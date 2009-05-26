@@ -16,8 +16,8 @@
  */
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.search.SortComparatorSource;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.MissingStringLastComparatorSource;
@@ -94,7 +94,7 @@ class ShardFieldSortedHitQueue extends PriorityQueue {
 
       String fieldname = fields[i].getField();
       comparators[i] = getCachedComparator(fieldname, fields[i]
-          .getType(), fields[i].getLocale(), fields[i].getFactory());
+          .getType(), fields[i].getLocale(), fields[i].getComparatorSource());
 
      if (fields[i].getType() == SortField.STRING) {
         this.fields[i] = new SortField(fieldname, fields[i].getLocale(),
@@ -144,7 +144,7 @@ class ShardFieldSortedHitQueue extends PriorityQueue {
     return c < 0;
   }
 
-  Comparator getCachedComparator(String fieldname, int type, Locale locale, SortComparatorSource factory) {
+  Comparator getCachedComparator(String fieldname, int type, Locale locale, FieldComparatorSource factory) {
     Comparator comparator = null;
     switch (type) {
     case SortField.SCORE:

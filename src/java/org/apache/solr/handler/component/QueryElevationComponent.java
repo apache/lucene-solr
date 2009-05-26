@@ -42,17 +42,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.ScoreDocComparator;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortComparatorSource;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DOMUtil;
@@ -448,58 +438,53 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   }
 }
 
-/**
- * Comparator source that knows about elevated documents
- */
-class ElevationComparatorSource implements SortComparatorSource 
-{
+class ElevationComparatorSource extends FieldComparatorSource {
   private final Map<String,Integer> priority;
-  
+
   public ElevationComparatorSource( final Map<String,Integer> boosts) {
     this.priority = boosts;
   }
-  
-  public ScoreDocComparator newComparator(final IndexReader reader, final String fieldname)
-    throws IOException 
-  {
 
-    // A future alternate version could store internal docids (would need to be regenerated per IndexReader)
-    // instead of loading the FieldCache instance into memory.
+  public FieldComparator newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
+    return new FieldComparator() {
+      
+      FieldCache.StringIndex idIndex;
+      private final int[] values = new int[numHits];
+      int bottomVal;
 
-    final FieldCache.StringIndex index =
-            FieldCache.DEFAULT.getStringIndex(reader, fieldname);
-  
-    return new ScoreDocComparator () 
-    {
-      public final int compare (final ScoreDoc d0, final ScoreDoc d1) {
-        final int f0 = index.order[d0.doc];
-        final int f1 = index.order[d1.doc];
- 
-        final String id0 = index.lookup[f0];
-        final String id1 = index.lookup[f1];
- 
-        final Integer b0 = priority.get( id0 );
-        final Integer b1 = priority.get( id1 );
-
-        final int v0 = (b0 == null) ? -1 : b0.intValue();
-        final int v1 = (b1 == null) ? -1 : b1.intValue();
-       
-        return v1 - v0;
+      public int compare(int slot1, int slot2) {
+        return values[slot2] - values[slot1];  // values will be small enough that there is no overflow concern
       }
-  
-      public Comparable sortValue (final ScoreDoc d0) {
-        final int f0 = index.order[d0.doc];
-        final String id0 = index.lookup[f0];
-        final Integer b0 = priority.get( id0 );
-        final int v0 = (b0 == null) ? -1 : b0.intValue();       
-        return new Integer( v0 );
+
+      public void setBottom(int slot) {
+        bottomVal = values[slot];
       }
-  
+
+      private int docVal(int doc) throws IOException {
+        String id = idIndex.lookup[idIndex.order[doc]];
+        Integer prio = priority.get(id);
+        return prio == null ? 0 : prio.intValue();
+      }
+
+      public int compareBottom(int doc) throws IOException {
+        return docVal(doc) - bottomVal;
+      }
+
+      public void copy(int slot, int doc) throws IOException {
+        values[slot] = docVal(doc);
+      }
+
+      public void setNextReader(IndexReader reader, int docBase, int numSlotsFull) throws IOException {
+        idIndex = FieldCache.DEFAULT.getStringIndex(reader, fieldname);
+      }
+
       public int sortType() {
-        return SortField.CUSTOM;
+        return SortField.INT;
+      }
+
+      public Comparable value(int slot) {
+        return values[slot];
       }
     };
   }
 }
-
-

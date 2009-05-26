@@ -52,6 +52,6 @@ public class Sorting {
   }
 
 
-  static final SortComparatorSource nullStringLastComparatorSource = new MissingStringLastComparatorSource(null);
+  static final FieldComparatorSource nullStringLastComparatorSource = new MissingStringLastComparatorSource(null);
 }
 

@@ -180,7 +180,9 @@
     -->
 
 
+    <!--
     <useFilterForSortedQuery>true</useFilterForSortedQuery>
+    -->
 
     <queryResultWindowSize>10</queryResultWindowSize>
 
