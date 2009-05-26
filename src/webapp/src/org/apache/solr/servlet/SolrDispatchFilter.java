@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.ByteArrayInputStream;
+import java.util.Map;
 import java.util.WeakHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +57,7 @@ public class SolrDispatchFilter implements Filter
   protected String pathPrefix = null; // strip this from the beginning of a path
   protected String abortErrorMessage = null;
   protected String solrConfigFilename = null;
-  protected final WeakHashMap<SolrConfig, SolrRequestParsers> parsers = new WeakHashMap<SolrConfig, SolrRequestParsers>();
+  protected final Map<SolrConfig, SolrRequestParsers> parsers = new WeakHashMap<SolrConfig, SolrRequestParsers>();
   protected final SolrRequestParsers adminRequestParser;
 
   public SolrDispatchFilter() {
@@ -195,10 +196,10 @@ public class SolrDispatchFilter implements Filter
           final SolrConfig config = core.getSolrConfig();
           // get or create/cache the parser for the core
           SolrRequestParsers parser = null;
-          parser = parsers.get(core);
+          parser = parsers.get(config);
           if( parser == null ) {
             parser = new SolrRequestParsers(config);
-            parsers.put( core.getSolrConfig(), parser );
+            parsers.put(config, parser );
           }
 
           // Determine the handler from the url path if not set
