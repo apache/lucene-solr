@@ -88,10 +88,7 @@ public class DateTools {
   public static String timeToString(long time, Resolution resolution) {
     Calendar cal = Calendar.getInstance(GMT);
 
-    //protected in JDK's prior to 1.4
-    //cal.setTimeInMillis(round(time, resolution));
-    
-    cal.setTime(new Date(round(time, resolution)));
+    cal.setTimeInMillis(round(time, resolution));
 
     String result;
     if (resolution == Resolution.YEAR) {
