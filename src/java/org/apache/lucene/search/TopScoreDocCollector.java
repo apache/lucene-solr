@@ -28,6 +28,11 @@ import org.apache.lucene.index.IndexReader;
  * and then (when the scores are tied) docID ascending. When you create an
  * instance of this collector you should know in advance whether documents are
  * going to be collected in doc Id order or not.
+ *
+ * <p><b>NOTE</b>: The values Float.Nan,
+ * Float.NEGATIVE_INFINITY and Float.POSITIVE_INFINITY are
+ * not valid scores.  This collector will not properly
+ * collect hits with such scores.
  */
 public abstract class TopScoreDocCollector extends TopDocsCollector {
 

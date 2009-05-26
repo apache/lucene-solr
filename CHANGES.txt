@@ -27,7 +27,11 @@ Changes in backwards compatibility policy
     implement Searchable or extend Searcher, you should change you
     code to implement this method.  If you already extend
     IndexSearcher, no further changes are needed to use Collector.
-    (Shai Erera via Mike McCandless)
+    
+    Finally, the values Float.Nan, Float.NEGATIVE_INFINITY and
+    Float.POSITIVE_INFINITY are not valid scores.  Lucene uses these
+    values internally in certain places, so if you have hits with such
+    scores it will cause problems. (Shai Erera via Mike McCandless)
 
 Changes in runtime behavior
 

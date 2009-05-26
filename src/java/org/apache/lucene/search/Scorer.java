@@ -31,6 +31,13 @@ import java.io.IOException;
  * Document scores are computed using a given <code>Similarity</code>
  * implementation.
  * </p>
+ *
+ * <p><b>NOTE</b>: The values Float.Nan,
+ * Float.NEGATIVE_INFINITY and Float.POSITIVE_INFINITY are
+ * not valid scores.  Certain collectors (eg {@link
+ * TopScoreDocCollector}) will not properly collect hits
+ * with these scores.
+ *
  * @see BooleanQuery#setAllowDocsOutOfOrder
  */
 public abstract class Scorer extends DocIdSetIterator {
