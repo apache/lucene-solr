@@ -713,6 +713,9 @@ public class CheckIndex {
     checker.setInfoStream(System.out);
 
     Status result = checker.checkIndex(onlySegments);
+    if (result.missingSegments) {
+      System.exit(1);
+    }
 
     if (!result.clean) {
       if (!doFix) {
