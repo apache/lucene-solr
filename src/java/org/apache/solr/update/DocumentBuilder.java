@@ -29,10 +29,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.schema.CopyField;
-import org.apache.solr.schema.DateField;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.*;
 
 /**
  * @version $Id$
@@ -219,8 +216,7 @@ public class DocumentBuilder {
               sfield.getName() + ": " +field.getValue() );
       }
       
-      final List<CopyField> copyFields = schema.getCopyFieldsList(name);
-      
+
       // load each field value
       boolean hasField = false;
       for( Object v : field ) {
@@ -229,39 +225,55 @@ public class DocumentBuilder {
         }
         String val = null;
         hasField = true;
-        
-        // TODO!!! HACK -- date conversion
-        if( sfield != null && v instanceof Date && sfield.getType() instanceof DateField ) {
-          DateField df = (DateField)sfield.getType();
-          val = df.toInternal( (Date)v )+'Z';
-        }
-        else if (v != null) {
-          val = v.toString();
-        }
-        
-        if( sfield != null ) {
+        boolean isBinaryField = false;
+        if (sfield != null && sfield.getType() instanceof BinaryField) {
+          isBinaryField = true;
+          BinaryField binaryField = (BinaryField) sfield.getType();
+          Field f = binaryField.createField(sfield,v,boost);
+          if(f != null) out.add(f);
           used = true;
-          Field f = sfield.createField( val, boost );
-          if( f != null ) { // null fields are not added
-            out.add( f );
+        } else {
+          // TODO!!! HACK -- date conversion
+          if (sfield != null && v instanceof Date && sfield.getType() instanceof DateField) {
+            DateField df = (DateField) sfield.getType();
+            val = df.toInternal((Date) v) + 'Z';
+          } else if (v != null) {
+            val = v.toString();
+          }
+
+          if (sfield != null) {
+            used = true;
+            Field f = sfield.createField(val, boost);
+            if (f != null) { // null fields are not added
+              out.add(f);
+            }
           }
         }
-        
+
         // Check if we should copy this field to any other fields.
         // This could happen whether it is explicit or not.
-        for( CopyField cf : copyFields ) {
-          SchemaField sf = cf.getDestination();
+        List<CopyField> copyFields = schema.getCopyFieldsList(name);
+        for (CopyField cf : copyFields) {
+          SchemaField destinationField = cf.getDestination();
           // check if the copy field is a multivalued or not
-          if( !sf.multiValued() && out.get( sf.getName() ) != null ) {
-            throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
-                "ERROR: multiple values encountered for non multiValued copy field " + 
-                  sf.getName() + ": " +val ); 
+          if (!destinationField.multiValued() && out.get(destinationField.getName()) != null) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                    "ERROR: multiple values encountered for non multiValued copy field " +
+                            destinationField.getName() + ": " + val);
           }
-          
+
           used = true;
-          Field f = sf.createField( cf.getLimitedValue( val ), boost );
-          if( f != null ) { // null fields are not added
-            out.add( f );
+          Field f = null;
+          if (isBinaryField) {
+            if (destinationField.getType() instanceof BinaryField) {
+              BinaryField binaryField = (BinaryField) destinationField.getType();
+              binaryField.createField(destinationField, v, boost);
+            }
+          } else {
+            f = destinationField.createField(cf.getLimitedValue(val), boost);
+          }
+          if (f != null) { // null fields are not added
+            out.add(f);
           }
         }
         
@@ -274,7 +286,8 @@ public class DocumentBuilder {
       
       // make sure the field was used somehow...
       if( !used && hasField ) {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"ERROR:unknown field '" + name + "'");
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"ERROR:unknown field '" +
+                name + "'");
       }
     }
     

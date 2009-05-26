@@ -25,6 +25,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.nio.ByteBuffer;
 
 /**
  * A class to map objects to and from solr documents.
@@ -182,7 +183,9 @@ public class DocumentObjectBinder {
             if (types != null && types.length > 0) type = (Class) types[0];
           }
         }*/
-      } else if (type.isArray()) {
+      } else if(type == byte[].class){
+        //no op
+      }else if (type.isArray()) {
         isArray = true;
         type = type.getComponentType();
       }
@@ -221,6 +224,9 @@ public class DocumentObjectBinder {
     }
     
     private void set(Object obj, Object v) {
+      if(v!= null && type == ByteBuffer.class && v.getClass()== byte[].class) {
+        v = ByteBuffer.wrap((byte[])v);
+      }
       try {
         if (field != null) {
           field.set(obj, v);

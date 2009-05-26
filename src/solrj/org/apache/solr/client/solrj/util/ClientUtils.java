@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.TimeZone;
+import java.nio.ByteBuffer;
 
 import org.apache.commons.httpclient.util.DateParseException;
 
@@ -35,10 +36,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.common.util.XML;
-import org.apache.solr.common.util.DateUtil;
+import org.apache.solr.common.util.*;
 
 
 /**
@@ -107,11 +105,17 @@ public class ClientUtils
       for( Object v : field ) {
         if (v instanceof Date) {
           v = DateUtil.getThreadLocalDateFormat().format( (Date)v );
+        }else if (v instanceof byte[]) {
+          byte[] bytes = (byte[]) v;
+          v = Base64.byteArrayToBase64(bytes, 0,bytes.length);
+        } else if (v instanceof ByteBuffer) {
+          ByteBuffer bytes = (ByteBuffer) v;
+          v = Base64.byteArrayToBase64(bytes.array(), bytes.position(),bytes.limit() - bytes.position());
         }
+
         if( boost != 1.0f ) {
           XML.writeXML(writer, "field", v.toString(), "name", name, "boost", boost );
-        }
-        else if (v != null) {
+        } else if (v != null) {
           XML.writeXML(writer, "field", v.toString(), "name", name );
         }
 

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.nio.ByteBuffer;
 
 /**
  * The class is designed to optimaly serialize/deserialize a NamedList. As we know there are only a limited type of
@@ -97,7 +98,7 @@ public class JavaBinCodec {
     if (version != VERSION) {
       throw new RuntimeException("Invalid version or the data in not in 'javabin' format");
     }
-    return (Object) readVal(dis);
+    return readVal(dis);
   }
 
 
@@ -523,12 +524,17 @@ public class JavaBinCodec {
     } else if (val instanceof byte[]) {
       writeByteArray((byte[]) val, 0, ((byte[]) val).length);
       return true;
+    }else if (val instanceof ByteBuffer) {
+      ByteBuffer buf = (ByteBuffer) val;
+      writeByteArray(buf.array(),buf.position(),buf.limit() - buf.position());
+      return true;
     } else if (val == END_OBJ) {
       writeTag(END);
       return true;
     }
     return false;
   }
+
 
   public void writeMap(Map val)
           throws IOException {

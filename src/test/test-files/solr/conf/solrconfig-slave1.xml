@@ -69,6 +69,9 @@
 
   <requestHandler name="/update" class="solr.XmlUpdateRequestHandler"/>
 
+
+  <requestHandler name="/update/javabin" class="solr.BinaryUpdateRequestHandler"/>
+
   <requestHandler name="/replication" class="solr.ReplicationHandler">
 
   </requestHandler>
