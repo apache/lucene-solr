@@ -49,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * @version $Id$
  * @since solr 0.9
  */
-public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
+public class SolrIndexSearcher extends Searcher implements SolrInfoMBean {
   private static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
   private final SolrCore core;
   private final IndexSchema schema;
@@ -59,6 +59,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private long openTime = System.currentTimeMillis();
   private long registerTime = 0;
   private long warmupTime = 0;
+  private final IndexSearcher searcher;
   private final SolrIndexReader reader;
   private final boolean closeReader;
 
@@ -110,7 +111,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
   public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean closeReader, boolean enableCache) {
-    super(r);
     this.core = core;
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + (name!=null ? " "+name : "");
@@ -130,8 +130,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       indexDir = fsDirectory.getFile().getAbsolutePath();
     }
 
+    searcher = new IndexSearcher(reader);
     this.closeReader = closeReader;
-    setSimilarity(schema.getSimilarity());
+    searcher.setSimilarity(schema.getSimilarity());
 
     SolrConfig solrConfig = core.getSolrConfig();
     queryResultWindowSize = solrConfig.queryResultWindowSize;
@@ -217,7 +218,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     }
     core.getInfoRegistry().remove(name);
     try {
-      super.close();
+      searcher.close();
     }
     finally {
       if(closeReader) reader.close();
@@ -338,14 +339,38 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     if (optimizer==null || filter!=null || !(query instanceof BooleanQuery)
     ) {
-      return super.search(query,filter,sort);
+      return searcher.search(query,filter,sort);
     } else {
       Query[] newQuery = new Query[1];
       Filter[] newFilter = new Filter[1];
-      optimizer.optimize((BooleanQuery)query, this, 0, newQuery, newFilter);
+      optimizer.optimize((BooleanQuery)query, searcher, 0, newQuery, newFilter);
 
-      return super.search(newQuery[0], newFilter[0], sort);
+      return searcher.search(newQuery[0], newFilter[0], sort);
     }
+  }
+
+  public Hits search(Query query, Filter filter) throws IOException {
+    return searcher.search(query, filter);
+  }
+
+  public Hits search(Query query, Sort sort) throws IOException {
+    return searcher.search(query, sort);
+  }
+
+  public void search(Query query, HitCollector results) throws IOException {
+    searcher.search(query, results);
+  }
+
+  public void setSimilarity(Similarity similarity) {
+    searcher.setSimilarity(similarity);
+  }
+
+  public Similarity getSimilarity() {
+    return searcher.getSimilarity();
+  }
+
+  public int docFreq(Term term) throws IOException {
+    return searcher.docFreq(term);
   }
 
   /**
@@ -394,7 +419,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    * 
    * @see IndexReader#document(int, FieldSelector) */
   public Document doc(int n, FieldSelector fieldSelector) throws IOException {
-    return getIndexReader().document(n, fieldSelector);
+    return getReader().document(n, fieldSelector);
   }
 
   /**
@@ -413,9 +438,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     }
 
     if(!enableLazyFieldLoading || fields == null) {
-      d = getIndexReader().document(i);
+      d = searcher.getIndexReader().document(i);
     } else {
-      d = getIndexReader().document(i, 
+      d = searcher.getIndexReader().document(i, 
              new SetNonLazyFieldSelector(fields));
     }
 
@@ -445,6 +470,34 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
   /* ********************** end document retrieval *************************/
+
+  public int maxDoc() throws IOException {
+    return searcher.maxDoc();
+  }
+
+  public TopDocs search(Weight weight, Filter filter, int i) throws IOException {
+    return searcher.search(weight, filter, i);
+  }
+
+  public void search(Weight weight, Filter filter, HitCollector hitCollector) throws IOException {
+    searcher.search(weight, filter, hitCollector);
+  }
+
+  public void search(Weight weight, Filter filter, Collector collector) throws IOException {
+    searcher.search(weight, filter, collector);
+  }
+
+  public Query rewrite(Query original) throws IOException {
+    return searcher.rewrite(original);
+  }
+
+  public Explanation explain(Weight weight, int i) throws IOException {
+    return searcher.explain(weight, i);
+  }
+
+  public TopFieldDocs search(Weight weight, Filter filter, int i, Sort sort) throws IOException {
+    return searcher.search(weight, filter, i, sort);
+  }
 
   ////////////////////////////////////////////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////
@@ -636,7 +689,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
           tdocs.close();
         }
       } else {
-        super.search(query,null,hc);
+        searcher.search(query,null,hc);
       }
       return hc.getDocSet();
 
@@ -934,7 +987,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         hc = new TimeLimitedCollector( hc, timeAllowed );
       }
       try {
-        super.search(query, luceneFilter, hc);
+        searcher.search(query, luceneFilter,  hc );
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -970,7 +1023,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         hc = new TimeLimitedCollector( hc, timeAllowed );
       }
       try {
-        super.search(query, luceneFilter, hc );
+        searcher.search(query, luceneFilter, hc );
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1022,7 +1075,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         hc = new TimeLimitedCollector( hc, timeAllowed );
       }
       try {
-        super.search(query, luceneFilter, hc );
+        searcher.search(query, luceneFilter, hc );
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1139,7 +1192,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         hc = new TimeLimitedCollector( hc, timeAllowed );
       }
       try {
-        super.search(query, luceneFilter, hc);
+        searcher.search(query, luceneFilter, hc);
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1179,7 +1232,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         hc = new TimeLimitedCollector( hc, timeAllowed );
       }
       try {
-        super.search(query, luceneFilter, hc);
+        searcher.search(query, luceneFilter, hc);
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
@@ -1235,7 +1288,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         hc = new TimeLimitedCollector( hc, timeAllowed );
       }
       try {
-        super.search(query, luceneFilter, hc);
+        searcher.search(query, luceneFilter, hc);
       }
       catch( TimeLimitedCollector.TimeExceededException x ) {
         log.warn( "Query: " + query + "; " + x.getMessage() );
