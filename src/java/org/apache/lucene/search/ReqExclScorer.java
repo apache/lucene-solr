@@ -20,32 +20,34 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 
-/** A Scorer for queries with a required subscorer and an excluding (prohibited) subscorer.
+/** A Scorer for queries with a required subscorer
+ * and an excluding (prohibited) sub DocIdSetIterator.
  * <br>
  * This <code>Scorer</code> implements {@link Scorer#skipTo(int)},
  * and it uses the skipTo() on the given scorers.
  */
-public class ReqExclScorer extends Scorer {
-  private Scorer reqScorer, exclScorer;
+class ReqExclScorer extends Scorer {
+  private Scorer reqScorer;
+  private DocIdSetIterator exclDisi;
 
   /** Construct a <code>ReqExclScorer</code>.
    * @param reqScorer The scorer that must match, except where
-   * @param exclScorer indicates exclusion.
+   * @param exclDisi indicates exclusion.
    */
   public ReqExclScorer(
       Scorer reqScorer,
-      Scorer exclScorer) {
+      DocIdSetIterator exclDisi) {
     super(null); // No similarity used.
     this.reqScorer = reqScorer;
-    this.exclScorer = exclScorer;
+    this.exclDisi = exclDisi;
   }
 
   private boolean firstTime = true;
   
   public boolean next() throws IOException {
     if (firstTime) {
-      if (! exclScorer.next()) {
-        exclScorer = null; // exhausted at start
+      if (! exclDisi.next()) {
+        exclDisi = null; // exhausted at start
       }
       firstTime = false;
     }
@@ -56,7 +58,7 @@ public class ReqExclScorer extends Scorer {
       reqScorer = null; // exhausted, nothing left
       return false;
     }
-    if (exclScorer == null) {
+    if (exclDisi == null) {
       return true; // reqScorer.next() already returned true
     }
     return toNonExcluded();
@@ -66,7 +68,7 @@ public class ReqExclScorer extends Scorer {
    * <br>On entry:
    * <ul>
    * <li>reqScorer != null,
-   * <li>exclScorer != null,
+   * <li>exclDisi != null,
    * <li>reqScorer was advanced once via next() or skipTo()
    *      and reqScorer.doc() may still be excluded.
    * </ul>
@@ -74,17 +76,17 @@ public class ReqExclScorer extends Scorer {
    * @return true iff there is a non excluded required doc.
    */
   private boolean toNonExcluded() throws IOException {
-    int exclDoc = exclScorer.doc();
+    int exclDoc = exclDisi.doc();
     do {  
       int reqDoc = reqScorer.doc(); // may be excluded
       if (reqDoc < exclDoc) {
         return true; // reqScorer advanced to before exclScorer, ie. not excluded
       } else if (reqDoc > exclDoc) {
-        if (! exclScorer.skipTo(reqDoc)) {
-          exclScorer = null; // exhausted, no more exclusions
+        if (! exclDisi.skipTo(reqDoc)) {
+          exclDisi = null; // exhausted, no more exclusions
           return true;
         }
-        exclDoc = exclScorer.doc();
+        exclDoc = exclDisi.doc();
         if (exclDoc > reqDoc) {
           return true; // not excluded
         }
@@ -115,14 +117,14 @@ public class ReqExclScorer extends Scorer {
   public boolean skipTo(int target) throws IOException {
     if (firstTime) {
       firstTime = false;
-      if (! exclScorer.skipTo(target)) {
-        exclScorer = null; // exhausted
+      if (! exclDisi.skipTo(target)) {
+        exclDisi = null; // exhausted
       }
     }
     if (reqScorer == null) {
       return false;
     }
-    if (exclScorer == null) {
+    if (exclDisi == null) {
       return reqScorer.skipTo(target);
     }
     if (! reqScorer.skipTo(target)) {
@@ -134,7 +136,7 @@ public class ReqExclScorer extends Scorer {
 
   public Explanation explain(int doc) throws IOException {
     Explanation res = new Explanation();
-    if (exclScorer.skipTo(doc) && (exclScorer.doc() == doc)) {
+    if (exclDisi.skipTo(doc) && (exclDisi.doc() == doc)) {
       res.setDescription("excluded");
     } else {
       res.setDescription("not excluded");

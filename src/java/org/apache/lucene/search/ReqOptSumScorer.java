@@ -23,7 +23,7 @@ import java.io.IOException;
  * <br>
  * This <code>Scorer</code> implements {@link Scorer#skipTo(int)}.
  */
-public class ReqOptSumScorer extends Scorer {
+class ReqOptSumScorer extends Scorer {
   /** The scorers passed from the constructor.
    * These are set to null as soon as their next() or skipTo() returns false.
    */
