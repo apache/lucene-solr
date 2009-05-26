@@ -237,8 +237,7 @@ public class DocBuilder {
     addStatusMessage("Identifying Delta");
     LOG.info("Starting delta collection.");
     Set<Map<String, Object>> deletedKeys = new HashSet<Map<String, Object>>();
-    Set<Map<String, Object>> allPks = collectDelta(root, null, resolver,
-            dataImporter, deletedKeys);
+    Set<Map<String, Object>> allPks = collectDelta(root, null, resolver, deletedKeys);
     if (stop.get())
       return;
     addStatusMessage("Deltas Obtained");
@@ -568,7 +567,7 @@ public class DocBuilder {
   @SuppressWarnings("unchecked")
   public Set<Map<String, Object>> collectDelta(DataConfig.Entity entity,
                                                DataConfig.Entity parentEntity, VariableResolverImpl resolver,
-                                               DataImporter dataImporter, Set<Map<String, Object>> deletedRows) {
+                                               Set<Map<String, Object>> deletedRows) {
     //someone called abort
     if (stop.get())
       return new HashSet();
@@ -579,8 +578,7 @@ public class DocBuilder {
 
       for (DataConfig.Entity entity1 : entity.entities) {
         //this ensures that we start from the leaf nodes
-        myModifiedPks.addAll(collectDelta(entity1, entity, resolver, dataImporter,
-                deletedRows));
+        myModifiedPks.addAll(collectDelta(entity1, entity, resolver, deletedRows));
         //someone called abort
         if (stop.get())
           return new HashSet();
