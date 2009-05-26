@@ -40,7 +40,8 @@
 
   <property name="name" value="${ant.project.name}"/>
   <property name="Name" value="Lucene"/>
-  <property name="version" value="2.9-dev"/>
+  <property name="dev.version" value="2.9-dev"/>
+  <property name="version" value="${dev.version}"/>
   <property name="compatibility.tag" value="lucene_2_4_back_compat_tests_20090525"/>
   <property name="spec.version" value="${version}"/>	
   <property name="year" value="2000-${current.year}"/>
@@ -395,7 +396,7 @@
 	      <sysproperty key="dataDir" file="@{dataDir}"/>
 	      <sysproperty key="tempDir" file="@{tempDir}"/>
 	      <sysproperty key="java.io.tmpdir" file="@{tempDir}"/>
-	      <sysproperty key="lucene.version" value="${version}"/>
+	      <sysproperty key="lucene.version" value="${dev.version}"/>
 	
 		  <contrib-settings />
 	    	
