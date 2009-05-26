@@ -26,6 +26,9 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.channels.FileChannel;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.text.SimpleDateFormat;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +69,7 @@ public class CoreContainer
   protected SolrResourceLoader loader = null;
   protected java.lang.ref.WeakReference<SolrCore> adminCore = null;
   protected Properties containerProperties;
+  protected Map<String ,IndexSchema> indexSchemaCache;
   public CoreContainer() {
   }
 
@@ -173,6 +177,10 @@ public class CoreContainer
       persistent = cfg.getBool( "solr/@persistent", false );
       libDir     = cfg.get(     "solr/@sharedLib", null);
       adminPath  = cfg.get(     "solr/cores/@adminPath", null );
+      String shareSchema = cfg.get(     "solr/cores/@shareSchema", null );
+      if(Boolean.parseBoolean(shareSchema)){
+        indexSchemaCache = new ConcurrentHashMap<String ,IndexSchema>();
+      }
       String adminHandler  = cfg.get(     "solr/cores/@adminHandler", null );
       managementPath  = cfg.get("solr/cores/@managementPath", null );
 
@@ -345,7 +353,22 @@ public class CoreContainer
     // Initialize the solr config
     SolrResourceLoader solrLoader = new SolrResourceLoader(instanceDir, libLoader, dcore.getCoreProperties());
     SolrConfig config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
-    IndexSchema schema = new IndexSchema(config, dcore.getSchemaName(), null);
+    IndexSchema schema = null;
+    if(indexSchemaCache != null){
+      //schema sharing is enabled. so check if it already is loaded
+      File  schemFile = new File(dcore.getInstanceDir() + dcore.getSchemaName());
+      if(schemFile. exists()){
+        String key = schemFile.getAbsolutePath()+":"+new SimpleDateFormat("yyyyMMddhhmmss").format(new Date(schemFile.lastModified()));
+        schema = indexSchemaCache.get(key);
+        if(schema == null){
+          schema = new IndexSchema(config, dcore.getSchemaName(), null);
+          indexSchemaCache.put(key,schema);
+        }
+      }
+    }
+    if(schema == null){
+      schema = new IndexSchema(config, dcore.getSchemaName(), null);
+    }
     SolrCore core = new SolrCore(dcore.getName(), null, config, schema, dcore);
     return core;
   }
