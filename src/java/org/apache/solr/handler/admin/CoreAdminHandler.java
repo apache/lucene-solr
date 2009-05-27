@@ -376,7 +376,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
 
   }
 
-  protected static NamedList<Object> getCoreStatus(CoreContainer cores, String cname) throws IOException {
+  protected NamedList<Object> getCoreStatus(CoreContainer cores, String cname) throws IOException {
     NamedList<Object> info = new SimpleOrderedMap<Object>();
     SolrCore core = cores.getCore(cname);
     if (core != null) {
@@ -387,8 +387,11 @@ public class CoreAdminHandler extends RequestHandlerBase {
         info.add("startTime", new Date(core.getStartTime()));
         info.add("uptime", System.currentTimeMillis() - core.getStartTime());
         RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-        info.add("index", LukeRequestHandler.getIndexInfo(searcher.get().getReader(), false));
-        searcher.decref();
+        try {
+          info.add("index", LukeRequestHandler.getIndexInfo(searcher.get().getReader(), false));
+        } finally {
+          searcher.decref();
+        }
       } finally {
         core.close();
       }
