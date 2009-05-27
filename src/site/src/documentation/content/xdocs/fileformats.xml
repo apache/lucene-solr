@@ -760,7 +760,7 @@
         </section>
 
         <section id="Compound Types"><title>Compound Types</title>
-            <section id="String"><title>Map&lt;String,String&gt;</title>
+            <section id="MapStringString"><title>Map&lt;String,String&gt;</title>
 
                 <p>
 		    In a couple places Lucene stores a Map
