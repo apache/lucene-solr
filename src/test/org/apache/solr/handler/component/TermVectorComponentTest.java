@@ -93,7 +93,11 @@ public class TermVectorComponentTest extends AbstractSolrTestCase {
     NamedList titl = (NamedList) field.get("titl");
     assertTrue("titl is null and it shouldn't be", titl != null);
     assertTrue(titl.get("tf") + " does not equal: " + 2, ((Integer) titl.get("tf")) == 2);
-
+    //there should not be any positions or offsets
+    NamedList positions = (NamedList) titl.get("positions");
+    assertTrue("positions is not null and it should be", positions == null);
+    NamedList offsets = (NamedList) titl.get("offsets");
+    assertTrue("offsets is not null and it should be", offsets == null);
     String uniqueKeyFieldName = (String) termVectors.getVal(1);
     assertTrue("uniqueKeyFieldName is null and it shouldn't be", uniqueKeyFieldName != null);
     assertTrue(uniqueKeyFieldName + " is not equal to " + "id", uniqueKeyFieldName.equals("id") == true);
@@ -126,6 +130,24 @@ public class TermVectorComponentTest extends AbstractSolrTestCase {
     NamedList doc = (NamedList) termVectors.getVal(0);
     assertTrue("doc is null and it shouldn't be", doc != null);
     assertTrue(doc.size() + " does not equal: " + 2, doc.size() == 2);
+    NamedList offtv = (NamedList) doc.get("test_posofftv");
+    assertTrue("offtv is null and it shouldn't be", offtv != null);
+    assertTrue("offtv Size: " + offtv.size() + " is not: " + 2, offtv.size() == 2);
+    NamedList another = (NamedList) offtv.get("anoth");
+    NamedList offsets = (NamedList) another.get("offsets");
+    assertTrue("offsets is null and it shouldn't be", offsets != null);
+    assertTrue("offsets Size: " + offsets.size() + " is not greater than: " + 0, offsets.size() > 0);
+    NamedList pos = (NamedList) another.get("positions");
+    assertTrue("pos is null and it shouldn't be", pos != null);
+    assertTrue("pos Size: " + pos.size() + " is not greater than: " + 0, pos.size() > 0);
+    Integer df = (Integer) another.get("df");
+    assertTrue("df is null and it shouldn't be", df != null);
+    assertTrue(df + " does not equal: " + 2, df == 2);
+    Double tfIdf = (Double) another.get("tf-idf");
+    assertTrue("tfIdf is null and it shouldn't be", tfIdf != null);
+    assertTrue(tfIdf + " does not equal: " + 0.5, tfIdf == 0.5);
+
+
   }
 
 

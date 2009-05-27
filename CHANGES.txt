@@ -269,10 +269,6 @@ Optimizations
 12. SOLR-1165: Use Lucene Filters and pass them down to the Lucene
     search methods to filter earlier and improve performance. (yonik)
 
-13. SOLR-1111: Use per-segment sorting to share fieldcache elements
-    across unchanged segments.  This saves memory and reduces
-    commit times for incremental updates to the index. (yonik)
-
 
 Bug Fixes
 ----------------------

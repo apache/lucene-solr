@@ -193,6 +193,16 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     private NamedList fieldNL;
     private Term currentTerm;
 
+    /**
+     *
+     * @param fields
+     * @param reader
+     * @param termFreq
+     * @param positions true if the TVM should try to get position info from the Term Vector, assuming it is present
+     * @param offsets true if the TVM should try to get offset info from the Term Vector, assuming it is present
+     * @param docFreq
+     * @param tfIdf
+     */
     public TVMapper(String[] fields, IndexReader reader, boolean termFreq, boolean positions, boolean offsets, boolean docFreq, boolean tfIdf) {
 
       this.reader = reader;
@@ -267,6 +277,16 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
         map = false;
         fieldNL = null;
       }
+    }
+
+    @Override
+    public boolean isIgnoringPositions() {
+      return this.positions == false;  // if we are not interested in positions, then return true telling Lucene to skip loading them
+    }
+
+    @Override
+    public boolean isIgnoringOffsets() {
+      return this.offsets == false;  //  if we are not interested in offsets, then return true telling Lucene to skip loading them
     }
   }
 
