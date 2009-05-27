@@ -127,7 +127,7 @@ public interface FieldCache {
   }
 
   /** Expert: The cache used internally by sorting and range query classes. */
-  public static FieldCache DEFAULT = new FieldCacheImpl();
+  public static FieldCache DEFAULT = new ExtendedFieldCacheImpl();
 
   /** Checks the internal cache for an appropriate entry, and if none is
    * found, reads the terms in <code>field</code> as a single byte and returns an array

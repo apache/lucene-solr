@@ -41,7 +41,7 @@ public interface ExtendedFieldCache extends FieldCache {
     public double parseDouble(String string);
   }
 
-  public static ExtendedFieldCache EXT_DEFAULT = new ExtendedFieldCacheImpl();
+  public static ExtendedFieldCache EXT_DEFAULT = (ExtendedFieldCache)FieldCache.DEFAULT;
 
   /**
    * Checks the internal cache for an appropriate entry, and if none is
