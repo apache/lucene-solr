@@ -33,7 +33,7 @@ public abstract class StringIndexDocValues extends DocValues {
     protected final ValueSource vs;
 
     public StringIndexDocValues(ValueSource vs, IndexReader reader, String field) throws IOException {
-      index = ExtendedFieldCache.EXT_DEFAULT.getStringIndex(reader, field);
+      index = FieldCache.DEFAULT.getStringIndex(reader, field);
       order = index.order;
       lookup = index.lookup;
       this.vs = vs;
