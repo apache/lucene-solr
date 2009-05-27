@@ -635,8 +635,8 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
           for(;;) {
             int num = tdocs.read(arr, freq);
             if (num==0) break;
-            while (--num>=0) {
-              hc.collect(arr[num]);
+            for (int j=0; j<num; j++) {
+              hc.collect(arr[j]);
             }
           }
           tdocs.close();

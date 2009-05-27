@@ -30,12 +30,14 @@ public class SimpleFacetsTest extends AbstractSolrTestCase {
                  "name", "Zapp Brannigan"));
     assertU(adoc("id", "43" ,
                  "title", "Democratic Order of Planets"));
+    assertU(commit());
     assertU(adoc("id", "44", "trait_s", "Tool",
                  "name", "The Zapper"));
     assertU(adoc("id", "45", "trait_s", "Chauvinist",
                  "title", "25 star General"));
     assertU(adoc("id", "46", "trait_s", "Obnoxious",
                  "subject", "Defeated the pacifists of the Gandhi nebula"));
+    assertU(commit());
     assertU(adoc("id", "47", "trait_s", "Pig",
                  "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
     assertU(commit());
@@ -216,6 +218,7 @@ public class SimpleFacetsTest extends AbstractSolrTestCase {
     assertU(adoc("id", "1",  f, "1976-07-04T12:08:56.235Z"));
     assertU(adoc("id", "2",  f, "1976-07-05T00:00:00.000Z"));
     assertU(adoc("id", "3",  f, "1976-07-15T00:07:67.890Z"));
+    assertU(commit());
     assertU(adoc("id", "4",  f, "1976-07-21T00:07:67.890Z"));
     assertU(adoc("id", "5",  f, "1976-07-13T12:12:25.255Z"));
     assertU(adoc("id", "6",  f, "1976-07-03T17:01:23.456Z"));
@@ -223,6 +226,7 @@ public class SimpleFacetsTest extends AbstractSolrTestCase {
     assertU(adoc("id", "8",  f, "1976-07-15T15:15:15.155Z"));
     assertU(adoc("id", "9",  f, "1907-07-12T13:13:23.235Z"));
     assertU(adoc("id", "10", f, "1976-07-03T11:02:45.678Z"));
+    assertU(commit());
     assertU(adoc("id", "11", f, "1907-07-12T12:12:25.255Z"));
     assertU(adoc("id", "12", f, "2007-07-30T07:07:07.070Z"));
     assertU(adoc("id", "13", f, "1976-07-30T22:22:22.222Z"));
@@ -343,6 +347,7 @@ public class SimpleFacetsTest extends AbstractSolrTestCase {
 
     assertU(adoc("id", "1",  f, "A"));
     assertU(adoc("id", "2",  f, "B"));
+    assertU(commit());
     assertU(adoc("id", "3",  f, "C"));
     assertU(adoc("id", "4",  f, "C"));
     assertU(adoc("id", "5",  f, "D"));
@@ -350,6 +355,7 @@ public class SimpleFacetsTest extends AbstractSolrTestCase {
     assertU(adoc("id", "7",  f, "E"));
     assertU(adoc("id", "8",  f, "E"));
     assertU(adoc("id", "9",  f, "F"));
+    assertU(commit());
     assertU(adoc("id", "10", f, "G"));
     assertU(adoc("id", "11", f, "G"));
     assertU(adoc("id", "12", f, "G"));
@@ -520,13 +526,17 @@ public class SimpleFacetsTest extends AbstractSolrTestCase {
     assertU(adoc("id", "2",  f, "B"));
     assertU(adoc("id", "3",  f, "BB"));
     assertU(adoc("id", "4",  f, "BB"));
+    assertU(commit());
     assertU(adoc("id", "5",  f, "BBB"));
     assertU(adoc("id", "6",  f, "BBB"));
+    assertU(commit());
     assertU(adoc("id", "7",  f, "BBB"));
     assertU(adoc("id", "8",  f, "CC"));
     assertU(adoc("id", "9",  f, "CC"));
+    assertU(commit());
     assertU(adoc("id", "10", f, "CCC"));
     assertU(adoc("id", "11", f, "CCC"));
+    assertU(commit());    
     assertU(adoc("id", "12", f, "CCC"));
     assertU(commit());
 

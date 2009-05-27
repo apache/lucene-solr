@@ -202,10 +202,14 @@ public class TestFaceting extends AbstractSolrTestCase {
 
     // int iter=65536+10;
     int iter=1000;
+    int commitInterval=iter/9;
 
     for (int i=0; i<iter; i++) {
       // assertU(adoc("id", t(i), "many_ws", many_ws + t(i1+i) + " " + t(i1*2+i)));
       assertU(adoc("id", t(i), "many_ws", t(i1+i) + " " + t(i1*2+i)));
+      if (iter % commitInterval == 0) {
+        assertU(commit());
+      }
     }
     assertU(commit());
 

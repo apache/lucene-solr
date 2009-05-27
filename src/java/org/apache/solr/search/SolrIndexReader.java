@@ -408,10 +408,10 @@ public class SolrIndexReader extends FilterIndexReader {
     return in.document(n);
   }
 
-  @Override
-  public String getCommitUserData() {
-    return in.getCommitUserData();
-  }
+//  @Override
+//  public String getCommitUserData() {
+//    return in.getCommitUserData();
+//  }
 
   @Override
   public IndexCommit getIndexCommit() throws IOException {
