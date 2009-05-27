@@ -480,6 +480,8 @@ Other Changes
 33. SOLR-1149: Made QParserPlugin and related classes extendible as an experimental API.
     (Kaktu Chakarabati via shalin)
 
+34. Upgraded to Lucene 2.9-dev r779312 (yonik)
+
 Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)
