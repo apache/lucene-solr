@@ -46,17 +46,49 @@ public class IndexSearcher extends Searcher {
   /** Creates a searcher searching the index in the named directory.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link #IndexSearcher(String, boolean)} instead
    */
   public IndexSearcher(String path) throws CorruptIndexException, IOException {
     this(IndexReader.open(path), true);
   }
 
-  /** Creates a searcher searching the index in the provided directory.
+  /** Creates a searcher searching the index in the named
+   *  directory.  You should pass readOnly=true, since it
+   *  gives much better concurrent performance, unless you
+   *  intend to do write operations (delete documents or
+   *  change norms) with the underlying IndexReader.
+   * @param path directory where IndexReader will be opened
+   * @param readOnly if true, the underlying IndexReader
+   * will be opened readOnly
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
+  public IndexSearcher(String path, boolean readOnly) throws CorruptIndexException, IOException {
+    this(IndexReader.open(path, readOnly), true);
+  }
+
+  /** Creates a searcher searching the index in the provided directory.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link #IndexSearcher(Directory, boolean)} instead
+   */
   public IndexSearcher(Directory directory) throws CorruptIndexException, IOException {
     this(IndexReader.open(directory), true);
+  }
+
+  /** Creates a searcher searching the index in the named
+   *  directory.  You should pass readOnly=true, since it
+   *  gives much better concurrent performance, unless you
+   *  intend to do write operations (delete documents or
+   *  change norms) with the underlying IndexReader.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   * @param path directory where IndexReader will be opened
+   * @param readOnly if true, the underlying IndexReader
+   * will be opened readOnly
+   */
+  public IndexSearcher(Directory path, boolean readOnly) throws CorruptIndexException, IOException {
+    this(IndexReader.open(path, readOnly), true);
   }
 
   /** Creates a searcher searching the provided index. */

@@ -375,9 +375,10 @@ class SegmentReader extends DirectoryIndexReader {
   /**
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated
    */
   public static SegmentReader get(SegmentInfo si) throws CorruptIndexException, IOException {
-    return get(READ_ONLY_DEFAULT, si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE, true);
+    return get(false, si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE, true);
   }
 
   /**
@@ -391,25 +392,28 @@ class SegmentReader extends DirectoryIndexReader {
   /**
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated
    */
   static SegmentReader get(SegmentInfo si, boolean doOpenStores) throws CorruptIndexException, IOException {
-    return get(READ_ONLY_DEFAULT, si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE, doOpenStores);
+    return get(false, si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE, doOpenStores);
   }
 
   /**
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated
    */
   public static SegmentReader get(SegmentInfo si, int readBufferSize) throws CorruptIndexException, IOException {
-    return get(READ_ONLY_DEFAULT, si.dir, si, null, false, false, readBufferSize, true);
+    return get(false, si.dir, si, null, false, false, readBufferSize, true);
   }
 
   /**
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated
    */
   static SegmentReader get(SegmentInfo si, int readBufferSize, boolean doOpenStores) throws CorruptIndexException, IOException {
-    return get(READ_ONLY_DEFAULT, si.dir, si, null, false, false, readBufferSize, doOpenStores);
+    return get(false, si.dir, si, null, false, false, readBufferSize, doOpenStores);
   }
 
   /**
@@ -432,13 +436,14 @@ class SegmentReader extends DirectoryIndexReader {
   /**
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated
    */
   public static SegmentReader get(Directory dir, SegmentInfo si,
                                   SegmentInfos sis,
                                   boolean closeDir, boolean ownDir,
                                   int readBufferSize)
     throws CorruptIndexException, IOException {
-    return get(READ_ONLY_DEFAULT, dir, si, sis, closeDir, ownDir, readBufferSize, true);
+    return get(false, dir, si, sis, closeDir, ownDir, readBufferSize, true);
   }
 
   /**

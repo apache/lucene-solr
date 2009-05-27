@@ -34,7 +34,8 @@ import java.util.Map;
  so that any subclass which implements it is searchable.
 
  <p> Concrete subclasses of IndexReader are usually constructed with a call to
- one of the static <code>open()</code> methods, e.g. {@link #open(String)}.
+ one of the static <code>open()</code> methods, e.g. {@link
+ #open(String, boolean)}.
 
  <p> For efficiency, in this API documents are often referred to via
  <i>document numbers</i>, non-negative integers which each name a unique
@@ -69,9 +70,6 @@ import java.util.Map;
  @version $Id$
 */
 public abstract class IndexReader implements Cloneable {
-
-  // NOTE: in 3.0 this will change to true
-  final static boolean READ_ONLY_DEFAULT = false;
 
   /**
    * Constants describing field properties, for example used for
@@ -203,36 +201,70 @@ public abstract class IndexReader implements Cloneable {
   }
 
   /** Returns a read/write IndexReader reading the index in an FSDirectory in the named
-   path.  <b>NOTE</b>: starting in 3.0 this will return a readOnly IndexReader.
+   *  path.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link #open(String, boolean)} instead
    * @param path the path to the index directory */
   public static IndexReader open(String path) throws CorruptIndexException, IOException {
-    return open(FSDirectory.getDirectory(path), true, null, null, READ_ONLY_DEFAULT);
+    return open(FSDirectory.getDirectory(path), true, null, null, false);
+  }
+
+  /** Returns an IndexReader reading the index in an
+   *  FSDirectory in the named path.  You should pass
+   *  readOnly=true, since it gives much better concurrent
+   *  performance, unless you intend to do write operations
+   *  (delete documents or change norms) with the reader.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   * @param path the path to the index directory
+   * @param readOnly true if this should be a readOnly
+   * reader */
+  public static IndexReader open(String path, boolean readOnly) throws CorruptIndexException, IOException {
+    return open(FSDirectory.getDirectory(path), true, null, null, readOnly);
   }
 
   /** Returns a read/write IndexReader reading the index in an FSDirectory in the named
-   * path.  <b>NOTE</b>: starting in 3.0 this will return a readOnly IndexReader.
+   *  path.
    * @param path the path to the index directory
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link #open(File, boolean)} instead
    */
   public static IndexReader open(File path) throws CorruptIndexException, IOException {
-    return open(FSDirectory.getDirectory(path), true, null, null, READ_ONLY_DEFAULT);
+    return open(FSDirectory.getDirectory(path), true, null, null, false);
+  }
+
+  /** Returns an IndexReader reading the index in an
+   *  FSDirectory in the named path.  You should pass
+   *  readOnly=true, since it gives much better concurrent
+   *  performance, unless you intend to do write operations
+   *  (delete documents or change norms) with the reader.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   * @param path the path to the index directory
+   * @param readOnly true if this should be a readOnly
+   * reader */
+  public static IndexReader open(File path, boolean readOnly) throws CorruptIndexException, IOException {
+    return open(FSDirectory.getDirectory(path), true, null, null, readOnly);
   }
 
   /** Returns a read/write IndexReader reading the index in
-   * the given Directory. <b>NOTE</b>: starting in 3.0 this
-   * will return a readOnly IndexReader.
+   *  the given Directory.
    * @param directory the index directory
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link #open(Directory, boolean)} instead
    */
   public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
-    return open(directory, false, null, null, READ_ONLY_DEFAULT);
+    return open(directory, false, null, null, false);
   }
 
-  /** Returns a read/write or read only IndexReader reading the index in the given Directory.
+  /** Returns an IndexReader reading the index in the given
+   *  Directory.  You should pass readOnly=true, since it
+   *  gives much better concurrent performance, unless you
+   *  intend to do write operations (delete documents or
+   *  change norms) with the reader.
    * @param directory the index directory
    * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
    * @throws CorruptIndexException if the index is corrupt
@@ -243,35 +275,51 @@ public abstract class IndexReader implements Cloneable {
   }
 
   /** Expert: returns a read/write IndexReader reading the index in the given
-   * {@link IndexCommit}.  <b>NOTE</b>: starting in 3.0 this
-   * will return a readOnly IndexReader.
+   * {@link IndexCommit}.
    * @param commit the commit point to open
    * @throws CorruptIndexException if the index is corrupt
+   * @deprecated Use {@link #open(IndexCommit, boolean)} instead
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), false, null, commit, READ_ONLY_DEFAULT);
+    return open(commit.getDirectory(), false, null, commit, false);
+  }
+
+  /** Expert: returns an IndexReader reading the index in the given
+   *  {@link IndexCommit}.  You should pass readOnly=true, since it
+   *  gives much better concurrent performance, unless you
+   *  intend to do write operations (delete documents or
+   *  change norms) with the reader.
+   * @param commit the commit point to open
+   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final IndexCommit commit, boolean readOnly) throws CorruptIndexException, IOException {
+    return open(commit.getDirectory(), false, null, commit, readOnly);
   }
 
   /** Expert: returns a read/write IndexReader reading the index in the given
-   * Directory, with a custom {@link IndexDeletionPolicy}.
-   * <b>NOTE</b>: starting in 3.0 this will return a
-   * readOnly IndexReader.
+   *  Directory, with a custom {@link IndexDeletionPolicy}.
    * @param directory the index directory
    * @param deletionPolicy a custom deletion policy (only used
    *  if you use this reader to perform deletes or to set
    *  norms); see {@link IndexWriter} for details.
+   * @deprecated Use {@link #open(Directory,
+   * IndexDeletionPolicy, boolean)} instead
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
-    return open(directory, false, deletionPolicy, null, READ_ONLY_DEFAULT);
+    return open(directory, false, deletionPolicy, null, false);
   }
 
-  /** Expert: returns a read/write or read only IndexReader reading the index in the given
-   * Directory, with a custom {@link IndexDeletionPolicy}.
-   * <b>NOTE</b>: starting in 3.0 this will return a
-   * readOnly IndexReader.
+  /** Expert: returns an IndexReader reading the index in
+   *  the given Directory, with a custom {@link
+   *  IndexDeletionPolicy}.  You should pass readOnly=true,
+   *  since it gives much better concurrent performance,
+   *  unless you intend to do write operations (delete
+   *  documents or change norms) with the reader.
    * @param directory the index directory
    * @param deletionPolicy a custom deletion policy (only used
    *  if you use this reader to perform deletes or to set
@@ -286,23 +334,28 @@ public abstract class IndexReader implements Cloneable {
 
   /** Expert: returns a read/write IndexReader reading the index in the given
    * Directory, using a specific commit and with a custom
-   * {@link IndexDeletionPolicy}.  <b>NOTE</b>: starting in
-   * 3.0 this will return a readOnly IndexReader.
+   * {@link IndexDeletionPolicy}.
    * @param commit the specific {@link IndexCommit} to open;
    * see {@link IndexReader#listCommits} to list all commits
    * in a directory
    * @param deletionPolicy a custom deletion policy (only used
    *  if you use this reader to perform deletes or to set
    *  norms); see {@link IndexWriter} for details.
+   * @deprecated Use {@link #open(IndexCommit,
+   * IndexDeletionPolicy, boolean)} instead
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), false, deletionPolicy, commit, READ_ONLY_DEFAULT);
+    return open(commit.getDirectory(), false, deletionPolicy, commit, false);
   }
 
-  /** Expert: returns a read/write or read only IndexReader reading the index in the given
-   * Directory, using a specific commit and with a custom {@link IndexDeletionPolicy}.
+  /** Expert: returns an IndexReader reading the index in
+   *  the given Directory, using a specific commit and with
+   *  a custom {@link IndexDeletionPolicy}.  You should pass
+   *  readOnly=true, since it gives much better concurrent
+   *  performance, unless you intend to do write operations
+   *  (delete documents or change norms) with the reader.
    * @param commit the specific {@link IndexCommit} to open;
    * see {@link IndexReader#listCommits} to list all commits
    * in a directory
