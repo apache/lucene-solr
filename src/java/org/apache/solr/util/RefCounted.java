@@ -39,6 +39,10 @@ public abstract class RefCounted<Type> {
     this.resource = resource;
   }
 
+  public int getRefcount() {
+    return refcount.get();
+  }
+
   public final RefCounted<Type> incref() {
     refcount.incrementAndGet();
     return this;
