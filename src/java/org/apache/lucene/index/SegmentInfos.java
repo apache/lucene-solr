@@ -261,11 +261,10 @@ final class SegmentInfos extends Vector {
       if (format <= FORMAT_USER_DATA) {
         if (format <= FORMAT_DIAGNOSTICS) {
           userData = input.readStringStringMap();
+        } else if (0 != input.readByte()) {
+          userData = Collections.singletonMap("userData", input.readString());
         } else {
           userData = Collections.EMPTY_MAP;
-          if (0 != input.readByte()) {
-            userData.put("userData", input.readString());
-          }
         }
       } else {
         userData = Collections.EMPTY_MAP;
