@@ -71,6 +71,7 @@ public class CoreContainer
   protected Properties containerProperties;
   protected Map<String ,IndexSchema> indexSchemaCache;
   protected String adminHandler;
+  protected boolean shareSchema;
 
   public CoreContainer() {
   }
@@ -179,8 +180,8 @@ public class CoreContainer
       persistent = cfg.getBool( "solr/@persistent", false );
       libDir     = cfg.get(     "solr/@sharedLib", null);
       adminPath  = cfg.get(     "solr/cores/@adminPath", null );
-      String shareSchema = cfg.get(     "solr/cores/@shareSchema", null );
-      if(Boolean.parseBoolean(shareSchema)){
+      shareSchema = cfg.getBool("solr/cores/@shareSchema", false );
+      if(shareSchema){
         indexSchemaCache = new ConcurrentHashMap<String ,IndexSchema>();
       }
       adminHandler  = cfg.get("solr/cores/@adminHandler", null );
@@ -651,6 +652,7 @@ public class CoreContainer
     w.write("<cores");
     writeAttribute(w, "adminPath",adminPath);
     if(adminHandler != null) writeAttribute(w, "adminHandler",adminHandler);
+    if(shareSchema) writeAttribute(w, "shareSchema","true");
     w.write(">\n");
 
     Map<SolrCore, LinkedList<String>> aliases = new HashMap<SolrCore,LinkedList<String>>();
