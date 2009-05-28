@@ -487,6 +487,8 @@ Other Changes
 35. SOLR-786: Refactor DisMaxQParser to allow overriding certain features of DisMaxQParser
     (Wojciech Biela via shalin)
 
+36. SOLR-458: Add equals and hashCode methods to NamedList (Stefan Rinner, shalin) 
+
 Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)

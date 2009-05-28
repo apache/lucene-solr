@@ -61,7 +61,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   /**
    * Creates a NamedList instance containing the "name,value" pairs contained in the
    * Entry[].
-   * 
+   *
    * <p>
    * Modifying the contents of the Entry[] after calling this constructor may change
    * the NamedList (in future versions of Solr), but this is not garunteed and should
@@ -91,12 +91,12 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   public NamedList(List nameValuePairs) {
     nvPairs=nameValuePairs;
   }
-  
+
   /**
    * Method to serialize Map.Entry&lt;String, ?&gt; to a List in which the even
    * indexed elements (0,2,4. ..etc) are Strings and odd elements (1,3,5,) are of
    * the type "T".
-   *  
+   *
    * @param nameValuePairs
    * @return Modified List as per the above description
    * @deprecated This a temporary placeholder method until the guts of the class
@@ -106,12 +106,12 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   @Deprecated
   private List  nameValueMapToList(Map.Entry<String, ? extends T>[] nameValuePairs) {
     List result = new ArrayList();
-    for (Map.Entry<String, ?> ent : nameValuePairs) { 
+    for (Map.Entry<String, ?> ent : nameValuePairs) {
       result.add(ent.getKey());
       result.add(ent.getValue());
     }
     return result;
-  }  
+  }
 
   /** The total number of name/value pairs */
   public int size() {
@@ -136,7 +136,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   public T getVal(int idx) {
     return (T)nvPairs.get((idx << 1) + 1);
   }
-  
+
   /**
    * Adds a name/value pair to the end of the list.
    */
@@ -197,7 +197,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   /**
    * Gets the value for the first instance of the specified name
    * found.
-   * 
+   *
    * @return null if not found or if the value stored was null.
    * @see #indexOf
    * @see #get(String,int)
@@ -209,7 +209,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   /**
    * Gets the value for the first instance of the specified name
    * found starting at the specified index.
-   * 
+   *
    * @return null if not found or if the value stored was null.
    * @see #indexOf
    */
@@ -257,25 +257,25 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
     return sb.toString();
   }
-  
+
   /**
-   * 
+   *
    * Helper class implementing Map.Entry<String, T> to store the key-value
    * relationship in NamedList (the keys of which are String-s) 
-   * 
+   *
    * @param <T>
    */
   public static final class NamedListEntry<T> implements Map.Entry<String, T> {
 
-    public NamedListEntry() { 
-      
+    public NamedListEntry() {
+
     }
-    
+
     public NamedListEntry(String _key, T _value) {
       key = _key;
       value = _value;
     }
-    
+
     public String getKey() {
       return key;
     }
@@ -288,10 +288,10 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
       T oldValue = value;
       value = _value;
       return oldValue;
-    } 
-    
+    }
+
     private String key;
-    
+
     private T value;
   }
 
@@ -324,18 +324,18 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   //----------------------------------------------------------------------------
   // Iterable interface
   //----------------------------------------------------------------------------
-  
+
   /**
    * Support the Iterable interface
    */
   public Iterator<Map.Entry<String,T>> iterator() {
-    
+
     final NamedList list = this;
-    
+
     Iterator<Map.Entry<String,T>> iter = new Iterator<Map.Entry<String,T>>() {
-      
+
       int idx = 0;
-      
+
       public boolean hasNext() {
         return idx < list.size();
       }
@@ -351,7 +351,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
           public T getValue() {
             return (T)list.getVal( index );
           }
-          
+
           public String toString()
           {
         	  return getKey()+"="+getValue();
@@ -375,5 +375,17 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     int idx = indexOf(name, 0);
     if(idx != -1) return remove(idx);
     return null;
+  }
+
+  @Override
+  public int hashCode() {
+    return nvPairs.hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof NamedList)) return false;
+    NamedList nl = (NamedList) obj;
+    return this.nvPairs.equals(nl.nvPairs);
   }
 }
