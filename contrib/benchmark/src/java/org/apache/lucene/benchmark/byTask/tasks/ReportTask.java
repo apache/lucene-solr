@@ -126,7 +126,7 @@ public abstract class ReportTask extends PerfTask {
     sb.append(Format.format(stat.getNumRuns(), RUNCNT)); 
     sb.append(Format.format(stat.getCount() / stat.getNumRuns(), RECCNT));
     long elapsed = (stat.getElapsed()>0 ? stat.getElapsed() : 1); // assume at least 1ms
-    sb.append(Format.format(1,(float) (stat.getCount() * 1000.0 / elapsed), RECSEC));
+    sb.append(Format.format(2, (float) (stat.getCount() * 1000.0 / elapsed), RECSEC));
     sb.append(Format.format(2, (float) stat.getElapsed() / 1000, ELAPSED));
     sb.append(Format.format(0, (float) stat.getMaxUsedMem() / stat.getNumRuns(), USEDMEM)); 
     sb.append(Format.format(0, (float) stat.getMaxTotMem() / stat.getNumRuns(), TOTMEM));
