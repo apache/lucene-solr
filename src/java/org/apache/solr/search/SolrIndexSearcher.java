@@ -33,6 +33,7 @@ import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.request.UnInvertedField;
+import org.apache.solr.search.function.BoostedQuery;
 import org.apache.lucene.util.OpenBitSet;
 
 import java.io.IOException;
@@ -618,9 +619,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
   // query must be positive
-  protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
+  protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {    
+    DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());
+
     if (filter==null) {
-      DocSetCollector hc = new DocSetCollector(maxDoc()>>6, maxDoc());
       if (query instanceof TermQuery) {
         Term t = ((TermQuery)query).getTerm();
         SolrIndexReader[] readers = reader.getLeafReaders();
@@ -630,42 +632,26 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         for (int i=0; i<readers.length; i++) {
           SolrIndexReader sir = readers[i];
           int offset = offsets[i];
-          hc.setNextReader(sir, offset);
+          collector.setNextReader(sir, offset);
           TermDocs tdocs = sir.termDocs(t);
           for(;;) {
             int num = tdocs.read(arr, freq);
             if (num==0) break;
             for (int j=0; j<num; j++) {
-              hc.collect(arr[j]);
+              collector.collect(arr[j]);
             }
           }
           tdocs.close();
         }
       } else {
-        super.search(query,null,hc);
+        super.search(query,null,collector);
       }
-      return hc.getDocSet();
+      return collector.getDocSet();
 
     } else {
-      // FUTURE: if the filter is sorted by docid, could use skipTo (SkipQueryFilter)
-      final DocSetCollector hc = new DocSetCollector(maxDoc()>>6, maxDoc());
-      final DocSet filt = filter;
-      super.search(query, null, new Collector() {
-        int base = 0;
-        public void collect(int doc) throws IOException {
-          doc += base;
-          if (filt.exists(doc)) hc.collect(doc);
-        }
-
-        public void setNextReader(IndexReader reader, int docBase) throws IOException {
-          this.base = docBase;  
-        }
-
-        public void setScorer(Scorer scorer) throws IOException {
-        }
-      }
-      );
-      return hc.getDocSet();
+      Filter luceneFilter = filter.getTopFilter();
+      super.search(query, luceneFilter, collector);
+      return collector.getDocSet();
     }
   }
 
