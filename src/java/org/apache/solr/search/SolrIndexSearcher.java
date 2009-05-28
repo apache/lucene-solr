@@ -619,9 +619,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
   // query must be positive
-  protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {    
-    query = QueryUtils.simplifyQuery(query);
-
+  protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
     DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());
 
     if (filter==null) {
