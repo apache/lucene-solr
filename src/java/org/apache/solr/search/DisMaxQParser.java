@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
@@ -27,7 +26,6 @@ import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.SolrPluginUtils;
 
 import java.util.ArrayList;
@@ -66,92 +64,39 @@ public class DisMaxQParser extends QParser {
 
   public Query parse() throws ParseException {
     SolrParams solrParams = localParams == null ? params : new DefaultSolrParams(localParams, params);
-
-    IndexSchema schema = req.getSchema();
-
     queryFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.QF));
-    Map<String, Float> phraseFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.PF));
-
-    float tiebreaker = solrParams.getFloat(DisMaxParams.TIE, 0.0f);
-
-    int pslop = solrParams.getInt(DisMaxParams.PS, 0);
-    int qslop = solrParams.getInt(DisMaxParams.QS, 0);
-
-    /* a generic parser for parsing regular lucene queries */
-    QueryParser p = schema.getSolrQueryParser(null);
-
-    /* a parser for dealing with user input, which will convert
-     * things to DisjunctionMaxQueries
-     */
-    SolrPluginUtils.DisjunctionMaxQueryParser up =
-            new SolrPluginUtils.DisjunctionMaxQueryParser(schema, IMPOSSIBLE_FIELD_NAME);
-    up.addAlias(IMPOSSIBLE_FIELD_NAME,
-            tiebreaker, queryFields);
-    up.setPhraseSlop(qslop);
-
-    /* for parsing sloppy phrases using DisjunctionMaxQueries */
-    SolrPluginUtils.DisjunctionMaxQueryParser pp =
-            new SolrPluginUtils.DisjunctionMaxQueryParser(schema, IMPOSSIBLE_FIELD_NAME);
-    pp.addAlias(IMPOSSIBLE_FIELD_NAME,
-            tiebreaker, phraseFields);
-    pp.setPhraseSlop(pslop);
-
 
     /* the main query we will execute.  we disable the coord because
      * this query is an artificial construct
      */
     BooleanQuery query = new BooleanQuery(true);
 
-    /* * * Main User Query * * */
-    parsedUserQuery = null;
-    String userQuery = getString();
-    altUserQuery = null;
-    if (userQuery == null || userQuery.trim().length() < 1) {
-      // If no query is specified, we may have an alternate
-      String altQ = solrParams.get(DisMaxParams.ALTQ);
-      if (altQ != null) {
-        altQParser = subQuery(altQ, null);
-        altUserQuery = altQParser.parse();
-        query.add(altUserQuery, BooleanClause.Occur.MUST);
-      } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing query string");
-      }
-    } else {
-      // There is a valid query string
-      userQuery = SolrPluginUtils.partialEscape(SolrPluginUtils.stripUnbalancedQuotes(userQuery)).toString();
-      userQuery = SolrPluginUtils.stripIllegalOperators(userQuery).toString();
+    addMainQuery(query, solrParams);
+    addBoostQuery(query, solrParams);
+    addBoostFunctions(query, solrParams);
 
-      String minShouldMatch = solrParams.get(DisMaxParams.MM, "100%");
-      Query dis = up.parse(userQuery);
-      parsedUserQuery = dis;
+    return query;
+  }
 
-      if (dis instanceof BooleanQuery) {
-        BooleanQuery t = new BooleanQuery();
-        SolrPluginUtils.flattenBooleanQuery(t, (BooleanQuery) dis);
-        SolrPluginUtils.setMinShouldMatch(t, minShouldMatch);
-        parsedUserQuery = t;
-      }
-      query.add(parsedUserQuery, BooleanClause.Occur.MUST);
-
-
-      /* * * Add on Phrases for the Query * * */
-
-      /* build up phrase boosting queries */
-
-      /* if the userQuery already has some quotes, strip them out.
-       * we've already done the phrases they asked for in the main
-       * part of the query, this is to boost docs that may not have
-       * matched those phrases but do match looser phrases.
-       */
-      String userPhraseQuery = userQuery.replace("\"", "");
-      Query phrase = pp.parse("\"" + userPhraseQuery + "\"");
-      if (null != phrase) {
-        query.add(phrase, BooleanClause.Occur.SHOULD);
+  protected void addBoostFunctions(BooleanQuery query, SolrParams solrParams) throws ParseException {
+    String[] boostFuncs = solrParams.getParams(DisMaxParams.BF);
+    if (null != boostFuncs && 0 != boostFuncs.length) {
+      for (String boostFunc : boostFuncs) {
+        if (null == boostFunc || "".equals(boostFunc)) continue;
+        Map<String, Float> ff = SolrPluginUtils.parseFieldBoosts(boostFunc);
+        for (String f : ff.keySet()) {
+          Query fq = subQuery(f, FunctionQParserPlugin.NAME).parse();
+          Float b = ff.get(f);
+          if (null != b) {
+            fq.setBoost(b);
+          }
+          query.add(fq, BooleanClause.Occur.SHOULD);
+        }
       }
     }
+  }
 
-
-    /* * * Boosting Query * * */
+  protected void addBoostQuery(BooleanQuery query, SolrParams solrParams) throws ParseException {
     boostParams = solrParams.getParams(DisMaxParams.BQ);
     //List<Query> boostQueries = SolrPluginUtils.parseQueryStrings(req, boostParams);
     boostQueries = null;
@@ -183,26 +128,90 @@ public class DisMaxQParser extends QParser {
         }
       }
     }
+  }
 
-    /* * * Boosting Functions * * */
+  protected void addMainQuery(BooleanQuery query, SolrParams solrParams) throws ParseException {
+    Map<String, Float> phraseFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.PF));
+    float tiebreaker = solrParams.getFloat(DisMaxParams.TIE, 0.0f);
 
-    String[] boostFuncs = solrParams.getParams(DisMaxParams.BF);
-    if (null != boostFuncs && 0 != boostFuncs.length) {
-      for (String boostFunc : boostFuncs) {
-        if (null == boostFunc || "".equals(boostFunc)) continue;
-        Map<String, Float> ff = SolrPluginUtils.parseFieldBoosts(boostFunc);
-        for (String f : ff.keySet()) {
-          Query fq = subQuery(f, FunctionQParserPlugin.NAME).parse();
-          Float b = ff.get(f);
-          if (null != b) {
-            fq.setBoost(b);
-          }
-          query.add(fq, BooleanClause.Occur.SHOULD);
-        }
+    /* a parser for dealing with user input, which will convert
+     * things to DisjunctionMaxQueries
+     */
+    SolrPluginUtils.DisjunctionMaxQueryParser up = getParser(queryFields, DisMaxParams.QS, solrParams, tiebreaker);
+
+    /* for parsing sloppy phrases using DisjunctionMaxQueries */
+    SolrPluginUtils.DisjunctionMaxQueryParser pp = getParser(phraseFields, DisMaxParams.PS, solrParams, tiebreaker);
+
+    /* * * Main User Query * * */
+    parsedUserQuery = null;
+    String userQuery = getString();
+    altUserQuery = null;
+    if (userQuery == null || userQuery.trim().length() < 1) {
+      // If no query is specified, we may have an alternate
+      altUserQuery = getAlternateUserQuery(solrParams);
+      query.add(altUserQuery, BooleanClause.Occur.MUST);
+    } else {
+      // There is a valid query string
+      userQuery = SolrPluginUtils.partialEscape(SolrPluginUtils.stripUnbalancedQuotes(userQuery)).toString();
+      userQuery = SolrPluginUtils.stripIllegalOperators(userQuery).toString();
+
+      parsedUserQuery = getUserQuery(userQuery, up, solrParams);
+      query.add(parsedUserQuery, BooleanClause.Occur.MUST);
+
+      Query phrase = getPhraseQuery(userQuery, pp);
+      if (null != phrase) {
+        query.add(phrase, BooleanClause.Occur.SHOULD);
       }
     }
+  }
 
+  protected Query getAlternateUserQuery(SolrParams solrParams) throws ParseException {
+    String altQ = solrParams.get(DisMaxParams.ALTQ);
+    if (altQ != null) {
+      QParser altQParser = subQuery(altQ, null);
+      return altQParser.parse();
+    } else {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing query string");
+    }
+  }
+
+  protected Query getPhraseQuery(String userQuery, SolrPluginUtils.DisjunctionMaxQueryParser pp) throws ParseException {
+    /* * * Add on Phrases for the Query * * */
+
+    /* build up phrase boosting queries */
+
+    /* if the userQuery already has some quotes, strip them out.
+     * we've already done the phrases they asked for in the main
+     * part of the query, this is to boost docs that may not have
+     * matched those phrases but do match looser phrases.
+    */
+    String userPhraseQuery = userQuery.replace("\"", "");
+    return pp.parse("\"" + userPhraseQuery + "\"");
+  }
+
+  protected Query getUserQuery(String userQuery, SolrPluginUtils.DisjunctionMaxQueryParser up, SolrParams solrParams)
+          throws ParseException {
+    String minShouldMatch = solrParams.get(DisMaxParams.MM, "100%");
+    Query dis = up.parse(userQuery);
+    Query query = dis;
+
+    if (dis instanceof BooleanQuery) {
+      BooleanQuery t = new BooleanQuery();
+      SolrPluginUtils.flattenBooleanQuery(t, (BooleanQuery) dis);
+      SolrPluginUtils.setMinShouldMatch(t, minShouldMatch);
+      query = t;
+    }
     return query;
+  }
+
+  protected SolrPluginUtils.DisjunctionMaxQueryParser getParser(Map<String, Float> fields, String paramName,
+                                                                SolrParams solrParams, float tiebreaker) {
+    int slop = solrParams.getInt(paramName, 0);
+    SolrPluginUtils.DisjunctionMaxQueryParser parser = new SolrPluginUtils.DisjunctionMaxQueryParser(req.getSchema(),
+            IMPOSSIBLE_FIELD_NAME);
+    parser.addAlias(IMPOSSIBLE_FIELD_NAME, tiebreaker, fields);
+    parser.setPhraseSlop(slop);
+    return parser;
   }
 
   @Override
