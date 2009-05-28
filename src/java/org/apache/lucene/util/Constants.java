@@ -56,10 +56,10 @@ public final class Constants {
 
   public static final String LUCENE_VERSION;
 
-  public static final String LUCENE_MAIN_VERSION = "2.9-dev";
+  public static final String LUCENE_MAIN_VERSION = "2.9";
 
   static {
-    String v = LUCENE_MAIN_VERSION;
+    String v = LUCENE_MAIN_VERSION + "-dev";
     try {
       // TODO: this should have worked, but doesn't seem to?
       // Package.getPackage("org.apache.lucene.util").getImplementationVersion();
@@ -69,7 +69,14 @@ public final class Constants {
       try {
         Manifest manifest = new Manifest(s);
         Attributes attr = manifest.getMainAttributes();
-        v = attr.getValue(Attributes.Name.IMPLEMENTATION_VERSION);
+        String value = attr.getValue(Attributes.Name.IMPLEMENTATION_VERSION);
+        if (value != null) {
+          if (value.indexOf(LUCENE_MAIN_VERSION) == -1) {
+            v = value + " [" + LUCENE_MAIN_VERSION + "]";
+          } else {
+            v = value;
+          }
+        }
       } finally {
         if (s != null) {
           s.close();
