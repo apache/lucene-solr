@@ -226,6 +226,12 @@ public class DirectUpdateHandler extends UpdateHandler {
   }
   ***************************/
 
+  public int mergeIndexes(MergeIndexesCommand cmd) throws IOException {
+    throw new SolrException(
+        SolrException.ErrorCode.BAD_REQUEST,
+        "DirectUpdateHandler doesn't support mergeIndexes. Use DirectUpdateHandler2 instead.");
+  }
+
   public void commit(CommitUpdateCommand cmd) throws IOException {
     Future[] waitSearcher = null;
     if (cmd.waitSearcher) {

@@ -29,6 +29,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.store.Directory;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -129,6 +130,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   AtomicLong deleteByIdCommandsCumulative= new AtomicLong();
   AtomicLong deleteByQueryCommands= new AtomicLong();
   AtomicLong deleteByQueryCommandsCumulative= new AtomicLong();
+  AtomicLong mergeIndexesCommands = new AtomicLong();
   AtomicLong commitCommands= new AtomicLong();
   AtomicLong optimizeCommands= new AtomicLong();
   AtomicLong rollbackCommands= new AtomicLong();
@@ -339,7 +341,35 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
   }
 
-  public void forceOpenWriter() throws IOException  {
+  public int mergeIndexes(MergeIndexesCommand cmd) throws IOException {
+    mergeIndexesCommands.incrementAndGet();
+    int rc = -1;
+
+    iwCommit.lock();
+    try {
+      log.info("start " + cmd);
+
+      Directory[] dirs = cmd.dirs;
+      if (dirs != null && dirs.length > 0) {
+        openWriter();
+        writer.addIndexesNoOptimize(dirs);
+        rc = 1;
+      } else {
+        rc = 0;
+      }
+      log.info("end_mergeIndexes");
+    } finally {
+      iwCommit.unlock();
+    }
+
+    if (rc == 1 && tracker.timeUpperBound > 0) {
+      tracker.scheduleCommitWithin(tracker.timeUpperBound);
+    }
+
+    return rc;
+  }
+
+   public void forceOpenWriter() throws IOException  {
     iwCommit.lock();
     try {
       openWriter();

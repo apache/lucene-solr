@@ -226,6 +226,8 @@ New Features
 
 55. SOLR-1116: Add a Binary FieldType (noble)
 
+56. SOLR-1051: Support the merge of multiple indexes as a CoreAdmin and an update command (Ning Li via shalin)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

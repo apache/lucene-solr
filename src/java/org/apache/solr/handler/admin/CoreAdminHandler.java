@@ -21,16 +21,22 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.update.MergeIndexesCommand;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.lucene.store.Directory;
 
 import java.io.File;
 import java.io.IOException;
@@ -141,17 +147,55 @@ public class CoreAdminHandler extends RequestHandlerBase {
           break;
         }
 
+        case MERGEINDEXES: {
+          doPersist = this.handleMergeAction(req, rsp);
+          break;
+        }
+
         default: {
           doPersist = this.handleCustomAction(req, rsp);
           break;
         }
-      } // switch
+        case LOAD:
+          break;
+      }
     }
     // Should we persist the changes?
     if (doPersist) {
       cores.persist();
       rsp.add("saved", cores.getConfigFile().getAbsolutePath());
     }
+  }
+
+  protected boolean handleMergeAction(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+    boolean doPersist = false;
+    SolrParams params = req.getParams();
+    SolrParams required = params.required();
+    String cname = required.get(CoreAdminParams.CORE);
+    SolrCore core = coreContainer.getCore(cname);
+    if (core != null) {
+      try {
+        doPersist = coreContainer.isPersistent();
+
+        String p = required.get(CoreAdminParams.INDEX_DIRS);
+        String[] dirNames = p.split(",");
+
+        DirectoryFactory dirFactory = core.getDirectoryFactory();
+        Directory[] dirs = new Directory[dirNames.length];
+        for (int i = 0; i < dirNames.length; i++) {
+          dirs[i] = dirFactory.open(dirNames[i]);
+        }
+
+        UpdateRequestProcessorChain processorChain =
+                core.getUpdateProcessingChain(params.get(UpdateParams.UPDATE_PROCESSOR));
+        UpdateRequestProcessor processor =
+                processorChain.createProcessor(req, rsp);
+        processor.processMergeIndexes(new MergeIndexesCommand(dirs));
+      } finally {
+        core.close();
+      }
+    }
+    return doPersist;
   }
 
   /**

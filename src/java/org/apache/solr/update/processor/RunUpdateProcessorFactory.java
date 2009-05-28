@@ -25,6 +25,7 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.DocumentBuilder;
+import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
 
@@ -70,6 +71,12 @@ class RunUpdateProcessor extends UpdateRequestProcessor
       updateHandler.deleteByQuery(cmd);
     }
     super.processDelete(cmd);
+  }
+
+  @Override
+  public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
+    updateHandler.mergeIndexes(cmd);
+    super.processMergeIndexes(cmd);
   }
 
   @Override

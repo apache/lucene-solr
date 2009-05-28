@@ -53,6 +53,10 @@ public interface CoreAdminParams
   /** If you specify a file, what is its name **/
   public final static String FILE = "file";
   
+  /** If you merge indexes, what are the index directories.
+   * The directories are separated by ",". */
+  public final static String INDEX_DIRS = "indexDirs";
+
   public enum CoreAdminAction {
     STATUS,  
     LOAD,
@@ -62,7 +66,8 @@ public interface CoreAdminParams
     PERSIST,
     SWAP,
     RENAME,
-    ALIAS;
+    ALIAS,
+    MERGEINDEXES;
     
     public static CoreAdminAction get( String p )
     {

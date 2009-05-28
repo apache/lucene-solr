@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 
 
@@ -54,6 +55,10 @@ public abstract class UpdateRequestProcessor {
 
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
     if (next != null) next.processDelete(cmd);
+  }
+
+  public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
+    if (next != null) next.processMergeIndexes(cmd);
   }
 
   public void processCommit(CommitUpdateCommand cmd) throws IOException

@@ -109,6 +109,34 @@ public class CoreAdminRequest extends SolrRequest
     }
   }
   
+  public static class MergeIndexes extends CoreAdminRequest {
+    protected String indexDirs;
+
+    public MergeIndexes() {
+      action = CoreAdminAction.MERGEINDEXES;
+    }
+
+    public void setIndexDirs(String indexDirs) {
+      this.indexDirs = indexDirs;
+    }
+
+    public String getIndexDirs() {
+      return indexDirs;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      if (action == null) {
+        throw new RuntimeException("no action specified!");
+      }
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(CoreAdminParams.ACTION, action.toString());
+      params.set(CoreAdminParams.CORE, core);
+      params.set(CoreAdminParams.INDEX_DIRS, indexDirs);
+      return params;
+    }
+  }
+
   public CoreAdminRequest()
   {
     super( METHOD.GET, "/admin/cores" );
@@ -245,6 +273,25 @@ public class CoreAdminRequest extends SolrRequest
   {
     CoreAdminRequest.Persist req = new CoreAdminRequest.Persist();
     req.setFileName(fileName);
+    return req.process(server);
+  }
+
+  public static CoreAdminResponse mergeIndexes(String name,
+      String[] indexDirs, SolrServer server) throws SolrServerException,
+      IOException {
+    CoreAdminRequest.MergeIndexes req = new CoreAdminRequest.MergeIndexes();
+    req.setCoreName(name);
+    String p = null;
+    if (indexDirs.length == 1) {
+      p = indexDirs[0];
+    } else if (indexDirs.length > 1) {
+      StringBuilder s = new StringBuilder(indexDirs[0]);
+      for (int i = 1; i < indexDirs.length; i++) {
+        s.append(",").append(indexDirs[i]);
+      }
+      p = s.toString();
+    }
+    req.setIndexDirs(p);
     return req.process(server);
   }
 }
