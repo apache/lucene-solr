@@ -43,9 +43,15 @@ public class SnapShooter {
   private SolrCore solrCore;
   private SimpleFSLockFactory lockFactory;
 
-  public SnapShooter(SolrCore core) throws IOException {
+  public SnapShooter(SolrCore core, String location) throws IOException {
     solrCore = core;
-    snapDir = core.getDataDir();
+    if (location == null) snapDir = core.getDataDir();
+    else  {
+      File base = new File(core.getCoreDescriptor().getInstanceDir());
+      snapDir = org.apache.solr.common.util.FileUtils.resolvePath(base, location).getAbsolutePath();
+      File dir = new File(snapDir);
+      if (!dir.exists())  dir.mkdirs();
+    }
     lockFactory = new SimpleFSLockFactory(snapDir);
   }
 

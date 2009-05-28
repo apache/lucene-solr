@@ -128,7 +128,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (command.equals(CMD_GET_FILE_LIST)) {
       getFileList(solrParams, rsp);
     } else if (command.equals(CMD_SNAP_SHOOT)) {
-      doSnapShoot(rsp);
+      doSnapShoot(solrParams, rsp);
     } else if (command.equals(CMD_SNAP_PULL)) {
       new Thread() {
         public void run() {
@@ -244,11 +244,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return snapPullLock.isLocked();
   }
 
-  private void doSnapShoot(SolrQueryResponse rsp) {
+  private void doSnapShoot(SolrParams params, SolrQueryResponse rsp) {
     try {
       IndexCommit indexCommit = core.getDeletionPolicy().getLatestCommit();
       if (indexCommit != null)  {
-        new SnapShooter(core).createSnapAsync(indexCommit.getFileNames(), this);
+        new SnapShooter(core, params.get("location")).createSnapAsync(indexCommit.getFileNames(), this);
       }
     } catch (Exception e) {
       LOG.warn("Exception during creating a snapshot", e);
@@ -820,7 +820,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
         if (snapshoot) {
           try {
-            SnapShooter snapShooter = new SnapShooter(core);
+            SnapShooter snapShooter = new SnapShooter(core, null);
             snapShooter.createSnapAsync(core.getDeletionPolicy().getLatestCommit().getFileNames(), ReplicationHandler.this);
           } catch (Exception e) {
             LOG.error("Exception while snapshooting", e);
