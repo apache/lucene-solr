@@ -60,6 +60,8 @@ public class DateTools {
     MILLISECOND_FORMAT.setTimeZone(GMT);
   }
 
+  private static final Calendar calInstance = Calendar.getInstance(GMT);
+  
   // cannot create, the class has static methods only
   private DateTools() {}
 
@@ -72,7 +74,7 @@ public class DateTools {
    * @return a string in format <code>yyyyMMddHHmmssSSS</code> or shorter,
    *  depeding on <code>resolution</code>; using GMT as timezone 
    */
-  public static String dateToString(Date date, Resolution resolution) {
+  public static synchronized String dateToString(Date date, Resolution resolution) {
     return timeToString(date.getTime(), resolution);
   }
 
@@ -85,44 +87,27 @@ public class DateTools {
    * @return a string in format <code>yyyyMMddHHmmssSSS</code> or shorter,
    *  depeding on <code>resolution</code>; using GMT as timezone
    */
-  public static String timeToString(long time, Resolution resolution) {
-    Calendar cal = Calendar.getInstance(GMT);
-
-    cal.setTimeInMillis(round(time, resolution));
-
-    String result;
+  public static synchronized String timeToString(long time, Resolution resolution) {
+    calInstance.setTimeInMillis(round(time, resolution));
+    Date date = calInstance.getTime();
+    
     if (resolution == Resolution.YEAR) {
-      synchronized (YEAR_FORMAT) {
-        result = YEAR_FORMAT.format(cal.getTime());
-      }
+      return YEAR_FORMAT.format(date);
     } else if (resolution == Resolution.MONTH) {
-      synchronized (MONTH_FORMAT) {
-        result = MONTH_FORMAT.format(cal.getTime());
-      }
+      return MONTH_FORMAT.format(date);
     } else if (resolution == Resolution.DAY) {
-      synchronized (DAY_FORMAT) {
-        result = DAY_FORMAT.format(cal.getTime());
-      }
+      return DAY_FORMAT.format(date);
     } else if (resolution == Resolution.HOUR) {
-      synchronized (HOUR_FORMAT) {
-        result = HOUR_FORMAT.format(cal.getTime());
-      }
+      return HOUR_FORMAT.format(date);
     } else if (resolution == Resolution.MINUTE) {
-      synchronized (MINUTE_FORMAT) {
-        result = MINUTE_FORMAT.format(cal.getTime());
-      }
+      return MINUTE_FORMAT.format(date);
     } else if (resolution == Resolution.SECOND) {
-      synchronized (SECOND_FORMAT) {
-        result = SECOND_FORMAT.format(cal.getTime());
-      }
+      return SECOND_FORMAT.format(date);
     } else if (resolution == Resolution.MILLISECOND) {
-      synchronized (MILLISECOND_FORMAT) {
-        result = MILLISECOND_FORMAT.format(cal.getTime());
-      }
-    } else {
-      throw new IllegalArgumentException("unknown resolution " + resolution);
+      return MILLISECOND_FORMAT.format(date);
     }
-    return result;
+    
+    throw new IllegalArgumentException("unknown resolution " + resolution);
   }
   
   /**
@@ -135,7 +120,7 @@ public class DateTools {
    * @throws ParseException if <code>dateString</code> is not in the 
    *  expected format 
    */
-  public static long stringToTime(String dateString) throws ParseException {
+  public static synchronized long stringToTime(String dateString) throws ParseException {
     return stringToDate(dateString).getTime();
   }
 
@@ -149,40 +134,23 @@ public class DateTools {
    * @throws ParseException if <code>dateString</code> is not in the 
    *  expected format 
    */
-  public static Date stringToDate(String dateString) throws ParseException {
-    Date date;
+  public static synchronized Date stringToDate(String dateString) throws ParseException {
     if (dateString.length() == 4) {
-      synchronized (YEAR_FORMAT) {
-        date = YEAR_FORMAT.parse(dateString);
-      }
+      return YEAR_FORMAT.parse(dateString);
     } else if (dateString.length() == 6) {
-      synchronized (MONTH_FORMAT) {
-        date = MONTH_FORMAT.parse(dateString);
-      }
+      return MONTH_FORMAT.parse(dateString);
     } else if (dateString.length() == 8) {
-      synchronized (DAY_FORMAT) {
-        date = DAY_FORMAT.parse(dateString);
-      }
+      return DAY_FORMAT.parse(dateString);
     } else if (dateString.length() == 10) {
-      synchronized (HOUR_FORMAT) {
-        date = HOUR_FORMAT.parse(dateString);
-      }
+      return HOUR_FORMAT.parse(dateString);
     } else if (dateString.length() == 12) {
-      synchronized (MINUTE_FORMAT) {
-        date = MINUTE_FORMAT.parse(dateString);
-      }
+      return MINUTE_FORMAT.parse(dateString);
     } else if (dateString.length() == 14) {
-      synchronized (SECOND_FORMAT) {
-        date = SECOND_FORMAT.parse(dateString);
-      }
+      return SECOND_FORMAT.parse(dateString);
     } else if (dateString.length() == 17) {
-      synchronized (MILLISECOND_FORMAT) {
-        date = MILLISECOND_FORMAT.parse(dateString);
-      }
-    } else {
-      throw new ParseException("Input is not valid date string: " + dateString, 0);
+      return MILLISECOND_FORMAT.parse(dateString);
     }
-    return date;
+    throw new ParseException("Input is not valid date string: " + dateString, 0);
   }
   
   /**
@@ -194,7 +162,7 @@ public class DateTools {
    * @return the date with all values more precise than <code>resolution</code>
    *  set to 0 or 1
    */
-  public static Date round(Date date, Resolution resolution) {
+  public static synchronized Date round(Date date, Resolution resolution) {
     return new Date(round(date.getTime(), resolution));
   }
   
@@ -208,47 +176,42 @@ public class DateTools {
    * @return the date with all values more precise than <code>resolution</code>
    *  set to 0 or 1, expressed as milliseconds since January 1, 1970, 00:00:00 GMT
    */
-  public static long round(long time, Resolution resolution) {
-    Calendar cal = Calendar.getInstance(GMT);
-
-    // protected in JDK's prior to 1.4
-    //cal.setTimeInMillis(time);
-    
-    cal.setTime(new Date(time));
+  public static synchronized long round(long time, Resolution resolution) {
+    calInstance.setTimeInMillis(time);
     
     if (resolution == Resolution.YEAR) {
-      cal.set(Calendar.MONTH, 0);
-      cal.set(Calendar.DAY_OF_MONTH, 1);
-      cal.set(Calendar.HOUR_OF_DAY, 0);
-      cal.set(Calendar.MINUTE, 0);
-      cal.set(Calendar.SECOND, 0);
-      cal.set(Calendar.MILLISECOND, 0);
+      calInstance.set(Calendar.MONTH, 0);
+      calInstance.set(Calendar.DAY_OF_MONTH, 1);
+      calInstance.set(Calendar.HOUR_OF_DAY, 0);
+      calInstance.set(Calendar.MINUTE, 0);
+      calInstance.set(Calendar.SECOND, 0);
+      calInstance.set(Calendar.MILLISECOND, 0);
     } else if (resolution == Resolution.MONTH) {
-      cal.set(Calendar.DAY_OF_MONTH, 1);
-      cal.set(Calendar.HOUR_OF_DAY, 0);
-      cal.set(Calendar.MINUTE, 0);
-      cal.set(Calendar.SECOND, 0);
-      cal.set(Calendar.MILLISECOND, 0);
+      calInstance.set(Calendar.DAY_OF_MONTH, 1);
+      calInstance.set(Calendar.HOUR_OF_DAY, 0);
+      calInstance.set(Calendar.MINUTE, 0);
+      calInstance.set(Calendar.SECOND, 0);
+      calInstance.set(Calendar.MILLISECOND, 0);
     } else if (resolution == Resolution.DAY) {
-      cal.set(Calendar.HOUR_OF_DAY, 0);
-      cal.set(Calendar.MINUTE, 0);
-      cal.set(Calendar.SECOND, 0);
-      cal.set(Calendar.MILLISECOND, 0);
+      calInstance.set(Calendar.HOUR_OF_DAY, 0);
+      calInstance.set(Calendar.MINUTE, 0);
+      calInstance.set(Calendar.SECOND, 0);
+      calInstance.set(Calendar.MILLISECOND, 0);
     } else if (resolution == Resolution.HOUR) {
-      cal.set(Calendar.MINUTE, 0);
-      cal.set(Calendar.SECOND, 0);
-      cal.set(Calendar.MILLISECOND, 0);
+      calInstance.set(Calendar.MINUTE, 0);
+      calInstance.set(Calendar.SECOND, 0);
+      calInstance.set(Calendar.MILLISECOND, 0);
     } else if (resolution == Resolution.MINUTE) {
-      cal.set(Calendar.SECOND, 0);
-      cal.set(Calendar.MILLISECOND, 0);
+      calInstance.set(Calendar.SECOND, 0);
+      calInstance.set(Calendar.MILLISECOND, 0);
     } else if (resolution == Resolution.SECOND) {
-      cal.set(Calendar.MILLISECOND, 0);
+      calInstance.set(Calendar.MILLISECOND, 0);
     } else if (resolution == Resolution.MILLISECOND) {
       // don't cut off anything
     } else {
       throw new IllegalArgumentException("unknown resolution " + resolution);
     }
-    return cal.getTime().getTime();
+    return calInstance.getTimeInMillis();
   }
 
   /** Specifies the time granularity. */

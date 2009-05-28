@@ -366,6 +366,10 @@ Optimizations
 
  8. LUCENE-1596: MultiTermDocs speedup when set with
     MultiTermDocs.seek(MultiTermEnum) (yonik)
+    
+ 9. LUCENE-1653: Avoid creating a Calendar in every call to 
+    DateTools#dateToString, DateTools#timeToString and
+    DateTools#round.  (Shai Erera via Mark Miller)
 
 Documentation
 
