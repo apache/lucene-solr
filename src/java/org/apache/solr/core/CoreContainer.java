@@ -70,6 +70,8 @@ public class CoreContainer
   protected java.lang.ref.WeakReference<SolrCore> adminCore = null;
   protected Properties containerProperties;
   protected Map<String ,IndexSchema> indexSchemaCache;
+  protected String adminHandler;
+
   public CoreContainer() {
   }
 
@@ -181,7 +183,7 @@ public class CoreContainer
       if(Boolean.parseBoolean(shareSchema)){
         indexSchemaCache = new ConcurrentHashMap<String ,IndexSchema>();
       }
-      String adminHandler  = cfg.get(     "solr/cores/@adminHandler", null );
+      adminHandler  = cfg.get("solr/cores/@adminHandler", null );
       managementPath  = cfg.get("solr/cores/@managementPath", null );
 
       if (libDir != null) {
@@ -634,31 +636,22 @@ public class CoreContainer
   }
   
   /** Write the cores configuration through a writer.*/
-  void persist(Writer writer) throws IOException {
-    writer.write("<?xml version='1.0' encoding='UTF-8'?>");
-    writer.write("<solr");
+  void persist(Writer w) throws IOException {
+    w.write("<?xml version='1.0' encoding='UTF-8'?>");
+    w.write("<solr");
     if (this.libDir != null) {
-      writer.write(" sharedLib='");
-      XML.escapeAttributeValue(libDir, writer);
-      writer.write('\'');
+      writeAttribute(w,"sharedLib",libDir);
     }
-    writer.write(" persistent='");
-    if (isPersistent()) {
-      writer.write("true'");
-    }
-    else {
-      writer.write("false'");
-    }
-    writer.write(">\n");
+    writeAttribute(w,"persistent",isPersistent());
+    w.write(">\n");
 
     if (containerProperties != null && !containerProperties.isEmpty())  {
-      writeProperties(writer, containerProperties);
+      writeProperties(w, containerProperties);
     }
-
-    writer.write("<cores adminPath='");
-    XML.escapeAttributeValue(adminPath, writer);
-    writer.write('\'');
-    writer.write(">\n");
+    w.write("<cores");
+    writeAttribute(w, "adminPath",adminPath);
+    if(adminHandler != null) writeAttribute(w, "adminHandler",adminHandler);
+    w.write(">\n");
 
     Map<SolrCore, LinkedList<String>> aliases = new HashMap<SolrCore,LinkedList<String>>();
 
@@ -677,57 +670,54 @@ public class CoreContainer
     }
 
     for (Map.Entry<SolrCore, LinkedList<String>> entry : aliases.entrySet()) {
-      persist(writer, entry.getValue(), entry.getKey().getCoreDescriptor());
+      persist(w, entry.getValue(), entry.getKey().getCoreDescriptor());
     }
 
-    writer.write("</cores>\n");
-    writer.write("</solr>\n");
+    w.write("</cores>\n");
+    w.write("</solr>\n");
+  }
+
+  private void writeAttribute(Writer w, String name, Object value) throws IOException {
+    if (value == null) return;
+    w.write(" ");
+    w.write(name);
+    w.write("='");
+    XML.escapeAttributeValue(value.toString(), w);
+    w.write("'");
   }
   
   /** Writes the cores configuration node for a given core. */
-  void persist(Writer writer, List<String> aliases, CoreDescriptor dcore) throws IOException {
-    writer.write("  <core");
-    writer.write (" name='");
-    XML.escapeAttributeValue(StrUtils.join(aliases,','), writer);
-    writer.write("' instanceDir='");
-    XML.escapeAttributeValue(dcore.getInstanceDir(), writer);
-    writer.write('\'');
+  void persist(Writer w, List<String> aliases, CoreDescriptor dcore) throws IOException {
+    w.write("  <core");
+    writeAttribute(w,"name",StrUtils.join(aliases,','));
+    writeAttribute(w,"instanceDir",dcore.getInstanceDir());
     //write config (if not default)
     String opt = dcore.getConfigName();
     if (opt != null && !opt.equals(dcore.getDefaultConfigName())) {
-      writer.write(" config='");
-      XML.escapeAttributeValue(opt, writer);
-      writer.write('\'');
+      writeAttribute(w, "config",opt);
     }
     //write schema (if not default)
     opt = dcore.getSchemaName();
     if (opt != null && !opt.equals(dcore.getDefaultSchemaName())) {
-      writer.write(" schema='");
-      XML.escapeAttributeValue(opt, writer);
-      writer.write('\'');
+      writeAttribute(w,"schema",opt);
     }
     opt = dcore.dataDir;
-    if (opt != null) {
-      writer.write(" dataDir='");
-      XML.escapeAttributeValue(opt, writer);
-      writer.write('\'');
-    }
+    if (opt != null) writeAttribute(w,"dataDir",opt);
     if (dcore.getCoreProperties() == null || dcore.getCoreProperties().isEmpty())
-      writer.write("/>\n"); // core
+      w.write("/>\n"); // core
     else  {
-      writer.write(">\n");
-      writeProperties(writer, dcore.getCoreProperties());
-      writer.write("</core>");
+      w.write(">\n");
+      writeProperties(w, dcore.getCoreProperties());
+      w.write("</core>");
     }
   }
 
-  private void writeProperties(Writer writer, Properties props) throws IOException {
+  private void writeProperties(Writer w, Properties props) throws IOException {
     for (Map.Entry<Object, Object> entry : props.entrySet()) {
-      writer.write("<property name='");
-      XML.escapeAttributeValue(entry.getKey().toString(), writer);
-      writer.write("' value='");
-      XML.escapeAttributeValue(entry.getValue().toString(), writer);
-      writer.write("' />\n");
+      w.write("<property name='");
+      writeAttribute(w,"name",entry.getKey());
+      writeAttribute(w,"value",entry.getValue());
+      w.write("' />\n");
     }
   }
 
