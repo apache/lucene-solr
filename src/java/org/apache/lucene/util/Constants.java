@@ -17,10 +17,7 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.util.jar.Manifest;
-import java.util.jar.Attributes;
-import java.io.InputStream;
-import java.net.URL;
+import org.apache.lucene.LucenePackage;
 
 /**
  * Some useful constants.
@@ -54,38 +51,17 @@ public final class Constants {
   public static final String OS_VERSION = System.getProperty("os.version");
   public static final String JAVA_VENDOR = System.getProperty("java.vendor");
 
-  public static final String LUCENE_VERSION;
-
   public static final String LUCENE_MAIN_VERSION = "2.9";
 
+  public static final String LUCENE_VERSION;
   static {
-    String v = LUCENE_MAIN_VERSION + "-dev";
-    try {
-      // TODO: this should have worked, but doesn't seem to?
-      // Package.getPackage("org.apache.lucene.util").getImplementationVersion();
-      String classContainer = Constants.class.getProtectionDomain().getCodeSource().getLocation().toString();
-      URL manifestUrl = new URL("jar:" + classContainer + "!/META-INF/MANIFEST.MF");
-      InputStream s = manifestUrl.openStream();
-      try {
-        Manifest manifest = new Manifest(s);
-        Attributes attr = manifest.getMainAttributes();
-        String value = attr.getValue(Attributes.Name.IMPLEMENTATION_VERSION);
-        if (value != null) {
-          if (value.indexOf(LUCENE_MAIN_VERSION) == -1) {
-            v = value + " [" + LUCENE_MAIN_VERSION + "]";
-          } else {
-            v = value;
-          }
-        }
-      } finally {
-        if (s != null) {
-          s.close();
-        }
-      }
-    } catch (Throwable t) {
-      // ignore
+    Package pkg = LucenePackage.get();
+    String v = (pkg == null) ? null : pkg.getImplementationVersion();
+    if (v == null) {
+      v = LUCENE_MAIN_VERSION + "-dev";
+    } else if (v.indexOf(LUCENE_MAIN_VERSION) == -1) {
+      v = v + " [" + LUCENE_MAIN_VERSION + "]";
     }
-
     LUCENE_VERSION = v;
   }
 }
