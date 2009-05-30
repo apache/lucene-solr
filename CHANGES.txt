@@ -44,7 +44,7 @@ Changes in runtime behavior
  2. LUCENE-1575: As of 2.9, the core collectors as well as
     IndexSearcher's search methods that return top N results, no
     longer filter out zero scoring documents. If you rely on this
-    functionaliy you can use PositiveScoresOnlyCollector like this:
+    functionality you can use PositiveScoresOnlyCollector like this:
 
     <code>
       TopDocsCollector tdc = new TopScoreDocCollector(10);
@@ -191,7 +191,7 @@ Bug fixes
    could cause "infinite merging" to happen.  (Christiaan Fluit via
    Mike McCandless)
 
-8. LUCENE-1623: Properly handle back-compability of 2.3.x indexes that
+8. LUCENE-1623: Properly handle back-compatibility of 2.3.x indexes that
    contain field names with non-ascii characters.  (Mike Streeton via
    Mike McCandless)
 
@@ -882,7 +882,7 @@ Bug fixes
     filled with stale bytes such that subsequent calls to readByte()
     return incorrect results.  (Trejkaz via Mike McCandless)
 
-12. LUCENE-1270: Fixed intermittant case where IndexWriter.close()
+12. LUCENE-1270: Fixed intermittent case where IndexWriter.close()
     would hang after IndexWriter.addIndexesNoOptimize had been
     called.  (Stu Hood via Mike McCandless)
 	
