@@ -153,6 +153,11 @@ API Changes
 14. LUCENE-1636: Make TokenFilter.input final so it's set only
     once. (Wouter Heijke, Uwe Schindler via Mike McCandless).
 
+15. LUCENE-1658: Renamed FSDirectory to SimpleFSDirectory (but left an
+    FSDirectory base class).  Added an FSDirectory.open static method
+    to pick a good default FSDirectory implementation given the OS.
+    (Michael McCandless)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()

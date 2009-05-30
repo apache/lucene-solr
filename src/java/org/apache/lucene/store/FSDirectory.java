@@ -29,21 +29,65 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexFileNameFilter;
+import org.apache.lucene.util.Constants;
 
 // Used only for WRITE_LOCK_NAME in deprecated create=true case:
 import org.apache.lucene.index.IndexWriter;
 
 /**
- * Straightforward implementation of {@link Directory} as a directory of files.
- * Locking implementation is by default the {@link SimpleFSLockFactory}, but
- * can be changed either by passing in a {@link LockFactory} instance to
- * <code>getDirectory</code>, or specifying the LockFactory class by setting
- * <code>org.apache.lucene.store.FSDirectoryLockFactoryClass</code> Java system
- * property, or by calling {@link #setLockFactory} after creating
- * the Directory.
+ * <a name="subclasses"/>
+ * Base class for Directory implementations that store index
+ * files in the file system.  There are currently three core
+ * subclasses:
+ *
+ * <ul>
+ *
+ *  <li> {@link SimpleFSDirectory} is a straighforward
+ *       implementation using java.io.RandomAccessFile.
+ *       However, it has poor concurrent performance
+ *       (multiple threads will bottleneck) as it
+ *       synchronizes when multiple threads read from the
+ *       same file.
+ *
+ *  <li> {@link NIOFSDirectory} uses java.nio's
+ *       FileChannel's positional io when reading to avoid
+ *       synchronization when reading from the same file.
+ *       Unfortunately, due to a Windows-only <a
+ *       href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6265734">Sun
+ *       JRE bug</a> this is a poor choice for Windows, but
+ *       on all other platforms this is the preferred
+ *       choice.
+ *
+ *  <li> {@link MMapDirectory} uses memory-mapped IO when
+ *       reading.  This is a good choice if you have plenty
+ *       of virtual memory relative to your index size, eg
+ *       if you are running on a 64 bit JRE, or you are
+ *       running on a 32 bit JRE but your index sizes are
+ *       small enough to fit into the virtual memory space.
+ *
+ * </ul>
+ *
+ * Unfortunately, because of system peculiarities, there is
+ * no single overall best implementation.  Therefore, we've
+ * added the {@link #open} method, to allow Lucene to choose
+ * the best FSDirectory implementation given your
+ * environment, and the known limitations of each
+ * implementation.  For users who have no reason to prefer a
+ * specific implementation, it's best to simply use {@link
+ * #open}.  For all others, you should instantiate the
+ * desired implementation directly.
+ *
+ * <p>The locking implementation is by default {@link
+ * SimpleFSLockFactory}, but can be changed either by
+ * passing in a custom {@link LockFactory} instance, or
+ * specifying the LockFactory class by setting
+ * <code>org.apache.lucene.store.FSDirectoryLockFactoryClass</code>
+ * Java system property, or by calling {@link
+ * #setLockFactory} after creating the Directory.
  *
  * @see Directory
  */
+// TODO: in 3.0 this will become an abstract base class
 public class FSDirectory extends Directory {
     
   /** This cache of directories ensures that there is a unique Directory
@@ -53,6 +97,7 @@ public class FSDirectory extends Directory {
    * instance for a given canonical path is closed, we remove the
    * instance from the cache.  See LUCENE-776
    * for some relevant discussion.
+   * @deprecated Not used by any non-deprecated methods anymore
    */
   private static final Map DIRECTORIES = new HashMap();
 
@@ -96,6 +141,7 @@ public class FSDirectory extends Directory {
                                                            System.getProperty("java.io.tmpdir"));
 
   /** The default class which implements filesystem-based directories. */
+  // deprecated
   private static Class IMPL;
   static {
     try {
@@ -130,7 +176,7 @@ public class FSDirectory extends Directory {
 
   /** Returns the directory instance for the named location.
    *
-   * @deprecated Use {@link #FSDirectory(File, LockFactory)}
+   * @deprecated Use {@link #open(File)}
    *
    * @param path the path to the directory.
    * @return the FSDirectory for the named file.  */
@@ -141,7 +187,7 @@ public class FSDirectory extends Directory {
 
   /** Returns the directory instance for the named location.
    *
-   * @deprecated Use {@link #FSDirectory(File, LockFactory)}
+   * @deprecated Use {@link #open(File, LockFactory)}
    *
    * @param path the path to the directory.
    * @param lockFactory instance of {@link LockFactory} providing the
@@ -154,7 +200,7 @@ public class FSDirectory extends Directory {
 
   /** Returns the directory instance for the named location.
    *
-   * @deprecated Use {@link #FSDirectory(File, LockFactory)}
+   * @deprecated Use {@link #open(File)}
    *
    * @param file the path to the directory.
    * @return the FSDirectory for the named file.  */
@@ -165,7 +211,7 @@ public class FSDirectory extends Directory {
 
   /** Returns the directory instance for the named location.
    *
-   * @deprecated Use {@link #FSDirectory(File, LockFactory)}
+   * @deprecated Use {@link #open(File, LockFactory)}
    *
    * @param file the path to the directory.
    * @param lockFactory instance of {@link LockFactory} providing the
@@ -270,13 +316,21 @@ public class FSDirectory extends Directory {
     }
   }
 
-  private File directory = null;
+  final void initOutput(String name) throws IOException {
+    ensureOpen();
+    createDir();
+    File file = new File(directory, name);
+    if (file.exists() && !file.delete())          // delete existing, if any
+      throw new IOException("Cannot overwrite: " + file);
+  }
+
+  protected File directory = null;
   private int refCount;
 
   protected FSDirectory() {};                     // permit subclassing
 
   /** Create a new FSDirectory for the named location.
-   *
+   * @deprecated Use {@link SimpleFSDirectory#SimpleFSDirectory}.
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default.
    * @throws IOException
@@ -285,6 +339,38 @@ public class FSDirectory extends Directory {
     path = getCanonicalPath(path);
     init(path, lockFactory);
     refCount = 1;
+  }
+
+  /** Creates an FSDirectory instance, trying to pick the
+   *  best implementation given the current environment.
+   *
+   *  <p>Currently this returns {@link MMapDirectory} when
+   *  running in a 64 bit JRE, {@link NIOFSDirectory} on
+   *  non-Windows 32 bit JRE, and {@link SimpleFSDirectory}
+   *  on Windows 32 bit JRE.
+   *
+   * <p><b>NOTE</b>: this method may suddenly change which
+   * implementation is returned from release to release, in
+   * the event that higher performance defaults become
+   * possible; if the precise implementation is important to
+   * your application, please instantiate it directly,
+   * instead.
+   *
+   * <p>See <a href="#subclasses">above</a> */
+  public static FSDirectory open(File path) throws IOException {
+    return open(path, null);
+  }
+
+  /** Just like {@link #open(File)}, but allows you to
+   *  also specify a custom {@link LockFactory}. */
+  public static FSDirectory open(File path, LockFactory lockFactory) throws IOException {
+    if (Constants.JRE_IS_64BIT) {
+      return new MMapDirectory(path, lockFactory);
+    } else if (Constants.WINDOWS) {
+      return new SimpleFSDirectory(path, lockFactory);
+    } else {
+      return new NIOFSDirectory(path, lockFactory);
+    }
   }
 
   private void init(File path, LockFactory lockFactory) throws IOException {
@@ -501,8 +587,7 @@ public class FSDirectory extends Directory {
     }
   }
 
-  /** Creates a new, empty file in the directory with the given name.
-      Returns a stream writing this file. */
+  /** @deprecated In 3.0 this method will become abstract */
   public IndexOutput createOutput(String name) throws IOException {
     ensureOpen();
     createDir();
@@ -556,7 +641,7 @@ public class FSDirectory extends Directory {
     return openInput(name, BufferedIndexInput.BUFFER_SIZE);
   }
 
-  // Inherit javadoc
+  /** @deprecated In 3.0 this method will become abstract */
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
     return new FSIndexInput(new File(directory, name), bufferSize);
@@ -613,6 +698,7 @@ public class FSDirectory extends Directory {
     return this.getClass().getName() + "@" + directory;
   }
 
+  /** @deprecated Use SimpleFSDirectory.SimpleFSIndexInput instead */
   protected static class FSIndexInput extends BufferedIndexInput {
   
     protected static class Descriptor extends RandomAccessFile {
@@ -702,6 +788,7 @@ public class FSDirectory extends Directory {
     }
   }
 
+  /** @deprecated Use SimpleFSDirectory.SimpleFSIndexOutput instead */
   protected static class FSIndexOutput extends BufferedIndexOutput {
     RandomAccessFile file = null;
   

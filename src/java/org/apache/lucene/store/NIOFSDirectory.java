@@ -23,24 +23,21 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 /**
- * NIO version of FSDirectory.  Uses FileChannel.read(ByteBuffer dst, long position) method
- * which allows multiple threads to read from the file without synchronizing.  FSDirectory
- * synchronizes in the FSIndexInput.readInternal method which can cause pileups when there
- * are many threads accessing the Directory concurrently.  
+ * An {@link FSDirectory} implementation that uses
+ * java.nio's FileChannel's positional read, which allows
+ * multiple threads to read from the same file without
+ * synchronizing.
  *
- * This class only uses FileChannel when reading; writing
- * with an IndexOutput is inherited from FSDirectory.
+ * <p>This class only uses FileChannel when reading; writing
+ * is achieved with {@link SimpleFSDirectory.SimpleFSIndexOutput}.
  * 
- * Note: NIOFSDirectory is not recommended on Windows because of a bug
+ * <p><b>NOTE</b>: NIOFSDirectory is not recommended on Windows because of a bug
  * in how FileChannel.read is implemented in Sun's JRE.
  * Inside of the implementation the position is apparently
- * synchronized.  See here for details:
-
- * http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6265734 
- * 
- * @see FSDirectory
+ * synchronized.  See <a
+ * href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6265734">here</a>
+ * for details.
  */
-
 public class NIOFSDirectory extends FSDirectory {
 
   /** Create a new NIOFSDirectory for the named location.
@@ -54,6 +51,7 @@ public class NIOFSDirectory extends FSDirectory {
   }
 
   // back compatibility so FSDirectory can instantiate via reflection
+  /* @deprecated */
   protected NIOFSDirectory() throws IOException {
   }
 
@@ -61,6 +59,11 @@ public class NIOFSDirectory extends FSDirectory {
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
     return new NIOFSIndexInput(new File(getFile(), name), bufferSize);
+  }
+
+  public IndexOutput createOutput(String name) throws IOException {
+    initOutput(name);
+    return new SimpleFSDirectory.SimpleFSIndexOutput(new File(directory, name));
   }
 
   private static class NIOFSIndexInput extends FSDirectory.FSIndexInput {

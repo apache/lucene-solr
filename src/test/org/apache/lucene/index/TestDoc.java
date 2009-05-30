@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.demo.FileDocument;
 
 import java.io.*;
@@ -105,7 +104,7 @@ public class TestDoc extends LuceneTestCase {
       StringWriter sw = new StringWriter();
       PrintWriter out = new PrintWriter(sw, true);
 
-      Directory directory = FSDirectory.getDirectory(indexDir);
+      Directory directory = FSDirectory.open(indexDir);
       IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
       SegmentInfo si1 = indexDoc(writer, "test.txt");
@@ -133,7 +132,7 @@ public class TestDoc extends LuceneTestCase {
       sw = new StringWriter();
       out = new PrintWriter(sw, true);
 
-      directory = FSDirectory.getDirectory(indexDir);
+      directory = FSDirectory.open(indexDir);
       writer = new IndexWriter(directory, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
       si1 = indexDoc(writer, "test.txt");
@@ -173,12 +172,10 @@ public class TestDoc extends LuceneTestCase {
 
    private SegmentInfo merge(SegmentInfo si1, SegmentInfo si2, String merged, boolean useCompoundFile)
    throws Exception {
-      Directory directory = FSDirectory.getDirectory(indexDir, false);
-
       SegmentReader r1 = SegmentReader.get(si1);
       SegmentReader r2 = SegmentReader.get(si2);
 
-      SegmentMerger merger = new SegmentMerger(directory, merged);
+      SegmentMerger merger = new SegmentMerger(si1.dir, merged);
 
       merger.add(r1);
       merger.add(r2);
@@ -188,17 +185,15 @@ public class TestDoc extends LuceneTestCase {
       if (useCompoundFile) {
         List filesToDelete = merger.createCompoundFile(merged + ".cfs");
         for (Iterator iter = filesToDelete.iterator(); iter.hasNext();)
-          directory.deleteFile((String) iter.next());
+          si1.dir.deleteFile((String) iter.next());
       }
 
-      directory.close();
-      return new SegmentInfo(merged, si1.docCount + si2.docCount, directory, useCompoundFile, true);
+      return new SegmentInfo(merged, si1.docCount + si2.docCount, si1.dir, useCompoundFile, true);
    }
 
 
    private void printSegment(PrintWriter out, SegmentInfo si)
    throws Exception {
-      Directory directory = FSDirectory.getDirectory(indexDir, false);
       SegmentReader reader = SegmentReader.get(si);
 
       for (int i = 0; i < reader.numDocs(); i++)
@@ -226,6 +221,5 @@ public class TestDoc extends LuceneTestCase {
       }
       tis.close();
       reader.close();
-      directory.close();
     }
 }

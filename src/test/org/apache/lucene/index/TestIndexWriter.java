@@ -747,7 +747,7 @@ public class TestIndexWriter extends LuceneTestCase
         File indexDir = new File(tempDir, "lucenetestindexwriter");
 
         try {
-          Directory dir = FSDirectory.getDirectory(indexDir);
+          Directory dir = FSDirectory.open(indexDir);
 
           // add one document & close writer
           IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
@@ -4050,7 +4050,7 @@ public class TestIndexWriter extends LuceneTestCase
   // LUCENE-1374
   public void testMergeCompressedFields() throws IOException {
     File indexDir = new File(System.getProperty("tempDir"), "mergecompressedfields");
-    Directory dir = FSDirectory.getDirectory(indexDir);
+    Directory dir = FSDirectory.open(indexDir);
     try {
       for(int i=0;i<5;i++) {
         // Must make a new writer & doc each time, w/

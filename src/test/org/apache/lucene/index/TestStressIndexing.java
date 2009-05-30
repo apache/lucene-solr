@@ -174,7 +174,7 @@ public class TestStressIndexing extends LuceneTestCase {
     // FSDir
     String tempDir = System.getProperty("java.io.tmpdir");
     File dirPath = new File(tempDir, "lucene.test.stress");
-    directory = FSDirectory.getDirectory(dirPath);
+    directory = FSDirectory.open(dirPath);
     runStressTest(directory, true, null);
     directory.close();
 
@@ -184,7 +184,7 @@ public class TestStressIndexing extends LuceneTestCase {
     directory.close();
 
     // With ConcurrentMergeScheduler, in FSDir
-    directory = FSDirectory.getDirectory(dirPath);
+    directory = FSDirectory.open(dirPath);
     runStressTest(directory, true, new ConcurrentMergeScheduler());
     directory.close();
 
@@ -194,7 +194,7 @@ public class TestStressIndexing extends LuceneTestCase {
     directory.close();
 
     // With ConcurrentMergeScheduler and autoCommit=false, in FSDir
-    directory = FSDirectory.getDirectory(dirPath);
+    directory = FSDirectory.open(dirPath);
     runStressTest(directory, false, new ConcurrentMergeScheduler());
     directory.close();
 

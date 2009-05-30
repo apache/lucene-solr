@@ -51,6 +51,22 @@ public final class Constants {
   public static final String OS_VERSION = System.getProperty("os.version");
   public static final String JAVA_VENDOR = System.getProperty("java.vendor");
 
+  // NOTE: this logic may not be correct; if you know of a
+  // more reliable approach please raise it on java-dev!
+  public static final boolean JRE_IS_64BIT;
+  static {
+    String x = System.getProperty("sun.arch.data.model");
+    if (x != null) {
+      JRE_IS_64BIT = x.indexOf("64") != -1;
+    } else {
+      if (OS_ARCH != null && OS_ARCH.indexOf("64") != -1) {
+        JRE_IS_64BIT = true;
+      } else {
+        JRE_IS_64BIT = false;
+      }
+    }
+  }
+
   public static final String LUCENE_MAIN_VERSION = "2.9";
 
   public static final String LUCENE_VERSION;

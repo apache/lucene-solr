@@ -215,7 +215,7 @@ public class TestFieldsReader extends LuceneTestCase {
     String path = tmpIODir + File.separator + "lazyDir" + userName;
     File file = new File(path);
     _TestUtil.rmDir(file);
-    FSDirectory tmpDir = FSDirectory.getDirectory(file);
+    FSDirectory tmpDir = FSDirectory.open(file);
     assertTrue(tmpDir != null);
 
     IndexWriter writer = new IndexWriter(tmpDir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
@@ -314,7 +314,7 @@ public class TestFieldsReader extends LuceneTestCase {
 
     FSDirectory fsDir;
     public FaultyFSDirectory(File dir) throws IOException {
-      fsDir = FSDirectory.getDirectory(dir);
+      fsDir = FSDirectory.open(dir);
       lockFactory = fsDir.getLockFactory();
     }
     public IndexInput openInput(String name) throws IOException {

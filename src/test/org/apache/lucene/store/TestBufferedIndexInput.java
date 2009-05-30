@@ -212,7 +212,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       public MockFSDirectory(File path, Random rand) throws IOException {
         this.rand = rand;
         lockFactory = new NoLockFactory();
-        dir = FSDirectory.getDirectory(path);
+        dir = FSDirectory.open(path);
       }
 
       public IndexInput openInput(String name) throws IOException {

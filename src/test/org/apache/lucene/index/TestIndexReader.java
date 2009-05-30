@@ -537,7 +537,7 @@ public class TestIndexReader extends LuceneTestCase
             throw new IOException("tempDir undefined, cannot run test");
 
         File indexDir = new File(tempDir, "lucenetestnormwriter");
-        Directory dir = FSDirectory.getDirectory(indexDir);
+        Directory dir = FSDirectory.open(indexDir);
         IndexWriter writer;
         IndexReader reader;
         Term searchTerm = new Term("content", "aaa");
@@ -717,7 +717,7 @@ public class TestIndexReader extends LuceneTestCase
     }
 
   private Directory getDirectory() throws IOException {
-    return FSDirectory.getDirectory(new File(System.getProperty("tempDir"), "testIndex"));
+    return FSDirectory.open(new File(System.getProperty("tempDir"), "testIndex"));
   }
 
   public void testFilesOpenClose() throws IOException
@@ -1185,7 +1185,7 @@ public class TestIndexReader extends LuceneTestCase
     public void testOpenReaderAfterDelete() throws IOException {
       File dirFile = new File(System.getProperty("tempDir"),
                           "deletetest");
-      Directory dir = FSDirectory.getDirectory(dirFile);
+      Directory dir = FSDirectory.open(dirFile);
       try {
         IndexReader.open(dir);
         fail("expected FileNotFoundException");
@@ -1543,7 +1543,7 @@ public class TestIndexReader extends LuceneTestCase
       File indexDir = new File(tempDir, "lucenetestdiralreadyclosed");
 
       try {
-        FSDirectory dir = FSDirectory.getDirectory(indexDir);
+        FSDirectory dir = FSDirectory.open(indexDir);
         IndexWriter w = new IndexWriter(indexDir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
         w.setUseCompoundFile(false);
         Document doc = new Document();
@@ -1624,7 +1624,7 @@ public class TestIndexReader extends LuceneTestCase
   // good exception
   public void testNoDir() throws Throwable {
     String tempDir = System.getProperty("java.io.tmpdir");
-    Directory dir = FSDirectory.getDirectory(new File(tempDir, "doesnotexist"), null);
+    Directory dir = FSDirectory.open(new File(tempDir, "doesnotexist"));
     try {
       IndexReader.open(dir);
       fail("did not hit expected exception");

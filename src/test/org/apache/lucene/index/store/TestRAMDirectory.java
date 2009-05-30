@@ -77,7 +77,7 @@ public class TestRAMDirectory extends LuceneTestCase {
   
   public void testRAMDirectory () throws IOException {
     
-    Directory dir = FSDirectory.getDirectory(indexDir);
+    Directory dir = FSDirectory.open(indexDir);
     MockRAMDirectory ramDir = new MockRAMDirectory(dir);
     
     // close the underlaying directory

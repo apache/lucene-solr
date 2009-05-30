@@ -123,11 +123,6 @@ public class TestTransactionRollback extends TestCase {
 
   protected void setUp() throws Exception {
     dir = new MockRAMDirectory();
-    //		dir=FSDirectory.getDirectory("/indexes/testDeletionPolicy");
-    //		String[] files = dir.list();
-    //		for (String string : files) {
-    //			dir.deleteFile(string);
-    //		}
 		
     //Build index, of records 1 to 100, committing after each batch of 10
     IndexDeletionPolicy sdp=new KeepAllDeletionPolicy();

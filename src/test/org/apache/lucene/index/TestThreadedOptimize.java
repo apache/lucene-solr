@@ -149,7 +149,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
       throw new IOException("tempDir undefined, cannot run test");
 
     String dirName = tempDir + "/luceneTestThreadedOptimize";
-    directory = FSDirectory.getDirectory(dirName);
+    directory = FSDirectory.open(new File(dirName));
     runTest(directory, false, new SerialMergeScheduler());
     runTest(directory, true, new SerialMergeScheduler());
     runTest(directory, false, new ConcurrentMergeScheduler());

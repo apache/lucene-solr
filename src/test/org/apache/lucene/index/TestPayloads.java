@@ -160,7 +160,7 @@ public class TestPayloads extends LuceneTestCase {
         
         // now use a FSDirectory and repeat same test
         String dirName = "test_payloads"; 
-        dir = FSDirectory.getDirectory(dirName);
+        dir = FSDirectory.open(new File(dirName));
         performTest(dir);
         rmDir(dirName);
     }

@@ -134,7 +134,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
       String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
       unzip(dirName, oldNames[i]);
       String fullPath = fullDir(oldNames[i]);
-      Directory dir = FSDirectory.getDirectory(fullPath);
+      Directory dir = FSDirectory.open(new File(fullPath));
       IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
       w.optimize();
       w.close();
@@ -195,7 +195,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     dirName = fullDir(dirName);
 
-    Directory dir = FSDirectory.getDirectory(dirName);
+    Directory dir = FSDirectory.open(new File(dirName));
     IndexSearcher searcher = new IndexSearcher(dir);
     IndexReader reader = searcher.getIndexReader();
 
@@ -263,7 +263,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     dirName = fullDir(dirName);
 
-    Directory dir = FSDirectory.getDirectory(dirName);
+    Directory dir = FSDirectory.open(new File(dirName));
 
     // open writer
     IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
@@ -325,7 +325,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     dirName = fullDir(dirName);
 
-    Directory dir = FSDirectory.getDirectory(dirName);
+    Directory dir = FSDirectory.open(new File(dirName));
 
     // make sure searching sees right # hits
     IndexSearcher searcher = new IndexSearcher(dir);
@@ -375,7 +375,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     dirName = fullDir(dirName);
 
-    Directory dir = FSDirectory.getDirectory(dirName);
+    Directory dir = FSDirectory.open(new File(dirName));
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setUseCompoundFile(doCFS);
     writer.setMaxBufferedDocs(10);
@@ -407,7 +407,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
       rmDir(outputDir);
 
       try {
-        Directory dir = FSDirectory.getDirectory(fullDir(outputDir));
+        Directory dir = FSDirectory.open(new File(fullDir(outputDir)));
 
         boolean autoCommit = 0 == pass;
  

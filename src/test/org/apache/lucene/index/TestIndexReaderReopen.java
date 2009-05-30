@@ -141,12 +141,12 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   // in each iteration verify the work of previous iteration. 
   // try this once with reopen once recreate, on both RAMDir and FSDir.
   public void testCommitReopenFS () throws IOException {
-    Directory dir = FSDirectory.getDirectory(indexDir);
+    Directory dir = FSDirectory.open(indexDir);
     doTestReopenWithCommit(dir, true);
     dir.close();
   }
   public void testCommitRecreateFS () throws IOException {
-    Directory dir = FSDirectory.getDirectory(indexDir);
+    Directory dir = FSDirectory.open(indexDir);
     doTestReopenWithCommit(dir, false);
     dir.close();
   }
@@ -1081,7 +1081,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   
   // LUCENE-1453
   public void testFSDirectoryReopen() throws CorruptIndexException, IOException {
-    Directory dir1 = FSDirectory.getDirectory(indexDir);
+    Directory dir1 = FSDirectory.open(indexDir, null);
     createIndex(dir1, false);
     dir1.close();
 
@@ -1110,7 +1110,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       throw new IOException("java.io.tmpdir undefined, cannot run test");
     File indexDir2 = new File(tempDir, "IndexReaderReopen2");
 
-    Directory dir1 = FSDirectory.getDirectory(indexDir2);
+    Directory dir1 = FSDirectory.open(indexDir2);
     createIndex(dir1, false);
 
     IndexReader lastReader = IndexReader.open(indexDir2);

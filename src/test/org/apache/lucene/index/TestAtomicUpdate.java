@@ -190,7 +190,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
     // Second in an FSDirectory:
     String tempDir = System.getProperty("java.io.tmpdir");
     File dirPath = new File(tempDir, "lucene.test.atomic");
-    directory = FSDirectory.getDirectory(dirPath);
+    directory = FSDirectory.open(dirPath);
     runTest(directory);
     directory.close();
     _TestUtil.rmDir(dirPath);

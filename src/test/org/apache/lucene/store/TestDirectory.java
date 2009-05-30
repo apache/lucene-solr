@@ -35,7 +35,7 @@ public class TestDirectory extends LuceneTestCase {
     } catch (AlreadyClosedException ace) {
     }
 
-    dir = FSDirectory.getDirectory(System.getProperty("tempDir"));
+    dir = FSDirectory.open(new File(System.getProperty("tempDir")));
     dir.close();
     try {
       dir.createOutput("test");
@@ -138,7 +138,7 @@ public class TestDirectory extends LuceneTestCase {
 
   // LUCENE-1468
   public void testFSDirectoryFilter() throws IOException {
-    checkDirectoryFilter(FSDirectory.getDirectory("test"));
+    checkDirectoryFilter(FSDirectory.open(new File("test")));
   }
 
   // LUCENE-1468

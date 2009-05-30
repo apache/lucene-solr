@@ -339,7 +339,7 @@ public class TestLockFactory extends LuceneTestCase {
     }
 
     public void _testStressLocks(LockFactory lockFactory, String indexDirName) throws Exception {
-        FSDirectory fs1 = FSDirectory.getDirectory(indexDirName, lockFactory);
+        FSDirectory fs1 = FSDirectory.open(new File(indexDirName), lockFactory);
 
         // First create a 1 doc index:
         IndexWriter w = new IndexWriter(fs1, new WhitespaceAnalyzer(), true,
@@ -389,8 +389,8 @@ public class TestLockFactory extends LuceneTestCase {
     public void testNativeFSLockFactoryPrefix() throws IOException {
 
       // Make sure we get identical instances:
-      Directory dir1 = FSDirectory.getDirectory("TestLockFactory.8", new NativeFSLockFactory("TestLockFactory.8"));
-      Directory dir2 = FSDirectory.getDirectory("TestLockFactory.9", new NativeFSLockFactory("TestLockFactory.9"));
+      Directory dir1 = FSDirectory.open(new File("TestLockFactory.8"), new NativeFSLockFactory("TestLockFactory.8"));
+      Directory dir2 = FSDirectory.open(new File("TestLockFactory.9"), new NativeFSLockFactory("TestLockFactory.9"));
 
       String prefix1 = dir1.getLockFactory().getLockPrefix();
       String prefix2 = dir2.getLockFactory().getLockPrefix();
@@ -406,7 +406,7 @@ public class TestLockFactory extends LuceneTestCase {
     public void testDefaultFSLockFactoryPrefix() throws IOException {
 
       // Make sure we get null prefix:
-      Directory dir = FSDirectory.getDirectory("TestLockFactory.10");
+      Directory dir = FSDirectory.open(new File("TestLockFactory.10"));
 
       String prefix = dir.getLockFactory().getLockPrefix();
 

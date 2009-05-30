@@ -37,7 +37,6 @@ public class TestWindowsMMap extends LuceneTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 		random = newRandom();
-		System.setProperty("org.apache.lucene.FSDirectory.class", "org.apache.lucene.store.MMapDirectory");
 	}
 	
 	private String randomToken() {
@@ -65,7 +64,7 @@ public class TestWindowsMMap extends LuceneTestCase {
 
 	public void testMmapIndex() throws Exception {
 		FSDirectory storeDirectory;
-		storeDirectory = FSDirectory.getDirectory(storePathname);
+		storeDirectory = new MMapDirectory(new File(storePathname), null);
 
 		// plan to add a set of useful stopwords, consider changing some of the
 		// interior filters.

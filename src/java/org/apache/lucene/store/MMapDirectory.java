@@ -24,16 +24,21 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 
-/** File-based {@link Directory} implementation that uses mmap for input.
+/** File-based {@link Directory} implementation that uses
+ *  mmap for reading, and {@link
+ *  SimpleFSDirectory.SimpleFSIndexOutput} for writing.
  *
- * <p>To use this, invoke Java with the System property
- * org.apache.lucene.FSDirectory.class set to
- * org.apache.lucene.store.MMapDirectory.  This will cause {@link
- * FSDirectory#getDirectory(File,boolean)} to return instances of this class.
+ * <p> <b>NOTE</b>: memory mapping uses up a portion of the
+ * virtual memory address space in your process equal to the
+ * size of the file being mapped.  Before using this class,
+ * be sure your have plenty of virtual memory, eg by using a
+ * 64 bit JRE, or a 32 bit JRE with indexes that are
+ * guaranteed to fit within the address space.
  */
 public class MMapDirectory extends FSDirectory {
 
   /** Create a new MMapDirectory for the named location.
+   *
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default.
    * @throws IOException
@@ -42,7 +47,9 @@ public class MMapDirectory extends FSDirectory {
     super(path, lockFactory);
   }
 
-  // back compatibility so FSDirectory can instantiate via reflection
+  // back compatibility so FSDirectory can instantiate via
+  // reflection
+  /* @deprecated */
   protected MMapDirectory() throws IOException {
   }
 
@@ -86,6 +93,9 @@ public class MMapDirectory extends FSDirectory {
     public void close() throws IOException {}
   }
 
+  // Because Java's ByteBuffer uses an int to address the
+  // values, it's necessary to access a file >
+  // Integer.MAX_VALUE in size using multiple byte buffers.
   private static class MultiMMapIndexInput extends IndexInput {
   
     private ByteBuffer[] buffers;
@@ -201,6 +211,11 @@ public class MMapDirectory extends FSDirectory {
   private final int MAX_BBUF = Integer.MAX_VALUE;
 
   public IndexInput openInput(String name) throws IOException {
+    return openInput(name, BufferedIndexInput.BUFFER_SIZE);
+  }
+
+  public IndexInput openInput(String name, int bufferSize) throws IOException {
+    ensureOpen();
     File f =  new File(getFile(), name);
     RandomAccessFile raf = new RandomAccessFile(f, "r");
     try {
@@ -212,7 +227,8 @@ public class MMapDirectory extends FSDirectory {
     }
   }
 
-  public IndexInput openInput(String name, int bufferSize) throws IOException {
-    return openInput(name);
+  public IndexOutput createOutput(String name) throws IOException {
+    initOutput(name);
+    return new SimpleFSDirectory.SimpleFSIndexOutput(new File(directory, name));
   }
 }
