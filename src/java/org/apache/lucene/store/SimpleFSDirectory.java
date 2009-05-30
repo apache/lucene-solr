@@ -132,7 +132,7 @@ public class SimpleFSDirectory extends FSDirectory {
     }
   
     public Object clone() {
-      FSIndexInput clone = (FSIndexInput)super.clone();
+      SimpleFSIndexInput clone = (SimpleFSIndexInput)super.clone();
       clone.isClone = true;
       return clone;
     }
