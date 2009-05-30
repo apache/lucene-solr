@@ -5485,6 +5485,22 @@ public class IndexWriter {
     throw oom;
   }
 
+  // deprecated
+  private boolean allowMinus1Position;
+
+  /** Deprecated: emulates IndexWriter's buggy behavior when
+   *  first token(s) have positionIncrement==0 (ie, prior to
+   *  fixing LUCENE-1542) */
+  public void setAllowMinus1Position() {
+    allowMinus1Position = true;
+    docWriter.setAllowMinus1Position();
+  }
+
+  // deprecated
+  boolean getAllowMinus1Position() {
+    return allowMinus1Position;
+  }
+
   // Used only by assert for testing.  Current points:
   //   startDoFlush
   //   startCommitMerge

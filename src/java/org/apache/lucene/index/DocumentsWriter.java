@@ -150,6 +150,9 @@ final class DocumentsWriter {
     Document doc;
     String maxTermPrefix;
 
+    // deprecated
+    boolean allowMinus1Position;
+
     // Only called by asserts
     public boolean testPoint(String name) {
       return docWriter.writer.testPoint(name);
@@ -296,6 +299,11 @@ final class DocumentsWriter {
     this.similarity = similarity;
     for(int i=0;i<threadStates.length;i++)
       threadStates[i].docState.similarity = similarity;
+  }
+
+  synchronized void setAllowMinus1Position() {
+    for(int i=0;i<threadStates.length;i++)
+      threadStates[i].docState.allowMinus1Position = true;;
   }
 
   /** Set how much RAM we can use before flushing. */

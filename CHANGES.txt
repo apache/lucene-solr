@@ -71,6 +71,17 @@ Changes in runtime behavior
     with SortField.FIELD_DOC (it was unnecessary as Lucene breaks ties
     internally by docID). (Shai Erera via Michael McCandless)
 
+ 6. LUCENE-1542: When the first token(s) have 0 position increment,
+    IndexWriter used to incorrectly record the position as -1, if no
+    payload is present, or Integer.MAX_VALUE if a payload is present.
+    This causes positional queries to fail to match.  The bug is now
+    fixed, but if your app relies on the buggy behavior then you must
+    call IndexWriter.setAllowMinus1Position().  That API is deprecated
+    so you must fix your application, and rebuild your index, to not
+    rely on this behavior by the 3.0 release of Lucene. (Jonathan
+    Mamou, Mark Miller via Mike McCandless)
+
+
 API Changes
 
 1. LUCENE-1419: Add expert API to set custom indexing chain. This API is 
@@ -185,6 +196,16 @@ Bug fixes
 
 10. LUCENE-1647: Fix case where IndexReader.undeleteAll would cause
     the segment's deletion count to be incorrect. (Mike McCandless)
+
+11. LUCENE-1542: When the first token(s) have 0 position increment,
+    IndexWriter used to incorrectly record the position as -1, if no
+    payload is present, or Integer.MAX_VALUE if a payload is present.
+    This causes positional queries to fail to match.  The bug is now
+    fixed, but if your app relies on the buggy behavior then you must
+    call IndexWriter.setAllowMinus1Position().  That API is deprecated
+    so you must fix your application, and rebuild your index, to not
+    rely on this behavior by the 3.0 release of Lucene. (Jonathan
+    Mamou, Mark Miller via Mike McCandless)
 
  New features
 

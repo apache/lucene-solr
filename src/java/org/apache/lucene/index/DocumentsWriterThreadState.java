@@ -40,6 +40,7 @@ final class DocumentsWriterThreadState {
     docState.infoStream = docWriter.infoStream;
     docState.similarity = docWriter.similarity;
     docState.docWriter = docWriter;
+    docState.allowMinus1Position = docWriter.writer.getAllowMinus1Position();
     consumer = docWriter.consumer.addThread(this);
   }
 

@@ -126,6 +126,9 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           // reset the TokenStream to the first token
           stream.reset();
 
+          // deprecated
+          final boolean allowMinus1Position = docState.allowMinus1Position;
+
           try {
             int offsetEnd = fieldState.offset-1;
             
@@ -162,7 +165,11 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
               }
               
               final int posIncr = posIncrAttribute.getPositionIncrement();
-              fieldState.position += posIncr - 1;
+              fieldState.position += posIncr;
+              if (allowMinus1Position || fieldState.position > 0) {
+                fieldState.position--;
+              }
+
               if (posIncr == 0)
                 fieldState.numOverlap++;
 
