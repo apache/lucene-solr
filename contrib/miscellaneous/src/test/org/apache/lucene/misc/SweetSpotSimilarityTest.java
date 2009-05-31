@@ -84,8 +84,8 @@ public class SweetSpotSimilarityTest extends TestCase {
 
     // seperate sweet spot for certain fields
 
-    ss.setLengthNormFactors("bar",8,13, 0.5f);
-    ss.setLengthNormFactors("yak",6,9, 0.5f);
+    ss.setLengthNormFactors("bar",8,13, 0.5f, false);
+    ss.setLengthNormFactors("yak",6,9, 0.5f, false);
 
   
     for (int i = 3; i <=10; i++) {
@@ -122,8 +122,8 @@ public class SweetSpotSimilarityTest extends TestCase {
 
     // steepness
 
-    ss.setLengthNormFactors("a",5,8,0.5f);
-    ss.setLengthNormFactors("b",5,8,0.1f);
+    ss.setLengthNormFactors("a",5,8,0.5f, false);
+    ss.setLengthNormFactors("b",5,8,0.1f, false);
 
     for (int i = 9; i < 1000; i++) {
       assertTrue("s: i="+i+" : a="+ss.lengthNorm("a",i)+
