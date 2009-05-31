@@ -25,12 +25,12 @@ import java.util.Map;
 import java.util.HashMap;
 
 /**
- * A similarity with a lengthNorm that provides for a "platuea" of
+ * A similarity with a lengthNorm that provides for a "plateau" of
  * equally good lengths, and tf helper functions.
  *
  * <p>
  * For lengthNorm, A global min/max can be specified to define the
- * platuea of lengths that should all have a norm of 1.0.
+ * plateau of lengths that should all have a norm of 1.0.
  * Below the min, and above the max the lengthNorm drops off in a
  * sqrt function.
  * </p>
@@ -108,25 +108,6 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
   }
 
   /**
-   * Sets the function variables used by lengthNorm for a
-   * specific named field.
-   * 
-   * @deprecated Please call {@link #setLengthNormFactors(String,
-   * int, int, float, boolean)} instead.
-   * 
-   * @param field field name
-   * @param min minimum value
-   * @param max maximum value
-   * @param steepness steepness of the curve
-   *
-   * @see #lengthNorm
-   */
-  public void setLengthNormFactors(String field, int min, int max,
-                                   float steepness) {
-    setLengthNormFactors(field, min, max, steepness, false);
-  }
-    
-  /**
    * Sets the function variables used by lengthNorm for a specific named field.
    * 
    * @param field field name
@@ -180,7 +161,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    * </p>
    *
    * <p>
-   * :TODO: potential optimiation is to just flat out return 1.0f if numTerms
+   * :TODO: potential optimization is to just flat out return 1.0f if numTerms
    * is between min and max.
    * </p>
    *
@@ -244,8 +225,6 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
       : (float)Math.sqrt(freq + (tf_base * tf_base) - tf_min);
   }
 
-
-    
   /**
    * Uses a hyperbolic tangent function that allows for a hard max...
    *
@@ -286,4 +265,3 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
   }
 
 }
-
