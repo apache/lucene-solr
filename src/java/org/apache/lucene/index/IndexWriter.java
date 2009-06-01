@@ -46,28 +46,24 @@ import java.util.Map;
 /**
   An <code>IndexWriter</code> creates and maintains an index.
 
-  <p>The <code>create</code> argument to the 
-  <a href="#IndexWriter(org.apache.lucene.store.Directory, org.apache.lucene.analysis.Analyzer, boolean)"><b>constructor</b></a>
-  determines whether a new index is created, or whether an existing index is
-  opened.  Note that you
-  can open an index with <code>create=true</code> even while readers are
-  using the index.  The old readers will continue to search
-  the "point in time" snapshot they had opened, and won't
-  see the newly created index until they re-open.  There are
-  also <a href="#IndexWriter(org.apache.lucene.store.Directory, org.apache.lucene.analysis.Analyzer)"><b>constructors</b></a>
-  with no <code>create</code> argument which
-  will create a new index if there is not already an index at the
-  provided path and otherwise open the existing index.</p>
+  <p>The <code>create</code> argument to the {@link
+  #IndexWriter(Directory, Analyzer, boolean) constructor} determines 
+  whether a new index is created, or whether an existing index is
+  opened.  Note that you can open an index with <code>create=true</code>
+  even while readers are using the index.  The old readers will 
+  continue to search the "point in time" snapshot they had opened, 
+  and won't see the newly created index until they re-open.  There are
+  also {@link #IndexWriter(Directory, Analyzer) constructors}
+  with no <code>create</code> argument which will create a new index
+  if there is not already an index at the provided path and otherwise 
+  open the existing index.</p>
 
-  <p>In either case, documents are added with <a
-  href="#addDocument(org.apache.lucene.document.Document)"><b>addDocument</b></a>
-  and removed with <a
-  href="#deleteDocuments(org.apache.lucene.index.Term)"><b>deleteDocuments(Term)</b></a>
-  or <a
-  href="#deleteDocuments(org.apache.lucene.search.Query)"><b>deleteDocuments(Query)</b></a>.
-  A document can be updated with <a href="#updateDocument(org.apache.lucene.index.Term, org.apache.lucene.document.Document)"><b>updateDocument</b></a> 
-  (which just deletes and then adds the entire document).
-  When finished adding, deleting and updating documents, <a href="#close()"><b>close</b></a> should be called.</p>
+  <p>In either case, documents are added with {@link #addDocument(Document)
+  addDocument} and removed with {@link #deleteDocuments(Term)} or {@link
+  #deleteDocuments(Query)}. A document can be updated with {@link
+  #updateDocument(Term, Document) updateDocument} (which just deletes
+  and then adds the entire document). When finished adding, deleting 
+  and updating documents, {@link #close() close} should be called.</p>
 
   <a name="flush"></a>
   <p>These changes are buffered in memory and periodically
@@ -90,23 +86,20 @@ import java.util.Map;
   for changing the {@link MergeScheduler}).</p>
 
   <a name="autoCommit"></a>
-  <p>The optional <code>autoCommit</code> argument to the <a
-  href="#IndexWriter(org.apache.lucene.store.Directory,
-  boolean,
-  org.apache.lucene.analysis.Analyzer)"><b>constructors</b></a>
+  <p>The optional <code>autoCommit</code> argument to the {@link
+  #IndexWriter(Directory, boolean, Analyzer) constructors}
   controls visibility of the changes to {@link IndexReader}
   instances reading the same index.  When this is
   <code>false</code>, changes are not visible until {@link
   #close()} or {@link #commit()} is called.  Note that changes will still be
-  flushed to the {@link org.apache.lucene.store.Directory}
-  as new files, but are not committed (no new
-  <code>segments_N</code> file is written referencing the
-  new files, nor are the files sync'd to stable storage)
+  flushed to the {@link Directory} as new files, but are 
+  not committed (no new <code>segments_N</code> file is written 
+  referencing the new files, nor are the files sync'd to stable storage)
   until {@link #close()} or {@link #commit()} is called.  If something
   goes terribly wrong (for example the JVM crashes), then
   the index will reflect none of the changes made since the
   last commit, or the starting state if commit was not called.
-  You can also call {@link #rollback}, which closes the writer
+  You can also call {@link #rollback()}, which closes the writer
   without committing any changes, and removes any index
   files that had been flushed but are now unreferenced.
   This mode is useful for preventing readers from refreshing
@@ -142,7 +135,7 @@ import java.util.Map;
   are not visible until the reader is re-opened.</p>
 
   <p>If an index will not have more documents added for a while and optimal search
-  performance is desired, then either the full <a href="#optimize()"><b>optimize</b></a>
+  performance is desired, then either the full {@link #optimize() optimize}
   method or partial {@link #optimize(int)} method should be
   called before the index is closed.</p>
 

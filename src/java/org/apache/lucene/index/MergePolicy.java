@@ -55,7 +55,7 @@ import java.util.Set;
  * (subject to change suddenly in the next release)</p>
  *
  * <p><b>NOTE</b>: This class typically requires access to
- * package-private APIs (eg, SegmentInfos) to do its job;
+ * package-private APIs (e.g. {@link SegmentInfo}s) to do its job;
  * if you implement your own MergePolicy, you'll need to put
  * it in package org.apache.lucene.index in order to use
  * these APIs.

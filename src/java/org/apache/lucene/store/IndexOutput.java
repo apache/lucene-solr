@@ -162,6 +162,7 @@ public abstract class IndexOutput {
 
   /** Copy numBytes bytes from input to ourself. */
   public void copyBytes(IndexInput input, long numBytes) throws IOException {
+    assert numBytes >= 0: "numBytes=" + numBytes;
     long left = numBytes;
     if (copyBuffer == null)
       copyBuffer = new byte[COPY_BUFFER_SIZE];
