@@ -26,7 +26,7 @@ import junit.textui.TestRunner;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.store._TestHelper;
 import org.apache.lucene.util._TestUtil;
 
@@ -62,9 +62,14 @@ public class TestCompoundFile extends LuceneTestCase
        super.setUp();
        File file = new File(System.getProperty("tempDir"), "testIndex");
        _TestUtil.rmDir(file);
-       dir = FSDirectory.open(file);
+       // use a simple FSDir here, to be sure to have SimpleFSInputs
+       dir = new SimpleFSDirectory(file,null);
     }
 
+    public void tearDown() throws Exception {
+       dir.close();
+       super.tearDown();
+    }
 
     /** Creates a file of the specified size with random data. */
     private void createRandomFile(Directory dir, String name, int size)
@@ -310,10 +315,10 @@ public class TestCompoundFile extends LuceneTestCase
 
 
     public void testReadAfterClose() throws IOException {
-        demo_FSIndexInputBug((FSDirectory) dir, "test");
+        demo_FSIndexInputBug(dir, "test");
     }
 
-    private void demo_FSIndexInputBug(FSDirectory fsdir, String file)
+    private void demo_FSIndexInputBug(Directory fsdir, String file)
     throws IOException
     {
         // Setup the test file - we need more than 1024 bytes
@@ -358,7 +363,7 @@ public class TestCompoundFile extends LuceneTestCase
             CompoundFileReader.CSIndexInput cis =
             (CompoundFileReader.CSIndexInput) is;
 
-            return _TestHelper.isFSIndexInputOpen(cis.base);
+            return _TestHelper.isSimpleFSIndexInputOpen(cis.base);
         } else {
             return false;
         }
@@ -373,49 +378,47 @@ public class TestCompoundFile extends LuceneTestCase
         IndexInput expected = dir.openInput("f11");
 
         // this test only works for FSIndexInput
-        if (_TestHelper.isFSIndexInput(expected)) {
+        assertTrue(_TestHelper.isSimpleFSIndexInput(expected));
+        assertTrue(_TestHelper.isSimpleFSIndexInputOpen(expected));
 
-          assertTrue(_TestHelper.isFSIndexInputOpen(expected));
+        IndexInput one = cr.openInput("f11");
+        assertTrue(isCSIndexInputOpen(one));
 
-          IndexInput one = cr.openInput("f11");
-          assertTrue(isCSIndexInputOpen(one));
+        IndexInput two = (IndexInput) one.clone();
+        assertTrue(isCSIndexInputOpen(two));
 
-          IndexInput two = (IndexInput) one.clone();
-          assertTrue(isCSIndexInputOpen(two));
+        assertSameStreams("basic clone one", expected, one);
+        expected.seek(0);
+        assertSameStreams("basic clone two", expected, two);
 
-          assertSameStreams("basic clone one", expected, one);
-          expected.seek(0);
-          assertSameStreams("basic clone two", expected, two);
+        // Now close the first stream
+        one.close();
+        assertTrue("Only close when cr is closed", isCSIndexInputOpen(one));
 
-          // Now close the first stream
-          one.close();
-          assertTrue("Only close when cr is closed", isCSIndexInputOpen(one));
-
-          // The following should really fail since we couldn't expect to
-          // access a file once close has been called on it (regardless of
-          // buffering and/or clone magic)
-          expected.seek(0);
-          two.seek(0);
-          assertSameStreams("basic clone two/2", expected, two);
-
-
-          // Now close the compound reader
-          cr.close();
-          assertFalse("Now closed one", isCSIndexInputOpen(one));
-          assertFalse("Now closed two", isCSIndexInputOpen(two));
-
-          // The following may also fail since the compound stream is closed
-          expected.seek(0);
-          two.seek(0);
-          //assertSameStreams("basic clone two/3", expected, two);
+        // The following should really fail since we couldn't expect to
+        // access a file once close has been called on it (regardless of
+        // buffering and/or clone magic)
+        expected.seek(0);
+        two.seek(0);
+        assertSameStreams("basic clone two/2", expected, two);
 
 
-          // Now close the second clone
-          two.close();
-          expected.seek(0);
-          two.seek(0);
-          //assertSameStreams("basic clone two/4", expected, two);
-        }
+        // Now close the compound reader
+        cr.close();
+        assertFalse("Now closed one", isCSIndexInputOpen(one));
+        assertFalse("Now closed two", isCSIndexInputOpen(two));
+
+        // The following may also fail since the compound stream is closed
+        expected.seek(0);
+        two.seek(0);
+        //assertSameStreams("basic clone two/3", expected, two);
+
+
+        // Now close the second clone
+        two.close();
+        expected.seek(0);
+        two.seek(0);
+        //assertSameStreams("basic clone two/4", expected, two);
 
         expected.close();
     }

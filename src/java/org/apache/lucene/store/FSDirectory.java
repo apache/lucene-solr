@@ -59,12 +59,29 @@ import org.apache.lucene.index.IndexWriter;
  *       choice.
  *
  *  <li> {@link MMapDirectory} uses memory-mapped IO when
- *       reading.  This is a good choice if you have plenty
+ *       reading. This is a good choice if you have plenty
  *       of virtual memory relative to your index size, eg
  *       if you are running on a 64 bit JRE, or you are
  *       running on a 32 bit JRE but your index sizes are
  *       small enough to fit into the virtual memory space.
- *
+ *       Java has currently the limitation of not being able to
+ *       unmap files from user code. The files are unmapped, when GC
+ *       releases the byte buffers. Due to
+ *       <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4724038">
+ *       this bug</a> in Sun's JRE, MMapDirectory's {@link IndexInput#close}
+ *       is unable to close the underlying OS file handle. Only when
+ *       GC finally collects the underlying objects, which could be
+ *       quite some time later, will the file handle be closed.
+ *       This will consume additional transient disk usage: on Windows,
+ *       attempts to delete or overwrite the files will result in an
+ *       exception; on other platforms, which typically have a &quot;delete on
+ *       last close&quot; semantics, while such operations will succeed, the bytes
+ *       are still consuming space on disk.  For many applications this
+ *       limitation is not a problem (e.g. if you have plenty of disk space,
+ *       and you don't rely on overwriting files on Windows) but it's still
+ *       an important limitation to be aware of. This class supplies a
+ *       (possibly dangerous) workaround mentioned in the bug report,
+ *       which may fail on non-Sun JVMs.
  * </ul>
  *
  * Unfortunately, because of system peculiarities, there is
@@ -84,6 +101,8 @@ import org.apache.lucene.index.IndexWriter;
  * <code>org.apache.lucene.store.FSDirectoryLockFactoryClass</code>
  * Java system property, or by calling {@link
  * #setLockFactory} after creating the Directory.
+ *
+ * <p><em>In 3.0 this class will become abstract.</em>
  *
  * @see Directory
  */
@@ -118,7 +137,8 @@ public class FSDirectory extends Directory {
   /**
    * Returns whether Lucene's use of lock files is disabled.
    * @return true if locks are disabled, false if locks are enabled.
-   */
+   * @see #setDisableLocks
+  */
   public static boolean getDisableLocks() {
     return FSDirectory.disableLocks;
   }
@@ -147,16 +167,17 @@ public class FSDirectory extends Directory {
     try {
       String name =
         System.getProperty("org.apache.lucene.FSDirectory.class",
-                           FSDirectory.class.getName());
-      IMPL = Class.forName(name);
+                           SimpleFSDirectory.class.getName());
+      if (FSDirectory.class.getName().equals(name)) {
+        // FSDirectory will be abstract, so we replace it by the correct class
+        IMPL = SimpleFSDirectory.class;
+      } else {
+        IMPL = Class.forName(name);
+      }
     } catch (ClassNotFoundException e) {
       throw new RuntimeException("cannot load FSDirectory class: " + e.toString(), e);
     } catch (SecurityException se) {
-      try {
-        IMPL = Class.forName(FSDirectory.class.getName());
-      } catch (ClassNotFoundException e) {
-        throw new RuntimeException("cannot load default FSDirectory class: " + e.toString(), e);
-      }
+      IMPL = SimpleFSDirectory.class;
     }
   }
 
@@ -316,7 +337,9 @@ public class FSDirectory extends Directory {
     }
   }
 
-  final void initOutput(String name) throws IOException {
+  /** Initializes the directory to create a new file with the given name.
+   * This method should be used in {@link #createOutput}. */
+  protected final void initOutput(String name) throws IOException {
     ensureOpen();
     createDir();
     File file = new File(directory, name);
@@ -324,18 +347,21 @@ public class FSDirectory extends Directory {
       throw new IOException("Cannot overwrite: " + file);
   }
 
+  /** The underlying filesystem directory */
   protected File directory = null;
-  private int refCount;
+  
+  /** @deprecated */
+  private int refCount = 0;
 
-  protected FSDirectory() {};                     // permit subclassing
+  /** @deprecated */
+  protected FSDirectory() {}; // permit subclassing
 
-  /** Create a new FSDirectory for the named location.
-   * @deprecated Use {@link SimpleFSDirectory#SimpleFSDirectory}.
+  /** Create a new FSDirectory for the named location (ctor for subclasses).
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default.
    * @throws IOException
    */
-  public FSDirectory(File path, LockFactory lockFactory) throws IOException {
+  protected FSDirectory(File path, LockFactory lockFactory) throws IOException {
     path = getCanonicalPath(path);
     init(path, lockFactory);
     refCount = 1;
@@ -344,17 +370,20 @@ public class FSDirectory extends Directory {
   /** Creates an FSDirectory instance, trying to pick the
    *  best implementation given the current environment.
    *
-   *  <p>Currently this returns {@link MMapDirectory} when
-   *  running in a 64 bit JRE, {@link NIOFSDirectory} on
-   *  non-Windows 32 bit JRE, and {@link SimpleFSDirectory}
-   *  on Windows 32 bit JRE.
+   *  <p>Currently this returns {@link NIOFSDirectory}
+   *  on non-Windows JREs and {@link SimpleFSDirectory}
+   *  on Windows.
    *
    * <p><b>NOTE</b>: this method may suddenly change which
    * implementation is returned from release to release, in
    * the event that higher performance defaults become
    * possible; if the precise implementation is important to
    * your application, please instantiate it directly,
-   * instead.
+   * instead. On 64 bit systems, it may also good to
+   * return {@link MMapDirectory}, but this is disabled
+   * because of officially missing unmap support in Java.
+   * For optimal performance you should consider using
+   * this implementation on 64 bit JVMs.
    *
    * <p>See <a href="#subclasses">above</a> */
   public static FSDirectory open(File path) throws IOException {
@@ -364,15 +393,19 @@ public class FSDirectory extends Directory {
   /** Just like {@link #open(File)}, but allows you to
    *  also specify a custom {@link LockFactory}. */
   public static FSDirectory open(File path, LockFactory lockFactory) throws IOException {
-    if (Constants.JRE_IS_64BIT) {
-      return new MMapDirectory(path, lockFactory);
-    } else if (Constants.WINDOWS) {
+    /* For testing:
+    MMapDirectory dir=new MMapDirectory(path, lockFactory);
+    dir.setUseUnmap(true);
+    return dir;
+    */
+    if (Constants.WINDOWS) {
       return new SimpleFSDirectory(path, lockFactory);
     } else {
       return new NIOFSDirectory(path, lockFactory);
     }
   }
 
+  /* will move to ctor, when reflection is removed in 3.0 */
   private void init(File path, LockFactory lockFactory) throws IOException {
 
     // Set up lockFactory with cascaded defaults: if an instance was passed in,
@@ -587,15 +620,11 @@ public class FSDirectory extends Directory {
     }
   }
 
-  /** @deprecated In 3.0 this method will become abstract */
+  /** Creates an IndexOutput for the file with the given name.
+   * <em>In 3.0 this method will become abstract.</em> */
   public IndexOutput createOutput(String name) throws IOException {
-    ensureOpen();
-    createDir();
-    File file = new File(directory, name);
-    if (file.exists() && !file.delete())          // delete existing, if any
-      throw new IOException("Cannot overwrite: " + file);
-
-    return new FSIndexOutput(file);
+    initOutput(name);
+    return new FSIndexOutput(new File(directory, name));
   }
 
   public void sync(String name) throws IOException {
@@ -641,7 +670,8 @@ public class FSDirectory extends Directory {
     return openInput(name, BufferedIndexInput.BUFFER_SIZE);
   }
 
-  /** @deprecated In 3.0 this method will become abstract */
+  /** Creates an IndexInput for the file with the given name.
+   * <em>In 3.0 this method will become abstract.</em> */
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
     return new FSIndexInput(new File(directory, name), bufferSize);
@@ -698,144 +728,37 @@ public class FSDirectory extends Directory {
     return this.getClass().getName() + "@" + directory;
   }
 
+
   /** @deprecated Use SimpleFSDirectory.SimpleFSIndexInput instead */
-  protected static class FSIndexInput extends BufferedIndexInput {
+  protected static class FSIndexInput extends SimpleFSDirectory.SimpleFSIndexInput {
   
-    protected static class Descriptor extends RandomAccessFile {
-      // remember if the file is open, so that we don't try to close it
-      // more than once
-      protected volatile boolean isOpen;
-      long position;
-      final long length;
-      
+    /** @deprecated */
+    protected static class Descriptor extends SimpleFSDirectory.SimpleFSIndexInput.Descriptor {
+      /** @deprecated */
       public Descriptor(File file, String mode) throws IOException {
         super(file, mode);
-        isOpen=true;
-        length=length();
-      }
-  
-      public void close() throws IOException {
-        if (isOpen) {
-          isOpen=false;
-          super.close();
-        }
-      }
-  
-      protected void finalize() throws Throwable {
-        try {
-          close();
-        } finally {
-          super.finalize();
-        }
       }
     }
   
-    protected final Descriptor file;
-    boolean isClone;
-  
+    /** @deprecated */
     public FSIndexInput(File path) throws IOException {
-      this(path, BufferedIndexInput.BUFFER_SIZE);
+      super(path);
     }
   
+    /** @deprecated */
     public FSIndexInput(File path, int bufferSize) throws IOException {
-      super(bufferSize);
-      file = new Descriptor(path, "r");
+      super(path, bufferSize);
     }
   
-    /** IndexInput methods */
-    protected void readInternal(byte[] b, int offset, int len)
-         throws IOException {
-      synchronized (file) {
-        long position = getFilePointer();
-        if (position != file.position) {
-          file.seek(position);
-          file.position = position;
-        }
-        int total = 0;
-        do {
-          int i = file.read(b, offset+total, len-total);
-          if (i == -1)
-            throw new IOException("read past EOF");
-          file.position += i;
-          total += i;
-        } while (total < len);
-      }
-    }
-  
-    public void close() throws IOException {
-      // only close the file if this is not a clone
-      if (!isClone) file.close();
-    }
-  
-    protected void seekInternal(long position) {
-    }
-  
-    public long length() {
-      return file.length;
-    }
-  
-    public Object clone() {
-      FSIndexInput clone = (FSIndexInput)super.clone();
-      clone.isClone = true;
-      return clone;
-    }
-  
-    /** Method used for testing. Returns true if the underlying
-     *  file descriptor is valid.
-     */
-    boolean isFDValid() throws IOException {
-      return file.getFD().valid();
-    }
   }
 
   /** @deprecated Use SimpleFSDirectory.SimpleFSIndexOutput instead */
-  protected static class FSIndexOutput extends BufferedIndexOutput {
-    RandomAccessFile file = null;
-  
-    // remember if the file is open, so that we don't try to close it
-    // more than once
-    private volatile boolean isOpen;
+  protected static class FSIndexOutput extends SimpleFSDirectory.SimpleFSIndexOutput {
 
+    /** @deprecated */
     public FSIndexOutput(File path) throws IOException {
-      file = new RandomAccessFile(path, "rw");
-      isOpen = true;
+      super(path);
     }
-  
-    /** output methods: */
-    public void flushBuffer(byte[] b, int offset, int size) throws IOException {
-      file.write(b, offset, size);
-    }
-    public void close() throws IOException {
-      // only close the file if it has not been closed yet
-      if (isOpen) {
-        boolean success = false;
-        try {
-          super.close();
-          success = true;
-        } finally {
-          isOpen = false;
-          if (!success) {
-            try {
-              file.close();
-            } catch (Throwable t) {
-              // Suppress so we don't mask original exception
-            }
-          } else
-            file.close();
-        }
-      }
-    }
-  
-    /** Random-access methods */
-    public void seek(long pos) throws IOException {
-      super.seek(pos);
-      file.seek(pos);
-    }
-    public long length() throws IOException {
-      return file.length();
-    }
-    public void setLength(long length) throws IOException {
-      file.setLength(length);
-    }
+
   }
 }

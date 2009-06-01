@@ -146,9 +146,9 @@ API Changes
     is deprecated in favor of the new TimeLimitingCollector which
     extends Collector.  (Shai Erera via Mike McCandless)
 
-13. LUCENE-1621: MultiTermQuery#getTerm() has been deprecated as it does
+13. LUCENE-1621: MultiTermQuery.getTerm() has been deprecated as it does
     not make sense for all subclasses of MultiTermQuery. Check individual
-    subclasses to see if they support #getTerm().  (Mark Miller)
+    subclasses to see if they support getTerm().  (Mark Miller)
 
 14. LUCENE-1636: Make TokenFilter.input final so it's set only
     once. (Wouter Heijke, Uwe Schindler via Mike McCandless).
@@ -156,7 +156,7 @@ API Changes
 15. LUCENE-1658: Renamed FSDirectory to SimpleFSDirectory (but left an
     FSDirectory base class).  Added an FSDirectory.open static method
     to pick a good default FSDirectory implementation given the OS.
-    (Michael McCandless)
+    (Michael McCandless, Uwe Schindler)
 
 Bug fixes
 
@@ -211,6 +211,11 @@ Bug fixes
     so you must fix your application, and rebuild your index, to not
     rely on this behavior by the 3.0 release of Lucene. (Jonathan
     Mamou, Mark Miller via Mike McCandless)
+
+15. LUCENE-1658: Fixed MMapDirectory to correctly throw IOExceptions
+    on EOF, removed numeric overflow possibilities and added support
+    for a hack to unmap the buffers on closing IndexInput.
+    (Uwe Schindler)
 
  New features
 

@@ -19,7 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 
-import org.apache.lucene.store.FSDirectory.FSIndexInput;
+import org.apache.lucene.store.SimpleFSDirectory.SimpleFSIndexInput;
 
 /** This class provides access to package-level features defined in the
  *  store package. It is used for testing only.
@@ -27,35 +27,35 @@ import org.apache.lucene.store.FSDirectory.FSIndexInput;
 public class _TestHelper {
 
     /** Returns true if the instance of the provided input stream is actually
-     *  an FSIndexInput.
+     *  an SimpleFSIndexInput.
      */
-    public static boolean isFSIndexInput(IndexInput is) {
-        return is instanceof FSIndexInput;
+    public static boolean isSimpleFSIndexInput(IndexInput is) {
+        return is instanceof SimpleFSIndexInput;
     }
 
-    /** Returns true if the provided input stream is an FSIndexInput and
+    /** Returns true if the provided input stream is an SimpleFSIndexInput and
      *  is a clone, that is it does not own its underlying file descriptor.
      */
-    public static boolean isFSIndexInputClone(IndexInput is) {
-        if (isFSIndexInput(is)) {
-            return ((FSIndexInput) is).isClone;
+    public static boolean isSimpleFSIndexInputClone(IndexInput is) {
+        if (isSimpleFSIndexInput(is)) {
+            return ((SimpleFSIndexInput) is).isClone;
         } else {
             return false;
         }
     }
 
-    /** Given an instance of FSDirectory.FSIndexInput, this method returns
+    /** Given an instance of SimpleFSDirectory.SimpleFSIndexInput, this method returns
      *  true if the underlying file descriptor is valid, and false otherwise.
      *  This can be used to determine if the OS file has been closed.
      *  The descriptor becomes invalid when the non-clone instance of the
-     *  FSIndexInput that owns this descriptor is closed. However, the
+     *  SimpleFSIndexInput that owns this descriptor is closed. However, the
      *  descriptor may possibly become invalid in other ways as well.
      */
-    public static boolean isFSIndexInputOpen(IndexInput is)
+    public static boolean isSimpleFSIndexInputOpen(IndexInput is)
     throws IOException
     {
-        if (isFSIndexInput(is)) {
-            FSIndexInput fis = (FSIndexInput) is;
+        if (isSimpleFSIndexInput(is)) {
+            SimpleFSIndexInput fis = (SimpleFSIndexInput) is;
             return fis.isFDValid();
         } else {
             return false;

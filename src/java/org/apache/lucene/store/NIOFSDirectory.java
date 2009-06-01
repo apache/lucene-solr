@@ -50,23 +50,32 @@ public class NIOFSDirectory extends FSDirectory {
     super(path, lockFactory);
   }
 
-  // back compatibility so FSDirectory can instantiate via reflection
-  /* @deprecated */
-  protected NIOFSDirectory() throws IOException {
+  /** Create a new NIOFSDirectory for the named location and the default lock factory.
+   *
+   * @param path the path of the directory
+   * @throws IOException
+   */
+  public NIOFSDirectory(File path) throws IOException {
+    super(path, null);
   }
 
-  // Inherit javadoc
+  // back compatibility so FSDirectory can instantiate via reflection
+  /** @deprecated */
+  NIOFSDirectory() {}
+
+  /** Creates an IndexInput for the file with the given name. */
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
     return new NIOFSIndexInput(new File(getFile(), name), bufferSize);
   }
 
+  /** Creates an IndexOutput for the file with the given name. */
   public IndexOutput createOutput(String name) throws IOException {
     initOutput(name);
     return new SimpleFSDirectory.SimpleFSIndexOutput(new File(directory, name));
   }
 
-  private static class NIOFSIndexInput extends FSDirectory.FSIndexInput {
+  private static class NIOFSIndexInput extends SimpleFSDirectory.SimpleFSIndexInput {
 
     private ByteBuffer byteBuf; // wraps the buffer for NIO
 

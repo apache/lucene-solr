@@ -53,7 +53,7 @@ public class TestDirectory extends LuceneTestCase {
     int sz = 3;
     Directory[] dirs = new Directory[sz];
 
-    dirs[0] = new FSDirectory(path, null);
+    dirs[0] = new SimpleFSDirectory(path, null);
     dirs[1] = new NIOFSDirectory(path, null);
     dirs[2] = new MMapDirectory(path, null);
 
@@ -123,7 +123,7 @@ public class TestDirectory extends LuceneTestCase {
     File path = new File(System.getProperty("tempDir"), "doesnotexist");
     try {
       assertTrue(!path.exists());
-      Directory dir = new FSDirectory(path, null);
+      Directory dir = new SimpleFSDirectory(path, null);
       assertTrue(!path.exists());
       dir.close();
     } finally {
@@ -159,7 +159,7 @@ public class TestDirectory extends LuceneTestCase {
     try {
       path.mkdirs();
       new File(path, "subdir").mkdirs();
-      Directory fsDir = new FSDirectory(path, null);
+      Directory fsDir = new SimpleFSDirectory(path, null);
       assertEquals(0, new RAMDirectory(fsDir).listAll().length);
     } finally {
       _TestUtil.rmDir(path);
@@ -169,13 +169,13 @@ public class TestDirectory extends LuceneTestCase {
   // LUCENE-1468
   public void testNotDirectory() throws Throwable {
     File path = new File(System.getProperty("tempDir"), "testnotdir");
-    Directory fsDir = new FSDirectory(path, null);
+    Directory fsDir = new SimpleFSDirectory(path, null);
     try {
       IndexOutput out = fsDir.createOutput("afile");
       out.close();
       assertTrue(fsDir.fileExists("afile"));
       try {
-        new FSDirectory(new File(path, "afile"), null);
+        new SimpleFSDirectory(new File(path, "afile"), null);
         fail("did not hit expected exception");
       } catch (NoSuchDirectoryException nsde) {
         // Expected

@@ -4207,7 +4207,7 @@ public class TestIndexWriter extends LuceneTestCase
   
   public void testOtherFiles() throws Throwable {
     File indexDir = new File(System.getProperty("tempDir"), "otherfiles");
-    Directory dir = new FSDirectory(indexDir, null);
+    Directory dir = FSDirectory.open(indexDir);
     try {
       // Create my own random file:
 

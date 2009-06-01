@@ -69,7 +69,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   public void testRandom() throws Throwable {
     r = newRandom();
     Directory dir1 = new MockRAMDirectory();
-    // dir1 = FSDirectory.getDirectory("foofoofoo");
+    // dir1 = FSDirectory.open("foofoofoo");
     Directory dir2 = new MockRAMDirectory();
     // mergeFactor=2; maxBufferedDocs=2; Map docs = indexRandom(1, 3, 2, dir1);
     Map docs = indexRandom(10, 100, 100, dir1);

@@ -59,7 +59,7 @@ public class TestDoc extends LuceneTestCase {
         indexDir = new File(workDir, "testIndex");
         indexDir.mkdirs();
 
-        Directory directory = FSDirectory.getDirectory(indexDir, true);
+        Directory directory = FSDirectory.open(indexDir);
         directory.close();
 
         files = new LinkedList();

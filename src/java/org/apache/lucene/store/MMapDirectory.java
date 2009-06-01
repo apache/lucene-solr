@@ -21,19 +21,47 @@ import java.io.IOException;
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.nio.BufferUnderflowException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
+
+import java.security.AccessController;
+import java.security.PrivilegedExceptionAction;
+import java.security.PrivilegedActionException;
+import java.lang.reflect.Method;
 
 /** File-based {@link Directory} implementation that uses
  *  mmap for reading, and {@link
  *  SimpleFSDirectory.SimpleFSIndexOutput} for writing.
  *
- * <p> <b>NOTE</b>: memory mapping uses up a portion of the
+ * <p><b>NOTE</b>: memory mapping uses up a portion of the
  * virtual memory address space in your process equal to the
  * size of the file being mapped.  Before using this class,
- * be sure your have plenty of virtual memory, eg by using a
- * 64 bit JRE, or a 32 bit JRE with indexes that are
+ * be sure your have plenty of virtual address space, e.g. by
+ * using a 64 bit JRE, or a 32 bit JRE with indexes that are
  * guaranteed to fit within the address space.
+ *
+ * <p>Due to <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4724038">
+ * this bug</a> in Sun's JRE, MMapDirectory's {@link IndexInput#close}
+ * is unable to close the underlying OS file handle.  Only when GC
+ * finally collects the underlying objects, which could be quite
+ * some time later, will the file handle be closed.
+ *
+ * <p>This will consume additional transient disk usage: on Windows,
+ * attempts to delete or overwrite the files will result in an
+ * exception; on other platforms, which typically have a &quot;delete on
+ * last close&quot; semantics, while such operations will succeed, the bytes
+ * are still consuming space on disk.  For many applications this
+ * limitation is not a problem (e.g. if you have plenty of disk space,
+ * and you don't rely on overwriting files on Windows) but it's still
+ * an important limitation to be aware of.
+ *
+ * <p>This class supplies the workaround mentioned in the bug report
+ * (disabled by default, see {@link #setUseUnmap}), which may fail on
+ * non-Sun JVMs. It forcefully unmaps the buffer on close by using
+ * an undocumented internal cleanup functionality.
+ * {@link #UNMAP_SUPPORTED} is <code>true</code>, if the workaround
+ * can be enabled (with no guarantees).
  */
 public class MMapDirectory extends FSDirectory {
 
@@ -47,16 +75,101 @@ public class MMapDirectory extends FSDirectory {
     super(path, lockFactory);
   }
 
-  // back compatibility so FSDirectory can instantiate via
-  // reflection
-  /* @deprecated */
-  protected MMapDirectory() throws IOException {
+  /** Create a new MMapDirectory for the named location and the default lock factory.
+   *
+   * @param path the path of the directory
+   * @throws IOException
+   */
+  public MMapDirectory(File path) throws IOException {
+    super(path, null);
   }
 
-  private static class MMapIndexInput extends IndexInput {
+  // back compatibility so FSDirectory can instantiate via reflection
+  /** @deprecated */
+  MMapDirectory() {}
+  
+  static final Class[] NO_PARAM_TYPES = new Class[0];
+  static final Object[] NO_PARAMS = new Object[0];
+  
+  private boolean useUnmapHack = false;
+  
+  /**
+   * <code>true</code>, if this platform supports unmapping mmaped files.
+   */
+  public static final boolean UNMAP_SUPPORTED;
+  static {
+    boolean v;
+    try {
+      Class.forName("sun.misc.Cleaner");
+      Class.forName("java.nio.DirectByteBuffer")
+        .getMethod("cleaner", NO_PARAM_TYPES);
+      v = true;
+    } catch (Exception e) {
+      v = false;
+    }
+    UNMAP_SUPPORTED = v;
+  }
+
+  /**
+   * This method enables the workaround for unmapping the buffers
+   * from address space after closing {@link IndexInput}, that is
+   * mentioned in the bug report. This hack may fail on non-Sun JVMs.
+   * It forcefully unmaps the buffer on close by using
+   * an undocumented internal cleanup functionality.
+   * <p><b>NOTE:</b> Enabling this is completely unsupported
+   * by Java and may lead to JVM crashs if <code>IndexInput</code>
+   * is closed while another thread is still accessing it (SIGSEGV).
+   * @throws IllegalArgumentException if {@link #UNMAP_SUPPORTED}
+   * is <code>false</code> and the workaround cannot be enabled.
+   */
+  public void setUseUnmap(final boolean useUnmapHack) {
+    if (useUnmapHack && !UNMAP_SUPPORTED)
+      throw new IllegalArgumentException("Unmap hack not supported on this platform!");
+    this.useUnmapHack=useUnmapHack;
+  }
+  
+  /**
+   * Returns <code>true</code>, if the unmap workaround is enabled.
+   * @see #setUseUnmap
+   */
+  public boolean getUseUnmap() {
+    return useUnmapHack;
+  }
+  
+  /**
+   * Try to unmap the buffer, this method silently fails if no support
+   * for that in the JVM. On Windows, this leads to the fact,
+   * that mmapped files cannot be modified or deleted.
+   */
+  final void cleanMapping(final ByteBuffer buffer) throws IOException {
+    if (useUnmapHack) {
+      try {
+        AccessController.doPrivileged(new PrivilegedExceptionAction() {
+          public Object run() throws Exception {
+            final Method getCleanerMethod = buffer.getClass()
+              .getMethod("cleaner", NO_PARAM_TYPES);
+            getCleanerMethod.setAccessible(true);
+            final Object cleaner = getCleanerMethod.invoke(buffer, NO_PARAMS);
+            if (cleaner != null) {
+              cleaner.getClass().getMethod("clean", NO_PARAM_TYPES)
+                .invoke(cleaner, NO_PARAMS);
+            }
+            return null;
+          }
+        });
+      } catch (PrivilegedActionException e) {
+        final IOException ioe = new IOException("unable to unmap the mapped buffer");
+        ioe.initCause(e.getCause());
+        throw ioe;
+      }
+    }
+  }
+
+  private class MMapIndexInput extends IndexInput {
 
     private ByteBuffer buffer;
     private final long length;
+    private boolean isClone = false;
 
     private MMapIndexInput(RandomAccessFile raf) throws IOException {
         this.length = raf.length();
@@ -64,12 +177,19 @@ public class MMapDirectory extends FSDirectory {
     }
 
     public byte readByte() throws IOException {
-      return buffer.get();
+      try {
+        return buffer.get();
+      } catch (BufferUnderflowException e) {
+        throw new IOException("read past EOF");
+      }
     }
 
-    public void readBytes(byte[] b, int offset, int len)
-      throws IOException {
-      buffer.get(b, offset, len);
+    public void readBytes(byte[] b, int offset, int len) throws IOException {
+      try {
+        buffer.get(b, offset, len);
+      } catch (BufferUnderflowException e) {
+        throw new IOException("read past EOF");
+      }
     }
 
     public long getFilePointer() {
@@ -86,17 +206,26 @@ public class MMapDirectory extends FSDirectory {
 
     public Object clone() {
       MMapIndexInput clone = (MMapIndexInput)super.clone();
+      clone.isClone = true;
       clone.buffer = buffer.duplicate();
       return clone;
     }
 
-    public void close() throws IOException {}
+    public void close() throws IOException {
+      if (isClone || buffer == null) return;
+      // unmap the buffer (if enabled) and at least unset it for GC
+      try {
+        cleanMapping(buffer);
+      } finally {
+        buffer = null;
+      }
+    }
   }
 
   // Because Java's ByteBuffer uses an int to address the
   // values, it's necessary to access a file >
   // Integer.MAX_VALUE in size using multiple byte buffers.
-  private static class MultiMMapIndexInput extends IndexInput {
+  private class MultiMMapIndexInput extends IndexInput {
   
     private ByteBuffer[] buffers;
     private int[] bufSizes; // keep here, ByteBuffer.size() method is optional
@@ -109,6 +238,7 @@ public class MMapDirectory extends FSDirectory {
     private ByteBuffer curBuf; // redundant for speed: buffers[curBufIndex]
     private int curAvail; // redundant for speed: (bufSizes[curBufIndex] - curBuf.position())
   
+    private boolean isClone = false;
     
     public MultiMMapIndexInput(RandomAccessFile raf, int maxBufSize)
       throws IOException {
@@ -125,7 +255,7 @@ public class MMapDirectory extends FSDirectory {
            + raf.toString());
       
       int nrBuffers = (int) (length / maxBufSize);
-      if ((nrBuffers * maxBufSize) < length) nrBuffers++;
+      if (((long) nrBuffers * maxBufSize) < length) nrBuffers++;
       
       this.buffers = new ByteBuffer[nrBuffers];
       this.bufSizes = new int[nrBuffers];
@@ -145,10 +275,12 @@ public class MMapDirectory extends FSDirectory {
   
     public byte readByte() throws IOException {
       // Performance might be improved by reading ahead into an array of
-      // eg. 128 bytes and readByte() from there.
+      // e.g. 128 bytes and readByte() from there.
       if (curAvail == 0) {
         curBufIndex++;
-        curBuf = buffers[curBufIndex]; // index out of bounds when too many bytes requested
+        if (curBufIndex >= buffers.length)
+          throw new IOException("read past EOF");
+        curBuf = buffers[curBufIndex];
         curBuf.position(0);
         curAvail = bufSizes[curBufIndex];
       }
@@ -162,7 +294,9 @@ public class MMapDirectory extends FSDirectory {
         len -= curAvail;
         offset += curAvail;
         curBufIndex++;
-        curBuf = buffers[curBufIndex]; // index out of bounds when too many bytes requested
+        if (curBufIndex >= buffers.length)
+          throw new IOException("read past EOF");
+        curBuf = buffers[curBufIndex];
         curBuf.position(0);
         curAvail = bufSizes[curBufIndex];
       }
@@ -171,13 +305,13 @@ public class MMapDirectory extends FSDirectory {
     }
   
     public long getFilePointer() {
-      return (curBufIndex * (long) maxBufSize) + curBuf.position();
+      return ((long) curBufIndex * maxBufSize) + curBuf.position();
     }
   
     public void seek(long pos) throws IOException {
       curBufIndex = (int) (pos / maxBufSize);
       curBuf = buffers[curBufIndex];
-      int bufOffset = (int) (pos - (curBufIndex * maxBufSize));
+      int bufOffset = (int) (pos - ((long) curBufIndex * maxBufSize));
       curBuf.position(bufOffset);
       curAvail = bufSizes[curBufIndex] - bufOffset;
     }
@@ -188,10 +322,11 @@ public class MMapDirectory extends FSDirectory {
   
     public Object clone() {
       MultiMMapIndexInput clone = (MultiMMapIndexInput)super.clone();
+      clone.isClone = true;
       clone.buffers = new ByteBuffer[buffers.length];
       // No need to clone bufSizes.
       // Since most clones will use only one buffer, duplicate() could also be
-      // done lazy in clones, eg. when adapting curBuf.
+      // done lazy in clones, e.g. when adapting curBuf.
       for (int bufNr = 0; bufNr < buffers.length; bufNr++) {
         clone.buffers[bufNr] = buffers[bufNr].duplicate();
       }
@@ -205,15 +340,26 @@ public class MMapDirectory extends FSDirectory {
       return clone;
     }
   
-    public void close() throws IOException {}
+    public void close() throws IOException {
+      if (isClone || buffers == null) return;
+      try {
+        for (int bufNr = 0; bufNr < buffers.length; bufNr++) {
+          // unmap the buffer (if enabled) and at least unset it for GC
+          try {
+            cleanMapping(buffers[bufNr]);
+          } finally {
+            buffers[bufNr] = null;
+          }
+        }
+      } finally {
+        buffers = null;
+      }
+    }
   }
   
   private final int MAX_BBUF = Integer.MAX_VALUE;
 
-  public IndexInput openInput(String name) throws IOException {
-    return openInput(name, BufferedIndexInput.BUFFER_SIZE);
-  }
-
+  /** Creates an IndexInput for the file with the given name. */
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
     File f =  new File(getFile(), name);
@@ -227,6 +373,7 @@ public class MMapDirectory extends FSDirectory {
     }
   }
 
+  /** Creates an IndexOutput for the file with the given name. */
   public IndexOutput createOutput(String name) throws IOException {
     initOutput(name);
     return new SimpleFSDirectory.SimpleFSIndexOutput(new File(directory, name));

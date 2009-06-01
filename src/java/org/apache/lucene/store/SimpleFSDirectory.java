@@ -38,19 +38,27 @@ public class SimpleFSDirectory extends FSDirectory {
   public SimpleFSDirectory(File path, LockFactory lockFactory) throws IOException {
     super(path, lockFactory);
   }
-
-  // Inherit javadoc
-  public IndexOutput createOutput(String name) throws IOException {
-    ensureOpen();
-    createDir();
-    File file = new File(directory, name);
-    if (file.exists() && !file.delete())          // delete existing, if any
-      throw new IOException("Cannot overwrite: " + file);
-
-    return new SimpleFSIndexOutput(file);
+  
+  /** Create a new SimpleFSDirectory for the named location and the default lock factory.
+   *
+   * @param path the path of the directory
+   * @throws IOException
+   */
+  public SimpleFSDirectory(File path) throws IOException {
+    super(path, null);
   }
 
-  // Inherit javadoc
+  // back compatibility so FSDirectory can instantiate via reflection
+  /** @deprecated */
+  SimpleFSDirectory() {}
+
+  /** Creates an IndexOutput for the file with the given name. */
+  public IndexOutput createOutput(String name) throws IOException {
+    initOutput(name);
+    return new SimpleFSIndexOutput(new File(directory, name));
+  }
+
+  /** Creates an IndexInput for the file with the given name. */
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
     return new SimpleFSIndexInput(new File(directory, name), bufferSize);

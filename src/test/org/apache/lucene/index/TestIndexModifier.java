@@ -144,7 +144,7 @@ public class TestIndexModifier extends LuceneTestCase {
     if (tempDir == null)
       throw new IOException("java.io.tmpdir undefined, cannot run test");
     File indexDir = new File(tempDir, "lucenetestindex");
-    Directory rd = FSDirectory.getDirectory(indexDir);
+    Directory rd = FSDirectory.open(indexDir);
     IndexThread.id = 0;
     IndexThread.idStack.clear();
     IndexModifier index = new IndexModifier(rd, new StandardAnalyzer(), create);
