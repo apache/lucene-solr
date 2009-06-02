@@ -81,7 +81,7 @@ public class LatLongDistanceFilter extends DistanceFilter {
   public BitSet bits(IndexReader reader) throws IOException {
 
     /* Create a BitSet to store the result */
-    int maxdocs = reader.numDocs();
+    int maxdocs = reader.maxDoc();
     BitSet bits = new BitSet(maxdocs);
     
     setPrecision(maxdocs);
