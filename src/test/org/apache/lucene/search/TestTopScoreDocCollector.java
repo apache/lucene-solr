@@ -67,7 +67,7 @@ public class TestTopScoreDocCollector extends LuceneTestCase {
       IndexSearcher searcher = new IndexSearcher(dir);
       for (int i = 0; i < inOrder.length; i++) {
         TopDocsCollector tdc = TopScoreDocCollector.create(3, inOrder[i]);
-        assertEquals(actualTSDCClass[i], tdc.getClass().getSimpleName());
+        assertEquals("org.apache.lucene.search.TopScoreDocCollector$" + actualTSDCClass[i], tdc.getClass().getName());
         
         searcher.search(new MatchAllDocsQuery(), tdc);
         
