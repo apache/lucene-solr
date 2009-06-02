@@ -158,6 +158,10 @@ API Changes
     to pick a good default FSDirectory implementation given the OS.
     (Michael McCandless, Uwe Schindler)
 
+16. LUCENE-1665: Deprecate SortField.AUTO, to be removed in 3.0.
+    Instead, when sorting by field, the application should explicitly
+    state the type of the field.  (Mike McCandless)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()
