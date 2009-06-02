@@ -49,7 +49,8 @@ implements Serializable {
   /** Guess type of sort based on field contents.  A regular expression is used
    * to look at the first term indexed for the field and determine if it
    * represents an integer number, a floating point number, or just arbitrary
-   * string characters. */
+   * string characters.
+   * @deprecated Please specify the exact type, instead.*/
   public static final int AUTO = 2;
 
   /** Sort using term values as Strings.  Sort values are String and lower
@@ -114,7 +115,9 @@ implements Serializable {
 
   /** Creates a sort by terms in the given field where the type of term value
    * is determined dynamically ({@link #AUTO AUTO}).
-   * @param field Name of field to sort by, cannot be <code>null</code>.
+   * @param field Name of field to sort by, cannot be
+   * <code>null</code>.
+   * @deprecated Please specify the exact type instead.
    */
   public SortField (String field) {
     initFieldType(field, AUTO);
@@ -124,6 +127,7 @@ implements Serializable {
    * the type of term value is determined dynamically ({@link #AUTO AUTO}).
    * @param field Name of field to sort by, cannot be <code>null</code>.
    * @param reverse True if natural order should be reversed.
+   * @deprecated Please specify the exact type instead.
    */
   public SortField (String field, boolean reverse) {
     initFieldType(field, AUTO);
