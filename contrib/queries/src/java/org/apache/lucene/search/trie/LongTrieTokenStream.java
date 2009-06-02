@@ -46,7 +46,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  * for more than one document:
  * <pre>
  *  <em>// init</em>
- *  TokenStream stream = new LongTrieTokenStream(precisionStep);
+ *  LongTrieTokenStream stream = new LongTrieTokenStream(precisionStep);
  *  Field field = new Field(name, stream);
  *  field.setOmitNorms(true);
  *  field.setOmitTermFreqAndPositions(true);
