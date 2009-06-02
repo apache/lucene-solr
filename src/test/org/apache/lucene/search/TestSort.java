@@ -146,7 +146,9 @@ public class TestSort extends LuceneTestCase implements Serializable {
     }
     //writer.optimize ();
     writer.close ();
-    return new IndexSearcher (indexStore);
+    IndexSearcher s = new IndexSearcher (indexStore);
+    s.setDefaultFieldSortScoring(true, true);
+    return s;
   }
 
   private Searcher getFullIndex()

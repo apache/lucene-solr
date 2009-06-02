@@ -5,21 +5,28 @@ $Id$
 
 Changes in backwards compatibility policy
 
- 1. LUCENE-1575: Searchable.search(Weight, Filter, int, Sort)
-    currently tracks document scores (including maxScore), and sets
-    the score in each returned FieldDoc.  However, in 3.0 it will stop
-    tracking document scores. If document scores tracking is still
-    needed, you can use Searchable.search(Weight, Filter, Collector)
+ 1. LUCENE-1575: Searchable.search(Weight, Filter, int, Sort) no
+    longer computes document scores of each hit, by default.  If
+    document scores tracking is still needed, you can call
+    IndexSearcher.setDefaultFieldSortScoring(true, true) to enable
+    both per-hit and maxScore tracking; however, this is deprecated
+    and will be removed in 3.0.
+
+    Alternatively, use Searchable.search(Weight, Filter, Collector)
     and pass in a TopFieldCollector instance, using the following code
     sample:
  
     <code>
       TopFieldCollector tfc = TopFieldCollector.create(sort, numHits, fillFields, 
                                                        true /* trackDocScores */,
-                                                       true /* trackMaxScore */);
-      searcher.search(weight, filter, tfc);
+                                                       true /* trackMaxScore */,
+						       false /* docsInOrder */);
+      searcher.search(query, tfc);
       TopDocs results = tfc.topDocs();
     </code>
+
+    Note that your Sort object cannot use SortField.AUTO when you
+    directly instantiate TopFieldCollector.
 
     Also, the method search(Weight, Filter, Collector) was added to
     the Searchable interface and the Searcher abstract class, to

@@ -225,14 +225,11 @@ public class IndexSearcher extends Searcher {
       return (TopFieldDocs) collector.topDocs();
     }
     // Search each sub-reader
-    // TODO (3.0): by default we should create a TopFieldCollector which does
-    // not track document scores and maxScore. Currently the default is set to
-    // true, however it will change in 3.0.
     // TODO: The following should be changed to first obtain a Scorer and then ask it
     // if it's going to return in-order or out-of-order docs, and create TSDC
     // accordingly.
     TopFieldCollector collector = TopFieldCollector.create(sort, nDocs,
-        fillFields, true, true, false);
+        fillFields, fieldSortDoTrackScores, fieldSortDoMaxScore, false);
     search(weight, filter, collector);
     return (TopFieldDocs) collector.topDocs();
   }
@@ -298,5 +295,14 @@ public class IndexSearcher extends Searcher {
 
   public Explanation explain(Weight weight, int doc) throws IOException {
     return weight.explain(reader, doc);
+  }
+
+  private boolean fieldSortDoTrackScores;
+  private boolean fieldSortDoMaxScore;
+
+  /** @deprecated */
+  public void setDefaultFieldSortScoring(boolean doTrackScores, boolean doMaxScore) {
+    fieldSortDoTrackScores = doTrackScores;
+    fieldSortDoMaxScore = doMaxScore;
   }
 }

@@ -120,7 +120,7 @@ public class TestMultiSearcher extends LuceneTestCase
 
         // iterating over the hit documents
         for (int i = 0; i < hits.length; i++) {
-            Document d = mSearcher.doc(hits[i].doc);
+          mSearcher.doc(hits[i].doc);
         }
         mSearcher.close();
 
@@ -149,8 +149,8 @@ public class TestMultiSearcher extends LuceneTestCase
 
         // iterating over the hit documents
         for (int i = 0; i < hits2.length; i++) {
-            // no exception should happen at this point
-            Document d = mSearcher2.doc(hits2[i].doc);
+          // no exception should happen at this point
+          mSearcher2.doc(hits2[i].doc);
         }
 
         // test the subSearcher() method:
@@ -194,7 +194,7 @@ public class TestMultiSearcher extends LuceneTestCase
 
         // iterating over the hit documents
         for (int i = 0; i < hits3.length; i++) {
-            Document d = mSearcher3.doc(hits3[i].doc);
+          mSearcher3.doc(hits3[i].doc);
         }
         mSearcher3.close();
         indexStoreA.close();
@@ -298,6 +298,7 @@ public class TestMultiSearcher extends LuceneTestCase
         initIndex(ramDirectory1, nDocs, false, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
         
         indexSearcher1=new IndexSearcher(ramDirectory1);
+        indexSearcher1.setDefaultFieldSortScoring(true, true);
         
         hits=indexSearcher1.search(query, null, 1000).scoreDocs;
         
@@ -325,7 +326,9 @@ public class TestMultiSearcher extends LuceneTestCase
         initIndex(ramDirectory2, nDocs, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
         
         indexSearcher1=new IndexSearcher(ramDirectory1);
+        indexSearcher1.setDefaultFieldSortScoring(true, true);
         indexSearcher2=new IndexSearcher(ramDirectory2);
+        indexSearcher2.setDefaultFieldSortScoring(true, true);
         
         Searcher searcher=getMultiSearcherInstance(new Searcher[] { indexSearcher1, indexSearcher2 });
         
