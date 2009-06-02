@@ -30,6 +30,10 @@ unset master_host master_status_dir data_dir user verbose debug
 prog=${0##*/}
 log=${solr_root}/logs/${prog}.log
 
+LOCKDIR="${solr_root}/logs/snapinstaller-lock"
+PIDFILE="${LOCKDIR}/PID"
+
+
 # define usage string
 USAGE="\
 usage: $prog [-M master] [-S sdir] [-d dir] [-u username] [-v]
@@ -106,6 +110,20 @@ fi
 
 setStartTime
 
+if test -r $PIDFILE
+then
+  OTHERPID="$(cat "${PIDFILE}")"
+  if ! kill -0 $OTHERPID &>/dev/null; then
+    logMessage removing stale lock ${OTHERPID}
+    rm -rf "${LOCKDIR}"
+  else
+    logExit "lock failed, PID ${OTHERPID} is active" 1
+  fi
+fi
+
+mkdir "${LOCKDIR}" &>/dev/null
+echo "$$" >"${PIDFILE}"
+
 logMessage started by $oldwhoami
 logMessage command: $0 $@
 
@@ -176,4 +194,5 @@ then
   logExit failed 1
 fi
 
+rm -rf "${LOCKDIR}"
 logExit ended 0
