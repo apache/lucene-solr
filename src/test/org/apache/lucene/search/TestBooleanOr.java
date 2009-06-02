@@ -31,10 +31,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.RAMDirectory;
 
-/**
- * Created on 2005. 2. 9.
- * <br>Adapted to Lucene testcase by Paul Elschot.
- */
 public class TestBooleanOr extends LuceneTestCase {
 
 	private static String FIELD_T = "T";
