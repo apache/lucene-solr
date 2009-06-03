@@ -79,6 +79,7 @@ public class RAMDirectory extends Directory implements Serializable {
    * @param dir a <code>File</code> specifying the index directory
    *
    * @see #RAMDirectory(Directory)
+   * @deprecated Use {@link #RAMDirectory(Directory)} instead
    */
   public RAMDirectory(File dir) throws IOException {
     this(FSDirectory.getDirectory(dir), true);
@@ -90,6 +91,7 @@ public class RAMDirectory extends Directory implements Serializable {
    * @param dir a <code>String</code> specifying the full index directory path
    *
    * @see #RAMDirectory(Directory)
+   * @deprecated Use {@link #RAMDirectory(Directory)} instead
    */
   public RAMDirectory(String dir) throws IOException {
     this(FSDirectory.getDirectory(dir), true);

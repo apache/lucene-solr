@@ -204,7 +204,7 @@ public abstract class IndexReader implements Cloneable {
    *  path.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @deprecated Use {@link #open(String, boolean)} instead
+   * @deprecated Use {@link #open(Directory, boolean)} instead
    * @param path the path to the index directory */
   public static IndexReader open(String path) throws CorruptIndexException, IOException {
     return open(FSDirectory.getDirectory(path), true, null, null, false);
@@ -219,7 +219,8 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    * @param path the path to the index directory
    * @param readOnly true if this should be a readOnly
-   * reader */
+   * reader
+   * @deprecated Use {@link #open(Directory, boolean)} instead*/
   public static IndexReader open(String path, boolean readOnly) throws CorruptIndexException, IOException {
     return open(FSDirectory.getDirectory(path), true, null, null, readOnly);
   }
@@ -229,7 +230,7 @@ public abstract class IndexReader implements Cloneable {
    * @param path the path to the index directory
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @deprecated Use {@link #open(File, boolean)} instead
+   * @deprecated Use {@link #open(Directory, boolean)} instead
    */
   public static IndexReader open(File path) throws CorruptIndexException, IOException {
     return open(FSDirectory.getDirectory(path), true, null, null, false);
@@ -244,7 +245,9 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    * @param path the path to the index directory
    * @param readOnly true if this should be a readOnly
-   * reader */
+   * reader
+   * @deprecated Use {@link #open(Directory, boolean)}
+   * instead */
   public static IndexReader open(File path, boolean readOnly) throws CorruptIndexException, IOException {
     return open(FSDirectory.getDirectory(path), true, null, null, readOnly);
   }
@@ -555,6 +558,7 @@ public abstract class IndexReader implements Cloneable {
    * @return version number.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link #getCurrentVersion(Directory)} instead
    */
   public static long getCurrentVersion(File directory) throws CorruptIndexException, IOException {
     Directory dir = FSDirectory.getDirectory(directory);
@@ -1167,7 +1171,7 @@ public abstract class IndexReader implements Cloneable {
    * currently locked.
    * @param directory the directory to check for a lock
    * @throws IOException if there is a low-level IO error
-   * @deprecated Please use {@link IndexWriter#isLocked(String)} instead
+   * @deprecated Please use {@link IndexWriter#isLocked(Directory)} instead
    */
   public static boolean isLocked(String directory) throws IOException {
     Directory dir = FSDirectory.getDirectory(directory);

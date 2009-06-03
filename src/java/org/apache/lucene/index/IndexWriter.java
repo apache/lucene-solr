@@ -837,6 +837,8 @@ public class IndexWriter {
    *  if it does not exist and <code>create</code> is
    *  <code>false</code> or if there is any other low-level
    *  IO error
+   * @deprecated Use {@link #IndexWriter(Directory, Analyzer,
+   * boolean, MaxFieldLength)}
    */
   public IndexWriter(String path, Analyzer a, boolean create, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -864,7 +866,7 @@ public class IndexWriter {
    *  IO error
    * @deprecated This constructor will be removed in the 3.0 release.
    *  Use {@link
-   *  #IndexWriter(String,Analyzer,boolean,MaxFieldLength)}
+   *  #IndexWriter(Directory,Analyzer,boolean,MaxFieldLength)}
    *  instead, and call {@link #commit()} when needed.
    */
   public IndexWriter(String path, Analyzer a, boolean create)
@@ -897,6 +899,8 @@ public class IndexWriter {
    *  if it does not exist and <code>create</code> is
    *  <code>false</code> or if there is any other low-level
    *  IO error
+   * @deprecated Use {@link #IndexWriter(Directory,
+   * Analyzer, boolean, MaxFieldLength)}
    */
   public IndexWriter(File path, Analyzer a, boolean create, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -924,7 +928,7 @@ public class IndexWriter {
    *  IO error
    * @deprecated This constructor will be removed in the 3.0 release.
    *  Use {@link
-   *  #IndexWriter(File,Analyzer,boolean,MaxFieldLength)}
+   *  #IndexWriter(Directory,Analyzer,boolean,MaxFieldLength)}
    *  instead, and call {@link #commit()} when needed.
    */
   public IndexWriter(File path, Analyzer a, boolean create)
@@ -1012,6 +1016,7 @@ public class IndexWriter {
    * @throws IOException if the directory cannot be
    *  read/written to or if there is any other low-level
    *  IO error
+   * @deprecated Use {@link #IndexWriter(Directory, Analyzer, MaxFieldLength)}
    */
   public IndexWriter(String path, Analyzer a, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -1035,7 +1040,7 @@ public class IndexWriter {
    *  IO error
    * @deprecated This constructor will be removed in the 3.0
    *  release, and call {@link #commit()} when needed.
-   *  Use {@link #IndexWriter(String,Analyzer,MaxFieldLength)} instead.
+   *  Use {@link #IndexWriter(Directory,Analyzer,MaxFieldLength)} instead.
    */
   public IndexWriter(String path, Analyzer a)
     throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -1063,6 +1068,8 @@ public class IndexWriter {
    * @throws IOException if the directory cannot be
    *  read/written to or if there is any other low-level
    *  IO error
+   * @deprecated Use {@link #IndexWriter(Directory,
+   * Analyzer, MaxFieldLength)}
    */
   public IndexWriter(File path, Analyzer a, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -1085,7 +1092,7 @@ public class IndexWriter {
    *  read/written to or if there is any other low-level
    *  IO error
    * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link #IndexWriter(File,Analyzer,MaxFieldLength)}
+   *  Use {@link #IndexWriter(Directory,Analyzer,MaxFieldLength)}
    *  instead, and call {@link #commit()} when needed.
    */
   public IndexWriter(File path, Analyzer a)
@@ -5367,6 +5374,7 @@ public class IndexWriter {
    * currently locked.
    * @param directory the directory to check for a lock
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link #isLocked(Directory)}
    */
   public static boolean isLocked(String directory) throws IOException {
     Directory dir = FSDirectory.getDirectory(directory);
