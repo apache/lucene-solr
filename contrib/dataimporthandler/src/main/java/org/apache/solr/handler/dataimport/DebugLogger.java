@@ -42,11 +42,11 @@ import java.util.Stack;
  * @version $Id$
  * @since solr 1.3
  */
-public class DebugLogger {
+class DebugLogger {
   private Stack<DebugInfo> debugStack;
 
   NamedList output;
-  SolrWriter writer;
+  private final SolrWriter writer;
 
   private static final String LINE = "---------------------------------------------";
 
@@ -55,7 +55,8 @@ public class DebugLogger {
 
   boolean enabled = true;
 
-  public DebugLogger() {
+  public DebugLogger(SolrWriter solrWriter) {
+    writer = solrWriter;
     output = new NamedList();
     debugStack = new Stack<DebugInfo>() {
 
@@ -69,10 +70,6 @@ public class DebugLogger {
     debugStack.push(new DebugInfo(null, -1, null));
     output = debugStack.peek().lst;
   }
-
-    public DebugLogger(SolrWriter solrWriter) {
-      writer = solrWriter;
-    }
 
     private DebugInfo peekStack() {
     return debugStack.isEmpty() ? null : debugStack.peek();
