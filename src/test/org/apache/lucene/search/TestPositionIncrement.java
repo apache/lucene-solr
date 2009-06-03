@@ -186,17 +186,9 @@ public class TestPositionIncrement extends LuceneTestCase {
     hits = searcher.search(q, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
-    // analyzer to introduce stopwords and increment gaps 
-    Analyzer stpa = new Analyzer() {
-      final WhitespaceAnalyzer a = new WhitespaceAnalyzer();
-      public TokenStream tokenStream(String fieldName, Reader reader) {
-        TokenStream ts = a.tokenStream(fieldName,reader);
-        return new StopFilter(ts,new String[]{"stop"});
-      }
-    };
-
     // should not find "1 2" because there is a gap of 1 in the index
-    QueryParser qp = new QueryParser("field",stpa);
+    QueryParser qp = new QueryParser("field",
+                                     new StopWhitespaceAnalyzer(false));
     q = (PhraseQuery) qp.parse("\"1 2\"");
     hits = searcher.search(q, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
@@ -212,22 +204,30 @@ public class TestPositionIncrement extends LuceneTestCase {
     hits = searcher.search(q, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
-    boolean dflt = StopFilter.getEnablePositionIncrementsDefault();
-    try {
-      // stop filter alone won't help, because query parser swallows the increments. 
-      qp.setEnablePositionIncrements(false);
-      StopFilter.setEnablePositionIncrementsDefault(true);
-      q = (PhraseQuery) qp.parse("\"1 stop 2\"");
-      hits = searcher.search(q, null, 1000).scoreDocs;
-      assertEquals(0, hits.length);
+    // stop filter alone won't help, because query parser swallows the increments. 
+    qp.setEnablePositionIncrements(false);
+    q = (PhraseQuery) qp.parse("\"1 stop 2\"");
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(0, hits.length);
       
-      // when both qp qnd stopFilter propagate increments, we should find the doc.
-      qp.setEnablePositionIncrements(true);
-      q = (PhraseQuery) qp.parse("\"1 stop 2\"");
-      hits = searcher.search(q, null, 1000).scoreDocs;
-      assertEquals(1, hits.length);
-    } finally {
-      StopFilter.setEnablePositionIncrementsDefault(dflt);
+    // when both qp qnd stopFilter propagate increments, we should find the doc.
+    qp = new QueryParser("field",
+                         new StopWhitespaceAnalyzer(true));
+    qp.setEnablePositionIncrements(true);
+    q = (PhraseQuery) qp.parse("\"1 stop 2\"");
+    hits = searcher.search(q, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
+  }
+
+  private static class StopWhitespaceAnalyzer extends Analyzer {
+    boolean enablePositionIncrements;
+    final WhitespaceAnalyzer a = new WhitespaceAnalyzer();
+    public StopWhitespaceAnalyzer(boolean enablePositionIncrements) {
+      this.enablePositionIncrements = enablePositionIncrements;
+    }
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      TokenStream ts = a.tokenStream(fieldName,reader);
+      return new StopFilter(enablePositionIncrements, ts, new String[]{"stop"});
     }
   }
   

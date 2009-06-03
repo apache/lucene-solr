@@ -169,6 +169,11 @@ API Changes
     Instead, when sorting by field, the application should explicitly
     state the type of the field.  (Mike McCandless)
 
+17. LUCENE-1660: StopFilter, StandardAnalyzer, StopAnalyzer now
+    require up front specification of enablePositionIncrement (Mike
+    McCandless)
+
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()

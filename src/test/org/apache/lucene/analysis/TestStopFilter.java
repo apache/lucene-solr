@@ -36,7 +36,7 @@ public class TestStopFilter extends LuceneTestCase {
   public void testExactCase() throws IOException {
     StringReader reader = new StringReader("Now is The Time");
     String[] stopWords = new String[] { "is", "the", "Time" };
-    TokenStream stream = new StopFilter(new WhitespaceTokenizer(reader), stopWords);
+    TokenStream stream = new StopFilter(false, new WhitespaceTokenizer(reader), stopWords);
     final TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
     assertTrue(stream.incrementToken());
     assertEquals("Now", termAtt.term());
@@ -48,7 +48,7 @@ public class TestStopFilter extends LuceneTestCase {
   public void testIgnoreCase() throws IOException {
     StringReader reader = new StringReader("Now is The Time");
     String[] stopWords = new String[] { "is", "the", "Time" };
-    TokenStream stream = new StopFilter(new WhitespaceTokenizer(reader), stopWords, true);
+    TokenStream stream = new StopFilter(false, new WhitespaceTokenizer(reader), stopWords, true);
     final TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
     assertTrue(stream.incrementToken());
     assertEquals("Now", termAtt.term());
@@ -59,7 +59,7 @@ public class TestStopFilter extends LuceneTestCase {
     StringReader reader = new StringReader("Now is The Time");
     String[] stopWords = new String[] { "is", "the", "Time" };
     Set stopSet = StopFilter.makeStopSet(stopWords);
-    TokenStream stream = new StopFilter(new WhitespaceTokenizer(reader), stopSet);
+    TokenStream stream = new StopFilter(false, new WhitespaceTokenizer(reader), stopSet);
     final TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
     assertTrue(stream.incrementToken());
     assertEquals("Now", termAtt.term());
@@ -85,11 +85,11 @@ public class TestStopFilter extends LuceneTestCase {
     Set stopSet = StopFilter.makeStopSet(stopWords);
     // with increments
     StringReader reader = new StringReader(sb.toString());
-    StopFilter stpf = new StopFilter(new WhitespaceTokenizer(reader), stopSet);
+    StopFilter stpf = new StopFilter(false, new WhitespaceTokenizer(reader), stopSet);
     doTestStopPositons(stpf,true);
     // without increments
     reader = new StringReader(sb.toString());
-    stpf = new StopFilter(new WhitespaceTokenizer(reader), stopSet);
+    stpf = new StopFilter(false, new WhitespaceTokenizer(reader), stopSet);
     doTestStopPositons(stpf,false);
     // with increments, concatenating two stop filters
     ArrayList a0 = new ArrayList();
@@ -108,9 +108,9 @@ public class TestStopFilter extends LuceneTestCase {
     Set stopSet0 = StopFilter.makeStopSet(stopWords0);
     Set stopSet1 = StopFilter.makeStopSet(stopWords1);
     reader = new StringReader(sb.toString());
-    StopFilter stpf0 = new StopFilter(new WhitespaceTokenizer(reader), stopSet0); // first part of the set
+    StopFilter stpf0 = new StopFilter(false, new WhitespaceTokenizer(reader), stopSet0); // first part of the set
     stpf0.setEnablePositionIncrements(true);
-    StopFilter stpf01 = new StopFilter(stpf0, stopSet1); // two stop filters concatenated!
+    StopFilter stpf01 = new StopFilter(false, stpf0, stopSet1); // two stop filters concatenated!
     doTestStopPositons(stpf01,true);
   }
   

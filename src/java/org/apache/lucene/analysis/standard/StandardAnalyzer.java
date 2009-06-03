@@ -44,6 +44,10 @@ public class StandardAnalyzer extends Analyzer {
   private boolean replaceInvalidAcronym = defaultReplaceInvalidAcronym;
 
   private static boolean defaultReplaceInvalidAcronym;
+  private boolean enableStopPositionIncrements;
+
+  // @deprecated
+  private boolean useDefaultStopPositionIncrements;
 
   // Default to true (fixed the bug), unless the system prop is set
   static {
@@ -88,33 +92,89 @@ public class StandardAnalyzer extends Analyzer {
   useful for searching. */
   public static final String[] STOP_WORDS = StopAnalyzer.ENGLISH_STOP_WORDS;
 
-  /** Builds an analyzer with the default stop words ({@link #STOP_WORDS}). */
+  /** Builds an analyzer with the default stop words ({@link
+   * #STOP_WORDS}).
+   * @deprecated Use {@link #StandardAnalyzer(boolean, String[])},
+   * passing in null for the stop words, instead */
   public StandardAnalyzer() {
     this(STOP_WORDS);
   }
 
-  /** Builds an analyzer with the given stop words. */
+  /** Builds an analyzer with the given stop words.
+   * @deprecated Use {@link #StandardAnalyzer(boolean, Set)}
+   * instead */
   public StandardAnalyzer(Set stopWords) {
     stopSet = stopWords;
+    useDefaultStopPositionIncrements = true;
   }
 
-  /** Builds an analyzer with the given stop words. */
+  /** Builds an analyzer with the given stop words.
+   * @param enableStopPositionIncrements See {@link
+   * StopFilter#setEnablePositionIncrements}
+   * @param stopWords stop words */
+  public StandardAnalyzer(boolean enableStopPositionIncrements, Set stopWords) {
+    stopSet = stopWords;
+    this.enableStopPositionIncrements = enableStopPositionIncrements;
+  }
+
+  /** Builds an analyzer with the given stop words.
+   * @deprecated Use {@link #StandardAnalyzer(boolean,
+   * String[])} instead */
   public StandardAnalyzer(String[] stopWords) {
+    if (stopWords == null) {
+      stopWords = STOP_WORDS;
+    }
     stopSet = StopFilter.makeStopSet(stopWords);
+    useDefaultStopPositionIncrements = true;
+  }
+
+  /** Builds an analyzer with the given stop words.
+   * @param enableStopPositionIncrements See {@link
+   * StopFilter#setEnablePositionIncrements}
+   * @param stopWords Array of stop words */
+  public StandardAnalyzer(boolean enableStopPositionIncrements, String[] stopWords) {
+    stopSet = StopFilter.makeStopSet(stopWords);
+    this.enableStopPositionIncrements = enableStopPositionIncrements;
   }
 
   /** Builds an analyzer with the stop words from the given file.
    * @see WordlistLoader#getWordSet(File)
+   * @deprecated Use {@link #StandardAnalyzer(boolean, File)}
+   * instead
    */
   public StandardAnalyzer(File stopwords) throws IOException {
     stopSet = WordlistLoader.getWordSet(stopwords);
+    useDefaultStopPositionIncrements = true;
+  }
+
+  /** Builds an analyzer with the stop words from the given file.
+   * @see WordlistLoader#getWordSet(File)
+   * @param enableStopPositionIncrements See {@link
+   * StopFilter#setEnablePositionIncrements}
+   * @param stopwords File to read stop words from */
+  public StandardAnalyzer(boolean enableStopPositionIncrements, File stopwords) throws IOException {
+    stopSet = WordlistLoader.getWordSet(stopwords);
+    this.enableStopPositionIncrements = enableStopPositionIncrements;
   }
 
   /** Builds an analyzer with the stop words from the given reader.
    * @see WordlistLoader#getWordSet(Reader)
+   * @deprecated Use {@link #StandardAnalyzer(boolean, Reader)}
+   * instead
    */
   public StandardAnalyzer(Reader stopwords) throws IOException {
     stopSet = WordlistLoader.getWordSet(stopwords);
+    useDefaultStopPositionIncrements = true;
+  }
+
+  /** Builds an analyzer with the stop words from the given reader.
+   * @see WordlistLoader#getWordSet(Reader)
+   * @param enableStopPositionIncrements See {@link
+   * StopFilter#setEnablePositionIncrements}
+   * @param stopwords Reader to read stop words from */
+  public StandardAnalyzer(boolean enableStopPositionIncrements, Reader stopwords) throws IOException {
+    stopSet = WordlistLoader.getWordSet(stopwords);
+    this.enableStopPositionIncrements = enableStopPositionIncrements;
   }
 
   /**
@@ -128,6 +188,7 @@ public class StandardAnalyzer extends Analyzer {
   public StandardAnalyzer(boolean replaceInvalidAcronym) {
     this(STOP_WORDS);
     this.replaceInvalidAcronym = replaceInvalidAcronym;
+    useDefaultStopPositionIncrements = true;
   }
 
   /**
@@ -141,6 +202,7 @@ public class StandardAnalyzer extends Analyzer {
   public StandardAnalyzer(Reader stopwords, boolean replaceInvalidAcronym) throws IOException{
     this(stopwords);
     this.replaceInvalidAcronym = replaceInvalidAcronym;
+    useDefaultStopPositionIncrements = true;
   }
 
   /**
@@ -154,6 +216,7 @@ public class StandardAnalyzer extends Analyzer {
   public StandardAnalyzer(File stopwords, boolean replaceInvalidAcronym) throws IOException{
     this(stopwords);
     this.replaceInvalidAcronym = replaceInvalidAcronym;
+    useDefaultStopPositionIncrements = true;
   }
 
   /**
@@ -168,6 +231,7 @@ public class StandardAnalyzer extends Analyzer {
   public StandardAnalyzer(String [] stopwords, boolean replaceInvalidAcronym) throws IOException{
     this(stopwords);
     this.replaceInvalidAcronym = replaceInvalidAcronym;
+    useDefaultStopPositionIncrements = true;
   }
 
   /**
@@ -181,6 +245,7 @@ public class StandardAnalyzer extends Analyzer {
   public StandardAnalyzer(Set stopwords, boolean replaceInvalidAcronym) throws IOException{
     this(stopwords);
     this.replaceInvalidAcronym = replaceInvalidAcronym;
+    useDefaultStopPositionIncrements = true;
   }
 
   /** Constructs a {@link StandardTokenizer} filtered by a {@link
@@ -190,7 +255,11 @@ public class StandardAnalyzer extends Analyzer {
     tokenStream.setMaxTokenLength(maxTokenLength);
     TokenStream result = new StandardFilter(tokenStream);
     result = new LowerCaseFilter(result);
-    result = new StopFilter(result, stopSet);
+    if (useDefaultStopPositionIncrements) {
+      result = new StopFilter(result, stopSet);
+    } else {
+      result = new StopFilter(enableStopPositionIncrements, result, stopSet);
+    }
     return result;
   }
 
@@ -229,7 +298,11 @@ public class StandardAnalyzer extends Analyzer {
       streams.tokenStream = new StandardTokenizer(reader);
       streams.filteredTokenStream = new StandardFilter(streams.tokenStream);
       streams.filteredTokenStream = new LowerCaseFilter(streams.filteredTokenStream);
-      streams.filteredTokenStream = new StopFilter(streams.filteredTokenStream, stopSet);
+      if (useDefaultStopPositionIncrements) {
+        streams.filteredTokenStream = new StopFilter(streams.filteredTokenStream, stopSet);
+      } else {
+        streams.filteredTokenStream = new StopFilter(enableStopPositionIncrements, streams.filteredTokenStream, stopSet);
+      }
     } else {
       streams.tokenStream.reset(reader);
     }
