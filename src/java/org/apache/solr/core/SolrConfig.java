@@ -141,8 +141,10 @@ public class SolrConfig extends Config {
       conf = new CacheConfig(FastLRUCache.class, args, null);
     }
     fieldValueCacheConfig = conf;
+    unlockOnStartup = getBool("mainIndex/unlockOnStartup", false);
+    useColdSearcher = getBool("query/useColdSearcher",false);
 
-    userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache");     
+    userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache");
 
     org.apache.solr.search.SolrIndexSearcher.initRegenerators(this);
 
@@ -160,6 +162,8 @@ public class SolrConfig extends Config {
     } else {
       jmxConfig = new JmxConfiguration(false, null, null);
     }
+     maxWarmingSearchers = getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
+
     
     Config.log.info("Loaded SolrConfig: " + name);
     
@@ -190,7 +194,11 @@ public class SolrConfig extends Config {
   // default & main index configurations
   public final SolrIndexConfig defaultIndexConfig;
   public final SolrIndexConfig mainIndexConfig;
-  
+
+  public final int maxWarmingSearchers;
+  public final boolean unlockOnStartup;
+  public final boolean useColdSearcher;
+
   //JMX configuration
   public final JmxConfiguration jmxConfig;
   

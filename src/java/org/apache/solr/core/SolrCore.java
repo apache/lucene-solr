@@ -360,7 +360,7 @@ public final class SolrCore implements SolrInfoMBean {
       synchronized (SolrCore.class) {
         firstTime = dirs.add(dirFile.getCanonicalPath());
       }
-      boolean removeLocks = solrConfig.getBool("mainIndex/unlockOnStartup", false);
+      boolean removeLocks = solrConfig.unlockOnStartup;
 
       initDirectoryFactory();
 
@@ -509,7 +509,7 @@ public final class SolrCore implements SolrInfoMBean {
     this.dataDir = dataDir;
     this.solrConfig = config;
     this.startTime = System.currentTimeMillis();
-    this.maxWarmingSearchers = config.getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
+    this.maxWarmingSearchers = config.maxWarmingSearchers;
 
     booleanQueryMaxClauseCount();
   
@@ -1104,7 +1104,7 @@ public final class SolrCore implements SolrInfoMBean {
         if (_searcher == null) {
           // if there isn't a current searcher then we may
           // want to register this one before warming is complete instead of waiting.
-          if (solrConfig.getBool("query/useColdSearcher",false)) {
+          if (solrConfig.useColdSearcher) {
             registerSearcher(newSearchHolder);
             decrementOnDeckCount[0]=false;
             alreadyRegistered=true;
