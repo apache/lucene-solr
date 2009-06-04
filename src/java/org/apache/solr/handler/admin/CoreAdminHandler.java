@@ -316,6 +316,10 @@ public class CoreAdminHandler extends RequestHandlerBase {
     SolrParams params = req.getParams();
     String cname = params.get(CoreAdminParams.CORE);
     SolrCore core = coreContainer.remove(cname);
+    if(core == null){
+       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "No such core exists '"+cname+"'");
+    }
     core.close();
     return coreContainer.isPersistent();
 
