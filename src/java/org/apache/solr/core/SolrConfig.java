@@ -116,6 +116,7 @@ public class SolrConfig extends Config {
     super(loader, name, is, "/config/");
     defaultIndexConfig = new SolrIndexConfig(this, null, null);
     mainIndexConfig = new SolrIndexConfig(this, "mainIndex", defaultIndexConfig);
+    reopenReaders = getBool("mainIndex/reopenReaders", true);
     
     booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", BooleanQuery.getMaxClauseCount());
     filtOptEnabled = getBool("query/boolTofilterOptimizer/@enabled", false);
@@ -188,6 +189,7 @@ public class SolrConfig extends Config {
   public final int queryResultWindowSize;
   public final int queryResultMaxDocsCached;
   public final boolean enableLazyFieldLoading;
+  public final boolean reopenReaders;
   // DocSet
   public final float hashSetInverseLoadFactor;
   public final int hashDocSetMaxSize;

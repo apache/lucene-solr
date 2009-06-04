@@ -113,7 +113,12 @@
          This is not needed if lock type is 'none' or 'single'
      -->
     <unlockOnStartup>false</unlockOnStartup>
-
+    
+    <!-- If true, IndexReaders will be reopened (often more efficient) instead
+         of closed and then opened.
+    -->
+    <reopenReaders>true</reopenReaders>
+	  
     <!--
         Custom deletion policies can specified here. The class must
         implement org.apache.lucene.index.IndexDeletionPolicy.
