@@ -19,6 +19,8 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
+import java.util.Arrays;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
@@ -110,17 +112,17 @@ public class CoreAdminRequest extends SolrRequest
   }
   
   public static class MergeIndexes extends CoreAdminRequest {
-    protected String indexDirs;
+    protected List<String> indexDirs;
 
     public MergeIndexes() {
       action = CoreAdminAction.MERGEINDEXES;
     }
 
-    public void setIndexDirs(String indexDirs) {
+    public void setIndexDirs(List<String> indexDirs) {
       this.indexDirs = indexDirs;
     }
 
-    public String getIndexDirs() {
+    public List<String> getIndexDirs() {
       return indexDirs;
     }
 
@@ -132,7 +134,11 @@ public class CoreAdminRequest extends SolrRequest
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, action.toString());
       params.set(CoreAdminParams.CORE, core);
-      params.set(CoreAdminParams.INDEX_DIRS, indexDirs);
+      if (indexDirs != null)  {
+        for (String indexDir : indexDirs) {
+          params.set(CoreAdminParams.INDEX_DIR, indexDir);
+        }
+      }
       return params;
     }
   }
@@ -281,17 +287,7 @@ public class CoreAdminRequest extends SolrRequest
       IOException {
     CoreAdminRequest.MergeIndexes req = new CoreAdminRequest.MergeIndexes();
     req.setCoreName(name);
-    String p = null;
-    if (indexDirs.length == 1) {
-      p = indexDirs[0];
-    } else if (indexDirs.length > 1) {
-      StringBuilder s = new StringBuilder(indexDirs[0]);
-      for (int i = 1; i < indexDirs.length; i++) {
-        s.append(",").append(indexDirs[i]);
-      }
-      p = s.toString();
-    }
-    req.setIndexDirs(p);
+    req.setIndexDirs(Arrays.asList(indexDirs));
     return req.process(server);
   }
 }

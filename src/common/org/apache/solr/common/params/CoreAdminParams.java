@@ -55,7 +55,7 @@ public interface CoreAdminParams
   
   /** If you merge indexes, what are the index directories.
    * The directories are separated by ",". */
-  public final static String INDEX_DIRS = "indexDirs";
+  public final static String INDEX_DIR = "indexDir";
 
   public enum CoreAdminAction {
     STATUS,  

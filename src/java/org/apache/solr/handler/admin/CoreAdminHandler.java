@@ -31,6 +31,7 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.update.MergeIndexesCommand;
@@ -177,8 +178,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       try {
         doPersist = coreContainer.isPersistent();
 
-        String p = required.get(CoreAdminParams.INDEX_DIRS);
-        String[] dirNames = p.split(",");
+        String[] dirNames = required.getParams(CoreAdminParams.INDEX_DIR);
 
         DirectoryFactory dirFactory = core.getDirectoryFactory();
         Directory[] dirs = new Directory[dirNames.length];
@@ -188,8 +188,9 @@ public class CoreAdminHandler extends RequestHandlerBase {
 
         UpdateRequestProcessorChain processorChain =
                 core.getUpdateProcessingChain(params.get(UpdateParams.UPDATE_PROCESSOR));
+        SolrQueryRequest wrappedReq = new LocalSolrQueryRequest(core, req.getParams());
         UpdateRequestProcessor processor =
-                processorChain.createProcessor(req, rsp);
+                processorChain.createProcessor(wrappedReq, rsp);
         processor.processMergeIndexes(new MergeIndexesCommand(dirs));
       } finally {
         core.close();
