@@ -369,7 +369,8 @@ public class  FacetComponent extends SearchComponent
       facet_fields.add(dff.getKey(), fieldCounts);
 
       ShardFacetCount[] counts;
-      if (dff.sort.equals(FacetParams.FACET_SORT_COUNT)) {
+      boolean countSorted = dff.sort.equals(FacetParams.FACET_SORT_COUNT);
+      if (countSorted) {
         counts = dff.countSorted;
         if (counts == null || dff.needRefinements) {
           counts = dff.getCountSorted();
@@ -382,7 +383,10 @@ public class  FacetComponent extends SearchComponent
 
       int end = dff.limit < 0 ? counts.length : Math.min(dff.offset + dff.limit, counts.length);
       for (int i=dff.offset; i<end; i++) {
-        if (counts[i].count < dff.minCount) break;
+        if (counts[i].count < dff.minCount) {
+          if (countSorted) break;  // if sorted by count, we can break out of loop early
+          else continue;
+        }
         fieldCounts.add(counts[i].name, num(counts[i].count));
       }
 
