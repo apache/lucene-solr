@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import org.apache.commons.httpclient.*;
+import org.apache.commons.httpclient.auth.AuthScope;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexCommit;
@@ -103,6 +104,8 @@ public class SnapPuller {
   private static HttpClient client;
   // HttpClient for this instance if connectionTimeout or readTimeout has been specified
   private final HttpClient myHttpClient;
+  private static final String HTTP_BASIC_AUTH_USER = "httpBasicAuthUser";
+  private static final String HTTP_BASIC_AUTH_PASSWORD = "httpBasicAuthPassword";
 
   private static synchronized HttpClient createHttpClient(String connTimeout, String readTimeout) {
     if (connTimeout == null && readTimeout == null && client != null)  return client;
@@ -132,7 +135,13 @@ public class SnapPuller {
     useExternal = EXTERNAL.equals(compress);
     String connTimeout = (String) initArgs.get(HTTP_CONN_TIMEOUT);
     String readTimeout = (String) initArgs.get(HTTP_READ_TIMEOUT);
+    String httpBasicAuthUser = (String) initArgs.get(HTTP_BASIC_AUTH_USER);
+    String httpBasicAuthPassword = (String) initArgs.get(HTTP_BASIC_AUTH_PASSWORD);
     myHttpClient = createHttpClient(connTimeout, readTimeout);
+    if (httpBasicAuthUser != null && httpBasicAuthPassword != null) {
+      myHttpClient.getState().setCredentials(AuthScope.ANY,
+              new UsernamePasswordCredentials(httpBasicAuthUser, httpBasicAuthPassword));
+    }
     if (pollInterval != null && pollInterval > 0) {
       startExecutorService();
     } else {

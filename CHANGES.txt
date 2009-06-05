@@ -232,6 +232,9 @@ New Features
 
 58. SOLR-1204: Enhance SpellingQueryConverter to handle UTF-8 instead of ASCII only (Michael Ludwig via shalin)
 
+59. SOLR-1189: Support providing username and password for basic HTTP authentication in Java replication
+    (Matthew Gregg, shalin)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the
