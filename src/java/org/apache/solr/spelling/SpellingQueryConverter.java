@@ -37,7 +37,7 @@ import org.apache.lucene.analysis.TokenStream;
  **/
 public class SpellingQueryConverter extends QueryConverter  {
 
-  protected Pattern QUERY_REGEX = Pattern.compile("(?:(?!(\\w+:|\\d+)))\\w+");
+  protected Pattern QUERY_REGEX = Pattern.compile("(?:(?!(\\p{L}+:|\\d+)))\\p{L}+");
 
   /**
    * Converts the original query string to a collection of Lucene Tokens.
