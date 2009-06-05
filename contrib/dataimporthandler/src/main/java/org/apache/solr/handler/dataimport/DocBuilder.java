@@ -237,7 +237,7 @@ public class DocBuilder {
     addStatusMessage("Identifying Delta");
     LOG.info("Starting delta collection.");
     Set<Map<String, Object>> deletedKeys = new HashSet<Map<String, Object>>();
-    Set<Map<String, Object>> allPks = collectDelta(root, null, resolver, deletedKeys);
+    Set<Map<String, Object>> allPks = collectDelta(root, resolver, deletedKeys);
     if (stop.get())
       return;
     addStatusMessage("Deltas Obtained");
@@ -565,12 +565,16 @@ public class DocBuilder {
    * @return an iterator to the list of keys for which Solr documents should be updated.
    */
   @SuppressWarnings("unchecked")
-  public Set<Map<String, Object>> collectDelta(DataConfig.Entity entity,
-                                               DataConfig.Entity parentEntity, VariableResolverImpl resolver,
+  public Set<Map<String, Object>> collectDelta(DataConfig.Entity entity, VariableResolverImpl resolver,
                                                Set<Map<String, Object>> deletedRows) {
     //someone called abort
     if (stop.get())
       return new HashSet();
+
+    EntityProcessor entityProcessor = getEntityProcessor(entity);
+    ContextImpl context1 = new ContextImpl(entity, resolver, null, Context.FIND_DELTA, session, null, this);
+    resolver.context = context1;
+    entityProcessor.init(context1);
 
     Set<Map<String, Object>> myModifiedPks = new HashSet<Map<String, Object>>();
 
@@ -578,21 +582,16 @@ public class DocBuilder {
 
       for (DataConfig.Entity entity1 : entity.entities) {
         //this ensures that we start from the leaf nodes
-        myModifiedPks.addAll(collectDelta(entity1, entity, resolver, deletedRows));
+        myModifiedPks.addAll(collectDelta(entity1, resolver, deletedRows));
         //someone called abort
         if (stop.get())
           return new HashSet();
       }
 
     }
-    // identifying the modified rows for this entities
+    // identifying the modified rows for this entity
 
     Set<Map<String, Object>> deltaSet = new HashSet<Map<String, Object>>();
-    resolver.addNamespace(null, (Map) entity.allAttributes);
-    EntityProcessor entityProcessor = getEntityProcessor(entity);
-    ContextImpl context1 = new ContextImpl(entity, resolver, null, Context.FIND_DELTA, session, null, this);
-    resolver.context = context1;
-    entityProcessor.init(context1);
     LOG.info("Running ModifiedRowKey() for Entity: " + entity.name);
     //get the modified rows in this entity
     while (true) {
@@ -638,23 +637,19 @@ public class DocBuilder {
     myModifiedPks.addAll(deltaSet);
     Set<Map<String, Object>> parentKeyList = new HashSet<Map<String, Object>>();
     //all that we have captured is useless (in a sub-entity) if no rows in the parent is modified because of these
-    //so propogate up the changes in the chain
-    if (parentEntity != null && parentEntity.isDocRoot) {
-      EntityProcessor parentEntityProcessor = getEntityProcessor(parentEntity);
-      ContextImpl context2 = new ContextImpl(parentEntity, resolver, null, Context.FIND_DELTA, session, null, this);
-      resolver.context = context2;
-      parentEntityProcessor.init(context2);
+    //propogate up the changes in the chain
+    if (entity.parentEntity != null) {
       // identifying deleted rows with deltas
 
       for (Map<String, Object> row : myModifiedPks) {
-        getModifiedParentRows(resolver.addNamespace(entity.name, row), entity.name, parentEntityProcessor, parentKeyList);
+        getModifiedParentRows(resolver.addNamespace(entity.name, row), entity.name, entityProcessor, parentKeyList);
         // check for abort
         if (stop.get())
           return new HashSet();
       }
       // running the same for deletedrows
       for (Map<String, Object> row : deletedSet) {
-        getModifiedParentRows(resolver.addNamespace(entity.name, row), entity.name, parentEntityProcessor, parentKeyList);
+        getModifiedParentRows(resolver.addNamespace(entity.name, row), entity.name, entityProcessor, parentKeyList);
         // check for abort
         if (stop.get())
           return new HashSet();
