@@ -54,7 +54,7 @@ public interface CoreAdminParams
   public final static String FILE = "file";
   
   /** If you merge indexes, what are the index directories.
-   * The directories are separated by ",". */
+   * The directories are specified by multiple indexDir parameters. */
   public final static String INDEX_DIR = "indexDir";
 
   public enum CoreAdminAction {
