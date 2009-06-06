@@ -18,9 +18,7 @@
 package org.apache.solr.core;
 
 import java.net.URL;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -38,7 +36,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
-import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Node;
@@ -118,11 +115,11 @@ final class RequestHandlers {
    * This function should <b>only</b> be called from the SolrCore constructor.  It is
    * not intended as a public API.
    * 
-   * While the normal runtime registration contract is that handlers MUST be initialized 
+   * While the normal runtime registration contract is that handlers MUST be initialized
    * before they are registered, this function does not do that exactly.
-   * 
-   * This function registers all handlers first and then calls init() for each one.  
-   * 
+   *
+   * This function registers all handlers first and then calls init() for each one.
+   *
    * This is OK because this function is only called at startup and there is no chance that
    * a handler could be asked to handle a request before it is initialized.
    * 
@@ -131,52 +128,44 @@ final class RequestHandlers {
    * 
    * Handlers will be registered and initialized in the order they appear in solrconfig.xml
    */
-  void initHandlersFromConfig( final Config config )  
-  {
-    final RequestHandlers handlers = this;
-    AbstractPluginLoader<SolrRequestHandler> loader = 
-      new AbstractPluginLoader<SolrRequestHandler>( "[solrconfig.xml] requestHandler", true, true )
-    {
-      @Override
-      protected SolrRequestHandler create( ResourceLoader config, String name, String className, Node node ) throws Exception
-      {    
-        String startup = DOMUtil.getAttr( node, "startup" );
-        if( startup != null ) {
-          if( "lazy".equals( startup ) ) {
-            log.info("adding lazy requestHandler: " + className );
-            NamedList args = DOMUtil.childNodesToNamedList(node);
-            return new LazyRequestHandlerWrapper( core, className, args );
-          }
-          else {
-            throw new Exception( "Unknown startup value: '"+startup+"' for: "+className );
-          }
-        }
-        return super.create( config, name, className, node );
-      }
 
-      @Override
-      protected SolrRequestHandler register(String name, SolrRequestHandler plugin) throws Exception {
-        return handlers.register( name, plugin );
-      }
-      
-      @Override
-      protected void init(SolrRequestHandler plugin, Node node ) throws Exception {
-        plugin.init( DOMUtil.childNodesToNamedList(node) );
-      }      
-    };
-    
-    NodeList nodes = (NodeList)config.evaluate("requestHandler", XPathConstants.NODESET);
-    
-    // Load the handlers and get the default one
-    SolrRequestHandler defaultHandler = loader.load( config.getResourceLoader(), nodes );
-    if( defaultHandler == null ) {
-      defaultHandler = get(RequestHandlers.DEFAULT_HANDLER_NAME);
-      if( defaultHandler == null ) {
-        defaultHandler = new StandardRequestHandler();
-        register(RequestHandlers.DEFAULT_HANDLER_NAME, defaultHandler);
+  void initHandlersFromConfig(SolrConfig config ){
+    Map<SolrConfig.PluginInfo,SolrRequestHandler> handlers = new HashMap<SolrConfig.PluginInfo,SolrRequestHandler>();
+    for (SolrConfig.PluginInfo info : config.reqHandlerInfo) {
+      try {
+        SolrRequestHandler requestHandler;
+        if( info.startup != null ) {
+          if( "lazy".equals(info.startup ) ) {
+            log.info("adding lazy requestHandler: " + info.className);
+            requestHandler = new LazyRequestHandlerWrapper( core, info.className, info.initArgs );
+          } else {
+            throw new Exception( "Unknown startup value: '"+info.startup+"' for: "+info.className );
+          }
+        } else {
+          requestHandler = (SolrRequestHandler) config.getResourceLoader().newInstance(info.className);
+        }
+        handlers.put(info,requestHandler);
+        requestHandler.init(info.initArgs);
+        SolrRequestHandler old = register(info.name, requestHandler);
+        if(old != null) {
+          log.warn("Multiple requestHandler registered to the same name: " + info.name + " ignoring: " + old.getClass().getName());
+        }
+        if(info.isDefault){
+          old = register("",requestHandler);
+          if(old != null)
+            log.warn("Multiple default requestHandler registered" + " ignoring: " + old.getClass().getName()); 
+        }
+        log.info("created "+info.name+": " + info.className);
+      } catch (Exception e) {
+          SolrConfig.severeErrors.add( e );
+          SolrException.logOnce(log,null,e);
       }
     }
-    register("", defaultHandler);
+    for (Map.Entry<SolrConfig.PluginInfo,SolrRequestHandler> entry : handlers.entrySet()) {
+      entry.getValue().init(entry.getKey().initArgs);
+    }
+
+    if(get("") == null) register("", get(DEFAULT_HANDLER_NAME));
   }
     
 

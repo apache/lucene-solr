@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -31,9 +32,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPathConstants;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -164,12 +167,21 @@ public class SolrConfig extends Config {
       jmxConfig = new JmxConfiguration(false, null, null);
     }
      maxWarmingSearchers = getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
+     reqHandlerInfo = loadRequestHandlerInfo();
 
-    
     Config.log.info("Loaded SolrConfig: " + name);
     
     // TODO -- at solr 2.0. this should go away
     config = this;
+  }
+
+  private List<PluginInfo> loadRequestHandlerInfo() {
+    ArrayList<PluginInfo> result = new ArrayList<PluginInfo>();
+    NodeList nodes = (NodeList) evaluate("requestHandler", XPathConstants.NODESET);
+     for (int i=0; i<nodes.getLength(); i++) {
+       result.add(new PluginInfo(nodes.item(i) ,"[solrconfig.xml] requestHandler","name","class"));
+     }
+    return Collections.unmodifiableList(result) ;
   }
 
   /* The set of materialized parameters: */
@@ -196,11 +208,12 @@ public class SolrConfig extends Config {
   // default & main index configurations
   public final SolrIndexConfig defaultIndexConfig;
   public final SolrIndexConfig mainIndexConfig;
+  public final List<PluginInfo> reqHandlerInfo;
 
   public final int maxWarmingSearchers;
   public final boolean unlockOnStartup;
   public final boolean useColdSearcher;
-
+  
   //JMX configuration
   public final JmxConfiguration jmxConfig;
   
@@ -331,5 +344,37 @@ public class SolrConfig extends Config {
     /** null if no max age limitation */
     public Long getMaxAge() { return maxAge; }
     public LastModFrom getLastModFrom() { return lastModFrom; }
+  }
+
+  public static class PluginInfo {
+    final String startup, name, className, event;
+    final boolean isDefault;    
+    final NamedList initArgs;
+
+    public PluginInfo(String startup, String name, String className,
+                      String event, boolean isdefault, NamedList initArgs) {
+      this.startup = startup;
+      this.name = name;
+      this.className = className;
+      this.event = event;
+      isDefault = isdefault;
+      this.initArgs = initArgs;
+    }
+
+
+    public PluginInfo(Node node, String err, String... requiredFields) {
+      List<String> l = requiredFields == null? Collections.EMPTY_LIST: Arrays.asList(requiredFields);
+      startup = getVal( node, "startup",l,err);
+      name = getVal(node, "name", l,err);
+      className = getVal(node, "class",l,err);
+      event = getVal(node, "event",l,err);
+      isDefault = Boolean.parseBoolean(getVal(node,"default",l,err));
+      initArgs = DOMUtil.childNodesToNamedList(node);
+  }
+
+    private String getVal(Node node, String name, List<String> required, String err) {
+      return DOMUtil.getAttr(node, name, required.contains(name) ? err : null);
+    }
+
   }
 }
