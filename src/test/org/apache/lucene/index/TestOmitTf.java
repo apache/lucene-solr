@@ -90,8 +90,7 @@ public class TestOmitTf extends LuceneTestCase {
     writer.close();
     _TestUtil.checkIndex(ram);
 
-    // only one segment in the index, so we can cast to SegmentReader
-    SegmentReader reader = (SegmentReader) IndexReader.open(ram);
+    SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
     FieldInfos fi = reader.fieldInfos();
     assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f1").omitTermFreqAndPositions);
     assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f2").omitTermFreqAndPositions);
@@ -143,8 +142,7 @@ public class TestOmitTf extends LuceneTestCase {
 
     _TestUtil.checkIndex(ram);
 
-    // only one segment in the index, so we can cast to SegmentReader
-    SegmentReader reader = (SegmentReader) IndexReader.open(ram);
+    SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
     FieldInfos fi = reader.fieldInfos();
     assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f1").omitTermFreqAndPositions);
     assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f2").omitTermFreqAndPositions);
@@ -188,8 +186,7 @@ public class TestOmitTf extends LuceneTestCase {
 
     _TestUtil.checkIndex(ram);
 
-    // only one segment in the index, so we can cast to SegmentReader
-    SegmentReader reader = (SegmentReader) IndexReader.open(ram);
+    SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
     FieldInfos fi = reader.fieldInfos();
     assertTrue("OmitTermFreqAndPositions field bit should not be set.", !fi.fieldInfo("f1").omitTermFreqAndPositions);
     assertTrue("OmitTermFreqAndPositions field bit should be set.", fi.fieldInfo("f2").omitTermFreqAndPositions);

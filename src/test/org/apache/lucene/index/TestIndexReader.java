@@ -1675,8 +1675,7 @@ public class TestIndexReader extends LuceneTestCase
     writer.close();
 
     // Open reader
-    IndexReader r = IndexReader.open(dir);
-    assertTrue(r instanceof SegmentReader);
+    IndexReader r = SegmentReader.getOnlySegmentReader(dir);
     final int[] ints = FieldCache.DEFAULT.getInts(r, "number");
     assertEquals(1, ints.length);
     assertEquals(17, ints[0]);
@@ -1685,7 +1684,6 @@ public class TestIndexReader extends LuceneTestCase
     IndexReader r2 = (IndexReader) r.clone();
     r.close();
     assertTrue(r2 != r);
-    assertTrue(r2 instanceof SegmentReader);
     final int[] ints2 = FieldCache.DEFAULT.getInts(r2, "number");
     r2.close();
 
@@ -1709,8 +1707,8 @@ public class TestIndexReader extends LuceneTestCase
 
     // Open reader1
     IndexReader r = IndexReader.open(dir);
-    assertTrue(r instanceof SegmentReader);
-    final int[] ints = FieldCache.DEFAULT.getInts(r, "number");
+    IndexReader r1 = SegmentReader.getOnlySegmentReader(r);
+    final int[] ints = FieldCache.DEFAULT.getInts(r1, "number");
     assertEquals(1, ints.length);
     assertEquals(17, ints[0]);
 
@@ -1719,11 +1717,9 @@ public class TestIndexReader extends LuceneTestCase
     writer.commit();
 
     // Reopen reader1 --> reader2
-    IndexReader r2 = (IndexReader) r.reopen();
+    IndexReader r2 = r.reopen();
     r.close();
-    assertTrue(r2 instanceof MultiSegmentReader);
     IndexReader sub0 = r2.getSequentialSubReaders()[0];
-    assertTrue(sub0 instanceof SegmentReader);
     final int[] ints2 = FieldCache.DEFAULT.getInts(sub0, "number");
     r2.close();
     assertTrue(ints == ints2);
@@ -1743,14 +1739,15 @@ public class TestIndexReader extends LuceneTestCase
 
     // Open reader1
     IndexReader r = IndexReader.open(dir);
-    assertTrue(r instanceof SegmentReader);
-    final int[] ints = FieldCache.DEFAULT.getInts(r, "number");
+    assertTrue(r instanceof DirectoryReader);
+    IndexReader r1 = SegmentReader.getOnlySegmentReader(r);
+    final int[] ints = FieldCache.DEFAULT.getInts(r1, "number");
     assertEquals(1, ints.length);
     assertEquals(17, ints[0]);
 
     // Reopen to readonly w/ no chnages
-    IndexReader r3 = (IndexReader) r.reopen(true);
-    assertTrue(r3 instanceof ReadOnlySegmentReader);
+    IndexReader r3 = r.reopen(true);
+    assertTrue(r3 instanceof ReadOnlyDirectoryReader);
     r3.close();
 
     // Add new segment
@@ -1758,9 +1755,9 @@ public class TestIndexReader extends LuceneTestCase
     writer.commit();
 
     // Reopen reader1 --> reader2
-    IndexReader r2 = (IndexReader) r.reopen(true);
+    IndexReader r2 = r.reopen(true);
     r.close();
-    assertTrue(r2 instanceof MultiSegmentReader);
+    assertTrue(r2 instanceof ReadOnlyDirectoryReader);
     IndexReader[] subs = r2.getSequentialSubReaders();
     final int[] ints2 = FieldCache.DEFAULT.getInts(subs[0], "number");
     r2.close();
@@ -1784,7 +1781,8 @@ public class TestIndexReader extends LuceneTestCase
     writer.commit();
 
     IndexReader r = IndexReader.open(dir);
-    assertEquals(36, r.getUniqueTermCount());
+    IndexReader r1 = SegmentReader.getOnlySegmentReader(r);
+    assertEquals(36, r1.getUniqueTermCount());
     writer.addDocument(doc);
     writer.commit();
     IndexReader r2 = r.reopen();

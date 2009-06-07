@@ -25,9 +25,9 @@ import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.index.MultiSegmentReader.MultiTermDocs;
-import org.apache.lucene.index.MultiSegmentReader.MultiTermEnum;
-import org.apache.lucene.index.MultiSegmentReader.MultiTermPositions;
+import org.apache.lucene.index.DirectoryReader.MultiTermDocs;
+import org.apache.lucene.index.DirectoryReader.MultiTermEnum;
+import org.apache.lucene.index.DirectoryReader.MultiTermPositions;
 import org.apache.lucene.search.DefaultSimilarity;
 
 /** An IndexReader which reads multiple indexes, appending their content.
@@ -268,7 +268,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   }
 
   private int readerIndex(int n) {    // find reader for doc n:
-    return MultiSegmentReader.readerIndex(n, this.starts, this.subReaders.length);
+    return DirectoryReader.readerIndex(n, this.starts, this.subReaders.length);
   }
   
   public boolean hasNorms(String field) throws IOException {
@@ -377,7 +377,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   
   public Collection getFieldNames (IndexReader.FieldOption fieldNames) {
     ensureOpen();
-    return MultiSegmentReader.getFieldNames(fieldNames, this.subReaders);
+    return DirectoryReader.getFieldNames(fieldNames, this.subReaders);
   }  
   
   /**

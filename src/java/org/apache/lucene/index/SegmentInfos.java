@@ -535,6 +535,16 @@ final class SegmentInfos extends Vector {
     }
 
     public Object run() throws CorruptIndexException, IOException {
+      return run(null);
+    }
+    
+    public Object run(IndexCommit commit) throws CorruptIndexException, IOException {
+      if (commit != null) {
+        if (directory != commit.getDirectory())
+          throw new IOException("the specified commit does not match the specified Directory");
+        return doBody(commit.getSegmentsFileName());
+      }
+
       String segmentFileName = null;
       long lastGen = -1;
       long gen = 0;

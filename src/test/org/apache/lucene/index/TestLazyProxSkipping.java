@@ -72,8 +72,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         writer.optimize();
         writer.close();
         
-        // the index is a single segment, thus IndexReader.open() returns an instance of SegmentReader
-        SegmentReader reader = (SegmentReader) IndexReader.open(directory);
+        SegmentReader reader = SegmentReader.getOnlySegmentReader(directory);
 
         // we decorate the proxStream with a wrapper class that allows to count the number of calls of seek()
         reader.proxStream = new SeeksCountingStream(reader.proxStream);

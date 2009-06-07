@@ -374,7 +374,7 @@ public abstract class IndexReader implements Cloneable {
   }
 
   private static IndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly) throws CorruptIndexException, IOException {
-    return DirectoryIndexReader.open(directory, closeDirectory, deletionPolicy, commit, readOnly);
+    return DirectoryReader.open(directory, closeDirectory, deletionPolicy, commit, readOnly);
   }
 
   /**
@@ -1296,7 +1296,7 @@ public abstract class IndexReader implements Cloneable {
    *  progress while this method is running, that commit
    *  may or may not be returned array.  */
   public static Collection listCommits(Directory dir) throws IOException {
-    return DirectoryIndexReader.listCommits(dir);
+    return DirectoryReader.listCommits(dir);
   }
 
   /** Expert: returns the sequential sub readers that this
@@ -1308,12 +1308,12 @@ public abstract class IndexReader implements Cloneable {
    *  reader is a null reader (for example a MultiReader
    *  that has no sub readers).
    *  <p>
-   *  NOTE: for a MultiSegmentReader, which is obtained by
-   *  {@link #open} when the index has more than one
-   *  segment, you should not use the sub-readers returned
-   *  by this method to make any changes (setNorm,
-   *  deleteDocument, etc.).  Doing so will likely lead to
-   *  index corruption.  Use the parent reader instead. */
+   *  NOTE: You should not try using sub-readers returned by
+   *  this method to make any changes (setNorm, deleteDocument,
+   *  etc.). While this might succeed for one composite reader
+   *  (like MultiReader), it will most likely lead to index
+   *  corruption for other readers (like DirectoryReader obtained
+   *  through {@link #open}. Use the parent reader directly. */
   public IndexReader[] getSequentialSubReaders() {
     return null;
   }

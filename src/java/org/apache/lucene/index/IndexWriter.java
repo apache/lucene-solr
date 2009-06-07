@@ -440,7 +440,7 @@ public class IndexWriter {
     // reader; in theory we could do similar retry logic,
     // just like we do when loading segments_N
     synchronized(this) {
-      return new ReadOnlyMultiSegmentReader(this, segmentInfos);
+      return new ReadOnlyDirectoryReader(this, segmentInfos);
     }
   }
 
@@ -616,7 +616,6 @@ public class IndexWriter {
         // synchronized
         // Returns a ref, which we xfer to readerMap:
         sr = SegmentReader.get(info, readBufferSize, doOpenStores);
-        sr.writer = IndexWriter.this;
         readerMap.put(info, sr);
       } else if (doOpenStores) {
         sr.openDocStores();

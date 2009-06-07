@@ -56,7 +56,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     writer.optimize();
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = SegmentReader.getOnlySegmentReader(dir);
     SegmentTermPositions tp = (SegmentTermPositions) reader.termPositions();
     tp.freqStream = new CountingStream(tp.freqStream);
 

@@ -349,7 +349,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       IndexReader reader0 = IndexReader.open(dir1);
       assertRefCountEquals(1, reader0);
 
-      assertTrue(reader0 instanceof MultiSegmentReader);
+      assertTrue(reader0 instanceof DirectoryReader);
       IndexReader[] subReaders0 = reader0.getSequentialSubReaders();
       for (int i = 0; i < subReaders0.length; i++) {
         assertRefCountEquals(1, subReaders0[i]);
@@ -361,7 +361,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       modifier.close();
       
       IndexReader reader1 = refreshReader(reader0, true).refreshedReader;
-      assertTrue(reader1 instanceof MultiSegmentReader);
+      assertTrue(reader1 instanceof DirectoryReader);
       IndexReader[] subReaders1 = reader1.getSequentialSubReaders();
       assertEquals(subReaders0.length, subReaders1.length);
       
@@ -380,7 +380,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       modifier.close();
 
       IndexReader reader2 = refreshReader(reader1, true).refreshedReader;
-      assertTrue(reader2 instanceof MultiSegmentReader);
+      assertTrue(reader2 instanceof DirectoryReader);
       IndexReader[] subReaders2 = reader2.getSequentialSubReaders();
       assertEquals(subReaders1.length, subReaders2.length);
       
@@ -404,7 +404,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       }
       
       IndexReader reader3 = refreshReader(reader0, true).refreshedReader;
-      assertTrue(reader3 instanceof MultiSegmentReader);
+      assertTrue(reader3 instanceof DirectoryReader);
       IndexReader[] subReaders3 = reader3.getSequentialSubReaders();
       assertEquals(subReaders3.length, subReaders0.length);
       
@@ -596,66 +596,68 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     Directory dir1 = new MockRAMDirectory();
     createIndex(dir1, false);
     
-    SegmentReader reader1 = (SegmentReader) IndexReader.open(dir1);
+    IndexReader reader1 = IndexReader.open(dir1);
+    SegmentReader segmentReader1 = SegmentReader.getOnlySegmentReader(reader1);
     IndexReader modifier = IndexReader.open(dir1);
     modifier.deleteDocument(0);
     modifier.close();
     
-    SegmentReader reader2 = (SegmentReader) reader1.reopen();
+    IndexReader reader2 = reader1.reopen();
     modifier = IndexReader.open(dir1);
     modifier.setNorm(1, "field1", 50);
     modifier.setNorm(1, "field2", 50);
     modifier.close();
     
-    SegmentReader reader3 = (SegmentReader) reader2.reopen();
+    IndexReader reader3 = reader2.reopen();
+    SegmentReader segmentReader3 = SegmentReader.getOnlySegmentReader(reader3);
     modifier = IndexReader.open(dir1);
     modifier.deleteDocument(2);
     modifier.close();
 
-    SegmentReader reader4 = (SegmentReader) reader3.reopen();
+    IndexReader reader4 = reader3.reopen();
     modifier = IndexReader.open(dir1);
     modifier.deleteDocument(3);
     modifier.close();
 
-    SegmentReader reader5 = (SegmentReader) reader3.reopen();
+    IndexReader reader5 = reader3.reopen();
     
     // Now reader2-reader5 references reader1. reader1 and reader2
     // share the same norms. reader3, reader4, reader5 also share norms.
     assertRefCountEquals(1, reader1);
-    assertFalse(reader1.normsClosed());
+    assertFalse(segmentReader1.normsClosed());
 
     reader1.close();
 
     assertRefCountEquals(0, reader1);
-    assertFalse(reader1.normsClosed());
+    assertFalse(segmentReader1.normsClosed());
 
     reader2.close();
     assertRefCountEquals(0, reader1);
 
     // now the norms for field1 and field2 should be closed
-    assertTrue(reader1.normsClosed("field1"));
-    assertTrue(reader1.normsClosed("field2"));
+    assertTrue(segmentReader1.normsClosed("field1"));
+    assertTrue(segmentReader1.normsClosed("field2"));
 
     // but the norms for field3 and field4 should still be open
-    assertFalse(reader1.normsClosed("field3"));
-    assertFalse(reader1.normsClosed("field4"));
+    assertFalse(segmentReader1.normsClosed("field3"));
+    assertFalse(segmentReader1.normsClosed("field4"));
     
     reader3.close();
     assertRefCountEquals(0, reader1);
-    assertFalse(reader3.normsClosed());
+    assertFalse(segmentReader3.normsClosed());
     reader5.close();
     assertRefCountEquals(0, reader1);
-    assertFalse(reader3.normsClosed());
+    assertFalse(segmentReader3.normsClosed());
     reader4.close();
     assertRefCountEquals(0, reader1);
     
     // and now all norms that reader1 used should be closed
-    assertTrue(reader1.normsClosed());
+    assertTrue(segmentReader1.normsClosed());
     
     // now that reader3, reader4 and reader5 are closed,
     // the norms that those three readers shared should be
     // closed as well
-    assertTrue(reader3.normsClosed());
+    assertTrue(segmentReader3.normsClosed());
 
     dir1.close();
   }
@@ -941,12 +943,12 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     }
     
     w.close();
-    
+
     IndexReader r = IndexReader.open(dir);
     if (multiSegment) {
-      assertTrue(r instanceof MultiSegmentReader);
+      assertTrue(r.getSequentialSubReaders().length > 1);
     } else {
-      assertTrue(r instanceof SegmentReader);
+      assertTrue(r.getSequentialSubReaders().length == 1);
     }
     r.close();
   }
@@ -1023,7 +1025,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     }
     
     if (checkSubReaders) {
-      if (reader instanceof MultiSegmentReader) {
+      if (reader instanceof DirectoryReader) {
         IndexReader[] subReaders = reader.getSequentialSubReaders();
         for (int i = 0; i < subReaders.length; i++) {
           assertReaderClosed(subReaders[i], checkSubReaders, checkNormsClosed);
@@ -1050,7 +1052,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   private void assertReaderOpen(IndexReader reader) {
     reader.ensureOpen();
     
-    if (reader instanceof MultiSegmentReader) {
+    if (reader instanceof DirectoryReader) {
       IndexReader[] subReaders = reader.getSequentialSubReaders();
       for (int i = 0; i < subReaders.length; i++) {
         assertReaderOpen(subReaders[i]);
@@ -1208,7 +1210,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
     IndexReader[] rs2 = r2.getSequentialSubReaders();
 
-    SegmentReader sr1 = (SegmentReader) r1;
+    SegmentReader sr1 = SegmentReader.getOnlySegmentReader(r1);
     SegmentReader sr2 = (SegmentReader) rs2[0];
 
     // At this point they share the same BitVector

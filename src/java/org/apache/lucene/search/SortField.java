@@ -324,7 +324,7 @@ implements Serializable {
   }
   
   /**
-   * Use legacy IndexSearch implementation: search with a MultiSegmentReader rather
+   * Use legacy IndexSearch implementation: search with a DirectoryReader rather
    * than passing a single hit collector to multiple SegmentReaders.
    * 
    * @param legacy true for legacy behavior

@@ -22,16 +22,16 @@ import org.apache.lucene.store.Directory;
 import java.io.IOException;
 import java.util.Map;
 
-class ReadOnlyMultiSegmentReader extends MultiSegmentReader {
-  ReadOnlyMultiSegmentReader(Directory directory, SegmentInfos sis, boolean closeDirectory) throws IOException {
-    super(directory, sis, closeDirectory, true);
+class ReadOnlyDirectoryReader extends DirectoryReader {
+  ReadOnlyDirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy, boolean closeDirectory) throws IOException {
+    super(directory, sis, deletionPolicy, closeDirectory, true);
   }
 
-  ReadOnlyMultiSegmentReader(Directory directory, SegmentInfos infos, boolean closeDirectory, SegmentReader[] oldReaders, int[] oldStarts, Map oldNormsCache, boolean doClone) throws IOException {
+  ReadOnlyDirectoryReader(Directory directory, SegmentInfos infos, boolean closeDirectory, SegmentReader[] oldReaders, int[] oldStarts, Map oldNormsCache, boolean doClone) throws IOException {
     super(directory, infos, closeDirectory, oldReaders, oldStarts, oldNormsCache, true, doClone);
   }
   
-  ReadOnlyMultiSegmentReader(IndexWriter writer, SegmentInfos infos) throws IOException {
+  ReadOnlyDirectoryReader(IndexWriter writer, SegmentInfos infos) throws IOException {
     super(writer, infos);
   }
   

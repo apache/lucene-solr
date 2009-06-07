@@ -19,9 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.store.Directory;
-
-public class TestMultiReader extends TestMultiSegmentReader {
+public class TestMultiReader extends TestDirectoryReader {
   public TestMultiReader(String s) {
     super(s);
   }

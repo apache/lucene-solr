@@ -27,7 +27,7 @@ import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
 
-public class TestMultiSegmentReader extends LuceneTestCase {
+public class TestDirectoryReader extends LuceneTestCase {
   protected Directory dir;
   private Document doc1;
   private Document doc2;
@@ -35,7 +35,7 @@ public class TestMultiSegmentReader extends LuceneTestCase {
   protected SegmentInfos sis;
   
   
-  public TestMultiSegmentReader(String s) {
+  public TestDirectoryReader(String s) {
     super(s);
   }
 
@@ -55,7 +55,7 @@ public class TestMultiSegmentReader extends LuceneTestCase {
   protected IndexReader openReader() throws IOException {
     IndexReader reader;
     reader = IndexReader.open(dir);
-    assertTrue(reader instanceof MultiSegmentReader);
+    assertTrue(reader instanceof DirectoryReader);
 
     assertTrue(dir != null);
     assertTrue(sis != null);

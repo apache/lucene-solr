@@ -38,10 +38,11 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.CloseableThreadLocal;
 
-/**
- * @version $Id$
- */
-class SegmentReader extends DirectoryIndexReader {
+/** @version $Id */
+class SegmentReader extends IndexReader implements Cloneable {
+  protected Directory directory;
+  protected boolean readOnly;
+
   private String segment;
   private SegmentInfo si;
   private int readBufferSize;
@@ -59,6 +60,7 @@ class SegmentReader extends DirectoryIndexReader {
   private boolean normsDirty = false;
   private int pendingDeleteCount;
 
+  private boolean rollbackHasChanges = false;
   private boolean rollbackDeletedDocsDirty = false;
   private boolean rollbackNormsDirty = false;
   private int rollbackPendingDeleteCount;
@@ -378,7 +380,7 @@ class SegmentReader extends DirectoryIndexReader {
    * @deprecated
    */
   public static SegmentReader get(SegmentInfo si) throws CorruptIndexException, IOException {
-    return get(false, si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE, true);
+    return get(false, si.dir, si, BufferedIndexInput.BUFFER_SIZE, true);
   }
 
   /**
@@ -386,25 +388,7 @@ class SegmentReader extends DirectoryIndexReader {
    * @throws IOException if there is a low-level IO error
    */
   public static SegmentReader get(boolean readOnly, SegmentInfo si) throws CorruptIndexException, IOException {
-    return get(readOnly, si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE, true);
-  }
-
-  /**
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   * @deprecated
-   */
-  static SegmentReader get(SegmentInfo si, boolean doOpenStores) throws CorruptIndexException, IOException {
-    return get(false, si.dir, si, null, false, false, BufferedIndexInput.BUFFER_SIZE, doOpenStores);
-  }
-
-  /**
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   * @deprecated
-   */
-  public static SegmentReader get(SegmentInfo si, int readBufferSize) throws CorruptIndexException, IOException {
-    return get(false, si.dir, si, null, false, false, readBufferSize, true);
+    return get(readOnly, si.dir, si, BufferedIndexInput.BUFFER_SIZE, true);
   }
 
   /**
@@ -413,37 +397,7 @@ class SegmentReader extends DirectoryIndexReader {
    * @deprecated
    */
   static SegmentReader get(SegmentInfo si, int readBufferSize, boolean doOpenStores) throws CorruptIndexException, IOException {
-    return get(false, si.dir, si, null, false, false, readBufferSize, doOpenStores);
-  }
-
-  /**
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  static SegmentReader get(boolean readOnly, SegmentInfo si, int readBufferSize, boolean doOpenStores) throws CorruptIndexException, IOException {
-    return get(readOnly, si.dir, si, null, false, false, readBufferSize, doOpenStores);
-  }
-
-  /**
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public static SegmentReader get(boolean readOnly, SegmentInfos sis, SegmentInfo si,
-                                  boolean closeDir) throws CorruptIndexException, IOException {
-    return get(readOnly, si.dir, si, sis, closeDir, true, BufferedIndexInput.BUFFER_SIZE, true);
-  }
-
-  /**
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   * @deprecated
-   */
-  public static SegmentReader get(Directory dir, SegmentInfo si,
-                                  SegmentInfos sis,
-                                  boolean closeDir, boolean ownDir,
-                                  int readBufferSize)
-    throws CorruptIndexException, IOException {
-    return get(false, dir, si, sis, closeDir, ownDir, readBufferSize, true);
+    return get(false, si.dir, si, readBufferSize, doOpenStores);
   }
 
   /**
@@ -453,8 +407,6 @@ class SegmentReader extends DirectoryIndexReader {
   public static SegmentReader get(boolean readOnly,
                                   Directory dir,
                                   SegmentInfo si,
-                                  SegmentInfos sis,
-                                  boolean closeDir, boolean ownDir,
                                   int readBufferSize,
                                   boolean doOpenStores)
     throws CorruptIndexException, IOException {
@@ -467,8 +419,57 @@ class SegmentReader extends DirectoryIndexReader {
     } catch (Exception e) {
       throw new RuntimeException("cannot load SegmentReader class: " + e, e);
     }
-    instance.init(dir, sis, closeDir, readOnly);
-    instance.initialize(si, readBufferSize, doOpenStores);
+    instance.directory = dir;
+    instance.readOnly = readOnly;
+    instance.segment = si.name;
+    instance.si = si;
+    instance.readBufferSize = readBufferSize;
+
+    boolean success = false;
+
+    try {
+      // Use compound file directory for some files, if it exists
+      Directory cfsDir = instance.directory();
+      if (si.getUseCompoundFile()) {
+        instance.cfsReader = new CompoundFileReader(instance.directory(), instance.segment + "." + IndexFileNames.COMPOUND_FILE_EXTENSION, readBufferSize);
+        cfsDir = instance.cfsReader;
+      }
+
+      instance.fieldInfos = new FieldInfos(cfsDir, instance.segment + ".fnm");
+
+      if (doOpenStores) {
+        instance.openDocStores();
+      }
+
+      boolean anyProx = false;
+      final int numFields = instance.fieldInfos.size();
+      for(int i=0;!anyProx && i<numFields;i++)
+        if (!instance.fieldInfos.fieldInfo(i).omitTermFreqAndPositions)
+          anyProx = true;
+
+      instance.tis = new TermInfosReader(cfsDir, instance.segment, instance.fieldInfos, readBufferSize);
+
+      instance.loadDeletedDocs();
+
+      // make sure that all index files have been read or are kept open
+      // so that if an index update removes them we'll still have them
+      instance.freqStream = cfsDir.openInput(instance.segment + ".frq", readBufferSize);
+      if (anyProx)
+        instance.proxStream = cfsDir.openInput(instance.segment + ".prx", readBufferSize);
+      instance.openNorms(cfsDir, readBufferSize);
+
+      success = true;
+    } finally {
+
+      // With lock-less commits, it's entirely possible (and
+      // fine) to hit a FileNotFound exception above.  In
+      // this case, we want to explicitly close any subset
+      // of things that were opened so that we don't have to
+      // wait for a GC to do so.
+      if (!success) {
+        instance.doClose();
+      }
+    }
     return instance;
   }
 
@@ -521,58 +522,6 @@ class SegmentReader extends DirectoryIndexReader {
     }
   }
 
-  private void initialize(SegmentInfo si, int readBufferSize, boolean doOpenStores) throws CorruptIndexException, IOException {
-    segment = si.name;
-    this.si = si;
-    this.readBufferSize = readBufferSize;
-
-    boolean success = false;
-
-    try {
-      // Use compound file directory for some files, if it exists
-      Directory cfsDir = directory();
-      if (si.getUseCompoundFile()) {
-        cfsReader = new CompoundFileReader(directory(), segment + "." + IndexFileNames.COMPOUND_FILE_EXTENSION, readBufferSize);
-        cfsDir = cfsReader;
-      }
-
-      fieldInfos = new FieldInfos(cfsDir, segment + ".fnm");
-
-      if (doOpenStores) {
-        openDocStores();
-      }
-
-      boolean anyProx = false;
-      final int numFields = fieldInfos.size();
-      for(int i=0;!anyProx && i<numFields;i++)
-        if (!fieldInfos.fieldInfo(i).omitTermFreqAndPositions)
-          anyProx = true;
-
-      tis = new TermInfosReader(cfsDir, segment, fieldInfos, readBufferSize);
-      
-      loadDeletedDocs();
-
-      // make sure that all index files have been read or are kept open
-      // so that if an index update removes them we'll still have them
-      freqStream = cfsDir.openInput(segment + ".frq", readBufferSize);
-      if (anyProx)
-        proxStream = cfsDir.openInput(segment + ".prx", readBufferSize);
-      openNorms(cfsDir, readBufferSize);
-
-      success = true;
-    } finally {
-
-      // With lock-less commits, it's entirely possible (and
-      // fine) to hit a FileNotFound exception above.  In
-      // this case, we want to explicitly close any subset
-      // of things that were opened so that we don't have to
-      // wait for a GC to do so.
-      if (!success) {
-        doClose();
-      }
-    }
-  }
-  
   private void loadDeletedDocs() throws IOException {
     // NOTE: the bitvector is stored using the regular directory, not cfs
     if (hasDeletions(si)) {
@@ -611,35 +560,18 @@ class SegmentReader extends DirectoryIndexReader {
     return (BitVector)bv.clone();
   }
 
-  protected synchronized DirectoryIndexReader doReopen(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
-    DirectoryIndexReader newReader;
-
-    if (infos == null) {
-      if (doClone) {
-        // OK: directly clone myself
-        newReader = reopenSegment(si, doClone, openReadOnly);
-      } else {
-        throw new UnsupportedOperationException("cannot reopen a standalone SegmentReader");
-      }
-    } else if (infos.size() == 1) {
-      SegmentInfo si = infos.info(0);
-      if (segment.equals(si.name) && si.getUseCompoundFile() == SegmentReader.this.si.getUseCompoundFile()) {
-        newReader = reopenSegment(si, doClone, openReadOnly);
-      } else { 
-        // segment not referenced anymore, reopen not possible
-        // or segment format changed
-        newReader = SegmentReader.get(openReadOnly, infos, infos.info(0), false);
-      }
-    } else {
-      if (openReadOnly)
-        newReader = new ReadOnlyMultiSegmentReader(directory, infos, closeDirectory, new SegmentReader[] {this}, null, null, doClone);
-      else
-        newReader = new MultiSegmentReader(directory, infos, closeDirectory, new SegmentReader[] {this}, null, null, false, doClone);
+  public final synchronized Object clone() {
+    try {
+      return clone(readOnly); // Preserve current readOnly
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
     }
-    newReader.setDisableFakeNorms(getDisableFakeNorms());
-    return newReader;
   }
-  
+
+  public final synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
+    return reopenSegment(si, true, openReadOnly);
+  }
+
   synchronized SegmentReader reopenSegment(SegmentInfo si, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
     boolean deletionsUpToDate = (this.si.hasDeletions() == si.hasDeletions()) 
                                   && (!si.hasDeletions() || this.si.getDelFileName().equals(si.getDelFileName()));
@@ -752,35 +684,42 @@ class SegmentReader extends DirectoryIndexReader {
     return clone;
   }
 
-  protected void commitChanges() throws IOException {
+  /** @deprecated  */
+  protected void doCommit() throws IOException {
+    doCommit(null);
+  }
 
-    if (deletedDocsDirty) {               // re-write deleted
-      si.advanceDelGen();
+  protected void doCommit(Map commitUserData) throws IOException {
+    if (hasChanges) {
+      if (deletedDocsDirty) {               // re-write deleted
+        si.advanceDelGen();
 
-      // We can write directly to the actual name (vs to a
-      // .tmp & renaming it) because the file is not live
-      // until segments file is written:
-      deletedDocs.write(directory(), si.getDelFileName());
-      
-      si.setDelCount(si.getDelCount()+pendingDeleteCount);
-      pendingDeleteCount = 0;
-      assert deletedDocs.count() == si.getDelCount(): "delete count mismatch during commit: info=" + si.getDelCount() + " vs BitVector=" + deletedDocs.count();
-    } else {
-      assert pendingDeleteCount == 0;
-    }
+        // We can write directly to the actual name (vs to a
+        // .tmp & renaming it) because the file is not live
+        // until segments file is written:
+        deletedDocs.write(directory(), si.getDelFileName());
 
-    if (normsDirty) {               // re-write norms
-      si.setNumFields(fieldInfos.size());
-      Iterator it = norms.values().iterator();
-      while (it.hasNext()) {
-        Norm norm = (Norm) it.next();
-        if (norm.dirty) {
-          norm.reWrite(si);
+        si.setDelCount(si.getDelCount()+pendingDeleteCount);
+        pendingDeleteCount = 0;
+        assert deletedDocs.count() == si.getDelCount(): "delete count mismatch during commit: info=" + si.getDelCount() + " vs BitVector=" + deletedDocs.count();
+      } else {
+        assert pendingDeleteCount == 0;
+      }
+
+      if (normsDirty) {               // re-write norms
+        si.setNumFields(fieldInfos.size());
+        Iterator it = norms.values().iterator();
+        while (it.hasNext()) {
+          Norm norm = (Norm) it.next();
+          if (norm.dirty) {
+            norm.reWrite(si);
+          }
         }
       }
+      deletedDocsDirty = false;
+      normsDirty = false;
+      hasChanges = false;
     }
-    deletedDocsDirty = false;
-    normsDirty = false;
   }
 
   FieldsReader getFieldsReader() {
@@ -788,7 +727,6 @@ class SegmentReader extends DirectoryIndexReader {
   }
   
   protected void doClose() throws IOException {
-
     termVectorsLocal.close();
     fieldsReaderLocal.close();
     
@@ -825,12 +763,6 @@ class SegmentReader extends DirectoryIndexReader {
       if (storeCFSReader != null)
         storeCFSReader.close();
     }
-
-    // In DirectoryIndexReader.reopen, our directory
-    // instance was made private to us (cloned), so we
-    // always call super.doClose to possibly close the
-    // directory:
-    super.doClose();
   }
 
   static boolean hasDeletions(SegmentInfo si) throws IOException {
@@ -1254,7 +1186,7 @@ class SegmentReader extends DirectoryIndexReader {
   }
 
   void startCommit() {
-    super.startCommit();
+    rollbackHasChanges = hasChanges;
     rollbackDeletedDocsDirty = deletedDocsDirty;
     rollbackNormsDirty = normsDirty;
     rollbackPendingDeleteCount = pendingDeleteCount;
@@ -1266,7 +1198,7 @@ class SegmentReader extends DirectoryIndexReader {
   }
 
   void rollbackCommit() {
-    super.rollbackCommit();
+    hasChanges = rollbackHasChanges;
     deletedDocsDirty = rollbackDeletedDocsDirty;
     normsDirty = rollbackNormsDirty;
     pendingDeleteCount = rollbackPendingDeleteCount;
@@ -1275,6 +1207,14 @@ class SegmentReader extends DirectoryIndexReader {
       Norm norm = (Norm) it.next();
       norm.dirty = norm.rollbackDirty;
     }
+  }
+
+  /** Returns the directory this index resides in. */
+  public Directory directory() {
+    // Don't ensureOpen here -- in certain cases, when a
+    // cloned/reopened reader needs to commit, it may call
+    // this method on the closed original reader
+    return directory;
   }
 
   // This is necessary so that cloned SegmentReaders (which
@@ -1286,5 +1226,29 @@ class SegmentReader extends DirectoryIndexReader {
 
   public long getUniqueTermCount() {
     return tis.size();
+  }
+
+  /**
+   * Lotsa tests did hacks like:<br/>
+   * SegmentReader reader = (SegmentReader) IndexReader.open(dir);<br/>
+   * They broke. This method serves as a hack to keep hacks working
+   */
+  static SegmentReader getOnlySegmentReader(Directory dir) throws IOException {
+    return getOnlySegmentReader(IndexReader.open(dir));
+  }
+
+  static SegmentReader getOnlySegmentReader(IndexReader reader) {
+    if (reader instanceof SegmentReader)
+      return (SegmentReader) reader;
+
+    if (reader instanceof DirectoryReader) {
+      IndexReader[] subReaders = reader.getSequentialSubReaders();
+      if (subReaders.length != 1)
+        throw new IllegalArgumentException(reader + " has " + subReaders.length + " segments instead of exactly one");
+
+      return (SegmentReader) subReaders[0];
+    }
+
+    throw new IllegalArgumentException(reader + " is not a SegmentReader or a single-segment DirectoryReader");
   }
 }

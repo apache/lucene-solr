@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -25,26 +26,94 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.Collections;
+import java.util.ArrayList;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.FSDirectory;
 
 /** 
  * An IndexReader which reads indexes with multiple segments.
  */
-class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
-  protected SegmentReader[] subReaders;
+class DirectoryReader extends IndexReader implements Cloneable {
+  protected Directory directory;
+  protected boolean readOnly;
+  protected boolean closeDirectory;
+
+  IndexWriter writer;
+
+  private IndexDeletionPolicy deletionPolicy;
+  private final HashSet synced = new HashSet();
+  private Lock writeLock;
+  private SegmentInfos segmentInfos;
+  private boolean stale;
+
+  private boolean rollbackHasChanges;
+  private SegmentInfos rollbackSegmentInfos;
+
+  private SegmentReader[] subReaders;
   private int[] starts;                           // 1st docno for each segment
   private Map normsCache = new HashMap();
   private int maxDoc = 0;
   private int numDocs = -1;
   private boolean hasDeletions = false;
 
+  static IndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly) throws CorruptIndexException, IOException {
+    SegmentInfos.FindSegmentsFile finder = new SegmentInfos.FindSegmentsFile(directory) {
+
+      protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
+
+        SegmentInfos infos = new SegmentInfos();
+        infos.read(directory, segmentFileName);
+
+        if (readOnly)
+          return new ReadOnlyDirectoryReader(directory, infos, deletionPolicy, closeDirectory);
+        else
+          return new DirectoryReader(directory, infos, deletionPolicy, closeDirectory, false);
+      }
+    };
+
+    IndexReader reader = null;
+    try {
+      reader = (IndexReader) finder.run(commit);
+    } finally {
+      // We passed false above for closeDirectory so that
+      // the directory would not be closed before we were
+      // done retrying, so at this point if we truly failed
+      // to open a reader, which means an exception is being
+      // thrown, then close the directory now:
+      if (reader == null && closeDirectory) {
+        try {
+          directory.close();
+        } catch (IOException ioe) {
+          // suppress, so we keep throwing original failure
+          // from opening the reader
+        }
+      }
+    }
+
+    return reader;
+  }
+
   /** Construct reading the named set of readers. */
-  MultiSegmentReader(Directory directory, SegmentInfos sis, boolean closeDirectory, boolean readOnly) throws IOException {
-    super(directory, sis, closeDirectory, readOnly);
+  DirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy, boolean closeDirectory, boolean readOnly) throws IOException {
+    this.directory = directory;
+    this.readOnly = readOnly;
+    this.closeDirectory = closeDirectory;
+    this.segmentInfos = sis;
+    this.deletionPolicy = deletionPolicy;
+
+    if (!readOnly) {
+      // We assume that this segments_N was previously
+      // properly sync'd:
+      synced.addAll(sis.files(directory, true));
+    }
 
     // To reduce the chance of hitting FileNotFound
     // (and having to retry), we open segments in
@@ -75,8 +144,16 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
   }
 
   // Used by near real-time search
-  MultiSegmentReader(IndexWriter writer, SegmentInfos infos) throws IOException {
-    super(writer.getDirectory(), infos, false, true);
+  DirectoryReader(IndexWriter writer, SegmentInfos infos) throws IOException {
+    this.directory = writer.getDirectory();
+    this.readOnly = true;
+    this.closeDirectory = false;
+    this.segmentInfos = infos;
+    if (!readOnly) {
+      // We assume that this segments_N was previously
+      // properly sync'd:
+      synced.addAll(infos.files(directory, true));
+    }
 
     // IndexWriter synchronizes externally before calling
     // us, which ensures infos will not change; so there's
@@ -121,9 +198,17 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
   }
 
   /** This contructor is only used for {@link #reopen()} */
-  MultiSegmentReader(Directory directory, SegmentInfos infos, boolean closeDirectory, SegmentReader[] oldReaders, int[] oldStarts,
+  DirectoryReader(Directory directory, SegmentInfos infos, boolean closeDirectory, SegmentReader[] oldReaders, int[] oldStarts,
                      Map oldNormsCache, boolean readOnly, boolean doClone) throws IOException {
-    super(directory, infos, closeDirectory, readOnly);
+    this.directory = directory;
+    this.readOnly = readOnly;
+    this.closeDirectory = closeDirectory;
+    this.segmentInfos = infos;
+    if (!readOnly) {
+      // We assume that this segments_N was previously
+      // properly sync'd:
+      synced.addAll(infos.files(directory, true));
+    }
 
     // we put the old SegmentReaders in a map, that allows us
     // to lookup a reader using its segment name
@@ -139,7 +224,7 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
     SegmentReader[] newReaders = new SegmentReader[infos.size()];
     
     // remember which readers are shared between the old and the re-opened
-    // MultiSegmentReader - we have to incRef those readers
+    // DirectoryReader - we have to incRef those readers
     boolean[] readerShared = new boolean[infos.size()];
     
     for (int i = infos.size() - 1; i>=0; i--) {
@@ -164,20 +249,7 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
           // this is a new reader; in case we hit an exception we can close it safely
           newReader = SegmentReader.get(readOnly, infos.info(i));
         } else {
-          newReader = (SegmentReader) newReaders[i].reopenSegment(infos.info(i), doClone, readOnly);
-          if (newReader == newReaders[i] && newReaders[i].hasSegmentInfos()) {
-            // Special case when a single-segment reader was
-            // reopened to a multi-segment reader -- we must
-            // get a private clone, to clear its
-            // SegmentInfos, so it does not attempt to
-            // obtain the write lock
-            newReader = (SegmentReader) newReaders[i].clone(readOnly);
-            newReader.init(directory, null, false, readOnly);
-          } 
-
-          // Make sure reopenSegment did not carry over a
-          // segmentInfos instance
-          assert !newReader.hasSegmentInfos();
+          newReader = newReaders[i].reopenSegment(infos.info(i), doClone, readOnly);
         }
         if (newReader == newReaders[i]) {
           // this reader will be shared between the old and the new one,
@@ -263,19 +335,169 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
     starts[subReaders.length] = maxDoc;
   }
 
-  protected synchronized DirectoryIndexReader doReopen(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
-    DirectoryIndexReader reader;
-	if (infos.size() == 1) {
-      // The index has only one segment now, so we can't refresh the MultiSegmentReader.
-      // Return a new [ReadOnly]SegmentReader instead
-      reader = SegmentReader.get(openReadOnly, infos, infos.info(0), false);
-    } else if (openReadOnly) {
-      reader = new ReadOnlyMultiSegmentReader(directory, infos, closeDirectory, subReaders, starts, normsCache, doClone);
+  public final synchronized Object clone() {
+    try {
+      return clone(readOnly); // Preserve current readOnly
+    } catch (Exception ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+
+  public final synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
+    DirectoryReader newReader = doReopen((SegmentInfos) segmentInfos.clone(), true, openReadOnly);
+
+    if (this != newReader) {
+      newReader.closeDirectory = closeDirectory;
+      newReader.deletionPolicy = deletionPolicy;
+    }
+    newReader.writer = writer;
+    // If we're cloning a non-readOnly reader, move the
+    // writeLock (if there is one) to the new reader:
+    if (!openReadOnly && writeLock != null) {
+      // In near real-time search, reader is always readonly
+      assert writer == null;
+      newReader.writeLock = writeLock;
+      newReader.hasChanges = hasChanges;
+      newReader.hasDeletions = hasDeletions;
+      writeLock = null;
+      hasChanges = false;
+    }
+
+    return newReader;
+  }
+
+  public final synchronized IndexReader reopen() throws CorruptIndexException, IOException {
+    // Preserve current readOnly
+    return doReopen(readOnly, null);
+  }
+
+  public final synchronized IndexReader reopen(boolean openReadOnly) throws CorruptIndexException, IOException {
+    return doReopen(openReadOnly, null);
+  }
+
+  public final synchronized IndexReader reopen(final IndexCommit commit) throws CorruptIndexException, IOException {
+    return doReopen(true, commit);
+  }
+
+  private synchronized IndexReader doReopen(final boolean openReadOnly, IndexCommit commit) throws CorruptIndexException, IOException {
+    ensureOpen();
+
+    assert commit == null || openReadOnly;
+
+    // If we were obtained by writer.getReader(), re-ask the
+    // writer to get a new reader.
+    if (writer != null) {
+      assert readOnly;
+
+      if (!openReadOnly) {
+        throw new IllegalArgumentException("a reader obtained from IndexWriter.getReader() can only be reopened with openReadOnly=true (got false)");
+      }
+
+      if (commit != null) {
+        throw new IllegalArgumentException("a reader obtained from IndexWriter.getReader() cannot currently accept a commit");
+      }
+
+      if (!writer.isOpen(true)) {
+        throw new AlreadyClosedException("cannot reopen: the IndexWriter this reader was obtained from is now closed");
+      }
+
+      // TODO: right now we *always* make a new reader; in
+      // the future we could have write make some effort to
+      // detect that no changes have occurred
+      IndexReader reader = writer.getReader();
+      reader.setDisableFakeNorms(getDisableFakeNorms());
+      return reader;
+    }
+
+    if (commit == null) {
+      if (hasChanges) {
+        // We have changes, which means we are not readOnly:
+        assert readOnly == false;
+        // and we hold the write lock:
+        assert writeLock != null;
+        // so no other writer holds the write lock, which
+        // means no changes could have been done to the index:
+        assert isCurrent();
+
+        if (openReadOnly) {
+          return (IndexReader) clone(openReadOnly);
+        } else {
+          return this;
+        }
+      } else if (isCurrent()) {
+        if (openReadOnly != readOnly) {
+          // Just fallback to clone
+          return (IndexReader) clone(openReadOnly);
+        } else {
+          return this;
+        }
+      }
     } else {
-      reader = new MultiSegmentReader(directory, infos, closeDirectory, subReaders, starts, normsCache, false, doClone);
+      if (directory != commit.getDirectory())
+        throw new IOException("the specified commit does not match the specified Directory");
+      if (segmentInfos != null && commit.getSegmentsFileName().equals(segmentInfos.getCurrentSegmentFileName())) {
+        if (readOnly != openReadOnly) {
+          // Just fallback to clone
+          return (IndexReader) clone(openReadOnly);
+        } else {
+          return this;
+        }
+      }
+    }
+
+    final SegmentInfos.FindSegmentsFile finder = new SegmentInfos.FindSegmentsFile(directory) {
+
+      protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
+        SegmentInfos infos = new SegmentInfos();
+        infos.read(directory, segmentFileName);
+        return doReopen(infos, false, openReadOnly);
+      }
+    };
+
+    DirectoryReader reader = null;
+
+    // While trying to reopen, we temporarily mark our
+    // closeDirectory as false.  This way any exceptions hit
+    // partway while opening the reader, which is expected
+    // eg if writer is committing, won't close our
+    // directory.  We restore this value below:
+    final boolean myCloseDirectory = closeDirectory;
+    closeDirectory = false;
+
+    try {
+      reader = (DirectoryReader) finder.run(commit);
+    } finally {
+      if (myCloseDirectory) {
+        assert directory instanceof FSDirectory;
+        // Restore my closeDirectory
+        closeDirectory = true;
+        if (reader != null && reader != this) {
+          // Success, and a new reader was actually opened
+          reader.closeDirectory = true;
+          // Clone the directory
+          reader.directory = FSDirectory.getDirectory(((FSDirectory) directory).getFile());
+        }
+      }
+    }
+
+    return reader;
+  }
+
+  private synchronized DirectoryReader doReopen(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
+    DirectoryReader reader;
+	  if (openReadOnly) {
+      reader = new ReadOnlyDirectoryReader(directory, infos, closeDirectory, subReaders, starts, normsCache, doClone);
+    } else {
+      reader = new DirectoryReader(directory, infos, closeDirectory, subReaders, starts, normsCache, false, doClone);
     }
     reader.setDisableFakeNorms(getDisableFakeNorms());
     return reader;
+  }
+
+  /** Version number when this IndexReader was opened. */
+  public long getVersion() {
+    ensureOpen();
+    return segmentInfos.getVersion();
   }
 
   public TermFreqVector[] getTermFreqVectors(int n) throws IOException {
@@ -304,8 +526,13 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
     subReaders[i].getTermFreqVector(docNumber - starts[i], mapper);
   }
 
+  /**
+   * Checks is the index is optimized (if it has a single segment and no deletions)
+   * @return <code>true</code> if the index is optimized; <code>false</code> otherwise
+   */
   public boolean isOptimized() {
-    return false;
+    ensureOpen();
+    return segmentInfos.size() == 1 && !hasDeletions();
   }
   
   public synchronized int numDocs() {
@@ -463,31 +690,185 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
     return new MultiTermPositions(this, subReaders, starts);
   }
 
-  protected void commitChanges() throws IOException {
-    for (int i = 0; i < subReaders.length; i++)
-      subReaders[i].commit();
+  /**
+   * Tries to acquire the WriteLock on this directory. this method is only valid if this IndexReader is directory
+   * owner.
+   *
+   * @throws StaleReaderException  if the index has changed since this reader was opened
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws org.apache.lucene.store.LockObtainFailedException
+   *                               if another writer has this index open (<code>write.lock</code> could not be
+   *                               obtained)
+   * @throws IOException           if there is a low-level IO error
+   */
+  protected void acquireWriteLock() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
+
+    if (readOnly) {
+      // NOTE: we should not reach this code w/ the core
+      // IndexReader classes; however, an external subclass
+      // of IndexReader could reach this.
+      ReadOnlySegmentReader.noWrite();
+    }
+
+    if (segmentInfos != null) {
+      ensureOpen();
+      if (stale)
+        throw new StaleReaderException("IndexReader out of date and no longer valid for delete, undelete, or setNorm operations");
+
+      if (writeLock == null) {
+        Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
+        if (!writeLock.obtain(IndexWriter.WRITE_LOCK_TIMEOUT)) // obtain write lock
+          throw new LockObtainFailedException("Index locked for write: " + writeLock);
+        this.writeLock = writeLock;
+
+        // we have to check whether index has changed since this reader was opened.
+        // if so, this reader is no longer valid for deletion
+        if (SegmentInfos.readCurrentVersion(directory) > segmentInfos.getVersion()) {
+          stale = true;
+          this.writeLock.release();
+          this.writeLock = null;
+          throw new StaleReaderException("IndexReader out of date and no longer valid for delete, undelete, or setNorm operations");
+        }
+      }
+    }
+  }
+
+  /** @deprecated  */
+  protected void doCommit() throws IOException {
+    doCommit(null);
+  }
+
+  /**
+   * Commit changes resulting from delete, undeleteAll, or setNorm operations
+   * <p/>
+   * If an exception is hit, then either no changes or all changes will have been committed to the index (transactional
+   * semantics).
+   *
+   * @throws IOException if there is a low-level IO error
+   */
+  protected void doCommit(Map commitUserData) throws IOException {
+    if (hasChanges) {
+      segmentInfos.setUserData(commitUserData);
+      // Default deleter (for backwards compatibility) is
+      // KeepOnlyLastCommitDeleter:
+      IndexFileDeleter deleter = new IndexFileDeleter(directory,
+                                                      deletionPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : deletionPolicy,
+                                                      segmentInfos, null, null);
+
+      // Checkpoint the state we are about to change, in
+      // case we have to roll back:
+      startCommit();
+
+      boolean success = false;
+      try {
+        for (int i = 0; i < subReaders.length; i++)
+          subReaders[i].commit();
+
+        // Sync all files we just wrote
+        Iterator it = segmentInfos.files(directory, false).iterator();
+        while (it.hasNext()) {
+          final String fileName = (String) it.next();
+          if (!synced.contains(fileName)) {
+            assert directory.fileExists(fileName);
+            directory.sync(fileName);
+            synced.add(fileName);
+          }
+        }
+
+        segmentInfos.commit(directory);
+        success = true;
+      } finally {
+
+        if (!success) {
+
+          // Rollback changes that were made to
+          // SegmentInfos but failed to get [fully]
+          // committed.  This way this reader instance
+          // remains consistent (matched to what's
+          // actually in the index):
+          rollbackCommit();
+
+          // Recompute deletable files & remove them (so
+          // partially written .del files, etc, are
+          // removed):
+          deleter.refresh();
+        }
+      }
+
+      // Have the deleter remove any now unreferenced
+      // files due to this commit:
+      deleter.checkpoint(segmentInfos, true);
+      deleter.close();
+
+      if (writeLock != null) {
+        writeLock.release();  // release write lock
+        writeLock = null;
+      }
+    }
+    hasChanges = false;
   }
 
   void startCommit() {
-    super.startCommit();
+    rollbackHasChanges = hasChanges;
+    rollbackSegmentInfos = (SegmentInfos) segmentInfos.clone();
     for (int i = 0; i < subReaders.length; i++) {
       subReaders[i].startCommit();
     }
   }
 
   void rollbackCommit() {
-    super.rollbackCommit();
+    hasChanges = rollbackHasChanges;
+    for (int i = 0; i < segmentInfos.size(); i++) {
+      // Rollback each segmentInfo.  Because the
+      // SegmentReader holds a reference to the
+      // SegmentInfo we can't [easily] just replace
+      // segmentInfos, so we reset it in place instead:
+      segmentInfos.info(i).reset(rollbackSegmentInfos.info(i));
+    }
+    rollbackSegmentInfos = null;
     for (int i = 0; i < subReaders.length; i++) {
       subReaders[i].rollbackCommit();
     }
   }
 
+  /** Release the write lock, if needed. */
+  protected void finalize() throws Throwable {
+    try {
+      if (writeLock != null) {
+        writeLock.release();                        // release write lock
+        writeLock = null;
+      }
+    } finally {
+      super.finalize();
+    }
+  }
+
+  public Map getCommitUserData() {
+    ensureOpen();
+    return segmentInfos.getUserData();
+  }
+
+  /**
+   * Check whether this IndexReader is still using the current (i.e., most recently committed) version of the index.  If
+   * a writer has committed any changes to the index since this reader was opened, this will return <code>false</code>,
+   * in which case you must open a new IndexReader in order to see the changes.  See the description of the <a
+   * href="IndexWriter.html#autoCommit"><code>autoCommit</code></a> flag which controls when the {@link IndexWriter}
+   * actually commits changes to the index.
+   *
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException           if there is a low-level IO error
+   */
+  public boolean isCurrent() throws CorruptIndexException, IOException {
+    ensureOpen();
+    return SegmentInfos.readCurrentVersion(directory) == segmentInfos.getVersion();
+  }
+
   protected synchronized void doClose() throws IOException {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].decRef();
-    
-    // maybe close directory
-    super.doClose();
+
+    if (closeDirectory)
+      directory.close();
   }
 
   public Collection getFieldNames (IndexReader.FieldOption fieldNames) {
@@ -526,6 +907,119 @@ class MultiSegmentReader extends DirectoryIndexReader implements Cloneable {
     super.setDisableFakeNorms(disableFakeNorms);
     for (int i = 0; i < subReaders.length; i++)
         subReaders[i].setDisableFakeNorms(disableFakeNorms);
+  }
+
+  /** Returns the directory this index resides in. */
+  public Directory directory() {
+    // Don't ensureOpen here -- in certain cases, when a
+    // cloned/reopened reader needs to commit, it may call
+    // this method on the closed original reader
+    return directory;
+  }
+
+  /**
+   * Expert: return the IndexCommit that this reader has opened.
+   * <p/>
+   * <p><b>WARNING</b>: this API is new and experimental and may suddenly change.</p>
+   */
+  public IndexCommit getIndexCommit() throws IOException {
+    return new ReaderCommit(segmentInfos, directory);
+  }
+
+  /** @see org.apache.lucene.index.IndexReader#listCommits */
+  public static Collection listCommits(Directory dir) throws IOException {
+    final String[] files = dir.listAll();
+
+    Collection commits = new ArrayList();
+
+    SegmentInfos latest = new SegmentInfos();
+    latest.read(dir);
+    final long currentGen = latest.getGeneration();
+
+    commits.add(new ReaderCommit(latest, dir));
+
+    for(int i=0;i<files.length;i++) {
+
+      final String fileName = files[i];
+
+      if (fileName.startsWith(IndexFileNames.SEGMENTS) &&
+          !fileName.equals(IndexFileNames.SEGMENTS_GEN) &&
+          SegmentInfos.generationFromSegmentsFileName(fileName) < currentGen) {
+
+        SegmentInfos sis = new SegmentInfos();
+        try {
+          // IOException allowed to throw there, in case
+          // segments_N is corrupt
+          sis.read(dir, fileName);
+        } catch (FileNotFoundException fnfe) {
+          // LUCENE-948: on NFS (and maybe others), if
+          // you have writers switching back and forth
+          // between machines, it's very likely that the
+          // dir listing will be stale and will claim a
+          // file segments_X exists when in fact it
+          // doesn't.  So, we catch this and handle it
+          // as if the file does not exist
+          sis = null;
+        }
+
+        if (sis != null)
+          commits.add(new ReaderCommit(sis, dir));
+      }
+    }
+
+    return commits;
+  }
+
+  private static final class ReaderCommit extends IndexCommit {
+    private String segmentsFileName;
+    Collection files;
+    Directory dir;
+    long generation;
+    long version;
+    final boolean isOptimized;
+    final Map userData;
+
+    ReaderCommit(SegmentInfos infos, Directory dir) throws IOException {
+      segmentsFileName = infos.getCurrentSegmentFileName();
+      this.dir = dir;
+      userData = infos.getUserData();
+      files = Collections.unmodifiableCollection(infos.files(dir, true));
+      version = infos.getVersion();
+      generation = infos.getGeneration();
+      isOptimized = infos.size() == 1 && !infos.info(0).hasDeletions();
+    }
+
+    public boolean isOptimized() {
+      return isOptimized;
+    }
+
+    public String getSegmentsFileName() {
+      return segmentsFileName;
+    }
+
+    public Collection getFileNames() {
+      return files;
+    }
+
+    public Directory getDirectory() {
+      return dir;
+    }
+
+    public long getVersion() {
+      return version;
+    }
+
+    public long getGeneration() {
+      return generation;
+    }
+
+    public boolean isDeleted() {
+      return false;
+    }
+
+    public Map getUserData() {
+      return userData;
+    }
   }
 
   static class MultiTermEnum extends TermEnum {

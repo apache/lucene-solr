@@ -461,15 +461,15 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir1, new WhitespaceAnalyzer(),
         IndexWriter.MaxFieldLength.LIMITED);
     writer.setInfoStream(infoStream);
-    DirectoryIndexReader r1 = (DirectoryIndexReader) writer.getReader();
+    IndexReader r1 = writer.getReader();
     assertEquals(0, r1.maxDoc());
     createIndexNoClose(false, "index1", writer);
     writer.flush(!optimize, true, true);
 
-    DirectoryIndexReader iwr1 = (DirectoryIndexReader) writer.getReader();
+    IndexReader iwr1 = writer.getReader();
     assertEquals(100, iwr1.maxDoc());
 
-    DirectoryIndexReader r2 = (DirectoryIndexReader) writer.getReader();
+    IndexReader r2 = writer.getReader();
     assertEquals(r2.maxDoc(), 100);
     // add 100 documents
     for (int x = 10000; x < 10000 + 100; x++) {

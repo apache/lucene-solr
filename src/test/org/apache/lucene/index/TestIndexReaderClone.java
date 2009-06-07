@@ -39,7 +39,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
     TestIndexReaderReopen.createIndex(dir1, false);
     IndexReader reader = IndexReader.open(dir1);
-    IndexReader readOnlyReader = (IndexReader) reader.clone(true);
+    IndexReader readOnlyReader = reader.clone(true);
     if (!isReadOnly(readOnlyReader)) {
       fail("reader isn't read only");
     }
@@ -58,7 +58,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
     TestIndexReaderReopen.createIndex(dir1, true);
     IndexReader r1 = IndexReader.open(dir1, false);
-    DirectoryIndexReader r2 = (DirectoryIndexReader) r1.clone(false);
+    IndexReader r2 = r1.clone(false);
     if (!deleteWorked(1, r2)) {
       fail("deleting from the cloned should have worked");
     }
@@ -74,7 +74,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
     TestIndexReaderReopen.createIndex(dir1, true);
     IndexReader r1 = IndexReader.open(dir1, false);
-    DirectoryIndexReader r2 = (DirectoryIndexReader) r1.clone(false);
+    IndexReader r2 = r1.clone(false);
     if (!deleteWorked(1, r1)) {
       fail("deleting from the original should have worked");
     }
@@ -90,7 +90,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
     TestIndexReaderReopen.createIndex(dir1, true);
     IndexReader r1 = IndexReader.open(dir1, false);
-    DirectoryIndexReader r2 = (DirectoryIndexReader) r1.clone(false);
+    IndexReader r2 = r1.clone(false);
     if (!deleteWorked(1, r2)) {
       fail("deleting from the original should have worked");
     }
@@ -131,7 +131,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
     TestIndexReaderReopen.createIndex(dir1, true);
     IndexReader reader = IndexReader.open(dir1, false);
-    DirectoryIndexReader readOnlyReader = (DirectoryIndexReader) reader.clone(true);
+    IndexReader readOnlyReader = reader.clone(true);
     if (!isReadOnly(readOnlyReader)) {
       fail("reader isn't read only");
     }
@@ -157,7 +157,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     assertTrue(deleteWorked(1, reader));
     assertEquals(docCount-1, reader.numDocs());
 
-    DirectoryIndexReader readOnlyReader = (DirectoryIndexReader) reader.reopen(true);
+    IndexReader readOnlyReader = reader.reopen(true);
     if (!isReadOnly(readOnlyReader)) {
       fail("reader isn't read only");
     }
@@ -175,7 +175,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     TestIndexReaderReopen.createIndex(dir1, true);
     IndexReader reader1 = IndexReader.open(dir1, true);
 
-    DirectoryIndexReader reader2 = (DirectoryIndexReader) reader1.clone(false);
+    IndexReader reader2 = reader1.clone(false);
     if (isReadOnly(reader2)) {
       fail("reader should not be read only");
     }
@@ -218,12 +218,12 @@ public class TestIndexReaderClone extends LuceneTestCase {
     return !exception;
   }
   
-  public void testCloneReadOnlyMultiSegmentReader() throws Exception {
+  public void testCloneReadOnlyDirectoryReader() throws Exception {
     final Directory dir1 = new MockRAMDirectory();
 
     TestIndexReaderReopen.createIndex(dir1, true);
     IndexReader reader = IndexReader.open(dir1);
-    IndexReader readOnlyReader = (IndexReader) reader.clone(true);
+    IndexReader readOnlyReader = reader.clone(true);
     if (!isReadOnly(readOnlyReader)) {
       fail("reader isn't read only");
     }
@@ -234,7 +234,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
   public static boolean isReadOnly(IndexReader r) {
     if (r instanceof ReadOnlySegmentReader
-        || r instanceof ReadOnlyMultiSegmentReader)
+        || r instanceof ReadOnlyDirectoryReader)
       return true;
     return false;
   }
@@ -307,7 +307,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
   public void testSegmentReaderUndeleteall() throws Exception {
     final Directory dir1 = new MockRAMDirectory();
     TestIndexReaderReopen.createIndex(dir1, false);
-    SegmentReader origSegmentReader = (SegmentReader) IndexReader.open(dir1);
+    SegmentReader origSegmentReader = SegmentReader.getOnlySegmentReader(dir1);
     origSegmentReader.deleteDocument(10);
     assertDelDocsRefCountEquals(1, origSegmentReader);
     origSegmentReader.undeleteAll();
@@ -320,7 +320,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
   public void testSegmentReaderCloseReferencing() throws Exception {
     final Directory dir1 = new MockRAMDirectory();
     TestIndexReaderReopen.createIndex(dir1, false);
-    SegmentReader origSegmentReader = (SegmentReader) IndexReader.open(dir1);
+    SegmentReader origSegmentReader = SegmentReader.getOnlySegmentReader(dir1);
     origSegmentReader.deleteDocument(1);
     origSegmentReader.setNorm(4, "field1", 0.5f);
 
@@ -339,23 +339,25 @@ public class TestIndexReaderClone extends LuceneTestCase {
   public void testSegmentReaderDelDocsReferenceCounting() throws Exception {
     final Directory dir1 = new MockRAMDirectory();
     TestIndexReaderReopen.createIndex(dir1, false);
-    SegmentReader origSegmentReader = (SegmentReader) IndexReader.open(dir1);
+
+    IndexReader origReader = IndexReader.open(dir1);
+    SegmentReader origSegmentReader = SegmentReader.getOnlySegmentReader(origReader);
     // deletedDocsRef should be null because nothing has updated yet
     assertNull(origSegmentReader.deletedDocsRef);
 
     // we deleted a document, so there is now a deletedDocs bitvector and a
     // reference to it
-    origSegmentReader.deleteDocument(1);
+    origReader.deleteDocument(1);
     assertDelDocsRefCountEquals(1, origSegmentReader);
 
     // the cloned segmentreader should have 2 references, 1 to itself, and 1 to
     // the original segmentreader
-    SegmentReader clonedSegmentReader = (SegmentReader) origSegmentReader
-        .clone();
+    IndexReader clonedReader = (IndexReader) origReader.clone();
+    SegmentReader clonedSegmentReader = SegmentReader.getOnlySegmentReader(clonedReader);
     assertDelDocsRefCountEquals(2, origSegmentReader);
     // deleting a document creates a new deletedDocs bitvector, the refs goes to
     // 1
-    clonedSegmentReader.deleteDocument(2);
+    clonedReader.deleteDocument(2);
     assertDelDocsRefCountEquals(1, origSegmentReader);
     assertDelDocsRefCountEquals(1, clonedSegmentReader);
 
@@ -371,28 +373,27 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
     // deleting a doc from the original segmentreader should throw an exception
     try {
-      origSegmentReader.deleteDocument(4);
+      origReader.deleteDocument(4);
       fail("expected exception");
     } catch (LockObtainFailedException lbfe) {
       // expected
     }
 
-    origSegmentReader.close();
+    origReader.close();
     // try closing the original segment reader to see if it affects the
     // clonedSegmentReader
-    clonedSegmentReader.deleteDocument(3);
-    clonedSegmentReader.flush();
+    clonedReader.deleteDocument(3);
+    clonedReader.flush();
     assertDelDocsRefCountEquals(1, clonedSegmentReader);
 
     // test a reopened reader
-    SegmentReader reopenedSegmentReader = (SegmentReader) clonedSegmentReader
-        .reopen();
-    SegmentReader cloneSegmentReader2 = (SegmentReader) reopenedSegmentReader
-        .clone();
+    IndexReader reopenedReader = clonedReader.reopen();
+    IndexReader cloneReader2 = (IndexReader) reopenedReader.clone();
+    SegmentReader cloneSegmentReader2 = SegmentReader.getOnlySegmentReader(cloneReader2);
     assertDelDocsRefCountEquals(2, cloneSegmentReader2);
-    clonedSegmentReader.close();
-    reopenedSegmentReader.close();
-    cloneSegmentReader2.close();
+    clonedReader.close();
+    reopenedReader.close();
+    cloneReader2.close();
 
     dir1.close();
   }
@@ -401,14 +402,14 @@ public class TestIndexReaderClone extends LuceneTestCase {
   public void testCloneWithDeletes() throws Throwable {
     final Directory dir1 = new MockRAMDirectory();
     TestIndexReaderReopen.createIndex(dir1, false);
-    SegmentReader origSegmentReader = (SegmentReader) IndexReader.open(dir1);
-    origSegmentReader.deleteDocument(1);
+    IndexReader origReader = IndexReader.open(dir1);
+    origReader.deleteDocument(1);
 
-    SegmentReader clonedSegmentReader = (SegmentReader) origSegmentReader.clone();
-    origSegmentReader.close();
-    clonedSegmentReader.close();
+    IndexReader clonedReader = (IndexReader) origReader.clone();
+    origReader.close();
+    clonedReader.close();
 
-    SegmentReader r = (SegmentReader) IndexReader.open(dir1);
+    IndexReader r = IndexReader.open(dir1);
     assertTrue(r.isDeleted(1));
     r.close();
     dir1.close();
@@ -418,18 +419,18 @@ public class TestIndexReaderClone extends LuceneTestCase {
   public void testCloneWithSetNorm() throws Throwable {
     final Directory dir1 = new MockRAMDirectory();
     TestIndexReaderReopen.createIndex(dir1, false);
-    SegmentReader orig = (SegmentReader) IndexReader.open(dir1);
+    IndexReader orig = IndexReader.open(dir1);
     orig.setNorm(1, "field1", 17.0f);
     final byte encoded = Similarity.encodeNorm(17.0f);
     assertEquals(encoded, orig.norms("field1")[1]);
 
     // the cloned segmentreader should have 2 references, 1 to itself, and 1 to
     // the original segmentreader
-    SegmentReader clonedSegmentReader = (SegmentReader) orig.clone();
+    IndexReader clonedReader = (IndexReader) orig.clone();
     orig.close();
-    clonedSegmentReader.close();
+    clonedReader.close();
 
-    SegmentReader r = (SegmentReader) IndexReader.open(dir1);
+    IndexReader r = IndexReader.open(dir1);
     assertEquals(encoded, r.norms("field1")[1]);
     r.close();
     dir1.close();
@@ -469,7 +470,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     TestIndexReaderReopen.createIndex(dir1, false);
     IndexReader r1 = IndexReader.open(dir1);
     r1.incRef();
-    IndexReader r2 = (IndexReader) r1.clone(false);
+    IndexReader r2 = r1.clone(false);
     r1.deleteDocument(5);
     r1.decRef();
     
@@ -490,7 +491,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
     IndexReader r1 = IndexReader.open(dir);
-    IndexReader r2 = (IndexReader) r1.clone(false);
+    IndexReader r2 = r1.clone(false);
     r1.close();
     r2.close();
     dir.close();
