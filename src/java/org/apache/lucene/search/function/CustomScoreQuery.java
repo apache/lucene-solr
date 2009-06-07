@@ -367,41 +367,53 @@ public class CustomScoreQuery extends Query {
       this.vScores = new float[valSrcScorers.length];
     }
 
-    /*(non-Javadoc) @see org.apache.lucene.search.Scorer#next() */
+    /** @deprecated use {@link #nextDoc()} instead. */
     public boolean next() throws IOException {
-      boolean hasNext = subQueryScorer.next();
-      if (hasNext) {
-        for(int i = 0; i < valSrcScorers.length; i++) {
-          valSrcScorers[i].skipTo(subQueryScorer.doc());  
-        }
-      }
-      return hasNext;
+      return nextDoc() != NO_MORE_DOCS;
     }
 
-    /*(non-Javadoc) @see org.apache.lucene.search.Scorer#doc() */
+    public int nextDoc() throws IOException {
+      int doc = subQueryScorer.nextDoc();
+      if (doc != NO_MORE_DOCS) {
+        for (int i = 0; i < valSrcScorers.length; i++) {
+          valSrcScorers[i].advance(doc);
+        }
+      }
+      return doc;
+    }
+
+    /** @deprecated use {@link #docID()} instead. */
     public int doc() {
       return subQueryScorer.doc();
     }
 
+    public int docID() {
+      return subQueryScorer.docID();
+    }
+    
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#score() */
     public float score() throws IOException {
-      for(int i = 0; i < valSrcScorers.length; i++) {
+      for (int i = 0; i < valSrcScorers.length; i++) {
         vScores[i] = valSrcScorers[i].score();
       }
-      return qWeight * customScore(subQueryScorer.doc(), subQueryScorer.score(), vScores);
+      return qWeight * customScore(subQueryScorer.docID(), subQueryScorer.score(), vScores);
     }
 
-    /*(non-Javadoc) @see org.apache.lucene.search.Scorer#skipTo(int) */
+    /** @deprecated use {@link #advance(int)} instead. */
     public boolean skipTo(int target) throws IOException {
-      boolean hasNext = subQueryScorer.skipTo(target);
-      if (hasNext) {
-      	for (int i = 0; i < valSrcScorers.length; i++) {
-          valSrcScorers[i].skipTo(subQueryScorer.doc());
+      return advance(target) != NO_MORE_DOCS;
+    }
+
+    public int advance(int target) throws IOException {
+      int doc = subQueryScorer.advance(target);
+      if (doc != NO_MORE_DOCS) {
+        for (int i = 0; i < valSrcScorers.length; i++) {
+          valSrcScorers[i].advance(doc);
         }
       }
-      return hasNext;
+      return doc;
     }
-
+    
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#explain(int) */
     public Explanation explain(int doc) throws IOException {
       Explanation subQueryExpl = weight.subQueryWeight.explain(reader,doc);

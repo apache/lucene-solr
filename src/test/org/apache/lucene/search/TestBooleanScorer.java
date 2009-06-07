@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -74,5 +75,41 @@ public class TestBooleanScorer extends LuceneTestCase
 
   }
   
+  public void testEmptyBucketWithMoreDocs() throws Exception {
+    // This test checks the logic of nextDoc() when all sub scorers have docs
+    // beyond the first bucket (for example). Currently, the code relies on the
+    // 'more' variable to work properly, and this test ensures that if the logic
+    // changes, we have a test to back it up.
+    
+    Similarity sim = Similarity.getDefault();
+    Scorer[] scorers = new Scorer[] {new Scorer(sim) {
+      private int doc = -1;
+      public Explanation explain(int doc) throws IOException { return null; }
+      public float score() throws IOException { return 0; }
+      /** @deprecated delete in 3.0. */
+      public int doc() { return 3000; }
+      public int docID() { return doc; }
+      /** @deprecated delete in 3.0 */
+      public boolean next() throws IOException { return nextDoc() != NO_MORE_DOCS; }
+      
+      public int nextDoc() throws IOException {
+        return doc = doc == -1 ? 3000 : NO_MORE_DOCS;
+      }
+
+      /** @deprecated delete in 3.0 */
+      public boolean skipTo(int target) throws IOException {
+        return advance(target) != NO_MORE_DOCS;
+      }
+      
+      public int advance(int target) throws IOException {
+        return doc = target <= 3000 ? 3000 : NO_MORE_DOCS;
+      }
+      
+    }};
+    BooleanScorer bs = new BooleanScorer(sim, 1, Arrays.asList(scorers), null);
+    
+    assertEquals("should have received 3000", 3000, bs.nextDoc());
+    assertEquals("should have received NO_MORE_DOCS", DocIdSetIterator.NO_MORE_DOCS, bs.nextDoc());
+  }
 
 }

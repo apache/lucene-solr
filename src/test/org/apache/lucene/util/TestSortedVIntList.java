@@ -42,10 +42,10 @@ public class TestSortedVIntList extends TestCase {
     }
     DocIdSetIterator m = vintList.iterator();
     for (int i = 0; i < ints.length; i++) {
-      assertTrue("No end of Matcher at: " + i, m.next());
-      assertEquals(ints[i], m.doc());
+      assertTrue("No end of Matcher at: " + i, m.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+      assertEquals(ints[i], m.docID());
     }
-    assertTrue("End of Matcher", (! m.next()));
+    assertTrue("End of Matcher", m.nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
   }
 
   void tstVIntList(
@@ -142,9 +142,6 @@ public class TestSortedVIntList extends TestCase {
   }
   public void test02() {
     tstInts(new int[] {0});
-  }
-  public void test03() {
-    tstInts(new int[] {0,Integer.MAX_VALUE});
   }
   public void test04a() {
     tstInts(new int[] {0, VB2 - 1});

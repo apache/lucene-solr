@@ -20,6 +20,8 @@ package org.apache.lucene.util;
 import java.util.Random;
 import java.util.BitSet;
 
+import org.apache.lucene.search.DocIdSetIterator;
+
 /**
  * @version $Id$
  */
@@ -55,12 +57,8 @@ public class TestOpenBitSet extends LuceneTestCase {
     OpenBitSetIterator iterator = new OpenBitSetIterator(b);
     do {
       aa = a.nextSetBit(aa+1);
-      if (rand.nextBoolean())
-        iterator.next();
-      else
-        iterator.skipTo(bb+1);
-      bb = iterator.doc();
-      assertEquals(aa,bb);
+      bb = rand.nextBoolean() ? iterator.nextDoc() : iterator.advance(bb + 1);
+      assertEquals(aa == -1 ? DocIdSetIterator.NO_MORE_DOCS : aa, bb);
     } while (aa>=0);
   }
 
@@ -69,11 +67,8 @@ public class TestOpenBitSet extends LuceneTestCase {
     OpenBitSetIterator iterator = new OpenBitSetIterator(b);
     do {
       aa = a.nextSetBit(aa+1);
-      if (rand.nextBoolean())
-        bb = iterator.nextDoc();
-      else
-        bb = iterator.next(bb+1);
-      assertEquals(aa,bb);
+      bb = rand.nextBoolean() ? iterator.nextDoc() : iterator.advance(bb + 1);
+      assertEquals(aa == -1 ? DocIdSetIterator.NO_MORE_DOCS : aa, bb);
     } while (aa>=0);
   }
 

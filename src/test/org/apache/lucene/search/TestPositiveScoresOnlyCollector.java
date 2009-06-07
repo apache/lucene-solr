@@ -36,15 +36,28 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
       return idx == scores.length ? Float.NaN : scores[idx];
     }
 
+    /** @deprecated use {@link #docID()} instead. */
     public int doc() { return idx; }
+    
+    public int docID() { return idx; }
 
-    public boolean next() throws IOException { 
-      return ++idx == scores.length;
+    /** @deprecated use {@link #nextDoc()} instead. */
+    public boolean next() throws IOException {
+      return nextDoc() != NO_MORE_DOCS;
     }
 
+    public int nextDoc() throws IOException {
+      return ++idx != scores.length ? idx : NO_MORE_DOCS;
+    }
+    
+    /** @deprecated use {@link #advance(int)} instead. */
     public boolean skipTo(int target) throws IOException {
+      return advance(target) != NO_MORE_DOCS;
+    }
+    
+    public int advance(int target) throws IOException {
       idx = target;
-      return idx >= scores.length;
+      return idx < scores.length ? idx : NO_MORE_DOCS;
     }
   }
 
@@ -71,7 +84,7 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     TopDocsCollector tdc = TopScoreDocCollector.create(scores.length, true);
     Collector c = new PositiveScoresOnlyCollector(tdc);
     c.setScorer(s);
-    while (!s.next()) {
+    while (s.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       c.collect(0);
     }
     TopDocs td = tdc.topDocs();

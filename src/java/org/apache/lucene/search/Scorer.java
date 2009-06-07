@@ -71,8 +71,9 @@ public abstract class Scorer extends DocIdSetIterator {
    */
   public void score(Collector collector) throws IOException {
     collector.setScorer(this);
-    while (next()) {
-      collector.collect(doc());
+    int doc;
+    while ((doc = nextDoc()) != NO_MORE_DOCS) {
+      collector.collect(doc);
     }
   }
 
@@ -86,26 +87,33 @@ public abstract class Scorer extends DocIdSetIterator {
    * @deprecated use {@link #score(Collector, int)} instead.
    */
   protected boolean score(HitCollector hc, int max) throws IOException {
-    return score(new HitCollectorWrapper(hc), max);
+    return score(new HitCollectorWrapper(hc), max, docID());
   }
   
-  /** Expert: Collects matching documents in a range.  Hook for optimization.
-   * Note that {@link #next()} must be called once before this method is called
-   * for the first time.
-   * @param collector The collector to which all matching documents are passed.
-   * @param max Do not score documents past this.
+  /**
+   * Expert: Collects matching documents in a range. Hook for optimization.
+   * Note, <code>firstDocID</code> is added to ensure that {@link #nextDoc()}
+   * was called before this method.
+   * 
+   * @param collector
+   *          The collector to which all matching documents are passed.
+   * @param max
+   *          Do not score documents past this.
+   * @param firstDocID
+   *          The first document ID (ensures {@link #nextDoc()} is called before
+   *          this method.
    * @return true if more matching documents may remain.
    */
-  protected boolean score(Collector collector, int max) throws IOException {
+  protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
     collector.setScorer(this);
-    while (doc() < max) {
-      collector.collect(doc());
-      if (!next())
-        return false;
+    int doc = firstDocID;
+    while (doc < max) {
+      collector.collect(doc);
+      doc = nextDoc();
     }
-    return true;
+    return doc == NO_MORE_DOCS;
   }
-
+  
   /** Returns the score of the current document matching the query.
    * Initially invalid, until {@link #next()} or {@link #skipTo(int)}
    * is called the first time, or when called from within

@@ -34,27 +34,37 @@ public class TestDocIdSet extends LuceneTestCase {
         public DocIdSetIterator iterator() {
           return new DocIdSetIterator() {
 
-            int docid=-1;
-            //@Override
+            int docid = -1;
+            
+            /** @deprecated use {@link #docID()} instead. */
             public int doc() {
               return docid;
             }
 
-            //@Override
+            public int docID() {
+              return docid;
+            }
+            
+            /** @deprecated use {@link #nextDoc()} instead. */
             public boolean next() throws IOException {
-              docid++;
-              return (docid<maxdoc);
+              return nextDoc() != NO_MORE_DOCS;
             }
 
             //@Override
-            public boolean skipTo(int target) throws IOException {
-              do {
-                if (!next()) {
-                  return false;
-                }
-              } while (target > doc());
+            public int nextDoc() throws IOException {
+              docid++;
+              return docid < maxdoc ? docid : (docid = NO_MORE_DOCS);
+            }
 
-              return true;
+            /** @deprecated use {@link #advance(int)} instead. */
+            public boolean skipTo(int target) throws IOException {
+              return advance(target) != NO_MORE_DOCS;
+            }
+            
+            //@Override
+            public int advance(int target) throws IOException {
+              while (nextDoc() < target) {}
+              return docid;
             }
           };
         } 
@@ -70,10 +80,11 @@ public class TestDocIdSet extends LuceneTestCase {
 	  
     DocIdSetIterator iter = filteredSet.iterator();
     ArrayList/*<Integer>*/ list = new ArrayList/*<Integer>*/();
-    if (iter.skipTo(3)) {
-      list.add(new Integer(iter.doc()));
-      while(iter.next()) {
-        list.add(new Integer(iter.doc()));
+    int doc = iter.advance(3);
+    if (doc != DocIdSetIterator.NO_MORE_DOCS) {
+      list.add(Integer.valueOf(doc));
+      while((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        list.add(Integer.valueOf(doc));
       }
     }
 	  

@@ -85,7 +85,7 @@ extends Query {
         }
         Filter f = FilteredQuery.this.filter;
         DocIdSetIterator docIdSetIterator = f.getDocIdSet(ir).iterator();
-        if (docIdSetIterator.skipTo(i) && (docIdSetIterator.doc() == i)) {
+        if (docIdSetIterator.advance(i) == i) {
           return inner;
         } else {
           Explanation result = new Explanation
@@ -99,35 +99,51 @@ extends Query {
       public Query getQuery() { return FilteredQuery.this; }
 
       // return a filtering scorer
-       public Scorer scorer (IndexReader indexReader) throws IOException {
+      public Scorer scorer (IndexReader indexReader) throws IOException {
         final Scorer scorer = weight.scorer(indexReader);
         final DocIdSetIterator docIdSetIterator = filter.getDocIdSet(indexReader).iterator();
 
         return new Scorer(similarity) {
 
-          private boolean advanceToCommon() throws IOException {
-            while (scorer.doc() != docIdSetIterator.doc()) {
-              if (scorer.doc() < docIdSetIterator.doc()) {
-                if (!scorer.skipTo(docIdSetIterator.doc())) {
-                  return false;
-                }
-              } else if (!docIdSetIterator.skipTo(scorer.doc())) {
-                return false;
+          private int doc = -1;
+          
+          private int advanceToCommon(int scorerDoc, int disiDoc) throws IOException {
+            while (scorerDoc != disiDoc) {
+              if (scorerDoc < disiDoc) {
+                scorerDoc = scorer.advance(disiDoc);
+              } else {
+                disiDoc = docIdSetIterator.advance(scorerDoc);
               }
             }
-            return true;
+            return scorerDoc;
           }
 
+          /** @deprecated use {@link #nextDoc()} instead. */
           public boolean next() throws IOException {
-            return docIdSetIterator.next() && scorer.next() && advanceToCommon();
+            return nextDoc() != NO_MORE_DOCS;
           }
 
+          public int nextDoc() throws IOException {
+            int scorerDoc, disiDoc;
+            return doc = (disiDoc = docIdSetIterator.nextDoc()) != NO_MORE_DOCS
+                && (scorerDoc = scorer.nextDoc()) != NO_MORE_DOCS
+                && advanceToCommon(scorerDoc, disiDoc) != NO_MORE_DOCS ? scorer.docID() : NO_MORE_DOCS;
+          }
+          
+          /** @deprecated use {@link #docID()} instead. */
           public int doc() { return scorer.doc(); }
-
+          public int docID() { return doc; }
+          
+          /** @deprecated use {@link #advance(int)} instead. */
           public boolean skipTo(int i) throws IOException {
-            return docIdSetIterator.skipTo(i)
-                && scorer.skipTo(docIdSetIterator.doc())
-                && advanceToCommon();
+            return advance(i) != NO_MORE_DOCS;
+          }
+          
+          public int advance(int target) throws IOException {
+            int disiDoc, scorerDoc;
+            return doc = (disiDoc = docIdSetIterator.advance(target)) != NO_MORE_DOCS
+                && (scorerDoc = scorer.advance(disiDoc)) != NO_MORE_DOCS 
+                && advanceToCommon(scorerDoc, disiDoc) != NO_MORE_DOCS ? scorer.docID() : NO_MORE_DOCS;
           }
 
           public float score() throws IOException { return getBoost() * scorer.score(); }
@@ -136,7 +152,7 @@ extends Query {
           public Explanation explain (int i) throws IOException {
             Explanation exp = scorer.explain(i);
             
-            if (docIdSetIterator.skipTo(i) && (docIdSetIterator.doc() == i)) {
+            if (docIdSetIterator.advance(i) == i) {
               exp.setDescription ("allowed by filter: "+exp.getDescription());
               exp.setValue(getBoost() * exp.getValue());
             } else {

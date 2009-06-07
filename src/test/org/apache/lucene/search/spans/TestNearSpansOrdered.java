@@ -165,8 +165,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     SpanNearQuery q = makeQuery();
     Weight w = q.createWeight(searcher);
     Scorer s = w.scorer(searcher.getIndexReader());
-    assertEquals(true, s.skipTo(1));
-    assertEquals(1, s.doc());
+    assertEquals(1, s.advance(1));
   }
   /**
    * not a direct test of NearSpans, but a demonstration of how/when

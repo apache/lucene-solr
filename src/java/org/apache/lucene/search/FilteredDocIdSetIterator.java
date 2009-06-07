@@ -25,10 +25,9 @@ import java.io.IOException;
  * mechanism on an underlying DocIdSetIterator.  See {@link
  * FilteredDocIdSet}.
  */
-
 public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
   protected DocIdSetIterator _innerIter;
-  private int _currentDoc;
+  private int doc;
 	
   /**
    * Constructor.
@@ -39,7 +38,7 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
       throw new IllegalArgumentException("null iterator");
     }
     _innerIter = innerIter;
-    _currentDoc = -1;
+    doc = -1;
   }
 	
   /**
@@ -50,42 +49,49 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
    */
   abstract protected boolean match(int doc);
 	
-  // @Override
+  /** @deprecated use {@link #docID()} instead. */
   public final int doc() {
-    return _currentDoc;
+    return doc;
   }
 
-  // @Override
+  public int docID() {
+    return doc;
+  }
+  
+  /** @deprecated use {@link #nextDoc()} instead. */
   public final boolean next() throws IOException{
-    while (_innerIter.next()) {
-      int doc = _innerIter.doc();
+    return nextDoc() != NO_MORE_DOCS;
+  }
+
+  public int nextDoc() throws IOException {
+    while ((doc = _innerIter.nextDoc()) != NO_MORE_DOCS) {
       if (match(doc)) {
-        _currentDoc = doc;
-        return true;
+        return doc;
       }
     }
-    return false;
+    return doc;
   }
-
-  // @Override
+  
+  /** @deprecated use {@link #advance(int)} instead. */
   public final boolean skipTo(int n) throws IOException{
-    boolean flag = _innerIter.skipTo(n);
-    if (flag) {
-      int doc = _innerIter.doc();
+    return advance(n) != NO_MORE_DOCS;
+  }
+  
+  public int advance(int target) throws IOException {
+    doc = _innerIter.advance(target);
+    if (doc != NO_MORE_DOCS) {
       if (match(doc)) {
-        _currentDoc = doc;
-        return true;
+        return doc;
       } else {
-        while (_innerIter.next()) {
-          int docid = _innerIter.doc();
-          if (match(docid)) {
-            _currentDoc = docid;
-            return true;
+        while ((doc = _innerIter.nextDoc()) != NO_MORE_DOCS) {
+          if (match(doc)) {
+            return doc;
           }
         }
-        return false;
+        return doc;
       }
     }
-    return flag;
+    return doc;
   }
+  
 }

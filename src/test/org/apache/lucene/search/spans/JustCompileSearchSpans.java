@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.Weight;
 
 /**
  * Holds all implementations of classes in the o.a.l.s.spans package as a
@@ -109,4 +111,15 @@ final class JustCompileSearchSpans {
     
   }
   
+  static final class JustCompileSpanScorer extends SpanScorer {
+
+    protected JustCompileSpanScorer(Spans spans, Weight weight,
+        Similarity similarity, byte[] norms) throws IOException {
+      super(spans, weight, similarity, norms);
+    }
+
+    protected boolean setFreqCurrentDoc() throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+  }
 }

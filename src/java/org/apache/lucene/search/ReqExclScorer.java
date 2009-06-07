@@ -29,75 +29,77 @@ import java.io.IOException;
 class ReqExclScorer extends Scorer {
   private Scorer reqScorer;
   private DocIdSetIterator exclDisi;
+  private int doc = -1;
 
   /** Construct a <code>ReqExclScorer</code>.
    * @param reqScorer The scorer that must match, except where
    * @param exclDisi indicates exclusion.
    */
-  public ReqExclScorer(
-      Scorer reqScorer,
-      DocIdSetIterator exclDisi) {
+  public ReqExclScorer(Scorer reqScorer, DocIdSetIterator exclDisi) {
     super(null); // No similarity used.
     this.reqScorer = reqScorer;
     this.exclDisi = exclDisi;
   }
 
-  private boolean firstTime = true;
-  
+  /** @deprecated use {@link #nextDoc()} instead. */
   public boolean next() throws IOException {
-    if (firstTime) {
-      if (! exclDisi.next()) {
-        exclDisi = null; // exhausted at start
-      }
-      firstTime = false;
-    }
+    return nextDoc() != NO_MORE_DOCS;
+  }
+
+  public int nextDoc() throws IOException {
     if (reqScorer == null) {
-      return false;
+      return doc;
     }
-    if (! reqScorer.next()) {
+    doc = reqScorer.nextDoc();
+    if (doc == NO_MORE_DOCS) {
       reqScorer = null; // exhausted, nothing left
-      return false;
+      return doc;
     }
     if (exclDisi == null) {
-      return true; // reqScorer.next() already returned true
+      return doc;
     }
-    return toNonExcluded();
+    return doc = toNonExcluded();
   }
   
   /** Advance to non excluded doc.
    * <br>On entry:
    * <ul>
    * <li>reqScorer != null,
-   * <li>exclDisi != null,
+   * <li>exclScorer != null,
    * <li>reqScorer was advanced once via next() or skipTo()
    *      and reqScorer.doc() may still be excluded.
    * </ul>
    * Advances reqScorer a non excluded required doc, if any.
    * @return true iff there is a non excluded required doc.
    */
-  private boolean toNonExcluded() throws IOException {
-    int exclDoc = exclDisi.doc();
+  private int toNonExcluded() throws IOException {
+    int exclDoc = exclDisi.docID();
+    int reqDoc = reqScorer.docID(); // may be excluded
     do {  
-      int reqDoc = reqScorer.doc(); // may be excluded
       if (reqDoc < exclDoc) {
-        return true; // reqScorer advanced to before exclScorer, ie. not excluded
+        return reqDoc; // reqScorer advanced to before exclScorer, ie. not excluded
       } else if (reqDoc > exclDoc) {
-        if (! exclDisi.skipTo(reqDoc)) {
+        exclDoc = exclDisi.advance(reqDoc);
+        if (exclDoc == NO_MORE_DOCS) {
           exclDisi = null; // exhausted, no more exclusions
-          return true;
+          return reqDoc;
         }
-        exclDoc = exclDisi.doc();
         if (exclDoc > reqDoc) {
-          return true; // not excluded
+          return reqDoc; // not excluded
         }
       }
-    } while (reqScorer.next());
+    } while ((reqDoc = reqScorer.nextDoc()) != NO_MORE_DOCS);
     reqScorer = null; // exhausted, nothing left
-    return false;
+    return NO_MORE_DOCS;
   }
 
+  /** @deprecated use {@link #docID()} instead. */
   public int doc() {
     return reqScorer.doc(); // reqScorer may be null when next() or skipTo() already return false
+  }
+  
+  public int docID() {
+    return doc;
   }
 
   /** Returns the score of the current document matching the query.
@@ -108,35 +110,28 @@ class ReqExclScorer extends Scorer {
     return reqScorer.score(); // reqScorer may be null when next() or skipTo() already return false
   }
   
-  /** Skips to the first match beyond the current whose document number is
-   * greater than or equal to a given target.
-   * <br>When this method is used the {@link #explain(int)} method should not be used.
-   * @param target The target document number.
-   * @return true iff there is such a match.
-   */
+  /** @deprecated use {@link #advance(int)} instead. */
   public boolean skipTo(int target) throws IOException {
-    if (firstTime) {
-      firstTime = false;
-      if (! exclDisi.skipTo(target)) {
-        exclDisi = null; // exhausted
-      }
-    }
-    if (reqScorer == null) {
-      return false;
-    }
-    if (exclDisi == null) {
-      return reqScorer.skipTo(target);
-    }
-    if (! reqScorer.skipTo(target)) {
-      reqScorer = null;
-      return false;
-    }
-    return toNonExcluded();
+    return advance(target) != NO_MORE_DOCS;
   }
 
+  public int advance(int target) throws IOException {
+    if (reqScorer == null) {
+      return doc = NO_MORE_DOCS;
+    }
+    if (exclDisi == null) {
+      return doc = reqScorer.advance(target);
+    }
+    if (reqScorer.advance(target) == NO_MORE_DOCS) {
+      reqScorer = null;
+      return doc = NO_MORE_DOCS;
+    }
+    return doc = toNonExcluded();
+  }
+  
   public Explanation explain(int doc) throws IOException {
     Explanation res = new Explanation();
-    if (exclDisi.skipTo(doc) && (exclDisi.doc() == doc)) {
+    if (exclDisi.advance(doc) == doc) {
       res.setDescription("excluded");
     } else {
       res.setDescription("not excluded");

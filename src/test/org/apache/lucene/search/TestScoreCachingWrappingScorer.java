@@ -42,16 +42,30 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       return idx == scores.length ? Float.NaN : scores[idx++];
     }
 
+    /** @deprecated use {@link #docID()} instead. */
     public int doc() { return doc; }
+    
+    public int docID() { return doc; }
 
+    /** @deprecated use {@link #nextDoc()} instead. */
     public boolean next() throws IOException { 
-      return ++doc == scores.length;
+      return nextDoc() != NO_MORE_DOCS;
     }
 
-    public boolean skipTo(int target) throws IOException {
-      doc = target;
-      return doc >= scores.length;
+    public int nextDoc() throws IOException {
+      return ++doc < scores.length ? doc : NO_MORE_DOCS;
     }
+    
+    /** @deprecated use {@link #advance(int)} instead. */
+    public boolean skipTo(int target) throws IOException {
+      return advance(target) != NO_MORE_DOCS;
+    }
+    
+    public int advance(int target) throws IOException {
+      doc = target;
+      return doc < scores.length ? doc : NO_MORE_DOCS;
+    }
+    
   }
   
   private static final class ScoreCachingCollector extends Collector {
@@ -98,8 +112,9 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
     scc.setScorer(s);
     
     // We need to iterate on the scorer so that its doc() advances.
-    while (!s.next()) {
-      scc.collect(s.doc());
+    int doc;
+    while ((doc = s.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+      scc.collect(doc);
     }
     
     for (int i = 0; i < scores.length; i++) {

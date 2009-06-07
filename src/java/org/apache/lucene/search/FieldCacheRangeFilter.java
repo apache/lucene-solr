@@ -158,37 +158,51 @@ public class FieldCacheRangeFilter extends Filter {
     
     protected class RangeMultiFilterIterator extends DocIdSetIterator {
       private int doc = -1;
-      
+
+      /** @deprecated use {@link #docID()} instead. */
       public int doc() {
         return doc;
       }
 
+      public int docID() {
+        return doc;
+      }
+      
+      /** @deprecated use {@link #nextDoc()} instead. */
       public boolean next() {
+        return nextDoc() != NO_MORE_DOCS;
+      }
+
+      public int nextDoc() {
         try {
           do {
             doc++;
           } while (fcsi.order[doc] > inclusiveUpperPoint 
                    || fcsi.order[doc] < inclusiveLowerPoint);
-          return true;
         } catch (ArrayIndexOutOfBoundsException e) {
-          doc = Integer.MAX_VALUE;
-          return false;
+          doc = NO_MORE_DOCS;
         }
+        return doc;
       }
-
+      
+      /** @deprecated use {@link #advance(int)} instead. */
       public boolean skipTo(int target) {
+        return advance(target) != NO_MORE_DOCS;
+      }
+      
+      public int advance(int target) {
         try {
           doc = target;
           while (fcsi.order[doc] > inclusiveUpperPoint 
                 || fcsi.order[doc] < inclusiveLowerPoint) { 
             doc++;
           }
-          return true;
         } catch (ArrayIndexOutOfBoundsException e) {
-          doc = Integer.MAX_VALUE;
-          return false;
+          doc = NO_MORE_DOCS;
         }
+        return doc;
       }
+      
     }
   }
 }

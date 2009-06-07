@@ -47,8 +47,10 @@ public class OpenBitSetDISI extends OpenBitSet {
    * constructor.
    */   
   public void inPlaceOr(DocIdSetIterator disi) throws IOException {
-    while (disi.next() && (disi.doc() < size())) {
-      fastSet(disi.doc());
+    int doc;
+    long size = size();
+    while ((doc = disi.nextDoc()) < size) {
+      fastSet(doc);
     }
   }
 
@@ -60,8 +62,8 @@ public class OpenBitSetDISI extends OpenBitSet {
    */   
   public void inPlaceAnd(DocIdSetIterator disi) throws IOException {
     int bitSetDoc = nextSetBit(0);
-    while ((bitSetDoc != -1) && disi.skipTo(bitSetDoc)) {
-      int disiDoc = disi.doc();
+    int disiDoc;
+    while (bitSetDoc != -1 && (disiDoc = disi.advance(bitSetDoc)) != DocIdSetIterator.NO_MORE_DOCS) {
       clear(bitSetDoc, disiDoc);
       bitSetDoc = nextSetBit(disiDoc + 1);
     }
@@ -77,8 +79,10 @@ public class OpenBitSetDISI extends OpenBitSet {
    * constructor.
    */   
   public void inPlaceNot(DocIdSetIterator disi) throws IOException {
-    while (disi.next() && (disi.doc() < size())) {
-      fastClear(disi.doc());
+    int doc;
+    long size = size();
+    while ((doc = disi.nextDoc()) < size) {
+      fastClear(doc);
     }
   }
 
@@ -89,8 +93,10 @@ public class OpenBitSetDISI extends OpenBitSet {
    * constructor.
    */   
   public void inPlaceXor(DocIdSetIterator disi) throws IOException {
-    while (disi.next() && (disi.doc() < size())) {
-      fastFlip(disi.doc());
+    int doc;
+    long size = size();
+    while ((doc = disi.nextDoc()) < size) {
+      fastFlip(doc);
     }
   }
 }

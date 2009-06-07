@@ -102,7 +102,7 @@ class DisjunctionSumScorer extends Scorer {
     scorerDocQueue = new ScorerDocQueue(nrScorers);
     while (si.hasNext()) {
       Scorer se = (Scorer) si.next();
-      if (se.next()) { // doc() method will be used in scorerDocQueue.
+      if (se.nextDoc() != NO_MORE_DOCS) { // doc() method will be used in scorerDocQueue.
         scorerDocQueue.insert(se);
       }
     }
@@ -124,7 +124,7 @@ class DisjunctionSumScorer extends Scorer {
    */
   public void score(Collector collector) throws IOException {
     collector.setScorer(this);
-    while (next()) {
+    while (nextDoc() != NO_MORE_DOCS) {
       collector.collect(currentDoc);
     }
   }
@@ -139,7 +139,7 @@ class DisjunctionSumScorer extends Scorer {
    * @deprecated use {@link #score(Collector, int)} instead.
    */
   protected boolean score(HitCollector hc, int max) throws IOException {
-    return score(new HitCollectorWrapper(hc), max);
+    return score(new HitCollectorWrapper(hc), max, docID());
   }
   
   /** Expert: Collects matching documents in a range.  Hook for optimization.
@@ -149,22 +149,29 @@ class DisjunctionSumScorer extends Scorer {
    * @param max Do not score documents past this.
    * @return true if more matching documents may remain.
    */
-  protected boolean score(Collector collector, int max) throws IOException {
+  protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
+    // firstDocID is ignored since nextDoc() sets 'currentDoc'
     collector.setScorer(this);
     while (currentDoc < max) {
       collector.collect(currentDoc);
-      if (!next()) {
+      if (nextDoc() == NO_MORE_DOCS) {
         return false;
       }
     }
     return true;
   }
 
+  /** @deprecated use {@link #nextDoc()} instead. */
   public boolean next() throws IOException {
-    return (scorerDocQueue.size() >= minimumNrMatchers)
-          && advanceAfterCurrent();
+    return nextDoc() != NO_MORE_DOCS;
   }
 
+  public int nextDoc() throws IOException {
+    if (scorerDocQueue.size() < minimumNrMatchers || !advanceAfterCurrent()) {
+      currentDoc = NO_MORE_DOCS;
+    }
+    return currentDoc;
+  }
 
   /** Advance all subscorers after the current document determined by the
    * top of the <code>scorerDocQueue</code>.
@@ -176,7 +183,7 @@ class DisjunctionSumScorer extends Scorer {
    * <br>In case there is a match, </code>currentDoc</code>, </code>currentSumScore</code>,
    * and </code>nrMatchers</code> describe the match.
    *
-   * @todo Investigate whether it is possible to use skipTo() when
+   * TODO: Investigate whether it is possible to use skipTo() when
    * the minimum number of matchers is bigger than one, ie. try and use the
    * character of ConjunctionScorer for the minimum number of matchers.
    * Also delay calling score() on the sub scorers until the minimum number of
@@ -190,7 +197,7 @@ class DisjunctionSumScorer extends Scorer {
       currentScore = scorerDocQueue.topScore();
       nrMatchers = 1;
       do { // Until all subscorers are after currentDoc
-        if (! scorerDocQueue.topNextAndAdjustElsePop()) {
+        if (!scorerDocQueue.topNextAndAdjustElsePop()) {
           if (scorerDocQueue.size() == 0) {
             break; // nothing more to advance, check for last match.
           }
@@ -215,8 +222,13 @@ class DisjunctionSumScorer extends Scorer {
    */
   public float score() throws IOException { return currentScore; }
    
+  /** @deprecated use {@link #docID()} instead. */
   public int doc() { return currentDoc; }
 
+  public int docID() {
+    return currentDoc;
+  }
+  
   /** Returns the number of subscorers matching the current document.
    * Initially invalid, until {@link #next()} is called the first time.
    */
@@ -224,31 +236,52 @@ class DisjunctionSumScorer extends Scorer {
     return nrMatchers;
   }
 
-  /** Skips to the first match beyond the current whose document number is
-   * greater than or equal to a given target.
-   * <br>When this method is used the {@link #explain(int)} method should not be used.
-   * <br>The implementation uses the skipTo() method on the subscorers.
-   * @param target The target document number.
+  /**
+   * Skips to the first match beyond the current whose document number is
+   * greater than or equal to a given target. <br>
+   * When this method is used the {@link #explain(int)} method should not be
+   * used. <br>
+   * The implementation uses the skipTo() method on the subscorers.
+   * 
+   * @param target
+   *          The target document number.
    * @return true iff there is such a match.
+   * @deprecated use {@link #advance(int)} instead.
    */
   public boolean skipTo(int target) throws IOException {
+    return advance(target) != NO_MORE_DOCS;
+  }
+
+  /**
+   * Advances to the first match beyond the current whose document number is
+   * greater than or equal to a given target. <br>
+   * When this method is used the {@link #explain(int)} method should not be
+   * used. <br>
+   * The implementation uses the skipTo() method on the subscorers.
+   * 
+   * @param target
+   *          The target document number.
+   * @return the document whose number is greater than or equal to the given
+   *         target, or -1 if none exist.
+   */
+  public int advance(int target) throws IOException {
     if (scorerDocQueue.size() < minimumNrMatchers) {
-      return false;
+      return currentDoc = NO_MORE_DOCS;
     }
     if (target <= currentDoc) {
-      return true;
+      return currentDoc;
     }
     do {
       if (scorerDocQueue.topDoc() >= target) {
-        return advanceAfterCurrent();
-      } else if (! scorerDocQueue.topSkipToAndAdjustElsePop(target)) {
+        return advanceAfterCurrent() ? currentDoc : (currentDoc = NO_MORE_DOCS);
+      } else if (!scorerDocQueue.topSkipToAndAdjustElsePop(target)) {
         if (scorerDocQueue.size() < minimumNrMatchers) {
-          return false;
+          return currentDoc = NO_MORE_DOCS;
         }
       }
     } while (true);
   }
-
+  
   /** @return An explanation for the score of a given document. */
   public Explanation explain(int doc) throws IOException {
     Explanation res = new Explanation();

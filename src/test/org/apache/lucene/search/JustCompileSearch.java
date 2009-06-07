@@ -175,18 +175,32 @@ final class JustCompileSearch {
 
   static final class JustCompileDocIdSetIterator extends DocIdSetIterator {
 
+    /** @deprecated delete in 3.0 */
     public int doc() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
+    
+    public int docID() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
 
+    /** @deprecated delete in 3.0 */
     public boolean next() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    /** @deprecated delete in 3.0 */
     public boolean skipTo(int target) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
+    public int nextDoc() throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+    
+    public int advance(int target) throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
   }
   
   static final class JustCompileFieldCache implements FieldCache {
@@ -470,6 +484,11 @@ final class JustCompileSearch {
       super(similarity);
     }
 
+    protected boolean score(Collector collector, int max, int firstDocID)
+        throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+    
     public Explanation explain(int doc) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -478,18 +497,32 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    /** @deprecated delete in 3.0 */
     public int doc() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
+    
+    public int docID() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
 
+    /** @deprecated delete in 3.0. */
     public boolean next() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    /** @deprecated delete in 3.0. */
     public boolean skipTo(int target) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
+
+    public int nextDoc() throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
     
+    public int advance(int target) throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
   }
   
   static final class JustCompileSimilarity extends Similarity {

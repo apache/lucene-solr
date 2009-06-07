@@ -16,13 +16,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Set;
+
+import org.apache.lucene.index.IndexReader;
 
 /**
  * A query that generates the union of documents produced by its subqueries, and that scores each document with the maximum
@@ -124,13 +124,19 @@ public class DisjunctionMaxQuery extends Query {
 
     /* Create the scorer used to score our associated DisjunctionMaxQuery */
     public Scorer scorer(IndexReader reader) throws IOException {
-      DisjunctionMaxScorer result = new DisjunctionMaxScorer(tieBreakerMultiplier, similarity);
-      for (int i = 0 ; i < weights.size(); i++) {
-        Weight w = (Weight) weights.get(i);
+      Scorer[] scorers = new Scorer[weights.size()];
+      int idx = 0;
+      for (Iterator iter = weights.iterator(); iter.hasNext();) {
+        Weight w = (Weight) iter.next();
         Scorer subScorer = w.scorer(reader);
-        if (subScorer == null) return null;
-        result.add(subScorer);
+        if (subScorer == null) {
+          return null;
+        } else if (subScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+          scorers[idx++] = subScorer;
+        }
       }
+      if (idx == 0) return null; // all scorers did not have documents
+      DisjunctionMaxScorer result = new DisjunctionMaxScorer(tieBreakerMultiplier, similarity, scorers, idx);
       return result;
     }
 

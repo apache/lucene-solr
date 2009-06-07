@@ -18,8 +18,11 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
+
 /* Description from Doug Cutting (excerpted from
  * LUCENE-1483):
  *
@@ -54,30 +57,105 @@ import org.apache.lucene.index.IndexReader;
  * updates for the optional terms. */
 
 final class BooleanScorer extends Scorer {
-  private SubScorer scorers = null;
-  private BucketTable bucketTable = new BucketTable();
+  
+  private static final class BooleanScorerCollector extends Collector {
+    private BucketTable bucketTable;
+    private int mask;
+    private Scorer scorer;
+    
+    public BooleanScorerCollector(int mask, BucketTable bucketTable) {
+      this.mask = mask;
+      this.bucketTable = bucketTable;
+    }
+    public final void collect(final int doc) throws IOException {
+      final BucketTable table = bucketTable;
+      final int i = doc & BucketTable.MASK;
+      Bucket bucket = table.buckets[i];
+      if (bucket == null)
+        table.buckets[i] = bucket = new Bucket();
+      
+      if (bucket.doc != doc) {                    // invalid bucket
+        bucket.doc = doc;                         // set doc
+        bucket.score = scorer.score();            // initialize score
+        bucket.bits = mask;                       // initialize mask
+        bucket.coord = 1;                         // initialize coord
 
-  private int maxCoord = 1;
-  private float[] coordFactors = null;
-
-  private int requiredMask = 0;
-  private int prohibitedMask = 0;
-  private int nextMask = 1;
-
-  private final int minNrShouldMatch;
-
-  BooleanScorer(Similarity similarity) {
-    this(similarity, 1);
+        bucket.next = table.first;                // push onto valid list
+        table.first = bucket;
+      } else {                                    // valid bucket
+        bucket.score += scorer.score();           // increment score
+        bucket.bits |= mask;                      // add bits in mask
+        bucket.coord++;                           // increment coord
+      }
+    }
+    
+    public void setNextReader(IndexReader reader, int docBase) {
+      // not needed by this implementation
+    }
+    public void setScorer(Scorer scorer) throws IOException {
+      this.scorer = scorer;
+    }
   }
   
-  BooleanScorer(Similarity similarity, int minNrShouldMatch) {
-    super(similarity);
-    this.minNrShouldMatch = minNrShouldMatch;
+  // An internal class which is used in score(Collector, int) for setting the
+  // current score. This is required since Collector exposes a setScorer method
+  // and implementations that need the score will call scorer.score().
+  // Therefore the only methods that are implemented are score() and doc().
+  private static final class BucketScorer extends Scorer {
+
+    float score;
+    int doc = NO_MORE_DOCS;
+    
+    public BucketScorer() { super(null); }
+    
+    public int advance(int target) throws IOException { return NO_MORE_DOCS; }
+
+    /** @deprecated use {@link #docID()} instead. */
+    public int doc() { return doc; }
+
+    public int docID() { return doc; }
+
+    public Explanation explain(int doc) throws IOException { return null; }
+    
+    /** @deprecated use {@link #nextDoc()} instead. */
+    public boolean next() throws IOException { return false; }
+
+    public int nextDoc() throws IOException { return NO_MORE_DOCS; }
+    
+    public float score() throws IOException { return score; }
+    
+    /** @deprecated use {@link #advance(int)} instead. */
+    public boolean skipTo(int target) throws IOException { return false; }
+    
+  }
+
+  static final class Bucket {
+    int doc = -1;            // tells if bucket is valid
+    float score;             // incremental score
+    int bits;                // used for bool constraints
+    int coord;               // count of terms in score
+    Bucket next;             // next valid bucket
   }
   
+  /** A simple hash table of document scores within a range. */
+  static final class BucketTable {
+    public static final int SIZE = 1 << 11;
+    public static final int MASK = SIZE - 1;
+
+    final Bucket[] buckets = new Bucket[SIZE];
+    Bucket first = null;                          // head of valid list
+  
+    public BucketTable() {}
+
+    public Collector newCollector(int mask) {
+      return new BooleanScorerCollector(mask, this);
+    }
+
+    public final int size() { return SIZE; }
+  }
+
   static final class SubScorer {
     public Scorer scorer;
-    public boolean done;
     public boolean required = false;
     public boolean prohibited = false;
     public Collector collector;
@@ -87,41 +165,52 @@ final class BooleanScorer extends Scorer {
         Collector collector, SubScorer next)
       throws IOException {
       this.scorer = scorer;
-      this.done = !scorer.next();
       this.required = required;
       this.prohibited = prohibited;
       this.collector = collector;
       this.next = next;
     }
   }
+  
+  private SubScorer scorers = null;
+  private BucketTable bucketTable = new BucketTable();
+  private int maxCoord = 1;
+  private final float[] coordFactors;
+  private int requiredMask = 0;
+  private int prohibitedMask = 0;
+  private int nextMask = 1;
+  private final int minNrShouldMatch;
+  private int end;
+  private Bucket current;
+  private int doc = -1;
 
-  final void add(Scorer scorer, boolean required, boolean prohibited)
-    throws IOException {
-    int mask = 0;
-    if (required || prohibited) {
-      if (nextMask == 0) {
-        throw new IndexOutOfBoundsException(
-            "More than 32 required/prohibited clauses in query.");
+  BooleanScorer(Similarity similarity, int minNrShouldMatch,
+      List optionalScorers, List prohibitedScorers) throws IOException {
+    super(similarity);
+    this.minNrShouldMatch = minNrShouldMatch;
+
+    if (optionalScorers != null && optionalScorers.size() > 0) {
+      for (Iterator si = optionalScorers.iterator(); si.hasNext();) {
+        Scorer scorer = (Scorer) si.next();
+        maxCoord++;
+        if (scorer.nextDoc() != NO_MORE_DOCS) {
+          scorers = new SubScorer(scorer, false, false, bucketTable.newCollector(0), scorers);
+        }
       }
-      mask = nextMask;
-      nextMask = nextMask << 1;
+    }
+    
+    if (prohibitedScorers != null && prohibitedScorers.size() > 0) {
+      for (Iterator si = prohibitedScorers.iterator(); si.hasNext();) {
+        Scorer scorer = (Scorer) si.next();
+        int mask = nextMask;
+        nextMask = nextMask << 1;
+        prohibitedMask |= mask;                     // update prohibited mask
+        if (scorer.nextDoc() != NO_MORE_DOCS) {
+          scorers = new SubScorer(scorer, false, true, bucketTable.newCollector(mask), scorers);
+        }
+      }
     }
 
-    if (!prohibited) {
-      maxCoord++;
-      if (required) {
-        requiredMask |= mask;                       // update required mask
-      }
-    } else {
-      // prohibited
-      prohibitedMask |= mask;                     // update prohibited mask
-    }
-
-    scorers = new SubScorer(scorer, required, prohibited,
-                            bucketTable.newCollector(mask), scorers);
-  }
-
-  private final void computeCoordFactors() {
     coordFactors = new float[maxCoord];
     Similarity sim = getSimilarity();
     for (int i = 0; i < maxCoord; i++) {
@@ -129,31 +218,10 @@ final class BooleanScorer extends Scorer {
     }
   }
 
-  private int end;
-  private Bucket current;
-
-  /** @deprecated use {@link #score(Collector)} instead. */
-  public void score(HitCollector hc) throws IOException {
-    score(new HitCollectorWrapper(hc));
-  }
-  
-  public void score(Collector collector) throws IOException {
-    next();
-    score(collector, Integer.MAX_VALUE);
-  }
-
-  /** @deprecated use {@link #score(Collector, int)} instead. */
-  protected boolean score(HitCollector hc, int max) throws IOException {
-    return score(new HitCollectorWrapper(hc), max);
-  }
-
-  protected boolean score(Collector collector, int max) throws IOException {
-    if (coordFactors == null) {
-      computeCoordFactors();
-    }
+  // firstDocID is ignored since nextDoc() initializes 'current'
+  protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
     boolean more;
     Bucket tmp;
-    
     BucketScorer bs = new BucketScorer();
     // The internal loop will set the score and doc before calling collect.
     collector.setScorer(bs);
@@ -194,10 +262,9 @@ final class BooleanScorer extends Scorer {
       more = false;
       end += BucketTable.SIZE;
       for (SubScorer sub = scorers; sub != null; sub = sub.next) {
-        if (!sub.done) {
-          sub.done = !sub.scorer.score(sub.collector, end);
-          if (!sub.done)
-            more = true;
+        int subScorerDocID = sub.scorer.docID();
+        if (subScorerDocID != NO_MORE_DOCS) {
+          more |= sub.scorer.score(sub.collector, end, subScorerDocID);
         }
       }
       current = bucketTable.first;
@@ -207,9 +274,32 @@ final class BooleanScorer extends Scorer {
     return false;
   }
 
-  public int doc() { return current.doc; }
+  /** @deprecated use {@link #score(Collector, int)} instead. */
+  protected boolean score(HitCollector hc, int max) throws IOException {
+    return score(new HitCollectorWrapper(hc), max, docID());
+  }
+  
+  public int advance(int target) throws IOException {
+    throw new UnsupportedOperationException();
+  }
 
+  /** @deprecated use {@link #docID()} instead. */
+  public int doc() { return current.doc; }
+  
+  public int docID() {
+    return doc;
+  }
+
+  public Explanation explain(int doc) {
+    throw new UnsupportedOperationException();
+  }
+
+  /** @deprecated use {@link #nextDoc()} instead. */
   public boolean next() throws IOException {
+    return nextDoc() != NO_MORE_DOCS;
+  }
+  
+  public int nextDoc() throws IOException {
     boolean more;
     do {
       while (bucketTable.first != null) {         // more queued
@@ -220,7 +310,7 @@ final class BooleanScorer extends Scorer {
         if ((current.bits & prohibitedMask) == 0 &&
             (current.bits & requiredMask) == requiredMask &&
             current.coord >= minNrShouldMatch) {
-          return true;
+          return doc = current.doc;
         }
       }
 
@@ -230,131 +320,33 @@ final class BooleanScorer extends Scorer {
       for (SubScorer sub = scorers; sub != null; sub = sub.next) {
         Scorer scorer = sub.scorer;
         sub.collector.setScorer(scorer);
-        while (!sub.done && scorer.doc() < end) {
-          sub.collector.collect(scorer.doc());
-          sub.done = !scorer.next();
+        int doc = scorer.docID();
+        while (doc < end) {
+          sub.collector.collect(doc);
+          doc = scorer.nextDoc();
         }
-        if (!sub.done) {
-          more = true;
-        }
+        more |= (doc != NO_MORE_DOCS);
       }
     } while (bucketTable.first != null || more);
 
-    return false;
+    return doc = NO_MORE_DOCS;
   }
 
   public float score() {
-    if (coordFactors == null) {
-      computeCoordFactors();
-    }
     return current.score * coordFactors[current.coord];
   }
 
-  static final class Bucket {
-    int doc = -1;                                 // tells if bucket is valid
-    float       score;                            // incremental score
-    int bits;                                     // used for bool constraints
-    int coord;                                    // count of terms in score
-    Bucket      next;                             // next valid bucket
+  public void score(Collector collector) throws IOException {
+    score(collector, Integer.MAX_VALUE, nextDoc());
   }
 
-  // An internal class which is used in score(Collector, int) for setting the
-  // current score. This is required since Collector exposes a setScorer method
-  // and implementations that need the score will call scorer.score().
-  // Therefore the only methods that are implemented are score() and doc().
-  private static final class BucketScorer extends Scorer {
-
-    float score;
-    int doc;
-    
-    public BucketScorer() {
-      super(null);
-    }
-    
-    
-    public Explanation explain(int doc) throws IOException {
-      return null;
-    }
-
-    public float score() throws IOException {
-      return score;
-    }
-
-    public int doc() {
-      return doc;
-    }
-
-    public boolean next() throws IOException {
-      return false;
-    }
-
-    public boolean skipTo(int target) throws IOException {
-      return false;
-    }
-    
+  /** @deprecated use {@link #score(Collector)} instead. */
+  public void score(HitCollector hc) throws IOException {
+    score(new HitCollectorWrapper(hc));
   }
   
-  /** A simple hash table of document scores within a range. */
-  static final class BucketTable {
-    public static final int SIZE = 1 << 11;
-    public static final int MASK = SIZE - 1;
-
-    final Bucket[] buckets = new Bucket[SIZE];
-    Bucket first = null;                          // head of valid list
-  
-    public BucketTable() {}
-
-    public final int size() { return SIZE; }
-
-    public Collector newCollector(int mask) {
-      return new BooleanScorerCollector(mask, this);
-    }
-  }
-
-  private static final class BooleanScorerCollector extends Collector {
-    private BucketTable bucketTable;
-    private int mask;
-    private Scorer scorer;
-    
-    public BooleanScorerCollector(int mask, BucketTable bucketTable) {
-      this.mask = mask;
-      this.bucketTable = bucketTable;
-    }
-    public void setScorer(Scorer scorer) throws IOException {
-      this.scorer = scorer;
-    }
-    
-    public final void collect(final int doc) throws IOException {
-      final BucketTable table = bucketTable;
-      final int i = doc & BucketTable.MASK;
-      Bucket bucket = table.buckets[i];
-      if (bucket == null)
-        table.buckets[i] = bucket = new Bucket();
-      
-      if (bucket.doc != doc) {                    // invalid bucket
-        bucket.doc = doc;                         // set doc
-        bucket.score = scorer.score();            // initialize score
-        bucket.bits = mask;                       // initialize mask
-        bucket.coord = 1;                         // initialize coord
-
-        bucket.next = table.first;                // push onto valid list
-        table.first = bucket;
-      } else {                                    // valid bucket
-        bucket.score += scorer.score();           // increment score
-        bucket.bits |= mask;                      // add bits in mask
-        bucket.coord++;                           // increment coord
-      }
-    }
-    public void setNextReader(IndexReader reader, int docBase) {
-      // not needed by this implementation
-    }
-  }
-
+  /** @deprecated use {@link #advance(int)} instead. */
   public boolean skipTo(int target) {
-    throw new UnsupportedOperationException();
-  }
-
-  public Explanation explain(int doc) {
     throw new UnsupportedOperationException();
   }
 

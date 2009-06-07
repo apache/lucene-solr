@@ -115,6 +115,7 @@ public class ValueSourceQuery extends Query {
     private final float qWeight;
     private final DocValues vals;
     private final TermDocs termDocs;
+    private int doc = -1;
 
     // constructor
     private ValueSourceScorer(Similarity similarity, IndexReader reader, ValueSourceWeight w) throws IOException {
@@ -126,25 +127,36 @@ public class ValueSourceQuery extends Query {
       termDocs = reader.termDocs(null);
     }
 
-    /*(non-Javadoc) @see org.apache.lucene.search.Scorer#next() */
+    /** @deprecated use {@link #nextDoc()} instead. */
     public boolean next() throws IOException {
       return termDocs.next();
     }
 
-    /*(non-Javadoc) @see org.apache.lucene.search.Scorer#doc()
-     */
+    public int nextDoc() throws IOException {
+      return doc = termDocs.next() ? termDocs.doc() : NO_MORE_DOCS;
+    }
+    
+    /** @deprecated use {@link #docID()} instead. */
     public int doc() {
       return termDocs.doc();
     }
 
+    public int docID() {
+      return doc;
+    }
+    
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#score() */
     public float score() throws IOException {
       return qWeight * vals.floatVal(termDocs.doc());
     }
 
-    /*(non-Javadoc) @see org.apache.lucene.search.Scorer#skipTo(int) */
+    /** @deprecated use {@link #advance(int)} instead. */
     public boolean skipTo(int target) throws IOException {
       return termDocs.skipTo(target);
+    }
+    
+    public int advance(int target) throws IOException {
+      return doc = termDocs.skipTo(target) ? termDocs.doc() : NO_MORE_DOCS;
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#explain(int) */

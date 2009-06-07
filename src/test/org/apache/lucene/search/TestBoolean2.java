@@ -18,22 +18,17 @@ package org.apache.lucene.search;
  */
 
 
-import org.apache.lucene.store.RAMDirectory;
-
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
+import java.util.Random;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-
-import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
-
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.util.Random;
 
 /** Test BooleanQuery2 against BooleanQuery by overriding the standard query parser.
  * This also tests the scoring order of BooleanQuery.
@@ -158,13 +153,14 @@ public class TestBoolean2 extends LuceneTestCase {
 
     int tot=0;
 
+    BooleanQuery q1 = null;
     try {
 
       // increase number of iterations for more complete testing
       for (int i=0; i<1000; i++) {
         int level = rnd.nextInt(3);
-        BooleanQuery q1 = randBoolQuery(new Random(rnd.nextLong()), level, field, vals, null);
-
+        q1 = randBoolQuery(new Random(rnd.nextLong()), level, field, vals, null);
+        
         // Can't sort by relevance since floating point numbers may not quite
         // match up.
         Sort sort = Sort.INDEXORDER;
@@ -181,6 +177,10 @@ public class TestBoolean2 extends LuceneTestCase {
         CheckHits.checkEqual(q1, hits1, hits2);
       }
 
+    } catch (Exception e) {
+      // For easier debugging
+      System.out.println("failed query: " + q1);
+      throw e;
     } finally { // even when a test fails.
       BooleanQuery.setAllowDocsOutOfOrder(false);
     }

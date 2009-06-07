@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Iterator;
 
 /* See the description in BooleanScorer.java, comparing
  * BooleanScorer & BooleanScorer2 */
@@ -65,6 +64,7 @@ class BooleanScorer2 extends Scorer {
    */  
   private boolean allowDocsOutOfOrder;
 
+  private int doc = -1;
 
   /** Create a BooleanScorer2.
    * @param similarity The similarity to be used.
@@ -151,7 +151,7 @@ class BooleanScorer2 extends Scorer {
       this.scorer = scorer;
     }
     public float score() throws IOException {
-      int doc = doc();
+      int doc = docID();
       if (doc >= lastScoredDoc) {
         if (doc > lastScoredDoc) {
           lastDocScore = scorer.score();
@@ -161,14 +161,26 @@ class BooleanScorer2 extends Scorer {
       }
       return lastDocScore;
     }
+    /** @deprecated use {@link #docID()} instead. */
     public int doc() {
       return scorer.doc();
     }
-    public boolean next() throws IOException {
-      return scorer.next();
+    public int docID() {
+      return scorer.docID();
     }
+    /** @deprecated use {@link #nextDoc()} instead. */
+    public boolean next() throws IOException {
+      return scorer.nextDoc() != NO_MORE_DOCS;
+    }
+    public int nextDoc() throws IOException {
+      return scorer.nextDoc();
+    }
+    /** @deprecated use {@link #advance(int)} instead. */
     public boolean skipTo(int docNr) throws IOException {
-      return scorer.skipTo(docNr);
+      return scorer.advance(docNr) != NO_MORE_DOCS;
+    }
+    public int advance(int target) throws IOException {
+      return scorer.advance(target);
     }
     public Explanation explain(int docNr) throws IOException {
       return scorer.explain(docNr);
@@ -184,7 +196,7 @@ class BooleanScorer2 extends Scorer {
       // once in score().
       private float lastDocScore = Float.NaN;
       public float score() throws IOException {
-        int doc = doc();
+        int doc = docID();
         if (doc >= lastScoredDoc) {
           if (doc > lastScoredDoc) {
             lastDocScore = super.score();
@@ -208,7 +220,7 @@ class BooleanScorer2 extends Scorer {
       // once in score().
       private float lastDocScore = Float.NaN;
       public float score() throws IOException {
-        int doc = doc();
+        int doc = docID();
         if (doc >= lastScoredDoc) {
           if (doc > lastScoredDoc) {
             lastDocScore = super.score();
@@ -323,24 +335,16 @@ class BooleanScorer2 extends Scorer {
   public void score(Collector collector) throws IOException {
     if (allowDocsOutOfOrder && requiredScorers.size() == 0
             && prohibitedScorers.size() < 32) {
-      // fall back to BooleanScorer, scores documents somewhat out of order
-      BooleanScorer bs = new BooleanScorer(getSimilarity(), minNrShouldMatch);
-      Iterator si = optionalScorers.iterator();
-      while (si.hasNext()) {
-        bs.add((Scorer) si.next(), false /* required */, false /* prohibited */);
-      }
-      si = prohibitedScorers.iterator();
-      while (si.hasNext()) {
-        bs.add((Scorer) si.next(), false /* required */, true /* prohibited */);
-      }
-      bs.score(collector);
+      new BooleanScorer(getSimilarity(), minNrShouldMatch, optionalScorers,
+          prohibitedScorers).score(collector);
     } else {
       if (countingSumScorer == null) {
         initCountingSumScorer();
       }
       collector.setScorer(this);
-      while (countingSumScorer.next()) {
-        collector.collect(countingSumScorer.doc());
+      int doc;
+      while ((doc = countingSumScorer.nextDoc()) != NO_MORE_DOCS) {
+        collector.collect(doc);
       }
     }
   }
@@ -355,60 +359,57 @@ class BooleanScorer2 extends Scorer {
    * @deprecated use {@link #score(Collector, int)} instead.
    */
   protected boolean score(HitCollector hc, int max) throws IOException {
-    return score(new HitCollectorWrapper(hc), max);
+    return score(new HitCollectorWrapper(hc), max, docID());
   }
   
-  /** Expert: Collects matching documents in a range.
-   * <br>Note that {@link #next()} must be called once before this method is
-   * called for the first time.
-   * @param collector The collector to which all matching documents are passed through.
-   * @param max Do not score documents past this.
-   * @return true if more matching documents may remain.
-   */
-  protected boolean score(Collector collector, int max) throws IOException {
+  protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
     // null pointer exception when next() was not called before:
-    int docNr = countingSumScorer.doc();
+    int docNr = firstDocID;
     collector.setScorer(this);
     while (docNr < max) {
       collector.collect(docNr);
-      if (!countingSumScorer.next()) {
-        return false;
-      }
-      docNr = countingSumScorer.doc();
+      docNr = countingSumScorer.nextDoc();
     }
-    return true;
+    return docNr != NO_MORE_DOCS;
   }
 
+  /** @deprecated use {@link #docID()} instead. */
   public int doc() { return countingSumScorer.doc(); }
 
+  public int docID() {
+    return doc;
+  }
+  
+  /** @deprecated use {@link #nextDoc()} instead. */
   public boolean next() throws IOException {
+    return nextDoc() != NO_MORE_DOCS;
+  }
+
+  public int nextDoc() throws IOException {
     if (countingSumScorer == null) {
       initCountingSumScorer();
     }
-    return countingSumScorer.next();
+    return doc = countingSumScorer.nextDoc();
   }
-
+  
   public float score() throws IOException {
     coordinator.nrMatchers = 0;
     float sum = countingSumScorer.score();
     return sum * coordinator.coordFactors[coordinator.nrMatchers];
   }
 
-  /** Skips to the first match beyond the current whose document number is
-   * greater than or equal to a given target.
-   * 
-   * <p>When this method is used the {@link #explain(int)} method should not be used.
-   * 
-   * @param target The target document number.
-   * @return true iff there is such a match.
-   */
+  /** @deprecated use {@link #advance(int)} instead. */
   public boolean skipTo(int target) throws IOException {
+    return advance(target) != NO_MORE_DOCS;
+  }
+
+  public int advance(int target) throws IOException {
     if (countingSumScorer == null) {
       initCountingSumScorer();
     }
-    return countingSumScorer.skipTo(target);
+    return doc = countingSumScorer.advance(target);
   }
-
+  
   /** Throws an UnsupportedOperationException.
    * TODO: Implement an explanation of the coordination factor.
    * @param doc The document number for the explanation.

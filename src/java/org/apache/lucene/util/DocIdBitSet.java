@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import java.util.BitSet;
+
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 
@@ -50,28 +51,40 @@ public class DocIdBitSet extends DocIdSet {
       this.docId = -1;
     }
     
+    /** @deprecated use {@link #docID()} instead. */
     public int doc() {
       assert docId != -1;
       return docId;
     }
     
+    public int docID() {
+      return docId;
+    }
+    
+    /** @deprecated use {@link #nextDoc()} instead. */
     public boolean next() {
       // (docId + 1) on next line requires -1 initial value for docNr:
-      return checkNextDocId(bitSet.nextSetBit(docId + 1));
+      return nextDoc() != NO_MORE_DOCS;
+    }
+    
+    public int nextDoc() {
+      // (docId + 1) on next line requires -1 initial value for docNr:
+      int d = bitSet.nextSetBit(docId + 1);
+      // -1 returned by BitSet.nextSetBit() when exhausted
+      docId = d == -1 ? NO_MORE_DOCS : d;
+      return docId;
     }
   
+    /** @deprecated use {@link #advance(int)} instead. */
     public boolean skipTo(int skipDocNr) {
-      return checkNextDocId( bitSet.nextSetBit(skipDocNr));
+      return advance(skipDocNr) != NO_MORE_DOCS;
     }
   
-    private boolean checkNextDocId(int d) {
-      if (d == -1) { // -1 returned by BitSet.nextSetBit() when exhausted
-        docId = Integer.MAX_VALUE;
-        return false;
-      } else {
-        docId = d;
-        return true;
-      }
+    public int advance(int target) {
+      int d = bitSet.nextSetBit(target);
+      // -1 returned by BitSet.nextSetBit() when exhausted
+      docId = d == -1 ? NO_MORE_DOCS : d;
+      return docId;
     }
   }
 }

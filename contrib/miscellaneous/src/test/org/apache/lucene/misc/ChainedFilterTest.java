@@ -20,16 +20,12 @@ package org.apache.lucene.misc;
 import junit.framework.TestCase;
 import java.util.*;
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -77,7 +73,7 @@ public class ChainedFilterTest extends TestCase {
     query = bq;
 
     // date filter matches everything too
-    Date pastTheEnd = parseDate("2099 Jan 1");
+    //Date pastTheEnd = parseDate("2099 Jan 1");
     // dateFilter = DateFilter.Before("date", pastTheEnd);
     // just treat dates as strings and select the whole range for now...
     dateFilter = new RangeFilter("date","","ZZZZ",true,true);
@@ -94,15 +90,17 @@ public class ChainedFilterTest extends TestCase {
       final Filter f = chain[i];
     // create old BitSet-based Filter as wrapper
       oldFilters[i] = new Filter() {
+        /** @deprecated */
         public BitSet bits(IndexReader reader) throws IOException {
           BitSet bits = new BitSet(reader.maxDoc());
-        DocIdSetIterator it = f.getDocIdSet(reader).iterator();          
-          while(it.next()) {
-            bits.set(it.doc());
+          DocIdSetIterator it = f.getDocIdSet(reader).iterator();  
+          int doc;
+          while((doc = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+            bits.set(doc);
           }
           return bits;
         }
-    };
+      };
     }
     return oldFilters;
   }
@@ -211,37 +209,36 @@ public class ChainedFilterTest extends TestCase {
     }
   }
 
+  /*
   private Date parseDate(String s) throws ParseException {
     return new SimpleDateFormat("yyyy MMM dd", Locale.US).parse(s);
   }
+  */
   
   public void testWithCachingFilter() throws Exception {
-    for (int mode = 0; mode < 2; mode++) {
-      boolean old = (mode==0);
-      Directory dir = new RAMDirectory();
-      Analyzer analyzer = new WhitespaceAnalyzer();
+    Directory dir = new RAMDirectory();
+    Analyzer analyzer = new WhitespaceAnalyzer();
   
-      IndexWriter writer = new IndexWriter(dir, analyzer, true, MaxFieldLength.LIMITED);
-      writer.close();
+    IndexWriter writer = new IndexWriter(dir, analyzer, true, MaxFieldLength.LIMITED);
+    writer.close();
   
-      Searcher searcher = new IndexSearcher(dir);
+    Searcher searcher = new IndexSearcher(dir);
   
-      Query query = new TermQuery(new Term("none", "none"));
+    Query query = new TermQuery(new Term("none", "none"));
   
-      QueryWrapperFilter queryFilter = new QueryWrapperFilter(query);
-      CachingWrapperFilter cachingFilter = new CachingWrapperFilter(queryFilter);
+    QueryWrapperFilter queryFilter = new QueryWrapperFilter(query);
+    CachingWrapperFilter cachingFilter = new CachingWrapperFilter(queryFilter);
   
-      searcher.search(query, cachingFilter, 1);
+    searcher.search(query, cachingFilter, 1);
   
-      CachingWrapperFilter cachingFilter2 = new CachingWrapperFilter(queryFilter);
-      Filter[] chain = new Filter[2];
-      chain[0] = cachingFilter;
-      chain[1] = cachingFilter2;
-      ChainedFilter cf = new ChainedFilter(chain);
+    CachingWrapperFilter cachingFilter2 = new CachingWrapperFilter(queryFilter);
+    Filter[] chain = new Filter[2];
+    chain[0] = cachingFilter;
+    chain[1] = cachingFilter2;
+    ChainedFilter cf = new ChainedFilter(chain);
   
-      // throws java.lang.ClassCastException: org.apache.lucene.util.OpenBitSet cannot be cast to java.util.BitSet
-      searcher.search(new MatchAllDocsQuery(), cf, 1);
-    }
+    // throws java.lang.ClassCastException: org.apache.lucene.util.OpenBitSet cannot be cast to java.util.BitSet
+    searcher.search(new MatchAllDocsQuery(), cf, 1);
   }
 
 }

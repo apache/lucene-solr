@@ -43,9 +43,8 @@ abstract class PhraseScorer extends Scorer {
 
   private float freq; //prhase frequency in current doc as computed by phraseFreq().
 
-
-  PhraseScorer(Weight weight, TermPositions[] tps, int[] offsets, Similarity similarity,
-               byte[] norms) {
+  PhraseScorer(Weight weight, TermPositions[] tps, int[] offsets,
+      Similarity similarity, byte[] norms) {
     super(similarity);
     this.norms = norms;
     this.weight = weight;
@@ -60,25 +59,37 @@ abstract class PhraseScorer extends Scorer {
       PhrasePositions pp = new PhrasePositions(tps[i], offsets[i]);
       if (last != null) {			  // add next to end of list
         last.next = pp;
-      } else
+      } else {
         first = pp;
+      }
       last = pp;
     }
 
     pq = new PhraseQueue(tps.length);             // construct empty pq
-
+    first.doc = -1;
   }
 
+  /** @deprecated use {@link #docID()} instead. */
   public int doc() { return first.doc; }
+  
+  public int docID() { return first.doc; }
 
+  /** @deprecated use {@link #nextDoc()} instead. */
   public boolean next() throws IOException {
+    return nextDoc() != NO_MORE_DOCS;
+  }
+
+  public int nextDoc() throws IOException {
     if (firstTime) {
       init();
       firstTime = false;
     } else if (more) {
       more = last.next();                         // trigger further scanning
     }
-    return doNext();
+    if (!doNext()) {
+      first.doc = NO_MORE_DOCS;
+    }
+    return first.doc;
   }
   
   // next without initial increment
@@ -107,16 +118,25 @@ abstract class PhraseScorer extends Scorer {
     return norms == null ? raw : raw * Similarity.decodeNorm(norms[first.doc]); // normalize
   }
 
+  /** @deprecated use {@link #advance(int)} instead. */
   public boolean skipTo(int target) throws IOException {
+    return advance(target) != NO_MORE_DOCS;
+  }
+
+  public int advance(int target) throws IOException {
     firstTime = false;
     for (PhrasePositions pp = first; more && pp != null; pp = pp.next) {
       more = pp.skipTo(target);
     }
-    if (more)
+    if (more) {
       sort();                                     // re-sort
-    return doNext();
+    }
+    if (!doNext()) {
+      first.doc = NO_MORE_DOCS;
+    }
+    return first.doc;
   }
-
+  
   /**
    * For a document containing all the phrase query terms, compute the
    * frequency of the phrase in that document. 
@@ -127,16 +147,19 @@ abstract class PhraseScorer extends Scorer {
   protected abstract float phraseFreq() throws IOException;
 
   private void init() throws IOException {
-    for (PhrasePositions pp = first; more && pp != null; pp = pp.next) 
+    for (PhrasePositions pp = first; more && pp != null; pp = pp.next) {
       more = pp.next();
-    if(more)
+    }
+    if (more) {
       sort();
+    }
   }
   
   private void sort() {
     pq.clear();
-    for (PhrasePositions pp = first; pp != null; pp = pp.next)
-      pq.put(pp);
+    for (PhrasePositions pp = first; pp != null; pp = pp.next) {
+      pq.add(pp);
+    }
     pqToList();
   }
 
@@ -163,9 +186,8 @@ abstract class PhraseScorer extends Scorer {
   public Explanation explain(final int doc) throws IOException {
     Explanation tfExplanation = new Explanation();
 
-    while (next() && doc() < doc) {}
-
-    float phraseFreq = (doc() == doc) ? freq : 0.0f;
+    int d = advance(doc);
+    float phraseFreq = (d == doc) ? freq : 0.0f;
     tfExplanation.setValue(getSimilarity().tf(phraseFreq));
     tfExplanation.setDescription("tf(phraseFreq=" + phraseFreq + ")");
 

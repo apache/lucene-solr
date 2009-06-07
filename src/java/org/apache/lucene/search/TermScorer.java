@@ -31,7 +31,7 @@ final class TermScorer extends Scorer {
   private TermDocs termDocs;
   private byte[] norms;
   private float weightValue;
-  private int doc;
+  private int doc = -1;
 
   private final int[] docs = new int[32];         // buffered doc numbers
   private final int[] freqs = new int[32];        // buffered term freqs
@@ -65,16 +65,16 @@ final class TermScorer extends Scorer {
   }
 
   public void score(Collector c) throws IOException {
-    next();
-    score(c, Integer.MAX_VALUE);
+    score(c, Integer.MAX_VALUE, nextDoc());
   }
 
   /** @deprecated use {@link #score(Collector, int)} instead. */
   protected boolean score(HitCollector c, int end) throws IOException {
-    return score(new HitCollectorWrapper(c), end);
+    return score(new HitCollectorWrapper(c), end, doc);
   }
   
-  protected boolean score(Collector c, int end) throws IOException {
+  // firstDocID is ignored since nextDoc() sets 'doc'
+  protected boolean score(Collector c, int end, int firstDocID) throws IOException {
     c.setScorer(this);
     while (doc < end) {                           // for docs in window
       c.collect(doc);                      // collect score
@@ -94,17 +94,31 @@ final class TermScorer extends Scorer {
     return true;
   }
 
-  /** Returns the current document number matching the query.
-   * Initially invalid, until {@link #next()} is called the first time.
-   */
+  /** @deprecated use {@link #docID()} instead. */
   public int doc() { return doc; }
+  
+  public int docID() { return doc; }
 
-  /** Advances to the next document matching the query.
-   * <br>The iterator over the matching documents is buffered using
+  /**
+   * Advances to the next document matching the query. <br>
+   * The iterator over the matching documents is buffered using
    * {@link TermDocs#read(int[],int[])}.
+   * 
    * @return true iff there is another document matching the query.
+   * @deprecated use {@link #nextDoc()} instead.
    */
   public boolean next() throws IOException {
+    return nextDoc() != NO_MORE_DOCS;
+  }
+
+  /**
+   * Advances to the next document matching the query. <br>
+   * The iterator over the matching documents is buffered using
+   * {@link TermDocs#read(int[],int[])}.
+   * 
+   * @return the document matching the query or -1 if there are no more documents.
+   */
+  public int nextDoc() throws IOException {
     pointer++;
     if (pointer >= pointerMax) {
       pointerMax = termDocs.read(docs, freqs);    // refill buffer
@@ -112,15 +126,15 @@ final class TermScorer extends Scorer {
         pointer = 0;
       } else {
         termDocs.close();                         // close stream
-        doc = Integer.MAX_VALUE;                  // set to sentinel value
-        return false;
+        return doc = NO_MORE_DOCS;
       }
     } 
     doc = docs[pointer];
-    return true;
+    return doc;
   }
-
+  
   public float score() {
+    assert doc != -1;
     int f = freqs[pointer];
     float raw =                                   // compute tf(f)*weight
       f < SCORE_CACHE_SIZE                        // check cache
@@ -130,18 +144,34 @@ final class TermScorer extends Scorer {
     return norms == null ? raw : raw * SIM_NORM_DECODER[norms[doc] & 0xFF]; // normalize for field
   }
 
-  /** Skips to the first match beyond the current whose document number is
-   * greater than or equal to a given target. 
-   * <br>The implementation uses {@link TermDocs#skipTo(int)}.
-   * @param target The target document number.
+  /**
+   * Skips to the first match beyond the current whose document number is
+   * greater than or equal to a given target. <br>
+   * The implementation uses {@link TermDocs#skipTo(int)}.
+   * 
+   * @param target
+   *          The target document number.
    * @return true iff there is such a match.
+   * @deprecated use {@link #advance(int)} instead.
    */
   public boolean skipTo(int target) throws IOException {
+    return advance(target) != NO_MORE_DOCS;
+  }
+
+  /**
+   * Advances to the first match beyond the current whose document number is
+   * greater than or equal to a given target. <br>
+   * The implementation uses {@link TermDocs#skipTo(int)}.
+   * 
+   * @param target
+   *          The target document number.
+   * @return the matching document or -1 if none exist.
+   */
+  public int advance(int target) throws IOException {
     // first scan in cache
     for (pointer++; pointer < pointerMax; pointer++) {
       if (docs[pointer] >= target) {
-        doc = docs[pointer];
-        return true;
+        return doc = docs[pointer];
       }
     }
 
@@ -153,11 +183,11 @@ final class TermScorer extends Scorer {
       docs[pointer] = doc = termDocs.doc();
       freqs[pointer] = termDocs.freq();
     } else {
-      doc = Integer.MAX_VALUE;
+      doc = NO_MORE_DOCS;
     }
-    return result;
+    return doc;
   }
-
+  
   /** Returns an explanation of the score for a document.
    * <br>When this method is used, the {@link #next()} method
    * and the {@link #score(HitCollector)} method should not be used.

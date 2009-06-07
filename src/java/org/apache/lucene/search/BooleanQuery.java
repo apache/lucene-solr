@@ -217,13 +217,15 @@ public class BooleanQuery extends Query {
       }
     }
 
-    /** @return Returns BooleanScorer2 that uses and provides skipTo(),
-     *          and scores documents in document number order.
+    /**
+     * @return Returns BooleanScorer2 that uses and provides advance(), and
+     *         scores documents in document number order.
      */
     public Scorer scorer(IndexReader reader) throws IOException {
       // TODO (3.0): instantiate either BS or BS2, according to
       // allowDocsOutOfOrder (basically, try to inline BS2.score(Collector)'s
       // logic.
+      
       BooleanScorer2 result = new BooleanScorer2(similarity,
                                                  minNrShouldMatch,
                                                  allowDocsOutOfOrder);

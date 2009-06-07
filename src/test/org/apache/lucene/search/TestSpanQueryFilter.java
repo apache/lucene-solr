@@ -16,7 +16,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
+import java.util.Iterator;
+import java.util.List;
+
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -27,10 +29,7 @@ import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
-
-import java.util.BitSet;
-import java.util.Iterator;
-import java.util.List;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSpanQueryFilter extends LuceneTestCase {
 
@@ -77,7 +76,7 @@ public class TestSpanQueryFilter extends LuceneTestCase {
   int getDocIdSetSize(DocIdSet docIdSet) throws Exception {
     int size = 0;
     DocIdSetIterator it = docIdSet.iterator();
-    while (it.next()) {
+    while (it.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       size++;
     }
     return size;
@@ -85,7 +84,7 @@ public class TestSpanQueryFilter extends LuceneTestCase {
   
   public void assertContainsDocId(String msg, DocIdSet docIdSet, int docId) throws Exception {
     DocIdSetIterator it = docIdSet.iterator();
-    assertTrue(msg, it.skipTo(docId));
-    assertTrue(msg, it.doc() == docId);
+    assertTrue(msg, it.advance(docId) != DocIdSetIterator.NO_MORE_DOCS);
+    assertTrue(msg, it.docID() == docId);
   }
 }

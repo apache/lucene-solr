@@ -134,11 +134,11 @@ public class TestTermScorer extends LuceneTestCase
         TermScorer ts = new TermScorer(weight,
                                        indexReader.termDocs(allTerm), indexSearcher.getSimilarity(),
                                        indexReader.norms(FIELD));
-        assertTrue("next did not return a doc", ts.next() == true);
+        assertTrue("next did not return a doc", ts.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
         assertTrue("score is not correct", ts.score() == 1.6931472f);
-        assertTrue("next did not return a doc", ts.next() == true);
+        assertTrue("next did not return a doc", ts.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
         assertTrue("score is not correct", ts.score() == 1.6931472f);
-        assertTrue("next returned a doc and it should not have", ts.next() == false);
+        assertTrue("next returned a doc and it should not have", ts.nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
     }
 
     public void testSkipTo() throws Exception {
@@ -151,7 +151,7 @@ public class TestTermScorer extends LuceneTestCase
         TermScorer ts = new TermScorer(weight,
                                        indexReader.termDocs(allTerm), indexSearcher.getSimilarity(),
                                        indexReader.norms(FIELD));
-        assertTrue("Didn't skip", ts.skipTo(3) == true);
+        assertTrue("Didn't skip", ts.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
         //The next doc should be doc 5
         assertTrue("doc should be number 5", ts.doc() == 5);
     }

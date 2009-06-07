@@ -42,8 +42,8 @@ public class ScoreCachingWrappingScorer extends Scorer {
     this.scorer = scorer;
   }
 
-  protected boolean score(Collector collector, int max) throws IOException {
-    return scorer.score(collector, max);
+  protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
+    return scorer.score(collector, max, firstDocID);
   }
 
   public Similarity getSimilarity() {
@@ -55,7 +55,7 @@ public class ScoreCachingWrappingScorer extends Scorer {
   }
 
   public float score() throws IOException {
-    int doc = scorer.doc();
+    int doc = scorer.docID();
     if (doc != curDoc) {
       curScore = scorer.score();
       curDoc = doc;
@@ -64,20 +64,35 @@ public class ScoreCachingWrappingScorer extends Scorer {
     return curScore;
   }
 
+  /** @deprecated use {@link #docID()} instead. */
   public int doc() {
     return scorer.doc();
   }
+  
+  public int docID() {
+    return scorer.docID();
+  }
 
+  /** @deprecated use {@link #nextDoc()} instead. */
   public boolean next() throws IOException {
     return scorer.next();
   }
 
+  public int nextDoc() throws IOException {
+    return scorer.nextDoc();
+  }
+  
   public void score(Collector collector) throws IOException {
     scorer.score(collector);
   }
   
+  /** @deprecated use {@link #advance(int)} instead. */
   public boolean skipTo(int target) throws IOException {
     return scorer.skipTo(target);
   }
 
+  public int advance(int target) throws IOException {
+    return scorer.advance(target);
+  }
+  
 }

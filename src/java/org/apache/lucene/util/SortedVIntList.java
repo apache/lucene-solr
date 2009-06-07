@@ -24,10 +24,15 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 
 /**
- *  Store and iterate sorted integers in compressed form in RAM.
- *  <br>The code for compressing the differences between ascending integers was
- *  borrowed from {@link org.apache.lucene.store.IndexInput} and
- *  {@link org.apache.lucene.store.IndexOutput}.
+ * Stores and iterate on sorted integers in compressed form in RAM. <br>
+ * The code for compressing the differences between ascending integers was
+ * borrowed from {@link org.apache.lucene.store.IndexInput} and
+ * {@link org.apache.lucene.store.IndexOutput}.
+ * <p>
+ * <b>NOTE:</b> this class assumes the stored integers are doc Ids (hence why it
+ * extends {@link DocIdSet}). Therefore its {@link #iterator()} assumes {@value
+ * DocIdSetIterator#NO_MORE_DOCS} can be used as sentinel. If you intent to use
+ * this value, then make sure it's not used during search flow.
  */
 public class SortedVIntList extends DocIdSet {
   /** When a BitSet has fewer than 1 in BITS2VINTLIST_SIZE bits set,
@@ -99,8 +104,9 @@ public class SortedVIntList extends DocIdSet {
    */
   public SortedVIntList(DocIdSetIterator docIdSetIterator) throws IOException {
     SortedVIntListBuilder builder = new SortedVIntListBuilder();
-    while (docIdSetIterator.next()) {
-      builder.addInt(docIdSetIterator.doc());
+    int doc;
+    while ((doc = docIdSetIterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+      builder.addInt(doc);
     }
     builder.done();
   }
@@ -181,6 +187,7 @@ public class SortedVIntList extends DocIdSet {
     return new DocIdSetIterator() {
       int bytePos = 0;
       int lastInt = 0;
+      int doc = -1;
       
       private void advance() {
         // See org.apache.lucene.store.IndexInput.readVInt()
@@ -192,26 +199,43 @@ public class SortedVIntList extends DocIdSet {
         }
       }
       
+      /** @deprecated use {@link #docID()} instead. */
       public int doc() {return lastInt;}
       
+      public int docID() {
+        return doc;
+      }
+      
+      /** @deprecated use {@link #nextDoc()} instead. */
       public boolean next() {
-        if (bytePos >= lastBytePos) {
-          return false;
-        } else {
-          advance();
-          return true;
-        }
+        return nextDoc() != NO_MORE_DOCS;
       }
 
+      public int nextDoc() {
+        if (bytePos >= lastBytePos) {
+          doc = NO_MORE_DOCS;
+        } else {
+          advance();
+          doc = lastInt;
+        }
+        return doc;
+      }
+      
+      /** @deprecated use {@link #advance(int)} instead. */
       public boolean skipTo(int docNr) {
+        return advance(docNr) != NO_MORE_DOCS;
+      }
+      
+      public int advance(int target) {
         while (bytePos < lastBytePos) {
           advance();
-          if (lastInt >= docNr) { // No skipping to docNr available.
-            return true;
+          if (lastInt >= target) {
+            return doc = lastInt;
           }
         }
-        return false;
+        return doc = NO_MORE_DOCS;
       }
+      
     };
   }
 }

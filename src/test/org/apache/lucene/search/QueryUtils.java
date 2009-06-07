@@ -1,12 +1,12 @@
 package org.apache.lucene.search;
 
-import junit.framework.TestCase;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+
+import junit.framework.Assert;
 
 import org.apache.lucene.index.IndexReader;
 
@@ -56,17 +56,17 @@ public class QueryUtils {
   }
 
   public static void checkEqual(Query q1, Query q2) {
-    TestCase.assertEquals(q1, q2);
-    TestCase.assertEquals(q1.hashCode(), q2.hashCode());
+    Assert.assertEquals(q1, q2);
+    Assert.assertEquals(q1.hashCode(), q2.hashCode());
   }
 
   public static void checkUnequal(Query q1, Query q2) {
-    TestCase.assertTrue(!q1.equals(q2));
-    TestCase.assertTrue(!q2.equals(q1));
+    Assert.assertTrue(!q1.equals(q2));
+    Assert.assertTrue(!q2.equals(q1));
 
     // possible this test can fail on a hash collision... if that
     // happens, please change test to use a different example.
-    TestCase.assertTrue(q1.hashCode() != q2.hashCode());
+    Assert.assertTrue(q1.hashCode() != q2.hashCode());
   }
   
   /** deep check that explanations of a query 'score' correctly */
@@ -169,8 +169,9 @@ public class QueryUtils {
           try {
             int op = order[(opidx[0]++)%order.length];
             //System.out.println(op==skip_op ? "skip("+(sdoc[0]+1)+")":"next()");
-            boolean more = op==skip_op ? scorer.skipTo(sdoc[0]+1) : scorer.next();
-            sdoc[0] = scorer.doc();
+            boolean more = op == skip_op ? scorer.advance(sdoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS
+                : scorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
+            sdoc[0] = scorer.docID();
             float scorerScore = scorer.score();
             float scorerScore2 = scorer.score();
             float scoreDiff = Math.abs(score-scorerScore);
@@ -204,8 +205,9 @@ public class QueryUtils {
       // make sure next call to scorer is false.
       int op = order[(opidx[0]++)%order.length];
       //System.out.println(op==skip_op ? "last: skip()":"last: next()");
-      boolean more = op==skip_op ? scorer.skipTo(sdoc[0]+1) : scorer.next();
-      TestCase.assertFalse(more);
+      boolean more = (op == skip_op ? scorer.advance(sdoc[0] + 1) : scorer
+          .nextDoc()) != DocIdSetIterator.NO_MORE_DOCS;
+      Assert.assertFalse(more);
     }
   }
     
@@ -228,11 +230,11 @@ public class QueryUtils {
           for (int i=lastDoc[0]+1; i<=doc; i++) {
             Weight w = q.weight(s);
             Scorer scorer = w.scorer(s.getIndexReader());
-            TestCase.assertTrue("query collected "+doc+" but skipTo("+i+") says no more docs!",scorer.skipTo(i));
-            TestCase.assertEquals("query collected "+doc+" but skipTo("+i+") got to "+scorer.doc(),doc,scorer.doc());
+            Assert.assertTrue("query collected "+doc+" but skipTo("+i+") says no more docs!",scorer.advance(i) != DocIdSetIterator.NO_MORE_DOCS);
+            Assert.assertEquals("query collected "+doc+" but skipTo("+i+") got to "+scorer.docID(),doc,scorer.docID());
             float skipToScore = scorer.score();
-            TestCase.assertEquals("unstable skipTo("+i+") score!",skipToScore,scorer.score(),maxDiff); 
-            TestCase.assertEquals("query assigned doc "+doc+" a score of <"+score+"> but skipTo("+i+") has <"+skipToScore+">!",score,skipToScore,maxDiff);
+            Assert.assertEquals("unstable skipTo("+i+") score!",skipToScore,scorer.score(),maxDiff); 
+            Assert.assertEquals("query assigned doc "+doc+" a score of <"+score+"> but skipTo("+i+") has <"+skipToScore+">!",score,skipToScore,maxDiff);
           }
           lastDoc[0] = doc;
         } catch (IOException e) {
@@ -245,8 +247,8 @@ public class QueryUtils {
     });
     Weight w = q.weight(s);
     Scorer scorer = w.scorer(s.getIndexReader());
-    boolean more = scorer.skipTo(lastDoc[0]+1);
+    boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
     if (more) 
-      TestCase.assertFalse("query's last doc was "+lastDoc[0]+" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.doc(),more);
+      Assert.assertFalse("query's last doc was "+lastDoc[0]+" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
   }
 }

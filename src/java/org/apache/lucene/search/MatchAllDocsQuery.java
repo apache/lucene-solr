@@ -47,9 +47,10 @@ public class MatchAllDocsQuery extends Query {
     final TermDocs termDocs;
     final float score;
     final byte[] norms;
-
-    MatchAllScorer(IndexReader reader, Similarity similarity, Weight w, byte[] norms) throws IOException
-    {
+    private int doc = -1;
+    
+    MatchAllScorer(IndexReader reader, Similarity similarity, Weight w,
+        byte[] norms) throws IOException {
       super(similarity);
       this.termDocs = reader.termDocs(null);
       score = w.getValue();
@@ -60,26 +61,36 @@ public class MatchAllDocsQuery extends Query {
       return null; // not called... see MatchAllDocsWeight.explain()
     }
 
+    /** @deprecated use {@link #docID()} instead. */
     public int doc() {
       return termDocs.doc();
     }
+    
+    public int docID() {
+      return doc;
+    }
 
+    /** @deprecated use {@link #nextDoc()} instead. */
     public boolean next() throws IOException {
-      return termDocs.next();
+      return nextDoc() != NO_MORE_DOCS;
     }
 
+    public int nextDoc() throws IOException {
+      return doc = termDocs.next() ? termDocs.doc() : NO_MORE_DOCS;
+    }
+    
     public float score() {
-      if (norms == null) {
-        return score;
-      } else {
-        return score * Similarity.decodeNorm(norms[doc()]); // normalize for field
-      }
+      return norms == null ? score : score * Similarity.decodeNorm(norms[docID()]);
     }
 
+    /** @deprecated use {@link #advance(int)} instead. */
     public boolean skipTo(int target) throws IOException {
-      return termDocs.skipTo(target);
+      return advance(target) != NO_MORE_DOCS;
     }
 
+    public int advance(int target) throws IOException {
+      return doc = termDocs.skipTo(target) ? termDocs.doc() : NO_MORE_DOCS;
+    }
   }
 
   private class MatchAllDocsWeight implements Weight {

@@ -35,7 +35,7 @@ Changes in backwards compatibility policy
     code to implement this method.  If you already extend
     IndexSearcher, no further changes are needed to use Collector.
     
-    Finally, the values Float.Nan, Float.NEGATIVE_INFINITY and
+    Finally, the values Float.NaN, Float.NEGATIVE_INFINITY and
     Float.POSITIVE_INFINITY are not valid scores.  Lucene uses these
     values internally in certain places, so if you have hits with such
     scores it will cause problems. (Shai Erera via Mike McCandless)
@@ -173,6 +173,17 @@ API Changes
     require up front specification of enablePositionIncrement (Mike
     McCandless)
 
+18. LUCENE-1614: DocIdSetIterator's next() and skipTo() were deprecated in favor
+    of the new nextDoc() and advance(). The new methods return the doc Id they 
+    landed on, saving an extra call to doc() in most cases.
+    For easy migration of the code, you can change the calls to next() to 
+    nextDoc() != DocIdSetIterator.NO_MORE_DOCS and similarly for skipTo(). 
+    However it is advised that you take advantage of the returned doc ID and not 
+    call doc() following those two.
+    Also, doc() was deprecated in favor of docID(). docID() should return -1 or 
+    NO_MORE_DOCS if nextDoc/advance were not called yet, or NO_MORE_DOCS if the 
+    iterator has exhausted. Otherwise it should return the current doc ID.
+    (Shai Erera via Mike McCandless)
 
 Bug fixes
 

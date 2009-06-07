@@ -24,76 +24,54 @@ import java.util.Comparator;
 
 /** Scorer for conjunctions, sets of queries, all of which are required. */
 class ConjunctionScorer extends Scorer {
+  
   private final Scorer[] scorers;
-
-  private boolean firstTime=true;
-  private boolean more;
   private final float coord;
-  private int lastDoc=-1;
+  private int lastDoc = -1;
 
   public ConjunctionScorer(Similarity similarity, Collection scorers) throws IOException {
-    this(similarity, (Scorer[])scorers.toArray(new Scorer[scorers.size()]));
+    this(similarity, (Scorer[]) scorers.toArray(new Scorer[scorers.size()]));
   }
 
   public ConjunctionScorer(Similarity similarity, Scorer[] scorers) throws IOException {
     super(similarity);
     this.scorers = scorers;
-    coord = getSimilarity().coord(this.scorers.length, this.scorers.length);
-  }
-
-  public int doc() { return lastDoc; }
-
-  public boolean next() throws IOException {
-    if (firstTime)
-      return init(0);
-    else if (more)
-      more = scorers[(scorers.length-1)].next();
-    return doNext();
-  }
-
-  private boolean doNext() throws IOException {
-    int first=0;
-    Scorer lastScorer = scorers[scorers.length-1];
-    Scorer firstScorer;
-    while (more && (firstScorer=scorers[first]).doc() < (lastDoc=lastScorer.doc())) {
-      more = firstScorer.skipTo(lastDoc);
-      lastScorer = firstScorer;
-      first = (first == (scorers.length-1)) ? 0 : first+1;
-    }
-    return more;
-  }
-
-  public boolean skipTo(int target) throws IOException {
-    if (firstTime)
-      return init(target);
-    else if (more)
-      more = scorers[(scorers.length-1)].skipTo(target);
-    return doNext();
-  }
-
-  // Note... most of this could be done in the constructor
-  // thus skipping a check for firstTime per call to next() and skipTo()
-  private boolean init(int target) throws IOException {
-    firstTime=false;
-    more = scorers.length>1;
-    for (int i=0; i<scorers.length; i++) {
-      more = target==0 ? scorers[i].next() : scorers[i].skipTo(target);
-      if (!more)
-        return false;
+    coord = similarity.coord(scorers.length, scorers.length);
+    
+    for (int i = 0; i < scorers.length; i++) {
+      if (scorers[i].nextDoc() == NO_MORE_DOCS) {
+        // If even one of the sub-scorers does not have any documents, this
+        // scorer should not attempt to do any more work.
+        lastDoc = NO_MORE_DOCS;
+        return;
+      }
     }
 
     // Sort the array the first time...
     // We don't need to sort the array in any future calls because we know
     // it will already start off sorted (all scorers on same doc).
-
+    
     // note that this comparator is not consistent with equals!
     Arrays.sort(scorers, new Comparator() {         // sort the array
-        public int compare(Object o1, Object o2) {
-          return ((Scorer)o1).doc() - ((Scorer)o2).doc();
-        }
-      });
+      public int compare(Object o1, Object o2) {
+        return ((Scorer) o1).docID() - ((Scorer) o2).docID();
+      }
+    });
 
-    doNext();
+    // NOTE: doNext() must be called before the re-sorting of the array later on.
+    // The reason is this: assume there are 5 scorers, whose first docs are 1,
+    // 2, 3, 5, 5 respectively. Sorting (above) leaves the array as is. Calling
+    // doNext() here advances all the first scorers to 5 (or a larger doc ID
+    // they all agree on). 
+    // However, if we re-sort before doNext() is called, the order will be 5, 3,
+    // 2, 1, 5 and then doNext() will stop immediately, since the first scorer's
+    // docs equals the last one. So the invariant that after calling doNext() 
+    // all scorers are on the same doc ID is broken.
+    if (doNext() == NO_MORE_DOCS) {
+      // The scorers did not agree on any document.
+      lastDoc = NO_MORE_DOCS;
+      return;
+    }
 
     // If first-time skip distance is any predictor of
     // scorer sparseness, then we should always try to skip first on
@@ -101,16 +79,62 @@ class ConjunctionScorer extends Scorer {
     // Keep last scorer in it's last place (it will be the first
     // to be skipped on), but reverse all of the others so that
     // they will be skipped on in order of original high skip.
-    int end=(scorers.length-1);
-    for (int i=0; i<(end>>1); i++) {
+    int end = scorers.length - 1;
+    int max = end >> 1;
+    for (int i = 0; i < max; i++) {
       Scorer tmp = scorers[i];
-      scorers[i] = scorers[end-i-1];
-      scorers[end-i-1] = tmp;
+      int idx = end - i - 1;
+      scorers[i] = scorers[idx];
+      scorers[idx] = tmp;
     }
-
-    return more;
   }
 
+  private int doNext() throws IOException {
+    int first = 0;
+    int doc = scorers[scorers.length - 1].docID();
+    Scorer firstScorer;
+    while ((firstScorer = scorers[first]).docID() < doc) {
+      doc = firstScorer.advance(doc);
+      first = first == scorers.length - 1 ? 0 : first + 1;
+    }
+    return doc;
+  }
+  
+  public int advance(int target) throws IOException {
+    if (lastDoc == NO_MORE_DOCS) {
+      return lastDoc;
+    } else if (scorers[(scorers.length - 1)].docID() < target) {
+      scorers[(scorers.length - 1)].advance(target);
+    }
+    return lastDoc = doNext();
+  }
+
+  /** @deprecated use {@link #docID()} instead. */
+  public int doc() { return lastDoc; }
+
+  public int docID() {
+    return lastDoc;
+  }
+  
+  public Explanation explain(int doc) {
+    throw new UnsupportedOperationException();
+  }
+
+  /** @deprecated use {@link #nextDoc()} instead. */
+  public boolean next() throws IOException {
+    return nextDoc() != NO_MORE_DOCS;
+  }
+
+  public int nextDoc() throws IOException {
+    if (lastDoc == NO_MORE_DOCS) {
+      return lastDoc;
+    } else if (lastDoc == -1) {
+      return lastDoc = scorers[scorers.length - 1].docID();
+    }
+    scorers[(scorers.length - 1)].nextDoc();
+    return lastDoc = doNext();
+  }
+  
   public float score() throws IOException {
     float sum = 0.0f;
     for (int i = 0; i < scorers.length; i++) {
@@ -119,8 +143,9 @@ class ConjunctionScorer extends Scorer {
     return sum * coord;
   }
 
-  public Explanation explain(int doc) {
-    throw new UnsupportedOperationException();
+  /** @deprecated use {@link #advance(int)} instead. */
+  public boolean skipTo(int target) throws IOException {
+    return advance(target) != NO_MORE_DOCS;
   }
 
 }

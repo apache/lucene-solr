@@ -23,13 +23,22 @@ import java.io.IOException;
 class NonMatchingScorer extends Scorer {
   public NonMatchingScorer() { super(null); } // no similarity used
   
+  /** @deprecated use {@link #docID()} instead. */
   public int doc() { throw new UnsupportedOperationException(); }
+  
+  public int docID() { return NO_MORE_DOCS; }
 
+  /** @deprecated use {@link #nextDoc()} instead. */
   public boolean next() throws IOException { return false; }
+  
+  public int nextDoc() throws IOException { return NO_MORE_DOCS; }
 
   public float score() { throw new UnsupportedOperationException(); }
 
+  /** @deprecated use {@link #advance(int)} instead. */
   public boolean skipTo(int target) { return false; }
+  
+  public int advance(int target) { return NO_MORE_DOCS; }
 
   public Explanation explain(int doc) {
     Explanation e = new Explanation();

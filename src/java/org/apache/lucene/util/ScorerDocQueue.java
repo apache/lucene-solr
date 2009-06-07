@@ -20,6 +20,8 @@ package org.apache.lucene.util;
 /* Derived from org.apache.lucene.util.PriorityQueue of March 2005 */
 
 import java.io.IOException;
+
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
 
 /** A ScorerDocQueue maintains a partial ordering of its Scorers such that the
@@ -35,14 +37,14 @@ public class ScorerDocQueue {  // later: SpansQueue for spans with doc and term 
     Scorer scorer;
     int doc;
     
-    HeapedScorerDoc(Scorer s) { this(s, s.doc()); }
+    HeapedScorerDoc(Scorer s) { this(s, s.docID()); }
     
     HeapedScorerDoc(Scorer scorer, int doc) {
       this.scorer = scorer;
       this.doc = doc;
     }
     
-    void adjust() { doc = scorer.doc(); }
+    void adjust() { doc = scorer.docID(); }
   }
   
   private HeapedScorerDoc topHSD; // same as heap[1], only for speed
@@ -79,7 +81,7 @@ public class ScorerDocQueue {  // later: SpansQueue for spans with doc and term 
       put(scorer);
       return true;
     } else {
-      int docNr = scorer.doc();
+      int docNr = scorer.docID();
       if ((size > 0) && (! (docNr < topHSD.doc))) { // heap[1] is top()
         heap[1] = new HeapedScorerDoc(scorer, docNr);
         downHeap();
@@ -113,16 +115,16 @@ public class ScorerDocQueue {  // later: SpansQueue for spans with doc and term 
   }
 
   public final boolean topNextAndAdjustElsePop() throws IOException {
-    return checkAdjustElsePop( topHSD.scorer.next());
+    return checkAdjustElsePop(topHSD.scorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
   }
 
   public final boolean topSkipToAndAdjustElsePop(int target) throws IOException {
-    return checkAdjustElsePop( topHSD.scorer.skipTo(target));
+    return checkAdjustElsePop(topHSD.scorer.advance(target) != DocIdSetIterator.NO_MORE_DOCS);
   }
   
   private boolean checkAdjustElsePop(boolean cond) {
     if (cond) { // see also adjustTop
-      topHSD.doc = topHSD.scorer.doc();
+      topHSD.doc = topHSD.scorer.docID();
     } else { // see also popNoResult
       heap[1] = heap[size]; // move last to first
       heap[size] = null;

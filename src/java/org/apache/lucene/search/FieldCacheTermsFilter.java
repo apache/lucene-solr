@@ -17,11 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermDocs;          // for javadoc
-import org.apache.lucene.util.OpenBitSet;
-
 import java.io.IOException;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.OpenBitSet;
 
 /**
  * A {@link Filter} that only accepts documents whose single
@@ -133,33 +132,44 @@ public class FieldCacheTermsFilter extends Filter {
     protected class FieldCacheTermsFilterDocIdSetIterator extends DocIdSetIterator {
       private int doc = -1;
 
+      /** @deprecated use {@link #docID()} instead. */
       public int doc() {
         return doc;
       }
-
-      public boolean next() {
-        try {
-          do {
-            doc++;
-          } while (!openBitSet.fastGet(fcsi.order[doc]));
-          return true;
-        } catch (ArrayIndexOutOfBoundsException e) {
-          doc = Integer.MAX_VALUE;
-          return false;
-        }
+      
+      public int docID() {
+        return doc;
       }
 
+      /** @deprecated use {@link #nextDoc()} instead. */
+      public boolean next() {
+        return nextDoc() != NO_MORE_DOCS;
+      }
+      
+      public int nextDoc() {
+        try {
+          while (!openBitSet.fastGet(fcsi.order[++doc])) {}
+        } catch (ArrayIndexOutOfBoundsException e) {
+          doc = NO_MORE_DOCS;
+        }
+        return doc;
+      }
+
+      /** @deprecated use {@link #advance(int)} instead. */
       public boolean skipTo(int target) {
+        return advance(target) != NO_MORE_DOCS;
+      }
+      
+      public int advance(int target) {
         try {
           doc = target;
           while (!openBitSet.fastGet(fcsi.order[doc])) {
             doc++;
           }
-          return true;
         } catch (ArrayIndexOutOfBoundsException e) {
-          doc = Integer.MAX_VALUE;
-          return false;
+          doc = NO_MORE_DOCS;
         }
+        return doc;
       }
     }
   }

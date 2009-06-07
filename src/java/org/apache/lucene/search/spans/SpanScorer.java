@@ -33,6 +33,7 @@ public class SpanScorer extends Scorer {
   protected byte[] norms;
   protected float value;
 
+  /** @deprecated not needed anymore */
   protected boolean firstTime = true;
   protected boolean more = true;
 
@@ -46,33 +47,46 @@ public class SpanScorer extends Scorer {
     this.norms = norms;
     this.weight = weight;
     this.value = weight.getValue();
-    doc = -1;
+    if (this.spans.next()) {
+      doc = -1;
+    } else {
+      doc = NO_MORE_DOCS;
+      more = false;
+    }
   }
 
+  /** @deprecated use {@link #nextDoc()} instead. */
   public boolean next() throws IOException {
-    if (firstTime) {
-      more = spans.next();
-      firstTime = false;
-    }
-    return setFreqCurrentDoc();
+    return nextDoc() != NO_MORE_DOCS;
   }
 
-  public boolean skipTo(int target) throws IOException {
-    if (firstTime) {
-      more = spans.skipTo(target);
-      firstTime = false;
+  public int nextDoc() throws IOException {
+    if (!setFreqCurrentDoc()) {
+      doc = NO_MORE_DOCS;
     }
-    if (! more) {
-      return false;
+    return doc;
+  }
+
+  /** @deprecated use {@link #advance(int)} instead. */
+  public boolean skipTo(int target) throws IOException {
+    return advance(target) != NO_MORE_DOCS;
+  }
+
+  public int advance(int target) throws IOException {
+    if (!more) {
+      return doc = NO_MORE_DOCS;
     }
     if (spans.doc() < target) { // setFreqCurrentDoc() leaves spans.doc() ahead
       more = spans.skipTo(target);
     }
-    return setFreqCurrentDoc();
+    if (!setFreqCurrentDoc()) {
+      doc = NO_MORE_DOCS;
+    }
+    return doc;
   }
-
+  
   protected boolean setFreqCurrentDoc() throws IOException {
-    if (! more) {
+    if (!more) {
       return false;
     }
     doc = spans.doc();
@@ -85,7 +99,10 @@ public class SpanScorer extends Scorer {
     return true;
   }
 
+  /** @deprecated use {@link #docID()} instead. */
   public int doc() { return doc; }
+  
+  public int docID() { return doc; }
 
   public float score() throws IOException {
     float raw = getSimilarity().tf(freq) * value; // raw score
@@ -95,9 +112,9 @@ public class SpanScorer extends Scorer {
   public Explanation explain(final int doc) throws IOException {
     Explanation tfExplanation = new Explanation();
 
-    skipTo(doc);
+    int expDoc = advance(doc);
 
-    float phraseFreq = (doc() == doc) ? freq : 0.0f;
+    float phraseFreq = (expDoc == doc) ? freq : 0.0f;
     tfExplanation.setValue(getSimilarity().tf(phraseFreq));
     tfExplanation.setDescription("tf(phraseFreq=" + phraseFreq + ")");
 

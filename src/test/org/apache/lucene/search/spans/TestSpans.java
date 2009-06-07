@@ -17,6 +17,7 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.CheckHits;
@@ -392,11 +393,11 @@ public class TestSpans extends LuceneTestCase {
 
     Scorer spanScorer = snq.weight(searcher).scorer(searcher.getIndexReader());
 
-    assertTrue("first doc", spanScorer.next());
-    assertEquals("first doc number", spanScorer.doc(), 11);
+    assertTrue("first doc", spanScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
+    assertEquals("first doc number", spanScorer.docID(), 11);
     float score = spanScorer.score();
     assertTrue("first doc score should be zero, " + score, score == 0.0f);
-    assertTrue("no second doc", ! spanScorer.next());
+    assertTrue("no second doc", spanScorer.nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
   }
 
   // LUCENE-1404

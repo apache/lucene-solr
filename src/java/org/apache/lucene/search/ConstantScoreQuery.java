@@ -84,7 +84,7 @@ public class ConstantScoreQuery extends Query {
     public Explanation explain(IndexReader reader, int doc) throws IOException {
 
       ConstantScorer cs = (ConstantScorer)scorer(reader);
-      boolean exists = cs.docIdSetIterator.skipTo(doc) && (cs.docIdSetIterator.doc() == doc);
+      boolean exists = cs.docIdSetIterator.advance(doc) == doc;
 
       ComplexExplanation result = new ComplexExplanation();
 
@@ -108,7 +108,7 @@ public class ConstantScoreQuery extends Query {
   protected class ConstantScorer extends Scorer {
     final DocIdSetIterator docIdSetIterator;
     final float theScore;
-    int doc=-1;
+    int doc = -1;
 
     public ConstantScorer(Similarity similarity, IndexReader reader, Weight w) throws IOException {
       super(similarity);
@@ -116,36 +116,48 @@ public class ConstantScoreQuery extends Query {
       docIdSetIterator = filter.getDocIdSet(reader).iterator();
     }
 
+    /** @deprecated use {@link #nextDoc()} instead. */
     public boolean next() throws IOException {
-      return docIdSetIterator.next();
+      return docIdSetIterator.nextDoc() != NO_MORE_DOCS;
     }
 
+    public int nextDoc() throws IOException {
+      return docIdSetIterator.nextDoc();
+    }
+    
+    /** @deprecated use {@link #docID()} instead. */
     public int doc() {
       return docIdSetIterator.doc();
+    }
+    
+    public int docID() {
+      return docIdSetIterator.docID();
     }
 
     public float score() throws IOException {
       return theScore;
     }
 
+    /** @deprecated use {@link #advance(int)} instead. */
     public boolean skipTo(int target) throws IOException {
-      return docIdSetIterator.skipTo(target);
+      return docIdSetIterator.advance(target) != NO_MORE_DOCS;
     }
 
+    public int advance(int target) throws IOException {
+      return docIdSetIterator.advance(target);
+    }
+    
     public Explanation explain(int doc) throws IOException {
       throw new UnsupportedOperationException();
     }
   }
 
-
   protected Weight createWeight(Searcher searcher) {
     return new ConstantScoreQuery.ConstantWeight(searcher);
   }
 
-
   /** Prints a user-readable version of this query. */
-  public String toString(String field)
-  {
+  public String toString(String field) {
     return "ConstantScore(" + filter.toString()
       + (getBoost()==1.0 ? ")" : "^" + getBoost());
   }
@@ -165,6 +177,3 @@ public class ConstantScoreQuery extends Query {
   }
 
 }
-
-
-

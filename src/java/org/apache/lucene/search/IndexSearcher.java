@@ -258,28 +258,34 @@ public class IndexSearcher extends Searcher {
     if (scorer == null)
       return;
 
+    int docID = scorer.docID();
+    assert docID == -1 || docID == DocIdSetIterator.NO_MORE_DOCS;
+    
     if (filter == null) {
       scorer.score(collector);
       return;
     }
 
-    DocIdSetIterator filterDocIdIterator = filter.getDocIdSet(reader).iterator(); // CHECKME: use ConjunctionScorer here?
+    // CHECKME: use ConjunctionScorer here?
+    DocIdSetIterator filterIter = filter.getDocIdSet(reader).iterator();
     
-    boolean more = filterDocIdIterator.next() && scorer.skipTo(filterDocIdIterator.doc());
-
+    int filterDoc = filterIter.nextDoc();
+    int scorerDoc = scorer.advance(filterDoc);
+    
     collector.setScorer(scorer);
-    while (more) {
-      int filterDocId = filterDocIdIterator.doc();
-      if (filterDocId > scorer.doc() && !scorer.skipTo(filterDocId)) {
-        more = false;
-      } else {
-        int scorerDocId = scorer.doc();
-        if (scorerDocId == filterDocId) { // permitted by filter
-          collector.collect(scorerDocId);
-          more = filterDocIdIterator.next();
-        } else {
-          more = filterDocIdIterator.skipTo(scorerDocId);
+    while (true) {
+      if (scorerDoc == filterDoc) {
+        // Check if scorer has exhausted, only before collecting.
+        if (scorerDoc == DocIdSetIterator.NO_MORE_DOCS) {
+          break;
         }
+        collector.collect(scorerDoc);
+        filterDoc = filterIter.nextDoc();
+        scorerDoc = scorer.advance(filterDoc);
+      } else if (scorerDoc > filterDoc) {
+        filterDoc = filterIter.advance(scorerDoc);
+      } else {
+        scorerDoc = scorer.advance(filterDoc);
       }
     }
   }

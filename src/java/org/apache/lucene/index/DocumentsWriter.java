@@ -991,11 +991,11 @@ final class DocumentsWriter {
       int limit = ((Integer) entry.getValue()).intValue();
       Weight weight = query.weight(searcher);
       Scorer scorer = weight.scorer(reader);
-      while(scorer.next()) {
-        final int docID = scorer.doc();
-        if (docIDStart + docID >= limit)
+      while(true)  {
+        int doc = scorer.nextDoc();
+        if (((long) docIDStart) + doc >= limit)
           break;
-        reader.deleteDocument(docID);
+        reader.deleteDocument(doc);
         any = true;
       }
     }
