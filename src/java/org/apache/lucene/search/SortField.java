@@ -420,6 +420,7 @@ implements Serializable {
       && other.reverse == this.reverse
       && (other.locale == null ? this.locale == null : other.locale.equals(this.locale))
       && (other.factory == null ? this.factory == null : other.factory.equals(this.factory))
+      && (other.comparatorSource == null ? this.comparatorSource == null : other.comparatorSource.equals(this.comparatorSource))
       && (other.parser == null ? this.parser == null : other.parser.equals(this.parser))
     );
   }
@@ -434,6 +435,7 @@ implements Serializable {
     if (field != null) hash += field.hashCode()^0xff5685dd;
     if (locale != null) hash += locale.hashCode()^0x08150815;
     if (factory != null) hash += factory.hashCode()^0x34987555;
+    if (comparatorSource != null) hash += comparatorSource.hashCode();
     if (parser != null) hash += parser.hashCode()^0x3aaf56ff;
     return hash;
   }
