@@ -44,6 +44,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Unit tests for sorting code.
@@ -1086,18 +1087,21 @@ public class TestSort extends LuceneTestCase implements Serializable {
   }
 
   private Searchable lookupRemote () throws Exception {
-    return (Searchable) Naming.lookup ("//localhost/SortedSearchable");
+    return (Searchable) Naming.lookup ("//localhost:" + port + "/SortedSearchable");
   }
+
+  private int port = -1;
 
   private void startServer () throws Exception {
     // construct an index
+    port = _TestUtil.getRandomSocketPort();
     Searcher local = getFullIndex();
     // local.search (queryA, new Sort());
 
     // publish it
-    LocateRegistry.createRegistry (1099);
+    LocateRegistry.createRegistry (port);
     RemoteSearchable impl = new RemoteSearchable (local);
-    Naming.rebind ("//localhost/SortedSearchable", impl);
+    Naming.rebind ("//localhost:" + port + "/SortedSearchable", impl);
   }
 
 }

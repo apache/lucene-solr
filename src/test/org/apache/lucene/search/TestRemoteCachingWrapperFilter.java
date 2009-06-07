@@ -21,6 +21,7 @@ import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -48,8 +49,10 @@ public class TestRemoteCachingWrapperFilter extends LuceneTestCase {
   }
 
   private static Searchable lookupRemote() throws Exception {
-    return (Searchable)Naming.lookup("//localhost/Searchable");
+    return (Searchable)Naming.lookup("//localhost:" + port + "/Searchable");
   }
+
+  private static int port;
 
   private static void startServer() throws Exception {
     // construct an index
@@ -71,10 +74,11 @@ public class TestRemoteCachingWrapperFilter extends LuceneTestCase {
     writer.close();
 
     // publish it
-    LocateRegistry.createRegistry(1099);
+    port = _TestUtil.getRandomSocketPort();
+    LocateRegistry.createRegistry(port);
     Searchable local = new IndexSearcher(indexStore);
     RemoteSearchable impl = new RemoteSearchable(local);
-    Naming.rebind("//localhost/Searchable", impl);
+    Naming.rebind("//localhost:" + port + "/Searchable", impl);
   }
 
   private static void search(Query query, Filter filter, int hitNumber, String typeValue) throws Exception {

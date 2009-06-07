@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
@@ -38,7 +39,13 @@ public class TestRemoteSearchable extends LuceneTestCase {
     super(name);
   }
 
+  private static int port = -1;
+
   private static Searchable getRemote() throws Exception {
+    if (port == -1) {
+      startServer();
+    }
+
     try {
       return lookupRemote();
     } catch (Throwable e) {
@@ -48,7 +55,7 @@ public class TestRemoteSearchable extends LuceneTestCase {
   }
 
   private static Searchable lookupRemote() throws Exception {
-    return (Searchable)Naming.lookup("//localhost/Searchable");
+    return (Searchable)Naming.lookup("//localhost:" + port + "/Searchable");
   }
 
   private static void startServer() throws Exception {
@@ -63,10 +70,11 @@ public class TestRemoteSearchable extends LuceneTestCase {
     writer.close();
 
     // publish it
-    LocateRegistry.createRegistry(1099);
+    port = _TestUtil.getRandomSocketPort();
+    LocateRegistry.createRegistry(port);
     Searchable local = new IndexSearcher(indexStore);
     RemoteSearchable impl = new RemoteSearchable(local);
-    Naming.rebind("//localhost/Searchable", impl);
+    Naming.rebind("//localhost:" + port + "/Searchable", impl);
   }
 
   private static void search(Query query) throws Exception {
