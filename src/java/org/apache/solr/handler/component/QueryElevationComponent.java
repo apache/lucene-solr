@@ -99,6 +99,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     final BooleanQuery include;
     final Map<String,Integer> priority;
     
+    // use singletons so hashCode/equals on Sort will just work
+    final FieldComparatorSource comparatorSource;
+
     ElevationObj( String qstr, List<String> elevate, List<String> exclude ) throws IOException
     {
       this.text = qstr;
@@ -124,6 +127,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           this.exclude[i] = new BooleanClause( tq, BooleanClause.Occur.MUST_NOT );
         }
       }
+
+      this.comparatorSource = new ElevationComparatorSource(priority);
     }
   }
   
@@ -348,7 +353,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       SortSpec sortSpec = rb.getSortSpec();
       if( sortSpec.getSort() == null ) {
         sortSpec.setSort( new Sort( new SortField[] {
-            new SortField(idField, new ElevationComparatorSource(booster.priority), false ),
+            new SortField(idField, booster.comparatorSource, false ),
             new SortField(null, SortField.SCORE, false)
         }));
       }
@@ -359,14 +364,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         ArrayList<SortField> sorts = new ArrayList<SortField>( current.length + 1 );
         // Perhaps force it to always sort by score
         if( force && current[0].getType() != SortField.SCORE ) {
-          sorts.add( new SortField(idField, 
-              new ElevationComparatorSource(booster.priority), false ) );
+          sorts.add( new SortField(idField, booster.comparatorSource, false ) );
           modify = true;
         }
         for( SortField sf : current ) {
           if( sf.getType() == SortField.SCORE ) {
-            sorts.add( new SortField(idField, 
-                new ElevationComparatorSource(booster.priority), sf.getReverse() ) );
+            sorts.add( new SortField(idField, booster.comparatorSource, sf.getReverse() ) );
             modify = true;
           }
           sorts.add( sf );
@@ -479,7 +482,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
       }
 
       public int sortType() {
-        return SortField.INT;
+        return SortField.CUSTOM;
       }
 
       public Comparable value(int slot) {
