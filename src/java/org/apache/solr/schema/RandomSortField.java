@@ -18,17 +18,16 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.ScoreDocComparator;
-import org.apache.lucene.search.SortComparatorSource;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.*;
 import org.apache.solr.request.TextResponseWriter;
 import org.apache.solr.request.XMLWriter;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.ValueSource;
+import org.apache.solr.search.SolrIndexReader;
 
 /**
  * Utility Field used for random sorting.  It should not be passed a value.
@@ -79,12 +78,21 @@ public class RandomSortField extends FieldType {
    * Using dynamic fields, you can force the random order to change 
    */
   private static int getSeed(String fieldName, IndexReader r) {
-    return (int) (fieldName.hashCode()^r.getVersion() );
+    SolrIndexReader top = (SolrIndexReader)r;
+    int base=0;
+    while (top.getParent() != null) {
+      base += top.getBase();
+      top = top.getParent();
+    }
+
+    // calling getVersion() on a segment will currently give you a null pointer exception, so
+    // we use the top-level reader.
+    return fieldName.hashCode() + base + (int)top.getVersion();
   }
 
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
-    return new RandomSort(field.getName(), reverse);
+    return new SortField(field.getName(), randomComparatorSource, reverse);
   }
 
   @Override
@@ -98,60 +106,47 @@ public class RandomSortField extends FieldType {
   @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException { }
 
-  private static class RandomComparator implements ScoreDocComparator {
-    final int seed;
 
-    RandomComparator(int seed) {
-      this.seed = seed;
-    }
+  private static FieldComparatorSource randomComparatorSource = new FieldComparatorSource() {
+    public FieldComparator newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
+      return new FieldComparator() {
+        int seed;
+        private final int[] values = new int[numHits];
+        int bottomVal;
 
-    public int compare(ScoreDoc i, ScoreDoc j) {
-      return hash(i.doc + seed) - hash(j.doc + seed);
-    }
+        public int compare(int slot1, int slot2) {
+          return values[slot1] - values[slot2];  // values will be positive... no overflow possible.
+        }
 
-    public Comparable sortValue(ScoreDoc i) {
-      return new Integer(hash(i.doc + seed));
-    }
+        public void setBottom(int slot) {
+          bottomVal = values[slot];
+        }
 
-    public int sortType() {
-      return SortField.CUSTOM;
+        public int compareBottom(int doc) throws IOException {
+          return bottomVal - hash(doc+seed);
+        }
+
+        public void copy(int slot, int doc) throws IOException {
+          values[slot] = hash(doc+seed);
+        }
+
+        public void setNextReader(IndexReader reader, int docBase, int numSlotsFull) throws IOException {
+          seed = getSeed(fieldname, reader);
+        }
+
+        public int sortType() {
+          return SortField.CUSTOM;
+        }
+
+        public Comparable value(int slot) {
+          return values[slot];
+        }
+      };
     }
   };
 
-  private static class RandomSort extends SortField {
-    public RandomSort(String n, boolean reverse) {
-      super(n, SortField.CUSTOM, reverse);
-    }
-    
-    static class RandomComparatorSource implements SortComparatorSource {
-      final String field;
-      public RandomComparatorSource( String field ){
-        this.field = field;
-      }
-      public ScoreDocComparator newComparator(IndexReader reader, String fieldname) throws IOException {
-        return new RandomComparator( getSeed(field, reader) );
-      }
-      
-      @Override
-      public int hashCode() {
-        return field.hashCode();
-      }
 
-      @Override
-      public boolean equals(Object o) {
-        if( !(o instanceof RandomComparatorSource ) ) return false;
-        RandomComparatorSource other = (RandomComparatorSource)o;
-        if( !field.equals( other.field ) ) return false;
-        return true;
-      }
-    }
 
-    @Override
-    public SortComparatorSource getFactory() {
-      return new RandomComparatorSource( getField() );
-    }
-  }
-  
   public class RandomValueSource extends ValueSource {
     private final String field;
 
