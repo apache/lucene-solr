@@ -185,6 +185,12 @@ API Changes
     iterator has exhausted. Otherwise it should return the current doc ID.
     (Shai Erera via Mike McCandless)
 
+19. LUCENE-1672: All ctors/opens and other methods using String/File to
+    specify the directory in IndexReader, IndexWriter, and IndexSearcher
+    were deprecated. You should instantiate the Directory manually before
+    and pass it to these classes (LUCENE-1451, LUCENE-1658).
+    (Uwe Schindler)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()

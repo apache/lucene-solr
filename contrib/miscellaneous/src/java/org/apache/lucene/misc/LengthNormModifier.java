@@ -65,7 +65,7 @@ public class LengthNormModifier {
     }
     
     File index = new File(args[0]);
-    Directory d = FSDirectory.getDirectory(index,false);
+    Directory d = FSDirectory.open(index);
     
     LengthNormModifier lnm = new LengthNormModifier(d, s);
     

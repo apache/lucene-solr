@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -523,12 +522,7 @@ final class SegmentInfos extends Vector {
    */
   public abstract static class FindSegmentsFile {
     
-    File fileDirectory;
     Directory directory;
-
-    public FindSegmentsFile(File directory) {
-      this.fileDirectory = directory;
-    }
 
     public FindSegmentsFile(Directory directory) {
       this.directory = directory;
@@ -582,10 +576,7 @@ final class SegmentInfos extends Vector {
 
           long genA = -1;
 
-          if (directory != null)
-            files = directory.listAll();
-          else
-            files = FSDirectory.listAll(fileDirectory);
+          files = directory.listAll();
           
           if (files != null)
             genA = getCurrentSegmentGeneration(files);
@@ -732,10 +723,7 @@ final class SegmentInfos extends Vector {
                                                                                gen-1);
 
             final boolean prevExists;
-            if (directory != null)
-              prevExists = directory.fileExists(prevSegmentFileName);
-            else
-              prevExists = new File(fileDirectory, prevSegmentFileName).exists();
+            prevExists = directory.fileExists(prevSegmentFileName);
 
             if (prevExists) {
               message("fallback to prior segment file '" + prevSegmentFileName + "'");

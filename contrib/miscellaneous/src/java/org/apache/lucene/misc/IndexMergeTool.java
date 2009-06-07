@@ -41,7 +41,7 @@ public class IndexMergeTool {
 
     Directory[] indexes = new Directory[args.length - 1];
     for (int i = 1; i < args.length; i++) {
-      indexes[i  - 1] = FSDirectory.getDirectory(args[i], false);
+      indexes[i  - 1] = FSDirectory.open(new File(args[i]));
     }
 
     System.out.println("Merging...");

@@ -26,6 +26,7 @@ import org.apache.lucene.document.Document;
 import java.text.NumberFormat;
 import java.io.PrintStream;
 import java.io.IOException;
+import java.io.File;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -702,7 +703,7 @@ public class CheckIndex {
     System.out.println("\nOpening index @ " + indexPath + "\n");
     Directory dir = null;
     try {
-      dir = FSDirectory.getDirectory(indexPath);
+      dir = FSDirectory.open(new File(indexPath));
     } catch (Throwable t) {
       System.out.println("ERROR: could not open directory \"" + indexPath + "\"; exiting");
       t.printStackTrace(System.out);

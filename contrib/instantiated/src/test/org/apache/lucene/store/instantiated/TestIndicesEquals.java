@@ -47,7 +47,7 @@ import org.apache.lucene.store.RAMDirectory;
 public class TestIndicesEquals extends TestCase {
 
 //  public void test2() throws Exception {
-//    FSDirectory fsdir = FSDirectory.getDirectory("/tmp/fatcorpus");
+//    FSDirectory fsdir = FSDirectory.open(new File("/tmp/fatcorpus"));
 //    IndexReader ir = IndexReader.open(fsdir);
 //    InstantiatedIndex ii = new InstantiatedIndex(ir);
 //    ir.close();

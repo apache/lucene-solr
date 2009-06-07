@@ -97,7 +97,7 @@ public class IndexModifier {
 
   protected Directory directory = null;
   protected Analyzer analyzer = null;
-  protected boolean open = false;
+  protected boolean open = false, closeDir = false;
 
   // Lucene defaults:
   protected PrintStream infoStream = null;
@@ -138,6 +138,7 @@ public class IndexModifier {
    */
   public IndexModifier(String dirName, Analyzer analyzer, boolean create) throws CorruptIndexException, LockObtainFailedException, IOException {
     Directory dir = FSDirectory.getDirectory(dirName);
+    this.closeDir = true;
     init(dir, analyzer, create);
   }
 
@@ -156,6 +157,7 @@ public class IndexModifier {
    */
   public IndexModifier(File file, Analyzer analyzer, boolean create) throws CorruptIndexException, LockObtainFailedException, IOException {
     Directory dir = FSDirectory.getDirectory(file);
+    this.closeDir = true;
     init(dir, analyzer, create);
   }
 
@@ -578,6 +580,10 @@ public class IndexModifier {
         indexReader = null;
       }
       open = false;
+      if (closeDir) {
+        directory.close();
+      }
+      closeDir = false;
     }
   }
 

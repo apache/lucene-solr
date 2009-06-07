@@ -49,7 +49,7 @@ public class TestDemo extends LuceneTestCase {
     // Store the index in memory:
     Directory directory = new RAMDirectory();
     // To store an index on disk, use this instead:
-    //Directory directory = FSDirectory.getDirectory("/tmp/testindex");
+    //Directory directory = FSDirectory.open(new File("/tmp/testindex"));
     IndexWriter iwriter = new IndexWriter(directory, analyzer, true,
                                           new IndexWriter.MaxFieldLength(25000));
     Document doc = new Document();

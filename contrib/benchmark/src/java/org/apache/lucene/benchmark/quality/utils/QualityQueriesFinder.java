@@ -52,7 +52,7 @@ public class QualityQueriesFinder {
       System.err.println("Usage: java QualityQueriesFinder <index-dir>");
       System.exit(1);
     }
-    QualityQueriesFinder qqf = new QualityQueriesFinder(FSDirectory.getDirectory(new File(args[0])));
+    QualityQueriesFinder qqf = new QualityQueriesFinder(FSDirectory.open(new File(args[0])));
     String q[] = qqf.bestQueries("body",20);
     for (int i=0; i<q.length; i++) {
       System.out.println(newline+formatQueryAsTrecTopic(i,q[i],null,null));

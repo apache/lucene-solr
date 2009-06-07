@@ -456,12 +456,16 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
     DirectoryReader reader = null;
 
-    // While trying to reopen, we temporarily mark our
-    // closeDirectory as false.  This way any exceptions hit
-    // partway while opening the reader, which is expected
-    // eg if writer is committing, won't close our
-    // directory.  We restore this value below:
-    final boolean myCloseDirectory = closeDirectory;
+    /* TODO: Remove this in 3.0 - the directory is then
+     * no longer owned by the IndexReader and must not be
+     * closed.
+     * While trying to reopen, we temporarily mark our
+     * closeDirectory as false.  This way any exceptions hit
+     * partway while opening the reader, which is expected
+     * eg if writer is committing, won't close our
+     * directory.  We restore this value below:
+     */
+    final boolean myCloseDirectory = closeDirectory; // @deprectated
     closeDirectory = false;
 
     try {

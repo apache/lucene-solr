@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.io.File;
 import java.util.Date;
 
 import org.apache.lucene.search.Similarity;
@@ -62,7 +63,7 @@ public class FieldNormModifier {
       }
     }
 
-    Directory d = FSDirectory.getDirectory(args[0], false);
+    Directory d = FSDirectory.open(new File(args[0]));
     FieldNormModifier fnm = new FieldNormModifier(d, s);
 
     for (int i = 2; i < args.length; i++) {

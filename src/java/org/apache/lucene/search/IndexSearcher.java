@@ -46,7 +46,7 @@ public class IndexSearcher extends Searcher {
   /** Creates a searcher searching the index in the named directory.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @deprecated Use {@link #IndexSearcher(String, boolean)} instead
+   * @deprecated Use {@link #IndexSearcher(Directory, boolean)} instead
    */
   public IndexSearcher(String path) throws CorruptIndexException, IOException {
     this(IndexReader.open(path), true);
@@ -62,6 +62,7 @@ public class IndexSearcher extends Searcher {
    * will be opened readOnly
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link #IndexSearcher(Directory, boolean)} instead
    */
   public IndexSearcher(String path, boolean readOnly) throws CorruptIndexException, IOException {
     this(IndexReader.open(path, readOnly), true);

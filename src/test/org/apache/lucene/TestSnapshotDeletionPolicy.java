@@ -54,7 +54,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     try {
       // Sometimes past test leaves the dir
       _TestUtil.rmDir(dir);
-      Directory fsDir = FSDirectory.getDirectory(dir);
+      Directory fsDir = FSDirectory.open(dir);
       runTest(fsDir);
       fsDir.close();
     } finally {

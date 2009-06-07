@@ -128,7 +128,7 @@ public class PerfRunData {
         FileUtils.fullyDelete(indexDir);
       }
       indexDir.mkdirs();
-      directory = FSDirectory.getDirectory(indexDir);
+      directory = FSDirectory.open(indexDir);
     } else {
       directory = new RAMDirectory();
     }

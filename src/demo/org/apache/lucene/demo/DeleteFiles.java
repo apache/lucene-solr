@@ -17,6 +17,8 @@ package org.apache.lucene.demo;
  * limitations under the License.
  */
 
+import java.io.File;
+
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.index.IndexReader;
@@ -37,7 +39,7 @@ public class DeleteFiles {
       System.exit(1);
     }
     try {
-      Directory directory = FSDirectory.getDirectory("index");
+      Directory directory = FSDirectory.open(new File("index"));
       IndexReader reader = IndexReader.open(directory);
 
       Term term = new Term("path", args[0]);

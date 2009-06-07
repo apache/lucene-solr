@@ -19,6 +19,7 @@ package org.apache.lucene.wordnet;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.File;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -68,7 +69,7 @@ public final class SynExpand {
 							   "java org.apache.lucene.wordnet.SynExpand <index path> <query>");
 		}
 
-		FSDirectory directory = FSDirectory.getDirectory(args[0], false);
+		FSDirectory directory = FSDirectory.open(new File(args[0]));
 		IndexSearcher searcher = new IndexSearcher(directory);
 
 		String query = args[1];
