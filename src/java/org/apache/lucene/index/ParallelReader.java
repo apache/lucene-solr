@@ -320,7 +320,6 @@ public class ParallelReader extends IndexReader {
 
   public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
     ensureOpen();
-    ensureOpen();
 
     Iterator i = fieldToReader.entrySet().iterator();
     while (i.hasNext()) {
