@@ -238,7 +238,7 @@ public class SolrDispatchFilter implements Filter
                 SolrQueryResponse solrRsp = new SolrQueryResponse();
                 /* even for HEAD requests, we need to execute the handler to
                  * ensure we don't get an error (and to make sure the correct
-                 * QueryResponseWriter is selectedand we get the correct
+                 * QueryResponseWriter is selected and we get the correct
                  * Content-Type)
                  */
                 this.execute( req, handler, solrReq, solrRsp );
