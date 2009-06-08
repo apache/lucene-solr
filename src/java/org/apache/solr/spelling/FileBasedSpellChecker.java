@@ -80,7 +80,6 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
   @SuppressWarnings("unchecked")
   private void loadExternalFileDictionary(IndexSchema schema, SolrResourceLoader loader) {
-    IndexSearcher searcher = null;
     try {
 
       // Get the field's analyzer
@@ -119,13 +118,6 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
     } catch (IOException e) {
       log.error( "Unable to load spellings", e);
-    } finally {
-      try {
-        if (searcher != null)
-          searcher.close();
-      } catch (IOException e) {
-        // Ignore
-      }
     }
   }
 
