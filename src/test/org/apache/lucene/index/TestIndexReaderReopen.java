@@ -1083,7 +1083,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   
   // LUCENE-1453
   public void testFSDirectoryReopen() throws CorruptIndexException, IOException {
-    Directory dir1 = FSDirectory.open(indexDir, null);
+    Directory dir1 = FSDirectory.getDirectory(indexDir, null);
     createIndex(dir1, false);
     dir1.close();
 
@@ -1112,7 +1112,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       throw new IOException("java.io.tmpdir undefined, cannot run test");
     File indexDir2 = new File(tempDir, "IndexReaderReopen2");
 
-    Directory dir1 = FSDirectory.open(indexDir2);
+    Directory dir1 = FSDirectory.getDirectory(indexDir2);
     createIndex(dir1, false);
 
     IndexReader lastReader = IndexReader.open(indexDir2);
