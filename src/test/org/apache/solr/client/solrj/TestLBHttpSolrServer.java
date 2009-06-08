@@ -137,7 +137,13 @@ public class TestLBHttpSolrServer extends TestCase {
     solr[1].jetty = null;
     solr[0].startJetty();
     Thread.sleep(1200);
-    resp = lbHttpSolrServer.query(solrQuery);
+    try {
+      resp = lbHttpSolrServer.query(solrQuery);
+    } catch(SolrServerException e) {
+      // try again after a pause in case the error is lack of time to start server
+      Thread.sleep(3000);
+      resp = lbHttpSolrServer.query(solrQuery);
+    }
     name = resp.getResults().get(0).getFieldValue("name").toString();
     Assert.assertEquals("solr0", name);
   }
