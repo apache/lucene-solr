@@ -133,9 +133,10 @@ public class FunctionQuery extends Query {
     public float score() throws IOException {
       float score = qWeight * vals.floatVal(doc);
 
-      // current Lucene sorting priority queues can't handle NaN (score!=score is true for NaN) and -Infinity
-      if (score != score || score==Float.NEGATIVE_INFINITY) return -Float.MAX_VALUE;
-      return score;
+      // Current Lucene priority queues can't handle NaN and -Infinity, so
+      // map to -Float.MAX_VALUE. This conditional handles both -infinity
+      // and NaN since comparisons with NaN are always false.
+      return score>Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
     }
 
     public boolean skipTo(int target) throws IOException {
