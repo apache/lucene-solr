@@ -229,6 +229,14 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
 
     // now check that it comes out...
     rsp = server.query( new SolrQuery( "id:id3") );
+    
+    if(rsp.getResults().getNumFound() == 0) {
+      // wait and try again for slower machines
+      Thread.sleep( 2000 ); // wait 1/2 seconds...
+      
+      rsp = server.query( new SolrQuery( "id:id3") );
+    }
+    
     Assert.assertEquals( 1, rsp.getResults().getNumFound() );
   }
   
