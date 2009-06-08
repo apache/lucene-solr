@@ -133,6 +133,11 @@
   <directoryFactory name="DirectoryFactory" class="org.apache.solr.core.AlternateDirectoryTest$TestFSDirectoryFactory">
     <!-- Parameters as required by the implementation -->
   </directoryFactory>
+  
+  
+  <indexReaderFactory name="IndexReaderFactory" class="org.apache.solr.core.AlternateIndexReaderTest$TestIndexReaderFactory">
+    <!-- Parameters as required by the implementation -->
+  </indexReaderFactory >
 
   <query>
     <!-- Maximum number of clauses in a boolean query... can affect

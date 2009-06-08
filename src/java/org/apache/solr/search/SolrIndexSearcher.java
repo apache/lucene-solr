@@ -24,7 +24,6 @@ import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig;
@@ -33,7 +32,6 @@ import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.request.UnInvertedField;
-import org.apache.solr.search.function.BoostedQuery;
 import org.apache.lucene.util.OpenBitSet;
 
 import java.io.IOException;
@@ -92,17 +90,23 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    * @deprecated use alternate constructor
    */
   public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, String path, boolean enableCache) throws IOException {
-    this(core, schema,name,IndexReader.open(path), true, enableCache);
+    this(core, schema,name, core.getIndexReaderFactory().newReader(core.getDirectoryFactory().open(path), false), true, enableCache);
   }
 
-  /** Creates a searcher searching the index in the provided directory. */
-  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, Directory directory, boolean enableCache) throws IOException {
-    this(core, schema,name,IndexReader.open(directory), true, enableCache);
+  /*
+   * Creates a searcher searching the index in the provided directory. Note:
+   * uses the main IndexReaderFactory for the specified SolrCore.
+   * 
+   * @see SolrCore#getMainIndexReaderFactory
+   */
+  public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name,
+      Directory directory, boolean enableCache) throws IOException {
+    this(core, schema,name, core.getIndexReaderFactory().newReader(directory, false), true, enableCache);
   }
   
   /** Creates a searcher searching the index in the provided directory. */
   public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, Directory directory, boolean readOnly, boolean enableCache) throws IOException {
-    this(core, schema,name,IndexReader.open(directory, readOnly), true, enableCache);
+    this(core, schema,name, core.getIndexReaderFactory().newReader(directory, readOnly), true, enableCache);
   }
 
   /** Creates a searcher searching the provided index. */

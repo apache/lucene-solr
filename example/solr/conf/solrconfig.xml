@@ -205,6 +205,13 @@
     -->
 
   </updateHandler>
+  
+  <!-- Use the following format to specify a custom IndexReaderFactory - allows for alternate
+       IndexReader implementations.
+  <indexReaderFactory name="IndexReaderFactory" class="package.class">
+    Parameters as required by the implementation
+  </indexReaderFactory >
+  -->
 
 
   <query>

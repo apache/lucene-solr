@@ -97,6 +97,7 @@ public final class SolrCore implements SolrInfoMBean {
   private final Map<String, SolrInfoMBean> infoRegistry;
   private IndexDeletionPolicyWrapper solrDelPolicy;
   private DirectoryFactory directoryFactory;
+  private IndexReaderFactory indexReaderFactory;
 
   public long getStartTime() { return startTime; }
 
@@ -223,6 +224,10 @@ public final class SolrCore implements SolrInfoMBean {
     return directoryFactory;
   }
   
+  public IndexReaderFactory getIndexReaderFactory() {
+    return indexReaderFactory;
+  }
+  
   public String getName() {
     return name;
   }
@@ -341,6 +346,24 @@ public final class SolrCore implements SolrInfoMBean {
     directoryFactory = dirFactory;
   }
 
+  private void initIndexReaderFactory() {
+    String xpath = "indexReaderFactory";
+    Node node = (Node) solrConfig.evaluate(xpath, XPathConstants.NODE);
+    IndexReaderFactory indexReaderFactory;
+    if (node != null) {
+      Map<String, IndexReaderFactory> registry = new HashMap<String, IndexReaderFactory>();
+      NamedListPluginLoader<IndexReaderFactory> indexReaderFactoryLoader = new NamedListPluginLoader<IndexReaderFactory>(
+          "[solrconfig.xml] " + xpath, registry);
+
+      indexReaderFactory = indexReaderFactoryLoader.loadSingle(solrConfig
+          .getResourceLoader(), node);
+    } else {
+      indexReaderFactory = new StandardIndexReaderFactory();
+    }
+
+    this.indexReaderFactory = indexReaderFactory;
+  }
+  
   // protect via synchronized(SolrCore.class)
   private static Set<String> dirs = new HashSet<String>();
 
@@ -355,6 +378,7 @@ public final class SolrCore implements SolrInfoMBean {
       boolean removeLocks = solrConfig.unlockOnStartup;
 
       initDirectoryFactory();
+      initIndexReaderFactory();
 
       if (indexExists && firstTime && removeLocks) {
         // to remove locks, the directory must already exist... so we create it
@@ -1048,21 +1072,22 @@ public final class SolrCore implements SolrInfoMBean {
     try {
       newestSearcher = getNewestSearcher(false);
       String newIndexDir = getNewIndexDir();
-      if (newestSearcher != null) {
+      File indexDirFile = new File(getIndexDir()).getCanonicalFile();
+      File newIndexDirFile = new File(newIndexDir).getCanonicalFile();
+      
+      if (newestSearcher != null && solrConfig.reopenReaders
+          && indexDirFile.equals(newIndexDirFile)) {
         IndexReader currentReader = newestSearcher.get().getReader();
-        if(solrConfig.reopenReaders && new File(getIndexDir()).getCanonicalFile().equals(new File(newIndexDir).getCanonicalFile()))  {
-          IndexReader newReader = currentReader.reopen();
+        IndexReader newReader = currentReader.reopen();
 
-          if(newReader == currentReader) {
-            currentReader.incRef();
-          }
-          
-          tmp = new SolrIndexSearcher(this, schema, "main", newReader, true, true);
-        } else  {
-          tmp = new SolrIndexSearcher(this, schema, "main", getDirectoryFactory().open(newIndexDir), true, true);
+        if (newReader == currentReader) {
+          currentReader.incRef();
         }
+
+        tmp = new SolrIndexSearcher(this, schema, "main", newReader, true, true);
       } else {
-          tmp = new SolrIndexSearcher(this, schema, "main", getDirectoryFactory().open(newIndexDir), true, true);
+        IndexReader reader = getIndexReaderFactory().newReader(getDirectoryFactory().open(newIndexDir), true);
+        tmp = new SolrIndexSearcher(this, schema, "main", reader, true, true);
       }
     } catch (Throwable th) {
       synchronized(searcherLock) {

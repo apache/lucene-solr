@@ -234,6 +234,9 @@ New Features
 
 59. SOLR-1189: Support providing username and password for basic HTTP authentication in Java replication
     (Matthew Gregg, shalin)
+    
+60. SOLR-243: Add configurable IndexReaderFactory so that alternate IndexReader implementations 
+    can be specified via solrconfig.xml. (Andrzej Bialecki, hossman, Mark Miller, John Wang)
 
 Optimizations
 ----------------------
