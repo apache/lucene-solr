@@ -70,6 +70,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.net.URL;
+import java.lang.reflect.Constructor;
 
 
 /**
@@ -248,31 +249,27 @@ public final class SolrCore implements SolrInfoMBean {
     return infoRegistry;
   }
 
-  private void initDeletionPolicy() {
-    String className = solrConfig.get("mainIndex/deletionPolicy/@class", SolrDeletionPolicy.class.getName());
-    IndexDeletionPolicy delPolicy = createInstance(className, IndexDeletionPolicy.class, "Deletion Policy for SOLR");
+   private void initDeletionPolicy() {
+     SolrConfig.PluginInfo info = solrConfig.getDeletionPolicyInfo();
+     IndexDeletionPolicy delPolicy = null;
+     if(info != null){
+       delPolicy = createInstance(info.className,IndexDeletionPolicy.class,"Deletion Policy for SOLR");
+       if (delPolicy instanceof NamedListInitializedPlugin) {
+         ((NamedListInitializedPlugin) delPolicy).init(info.initArgs);
+       }
+     } else {
+       delPolicy = new SolrDeletionPolicy();
+     }     
+     solrDelPolicy = new IndexDeletionPolicyWrapper(delPolicy);
+   }
 
-    Node node = (Node) solrConfig.evaluate("mainIndex/deletionPolicy", XPathConstants.NODE);
-    if (node != null) {
-      if (delPolicy instanceof NamedListInitializedPlugin)
-        ((NamedListInitializedPlugin) delPolicy).init(DOMUtil.childNodesToNamedList(node));
-    }
-    solrDelPolicy = new IndexDeletionPolicyWrapper(delPolicy);
-  }
-
-  public List<SolrEventListener> parseListener(String path) {
+  private List<SolrEventListener> parseListener(List<SolrConfig.PluginInfo> path) {
     List<SolrEventListener> lst = new ArrayList<SolrEventListener>();
-    log.info( logid+"Searching for listeners: " +path);
-    NodeList nodes = (NodeList)solrConfig.evaluate(path, XPathConstants.NODESET);
-    if (nodes!=null) {
-      for (int i=0; i<nodes.getLength(); i++) {
-        Node node = nodes.item(i);
-        String className = DOMUtil.getAttr(node,"class");
-        SolrEventListener listener = createEventListener(className);
-        listener.init(DOMUtil.childNodesToNamedList(node));
-        lst.add(listener);
-        log.info( logid+"Added SolrEventListener: " + listener);
-      }
+    for (SolrConfig.PluginInfo info : path) {
+      SolrEventListener listener = createEventListener(info.className);
+      listener.init(info.initArgs);
+      lst.add(listener);
+      log.info(logid + "Added SolrEventListener: " + listener);
     }
     return lst;
   }
@@ -280,8 +277,8 @@ public final class SolrCore implements SolrInfoMBean {
   List<SolrEventListener> firstSearcherListeners;
   List<SolrEventListener> newSearcherListeners;
   private void parseListeners() {
-    firstSearcherListeners = parseListener("//listener[@event=\"firstSearcher\"]");
-    newSearcherListeners = parseListener("//listener[@event=\"newSearcher\"]");
+    firstSearcherListeners = parseListener(solrConfig.getFirstSearcherListenerInfo());
+    newSearcherListeners = parseListener(solrConfig.getNewSearcherListenerInfo());
   }
   
   /**
@@ -330,21 +327,16 @@ public final class SolrCore implements SolrInfoMBean {
     return new SolrIndexSearcher(this, schema, name, directoryFactory.open(getIndexDir()), readOnly, false);
   }
 
-  private void initDirectoryFactory() {
-    String xpath = "directoryFactory";
-    Node node = (Node) solrConfig.evaluate(xpath, XPathConstants.NODE);
-    DirectoryFactory dirFactory;
-    if (node != null) {
-      Map<String, DirectoryFactory> registry = new HashMap<String, DirectoryFactory>();
-      NamedListPluginLoader<DirectoryFactory> indexReaderFactoryLoader = new NamedListPluginLoader<DirectoryFactory>(
-          "[solrconfig.xml] " + xpath, registry);
 
-      dirFactory = indexReaderFactoryLoader.loadSingle(solrConfig
-          .getResourceLoader(), node);
+   private void initDirectoryFactory() {
+    DirectoryFactory dirFactory;
+    SolrConfig.PluginInfo info = solrConfig.getDirectoryfactoryInfo();
+    if (info != null) {
+      dirFactory = (DirectoryFactory) getResourceLoader().newInstance(info.className);
+      dirFactory.init(info.initArgs);
     } else {
       dirFactory = new StandardDirectoryFactory();
     }
-
     // And set it
     directoryFactory = dirFactory;
   }
@@ -402,17 +394,20 @@ public final class SolrCore implements SolrInfoMBean {
   private <T extends Object> T createInstance(String className, Class<T> cast, String msg) {
     Class clazz = null;
     if (msg == null) msg = "SolrCore Object";
-    try {
-      try {
-        clazz = solrConfig.getResourceLoader().findClass(className);
+    try { 
+        clazz = getResourceLoader().findClass(className);
         if (cast != null && !cast.isAssignableFrom(clazz))
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " is not a " +cast.getName());
-        
-        java.lang.reflect.Constructor cons = clazz.getConstructor(new Class[]{SolrCore.class});
-        return (T) cons.newInstance(new Object[]{this});
-      } catch(NoSuchMethodException xnomethod) {
-        return (T) clazz.newInstance();
-      }
+      //most of the classes do not have constructors whiuch take in SolrCore. It is recommended to obtain SolrCore by implementing SolrCoreAare.
+      // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
+        Constructor[] cons =  clazz.getConstructors();
+        for (Constructor con : cons) {
+          Class[] types = con.getParameterTypes();
+          if(types.length == 1 && types[0] == SolrCore.class){
+            return (T)con.newInstance(this);
+          }
+        }
+        return (T) clazz.newInstance();//use the empty constructor      
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
@@ -830,14 +825,14 @@ public final class SolrCore implements SolrInfoMBean {
   /**
    * Register the default search components
    */
-  private static Map<String, SearchComponent> loadSearchComponents( SolrConfig config )
+  private Map<String, SearchComponent> loadSearchComponents( SolrConfig config )
   {
     Map<String, SearchComponent> components = new HashMap<String, SearchComponent>();
-  
+
     String xpath = "searchComponent";
     NamedListPluginLoader<SearchComponent> loader = new NamedListPluginLoader<SearchComponent>( xpath, components );
     loader.load( config.getResourceLoader(), (NodeList)config.evaluate( xpath, XPathConstants.NODESET ) );
-  
+
     final Map<String,Class<? extends SearchComponent>> standardcomponents 
         = new HashMap<String, Class<? extends SearchComponent>>();
     standardcomponents.put( QueryComponent.COMPONENT_NAME,        QueryComponent.class        );
@@ -1415,13 +1410,7 @@ public final class SolrCore implements SolrInfoMBean {
   /** Configure the query response writers. There will always be a default writer; additional
    * writers may also be configured. */
   private void initWriters() {
-    String xpath = "queryResponseWriter";
-    NodeList nodes = (NodeList) solrConfig.evaluate(xpath, XPathConstants.NODESET);
-    
-    NamedListPluginLoader<QueryResponseWriter> loader = 
-      new NamedListPluginLoader<QueryResponseWriter>( "[solrconfig.xml] "+xpath, responseWriters );
-    
-    defaultResponseWriter = loader.load( solrConfig.getResourceLoader(), nodes );
+    defaultResponseWriter = initPlugins(solrConfig.getRespWriterInfo(), responseWriters, QueryResponseWriter.class);
     for (Map.Entry<String, QueryResponseWriter> entry : DEFAULT_RESPONSE_WRITERS.entrySet()) {
       if(responseWriters.get(entry.getKey()) == null) responseWriters.put(entry.getKey(), entry.getValue());
     }
@@ -1455,14 +1444,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   /** Configure the query parsers. */
   private void initQParsers() {
-    String xpath = "queryParser";
-    NodeList nodes = (NodeList) solrConfig.evaluate(xpath, XPathConstants.NODESET);
-
-    NamedListPluginLoader<QParserPlugin> loader =
-      new NamedListPluginLoader<QParserPlugin>( "[solrconfig.xml] "+xpath, qParserPlugins);
-
-    loader.load( solrConfig.getResourceLoader(), nodes );
-
+    initPlugins(solrConfig.getQueryParserInfo(),qParserPlugins,QParserPlugin.class);
     // default parsers
     for (int i=0; i<QParserPlugin.standardPlugins.length; i+=2) {
      try {
@@ -1489,14 +1471,7 @@ public final class SolrCore implements SolrInfoMBean {
   
   /** Configure the ValueSource (function) plugins */
   private void initValueSourceParsers() {
-    String xpath = "valueSourceParser";
-    NodeList nodes = (NodeList) solrConfig.evaluate(xpath, XPathConstants.NODESET);
-
-    NamedListPluginLoader<ValueSourceParser> loader =
-      new NamedListPluginLoader<ValueSourceParser>( "[solrconfig.xml] "+xpath, valueSourceParsers);
-
-    loader.load( solrConfig.getResourceLoader(), nodes );
-
+    initPlugins(solrConfig.getValueSourceParserInfo(),valueSourceParsers,ValueSourceParser.class);
     // default value source parsers
     for (Map.Entry<String, ValueSourceParser> entry : ValueSourceParser.standardValueSourceParsers.entrySet()) {
       try {
@@ -1511,7 +1486,23 @@ public final class SolrCore implements SolrInfoMBean {
       }
     }
   }
-  
+
+  private <T> T initPlugins(List<SolrConfig.PluginInfo> pluginInfos , Map<String ,T> registry, Class<T> type){
+    T def = null;
+    for (SolrConfig.PluginInfo info : pluginInfos) {
+      T o = createInstance(info.className,type, type.getSimpleName());
+      if (o instanceof NamedListInitializedPlugin) {
+        ((NamedListInitializedPlugin) o).init(info.initArgs);
+      }
+      registry.put(info.name, o);
+      if(info.isDefault){
+        def = o;
+      }
+
+    }
+    return def;
+  }
+
   public ValueSourceParser getValueSourceParser(String parserName) {
     return valueSourceParsers.get(parserName);
   }

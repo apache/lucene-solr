@@ -167,7 +167,8 @@ public class SolrConfig extends Config {
       jmxConfig = new JmxConfiguration(false, null, null);
     }
      maxWarmingSearchers = getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
-     reqHandlerInfo = loadRequestHandlerInfo();
+
+     loadPluginInfo();
 
     Config.log.info("Loaded SolrConfig: " + name);
     
@@ -175,11 +176,27 @@ public class SolrConfig extends Config {
     config = this;
   }
 
-  private List<PluginInfo> loadRequestHandlerInfo() {
+  protected void loadPluginInfo() {
+    List<String> reqFields = Arrays.asList("name","class");
+    reqHandlerInfo = loadPluginInfo("requestHandler",reqFields);
+    respWriterInfo = loadPluginInfo("queryResponseWriter",reqFields);
+    valueSourceParserInfo = loadPluginInfo("valueSourceParser",reqFields);
+    queryParserInfo = loadPluginInfo("queryParser",reqFields);
+    searchComponentInfo = loadPluginInfo("searchComponent",reqFields);
+    List<PluginInfo> plugins =  loadPluginInfo("directoryFactory",reqFields);
+    directoryfactoryInfo = plugins.isEmpty() ? null:plugins.get(0);
+    reqFields = Arrays.asList("class");
+    plugins = loadPluginInfo("mainIndex/deletionPolicy",reqFields);
+    deletionPolicyInfo = plugins.isEmpty() ? null : plugins.get(0);
+    firstSearcherListenerInfo = loadPluginInfo("//listener[@event='firstSearcher']",reqFields);
+    newSearcherListenerInfo = loadPluginInfo("//listener[@event='newSearcher']",reqFields);
+  }
+
+  private List<PluginInfo> loadPluginInfo(String tag, List<String> reqFields) {
     ArrayList<PluginInfo> result = new ArrayList<PluginInfo>();
-    NodeList nodes = (NodeList) evaluate("requestHandler", XPathConstants.NODESET);
+    NodeList nodes = (NodeList) evaluate(tag, XPathConstants.NODESET);
      for (int i=0; i<nodes.getLength(); i++) {
-       result.add(new PluginInfo(nodes.item(i) ,"[solrconfig.xml] requestHandler","name","class"));
+       result.add(new PluginInfo(nodes.item(i) ,"[solrconfig.xml] "+tag,reqFields));
      }
     return Collections.unmodifiableList(result) ;
   }
@@ -208,7 +225,16 @@ public class SolrConfig extends Config {
   // default & main index configurations
   public final SolrIndexConfig defaultIndexConfig;
   public final SolrIndexConfig mainIndexConfig;
-  public final List<PluginInfo> reqHandlerInfo;
+
+  protected List<PluginInfo> reqHandlerInfo;
+  protected List<PluginInfo> queryParserInfo;
+  protected List<PluginInfo> respWriterInfo;
+  protected List<PluginInfo> valueSourceParserInfo;
+  protected List<PluginInfo> searchComponentInfo;
+  protected List<PluginInfo> firstSearcherListenerInfo;
+  protected PluginInfo deletionPolicyInfo;
+  protected List<PluginInfo> newSearcherListenerInfo;
+  protected PluginInfo directoryfactoryInfo;
 
   public final int maxWarmingSearchers;
   public final boolean unlockOnStartup;
@@ -347,34 +373,59 @@ public class SolrConfig extends Config {
   }
 
   public static class PluginInfo {
-    final String startup, name, className, event;
+    final String startup, name, className;
     final boolean isDefault;    
     final NamedList initArgs;
 
     public PluginInfo(String startup, String name, String className,
-                      String event, boolean isdefault, NamedList initArgs) {
+                      boolean isdefault, NamedList initArgs) {
       this.startup = startup;
       this.name = name;
       this.className = className;
-      this.event = event;
-      isDefault = isdefault;
+      this.isDefault = isdefault;
       this.initArgs = initArgs;
     }
 
 
-    public PluginInfo(Node node, String err, String... requiredFields) {
-      List<String> l = requiredFields == null? Collections.EMPTY_LIST: Arrays.asList(requiredFields);
-      startup = getVal( node, "startup",l,err);
-      name = getVal(node, "name", l,err);
-      className = getVal(node, "class",l,err);
-      event = getVal(node, "event",l,err);
-      isDefault = Boolean.parseBoolean(getVal(node,"default",l,err));
+    public PluginInfo(Node node, String err, List<String> reqFields) {
+      startup = getVal( node, "startup",reqFields,err);
+      name = getVal(node, "name", reqFields,err);
+      className = getVal(node, "class",reqFields,err);
+      isDefault = Boolean.parseBoolean(getVal(node,"default",reqFields,err));
       initArgs = DOMUtil.childNodesToNamedList(node);
   }
 
-    private String getVal(Node node, String name, List<String> required, String err) {
-      return DOMUtil.getAttr(node, name, required.contains(name) ? err : null);
-    }
+   private String getVal(Node node, String name, List<String> required, String err) {
+    return DOMUtil.getAttr(node, name, required.contains(name) ? err : null);
+   }
 
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("{");
+      if(name != null) sb.append("name = "+name +",");
+      if(className != null) sb.append("class = "+className +",");
+      if(isDefault) sb.append("default = "+isDefault +",");
+      if(initArgs.size() >0) sb.append("args = "+initArgs);
+      sb.append("}");
+      return sb.toString();    
+    }
   }
+
+  public List<PluginInfo> getReqHandlerInfo() { return reqHandlerInfo; }
+
+  public List<PluginInfo> getQueryParserInfo() { return queryParserInfo; }
+
+  public List<PluginInfo> getRespWriterInfo() { return respWriterInfo; }
+
+  public List<PluginInfo> getValueSourceParserInfo() { return valueSourceParserInfo; }
+
+  public List<PluginInfo> getSearchComponentInfo() { return searchComponentInfo; }
+
+  public List<PluginInfo> getFirstSearcherListenerInfo() { return firstSearcherListenerInfo; }
+
+  public List<PluginInfo> getNewSearcherListenerInfo() { return newSearcherListenerInfo; }
+
+  public PluginInfo getDirectoryfactoryInfo() { return directoryfactoryInfo; }
+
+  public PluginInfo getDeletionPolicyInfo() { return deletionPolicyInfo; }
 }

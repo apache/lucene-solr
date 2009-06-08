@@ -131,7 +131,7 @@ final class RequestHandlers {
 
   void initHandlersFromConfig(SolrConfig config ){
     Map<SolrConfig.PluginInfo,SolrRequestHandler> handlers = new HashMap<SolrConfig.PluginInfo,SolrRequestHandler>();
-    for (SolrConfig.PluginInfo info : config.reqHandlerInfo) {
+    for (SolrConfig.PluginInfo info : config.getReqHandlerInfo()) {
       try {
         SolrRequestHandler requestHandler;
         if( info.startup != null ) {
