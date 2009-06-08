@@ -435,17 +435,10 @@
    <copyField source="manu" dest="text"/>
    <copyField source="features" dest="text"/>
    <copyField source="includes" dest="text"/>
-	
-   <!-- Above, multiple specific fields are copied to the [text] field.
-	   Another option is to use the dynamic field syntax. A maxChars to
-	   copy setting is also available.  -->
-	   
-   <!-- <copyField source="*" dest="text" maxChars="3000"/> -->
-  
 
    <copyField source="manu" dest="manu_exact"/>
 
-   <copyField source="name" dest="spell"/>
+  <copyField source="name" dest="spell"/>
 
  <!-- Similarity is the scoring routine for each document vs. a query.
       A custom similarity may be specified here, but the default is fine
