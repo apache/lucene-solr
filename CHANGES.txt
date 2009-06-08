@@ -409,6 +409,8 @@ Bug Fixes
 48. SOLR-1182: Fix bug in OrdFieldSource#equals which could cause a bug with OrdFieldSource caching
                on OrdFieldSource#hashcode collisions. (Mark Miller)
 
+49. SOLR-1207: equals method should compare this and other of DocList in DocSetBase (koji)
+
 
 Other Changes
 ----------------------

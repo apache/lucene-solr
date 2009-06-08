@@ -162,7 +162,7 @@ abstract class DocSetBase implements DocSet {
     if (this instanceof DocList && other instanceof DocList) {
       // compare ordering
       DocIterator i1=this.iterator();
-      DocIterator i2=this.iterator();
+      DocIterator i2=other.iterator();
       while(i1.hasNext() && i2.hasNext()) {
         if (i1.nextDoc() != i2.nextDoc()) return false;
       }
