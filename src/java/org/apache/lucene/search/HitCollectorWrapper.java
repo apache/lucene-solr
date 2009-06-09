@@ -27,7 +27,7 @@ import org.apache.lucene.index.IndexReader;
  * HitCollector#collect}.
  * @deprecated this class will be removed when {@link HitCollector} is removed.
  */
-class HitCollectorWrapper extends Collector {
+public class HitCollectorWrapper extends Collector {
   private HitCollector collector;
   private int base = 0;
   private Scorer scorer = null;
