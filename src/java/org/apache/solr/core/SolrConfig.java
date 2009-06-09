@@ -195,10 +195,9 @@ public class SolrConfig extends Config {
     valueSourceParserInfo = loadPluginInfo("valueSourceParser",true);
     queryParserInfo = loadPluginInfo("queryParser",true);
     searchComponentInfo = loadPluginInfo("searchComponent",true);
-    List<PluginInfo> plugins =  loadPluginInfo("directoryFactory",true);
-    directoryfactoryInfo = plugins.isEmpty() ? null:plugins.get(0);
-    plugins = loadPluginInfo("mainIndex/deletionPolicy",false);
-    deletionPolicyInfo = plugins.isEmpty() ? null : plugins.get(0);
+    directoryfactoryInfo = loadSinglePlugin("directoryFactory");
+    deletionPolicyInfo = loadSinglePlugin("mainIndex/deletionPolicy");
+    indexReaderFactoryInfo = loadSinglePlugin("indexReaderFactory");
     firstSearcherListenerInfo = loadPluginInfo("//listener[@event='firstSearcher']",false);
     newSearcherListenerInfo = loadPluginInfo("//listener[@event='newSearcher']",false);
   }
@@ -231,6 +230,13 @@ public class SolrConfig extends Config {
     }
 
     return Collections.unmodifiableMap(chains);
+  }
+  private PluginInfo loadSinglePlugin(String tag){
+     NodeList nodes = (NodeList) evaluate(tag, XPathConstants.NODESET);
+     for (int i=0; i<nodes.getLength(); i++) {
+       return new PluginInfo(nodes.item(i) ,"[solrconfig.xml] "+tag,false);
+     }
+    return null;
   }
 
   private List<PluginInfo> loadPluginInfo(String tag, boolean requireName) {
@@ -274,6 +280,7 @@ public class SolrConfig extends Config {
   protected List<PluginInfo> searchComponentInfo;
   protected List<PluginInfo> firstSearcherListenerInfo;
   protected PluginInfo deletionPolicyInfo;
+  protected PluginInfo indexReaderFactoryInfo;
   protected List<PluginInfo> newSearcherListenerInfo;
   protected PluginInfo directoryfactoryInfo;
   protected Map<String ,List<PluginInfo>> updateProcessorChainInfo ;
@@ -510,4 +517,6 @@ public class SolrConfig extends Config {
   public Map<String, List<PluginInfo>> getUpdateProcessorChainInfo() { return updateProcessorChainInfo; }
 
   public UpdateHandlerInfo getUpdateHandlerInfo() { return updateHandlerInfo; }
+
+  public PluginInfo getIndexReaderFactoryInfo() { return indexReaderFactoryInfo; }
 }

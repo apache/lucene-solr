@@ -348,20 +348,14 @@ public final class SolrCore implements SolrInfoMBean {
   }
 
   private void initIndexReaderFactory() {
-    String xpath = "indexReaderFactory";
-    Node node = (Node) solrConfig.evaluate(xpath, XPathConstants.NODE);
     IndexReaderFactory indexReaderFactory;
-    if (node != null) {
-      Map<String, IndexReaderFactory> registry = new HashMap<String, IndexReaderFactory>();
-      NamedListPluginLoader<IndexReaderFactory> indexReaderFactoryLoader = new NamedListPluginLoader<IndexReaderFactory>(
-          "[solrconfig.xml] " + xpath, registry);
-
-      indexReaderFactory = indexReaderFactoryLoader.loadSingle(solrConfig
-          .getResourceLoader(), node);
+    SolrConfig.PluginInfo info = solrConfig.getIndexReaderFactoryInfo();
+    if (info != null) {
+      indexReaderFactory = (IndexReaderFactory) resourceLoader.newInstance(info.className);
+      indexReaderFactory.init(info.initArgs);
     } else {
       indexReaderFactory = new StandardIndexReaderFactory();
-    }
-
+    } 
     this.indexReaderFactory = indexReaderFactory;
   }
   
@@ -419,11 +413,11 @@ public final class SolrCore implements SolrInfoMBean {
   private <T extends Object> T createInstance(String className, Class<T> cast, String msg) {
     Class clazz = null;
     if (msg == null) msg = "SolrCore Object";
-    try { 
+    try {
         clazz = getResourceLoader().findClass(className);
         if (cast != null && !cast.isAssignableFrom(clazz))
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " is not a " +cast.getName());
-      //most of the classes do not have constructors whiuch take in SolrCore. It is recommended to obtain SolrCore by implementing SolrCoreAare.
+      //most of the classes do not have constructors which takes SolrCore argument. It is recommended to obtain SolrCore by implementing SolrCoreAware.
       // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
         Constructor[] cons =  clazz.getConstructors();
         for (Constructor con : cons) {
@@ -432,7 +426,7 @@ public final class SolrCore implements SolrInfoMBean {
             return (T)con.newInstance(this);
           }
         }
-        return (T) clazz.newInstance();//use the empty constructor      
+        return (T) getResourceLoader().newInstance(className);//use the empty constructor      
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
@@ -823,33 +817,24 @@ public final class SolrCore implements SolrInfoMBean {
   private Map<String, SearchComponent> loadSearchComponents()
   {
     Map<String, SearchComponent> components = new HashMap<String, SearchComponent>();
-
-    String xpath = "searchComponent";
-    NamedListPluginLoader<SearchComponent> loader = new NamedListPluginLoader<SearchComponent>( xpath, components );
-    loader.load( solrConfig.getResourceLoader(), (NodeList)solrConfig.evaluate( xpath, XPathConstants.NODESET ) );
-
-    final Map<String,Class<? extends SearchComponent>> standardcomponents 
-        = new HashMap<String, Class<? extends SearchComponent>>();
-    standardcomponents.put( QueryComponent.COMPONENT_NAME,        QueryComponent.class        );
-    standardcomponents.put( FacetComponent.COMPONENT_NAME,        FacetComponent.class        );
-    standardcomponents.put( MoreLikeThisComponent.COMPONENT_NAME, MoreLikeThisComponent.class );
-    standardcomponents.put( HighlightComponent.COMPONENT_NAME,    HighlightComponent.class    );
-    standardcomponents.put( StatsComponent.COMPONENT_NAME,        StatsComponent.class        );
-    standardcomponents.put( DebugComponent.COMPONENT_NAME,        DebugComponent.class        );
-    for( Map.Entry<String, Class<? extends SearchComponent>> entry : standardcomponents.entrySet() ) {
-      if( components.get( entry.getKey() ) == null ) {
-        try {
-          SearchComponent comp = entry.getValue().newInstance();
-          comp.init( null ); // default components initialized with nothing
-          components.put( entry.getKey(), comp );
-        }
-        catch (Exception e) {
-          SolrConfig.severeErrors.add( e );
-          SolrException.logOnce(log,null,e);
-        }
-      }
+    // there is something strange which makes the tests fail when the instance is created using SolrCore#createInstance
+    for (SolrConfig.PluginInfo info : solrConfig.getSearchComponentInfo()) {
+      SearchComponent sc = (SearchComponent) resourceLoader.newInstance(info.className);
+      sc.init(info.initArgs);
+      components.put(info.name, sc);
     }
+    addIfNotPresent(components,QueryComponent.COMPONENT_NAME,QueryComponent.class);
+    addIfNotPresent(components,FacetComponent.COMPONENT_NAME,FacetComponent.class);
+    addIfNotPresent(components,MoreLikeThisComponent.COMPONENT_NAME,MoreLikeThisComponent.class);
+    addIfNotPresent(components,HighlightComponent.COMPONENT_NAME,HighlightComponent.class);
+    addIfNotPresent(components,StatsComponent.COMPONENT_NAME,StatsComponent.class);
+    addIfNotPresent(components,DebugComponent.COMPONENT_NAME,DebugComponent.class);
     return components;
+  }
+  private <T> void addIfNotPresent(Map<String ,T> registry, String name, Class<? extends  T> c){
+    if(!registry.containsKey(name)){
+      registry.put(name, (T) resourceLoader.newInstance(c.getName()));
+    }
   }
   
   /**
@@ -1493,8 +1478,7 @@ public final class SolrCore implements SolrInfoMBean {
       registry.put(info.name, o);
       if(info.isDefault){
         def = o;
-      }
-
+      } 
     }
     return def;
   }
