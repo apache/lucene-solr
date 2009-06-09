@@ -817,12 +817,7 @@ public final class SolrCore implements SolrInfoMBean {
   private Map<String, SearchComponent> loadSearchComponents()
   {
     Map<String, SearchComponent> components = new HashMap<String, SearchComponent>();
-    // there is something strange which makes the tests fail when the instance is created using SolrCore#createInstance
-    for (SolrConfig.PluginInfo info : solrConfig.getSearchComponentInfo()) {
-      SearchComponent sc = (SearchComponent) resourceLoader.newInstance(info.className);
-      sc.init(info.initArgs);
-      components.put(info.name, sc);
-    }
+    initPlugins(solrConfig.getSearchComponentInfo(),components,SearchComponent.class);    
     addIfNotPresent(components,QueryComponent.COMPONENT_NAME,QueryComponent.class);
     addIfNotPresent(components,FacetComponent.COMPONENT_NAME,FacetComponent.class);
     addIfNotPresent(components,MoreLikeThisComponent.COMPONENT_NAME,MoreLikeThisComponent.class);
