@@ -597,7 +597,6 @@ public final class SolrCore implements SolrInfoMBean {
     final Map<String, UpdateRequestProcessorChain> map = new HashMap<String, UpdateRequestProcessorChain>();
     UpdateRequestProcessorChain def = null;
     Map<String, List<SolrConfig.PluginInfo>> infos = solrConfig.getUpdateProcessorChainInfo();
-    System.out.println(infos);
     if (!infos.isEmpty()) {
       boolean defaultProcessed = false;
       List<SolrConfig.PluginInfo> defProcessorChainInfo = infos.get(null);// this is the default one
