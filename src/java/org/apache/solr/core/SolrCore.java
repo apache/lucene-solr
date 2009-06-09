@@ -86,6 +86,7 @@ public final class SolrCore implements SolrInfoMBean {
   private final CoreDescriptor coreDescriptor;
 
   private final SolrConfig solrConfig;
+  private final SolrResourceLoader resourceLoader;
   private final IndexSchema schema;
   private final String dataDir;
   private final UpdateHandler updateHandler;
@@ -126,7 +127,7 @@ public final class SolrCore implements SolrInfoMBean {
    * @since solr 1.3
    */
   public SolrResourceLoader getResourceLoader() {
-    return solrConfig.getResourceLoader();
+    return resourceLoader;
   }
 
   /**
@@ -504,13 +505,13 @@ public final class SolrCore implements SolrInfoMBean {
   public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd) {
     coreDescriptor = cd;
     this.setName( name );
-    SolrResourceLoader loader = config.getResourceLoader();
+    resourceLoader = config.getResourceLoader();
     if (dataDir == null)
       dataDir = config.get("dataDir",cd.getDataDir());
 
     dataDir = SolrResourceLoader.normalizeDir(dataDir);
 
-    log.info(logid+"Opening new SolrCore at " + loader.getInstanceDir() + ", dataDir="+dataDir);
+    log.info(logid+"Opening new SolrCore at " + resourceLoader.getInstanceDir() + ", dataDir="+dataDir);
 
     if (schema==null) {
       schema = new IndexSchema(config, IndexSchema.DEFAULT_SCHEMA_FILE, null);
@@ -542,7 +543,7 @@ public final class SolrCore implements SolrInfoMBean {
     initQParsers();
     initValueSourceParsers();
 
-    this.searchComponents = loadSearchComponents( config );
+    this.searchComponents = loadSearchComponents();
 
     // Processors initialized before the handlers
     updateProcessorChains = loadUpdateProcessorChains();
@@ -574,16 +575,15 @@ public final class SolrCore implements SolrInfoMBean {
       // one in the middle.
       // With lockless commits in Lucene now, this probably shouldn't be an issue anymore
       getSearcher(false,false,null);
-  
-      updateHandler = createUpdateHandler(
-        solrConfig.get("updateHandler/@class", DirectUpdateHandler2.class.getName())
-      );
 
+      String updateHandlerClass = solrConfig.getUpdateHandlerInfo().className;
+
+      updateHandler = createUpdateHandler(updateHandlerClass == null ?  DirectUpdateHandler2.class.getName():updateHandlerClass); 
       infoRegistry.put("updateHandler", updateHandler);
 
       // Finally tell anyone who wants to know
-      loader.inform( loader );
-      loader.inform( this );
+      resourceLoader.inform( resourceLoader );
+      resourceLoader.inform( this );
       instance = this;   // set singleton for backwards compatibility
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -597,79 +597,50 @@ public final class SolrCore implements SolrInfoMBean {
 
 
   /**
-   * Load the request processors configured in solrconfig.xml
+   * Load the request processors
    */
-  private Map<String,UpdateRequestProcessorChain> loadUpdateProcessorChains() {
-    final Map<String,UpdateRequestProcessorChain> map = new HashMap<String, UpdateRequestProcessorChain>();
-    
-    final String parsingErrorText = "Parsing Update Request Processor Chain";
+   private Map<String,UpdateRequestProcessorChain> loadUpdateProcessorChains() {
+    final Map<String, UpdateRequestProcessorChain> map = new HashMap<String, UpdateRequestProcessorChain>();
     UpdateRequestProcessorChain def = null;
-    
-    // This is kinda ugly, but at least it keeps the xpath logic in one place
-    // away from the Processors themselves.  
-    XPath xpath = solrConfig.getXPath();
-    NodeList nodes = (NodeList)solrConfig.evaluate("updateRequestProcessorChain", XPathConstants.NODESET);
-    boolean requireName = nodes.getLength() > 1;
-    if (nodes !=null ) {
-      for (int i=0; i<nodes.getLength(); i++) {
-        Node node = nodes.item(i);
-        String name       = DOMUtil.getAttr(node,"name", requireName?parsingErrorText:null);
-        boolean isDefault = "true".equals( DOMUtil.getAttr(node,"default", null ) );
-        
-        NodeList links = null;
-        try {
-          links = (NodeList)xpath.evaluate("processor", node, XPathConstants.NODESET);
-        } 
-        catch (XPathExpressionException e) {
-          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error reading processors",e,false);
+    Map<String, List<SolrConfig.PluginInfo>> infos = solrConfig.getUpdateProcessorChainInfo();
+    System.out.println(infos);
+    if (!infos.isEmpty()) {
+      boolean defaultProcessed = false;
+      List<SolrConfig.PluginInfo> defProcessorChainInfo = infos.get(null);// this is the default one
+      for (Map.Entry<String, List<SolrConfig.PluginInfo>> e : solrConfig.getUpdateProcessorChainInfo().entrySet()) {
+        List<SolrConfig.PluginInfo> processorsInfo = e.getValue();
+        if (processorsInfo == defProcessorChainInfo && defaultProcessed) {
+          map.put(e.getKey(), def);
+          continue;
         }
-        if( links == null || links.getLength() < 1 ) {
-          throw new RuntimeException( "updateRequestProcessorChain require at least one processor");
+        UpdateRequestProcessorFactory[] chain = new UpdateRequestProcessorFactory[processorsInfo.size()];
+        for (int i = 0; i < processorsInfo.size(); i++) {
+          SolrConfig.PluginInfo info = processorsInfo.get(i);
+          chain[i] = createInstance(info.className, UpdateRequestProcessorFactory.class, null);
+          chain[i].init(info.initArgs);
         }
-        
-        // keep a list of the factories...
-        final ArrayList<UpdateRequestProcessorFactory> factories = new ArrayList<UpdateRequestProcessorFactory>(links.getLength());
-        // Load and initialize the plugin chain
-        AbstractPluginLoader<UpdateRequestProcessorFactory> loader 
-            = new AbstractPluginLoader<UpdateRequestProcessorFactory>( "processor chain", false, false ) {
-          @Override
-          protected void init(UpdateRequestProcessorFactory plugin, Node node) throws Exception {
-            plugin.init( (node==null)?null:DOMUtil.childNodesToNamedList(node) );
-          }
-    
-          @Override
-          protected UpdateRequestProcessorFactory register(String name, UpdateRequestProcessorFactory plugin) throws Exception {
-            factories.add( plugin );
-            return null;
-          }
-        };
-        loader.load( solrConfig.getResourceLoader(), links );
-        
-        
-        UpdateRequestProcessorChain chain = new UpdateRequestProcessorChain( 
-            factories.toArray( new UpdateRequestProcessorFactory[factories.size()] ) );
-        if( isDefault || nodes.getLength()==1 ) {
-          def = chain;
-        }
-        if( name != null ) {
-          map.put(name, chain);
+        UpdateRequestProcessorChain processorChain = new UpdateRequestProcessorChain(chain);
+        map.put(e.getKey(), processorChain);
+        if (e.getKey() == null || processorsInfo == defProcessorChainInfo) { //this is the default one
+          defaultProcessed = true;
+          def = processorChain;
         }
       }
     }
-    
-    if( def == null ) {
+
+    if (def == null) {
       // construct the default chain
-      UpdateRequestProcessorFactory[] factories = new UpdateRequestProcessorFactory[] {
-        new RunUpdateProcessorFactory(),
-        new LogUpdateProcessorFactory()
+      UpdateRequestProcessorFactory[] factories = new UpdateRequestProcessorFactory[]{
+              new RunUpdateProcessorFactory(),
+              new LogUpdateProcessorFactory()
       };
-      def = new UpdateRequestProcessorChain( factories );
+      def = new UpdateRequestProcessorChain(factories);
     }
-    map.put( null, def );
-    map.put( "", def );
+    map.put(null, def);
+    map.put("", def);
     return map;
   }
-  
+
   /**
    * @return an update processor registered to the given name.  Throw an exception if this chain is undefined
    */    
@@ -849,13 +820,13 @@ public final class SolrCore implements SolrInfoMBean {
   /**
    * Register the default search components
    */
-  private Map<String, SearchComponent> loadSearchComponents( SolrConfig config )
+  private Map<String, SearchComponent> loadSearchComponents()
   {
     Map<String, SearchComponent> components = new HashMap<String, SearchComponent>();
 
     String xpath = "searchComponent";
     NamedListPluginLoader<SearchComponent> loader = new NamedListPluginLoader<SearchComponent>( xpath, components );
-    loader.load( config.getResourceLoader(), (NodeList)config.evaluate( xpath, XPathConstants.NODESET ) );
+    loader.load( solrConfig.getResourceLoader(), (NodeList)solrConfig.evaluate( xpath, XPathConstants.NODESET ) );
 
     final Map<String,Class<? extends SearchComponent>> standardcomponents 
         = new HashMap<String, Class<? extends SearchComponent>>();

@@ -520,8 +520,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       docsSinceCommit = 0;
       pending = null;
 
-      docsUpperBound = core.getSolrConfig().getInt("updateHandler/autoCommit/maxDocs", -1);
-      timeUpperBound = core.getSolrConfig().getInt("updateHandler/autoCommit/maxTime", -1);
+      docsUpperBound = core.getSolrConfig().getUpdateHandlerInfo().autoCommmitMaxDocs;   //getInt("updateHandler/autoCommit/maxDocs", -1);
+      timeUpperBound = core.getSolrConfig().getUpdateHandlerInfo().autoCommmitMaxTime;    //getInt("updateHandler/autoCommit/maxTime", -1);
 
       SolrCore.log.info("AutoCommit: " + this);
     }

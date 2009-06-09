@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -33,10 +34,13 @@ import org.slf4j.LoggerFactory;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.w3c.dom.NamedNodeMap;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpressionException;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -169,6 +173,8 @@ public class SolrConfig extends Config {
      maxWarmingSearchers = getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
 
      loadPluginInfo();
+     updateProcessorChainInfo = loadUpdateProcessorInfo();
+     updateHandlerInfo = loadUpdatehandlerInfo();
 
     Config.log.info("Loaded SolrConfig: " + name);
     
@@ -176,27 +182,62 @@ public class SolrConfig extends Config {
     config = this;
   }
 
-  protected void loadPluginInfo() {
-    List<String> reqFields = Arrays.asList("name","class");
-    reqHandlerInfo = loadPluginInfo("requestHandler",reqFields);
-    respWriterInfo = loadPluginInfo("queryResponseWriter",reqFields);
-    valueSourceParserInfo = loadPluginInfo("valueSourceParser",reqFields);
-    queryParserInfo = loadPluginInfo("queryParser",reqFields);
-    searchComponentInfo = loadPluginInfo("searchComponent",reqFields);
-    List<PluginInfo> plugins =  loadPluginInfo("directoryFactory",reqFields);
-    directoryfactoryInfo = plugins.isEmpty() ? null:plugins.get(0);
-    reqFields = Arrays.asList("class");
-    plugins = loadPluginInfo("mainIndex/deletionPolicy",reqFields);
-    deletionPolicyInfo = plugins.isEmpty() ? null : plugins.get(0);
-    firstSearcherListenerInfo = loadPluginInfo("//listener[@event='firstSearcher']",reqFields);
-    newSearcherListenerInfo = loadPluginInfo("//listener[@event='newSearcher']",reqFields);
+  protected UpdateHandlerInfo loadUpdatehandlerInfo() {
+    return new UpdateHandlerInfo(get("updateHandler/@class",null),
+            getInt("updateHandler/autoCommit/maxDocs",-1),
+            getInt("updateHandler/autoCommit/maxTime",-1),
+            getInt("updateHandler/commitIntervalLowerBound",-1));
   }
 
-  private List<PluginInfo> loadPluginInfo(String tag, List<String> reqFields) {
+  protected void loadPluginInfo() {
+    reqHandlerInfo = loadPluginInfo("requestHandler",true);
+    respWriterInfo = loadPluginInfo("queryResponseWriter",true);
+    valueSourceParserInfo = loadPluginInfo("valueSourceParser",true);
+    queryParserInfo = loadPluginInfo("queryParser",true);
+    searchComponentInfo = loadPluginInfo("searchComponent",true);
+    List<PluginInfo> plugins =  loadPluginInfo("directoryFactory",true);
+    directoryfactoryInfo = plugins.isEmpty() ? null:plugins.get(0);
+    plugins = loadPluginInfo("mainIndex/deletionPolicy",false);
+    deletionPolicyInfo = plugins.isEmpty() ? null : plugins.get(0);
+    firstSearcherListenerInfo = loadPluginInfo("//listener[@event='firstSearcher']",false);
+    newSearcherListenerInfo = loadPluginInfo("//listener[@event='newSearcher']",false);
+  }
+
+  protected Map<String, List<PluginInfo>> loadUpdateProcessorInfo() {
+    HashMap<String, List<PluginInfo>> chains = new HashMap<String, List<PluginInfo>>();
+    NodeList nodes = (NodeList) evaluate("updateRequestProcessorChain", XPathConstants.NODESET);
+    if (nodes != null) {
+      boolean requireName = nodes.getLength() > 1;
+      for (int i = 0; i < nodes.getLength(); i++) {
+        Node node = nodes.item(i);
+        String name       = DOMUtil.getAttr(node,"name", requireName ? "[solrconfig.xml] updateRequestProcessorChain":null);
+        boolean isDefault = "true".equals( DOMUtil.getAttr(node,"default", null ) );
+        XPath xpath = getXPath();
+        try {
+          NodeList nl = (NodeList) xpath.evaluate("processor",node, XPathConstants.NODESET);
+          if((nl.getLength() <1)) {
+            throw new RuntimeException( "updateRequestProcessorChain require at least one processor");
+          }
+          ArrayList<PluginInfo> result = new ArrayList<PluginInfo>();
+          for (int j=0; j<nl.getLength(); j++) {
+            result.add(new PluginInfo(nl.item(j) ,"[solrconfig.xml] processor",false));
+          }
+          chains.put(name,result);
+          if(isDefault || nodes.getLength() == 1) chains.put(null,result);
+        } catch (XPathExpressionException e) {
+          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error reading processors",e,false);
+        }
+      }
+    }
+
+    return Collections.unmodifiableMap(chains);
+  }
+
+  private List<PluginInfo> loadPluginInfo(String tag, boolean requireName) {
     ArrayList<PluginInfo> result = new ArrayList<PluginInfo>();
     NodeList nodes = (NodeList) evaluate(tag, XPathConstants.NODESET);
      for (int i=0; i<nodes.getLength(); i++) {
-       result.add(new PluginInfo(nodes.item(i) ,"[solrconfig.xml] "+tag,reqFields));
+       result.add(new PluginInfo(nodes.item(i) ,"[solrconfig.xml] "+tag,requireName));
      }
     return Collections.unmodifiableList(result) ;
   }
@@ -235,6 +276,8 @@ public class SolrConfig extends Config {
   protected PluginInfo deletionPolicyInfo;
   protected List<PluginInfo> newSearcherListenerInfo;
   protected PluginInfo directoryfactoryInfo;
+  protected Map<String ,List<PluginInfo>> updateProcessorChainInfo ;
+  protected UpdateHandlerInfo updateHandlerInfo ;
 
   public final int maxWarmingSearchers;
   public final boolean unlockOnStartup;
@@ -372,32 +415,59 @@ public class SolrConfig extends Config {
     public LastModFrom getLastModFrom() { return lastModFrom; }
   }
 
+  public static class UpdateHandlerInfo{
+    public final String className;
+    public final int autoCommmitMaxDocs,autoCommmitMaxTime,commitIntervalLowerBound;
+
+    /**
+     * @param className
+     * @param autoCommmitMaxDocs set -1 as default
+     * @param autoCommmitMaxTime set -1 as default
+     * @param commitIntervalLowerBound set -1 as default
+     */
+    public UpdateHandlerInfo(String className, int autoCommmitMaxDocs, int autoCommmitMaxTime, int commitIntervalLowerBound) {
+      this.className = className;
+      this.autoCommmitMaxDocs = autoCommmitMaxDocs;
+      this.autoCommmitMaxTime = autoCommmitMaxTime;
+      this.commitIntervalLowerBound = commitIntervalLowerBound;
+    } 
+  }
+
   public static class PluginInfo {
     final String startup, name, className;
     final boolean isDefault;    
     final NamedList initArgs;
+    final Map<String ,String> otherAttributes;
 
     public PluginInfo(String startup, String name, String className,
-                      boolean isdefault, NamedList initArgs) {
+                      boolean isdefault, NamedList initArgs, Map<String ,String> otherAttrs) {
       this.startup = startup;
       this.name = name;
       this.className = className;
       this.isDefault = isdefault;
       this.initArgs = initArgs;
+      otherAttributes = otherAttrs == null ? Collections.<String ,String >emptyMap(): otherAttrs;
     }
 
 
-    public PluginInfo(Node node, String err, List<String> reqFields) {
-      startup = getVal( node, "startup",reqFields,err);
-      name = getVal(node, "name", reqFields,err);
-      className = getVal(node, "class",reqFields,err);
-      isDefault = Boolean.parseBoolean(getVal(node,"default",reqFields,err));
+    public PluginInfo(Node node, String err, boolean requireName) {
+      name = DOMUtil.getAttr(node, "name", requireName ? err : null);
+      className = DOMUtil.getAttr(node, "class", err );
+      isDefault = Boolean.parseBoolean(DOMUtil.getAttr(node, "default", null));
+      startup = DOMUtil.getAttr(node, "startup",null);
       initArgs = DOMUtil.childNodesToNamedList(node);
-  }
+      Map<String ,String> m = new HashMap<String, String>();
+      NamedNodeMap nnm = node.getAttributes();
+      for (int i = 0; i < nnm.getLength(); i++) {
+        String name= nnm.item(i).getNodeName();
+        if(knownAttrs.contains(name)) continue;
+        m.put(name, nnm.item(i).getNodeValue());
+      }
+      otherAttributes = m.isEmpty() ?
+              Collections.<String ,String >emptyMap():
+              Collections.unmodifiableMap(m);
 
-   private String getVal(Node node, String name, List<String> required, String err) {
-    return DOMUtil.getAttr(node, name, required.contains(name) ? err : null);
-   }
+  }
 
     @Override
     public String toString() {
@@ -405,9 +475,17 @@ public class SolrConfig extends Config {
       if(name != null) sb.append("name = "+name +",");
       if(className != null) sb.append("class = "+className +",");
       if(isDefault) sb.append("default = "+isDefault +",");
+      if(startup != null) sb.append("startup = "+startup +",");      
       if(initArgs.size() >0) sb.append("args = "+initArgs);
       sb.append("}");
       return sb.toString();    
+    }
+    private static final Set<String> knownAttrs = new HashSet<String>();
+    static {
+      knownAttrs.add("name");
+      knownAttrs.add("class");
+      knownAttrs.add("startup");
+      knownAttrs.add("default");
     }
   }
 
@@ -428,4 +506,8 @@ public class SolrConfig extends Config {
   public PluginInfo getDirectoryfactoryInfo() { return directoryfactoryInfo; }
 
   public PluginInfo getDeletionPolicyInfo() { return deletionPolicyInfo; }
+
+  public Map<String, List<PluginInfo>> getUpdateProcessorChainInfo() { return updateProcessorChainInfo; }
+
+  public UpdateHandlerInfo getUpdateHandlerInfo() { return updateHandlerInfo; }
 }
