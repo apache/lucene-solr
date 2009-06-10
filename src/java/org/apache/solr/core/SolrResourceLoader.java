@@ -134,7 +134,7 @@ public class SolrResourceLoader implements ResourceLoader
   
   /** Ensures a directory name always ends with a '/'. */
   public  static String normalizeDir(String path) {
-    return ( path != null && (!(path.endsWith("/") || path.endsWith("\\"))) )? path + '/' : path;
+    return ( path != null && (!(path.endsWith("/") || path.endsWith("\\"))) )? path + File.separator : path;
   }
 
   public String getConfigDir() {

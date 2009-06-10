@@ -43,7 +43,7 @@ public class CoreDescriptor {
     if (instanceDir == null) {
       throw new NullPointerException("Missing required \'instanceDir\'");
     }
-    if (!instanceDir.endsWith("/")) instanceDir = instanceDir + "/";
+    instanceDir = SolrResourceLoader.normalizeDir(instanceDir);
     this.instanceDir = instanceDir;
     this.configName = getDefaultConfigName();
     this.schemaName = getDefaultSchemaName();
