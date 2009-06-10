@@ -719,7 +719,7 @@ public class CoreContainer
       w.write("<property name='");
       writeAttribute(w,"name",entry.getKey());
       writeAttribute(w,"value",entry.getValue());
-      w.write("' />\n");
+      w.write("/>\n");
     }
   }
 
