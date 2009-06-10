@@ -32,11 +32,11 @@ import org.apache.lucene.index.Term;
  * @version $Id$
  */
 public class WildcardTermEnum extends FilteredTermEnum {
-  Term searchTerm;
-  String field = "";
-  String text = "";
-  String pre = "";
-  int preLen = 0;
+  final Term searchTerm;
+  final String field;
+  final String text;
+  final String pre;
+  final int preLen;
   boolean endEnum = false;
 
   /**
@@ -49,10 +49,10 @@ public class WildcardTermEnum extends FilteredTermEnum {
     super();
     searchTerm = term;
     field = searchTerm.field();
-    text = searchTerm.text();
+    final String searchTermText = searchTerm.text();
 
-    int sidx = text.indexOf(WILDCARD_STRING);
-    int cidx = text.indexOf(WILDCARD_CHAR);
+    final int sidx = searchTermText.indexOf(WILDCARD_STRING);
+    final int cidx = searchTermText.indexOf(WILDCARD_CHAR);
     int idx = sidx;
     if (idx == -1) {
       idx = cidx;
@@ -60,14 +60,10 @@ public class WildcardTermEnum extends FilteredTermEnum {
     else if (cidx >= 0) {
       idx = Math.min(idx, cidx);
     }
-    if (idx != -1) {
-      pre = searchTerm.text().substring(0,idx);
-    } else {
-      pre = "";
-    }
+    pre = idx != -1?searchTerm.text().substring(0,idx): "";
 
     preLen = pre.length();
-    text = text.substring(preLen);
+    text = searchTermText.substring(preLen);
     setEnum(reader.terms(new Term(searchTerm.field(), pre)));
   }
 
@@ -82,7 +78,7 @@ public class WildcardTermEnum extends FilteredTermEnum {
     return false;
   }
 
-  public final float difference() {
+  public float difference() {
     return 1.0f;
   }
 
@@ -189,13 +185,5 @@ public class WildcardTermEnum extends FilteredTermEnum {
         }
       }
       return false;
-  }
-
-  public void close() throws IOException
-  {
-    super.close();
-    searchTerm = null;
-    field = null;
-    text = null;
   }
 }
