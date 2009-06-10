@@ -55,7 +55,7 @@ import org.apache.lucene.util.AttributeSource;
         consumes the attributes after each call.    
   </ol>
   To make sure that filters and consumers know which attributes are available
-  the attributes must be added in the during instantiation. Filters and 
+  the attributes must be added during instantiation. Filters and 
   consumers are not required to check for availability of attributes in {@link #incrementToken()}.
   <p>
   Sometimes it is desirable to capture a current state of a
