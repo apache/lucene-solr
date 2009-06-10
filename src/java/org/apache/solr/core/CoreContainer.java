@@ -716,7 +716,7 @@ public class CoreContainer
 
   private void writeProperties(Writer w, Properties props) throws IOException {
     for (Map.Entry<Object, Object> entry : props.entrySet()) {
-      w.write("<property name='");
+      w.write("<property");
       writeAttribute(w,"name",entry.getKey());
       writeAttribute(w,"value",entry.getValue());
       w.write("/>\n");
