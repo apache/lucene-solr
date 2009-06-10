@@ -1539,10 +1539,7 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testFalseDirectoryAlreadyClosed() throws Throwable {
 
-      String tempDir = System.getProperty("java.io.tmpdir");
-      if (tempDir == null)
-        throw new RuntimeException("java.io.tmpdir undefined");
-      File indexDir = new File(tempDir, "lucenetestdiralreadyclosed");
+      File indexDir = _TestUtil.getTempDir("lucenetestdiralreadyclosed");
 
       try {
         FSDirectory dir = FSDirectory.getDirectory(indexDir);
@@ -1625,8 +1622,7 @@ public class TestIndexReader extends LuceneTestCase
   // IndexReader on a non-existent directory, you get a
   // good exception
   public void testNoDir() throws Throwable {
-    String tempDir = System.getProperty("java.io.tmpdir");
-    Directory dir = FSDirectory.open(new File(tempDir, "doesnotexist"));
+    Directory dir = FSDirectory.open(_TestUtil.getTempDir("doesnotexist"));
     try {
       IndexReader.open(dir);
       fail("did not hit expected exception");

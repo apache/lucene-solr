@@ -172,8 +172,7 @@ public class TestStressIndexing extends LuceneTestCase {
     directory.close();
 
     // FSDir
-    String tempDir = System.getProperty("java.io.tmpdir");
-    File dirPath = new File(tempDir, "lucene.test.stress");
+    File dirPath = _TestUtil.getTempDir("lucene.test.stress");
     directory = FSDirectory.open(dirPath);
     runStressTest(directory, true, null);
     directory.close();

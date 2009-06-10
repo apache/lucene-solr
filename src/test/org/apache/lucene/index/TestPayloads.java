@@ -41,6 +41,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util._TestUtil;
 
 
 public class TestPayloads extends LuceneTestCase {
@@ -157,10 +158,10 @@ public class TestPayloads extends LuceneTestCase {
         performTest(dir);
         
         // now use a FSDirectory and repeat same test
-        String dirName = "test_payloads"; 
-        dir = FSDirectory.open(new File(dirName));
+        File dirName = _TestUtil.getTempDir("test_payloads");
+        dir = FSDirectory.open(dirName);
         performTest(dir);
-        rmDir(dirName);
+       _TestUtil.rmDir(dirName);
     }
     
     // builds an index with payloads in the given Directory and performs
@@ -363,21 +364,6 @@ public class TestPayloads extends LuceneTestCase {
         return terms;
     }
 
-
-    private void rmDir(String dir) {
-        File fileDir = new File(dir);
-        if (fileDir.exists()) {
-          File[] files = fileDir.listFiles();
-          if (files != null) {
-            for (int i = 0; i < files.length; i++) {
-              files[i].delete();
-            }
-          }
-          fileDir.delete();
-        }
-      }
-
- 
 
     void assertByteArrayEquals(byte[] b1, byte[] b2) {
         if (b1.length != b2.length) {

@@ -741,10 +741,7 @@ public class TestIndexWriter extends LuceneTestCase
     // reader holds it open (this fails pre lock-less
     // commits on windows):
     public void testCreateWithReader() throws IOException {
-        String tempDir = System.getProperty("java.io.tmpdir");
-        if (tempDir == null)
-            throw new IOException("java.io.tmpdir undefined, cannot run test");
-        File indexDir = new File(tempDir, "lucenetestindexwriter");
+        File indexDir = _TestUtil.getTempDir("lucenetestindexwriter");
 
         try {
           Directory dir = FSDirectory.open(indexDir);
@@ -778,10 +775,7 @@ public class TestIndexWriter extends LuceneTestCase
     // Same test as above, but use IndexWriter constructor
     // that takes File:
     public void testCreateWithReader2() throws IOException {
-        String tempDir = System.getProperty("java.io.tmpdir");
-        if (tempDir == null)
-            throw new IOException("java.io.tmpdir undefined, cannot run test");
-        File indexDir = new File(tempDir, "lucenetestindexwriter");
+        File indexDir = _TestUtil.getTempDir("lucenetestindexwriter");
         try {
           // add one document & close writer
           IndexWriter writer = new IndexWriter(indexDir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
@@ -811,11 +805,7 @@ public class TestIndexWriter extends LuceneTestCase
     // Same test as above, but use IndexWriter constructor
     // that takes String:
     public void testCreateWithReader3() throws IOException {
-        String tempDir = System.getProperty("tempDir");
-        if (tempDir == null)
-            throw new IOException("java.io.tmpdir undefined, cannot run test");
-
-        String dirName = tempDir + "/lucenetestindexwriter";
+        File dirName = _TestUtil.getTempDir("lucenetestindexwriter");
         try {
 
           // add one document & close writer
@@ -839,7 +829,7 @@ public class TestIndexWriter extends LuceneTestCase
           reader.close();
           reader2.close();
         } finally {
-          rmDir(new File(dirName));
+          rmDir(dirName);
         }
     }
 

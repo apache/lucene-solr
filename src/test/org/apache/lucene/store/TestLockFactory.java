@@ -34,6 +34,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestLockFactory extends LuceneTestCase {
 
@@ -339,7 +340,8 @@ public class TestLockFactory extends LuceneTestCase {
     }
 
     public void _testStressLocks(LockFactory lockFactory, String indexDirName) throws Exception {
-        FSDirectory fs1 = FSDirectory.open(new File(indexDirName), lockFactory);
+        File indexDir = _TestUtil.getTempDir(indexDirName);
+        FSDirectory fs1 = FSDirectory.open(indexDir, lockFactory);
 
         // First create a 1 doc index:
         IndexWriter w = new IndexWriter(fs1, new WhitespaceAnalyzer(), true,
@@ -360,7 +362,7 @@ public class TestLockFactory extends LuceneTestCase {
         assertTrue("IndexSearcher hit unexpected exceptions", !searcher.hitException);
 
         // Cleanup
-        rmDir(indexDirName);
+        _TestUtil.rmDir(indexDir);
     }
 
     // Verify: NativeFSLockFactory works correctly
