@@ -15,7 +15,7 @@ import org.apache.lucene.index.Term;
  */
 public class PrefixTermEnum extends FilteredTermEnum {
 
-  private Term prefix;
+  private final Term prefix;
   private boolean endEnum = false;
 
   public PrefixTermEnum(IndexReader reader, Term prefix) throws IOException {
@@ -30,6 +30,10 @@ public class PrefixTermEnum extends FilteredTermEnum {
 
   protected boolean endEnum() {
     return endEnum;
+  }
+  
+  protected Term getPrefixTerm() {
+      return prefix;
   }
 
   protected boolean termCompare(Term term) {
