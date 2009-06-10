@@ -36,7 +36,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.FSDirectory;
 
 /** 
  * An IndexReader which reads indexes with multiple segments.
@@ -44,7 +43,6 @@ import org.apache.lucene.store.FSDirectory;
 class DirectoryReader extends IndexReader implements Cloneable {
   protected Directory directory;
   protected boolean readOnly;
-  protected boolean closeDirectory;
 
   IndexWriter writer;
 
@@ -64,48 +62,23 @@ class DirectoryReader extends IndexReader implements Cloneable {
   private int numDocs = -1;
   private boolean hasDeletions = false;
 
-  static IndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly) throws CorruptIndexException, IOException {
-    SegmentInfos.FindSegmentsFile finder = new SegmentInfos.FindSegmentsFile(directory) {
-
+  static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly) throws CorruptIndexException, IOException {
+    return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
-
         SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);
-
         if (readOnly)
-          return new ReadOnlyDirectoryReader(directory, infos, deletionPolicy, closeDirectory);
+          return new ReadOnlyDirectoryReader(directory, infos, deletionPolicy);
         else
-          return new DirectoryReader(directory, infos, deletionPolicy, closeDirectory, false);
+          return new DirectoryReader(directory, infos, deletionPolicy, false);
       }
-    };
-
-    IndexReader reader = null;
-    try {
-      reader = (IndexReader) finder.run(commit);
-    } finally {
-      // We passed false above for closeDirectory so that
-      // the directory would not be closed before we were
-      // done retrying, so at this point if we truly failed
-      // to open a reader, which means an exception is being
-      // thrown, then close the directory now:
-      if (reader == null && closeDirectory) {
-        try {
-          directory.close();
-        } catch (IOException ioe) {
-          // suppress, so we keep throwing original failure
-          // from opening the reader
-        }
-      }
-    }
-
-    return reader;
+    }.run(commit);
   }
 
   /** Construct reading the named set of readers. */
-  DirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy, boolean closeDirectory, boolean readOnly) throws IOException {
+  DirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws IOException {
     this.directory = directory;
     this.readOnly = readOnly;
-    this.closeDirectory = closeDirectory;
     this.segmentInfos = sis;
     this.deletionPolicy = deletionPolicy;
 
@@ -147,7 +120,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
   DirectoryReader(IndexWriter writer, SegmentInfos infos) throws IOException {
     this.directory = writer.getDirectory();
     this.readOnly = true;
-    this.closeDirectory = false;
     this.segmentInfos = infos;
     if (!readOnly) {
       // We assume that this segments_N was previously
@@ -198,11 +170,10 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   /** This contructor is only used for {@link #reopen()} */
-  DirectoryReader(Directory directory, SegmentInfos infos, boolean closeDirectory, SegmentReader[] oldReaders, int[] oldStarts,
+  DirectoryReader(Directory directory, SegmentInfos infos, SegmentReader[] oldReaders, int[] oldStarts,
                      Map oldNormsCache, boolean readOnly, boolean doClone) throws IOException {
     this.directory = directory;
     this.readOnly = readOnly;
-    this.closeDirectory = closeDirectory;
     this.segmentInfos = infos;
     if (!readOnly) {
       // We assume that this segments_N was previously
@@ -347,7 +318,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
     DirectoryReader newReader = doReopen((SegmentInfos) segmentInfos.clone(), true, openReadOnly);
 
     if (this != newReader) {
-      newReader.closeDirectory = closeDirectory;
       newReader.deletionPolicy = deletionPolicy;
     }
     newReader.writer = writer;
@@ -445,54 +415,21 @@ class DirectoryReader extends IndexReader implements Cloneable {
       }
     }
 
-    final SegmentInfos.FindSegmentsFile finder = new SegmentInfos.FindSegmentsFile(directory) {
-
+    return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
         SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);
         return doReopen(infos, false, openReadOnly);
       }
-    };
-
-    DirectoryReader reader = null;
-
-    /* TODO: Remove this in 3.0 - the directory is then
-     * no longer owned by the IndexReader and must not be
-     * closed.
-     * While trying to reopen, we temporarily mark our
-     * closeDirectory as false.  This way any exceptions hit
-     * partway while opening the reader, which is expected
-     * eg if writer is committing, won't close our
-     * directory.  We restore this value below:
-     */
-    final boolean myCloseDirectory = closeDirectory; // @deprectated
-    closeDirectory = false;
-
-    try {
-      reader = (DirectoryReader) finder.run(commit);
-    } finally {
-      if (myCloseDirectory) {
-        assert directory instanceof FSDirectory;
-        // Restore my closeDirectory
-        closeDirectory = true;
-        if (reader != null && reader != this) {
-          // Success, and a new reader was actually opened
-          reader.closeDirectory = true;
-          // Clone the directory
-          reader.directory = FSDirectory.getDirectory(((FSDirectory) directory).getFile());
-        }
-      }
-    }
-
-    return reader;
+    }.run(commit);
   }
 
   private synchronized DirectoryReader doReopen(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
     DirectoryReader reader;
 	  if (openReadOnly) {
-      reader = new ReadOnlyDirectoryReader(directory, infos, closeDirectory, subReaders, starts, normsCache, doClone);
+      reader = new ReadOnlyDirectoryReader(directory, infos, subReaders, starts, normsCache, doClone);
     } else {
-      reader = new DirectoryReader(directory, infos, closeDirectory, subReaders, starts, normsCache, false, doClone);
+      reader = new DirectoryReader(directory, infos, subReaders, starts, normsCache, false, doClone);
     }
     reader.setDisableFakeNorms(getDisableFakeNorms());
     return reader;
@@ -868,11 +805,17 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   protected synchronized void doClose() throws IOException {
-    for (int i = 0; i < subReaders.length; i++)
-      subReaders[i].decRef();
-
-    if (closeDirectory)
-      directory.close();
+    IOException ioe = null;
+    for (int i = 0; i < subReaders.length; i++) {
+      // try to close each reader, even if an exception is thrown
+      try {
+        subReaders[i].decRef();
+      } catch (IOException e) {
+        if (ioe == null) ioe = e;
+      }
+    }
+    // throw the first exception
+    if (ioe != null) throw ioe;
   }
 
   public Collection getFieldNames (IndexReader.FieldOption fieldNames) {

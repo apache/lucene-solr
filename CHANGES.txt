@@ -481,10 +481,12 @@ Bug fixes
 5. LUCENE-1442: Multiple-valued NOT_ANALYZED fields can double-count
    token offsets.  (Mike McCandless)
 
-6. LUCENE-1453: Ensure IndexReader.reopen() does not result in
-   incorrectly closing the shared FSDirectory.  This bug would only
-   happen if you use IndexReader.open with a File or String argument.
-   (Mark Miller via Mike McCandless)
+6. LUCENE-1453: Ensure IndexReader.reopen()/clone() does not result in
+   incorrectly closing the shared FSDirectory. This bug would only
+   happen if you use IndexReader.open() with a File or String argument.
+   The returned readers are wrapped by a FilterIndexReader that
+   correctly handles closing of directory after reopen()/clone(). 
+   (Mark Miller, Uwe Schindler, Mike McCandless)
 
 7. LUCENE-1457: Fix possible overflow bugs during binary
    searches. (Mark Miller via Mike McCandless)

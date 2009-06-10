@@ -17,6 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+
 import org.apache.lucene.index.SegmentReader.Norm;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.analysis.SimpleAnalyzer;
@@ -25,7 +28,9 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.store.AlreadyClosedException;
 
 /**
  * Tests cloning multiple types of readers, modifying the deletedDocs and norms
@@ -49,6 +54,34 @@ public class TestIndexReaderClone extends LuceneTestCase {
     reader.close();
     readOnlyReader.close();
     dir1.close();
+  }
+
+  // LUCENE-1453
+  public void testFSDirectoryClone() throws Exception {
+
+    String tempDir = System.getProperty("java.io.tmpdir");
+    if (tempDir == null)
+      throw new IOException("java.io.tmpdir undefined, cannot run test");
+    File indexDir2 = new File(tempDir, "FSDirIndexReaderClone");
+
+    Directory dir1 = FSDirectory.getDirectory(indexDir2);
+    TestIndexReaderReopen.createIndex(dir1, false);
+
+    IndexReader reader = IndexReader.open(indexDir2);
+    IndexReader readOnlyReader = (IndexReader) reader.clone();
+    reader.close();
+    readOnlyReader.close();
+
+    // Make sure we didn't pick up too many incRef's along
+    // the way -- this close should be the final close:
+    dir1.close();
+
+    try {
+      dir1.listAll();
+      fail("did not hit AlreadyClosedException");
+    } catch (AlreadyClosedException ace) {
+      // expected
+    }
   }
 
   // open non-readOnly reader1, clone to non-readOnly

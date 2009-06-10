@@ -199,7 +199,7 @@ public abstract class IndexReader implements Cloneable {
       throw new AlreadyClosedException("this IndexReader is closed");
     }
   }
-
+  
   /** Returns a read/write IndexReader reading the index in an FSDirectory in the named
    *  path.
    * @throws CorruptIndexException if the index is corrupt
@@ -208,7 +208,7 @@ public abstract class IndexReader implements Cloneable {
    * Use {@link #open(Directory, boolean)} instead
    * @param path the path to the index directory */
   public static IndexReader open(String path) throws CorruptIndexException, IOException {
-    return open(FSDirectory.getDirectory(path), true, null, null, false);
+    return new DirectoryOwningReader(open(FSDirectory.getDirectory(path), null, null, false));
   }
 
   /** Returns an IndexReader reading the index in an
@@ -225,7 +225,7 @@ public abstract class IndexReader implements Cloneable {
    * Use {@link #open(Directory, boolean)} instead
    */
   public static IndexReader open(String path, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(FSDirectory.getDirectory(path), true, null, null, readOnly);
+    return new DirectoryOwningReader(open(FSDirectory.getDirectory(path), null, null, readOnly));
   }
 
   /** Returns a read/write IndexReader reading the index in an FSDirectory in the named
@@ -237,7 +237,7 @@ public abstract class IndexReader implements Cloneable {
    * Use {@link #open(Directory, boolean)} instead
    */
   public static IndexReader open(File path) throws CorruptIndexException, IOException {
-    return open(FSDirectory.getDirectory(path), true, null, null, false);
+    return new DirectoryOwningReader(open(FSDirectory.getDirectory(path), null, null, false));
   }
 
   /** Returns an IndexReader reading the index in an
@@ -254,7 +254,7 @@ public abstract class IndexReader implements Cloneable {
    * Use {@link #open(Directory, boolean)} instead
    */
   public static IndexReader open(File path, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(FSDirectory.getDirectory(path), true, null, null, readOnly);
+    return new DirectoryOwningReader(open(FSDirectory.getDirectory(path), null, null, readOnly));
   }
 
   /** Returns a read/write IndexReader reading the index in
@@ -266,7 +266,7 @@ public abstract class IndexReader implements Cloneable {
    * Use {@link #open(Directory, boolean)} instead
    */
   public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
-    return open(directory, false, null, null, false);
+    return open(directory, null, null, false);
   }
 
   /** Returns an IndexReader reading the index in the given
@@ -280,7 +280,7 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(directory, false, null, null, readOnly);
+    return open(directory, null, null, readOnly);
   }
 
   /** Expert: returns a read/write IndexReader reading the index in the given
@@ -292,7 +292,7 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), false, null, commit, false);
+    return open(commit.getDirectory(), null, commit, false);
   }
 
   /** Expert: returns an IndexReader reading the index in the given
@@ -306,7 +306,7 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), false, null, commit, readOnly);
+    return open(commit.getDirectory(), null, commit, readOnly);
   }
 
   /** Expert: returns a read/write IndexReader reading the index in the given
@@ -321,7 +321,7 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
-    return open(directory, false, deletionPolicy, null, false);
+    return open(directory, deletionPolicy, null, false);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -339,7 +339,7 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(directory, false, deletionPolicy, null, readOnly);
+    return open(directory, deletionPolicy, null, readOnly);
   }
 
   /** Expert: returns a read/write IndexReader reading the index in the given
@@ -357,7 +357,7 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), false, deletionPolicy, commit, false);
+    return open(commit.getDirectory(), deletionPolicy, commit, false);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -377,11 +377,11 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), false, deletionPolicy, commit, readOnly);
+    return open(commit.getDirectory(), deletionPolicy, commit, readOnly);
   }
 
-  private static IndexReader open(final Directory directory, final boolean closeDirectory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly) throws CorruptIndexException, IOException {
-    return DirectoryReader.open(directory, closeDirectory, deletionPolicy, commit, readOnly);
+  private static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly) throws CorruptIndexException, IOException {
+    return DirectoryReader.open(directory, deletionPolicy, commit, readOnly);
   }
 
   /**
@@ -577,9 +577,11 @@ public abstract class IndexReader implements Cloneable {
    */
   public static long getCurrentVersion(File directory) throws CorruptIndexException, IOException {
     Directory dir = FSDirectory.getDirectory(directory);
-    long version = getCurrentVersion(dir);
-    dir.close();
-    return version;
+    try {
+      return getCurrentVersion(dir);
+    } finally {
+      dir.close();
+    }
   }
 
   /**
@@ -1196,9 +1198,11 @@ public abstract class IndexReader implements Cloneable {
    */
   public static boolean isLocked(String directory) throws IOException {
     Directory dir = FSDirectory.getDirectory(directory);
-    boolean result = isLocked(dir);
-    dir.close();
-    return result;
+    try {
+      return isLocked(dir);
+    } finally {
+      dir.close();
+    }
   }
 
   /**
