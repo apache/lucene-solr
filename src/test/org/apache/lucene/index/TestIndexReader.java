@@ -1202,6 +1202,8 @@ public class TestIndexReader extends LuceneTestCase
       } catch (FileNotFoundException e) {
         // expected
       }
+      
+      dir.close();
     }
 
     private void deleteReaderReaderConflict(boolean optimize) throws IOException
@@ -1543,7 +1545,7 @@ public class TestIndexReader extends LuceneTestCase
       File indexDir = new File(tempDir, "lucenetestdiralreadyclosed");
 
       try {
-        FSDirectory dir = FSDirectory.open(indexDir);
+        FSDirectory dir = FSDirectory.getDirectory(indexDir);
         IndexWriter w = new IndexWriter(indexDir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
         w.setUseCompoundFile(false);
         Document doc = new Document();
@@ -1631,6 +1633,7 @@ public class TestIndexReader extends LuceneTestCase
     } catch (NoSuchDirectoryException nsde) {
       // expected
     }
+    dir.close();
   }
 
   // LUCENE-1509

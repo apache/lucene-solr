@@ -208,7 +208,7 @@ public abstract class IndexReader implements Cloneable {
    * Use {@link #open(Directory, boolean)} instead
    * @param path the path to the index directory */
   public static IndexReader open(String path) throws CorruptIndexException, IOException {
-    return new DirectoryOwningReader(open(FSDirectory.getDirectory(path), null, null, false));
+    return open(path, false);
   }
 
   /** Returns an IndexReader reading the index in an
@@ -225,7 +225,15 @@ public abstract class IndexReader implements Cloneable {
    * Use {@link #open(Directory, boolean)} instead
    */
   public static IndexReader open(String path, boolean readOnly) throws CorruptIndexException, IOException {
-    return new DirectoryOwningReader(open(FSDirectory.getDirectory(path), null, null, readOnly));
+    final Directory dir = FSDirectory.getDirectory(path);
+    IndexReader r = null;
+    try {
+      r = open(dir, null, null, readOnly);
+    } finally {
+      if (r == null)
+        dir.close();
+    }
+    return new DirectoryOwningReader(r);
   }
 
   /** Returns a read/write IndexReader reading the index in an FSDirectory in the named
@@ -237,7 +245,7 @@ public abstract class IndexReader implements Cloneable {
    * Use {@link #open(Directory, boolean)} instead
    */
   public static IndexReader open(File path) throws CorruptIndexException, IOException {
-    return new DirectoryOwningReader(open(FSDirectory.getDirectory(path), null, null, false));
+    return open(path, false);
   }
 
   /** Returns an IndexReader reading the index in an
@@ -254,7 +262,15 @@ public abstract class IndexReader implements Cloneable {
    * Use {@link #open(Directory, boolean)} instead
    */
   public static IndexReader open(File path, boolean readOnly) throws CorruptIndexException, IOException {
-    return new DirectoryOwningReader(open(FSDirectory.getDirectory(path), null, null, readOnly));
+    final Directory dir = FSDirectory.getDirectory(path);
+    IndexReader r = null;
+    try {
+      r = open(dir, null, null, readOnly);
+    } finally {
+      if (r == null)
+        dir.close();
+    }
+    return new DirectoryOwningReader(r);
   }
 
   /** Returns a read/write IndexReader reading the index in
