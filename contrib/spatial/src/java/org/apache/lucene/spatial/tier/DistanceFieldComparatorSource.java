@@ -48,8 +48,8 @@ public class DistanceFieldComparatorSource extends FieldComparatorSource {
 	}
 
 	@Override
-	public FieldComparator newComparator(String fieldname, int numHits, int sortPos, boolean reversed)
-			throws IOException {
+	public FieldComparator newComparator(String fieldname, int numHits,
+			int sortPos, boolean reversed) throws IOException {
 		dsdlc = new DistanceScoreDocLookupComparator(distanceFilter, numHits);
 		return dsdlc;
 	}
@@ -59,8 +59,10 @@ public class DistanceFieldComparatorSource extends FieldComparatorSource {
 		private DistanceFilter distanceFilter;
 		private double[] values;
 		private double bottom;
-
-		public DistanceScoreDocLookupComparator(DistanceFilter distanceFilter, int numHits) {
+		private int offset =0;
+		
+		public DistanceScoreDocLookupComparator(DistanceFilter distanceFilter,
+				int numHits) {
 			this.distanceFilter = distanceFilter;
 			values = new double[numHits];
 			return;
@@ -78,26 +80,25 @@ public class DistanceFieldComparatorSource extends FieldComparatorSource {
 			return 0;
 		}
 
-	
-
 		public void cleanUp() {
 			distanceFilter = null;
 		}
 
 		@Override
 		public int compareBottom(int doc) {
-			final double v2 = distanceFilter.getDistance(doc);
-      if (bottom > v2) {
-        return 1;
-      } else if (bottom < v2) {
-        return -1;
-      } 
+			double v2 = distanceFilter.getDistance(doc+ offset);
+			
+			if (bottom > v2) {
+				return 1;
+			} else if (bottom < v2) {
+				return -1;
+			}
 			return 0;
 		}
 
 		@Override
 		public void copy(int slot, int doc) {
-			values[slot] = distanceFilter.getDistance(doc);
+			values[slot] = distanceFilter.getDistance(doc + offset);
 		}
 
 		@Override
@@ -107,10 +108,12 @@ public class DistanceFieldComparatorSource extends FieldComparatorSource {
 		}
 
 		@Override
-		public void setNextReader(IndexReader reader, int docBase, int numSlotsFull)
-				throws IOException {
-			// TODO Auto-generated method stub
-
+		public void setNextReader(IndexReader reader, int docBase,
+				int numSlotsFull) throws IOException {
+			
+			// each reader in a segmented base
+			// has an offset based on the maxDocs of previous readers
+			offset = docBase;
 		}
 
 		@Override
@@ -120,7 +123,7 @@ public class DistanceFieldComparatorSource extends FieldComparatorSource {
 
 		@Override
 		public int sortType() {
-			
+
 			return SortField.DOUBLE;
 		}
 	}

@@ -51,7 +51,7 @@ public class CartesianShapeFilter extends Filter {
     TermDocs termDocs = reader.termDocs();
     List<Double> area = shape.getArea();
     int sz = area.size();
-    log.info("Area size "+ sz);
+    log.fine("Area size "+ sz);
     
     // iterate through each boxid
     for (int i =0; i< sz; i++) {
@@ -68,7 +68,7 @@ public class CartesianShapeFilter extends Filter {
     }
     
     long end = System.currentTimeMillis();
-    log.info("BoundaryBox Time Taken: "+ (end - start) + " found: "+bits.cardinality()+" candidates");
+    log.fine("BoundaryBox Time Taken: "+ (end - start) + " found: "+bits.cardinality()+" candidates");
     return bits;
   }
 

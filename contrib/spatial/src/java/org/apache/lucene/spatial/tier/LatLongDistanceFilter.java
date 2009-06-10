@@ -45,7 +45,7 @@ public class LatLongDistanceFilter extends DistanceFilter {
   String latField;
   String lngField;
   Logger log = Logger.getLogger(getClass().getName());
-  int offset =0;
+
   int nextOffset = 0;
   
   Map<Integer,Double> distances = null;
@@ -89,12 +89,18 @@ public class LatLongDistanceFilter extends DistanceFilter {
     //   distances for the same point 
     //   TODO: Why is this a WeakHashMap? 
     WeakHashMap<String,Double> cdistance = new WeakHashMap<String,Double>(maxdocs);
-    
+    long start = System.currentTimeMillis();
     String[] latIndex = FieldCache.DEFAULT.getStrings(reader, latField);
     String[] lngIndex = FieldCache.DEFAULT.getStrings(reader, lngField);
 
     /* store calculated distances for reuse by other components */
     distances = new HashMap<Integer,Double>(maxdocs);
+    
+    
+    if (distances == null){
+    	distances = new HashMap<Integer,Double>();
+    }
+    
     for (int i = 0 ; i < maxdocs; i++) {
       
       String sx = latIndex[i];
@@ -121,11 +127,22 @@ public class LatLongDistanceFilter extends DistanceFilter {
       }
       distances.put(i, d);
       
+   // why was i storing all distances again?
       if (d < distance){
         bits.set(i);
+        distances.put(i+ nextOffset, d); // include nextOffset for multi segment reader  
       }
+      i = bits.nextSetBit(i+1);
       
     }
+    int size = bits.cardinality();
+    nextOffset += reader.maxDoc();  // this should be something that's part of indexReader
+    long end = System.currentTimeMillis();
+    log.fine("Bits 1: Time taken : "+ (end - start) + 
+            ", results : "+ distances.size() + 
+            ", cached : "+ cdistance.size() +
+            ", incoming size: "+ size+
+            ", nextOffset: "+ nextOffset);
     
     return bits;
   }
@@ -146,13 +163,9 @@ public class LatLongDistanceFilter extends DistanceFilter {
     HashMap<String,Double> cdistance = new HashMap<String,Double>(size);
     
 
-    /* store calculated distances for reuse by other components */
-    boolean db = false;
-    offset += reader.maxDoc();
+    
     if (distances == null){
     	distances = new HashMap<Integer,Double>();
-    }else {
-    	db=true;
     }
     
     long start = System.currentTimeMillis();
@@ -193,20 +206,24 @@ public class LatLongDistanceFilter extends DistanceFilter {
       // why was i storing all distances again?
       if (d < distance){
         result.set(i);
-        distances.put(i+ nextOffset, d); // include nextOffset for multireader  
+        int did = i + nextOffset;
+        distances.put(did, d); // include nextOffset for multi segment reader  
+        
       }
       i = bits.nextSetBit(i+1);
     }
     
     long end = System.currentTimeMillis();
+    nextOffset += reader.maxDoc();  // this should be something that's part of indexReader
     log.fine("Time taken : "+ (end - start) + 
         ", results : "+ distances.size() + 
         ", cached : "+ cdistance.size() +
-        ", incoming size: "+ size);
+        ", incoming size: "+ size+
+        ", nextOffset: "+ nextOffset);
   
 
     cdistance = null;
-    nextOffset += offset;  // this should be something that's part of indexReader
+    
     
     return result;
   }
