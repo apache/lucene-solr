@@ -17,28 +17,21 @@
 
 package org.apache.solr.core;
 
-import java.net.URL;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.xml.xpath.XPathConstants;
-
-import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.handler.StandardRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Node;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URL;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  */

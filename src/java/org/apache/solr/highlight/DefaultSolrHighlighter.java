@@ -21,17 +21,13 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Map;
 import java.util.Set;
 
-import javax.xml.xpath.XPathConstants;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
@@ -40,19 +36,18 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.*;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.plugin.NamedListPluginLoader;
-import org.w3c.dom.NodeList;
 
 /**
  * 
@@ -60,33 +55,42 @@ import org.w3c.dom.NodeList;
  */
 public class DefaultSolrHighlighter extends SolrHighlighter
 {
-  
-  public void initalize( final Config config )
-  {
+
+  public void initalize( SolrConfig config) {
     formatters.clear();
     fragmenters.clear();
-    
+
     // Load the fragmenters
-    String xpath = "highlighting/fragmenter";
-    NamedListPluginLoader<SolrFragmenter> fragloader = new NamedListPluginLoader<SolrFragmenter>( xpath, fragmenters );
-    SolrFragmenter frag = fragloader.load( config.getResourceLoader(), (NodeList)config.evaluate( xpath, XPathConstants.NODESET ) );
+    ResourceLoader loader= config.getResourceLoader();
+    SolrFragmenter frag = null;
+    for (SolrConfig.PluginInfo info : config.getHighlightingFragmenterInfo()) {
+      SolrFragmenter fragmenter = (SolrFragmenter) loader.newInstance(info.className);
+      fragmenter.init(info.initArgs);
+      if(info.isDefault) frag = fragmenter;
+      fragmenters.put(info.name,fragmenter);
+    }
+
     if( frag == null ) {
       frag = new GapFragmenter();
     }
     fragmenters.put( "", frag );
     fragmenters.put( null, frag );
-    
     // Load the formatters
-    xpath = "highlighting/formatter";
-    NamedListPluginLoader<SolrFormatter> fmtloader = new NamedListPluginLoader<SolrFormatter>( xpath, formatters );
-    SolrFormatter fmt = fmtloader.load( config.getResourceLoader(), (NodeList)config.evaluate( xpath, XPathConstants.NODESET ) );
+    SolrFormatter fmt = null;
+    for (SolrConfig.PluginInfo info : config.getHighlightingFormatterInfo()) {
+      SolrFormatter formatter = (SolrFormatter) loader.newInstance(info.className);
+      formatter.init(info.initArgs);
+      formatters.put(info.name, formatter);
+      if(info.isDefault) fmt = formatter;
+    }
     if( fmt == null ) {
       fmt = new HtmlFormatter();
     }
     formatters.put( "", fmt );
     formatters.put( null, fmt );
+
   }
-  
+
   /**
    * Return a phrase Highlighter appropriate for this field.
    * @param query The current Query

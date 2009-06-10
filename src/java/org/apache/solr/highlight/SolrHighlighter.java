@@ -30,7 +30,7 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocList;
 import org.apache.solr.util.SolrPluginUtils;
@@ -46,8 +46,7 @@ public abstract class SolrHighlighter
   // Thread safe registry
   protected final Map<String,SolrFragmenter> fragmenters =
     Collections.synchronizedMap( new HashMap<String, SolrFragmenter>() );
-
-  public abstract void initalize( final Config config );
+  public abstract void initalize( SolrConfig config );
 
 
   /**

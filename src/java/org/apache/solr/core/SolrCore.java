@@ -26,7 +26,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
@@ -46,19 +45,12 @@ import org.apache.solr.update.processor.RunUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.RefCounted;
-import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
-import org.apache.solr.util.plugin.NamedListPluginLoader;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.commons.io.IOUtils;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathExpressionException;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -543,10 +535,10 @@ public final class SolrCore implements SolrInfoMBean {
     updateProcessorChains = loadUpdateProcessorChains();
     reqHandlers = new RequestHandlers(this);
     reqHandlers.initHandlersFromConfig( solrConfig );
+
+    String highLightClass = solrConfig.getHighLghtingClass();
   
-    highlighter = createHighlighter(
-    	  solrConfig.get("highlighting/@class", DefaultSolrHighlighter.class.getName())
-    );
+    highlighter = createHighlighter(highLightClass == null? DefaultSolrHighlighter.class.getName() : highLightClass);
     highlighter.initalize( solrConfig );
 
     // Handle things that should eventually go away
@@ -1462,7 +1454,7 @@ public final class SolrCore implements SolrInfoMBean {
     }
   }
 
-  private <T> T initPlugins(List<SolrConfig.PluginInfo> pluginInfos , Map<String ,T> registry, Class<T> type){
+  public <T> T initPlugins(List<SolrConfig.PluginInfo> pluginInfos , Map<String ,T> registry, Class<T> type){
     T def = null;
     for (SolrConfig.PluginInfo info : pluginInfos) {
       T o = createInstance(info.className,type, type.getSimpleName());

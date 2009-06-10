@@ -5,7 +5,7 @@ import java.io.IOException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.DocList;
 
@@ -20,7 +20,7 @@ public class DummyHighlighter extends SolrHighlighter {
 	}
 
 	@Override
-	public void initalize(Config config) {
+	public void initalize(SolrConfig config) {
 		// do nothing
 	}
 

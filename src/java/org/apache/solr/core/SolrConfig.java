@@ -175,11 +175,22 @@ public class SolrConfig extends Config {
      loadPluginInfo();
      updateProcessorChainInfo = loadUpdateProcessorInfo();
      updateHandlerInfo = loadUpdatehandlerInfo();
+     loadHighLightingPlugins();
 
     Config.log.info("Loaded SolrConfig: " + name);
     
     // TODO -- at solr 2.0. this should go away
     config = this;
+  }
+
+  public String getHighLghtingClass() {
+    return highLghtingClass;
+  }
+
+  protected void loadHighLightingPlugins() {
+    highLghtingClass =  get("highlighting/@class",null);
+    highlightingFragmenterInfo = loadPluginInfo("highlighting/fragmenter",true);
+    highlightingFormatterInfo = loadPluginInfo("highlighting/formatter",true);
   }
 
   protected UpdateHandlerInfo loadUpdatehandlerInfo() {
@@ -278,6 +289,8 @@ public class SolrConfig extends Config {
   protected List<PluginInfo> respWriterInfo;
   protected List<PluginInfo> valueSourceParserInfo;
   protected List<PluginInfo> searchComponentInfo;
+  protected List<PluginInfo> highlightingFragmenterInfo;
+  protected List<PluginInfo> highlightingFormatterInfo;
   protected List<PluginInfo> firstSearcherListenerInfo;
   protected PluginInfo deletionPolicyInfo;
   protected PluginInfo indexReaderFactoryInfo;
@@ -285,6 +298,7 @@ public class SolrConfig extends Config {
   protected PluginInfo directoryfactoryInfo;
   protected Map<String ,List<PluginInfo>> updateProcessorChainInfo ;
   protected UpdateHandlerInfo updateHandlerInfo ;
+  protected String highLghtingClass;
 
   public final int maxWarmingSearchers;
   public final boolean unlockOnStartup;
@@ -441,10 +455,10 @@ public class SolrConfig extends Config {
   }
 
   public static class PluginInfo {
-    final String startup, name, className;
-    final boolean isDefault;    
-    final NamedList initArgs;
-    final Map<String ,String> otherAttributes;
+    public final String startup, name, className;
+    public final boolean isDefault;
+    public final NamedList initArgs;
+    public final Map<String ,String> otherAttributes;
 
     public PluginInfo(String startup, String name, String className,
                       boolean isdefault, NamedList initArgs, Map<String ,String> otherAttrs) {
@@ -519,4 +533,8 @@ public class SolrConfig extends Config {
   public UpdateHandlerInfo getUpdateHandlerInfo() { return updateHandlerInfo; }
 
   public PluginInfo getIndexReaderFactoryInfo() { return indexReaderFactoryInfo; }
+
+  public List<PluginInfo> getHighlightingFormatterInfo() { return highlightingFormatterInfo; }
+
+  public List<PluginInfo> getHighlightingFragmenterInfo() { return highlightingFragmenterInfo; }
 }
