@@ -359,13 +359,16 @@ public class CoreContainer
     IndexSchema schema = null;
     if(indexSchemaCache != null){
       //schema sharing is enabled. so check if it already is loaded
-      File  schemFile = new File(dcore.getInstanceDir() + dcore.getSchemaName());
+      File schemFile = new File(dcore.getInstanceDir() + "conf" + File.separator + dcore.getSchemaName());
       if(schemFile. exists()){
         String key = schemFile.getAbsolutePath()+":"+new SimpleDateFormat("yyyyMMddhhmmss").format(new Date(schemFile.lastModified()));
         schema = indexSchemaCache.get(key);
         if(schema == null){
+          log.info("creating new schema object for core: " + dcore.name);
           schema = new IndexSchema(config, dcore.getSchemaName(), null);
           indexSchemaCache.put(key,schema);
+        } else {
+          log.info("re-using schema object for core: " + dcore.name);
         }
       }
     }
