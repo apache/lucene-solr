@@ -504,6 +504,8 @@ Other Changes
 37. SOLR-1184: Add option in solrconfig to open a new IndexReader rather than
     using reopen. Done mainly as a fail-safe in the case that a user runs into
     a reopen bug/issue.  (Mark Miller)
+    
+38. SOLR-1215 use double quotes to enclose attributes in solr.xml (noble)
 
 Build
 ----------------------

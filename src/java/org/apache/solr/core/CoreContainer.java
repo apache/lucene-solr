@@ -686,9 +686,9 @@ public class CoreContainer
     if (value == null) return;
     w.write(" ");
     w.write(name);
-    w.write("='");
+    w.write("=\"");
     XML.escapeAttributeValue(value.toString(), w);
-    w.write("'");
+    w.write("\"");
   }
   
   /** Writes the cores configuration node for a given core. */
