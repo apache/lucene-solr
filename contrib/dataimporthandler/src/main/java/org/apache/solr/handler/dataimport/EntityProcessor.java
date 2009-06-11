@@ -97,6 +97,15 @@ public abstract class EntityProcessor {
   public abstract void destroy();
 
   /**
+   * Invoked after the transformers are invoked. EntityProcessors can add, remove or modify values
+   * added by Transformers in this method.
+   *
+   * @param r The transformed row
+   */
+  public void postTransform(Map<String, Object> r) {
+  }
+
+  /**
    * Invoked when the Entity processor is detroyed. towards the end of import.
    */
   public void close() {

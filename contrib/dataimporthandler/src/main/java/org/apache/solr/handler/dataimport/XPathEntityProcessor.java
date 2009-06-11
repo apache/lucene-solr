@@ -172,6 +172,11 @@ public class XPathEntityProcessor extends EntityProcessorBase {
     }
   }
 
+  @Override
+  public void postTransform(Map<String, Object> r) {
+    readUsefulVars(r);
+  }
+
   @SuppressWarnings("unchecked")
   private Map<String, Object> fetchNextRow() {
     Map<String, Object> r = null;

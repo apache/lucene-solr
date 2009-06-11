@@ -233,7 +233,10 @@ public class EntityProcessorWrapper extends EntityProcessor {
         return null;
       } else {
         arow = applyTransformer(arow);
-        if (arow != null) return arow;
+        if (arow != null) {
+          delegate.postTransform(arow);
+          return arow;
+        }
       }
     }
   }
