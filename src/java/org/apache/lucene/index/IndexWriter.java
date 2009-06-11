@@ -4426,6 +4426,7 @@ public class IndexWriter {
             message("now merge\n  merge=" + merge.segString(directory) + "\n  merge=" + merge + "\n  index=" + segString());
 
           mergeMiddle(merge);
+          mergeSuccess(merge);
           success = true;
         } catch (Throwable t) {
           handleMergeException(t, merge);
@@ -4453,6 +4454,10 @@ public class IndexWriter {
     }
   }
 
+  /** Hook that's called when the specified merge is complete. */
+  void mergeSuccess(MergePolicy.OneMerge merge) {
+  }
+  
   /** Checks whether this merge involves any segments
    *  already participating in a merge.  If not, this merge
    *  is "registered", meaning we record that its segments
