@@ -351,9 +351,9 @@
    <field name="inStock" type="boolean" indexed="true" stored="true"/>
 
    <!-- Some sample docs exists solely to demonstrate the spellchecker
-        functionality, this is the only field they container.
+        functionality, this is the only field they contain.
         Typically you might build the spellchecker of "catchall" type field
-        containing all of the text in each document
+        containing all of the text in each document.
      -->
    <field name="word" type="string" indexed="true" stored="true"/>
 
