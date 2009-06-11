@@ -31,10 +31,17 @@ import java.io.IOException;
 public class SortedIntDocSet extends DocSetBase {
   protected final int[] docs;
 
+  /**
+   * @param docs  Sorted list of ids
+   */
   public SortedIntDocSet(int[] docs) {
     this.docs = docs;
   }
 
+  /**
+   * @param docs Sorted list of ids
+   * @param len  Number of ids in the list
+   */
   public SortedIntDocSet(int[] docs, int len) {
     this(shrink(docs,len));
   }
