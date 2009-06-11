@@ -3583,7 +3583,7 @@ public class IndexWriter {
           info = segmentInfos.info(i);
           if (info.dir != directory) {
             done = false;
-            final MergePolicy.OneMerge newMerge = new MergePolicy.OneMerge(segmentInfos.range(i, 1+i), info.getUseCompoundFile());
+            final MergePolicy.OneMerge newMerge = new MergePolicy.OneMerge(segmentInfos.range(i, 1+i), mergePolicy instanceof LogMergePolicy && getUseCompoundFile());
 
             // Returns true if no running merge conflicts
             // with this one (and, records this merge as

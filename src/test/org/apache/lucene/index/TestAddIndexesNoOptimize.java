@@ -537,4 +537,21 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     dir.close();
     dir2.close();
   }
+
+  // LUCENE-1642: make sure CFS of destination indexwriter
+  // is respected when copying tail segments
+  public void testTargetCFS() throws IOException {
+    Directory dir = new RAMDirectory();
+    IndexWriter writer = newWriter(dir, true);
+    writer.setUseCompoundFile(false);
+    addDocs(writer, 1);
+    writer.close();
+
+    Directory other = new RAMDirectory();
+    writer = newWriter(other, true);
+    writer.setUseCompoundFile(true);
+    writer.addIndexesNoOptimize(new Directory[] {dir});
+    assertTrue(writer.newestSegment().getUseCompoundFile());
+    writer.close();
+  }
 }
