@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
   Licensed to the Apache Software Foundation (ASF) under one or more
   contributor license agreements.  See the NOTICE file distributed with
@@ -16,12 +16,24 @@
   limitations under the License.
 -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-  <xsl:import href="corner-imports.svg.xslt" />
-<!-- Rounded corner -->
-  <xsl:template name="figure">
-    <g transform="translate(0.5 0.5)">
-      <ellipse cx="{$smallersize}" cy="{$smallersize}" rx="{$smallersize}" ry="{$smallersize}"
-				 style="{$fill}{$stroke}stroke-width:1"/>
-    </g>
+<!-- FIXME: FOR-555. This might not be the best solution though, but it sure works -->
+  <xsl:template match="comment()|processing-instruction()">
+    <xsl:copy>
+      <xsl:apply-templates select="@*|*|text()|processing-instruction()|comment()"/>
+    </xsl:copy>
+  </xsl:template>
+<!-- End fixme FOR-555 -->
+  <xsl:template match="*">
+<!-- remove element prefix (if any) -->
+    <xsl:element name="{local-name()}">
+<!-- process attributes -->
+      <xsl:for-each select="@*">
+<!-- remove attribute prefix (if any) -->
+        <xsl:attribute name="{local-name()}">
+          <xsl:value-of select="."/>
+        </xsl:attribute>
+      </xsl:for-each>
+      <xsl:apply-templates/>
+    </xsl:element>
   </xsl:template>
 </xsl:stylesheet>

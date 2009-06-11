@@ -1,12 +1,12 @@
 <broken-links>
   <link message="null" uri="images/solr_FC.jpg">
     <referrer uri="linkmap.html"/>
-    <referrer uri="tutorial.html"/>
-    <referrer uri="index.html"/>
     <referrer uri="issue_tracking.html"/>
-    <referrer uri="version_control.html"/>
-    <referrer uri="features.html"/>
     <referrer uri="who.html"/>
     <referrer uri="mailing_lists.html"/>
+    <referrer uri="version_control.html"/>
+    <referrer uri="tutorial.html"/>
+    <referrer uri="features.html"/>
+    <referrer uri="index.html"/>
   </link>
 </broken-links>

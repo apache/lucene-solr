@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="ISO-8859-1"?>
 <!--
   Licensed to the Apache Software Foundation (ASF) under one or more
   contributor license agreements.  See the NOTICE file distributed with
@@ -15,13 +15,9 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-  <xsl:import href="corner-imports.svg.xslt" />
-<!-- Rounded corner -->
-  <xsl:template name="figure">
-    <g transform="translate(0.5 0.5)">
-      <ellipse cx="{$smallersize}" cy="{$smallersize}" rx="{$smallersize}" ry="{$smallersize}"
-				 style="{$fill}{$stroke}stroke-width:1"/>
-    </g>
-  </xsl:template>
-</xsl:stylesheet>
+<catalogue>
+  <message key="Font size:">Schriftgrösse:</message>
+  <message key="Last Published:">Zuletzt veröffentlicht:</message>
+  <message key="Search">Suche:</message>
+  <message key="Search the site with">Suche auf der Seite mit</message>
+</catalogue>

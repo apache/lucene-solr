@@ -35,7 +35,7 @@ which will be used to configure the chosen Forrest skin.
     no search box. @domain will enable sitesearch for the specific domain with google.
     In other words google will search the @domain for the query string.
   -->
-  <search name="Solr" domain="lucene.apache.org" provider="google"/>
+  <search name="Solr" provider="Solr"/>
 
   <!-- Disable the print link? If enabled, invalid HTML 4.0.1 -->
   <disable-print-link>true</disable-print-link>  
