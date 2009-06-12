@@ -24,7 +24,6 @@ import org.apache.lucene.store.ChecksumIndexOutput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.NoSuchDirectoryException;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -522,7 +521,7 @@ final class SegmentInfos extends Vector {
    */
   public abstract static class FindSegmentsFile {
     
-    Directory directory;
+    final Directory directory;
 
     public FindSegmentsFile(Directory directory) {
       this.directory = directory;
@@ -589,45 +588,43 @@ final class SegmentInfos extends Vector {
           // a stale cache (NFS) we have a better chance of
           // getting the right generation.
           long genB = -1;
-          if (directory != null) {
-            for(int i=0;i<defaultGenFileRetryCount;i++) {
-              IndexInput genInput = null;
+          for(int i=0;i<defaultGenFileRetryCount;i++) {
+            IndexInput genInput = null;
+            try {
+              genInput = directory.openInput(IndexFileNames.SEGMENTS_GEN);
+            } catch (FileNotFoundException e) {
+              message("segments.gen open: FileNotFoundException " + e);
+              break;
+            } catch (IOException e) {
+              message("segments.gen open: IOException " + e);
+            }
+  
+            if (genInput != null) {
               try {
-                genInput = directory.openInput(IndexFileNames.SEGMENTS_GEN);
-              } catch (FileNotFoundException e) {
-                message("segments.gen open: FileNotFoundException " + e);
-                break;
-              } catch (IOException e) {
-                message("segments.gen open: IOException " + e);
-              }
-
-              if (genInput != null) {
-                try {
-                  int version = genInput.readInt();
-                  if (version == FORMAT_LOCKLESS) {
-                    long gen0 = genInput.readLong();
-                    long gen1 = genInput.readLong();
-                    message("fallback check: " + gen0 + "; " + gen1);
-                    if (gen0 == gen1) {
-                      // The file is consistent.
-                      genB = gen0;
-                      break;
-                    }
+                int version = genInput.readInt();
+                if (version == FORMAT_LOCKLESS) {
+                  long gen0 = genInput.readLong();
+                  long gen1 = genInput.readLong();
+                  message("fallback check: " + gen0 + "; " + gen1);
+                  if (gen0 == gen1) {
+                    // The file is consistent.
+                    genB = gen0;
+                    break;
                   }
-                } catch (IOException err2) {
-                  // will retry
-                } finally {
-                  genInput.close();
                 }
+              } catch (IOException err2) {
+                // will retry
+              } finally {
+                genInput.close();
               }
-              try {
-                Thread.sleep(defaultGenFileRetryPauseMsec);
-              } catch (InterruptedException ie) {
-                // In 3.0 we will change this to throw
-                // InterruptedException instead
-                Thread.currentThread().interrupt();
-                throw new RuntimeException(ie);
-              }
+            }
+            try {
+              Thread.sleep(defaultGenFileRetryPauseMsec);
+            } catch (InterruptedException ie) {
+              // In 3.0 we will change this to throw
+              // InterruptedException instead
+              Thread.currentThread().interrupt();
+              throw new RuntimeException(ie);
             }
           }
 
