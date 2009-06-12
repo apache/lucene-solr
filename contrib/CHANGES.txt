@@ -60,6 +60,9 @@ New features
     sentences properly.  SmartChineseAnalyzer uses a Hidden Markov
     Model to tokenize Chinese words in a more intelligent way.
     (Xiaoping Gao via Mike McCandless)
+
+
+6. LUCENE-1676: Added DelimitedPayloadTokenFilter class for automatically adding payloads "in-stream" (Grant Ingersoll)    
   
 Optimizations
 

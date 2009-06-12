@@ -31,6 +31,10 @@ public class PayloadHelper {
     return encodeInt(Float.floatToIntBits(payload), data, offset);
   }
 
+  public static byte[] encodeInt(int payload){
+    return encodeInt(payload, new byte[4], 0);
+  }
+
   public static byte[] encodeInt(int payload, byte[] data, int offset){
     data[offset] = (byte)(payload >> 24);
     data[offset + 1] = (byte)(payload >> 16);
