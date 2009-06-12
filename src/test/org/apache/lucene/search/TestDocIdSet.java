@@ -82,9 +82,9 @@ public class TestDocIdSet extends LuceneTestCase {
     ArrayList/*<Integer>*/ list = new ArrayList/*<Integer>*/();
     int doc = iter.advance(3);
     if (doc != DocIdSetIterator.NO_MORE_DOCS) {
-      list.add(Integer.valueOf(doc));
+      list.add(new Integer(doc));
       while((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        list.add(Integer.valueOf(doc));
+        list.add(new Integer(doc));
       }
     }
 	  
