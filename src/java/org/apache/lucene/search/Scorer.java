@@ -84,7 +84,7 @@ public abstract class Scorer extends DocIdSetIterator {
    * {@link HitCollector#collect(int, float)}.
    * @param max Do not score documents past this.
    * @return true if more matching documents may remain.
-   * @deprecated use {@link #score(Collector, int)} instead.
+   * @deprecated use {@link #score(Collector, int, int)} instead.
    */
   protected boolean score(HitCollector hc, int max) throws IOException {
     return score(new HitCollectorWrapper(hc), max, docID());

@@ -30,7 +30,7 @@ import org.apache.lucene.search.DocIdSetIterator;
  * {@link org.apache.lucene.store.IndexOutput}.
  * <p>
  * <b>NOTE:</b> this class assumes the stored integers are doc Ids (hence why it
- * extends {@link DocIdSet}). Therefore its {@link #iterator()} assumes {@value
+ * extends {@link DocIdSet}). Therefore its {@link #iterator()} assumes {@link
  * DocIdSetIterator#NO_MORE_DOCS} can be used as sentinel. If you intent to use
  * this value, then make sure it's not used during search flow.
  */

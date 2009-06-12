@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.index.TermDocs;  // for javadocs
 
 /**
  * A {@link Filter} that only accepts documents whose single
