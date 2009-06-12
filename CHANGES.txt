@@ -153,27 +153,33 @@ API Changes
     is deprecated in favor of the new TimeLimitingCollector which
     extends Collector.  (Shai Erera via Mike McCandless)
 
-13. LUCENE-1621: MultiTermQuery.getTerm() has been deprecated as it does
+13. LUCENE-1592: The method TermsEnum.skipTo() was deprecated, because
+    it is used nowhere in core/contrib and there is only a very ineffective
+    default implementation available. If you want to position a TermEnum
+    to another Term, create a new one using IndexReader.terms(Term).
+    (Uwe Schindler)
+
+14. LUCENE-1621: MultiTermQuery.getTerm() has been deprecated as it does
     not make sense for all subclasses of MultiTermQuery. Check individual
     subclasses to see if they support getTerm().  (Mark Miller)
 
-14. LUCENE-1636: Make TokenFilter.input final so it's set only
+15. LUCENE-1636: Make TokenFilter.input final so it's set only
     once. (Wouter Heijke, Uwe Schindler via Mike McCandless).
 
-15. LUCENE-1658: Renamed FSDirectory to SimpleFSDirectory (but left an
+16. LUCENE-1658: Renamed FSDirectory to SimpleFSDirectory (but left an
     FSDirectory base class).  Added an FSDirectory.open static method
     to pick a good default FSDirectory implementation given the OS.
     (Michael McCandless, Uwe Schindler)
 
-16. LUCENE-1665: Deprecate SortField.AUTO, to be removed in 3.0.
+17. LUCENE-1665: Deprecate SortField.AUTO, to be removed in 3.0.
     Instead, when sorting by field, the application should explicitly
     state the type of the field.  (Mike McCandless)
 
-17. LUCENE-1660: StopFilter, StandardAnalyzer, StopAnalyzer now
+18. LUCENE-1660: StopFilter, StandardAnalyzer, StopAnalyzer now
     require up front specification of enablePositionIncrement (Mike
     McCandless)
 
-18. LUCENE-1614: DocIdSetIterator's next() and skipTo() were deprecated in favor
+19. LUCENE-1614: DocIdSetIterator's next() and skipTo() were deprecated in favor
     of the new nextDoc() and advance(). The new methods return the doc Id they 
     landed on, saving an extra call to doc() in most cases.
     For easy migration of the code, you can change the calls to next() to 
@@ -185,12 +191,12 @@ API Changes
     iterator has exhausted. Otherwise it should return the current doc ID.
     (Shai Erera via Mike McCandless)
 
-19. LUCENE-1672: All ctors/opens and other methods using String/File to
+20. LUCENE-1672: All ctors/opens and other methods using String/File to
     specify the directory in IndexReader, IndexWriter, and IndexSearcher
     were deprecated. You should instantiate the Directory manually before
     and pass it to these classes (LUCENE-1451, LUCENE-1658).
     (Uwe Schindler)
-
+    
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()
