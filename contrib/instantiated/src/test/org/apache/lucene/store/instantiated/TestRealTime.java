@@ -24,6 +24,12 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 
+/**
+ * Assert that the content of an index 
+ * is instantly available
+ * for all open searchers
+ * also after a commit.
+ */
 public class TestRealTime extends TestCase {
 
   public void test() throws Exception {

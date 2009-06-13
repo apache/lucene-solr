@@ -40,6 +40,10 @@ import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocCollector;
+import org.apache.lucene.search.TopScoreDocCollector;
 
 /**
  * Asserts equality of content and behaviour of two index readers.

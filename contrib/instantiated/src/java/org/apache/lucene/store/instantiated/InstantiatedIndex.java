@@ -110,7 +110,8 @@ public class InstantiatedIndex
   public InstantiatedIndex(IndexReader sourceIndexReader, Set<String> fields) throws IOException {
 
     if (!sourceIndexReader.isOptimized()) {
-      throw new IOException("Source index is not optimized.");
+      System.out.println(("Source index is not optimized."));      
+      //throw new IOException("Source index is not optimized.");
     }
 
 
@@ -170,11 +171,14 @@ public class InstantiatedIndex
     }
 
 
-    documentsByNumber = new InstantiatedDocument[sourceIndexReader.numDocs()];
+    documentsByNumber = new InstantiatedDocument[sourceIndexReader.maxDoc()];
+
 
     // create documents
-    for (int i = 0; i < sourceIndexReader.numDocs(); i++) {
-      if (!sourceIndexReader.isDeleted(i)) {
+    for (int i = 0; i < sourceIndexReader.maxDoc(); i++) {
+      if (sourceIndexReader.isDeleted(i)) {
+        deletedDocuments.add(i);
+      } else {
         InstantiatedDocument document = new InstantiatedDocument();
         // copy stored fields from source reader
         Document sourceDocument = sourceIndexReader.document(i);
@@ -259,6 +263,9 @@ public class InstantiatedIndex
 
     // load offsets to term-document informations
     for (InstantiatedDocument document : getDocumentsByNumber()) {
+      if (document == null) {
+        continue; // deleted
+      }
       for (Field field : (List<Field>) document.getDocument().getFields()) {
         if (field.isTermVectorStored() && field.isStoreOffsetWithTermVector()) {
           TermPositionVector termPositionVector = (TermPositionVector) sourceIndexReader.getTermFreqVector(document.getDocumentNumber(), field.name());
