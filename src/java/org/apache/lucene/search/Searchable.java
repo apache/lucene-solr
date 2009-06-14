@@ -35,7 +35,7 @@ import java.io.IOException;       // for javadoc
  * they may be efficiently passed to a remote index, with only the top-scoring
  * hits being returned, rather than every matching hit.
  */
-public interface Searchable extends java.rmi.Remote {
+public interface Searchable {
   /** Lower-level search API.
    *
    * <p>{@link HitCollector#collect(int,float)} is called for every non-zero

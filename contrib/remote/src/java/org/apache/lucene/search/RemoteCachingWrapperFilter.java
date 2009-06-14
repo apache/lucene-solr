@@ -36,6 +36,8 @@ import org.apache.lucene.index.IndexReader;
  * To cache a result you must do something like 
  * RemoteCachingWrapperFilter f = new RemoteCachingWrapperFilter(new CachingWrapperFilter(myFilter));
  * <p/>
+ * 
+ * @version $Id:$
  */
 public class RemoteCachingWrapperFilter extends Filter {
   protected Filter filter;

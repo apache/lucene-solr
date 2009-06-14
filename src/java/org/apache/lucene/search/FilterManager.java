@@ -25,8 +25,8 @@ import java.util.Map;
 import java.util.TreeSet;
 
 /**
- * Filter caching singleton.  It can be used by {@link org.apache.lucene.search.RemoteCachingWrapperFilter}
- * or just to save filters locally for reuse.
+ * Filter caching singleton.  It can be used 
+ * to save filters locally for reuse.
  * This class makes it possble to cache Filters even when using RMI, as it
  * keeps the cache on the seaercher side of the RMI connection.
  * 

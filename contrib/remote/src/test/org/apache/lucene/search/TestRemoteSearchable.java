@@ -32,7 +32,7 @@ import java.util.Set;
 import java.util.HashSet;
 
 /**
- * @version $Id$
+ *  @version $Id$
  */
 public class TestRemoteSearchable extends LuceneTestCase {
   public TestRemoteSearchable(String name) {

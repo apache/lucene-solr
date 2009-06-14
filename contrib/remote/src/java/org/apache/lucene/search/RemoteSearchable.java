@@ -35,7 +35,7 @@ import java.rmi.server.UnicastRemoteObject;
  */
 public class RemoteSearchable
   extends UnicastRemoteObject
-  implements Searchable {
+  implements RMIRemoteSearchable {
   
   private Searchable local;
   

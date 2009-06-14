@@ -196,6 +196,11 @@ API Changes
     were deprecated. You should instantiate the Directory manually before
     and pass it to these classes (LUCENE-1451, LUCENE-1658).
     (Uwe Schindler)
+
+21. LUCENE-1407: Move RemoteSearchable, RemoteCachingWrapperFilter out
+    of Lucene's core into new contrib/remote package.  Searchable no
+    longer extends java.rmi.Remote (Simon Willnauer via Mike
+    McCandless)
     
 Bug fixes
 

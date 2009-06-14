@@ -19,8 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.rmi.Naming;
-import java.rmi.registry.LocateRegistry;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -29,7 +27,6 @@ import java.util.Random;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
-import junit.textui.TestRunner;
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -44,7 +41,6 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 /**
  * Unit tests for sorting code.
@@ -72,21 +68,6 @@ public class TestSort extends LuceneTestCase implements Serializable {
 
   public TestSort (String name) {
     super (name);
-  }
-
-  public static void main (String[] argv) {
-    if (argv == null || argv.length < 1)
-      TestRunner.run (suite());
-    else if ("server".equals (argv[0])) {
-      TestSort test = new TestSort (null);
-      try {
-        test.startServer();
-        Thread.sleep (500000);
-      } catch (Exception e) {
-        System.out.println (e);
-        e.printStackTrace();
-      }
-    }
   }
 
   public static Test suite() {
@@ -653,28 +634,6 @@ public class TestSort extends LuceneTestCase implements Serializable {
     runMultiSorts(searcher, false);
   }
 
-  // test a variety of sorts using a remote searcher
-  public void testRemoteSort() throws Exception {
-    Searchable searcher = getRemote();
-    MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
-    runMultiSorts(multi, true); // this runs on the full index
-  }
-
-  // test custom search when remote
-  public void testRemoteCustomSort() throws Exception {
-    Searchable searcher = getRemote();
-    MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
-    sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource()));
-    assertMatches (multi, queryX, sort, "CAIEG");
-    sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource(), true));
-    assertMatches (multi, queryY, sort, "HJDBF");
-    SortComparator custom = SampleComparable.getComparator();
-    sort.setSort (new SortField ("custom", custom));
-    assertMatches (multi, queryX, sort, "CAIEG");
-    sort.setSort (new SortField ("custom", custom, true));
-    assertMatches (multi, queryY, sort, "HJDBF");
-  }
-
   // test that the relevancy scores are the same even if
   // hits are sorted
   public void testNormalizedScores() throws Exception {
@@ -685,97 +644,73 @@ public class TestSort extends LuceneTestCase implements Serializable {
     HashMap scoresA = getScores (full.search (queryA, null, 1000).scoreDocs, full);
 
     // we'll test searching locally, remote and multi
-    MultiSearcher remote = new MultiSearcher (new Searchable[] { getRemote() });
+    
     MultiSearcher multi  = new MultiSearcher (new Searchable[] { searchX, searchY });
 
     // change sorting and make sure relevancy stays the same
 
     sort = new Sort();
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
     sort.setSort(SortField.FIELD_DOC);
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
     sort.setSort ("int");
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
     sort.setSort ("float");
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
     sort.setSort ("string");
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
     sort.setSort (new String[] {"int","float"});
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
     sort.setSort (new SortField[] { new SortField ("int", true), new SortField (null, SortField.DOC, true) });
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
     sort.setSort (new String[] {"float","string"});
     assertSameValues (scoresX, getScores (full.search (queryX, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresX, getScores (multi.search (queryX, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresY, getScores (full.search (queryY, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresY, getScores (multi.search (queryY, null, 1000, sort).scoreDocs, multi));
     assertSameValues (scoresA, getScores (full.search (queryA, null, 1000, sort).scoreDocs, full));
-    assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (multi.search (queryA, null, 1000, sort).scoreDocs, multi));
 
   }
@@ -1075,33 +1010,6 @@ public class TestSort extends LuceneTestCase implements Serializable {
         assertEquals (m1.get(key), m2.get(key));
       }
     }
-  }
-
-  private Searchable getRemote () throws Exception {
-    try {
-      return lookupRemote ();
-    } catch (Throwable e) {
-      startServer ();
-      return lookupRemote ();
-    }
-  }
-
-  private Searchable lookupRemote () throws Exception {
-    return (Searchable) Naming.lookup ("//localhost:" + port + "/SortedSearchable");
-  }
-
-  private static int port = -1;
-
-  private void startServer () throws Exception {
-    // construct an index
-    port = _TestUtil.getRandomSocketPort();
-    Searcher local = getFullIndex();
-    // local.search (queryA, new Sort());
-
-    // publish it
-    LocateRegistry.createRegistry (port);
-    RemoteSearchable impl = new RemoteSearchable (local);
-    Naming.rebind ("//localhost:" + port + "/SortedSearchable", impl);
   }
 
 }

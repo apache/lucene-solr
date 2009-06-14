@@ -31,8 +31,7 @@ public class CachingSpanFilter extends SpanFilter {
   protected SpanFilter filter;
 
   /**
-   * A transient Filter cache.  To cache Filters even when using {@link org.apache.lucene.search.RemoteSearchable} use
-   * {@link org.apache.lucene.search.RemoteCachingWrapperFilter} instead.
+   * A transient Filter cache.
    */
   protected transient Map cache;
 

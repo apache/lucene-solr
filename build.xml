@@ -77,15 +77,6 @@
   <!-- Prepares the build directory                                       -->
   <!-- ================================================================== -->
 
-  <!-- Overrides common.compile-core to add rmic -->
-  <target name="compile-core" depends="common.compile-core"
-          description="Compiles core classes, including rmic">
-    <rmic classname="org.apache.lucene.search.RemoteSearchable"
-      base="${build.dir}/classes/java" stubversion="1.2">
-      <classpath refid="classpath"/>
-    </rmic>
-  </target>
-
   <target name="test-core" depends="common.test"
           description="Runs unit tests for the core Lucene code"
   />
@@ -136,11 +127,7 @@
 	    destdir="${build.dir}/${tag}/classes/java">
 	  <classpath refid="tag.classpath"/>
 	  </compile>
-	  <rmic classname="org.apache.lucene.search.RemoteSearchable"
-	    base="${build.dir}/${tag}/classes/java" stubversion="1.2">
-        <classpath refid="tag.classpath"/>
-      </rmic>
-			
+
 	  <!-- compile jar for tag -->
       <jarify basedir="${build.dir}/${tag}/classes/java"
 			  destfile="${build.dir}/${tag}/${tag}.jar" />

@@ -32,8 +32,7 @@ public class CachingWrapperFilter extends Filter {
   protected Filter filter;
 
   /**
-   * A transient Filter cache.  To cache Filters even when using {@link RemoteSearchable} use
-   * {@link RemoteCachingWrapperFilter} instead.
+   * A transient Filter cache.
    */
   protected transient Map cache;
 
