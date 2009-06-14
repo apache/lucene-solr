@@ -17,6 +17,7 @@
 package org.apache.lucene.spatial.tier;
 
 import java.io.IOException;
+import java.util.BitSet;
 
 import junit.framework.TestCase;
 
@@ -24,8 +25,12 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.spatial.NumberUtils;
+import org.apache.lucene.spatial.tier.LatLongDistanceFilter;
 import org.apache.lucene.store.RAMDirectory;
 
 
@@ -42,16 +47,20 @@ public class TestDistance extends TestCase{
   private double lng= -77.386398;
   private String latField = "lat";
   private String lngField = "lng";
-  
+  private IndexWriter writer;
   
   @Override
   protected void setUp() throws IOException {
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+    writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
     addData(writer);
     
   }
-  
+
+  @Override
+  protected void tearDown() throws IOException {
+    writer.close();
+  }
   
   private void addPoint(IndexWriter writer, String name, double lat, double lng) throws IOException{
     
@@ -90,7 +99,18 @@ public class TestDistance extends TestCase{
     addPoint(writer,"HorseFeathers, Bar & Grill", 39.01220000000001, -77.3942);
     writer.flush();
   }
-  
+
+  public void testLatLongFilterOnDeletedDocs() throws Exception {
+    writer.deleteDocuments(new Term("name", "Potomac"));
+    IndexReader r = writer.getReader();
+    LatLongDistanceFilter f = new LatLongDistanceFilter(lat, lng, 1.0, latField, lngField);
+    f.bits(r);
+
+    BitSet allSet = new BitSet(r.maxDoc());
+    allSet.set(0, r.maxDoc());
+    f.bits(r, allSet);
+    r.close();
+  }
  
   
   public void testMiles() {

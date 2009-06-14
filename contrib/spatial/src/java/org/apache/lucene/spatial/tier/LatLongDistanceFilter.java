@@ -25,6 +25,7 @@ import java.util.WeakHashMap;
 import java.util.logging.Logger;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.spatial.NumberUtils;
 import org.apache.lucene.spatial.tier.DistanceHandler.Precision;
@@ -96,15 +97,16 @@ public class LatLongDistanceFilter extends DistanceFilter {
     /* store calculated distances for reuse by other components */
     distances = new HashMap<Integer,Double>(maxdocs);
     
-    
     if (distances == null){
     	distances = new HashMap<Integer,Double>();
     }
-    
-    for (int i = 0 ; i < maxdocs; i++) {
+
+    TermDocs td = reader.termDocs(null);
+    while(td.next()) {
+      int doc = td.doc();
       
-      String sx = latIndex[i];
-      String sy = lngIndex[i];
+      String sx = latIndex[doc];
+      String sy = lngIndex[doc];
   
       double x = NumberUtils.SortableStr2double(sx);
       double y = NumberUtils.SortableStr2double(sy);
@@ -125,15 +127,12 @@ public class LatLongDistanceFilter extends DistanceFilter {
         d = DistanceUtils.getInstance().getDistanceMi(lat, lng, x, y);
         cdistance.put(ck, d);
       }
-      distances.put(i, d);
       
    // why was i storing all distances again?
       if (d < distance){
-        bits.set(i);
-        distances.put(i+ nextOffset, d); // include nextOffset for multi segment reader  
+        bits.set(doc);
+        distances.put(doc+ nextOffset, d); // include nextOffset for multi segment reader  
       }
-      i = bits.nextSetBit(i+1);
-      
     }
     int size = bits.cardinality();
     nextOffset += reader.maxDoc();  // this should be something that's part of indexReader
@@ -175,6 +174,12 @@ public class LatLongDistanceFilter extends DistanceFilter {
     /* loop over all set bits (hits from the boundary box filters) */
     int i = bits.nextSetBit(0);
     while (i >= 0){
+
+      if (reader.isDeleted(i)) {
+        i = bits.nextSetBit(i+1);
+        continue;
+      }
+
       double x,y;
       
       // if we have a completed
