@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.File;
 
 /** Native file-based {@link Directory} implementation, using GCJ.
- *
+ * @deprecated This will be removed in 3.0.
  */
 public class GCJDirectory extends FSDirectory {
 

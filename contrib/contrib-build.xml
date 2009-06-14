@@ -61,7 +61,8 @@
   </target>
 
   
-  <target name="init" depends="common.init,build-lucene,build-lucene-tests"/>
+  <!--<target name="init" depends="common.init,build-lucene,build-lucene-tests"/>-->
+  <target name="init"/>
   <target name="compile-test" depends="init" if="contrib.has.tests">
     <antcall target="common.compile-test" inheritRefs="true" />
   </target>

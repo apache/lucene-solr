@@ -21,7 +21,7 @@ import java.io.IOException;
 import gnu.gcj.RawData;
 
 /** Native file-based {@link IndexInput} implementation, using GCJ.
- *
+ * @deprecated This will be removed in 3.0.
  */
 public class GCJIndexInput extends IndexInput {
 

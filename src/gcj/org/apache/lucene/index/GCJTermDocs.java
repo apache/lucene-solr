@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+// @deprecated This will be removed in 3.0.
 class GCJTermDocs extends SegmentTermDocs {
   public GCJTermDocs(SegmentReader parent) {
     super(parent);

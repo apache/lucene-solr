@@ -338,6 +338,7 @@ class SegmentReader extends IndexReader implements Cloneable {
   Map norms = new HashMap();
   
   /** The class which implements SegmentReader. */
+  // @deprecated (LUCENE-1677)
   private static Class IMPL;
   static {
     try {
@@ -356,6 +357,7 @@ class SegmentReader extends IndexReader implements Cloneable {
     }
   }
 
+  // @deprecated (LUCENE-1677)
   private static Class READONLY_IMPL;
   static {
     try {

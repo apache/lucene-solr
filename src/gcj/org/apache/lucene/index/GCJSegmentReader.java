@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.store.GCJIndexInput;
 
+// @deprecated This will be removed in 3.0.
 class GCJSegmentReader extends SegmentReader {
 
   /** Try to use an optimized native implementation of TermDocs.  The optimized

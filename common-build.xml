@@ -378,6 +378,8 @@
 	      <not><or>
 	        <isset property="testcase" />
 	      	<isset property="testpackage" />
+	      	<isset property="testpackagea" />
+	      	<isset property="testpackageb" />
 	      	<isset property="testpackageroot" />
 	      </or></not>
 	    </condition>
@@ -405,9 +407,15 @@
 	      <batchtest fork="yes" todir="@{junit.output.dir}" if="runall">
 	        <fileset dir="@{dataDir}" includes="${junit.includes}" excludes="${junit.excludes}"/>
 	      </batchtest>
-	      <batchtest fork="yes" todir="@{junit.output.dir}" if="testpackage">
-	        <fileset dir="@{dataDir}" includes="**/${testpackage}/**/Test*.java,**/${testpackage}/**/*Test.java" excludes="${junit.excludes}"/>
-	      </batchtest>
+      <batchtest fork="yes" todir="@{junit.output.dir}" if="testpackage">
+        <fileset dir="@{dataDir}" includes="**/${testpackage}/**/Test*.java,**/${testpackage}/**/*Test.java" excludes="${junit.excludes}"/>
+      </batchtest>
+       <batchtest fork="yes" todir="@{junit.output.dir}" if="testpackagea">
+         <fileset dir="@{dataDir}" includes=" **/${testpackagea}/**/TestA*.java **/${testpackagea}/**/A*Test.java **/${testpackagea}/**/TestB*.java **/${testpackagea}/**/B*Test.java **/${testpackagea}/**/TestC*.java **/${testpackagea}/**/C*Test.java **/${testpackagea}/**/TestD*.java **/${testpackagea}/**/D*Test.java **/${testpackagea}/**/TestE*.java **/${testpackagea}/**/E*Test.java **/${testpackagea}/**/TestF*.java **/${testpackagea}/**/F*Test.java **/${testpackagea}/**/TestG*.java **/${testpackagea}/**/G*Test.java **/${testpackagea}/**/TestH*.java **/${testpackagea}/**/H*Test.java **/${testpackagea}/**/TestI*.java **/${testpackagea}/**/I*Test.java **/${testpackagea}/**/TestJ*.java **/${testpackagea}/**/J*Test.java **/${testpackagea}/**/TestK*.java **/${testpackagea}/**/K*Test.java **/${testpackagea}/**/TestL*.java **/${testpackagea}/**/L*Test.java" excludes="${junit.excludes}"/>
+       </batchtest>
+       <batchtest fork="yes" todir="@{junit.output.dir}" if="testpackageb">
+         <fileset dir="@{dataDir}" includes=" **/${testpackageb}/**/TestM*.java **/${testpackageb}/**/M*Test.java **/${testpackageb}/**/TestN*.java **/${testpackageb}/**/N*Test.java **/${testpackageb}/**/TestO*.java **/${testpackageb}/**/O*Test.java **/${testpackageb}/**/TestP*.java **/${testpackageb}/**/P*Test.java **/${testpackageb}/**/TestQ*.java **/${testpackageb}/**/Q*Test.java **/${testpackageb}/**/TestR*.java **/${testpackageb}/**/R*Test.java **/${testpackageb}/**/TestS*.java **/${testpackageb}/**/S*Test.java **/${testpackageb}/**/TestT*.java **/${testpackageb}/**/T*Test.java **/${testpackageb}/**/TestU*.java **/${testpackageb}/**/U*Test.java **/${testpackageb}/**/TestV*.java **/${testpackageb}/**/V*Test.java **/${testpackageb}/**/TestW*.java **/${testpackageb}/**/W*Test.java **/${testpackageb}/**/TestX*.java **/${testpackageb}/**/X*Test.java **/${testpackageb}/**/TestY*.java **/${testpackageb}/**/Y*Test.java **/${testpackageb}/**/TestZ*.java **/${testpackageb}/**/Z*Test.java" excludes="${junit.excludes}"/>
+       </batchtest>
 	      <batchtest fork="yes" todir="@{junit.output.dir}" if="testpackageroot">
 	        <fileset dir="@{dataDir}" includes="**/${testpackageroot}/Test*.java,**/${testpackageroot}/*Test.java" excludes="${junit.excludes}"/>
 	      </batchtest>
@@ -424,7 +432,7 @@
   	</sequential>
   </macrodef>
 	
-  <target name="test" depends="compile-test" description="Runs unit tests">
+  <target name="test" description="Runs unit tests">
     <test-macro dataDir="src/test" tempDir="${build.dir}/test">
     	<contrib-settings>
 	      <!-- set as a system property so contrib tests can have a fixed root

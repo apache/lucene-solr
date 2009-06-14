@@ -110,10 +110,9 @@
       </exec>
 	</sequential>
   </target>
-	
-  <target name="test-tag" depends="download-tag, compile-core, compile-demo, jar-core"
-  	description="Runs tests of a previous Lucene version. Specify tag version like this: -Dtag=branches/lucene_2_4_back_compat_tests">
-	<sequential>
+
+  <target name="compile-tag" depends="download-tag, compile-core, compile-demo, jar-core">
+    <sequential>
       <available property="tag.available" file="${tags.dir}/${tag}/src/test" />
 
 	  <fail unless="tag.available">
@@ -135,12 +134,15 @@
 	  <!-- compile tag tests against tag jar -->	
 	  <compile-test-macro srcdir="${tags.dir}/${tag}/src/test" destdir="${build.dir}/${tag}/classes/test"
 			  			  test.classpath="tag.test.classpath"/>
-		
-	  <!-- run tag tests against trunk jar -->
-      <test-macro dataDir="${tags.dir}/${tag}/src/test" 
-      			  tempDir="${build.dir}/${tag}"
-      			  junit.classpath="tag.junit.classpath"/>
-  	</sequential>
+    </sequential>
+  </target>
+	
+  <target name="test-tag"
+  	description="Runs tests of a previous Lucene version. Specify tag version like this: -Dtag=branches/lucene_2_4_back_compat_tests">
+    <!-- run tag tests against trunk jar -->
+    <test-macro dataDir="${tags.dir}/${tag}/src/test" 
+		tempDir="${build.dir}/${tag}"
+		junit.classpath="tag.junit.classpath"/>
   </target>	
 
 	
@@ -613,7 +615,7 @@
     <contrib-crawl target="build-artifacts-and-tests"/>
   </target>
 
-  <target name="test-contrib" depends="build-contrib">
+  <target name="test-contrib">
     <!-- Don't fail on error, instead check for flag file so we run
          all the tests possible and can "ant generate-test-reports"
          for all of them.

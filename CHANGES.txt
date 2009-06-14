@@ -201,6 +201,12 @@ API Changes
     of Lucene's core into new contrib/remote package.  Searchable no
     longer extends java.rmi.Remote (Simon Willnauer via Mike
     McCandless)
+
+22. LUCENE-1677: The global property
+    org.apache.lucene.SegmentReader.class, and
+    ReadOnlySegmentReader.class, along with the src/gcj/*
+    specializations for GCJ, are now deprecated, to be removed in
+    3.0.  (Earwin Burrfoot via Mike McCandless)
     
 Bug fixes
 
