@@ -115,23 +115,6 @@
         <pathelement location="${benchmark.ext.classpath}"/>
     </path>
 
-    <target name="run-standard" depends="compile,check-files,get-files" description="Run the standard baseline">
-        <echo>Working Directory: ${working.dir}</echo>
-        <java classname="org.apache.lucene.benchmark.Driver"  maxmemory="1024M" fork="true">
-            <classpath refid="run.classpath"/>
-            <arg file="${working.dir}"/>
-            <arg file="conf/standard-config.xml"/>
-        </java>
-    </target>
-    <target name="run-micro-standard" depends="compile,check-files,get-files" description="Run the standard baseline">
-        <echo>Working Directory: ${working.dir}</echo>
-        <java classname="org.apache.lucene.benchmark.Driver" maxmemory="1024M" fork="true">
-            <classpath refid="run.classpath"/>
-            <arg file="${working.dir}"/>
-            <arg file="conf/micro-standard-config.xml"/>
-        </java>
-    </target>
-
     <property name="task.alg" location="conf/micro-standard.alg"/>
     <property name="task.mem" value="140M"/>
 
