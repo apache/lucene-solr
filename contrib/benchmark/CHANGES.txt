@@ -3,6 +3,15 @@ Lucene Benchmark Contrib Change Log
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
 $Id:$
+6/12/09 
+  LUCENE-1539: Added DeleteByPercentTask which enables deleting a
+  percentage of documents and searching on them.  Changed CommitIndex
+  to optionally accept a label (recorded as userData=<label> in the
+  commit point).  Added FlushReaderTask, and modified OpenReaderTask
+  to also optionally take a label referencing a commit point to open.
+  Also changed default autoCommit (when IndexWriter is opened) to
+  true. (Jason Rutherglen via Mike McCandless)
+
 12/20/08
   LUCENE-1495: Allow task sequence to run for specfied number of seconds by adding ": 2.7s" (for example).
 

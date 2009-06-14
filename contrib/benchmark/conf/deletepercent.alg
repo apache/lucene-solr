@@ -17,11 +17,6 @@
 # -------------------------------------------------------------------------------------
 # multi val params are iterated by NewRound's, added to reports, start with column name.
 
-merge.factor=mrg:10:100:10:100:10:100:10:100
-max.buffered=buf:10:10:100:100:10:10:100:100
-#ram.flush.mb=flush:32:40:48:56:32:40:48:56
-compound=cmpnd:true:true:true:true:false:false:false:false
-
 autocommit=false
 analyzer=org.apache.lucene.analysis.standard.StandardAnalyzer
 directory=FSDirectory
@@ -30,7 +25,7 @@ directory=FSDirectory
 doc.stored=true
 doc.tokenized=true
 doc.term.vector=false
-doc.add.log.step=2000
+doc.add.log.step=500
 
 docs.dir=reuters-out
 #docs.dir=reuters-111
@@ -40,6 +35,7 @@ doc.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker
 
 #query.maker=org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker
 query.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker
+deletion.policy=org.apache.lucene.benchmark.utils.NoDeletionPolicy
 
 # task at this depth or less would print when they start
 task.max.depth.log=2
@@ -52,20 +48,58 @@ log.queries=true
     ResetSystemErase
 
     { "Populate"
-        CreateIndex
-        [{ "MAddDocs" AddDoc } : 5000] : 4
-        Optimize
-        CommitIndex(commit1)
+        -CreateIndex
+        { "MAddDocs" AddDoc > : 1000
+        CommitIndex(original)
         CloseIndex
     }
 
+    OpenReader(false,original)
+    DeleteByPercent(5)
+    { "SearchSameRdr5" Search > : 500
+    FlushReader(5%)
+    CloseReader 
+    PrintReader(5%)
 
-    RepSumByPref MAddDocs
+    OpenReader(false,5%)
+    DeleteByPercent(10)
+    { "SearchSameRdr10" Search > : 500
+    FlushReader(10%)
+    CloseReader 
+    PrintReader(10%)
+
+    OpenReader(false,10%)
+    DeleteByPercent(20)
+    { "SearchSameRdr20" Search > : 500
+    FlushReader(20%)
+    CloseReader 
+    PrintReader(20%)
+    
+    OpenReader(false,20%)
+    DeleteByPercent(60)
+    { "SearchSameRdr60" Search > : 500
+    FlushReader(60%)
+    CloseReader 
+    PrintReader(60%)
+    
+    OpenReader(false,60%)
+    DeleteByPercent(75)
+    { "SearchSameRdr75" Search > : 500
+    FlushReader(75%)
+    CloseReader 
+    PrintReader(75%)
+
+    # Test lower percentage of deletes (so undeleteAll is used)
+    OpenReader(false,75%)
+    DeleteByPercent(7)
+    { "SearchSameRdr7" Search > : 500
+    FlushReader(7%)
+    CloseReader 
+    PrintReader(7%)
 
     NewRound
 
-} : 8
+} : 1
 
-RepSumByNameRound
 RepSumByName
 RepSumByPrefRound MAddDocs

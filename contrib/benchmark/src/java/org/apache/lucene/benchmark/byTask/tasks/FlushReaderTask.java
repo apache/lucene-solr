@@ -1,4 +1,5 @@
 package org.apache.lucene.benchmark.byTask.tasks;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,20 +17,17 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 
-/**
- * Commits the IndexWriter.
- *
- */
-public class CommitIndexTask extends PerfTask {
-  String commitUserData = null;
+public class FlushReaderTask extends PerfTask {
+  String userData = null;
   
-  public CommitIndexTask(PerfRunData runData) {
+  public FlushReaderTask(PerfRunData runData) {
     super(runData);
   }
   
@@ -38,20 +36,19 @@ public class CommitIndexTask extends PerfTask {
   }
   
   public void setParams(String params) {
-    commitUserData = params;
+    super.setParams(params);
+    userData = params;
   }
   
-  public int doLogic() throws Exception {
-    IndexWriter iw = getRunData().getIndexWriter();
-    if (iw != null) {
-      if (commitUserData == null) iw.commit();
-      else {
-        Map map = new HashMap();
-        map.put(OpenReaderTask.USER_DATA, commitUserData);
-        iw.commit(map);
-      }
+  public int doLogic() throws IOException {
+    IndexReader reader = getRunData().getIndexReader();
+    if (userData != null) {
+      Map map = new HashMap();
+      map.put(OpenReaderTask.USER_DATA, userData);
+      reader.flush(map);
+    } else {
+      reader.flush();
     }
-    
     return 1;
   }
 }

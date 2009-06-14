@@ -19,6 +19,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MergePolicy;
@@ -91,14 +92,38 @@ public class CreateIndexTask extends PerfTask {
       writer.setRAMBufferSizeMB(ramBuffer);
     }
   }
-
+  
+  public static IndexDeletionPolicy getIndexDeletionPolicy(Config config) {
+    String deletionPolicyName = config.get("deletion.policy", "org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy");
+    IndexDeletionPolicy indexDeletionPolicy = null;
+    RuntimeException err = null;
+    try {
+      indexDeletionPolicy = ((IndexDeletionPolicy) Class.forName(deletionPolicyName).newInstance());
+    } catch (IllegalAccessException iae) {
+      err = new RuntimeException("unable to instantiate class '" + deletionPolicyName + "' as IndexDeletionPolicy");
+      err.initCause(iae);
+    } catch (InstantiationException ie) {
+      err = new RuntimeException("unable to instantiate class '" + deletionPolicyName + "' as IndexDeletionPolicy");
+      err.initCause(ie);
+    } catch (ClassNotFoundException cnfe) {
+      err = new RuntimeException("unable to load class '" + deletionPolicyName + "' as IndexDeletionPolicy");
+      err.initCause(cnfe);
+    }
+    if (err != null)
+      throw err;
+    return indexDeletionPolicy;
+  }
+  
   public int doLogic() throws IOException {
     PerfRunData runData = getRunData();
     Config config = runData.getConfig();
+    
+    IndexDeletionPolicy indexDeletionPolicy = getIndexDeletionPolicy(config);
+    
     IndexWriter writer = new IndexWriter(runData.getDirectory(),
                                          runData.getConfig().get("autocommit", OpenIndexTask.DEFAULT_AUTO_COMMIT),
                                          runData.getAnalyzer(),
-                                         true);
+                                         true, indexDeletionPolicy);
     CreateIndexTask.setIndexWriterConfig(writer, config);
     runData.setIndexWriter(writer);
     return 1;

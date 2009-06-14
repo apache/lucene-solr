@@ -38,7 +38,7 @@ public class OpenIndexTask extends PerfTask {
   public static final int DEFAULT_MAX_FIELD_LENGTH = IndexWriter.DEFAULT_MAX_FIELD_LENGTH;
   public static final int DEFAULT_MERGE_PFACTOR = LogMergePolicy.DEFAULT_MERGE_FACTOR;
   public static final double DEFAULT_RAM_FLUSH_MB = (int) IndexWriter.DEFAULT_RAM_BUFFER_SIZE_MB;
-  public static final boolean DEFAULT_AUTO_COMMIT = true;
+  public static final boolean DEFAULT_AUTO_COMMIT = false;
 
   public OpenIndexTask(PerfRunData runData) {
     super(runData);

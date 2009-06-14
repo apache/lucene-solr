@@ -18,18 +18,26 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 
 /**
  * Open an index reader.
  * <br>Other side effects: index redaer object in perfRunData is set.
+ * <br> Optional params readOnly,commitUserData eg. OpenReader(false,commit1)
  */
 public class OpenReaderTask extends PerfTask {
-
+  public static final String USER_DATA = "userData";
   private boolean readOnly = true;
+  private String commitUserData = null;
 
   public OpenReaderTask(PerfRunData runData) {
     super(runData);
@@ -37,14 +45,51 @@ public class OpenReaderTask extends PerfTask {
 
   public int doLogic() throws IOException {
     Directory dir = getRunData().getDirectory();
-    IndexReader reader = IndexReader.open(dir, readOnly);
-    getRunData().setIndexReader(reader);
+    Config config = getRunData().getConfig();
+    IndexReader r = null;
+    if (commitUserData != null) {
+      r = openCommitPoint(commitUserData, dir, config, readOnly);
+    } else {
+      IndexDeletionPolicy indexDeletionPolicy = CreateIndexTask.getIndexDeletionPolicy(config);
+      r = IndexReader.open(dir, indexDeletionPolicy, readOnly); 
+    }
+    System.out.println("--> openReader: "+r.getCommitUserData());
+    getRunData().setIndexReader(r);
     return 1;
   }
-
+ 
+  public static IndexReader openCommitPoint(String userData, Directory dir, Config config, boolean readOnly) throws IOException {
+    IndexReader r = null;
+    Collection commits = IndexReader.listCommits(dir);
+    Iterator i = commits.iterator();
+    while (i.hasNext()) {
+      IndexCommit ic = (IndexCommit)i.next();
+      Map map = ic.getUserData();
+      String ud = null;
+      if (map != null) {
+        ud = (String)map.get(USER_DATA);
+      }
+      if (ud != null && ud.equals(userData)) {
+        IndexDeletionPolicy indexDeletionPolicy = CreateIndexTask.getIndexDeletionPolicy(config);
+        r = IndexReader.open(ic, indexDeletionPolicy, readOnly);
+        break;
+      }
+    }
+    if (r == null) throw new IOException("cannot find commitPoint userData:"+userData);
+    return r;
+  }
+  
   public void setParams(String params) {
     super.setParams(params);
-    readOnly = Boolean.valueOf(params).booleanValue();
+    if (params != null) {
+      String[] split = params.split(",");
+      if (split.length > 0) {
+        readOnly = Boolean.valueOf(split[0]).booleanValue();
+      }
+      if (split.length > 1) {
+        commitUserData = split[1];
+      }
+    }
   }
 
   public boolean supportsParams() {

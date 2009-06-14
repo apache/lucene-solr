@@ -76,7 +76,7 @@ public class AddDocTask extends PerfTask {
     return 1;
   }
 
-  private void log (int count) {
+  protected void log (int count) {
     if (logStep<0) {
       // init once per instance
       logStep = getRunData().getConfig().get("doc.add.log.step",DEFAULT_ADD_DOC_LOG_STEP);

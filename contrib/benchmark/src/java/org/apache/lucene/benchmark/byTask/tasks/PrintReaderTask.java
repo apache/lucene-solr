@@ -1,4 +1,5 @@
 package org.apache.lucene.benchmark.byTask.tasks;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,42 +17,37 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.store.Directory;
 
-/**
- * Commits the IndexWriter.
- *
- */
-public class CommitIndexTask extends PerfTask {
-  String commitUserData = null;
+public class PrintReaderTask extends PerfTask {
+  private String userData = null;
   
-  public CommitIndexTask(PerfRunData runData) {
+  public PrintReaderTask(PerfRunData runData) {
     super(runData);
+  }
+  
+  public void setParams(String params) {
+    super.setParams(params);
+    userData = params;
   }
   
   public boolean supportsParams() {
     return true;
   }
   
-  public void setParams(String params) {
-    commitUserData = params;
-  }
-  
   public int doLogic() throws Exception {
-    IndexWriter iw = getRunData().getIndexWriter();
-    if (iw != null) {
-      if (commitUserData == null) iw.commit();
-      else {
-        Map map = new HashMap();
-        map.put(OpenReaderTask.USER_DATA, commitUserData);
-        iw.commit(map);
-      }
-    }
-    
+    Directory dir = getRunData().getDirectory();
+    Config config = getRunData().getConfig();
+    IndexReader r = null;
+    if (userData == null) 
+      r = IndexReader.open(dir);
+    else
+      r = OpenReaderTask.openCommitPoint(userData, dir, config, true);
+    System.out.println("--> numDocs:"+r.numDocs()+" dels:"+r.numDeletedDocs());
+    r.close();
     return 1;
   }
 }
