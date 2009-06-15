@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.standard;
  */
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,12 +27,24 @@ import java.util.Set;
 
 /**
  * Filters {@link StandardTokenizer} with {@link StandardFilter}, {@link
- * LowerCaseFilter} and {@link StopFilter}, using a list of English stop words.
+ * LowerCaseFilter} and {@link StopFilter}, using a list of
+ * English stop words.
+ *
+ * <a name="version"/>
+ * <p>You must specify the required {@link Version}
+ * compatibility when creating StandardAnalyzer:
+ * <ul>
+ *   <li> As of 2.9, StopFilter preserves position
+ *        increments by default
+ *   <li> As of 2.9, Tokens incorrectly identified as acronyms
+ *        are corrected (see <a href="https://issues.apache.org/jira/browse/LUCENE-1068">LUCENE-1608</a>
+ * </ul>
  *
  * @version $Id$
  */
 public class StandardAnalyzer extends Analyzer {
   private Set stopSet;
+  private Version matchVersion;
 
   /**
    * Specifies whether deprecated acronyms should be replaced with HOST type.
@@ -94,87 +107,92 @@ public class StandardAnalyzer extends Analyzer {
 
   /** Builds an analyzer with the default stop words ({@link
    * #STOP_WORDS}).
-   * @deprecated Use {@link #StandardAnalyzer(boolean, String[])},
-   * passing in null for the stop words, instead */
+   * @deprecated Use {@link #StandardAnalyzer(Version)},
+   * instead. */
   public StandardAnalyzer() {
-    this(STOP_WORDS);
+    this(Version.LUCENE_24, STOP_WORDS);
+  }
+
+  /** Builds an analyzer with the default stop words ({@link
+   * #STOP_WORDS}).
+   * @param matchVersion Lucene version to match See {@link
+   * <a href="#version">above</a>}
+   */
+  public StandardAnalyzer(Version matchVersion) {
+    this(matchVersion, STOP_WORDS);
   }
 
   /** Builds an analyzer with the given stop words.
-   * @deprecated Use {@link #StandardAnalyzer(boolean, Set)}
+   * @deprecated Use {@link #StandardAnalyzer(Version, Set)}
    * instead */
   public StandardAnalyzer(Set stopWords) {
-    stopSet = stopWords;
-    useDefaultStopPositionIncrements = true;
+    this(Version.LUCENE_24, stopWords);
   }
 
   /** Builds an analyzer with the given stop words.
-   * @param enableStopPositionIncrements See {@link
-   * StopFilter#setEnablePositionIncrements}
+   * @param matchVersion Lucene version to match See {@link
+   * <a href="#version">above</a>}
    * @param stopWords stop words */
-  public StandardAnalyzer(boolean enableStopPositionIncrements, Set stopWords) {
+  public StandardAnalyzer(Version matchVersion, Set stopWords) {
     stopSet = stopWords;
-    this.enableStopPositionIncrements = enableStopPositionIncrements;
+    init(matchVersion);
   }
 
   /** Builds an analyzer with the given stop words.
-   * @deprecated Use {@link #StandardAnalyzer(boolean,
+   * @deprecated Use {@link #StandardAnalyzer(Version,
    * String[])} instead */
   public StandardAnalyzer(String[] stopWords) {
+    this(Version.LUCENE_24, stopWords);
+  }
+
+  /** Builds an analyzer with the given stop words.
+   * @param matchVersion Lucene version to match See {@link
+   * <a href="#version">above</a>}
+   * @param stopWords Array of stop words */
+  public StandardAnalyzer(Version matchVersion, String[] stopWords) {
     if (stopWords == null) {
       stopWords = STOP_WORDS;
     }
     stopSet = StopFilter.makeStopSet(stopWords);
-    useDefaultStopPositionIncrements = true;
-  }
-
-  /** Builds an analyzer with the given stop words.
-   * @param enableStopPositionIncrements See {@link
-   * StopFilter#setEnablePositionIncrements}
-   * @param stopWords Array of stop words */
-  public StandardAnalyzer(boolean enableStopPositionIncrements, String[] stopWords) {
-    stopSet = StopFilter.makeStopSet(stopWords);
-    this.enableStopPositionIncrements = enableStopPositionIncrements;
+    init(matchVersion);
   }
 
   /** Builds an analyzer with the stop words from the given file.
    * @see WordlistLoader#getWordSet(File)
-   * @deprecated Use {@link #StandardAnalyzer(boolean, File)}
+   * @deprecated Use {@link #StandardAnalyzer(Version, File)}
    * instead
    */
   public StandardAnalyzer(File stopwords) throws IOException {
-    stopSet = WordlistLoader.getWordSet(stopwords);
-    useDefaultStopPositionIncrements = true;
+    this(Version.LUCENE_24, stopwords);
   }
 
   /** Builds an analyzer with the stop words from the given file.
    * @see WordlistLoader#getWordSet(File)
-   * @param enableStopPositionIncrements See {@link
-   * StopFilter#setEnablePositionIncrements}
+   * @param matchVersion Lucene version to match See {@link
+   * <a href="#version">above</a>}
    * @param stopwords File to read stop words from */
-  public StandardAnalyzer(boolean enableStopPositionIncrements, File stopwords) throws IOException {
+  public StandardAnalyzer(Version matchVersion, File stopwords) throws IOException {
     stopSet = WordlistLoader.getWordSet(stopwords);
-    this.enableStopPositionIncrements = enableStopPositionIncrements;
+    init(matchVersion);
   }
 
   /** Builds an analyzer with the stop words from the given reader.
    * @see WordlistLoader#getWordSet(Reader)
-   * @deprecated Use {@link #StandardAnalyzer(boolean, Reader)}
+   * @deprecated Use {@link #StandardAnalyzer(Version, Reader)}
    * instead
    */
   public StandardAnalyzer(Reader stopwords) throws IOException {
-    stopSet = WordlistLoader.getWordSet(stopwords);
-    useDefaultStopPositionIncrements = true;
+    this(Version.LUCENE_24, stopwords);
   }
 
   /** Builds an analyzer with the stop words from the given reader.
    * @see WordlistLoader#getWordSet(Reader)
-   * @param enableStopPositionIncrements See {@link
-   * StopFilter#setEnablePositionIncrements}
+   * @param matchVersion Lucene version to match See {@link
+   * <a href="#version">above</a>}
    * @param stopwords Reader to read stop words from */
-  public StandardAnalyzer(boolean enableStopPositionIncrements, Reader stopwords) throws IOException {
+  public StandardAnalyzer(Version matchVersion, Reader stopwords) throws IOException {
     stopSet = WordlistLoader.getWordSet(stopwords);
-    this.enableStopPositionIncrements = enableStopPositionIncrements;
+    init(matchVersion);
   }
 
   /**
@@ -186,9 +204,8 @@ public class StandardAnalyzer extends Analyzer {
    * @deprecated Remove in 3.X and make true the only valid value
    */
   public StandardAnalyzer(boolean replaceInvalidAcronym) {
-    this(STOP_WORDS);
+    this(Version.LUCENE_24, STOP_WORDS);
     this.replaceInvalidAcronym = replaceInvalidAcronym;
-    useDefaultStopPositionIncrements = true;
   }
 
   /**
@@ -200,9 +217,8 @@ public class StandardAnalyzer extends Analyzer {
    * @deprecated Remove in 3.X and make true the only valid value
    */
   public StandardAnalyzer(Reader stopwords, boolean replaceInvalidAcronym) throws IOException{
-    this(stopwords);
+    this(Version.LUCENE_24, stopwords);
     this.replaceInvalidAcronym = replaceInvalidAcronym;
-    useDefaultStopPositionIncrements = true;
   }
 
   /**
@@ -214,9 +230,8 @@ public class StandardAnalyzer extends Analyzer {
    * @deprecated Remove in 3.X and make true the only valid value
    */
   public StandardAnalyzer(File stopwords, boolean replaceInvalidAcronym) throws IOException{
-    this(stopwords);
+    this(Version.LUCENE_24, stopwords);
     this.replaceInvalidAcronym = replaceInvalidAcronym;
-    useDefaultStopPositionIncrements = true;
   }
 
   /**
@@ -229,9 +244,8 @@ public class StandardAnalyzer extends Analyzer {
    * @deprecated Remove in 3.X and make true the only valid value
    */
   public StandardAnalyzer(String [] stopwords, boolean replaceInvalidAcronym) throws IOException{
-    this(stopwords);
+    this(Version.LUCENE_24, stopwords);
     this.replaceInvalidAcronym = replaceInvalidAcronym;
-    useDefaultStopPositionIncrements = true;
   }
 
   /**
@@ -243,9 +257,17 @@ public class StandardAnalyzer extends Analyzer {
    * @deprecated Remove in 3.X and make true the only valid value
    */
   public StandardAnalyzer(Set stopwords, boolean replaceInvalidAcronym) throws IOException{
-    this(stopwords);
+    this(Version.LUCENE_24, stopwords);
     this.replaceInvalidAcronym = replaceInvalidAcronym;
-    useDefaultStopPositionIncrements = true;
+  }
+
+  private final void init(Version matchVersion) {
+    this.matchVersion = matchVersion;
+    if (matchVersion.onOrAfter(Version.LUCENE_29)) {
+      enableStopPositionIncrements = true;
+    } else {
+      useDefaultStopPositionIncrements = true;
+    }
   }
 
   /** Constructs a {@link StandardTokenizer} filtered by a {@link
@@ -289,7 +311,8 @@ public class StandardAnalyzer extends Analyzer {
   public int getMaxTokenLength() {
     return maxTokenLength;
   }
-  
+
+  /** @deprecated Use {@link #tokenStream} instead */
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();
     if (streams == null) {
