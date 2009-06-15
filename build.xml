@@ -309,6 +309,7 @@
           <packageset dir="contrib/miscellaneous/src/java"/>
           <packageset dir="contrib/queries/src/java"/>
           <packageset dir="contrib/regex/src/java"/>
+          <packageset dir="contrib/remote/src/java"/>
           <packageset dir="contrib/snowball/src/java"/>
           <packageset dir="contrib/spatial/src/java"/>
           <packageset dir="contrib/spellchecker/src/java"/>
