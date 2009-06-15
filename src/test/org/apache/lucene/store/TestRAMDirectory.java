@@ -1,4 +1,4 @@
-package org.apache.lucene.index.store;
+package org.apache.lucene.store;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -32,14 +32,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
-
-import org.apache.lucene.store.MockRAMDirectory;
 
 /**
  * JUnit testcase to test RAMDirectory. RAMDirectory itself is used in many testcases,
