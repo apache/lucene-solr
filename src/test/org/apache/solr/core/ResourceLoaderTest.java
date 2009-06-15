@@ -29,6 +29,8 @@ import org.apache.solr.request.JSONResponseWriter;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
+import java.io.File;
+
 public class ResourceLoaderTest extends TestCase 
 {
   public void testInstanceDir() throws Exception {
@@ -38,7 +40,7 @@ public class ResourceLoaderTest extends TestCase
 
     loader = new SolrResourceLoader("solr");
     instDir = loader.getInstanceDir();
-    assertTrue(instDir + " is not equal to " + "solr/", instDir.equals("solr/") == true);
+    assertTrue(instDir + " is not equal to " + "solr/", instDir.equals("solr" + File.separator) == true);
   }
 
   public void testAwareCompatibility() 
