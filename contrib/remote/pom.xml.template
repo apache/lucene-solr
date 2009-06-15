@@ -28,7 +28,7 @@
     <version>@version@</version>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-regex</artifactId>
+  <artifactId>lucene-remote</artifactId>
   <name>Lucene Remote</name>
   <version>@version@</version>
   <description>Remote Searchable based on RMI</description>
