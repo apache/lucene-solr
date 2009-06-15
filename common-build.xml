@@ -319,6 +319,19 @@
     </sequential>
   </macrodef>
 
+  <!-- setup proxy for download tasks -->
+  <condition property="proxy.specified">
+    <or>
+      <isset property="proxy.host"/>
+      <isset property="proxy.port"/>
+      <isset property="proxy.user"/>
+    </or>
+  </condition>
+
+  <target name="proxy.setup" if="proxy.specified">
+    <setproxy proxyhost="${proxy.host}" proxyport="${proxy.port}" proxyuser="${proxy.user}" proxypassword="${proxy.password}"/>
+  </target>
+
 
   <target name="clean-contrib"
 	          description="Cleans all contrib modules and their tests">

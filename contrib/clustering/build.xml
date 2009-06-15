@@ -58,7 +58,7 @@
     <mkdir dir="lib/downloads" />
   </target>
 
-  <target name="check-files">
+  <target name="check-files" depends="proxy.setup">
       <available file="lib/downloads/colt-1.2.0.jar" property="colt.exists"/>
       <available file="lib/downloads/pcj-1.2.jar" property="pcj.exists"/>
       <available file="lib/downloads/nni-1.0.0.jar" property="nni.exists"/>

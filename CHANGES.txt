@@ -514,6 +514,8 @@ Build
  2. SOLR-854: Added run-example target (Mark Miller vie ehatcher)
 
  3. SOLR-1054:Fix dist-src target for DataImportHandler (Ryuuichi Kumai via shalin)
+
+ 4. SOLR-1219: Added proxy.setup target (koji)
  
 
 Documentation

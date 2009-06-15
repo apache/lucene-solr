@@ -875,7 +875,7 @@
   <!-- ========================================================================= -->
 
   <available file="luke/luke-0.9.1.jar" property="luke.jar.exists" />
-  <target name="luke-download" unless="luke.jar.exists">
+  <target name="luke-download" unless="luke.jar.exists" depends="proxy.setup">
     <mkdir dir="luke"/>
     <get src="http://www.getopt.org/luke/luke-0.9.1/luke-0.9.1.jar" 
         dest="luke/luke-0.9.1.jar"/>
