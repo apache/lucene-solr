@@ -161,7 +161,7 @@ public abstract class TokenStream extends AttributeSource {
 	 * @return false for end of stream; true otherwise
 	 *
 	 * <p>
-	 * <b>Note that this method will be defined abstract in Lucene 3.0.<b>
+	 * <b>Note that this method will be defined abstract in Lucene 3.0.</b>
 	 */
 	public boolean incrementToken() throws IOException {
 	  // subclasses must implement this method; will be made abstract in Lucene 3.0
