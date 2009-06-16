@@ -18,6 +18,7 @@ package org.apache.lucene.search.function;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import junit.framework.Assert;
 
 /**
  * DocValues TestCase  
@@ -44,7 +45,7 @@ public class TestDocValues extends LuceneTestCase {
     float[] innerArray = new float[] { 1.0f, 2.0f, -1.0f, 100.0f };
     DocValuesTestImpl docValues = new DocValuesTestImpl(innerArray);
     assertEquals("-1.0f is the min value in the source array", -1.0f, docValues
-        .getMinValue());
+        .getMinValue(), 0);
 
     // test with without values - NaN
     innerArray = new float[] {};
@@ -57,18 +58,18 @@ public class TestDocValues extends LuceneTestCase {
     float[] innerArray = new float[] { 1.0f, 2.0f, -1.0f, 10.0f };
     DocValuesTestImpl docValues = new DocValuesTestImpl(innerArray);
     assertEquals("10.0f is the max value in the source array", 10.0f, docValues
-        .getMaxValue());
+        .getMaxValue(), 0);
 
     innerArray = new float[] { -3.0f, -1.0f, -100.0f };
     docValues = new DocValuesTestImpl(innerArray);
     assertEquals("-1.0f is the max value in the source array", -1.0f, docValues
-        .getMaxValue());
+        .getMaxValue(), 0);
 
     innerArray = new float[] { -3.0f, -1.0f, 100.0f, Float.MAX_VALUE,
         Float.MAX_VALUE - 1 };
     docValues = new DocValuesTestImpl(innerArray);
     assertEquals(Float.MAX_VALUE + " is the max value in the source array",
-        Float.MAX_VALUE, docValues.getMaxValue());
+        Float.MAX_VALUE, docValues.getMaxValue(), 0);
 
     // test with without values - NaN
     innerArray = new float[] {};
@@ -80,16 +81,16 @@ public class TestDocValues extends LuceneTestCase {
   public void testGetAverageValue() {
     float[] innerArray = new float[] { 1.0f, 1.0f, 1.0f, 1.0f };
     DocValuesTestImpl docValues = new DocValuesTestImpl(innerArray);
-    assertEquals("the average is 1.0f", 1.0f, docValues.getAverageValue());
+    assertEquals("the average is 1.0f", 1.0f, docValues.getAverageValue(), 0);
 
     innerArray = new float[] { 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f };
     docValues = new DocValuesTestImpl(innerArray);
-    assertEquals("the average is 3.5f", 3.5f, docValues.getAverageValue());
+    assertEquals("the average is 3.5f", 3.5f, docValues.getAverageValue(), 0);
 
     // test with negative values
     innerArray = new float[] { -1.0f, 2.0f };
     docValues = new DocValuesTestImpl(innerArray);
-    assertEquals("the average is 0.5f", 0.5f, docValues.getAverageValue());
+    assertEquals("the average is 0.5f", 0.5f, docValues.getAverageValue(), 0);
 
     // test with without values - NaN
     innerArray = new float[] {};
