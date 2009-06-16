@@ -223,9 +223,9 @@ public class UnInvertedField {
       int termNum = te.getTermNumber();
 
       if (termNum >= maxTermCounts.length) {
-        // resize, but conserve memory by not doubling
-        // resize at end??? we waste a maximum of 16K (average of 8K)
-        int[] newMaxTermCounts = new int[maxTermCounts.length+4096];
+        // resize by doubling - for very large number of unique terms, expanding
+        // by 4K and resultant GC will dominate uninvert times.  Resize at end if material
+        int[] newMaxTermCounts = new int[maxTermCounts.length*2];
         System.arraycopy(maxTermCounts, 0, newMaxTermCounts, 0, termNum);
         maxTermCounts = newMaxTermCounts;
       }
@@ -331,6 +331,14 @@ public class UnInvertedField {
 
     numTermsInField = te.getTermNumber();
     te.close();
+
+    // free space if outrageously wasteful (tradeoff memory/cpu) 
+
+    if ((maxTermCounts.length - numTermsInField) > 1024) { // too much waste!
+      int[] newMaxTermCounts = new int[numTermsInField];
+      System.arraycopy(maxTermCounts, 0, newMaxTermCounts, 0, numTermsInField);
+      maxTermCounts = newMaxTermCounts;
+   }
 
     long midPoint = System.currentTimeMillis();
 
