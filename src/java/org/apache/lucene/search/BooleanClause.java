@@ -94,9 +94,9 @@ public class BooleanClause implements java.io.Serializable {
 
 
 
-  /** Returns true iff <code>o</code> is equal to this. */
+  /** Returns true if <code>o</code> is equal to this. */
   public boolean equals(Object o) {
-    if (!(o instanceof BooleanClause))
+    if (o == null || !(o instanceof BooleanClause))
       return false;
     BooleanClause other = (BooleanClause)o;
     return this.query.equals(other.query)
