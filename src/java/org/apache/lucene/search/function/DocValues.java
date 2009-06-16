@@ -114,17 +114,15 @@ public abstract class DocValues {
   }
 
   // --- some simple statistics on values
-  private float minVal;
-  private float maxVal;
-  private float avgVal;
+  private float minVal = Float.NaN;
+  private float maxVal = Float.NaN;
+  private float avgVal = Float.NaN;
   private boolean computed=false;
   // compute optional values
-  private void compute () {
+  private void compute() {
     if (computed) {
       return;
     }
-    minVal = Float.MAX_VALUE;
-    maxVal = 0;
     float sum = 0;
     int n = 0;
     while (true) {
@@ -135,34 +133,56 @@ public abstract class DocValues {
         break;
       }
       sum += val;
-      minVal = Math.min(minVal,val);
-      maxVal = Math.max(maxVal,val);
+      minVal = Float.isNaN(minVal) ? val : Math.min(minVal, val);
+      maxVal = Float.isNaN(maxVal) ? val : Math.max(maxVal, val);
+      ++n;
     }
-    avgVal = sum / n;
+
+    avgVal = n == 0 ? Float.NaN : sum / n;
     computed = true;
   }
+
   /**
-   * Optional op.
-   * Returns the minimum of all values.
+   * Returns the minimum of all values or <code>Float.NaN</code> if this
+   * DocValues instance does not contain any value.
+   * <p>
+   * This operation is optional
+   * </p>
+   * 
+   * @return the minimum of all values or <code>Float.NaN</code> if this
+   *         DocValues instance does not contain any value.
    */
-  public float getMinValue () {
+  public float getMinValue() {
     compute();
     return minVal;
   }
-  
+
   /**
-   * Optional op.
-   * Returns the maximum of all values. 
+   * Returns the maximum of all values or <code>Float.NaN</code> if this
+   * DocValues instance does not contain any value.
+   * <p>
+   * This operation is optional
+   * </p>
+   * 
+   * @return the maximum of all values or <code>Float.NaN</code> if this
+   *         DocValues instance does not contain any value.
    */
-  public float getMaxValue () {
+  public float getMaxValue() {
     compute();
     return maxVal;
   }
-  
+
   /**
-   * Returns the average of all values. 
+   * Returns the average of all values or <code>Float.NaN</code> if this
+   * DocValues instance does not contain any value. *
+   * <p>
+   * This operation is optional
+   * </p>
+   * 
+   * @return the average of all values or <code>Float.NaN</code> if this
+   *         DocValues instance does not contain any value
    */
-  public float getAverageValue () {
+  public float getAverageValue() {
     compute();
     return avgVal;
   }

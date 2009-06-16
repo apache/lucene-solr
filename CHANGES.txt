@@ -266,6 +266,9 @@ Bug fixes
     on EOF, removed numeric overflow possibilities and added support
     for a hack to unmap the buffers on closing IndexInput.
     (Uwe Schindler)
+    
+16. LUCENE-1681: Fix infinite loop caused by a call to DocValues methods 
+    getMinValue, getMaxValue, getAverageValue. (Simon Willnauer via Mark Miller)
 
  New features
 
