@@ -37,7 +37,18 @@ import java.io.Reader;
  */
 public final class CJKTokenizer extends Tokenizer {
     //~ Static fields/initializers ---------------------------------------------
+    /** Word token type */
+    static final int WORD_TYPE = 0;
+  
+    /** Single byte token type */
+    static final int SINGLE_TOKEN_TYPE = 1;
 
+    /** Double byte token type */
+    static final int DOUBLE_TOKEN_TYPE = 2;
+  
+    /** Names for token types */
+    static final String[] TOKEN_TYPE_NAMES = { "word", "single", "double" };
+  
     /** Max word length */
     private static final int MAX_WORD_LEN = 255;
 
@@ -68,7 +79,7 @@ public final class CJKTokenizer extends Tokenizer {
     private final char[] ioBuffer = new char[IO_BUFFER_SIZE];
 
     /** word type: single=>ASCII  double=>non-ASCII word=>default */
-    private String tokenType = "word";
+    private int tokenType = WORD_TYPE;
 
     /**
      * tag: previous character is a cached double-byte character  "C1C2C3C4"
@@ -105,12 +116,15 @@ public final class CJKTokenizer extends Tokenizer {
     public final Token next(final Token reusableToken) throws java.io.IOException {
         /** how many character(s) has been stored in buffer */
         assert reusableToken != null;
-        int length = 0;
 
-        /** the position used to create Token */
-        int start = offset;
+        while(true) { // loop until we find a non-empty token
 
-        while (true) {
+          int length = 0;
+
+          /** the position used to create Token */
+          int start = offset;
+
+          while (true) { // loop until we've found a full token
             /** current character */
             char c;
 
@@ -150,7 +164,7 @@ public final class CJKTokenizer extends Tokenizer {
                 if (ub == Character.UnicodeBlock.HALFWIDTH_AND_FULLWIDTH_FORMS) {
                   int i = (int) c;
                   if (i >= 65281 && i <= 65374) {
-                    /** convert certain HALFWIDTH_AND_FULLWIDTH_FORMS to BASIC_LATIN */
+                    // convert certain HALFWIDTH_AND_FULLWIDTH_FORMS to BASIC_LATIN
                     i = i - 65248;
                     c = (char) i;
                   }
@@ -165,19 +179,17 @@ public final class CJKTokenizer extends Tokenizer {
                         //      ^--: the current character begin to token the ASCII
                         // letter
                         start = offset - 1;
-                    } else if (tokenType == "double") {
+                    } else if (tokenType == DOUBLE_TOKEN_TYPE) {
                         // "javaC1C2C3C4linux" <br>
                         //              ^--: the previous non-ASCII
                         // : the current character
                         offset--;
                         bufferIndex--;
-                        tokenType = "single";
 
                         if (preIsTokened == true) {
                             // there is only one non-ASCII has been stored
                             length = 0;
                             preIsTokened = false;
-
                             break;
                         } else {
                             break;
@@ -186,7 +198,7 @@ public final class CJKTokenizer extends Tokenizer {
 
                     // store the LowerCase(c) in the buffer
                     buffer[length++] = Character.toLowerCase(c);
-                    tokenType = "single";
+                    tokenType = SINGLE_TOKEN_TYPE;
 
                     // break the procedure if buffer overflowed!
                     if (length == MAX_WORD_LEN) {
@@ -206,9 +218,9 @@ public final class CJKTokenizer extends Tokenizer {
                     if (length == 0) {
                         start = offset - 1;
                         buffer[length++] = c;
-                        tokenType = "double";
+                        tokenType = DOUBLE_TOKEN_TYPE;
                     } else {
-                        if (tokenType == "single") {
+                      if (tokenType == SINGLE_TOKEN_TYPE) {
                             offset--;
                             bufferIndex--;
 
@@ -216,7 +228,7 @@ public final class CJKTokenizer extends Tokenizer {
                             break;
                         } else {
                             buffer[length++] = c;
-                            tokenType = "double";
+                            tokenType = DOUBLE_TOKEN_TYPE;
 
                             if (length == 2) {
                                 offset--;
@@ -238,7 +250,16 @@ public final class CJKTokenizer extends Tokenizer {
                 }
             }
         }
+      
+        if (length > 0) {
+            return reusableToken.reinit
+                (buffer, 0, length, start, start+length, TOKEN_TYPE_NAMES[tokenType]);
+        } else if (dataLen == -1) {
+          return null;
+        }
 
-        return reusableToken.reinit(buffer, 0, length, start, start+length, tokenType);
+        // Cycle back and try for the next token (don't
+        // return an empty string)
+      }
     }
 }
