@@ -39,9 +39,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.TermFreqVector;
-import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.analysis.TokenFilterFactory;
@@ -54,13 +53,11 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrQueryParser;
 
@@ -275,7 +272,6 @@ public class LukeRequestHandler extends RequestHandlerBase
   private static SimpleOrderedMap<Object> getIndexedFieldsInfo( 
     final SolrIndexSearcher searcher, final Set<String> fields, final int numTerms ) 
     throws Exception {
-    Query matchAllDocs = new MatchAllDocsQuery();
     SolrQueryParser qp = searcher.getSchema().getSolrQueryParser(null);
 
     IndexReader reader = searcher.getReader();
@@ -307,12 +303,11 @@ public class LukeRequestHandler extends RequestHandlerBase
       // If numTerms==0, the call is just asking for a quick field list
       if( ttinfo != null && sfield != null && sfield.indexed() ) {
         Query q = qp.parse( fieldName+":[* TO *]" ); 
-        int docCount = searcher.numDocs( q, matchAllDocs );
-        if( docCount > 0 ) {
+        TopDocs top = searcher.search( q, 1 );
+        if( top.totalHits > 0 ) {
           // Find a document with this field
-          DocList ds = searcher.getDocList( q, (Query)null, (Sort)null, 0, 1 );
           try {
-            Document doc = searcher.doc( ds.iterator().next() );
+            Document doc = searcher.doc( top.scoreDocs[0].doc );
             Fieldable fld = doc.getFieldable( fieldName );
             if( fld != null ) {
               f.add( "index", getFieldFlags( fld ) );
@@ -325,9 +320,8 @@ public class LukeRequestHandler extends RequestHandlerBase
           catch( Exception ex ) {
             log.warn( "error reading field: "+fieldName );
           }
-          // Find one document so we can get the fieldable
         }
-        f.add( "docs", docCount );
+        f.add( "docs", top.totalHits );
         
         TopTermQueue topTerms = ttinfo.get( fieldName );
         if( topTerms != null ) {
