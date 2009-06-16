@@ -244,16 +244,15 @@ public class DefaultSolrHighlighter extends SolrHighlighter
      IndexSchema schema = searcher.getSchema();
      NamedList fragments = new SimpleOrderedMap();
      String[] fieldNames = getHighlightFields(query, req, defaultFields);
-     Document[] readDocs = new Document[docs.size()];
+     Set<String> fset = new HashSet<String>();
+     
      {
        // pre-fetch documents using the Searcher's doc cache
-       Set<String> fset = new HashSet<String>();
        for(String f : fieldNames) { fset.add(f); }
        // fetch unique key if one exists.
        SchemaField keyField = schema.getUniqueKeyField();
        if(null != keyField)
          fset.add(keyField.getName());  
-       searcher.readDocs(readDocs, docs, fset);
      }
 
 
@@ -261,7 +260,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docs.size(); i++) {
        int docId = iterator.nextDoc();
-       Document doc = readDocs[i];
+       Document doc = searcher.doc(docId, fset);
        NamedList docSummaries = new SimpleOrderedMap();
        for (String fieldName : fieldNames) {
           fieldName = fieldName.trim();
@@ -360,7 +359,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter
                     int len = 0;
                     for( String altText: altTexts ){
                       altList.add( len + altText.length() > alternateFieldLen ?
-                                   altText.substring( 0, alternateFieldLen - len ) : altText );
+                                   new String(altText.substring( 0, alternateFieldLen - len )) : altText );
                       len += altText.length();
                       if( len >= alternateFieldLen ) break;
                     }
