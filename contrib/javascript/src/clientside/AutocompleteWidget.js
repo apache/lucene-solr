@@ -16,7 +16,7 @@
  */
 
 /**
- * <p> Autocomplete input filed that suggests facet values. It can show facet values of multiple 
+ * <p> Autocomplete input field that suggests facet values. It can show facet values of multiple 
  * fields (specified by "fieldNames"), as well as perform a fulltext query ("fulltextFieldName")
  * in case no suggested value is selected. </p>
  *

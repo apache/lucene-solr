@@ -16,7 +16,7 @@
  */
 
 /**
- * A simple facet widteh that shows the facet values as list. It remembers the selection
+ * A simple facet widget that shows the facet values as list. It remembers the selection
  * and shows a "value(x)" label after selection.
  *
  * @class ExtensibleResultWidget

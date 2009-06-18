@@ -48,7 +48,7 @@ jQuery.solrjs.TagcloudWidget = jQuery.solrjs.createClass ("AbstractClientSideWid
      jQuery(this.target).empty();
      
      if (values.length == 0) {
-       jQuery("<div/>").html("not items found in current selection").appendTo(this.target);
+       jQuery("<div/>").html("no items found in current selection").appendTo(this.target);
      }
 		
 		 var maxCount = 0;

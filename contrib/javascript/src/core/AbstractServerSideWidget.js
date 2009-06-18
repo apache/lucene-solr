@@ -50,7 +50,7 @@ jQuery.solrjs.AbstractServerSideWidget = jQuery.solrjs.createClass ("AbstractWid
   },
   
   /**
-   * The default behaviour is that the result of teh template is simply "copied" to the target div.
+   * The default behaviour is that the result of the template is simply "copied" to the target div.
    * 
    * @param result The result of the velocity template wrapped inside a javascript object.
    */

@@ -16,7 +16,7 @@
  */
 
 /**
- * A calenader facet field. it uses solr's date facet capabilities, and displays 
+ * A calendar facet field. it uses solr's date facet capabilities, and displays 
  * the document count of one day using the DHTML calendar from www.dynarch.com/projects/calendar
  * 
  * @class CalendarWidget
@@ -91,7 +91,7 @@ jQuery.solrjs.CalendarWidget = jQuery.solrjs.createClass ("AbstractClientSideWid
     cal.show();
     cal.setDate(new Date(1987, 2, 1));
     
-    // override pribt method to display document count
+    // override print method to display document count
     var oldPrint = Date.prototype.print;
     Date.prototype.print = function(string) {
       if (string.indexOf("solrjs") == -1) {
