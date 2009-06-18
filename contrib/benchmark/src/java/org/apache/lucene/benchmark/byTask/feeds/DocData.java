@@ -20,94 +20,77 @@ package org.apache.lucene.benchmark.byTask.feeds;
 import java.util.Date;
 import java.util.Properties;
 
-/**
- * Output of parsing (e.g. HTML parsing) of an input document.
- */
+import org.apache.lucene.document.DateTools;
 
+/** Output of parsing (e.g. HTML parsing) of an input document. */
 public class DocData {
   
   private String name;
   private String body;
   private String title;
-  private Date date;
+  private String date;
   private Properties props;
   
-  public DocData(String name, String body, String title, Properties props, Date date) {
-    this.name = name;
-    this.body = body;
-    this.title = title;
-    this.date = date;
-    this.props = props;
+  public void clear() {
+    name = null;
+    body = null;
+    title = null;
+    date = null;
+    props = null;
   }
-
-  /**
-   * @return Returns the name.
-   */
-  public String getName() {
-    return name;
-  }
-
-  /**
-   * @param name The name to set.
-   */
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  /**
-   * @return Returns the props.
-   */
-  public Properties getProps() {
-    return props;
-  }
-
-  /**
-   * @param props The props to set.
-   */
-  public void setProps(Properties props) {
-    this.props = props;
-  }
-
-  /**
-   * @return Returns the body.
-   */
+  
   public String getBody() {
     return body;
   }
 
   /**
-   * @param body The body to set.
+   * @return the date. If the ctor with Date was called, then the String
+   *         returned is the output of
+   *         {@link DateTools#dateToString(Date, org.apache.lucene.document.DateTools.Resolution)}
+   *         . Otherwise it's the String passed to the other ctor.
    */
-  public void setBody(String body) {
-    this.body = body;
+  public String getDate() {
+    return date;
   }
 
-  /**
-   * @return Returns the title.
-   */
+  public String getName() {
+    return name;
+  }
+
+  public Properties getProps() {
+    return props;
+  }
+
   public String getTitle() {
     return title;
   }
 
-  /**
-   * @param title The title to set.
-   */
+  public void setBody(String body) {
+    this.body = body;
+  }
+
+  public void setDate(Date date) {
+    if (date != null) {
+      setDate(DateTools.dateToString(date, DateTools.Resolution.SECOND));
+    } else {
+      this.date = null;
+    }
+  }
+
+  public void setDate(String date) {
+    this.date = date;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public void setProps(Properties props) {
+    this.props = props;
+  }
+
   public void setTitle(String title) {
     this.title = title;
-  }
-
-  /**
-   * @return Returns the date.
-   */
-  public Date getDate() {
-    return date;
-  }
-
-  /**
-   * @param date The date to set.
-   */
-  public void setDate(Date date) {
-    this.date = date;
   }
 
 }

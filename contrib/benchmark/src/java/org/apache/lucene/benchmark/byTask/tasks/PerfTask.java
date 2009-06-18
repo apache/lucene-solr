@@ -17,54 +17,80 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
+import java.text.NumberFormat;
+
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.stats.Points;
 import org.apache.lucene.benchmark.byTask.stats.TaskStats;
+import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.Format;
 
 /**
- * A (abstract)  task to be tested for performance.
- * <br>
- * Every performance task extends this class, and provides its own doLogic() method, 
- * which performss the actual task.
- * <br>
- * Tasks performing some work that should be measured for the task, can overide setup() and/or tearDown() and 
- * placed that work there. 
- * <br>
+ * An abstract task to be tested for performance. <br>
+ * Every performance task extends this class, and provides its own
+ * {@link #doLogic()} method, which performss the actual task. <br>
+ * Tasks performing some work that should be measured for the task, can overide
+ * {@link #setup()} and/or {@link #tearDown()} and place that work there. <br>
  * Relevant properties: <code>task.max.depth.log</code>.
  */
 public abstract class PerfTask implements Cloneable {
 
+  private static final int DEFAULT_LOG_STEP = 1000;
+  
   private PerfRunData runData;
   
   // propeties that all tasks have
   private String name;
   private int depth = 0;
+  protected int logStep;
+  private int logStepCount = 0;
   private int maxDepthLogStart = 0;
   private boolean disableCounting = false;
   protected String params = null;
   
   protected static final String NEW_LINE = System.getProperty("line.separator");
 
-  /**
-   * Should not be used externally
-   */
+  /** Should not be used externally */
   private PerfTask() {
-    name =  Format.simpleName(getClass());
+    name = Format.simpleName(getClass());
     if (name.endsWith("Task")) {
-      name = name.substring(0,name.length()-4);
+      name = name.substring(0, name.length() - 4);
     }
   }
 
+  /**
+   * @deprecated will be removed in 3.0. checks if there are any obsolete
+   *             settings, like doc.add.log.step and doc.delete.log.step and
+   *             alerts the user.
+   */
+  private void checkObsoleteSettings(Config config) {
+    if (config.get("doc.add.log.step", null) != null) {
+      throw new RuntimeException("doc.add.log.step is not supported anymore. " +
+      		"Use log.step and refer to CHANGES to read on the recent API changes " +
+      		"done to Benchmark's DocMaker and Task-based logging.");
+    }
+    
+    if (config.get("doc.delete.log.step", null) != null) {
+      throw new RuntimeException("doc.delete.log.step is not supported anymore. " +
+          "Use delete.log.step and refer to CHANGES to read on the recent API changes " +
+          "done to Benchmark's DocMaker and Task-based logging.");
+    }
+  }
+  
   public PerfTask(PerfRunData runData) {
     this();
     this.runData = runData;
-    this.maxDepthLogStart = runData.getConfig().get("task.max.depth.log",0);
+    Config config = runData.getConfig();
+    this.maxDepthLogStart = config.get("task.max.depth.log",0);
+    logStep = config.get("log.step", DEFAULT_LOG_STEP);
+    // To avoid the check 'if (logStep > 0)' in tearDown(). This effectively
+    // turns logging off.
+    if (logStep <= 0) {
+      logStep = Integer.MAX_VALUE;
+    }
+    checkObsoleteSettings(config);
   }
   
-  /* (non-Javadoc)
-   * @see java.lang.Object#clone()
-   */
   protected Object clone() throws CloneNotSupportedException {
     // tasks having non primitive data structures should overide this.
     // otherwise parallel running of a task sequence might not run crrectly. 
@@ -173,6 +199,10 @@ public abstract class PerfTask implements Cloneable {
     return maxDepthLogStart;
   }
 
+  protected String getLogMessage(int recsCount) {
+    return "processed " + recsCount + " records";
+  }
+  
   /**
    * Tasks that should never log at start can overide this.  
    * @return true if this task should never log when it start.
@@ -207,7 +237,14 @@ public abstract class PerfTask implements Cloneable {
    * Notice that higher level (sequence) tasks containing this task would then 
    * measure larger time than the sum of their contained tasks.
    */
-  public void tearDown () throws Exception {
+  public void tearDown() throws Exception {
+    if (++logStepCount % logStep == 0) {
+      double time = (System.currentTimeMillis() - runData.getStartTimeMillis()) / 1000.0;
+      NumberFormat nf = NumberFormat.getInstance();
+      nf.setMaximumFractionDigits(2);
+      System.out.println(nf.format(time) + " sec --> "
+          + Thread.currentThread().getName() + " " + getLogMessage(logStepCount));
+    }
   }
 
   /**

@@ -17,6 +17,7 @@
 
 package org.apache.lucene.benchmark.byTask;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.io.File;
 import java.io.FileReader;
@@ -26,7 +27,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.benchmark.byTask.feeds.DocData;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
-import org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker;
+import org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource;
 import org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker;
 import org.apache.lucene.benchmark.byTask.tasks.CountingSearchTestTask;
 import org.apache.lucene.benchmark.byTask.tasks.CountingHighlighterTestTask;
@@ -114,7 +115,7 @@ public class TestPerfTasksLogic extends TestCase {
     };
 
     CountingSearchTestTask.numSearches = 0;
-    Benchmark benchmark = execBenchmark(algLines);
+    execBenchmark(algLines);
     assertTrue(CountingSearchTestTask.numSearches > 0);
     long elapsed = CountingSearchTestTask.prevLastMillis - CountingSearchTestTask.startMillis;
     assertTrue("elapsed time was " + elapsed + " msec", elapsed <= 1500);
@@ -124,7 +125,7 @@ public class TestPerfTasksLogic extends TestCase {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {
         "doc.stored=true",
-        "doc.maker="+Reuters20DocMaker.class.getName(),
+        "content.source="+Reuters20ContentSource.class.getName(),
         "query.maker=" + ReutersQueryMaker.class.getName(),
         "ResetSystemErase",
         "CreateIndex",
@@ -162,7 +163,7 @@ public class TestPerfTasksLogic extends TestCase {
     String algLines[] = {
         "doc.stored=true",//doc storage is required in order to have text to highlight
         "doc.term.vector.offsets=true",
-        "doc.maker="+Reuters20DocMaker.class.getName(),
+        "content.source="+Reuters20ContentSource.class.getName(),
         "query.maker=" + ReutersQueryMaker.class.getName(),
         "ResetSystemErase",
         "CreateIndex",
@@ -199,7 +200,7 @@ public class TestPerfTasksLogic extends TestCase {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {
         "doc.stored=false",
-        "doc.maker="+Reuters20DocMaker.class.getName(),
+        "content.source="+Reuters20ContentSource.class.getName(),
         "query.maker=" + ReutersQueryMaker.class.getName(),
         "ResetSystemErase",
         "CreateIndex",
@@ -227,14 +228,14 @@ public class TestPerfTasksLogic extends TestCase {
   /**
    * Test Exhasting Doc Maker logic
    */
-  public void testExhaustDocMaker() throws Exception {
+  public void testExhaustContentSource() throws Exception {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {
         "# ----- properties ",
-        "doc.maker=org.apache.lucene.benchmark.byTask.feeds.SimpleDocMaker",
-        "doc.add.log.step=1",
+        "content.source=org.apache.lucene.benchmark.byTask.feeds.SingleDocSource",
+        "content.source.log.step=1",
         "doc.term.vector=false",
-        "doc.maker.forever=false",
+        "content.source.forever=false",
         "directory=RAMDirectory",
         "doc.stored=false",
         "doc.tokenized=false",
@@ -274,10 +275,10 @@ public class TestPerfTasksLogic extends TestCase {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {
         "# ----- properties ",
-        "doc.maker="+Reuters20DocMaker.class.getName(),
-        "doc.add.log.step=3",
+        "content.source="+Reuters20ContentSource.class.getName(),
+        "content.source.log.step=3",
         "doc.term.vector=false",
-        "doc.maker.forever=false",
+        "content.source.forever=false",
         "directory=FSDirectory",
         "doc.stored=false",
         "doc.tokenized=false",
@@ -292,7 +293,7 @@ public class TestPerfTasksLogic extends TestCase {
 
     // 3. test number of docs in the index
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
-    int ndocsExpected = 20; // Reuters20DocMaker exhausts after 20 docs.
+    int ndocsExpected = 20; // Reuters20ContentSource exhausts after 20 docs.
     assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
     ir.close();
   }
@@ -309,8 +310,8 @@ public class TestPerfTasksLogic extends TestCase {
     // Creates a line file with first 500 docs from reuters
     String algLines1[] = {
       "# ----- properties ",
-      "doc.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker",
-      "doc.maker.forever=false",
+      "content.source=org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource",
+      "content.source.forever=false",
       "line.file.out=" + lineFile.getAbsolutePath().replace('\\', '/'),
       "# ----- alg ",
       "{WriteLineDoc()}:" + NUM_TRY_DOCS,
@@ -335,7 +336,7 @@ public class TestPerfTasksLogic extends TestCase {
       "analyzer=org.apache.lucene.analysis.SimpleAnalyzer",
       "doc.maker=org.apache.lucene.benchmark.byTask.feeds.LineDocMaker",
       "docs.file=" + lineFile.getAbsolutePath().replace('\\', '/'),
-      "doc.maker.forever=false",
+      "content.source.forever=false",
       "doc.reuse.fields=false",
       "autocommit=false",
       "ram.flush.mb=4",
@@ -373,7 +374,7 @@ public class TestPerfTasksLogic extends TestCase {
     String algLines1[] = {
       "# ----- properties ",
       "analyzer=org.apache.lucene.analysis.WhitespaceAnalyzer",
-      "doc.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker",
+      "content.source=org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource",
       "# ----- alg ",
       "{ReadTokens}: " + NUM_DOCS,
       "ResetSystemErase",
@@ -421,10 +422,10 @@ public class TestPerfTasksLogic extends TestCase {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {
         "# ----- properties ",
-        "doc.maker="+Reuters20DocMaker.class.getName(),
-        "doc.add.log.step=3",
+        "content.source="+Reuters20ContentSource.class.getName(),
+        "content.source.log.step=3",
         "doc.term.vector=false",
-        "doc.maker.forever=false",
+        "content.source.forever=false",
         "directory=RAMDirectory",
         "doc.stored=false",
         "doc.tokenized=false",
@@ -442,7 +443,7 @@ public class TestPerfTasksLogic extends TestCase {
 
     // 3. test number of docs in the index
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
-    int ndocsExpected = 2 * 20; // Reuters20DocMaker exhausts after 20 docs.
+    int ndocsExpected = 2 * 20; // Reuters20ContentSource exhausts after 20 docs.
     assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
     ir.close();
   }
@@ -477,16 +478,19 @@ public class TestPerfTasksLogic extends TestCase {
   }
 
   /** use reuters and the exhaust mechanism, but to be faster, add 20 docs only... */
-  public static class Reuters20DocMaker extends ReutersDocMaker {
-    private int nDocs=0;
-    protected synchronized DocData getNextDocData() throws Exception {
-      if (nDocs>=20 && !forever) {
+  public static class Reuters20ContentSource extends ReutersContentSource {
+    private int nDocs = 0;
+
+    public synchronized DocData getNextDocData(DocData docData)
+        throws NoMoreDataException, IOException {
+      if (nDocs >= 20 && !forever) {
         throw new NoMoreDataException();
       }
       nDocs++;
-      return super.getNextDocData();
+      return super.getNextDocData(docData);
     }
-    public synchronized void resetInputs() {
+
+    public synchronized void resetInputs() throws IOException {
       super.resetInputs();
       nDocs = 0;
     }
@@ -499,10 +503,10 @@ public class TestPerfTasksLogic extends TestCase {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {
         "# ----- properties ",
-        "doc.maker="+Reuters20DocMaker.class.getName(),
-        "doc.add.log.step=3",
+        "content.source="+Reuters20ContentSource.class.getName(),
+        "content.source.log.step=3",
         "doc.term.vector=false",
-        "doc.maker.forever=false",
+        "content.source.forever=false",
         "directory=RAMDirectory",
         "doc.stored=false",
         "doc.tokenized=false",
@@ -521,7 +525,7 @@ public class TestPerfTasksLogic extends TestCase {
 
     // 3. test number of docs in the index
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
-    int ndocsExpected = 20; // Reuters20DocMaker exhausts after 20 docs.
+    int ndocsExpected = 20; // Reuters20ContentSource exhausts after 20 docs.
     assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
     ir.close();
   }
@@ -533,12 +537,12 @@ public class TestPerfTasksLogic extends TestCase {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {
         "# ----- properties ",
-        "doc.maker="+Reuters20DocMaker.class.getName(),
+        "content.source="+Reuters20ContentSource.class.getName(),
         "ram.flush.mb=-1",
         "max.buffered=2",
-        "doc.add.log.step=3",
+        "content.source.log.step=3",
         "doc.term.vector=false",
-        "doc.maker.forever=false",
+        "content.source.forever=false",
         "directory=RAMDirectory",
         "doc.stored=false",
         "doc.tokenized=false",
@@ -557,7 +561,7 @@ public class TestPerfTasksLogic extends TestCase {
 
     // 3. test number of docs in the index
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
-    int ndocsExpected = 20; // Reuters20DocMaker exhausts after 20 docs.
+    int ndocsExpected = 20; // Reuters20ContentSource exhausts after 20 docs.
     assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
     ir.close();
   }
@@ -577,10 +581,10 @@ public class TestPerfTasksLogic extends TestCase {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {
         "# ----- properties ",
-        "doc.maker="+Reuters20DocMaker.class.getName(),
-        "doc.add.log.step=3",
+        "content.source="+Reuters20ContentSource.class.getName(),
+        "content.source.log.step=3",
         "doc.term.vector=false",
-        "doc.maker.forever=false",
+        "content.source.forever=false",
         "directory=RAMDirectory",
         "merge.scheduler=" + MyMergeScheduler.class.getName(),
         "doc.stored=false",
@@ -601,7 +605,7 @@ public class TestPerfTasksLogic extends TestCase {
 
     // 3. test number of docs in the index
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
-    int ndocsExpected = 20; // Reuters20DocMaker exhausts after 20 docs.
+    int ndocsExpected = 20; // Reuters20ContentSource exhausts after 20 docs.
     assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
     ir.close();
   }
@@ -620,12 +624,12 @@ public class TestPerfTasksLogic extends TestCase {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {
         "# ----- properties ",
-        "doc.maker="+Reuters20DocMaker.class.getName(),
-        "doc.add.log.step=3",
+        "content.source="+Reuters20ContentSource.class.getName(),
+        "content.source.log.step=3",
         "ram.flush.mb=-1",
         "max.buffered=2",
         "doc.term.vector=false",
-        "doc.maker.forever=false",
+        "content.source.forever=false",
         "directory=RAMDirectory",
         "merge.policy=" + MyMergePolicy.class.getName(),
         "doc.stored=false",
@@ -646,7 +650,7 @@ public class TestPerfTasksLogic extends TestCase {
     
     // 3. test number of docs in the index
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
-    int ndocsExpected = 20; // Reuters20DocMaker exhausts after 20 docs.
+    int ndocsExpected = 20; // Reuters20ContentSource exhausts after 20 docs.
     assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
     ir.close();
   }
@@ -658,13 +662,13 @@ public class TestPerfTasksLogic extends TestCase {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {
         "# ----- properties ",
-        "doc.maker="+Reuters20DocMaker.class.getName(),
-        "doc.add.log.step=3",
+        "content.source="+Reuters20ContentSource.class.getName(),
+        "content.source.log.step=3",
         "ram.flush.mb=-1",
         "max.buffered=2",
         "compound=cmpnd:true:false",
         "doc.term.vector=vector:false:true",
-        "doc.maker.forever=false",
+        "content.source.forever=false",
         "directory=RAMDirectory",
         "doc.stored=false",
         "merge.factor=3",
@@ -702,12 +706,12 @@ public class TestPerfTasksLogic extends TestCase {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {
         "# ----- properties ",
-        "doc.maker="+Reuters20DocMaker.class.getName(),
-        "doc.add.log.step=3",
+        "content.source="+Reuters20ContentSource.class.getName(),
+        "content.source.log.step=3",
         "ram.flush.mb=-1",
         "max.buffered=3",
         "doc.term.vector=false",
-        "doc.maker.forever=false",
+        "content.source.forever=false",
         "directory=RAMDirectory",
         "merge.policy=org.apache.lucene.index.LogDocMergePolicy",
         "doc.stored=false",
@@ -728,7 +732,7 @@ public class TestPerfTasksLogic extends TestCase {
 
     // 3. test number of docs in the index
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
-    int ndocsExpected = 20; // Reuters20DocMaker exhausts after 20 docs.
+    int ndocsExpected = 20; // Reuters20ContentSource exhausts after 20 docs.
     assertEquals("wrong number of docs in the index!", ndocsExpected, ir.numDocs());
     ir.close();
 
@@ -780,10 +784,10 @@ public class TestPerfTasksLogic extends TestCase {
     String dis = disable ? "-" : "";
     return new String[] {
         "# ----- properties ",
-        "doc.maker="+Reuters20DocMaker.class.getName(),
-        "doc.add.log.step=30",
+        "content.source="+Reuters20ContentSource.class.getName(),
+        "content.source.log.step=30",
         "doc.term.vector=false",
-        "doc.maker.forever=false",
+        "content.source.forever=false",
         "directory=RAMDirectory",
         "doc.stored=false",
         "doc.tokenized=false",

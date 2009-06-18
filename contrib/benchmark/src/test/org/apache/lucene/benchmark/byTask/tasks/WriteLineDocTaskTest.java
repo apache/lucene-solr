@@ -27,8 +27,8 @@ import java.util.Properties;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.benchmark.byTask.feeds.BasicDocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.DocData;
+import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
@@ -40,7 +40,7 @@ import org.apache.lucene.document.Field.Store;
 public class WriteLineDocTaskTest extends BenchmarkTestCase {
 
   // class has to be public so that Class.forName.newInstance() will work
-  public static final class WriteLineDocMaker extends BasicDocMaker {
+  public static final class WriteLineDocMaker extends DocMaker {
 
     protected DocData getNextDocData() throws NoMoreDataException, Exception {
       throw new UnsupportedOperationException("not implemented");

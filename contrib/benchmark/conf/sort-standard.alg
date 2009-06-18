@@ -29,11 +29,11 @@ directory=FSDirectory
 doc.stored=true
 doc.tokenized=true
 doc.term.vector=false
-doc.add.log.step=100000
+log.step=100000
 
 docs.dir=reuters-out
 
-doc.maker=org.apache.lucene.benchmark.byTask.feeds.SortableSimpleDocMaker
+content.source=org.apache.lucene.benchmark.byTask.feeds.SortableSingleDocSource
 
 query.maker=org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker
 

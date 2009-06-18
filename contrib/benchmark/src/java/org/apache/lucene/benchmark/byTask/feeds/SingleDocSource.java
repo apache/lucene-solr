@@ -1,5 +1,7 @@
 package org.apache.lucene.benchmark.byTask.feeds;
 
+import java.io.IOException;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,9 +20,9 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 /**
- * Create documents for the test.
+ * Creates the same document each time {@link #getNextDocData()} is called.
  */
-public class SimpleDocMaker extends BasicDocMaker {
+public class SingleDocSource extends ContentSource {
   
   private int docID = 0;
 
@@ -42,33 +44,26 @@ public class SimpleDocMaker extends BasicDocMaker {
   
   // return a new docid
   private synchronized int newdocid() throws NoMoreDataException {
-    if (docID>0 && !forever) {
+    if (docID > 0 && !forever) {
       throw new NoMoreDataException();
     }
     return docID++;
   }
 
-  /*
-   *  (non-Javadoc)
-   * @see DocMaker#resetIinputs()
-   */
-  public synchronized void resetInputs() {
-    super.resetInputs();
-    docID = 0;
-  }
-
-  /*
-   *  (non-Javadoc)
-   * @see DocMaker#numUniqueTexts()
-   */
-  public int numUniqueTexts() {
-    return 0; // not applicable
-  }
-
-  protected DocData getNextDocData() throws NoMoreDataException {
+  public void close() throws IOException {}
+  
+  public DocData getNextDocData(DocData docData) throws NoMoreDataException {
     int id = newdocid();
     addBytes(DOC_TEXT.length());
-    return new DocData("doc"+id, DOC_TEXT, null, null, null);
+    docData.clear();
+    docData.setName("doc" + id);
+    docData.setBody(DOC_TEXT);
+    return docData;
+  }
+
+  public synchronized void resetInputs() throws IOException {
+    super.resetInputs();
+    docID = 0;
   }
 
 }

@@ -23,7 +23,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileReader;
+import java.io.IOException;
 import java.text.DateFormat;
+import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
@@ -31,31 +33,25 @@ import java.util.Locale;
 import java.util.Stack;
 
 /**
- * A DocMaker using the Dir collection for its input.
- *
- * Config properties:
- * docs.dir=&lt;path to the docs dir| Default: dir-out&gt;
-
- *
+ * A {@link ContentSource} using the Dir collection for its input. Supports
+ * the following configuration parameters (on top of {@link ContentSource}):
+ * <ul>
+ * <li><b>work.dir</b> - specifies the working directory. Required if "docs.dir"
+ * denotes a relative path (<b>default=work</b>).
+ * <li><b>docs.dir</b> - specifies the directory the Dir collection. Can be set
+ * to a relative path if "work.dir" is also specified (<b>default=dir-out</b>).
+ * <li><b>html.parser</b> - specifies the {@link HTMLParser} class to use for
+ * parsing the TREC documents content (<b>default=DemoHTMLParser</b>).
+ * </ul>
  */
-public class DirDocMaker extends BasicDocMaker {
+public class DirContentSource extends ContentSource {
 
-  protected ThreadLocal dateFormat = new ThreadLocal();
-  protected File dataDir = null;
-  protected int iteration=0;
+  private static final class DateFormatInfo {
+    DateFormat df;
+    ParsePosition pos;
+  }
   
-  static public class Iterator implements java.util.Iterator {
-
-    int count = 0;
-
-    public int getCount(){
-      return count;
-    }
-
-    Stack stack = new Stack();
-
-    /* this seems silly ... there must be a better way ...
-       not that this is good, but can it matter? */
+  public static class Iterator implements java.util.Iterator {
 
     static class Comparator implements java.util.Comparator {
       public int compare(Object _a, Object _b) {
@@ -81,22 +77,17 @@ public class DirDocMaker extends BasicDocMaker {
       }
     }
 
+    int count = 0;
+
+    Stack stack = new Stack();
+
+    /* this seems silly ... there must be a better way ...
+       not that this is good, but can it matter? */
+
     Comparator c = new Comparator();
 
-    void push(File[] files) {
-      Arrays.sort(files, c);
-      for(int i = 0; i < files.length; i++) {
-        // System.err.println("push " + files[i]);
-        stack.push(files[i]);
-      }
-    }
-
-    void push(File f) {
-      push(f.listFiles(new FileFilter() {
-          public boolean accept(File f) { return f.isDirectory(); } }));
-      push(f.listFiles(new FileFilter() {
-          public boolean accept(File f) { return f.getName().endsWith(".txt"); } }));
-      find();
+    public Iterator(File f) {
+      push(f);
     }
 
     void find() {
@@ -110,18 +101,38 @@ public class DirDocMaker extends BasicDocMaker {
       push(f);
     }
 
-    public Iterator(File f) {
-      push(f);
+    void push(File f) {
+      push(f.listFiles(new FileFilter() {
+
+        public boolean accept(File file) {
+          return file.isDirectory();
+        }
+      }));
+      push(f.listFiles(new FileFilter() {
+
+        public boolean accept(File file) {
+          return file.getName().endsWith(".txt");
+        }
+      }));
+      find();
     }
 
-    public void remove() {
-      throw new RuntimeException("cannot");
+    void push(File[] files) {
+      Arrays.sort(files, c);
+      for(int i = 0; i < files.length; i++) {
+        // System.err.println("push " + files[i]);
+        stack.push(files[i]);
+      }
     }
-    
+
+    public int getCount(){
+      return count;
+    }
+
     public boolean hasNext() {
       return stack.size() > 0;
     }
-
+    
     public Object next() {
       assert hasNext();
       count++;
@@ -131,42 +142,44 @@ public class DirDocMaker extends BasicDocMaker {
       return object;
     }
 
-  }
-
-  protected Iterator inputFiles = null;
-
-  /* (non-Javadoc)
-   * @see SimpleDocMaker#setConfig(java.util.Properties)
-   */
-  public void setConfig(Config config) {
-    super.setConfig(config);
-    String d = config.get("docs.dir", "dir-out");
-    dataDir = new File(d);
-    if (!dataDir.isAbsolute()) {
-      dataDir = new File(new File("work"), d);
+    public void remove() {
+      throw new RuntimeException("cannot");
     }
 
-    inputFiles = new Iterator(dataDir);
-
-    if (inputFiles==null) {
-      throw new RuntimeException("No txt files in dataDir: "+dataDir.getAbsolutePath());
-    }
   }
+  
+  private ThreadLocal dateFormat = new ThreadLocal();
+  private File dataDir = null;
+  private int iteration = 0;
+  private Iterator inputFiles = null;
 
   // get/initiate a thread-local simple date format (must do so 
   // because SimpleDateFormat is not thread-safe).
-  protected DateFormat getDateFormat () {
-    DateFormat df = (DateFormat) dateFormat.get();
-    if (df == null) {
+  private DateFormatInfo getDateFormatInfo() {
+    DateFormatInfo dfi = (DateFormatInfo) dateFormat.get();
+    if (dfi == null) {
+      dfi = new DateFormatInfo();
+      dfi.pos = new ParsePosition(0);
       // date format: 30-MAR-1987 14:22:36.87
-      df = new SimpleDateFormat("dd-MMM-yyyy kk:mm:ss.SSS",Locale.US);
-      df.setLenient(true);
-      dateFormat.set(df);
+      dfi.df = new SimpleDateFormat("dd-MMM-yyyy kk:mm:ss.SSS", Locale.US);
+      dfi.df.setLenient(true);
+      dateFormat.set(dfi);
     }
-    return df;
+    return dfi;
   }
   
-  protected DocData getNextDocData() throws Exception {
+  private Date parseDate(String dateStr) {
+    DateFormatInfo dfi = getDateFormatInfo();
+    dfi.pos.setIndex(0);
+    dfi.pos.setErrorIndex(-1);
+    return dfi.df.parse(dateStr.trim(), dfi.pos);
+  }
+
+  public void close() throws IOException {
+    inputFiles = null;
+  }
+  
+  public DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
     File f = null;
     String name = null;
     synchronized (this) {
@@ -197,27 +210,37 @@ public class DirDocMaker extends BasicDocMaker {
     reader.close();
     addBytes(f.length());
     
-    Date date = getDateFormat().parse(dateStr.trim()); 
-    return new DocData(name, bodyBuf.toString(), title, null, date);
+    Date date = parseDate(dateStr);
+    
+    docData.clear();
+    docData.setName(name);
+    docData.setBody(bodyBuf.toString());
+    docData.setTitle(title);
+    docData.setDate(date);
+    return docData;
   }
-
-
-  /*
-   *  (non-Javadoc)
-   * @see DocMaker#resetIinputs()
-   */
-  public synchronized void resetInputs() {
+  
+  public synchronized void resetInputs() throws IOException {
     super.resetInputs();
     inputFiles = new Iterator(dataDir);
     iteration = 0;
   }
 
-  /*
-   *  (non-Javadoc)
-   * @see DocMaker#numUniqueTexts()
-   */
-  public int numUniqueTexts() {
-    return inputFiles.getCount();
+  public void setConfig(Config config) {
+    super.setConfig(config);
+    
+    File workDir = new File(config.get("work.dir", "work"));
+    String d = config.get("docs.dir", "dir-out");
+    dataDir = new File(d);
+    if (!dataDir.isAbsolute()) {
+      dataDir = new File(workDir, d);
+    }
+
+    inputFiles = new Iterator(dataDir);
+
+    if (inputFiles == null) {
+      throw new RuntimeException("No txt files in dataDir: " + dataDir.getAbsolutePath());
+    }
   }
 
 }

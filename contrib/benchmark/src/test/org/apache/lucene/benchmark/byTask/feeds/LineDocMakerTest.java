@@ -111,34 +111,10 @@ public class LineDocMakerTest extends BenchmarkTestCase {
     doIndexAndSearchTest(file, false, null);
   }
   
-  public void testBZip2WithBzipCompressionDisabled() throws Exception {
-    File file = new File(getWorkDir(), "one-line.bz2");
-    createBZ2LineFile(file);
-    
-    try {
-      doIndexAndSearchTest(file, true, "false");
-      fail("Some exception should have been thrown !");
-    } catch (Exception e) {
-      // expected.
-    }
-  }
-  
   public void testRegularFile() throws Exception {
     File file = new File(getWorkDir(), "one-line");
     createRegularLineFile(file);
     doIndexAndSearchTest(file, false, null);
-  }
-  
-  public void testRegularFileWithBZipCompressionEnabled() throws Exception {
-    File file = new File(getWorkDir(), "one-line");
-    createRegularLineFile(file);
-    
-    try {
-      doIndexAndSearchTest(file, true, "true");
-      fail("Some exception should have been thrown !");
-    } catch (Exception e) {
-      // expected.
-    }
   }
 
   public void testInvalidFormat() throws Exception {

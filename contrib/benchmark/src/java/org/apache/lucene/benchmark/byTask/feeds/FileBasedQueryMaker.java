@@ -46,7 +46,7 @@ public class FileBasedQueryMaker extends AbstractQueryMaker implements QueryMake
 
     Analyzer anlzr = (Analyzer) Class.forName(config.get("analyzer",
             "org.apache.lucene.analysis.standard.StandardAnalyzer")).newInstance();
-    String defaultField = config.get("file.query.maker.default.field", BasicDocMaker.BODY_FIELD);
+    String defaultField = config.get("file.query.maker.default.field", DocMaker.BODY_FIELD);
     QueryParser qp = new QueryParser(defaultField, anlzr);
 
     List qq = new ArrayList();
@@ -55,8 +55,7 @@ public class FileBasedQueryMaker extends AbstractQueryMaker implements QueryMake
     {
       File file = new File(fileName);
       Reader reader = null;
-      if (file != null && file.exists())
-      {
+      if (file.exists()) {
         reader = new FileReader(file);
       } else {
         //see if we can find it as a resource

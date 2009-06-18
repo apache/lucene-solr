@@ -29,7 +29,7 @@ import java.util.ArrayList;
 
 /**
  * A QueryMaker that makes queries for a collection created 
- * using {@link org.apache.lucene.benchmark.byTask.feeds.SimpleDocMaker}.
+ * using {@link org.apache.lucene.benchmark.byTask.feeds.SingleDocSource}.
  */
 public class SimpleQueryMaker extends AbstractQueryMaker implements QueryMaker {
 
@@ -45,11 +45,11 @@ public class SimpleQueryMaker extends AbstractQueryMaker implements QueryMaker {
     Analyzer anlzr= (Analyzer) Class.forName(config.get("analyzer",
         "org.apache.lucene.analysis.standard.StandardAnalyzer")).newInstance(); 
     
-    QueryParser qp = new QueryParser(BasicDocMaker.BODY_FIELD,anlzr);
+    QueryParser qp = new QueryParser(DocMaker.BODY_FIELD,anlzr);
     ArrayList qq = new ArrayList();
-    Query q1 = new TermQuery(new Term(BasicDocMaker.ID_FIELD,"doc2"));
+    Query q1 = new TermQuery(new Term(DocMaker.ID_FIELD,"doc2"));
     qq.add(q1);
-    Query q2 = new TermQuery(new Term(BasicDocMaker.BODY_FIELD,"simple"));
+    Query q2 = new TermQuery(new Term(DocMaker.BODY_FIELD,"simple"));
     qq.add(q2);
     BooleanQuery bq = new BooleanQuery();
     bq.add(q1,Occur.MUST);

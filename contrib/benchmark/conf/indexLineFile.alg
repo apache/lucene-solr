@@ -38,7 +38,7 @@ doc.maker=org.apache.lucene.benchmark.byTask.feeds.LineDocMaker
 docs.file=work/reuters.lines.txt
 
 # Process documents only once:
-doc.maker.forever=false
+content.source.forever=false
 
 # -------------------------------------------------------------------------------------
 

@@ -29,13 +29,13 @@
 #
 
 # Where to get documents from:
-doc.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker
+content.source=org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource
 
 # Where to write the line file output:
 line.file.out=work/reuters.lines.txt
 
 # Stop after processing the document feed once:
-doc.maker.forever=false
+content.source.forever=false
 
 # -------------------------------------------------------------------------------------
 

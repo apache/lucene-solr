@@ -25,13 +25,14 @@ directory=FSDirectory
 doc.stored=true
 doc.tokenized=true
 doc.term.vector=false
-doc.add.log.step=500
+log.step=500
 
 docs.dir=reuters-out
 #docs.dir=reuters-111
 
 #doc.maker=org.apache.lucene.benchmark.byTask.feeds.SimpleDocMaker
-doc.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker
+#doc.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker
+content.source=org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource
 
 #query.maker=org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker
 query.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker

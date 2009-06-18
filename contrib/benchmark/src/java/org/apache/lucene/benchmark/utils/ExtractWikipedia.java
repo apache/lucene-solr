@@ -17,17 +17,16 @@ package org.apache.lucene.benchmark.utils;
  * limitations under the License.
  */
 
-import org.apache.lucene.benchmark.byTask.feeds.BasicDocMaker;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Properties;
+
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.EnwikiDocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.Properties;
 
 /**
  * Extract the downloaded Wikipedia dump into separate files for indexing.
@@ -50,7 +49,6 @@ public class ExtractWikipedia {
       files[i].delete();
     }
   }
-
 
   public File directory(int count, File directory) {
     if (directory == null) {
@@ -99,7 +97,8 @@ public class ExtractWikipedia {
     long start = System.currentTimeMillis();
     try {
       while ((doc = docMaker.makeDocument()) != null) {
-        create(doc.get(BasicDocMaker.ID_FIELD), doc.get(BasicDocMaker.TITLE_FIELD), doc.get(BasicDocMaker.DATE_FIELD), doc.get(BasicDocMaker.BODY_FIELD));
+        create(doc.get(DocMaker.ID_FIELD), doc.get(DocMaker.TITLE_FIELD), doc
+            .get(DocMaker.DATE_FIELD), doc.get(DocMaker.BODY_FIELD));
       }
     } catch (NoMoreDataException e) {
       //continue
@@ -130,7 +129,7 @@ public class ExtractWikipedia {
     Properties properties = new Properties();
 
     properties.setProperty("docs.file", wikipedia.getAbsolutePath());
-    properties.setProperty("doc.maker.forever", "false");
+    properties.setProperty("content.source.forever", "false");
     properties.setProperty("keep.image.only.docs", String.valueOf(keepImageOnlyDocs));
     docMaker.setConfig(new Config(properties));
     docMaker.resetInputs();

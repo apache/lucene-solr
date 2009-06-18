@@ -36,7 +36,7 @@ public class SimpleSloppyPhraseQueryMaker extends SimpleQueryMaker {
     // exatract some 100 words from doc text to an array
     String words[];
     ArrayList w = new ArrayList();
-    StringTokenizer st = new StringTokenizer(SimpleDocMaker.DOC_TEXT);
+    StringTokenizer st = new StringTokenizer(SingleDocSource.DOC_TEXT);
     while (st.hasMoreTokens() && w.size()<100) {
       w.add(st.nextToken());
     }
@@ -53,7 +53,7 @@ public class SimpleSloppyPhraseQueryMaker extends SimpleQueryMaker {
           q.setSlop(slop);
           int wind = wd;
           for (int i=0; i<qlen; i++) {
-            q.add(new Term(BasicDocMaker.BODY_FIELD,words[wind++]));
+            q.add(new Term(DocMaker.BODY_FIELD,words[wind++]));
             if (remainedSlop>0) {
               remainedSlop--;
               wind++;
@@ -66,7 +66,7 @@ public class SimpleSloppyPhraseQueryMaker extends SimpleQueryMaker {
           q.setSlop(slop+2*qlen);
           wind = wd+qlen+remainedSlop-1;
           for (int i=0; i<qlen; i++) {
-            q.add(new Term(BasicDocMaker.BODY_FIELD,words[wind--]));
+            q.add(new Term(DocMaker.BODY_FIELD,words[wind--]));
             if (remainedSlop>0) {
               remainedSlop--;
               wind--;

@@ -39,13 +39,13 @@ public interface HTMLParser {
    * @throws IOException
    * @throws InterruptedException
    */
-  public DocData parse(String name, Date date, Reader reader, DateFormat dateFormat) throws IOException, InterruptedException;
+  public DocData parse(DocData docData, String name, Date date, Reader reader, DateFormat dateFormat) throws IOException, InterruptedException;
   
   /**
    * Parse the inputText and return DocData. 
    * @param inputText the html text to parse.
    * @see #parse(String, Date, Reader, DateFormat)
    */
-  public DocData parse(String name, Date date, StringBuffer inputText, DateFormat dateFormat) throws IOException, InterruptedException;
+  public DocData parse(DocData docData, String name, Date date, StringBuffer inputText, DateFormat dateFormat) throws IOException, InterruptedException;
 
 }

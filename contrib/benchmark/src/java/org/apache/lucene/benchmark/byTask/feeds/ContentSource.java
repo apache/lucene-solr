@@ -1,0 +1,201 @@
+package org.apache.lucene.benchmark.byTask.feeds;
+
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.compress.compressors.CompressorException;
+import org.apache.commons.compress.compressors.CompressorStreamFactory;
+import org.apache.lucene.benchmark.byTask.utils.Config;
+
+/**
+ * Represents content from a specified source, such as TREC, Reuters etc. A
+ * {@link ContentSource} is responsible for creating {@link DocData} objects for
+ * its documents to be consumed by {@link ToDeleteDocMaker}. It also keeps track of
+ * various statistics, such as how many documents were generated, size in bytes
+ * etc.
+ * <p>
+ * Supports the following configuration parameters:
+ * <ul>
+ * <li><b>content.source.forever</b> - specifies whether to generate documents
+ * forever (<b>default=true</b>).
+ * <li><b>content.source.verbose</b> - specifies whether messages should be
+ * output by the content source (<b>default=false</b>).
+ * <li><b>content.source.log.step</b> - specifies for how many documents a
+ * message should be logged. If set to 0 it means no logging should occur.
+ * <b>NOTE:</b> if verbose is set to false, logging should not occur even if
+ * logStep is not 0 (<b>default=0</b>).
+ * </ul>
+ */
+public abstract class ContentSource {
+  
+  private static final int BZIP = 0;
+  private static final int OTHER = 1;
+  private static final Map extensionToType = new HashMap();
+  static {
+    extensionToType.put(".bz2", Integer.valueOf(BZIP));
+    extensionToType.put(".bzip", Integer.valueOf(BZIP));
+  }
+  
+  protected static final int BUFFER_SIZE = 1 << 16; // 64K
+
+  private long bytesCount;
+  private long totalBytesCount;
+  private int docsCount;
+  private int totalDocsCount;
+  private Config config;
+
+  protected boolean forever;
+  protected int logStep;
+  protected boolean verbose;
+  
+  private CompressorStreamFactory csFactory = new CompressorStreamFactory();
+
+  protected final synchronized void addBytes(long numBytes) {
+    bytesCount += numBytes;
+    totalBytesCount += numBytes;
+  }
+  
+  protected final synchronized void addDoc() {
+    ++docsCount;
+    ++totalDocsCount;
+  }
+
+  /**
+   * A convenience method for collecting all the files of a content source from
+   * a given directory. The collected {@link File} instances are stored in the
+   * given <code>files</code>.
+   */
+  protected final void collectFiles(File dir, ArrayList files) {
+    if (!dir.canRead()) {
+      return;
+    }
+    
+    File[] dirFiles = dir.listFiles();
+    Arrays.sort(dirFiles);
+    for (int i = 0; i < dirFiles.length; i++) {
+      File file = dirFiles[i];
+      if (file.isDirectory()) {
+        collectFiles(file, files);
+      } else if (file.canRead()) {
+        files.add(file);
+      }
+    }
+  }
+
+  /**
+   * Returns an {@link InputStream} over the requested file. This method
+   * attempts to identify the appropriate {@link InputStream} instance to return
+   * based on the file name (e.g., if it ends with .bz2 or .bzip, return a
+   * 'bzip' {@link InputStream}).
+   */
+  protected InputStream getInputStream(File file) throws IOException {
+    // First, create a FileInputStream, as this will be required by all types.
+    // Wrap with BufferedInputStream for better performance
+    InputStream is = new BufferedInputStream(new FileInputStream(file), BUFFER_SIZE);
+    
+    String fileName = file.getName();
+    int idx = fileName.lastIndexOf('.');
+    int type = OTHER;
+    if (idx != -1) {
+      Integer typeInt = (Integer) extensionToType.get(fileName.substring(idx));
+      if (typeInt != null) {
+        type = typeInt.intValue();
+      }
+    }
+    switch (type) {
+      case BZIP:
+        try {
+          // According to BZip2CompressorInputStream's code, it reads the first 
+          // two file header chars ('B' and 'Z'). It is important to wrap the
+          // underlying input stream with a buffered one since
+          // Bzip2CompressorInputStream uses the read() method exclusively.
+          is = csFactory.createCompressorInputStream("bzip2", is);
+        } catch (CompressorException e) {
+          IOException ioe = new IOException(e.getMessage());
+          ioe.initCause(e);
+          throw ioe;
+        }
+        break;
+      default: // Do nothing, stay with FileInputStream
+    }
+    
+    return is;
+  }
+  
+  /**
+   * Returns true whether it's time to log a message (depending on verbose and
+   * the number of documents generated).
+   */
+  protected final boolean shouldLog() {
+    return verbose && logStep > 0 && docsCount % logStep == 0;
+  }
+
+  /** Called when reading from this content source is no longer required. */
+  public abstract void close() throws IOException;
+  
+  /** Returns the number of bytes generated since last reset. */
+  public final long getBytesCount() { return bytesCount; }
+
+  /** Returns the number of generated documents since last reset. */
+  public final int getDocsCount() { return docsCount; }
+  
+  public final Config getConfig() { return config; }
+
+  /** Returns the next {@link DocData} from the content source. */
+  public abstract DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException;
+
+  /** Returns the total number of bytes that were generated by this source. */ 
+  public final long getTotalBytesCount() { return totalBytesCount; }
+
+  /** Returns the total number of generated documents. */
+  public final int getTotalDocsCount() { return totalDocsCount; }
+
+  /**
+   * Resets the input for this content source, so that the test would behave as
+   * if it was just started, input-wise.
+   * <p>
+   * <b>NOTE:</b> the default implementation resets the number of bytes and
+   * documents generated since the last reset, so it's important to call
+   * super.resetInputs in case you override this method.
+   */
+  public void resetInputs() throws IOException {
+    bytesCount = 0;
+    docsCount = 0;
+  }
+
+  /**
+   * Sets the {@link Config} for this content source. If you override this
+   * method, you must call super.setConfig.
+   */
+  public void setConfig(Config config) {
+    this.config = config;
+    forever = config.get("content.source.forever", true);
+    logStep = config.get("content.source.log.step", 0);
+    verbose = config.get("content.source.verbose", false);
+  }
+
+}

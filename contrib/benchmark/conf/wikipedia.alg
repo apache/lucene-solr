@@ -33,7 +33,7 @@ directory=FSDirectory
 doc.stored=true
 doc.tokenized=true
 doc.term.vector=false
-doc.add.log.step=5000
+log.step=5000
 
 docs.file=temp/enwiki-20070527-pages-articles.xml
 

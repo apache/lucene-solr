@@ -30,14 +30,7 @@ import java.util.Properties;
  */
 public class DemoHTMLParser implements org.apache.lucene.benchmark.byTask.feeds.HTMLParser {
 
-  public DemoHTMLParser () {
-  }
-
-  /*
-   *  (non-Javadoc)
-   * @see org.apache.lucene.benchmark.byTask.feeds.HTMLParser#parse(java.lang.String, java.util.Date, java.io.Reader, java.text.DateFormat)
-   */
-  public DocData parse(String name, Date date, Reader reader, DateFormat dateFormat) throws IOException, InterruptedException {
+  public DocData parse(DocData docData, String name, Date date, Reader reader, DateFormat dateFormat) throws IOException, InterruptedException {
     org.apache.lucene.demo.html.HTMLParser p = new org.apache.lucene.demo.html.HTMLParser(reader);
     
     // title
@@ -64,16 +57,22 @@ public class DemoHTMLParser implements org.apache.lucene.benchmark.byTask.feeds.
         date = new Date(); // now 
       }
     }
-      
-    return new DocData(name, bodyBuf.toString(), title, props, date);
+    
+    docData.clear();
+    docData.setName(name);
+    docData.setBody(bodyBuf.toString());
+    docData.setTitle(title);
+    docData.setProps(props);
+    docData.setDate(date);
+    return docData;
   }
 
   /*
    *  (non-Javadoc)
    * @see org.apache.lucene.benchmark.byTask.feeds.HTMLParser#parse(java.lang.String, java.util.Date, java.lang.StringBuffer, java.text.DateFormat)
    */
-  public DocData parse(String name, Date date, StringBuffer inputText, DateFormat dateFormat) throws IOException, InterruptedException {
-    return parse(name, date, new StringReader(inputText.toString()), dateFormat);
+  public DocData parse(DocData docData, String name, Date date, StringBuffer inputText, DateFormat dateFormat) throws IOException, InterruptedException {
+    return parse(docData, name, date, new StringReader(inputText.toString()), dateFormat);
   }
 
 }

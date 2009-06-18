@@ -15,55 +15,31 @@
 # * limitations under the License.
 # */
 # -------------------------------------------------------------------------------------
-# multi val params are iterated by NewRound's, added to reports, start with column name.
+
 #
-# based on micro-standard
+# This alg reads the information from a ContentSoruce. It is useful for 
+# measuring the performance of a particular ContentSource implementation, or 
+# gather baselines for operations like indexing (if reading from the content 
+# source takes 'X' time, we cannot index faster).
 #
-# modified to use wikipedia sources and index entire docs
-# currently just used to measure ingest rate
+# To use this, first cd to contrib/benchmark and then run:
+#
+#   ant run-task -Dtask.alg=conf/readContentSource.alg
+#
 
-#merge.factor=mrg:10:100:10:100
-#max.buffered=buf:10:10:100:100
-ram.flush.mb=ram:32:40:48:56
+# Where to get documents from:
+content.source=org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource
+docs.file=temp/enwiki-20070527-pages-articles.xml.bz2
 
-max.field.length=2147483647
+# Stop after processing the document feed once:
+content.source.forever=false
 
+# Log messages every:
+log.step=100000
 
-compound=true
-
-analyzer=org.apache.lucene.analysis.standard.StandardAnalyzer
-directory=FSDirectory
-
-doc.stored=true
-doc.tokenized=true
-doc.term.vector=false
-log.step=5000
-
-docs.file=temp/enwiki-20070527-pages-articles.xml
-
-doc.maker=org.apache.lucene.benchmark.byTask.feeds.EnwikiDocMaker
-
-query.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker
-
-# task at this depth or less would print when they start
-task.max.depth.log=2
-
-log.queries=false
 # -------------------------------------------------------------------------------------
 
-{ "Rounds"
+# Process all documents, appending each one to the line file:
+{ ConsumeContentSource } : *
 
-    ResetSystemErase
-
-    { "Populate"
-        CreateIndex
-        { "MAddDocs" AddDoc > : 200000
-        CloseIndex
-    }
-
-    NewRound
-
-} : 4
-
-RepSumByName
-RepSumByPrefRound MAddDocs
+RepSumByPref ConsumeContentSource

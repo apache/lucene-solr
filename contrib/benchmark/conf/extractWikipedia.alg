@@ -36,7 +36,7 @@ docs.file=temp/enwiki-20070527-pages-articles.xml
 line.file.out=work/enwiki.txt
 
 # Stop after processing the document feed once:
-doc.maker.forever=false
+content.source.forever=false
 
 # -------------------------------------------------------------------------------------
 

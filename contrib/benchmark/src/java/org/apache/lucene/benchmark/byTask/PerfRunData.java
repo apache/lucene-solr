@@ -17,9 +17,13 @@ package org.apache.lucene.benchmark.byTask;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
-import org.apache.lucene.benchmark.byTask.feeds.HTMLParser;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.benchmark.byTask.stats.Points;
 import org.apache.lucene.benchmark.byTask.tasks.ReadTask;
@@ -32,11 +36,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
-
-import java.io.File;
-import java.util.HashMap;
-import java.util.Iterator;
-
 
 /**
  * Data maintained by a performance test run.
@@ -62,7 +61,6 @@ public class PerfRunData {
   private Directory directory;
   private Analyzer analyzer;
   private DocMaker docMaker;
-  private HTMLParser htmlParser;
   
   // we use separate (identical) instances for each "read" task type, so each can iterate the quries separately.
   private HashMap readTaskQueryMaker;
@@ -82,14 +80,11 @@ public class PerfRunData {
         "org.apache.lucene.analysis.standard.StandardAnalyzer")).newInstance();
     // doc maker
     docMaker = (DocMaker) Class.forName(config.get("doc.maker",
-        "org.apache.lucene.benchmark.byTask.feeds.SimpleDocMaker")).newInstance();
+        "org.apache.lucene.benchmark.byTask.feeds.DocMaker")).newInstance();
     docMaker.setConfig(config);
     // query makers
     readTaskQueryMaker = new HashMap();
     qmkrClass = Class.forName(config.get("query.maker","org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker"));
-    // html parser, used for some doc makers
-    htmlParser = (HTMLParser) Class.forName(config.get("html.parser","org.apache.lucene.benchmark.byTask.feeds.DemoHTMLParser")).newInstance();
-    docMaker.setHTMLParser(htmlParser);
 
     // index stuff
     reinit(false);
@@ -229,9 +224,7 @@ public class PerfRunData {
     this.analyzer = analyzer;
   }
 
-  /**
-   * @return Returns the docMaker.
-   */
+  /** Returns the docMaker. */
   public DocMaker getDocMaker() {
     return docMaker;
   }
@@ -243,7 +236,7 @@ public class PerfRunData {
     return config;
   }
 
-  public void resetInputs() {
+  public void resetInputs() throws IOException {
     docMaker.resetInputs();
     Iterator it = readTaskQueryMaker.values().iterator();
     while (it.hasNext()) {
@@ -269,13 +262,6 @@ public class PerfRunData {
       readTaskQueryMaker.put(readTaskClass,qm);
     }
     return qm;
-  }
-
-  /**
-   * @return Returns the htmlParser.
-   */
-  public HTMLParser getHtmlParser() {
-    return htmlParser;
   }
 
 }

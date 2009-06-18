@@ -25,8 +25,8 @@
 #   ant run-task -Dtask.alg=conf/tokenize.alg
 #
 
-doc.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker
-doc.maker.forever=false
+content.source=org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource
+content.source.forever=false
 
 
 #

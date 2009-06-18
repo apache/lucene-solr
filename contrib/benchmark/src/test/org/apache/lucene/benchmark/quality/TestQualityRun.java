@@ -23,7 +23,7 @@ import java.io.FileReader;
 import java.io.PrintWriter;
 
 import org.apache.lucene.benchmark.byTask.TestPerfTasksLogic;
-import org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker;
+import org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource;
 import org.apache.lucene.benchmark.quality.Judge;
 import org.apache.lucene.benchmark.quality.QualityQuery;
 import org.apache.lucene.benchmark.quality.QualityQueryParser;
@@ -155,10 +155,10 @@ public class TestQualityRun extends TestCase {
     // 1. alg definition
     String algLines[] = {
         "# ----- properties ",
-        "doc.maker="+ReutersDocMaker.class.getName(),
-        "doc.add.log.step=2500",
+        "content.source="+ReutersContentSource.class.getName(),
+        "content.source.log.step=2500",
         "doc.term.vector=false",
-        "doc.maker.forever=false",
+        "content.source.forever=false",
         "directory=FSDirectory",
         "doc.stored=true",
         "doc.tokenized=true",

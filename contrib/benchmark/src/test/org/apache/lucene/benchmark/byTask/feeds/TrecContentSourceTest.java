@@ -18,24 +18,29 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.StringReader;
+import java.text.ParseException;
 import java.util.Date;
 
 import junit.framework.TestCase;
 
-public class TrecDocMakerTest extends TestCase {
+import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.document.DateTools;
+
+public class TrecContentSourceTest extends TestCase {
 
   /** A TrecDocMaker which works on a String and not files. */
-  private static class StringableTrecDocMaker extends TrecDocMaker {
+  private static class StringableTrecSource extends TrecContentSource {
   
     private String docs = null;
     
-    public StringableTrecDocMaker(String docs, boolean forever) {
+    public StringableTrecSource(String docs, boolean forever) {
       this.docs = docs;
       this.forever = forever;
     }
     
-    protected void openNextFile() throws NoMoreDataException, Exception {
+    protected void openNextFile() throws NoMoreDataException, IOException {
       if (reader != null) {
         if (!forever) {
           throw new NoMoreDataException();
@@ -46,20 +51,26 @@ public class TrecDocMakerTest extends TestCase {
       reader = new BufferedReader(new StringReader(docs));
     }
     
+    public void setConfig(Config config) {
+      htmlParser = new DemoHTMLParser();
+    }
   }
   
-  private void assertDocData(DocData dd, String expName, String expTitle, String expBody, Date expDate) {
+  private void assertDocData(DocData dd, String expName, String expTitle,
+                             String expBody, Date expDate)
+      throws ParseException {
     assertNotNull(dd);
     assertEquals(expName, dd.getName());
     assertEquals(expTitle, dd.getTitle());
     assertTrue(dd.getBody().indexOf(expBody) != -1);
-    assertEquals(expDate, dd.getDate());
+    Date date = dd.getDate() != null ? DateTools.stringToDate(dd.getDate()) : null;
+    assertEquals(expDate, date);
   }
   
-  private void assertNoMoreDataException(StringableTrecDocMaker stdm) throws Exception {
+  private void assertNoMoreDataException(StringableTrecSource stdm) throws Exception {
     boolean thrown = false;
     try {
-      stdm.getNextDocData();
+      stdm.getNextDocData(null);
     } catch (NoMoreDataException e) {
       thrown = true;
     }
@@ -93,14 +104,14 @@ public class TrecDocMakerTest extends TestCase {
                   "</body>\r\n" + 
                   "\r\n" + 
                   "</DOC>";
-    StringableTrecDocMaker stdm = new StringableTrecDocMaker(docs, false);
-    stdm.setHTMLParser(new DemoHTMLParser());
-    
-    DocData dd = stdm.getNextDocData();
-    assertDocData(dd, "TEST-000_0", "TEST-000 title", "TEST-000 text", stdm
+    StringableTrecSource source = new StringableTrecSource(docs, false);
+    source.setConfig(null);
+
+    DocData dd = source.getNextDocData(new DocData());
+    assertDocData(dd, "TEST-000_0", "TEST-000 title", "TEST-000 text", source
         .parseDate("Sun, 11 Jan 2009 08:00:00 GMT"));
     
-    assertNoMoreDataException(stdm);
+    assertNoMoreDataException(source);
   }
   
   public void testTwoDocuments() throws Exception {
@@ -156,18 +167,18 @@ public class TrecDocMakerTest extends TestCase {
                   "</body>\r\n" + 
                   "\r\n" + 
                   "</DOC>";
-    StringableTrecDocMaker stdm = new StringableTrecDocMaker(docs, false);
-    stdm.setHTMLParser(new DemoHTMLParser());
-    
-    DocData dd = stdm.getNextDocData();
-    assertDocData(dd, "TEST-000_0", "TEST-000 title", "TEST-000 text", stdm
+    StringableTrecSource source = new StringableTrecSource(docs, false);
+    source.setConfig(null);
+
+    DocData dd = source.getNextDocData(new DocData());
+    assertDocData(dd, "TEST-000_0", "TEST-000 title", "TEST-000 text", source
         .parseDate("Sun, 11 Jan 2009 08:00:00 GMT"));
     
-    dd = stdm.getNextDocData();
-    assertDocData(dd, "TEST-001_0", "TEST-001 title", "TEST-001 text", stdm
+    dd = source.getNextDocData(dd);
+    assertDocData(dd, "TEST-001_0", "TEST-001 title", "TEST-001 text", source
         .parseDate("Sun, 11 Jan 2009 08:01:00 GMT"));
     
-    assertNoMoreDataException(stdm);
+    assertNoMoreDataException(source);
   }
 
   // If a Date: attribute is missing, make sure the document is not skipped, but
@@ -224,17 +235,17 @@ public class TrecDocMakerTest extends TestCase {
                   "</body>\r\n" + 
                   "\r\n" + 
                   "</DOC>";
-    StringableTrecDocMaker stdm = new StringableTrecDocMaker(docs, false);
-    stdm.setHTMLParser(new DemoHTMLParser());
+    StringableTrecSource source = new StringableTrecSource(docs, false);
+    source.setConfig(null);
 
-    DocData dd = stdm.getNextDocData();
+    DocData dd = source.getNextDocData(new DocData());
     assertDocData(dd, "TEST-000_0", "TEST-000 title", "TEST-000 text", null);
     
-    dd = stdm.getNextDocData();
-    assertDocData(dd, "TEST-001_0", "TEST-001 title", "TEST-001 text", stdm
+    dd = source.getNextDocData(dd);
+    assertDocData(dd, "TEST-001_0", "TEST-001 title", "TEST-001 text", source
         .parseDate("Sun, 11 Jan 2009 08:01:00 GMT"));
     
-    assertNoMoreDataException(stdm);
+    assertNoMoreDataException(source);
   }
 
   // When a 'bad date' is input (unparsable date), make sure the DocData date is
@@ -266,13 +277,13 @@ public class TrecDocMakerTest extends TestCase {
                   "</body>\r\n" + 
                   "\r\n" + 
                   "</DOC>";
-    StringableTrecDocMaker stdm = new StringableTrecDocMaker(docs, false);
-    stdm.setHTMLParser(new DemoHTMLParser());
+    StringableTrecSource source = new StringableTrecSource(docs, false);
+    source.setConfig(null);
 
-    DocData dd = stdm.getNextDocData();
+    DocData dd = source.getNextDocData(new DocData());
     assertDocData(dd, "TEST-000_0", "TEST-000 title", "TEST-000 text", null);
     
-    assertNoMoreDataException(stdm);
+    assertNoMoreDataException(source);
   }
 
   public void testForever() throws Exception {
@@ -302,16 +313,16 @@ public class TrecDocMakerTest extends TestCase {
                   "</body>\r\n" + 
                   "\r\n" + 
                   "</DOC>";
-    StringableTrecDocMaker stdm = new StringableTrecDocMaker(docs, true);
-    stdm.setHTMLParser(new DemoHTMLParser());
+    StringableTrecSource source = new StringableTrecSource(docs, true);
+    source.setConfig(null);
 
-    DocData dd = stdm.getNextDocData();
-    assertDocData(dd, "TEST-000_0", "TEST-000 title", "TEST-000 text", stdm
+    DocData dd = source.getNextDocData(new DocData());
+    assertDocData(dd, "TEST-000_0", "TEST-000 title", "TEST-000 text", source
         .parseDate("Sun, 11 Jan 2009 08:00:00 GMT"));
     
     // same document, but the second iteration changes the name.
-    dd = stdm.getNextDocData();
-    assertDocData(dd, "TEST-000_1", "TEST-000 title", "TEST-000 text", stdm
+    dd = source.getNextDocData(dd);
+    assertDocData(dd, "TEST-000_1", "TEST-000 title", "TEST-000 text", source
         .parseDate("Sun, 11 Jan 2009 08:00:00 GMT"));
 
     // Don't test that NoMoreDataException is thrown, since the forever flag is

@@ -20,38 +20,23 @@ package org.apache.lucene.benchmark.byTask.tasks;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.document.Document;
-import java.text.NumberFormat;
-
 
 /**
  * Add a document, optionally with of a certain size.
  * <br>Other side effects: none.
- * <br>Relevant properties: <code>doc.add.log.step</code>.
  * <br>Takes optional param: document size. 
  */
 public class AddDocTask extends PerfTask {
-
-  /**
-   * Default value for property <code>doc.add.log.step<code> - indicating how often 
-   * an "added N docs" message should be logged.  
-   */
-  public static final int DEFAULT_ADD_DOC_LOG_STEP = 500;
 
   public AddDocTask(PerfRunData runData) {
     super(runData);
   }
 
-  private int logStep = -1;
   private int docSize = 0;
-  int count = 0;
   
   // volatile data passed between setup(), doLogic(), tearDown().
   private Document doc = null;
   
-  /*
-   *  (non-Javadoc)
-   * @see PerfTask#setup()
-   */
   public void setup() throws Exception {
     super.setup();
     DocMaker docMaker = getRunData().getDocMaker();
@@ -62,31 +47,18 @@ public class AddDocTask extends PerfTask {
     }
   }
 
-  /* (non-Javadoc)
-   * @see PerfTask#tearDown()
-   */
   public void tearDown() throws Exception {
-    log(++count);
     doc = null;
     super.tearDown();
   }
 
+  protected String getLogMessage(int recsCount) {
+    return "added " + recsCount + " docs";
+  }
+  
   public int doLogic() throws Exception {
     getRunData().getIndexWriter().addDocument(doc);
     return 1;
-  }
-
-  protected void log (int count) {
-    if (logStep<0) {
-      // init once per instance
-      logStep = getRunData().getConfig().get("doc.add.log.step",DEFAULT_ADD_DOC_LOG_STEP);
-    }
-    if (logStep>0 && (count%logStep)==0) {
-      double seconds = (System.currentTimeMillis() - getRunData().getStartTimeMillis())/1000.0;
-      NumberFormat nf = NumberFormat.getInstance();
-      nf.setMaximumFractionDigits(2);
-      System.out.println("--> "+nf.format(seconds) + " sec: " + Thread.currentThread().getName()+" processed (add) "+count+" docs");
-    }
   }
 
   /**

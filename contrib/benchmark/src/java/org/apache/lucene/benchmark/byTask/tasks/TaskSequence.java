@@ -62,6 +62,7 @@ public class TaskSequence extends PerfTask {
     for(int i=0;i<tasksArray.length;i++) {
       tasksArray[i].close();
     }
+    getRunData().getDocMaker().close();
   }
 
   private void initTasksArray() {
@@ -106,8 +107,8 @@ public class TaskSequence extends PerfTask {
       if (isParallel()) {
         throw new Exception("REPEAT_EXHAUST is not allowed for parallel tasks");
       }
-      if (getRunData().getConfig().get("doc.maker.forever",true)) {
-        throw new Exception("REPEAT_EXHAUST requires setting doc.maker.forever=false");
+      if (getRunData().getConfig().get("content.source.forever",true)) {
+        throw new Exception("REPEAT_EXHAUST requires setting content.source.forever=false");
       }
     }
     setSequenceName();

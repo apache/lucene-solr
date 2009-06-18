@@ -28,11 +28,11 @@ doc.tokenized=true
 doc.term.vector=false
 doc.term.vector.offsets=false
 doc.term.vector.positions=false
-doc.add.log.step=2000
+log.step=2000
 
 docs.dir=reuters-out
 
-doc.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker
+content.source=org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource
 
 query.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker
 

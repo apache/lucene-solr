@@ -22,7 +22,7 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 /**
  * Delete a document by docid.
  * <br>Other side effects: none.
- * <br>Relevant properties: <code>doc.delete.log.step , doc.delete.step</code>.
+ * <br>Relevant properties: <code>doc.delete.step, delete.log.step</code>.
  * <br>If no docid param is supplied, deletes doc with <code>id = last-deleted-doc + doc.delete.step</code>. 
  * <br>Takes optional param: document id. 
  */
@@ -33,19 +33,16 @@ public class DeleteDocTask extends PerfTask {
    */
   public static final int DEFAULT_DOC_DELETE_STEP = 8;
   
-  /**
-   * Default value for property <code>doc.delete.log.step<code> - indicating how often 
-   * an "deleted N docs" message should be logged.  
-   */
-  public static final int DEFAULT_DELETE_DOC_LOG_STEP = 500;
-  
   public DeleteDocTask(PerfRunData runData) {
     super(runData);
+    // Override log.step, which is read by PerfTask
+    int deleteLogStep = runData.getConfig().get("delete.log.step", -1);
+    if (deleteLogStep != -1) {
+      logStep = deleteLogStep;
+    }
   }
 
-  private int logStep = -1;
   private int deleteStep = -1;
-  private static int numDeleted = 0;
   private static int lastDeleted = -1;
 
   private int docid = -1;
@@ -62,10 +59,6 @@ public class DeleteDocTask extends PerfTask {
    */
   public void setup() throws Exception {
     super.setup();
-    // one time static initializations
-    if (logStep<0) {
-      logStep = getRunData().getConfig().get("doc.delete.log.step",DEFAULT_DELETE_DOC_LOG_STEP);
-    }
     if (deleteStep<0) {
       deleteStep = getRunData().getConfig().get("doc.delete.step",DEFAULT_DOC_DELETE_STEP);
     }
@@ -73,18 +66,8 @@ public class DeleteDocTask extends PerfTask {
     docid = (byStep ? lastDeleted + deleteStep : docid);
   }
 
-  /* (non-Javadoc)
-   * @see PerfTask#tearDown()
-   */
-  public void tearDown() throws Exception {
-    log(++numDeleted);
-    super.tearDown();
-  }
-
-  private void log (int count) {
-    if (logStep>0 && (count%logStep)==0) {
-      System.out.println("--> processed (delete) "+count+" docs, last deleted: "+lastDeleted);
-    }
+  protected String getLogMessage(int recsCount) {
+    return "deleted " + recsCount + " docs, last deleted: " + lastDeleted;
   }
   
   /**

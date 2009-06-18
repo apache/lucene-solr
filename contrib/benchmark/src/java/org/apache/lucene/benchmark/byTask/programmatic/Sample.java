@@ -80,9 +80,8 @@ public class Sample {
     Properties p = new Properties();
     p.setProperty ( "task.max.depth.log"  , "3" );
     p.setProperty ( "max.buffered"        , "buf:10:10:100:100:10:10:100:100" );
-    p.setProperty ( "doc.maker"           , "org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker" );
-    p.setProperty ( "doc.add.log.step"    , "2000" );
-    p.setProperty ( "doc.delete.log.step" , "2000" );
+    p.setProperty ( "doc.maker"           , "org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource" );
+    p.setProperty ( "log.step"            , "2000" );
     p.setProperty ( "doc.delete.step"     , "8" );
     p.setProperty ( "analyzer"            , "org.apache.lucene.analysis.standard.StandardAnalyzer" );
     p.setProperty ( "doc.term.vector"     , "false" );

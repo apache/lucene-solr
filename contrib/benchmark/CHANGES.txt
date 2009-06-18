@@ -3,6 +3,34 @@ Lucene Benchmark Contrib Change Log
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
 $Id:$
+6/17/09 
+  LUCENE-1595: This issue breaks previous external algorithms. DocMaker has been 
+  replaced with a concrete class which accepts a ContentSource for iterating over 
+  a content source's documents. Most of the old DocMakers were changed to a 
+  ContentSource implementation, and DocMaker is now a default document creation impl
+  that provides an easy way for reusing fields. When [doc.maker] is not defined in 
+  an algorithm, the new DocMaker is the default. If you have .alg files which 
+  specify a DocMaker (like ReutersDocMaker), you should change the [doc.maker] line to: 
+  [content.source=org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource]
+  
+  i.e.
+  doc.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersDocMaker
+  becomes
+  content.source=org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource
+  
+  doc.maker=org.apache.lucene.benchmark.byTask.feeds.SimpleDocMaker
+  becomes
+  content.source=org.apache.lucene.benchmark.byTask.feeds.SingleDocSource
+ 	
+  Also, PerfTask now logs a message in tearDown() rather than each Task doing its
+  own logging. A new setting called [log.step] is consulted to determine how often 
+  to log. [doc.add.log.step] is no longer a valid setting. For easy migration of 
+  current .alg files, rename [doc.add.log.step] to [log.step] and [doc.delete.log.step] 
+  to [delete.log.step]. 
+  
+  Additionally, [doc.maker.forever] should be changed to [content.source.forever].
+  (Shai Erera via Mark Miller)
+
 6/12/09 
   LUCENE-1539: Added DeleteByPercentTask which enables deleting a
   percentage of documents and searching on them.  Changed CommitIndex

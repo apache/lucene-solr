@@ -17,58 +17,44 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import java.text.NumberFormat;
 import java.io.Reader;
 import java.util.List;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 
 /**
  * Simple task to test performance of tokenizers.  It just
  * creates a token stream for each field of the document and
  * read all tokens out of that stream.
- * <br>Relevant properties: <code>doc.tokenize.log.step</code>.
  */
 public class ReadTokensTask extends PerfTask {
-
-  /**
-   * Default value for property <code>doc.tokenize.log.step<code> - indicating how often 
-   * an "added N docs / M tokens" message should be logged.  
-   */
-  public static final int DEFAULT_DOC_LOG_STEP = 500;
 
   public ReadTokensTask(PerfRunData runData) {
     super(runData);
   }
 
-  private int logStep = -1;
-  int count = 0;
-  int totalTokenCount = 0;
+  private int totalTokenCount = 0;
   
   // volatile data passed between setup(), doLogic(), tearDown().
   private Document doc = null;
   
-  /*
-   *  (non-Javadoc)
-   * @see PerfTask#setup()
-   */
   public void setup() throws Exception {
     super.setup();
     DocMaker docMaker = getRunData().getDocMaker();
     doc = docMaker.makeDocument();
   }
 
-  /* (non-Javadoc)
-   * @see PerfTask#tearDown()
-   */
+  protected String getLogMessage(int recsCount) {
+    return "read " + recsCount + " docs; " + totalTokenCount + " tokens";
+  }
+  
   public void tearDown() throws Exception {
-    log(++count);
     doc = null;
     super.tearDown();
   }
@@ -115,19 +101,6 @@ public class ReadTokensTask extends PerfTask {
     }
     totalTokenCount += tokenCount;
     return tokenCount;
-  }
-
-  private void log(int count) {
-    if (logStep<0) {
-      // init once per instance
-      logStep = getRunData().getConfig().get("doc.tokenize.log.step", DEFAULT_DOC_LOG_STEP);
-    }
-    if (logStep>0 && (count%logStep)==0) {
-      double seconds = (System.currentTimeMillis() - getRunData().getStartTimeMillis())/1000.0;
-      NumberFormat nf = NumberFormat.getInstance();
-      nf.setMaximumFractionDigits(2);
-      System.out.println("--> "+nf.format(seconds) + " sec: " + Thread.currentThread().getName()+" processed (add) "+count+" docs" + "; " + totalTokenCount + " tokens");
-    }
   }
 
   /* Simple StringReader that can be reset to a new string;
