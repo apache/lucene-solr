@@ -510,6 +510,9 @@ Other Changes
     
 38. SOLR-1215 use double quotes to enclose attributes in solr.xml (noble)
 
+39. SOLR-1151: add dynamic copy field and maxChars example to example schema.xml.
+    (Peter Wolanin, Mark Miller)
+
 Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)
