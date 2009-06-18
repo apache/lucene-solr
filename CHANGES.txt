@@ -73,7 +73,7 @@ New Features
     but this uses DoubleMetaphone specific calls (including alternate encoding)
     (Todd Feak via ryan)
 
- 7. SOLR-680: Add StatsComponent. This gets simple statists on matched numeric fields,
+ 7. SOLR-680: Add StatsComponent. This gets simple statistics on matched numeric fields,
     including: min, max, mean, median, stddev.  (koji, ryan)
 
  8. SOLR-561: Added Replication implemented in Java as a request handler. Supports index replication
@@ -228,7 +228,7 @@ New Features
 
 56. SOLR-1051: Support the merge of multiple indexes as a CoreAdmin and an update command (Ning Li via shalin)
 
-57. SOLR-1152: Snapshoot on ReplicationHandler should acccept location as a request parameter (shalin)
+57. SOLR-1152: Snapshoot on ReplicationHandler should accept location as a request parameter (shalin)
 
 58. SOLR-1204: Enhance SpellingQueryConverter to handle UTF-8 instead of ASCII only (Michael Ludwig via shalin)
 
@@ -428,7 +428,7 @@ Other Changes
 
  4. SOLR-852: Refactored common code in CSVRequestHandler and XMLUpdateRequestHandler (gsingers, ehatcher)
 
- 5. SOLR-871: Removed dependancy on stax-utils.jar.  If you using solr.jar and running 
+ 5. SOLR-871: Removed dependency on stax-utils.jar.  If you using solr.jar and running 
     java 6, you can also remove woodstox and geronimo.  (ryan)
 
  6. SOLR-465: Upgraded to Lucene 2.9-dev (r719351) (shalin)
@@ -517,7 +517,7 @@ Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)
 
- 2. SOLR-854: Added run-example target (Mark Miller vie ehatcher)
+ 2. SOLR-854: Added run-example target (Mark Miller via ehatcher)
 
  3. SOLR-1054:Fix dist-src target for DataImportHandler (Ryuuichi Kumai via shalin)
 
