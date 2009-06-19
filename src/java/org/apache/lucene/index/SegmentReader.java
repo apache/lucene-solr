@@ -475,6 +475,17 @@ class SegmentReader extends IndexReader implements Cloneable {
     return instance;
   }
 
+  synchronized void openDocStores(SegmentReader orig) throws IOException {
+    if (fieldsReaderOrig == null) {
+      orig.openDocStores();
+      
+      fieldsReaderOrig = orig.fieldsReaderOrig;
+      termVectorsReaderOrig = orig.termVectorsReaderOrig;
+      storeCFSReader = orig.storeCFSReader;
+      cfsReader = orig.cfsReader;
+    }
+  }
+
   synchronized void openDocStores() throws IOException {
     if (fieldsReaderOrig == null) {
       final Directory storeDir;

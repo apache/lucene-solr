@@ -133,6 +133,9 @@ public abstract class MergePolicy {
         b.append(" into ").append(info.name);
       if (optimize)
         b.append(" [optimize]");
+      if (mergeDocStores) {
+        b.append(" [mergeDocStores]");
+      }
       return b.toString();
     }
   }

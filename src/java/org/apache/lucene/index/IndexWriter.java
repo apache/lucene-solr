@@ -4829,7 +4829,7 @@ public class IndexWriter {
         }
 
         for(int i=0;i<numSegments;i++) {
-          merge.readersClone[i].openDocStores();
+          merge.readersClone[i].openDocStores(merge.readers[i]);
         }
 
         // Clear DSS
