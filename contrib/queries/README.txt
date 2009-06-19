@@ -1,13 +1,5 @@
 This module contains a number of filter and query objects that add to core lucene.
 
-==== TrieRangeFilter/TrieRangeQuery - This package provides fast numeric range queries/filters on long,
-double or Date fields based on trie structures. Numerical values are stored in a special string-encoded
-format with variable precision (all numerical values like doubles, longs, and timestamps are converted
-to lexicographic sortable string representations).  A range is then divided recursively into multiple
-intervals for searching: The center of the range is searched only with the lowest possible precision
-in the trie, the boundaries are matched more exactly. This reduces the number of terms and thus improves
-dramatically the performance of range queries, on the cost of larger index sizes.
-
 ==== The "MoreLikeThis" class from the "similarity" module has been copied into here.
 If people are generally happy with this move then the similarity module can be deleted, or at least a 
 "Moved to queries module..." note left in its place.
@@ -26,5 +18,5 @@ a sequence. An example might be a collection of primary keys from a database que
 a choice of "category" labels picked by the end user.
 
 
-Mark Harwood & Uwe Schindler
-05/12/2008
+Mark Harwood
+25/02/2006

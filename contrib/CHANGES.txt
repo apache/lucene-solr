@@ -38,33 +38,28 @@ Bug fixes
 
 New features
 
- 1. LUCENE-1470: Added TrieRangeQuery, a much faster implementation of
-    RangeQuery at the expense of added space (additional indexed
-    tokens) consumed in the index.  (Uwe Schindler via Mike McCandless)
+ 1. LUCENE-1531: Added support for BoostingTermQuery to XML query parser. (Karl Wettin)
 
- 2. LUCENE-1531: Added support for BoostingTermQuery to XML query parser. (Karl Wettin)
-
- 3. LUCENE-1435: Added contrib/collation, a CollationKeyFilter
+ 2. LUCENE-1435: Added contrib/collation, a CollationKeyFilter
     allowing you to convert tokens into CollationKeys encoded usign
     IndexableBinaryStringTools.  This allows for faster RangQuery when
     a field needs to use a custom Collator.  (Steven Rowe via Mike
     McCandless)
 
- 4. LUCENE-1591: EnWikiDocMaker, LineDocMaker, WriteLineDoc can now
+ 3. LUCENE-1591: EnWikiDocMaker, LineDocMaker, WriteLineDoc can now
     read/write bz2 using Apache commons compress library.  This means
     you can download the .bz2 export from http://wikipedia.org and
     immediately index it.  (Shai Erera via Mike McCandless)
 
- 5. LUCENE-1629: Add SmartChineseAnalyzer to contrib/analyzers.  It
+ 4. LUCENE-1629: Add SmartChineseAnalyzer to contrib/analyzers.  It
     improves on CJKAnalyzer and ChineseAnalyzer by handling Chinese
     sentences properly.  SmartChineseAnalyzer uses a Hidden Markov
     Model to tokenize Chinese words in a more intelligent way.
     (Xiaoping Gao via Mike McCandless)
 
-
- 6. LUCENE-1676: Added DelimitedPayloadTokenFilter class for automatically adding payloads "in-stream" (Grant Ingersoll)    
+ 5. LUCENE-1676: Added DelimitedPayloadTokenFilter class for automatically adding payloads "in-stream" (Grant Ingersoll)    
  
- 7. LUCENE-1578: Support for loading unoptimized readers to the
+ 6. LUCENE-1578: Support for loading unoptimized readers to the
     constructor of InstantiatedIndex. (Karl Wettin)
  
 Optimizations
