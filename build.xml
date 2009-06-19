@@ -575,12 +575,6 @@
        </manifest>
     </jar>
 
-    <copy todir="${example}/solr/bin">
-      <fileset dir="${src}/scripts">
-        <exclude name="scripts.conf"/>
-      </fileset>
-    </copy>
-    <chmod dir="${example}/solr/bin" perm="755" includes="**"/>
     <delete includeemptydirs="true">
       <fileset dir="${example}/work" includes="**/*"/>
     </delete>

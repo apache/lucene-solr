@@ -179,7 +179,9 @@
     </autoCommit>
     -->
 
-    <!-- The RunExecutableListener executes an external command.
+
+    <!-- The RunExecutableListener executes an external command from a
+      hook such as postCommit or postOptimize.
          exe - the name of the executable to run
          dir - dir to use as the current working directory. default="."
          wait - the calling thread waits until the executable returns. default="true"
@@ -195,8 +197,7 @@
       <arr name="env"> <str>MYVAR=val1</str> </arr>
     </listener>
     -->
-    <!-- A postOptimize event is fired only after every optimize command, useful
-         in conjunction with index distribution to only distribute optimized indicies 
+    <!-- A postOptimize event is fired only after every optimize command
     <listener event="postOptimize" class="solr.RunExecutableListener">
       <str name="exe">snapshooter</str>
       <str name="dir">solr/bin</str>
