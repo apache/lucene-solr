@@ -72,8 +72,14 @@ public class CoreContainer
   protected Map<String ,IndexSchema> indexSchemaCache;
   protected String adminHandler;
   protected boolean shareSchema;
+  protected final String solrHome;
 
+  @Deprecated
   public CoreContainer() {
+    solrHome =".";
+  }
+  public CoreContainer(String home) {
+    solrHome =home;
   }
 
   public Properties getContainerProperties() {
@@ -104,13 +110,13 @@ public class CoreContainer
     // core container instantiation
     public CoreContainer initialize() throws IOException, ParserConfigurationException, SAXException {
       CoreContainer cores = null;
-      String instanceDir = SolrResourceLoader.locateInstanceDir();
-      File fconf = new File(instanceDir, solrConfigFilename == null? "solr.xml": solrConfigFilename);
+      String solrHome = SolrResourceLoader.locateSolrHome();
+      File fconf = new File(solrHome, solrConfigFilename == null? "solr.xml": solrConfigFilename);
       log.info("looking for solr.xml: " + fconf.getAbsolutePath());
 
       if (fconf.exists()) {
-        cores = new CoreContainer();
-        cores.load(instanceDir, fconf);
+        cores = new CoreContainer(solrHome);
+        cores.load(solrHome, fconf);
         abortOnConfigurationError = false;
         // if any core aborts on startup, then abort
         for (SolrCore c : cores.getCores()) {
@@ -122,7 +128,7 @@ public class CoreContainer
         solrConfigFilename = cores.getConfigFile().getName();
       } else {
         // perform compatibility init
-        cores = new CoreContainer(new SolrResourceLoader(instanceDir));
+        cores = new CoreContainer(new SolrResourceLoader(solrHome));
         SolrConfig cfg = solrConfigFilename == null ? new SolrConfig() : new SolrConfig(solrConfigFilename);
         CoreDescriptor dcore = new CoreDescriptor(cores, "", ".");
         SolrCore singlecore = new SolrCore(null, null, cfg, null, dcore);
@@ -147,6 +153,7 @@ public class CoreContainer
    */
   public CoreContainer(String dir, File configFile ) throws ParserConfigurationException, IOException, SAXException 
   {
+    solrHome = dir;
     this.load(dir, configFile);
   }
   
@@ -156,8 +163,9 @@ public class CoreContainer
    */
   public CoreContainer(SolrResourceLoader loader) {
     this.loader = loader;
+    solrHome = loader.getInstanceDir();
   }
-  
+
   //-------------------------------------------------------------------
   // Initialization / Cleanup
   //-------------------------------------------------------------------
@@ -349,7 +357,7 @@ public class CoreContainer
     // Make the instanceDir relative to the cores instanceDir if not absolute
     File idir = new File(dcore.getInstanceDir());
     if (!idir.isAbsolute()) {
-      idir = new File(loader.getInstanceDir(), dcore.getInstanceDir());
+      idir = new File(solrHome, dcore.getInstanceDir());
     }
     String instanceDir = idir.getPath();
     
@@ -761,5 +769,8 @@ public class CoreContainer
       throw xforward;
     }
   }
- 
+
+  public String getSolrHome() {
+    return solrHome;
+  }
 }

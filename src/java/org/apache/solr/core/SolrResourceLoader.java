@@ -84,7 +84,7 @@ public class SolrResourceLoader implements ResourceLoader
   public SolrResourceLoader( String instanceDir, ClassLoader parent, Properties coreProperties )
   {
     if( instanceDir == null ) {
-      this.instanceDir = SolrResourceLoader.locateInstanceDir();
+      this.instanceDir = SolrResourceLoader.locateSolrHome();
     } else{
       this.instanceDir = normalizeDir(instanceDir);
     }
@@ -428,13 +428,13 @@ public class SolrResourceLoader implements ResourceLoader
     waitingForResources.clear();
   }
   /**
-   * Determines the instanceDir from the environment.
+   * Determines the solrhome from the environment.
    * Tries JNDI (java:comp/env/solr/home) then system property (solr.solr.home);
    * if both fail, defaults to solr/
    * @return the instance directory name
    */
   /**
-   * Finds the instanceDir based on looking up the value in one of three places:
+   * Finds the solrhome based on looking up the value in one of three places:
    * <ol>
    *  <li>JNDI: via java:comp/env/solr/home</li>
    *  <li>The system property solr.solr.home</li>
@@ -442,11 +442,10 @@ public class SolrResourceLoader implements ResourceLoader
    * </ol>
    *
    * The return value is normalized.  Normalization essentially means it ends in a trailing slash.
-   * @return A normalized instanceDir
-   *
-   * @see #normalizeDir(String) 
+   * @return A normalized solrhome
+   * @see #normalizeDir(String)
    */
-  public static String locateInstanceDir() {
+  public static String locateSolrHome() {
     String home = null;
     // Try JNDI
     try {
@@ -476,6 +475,10 @@ public class SolrResourceLoader implements ResourceLoader
       log.info(project + " home defaulted to '" + home + "' (could not find system property or JNDI)");
     }
     return normalizeDir( home );
+  }
+  @Deprecated
+  public static String locateInstanceDir() {
+    return locateSolrHome();
   }
 
   public String getInstanceDir() {

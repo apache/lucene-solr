@@ -91,7 +91,7 @@ public class CoreDescriptor {
       if (new File(instanceDir).isAbsolute()) {
         return SolrResourceLoader.normalizeDir(SolrResourceLoader.normalizeDir(instanceDir) + dataDir);
       } else  {
-        return SolrResourceLoader.normalizeDir(coreContainer.loader.getInstanceDir() +
+        return SolrResourceLoader.normalizeDir(coreContainer.getSolrHome() +
                 SolrResourceLoader.normalizeDir(instanceDir) + dataDir);
       }
     }

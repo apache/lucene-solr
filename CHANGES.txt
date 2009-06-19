@@ -237,6 +237,9 @@ New Features
     
 60. SOLR-243: Add configurable IndexReaderFactory so that alternate IndexReader implementations 
     can be specified via solrconfig.xml. (Andrzej Bialecki, hossman, Mark Miller, John Wang)
+    
+61. SOLR-1214: differentiate between solr home and instanceDir .deprecates the method SolrResourceLoader#locateInstanceDir()
+    and it is renamed to locateSolrHome (noble)
 
 Optimizations
 ----------------------
