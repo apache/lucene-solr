@@ -27,10 +27,17 @@
 </head>
 <body>
 <h1>DataImportHandler Development Console</h1>
-<br />
-<form action="../dataimport" target="result" method="post">
-<input type="hidden" name="debug" value="on">
+<%
+  String handler = request.getParameter("handler");  // must be specified
+%>
+<form action="../select" target="result" method="get">
+<input type="hidden" name="debug" value="on"/>
+<input type="hidden" name="qt" value="<%=handler%>"/>
 <table>
+  <tr>
+    <th>Handler: </th>
+    <td><%=handler%> <a href="dataimport.jsp" target="_top">change handler</a></td>
+  </tr>
 	<tr>
 		<td colspan="2">
 		<table width="100%">
@@ -49,7 +56,7 @@
 					name="clean" type="checkbox"></td>
 				<td><strong>Start Row</strong>&nbsp;<input
 					name="start" size="4" type="text" value="0"></td>
-				<td><strong>No:of Rows</strong>&nbsp;<input name="rows"
+				<td><strong>No. of Rows</strong>&nbsp;<input name="rows"
 					type="text" size="4" value="10"></td>
 			</tr>
 		</table>
@@ -61,17 +68,18 @@
 	</tr>
 	<tr>
 		<td colspan="2"><textarea id="txtDataConfig" rows="30" cols="80" name="dataConfig"></textarea></td>
-		<script type="text/javascript" language="Javascript">
-			$.get('../dataimport?command=show-config', function(data){
-  				$('#txtDataConfig').attr('value', data);
-			});
-		</script>
+    <script type="text/javascript" language="javascript">
+        $.get("../select?qt=<%=handler%>&command=show-config", function(data){
+            $('#txtDataConfig').attr('value', data);
+        });
+    </script>
 	</tr>
 </table>
 </form>
-<form action="../dataimport" target="result" method="get">
+<form action="../select" target="result" method="get">
 	<input type="hidden" name="clean" value="false">
 	<input type="hidden" name="commit" value="true">
+  <input type="hidden" name="qt" value="<%=handler%>"/>
 	<input class="stdbutton" type="submit" name="command" value="full-import">
 	<input class="stdbutton" type="submit" name="command" value="delta-import">
 	<input class="stdbutton" type="submit" name="command" value="status">
@@ -84,13 +92,15 @@
 	<input type="hidden" name="rows" value="0">
 	<input class="stdbutton" type="submit" value="Documents Count">
 </form>
-<form action="../dataimport" target="result" method="get">
+<form action="../select" target="result" method="get">
+  <input type="hidden" name="qt" value="<%=handler%>"/>
 	<input type="hidden" name="verbose" value="true">
 	<input type="hidden" name="clean" value="true">
 	<input type="hidden" name="commit" value="true">
 	<input type="hidden" name="command" value="full-import">
 	<input class="stdbutton" type="submit" value="Full Import with Cleaning">
 </form>
+
 <a href="index.jsp" target="_parent">Return to Admin Page</a>
 </body>
 </html>

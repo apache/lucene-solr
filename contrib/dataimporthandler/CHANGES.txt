@@ -142,7 +142,11 @@ New Features
 32.SOLR-1092: Added a new command named 'import' which does not automatically clean the index. This is useful and
               more appropriate when one needs to import only some of the entities.
               (Noble Paul via shalin)
-33.SOLR-11153: 'deltaImportQuery' is honored on child entities as well (noble) 
+              
+33.SOLR-1153: 'deltaImportQuery' is honored on child entities as well (noble) 
+
+34.SOLR-1230: Enhanced dataimport.jsp to work with all DataImportHandler request handler configurations,
+              rather than just a hardcoded /dataimport handler. (ehatcher)
 
 Optimizations
 ----------------------
