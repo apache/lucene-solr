@@ -58,7 +58,7 @@ public class SmartChineseAnalyzer extends Analyzer {
   private WordSegmenter wordSegment;
 
   public SmartChineseAnalyzer() {
-    this(false);
+    this(true);
   }
 
   /**

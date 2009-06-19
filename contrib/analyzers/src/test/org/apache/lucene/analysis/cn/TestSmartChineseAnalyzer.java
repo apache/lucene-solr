@@ -31,7 +31,27 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 
 public class TestSmartChineseAnalyzer extends TestCase {
-
+  
+  public void testChineseStopWordsDefault() throws Exception {
+    Analyzer ca = new SmartChineseAnalyzer(); /* will load stopwords */
+    String sentence = "我购买了道具和服装。";
+    String result[] = { "我", "购买", "了", "道具", "和", "服装" };
+    assertAnalyzesTo(ca, sentence, result);
+  }
+  
+  /*
+   * Punctuation is handled in a strange way if you disable stopwords
+   * In this example the IDEOGRAPHIC FULL STOP is converted into a comma.
+   * if you don't supply (true) to the constructor, or use a different stopwords list,
+   * then punctuation is indexed.
+   */
+  public void testChineseStopWordsOff() throws Exception {  
+    Analyzer ca = new SmartChineseAnalyzer(false); /* doesnt load stopwords */
+    String sentence = "我购买了道具和服装。";
+    String result[] = { "我", "购买", "了", "道具", "和", "服装", "," };
+    assertAnalyzesTo(ca, sentence, result);
+  }
+  
   public void testChineseAnalyzer() throws IOException {
     Token nt = new Token();
     Analyzer ca = new SmartChineseAnalyzer(true);
@@ -47,6 +67,54 @@ public class TestSmartChineseAnalyzer extends TestCase {
     }
     ts.close();
   }
+  
+  /*
+   * English words are lowercased and porter-stemmed.
+   */
+  public void testMixedLatinChinese() throws Exception {
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "我购买 Tests 了道具和服装", 
+        new String[] { "我", "购买", "test", "了", "道具", "和", "服装"});
+  }
+  
+  public void testOffsets() throws Exception {
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "我购买了道具和服装",
+        new String[] { "我", "购买", "了", "道具", "和", "服装" },
+        new int[] { 0, 1, 3, 4, 6, 7 },
+        new int[] { 1, 3, 4, 6, 7, 9 });
+  }
+  
+  public void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[])
+  throws Exception {
+
+  TokenStream ts = a.tokenStream("dummy", new StringReader(input));
+          final Token reusableToken = new Token();
+  for (int i = 0; i < output.length; i++) {
+      Token nextToken = ts.next(reusableToken);
+      assertNotNull(nextToken);
+      assertEquals(nextToken.term(), output[i]);
+      if (startOffsets != null)
+          assertEquals(nextToken.startOffset(), startOffsets[i]);
+      if (endOffsets != null)
+          assertEquals(nextToken.endOffset(), endOffsets[i]);
+      if (types != null)
+          assertEquals(nextToken.type(), types[i]);
+  }
+  assertNull(ts.next(reusableToken));
+  ts.close();
+}
+
+public void assertAnalyzesTo(Analyzer a, String input, String[] output) throws Exception {
+  assertAnalyzesTo(a, input, output, null, null, null);
+}
+
+public void assertAnalyzesTo(Analyzer a, String input, String[] output, String[] types) throws Exception {
+  assertAnalyzesTo(a, input, output, null, null, types);
+}
+
+public void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[]) throws Exception {
+  assertAnalyzesTo(a, input, output, startOffsets, endOffsets, null);
+}
+
 
   /**
    * @param args

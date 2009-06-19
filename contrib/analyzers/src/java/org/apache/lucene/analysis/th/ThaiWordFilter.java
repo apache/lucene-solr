@@ -47,7 +47,7 @@ public class ThaiWordFilter extends TokenFilter {
       if (end != BreakIterator.DONE) {
         reusableToken.reinit(thaiToken, thaiToken.termBuffer(), start, end - start);
         reusableToken.setStartOffset(thaiToken.startOffset()+start);
-        reusableToken.setEndOffset(thaiToken.endOffset()+end);
+        reusableToken.setEndOffset(thaiToken.startOffset()+end);
         return reusableToken;
       }
       thaiToken = null;

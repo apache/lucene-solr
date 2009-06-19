@@ -30,8 +30,43 @@ import org.apache.lucene.analysis.TokenStream;
  */
 
 public class TestThaiAnalyzer extends TestCase {
-
-	public void assertAnalyzesTo(Analyzer a, String input, String[] output)
+	
+	/* 
+	 * testcase for offsets
+	 */
+	public void testOffsets() throws Exception {
+		assertAnalyzesTo(new ThaiAnalyzer(), "เดอะนิวยอร์กไทมส์", 
+				new String[] { "เด", "อะนิว", "ยอ", "ร์ก", "ไทมส์"},
+				new int[] { 0, 2, 7, 9, 12 },
+				new int[] { 2, 7, 9, 12, 17});
+	}
+	
+	
+	/*
+	 * Thai numeric tokens are typed as <ALPHANUM> instead of <NUM>.
+	 * This is really a problem with the interaction w/ StandardTokenizer, which is used by ThaiAnalyzer.
+	 * 
+	 * The issue is this: in StandardTokenizer the entire [:Thai:] block is specified in ALPHANUM (including punctuation, digits, etc)
+	 * Fix is easy: refine this spec to exclude thai punctuation and digits.
+	 * 
+	 * A better fix, that would also fix quite a few other languages would be to remove the thai hack.
+	 * Instead, allow the definition of alphanum to include relevant categories like nonspacing marks!
+	 */
+	public void testBuggyTokenType() throws Exception {
+		assertAnalyzesTo(new ThaiAnalyzer(), "เดอะนิวยอร์กไทมส์ ๑๒๓", 
+				new String[] { "เด", "อะนิว", "ยอ", "ร์ก", "ไทมส์", "๑๒๓" },
+				new String[] { "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>" });
+	}
+	
+	/* correct testcase
+	public void testTokenType() throws Exception {
+		assertAnalyzesTo(new ThaiAnalyzer(), "เดอะนิวยอร์กไทมส์ ๑๒๓", 
+				new String[] { "เด", "อะนิว", "ยอ", "ร์ก", "ไทมส์", "๑๒๓" },
+				new String[] { "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<NUM>" });
+	}
+	*/
+	
+	public void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[])
 		throws Exception {
 
 		TokenStream ts = a.tokenStream("dummy", new StringReader(input));
@@ -40,9 +75,27 @@ public class TestThaiAnalyzer extends TestCase {
 			Token nextToken = ts.next(reusableToken);
 			assertNotNull(nextToken);
 			assertEquals(nextToken.term(), output[i]);
+			if (startOffsets != null)
+				assertEquals(nextToken.startOffset(), startOffsets[i]);
+			if (endOffsets != null)
+				assertEquals(nextToken.endOffset(), endOffsets[i]);
+			if (types != null)
+				assertEquals(nextToken.type(), types[i]);
 		}
 		assertNull(ts.next(reusableToken));
 		ts.close();
+	}
+	
+	public void assertAnalyzesTo(Analyzer a, String input, String[] output) throws Exception {
+		assertAnalyzesTo(a, input, output, null, null, null);
+	}
+	
+	public void assertAnalyzesTo(Analyzer a, String input, String[] output, String[] types) throws Exception {
+		assertAnalyzesTo(a, input, output, null, null, types);
+	}
+	
+	public void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[]) throws Exception {
+		assertAnalyzesTo(a, input, output, startOffsets, endOffsets, null);
 	}
 
 	public void testAnalyzer() throws Exception {
