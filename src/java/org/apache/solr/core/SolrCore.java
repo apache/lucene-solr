@@ -1368,6 +1368,8 @@ public final class SolrCore implements SolrInfoMBean {
     m.put("standard", m.get("xml"));
     m.put("json", new JSONResponseWriter());
     m.put("python", new PythonResponseWriter());
+    m.put("php", new PHPResponseWriter());
+    m.put("phps", new PHPSerializedResponseWriter());
     m.put("ruby", new RubyResponseWriter());
     m.put("raw", new RawResponseWriter());
     m.put("javabin", new BinaryResponseWriter());
