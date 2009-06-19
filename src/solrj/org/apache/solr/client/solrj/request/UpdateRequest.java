@@ -113,6 +113,13 @@ public class UpdateRequest extends SolrRequest
     deleteById.add( id );
     return this;
   }
+  public UpdateRequest deleteById( List<String> ids )
+  {
+    if( deleteById == null ) {
+      deleteById = new ArrayList<String>(ids);
+    }
+    return this;
+  }
   
   public UpdateRequest deleteByQuery( String q )
   {

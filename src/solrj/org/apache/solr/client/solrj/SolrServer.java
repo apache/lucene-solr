@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
@@ -99,6 +100,10 @@ public abstract class SolrServer implements Serializable
   
   public UpdateResponse deleteById(String id) throws SolrServerException, IOException {
     return new UpdateRequest().deleteById( id ).process( this );
+  }
+
+  public UpdateResponse deleteById(List<String> ids) throws SolrServerException, IOException {
+    return new UpdateRequest().deleteById( ids ).process( this );
   }
 
   public UpdateResponse deleteByQuery(String query) throws SolrServerException, IOException {
