@@ -17,12 +17,20 @@
 
 package org.apache.lucene.spatial;
 
+import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
+import org.apache.lucene.search.NumericRangeQuery; // for javadocs
+import org.apache.lucene.util.NumericUtils; // for javadocs
+
 /**
  * TODO -- when solr moves NumberUtils to lucene, this should be redundant
  * 
  * This is a copy of solr's number utils with only the functions we use...
  * 
- * @deprecated will be replaced with lucene version of solr copy...
+ * @deprecated TODO: This helper class will be removed soonly.
+ * For new indexes use {@link NumericUtils} instead, which provides a sortable
+ * binary representation (prefix encoded) of numeric values.
+ * To index and efficiently query numeric values use {@link NumericTokenStream}
+ * and {@link NumericRangeQuery}.
  */
 @Deprecated
 public class NumberUtils {

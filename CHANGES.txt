@@ -207,6 +207,10 @@ API Changes
     ReadOnlySegmentReader.class, along with the src/gcj/*
     specializations for GCJ, are now deprecated, to be removed in
     3.0.  (Earwin Burrfoot via Mike McCandless)
+
+23. LUCENE-1673: Deprecated NumberTools in favour of the new
+    NumericRangeQuery and its new indexing format for numeric or
+    date values.  (Uwe Schindler)
     
 Bug fixes
 
@@ -408,8 +412,15 @@ Bug fixes
     via Mike McCandless)
 
 26. LUCENE-1550: Added new n-gram based String distance measure for spell checking.
-    See the Javadocs for NGramDistance.java for a reference paper on why this is helpful (Tom Morton via Grant Ingersoll)
-        
+    See the Javadocs for NGramDistance.java for a reference paper on why
+    this is helpful (Tom Morton via Grant Ingersoll)
+
+27. LUCENE-1470, LUCENE-1582, LUCENE-1602, LUCENE-1673: Added
+    NumericRangeQuery and NumericRangeFilter, a fast alternative to
+    RangeQuery/RangeFilter for numeric searches. They depend on a specific
+    structure of terms in the index that can be created by indexing
+    using the new NumericTokenStream class.  (Uwe Schindler,
+    Yonik Seeley, Mike McCandless)
     
 Optimizations
 

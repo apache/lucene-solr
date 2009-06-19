@@ -136,6 +136,7 @@ org.apache.lucene.search.Searcher#search(Query,Filter)}.
         </li>
     </ol>
 </p>
+
 <h4>
     <a href="RangeQuery.html">RangeQuery</a>
 </h4>
@@ -147,12 +148,28 @@ org.apache.lucene.search.Searcher#search(Query,Filter)}.
     <a href="../index/Term.html">Term</a>
     and an upper
     <a href="../index/Term.html">Term</a>.
+    according to {@link java.lang.String#compareTo(String)}. It is not intended
+    for numerical ranges, use <a href="NumericRangeQuery.html">NumericRangeQuery</a> instead.
+
     For example, one could find all documents
     that have terms beginning with the letters <tt>a</tt> through <tt>c</tt>. This type of <a
         href="Query.html">Query</a> is frequently used to
     find
     documents that occur in a specific date range.
 </p>
+
+<h4>
+    <a href="NumericRangeQuery.html">NumericRangeQuery</a>
+</h4>
+
+<p>The
+    <a href="NumericRangeQuery.html">NumericRangeQuery</a>
+    matches all documents that occur in a numeric range.
+    For NumericRangeQuery to work, you must index the values
+    using a special <a href="../analysis/NumericTokenStream.html">
+    NumericTokenStream</a>.
+</p>
+
 <h4>
     <a href="PrefixQuery.html">PrefixQuery</a>,
     <a href="WildcardQuery.html">WildcardQuery</a>

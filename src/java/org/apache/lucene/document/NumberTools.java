@@ -17,6 +17,11 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
+import org.apache.lucene.search.NumericRangeQuery; // for javadocs
+import org.apache.lucene.util.NumericUtils; // for javadocs
+
+// do not remove this class in 3.0, it may be needed to decode old indexes!
 
 /**
  * Provides support for converting longs to Strings, and back again. The strings
@@ -31,7 +36,13 @@ package org.apache.lucene.document;
  * This class handles <b>all</b> long values (unlike
  * {@link org.apache.lucene.document.DateField}).
  * 
- * 
+ * @deprecated For new indexes use {@link NumericUtils} instead, which
+ * provides a sortable binary representation (prefix encoded) of numeric
+ * values.
+ * To index and efficiently query numeric values use {@link NumericTokenStream}
+ * and {@link NumericRangeQuery}.
+ * This class is included for use with existing
+ * indices and will be removed in a future release.
  */
 public class NumberTools {
 

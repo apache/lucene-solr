@@ -19,8 +19,14 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.RangeQuery;
+import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
+import org.apache.lucene.search.NumericRangeQuery; // for javadocs
+import org.apache.lucene.util.NumericUtils; // for javadocs
 
 import java.util.Date;   // for javadoc
+import java.util.Calendar;   // for javadoc
+
+// do not remove in 3.0, needed for reading old indexes!
 
 /**
  * Provides support for converting dates to strings and vice-versa.
@@ -38,7 +44,18 @@ import java.util.Date;   // for javadoc
  * indexed when using this class. See {@link DateTools} for an
  * alternative without such a limitation.
  *
- * @deprecated If you build a new index, use {@link DateTools} instead. This class is included for use with existing
+ * <P>
+ * Another approach is {@link NumericUtils}, which provides
+ * a sortable binary representation (prefix encoded) of numeric values, which
+ * date/time are.
+ * For indexing a {@link Date} or {@link Calendar}, just get the unix timestamp as
+ * <code>long</code> using {@link Date#getTime} or {@link Calendar#getTimeInMillis} and
+ * index this as a numeric value with {@link NumericTokenStream}
+ * and use {@link NumericRangeQuery} to query it.
+ *
+ * @deprecated If you build a new index, use {@link DateTools} or 
+ * {@link NumericTokenStream} instead.
+ * This class is included for use with existing
  * indices and will be removed in a future release.
  */
 public class DateField {
