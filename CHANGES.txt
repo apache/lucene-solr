@@ -516,6 +516,9 @@ Other Changes
 39. SOLR-1151: add dynamic copy field and maxChars example to example schema.xml.
     (Peter Wolanin, Mark Miller)
 
+40. SOLR-1233: remove /select?qt=/whatever restriction on /-prefixed request handlers.
+    (ehatcher)
+
 Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)
