@@ -805,4 +805,29 @@ public class TestIndexWriterReader extends LuceneTestCase {
     r.close();
     dir1.close();
   }
+
+  public void testExpungeDeletes() throws Throwable {
+    Directory dir = new MockRAMDirectory();
+    final IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(),
+                                               IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+    doc.add(new Field("field", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+    Field id = new Field("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    doc.add(id);
+    id.setValue("0");
+    w.addDocument(doc);
+    id.setValue("1");
+    w.addDocument(doc);
+    w.deleteDocuments(new Term("id", "0"));
+
+    IndexReader r = w.getReader();
+    w.expungeDeletes();
+    w.close();
+    r.close();
+    r = IndexReader.open(dir);
+    assertEquals(1, r.numDocs());
+    assertFalse(r.hasDeletions());
+    r.close();
+    dir.close();
+  }
 }

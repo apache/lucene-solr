@@ -303,7 +303,16 @@ public abstract class LogMergePolicy extends MergePolicy {
     int firstSegmentWithDeletions = -1;
     for(int i=0;i<numSegments;i++) {
       final SegmentInfo info = segmentInfos.info(i);
-      if (info.hasDeletions()) {
+      boolean deletionsInRAM = false;
+      SegmentReader sr = writer.readerPool.getIfExists(info);
+      try {
+        deletionsInRAM = sr != null && sr.hasDeletions();
+      } finally {
+        if (sr != null) {
+          writer.readerPool.release(sr);
+        }
+      }
+      if (info.hasDeletions() || deletionsInRAM) {
         if (verbose())
           message("  segment " + info.name + " has deletions");
         if (firstSegmentWithDeletions == -1)

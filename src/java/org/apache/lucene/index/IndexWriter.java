@@ -625,6 +625,15 @@ public class IndexWriter {
       sr.incRef();
       return sr;
     }
+
+    // Returns a ref
+    public synchronized SegmentReader getIfExists(SegmentInfo info) throws IOException {
+      SegmentReader sr = (SegmentReader) readerMap.get(info);
+      if (sr != null) {
+        sr.incRef();
+      }
+      return sr;
+    }
   }
   
   synchronized void acquireWrite() {
@@ -4142,18 +4151,10 @@ public class IndexWriter {
 
       docWriter.pushDeletes();
 
-      if (flushDocs)
+      if (flushDocs) {
         segmentInfos.add(newSegment);
-
-      if (flushDeletes) {
-        flushDeletesCount++;
-        applyDeletes();
-      }
-      
-      doAfterFlush();
-
-      if (flushDocs)
         checkpoint();
+      }
 
       if (flushDocs && mergePolicy.useCompoundFile(segmentInfos, newSegment)) {
         // Now build compound file
@@ -4172,6 +4173,16 @@ public class IndexWriter {
         newSegment.setUseCompoundFile(true);
         checkpoint();
       }
+
+      if (flushDeletes) {
+        flushDeletesCount++;
+        applyDeletes();
+      }
+      
+      if (flushDocs)
+        checkpoint();
+
+      doAfterFlush();
 
       return flushDocs;
 
