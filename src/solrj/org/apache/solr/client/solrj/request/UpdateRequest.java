@@ -117,6 +117,8 @@ public class UpdateRequest extends SolrRequest
   {
     if( deleteById == null ) {
       deleteById = new ArrayList<String>(ids);
+    } else {
+      deleteById.addAll(ids);
     }
     return this;
   }
