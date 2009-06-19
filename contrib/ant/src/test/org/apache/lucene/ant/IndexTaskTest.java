@@ -59,6 +59,7 @@ public class IndexTaskTest extends TestCase {
 
         IndexTask task = new IndexTask();
         FileSet fs = new FileSet();
+        fs.setProject(project);
         fs.setDir(new File(docsDir));
         task.addFileset(fs);
         task.setOverwrite(true);

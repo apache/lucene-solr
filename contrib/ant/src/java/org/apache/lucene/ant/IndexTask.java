@@ -38,15 +38,20 @@ import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.types.FileSet;
 import org.apache.tools.ant.types.EnumeratedAttribute;
+import org.apache.tools.ant.types.Resource;
+import org.apache.tools.ant.types.ResourceCollection;
+import org.apache.tools.ant.types.resources.FileResource;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Properties;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.ArrayList;
+import java.util.Vector;
 import java.text.ParseException;
 
 /**
@@ -55,9 +60,9 @@ import java.text.ParseException;
  */
 public class IndexTask extends Task {
   /**
-   *  file list
+   *  resources
    */
-  private ArrayList filesets = new ArrayList();
+  protected Vector rcs = new Vector();
 
   /**
    *  overwrite index?
@@ -173,8 +178,17 @@ public class IndexTask extends Task {
    *@param  set  FileSet to be added
    */
   public void addFileset(FileSet set) {
-    filesets.add(set);
+    add(set);
   }
+
+    /**
+     * Add a collection of files to copy.
+     * @param res a resource collection to copy.
+     * @since Ant 1.7
+     */
+    public void add(ResourceCollection res) {
+        rcs.add(res);
+    }
 
   /**
    * Sets custom properties for a configurable document handler.
@@ -267,18 +281,20 @@ public class IndexTask extends Task {
     try {
       writer.setMergeFactor(mergeFactor);
 
-      for (int i = 0; i < filesets.size(); i++) {
-        FileSet fs = (FileSet) filesets.get(i);
-        if (fs != null) {
-          DirectoryScanner ds =
-            fs.getDirectoryScanner(getProject());
-          String[] dsfiles = ds.getIncludedFiles();
-          File baseDir = ds.getBasedir();
-
-          for (int j = 0; j < dsfiles.length; j++) {
-            File file = new File(baseDir, dsfiles[j]);
+      for (int i = 0; i < rcs.size(); i++) {
+      	ResourceCollection rc = (ResourceCollection) rcs.elementAt(i);
+        if (rc.isFilesystemOnly()) {
+          Iterator resources = rc.iterator();
+          while (resources.hasNext()) {
+            Resource r = (Resource) resources.next();
+            if (!r.isExists() || !(r instanceof FileResource)) {
+              continue;
+            }
+            
             totalFiles++;
 
+            File file = ((FileResource) r).getFile();
+            
             if (!file.exists() || !file.canRead()) {
               throw new BuildException("File \"" +
                                        file.getAbsolutePath()

@@ -1,4 +1,8 @@
 <?xml version="1.0"?>
+<!--
+To use this example from a source checkout:
+   ant -f example.xml -lib ../../build/contrib/ant/ -lib ../../build/ -lib lib
+-->
 <project name="ant-example" default="index">
 
   <description>

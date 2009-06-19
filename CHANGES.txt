@@ -421,6 +421,9 @@ Bug fixes
     structure of terms in the index that can be created by indexing
     using the new NumericTokenStream class.  (Uwe Schindler,
     Yonik Seeley, Mike McCandless)
+
+28. LUCENE-1405: Added support for Ant resource collections in contrib/ant
+    <index> task.  (Przemyslaw Sztoch via Erik Hatcher)
     
 Optimizations
 
