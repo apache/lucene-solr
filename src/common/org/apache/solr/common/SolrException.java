@@ -36,13 +36,19 @@ public class SolrException extends RuntimeException {
     FORBIDDEN( 403 ),
     NOT_FOUND( 404 ),
     SERVER_ERROR( 500 ),
-    SERVICE_UNAVAILABLE( 503 ); 
-    
+    SERVICE_UNAVAILABLE( 503 ),
+    UNKNOWN(0);
     final int code;
     
     private ErrorCode( int c )
     {
       code = c;
+    }
+    public static ErrorCode getErrorCode(int c){
+      for (ErrorCode err : values()) {
+        if(err.code == c) return err;
+      }
+      return UNKNOWN;
     }
   };
   
