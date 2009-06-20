@@ -22,13 +22,14 @@
   <import file="common-build.xml"/>
   
   <!-- 3rd party libraries for compilation -->
-  <property name="lib" value="lib" />
+  <property name="lib" location="lib" />
 
   <!-- solr source files -->
-  <property name="src" value="src" />
+  <property name="src" location="src" />
+  <property name="web.xml" location="${src}/webapp/web/WEB-INF/web.xml"/>
 
   <!-- Destination for distribution files (demo WAR, src distro, etc.) -->
-  <property name="dist" value="dist" />
+  <property name="dist" location="dist" />
 
   
 
@@ -461,7 +462,7 @@
           depends="compile, make-manifest, dist-jar, dist-solrj">
     <mkdir dir="${dist}" />
     <war destfile="${dist}/${fullnamever}.war"
-         webxml="${src}/webapp/web/WEB-INF/web.xml"
+         webxml="${web.xml}"
          filesetmanifest="skip"
          manifest="${dest}/META-INF/MANIFEST.MF">
        <lib dir="${lib}">
