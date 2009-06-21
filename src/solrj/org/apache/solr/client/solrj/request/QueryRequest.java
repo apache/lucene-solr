@@ -84,15 +84,14 @@ public class QueryRequest extends SolrRequest
   @Override
   public QueryResponse process( SolrServer server ) throws SolrServerException 
   {
-    try 
-    {
+    try {
       long startTime = System.currentTimeMillis();
       QueryResponse res = new QueryResponse( server.request( this ), server );
       res.setElapsedTime( System.currentTimeMillis()-startTime );
       return res;
-    } 
-    catch (Exception e) 
-    {
+    } catch (SolrServerException e){
+      throw e;
+    } catch (Exception e) {
       throw new SolrServerException("Error executing query", e);
     }
   }
