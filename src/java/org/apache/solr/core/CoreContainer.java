@@ -367,7 +367,7 @@ public class CoreContainer
     IndexSchema schema = null;
     if(indexSchemaCache != null){
       //schema sharing is enabled. so check if it already is loaded
-      File schemFile = new File(dcore.getInstanceDir() + "conf" + File.separator + dcore.getSchemaName());
+      File schemFile = new File(solrLoader.getInstanceDir() + "conf" + File.separator + dcore.getSchemaName());
       if(schemFile. exists()){
         String key = schemFile.getAbsolutePath()+":"+new SimpleDateFormat("yyyyMMddhhmmss").format(new Date(schemFile.lastModified()));
         schema = indexSchemaCache.get(key);
