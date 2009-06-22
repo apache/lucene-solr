@@ -318,11 +318,11 @@ if (detailsMap != null)
       String abortParam = request.getParameter("abort");
       if (replicateParam != null)
         if (replicateParam.equals("now")) {
-          executeCommand("snappull", solrcore, rh);
+          executeCommand("fetchindex", solrcore, rh);
         }
       if (abortParam != null)
         if (abortParam.equals("stop")) {
-          executeCommand("abortsnappull", solrcore, rh);
+          executeCommand("abortfetch", solrcore, rh);
         }
     %>
   </td>

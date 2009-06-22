@@ -321,7 +321,7 @@ public class TestReplicationHandler extends TestCase {
     assertEquals(500, masterQueryResult.getNumFound());
 
     // snappull
-    String masterUrl = "http://localhost:" + slaveJetty.getLocalPort() + "/solr/replication?command=snappull&masterUrl=";
+    String masterUrl = "http://localhost:" + slaveJetty.getLocalPort() + "/solr/replication?command=fetchindex&masterUrl=";
     masterUrl += "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication";
     URL url = new URL(masterUrl);
     InputStream stream = url.openStream();

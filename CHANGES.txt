@@ -241,6 +241,8 @@ New Features
 61. SOLR-1214: differentiate between solr home and instanceDir .deprecates the method SolrResourceLoader#locateInstanceDir()
     and it is renamed to locateSolrHome (noble)
 
+62. SOLR-1216 :  disambiguate the replication command names. 'snappull' becomes 'fetchindex' 'abortsnappull' becomes 'abortfetch' (noble) 
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

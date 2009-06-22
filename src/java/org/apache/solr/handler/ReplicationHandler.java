@@ -129,7 +129,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       getFileList(solrParams, rsp);
     } else if (command.equals(CMD_SNAP_SHOOT)) {
       doSnapShoot(solrParams, rsp);
-    } else if (command.equals(CMD_SNAP_PULL)) {
+    } else if (command.equalsIgnoreCase(CMD_FETCH_INDEX)) {
       new Thread() {
         public void run() {
           doSnapPull(solrParams);
@@ -142,7 +142,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (command.equals(CMD_ENABLE_POLL)) {
       if (snapPuller != null)
         snapPuller.enablePoll();
-    } else if (command.equals(CMD_ABORT_SNAP_PULL)) {
+    } else if (command.equalsIgnoreCase(CMD_ABORT_FETCH)) {
       if (snapPuller != null)
         snapPuller.abortPull();
     } else if (command.equals(CMD_FILE_CHECKSUM)) {
@@ -945,9 +945,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   public static final String CMD_SNAP_SHOOT = "snapshoot";
 
-  public static final String CMD_SNAP_PULL = "snappull";
+  public static final String CMD_FETCH_INDEX = "fetchindex";
 
-  public static final String CMD_ABORT_SNAP_PULL = "abortsnappull";
+  public static final String CMD_ABORT_FETCH = "abortfetch";
 
   public static final String CMD_GET_FILE_LIST = "filelist";
 
