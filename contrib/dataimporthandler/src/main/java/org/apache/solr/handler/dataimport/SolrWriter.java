@@ -49,12 +49,20 @@ public class SolrWriter {
 
   private final String configDir;
 
+  private String persistFilename = IMPORTER_PROPERTIES;
+
   DebugLogger debugLogger;
 
   public SolrWriter(UpdateRequestProcessor processor, String confDir) {
     this.processor = processor;
     configDir = confDir;
-
+  }
+  public SolrWriter(UpdateRequestProcessor processor, String confDir, String filePrefix) {
+    this.processor = processor;
+    configDir = confDir;
+    if(filePrefix != null){
+      persistFilename = filePrefix+".properties";
+    }
   }
 
   public boolean upload(SolrInputDocument d) {
@@ -126,11 +134,11 @@ public class SolrWriter {
 
     try {
       propInput = new FileInputStream(configDir
-              + SolrWriter.IMPORTER_PROPERTIES);
+              + persistFilename);
       props.load(propInput);
-      log.info("Read " + SolrWriter.IMPORTER_PROPERTIES);
+      log.info("Read " + persistFilename);
     } catch (Exception e) {
-      log.warn("Unable to read: " + SolrWriter.IMPORTER_PROPERTIES);
+      log.warn("Unable to read: " + persistFilename);
     } finally {
       try {
         if (propInput != null)
@@ -225,7 +233,7 @@ public class SolrWriter {
     } catch (ParseException e) {
       throw new DataImportHandlerException(DataImportHandlerException.WARN,
               "Unable to read last indexed time from: "
-                      + SolrWriter.IMPORTER_PROPERTIES, e);
+                      + persistFilename, e);
     }
     return null;
   }

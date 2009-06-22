@@ -34,6 +34,7 @@ import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.request.RawResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -74,6 +75,8 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   private boolean debugEnabled = true;
 
+  private String myName = "dataimport";
+
   private Map<String , Object> coreScopeSession = new HashMap<String, Object>();
 
   @Override
@@ -85,6 +88,17 @@ public class DataImportHandler extends RequestHandlerBase implements
   @SuppressWarnings("unchecked")
   public void inform(SolrCore core) {
     try {
+      //hack to get the name of this handler
+      for (Map.Entry<String, SolrRequestHandler> e : core.getRequestHandlers().entrySet()) {
+        SolrRequestHandler handler = e.getValue();
+        //this will not work if startup=lazy is set
+        if( this == handler) {
+          String name= e.getKey();
+          if(name.startsWith("/")){
+            myName = name.substring(1);
+          }
+        }
+      }
       String debug = (String) initArgs.get(ENABLE_DEBUG);
       if (debug != null && "no".equals(debug))
         debugEnabled = false;
@@ -263,7 +277,7 @@ public class DataImportHandler extends RequestHandlerBase implements
   private SolrWriter getSolrWriter(final UpdateRequestProcessor processor,
                                    final SolrResourceLoader loader, final DataImporter.RequestParams requestParams) {
 
-    return new SolrWriter(processor, loader.getConfigDir()) {
+    return new SolrWriter(processor, loader.getConfigDir(), myName) {
 
       @Override
       public boolean upload(SolrInputDocument document) {

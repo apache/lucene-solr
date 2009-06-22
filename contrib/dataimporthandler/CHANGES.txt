@@ -1,4 +1,4 @@
-                    Apache Solr - DataImportHandler Version 1.3-dev
+                    Apache Solr - DataImportHandler Version 1.4-dev
                             Release Notes
 
 Introduction
@@ -149,6 +149,8 @@ New Features
               rather than just a hardcoded /dataimport handler. (ehatcher)
               
 35.SOLR-1235: disallow period (.) in entity names (noble)
+
+36.SOLR-1234: Multiple DIH does not work because all of them write to dataimport.properties. Use the handler name as the properties file name (noble)
 
 Optimizations
 ----------------------
