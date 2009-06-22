@@ -61,8 +61,9 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   }
 
   private static class Resolver implements JavaBinCodec.ObjectResolver {
-    private final IndexSchema schema;
-    private final SolrIndexSearcher searcher;
+    private final SolrQueryRequest solrQueryRequest;
+    private IndexSchema schema;
+    private SolrIndexSearcher searcher;
     private final Set<String> returnFields;
     private final boolean includeScore;
 
@@ -71,8 +72,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
     boolean useFieldObjects = true;
 
     public Resolver(SolrQueryRequest req, Set<String> returnFields) {
-      this.schema = req.getSchema();
-      this.searcher = req.getSearcher();
+      solrQueryRequest = req;
       this.includeScore = returnFields != null && returnFields.contains("score");
 
       if (returnFields != null) {
@@ -114,7 +114,8 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
       int sz = ids.size();
       codec.writeTag(JavaBinCodec.ARR, sz);
-
+      if(searcher == null) searcher = solrQueryRequest.getSearcher();
+      if(schema == null) schema = solrQueryRequest.getSchema(); 
       DocIterator iterator = ids.iterator();
       for (int i = 0; i < sz; i++) {
         int id = iterator.nextDoc();
