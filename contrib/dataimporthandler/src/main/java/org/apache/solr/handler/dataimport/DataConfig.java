@@ -21,6 +21,7 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.apache.solr.schema.SchemaField;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 
 import java.util.*;
 
@@ -111,8 +112,14 @@ public class DataConfig {
 
     public Entity(Element element) {
       name = getStringAttribute(element, NAME, null);
+      if(name == null){
+        throw new DataImportHandlerException(SEVERE, "Entity must have name '" );
+      }
+      if(name.indexOf(".") != -1){
+        throw new DataImportHandlerException(SEVERE, "Entity name must not have period (.): '" + name);
+      }      
       if (RESERVED_WORDS.contains(name)) {
-        throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Entity name : '" + name
+        throw new DataImportHandlerException(SEVERE, "Entity name : '" + name
                 + "' is a reserved keyword. Reserved words are: " + RESERVED_WORDS);
       }
       pk = getStringAttribute(element, "pk", null);
@@ -208,7 +215,7 @@ public class DataConfig {
       this.name = getStringAttribute(e, DataImporter.NAME, null);
       this.column = getStringAttribute(e, DataImporter.COLUMN, null);
       if (column == null) {
-        throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Field must have a column attribute");
+        throw new DataImportHandlerException(SEVERE, "Field must have a column attribute");
       }
       this.boost = Float.parseFloat(getStringAttribute(e, "boost", "1.0f"));
       allAttributes.putAll(getAllAttributes(e));
@@ -225,7 +232,7 @@ public class DataConfig {
   public void readFromXml(Element e) {
     List<Element> n = getChildNodes(e, "document");
     if (n.isEmpty()) {
-      throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "DataImportHandler " +
+      throw new DataImportHandlerException(SEVERE, "DataImportHandler " +
               "configuration file must have one <document> node.");
     }
     document = new Document(n.get(0));
@@ -243,7 +250,7 @@ public class DataConfig {
         String clz = getStringAttribute(element, CLASS, null);
         if (func == null || clz == null){
           throw new DataImportHandlerException(
-                  DataImportHandlerException.SEVERE,
+                  SEVERE,
                   "<function> must have a 'name' and 'class' attributes");
         } else {
           functions.add(getAllAttributes(element));
@@ -317,10 +324,6 @@ public class DataConfig {
 
   public static final String NAME = "name";
 
-  public static final String SCRIPT_LANG = "scriptlanguage";
-
-  public static final String SCRIPT_NAME = "scriptname";
-
   public static final String PROCESSOR = "processor";
 
   /**
@@ -347,6 +350,7 @@ public class DataConfig {
     RESERVED_WORDS.add("delta");
     RESERVED_WORDS.add("functions");
     RESERVED_WORDS.add("session");
+    RESERVED_WORDS.add(SolrWriter.LAST_INDEX_KEY);
   }
 
 }

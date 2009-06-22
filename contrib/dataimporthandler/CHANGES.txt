@@ -147,6 +147,8 @@ New Features
 
 34.SOLR-1230: Enhanced dataimport.jsp to work with all DataImportHandler request handler configurations,
               rather than just a hardcoded /dataimport handler. (ehatcher)
+              
+35.SOLR-1235: disallow period (.) in entity names (noble)
 
 Optimizations
 ----------------------
