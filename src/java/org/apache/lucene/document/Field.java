@@ -94,7 +94,7 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     /** Expert: Index the field's value without an Analyzer,
      * and also disable the storing of norms.  Note that you
      * can also separately enable/disable norms by calling
-     * {@link #setOmitNorms}.  No norms means that
+     * {@link Field#setOmitNorms}.  No norms means that
      * index-time field and document boosting and field
      * length normalization are disabled.  The benefit is
      * less memory usage as norms take up one byte of RAM
@@ -159,19 +159,19 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
   }
   
   
-  /** The value of the field as a String, or null.  If null, the Reader value,
-   * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
-   * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
+  /** The value of the field as a String, or null.  If null, the Reader value or
+   * binary value is used.  Exactly one of stringValue(),
+   * readerValue(), and getBinaryValue() must be set. */
   public String stringValue()   { return fieldsData instanceof String ? (String)fieldsData : null; }
   
-  /** The value of the field as a Reader, or null.  If null, the String value,
-   * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
-   * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
+  /** The value of the field as a Reader, or null.  If null, the String value or
+   * binary value is used.  Exactly one of stringValue(),
+   * readerValue(), and getBinaryValue() must be set. */
   public Reader readerValue()   { return fieldsData instanceof Reader ? (Reader)fieldsData : null; }
   
   /** The value of the field in Binary, or null.  If null, the Reader value,
-   * String value, or TokenStream value is used. Exactly one of stringValue(), 
-   * readerValue(), getBinaryValue(), and tokenStreamValue() must be set.
+   * or String value is used. Exactly one of stringValue(),
+   * readerValue(), and getBinaryValue() must be set.
    * @deprecated This method must allocate a new byte[] if
    * the {@link AbstractField#getBinaryOffset()} is non-zero
    * or {@link AbstractField#getBinaryLength()} is not the
@@ -191,10 +191,9 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     return ret;    
   }
   
-  /** The value of the field as a TokesStream, or null.  If null, the Reader value,
-   * String value, or binary value is used. Exactly one of stringValue(), 
-   * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
-  public TokenStream tokenStreamValue()   { return fieldsData instanceof TokenStream ? (TokenStream)fieldsData : null; }
+  /** The TokesStream for this field to be used when indexing, or null.  If null, the Reader value
+   * or String value is analyzed to produce the indexed tokens. */
+  public TokenStream tokenStreamValue()   { return tokenStream; }
   
 
   /** <p>Expert: change the value of this field.  This can
@@ -204,10 +203,7 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
    *  a single {@link Document} instance is re-used as
    *  well.  This helps most on small documents.</p>
    * 
-   *  <p>Note that you should only use this method after the
-   *  Field has been consumed (ie, the {@link Document}
-   *  containing this Field has been added to the index).
-   *  Also, each Field instance should only be used once
+   *  <p>Each Field instance should only be used once
    *  within a single {@link Document} instance.  See <a
    *  href="http://wiki.apache.org/lucene-java/ImproveIndexingSpeed">ImproveIndexingSpeed</a>
    *  for details.</p> */
@@ -250,7 +246,8 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
   }
   
   
-  /** Expert: change the value of this field.  See <a href="#setValue(java.lang.String)">setValue(String)</a>. */
+  /** Expert: change the value of this field.  See <a href="#setValue(java.lang.String)">setValue(String)</a>.
+   * @deprecated use {@link #setTokenStream} */
   public void setValue(TokenStream value) {
     if (isBinary) {
       throw new IllegalArgumentException("cannot set a TokenStream value on a binary field");
@@ -258,7 +255,16 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     if (isStored) {
       throw new IllegalArgumentException("cannot set a TokenStream value on a stored field");
     }
-    fieldsData = value;
+    fieldsData = null;
+    tokenStream = value;
+  }
+
+  /** Expert: sets the token stream to be used for indexing and causes isIndexed() and isTokenized() to return true.
+   *  May be combined with stored values from stringValue() or binaryValue() */
+  public void setTokenStream(TokenStream tokenStream) {
+    this.isIndexed = true;
+    this.isTokenized = true;
+    this.tokenStream = tokenStream;
   }
 
   /**
@@ -459,8 +465,9 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
       throw new NullPointerException("tokenStream cannot be null");
     
     this.name = name.intern();        // field names are interned
-    this.fieldsData = tokenStream;
-    
+    this.fieldsData = null;
+    this.tokenStream = tokenStream;
+
     this.isStored = false;
     this.isCompressed = false;
     

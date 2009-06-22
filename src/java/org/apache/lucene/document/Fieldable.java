@@ -74,36 +74,41 @@ public interface Fieldable extends Serializable {
    */
   String name();
 
-  /** The value of the field as a String, or null.  If null, the Reader value,
-   * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
-   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+  /** The value of the field as a String, or null.
+   * <p>
+   * For indexing, if isStored()==true, the stringValue() will be used as the stored field value
+   * unless isBinary()==true, in which case binaryValue() will be used.
+   *
+   * If isIndexed()==true and isTokenized()==false, this String value will be indexed as a single token.
+   * If isIndexed()==true and isTokenized()==true, then tokenStreamValue() will be used to generate indexed tokens if not null,
+   * else readerValue() will be used to generate indexed tokens if not null, else stringValue() will be used to generate tokens.
+   */
   public String stringValue();
   
-  /** The value of the field as a Reader, or null.  If null, the String value,
-   * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
-   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+  /** The value of the field as a Reader, which can be used at index time to generate indexed tokens.
+   * @see #stringValue()
+   */
   public Reader readerValue();
   
-  /** The value of the field in Binary, or null.  If null, the Reader value,
-   * String value, or TokenStream value is used. Exactly one of stringValue(), 
-   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+  /** The value of the field in Binary, or null.
+   * @see #stringValue()
+   */
   public byte[] binaryValue();
   
-  /** The value of the field as a TokenStream, or null.  If null, the Reader value,
-   * String value, or binary value is used. Exactly one of stringValue(), 
-   * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+  /** The TokenStream for this field to be used when indexing, or null.
+   * @see #stringValue()
+   */
   public TokenStream tokenStreamValue();
 
-  /** True iff the value of the field is to be stored in the index for return
-    with search hits.  It is an error for this to be true if a field is
-    Reader-valued. */
+  /** True if the value of the field is to be stored in the index for return
+    with search hits. */
   boolean  isStored();
 
-  /** True iff the value of the field is to be indexed, so that it may be
+  /** True if the value of the field is to be indexed, so that it may be
     searched on. */
   boolean  isIndexed();
 
-  /** True iff the value of the field should be tokenized as text prior to
+  /** True if the value of the field should be tokenized as text prior to
     indexing.  Un-tokenized fields are indexed as a single word and may not be
     Reader-valued. */
   boolean  isTokenized();
@@ -111,7 +116,7 @@ public interface Fieldable extends Serializable {
   /** True if the value of the field is stored and compressed within the index */
   boolean  isCompressed();
 
-  /** True iff the term or terms used to index this field are stored as a term
+  /** True if the term or terms used to index this field are stored as a term
    *  vector, available from {@link org.apache.lucene.index.IndexReader#getTermFreqVector(int,String)}.
    *  These methods do not provide access to the original content of the field,
    *  only to terms used to index it. If the original content must be
@@ -122,17 +127,17 @@ public interface Fieldable extends Serializable {
   boolean isTermVectorStored();
 
   /**
-   * True iff terms are stored as term vector together with their offsets 
+   * True if terms are stored as term vector together with their offsets 
    * (start and end positon in source text).
    */
   boolean isStoreOffsetWithTermVector();
 
   /**
-   * True iff terms are stored as term vector together with their token positions.
+   * True if terms are stored as term vector together with their token positions.
    */
   boolean isStorePositionWithTermVector();
 
-  /** True iff the value of the filed is stored as binary */
+  /** True if the value of the field is stored as binary */
   boolean  isBinary();
 
   /** True if norms are omitted for this indexed field */

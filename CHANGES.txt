@@ -424,6 +424,11 @@ Bug fixes
 
 28. LUCENE-1405: Added support for Ant resource collections in contrib/ant
     <index> task.  (Przemyslaw Sztoch via Erik Hatcher)
+
+29. LUCENE-1699: Allow setting a TokenStream on Field/Fieldable for indexing
+    in conjunction with any other ways to specify stored field values,
+    currently binary or string values.  (yonik)
+    
     
 Optimizations
 

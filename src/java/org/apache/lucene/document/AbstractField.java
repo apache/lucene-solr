@@ -16,7 +16,8 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.search.PhraseQuery; // for javadocs
-import org.apache.lucene.search.spans.SpanQuery; // for javadocs
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.analysis.TokenStream; // for javadocs
 
 
 /**
@@ -38,9 +39,11 @@ public abstract class AbstractField implements Fieldable {
   protected boolean lazy = false;
   protected boolean omitTermFreqAndPositions = false;
   protected float boost = 1.0f;
-  // the one and only data object for all different kind of field values
+  // the data object for all different kind of field values
   protected Object fieldsData = null;
-  //length/offset for all primitive types
+  // pre-analyzed tokenStream for indexed fields
+  protected TokenStream tokenStream;
+  // length/offset for all primitive types
   protected int binaryLength;
   protected int binaryOffset;
 

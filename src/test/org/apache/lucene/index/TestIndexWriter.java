@@ -17,11 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.io.Reader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -4349,5 +4345,67 @@ public class TestIndexWriter extends LuceneTestCase
     }
     t.join();
     assertFalse(t.failed);
+  }
+
+
+  public void testIndexStoreCombos() throws Exception {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    byte[] b = new byte[50];
+    for(int i=0;i<50;i++)
+      b[i] = (byte) (i+77);
+
+    Document doc = new Document();
+    Field f = new Field("binary", b, 10, 17, Field.Store.YES);
+    f.setTokenStream(new WhitespaceTokenizer(new StringReader("doc1field1")));
+    Field f2 = new Field("string", "value", Field.Store.YES,Field.Index.ANALYZED);
+    f2.setTokenStream(new WhitespaceTokenizer(new StringReader("doc1field2")));
+    doc.add(f);
+    doc.add(f2);
+    w.addDocument(doc);
+    
+    // add 2 docs to test in-memory merging
+    f.setTokenStream(new WhitespaceTokenizer(new StringReader("doc2field1")));
+    f2.setTokenStream(new WhitespaceTokenizer(new StringReader("doc2field2")));
+    w.addDocument(doc);
+  
+    // force segment flush so we can force a segment merge with doc3 later.
+    w.commit();
+
+    f.setTokenStream(new WhitespaceTokenizer(new StringReader("doc3field1")));
+    f2.setTokenStream(new WhitespaceTokenizer(new StringReader("doc3field2")));
+
+    w.addDocument(doc);
+    w.commit();
+    w.optimize();   // force segment merge.
+
+    IndexReader ir = IndexReader.open(dir);
+    doc = ir.document(0);
+    f = doc.getField("binary");
+    b = f.getBinaryValue();
+    assertTrue(b != null);
+    assertEquals(17, b.length, 17);
+    assertEquals(87, b[0]);
+
+    assertTrue(ir.document(0).getFieldable("binary").isBinary());
+    assertTrue(ir.document(1).getFieldable("binary").isBinary());
+    assertTrue(ir.document(2).getFieldable("binary").isBinary());
+    
+    assertEquals("value", ir.document(0).get("string"));
+    assertEquals("value", ir.document(1).get("string"));
+    assertEquals("value", ir.document(2).get("string"));
+
+
+    // test that the terms were indexed.
+    assertTrue(ir.termDocs(new Term("binary","doc1field1")).next());
+    assertTrue(ir.termDocs(new Term("binary","doc2field1")).next());
+    assertTrue(ir.termDocs(new Term("binary","doc3field1")).next());
+    assertTrue(ir.termDocs(new Term("string","doc1field2")).next());
+    assertTrue(ir.termDocs(new Term("string","doc2field2")).next());
+    assertTrue(ir.termDocs(new Term("string","doc3field2")).next());
+
+    ir.close();
+    dir.close();
+
   }
 }
