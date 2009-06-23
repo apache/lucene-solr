@@ -132,7 +132,7 @@ public class TestLockFactory extends LuceneTestCase {
     // Verify: SimpleFSLockFactory is the default for FSDirectory
     // Verify: FSDirectory does basic locking correctly
     public void testDefaultFSDirectory() throws IOException {
-        String indexDirName = "index.TestLockFactory1";
+        File indexDirName = _TestUtil.getTempDir("index.TestLockFactory1");
 
         IndexWriter writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true,
                                              IndexWriter.MaxFieldLength.LIMITED);
@@ -157,12 +157,12 @@ public class TestLockFactory extends LuceneTestCase {
         }
 
         // Cleanup
-        rmDir(indexDirName);
+        _TestUtil.rmDir(indexDirName);
     }
 
     // Verify: FSDirectory's default lockFactory clears all locks correctly
     public void testFSDirectoryTwoCreates() throws IOException {
-        String indexDirName = "index.TestLockFactory2";
+        File indexDirName = _TestUtil.getTempDir("index.TestLockFactory2");
 
         IndexWriter writer = new IndexWriter(indexDirName, new WhitespaceAnalyzer(), true,
                                              IndexWriter.MaxFieldLength.LIMITED);
@@ -206,7 +206,7 @@ public class TestLockFactory extends LuceneTestCase {
         }
 
         // Cleanup
-        rmDir(indexDirName);
+        _TestUtil.rmDir(indexDirName);
     }
     
 
@@ -215,7 +215,7 @@ public class TestLockFactory extends LuceneTestCase {
     //         settable this way 
     // Verify: FSDirectory does basic locking correctly
     public void testLockClassProperty() throws IOException {
-        String indexDirName = "index.TestLockFactory3";
+        File indexDirName = _TestUtil.getTempDir("index.TestLockFactory3");
         String prpName = "org.apache.lucene.store.FSDirectoryLockFactoryClass";
 
         try {
@@ -257,12 +257,12 @@ public class TestLockFactory extends LuceneTestCase {
         }
 
         // Cleanup
-        rmDir(indexDirName);
+        _TestUtil.rmDir(indexDirName);
     }
 
     // Verify: setDisableLocks works
     public void testDisableLocks() throws IOException {
-        String indexDirName = "index.TestLockFactory4";
+        File indexDirName = _TestUtil.getTempDir("index.TestLockFactory4");
         
         assertTrue("Locks are already disabled", !FSDirectory.getDisableLocks());
         FSDirectory.setDisableLocks(true);
@@ -289,12 +289,12 @@ public class TestLockFactory extends LuceneTestCase {
             writer2.close();
         }
         // Cleanup
-        rmDir(indexDirName);
+        _TestUtil.rmDir(indexDirName);
     }
 
     // Verify: if I try to getDirectory() with two different locking implementations, I get an IOException
     public void testFSDirectoryDifferentLockFactory() throws IOException {
-        String indexDirName = "index.TestLockFactory5";
+        File indexDirName = _TestUtil.getTempDir("index.TestLockFactory5");
 
         LockFactory lf = new SingleInstanceLockFactory();
         FSDirectory fs1 = FSDirectory.getDirectory(indexDirName, lf);
@@ -321,14 +321,14 @@ public class TestLockFactory extends LuceneTestCase {
             fs2.close();
         }
         // Cleanup
-        rmDir(indexDirName);
+        _TestUtil.rmDir(indexDirName);
     }
 
     // Verify: do stress test, by opening IndexReaders and
     // IndexWriters over & over in 2 threads and making sure
     // no unexpected exceptions are raised:
     public void testStressLocks() throws Exception {
-      _testStressLocks(null, "index.TestLockFactory6");
+      _testStressLocks(null, _TestUtil.getTempDir("index.TestLockFactory6"));
     }
 
     // Verify: do stress test, by opening IndexReaders and
@@ -336,11 +336,11 @@ public class TestLockFactory extends LuceneTestCase {
     // no unexpected exceptions are raised, but use
     // NativeFSLockFactory:
     public void testStressLocksNativeFSLockFactory() throws Exception {
-      _testStressLocks(new NativeFSLockFactory("index.TestLockFactory7"), "index.TestLockFactory7");
+      File dir = _TestUtil.getTempDir("index.TestLockFactory7");
+      _testStressLocks(new NativeFSLockFactory(dir), dir);
     }
 
-    public void _testStressLocks(LockFactory lockFactory, String indexDirName) throws Exception {
-        File indexDir = _TestUtil.getTempDir(indexDirName);
+    public void _testStressLocks(LockFactory lockFactory, File indexDir) throws Exception {
         FSDirectory fs1 = FSDirectory.open(indexDir, lockFactory);
 
         // First create a 1 doc index:
@@ -391,16 +391,18 @@ public class TestLockFactory extends LuceneTestCase {
     public void testNativeFSLockFactoryPrefix() throws IOException {
 
       // Make sure we get identical instances:
-      Directory dir1 = FSDirectory.open(new File("TestLockFactory.8"), new NativeFSLockFactory("TestLockFactory.8"));
-      Directory dir2 = FSDirectory.open(new File("TestLockFactory.9"), new NativeFSLockFactory("TestLockFactory.9"));
+      File fdir1 = _TestUtil.getTempDir("TestLockFactory.8");
+      Directory dir1 = FSDirectory.open(fdir1, new NativeFSLockFactory(fdir1));
+      File fdir2 = _TestUtil.getTempDir("TestLockFactory.9");
+      Directory dir2 = FSDirectory.open(fdir2, new NativeFSLockFactory(fdir2));
 
       String prefix1 = dir1.getLockFactory().getLockPrefix();
       String prefix2 = dir2.getLockFactory().getLockPrefix();
 
       assertTrue("Native Lock Factories are incorrectly shared: dir1 and dir2 have same lock prefix '" + prefix1 + "'; they should be different",
                  !prefix1.equals(prefix2));
-      rmDir("TestLockFactory.8");
-      rmDir("TestLockFactory.9");
+      _TestUtil.rmDir(fdir1);
+      _TestUtil.rmDir(fdir2);
     }
 
     // Verify: default LockFactory has no prefix (ie
@@ -408,13 +410,14 @@ public class TestLockFactory extends LuceneTestCase {
     public void testDefaultFSLockFactoryPrefix() throws IOException {
 
       // Make sure we get null prefix:
-      Directory dir = FSDirectory.open(new File("TestLockFactory.10"));
+      File dirName = _TestUtil.getTempDir("TestLockFactory.10");
+      Directory dir = FSDirectory.open(dirName);
 
       String prefix = dir.getLockFactory().getLockPrefix();
 
       assertTrue("Default lock prefix should be null", null == prefix);
 
-      rmDir("TestLockFactory.10");
+      _TestUtil.rmDir(dirName);
     }
 
     private class WriterThread extends Thread { 
@@ -559,17 +562,5 @@ public class TestLockFactory extends LuceneTestCase {
         Document doc = new Document();
         doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(doc);
-    }
-
-    private void rmDir(String dirName) {
-        File dir = new java.io.File(dirName);
-        String[] files = dir.list();            // clear old files
-        if (files != null) {
-          for (int i = 0; i < files.length; i++) {
-            File file = new File(dir, files[i]);
-            file.delete();
-          }
-          dir.delete();
-        }
     }
 }
