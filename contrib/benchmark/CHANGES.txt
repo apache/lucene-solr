@@ -3,6 +3,11 @@ Lucene Benchmark Contrib Change Log
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
 $Id:$
+6/23/09
+  LUCENE-1714: WriteLineDocTask incorrectly  normalized text, by replacing only 
+  occurrences of "\t" with a space. It now replaces "\r\n" in addition to that, 
+  so that LineDocMaker won't fail. (Shai Erera via Michael McCandless)
+  
 6/17/09 
   LUCENE-1595: This issue breaks previous external algorithms. DocMaker has been 
   replaced with a concrete class which accepts a ContentSource for iterating over 

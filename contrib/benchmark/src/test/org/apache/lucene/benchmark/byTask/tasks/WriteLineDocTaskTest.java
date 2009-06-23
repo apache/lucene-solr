@@ -27,9 +27,7 @@ import java.util.Properties;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.benchmark.byTask.feeds.DocData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
-import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -42,10 +40,6 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   // class has to be public so that Class.forName.newInstance() will work
   public static final class WriteLineDocMaker extends DocMaker {
 
-    protected DocData getNextDocData() throws NoMoreDataException, Exception {
-      throw new UnsupportedOperationException("not implemented");
-    }
-
     public Document makeDocument() throws Exception {
       Document doc = new Document();
       doc.add(new Field(BODY_FIELD, "body", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
@@ -54,17 +48,28 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       return doc;
     }
     
-    public int numUniqueTexts() {
-      return 0;
+  }
+  
+  // class has to be public so that Class.forName.newInstance() will work
+  public static final class NewLinesDocMaker extends DocMaker {
+    
+    public Document makeDocument() throws Exception {
+      Document doc = new Document();
+      doc.add(new Field(BODY_FIELD, "body\r\ntext\ttwo", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(new Field(TITLE_FIELD, "title\r\ntext", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(new Field(DATE_FIELD, "date\r\ntext", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      return doc;
     }
     
   }
   
   private static final CompressorStreamFactory csFactory = new CompressorStreamFactory();
 
-  private PerfRunData createPerfRunData(File file, boolean setBZCompress, String bz2CompressVal) throws Exception {
+  private PerfRunData createPerfRunData(File file, boolean setBZCompress,
+                                        String bz2CompressVal,
+                                        String docMakerName) throws Exception {
     Properties props = new Properties();
-    props.setProperty("doc.maker", WriteLineDocMaker.class.getName());
+    props.setProperty("doc.maker", docMakerName);
     props.setProperty("line.file.out", file.getAbsolutePath());
     if (setBZCompress) {
       props.setProperty("bzip.compression", bz2CompressVal);
@@ -74,7 +79,8 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     return new PerfRunData(config);
   }
   
-  private void doReadTest(File file, boolean bz2File) throws Exception {
+  private void doReadTest(File file, boolean bz2File, String expTitle,
+                          String expDate, String expBody) throws Exception {
     InputStream in = new FileInputStream(file);
     if (bz2File) {
       in = csFactory.createCompressorInputStream("bzip2", in);
@@ -85,9 +91,9 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       assertNotNull(line);
       String[] parts = line.split(Character.toString(WriteLineDocTask.SEP));
       assertEquals(3, parts.length);
-      assertEquals("title", parts[0]);
-      assertEquals("date", parts[1]);
-      assertEquals("body", parts[2]);
+      assertEquals(expTitle, parts[0]);
+      assertEquals(expDate, parts[1]);
+      assertEquals(expBody, parts[2]);
       assertNull(br.readLine());
     } finally {
       br.close();
@@ -99,36 +105,48 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     
     // Create a document in bz2 format.
     File file = new File(getWorkDir(), "one-line.bz2");
-    PerfRunData runData = createPerfRunData(file, true, "true");
+    PerfRunData runData = createPerfRunData(file, true, "true", WriteLineDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
     
-    doReadTest(file, true);
+    doReadTest(file, true, "title", "date", "body");
   }
   
   public void testBZip2AutoDetect() throws Exception {
     
     // Create a document in bz2 format.
     File file = new File(getWorkDir(), "one-line.bz2");
-    PerfRunData runData = createPerfRunData(file, false, null);
+    PerfRunData runData = createPerfRunData(file, false, null, WriteLineDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
     
-    doReadTest(file, true);
+    doReadTest(file, true, "title", "date", "body");
   }
   
   public void testRegularFile() throws Exception {
     
     // Create a document in regular format.
     File file = new File(getWorkDir(), "one-line");
-    PerfRunData runData = createPerfRunData(file, true, "false");
+    PerfRunData runData = createPerfRunData(file, true, "false", WriteLineDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);
     wldt.doLogic();
     wldt.close();
     
-    doReadTest(file, false);
+    doReadTest(file, false, "title", "date", "body");
   }
-  
+
+  public void testCharsReplace() throws Exception {
+    // WriteLineDocTask replaced only \t characters w/ a space, since that's its
+    // separator char. However, it didn't replace newline characters, which
+    // resulted in errors in LineDocMaker.
+    File file = new File(getWorkDir(), "one-line");
+    PerfRunData runData = createPerfRunData(file, false, null, NewLinesDocMaker.class.getName());
+    WriteLineDocTask wldt = new WriteLineDocTask(runData);
+    wldt.doLogic();
+    wldt.close();
+    
+    doReadTest(file, false, "title text", "date text", "body text two");
+  }
 }

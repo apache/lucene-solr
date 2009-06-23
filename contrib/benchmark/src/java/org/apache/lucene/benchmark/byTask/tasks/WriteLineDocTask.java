@@ -22,6 +22,8 @@ import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
@@ -36,7 +38,6 @@ import org.apache.lucene.document.Field;
  * taske can be consumed by
  * {@link org.apache.lucene.benchmark.byTask.feeds.LineDocMaker} and is intended
  * to save the IO overhead of opening a file per doument to be indexed.<br>
- * 
  * Supports the following parameters:
  * <ul>
  * <li>line.file.out - the name of the file to write the output to. That
@@ -45,10 +46,14 @@ import org.apache.lucene.document.Field;
  * recommended when the output file is expected to be large. (optional, default:
  * false).
  * </ul>
+ * <b>NOTE:</b> this class is not thread-safe and if used by multiple threads the
+ * output is unspecified (as all will write to the same ouput file in a
+ * non-synchronized way).
  */
 public class WriteLineDocTask extends PerfTask {
 
   public final static char SEP = '\t';
+  private static final Matcher NORMALIZER = Pattern.compile("[\t\r\n]+").matcher("");
 
   private int docSize = 0;
   private BufferedWriter lineFileOut = null;
@@ -92,14 +97,14 @@ public class WriteLineDocTask extends PerfTask {
     Document doc = docSize > 0 ? docMaker.makeDocument(docSize) : docMaker.makeDocument();
 
     Field f = doc.getField(DocMaker.BODY_FIELD);
-    String body = f != null ? f.stringValue().replace('\t', ' ') : null;
+    String body = f != null ? NORMALIZER.reset(f.stringValue()).replaceAll(" ") : null;
     
     if (body != null) {
       f = doc.getField(DocMaker.TITLE_FIELD);
-      String title = f != null ? f.stringValue().replace('\t', ' ') : "";
+      String title = f != null ? NORMALIZER.reset(f.stringValue()).replaceAll(" ") : "";
       
       f = doc.getField(DocMaker.DATE_FIELD);
-      String date = f != null ? f.stringValue().replace('\t', ' ') : "";
+      String date = f != null ? NORMALIZER.reset(f.stringValue()).replaceAll(" ") : "";
       
       lineFileOut.write(title, 0, title.length());
       lineFileOut.write(SEP);
