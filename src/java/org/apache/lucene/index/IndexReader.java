@@ -819,8 +819,16 @@ public abstract class IndexReader implements Cloneable {
     return maxDoc() - numDocs();
   }
 
-  /** Returns the stored fields of the <code>n</code><sup>th</sup>
-   <code>Document</code> in this index.
+  /**
+   * Returns the stored fields of the <code>n</code><sup>th</sup>
+   * <code>Document</code> in this index.
+   * <p>
+   * <b>NOTE:</b> for performance reasons, this method does not check if the
+   * requested document is deleted, and therefore asking for a deleted document
+   * may yield unspecified results. Usually this is not required, however you
+   * can call {@link #isDeleted(int)} with the requested document ID to verify
+   * the document is not deleted.
+   * 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
@@ -830,30 +838,38 @@ public abstract class IndexReader implements Cloneable {
   }
 
   /**
-   * Get the {@link org.apache.lucene.document.Document} at the <code>n</code><sup>th</sup> position. The {@link org.apache.lucene.document.FieldSelector}
-   * may be used to determine what {@link org.apache.lucene.document.Field}s to load and how they should be loaded.
+   * Get the {@link org.apache.lucene.document.Document} at the <code>n</code>
+   * <sup>th</sup> position. The {@link FieldSelector} may be used to determine
+   * what {@link org.apache.lucene.document.Field}s to load and how they should
+   * be loaded. <b>NOTE:</b> If this Reader (more specifically, the underlying
+   * <code>FieldsReader</code>) is closed before the lazy
+   * {@link org.apache.lucene.document.Field} is loaded an exception may be
+   * thrown. If you want the value of a lazy
+   * {@link org.apache.lucene.document.Field} to be available after closing you
+   * must explicitly load it or fetch the Document again with a new loader.
+   * <p>
+   * <b>NOTE:</b> for performance reasons, this method does not check if the
+   * requested document is deleted, and therefore asking for a deleted document
+   * may yield unspecified results. Usually this is not required, however you
+   * can call {@link #isDeleted(int)} with the requested document ID to verify
+   * the document is not deleted.
    * 
-   * <b>NOTE:</b> If this Reader (more specifically, the underlying <code>FieldsReader</code>) is closed before the lazy {@link org.apache.lucene.document.Field} is
-   * loaded an exception may be thrown.  If you want the value of a lazy {@link org.apache.lucene.document.Field} to be available after closing you must
-   * explicitly load it or fetch the Document again with a new loader.
-   * 
-   *  
    * @param n Get the document at the <code>n</code><sup>th</sup> position
-   * @param fieldSelector The {@link org.apache.lucene.document.FieldSelector} to use to determine what Fields should be loaded on the Document.  May be null, in which case all Fields will be loaded.
-   * @return The stored fields of the {@link org.apache.lucene.document.Document} at the nth position
+   * @param fieldSelector The {@link FieldSelector} to use to determine what
+   *        Fields should be loaded on the Document. May be null, in which case
+   *        all Fields will be loaded.
+   * @return The stored fields of the
+   *         {@link org.apache.lucene.document.Document} at the nth position
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * 
    * @see org.apache.lucene.document.Fieldable
    * @see org.apache.lucene.document.FieldSelector
    * @see org.apache.lucene.document.SetBasedFieldSelector
    * @see org.apache.lucene.document.LoadFirstFieldSelector
    */
-  //When we convert to JDK 1.5 make this Set<String>
+  // TODO (1.5): When we convert to JDK 1.5 make this Set<String>
   public abstract Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException;
   
-  
-
   /** Returns true if document <i>n</i> has been deleted */
   public abstract boolean isDeleted(int n);
 

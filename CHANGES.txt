@@ -112,6 +112,9 @@ Changes in runtime behavior
     rely on this behavior by the 3.0 release of Lucene. (Jonathan
     Mamou, Mark Miller via Mike McCandless)
 
+ 7. LUCENE-1708 - IndexReader.document() no longer checks if the document is 
+    deleted. You can call IndexReader.isDeleted(n) prior to calling document(n).
+    (Shai Erera via Mike McCandless)
 
 API Changes
 

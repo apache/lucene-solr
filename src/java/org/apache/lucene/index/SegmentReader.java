@@ -849,15 +849,8 @@ class SegmentReader extends IndexReader implements Cloneable {
     return fieldInfos;
   }
 
-  /**
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     ensureOpen();
-    if (isDeleted(n))
-      throw new IllegalArgumentException
-              ("attempt to access a deleted document");
     return getFieldsReader().doc(n, fieldSelector);
   }
 
