@@ -174,13 +174,20 @@ public class QueryParser implements QueryParserConstants {
     }
     catch (ParseException tme) {
       // rethrow to include the original query:
-      throw new ParseException("Cannot parse '" +query+ "': " + tme.getMessage());
+      // rethrow to include the original query:
+      ParseException e = new ParseException("Cannot parse '" +query+ "': " + tme.getMessage());
+      e.initCause(tme);
+      throw e;
     }
     catch (TokenMgrError tme) {
-      throw new ParseException("Cannot parse '" +query+ "': " + tme.getMessage());
+      ParseException e = new ParseException("Cannot parse '" +query+ "': " + tme.getMessage());
+      e.initCause(tme);
+      throw e;
     }
     catch (BooleanQuery.TooManyClauses tmc) {
-      throw new ParseException("Cannot parse '" +query+ "': too many boolean clauses");
+      ParseException e = new ParseException("Cannot parse '" +query+ "': too many boolean clauses");
+      e.initCause(tmc);
+      throw e;
     }
   }
 
