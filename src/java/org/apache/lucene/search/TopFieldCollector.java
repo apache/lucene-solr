@@ -810,7 +810,12 @@ public abstract class TopFieldCollector extends TopDocsCollector {
   }
 
   /**
-   * Creates a new {@link TopFieldCollector} from the given arguments.
+   * Creates a new {@link TopFieldCollector} from the given
+   * arguments.
+   *
+   * <p><b>NOTE</b>: The instances returned by this method
+   * pre-allocate a full array of length
+   * <code>numHits</code>.
    * 
    * @param sort
    *          the sort criteria (SortFields).

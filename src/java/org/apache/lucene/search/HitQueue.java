@@ -53,6 +53,9 @@ final class HitQueue extends PriorityQueue {
    * }
    * </pre>
    * 
+   * <p><b>NOTE</b>: This class pre-allocate a full array of
+   * length <code>size</code>.
+   * 
    * @param size
    *          the requested size of this queue.
    * @param prePopulate

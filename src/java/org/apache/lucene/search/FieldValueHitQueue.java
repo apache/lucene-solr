@@ -173,6 +173,9 @@ public abstract class FieldValueHitQueue extends PriorityQueue {
   /**
    * Creates a hit queue sorted by the given list of fields.
    * 
+   * <p><b>NOTE</b>: The instances returned by this method
+   * pre-allocate a full array of length <code>numHits</code>.
+   * 
    * @param fields
    *          SortField array we are sorting by in priority order (highest
    *          priority first); cannot be <code>null</code> or empty

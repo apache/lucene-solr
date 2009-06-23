@@ -18,8 +18,13 @@ package org.apache.lucene.util;
  */
 
 /** A PriorityQueue maintains a partial ordering of its elements such that the
-  least element can always be found in constant time.  Put()'s and pop()'s
-  require log(size) time. */
+ * least element can always be found in constant time.  Put()'s and pop()'s
+ * require log(size) time.
+ *
+ * <p><b>NOTE</b>: This class pre-allocates a full array of
+ * length <code>maxSize+1</code>, in {@link #initialize}.
+  * 
+*/
 public abstract class PriorityQueue {
   private int size;
   private int maxSize;
