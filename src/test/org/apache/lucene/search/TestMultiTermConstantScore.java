@@ -180,6 +180,9 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
       public void setNextReader(IndexReader reader, int docBase) {
         base = docBase;
       }
+      public boolean acceptsDocsOutOfOrder() {
+        return true;
+      }
     });
 
     //

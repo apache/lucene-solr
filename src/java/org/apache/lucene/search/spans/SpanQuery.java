@@ -17,14 +17,14 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
-import org.apache.lucene.search.Weight;
-
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Set;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryWeight;
+import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.Weight;
 
 /** Base class for span-based queries. */
 public abstract class SpanQuery extends Query {
@@ -46,7 +46,7 @@ public abstract class SpanQuery extends Query {
    */
   public PayloadSpans getPayloadSpans(IndexReader reader) throws IOException{
     return null;
-  };
+  }
 
   /** Returns the name of the field matched by this query.*/
   public abstract String getField();
@@ -57,9 +57,13 @@ public abstract class SpanQuery extends Query {
    */
   public abstract Collection getTerms();
 
+  /** @deprecated delete in 3.0. */
   protected Weight createWeight(Searcher searcher) throws IOException {
+    return createQueryWeight(searcher);
+  }
+  
+  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
     return new SpanWeight(this, searcher);
   }
 
 }
-

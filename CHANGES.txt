@@ -53,6 +53,17 @@ Changes in backwards compatibility policy
     which was unlikely done, because there is no possibility to change
     Lucene's FieldCache implementation.  (Grant Ingersoll, Uwe Schindler)
     
+ 3. LUCENE-1630: Deprecate Weight in favor of QueryWeight: added
+    matching methods to Searcher to take QueryWeight and deprecated
+    those taking Weight.  If you have a Weight implementation, you can
+    turn it into a QueryWeight with QueryWeightWrapper (will be
+    removed in 3.0). All of the Weight-based methods were implemented
+    by calling the QueryWeight variants by wrapping the given Weight.
+    Going forward Searchable will be kept for convenience only and may
+    be changed between minor releases without any deprecation
+    process. It is not recommended to implement it, but rather extend
+    Searcher.  (Shai Erera via Mike McCandless)
+
 Changes in runtime behavior
 
  1. LUCENE-1424: QueryParser now by default uses constant score query
@@ -225,6 +236,24 @@ API Changes
     NumericRangeQuery and its new indexing format for numeric or
     date values.  (Uwe Schindler)
     
+23. LUCENE-1630: Deprecate Weight in favor of QueryWeight, which adds
+    a scorer(IndexReader, boolean /* scoreDocsInOrder */, boolean /*
+    topScorer */) method instead of scorer(IndexReader) (now
+    deprecated). The new method is used by IndexSearcher to mate
+    between Collector and Scorer orderness of doc IDs. Some Scorers
+    (like BooleanScorer) are much more efficient if out-of-order
+    documents scoring is allowed by a Collector.  Collector must now
+    implement acceptsDocsOutOfOrder. If you write a Collector which
+    does not care about doc ID orderness, it is recommended that you
+    return true.  QueryWeight has the scoresDocsOutOfOrder method,
+    which by default returns false.  If you create a QueryWeight which
+    will score documents out of order if that's requested, you should
+    override that method to return true.  Also deprecated
+    BooleanQuery's setAllowDocsOutOfOrder and getAllowDocsOutOfOrder
+    as they are not needed anymore. BooleanQuery will now score docs
+    out of order when used with a Collector that can accept docs out
+    of order. (Shai Erera via Mike McCandless)
+ 	
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()

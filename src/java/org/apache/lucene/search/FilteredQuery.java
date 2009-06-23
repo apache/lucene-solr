@@ -54,16 +54,14 @@ extends Query {
     this.filter = filter;
   }
 
-
-
   /**
    * Returns a Weight that applies the filter to the enclosed query's Weight.
    * This is accomplished by overriding the Scorer returned by the Weight.
    */
-  protected Weight createWeight (final Searcher searcher) throws IOException {
-    final Weight weight = query.createWeight (searcher);
+  public QueryWeight createQueryWeight(final Searcher searcher) throws IOException {
+    final QueryWeight weight = query.createQueryWeight (searcher);
     final Similarity similarity = query.getSimilarity(searcher);
-    return new Weight() {
+    return new QueryWeight() {
       private float value;
         
       // pass these methods through to enclosed query's weight
@@ -99,8 +97,9 @@ extends Query {
       public Query getQuery() { return FilteredQuery.this; }
 
       // return a filtering scorer
-      public Scorer scorer (IndexReader indexReader) throws IOException {
-        final Scorer scorer = weight.scorer(indexReader);
+      public Scorer scorer(IndexReader indexReader, boolean scoreDocsInOrder, boolean topScorer)
+          throws IOException {
+        final Scorer scorer = weight.scorer(indexReader, scoreDocsInOrder, false);
         final DocIdSetIterator docIdSetIterator = filter.getDocIdSet(indexReader).iterator();
 
         return new Scorer(similarity) {

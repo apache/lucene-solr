@@ -80,24 +80,50 @@ public abstract class Query implements java.io.Serializable, Cloneable {
     return toString("");
   }
 
-  /** Expert: Constructs an appropriate Weight implementation for this query.
-   *
-   * <p>Only implemented by primitive queries, which re-write to themselves.
+  /**
+   * Expert: Constructs an appropriate Weight implementation for this query.
+   * 
+   * <p>
+   * Only implemented by primitive queries, which re-write to themselves.
+   * @deprecated use {@link #createQueryWeight(Searcher)} instead.
    */
   protected Weight createWeight(Searcher searcher) throws IOException {
+    return createQueryWeight(searcher);
+  }
+
+  /**
+   * Expert: Constructs an appropriate {@link QueryWeight} implementation for
+   * this query.
+   * 
+   * <p>
+   * Only implemented by primitive queries, which re-write to themselves.
+   */
+  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
     throw new UnsupportedOperationException();
   }
 
-  /** Expert: Constructs and initializes a Weight for a top-level query. */
-  public Weight weight(Searcher searcher)
-    throws IOException {
+  /**
+   * Expert: Constructs and initializes a Weight for a top-level query.
+   * 
+   * @deprecated use {@link #queryWeight(Searcher)} instead.
+   */
+  public Weight weight(Searcher searcher) throws IOException {
+    return queryWeight(searcher);
+  }
+
+  /**
+   * Expert: Constructs and initializes a {@link QueryWeight} for a top-level
+   * query.
+   */
+  public QueryWeight queryWeight(Searcher searcher) throws IOException {
     Query query = searcher.rewrite(this);
-    Weight weight = query.createWeight(searcher);
+    QueryWeight weight = query.createQueryWeight(searcher);
     float sum = weight.sumOfSquaredWeights();
     float norm = getSimilarity(searcher).queryNorm(sum);
     weight.normalize(norm);
     return weight;
   }
+  
 
   /** Expert: called to re-write queries into primitive queries. For example,
    * a PrefixQuery will be rewritten into a BooleanQuery that consists
@@ -106,6 +132,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
   public Query rewrite(IndexReader reader) throws IOException {
     return this;
   }
+  
 
   /** Expert: called when re-writing queries under MultiSearcher.
    *
@@ -151,6 +178,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
       result.add((Query) it.next(), BooleanClause.Occur.SHOULD);
     return result;
   }
+  
 
   /**
    * Expert: adds all terms occuring in this query to the terms set. Only
@@ -162,6 +190,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
     // needs to be implemented by query subclasses
     throw new UnsupportedOperationException();
   }
+  
 
 
   /** Expert: merges the clauses of a set of BooleanQuery's into a single
@@ -187,6 +216,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
     }
     return result;
   }
+  
 
   /** Expert: Returns the Similarity implementation to be used for this query.
    * Subclasses may override this method to specify their own Similarity
@@ -199,7 +229,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
   /** Returns a clone of this query. */
   public Object clone() {
     try {
-      return (Query)super.clone();
+      return super.clone();
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException("Clone not supported: " + e.getMessage());
     }

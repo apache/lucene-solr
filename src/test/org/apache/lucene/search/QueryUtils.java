@@ -105,7 +105,7 @@ public class QueryUtils {
    * @throws IOException if serialization check fail. 
    */
   private static void checkSerialization(Query q, Searcher s) throws IOException {
-    Weight w = q.weight(s);
+    QueryWeight w = q.queryWeight(s);
     try {
       ByteArrayOutputStream bos = new ByteArrayOutputStream();
       ObjectOutputStream oos = new ObjectOutputStream(bos);
@@ -150,8 +150,8 @@ public class QueryUtils {
       //System.out.print("Order:");for (int i = 0; i < order.length; i++) System.out.print(order[i]==skip_op ? " skip()":" next()"); System.out.println();
       final int opidx[] = {0};
 
-      final Weight w = q.weight(s);
-      final Scorer scorer = w.scorer(s.getIndexReader());
+      final QueryWeight w = q.queryWeight(s);
+      final Scorer scorer = w.scorer(s.getIndexReader(), true, false);
       
       // FUTURE: ensure scorer.doc()==-1
 
@@ -200,6 +200,9 @@ public class QueryUtils {
         public void setNextReader(IndexReader reader, int docBase) {
           base = docBase;
         }
+        public boolean acceptsDocsOutOfOrder() {
+          return true;
+        }
       });
       
       // make sure next call to scorer is false.
@@ -228,8 +231,8 @@ public class QueryUtils {
         float score = scorer.score();
         try {
           for (int i=lastDoc[0]+1; i<=doc; i++) {
-            Weight w = q.weight(s);
-            Scorer scorer = w.scorer(s.getIndexReader());
+            QueryWeight w = q.queryWeight(s);
+            Scorer scorer = w.scorer(s.getIndexReader(), true, false);
             Assert.assertTrue("query collected "+doc+" but skipTo("+i+") says no more docs!",scorer.advance(i) != DocIdSetIterator.NO_MORE_DOCS);
             Assert.assertEquals("query collected "+doc+" but skipTo("+i+") got to "+scorer.docID(),doc,scorer.docID());
             float skipToScore = scorer.score();
@@ -244,9 +247,12 @@ public class QueryUtils {
       public void setNextReader(IndexReader reader, int docBase) {
         base = docBase;
       }
+      public boolean acceptsDocsOutOfOrder() {
+        return false;
+      }
     });
-    Weight w = q.weight(s);
-    Scorer scorer = w.scorer(s.getIndexReader());
+    QueryWeight w = q.queryWeight(s);
+    Scorer scorer = w.scorer(s.getIndexReader(), true, false);
     boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
     if (more) 
       Assert.assertFalse("query's last doc was "+lastDoc[0]+" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);

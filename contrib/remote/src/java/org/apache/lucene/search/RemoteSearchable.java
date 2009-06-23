@@ -48,11 +48,16 @@ public class RemoteSearchable
   /** @deprecated use {@link #search(Weight, Filter, Collector)} instead. */
   public void search(Weight weight, Filter filter, HitCollector results)
     throws IOException {
-    local.search(weight, filter, results);
+    search(new QueryWeightWrapper(weight), filter, new HitCollectorWrapper(results));
   }
 
   public void search(Weight weight, Filter filter, Collector results)
       throws IOException {
+    search(new QueryWeightWrapper(weight), filter, results);
+  }
+
+  public void search(QueryWeight weight, Filter filter, Collector results)
+  throws IOException {
     local.search(weight, filter, results);
   }
 
@@ -74,11 +79,19 @@ public class RemoteSearchable
   }
 
   public TopDocs search(Weight weight, Filter filter, int n) throws IOException {
+    return search(new QueryWeightWrapper(weight), filter, n);
+  }
+  
+  public TopDocs search(QueryWeight weight, Filter filter, int n) throws IOException {
     return local.search(weight, filter, n);
   }
 
-
-  public TopFieldDocs search (Weight weight, Filter filter, int n, Sort sort)
+  public TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort)
+  throws IOException {
+    return search(new QueryWeightWrapper(weight), filter, n, sort);
+  }
+  
+  public TopFieldDocs search(QueryWeight weight, Filter filter, int n, Sort sort)
   throws IOException {
     return local.search (weight, filter, n, sort);
   }
@@ -96,6 +109,10 @@ public class RemoteSearchable
   }
 
   public Explanation explain(Weight weight, int doc) throws IOException {
+    return explain(new QueryWeightWrapper(weight), doc);
+  }
+  
+  public Explanation explain(QueryWeight weight, int doc) throws IOException {
     return local.explain(weight, doc);
   }
 

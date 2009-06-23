@@ -17,25 +17,32 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.index.IndexReader; // for javadoc
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.Term;
 
-import java.io.IOException;       // for javadoc
-
-/** The interface for search implementations.
- *
- * <p>Searchable is the abstract network protocol for searching. 
- * Implementations provide search over a single index, over multiple
- * indices, and over indices on remote servers.
- *
- * <p>Queries, filters and sort criteria are designed to be compact so that
- * they may be efficiently passed to a remote index, with only the top-scoring
- * hits being returned, rather than every matching hit.
+/**
+ * The interface for search implementations.
+ * 
+ * <p>
+ * Searchable is the abstract network protocol for searching. Implementations
+ * provide search over a single index, over multiple indices, and over indices
+ * on remote servers.
+ * 
+ * <p>
+ * Queries, filters and sort criteria are designed to be compact so that they
+ * may be efficiently passed to a remote index, with only the top-scoring hits
+ * being returned, rather than every matching hit.
+ * 
+ * <b>NOTE:</b> this interface is kept public for convenience. Since it is not
+ * expected to be implemented directly, it may be changed unexpectedly between
+ * releases.
  */
 public interface Searchable {
+  
   /** Lower-level search API.
    *
    * <p>{@link HitCollector#collect(int,float)} is called for every non-zero
@@ -51,7 +58,7 @@ public interface Searchable {
    * @param filter if non-null, used to permit documents to be collected.
    * @param results to receive hits
    * @throws BooleanQuery.TooManyClauses
-   * @deprecated use {@link #search(Weight, Filter, Collector)} instead.
+   * @deprecated use {@link #search(QueryWeight, Filter, Collector)} instead.
    */
   void search(Weight weight, Filter filter, HitCollector results)
   throws IOException;
@@ -75,8 +82,32 @@ public interface Searchable {
    * @param collector
    *          to receive hits
    * @throws BooleanQuery.TooManyClauses
+   * 
+   * @deprecated use {@link #search(QueryWeight, Filter, Collector)} instead.
    */
   void search(Weight weight, Filter filter, Collector collector) throws IOException;
+
+  /**
+   * Lower-level search API.
+   * 
+   * <p>
+   * {@link Collector#collect(int)} is called for every document. <br>
+   * Collector-based access to remote indexes is discouraged.
+   * 
+   * <p>
+   * Applications should only use this if they need <i>all</i> of the matching
+   * documents. The high-level search API ({@link Searcher#search(Query)}) is
+   * usually more efficient, as it skips non-high-scoring hits.
+   * 
+   * @param weight
+   *          to match documents
+   * @param filter
+   *          if non-null, used to permit documents to be collected.
+   * @param collector
+   *          to receive hits
+   * @throws BooleanQuery.TooManyClauses
+   */
+  void search(QueryWeight weight, Filter filter, Collector collector) throws IOException;
 
   /** Frees resources associated with this Searcher.
    * Be careful not to call this method while you are still using objects
@@ -86,7 +117,7 @@ public interface Searchable {
 
   /** Expert: Returns the number of documents containing <code>term</code>.
    * Called by search code to compute term weights.
-   * @see IndexReader#docFreq(Term)
+   * @see org.apache.lucene.index.IndexReader#docFreq(Term)
    */
   int docFreq(Term term) throws IOException;
 
@@ -98,7 +129,7 @@ public interface Searchable {
 
   /** Expert: Returns one greater than the largest possible document number.
    * Called by search code to compute term weights.
-   * @see IndexReader#maxDoc()
+   * @see org.apache.lucene.index.IndexReader#maxDoc()
    */
   int maxDoc() throws IOException;
 
@@ -110,12 +141,24 @@ public interface Searchable {
    * <p>Applications should usually call {@link Searcher#search(Query)} or
    * {@link Searcher#search(Query,Filter)} instead.
    * @throws BooleanQuery.TooManyClauses
+   * @deprecated use {@link #search(QueryWeight, Filter, int)} instead.
    */
   TopDocs search(Weight weight, Filter filter, int n) throws IOException;
+  
+  /** Expert: Low-level search implementation.  Finds the top <code>n</code>
+   * hits for <code>query</code>, applying <code>filter</code> if non-null.
+   *
+   * <p>Called by {@link Hits}.
+   *
+   * <p>Applications should usually call {@link Searcher#search(Query)} or
+   * {@link Searcher#search(Query,Filter)} instead.
+   * @throws BooleanQuery.TooManyClauses
+   */
+  TopDocs search(QueryWeight weight, Filter filter, int n) throws IOException;
 
   /** Expert: Returns the stored fields of document <code>i</code>.
    * Called by {@link HitCollector} implementations.
-   * @see IndexReader#document(int)
+   * @see org.apache.lucene.index.IndexReader#document(int)
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
@@ -136,7 +179,7 @@ public interface Searchable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    * 
-   * @see IndexReader#document(int, FieldSelector)
+   * @see org.apache.lucene.index.IndexReader#document(int, FieldSelector)
    * @see org.apache.lucene.document.Fieldable
    * @see org.apache.lucene.document.FieldSelector
    * @see org.apache.lucene.document.SetBasedFieldSelector
@@ -159,10 +202,23 @@ public interface Searchable {
    * entire index.
    * <p>Applications should call {@link Searcher#explain(Query, int)}.
    * @throws BooleanQuery.TooManyClauses
+   * @deprecated use {@link #explain(QueryWeight, int)} instead.
    */
   Explanation explain(Weight weight, int doc) throws IOException;
+  
+  /** Expert: low-level implementation method
+   * Returns an Explanation that describes how <code>doc</code> scored against
+   * <code>weight</code>.
+   *
+   * <p>This is intended to be used in developing Similarity implementations,
+   * and, for good performance, should not be displayed with every hit.
+   * Computing an explanation is as expensive as executing the query over the
+   * entire index.
+   * <p>Applications should call {@link Searcher#explain(Query, int)}.
+   * @throws BooleanQuery.TooManyClauses
+   */
+  Explanation explain(QueryWeight weight, int doc) throws IOException;
 
-  // TODO: change the javadoc in 3.0 to remove the last NOTE section.
   /** Expert: Low-level search implementation with arbitrary sorting.  Finds
    * the top <code>n</code> hits for <code>query</code>, applying
    * <code>filter</code> if non-null, and sorting the hits by the criteria in
@@ -171,15 +227,23 @@ public interface Searchable {
    * <p>Applications should usually call {@link
    * Searcher#search(Query,Filter,Sort)} instead.
    * 
-   * <b>NOTE:</b> currently, this method tracks document scores and sets them in
-   * the returned {@link FieldDoc}, however in 3.0 it will move to not track
-   * document scores. If document scores tracking is still needed, you can use
-   * {@link #search(Weight, Filter, Collector)} and pass in a
-   * {@link TopFieldCollector} instance.
+   * @throws BooleanQuery.TooManyClauses
+   * @deprecated use {@link #search(QueryWeight, Filter, int, Sort)} instead.
+   */
+  TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort)
+  throws IOException;
+  
+  /** Expert: Low-level search implementation with arbitrary sorting.  Finds
+   * the top <code>n</code> hits for <code>query</code>, applying
+   * <code>filter</code> if non-null, and sorting the hits by the criteria in
+   * <code>sort</code>.
+   *
+   * <p>Applications should usually call {@link
+   * Searcher#search(Query,Filter,Sort)} instead.
    * 
    * @throws BooleanQuery.TooManyClauses
    */
-  TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort)
+  TopFieldDocs search(QueryWeight weight, Filter filter, int n, Sort sort)
   throws IOException;
 
 }

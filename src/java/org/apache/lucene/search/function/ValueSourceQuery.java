@@ -62,7 +62,7 @@ public class ValueSourceQuery extends Query {
     // no terms involved here
   }
 
-  private class ValueSourceWeight implements Weight {
+  private class ValueSourceWeight extends QueryWeight {
     Similarity similarity;
     float queryNorm;
     float queryWeight;
@@ -93,14 +93,13 @@ public class ValueSourceQuery extends Query {
       queryWeight *= this.queryNorm;
     }
 
-    /*(non-Javadoc) @see org.apache.lucene.search.Weight#scorer(org.apache.lucene.index.IndexReader) */
-    public Scorer scorer(IndexReader reader) throws IOException {
+    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       return new ValueSourceScorer(similarity, reader, this);
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#explain(org.apache.lucene.index.IndexReader, int) */
     public Explanation explain(IndexReader reader, int doc) throws IOException {
-      return scorer(reader).explain(doc);
+      return scorer(reader, true, false).explain(doc);
     }
   }
 
@@ -173,12 +172,10 @@ public class ValueSourceQuery extends Query {
     }
   }
 
-  /*(non-Javadoc) @see org.apache.lucene.search.Query#createWeight(org.apache.lucene.search.Searcher) */
-  protected Weight createWeight(Searcher searcher) {
+  public QueryWeight createQueryWeight(Searcher searcher) {
     return new ValueSourceQuery.ValueSourceWeight(searcher);
   }
 
-  /* (non-Javadoc) @see org.apache.lucene.search.Query#toString(java.lang.String) */
   public String toString(String field) {
     return valSrc.toString() + ToStringUtils.boost(getBoost());
   }

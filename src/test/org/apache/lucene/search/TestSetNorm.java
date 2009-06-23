@@ -76,6 +76,9 @@ public class TestSetNorm extends LuceneTestCase {
          public void setNextReader(IndexReader reader, int docBase) {
            base = docBase;
          }
+         public boolean acceptsDocsOutOfOrder() {
+           return true;
+         }
        });
 
     float lastScore = 0.0f;

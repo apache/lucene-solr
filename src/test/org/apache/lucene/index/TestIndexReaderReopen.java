@@ -1073,7 +1073,6 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
 
   protected void setUp() throws Exception {
-    // TODO Auto-generated method stub
     super.setUp();
     String tempDir = System.getProperty("java.io.tmpdir");
     if (tempDir == null)

@@ -26,7 +26,6 @@ import org.apache.lucene.index.IndexReader;
  * {@link Collector} and makes sure only documents with
  * scores &gt; 0 are collected.
  */
-
 public class PositiveScoresOnlyCollector extends Collector {
 
   final private Collector c;
@@ -51,6 +50,10 @@ public class PositiveScoresOnlyCollector extends Collector {
     // score() also.
     this.scorer = new ScoreCachingWrappingScorer(scorer);
     c.setScorer(this.scorer);
+  }
+
+  public boolean acceptsDocsOutOfOrder() {
+    return c.acceptsDocsOutOfOrder();
   }
 
 }

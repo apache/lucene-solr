@@ -50,11 +50,11 @@ public class ConstantScoreQuery extends Query {
     // but may not be OK for highlighting
   }
 
-  protected class ConstantWeight implements Weight {
+  protected class ConstantWeight extends QueryWeight {
     private Similarity similarity;
     private float queryNorm;
     private float queryWeight;
-
+    
     public ConstantWeight(Searcher searcher) {
       this.similarity = getSimilarity(searcher);
     }
@@ -77,13 +77,13 @@ public class ConstantScoreQuery extends Query {
       queryWeight *= this.queryNorm;
     }
 
-    public Scorer scorer(IndexReader reader) throws IOException {
+    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       return new ConstantScorer(similarity, reader, this);
     }
 
     public Explanation explain(IndexReader reader, int doc) throws IOException {
 
-      ConstantScorer cs = (ConstantScorer)scorer(reader);
+      ConstantScorer cs = (ConstantScorer) scorer(reader, true, false);
       boolean exists = cs.docIdSetIterator.advance(doc) == doc;
 
       ComplexExplanation result = new ComplexExplanation();
@@ -110,7 +110,7 @@ public class ConstantScoreQuery extends Query {
     final float theScore;
     int doc = -1;
 
-    public ConstantScorer(Similarity similarity, IndexReader reader, Weight w) throws IOException {
+    public ConstantScorer(Similarity similarity, IndexReader reader, QueryWeight w) throws IOException {
       super(similarity);
       theScore = w.getValue();
       docIdSetIterator = filter.getDocIdSet(reader).iterator();
@@ -152,7 +152,7 @@ public class ConstantScoreQuery extends Query {
     }
   }
 
-  protected Weight createWeight(Searcher searcher) {
+  public QueryWeight createQueryWeight(Searcher searcher) {
     return new ConstantScoreQuery.ConstantWeight(searcher);
   }
 

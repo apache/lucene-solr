@@ -55,6 +55,10 @@ public abstract class TopScoreDocCollector extends TopDocsCollector {
       pqTop.score = score;
       pqTop = (ScoreDoc) pq.updateTop();
     }
+    
+    public boolean acceptsDocsOutOfOrder() {
+      return false;
+    }
   }
 
   // Assumes docs are scored out of order.
@@ -73,6 +77,10 @@ public abstract class TopScoreDocCollector extends TopDocsCollector {
       pqTop.doc = doc;
       pqTop.score = score;
       pqTop = (ScoreDoc) pq.updateTop();
+    }
+    
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
     }
   }
 

@@ -135,6 +135,11 @@ public abstract class TopFieldCollector extends TopDocsCollector {
         }
       }
     }
+    
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
+
   }
 
   /*
@@ -240,6 +245,11 @@ public abstract class TopFieldCollector extends TopDocsCollector {
         }
       }
     }
+    
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
+
   }
 
   /*
@@ -341,8 +351,12 @@ public abstract class TopFieldCollector extends TopDocsCollector {
           comparator.setBottom(bottom.slot);
         }
       }
-
     }
+    
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
+
   }
 
   /*
@@ -489,6 +503,11 @@ public abstract class TopFieldCollector extends TopDocsCollector {
         }
       }
     }
+    
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
+
   }
 
   /*
@@ -632,6 +651,11 @@ public abstract class TopFieldCollector extends TopDocsCollector {
         }
       }
     }
+    
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
+
   }
 
   /*
@@ -781,6 +805,11 @@ public abstract class TopFieldCollector extends TopDocsCollector {
       this.scorer = scorer;
       super.setScorer(scorer);
     }
+    
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
+
   }
 
   private static final ScoreDoc[] EMPTY_SCOREDOCS = new ScoreDoc[0];
@@ -930,4 +959,8 @@ public abstract class TopFieldCollector extends TopDocsCollector {
     return new TopFieldDocs(totalHits, results, ((FieldValueHitQueue) pq).getFields(), maxScore);
   }
   
+  public boolean acceptsDocsOutOfOrder() {
+    return false;
+  }
+
 }

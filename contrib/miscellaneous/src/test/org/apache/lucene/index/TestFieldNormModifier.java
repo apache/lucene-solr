@@ -146,6 +146,9 @@ public class TestFieldNormModifier extends TestCase {
       public void setScorer(Scorer scorer) throws IOException {
         this.scorer = scorer;
       }
+      public boolean acceptsDocsOutOfOrder() {
+        return true;
+      }
     });
     searcher.close();
     
@@ -173,6 +176,9 @@ public class TestFieldNormModifier extends TestCase {
       }
       public void setScorer(Scorer scorer) throws IOException {
         this.scorer = scorer;
+      }
+      public boolean acceptsDocsOutOfOrder() {
+        return true;
       }
     });
     searcher.close();
@@ -218,6 +224,9 @@ public class TestFieldNormModifier extends TestCase {
       }
       public void setScorer(Scorer scorer) throws IOException {
         this.scorer = scorer;
+      }
+      public boolean acceptsDocsOutOfOrder() {
+        return true;
       }
     });
     searcher.close();

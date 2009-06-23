@@ -216,4 +216,8 @@ public class TimeLimitingCollector extends Collector {
     collector.setScorer(scorer);
   }
 
+  public boolean acceptsDocsOutOfOrder() {
+    return collector.acceptsDocsOutOfOrder();
+  }
+
 }

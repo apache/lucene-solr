@@ -99,6 +99,10 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       this.scorer = new ScoreCachingWrappingScorer(scorer);
     }
     
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
+
   }
 
   private static final float[] scores = new float[] { 0.7767749f, 1.7839992f,

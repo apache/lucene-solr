@@ -24,10 +24,10 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryWeight;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -271,19 +271,18 @@ public class CustomScoreQuery extends Query {
 
   //=========================== W E I G H T ============================
   
-  private class CustomWeight implements Weight {
+  private class CustomWeight extends QueryWeight {
     Similarity similarity;
-    Weight subQueryWeight;
-    Weight[] valSrcWeights;
+    QueryWeight subQueryWeight;
+    QueryWeight[] valSrcWeights;
     boolean qStrict;
 
     public CustomWeight(Searcher searcher) throws IOException {
       this.similarity = getSimilarity(searcher);
-      this.subQueryWeight = subQuery.weight(searcher); 
-      this.subQueryWeight = subQuery.weight(searcher);
-      this.valSrcWeights = new Weight[valSrcQueries.length];
+      this.subQueryWeight = subQuery.queryWeight(searcher);
+      this.valSrcWeights = new QueryWeight[valSrcQueries.length];
       for(int i = 0; i < valSrcQueries.length; i++) {
-        this.valSrcWeights[i] = valSrcQueries[i].createWeight(searcher);
+        this.valSrcWeights[i] = valSrcQueries[i].createQueryWeight(searcher);
       }
       this.qStrict = strict;
     }
@@ -325,20 +324,28 @@ public class CustomScoreQuery extends Query {
       }
     }
 
-    /*(non-Javadoc) @see org.apache.lucene.search.Weight#scorer(org.apache.lucene.index.IndexReader) */
-    public Scorer scorer(IndexReader reader) throws IOException {
-      Scorer subQueryScorer = subQueryWeight.scorer(reader);
+    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+      // Pass true for "scoresDocsInOrder", because we
+      // require in-order scoring, even if caller does not,
+      // since we call advance on the valSrcScorers.  Pass
+      // false for "topScorer" because we will not invoke
+      // score(Collector) on these scorers:
+      Scorer subQueryScorer = subQueryWeight.scorer(reader, true, false);
       Scorer[] valSrcScorers = new Scorer[valSrcWeights.length];
       for(int i = 0; i < valSrcScorers.length; i++) {
-         valSrcScorers[i] = valSrcWeights[i].scorer(reader);
+         valSrcScorers[i] = valSrcWeights[i].scorer(reader, true, false);
       }
       return new CustomScorer(similarity, reader, this, subQueryScorer, valSrcScorers);
     }
 
-    /*(non-Javadoc) @see org.apache.lucene.search.Weight#explain(org.apache.lucene.index.IndexReader, int) */
     public Explanation explain(IndexReader reader, int doc) throws IOException {
-      return scorer(reader).explain(doc);
+      return scorer(reader, true, false).explain(doc);
     }
+    
+    public boolean scoresDocsOutOfOrder() {
+      return false;
+    }
+    
   }
 
 
@@ -435,8 +442,7 @@ public class CustomScoreQuery extends Query {
     }
   }
 
-  /*(non-Javadoc) @see org.apache.lucene.search.Query#createWeight(org.apache.lucene.search.Searcher) */
-  protected Weight createWeight(Searcher searcher) throws IOException {
+  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
     return new CustomWeight(searcher);
   }
 

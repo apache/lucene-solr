@@ -17,23 +17,18 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.CheckHits;
-import org.apache.lucene.store.RAMDirectory;
-
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
-
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
-
+import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryWeight;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestNearSpansOrdered extends LuceneTestCase {
@@ -163,8 +158,8 @@ public class TestNearSpansOrdered extends LuceneTestCase {
    */
   public void testSpanNearScorerSkipTo1() throws Exception {
     SpanNearQuery q = makeQuery();
-    Weight w = q.createWeight(searcher);
-    Scorer s = w.scorer(searcher.getIndexReader());
+    QueryWeight w = q.queryWeight(searcher);
+    Scorer s = w.scorer(searcher.getIndexReader(), true, false);
     assertEquals(1, s.advance(1));
   }
   /**
@@ -173,8 +168,8 @@ public class TestNearSpansOrdered extends LuceneTestCase {
    */
   public void testSpanNearScorerExplain() throws Exception {
     SpanNearQuery q = makeQuery();
-    Weight w = q.createWeight(searcher);
-    Scorer s = w.scorer(searcher.getIndexReader());
+    QueryWeight w = q.queryWeight(searcher);
+    Scorer s = w.scorer(searcher.getIndexReader(), true, false);
     Explanation e = s.explain(1);
     assertTrue("Scorer explanation value for doc#1 isn't positive: "
                + e.toString(),

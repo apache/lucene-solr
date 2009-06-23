@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.QueryWeight;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Weight;
 
@@ -69,6 +70,7 @@ final class JustCompileSearchSpans {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    /** @deprecated delete in 3.0. */
     public Collection getTerms() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -113,7 +115,13 @@ final class JustCompileSearchSpans {
   
   static final class JustCompileSpanScorer extends SpanScorer {
 
+    /** @deprecated delete in 3.0 */
     protected JustCompileSpanScorer(Spans spans, Weight weight,
+        Similarity similarity, byte[] norms) throws IOException {
+      super(spans, weight, similarity, norms);
+    }
+    
+    protected JustCompileSpanScorer(Spans spans, QueryWeight weight,
         Similarity similarity, byte[] norms) throws IOException {
       super(spans, weight, similarity, norms);
     }

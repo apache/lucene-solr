@@ -30,7 +30,6 @@ import java.util.*;
   */
 public class BooleanQuery extends Query {
 
-  
   private static int maxClauseCount = 1024;
 
   /** Thrown when an attempt is made to add more than {@link
@@ -173,7 +172,7 @@ public class BooleanQuery extends Query {
   /** Returns the list of clauses in this query. */
   public List clauses() { return clauses; }
 
-  private class BooleanWeight implements Weight {
+  private class BooleanWeight extends QueryWeight {
     protected Similarity similarity;
     protected ArrayList weights;
 
@@ -183,7 +182,7 @@ public class BooleanQuery extends Query {
       weights = new ArrayList(clauses.size());
       for (int i = 0 ; i < clauses.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.get(i);
-        weights.add(c.getQuery().createWeight(searcher));
+        weights.add(c.getQuery().createQueryWeight(searcher));
       }
     }
 
@@ -194,7 +193,7 @@ public class BooleanQuery extends Query {
       float sum = 0.0f;
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.get(i);
-        Weight w = (Weight)weights.get(i);
+        QueryWeight w = (QueryWeight)weights.get(i);
         // call sumOfSquaredWeights for all clauses in case of side effects
         float s = w.sumOfSquaredWeights();         // sum sub weights
         if (!c.isProhibited())
@@ -210,37 +209,11 @@ public class BooleanQuery extends Query {
 
     public void normalize(float norm) {
       norm *= getBoost();                         // incorporate boost
-      for (int i = 0 ; i < weights.size(); i++) {
-        Weight w = (Weight)weights.get(i);
+      for (Iterator iter = weights.iterator(); iter.hasNext();) {
+        QueryWeight w = (QueryWeight) iter.next();
         // normalize all clauses, (even if prohibited in case of side affects)
         w.normalize(norm);
       }
-    }
-
-    /**
-     * @return Returns BooleanScorer2 that uses and provides advance(), and
-     *         scores documents in document number order.
-     */
-    public Scorer scorer(IndexReader reader) throws IOException {
-      // TODO (3.0): instantiate either BS or BS2, according to
-      // allowDocsOutOfOrder (basically, try to inline BS2.score(Collector)'s
-      // logic.
-      
-      BooleanScorer2 result = new BooleanScorer2(similarity,
-                                                 minNrShouldMatch,
-                                                 allowDocsOutOfOrder);
-
-      for (int i = 0 ; i < weights.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.get(i);
-        Weight w = (Weight)weights.get(i);
-        Scorer subScorer = w.scorer(reader);
-        if (subScorer != null)
-          result.add(subScorer, c.isRequired(), c.isProhibited());
-        else if (c.isRequired())
-          return null;
-      }
-
-      return result;
     }
 
     public Explanation explain(IndexReader reader, int doc)
@@ -256,7 +229,7 @@ public class BooleanQuery extends Query {
       int shouldMatchCount = 0;
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.get(i);
-        Weight w = (Weight)weights.get(i);
+        QueryWeight w = (QueryWeight)weights.get(i);
         Explanation e = w.explain(reader, doc);
         if (!c.isProhibited()) maxCoord++;
         if (e.isMatch()) {
@@ -310,41 +283,101 @@ public class BooleanQuery extends Query {
         return result;
       }
     }
+
+    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer)
+        throws IOException {
+      List required = new ArrayList();
+      List prohibited = new ArrayList();
+      List optional = new ArrayList();
+      for (Iterator wIter = weights.iterator(), cIter = clauses.iterator(); wIter.hasNext();) {
+        QueryWeight w = (QueryWeight) wIter.next();
+        BooleanClause c = (BooleanClause) cIter.next();
+        Scorer subScorer = w.scorer(reader, true, false);
+        if (subScorer == null) {
+          return null;
+        } else if (c.isRequired()) {
+          required.add(subScorer);
+        } else if (c.isProhibited()) {
+          prohibited.add(subScorer);
+        } else {
+          optional.add(subScorer);
+        }
+      }
+      
+      // Check if we can return a BooleanScorer
+      scoreDocsInOrder |= !allowDocsOutOfOrder; // until it is removed, factor in the static setting.
+      if (!scoreDocsInOrder && topScorer && required.size() == 0 && prohibited.size() < 32) {
+        return new BooleanScorer(similarity, minNrShouldMatch, optional, prohibited);
+      }
+      
+      // Return a BooleanScorer2
+      return new BooleanScorer2(similarity, minNrShouldMatch, required, prohibited, optional);
+    }
+    
+    public boolean scoresDocsOutOfOrder() {
+      int numProhibited = 0;
+      for (Iterator cIter = clauses.iterator(); cIter.hasNext();) {
+        BooleanClause c = (BooleanClause) cIter.next();
+        if (c.isRequired()) {
+          return false; // BS2 (in-order) will be used by scorer()
+        } else if (c.isProhibited()) {
+          ++numProhibited;
+        }
+      }
+      
+      if (numProhibited > 32) { // cannot use BS
+        return false;
+      }
+      
+      // scorer() will return an out-of-order scorer if requested.
+      return true;
+    }
+    
   }
 
-  /** Whether hit docs may be collected out of docid order. */
-  private static boolean allowDocsOutOfOrder = false;
+  /**
+   * Whether hit docs may be collected out of docid order.
+   * 
+   * @deprecated this will not be needed anymore, as
+   *             {@link QueryWeight#scoresDocsOutOfOrder()} is used.
+   */
+  private static boolean allowDocsOutOfOrder = true;
 
   /**
-   * Expert: Indicates whether hit docs may be collected out of docid
-   * order.
-   *
+   * Expert: Indicates whether hit docs may be collected out of docid order.
+   * 
    * <p>
    * Background: although the contract of the Scorer class requires that
    * documents be iterated in order of doc id, this was not true in early
-   * versions of Lucene.  Many pieces of functionality in the current
-   * Lucene code base have undefined behavior if this contract is not
-   * upheld, but in some specific simple cases may be faster.  (For
-   * example: disjunction queries with less than 32 prohibited clauses;
-   * This setting has no effect for other queries.)
+   * versions of Lucene. Many pieces of functionality in the current Lucene code
+   * base have undefined behavior if this contract is not upheld, but in some
+   * specific simple cases may be faster. (For example: disjunction queries with
+   * less than 32 prohibited clauses; This setting has no effect for other
+   * queries.)
    * </p>
-   *
+   * 
    * <p>
-   * Specifics: By setting this option to true, docid N might be scored
-   * for a single segment before docid N-1. Across multiple segments,
-   * docs may be scored out of order regardless of this setting - it only
-   * applies to scoring a single segment.
+   * Specifics: By setting this option to true, docid N might be scored for a
+   * single segment before docid N-1. Across multiple segments, docs may be
+   * scored out of order regardless of this setting - it only applies to scoring
+   * a single segment.
    * 
    * Being static, this setting is system wide.
    * </p>
+   * 
+   * @deprecated this is not needed anymore, as
+   *             {@link QueryWeight#scoresDocsOutOfOrder()} is used.
    */
   public static void setAllowDocsOutOfOrder(boolean allow) {
     allowDocsOutOfOrder = allow;
-  }  
-  
+  }
+
   /**
    * Whether hit docs may be collected out of docid order.
+   * 
    * @see #setAllowDocsOutOfOrder(boolean)
+   * @deprecated this is not needed anymore, as
+   *             {@link QueryWeight#scoresDocsOutOfOrder()} is used.
    */
   public static boolean getAllowDocsOutOfOrder() {
     return allowDocsOutOfOrder;
@@ -364,7 +397,7 @@ public class BooleanQuery extends Query {
 	return getAllowDocsOutOfOrder();
   }
 
-  protected Weight createWeight(Searcher searcher) throws IOException {
+  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
     return new BooleanWeight(searcher);
   }
 

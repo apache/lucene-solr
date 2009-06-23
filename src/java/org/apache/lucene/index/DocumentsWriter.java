@@ -17,27 +17,27 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.util.ArrayUtil;
-
 import java.io.IOException;
 import java.io.PrintStream;
+import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
-import java.text.NumberFormat;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryWeight;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Similarity;
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ArrayUtil;
 
 /**
  * This class accepts multiple added documents and directly
@@ -172,7 +172,7 @@ final class DocumentsWriter {
     void setNext(DocWriter next) {
       this.next = next;
     }
-  };
+  }
   
   /**
    * The IndexingChain must define the {@link #getChain(DocumentsWriter)} method
@@ -303,7 +303,7 @@ final class DocumentsWriter {
 
   synchronized void setAllowMinus1Position() {
     for(int i=0;i<threadStates.length;i++)
-      threadStates[i].docState.allowMinus1Position = true;;
+      threadStates[i].docState.allowMinus1Position = true;
   }
 
   /** Set how much RAM we can use before flushing. */
@@ -989,8 +989,8 @@ final class DocumentsWriter {
       Entry entry = (Entry) iter.next();
       Query query = (Query) entry.getKey();
       int limit = ((Integer) entry.getValue()).intValue();
-      Weight weight = query.weight(searcher);
-      Scorer scorer = weight.scorer(reader);
+      QueryWeight weight = query.queryWeight(searcher);
+      Scorer scorer = weight.scorer(reader, true, false);
       while(true)  {
         int doc = scorer.nextDoc();
         if (((long) docIDStart) + doc >= limit)
@@ -1144,7 +1144,7 @@ final class DocumentsWriter {
   /* Initial chunks size of the shared byte[] blocks used to
      store postings data */
   final static int BYTE_BLOCK_SHIFT = 15;
-  final static int BYTE_BLOCK_SIZE = (int) (1 << BYTE_BLOCK_SHIFT);
+  final static int BYTE_BLOCK_SIZE = 1 << BYTE_BLOCK_SHIFT;
   final static int BYTE_BLOCK_MASK = BYTE_BLOCK_SIZE - 1;
   final static int BYTE_BLOCK_NOT_MASK = ~BYTE_BLOCK_MASK;
 
@@ -1187,7 +1187,7 @@ final class DocumentsWriter {
   /* Initial chunks size of the shared int[] blocks used to
      store postings data */
   final static int INT_BLOCK_SHIFT = 13;
-  final static int INT_BLOCK_SIZE = (int) (1 << INT_BLOCK_SHIFT);
+  final static int INT_BLOCK_SIZE = 1 << INT_BLOCK_SHIFT;
   final static int INT_BLOCK_MASK = INT_BLOCK_SIZE - 1;
 
   private ArrayList freeIntBlocks = new ArrayList();
@@ -1234,7 +1234,7 @@ final class DocumentsWriter {
   /* Initial chunk size of the shared char[] blocks used to
      store term text */
   final static int CHAR_BLOCK_SHIFT = 14;
-  final static int CHAR_BLOCK_SIZE = (int) (1 << CHAR_BLOCK_SHIFT);
+  final static int CHAR_BLOCK_SIZE = 1 << CHAR_BLOCK_SHIFT;
   final static int CHAR_BLOCK_MASK = CHAR_BLOCK_SIZE - 1;
 
   final static int MAX_TERM_LENGTH = CHAR_BLOCK_SIZE-1;
@@ -1283,7 +1283,7 @@ final class DocumentsWriter {
   void balanceRAM() {
 
     // We flush when we've used our target usage
-    final long flushTrigger = (long) ramBufferSize;
+    final long flushTrigger = ramBufferSize;
 
     if (numBytesAlloc > freeTrigger) {
 

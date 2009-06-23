@@ -33,11 +33,11 @@ public class ParallelMultiSearcher extends MultiSearcher {
   private Searchable[] searchables;
   private int[] starts;
 	
-  /** Creates a searcher which searches <i>searchables</i>. */
+  /** Creates a searchable which searches <i>searchables</i>. */
   public ParallelMultiSearcher(Searchable[] searchables) throws IOException {
     super(searchables);
-    this.searchables=searchables;
-    this.starts=getStarts();
+    this.searchables = searchables;
+    this.starts = getStarts();
   }
 
   /**
@@ -52,24 +52,16 @@ public class ParallelMultiSearcher extends MultiSearcher {
    * Searchable, waits for each search to complete and merge
    * the results back together.
    */
-  public TopDocs search(Weight weight, Filter filter, int nDocs)
+  public TopDocs search(QueryWeight weight, Filter filter, int nDocs)
     throws IOException {
     HitQueue hq = new HitQueue(nDocs, false);
     int totalHits = 0;
     MultiSearcherThread[] msta =
       new MultiSearcherThread[searchables.length];
-    for (int i = 0; i < searchables.length; i++) { // search each searcher
+    for (int i = 0; i < searchables.length; i++) { // search each searchable
       // Assume not too many searchables and cost of creating a thread is by far inferior to a search
-      msta[i] =
-        new MultiSearcherThread(
-                                searchables[i],
-                                weight,
-                                filter,
-                                nDocs,
-                                hq,
-                                i,
-                                starts,
-                                "MultiSearcher thread #" + (i + 1));
+      msta[i] = new MultiSearcherThread(searchables[i], weight, filter, nDocs,
+          hq, i, starts, "MultiSearcher thread #" + (i + 1));
       msta[i].start();
     }
 
@@ -105,25 +97,16 @@ public class ParallelMultiSearcher extends MultiSearcher {
    * Searchable, waits for each search to complete and merges
    * the results back together.
    */
-  public TopFieldDocs search(Weight weight, Filter filter, int nDocs, Sort sort)
+  public TopFieldDocs search(QueryWeight weight, Filter filter, int nDocs, Sort sort)
     throws IOException {
     // don't specify the fields - we'll wait to do this until we get results
     FieldDocSortedHitQueue hq = new FieldDocSortedHitQueue (null, nDocs);
     int totalHits = 0;
     MultiSearcherThread[] msta = new MultiSearcherThread[searchables.length];
-    for (int i = 0; i < searchables.length; i++) { // search each searcher
+    for (int i = 0; i < searchables.length; i++) { // search each searchable
       // Assume not too many searchables and cost of creating a thread is by far inferior to a search
-      msta[i] =
-        new MultiSearcherThread(
-                                searchables[i],
-                                weight,
-                                filter,
-                                nDocs,
-                                hq,
-                                sort,
-                                i,
-                                starts,
-                                "MultiSearcher thread #" + (i + 1));
+      msta[i] = new MultiSearcherThread(searchables[i], weight, filter, nDocs,
+          hq, sort, i, starts, "MultiSearcher thread #" + (i + 1));
       msta[i].start();
     }
 
@@ -156,28 +139,6 @@ public class ParallelMultiSearcher extends MultiSearcher {
   }
 
   /** Lower-level search API.
-   *
-   * <p>{@link HitCollector#collect(int,float)} is called for every matching
-   * document.
-   *
-   * <p>Applications should only use this if they need <i>all</i> of the
-   * matching documents.  The high-level search API ({@link
-   * Searcher#search(Query)}) is usually more efficient, as it skips
-   * non-high-scoring hits.
-   *
-   * @param weight to match documents
-   * @param filter if non-null, a bitset used to eliminate some documents
-   * @param results to receive hits
-   * 
-   * @todo parallelize this one too
-   * @deprecated use {@link #search(Weight, Filter, Collector)} instead.
-   */
-  public void search(Weight weight, Filter filter, final HitCollector results)
-    throws IOException {
-    search(weight, filter, new HitCollectorWrapper(results));
-  }
-
-  /** Lower-level search API.
   *
   * <p>{@link Collector#collect(int)} is called for every matching document.
   *
@@ -192,7 +153,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
   * 
   * @todo parallelize this one too
   */
-  public void search(Weight weight, Filter filter, final Collector collector)
+  public void search(QueryWeight weight, Filter filter, final Collector collector)
    throws IOException {
    for (int i = 0; i < searchables.length; i++) {
 
@@ -205,9 +166,11 @@ public class ParallelMultiSearcher extends MultiSearcher {
        public void collect(int doc) throws IOException {
          collector.collect(doc);
        }
-       
        public void setNextReader(IndexReader reader, int docBase) throws IOException {
          collector.setNextReader(reader, start + docBase);
+       }
+       public boolean acceptsDocsOutOfOrder() {
+         return collector.acceptsDocsOutOfOrder();
        }
      };
      
@@ -231,7 +194,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
 class MultiSearcherThread extends Thread {
 
   private Searchable searchable;
-  private Weight weight;
+  private QueryWeight weight;
   private Filter filter;
   private int nDocs;
   private TopDocs docs;
@@ -241,15 +204,8 @@ class MultiSearcherThread extends Thread {
   private IOException ioe;
   private Sort sort;
 
-  public MultiSearcherThread(
-                             Searchable searchable,
-                             Weight weight,
-                             Filter filter,
-                             int nDocs,
-                             HitQueue hq,
-                             int i,
-                             int[] starts,
-                             String name) {
+  public MultiSearcherThread(Searchable searchable, QueryWeight weight, Filter filter,
+      int nDocs, HitQueue hq, int i, int[] starts, String name) {
     super(name);
     this.searchable = searchable;
     this.weight = weight;
@@ -260,16 +216,9 @@ class MultiSearcherThread extends Thread {
     this.starts = starts;
   }
 
-  public MultiSearcherThread(
-                             Searchable searchable,
-                             Weight weight,
-                             Filter filter,
-                             int nDocs,
-                             FieldDocSortedHitQueue hq,
-                             Sort sort,
-                             int i,
-                             int[] starts,
-                             String name) {
+  public MultiSearcherThread(Searchable searchable, QueryWeight weight,
+      Filter filter, int nDocs, FieldDocSortedHitQueue hq, Sort sort, int i,
+      int[] starts, String name) {
     super(name);
     this.searchable = searchable;
     this.weight = weight;
@@ -298,7 +247,7 @@ class MultiSearcherThread extends Thread {
         TopFieldDocs docsFields = (TopFieldDocs) docs;
         // If one of the Sort fields is FIELD_DOC, need to fix its values, so that
         // it will break ties by doc Id properly. Otherwise, it will compare to
-        // 'relative' doc Ids, that belong to two different searchers.
+        // 'relative' doc Ids, that belong to two different searchables.
         for (int j = 0; j < docsFields.fields.length; j++) {
           if (docsFields.fields[j].getType() == SortField.DOC) {
             // iterate over the score docs and change their fields value

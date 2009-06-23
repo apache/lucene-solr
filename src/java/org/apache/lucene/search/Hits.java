@@ -19,8 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ConcurrentModificationException;
-import java.util.Vector;
 import java.util.Iterator;
+import java.util.Vector;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
@@ -53,7 +53,7 @@ import org.apache.lucene.index.CorruptIndexException;
  * </pre>
  */
 public final class Hits {
-  private Weight weight;
+  private QueryWeight weight;
   private Searcher searcher;
   private Filter filter = null;
   private Sort sort = null;
@@ -73,7 +73,7 @@ public final class Hits {
   boolean debugCheckedForDeletions = false; // for test purposes.
 
   Hits(Searcher s, Query q, Filter f) throws IOException {
-    weight = q.weight(s);
+    weight = q.queryWeight(s);
     searcher = s;
     filter = f;
     nDeletions = countDeletions(s);
@@ -82,7 +82,7 @@ public final class Hits {
   }
 
   Hits(Searcher s, Query q, Filter f, Sort o) throws IOException {
-    weight = q.weight(s);
+    weight = q.queryWeight(s);
     searcher = s;
     filter = f;
     sort = o;

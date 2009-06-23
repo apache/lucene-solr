@@ -161,38 +161,33 @@ public class IndexSearcher extends Searcher {
   }
 
   // inherit javadoc
-  public TopDocs search(Weight weight, Filter filter, final int nDocs)
-       throws IOException {
+  public TopDocs search(QueryWeight weight, Filter filter, final int nDocs) throws IOException {
 
-    if (nDocs <= 0)  // null might be returned from hq.top() below.
+    if (nDocs <= 0) {
       throw new IllegalArgumentException("nDocs must be > 0");
+    }
 
-    // TODO: The following should be changed to first obtain a Scorer and then ask it
-    // if it's going to return in-order or out-of-order docs, and create TSDC
-    // accordingly.
-    TopScoreDocCollector collector = TopScoreDocCollector.create(nDocs, false);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(nDocs, !weight.scoresDocsOutOfOrder());
     search(weight, filter, collector);
     return collector.topDocs();
   }
 
-  // inherit javadoc
-  public TopFieldDocs search(Weight weight, Filter filter, final int nDocs,
-                             Sort sort)
-      throws IOException {
+  public TopFieldDocs search(QueryWeight weight, Filter filter,
+      final int nDocs, Sort sort) throws IOException {
     return search(weight, filter, nDocs, sort, true);
   }
 
   /**
-   * Just like {@link #search(Weight, Filter, int, Sort)}, but you choose
+   * Just like {@link #search(QueryWeight, Filter, int, Sort)}, but you choose
    * whether or not the fields in the returned {@link FieldDoc} instances should
    * be set by specifying fillFields.<br>
    * <b>NOTE:</b> currently, this method tracks document scores and sets them in
    * the returned {@link FieldDoc}, however in 3.0 it will move to not track
    * document scores. If document scores tracking is still needed, you can use
-   * {@link #search(Weight, Filter, Collector)} and pass in a
+   * {@link #search(QueryWeight, Filter, Collector)} and pass in a
    * {@link TopFieldCollector} instance.
    */
-  public TopFieldDocs search(Weight weight, Filter filter, final int nDocs,
+  public TopFieldDocs search(QueryWeight weight, Filter filter, final int nDocs,
                              Sort sort, boolean fillFields)
       throws IOException {
     
@@ -222,50 +217,50 @@ public class IndexSearcher extends Searcher {
       TopDocCollector collector = new TopFieldDocCollector(reader, sort, nDocs);
       HitCollectorWrapper hcw = new HitCollectorWrapper(collector);
       hcw.setNextReader(reader, 0);
-      doSearch(reader, weight, filter, hcw);
+      if (filter == null) {
+        Scorer scorer = weight.scorer(reader, true, true);
+        scorer.score(hcw);
+      } else {
+        searchWithFilter(reader, weight, filter, hcw);
+      }
       return (TopFieldDocs) collector.topDocs();
     }
-    // Search each sub-reader
-    // TODO: The following should be changed to first obtain a Scorer and then ask it
-    // if it's going to return in-order or out-of-order docs, and create TSDC
-    // accordingly.
+    
     TopFieldCollector collector = TopFieldCollector.create(sort, nDocs,
-        fillFields, fieldSortDoTrackScores, fieldSortDoMaxScore, false);
+        fillFields, fieldSortDoTrackScores, fieldSortDoMaxScore, !weight.scoresDocsOutOfOrder());
     search(weight, filter, collector);
     return (TopFieldDocs) collector.topDocs();
   }
 
-  // inherit javadoc
-  /** @deprecated use {@link #search(Weight, Filter, Collector)} instead. */
-  public void search(Weight weight, Filter filter, HitCollector results)
-      throws IOException {
-    search(weight, filter, new HitCollectorWrapper(results));
-  }
-  
-  // inherit javadoc
-  public void search(Weight weight, Filter filter, Collector collector)
+  public void search(QueryWeight weight, Filter filter, Collector collector)
       throws IOException {
     
-    for (int i = 0; i < subReaders.length; i++) { // search each subreader
-      collector.setNextReader(subReaders[i], docStarts[i]);
-      doSearch(subReaders[i], weight, filter, collector);
+    if (filter == null) {
+      for (int i = 0; i < subReaders.length; i++) { // search each subreader
+        collector.setNextReader(subReaders[i], docStarts[i]);
+        Scorer scorer = weight.scorer(subReaders[i], !collector.acceptsDocsOutOfOrder(), true);
+        scorer.score(collector);
+      }
+    } else {
+      for (int i = 0; i < subReaders.length; i++) { // search each subreader
+        collector.setNextReader(subReaders[i], docStarts[i]);
+        searchWithFilter(subReaders[i], weight, filter, collector);
+      }
     }
   }
-  
-  private void doSearch(IndexReader reader, Weight weight, Filter filter,
-      final Collector collector) throws IOException {
 
-    Scorer scorer = weight.scorer(reader);
-    if (scorer == null)
+  private void searchWithFilter(IndexReader reader, QueryWeight weight,
+      final Filter filter, final Collector collector) throws IOException {
+
+    assert filter != null;
+    
+    Scorer scorer = weight.scorer(reader, true, false);
+    if (scorer == null) {
       return;
+    }
 
     int docID = scorer.docID();
     assert docID == -1 || docID == DocIdSetIterator.NO_MORE_DOCS;
-    
-    if (filter == null) {
-      scorer.score(collector);
-      return;
-    }
 
     // CHECKME: use ConjunctionScorer here?
     DocIdSetIterator filterIter = filter.getDocIdSet(reader).iterator();
@@ -300,7 +295,7 @@ public class IndexSearcher extends Searcher {
     return query;
   }
 
-  public Explanation explain(Weight weight, int doc) throws IOException {
+  public Explanation explain(QueryWeight weight, int doc) throws IOException {
     return weight.explain(reader, doc);
   }
 

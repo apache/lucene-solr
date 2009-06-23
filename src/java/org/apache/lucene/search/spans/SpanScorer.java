@@ -17,19 +17,21 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.QueryWeight;
+import org.apache.lucene.search.QueryWeightWrapper;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Weight;
-
-import java.io.IOException;
 
 /**
  * Public for extension only.
  */
 public class SpanScorer extends Scorer {
   protected Spans spans;
-  protected Weight weight;
+  protected QueryWeight weight;
   protected byte[] norms;
   protected float value;
 
@@ -40,8 +42,14 @@ public class SpanScorer extends Scorer {
   protected int doc;
   protected float freq;
 
+  /** @deprecated use {@link #SpanScorer(Spans, QueryWeight, Similarity, byte[])} instead.*/
   protected SpanScorer(Spans spans, Weight weight, Similarity similarity, byte[] norms)
     throws IOException {
+    this(spans, new QueryWeightWrapper(weight), similarity, norms);
+  }
+  
+  protected SpanScorer(Spans spans, QueryWeight weight, Similarity similarity, byte[] norms)
+  throws IOException {
     super(similarity);
     this.spans = spans;
     this.norms = norms;

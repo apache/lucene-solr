@@ -30,9 +30,10 @@ import java.util.List;
  * <br>Uses ConjunctionScorer, DisjunctionScorer, ReqOptScorer and ReqExclScorer.
  */
 class BooleanScorer2 extends Scorer {
-  private ArrayList requiredScorers = new ArrayList();
-  private ArrayList optionalScorers = new ArrayList();
-  private ArrayList prohibitedScorers = new ArrayList();
+  
+  private final List requiredScorers;
+  private final List optionalScorers;
+  private final List prohibitedScorers;
 
   private class Coordinator {
     float[] coordFactors = null;
@@ -54,90 +55,52 @@ class BooleanScorer2 extends Scorer {
   /** The scorer to which all scoring will be delegated,
    * except for computing and using the coordination factor.
    */
-  private Scorer countingSumScorer = null;
+  private final Scorer countingSumScorer;
 
   /** The number of optionalScorers that need to match (if there are any) */
   private final int minNrShouldMatch;
   
-  /** Whether it is allowed to return documents out of order.
-   *  This can accelerate the scoring of disjunction queries.  
-   */  
-  private boolean allowDocsOutOfOrder;
-
   private int doc = -1;
 
-  /** Create a BooleanScorer2.
-   * @param similarity The similarity to be used.
-   * @param minNrShouldMatch The minimum number of optional added scorers
-   *                         that should match during the search.
-   *                         In case no required scorers are added,
-   *                         at least one of the optional scorers will have to
-   *                         match during the search.
-   * @param allowDocsOutOfOrder Whether it is allowed to return documents out of order.
-   *                            This can accelerate the scoring of disjunction queries.                         
+  /**
+   * Creates a {@link Scorer} with the given similarity and lists of required,
+   * prohibited and optional scorers. In no required scorers are added, at least
+   * one of the optional scorers will have to match during the search.
+   * 
+   * @param similarity
+   *          The similarity to be used.
+   * @param minNrShouldMatch
+   *          The minimum number of optional added scorers that should match
+   *          during the search. In case no required scorers are added, at least
+   *          one of the optional scorers will have to match during the search.
+   * @param required
+   *          the list of required scorers.
+   * @param prohibited
+   *          the list of prohibited scorers.
+   * @param optional
+   *          the list of optional scorers.
    */
-  public BooleanScorer2(Similarity similarity, int minNrShouldMatch, boolean allowDocsOutOfOrder) throws IOException {
+  public BooleanScorer2(Similarity similarity, int minNrShouldMatch,
+      List required, List prohibited, List optional) throws IOException {
     super(similarity);
     if (minNrShouldMatch < 0) {
       throw new IllegalArgumentException("Minimum number of optional scorers should not be negative");
     }
     coordinator = new Coordinator();
     this.minNrShouldMatch = minNrShouldMatch;
-    this.allowDocsOutOfOrder = allowDocsOutOfOrder;
-  }
 
-  /** Create a BooleanScorer2.
-   *  In no required scorers are added,
-   *  at least one of the optional scorers will have to match during the search.
-   * @param similarity The similarity to be used.
-   * @param minNrShouldMatch The minimum number of optional added scorers
-   *                         that should match during the search.
-   *                         In case no required scorers are added,
-   *                         at least one of the optional scorers will have to
-   *                         match during the search.
-   */
-  public BooleanScorer2(Similarity similarity, int minNrShouldMatch) throws IOException {
-    this(similarity, minNrShouldMatch, false);
-  }
-  
-  /** Create a BooleanScorer2.
-   *  In no required scorers are added,
-   *  at least one of the optional scorers will have to match during the search.
-   * @param similarity The similarity to be used.
-   */
-  public BooleanScorer2(Similarity similarity) throws IOException {
-    this(similarity, 0, false);
-  }
+    optionalScorers = optional;
+    coordinator.maxCoord += optional.size();
 
-  public void add(final Scorer scorer, boolean required, boolean prohibited) throws IOException {
-    if (!prohibited) {
-      coordinator.maxCoord++;
-    }
-
-    if (required) {
-      if (prohibited) {
-        throw new IllegalArgumentException("scorer cannot be required and prohibited");
-      }
-      requiredScorers.add(scorer);
-    } else if (prohibited) {
-      prohibitedScorers.add(scorer);
-    } else {
-      optionalScorers.add(scorer);
-    }
-  }
-
-  /** Initialize the match counting scorer that sums all the
-   * scores. <p>
-   * When "counting" is used in a name it means counting the number
-   * of matching scorers.<br>
-   * When "sum" is used in a name it means score value summing
-   * over the matching scorers
-   */
-  private void initCountingSumScorer() throws IOException {
+    requiredScorers = required;
+    coordinator.maxCoord += required.size();
+    
+    prohibitedScorers = prohibited;
+    
     coordinator.init();
     countingSumScorer = makeCountingSumScorer();
   }
-
+  
   /** Count a scorer as a single match. */
   private class SingleMatchScorer extends Scorer {
     private Scorer scorer;
@@ -333,19 +296,10 @@ class BooleanScorer2 extends Scorer {
    * <br>When this method is used the {@link #explain(int)} method should not be used.
    */
   public void score(Collector collector) throws IOException {
-    if (allowDocsOutOfOrder && requiredScorers.size() == 0
-            && prohibitedScorers.size() < 32) {
-      new BooleanScorer(getSimilarity(), minNrShouldMatch, optionalScorers,
-          prohibitedScorers).score(collector);
-    } else {
-      if (countingSumScorer == null) {
-        initCountingSumScorer();
-      }
-      collector.setScorer(this);
-      int doc;
-      while ((doc = countingSumScorer.nextDoc()) != NO_MORE_DOCS) {
-        collector.collect(doc);
-      }
+    collector.setScorer(this);
+    int doc;
+    while ((doc = countingSumScorer.nextDoc()) != NO_MORE_DOCS) {
+      collector.collect(doc);
     }
   }
 
@@ -386,9 +340,6 @@ class BooleanScorer2 extends Scorer {
   }
 
   public int nextDoc() throws IOException {
-    if (countingSumScorer == null) {
-      initCountingSumScorer();
-    }
     return doc = countingSumScorer.nextDoc();
   }
   
@@ -404,9 +355,6 @@ class BooleanScorer2 extends Scorer {
   }
 
   public int advance(int target) throws IOException {
-    if (countingSumScorer == null) {
-      initCountingSumScorer();
-    }
     return doc = countingSumScorer.advance(target);
   }
   

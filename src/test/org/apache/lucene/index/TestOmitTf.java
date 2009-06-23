@@ -384,5 +384,8 @@ public class TestOmitTf extends LuceneTestCase {
     public void setNextReader(IndexReader reader, int docBase) {
       this.docBase = docBase;
     }
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
   }
 }

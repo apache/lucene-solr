@@ -70,7 +70,7 @@ public class TestTermScorer extends LuceneTestCase
         Term allTerm = new Term(FIELD, "all");
         TermQuery termQuery = new TermQuery(allTerm);
 
-        Weight weight = termQuery.weight(indexSearcher);
+        QueryWeight weight = termQuery.queryWeight(indexSearcher);
 
         TermScorer ts = new TermScorer(weight,
                                        indexReader.termDocs(allTerm), indexSearcher.getSimilarity(),
@@ -97,6 +97,9 @@ public class TestTermScorer extends LuceneTestCase
             }
             public void setNextReader(IndexReader reader, int docBase) {
               base = docBase;
+            }
+            public boolean acceptsDocsOutOfOrder() {
+              return true;
             }
         });
         assertTrue("docs Size: " + docs.size() + " is not: " + 2, docs.size() == 2);
@@ -129,7 +132,7 @@ public class TestTermScorer extends LuceneTestCase
         Term allTerm = new Term(FIELD, "all");
         TermQuery termQuery = new TermQuery(allTerm);
 
-        Weight weight = termQuery.weight(indexSearcher);
+        QueryWeight weight = termQuery.queryWeight(indexSearcher);
 
         TermScorer ts = new TermScorer(weight,
                                        indexReader.termDocs(allTerm), indexSearcher.getSimilarity(),
@@ -146,14 +149,14 @@ public class TestTermScorer extends LuceneTestCase
         Term allTerm = new Term(FIELD, "all");
         TermQuery termQuery = new TermQuery(allTerm);
 
-        Weight weight = termQuery.weight(indexSearcher);
+        QueryWeight weight = termQuery.queryWeight(indexSearcher);
 
         TermScorer ts = new TermScorer(weight,
                                        indexReader.termDocs(allTerm), indexSearcher.getSimilarity(),
                                        indexReader.norms(FIELD));
         assertTrue("Didn't skip", ts.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
         //The next doc should be doc 5
-        assertTrue("doc should be number 5", ts.doc() == 5);
+        assertTrue("doc should be number 5", ts.docID() == 5);
     }
 
     public void testExplain() throws Exception
@@ -161,7 +164,7 @@ public class TestTermScorer extends LuceneTestCase
         Term allTerm = new Term(FIELD, "all");
         TermQuery termQuery = new TermQuery(allTerm);
 
-        Weight weight = termQuery.weight(indexSearcher);
+        QueryWeight weight = termQuery.queryWeight(indexSearcher);
 
         TermScorer ts = new TermScorer(weight,
                                        indexReader.termDocs(allTerm), indexSearcher.getSimilarity(),
@@ -179,7 +182,7 @@ public class TestTermScorer extends LuceneTestCase
 
         Term dogsTerm = new Term(FIELD, "dogs");
         termQuery = new TermQuery(dogsTerm);
-        weight = termQuery.weight(indexSearcher);
+        weight = termQuery.queryWeight(indexSearcher);
 
         ts = new TermScorer(weight, indexReader.termDocs(dogsTerm), indexSearcher.getSimilarity(),
                                        indexReader.norms(FIELD));

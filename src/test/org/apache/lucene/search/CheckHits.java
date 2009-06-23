@@ -17,14 +17,14 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.index.IndexReader;
-
-import junit.framework.TestCase;
-
 import java.io.IOException;
 import java.util.Set;
 import java.util.TreeSet;
+
+import junit.framework.Assert;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.store.Directory;
 
 public class CheckHits {
   
@@ -55,9 +55,9 @@ public class CheckHits {
       if (ignore.contains(new Integer(doc))) continue;
 
       Explanation exp = searcher.explain(q, doc);
-      TestCase.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
+      Assert.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
                              exp);
-      TestCase.assertEquals("Explanation of [["+d+"]] for #"+doc+
+      Assert.assertEquals("Explanation of [["+d+"]] for #"+doc+
                             " doesn't indicate non-match: " + exp.toString(),
                             0.0f, exp.getValue(), 0.0f);
     }
@@ -95,12 +95,14 @@ public class CheckHits {
         public void collect(int doc) {
           actual.add(new Integer(doc + base));
         }
-
         public void setNextReader(IndexReader reader, int docBase) {
           base = docBase;
         }
+        public boolean acceptsDocsOutOfOrder() {
+          return true;
+        }
       });
-    TestCase.assertEquals(query.toString(defaultFieldName), correct, actual);
+    Assert.assertEquals(query.toString(defaultFieldName), correct, actual);
 
     QueryUtils.check(query,searcher);
   }
@@ -126,7 +128,7 @@ public class CheckHits {
         int[] results)
           throws IOException {
     if (searcher instanceof IndexSearcher) {
-      QueryUtils.check(query,(IndexSearcher)searcher);
+      QueryUtils.check(query,searcher);
     }
 
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -141,7 +143,7 @@ public class CheckHits {
       actual.add(new Integer(hits[i].doc));
     }
 
-    TestCase.assertEquals(query.toString(defaultFieldName), correct, actual);
+    Assert.assertEquals(query.toString(defaultFieldName), correct, actual);
 
     QueryUtils.check(query,searcher);
   }
@@ -149,9 +151,9 @@ public class CheckHits {
   /** Tests that a Hits has an expected order of documents */
   public static void checkDocIds(String mes, int[] results, ScoreDoc[] hits)
   throws IOException {
-    TestCase.assertEquals(mes + " nr of hits", hits.length, results.length);
+    Assert.assertEquals(mes + " nr of hits", hits.length, results.length);
     for (int i = 0; i < results.length; i++) {
-      TestCase.assertEquals(mes + " doc nrs for hit " + i, results[i], hits[i].doc);
+      Assert.assertEquals(mes + " doc nrs for hit " + i, results[i], hits[i].doc);
     }
   }
 
@@ -173,11 +175,11 @@ public class CheckHits {
   public static void checkEqual(Query query, ScoreDoc[] hits1, ScoreDoc[] hits2) throws IOException {
      final float scoreTolerance = 1.0e-6f;
      if (hits1.length != hits2.length) {
-       TestCase.fail("Unequal lengths: hits1="+hits1.length+",hits2="+hits2.length);
+       Assert.fail("Unequal lengths: hits1="+hits1.length+",hits2="+hits2.length);
      }
     for (int i = 0; i < hits1.length; i++) {
       if (hits1[i].doc != hits2[i].doc) {
-        TestCase.fail("Hit " + i + " docnumbers don't match\n"
+        Assert.fail("Hit " + i + " docnumbers don't match\n"
                 + hits2str(hits1, hits2,0,0)
                 + "for query:" + query.toString());
       }
@@ -185,7 +187,7 @@ public class CheckHits {
       if ((hits1[i].doc != hits2[i].doc)
           || Math.abs(hits1[i].score -  hits2[i].score) > scoreTolerance)
       {
-        TestCase.fail("Hit " + i + ", doc nrs " + hits1[i].doc + " and " + hits2[i].doc
+        Assert.fail("Hit " + i + ", doc nrs " + hits1[i].doc + " and " + hits2[i].doc
                       + "\nunequal       : " + hits1[i].score
                       + "\n           and: " + hits2[i].score
                       + "\nfor query:" + query.toString());
@@ -294,7 +296,7 @@ public class CheckHits {
                                        boolean deep,
                                        Explanation expl) {
     float value = expl.getValue();
-    TestCase.assertEquals(q+": score(doc="+doc+")="+score+
+    Assert.assertEquals(q+": score(doc="+doc+")="+score+
         " != explanationScore="+value+" Explanation: "+expl,
         score,value,EXPLAIN_SCORE_TOLERANCE_DELTA);
 
@@ -331,7 +333,7 @@ public class CheckHits {
             }
           }
         }
-        TestCase.assertTrue(
+        Assert.assertTrue(
             q+": multi valued explanation description=\""+descr
             +"\" must be 'max of plus x times others' or end with 'product of'"
             +" or 'sum of:' or 'max of:' - "+expl,
@@ -356,9 +358,9 @@ public class CheckHits {
         } else if (maxTimesOthers) {
           combined = max + x * (sum - max);
         } else {
-            TestCase.assertTrue("should never get here!",false);
+            Assert.assertTrue("should never get here!",false);
         }
-        TestCase.assertEquals(q+": actual subDetails combined=="+combined+
+        Assert.assertEquals(q+": actual subDetails combined=="+combined+
             " != value="+value+" Explanation: "+expl,
             combined,value,EXPLAIN_SCORE_TOLERANCE_DELTA);
       }
@@ -466,14 +468,15 @@ public class CheckHits {
           ("exception in hitcollector of [["+d+"]] for #"+doc, e);
       }
       
-      TestCase.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
-                             exp);
+      Assert.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null", exp);
       verifyExplanation(d,doc,scorer.score(),deep,exp);
     }
     public void setNextReader(IndexReader reader, int docBase) {
       base = docBase;
     }
-    
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
   }
 
 }

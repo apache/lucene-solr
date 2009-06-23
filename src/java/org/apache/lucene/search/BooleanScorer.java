@@ -92,9 +92,15 @@ final class BooleanScorer extends Scorer {
     public void setNextReader(IndexReader reader, int docBase) {
       // not needed by this implementation
     }
+    
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
     }
+    
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
+
   }
   
   // An internal class which is used in score(Collector, int) for setting the

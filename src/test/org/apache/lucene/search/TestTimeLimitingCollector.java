@@ -332,6 +332,10 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
       docBase = base;
     }
     
+    public boolean acceptsDocsOutOfOrder() {
+      return false;
+    }
+
   }
 
 }

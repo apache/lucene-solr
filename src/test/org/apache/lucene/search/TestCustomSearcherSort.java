@@ -122,9 +122,8 @@ implements Serializable {
 	            new SortField("publicationDate_"), 
 	            SortField.FIELD_SCORE
 	    });
-	    Searcher searcher = 
-	        new MultiSearcher(new Searchable[] {
-	                new CustomSearcher (index, 2)});
+	    Searcher searcher = new MultiSearcher(new Searcher[] { new CustomSearcher(
+        index, 2) });
 	    // search and check hits
 		matchHits(searcher, custSort);
 	}

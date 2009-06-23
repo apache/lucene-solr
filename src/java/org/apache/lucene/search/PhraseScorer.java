@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.TermPositions;
 
 /** Expert: Scoring functionality for phrase queries.
  * <br>A document is considered matching if it contains the phrase-query terms  
@@ -32,7 +32,7 @@ import org.apache.lucene.index.*;
  * means a match. 
  */
 abstract class PhraseScorer extends Scorer {
-  private Weight weight;
+  private QueryWeight weight;
   protected byte[] norms;
   protected float value;
 
@@ -43,7 +43,7 @@ abstract class PhraseScorer extends Scorer {
 
   private float freq; //prhase frequency in current doc as computed by phraseFreq().
 
-  PhraseScorer(Weight weight, TermPositions[] tps, int[] offsets,
+  PhraseScorer(QueryWeight weight, TermPositions[] tps, int[] offsets,
       Similarity similarity, byte[] norms) {
     super(similarity);
     this.norms = norms;

@@ -74,9 +74,7 @@ public class TestSimilarity extends LuceneTestCase {
     Term b = new Term("field", "b");
     Term c = new Term("field", "c");
 
-    searcher.search
-      (new TermQuery(b),
-       new Collector() {
+    searcher.search(new TermQuery(b), new Collector() {
          private Scorer scorer;
          public void setScorer(Scorer scorer) throws IOException {
            this.scorer = scorer; 
@@ -85,15 +83,16 @@ public class TestSimilarity extends LuceneTestCase {
            assertTrue(scorer.score() == 1.0f);
          }
          public void setNextReader(IndexReader reader, int docBase) {}
+         public boolean acceptsDocsOutOfOrder() {
+           return true;
+         }
        });
 
     BooleanQuery bq = new BooleanQuery();
     bq.add(new TermQuery(a), BooleanClause.Occur.SHOULD);
     bq.add(new TermQuery(b), BooleanClause.Occur.SHOULD);
     //System.out.println(bq.toString("field"));
-    searcher.search
-      (bq,
-       new Collector() {
+    searcher.search(bq, new Collector() {
          private int base = 0;
          private Scorer scorer;
          public void setScorer(Scorer scorer) throws IOException {
@@ -105,6 +104,9 @@ public class TestSimilarity extends LuceneTestCase {
          }
          public void setNextReader(IndexReader reader, int docBase) {
            base = docBase;
+         }
+         public boolean acceptsDocsOutOfOrder() {
+           return true;
          }
        });
 
@@ -124,13 +126,14 @@ public class TestSimilarity extends LuceneTestCase {
            assertTrue(scorer.score() == 1.0f);
          }
          public void setNextReader(IndexReader reader, int docBase) {}
+         public boolean acceptsDocsOutOfOrder() {
+           return true;
+         }
        });
 
     pq.setSlop(2);
     //System.out.println(pq.toString("field"));
-    searcher.search
-      (pq,
-       new Collector() {
+    searcher.search(pq, new Collector() {
         private Scorer scorer;
         public void setScorer(Scorer scorer) throws IOException {
           this.scorer = scorer; 
@@ -140,6 +143,9 @@ public class TestSimilarity extends LuceneTestCase {
            assertTrue(scorer.score() == 2.0f);
          }
          public void setNextReader(IndexReader reader, int docBase) {}
+         public boolean acceptsDocsOutOfOrder() {
+           return true;
+         }
        });
   }
 }

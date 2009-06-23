@@ -121,6 +121,8 @@ import org.apache.lucene.index.IndexReader;
  *
  * <p><b>NOTE:</b> This API is experimental and might change
  * in incompatible ways in the next release.</p>
+ * 
+ * @since 2.9
  */
 public abstract class Collector {
   
@@ -156,5 +158,17 @@ public abstract class Collector {
    * @param docBase
    */
   public abstract void setNextReader(IndexReader reader, int docBase) throws IOException;
+
+  /**
+   * Returns true iff this {@link Collector} can accept documents given to
+   * {@link #collect(int)} out of order.
+   * <p>
+   * NOTE: some collectors can work in either mode, with a more efficient
+   * implementation for in-order docs collection. If your collector can work in
+   * either mode, it is recommended that you create two variants of it, since
+   * some queries work much faster if out-of-order collection is supported by a
+   * {@link Collector}.
+   */
+  public abstract boolean acceptsDocsOutOfOrder();
   
 }

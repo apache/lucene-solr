@@ -61,15 +61,18 @@ public class QueryWrapperFilter extends Filter {
       public void setNextReader(IndexReader reader, int docBase) {
         base = docBase;
       }
+      public boolean acceptsDocsOutOfOrder() {
+        return true;
+      }
     });
     return bits;
   }
   
   public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
-    final Weight weight = query.weight(new IndexSearcher(reader));
+    final QueryWeight weight = query.queryWeight(new IndexSearcher(reader));
     return new DocIdSet() {
       public DocIdSetIterator iterator() throws IOException {
-        return weight.scorer(reader);
+        return weight.scorer(reader, true, false);
       }
     };
   }

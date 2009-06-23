@@ -25,7 +25,9 @@ import org.apache.lucene.index.IndexReader;
  * Wrapper for ({@link HitCollector}) implementations, which
  * simply re-bases the incoming docID before calling {@link
  * HitCollector#collect}.
- * @deprecated this class will be removed when {@link HitCollector} is removed.
+ * @deprecated this class will be removed when {@link
+ * HitCollector} is removed.  Please migrate custom
+ * HitCollectors to the new {@link Collector} class.
  */
 public class HitCollectorWrapper extends Collector {
   private HitCollector collector;
@@ -47,4 +49,9 @@ public class HitCollectorWrapper extends Collector {
   public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;      
   }
+  
+  public boolean acceptsDocsOutOfOrder() {
+    return false;
+  }
+
 }

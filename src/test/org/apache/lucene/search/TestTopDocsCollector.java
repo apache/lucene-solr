@@ -69,6 +69,10 @@ public class TestTopDocsCollector extends LuceneTestCase {
       // Don't do anything. Assign scores in random
     }
     
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
+
   }
 
   // Scores array to be used by MyTopDocsCollector. If it is changed, MAX_SCORE

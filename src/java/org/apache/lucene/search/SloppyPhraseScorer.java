@@ -28,7 +28,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
     private PhrasePositions tmpPos[]; // for flipping repeating pps.
     private boolean checkedRepeats;
 
-    SloppyPhraseScorer(Weight weight, TermPositions[] tps, int[] offsets, Similarity similarity,
+    SloppyPhraseScorer(QueryWeight weight, TermPositions[] tps, int[] offsets, Similarity similarity,
                        int slop, byte[] norms) {
         super(weight, tps, offsets, similarity, norms);
         this.slop = slop;

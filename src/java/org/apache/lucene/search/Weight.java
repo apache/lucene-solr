@@ -40,6 +40,8 @@ import org.apache.lucene.index.IndexReader;
  *     At this point the weighting is complete.
  * <li>A <code>Scorer</code> is constructed by {@link #scorer(IndexReader)}.
  * </ol>
+ * 
+ * @deprecated use {@link QueryWeight} instead. 
  */
 public interface Weight extends java.io.Serializable {
   /** The query that this concerns. */

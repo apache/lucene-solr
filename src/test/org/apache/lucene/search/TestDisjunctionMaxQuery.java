@@ -134,8 +134,8 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
 
     QueryUtils.check(dq,s);
 
-    final Weight dw = dq.weight(s);
-    final Scorer ds = dw.scorer(r);
+    final QueryWeight dw = dq.queryWeight(s);
+    final Scorer ds = dw.scorer(r, true, false);
     final boolean skipOk = ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS;
     if (skipOk) {
       fail("firsttime skipTo found a match? ... " + r.document(ds.docID()).get("id"));
@@ -149,39 +149,36 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
 
     QueryUtils.check(dq,s);
 
-    final Weight dw = dq.weight(s);
-    final Scorer ds = dw.scorer(r);
+    final QueryWeight dw = dq.queryWeight(s);
+    final Scorer ds = dw.scorer(r, true, false);
     assertTrue("firsttime skipTo found no match", ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("found wrong docid", "d4", r.document(ds.docID()).get("id"));
   }
 
+  public void testSimpleEqualScores1() throws Exception {
 
+    DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.0f);
+    q.add(tq("hed","albino"));
+    q.add(tq("hed","elephant"));
+    QueryUtils.check(q,s);
 
-    public void testSimpleEqualScores1() throws Exception {
+    ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
 
-        DisjunctionMaxQuery q = new DisjunctionMaxQuery(0.0f);
-        q.add(tq("hed","albino"));
-        q.add(tq("hed","elephant"));
-        QueryUtils.check(q,s);
+    try {
+      assertEquals("all docs should match " + q.toString(),
+          4, h.length);
 
-        ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
-
-        try {
-            assertEquals("all docs should match " + q.toString(),
-                         4, h.length);
-
-            float score = h[0].score;
-            for (int i = 1; i < h.length; i++) {
-                assertEquals("score #" + i + " is not the same",
-                             score, h[i].score, SCORE_COMP_THRESH);
-            }
-        } catch (Error e) {
-            printHits("testSimpleEqualScores1",h,s);
-            throw e;
-        }
-
-
+      float score = h[0].score;
+      for (int i = 1; i < h.length; i++) {
+        assertEquals("score #" + i + " is not the same",
+            score, h[i].score, SCORE_COMP_THRESH);
+      }
+    } catch (Error e) {
+      printHits("testSimpleEqualScores1",h,s);
+      throw e;
     }
+
+  }
 
     public void testSimpleEqualScores2() throws Exception {
 

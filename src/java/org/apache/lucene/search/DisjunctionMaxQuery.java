@@ -86,7 +86,7 @@ public class DisjunctionMaxQuery extends Query {
   }
 
   /* The Weight for DisjunctionMaxQuery's, used to normalize, score and explain these queries */
-  private class DisjunctionMaxWeight implements Weight {
+  private class DisjunctionMaxWeight extends QueryWeight {
 
     private Similarity similarity;   // The similarity which we are associated.
     private ArrayList weights = new ArrayList();  // The Weight's for our subqueries, in 1-1 correspondence with disjuncts
@@ -94,8 +94,9 @@ public class DisjunctionMaxQuery extends Query {
     /* Construct the Weight for this Query searched by searcher.  Recursively construct subquery weights. */
     public DisjunctionMaxWeight(Searcher searcher) throws IOException {
       this.similarity = searcher.getSimilarity();
-      for (int i = 0; i < disjuncts.size(); i++)
-        weights.add(((Query) disjuncts.get(i)).createWeight(searcher));
+      for (Iterator iter = disjuncts.iterator(); iter.hasNext();) {
+        weights.add(((Query) iter.next()).createQueryWeight(searcher));
+      }
     }
 
     /* Return our associated DisjunctionMaxQuery */
@@ -107,28 +108,32 @@ public class DisjunctionMaxQuery extends Query {
     /* Compute the sub of squared weights of us applied to our subqueries.  Used for normalization. */
     public float sumOfSquaredWeights() throws IOException {
       float max = 0.0f, sum = 0.0f;
-      for (int i = 0; i < weights.size(); i++) {
-        float sub = ((Weight) weights.get(i)).sumOfSquaredWeights();
+      for (Iterator iter = weights.iterator(); iter.hasNext();) {
+        float sub = ((QueryWeight) iter.next()).sumOfSquaredWeights();
         sum += sub;
         max = Math.max(max, sub);
+        
       }
-      return (((sum - max) * tieBreakerMultiplier * tieBreakerMultiplier) + max) * getBoost() * getBoost();
+      float boost = getBoost();
+      return (((sum - max) * tieBreakerMultiplier * tieBreakerMultiplier) + max) * boost * boost;
     }
 
     /* Apply the computed normalization factor to our subqueries */
     public void normalize(float norm) {
       norm *= getBoost();  // Incorporate our boost
-      for (int i = 0 ; i < weights.size(); i++)
-        ((Weight) weights.get(i)).normalize(norm);
+      for (Iterator iter = weights.iterator(); iter.hasNext();) {
+        ((QueryWeight) iter.next()).normalize(norm);
+      }
     }
 
     /* Create the scorer used to score our associated DisjunctionMaxQuery */
-    public Scorer scorer(IndexReader reader) throws IOException {
+    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder,
+        boolean topScorer) throws IOException {
       Scorer[] scorers = new Scorer[weights.size()];
       int idx = 0;
       for (Iterator iter = weights.iterator(); iter.hasNext();) {
-        Weight w = (Weight) iter.next();
-        Scorer subScorer = w.scorer(reader);
+        QueryWeight w = (QueryWeight) iter.next();
+        Scorer subScorer = w.scorer(reader, true, false);
         if (subScorer == null) {
           return null;
         } else if (subScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
@@ -142,12 +147,12 @@ public class DisjunctionMaxQuery extends Query {
 
     /* Explain the score we computed for doc */
     public Explanation explain(IndexReader reader, int doc) throws IOException {
-      if ( disjuncts.size() == 1) return ((Weight) weights.get(0)).explain(reader,doc);
+      if (disjuncts.size() == 1) return ((QueryWeight) weights.get(0)).explain(reader,doc);
       ComplexExplanation result = new ComplexExplanation();
       float max = 0.0f, sum = 0.0f;
       result.setDescription(tieBreakerMultiplier == 0.0f ? "max of:" : "max plus " + tieBreakerMultiplier + " times others of:");
-      for (int i = 0 ; i < weights.size(); i++) {
-        Explanation e = ((Weight) weights.get(i)).explain(reader, doc);
+      for (Iterator iter = weights.iterator(); iter.hasNext();) {
+        Explanation e = ((QueryWeight) iter.next()).explain(reader, doc);
         if (e.isMatch()) {
           result.setMatch(Boolean.TRUE);
           result.addDetail(e);
@@ -155,14 +160,14 @@ public class DisjunctionMaxQuery extends Query {
           max = Math.max(max, e.getValue());
         }
       }
-      result.setValue(max + (sum - max)*tieBreakerMultiplier);
+      result.setValue(max + (sum - max) * tieBreakerMultiplier);
       return result;
     }
-
+    
   }  // end of DisjunctionMaxWeight inner class
 
-  /* Create the Weight used to score us */
-  protected Weight createWeight(Searcher searcher) throws IOException {
+  /* Create the QueryWeight used to score us */
+  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
     return new DisjunctionMaxWeight(searcher);
   }
 
@@ -170,7 +175,8 @@ public class DisjunctionMaxQuery extends Query {
    * @param reader the IndexReader we query
    * @return an optimized copy of us (which may not be a copy if there is nothing to optimize) */
   public Query rewrite(IndexReader reader) throws IOException {
-    if (disjuncts.size() == 1) {
+    int numDisjunctions = disjuncts.size();
+    if (numDisjunctions == 1) {
       Query singleton = (Query) disjuncts.get(0);
       Query result = singleton.rewrite(reader);
       if (getBoost() != 1.0f) {
@@ -180,7 +186,7 @@ public class DisjunctionMaxQuery extends Query {
       return result;
     }
     DisjunctionMaxQuery clone = null;
-    for (int i = 0 ; i < disjuncts.size(); i++) {
+    for (int i = 0 ; i < numDisjunctions; i++) {
       Query clause = (Query) disjuncts.get(i);
       Query rewrite = clause.rewrite(reader);
       if (rewrite != clause) {
@@ -200,14 +206,12 @@ public class DisjunctionMaxQuery extends Query {
     return clone;
   }
 
-
   // inherit javadoc
   public void extractTerms(Set terms) {
-      for (int i = 0; i < disjuncts.size(); i++) {
-          ((Query)disjuncts.get(i)).extractTerms(terms);
-      }
+    for (Iterator iter = disjuncts.iterator(); iter.hasNext();) {
+      ((Query) iter.next()).extractTerms(terms);
+    }
   }
-
 
   /** Prettyprint us.
    * @param field the field to which we are applied
@@ -216,7 +220,8 @@ public class DisjunctionMaxQuery extends Query {
   public String toString(String field) {
     StringBuffer buffer = new StringBuffer();
     buffer.append("(");
-    for (int i = 0 ; i < disjuncts.size(); i++) {
+    int numDisjunctions = disjuncts.size();
+    for (int i = 0 ; i < numDisjunctions; i++) {
       Query subquery = (Query) disjuncts.get(i);
       if (subquery instanceof BooleanQuery) {   // wrap sub-bools in parens
         buffer.append("(");
@@ -224,7 +229,7 @@ public class DisjunctionMaxQuery extends Query {
         buffer.append(")");
       }
       else buffer.append(subquery.toString(field));
-      if (i != disjuncts.size()-1) buffer.append(" | ");
+      if (i != numDisjunctions-1) buffer.append(" | ");
     }
     buffer.append(")");
     if (tieBreakerMultiplier != 0.0f) {

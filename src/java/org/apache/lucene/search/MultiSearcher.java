@@ -35,11 +35,12 @@ import java.util.Set;
  * or {@link #search(Query,Filter)} methods.
  */
 public class MultiSearcher extends Searcher {
-    /**
-     * Document Frequency cache acting as a Dummy-Searcher.
-     * This class is no full-fledged Searcher, but only supports
-     * the methods necessary to initialize Weights.
-     */
+  
+  /**
+   * Document Frequency cache acting as a Dummy-Searcher. This class is no
+   * full-fledged Searcher, but only supports the methods necessary to
+   * initialize Weights.
+   */
   private static class CachedDfSource extends Searcher {
     private Map dfMap; // Map from Terms to corresponding doc freqs
     private int maxDoc; // document count
@@ -93,34 +94,28 @@ public class MultiSearcher extends Searcher {
         throw new UnsupportedOperationException();
     }
 
-    public Explanation explain(Weight weight,int doc) {
+    public Explanation explain(QueryWeight weight,int doc) {
       throw new UnsupportedOperationException();
     }
 
-    /** @deprecated use {@link #search(Weight, Filter, Collector)} instead. */
-    public void search(Weight weight, Filter filter, HitCollector results) {
+    public void search(QueryWeight weight, Filter filter, Collector results) {
       throw new UnsupportedOperationException();
     }
     
-    public void search(Weight weight, Filter filter, Collector collector) {
+    public TopDocs search(QueryWeight weight,Filter filter,int n) {
       throw new UnsupportedOperationException();
     }
 
-    public TopDocs search(Weight weight,Filter filter,int n) {
-      throw new UnsupportedOperationException();
-    }
-
-    public TopFieldDocs search(Weight weight,Filter filter,int n,Sort sort) {
+    public TopFieldDocs search(QueryWeight weight,Filter filter,int n,Sort sort) {
       throw new UnsupportedOperationException();
     }
   }
-
 
   private Searchable[] searchables;
   private int[] starts;
   private int maxDoc = 0;
 
-  /** Creates a searcher which searches <i>searchables</i>. */
+  /** Creates a searcher which searches <i>searchers</i>. */
   public MultiSearcher(Searchable[] searchables) throws IOException {
     this.searchables = searchables;
 
@@ -136,7 +131,7 @@ public class MultiSearcher extends Searcher {
   public Searchable[] getSearchables() {
     return searchables;
   }
-
+  
   protected int[] getStarts() {
   	return starts;
   }
@@ -200,8 +195,8 @@ public class MultiSearcher extends Searcher {
     return maxDoc;
   }
 
-  public TopDocs search(Weight weight, Filter filter, int nDocs)
-  throws IOException {
+  public TopDocs search(QueryWeight weight, Filter filter, int nDocs)
+      throws IOException {
 
     HitQueue hq = new HitQueue(nDocs, false);
     int totalHits = 0;
@@ -211,10 +206,10 @@ public class MultiSearcher extends Searcher {
       totalHits += docs.totalHits;		  // update totalHits
       ScoreDoc[] scoreDocs = docs.scoreDocs;
       for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
-	ScoreDoc scoreDoc = scoreDocs[j];
+        ScoreDoc scoreDoc = scoreDocs[j];
         scoreDoc.doc += starts[i];                // convert doc
         if(!hq.insert(scoreDoc))
-            break;                                // no more scores > minScore
+          break;                                // no more scores > minScore
       }
     }
 
@@ -227,7 +222,7 @@ public class MultiSearcher extends Searcher {
     return new TopDocs(totalHits, scoreDocs, maxScore);
   }
 
-  public TopFieldDocs search (Weight weight, Filter filter, int n, Sort sort)
+  public TopFieldDocs search (QueryWeight weight, Filter filter, int n, Sort sort)
   throws IOException {
     FieldDocSortedHitQueue hq = null;
     int totalHits = 0;
@@ -269,14 +264,7 @@ public class MultiSearcher extends Searcher {
   }
 
   // inherit javadoc
-  /** @deprecated use {@link #search(Weight, Filter, Collector)} instead. */
-  public void search(Weight weight, Filter filter, final HitCollector results)
-    throws IOException {
-    search(weight, filter, new HitCollectorWrapper(results));
-  }
-  
-  // inherit javadoc
-  public void search(Weight weight, Filter filter, final Collector collector)
+  public void search(QueryWeight weight, Filter filter, final Collector collector)
   throws IOException {
     for (int i = 0; i < searchables.length; i++) {
       
@@ -292,6 +280,9 @@ public class MultiSearcher extends Searcher {
         public void setNextReader(IndexReader reader, int docBase) throws IOException {
           collector.setNextReader(reader, start + docBase);
         }
+        public boolean acceptsDocsOutOfOrder() {
+          return collector.acceptsDocsOutOfOrder();
+        }
       };
       
       searchables[i].search(weight, filter, hc);
@@ -306,9 +297,9 @@ public class MultiSearcher extends Searcher {
     return queries[0].combine(queries);
   }
 
-  public Explanation explain(Weight weight, int doc) throws IOException {
+  public Explanation explain(QueryWeight weight, int doc) throws IOException {
     int i = subSearcher(doc);			  // find searcher index
-    return searchables[i].explain(weight,doc-starts[i]); // dispatch to searcher
+    return searchables[i].explain(weight, doc - starts[i]); // dispatch to searcher
   }
 
   /**
@@ -326,7 +317,7 @@ public class MultiSearcher extends Searcher {
    *
    * @return rewritten queries
    */
-  protected Weight createWeight(Query original) throws IOException {
+  protected QueryWeight createQueryWeight(Query original) throws IOException {
     // step 1
     Query rewrittenQuery = rewrite(original);
 
@@ -354,7 +345,7 @@ public class MultiSearcher extends Searcher {
     int numDocs = maxDoc();
     CachedDfSource cacheSim = new CachedDfSource(dfMap, numDocs, getSimilarity());
 
-    return rewrittenQuery.weight(cacheSim);
+    return rewrittenQuery.queryWeight(cacheSim);
   }
 
 }

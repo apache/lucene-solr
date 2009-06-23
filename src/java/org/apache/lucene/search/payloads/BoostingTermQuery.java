@@ -41,29 +41,23 @@ import java.io.IOException;
  */
 public class BoostingTermQuery extends SpanTermQuery{
 
-
   public BoostingTermQuery(Term term) {
     super(term);
   }
 
-
-  protected Weight createWeight(Searcher searcher) throws IOException {
+  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
     return new BoostingTermWeight(this, searcher);
   }
 
-  protected class BoostingTermWeight extends SpanWeight implements Weight {
-
+  protected class BoostingTermWeight extends SpanWeight {
 
     public BoostingTermWeight(BoostingTermQuery query, Searcher searcher) throws IOException {
       super(query, searcher);
     }
 
-
-
-
-    public Scorer scorer(IndexReader reader) throws IOException {
-      return new BoostingSpanScorer((TermSpans)query.getSpans(reader), this, similarity,
-              reader.norms(query.getField()));
+    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+      return new BoostingSpanScorer((TermSpans) query.getSpans(reader), this,
+          similarity, reader.norms(query.getField()));
     }
 
     protected class BoostingSpanScorer extends SpanScorer {
@@ -74,7 +68,7 @@ public class BoostingTermQuery extends SpanTermQuery{
       protected float payloadScore;
       private int payloadsSeen;
 
-      public BoostingSpanScorer(TermSpans spans, Weight weight,
+      public BoostingSpanScorer(TermSpans spans, QueryWeight weight,
                                 Similarity similarity, byte[] norms) throws IOException {
         super(spans, weight, similarity, norms);
         positions = spans.getPositions();

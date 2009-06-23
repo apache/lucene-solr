@@ -114,6 +114,9 @@ public class TestScorerPerf extends LuceneTestCase {
     public void setNextReader(IndexReader reader, int base) {
       docBase = base;
     }
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
   }
 
 

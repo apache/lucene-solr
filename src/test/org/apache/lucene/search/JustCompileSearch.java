@@ -38,22 +38,17 @@ final class JustCompileSearch {
 
   private static final String UNSUPPORTED_MSG = "unsupported: used for back-compat testing only !";
 
-  static final class JustCompileSearchable implements Searchable {
+  static final class JustCompileSearcher extends Searcher {
 
+    protected QueryWeight createQueryWeight(Query query) throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+    
     public void close() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     public Document doc(int i) throws CorruptIndexException, IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    public Document doc(int n, FieldSelector fieldSelector)
-        throws CorruptIndexException, IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    public int docFreq(Term term) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -61,55 +56,45 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    public Explanation explain(Weight weight, int doc) throws IOException {
+    public Explanation explain(Query query, int doc) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    public int maxDoc() throws IOException {
+    public Similarity getSimilarity() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    public Query rewrite(Query query) throws IOException {
+    public void search(Query query, Collector results) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    public void search(Weight weight, Filter filter, HitCollector results)
+    public void search(Query query, Filter filter, Collector results)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    public void search(Weight weight, Filter filter, Collector collector)
+    public TopDocs search(Query query, Filter filter, int n) throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+    
+    public TopFieldDocs search(Query query, Filter filter, int n, Sort sort)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-
-    public TopDocs search(Weight weight, Filter filter, int n)
-        throws IOException {
+    
+    public TopDocs search(Query query, int n) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-
-    public TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort)
-        throws IOException {
+    
+    public void setSimilarity(Similarity similarity) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-
-  }
-
-  static final class JustCompileSearcher extends Searcher {
-
-    public void close() throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    public Document doc(int i) throws CorruptIndexException, IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
+    
     public int docFreq(Term term) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    public Explanation explain(Weight weight, int doc) throws IOException {
+    public Explanation explain(QueryWeight weight, int doc) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -121,22 +106,17 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    public void search(Weight weight, Filter filter, HitCollector results)
+    public void search(QueryWeight weight, Filter filter, Collector results)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    public void search(Weight weight, Filter filter, Collector results)
+    public TopDocs search(QueryWeight weight, Filter filter, int n)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    public TopDocs search(Weight weight, Filter filter, int n)
-        throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    public TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort)
+    public TopFieldDocs search(QueryWeight weight, Filter filter, int n, Sort sort)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -163,6 +143,10 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
+    public boolean acceptsDocsOutOfOrder() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
   }
   
   static final class JustCompileDocIdSet extends DocIdSet {
@@ -316,7 +300,7 @@ final class JustCompileSearch {
 
   static final class JustCompilePhraseScorer extends PhraseScorer {
 
-    JustCompilePhraseScorer(Weight weight, TermPositions[] tps, int[] offsets,
+    JustCompilePhraseScorer(QueryWeight weight, TermPositions[] tps, int[] offsets,
         Similarity similarity, byte[] norms) {
       super(weight, tps, offsets, similarity, norms);
     }
@@ -437,9 +421,13 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
+    public boolean acceptsDocsOutOfOrder() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
   }
 
-  static final class JustCompileWeight implements Weight {
+  static final class JustCompileWeight extends QueryWeight {
 
     public Explanation explain(IndexReader reader, int doc) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
@@ -457,11 +445,17 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    /** @deprecated delete in 3.0 */
     public Scorer scorer(IndexReader reader) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
     public float sumOfSquaredWeights() throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer)
+        throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
