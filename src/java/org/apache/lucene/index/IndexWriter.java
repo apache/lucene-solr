@@ -2192,18 +2192,6 @@ public class IndexWriter {
     return useCompoundDocStore;
   }
 
-  /** Release the write lock, if needed. */
-  protected void finalize() throws Throwable {
-    try {
-      if (writeLock != null) {
-        writeLock.release();                        // release write lock
-        writeLock = null;
-      }
-    } finally {
-      super.finalize();
-    }
-  }
-
   /** Returns the Directory used by this index. */
   public Directory getDirectory() {     
     // Pass false because the flush during closing calls getDirectory

@@ -772,18 +772,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
     }
   }
 
-  /** Release the write lock, if needed. */
-  protected void finalize() throws Throwable {
-    try {
-      if (writeLock != null) {
-        writeLock.release();                        // release write lock
-        writeLock = null;
-      }
-    } finally {
-      super.finalize();
-    }
-  }
-
   public Map getCommitUserData() {
     ensureOpen();
     return segmentInfos.getUserData();
