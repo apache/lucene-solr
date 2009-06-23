@@ -3286,19 +3286,34 @@ public class IndexWriter {
         message("all running merges have aborted");
 
     } else {
-      // Ensure any running addIndexes finishes.  It's fine
-      // if a new one attempts to start because from our
+      // waitForMerges() will ensure any running addIndexes finishes.  
+      // It's fine if a new one attempts to start because from our
       // caller above the call will see that we are in the
       // process of closing, and will throw an
       // AlreadyClosedException.
-      acquireRead();
-      releaseRead();
-      while(pendingMerges.size() > 0 || runningMerges.size() > 0)
-        doWait();
-      assert 0 == mergingSegments.size();
+      waitForMerges();
     }
   }
- 
+
+  /**
+   * Wait for any currently outstanding merges to finish.
+   *
+   * <p>It is guaranteed that any merges started prior to calling this method 
+   *    will have completed once this method completes.</p>
+   */
+  public synchronized void waitForMerges() {
+    // Ensure any running addIndexes finishes.
+    acquireRead();
+    releaseRead();
+
+    while(pendingMerges.size() > 0 || runningMerges.size() > 0) {
+      doWait();
+    }
+
+    // sanity check
+    assert 0 == mergingSegments.size();
+  }
+
   /*
    * Called whenever the SegmentInfos has been updated and
    * the index files referenced exist (correctly) in the

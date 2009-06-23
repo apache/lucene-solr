@@ -262,6 +262,9 @@ API Changes
     of characters before tokenizers run.  (Koji Sekiguchi via Mike
     McCandless)
 
+26. LUCENE-1703: Add IndexWriter.waitForMerges.  (Tim Smith via Mike
+    McCandless)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()
