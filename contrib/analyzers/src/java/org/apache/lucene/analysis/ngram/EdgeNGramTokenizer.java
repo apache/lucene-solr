@@ -140,8 +140,8 @@ public class EdgeNGramTokenizer extends Tokenizer {
     int start = side == Side.FRONT ? 0 : inLen - gramSize;
     int end = start + gramSize;
     reusableToken.setTermBuffer(inStr, start, gramSize);
-    reusableToken.setStartOffset(start);
-    reusableToken.setEndOffset(end);
+    reusableToken.setStartOffset(input.correctOffset(start));
+    reusableToken.setEndOffset(input.correctOffset(end));
     gramSize++;
     return reusableToken;
   }

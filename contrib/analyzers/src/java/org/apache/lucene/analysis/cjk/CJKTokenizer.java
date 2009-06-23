@@ -96,7 +96,7 @@ public final class CJKTokenizer extends Tokenizer {
      * @param in I/O reader
      */
     public CJKTokenizer(Reader in) {
-        input = in;
+      super(in);
     }
 
     //~ Methods ----------------------------------------------------------------
@@ -253,7 +253,7 @@ public final class CJKTokenizer extends Tokenizer {
       
         if (length > 0) {
             return reusableToken.reinit
-                (buffer, 0, length, start, start+length, TOKEN_TYPE_NAMES[tokenType]);
+                (buffer, 0, length, input.correctOffset(start), input.correctOffset(start+length), TOKEN_TYPE_NAMES[tokenType]);
         } else if (dataLen == -1) {
           return null;
         }

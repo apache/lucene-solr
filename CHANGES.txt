@@ -236,7 +236,7 @@ API Changes
     NumericRangeQuery and its new indexing format for numeric or
     date values.  (Uwe Schindler)
     
-23. LUCENE-1630: Deprecate Weight in favor of QueryWeight, which adds
+24. LUCENE-1630: Deprecate Weight in favor of QueryWeight, which adds
     a scorer(IndexReader, boolean /* scoreDocsInOrder */, boolean /*
     topScorer */) method instead of scorer(IndexReader) (now
     deprecated). The new method is used by IndexSearcher to mate
@@ -254,6 +254,11 @@ API Changes
     out of order when used with a Collector that can accept docs out
     of order. (Shai Erera via Mike McCandless)
  	
+25. LUCENE-1466: Changed Tokenizer.input to be a CharStream; added
+    CharFilter and MappingCharFilter, which allows chaining & mapping
+    of characters before tokenizers run.  (Koji Sekiguchi via Mike
+    McCandless)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()

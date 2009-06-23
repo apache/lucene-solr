@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.standard;
 import java.io.IOException;
 import java.io.Reader;
 
+import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -91,7 +92,7 @@ public class StandardTokenizer extends Tokenizer {
   private boolean replaceInvalidAcronym;
     
   void setInput(Reader reader) {
-    this.input = reader;
+    input = CharReader.get(reader);
   }
 
   private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
@@ -126,7 +127,7 @@ public class StandardTokenizer extends Tokenizer {
    */
   public StandardTokenizer(Reader input, boolean replaceInvalidAcronym) {
     this.replaceInvalidAcronym = replaceInvalidAcronym;
-    this.input = input;
+    setInput(input);
     this.scanner = new StandardTokenizerImpl(input);
     termAtt = (TermAttribute) addAttribute(TermAttribute.class);
     offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
@@ -161,7 +162,7 @@ public class StandardTokenizer extends Tokenizer {
         posIncrAtt.setPositionIncrement(posIncr);
         scanner.getText(termAtt);
         final int start = scanner.yychar();
-        offsetAtt.setOffset(start, start+termAtt.termLength());
+        offsetAtt.setOffset(input.correctOffset(start), input.correctOffset(start+termAtt.termLength()));
         // This 'if' should be removed in the next release. For now, it converts
         // invalid acronyms to HOST. When removed, only the 'else' part should
         // remain.
@@ -194,19 +195,19 @@ public class StandardTokenizer extends Tokenizer {
       int posIncr = 1;
 
       while(true) {
-	int tokenType = scanner.getNextToken();
+        int tokenType = scanner.getNextToken();
 
-	if (tokenType == StandardTokenizerImpl.YYEOF) {
-	    return null;
-	}
+        if (tokenType == StandardTokenizerImpl.YYEOF) {
+          return null;
+        }
 
         if (scanner.yylength() <= maxTokenLength) {
           reusableToken.clear();
           reusableToken.setPositionIncrement(posIncr);
           scanner.getText(reusableToken);
           final int start = scanner.yychar();
-          reusableToken.setStartOffset(start);
-          reusableToken.setEndOffset(start+reusableToken.termLength());
+          reusableToken.setStartOffset(input.correctOffset(start));
+          reusableToken.setEndOffset(input.correctOffset(start+reusableToken.termLength()));
           // This 'if' should be removed in the next release. For now, it converts
           // invalid acronyms to HOST. When removed, only the 'else' part should
           // remain.
@@ -234,13 +235,13 @@ public class StandardTokenizer extends Tokenizer {
      * @see org.apache.lucene.analysis.TokenStream#reset()
      */
     public void reset() throws IOException {
-	super.reset();
-	scanner.yyreset(input);
+      super.reset();
+      scanner.yyreset(input);
     }
 
     public void reset(Reader reader) throws IOException {
-        input = reader;
-        reset();
+      setInput(reader);
+      reset();
     }
 
   /**

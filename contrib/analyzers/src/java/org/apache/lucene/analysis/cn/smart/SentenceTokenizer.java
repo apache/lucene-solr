@@ -45,6 +45,7 @@ public class SentenceTokenizer extends Tokenizer {
   private Token t = new Token();
 
   public SentenceTokenizer(Reader reader) {
+    super(reader);
     bufferInput = new BufferedReader(reader, 2048);
   }
 
@@ -91,7 +92,7 @@ public class SentenceTokenizer extends Tokenizer {
       return null;
     else {
       t.clear();
-      t.reinit(buffer.toString(), tokenStart, tokenEnd, "sentence");
+      t.reinit(buffer.toString(), input.correctOffset(tokenStart), input.correctOffset(tokenEnd), "sentence");
       return t;
     }
   }

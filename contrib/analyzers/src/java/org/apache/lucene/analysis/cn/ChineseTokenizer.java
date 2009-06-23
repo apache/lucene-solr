@@ -55,7 +55,7 @@ public final class ChineseTokenizer extends Tokenizer {
 
 
     public ChineseTokenizer(Reader in) {
-        input = in;
+      super(in);
     }
 
     private int offset = 0, bufferIndex=0, dataLen=0;
@@ -81,7 +81,7 @@ public final class ChineseTokenizer extends Tokenizer {
         if (length>0) {
             //System.out.println(new String(buffer, 0,
             //length));
-          return token.reinit(buffer, 0, length, start, start+length);
+          return token.reinit(buffer, 0, length, input.correctOffset(start), input.correctOffset(start+length));
         }
         else
             return null;

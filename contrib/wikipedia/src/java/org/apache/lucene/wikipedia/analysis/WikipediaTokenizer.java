@@ -17,6 +17,7 @@
 
 package org.apache.lucene.wikipedia.analysis;
 
+import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 
@@ -107,7 +108,7 @@ public class WikipediaTokenizer extends Tokenizer {
   private Iterator tokens = null;
 
   void setInput(Reader reader) {
-    this.input = reader;
+    this.input = CharReader.get(reader);
   }
 
   /**
@@ -190,8 +191,8 @@ public class WikipediaTokenizer extends Tokenizer {
     //trim the buffer
     String s = buffer.toString().trim();
     reusableToken.setTermBuffer(s.toCharArray(), 0, s.length());
-    reusableToken.setStartOffset(theStart);
-    reusableToken.setEndOffset(theStart + s.length());
+    reusableToken.setStartOffset(input.correctOffset(theStart));
+    reusableToken.setEndOffset(input.correctOffset(theStart + s.length()));
     reusableToken.setFlags(UNTOKENIZED_TOKEN_FLAG);
     //The way the loop is written, we will have proceeded to the next token.  We need to pushback the scanner to lastPos
     if (tmpTokType != WikipediaTokenizerImpl.YYEOF){
@@ -229,8 +230,8 @@ public class WikipediaTokenizer extends Tokenizer {
     //trim the buffer
     String s = buffer.toString().trim();
     reusableToken.setTermBuffer(s.toCharArray(), 0, s.length());
-    reusableToken.setStartOffset(theStart);
-    reusableToken.setEndOffset(theStart + s.length());
+    reusableToken.setStartOffset(input.correctOffset(theStart));
+    reusableToken.setEndOffset(input.correctOffset(theStart + s.length()));
     reusableToken.setFlags(UNTOKENIZED_TOKEN_FLAG);
     //The way the loop is written, we will have proceeded to the next token.  We need to pushback the scanner to lastPos
     if (tmpTokType != WikipediaTokenizerImpl.YYEOF){
@@ -243,8 +244,8 @@ public class WikipediaTokenizer extends Tokenizer {
   private void setupToken(final Token reusableToken) {
     scanner.getText(reusableToken);
     final int start = scanner.yychar();
-    reusableToken.setStartOffset(start);
-    reusableToken.setEndOffset(start + reusableToken.termLength());
+    reusableToken.setStartOffset(input.correctOffset(start));
+    reusableToken.setEndOffset(input.correctOffset(start + reusableToken.termLength()));
   }
 
   /*
@@ -258,7 +259,7 @@ public class WikipediaTokenizer extends Tokenizer {
   }
 
   public void reset(Reader reader) throws IOException {
-    input = reader;
+    setInput(reader);
     reset();
   }
 

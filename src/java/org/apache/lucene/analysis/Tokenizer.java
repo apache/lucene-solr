@@ -45,16 +45,20 @@ import java.io.IOException;
 
 public abstract class Tokenizer extends TokenStream {
   /** The text source for this Tokenizer. */
-  protected Reader input;
+  protected CharStream input;
 
   /** Construct a tokenizer with null input. */
   protected Tokenizer() {}
 
   /** Construct a token stream processing the given input. */
   protected Tokenizer(Reader input) {
-    this.input = input;
+    this.input = CharReader.get(input);
   }
 
+  protected Tokenizer(CharStream input) {
+    this.input = input;
+  }
+  
   /** By default, closes the input Reader. */
   public void close() throws IOException {
     input.close();
@@ -64,6 +68,10 @@ public abstract class Tokenizer extends TokenStream {
    *  analyzer (in its reusableTokenStream method) will use
    *  this to re-use a previously created tokenizer. */
   public void reset(Reader input) throws IOException {
+    this.input = CharReader.get(input);
+  }
+
+  public void reset(CharStream input) throws IOException {
     this.input = input;
   }
 }

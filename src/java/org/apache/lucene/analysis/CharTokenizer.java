@@ -90,7 +90,7 @@ public abstract class CharTokenizer extends Tokenizer {
     }
 
     termAtt.setTermLength(length);
-    offsetAtt.setOffset(start, start+length);
+    offsetAtt.setOffset(input.correctOffset(start), input.correctOffset(start+length));
     return true;
   }
 
@@ -134,8 +134,8 @@ public abstract class CharTokenizer extends Tokenizer {
     }
 
     reusableToken.setTermLength(length);
-    reusableToken.setStartOffset(start);
-    reusableToken.setEndOffset(start+length);
+    reusableToken.setStartOffset(input.correctOffset(start));
+    reusableToken.setEndOffset(input.correctOffset(start+length));
     return reusableToken;
   }
 

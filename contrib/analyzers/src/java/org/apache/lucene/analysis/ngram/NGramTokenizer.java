@@ -85,6 +85,6 @@ public class NGramTokenizer extends Tokenizer {
 
     int oldPos = pos;
     pos++;
-    return reusableToken.reinit(inStr, oldPos, gramSize, oldPos, oldPos+gramSize);
+    return reusableToken.reinit(inStr, oldPos, gramSize, input.correctOffset(oldPos), input.correctOffset(oldPos+gramSize));
   }
 }
