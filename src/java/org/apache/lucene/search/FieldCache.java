@@ -18,7 +18,12 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.document.NumericField; // for javadocs
+import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
+
 import java.io.IOException;
+import java.io.Serializable;
 
 /**
  * Expert: Maintains caches of term values.
@@ -79,19 +84,7 @@ public interface FieldCache {
    * is used to specify a custom parser to {@link
    * SortField#SortField(String, FieldCache.Parser)}.
    */
-  public interface Parser {
-  }
-
-  /**
-   * Expert: when thrown from a custom Parser, this stops
-   * processing terms and returns the current FieldCache
-   * array.
-   * 
-   * <p><b>NOTE</b>: This API is experimental and likely to
-   * change in incompatible ways, or be removed entirely, in
-   * the next release.
-   */
-  public static class StopFillCacheException extends RuntimeException {
+  public interface Parser extends Serializable {
   }
 
   /** Interface to parse bytes from document fields.
@@ -126,9 +119,149 @@ public interface FieldCache {
     public float parseFloat(String string);
   }
 
-  /** Expert: The cache used internally by sorting and range query classes. */
-  public static FieldCache DEFAULT = new ExtendedFieldCacheImpl();
+  /** Interface to parse long from document fields.
+   * @see FieldCache#getLongs(IndexReader, String, FieldCache.LongParser)
+   */
+  public interface LongParser extends Parser {
+    /** Return an long representation of this field's value. */
+    public long parseLong(String string);
+  }
 
+  /** Interface to parse doubles from document fields.
+   * @see FieldCache#getDoubles(IndexReader, String, FieldCache.DoubleParser)
+   */
+  public interface DoubleParser extends Parser {
+    /** Return an long representation of this field's value. */
+    public double parseDouble(String string);
+  }
+
+  /** Expert: The cache used internally by sorting and range query classes. */
+  public static FieldCache DEFAULT = new FieldCacheImpl();
+  
+  /** The default parser for byte values, which are encoded by {@link Byte#toString(byte)} */
+  public static final ByteParser DEFAULT_BYTE_PARSER = new ByteParser() {
+    public byte parseByte(String value) {
+      return Byte.parseByte(value);
+    }
+    protected Object readResolve() {
+      return DEFAULT_BYTE_PARSER;
+    }
+  };
+
+  /** The default parser for short values, which are encoded by {@link Short#toString(short)} */
+  public static final ShortParser DEFAULT_SHORT_PARSER = new ShortParser() {
+    public short parseShort(String value) {
+      return Short.parseShort(value);
+    }
+    protected Object readResolve() {
+      return DEFAULT_SHORT_PARSER;
+    }
+  };
+
+  /** The default parser for int values, which are encoded by {@link Integer#toString(int)} */
+  public static final IntParser DEFAULT_INT_PARSER = new IntParser() {
+    public int parseInt(String value) {
+      return Integer.parseInt(value);
+    }
+    protected Object readResolve() {
+      return DEFAULT_INT_PARSER;
+    }
+  };
+
+  /** The default parser for float values, which are encoded by {@link Float#toString(float)} */
+  public static final FloatParser DEFAULT_FLOAT_PARSER = new FloatParser() {
+    public float parseFloat(String value) {
+      return Float.parseFloat(value);
+    }
+    protected Object readResolve() {
+      return DEFAULT_FLOAT_PARSER;
+    }
+  };
+
+  /** The default parser for long values, which are encoded by {@link Long#toString(long)} */
+  public static final LongParser DEFAULT_LONG_PARSER = new LongParser() {
+    public long parseLong(String value) {
+      return Long.parseLong(value);
+    }
+    protected Object readResolve() {
+      return DEFAULT_LONG_PARSER;
+    }
+  };
+
+  /** The default parser for double values, which are encoded by {@link Double#toString(double)} */
+  public static final DoubleParser DEFAULT_DOUBLE_PARSER = new DoubleParser() {
+    public double parseDouble(String value) {
+      return Double.parseDouble(value);
+    }
+    protected Object readResolve() {
+      return DEFAULT_DOUBLE_PARSER;
+    }
+  };
+
+  /**
+   * A parser instance for int values encoded by {@link NumericUtils#intToPrefixCoded(int)}, e.g. when indexed
+   * via {@link NumericField}/{@link NumericTokenStream}.
+   */
+  public static final IntParser NUMERIC_UTILS_INT_PARSER=new IntParser(){
+    public int parseInt(String val) {
+      final int shift = val.charAt(0)-NumericUtils.SHIFT_START_INT;
+      if (shift>0 && shift<=31)
+        throw new FieldCacheImpl.StopFillCacheException();
+      return NumericUtils.prefixCodedToInt(val);
+    }
+    protected Object readResolve() {
+      return NUMERIC_UTILS_INT_PARSER;
+    }
+  };
+
+  /**
+   * A parser instance for float values encoded with {@link NumericUtils}, e.g. when indexed
+   * via {@link NumericField}/{@link NumericTokenStream}.
+   */
+  public static final FloatParser NUMERIC_UTILS_FLOAT_PARSER=new FloatParser(){
+    public float parseFloat(String val) {
+      final int shift = val.charAt(0)-NumericUtils.SHIFT_START_INT;
+      if (shift>0 && shift<=31)
+        throw new FieldCacheImpl.StopFillCacheException();
+      return NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(val));
+    }
+    protected Object readResolve() {
+      return NUMERIC_UTILS_FLOAT_PARSER;
+    }
+  };
+
+  /**
+   * A parser instance for long values encoded by {@link NumericUtils#longToPrefixCoded(long)}, e.g. when indexed
+   * via {@link NumericField}/{@link NumericTokenStream}.
+   */
+  public static final LongParser NUMERIC_UTILS_LONG_PARSER = new LongParser(){
+    public long parseLong(String val) {
+      final int shift = val.charAt(0)-NumericUtils.SHIFT_START_LONG;
+      if (shift>0 && shift<=63)
+        throw new FieldCacheImpl.StopFillCacheException();
+      return NumericUtils.prefixCodedToLong(val);
+    }
+    protected Object readResolve() {
+      return NUMERIC_UTILS_LONG_PARSER;
+    }
+  };
+
+  /**
+   * A parser instance for double values encoded with {@link NumericUtils}, e.g. when indexed
+   * via {@link NumericField}/{@link NumericTokenStream}.
+   */
+  public static final DoubleParser NUMERIC_UTILS_DOUBLE_PARSER = new DoubleParser(){
+    public double parseDouble(String val) {
+      final int shift = val.charAt(0)-NumericUtils.SHIFT_START_LONG;
+      if (shift>0 && shift<=63)
+        throw new FieldCacheImpl.StopFillCacheException();
+      return NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(val));
+    }
+    protected Object readResolve() {
+      return NUMERIC_UTILS_DOUBLE_PARSER;
+    }
+  };
+  
   /** Checks the internal cache for an appropriate entry, and if none is
    * found, reads the terms in <code>field</code> as a single byte and returns an array
    * of size <code>reader.maxDoc()</code> of the value each document
@@ -228,6 +361,65 @@ public interface FieldCache {
    */
   public float[] getFloats (IndexReader reader, String field,
                             FloatParser parser) throws IOException;
+  
+  /**
+   * Checks the internal cache for an appropriate entry, and if none is
+   * found, reads the terms in <code>field</code> as longs and returns an array
+   * of size <code>reader.maxDoc()</code> of the value each document
+   * has in the given field.
+   *
+   * @param reader Used to get field values.
+   * @param field  Which field contains the longs.
+   * @return The values in the given field for each document.
+   * @throws java.io.IOException If any error occurs.
+   */
+  public long[] getLongs(IndexReader reader, String field)
+          throws IOException;
+
+  /**
+   * Checks the internal cache for an appropriate entry, and if none is found,
+   * reads the terms in <code>field</code> as longs and returns an array of
+   * size <code>reader.maxDoc()</code> of the value each document has in the
+   * given field.
+   *
+   * @param reader Used to get field values.
+   * @param field  Which field contains the longs.
+   * @param parser Computes integer for string values.
+   * @return The values in the given field for each document.
+   * @throws IOException If any error occurs.
+   */
+  public long[] getLongs(IndexReader reader, String field, LongParser parser)
+          throws IOException;
+
+
+  /**
+   * Checks the internal cache for an appropriate entry, and if none is
+   * found, reads the terms in <code>field</code> as integers and returns an array
+   * of size <code>reader.maxDoc()</code> of the value each document
+   * has in the given field.
+   *
+   * @param reader Used to get field values.
+   * @param field  Which field contains the doubles.
+   * @return The values in the given field for each document.
+   * @throws IOException If any error occurs.
+   */
+  public double[] getDoubles(IndexReader reader, String field)
+          throws IOException;
+
+  /**
+   * Checks the internal cache for an appropriate entry, and if none is found,
+   * reads the terms in <code>field</code> as doubles and returns an array of
+   * size <code>reader.maxDoc()</code> of the value each document has in the
+   * given field.
+   *
+   * @param reader Used to get field values.
+   * @param field  Which field contains the doubles.
+   * @param parser Computes integer for string values.
+   * @return The values in the given field for each document.
+   * @throws IOException If any error occurs.
+   */
+  public double[] getDoubles(IndexReader reader, String field, DoubleParser parser)
+          throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if none
    * is found, reads the term values in <code>field</code> and returns an array
@@ -254,15 +446,18 @@ public interface FieldCache {
   throws IOException;
 
   /** Checks the internal cache for an appropriate entry, and if
-   * none is found reads <code>field</code> to see if it contains integers, floats
+   * none is found reads <code>field</code> to see if it contains integers, longs, floats
    * or strings, and then calls one of the other methods in this class to get the
    * values.  For string values, a StringIndex is returned.  After
    * calling this method, there is an entry in the cache for both
    * type <code>AUTO</code> and the actual found type.
    * @param reader  Used to get field values.
    * @param field   Which field contains the values.
-   * @return int[], float[] or StringIndex.
+   * @return int[], long[], float[] or StringIndex.
    * @throws IOException  If any error occurs.
+   * @deprecated Please specify the exact type, instead.
+   *  Especially, guessing does <b>not</b> work with the new
+   *  {@link NumericField} type.
    */
   public Object getAuto (IndexReader reader, String field)
   throws IOException;

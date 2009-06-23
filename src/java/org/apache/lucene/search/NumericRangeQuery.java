@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
+import org.apache.lucene.document.NumericField; // for javadocs
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.index.IndexReader;
@@ -33,12 +34,12 @@ import org.apache.lucene.index.Term;
  * <h3>Usage</h3>
  * <h4>Indexing</h4>
  * Before numeric values can be queried, they must be indexed in a special way. You can do this
- * by adding numeric fields to the index by specifying a {@link NumericTokenStream}.
+ * by adding numeric fields to the index by specifying a {@link NumericField} (expert: {@link NumericTokenStream}).
  * An important setting is the <a href="#precisionStepDesc"><code>precisionStep</code></a>, which specifies,
  * how many different precisions per numeric value are indexed to speed up range queries.
  * Lower values create more terms but speed up search, higher values create less terms, but
  * slow down search. Suitable values are 2, 4, or 8. A good starting point to test is 4.
- * For code examples see {@link NumericTokenStream}.
+ * For code examples see {@link NumericField}.
  *
  * <h4>Searching</h4>
  * <p>This class has no constructor, you can create filters depending on the data type
@@ -114,6 +115,10 @@ import org.apache.lucene.index.Term;
  * <p>The query is in {@linkplain #setConstantScoreRewrite constant score mode} per default.
  * With precision steps of &le;4, this query can be run in conventional {@link BooleanQuery}
  * rewrite mode without changing the max clause count.
+ *
+ * <p><font color="red"><b>NOTE:</b> This API is experimental and
+ * might change in incompatible ways in the next release.</font>
+ *
  * @since 2.9
  **/
 public final class NumericRangeQuery extends MultiTermQuery {

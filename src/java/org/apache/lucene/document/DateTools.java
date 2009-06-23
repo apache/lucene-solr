@@ -22,7 +22,6 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
-import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.util.NumericUtils; // for javadocs
 
@@ -46,7 +45,7 @@ import org.apache.lucene.util.NumericUtils; // for javadocs
  * date/time are.
  * For indexing a {@link Date} or {@link Calendar}, just get the unix timestamp as
  * <code>long</code> using {@link Date#getTime} or {@link Calendar#getTimeInMillis} and
- * index this as a numeric value with {@link NumericTokenStream}
+ * index this as a numeric value with {@link NumericField}
  * and use {@link NumericRangeQuery} to query it.
  */
 public class DateTools {

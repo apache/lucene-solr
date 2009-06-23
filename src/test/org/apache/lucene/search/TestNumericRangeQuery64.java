@@ -19,12 +19,13 @@ package org.apache.lucene.search;
 
 import java.util.Random;
 
-import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
@@ -37,15 +38,6 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   // number of docs to generate for testing
   private static final int noDocs = 10000;
   
-  private static Field newField(String name, int precisionStep) {
-    NumericTokenStream stream = new NumericTokenStream(precisionStep);
-    stream.setUseNewAPI(true);
-    Field f=new Field(name, stream);
-    f.setOmitTermFreqAndPositions(true);
-    f.setOmitNorms(true);
-    return f;
-  }
-  
   private static final RAMDirectory directory;
   private static final IndexSearcher searcher;
   static {
@@ -57,34 +49,31 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(),
       true, MaxFieldLength.UNLIMITED);
       
-      Field
-        field8 = newField("field8", 8),
-        field4 = newField("field4", 4),
-        field2 = newField("field2", 2),
-        ascfield8 = newField("ascfield8", 8),
-        ascfield4 = newField("ascfield4", 4),
-        ascfield2 = newField("ascfield2", 2);
+      NumericField
+        field8 = new NumericField("field8", 8, Field.Store.YES, true),
+        field4 = new NumericField("field4", 4, Field.Store.YES, true),
+        field2 = new NumericField("field2", 2, Field.Store.YES, true),
+        ascfield8 = new NumericField("ascfield8", 8, Field.Store.NO, true),
+        ascfield4 = new NumericField("ascfield4", 4, Field.Store.NO, true),
+        ascfield2 = new NumericField("ascfield2", 2, Field.Store.NO, true);
       
-      // Add a series of noDocs docs with increasing long values
+      Document doc = new Document();
+      // add fields, that have a distance to test general functionality
+      doc.add(field8); doc.add(field4); doc.add(field2);
+      // add ascending fields with a distance of 1, beginning at -noDocs/2 to test the correct splitting of range and inclusive/exclusive
+      doc.add(ascfield8); doc.add(ascfield4); doc.add(ascfield2);
+      
+      // Add a series of noDocs docs with increasing long values, by updating the fields
       for (int l=0; l<noDocs; l++) {
-        Document doc=new Document();
-        // add fields, that have a distance to test general functionality
         long val=distance*l+startOffset;
-        doc.add(new Field("value", Long.toString(val), Field.Store.YES, Field.Index.NO));
-        ((NumericTokenStream)field8.tokenStreamValue()).setLongValue(val);
-        doc.add(field8);
-        ((NumericTokenStream)field4.tokenStreamValue()).setLongValue(val);
-        doc.add(field4);
-        ((NumericTokenStream)field2.tokenStreamValue()).setLongValue(val);
-        doc.add(field2);
-        // add ascending fields with a distance of 1, beginning at -noDocs/2 to test the correct splitting of range and inclusive/exclusive
+        field8.setLongValue(val);
+        field4.setLongValue(val);
+        field2.setLongValue(val);
+
         val=l-(noDocs/2);
-        ((NumericTokenStream)ascfield8.tokenStreamValue()).setLongValue(val);
-        doc.add(ascfield8);
-        ((NumericTokenStream)ascfield4.tokenStreamValue()).setLongValue(val);
-        doc.add(ascfield4);
-        ((NumericTokenStream)ascfield2.tokenStreamValue()).setLongValue(val);
-        doc.add(ascfield2);
+        ascfield8.setLongValue(val);
+        ascfield4.setLongValue(val);
+        ascfield2.setLongValue(val);
         writer.addDocument(doc);
       }
     
@@ -136,9 +125,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       assertNotNull(sd);
       assertEquals("Score doc count"+type, count, sd.length );
       Document doc=searcher.doc(sd[0].doc);
-      assertEquals("First doc"+type, 2*distance+startOffset, Long.parseLong(doc.get("value")) );
+      assertEquals("First doc"+type, 2*distance+startOffset, Long.parseLong(doc.get(field)) );
       doc=searcher.doc(sd[sd.length-1].doc);
-      assertEquals("Last doc"+type, (1+count)*distance+startOffset, Long.parseLong(doc.get("value")) );
+      assertEquals("Last doc"+type, (1+count)*distance+startOffset, Long.parseLong(doc.get(field)) );
       if (i>0) {
         assertEquals("Distinct term number is equal for all query types", lastTerms, terms);
       }
@@ -174,9 +163,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
     Document doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", startOffset, Long.parseLong(doc.get("value")) );
+    assertEquals("First doc", startOffset, Long.parseLong(doc.get(field)) );
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (count-1)*distance+startOffset, Long.parseLong(doc.get("value")) );
+    assertEquals("Last doc", (count-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
   }
   
   public void testLeftOpenRange_8bit() throws Exception {
@@ -202,9 +191,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs-count, sd.length );
     Document doc=searcher.doc(sd[0].doc);
-    assertEquals("First doc", count*distance+startOffset, Long.parseLong(doc.get("value")) );
+    assertEquals("First doc", count*distance+startOffset, Long.parseLong(doc.get(field)) );
     doc=searcher.doc(sd[sd.length-1].doc);
-    assertEquals("Last doc", (noDocs-1)*distance+startOffset, Long.parseLong(doc.get("value")) );
+    assertEquals("Last doc", (noDocs-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
   }
   
   public void testRightOpenRange_8bit() throws Exception {
@@ -364,13 +353,13 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
         long a=lower; lower=upper; upper=a;
       }
       Query tq=NumericRangeQuery.newLongRange(field, precisionStep, new Long(lower), new Long(upper), true, true);
-      TopDocs topDocs = searcher.search(tq, null, noDocs, new Sort(NumericUtils.getLongSortField(field, true)));
+      TopDocs topDocs = searcher.search(tq, null, noDocs, new Sort(new SortField(field, SortField.LONG, true)));
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
-      long last=Long.parseLong(searcher.doc(sd[0].doc).get("value"));
+      long last=Long.parseLong(searcher.doc(sd[0].doc).get(field));
       for (int j=1; j<sd.length; j++) {
-        long act=Long.parseLong(searcher.doc(sd[j].doc).get("value"));
+        long act=Long.parseLong(searcher.doc(sd[j].doc).get(field));
         assertTrue("Docs should be sorted backwards", last>act );
         last=act;
       }

@@ -62,9 +62,7 @@ public class ShortFieldSource extends FieldCacheSource {
 
   /*(non-Javadoc) @see org.apache.lucene.search.function.FieldCacheSource#getCachedValues(org.apache.lucene.search.FieldCache, java.lang.String, org.apache.lucene.index.IndexReader) */
   public DocValues getCachedFieldValues (FieldCache cache, String field, IndexReader reader) throws IOException {
-    final short[] arr = (parser==null) ?  
-      cache.getShorts(reader, field) : 
-      cache.getShorts(reader, field, parser);
+    final short[] arr = cache.getShorts(reader, field, parser);
     return new DocValues() {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#floatVal(int) */
       public float floatVal(int doc) { 

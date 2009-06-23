@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.RangeQuery;
-import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.util.NumericUtils; // for javadocs
 
@@ -50,11 +49,11 @@ import java.util.Calendar;   // for javadoc
  * date/time are.
  * For indexing a {@link Date} or {@link Calendar}, just get the unix timestamp as
  * <code>long</code> using {@link Date#getTime} or {@link Calendar#getTimeInMillis} and
- * index this as a numeric value with {@link NumericTokenStream}
+ * index this as a numeric value with {@link NumericField}
  * and use {@link NumericRangeQuery} to query it.
  *
  * @deprecated If you build a new index, use {@link DateTools} or 
- * {@link NumericTokenStream} instead.
+ * {@link NumericField} instead.
  * This class is included for use with existing
  * indices and will be removed in a future release.
  */

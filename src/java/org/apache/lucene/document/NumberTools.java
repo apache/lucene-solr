@@ -17,7 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
+import org.apache.lucene.document.NumericField; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.util.NumericUtils; // for javadocs
 
@@ -39,7 +39,7 @@ import org.apache.lucene.util.NumericUtils; // for javadocs
  * @deprecated For new indexes use {@link NumericUtils} instead, which
  * provides a sortable binary representation (prefix encoded) of numeric
  * values.
- * To index and efficiently query numeric values use {@link NumericTokenStream}
+ * To index and efficiently query numeric values use {@link NumericField}
  * and {@link NumericRangeQuery}.
  * This class is included for use with existing
  * indices and will be removed in a future release.

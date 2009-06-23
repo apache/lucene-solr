@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
+import org.apache.lucene.document.NumericField; // for javadocs
 
 /**
  * Implementation of a {@link Filter} that implements <em>trie-based</em> range filtering
@@ -25,7 +26,7 @@ import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
  * {@link NumericRangeQuery}.
  *
  * <p>This filter depends on a specific structure of terms in the index that can only be created
- * by indexing using {@link NumericTokenStream}.
+ * by indexing using {@link NumericField} (expert: {@link NumericTokenStream}).
  *
  * <p><b>Please note:</b> This class has no constructor, you can create filters depending on the data type
  * by using the static factories {@linkplain #newLongRange NumericRangeFilter.newLongRange()},
@@ -36,6 +37,10 @@ import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
  *                                             new Float(0.3f), new Float(0.10f),
  *                                             true, true);
  * </pre>
+ *
+ * <p><font color="red"><b>NOTE:</b> This API is experimental and
+ * might change in incompatible ways in the next release.</font>
+ *
  * @since 2.9
  **/
 public final class NumericRangeFilter extends MultiTermQueryWrapperFilter {

@@ -40,6 +40,19 @@ Changes in backwards compatibility policy
     values internally in certain places, so if you have hits with such
     scores it will cause problems. (Shai Erera via Mike McCandless)
 
+ 2. LUCENE-1687: All methods and parsers from interface ExtendedFieldCache
+    were moved into FieldCache. ExtendedFieldCache was deprecated and now
+    contains only a few declarations for binary backwards compatibility and
+    will be removed in version 3.0. Users of FieldCache and ExtendedFieldCache
+    will therefore be able to plugin Lucene 2.9 without recompilation.
+    The auto cache (FieldCache.getAuto) was deprecated. Due to the merge of
+    ExtendedFieldCache and FieldCache, this method can now additionally return
+    long[] arrays in addition to int[] and float[] and StringIndex.
+    
+    The interface changes are only notable for users implementing the interfaces,
+    which was unlikely done, because there is no possibility to change
+    Lucene's FieldCache implementation.  (Grant Ingersoll, Uwe Schindler)
+    
 Changes in runtime behavior
 
  1. LUCENE-1424: QueryParser now by default uses constant score query
@@ -415,12 +428,17 @@ Bug fixes
     See the Javadocs for NGramDistance.java for a reference paper on why
     this is helpful (Tom Morton via Grant Ingersoll)
 
-27. LUCENE-1470, LUCENE-1582, LUCENE-1602, LUCENE-1673: Added
-    NumericRangeQuery and NumericRangeFilter, a fast alternative to
+27. LUCENE-1470, LUCENE-1582, LUCENE-1602, LUCENE-1673, LUCENE-1701:
+    Added NumericRangeQuery and NumericRangeFilter, a fast alternative to
     RangeQuery/RangeFilter for numeric searches. They depend on a specific
     structure of terms in the index that can be created by indexing
-    using the new NumericTokenStream class.  (Uwe Schindler,
-    Yonik Seeley, Mike McCandless)
+    using the new NumericField or NumericTokenStream classes. NumericField
+    can only be used for indexing and optionally stores the values as
+    string representation in the doc store. Documents returned from
+    IndexReader/IndexSearcher will return only the String value using
+    the standard Fieldable interface. NumericFields can be sorted on
+    and loaded into the FieldCache.  (Uwe Schindler, Yonik Seeley,
+    Mike McCandless)
 
 28. LUCENE-1405: Added support for Ant resource collections in contrib/ant
     <index> task.  (Przemyslaw Sztoch via Erik Hatcher)
@@ -429,6 +447,10 @@ Bug fixes
     in conjunction with any other ways to specify stored field values,
     currently binary or string values.  (yonik)
     
+30. LUCENE-1701: Made the standard FieldCache.Parsers public and added
+    parsers for fields generated using NumericField/NumericTokenStream.
+    All standard parsers now also implement Serializable and enforce
+    their singleton status.  (Uwe Schindler, Mike McCandless)
     
 Optimizations
 

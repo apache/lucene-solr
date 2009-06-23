@@ -62,9 +62,7 @@ public class ByteFieldSource extends FieldCacheSource {
 
   /*(non-Javadoc) @see org.apache.lucene.search.function.FieldCacheSource#getCachedValues(org.apache.lucene.search.FieldCache, java.lang.String, org.apache.lucene.index.IndexReader) */
   public DocValues getCachedFieldValues (FieldCache cache, String field, IndexReader reader) throws IOException {
-    final byte[] arr = (parser==null) ?  
-      cache.getBytes(reader, field) : 
-      cache.getBytes(reader, field, parser);
+    final byte[] arr = cache.getBytes(reader, field, parser);
     return new DocValues() {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#floatVal(int) */
       public float floatVal(int doc) { 

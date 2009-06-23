@@ -64,9 +64,7 @@ public class IntFieldSource extends FieldCacheSource {
 
   /*(non-Javadoc) @see org.apache.lucene.search.function.FieldCacheSource#getCachedValues(org.apache.lucene.search.FieldCache, java.lang.String, org.apache.lucene.index.IndexReader) */
   public DocValues getCachedFieldValues (FieldCache cache, String field, IndexReader reader) throws IOException {
-    final int[] arr = (parser==null) ?  
-      cache.getInts(reader, field) : 
-      cache.getInts(reader, field, parser);
+    final int[] arr = cache.getInts(reader, field, parser);
     return new DocValues() {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#floatVal(int) */
       public float floatVal(int doc) { 

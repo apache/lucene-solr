@@ -37,9 +37,17 @@ import java.util.WeakHashMap;
  * @since   lucene 1.4
  * @version $Id$
  */
-class FieldCacheImpl
-implements FieldCache {
+ // TODO: change interface to FieldCache in 3.0 when removed
+class FieldCacheImpl implements ExtendedFieldCache {
 	
+  /**
+   * Hack: When thrown from a Parser (NUMERIC_UTILS_* ones), this stops
+   * processing terms and returns the current FieldCache
+   * array.
+   */
+  static final class StopFillCacheException extends RuntimeException {
+  }
+
   /** Expert: Internal cache. */
   abstract static class Cache {
     private final Map readerCache = new WeakHashMap();
@@ -140,34 +148,9 @@ implements FieldCache {
     }
   }
 
-  private static final ByteParser BYTE_PARSER = new ByteParser() {
-    public byte parseByte(String value) {
-      return Byte.parseByte(value);
-    }
-  };
-
-  private static final ShortParser SHORT_PARSER = new ShortParser() {
-    public short parseShort(String value) {
-      return Short.parseShort(value);
-    }
-  };
-
-  private static final IntParser INT_PARSER = new IntParser() {
-      public int parseInt(String value) {
-        return Integer.parseInt(value);
-      }
-  };
-
-
-  private static final FloatParser FLOAT_PARSER = new FloatParser() {
-      public float parseFloat(String value) {
-        return Float.parseFloat(value);
-      }
-  };
-
   // inherit javadocs
   public byte[] getBytes (IndexReader reader, String field) throws IOException {
-    return getBytes(reader, field, BYTE_PARSER);
+    return getBytes(reader, field, null);
   }
 
   // inherit javadocs
@@ -183,6 +166,9 @@ implements FieldCache {
       Entry entry = (Entry) entryKey;
       String field = entry.field;
       ByteParser parser = (ByteParser) entry.custom;
+      if (parser == null) {
+        return getBytes(reader, field, FieldCache.DEFAULT_BYTE_PARSER);
+      }
       final byte[] retArray = new byte[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field));
@@ -207,7 +193,7 @@ implements FieldCache {
   
   // inherit javadocs
   public short[] getShorts (IndexReader reader, String field) throws IOException {
-    return getShorts(reader, field, SHORT_PARSER);
+    return getShorts(reader, field, null);
   }
 
   // inherit javadocs
@@ -223,6 +209,9 @@ implements FieldCache {
       Entry entry = (Entry) entryKey;
       String field = entry.field;
       ShortParser parser = (ShortParser) entry.custom;
+      if (parser == null) {
+        return getShorts(reader, field, FieldCache.DEFAULT_SHORT_PARSER);
+      }
       final short[] retArray = new short[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field));
@@ -247,7 +236,7 @@ implements FieldCache {
   
   // inherit javadocs
   public int[] getInts (IndexReader reader, String field) throws IOException {
-    return getInts(reader, field, INT_PARSER);
+    return getInts(reader, field, null);
   }
 
   // inherit javadocs
@@ -263,7 +252,14 @@ implements FieldCache {
       Entry entry = (Entry) entryKey;
       String field = entry.field;
       IntParser parser = (IntParser) entry.custom;
-      final int[] retArray = new int[reader.maxDoc()];
+      if (parser == null) {
+        try {
+          return getInts(reader, field, DEFAULT_INT_PARSER);
+        } catch (NumberFormatException ne) {
+          return getInts(reader, field, NUMERIC_UTILS_INT_PARSER);      
+        }
+      }
+      int[] retArray = null;
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field));
       try {
@@ -271,6 +267,8 @@ implements FieldCache {
           Term term = termEnum.term();
           if (term==null || term.field() != field) break;
           int termval = parser.parseInt(term.text());
+          if (retArray == null) // late init
+            retArray = new int[reader.maxDoc()];
           termDocs.seek (termEnum);
           while (termDocs.next()) {
             retArray[termDocs.doc()] = termval;
@@ -281,6 +279,8 @@ implements FieldCache {
         termDocs.close();
         termEnum.close();
       }
+      if (retArray == null) // no values
+        retArray = new int[reader.maxDoc()];
       return retArray;
     }
   };
@@ -289,7 +289,7 @@ implements FieldCache {
   // inherit javadocs
   public float[] getFloats (IndexReader reader, String field)
     throws IOException {
-    return getFloats(reader, field, FLOAT_PARSER);
+    return getFloats(reader, field, null);
   }
 
   // inherit javadocs
@@ -305,7 +305,14 @@ implements FieldCache {
       Entry entry = (Entry) entryKey;
       String field = entry.field;
       FloatParser parser = (FloatParser) entry.custom;
-      final float[] retArray = new float[reader.maxDoc()];
+      if (parser == null) {
+        try {
+          return getFloats(reader, field, DEFAULT_FLOAT_PARSER);
+        } catch (NumberFormatException ne) {
+          return getFloats(reader, field, NUMERIC_UTILS_FLOAT_PARSER);      
+        }
+      }
+      float[] retArray = null;
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field));
       try {
@@ -313,6 +320,8 @@ implements FieldCache {
           Term term = termEnum.term();
           if (term==null || term.field() != field) break;
           float termval = parser.parseFloat(term.text());
+          if (retArray == null) // late init
+            retArray = new float[reader.maxDoc()];
           termDocs.seek (termEnum);
           while (termDocs.next()) {
             retArray[termDocs.doc()] = termval;
@@ -323,6 +332,123 @@ implements FieldCache {
         termDocs.close();
         termEnum.close();
       }
+      if (retArray == null) // no values
+        retArray = new float[reader.maxDoc()];
+      return retArray;
+    }
+  };
+
+
+  public long[] getLongs(IndexReader reader, String field) throws IOException {
+    return getLongs(reader, field, null);
+  }
+
+  // inherit javadocs
+  public long[] getLongs(IndexReader reader, String field, FieldCache.LongParser parser)
+      throws IOException {
+    return (long[]) longsCache.get(reader, new Entry(field, parser));
+  }
+
+  /** @deprecated Will be removed in 3.0, this is for binary compatibility only */
+  public long[] getLongs(IndexReader reader, String field, ExtendedFieldCache.LongParser parser)
+      throws IOException {
+    return (long[]) longsCache.get(reader, new Entry(field, parser));
+  }
+
+  Cache longsCache = new Cache() {
+
+    protected Object createValue(IndexReader reader, Object entryKey)
+        throws IOException {
+      Entry entry = (Entry) entryKey;
+      String field = entry.field;
+      FieldCache.LongParser parser = (FieldCache.LongParser) entry.custom;
+      if (parser == null) {
+        try {
+          return getLongs(reader, field, DEFAULT_LONG_PARSER);
+        } catch (NumberFormatException ne) {
+          return getLongs(reader, field, NUMERIC_UTILS_LONG_PARSER);      
+        }
+      }
+      long[] retArray = null;
+      TermDocs termDocs = reader.termDocs();
+      TermEnum termEnum = reader.terms (new Term(field));
+      try {
+        do {
+          Term term = termEnum.term();
+          if (term==null || term.field() != field) break;
+          long termval = parser.parseLong(term.text());
+          if (retArray == null) // late init
+            retArray = new long[reader.maxDoc()];
+          termDocs.seek (termEnum);
+          while (termDocs.next()) {
+            retArray[termDocs.doc()] = termval;
+          }
+        } while (termEnum.next());
+      } catch (StopFillCacheException stop) {
+      } finally {
+        termDocs.close();
+        termEnum.close();
+      }
+      if (retArray == null) // no values
+        retArray = new long[reader.maxDoc()];
+      return retArray;
+    }
+  };
+
+  // inherit javadocs
+  public double[] getDoubles(IndexReader reader, String field)
+    throws IOException {
+    return getDoubles(reader, field, null);
+  }
+
+  // inherit javadocs
+  public double[] getDoubles(IndexReader reader, String field, FieldCache.DoubleParser parser)
+      throws IOException {
+    return (double[]) doublesCache.get(reader, new Entry(field, parser));
+  }
+
+  /** @deprecated Will be removed in 3.0, this is for binary compatibility only */
+  public double[] getDoubles(IndexReader reader, String field, ExtendedFieldCache.DoubleParser parser)
+      throws IOException {
+    return (double[]) doublesCache.get(reader, new Entry(field, parser));
+  }
+
+  Cache doublesCache = new Cache() {
+
+    protected Object createValue(IndexReader reader, Object entryKey)
+        throws IOException {
+      Entry entry = (Entry) entryKey;
+      String field = entry.field;
+      FieldCache.DoubleParser parser = (FieldCache.DoubleParser) entry.custom;
+      if (parser == null) {
+        try {
+          return getDoubles(reader, field, DEFAULT_DOUBLE_PARSER);
+        } catch (NumberFormatException ne) {
+          return getDoubles(reader, field, NUMERIC_UTILS_DOUBLE_PARSER);      
+        }
+      }
+      double[] retArray = null;
+      TermDocs termDocs = reader.termDocs();
+      TermEnum termEnum = reader.terms (new Term (field));
+      try {
+        do {
+          Term term = termEnum.term();
+          if (term==null || term.field() != field) break;
+          double termval = parser.parseDouble(term.text());
+          if (retArray == null) // late init
+            retArray = new double[reader.maxDoc()];
+          termDocs.seek (termEnum);
+          while (termDocs.next()) {
+            retArray[termDocs.doc()] = termval;
+          }
+        } while (termEnum.next());
+      } catch (StopFillCacheException stop) {
+      } finally {
+        termDocs.close();
+        termEnum.close();
+      }
+      if (retArray == null) // no values
+        retArray = new double[reader.maxDoc()];
       return retArray;
     }
   };
@@ -439,6 +565,11 @@ implements FieldCache {
     return autoCache.get(reader, field);
   }
 
+  /**
+   * @deprecated Please specify the exact type, instead.
+   *  Especially, guessing does <b>not</b> work with the new
+   *  {@link NumericField} type.
+   */
   Cache autoCache = new Cache() {
 
     protected Object createValue(IndexReader reader, Object fieldKey)
@@ -448,33 +579,27 @@ implements FieldCache {
       try {
         Term term = enumerator.term();
         if (term == null) {
-          throw new RuntimeException ("no terms in field " + field + " - cannot determine sort type");
+          throw new RuntimeException ("no terms in field " + field + " - cannot determine type");
         }
         Object ret = null;
         if (term.field() == field) {
           String termtext = term.text().trim();
 
-          /**
-           * Java 1.4 level code:
-
-           if (pIntegers.matcher(termtext).matches())
-           return IntegerSortedHitQueue.comparator (reader, enumerator, field);
-
-           else if (pFloats.matcher(termtext).matches())
-           return FloatSortedHitQueue.comparator (reader, enumerator, field);
-           */
-
-          // Java 1.3 level code:
           try {
             Integer.parseInt (termtext);
             ret = getInts (reader, field);
           } catch (NumberFormatException nfe1) {
             try {
+              Long.parseLong(termtext);
+              ret = getLongs (reader, field);
+            } catch (NumberFormatException nfe2) {
+              try {
                 Float.parseFloat (termtext);
                 ret = getFloats (reader, field);
               } catch (NumberFormatException nfe3) {
                 ret = getStringIndex (reader, field);
               }
+            }
           }          
         } else {
           throw new RuntimeException ("field \"" + field + "\" does not appear to be indexed");
@@ -486,12 +611,13 @@ implements FieldCache {
     }
   };
 
-  // inherit javadocs
+  /** @deprecated */
   public Comparable[] getCustom(IndexReader reader, String field,
       SortComparator comparator) throws IOException {
     return (Comparable[]) customCache.get(reader, new Entry(field, comparator));
   }
 
+  /** @deprecated */
   Cache customCache = new Cache() {
 
     protected Object createValue(IndexReader reader, Object entryKey)

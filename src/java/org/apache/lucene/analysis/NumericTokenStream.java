@@ -18,18 +18,25 @@ package org.apache.lucene.analysis;
  */
 
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.document.NumericField; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.search.NumericRangeFilter; // for javadocs
+import org.apache.lucene.search.SortField; // for javadocs
+import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /**
- * This class provides a {@link TokenStream} for indexing numeric values
+ * <b>Expert:</b> This class provides a {@link TokenStream} for indexing numeric values
  * that can be used by {@link NumericRangeQuery}/{@link NumericRangeFilter}.
  * For more information, how to use this class and its configuration properties
  * (<a href="../search/NumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>)
  * read the docs of {@link NumericRangeQuery}.
+ *
+ * <p><b>For easy usage during indexing, there is a {@link NumericField}, that uses the optimal
+ * indexing settings (no norms, no term freqs). {@link NumericField} is a wrapper around this
+ * expert token stream.</b>
  *
  * <p>This stream is not intended to be used in analyzers, its more for iterating the
  * different precisions during indexing a specific numeric value.
@@ -64,12 +71,16 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  *  writer.addDocument(document);
  *  ...
  * </pre>
+ *
  * <p><em>Please note:</em> Token streams are read, when the document is added to index.
  * If you index more than one numeric field, use a separate instance for each.
  *
- * <p>Values indexed by this stream can be sorted on or loaded into the field cache.
- * For that factories like {@link NumericUtils#getLongSortField} are available,
- * as well as parsers for filling the field cache (e.g., {@link NumericUtils#FIELD_CACHE_LONG_PARSER})
+ * <p>Values indexed by this stream can be loaded into the {@link FieldCache}
+ * and can be sorted (use {@link SortField}{@code .TYPE} to specify the correct
+ * type; {@link SortField#AUTO} does not work with this type of field)
+ *
+ * <p><font color="red"><b>NOTE:</b> This API is experimental and
+ * might change in incompatible ways in the next release.</font>
  *
  * @since 2.9
  */

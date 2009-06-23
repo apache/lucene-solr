@@ -338,14 +338,14 @@ public class TestSort extends LuceneTestCase implements Serializable {
     }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
 
-    sort.setSort (new SortField[] { new SortField ("parser", new ExtendedFieldCache.LongParser(){
+    sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.LongParser(){
       public final long parseLong(final String val) {
         return (val.charAt(0)-'A') * 1234567890L;
       }
     }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
 
-    sort.setSort (new SortField[] { new SortField ("parser", new ExtendedFieldCache.DoubleParser(){
+    sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.DoubleParser(){
       public final double parseDouble(final String val) {
         return Math.pow( val.charAt(0), (val.charAt(0)-'A') );
       }

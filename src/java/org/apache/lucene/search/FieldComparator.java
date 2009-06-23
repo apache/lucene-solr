@@ -22,8 +22,8 @@ import java.text.Collator;
 import java.util.Locale;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.ExtendedFieldCache.DoubleParser;
-import org.apache.lucene.search.ExtendedFieldCache.LongParser;
+import org.apache.lucene.search.FieldCache.DoubleParser;
+import org.apache.lucene.search.FieldCache.LongParser;
 import org.apache.lucene.search.FieldCache.ByteParser;
 import org.apache.lucene.search.FieldCache.FloatParser;
 import org.apache.lucene.search.FieldCache.IntParser;
@@ -71,9 +71,7 @@ public abstract class FieldComparator {
     }
 
     public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) throws IOException {
-      currentReaderValues = parser != null ? ExtendedFieldCache.EXT_DEFAULT
-        .getBytes(reader, field, parser) : ExtendedFieldCache.EXT_DEFAULT
-        .getBytes(reader, field);
+      currentReaderValues = FieldCache.DEFAULT.getBytes(reader, field, parser);
     }
     
     public void setBottom(final int bottom) {
@@ -134,7 +132,7 @@ public abstract class FieldComparator {
   }
 
   /** Parses field's values as double (using {@link
-   *  ExtendedFieldCache#getDoubles} and sorts by ascending value */
+   *  FieldCache#getDoubles} and sorts by ascending value */
   public static final class DoubleComparator extends FieldComparator {
     private final double[] values;
     private double[] currentReaderValues;
@@ -176,9 +174,7 @@ public abstract class FieldComparator {
     }
 
     public void setNextReader(IndexReader reader, int docBase, int numSlotsFull) throws IOException {
-      currentReaderValues = parser != null ? ExtendedFieldCache.EXT_DEFAULT
-          .getDoubles(reader, field, parser) : ExtendedFieldCache.EXT_DEFAULT
-          .getDoubles(reader, field);
+      currentReaderValues = FieldCache.DEFAULT.getDoubles(reader, field, parser);
     }
     
     public void setBottom(final int bottom) {
@@ -241,8 +237,7 @@ public abstract class FieldComparator {
     }
 
     public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) throws IOException {
-      currentReaderValues = parser != null ? FieldCache.DEFAULT.getFloats(
-          reader, field, parser) : FieldCache.DEFAULT.getFloats(reader, field);
+      currentReaderValues = FieldCache.DEFAULT.getFloats(reader, field, parser);
     }
     
     public void setBottom(final int bottom) {
@@ -309,8 +304,7 @@ public abstract class FieldComparator {
     }
 
     public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) throws IOException {
-      currentReaderValues = parser != null ? FieldCache.DEFAULT.getInts(reader,
-          field, parser) : FieldCache.DEFAULT.getInts(reader, field);
+      currentReaderValues = FieldCache.DEFAULT.getInts(reader, field, parser);
     }
     
     public void setBottom(final int bottom) {
@@ -327,7 +321,7 @@ public abstract class FieldComparator {
   }
 
   /** Parses field's values as long (using {@link
-   *  ExtendedFieldCache#getLongs} and sorts by ascending value */
+   *  FieldCache#getLongs} and sorts by ascending value */
   public static final class LongComparator extends FieldComparator {
     private final long[] values;
     private long[] currentReaderValues;
@@ -373,9 +367,7 @@ public abstract class FieldComparator {
     }
 
     public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) throws IOException {
-      currentReaderValues = parser != null ? ExtendedFieldCache.EXT_DEFAULT
-          .getLongs(reader, field, parser) : ExtendedFieldCache.EXT_DEFAULT
-          .getLongs(reader, field);
+      currentReaderValues = FieldCache.DEFAULT.getLongs(reader, field, parser);
     }
     
     public void setBottom(final int bottom) {
@@ -471,9 +463,7 @@ public abstract class FieldComparator {
     }
 
     public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) throws IOException {
-      currentReaderValues = parser != null ? ExtendedFieldCache.EXT_DEFAULT
-          .getShorts(reader, field, parser) : ExtendedFieldCache.EXT_DEFAULT
-          .getShorts(reader, field);
+      currentReaderValues = FieldCache.DEFAULT.getShorts(reader, field, parser);
     }
     
     public void setBottom(final int bottom) {
@@ -537,8 +527,7 @@ public abstract class FieldComparator {
     }
 
     public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) throws IOException {
-      currentReaderValues = ExtendedFieldCache.EXT_DEFAULT.getStrings(reader,
-          field);
+      currentReaderValues = FieldCache.DEFAULT.getStrings(reader, field);
     }
     
     public void setBottom(final int bottom) {
@@ -664,7 +653,7 @@ public abstract class FieldComparator {
     }
 
     public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) throws IOException {
-      StringIndex currentReaderValues = ExtendedFieldCache.EXT_DEFAULT.getStringIndex(reader, field);
+      StringIndex currentReaderValues = FieldCache.DEFAULT.getStringIndex(reader, field);
       currentReaderGen++;
       order = currentReaderValues.order;
       lookup = currentReaderValues.lookup;
@@ -756,8 +745,7 @@ public abstract class FieldComparator {
     }
 
     public void setNextReader(IndexReader reader, int docBase, int numSlotsFull) throws IOException {
-      currentReaderValues = ExtendedFieldCache.EXT_DEFAULT.getStrings(reader,
-          field);
+      currentReaderValues = FieldCache.DEFAULT.getStrings(reader, field);
     }
     
     public void setBottom(final int bottom) {

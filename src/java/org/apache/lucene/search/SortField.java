@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Locale;
 
+import org.apache.lucene.document.NumericField; // javadocs
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
@@ -50,7 +51,10 @@ implements Serializable {
    * to look at the first term indexed for the field and determine if it
    * represents an integer number, a floating point number, or just arbitrary
    * string characters.
-   * @deprecated Please specify the exact type, instead.*/
+   * @deprecated Please specify the exact type, instead.
+   *  Especially, guessing does <b>not</b> work with the new
+   *  {@link NumericField} type.
+   */
   public static final int AUTO = 2;
 
   /** Sort using term values as Strings.  Sort values are String and lower
@@ -161,9 +165,8 @@ implements Serializable {
    * @param field  Name of field to sort by.  Must not be null.
    * @param parser Instance of a {@link FieldCache.Parser},
    *  which must subclass one of the existing numeric
-   *  parsers from {@link FieldCache} or {@link
-   *  ExtendedFieldCache}. Sort type is inferred by testing
-   *  which numeric parser the parser subclasses.
+   *  parsers from {@link FieldCache}. Sort type is inferred
+   *  by testing which numeric parser the parser subclasses.
    * @throws IllegalArgumentException if the parser fails to
    *  subclass an existing numeric parser, or field is null
    */
@@ -176,9 +179,8 @@ implements Serializable {
    * @param field  Name of field to sort by.  Must not be null.
    * @param parser Instance of a {@link FieldCache.Parser},
    *  which must subclass one of the existing numeric
-   *  parsers from {@link FieldCache} or {@link
-   *  ExtendedFieldCache}. Sort type is inferred by testing
-   *  which numeric parser the parser subclasses.
+   *  parsers from {@link FieldCache}. Sort type is inferred
+   *  by testing which numeric parser the parser subclasses.
    * @param reverse True if natural order should be reversed.
    * @throws IllegalArgumentException if the parser fails to
    *  subclass an existing numeric parser, or field is null
@@ -188,10 +190,10 @@ implements Serializable {
     else if (parser instanceof FieldCache.FloatParser) initFieldType(field, FLOAT);
     else if (parser instanceof FieldCache.ShortParser) initFieldType(field, SHORT);
     else if (parser instanceof FieldCache.ByteParser) initFieldType(field, BYTE);
-    else if (parser instanceof ExtendedFieldCache.LongParser) initFieldType(field, LONG);
-    else if (parser instanceof ExtendedFieldCache.DoubleParser) initFieldType(field, DOUBLE);
+    else if (parser instanceof FieldCache.LongParser) initFieldType(field, LONG);
+    else if (parser instanceof FieldCache.DoubleParser) initFieldType(field, DOUBLE);
     else
-      throw new IllegalArgumentException("Parser instance does not subclass existing numeric parser from FieldCache or ExtendedFieldCache (got " + parser + ")");
+      throw new IllegalArgumentException("Parser instance does not subclass existing numeric parser from FieldCache (got " + parser + ")");
 
     this.reverse = reverse;
     this.parser = parser;
@@ -499,7 +501,10 @@ implements Serializable {
     }
   }
   
-  /** Attempts to detect the given field type for an IndexReader. */
+  /**
+   * Attempts to detect the given field type for an IndexReader.
+   * @deprecated
+   */
   static int detectFieldType(IndexReader reader, String fieldKey) throws IOException {
     String field = fieldKey.intern();
     TermEnum enumerator = reader.terms(new Term(field));
@@ -512,17 +517,6 @@ implements Serializable {
       if (term.field() == field) {
         String termtext = term.text().trim();
 
-        /**
-         * Java 1.4 level code:
-
-         if (pIntegers.matcher(termtext).matches())
-         return IntegerSortedHitQueue.comparator (reader, enumerator, field);
-
-         else if (pFloats.matcher(termtext).matches())
-         return FloatSortedHitQueue.comparator (reader, enumerator, field);
-         */
-
-        // Java 1.3 level code:
         try {
           Integer.parseInt (termtext);
           ret = SortField.INT;

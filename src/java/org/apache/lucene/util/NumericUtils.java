@@ -20,9 +20,6 @@ package org.apache.lucene.util;
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.search.NumericRangeFilter; // for javadocs
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.ExtendedFieldCache;
 
 /**
  * This is a helper class to generate prefix-encoded representations for numerical values
@@ -57,9 +54,9 @@ import org.apache.lucene.search.ExtendedFieldCache;
  * {@link String#compareTo(String)}) representations of numeric data types for other
  * usages (e.g. sorting).
  *
- * <p>Prefix encoded fields can also be sorted using the {@link SortField} factories
- * {@link #getLongSortField}, {@link #getIntSortField}, {@link #getDoubleSortField}
- * or {@link #getFloatSortField}.
+ * <p><font color="red"><b>NOTE:</b> This API is experimental and
+ * might change in incompatible ways in the next release.</font>
+ *
  * @since 2.9
  */
 public final class NumericUtils {
@@ -93,56 +90,6 @@ public final class NumericUtils {
   public static final int INT_BUF_SIZE = 31/7 + 2;
 
   /**
-   * A parser instance for filling a {@link ExtendedFieldCache}, that parses prefix encoded fields as longs.
-   */
-  public static final ExtendedFieldCache.LongParser FIELD_CACHE_LONG_PARSER=new ExtendedFieldCache.LongParser(){
-    public final long parseLong(final String val) {
-      final int shift = val.charAt(0)-SHIFT_START_LONG;
-      if (shift>0 && shift<=63)
-        throw new FieldCache.StopFillCacheException();
-      return prefixCodedToLong(val);
-    }
-  };
-  
-  /**
-   * A parser instance for filling a {@link FieldCache}, that parses prefix encoded fields as ints.
-   */
-  public static final FieldCache.IntParser FIELD_CACHE_INT_PARSER=new FieldCache.IntParser(){
-    public final int parseInt(final String val) {
-      final int shift = val.charAt(0)-SHIFT_START_INT;
-      if (shift>0 && shift<=31)
-        throw new FieldCache.StopFillCacheException();
-      return prefixCodedToInt(val);
-    }
-  };
-
-  /**
-   * A parser instance for filling a {@link ExtendedFieldCache}, that parses prefix encoded fields as doubles.
-   * This uses {@link #sortableLongToDouble} to convert the encoded long to a double.
-   */
-  public static final ExtendedFieldCache.DoubleParser FIELD_CACHE_DOUBLE_PARSER=new ExtendedFieldCache.DoubleParser(){
-    public final double parseDouble(final String val) {
-      final int shift = val.charAt(0)-SHIFT_START_LONG;
-      if (shift>0 && shift<=63)
-        throw new FieldCache.StopFillCacheException();
-      return sortableLongToDouble(prefixCodedToLong(val));
-    }
-  };
-  
-  /**
-   * A parser instance for filling a {@link FieldCache}, that parses prefix encoded fields as floats.
-   * This uses {@link #sortableIntToFloat} to convert the encoded int to a float.
-   */
-  public static final FieldCache.FloatParser FIELD_CACHE_FLOAT_PARSER=new FieldCache.FloatParser(){
-    public final float parseFloat(final String val) {
-      final int shift = val.charAt(0)-SHIFT_START_INT;
-      if (shift>0 && shift<=31)
-        throw new FieldCache.StopFillCacheException();
-      return sortableIntToFloat(prefixCodedToInt(val));
-    }
-  };
-  
-  /**
    * Expert: Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
    * This is method is used by {@link NumericTokenStream}.
    * @param val the numeric value
@@ -152,6 +99,8 @@ public final class NumericUtils {
    * @return number of chars written to buffer
    */
   public static int longToPrefixCoded(final long val, final int shift, final char[] buffer) {
+    if (shift>63 || shift<0)
+      throw new IllegalArgumentException("Illegal shift value, must be 0..63");
     int nChars = (63-shift)/7 + 1, len = nChars+1;
     buffer[0] = (char)(SHIFT_START_LONG + shift);
     long sortableBits = val ^ 0x8000000000000000L;
@@ -173,8 +122,6 @@ public final class NumericUtils {
    * @param shift how many bits to strip from the right
    */
   public static String longToPrefixCoded(final long val, final int shift) {
-    if (shift>63 || shift<0)
-      throw new IllegalArgumentException("Illegal shift value, must be 0..63");
     final char[] buffer = new char[LONG_BUF_SIZE];
     final int len = longToPrefixCoded(val, shift, buffer);
     return new String(buffer, 0, len);
@@ -200,6 +147,8 @@ public final class NumericUtils {
    * @return number of chars written to buffer
    */
   public static int intToPrefixCoded(final int val, final int shift, final char[] buffer) {
+    if (shift>31 || shift<0)
+      throw new IllegalArgumentException("Illegal shift value, must be 0..31");
     int nChars = (31-shift)/7 + 1, len = nChars+1;
     buffer[0] = (char)(SHIFT_START_INT + shift);
     int sortableBits = val ^ 0x80000000;
@@ -221,8 +170,6 @@ public final class NumericUtils {
    * @param shift how many bits to strip from the right
    */
   public static String intToPrefixCoded(final int val, final int shift) {
-    if (shift>31 || shift<0)
-      throw new IllegalArgumentException("Illegal shift value, must be 0..31");
     final char[] buffer = new char[INT_BUF_SIZE];
     final int len = intToPrefixCoded(val, shift, buffer);
     return new String(buffer, 0, len);
@@ -336,26 +283,6 @@ public final class NumericUtils {
     return Float.intBitsToFloat(val);
   }
 
-  /** A factory method, that generates a {@link SortField} instance for sorting prefix encoded long values. */
-  public static SortField getLongSortField(final String field, final boolean reverse) {
-    return new SortField(field, FIELD_CACHE_LONG_PARSER, reverse);
-  }
-  
-  /** A factory method, that generates a {@link SortField} instance for sorting prefix encoded int values. */
-  public static SortField getIntSortField(final String field, final boolean reverse) {
-    return new SortField(field, FIELD_CACHE_INT_PARSER, reverse);
-  }
-
-  /** A factory method, that generates a {@link SortField} instance for sorting prefix encoded double values. */
-  public static SortField getDoubleSortField(final String field, final boolean reverse) {
-    return new SortField(field, FIELD_CACHE_DOUBLE_PARSER, reverse);
-  }
-  
-  /** A factory method, that generates a {@link SortField} instance for sorting prefix encoded float values. */
-  public static SortField getFloatSortField(final String field, final boolean reverse) {
-    return new SortField(field, FIELD_CACHE_FLOAT_PARSER, reverse);
-  }
-
   /**
    * Expert: Splits a long range recursively.
    * You may implement a builder that adds clauses to a
@@ -451,7 +378,7 @@ public final class NumericUtils {
   /**
    * Expert: Callback for {@link #splitLongRange}.
    * You need to overwrite only one of the methods.
-   * <p><font color="red">WARNING: This is a very low-level interface,
+   * <p><font color="red"><b>NOTE:</b> This is a very low-level interface,
    * the method signatures may change in later versions.</font>
    */
   public static abstract class LongRangeBuilder {
@@ -477,7 +404,7 @@ public final class NumericUtils {
   /**
    * Expert: Callback for {@link #splitIntRange}.
    * You need to overwrite only one of the methods.
-   * <p><font color="red">WARNING: This is a very low-level interface,
+   * <p><font color="red"><b>NOTE:</b> This is a very low-level interface,
    * the method signatures may change in later versions.</font>
    */
   public static abstract class IntRangeBuilder {
