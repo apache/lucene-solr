@@ -40,8 +40,10 @@ package also provides utilities for working with {@link org.apache.lucene.docume
   take a look at the Lucene <a href="../../../../../../gettingstarted.html" target="top">demo</a> and the associated source code
   for extracting content from HTML.
 </p>
-<p>The {@link org.apache.lucene.document.DateTools} and {@link org.apache.lucene.document.NumberTools} classes are utility
-classes to make dates, times and longs searchable (remember, Lucene only searches text).</p>
+<p>The {@link org.apache.lucene.document.DateTools} is a utility class to make dates and times searchable
+(remember, Lucene only searches text). {@link org.apache.lucene.document.NumericField} is a special helper class
+to simplify indexing of numeric values (and also dates) for fast range range queries with {@link org.apache.lucene.search.NumericRangeQuery}
+(using a special sortable string representation of numeric values).</p>
 <p>The {@link org.apache.lucene.document.FieldSelector} class provides a mechanism to tell Lucene how to load Documents from
 storage.  If no FieldSelector is used, all Fieldables on a Document will be loaded.  As an example of the FieldSelector usage, consider
   the common use case of
