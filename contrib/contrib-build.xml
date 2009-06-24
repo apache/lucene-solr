@@ -103,4 +103,12 @@
       <jarify basedir="${javadoc.dir}/contrib-${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
     </sequential>
   </target>	
+
+  <target name="javadocs-index.html" description="Generate line for index.html of JavaDocs">
+    <echo file="${javadoc.dir}/index.html" append="true">
+<![CDATA[
+  <li><a href="contrib-${name}/index.html">${name}</a></li>
+]]></echo>
+  </target>
+  
 </project>

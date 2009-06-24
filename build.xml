@@ -240,7 +240,23 @@
   </target>
 
   <target name="javadocs" description="Generate javadoc" 
-  	      depends="javadocs-all, javadocs-core, javadocs-demo, javadocs-contrib"/>
+          depends="javadocs-all, javadocs-core, javadocs-demo, javadocs-contrib">
+    <echo file="${javadoc.dir}/index.html" append="false">
+<![CDATA[<html><head><title>${Name} ${version} Javadoc Index</title></head>
+<body>
+<h1>${Name} ${version} Javadoc Index</h1>
+<ul>
+  <li><a href="all/index.html">All</a></li>
+  <li><a href="core/index.html">Core</a></li>
+  <li>Contrib packages:</li>
+  <ul>
+]]></echo>
+    <contrib-crawl target="javadocs-index.html" failonerror="false"/>
+    <echo file="${javadoc.dir}/index.html" append="true"><![CDATA[
+  </ul>
+  <li><a href="demo/index.html">Demo</a></li>
+</ul></body>]]></echo>
+  </target>
 	
   <target name="javadocs-core" description="Generate javadoc for core classes">
   	<sequential>

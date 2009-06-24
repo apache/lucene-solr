@@ -64,6 +64,9 @@
     <ant dir="bdb-je" target="javadocs" />
   </target>  	
 
-
+  <target name="javadocs-index.html">
+    <ant dir="bdb" target="javadocs-index.html" />
+    <ant dir="bdb-je" target="javadocs-index.html" />
+  </target>
 	
 </project>
