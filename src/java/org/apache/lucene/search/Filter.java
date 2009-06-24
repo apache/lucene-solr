@@ -37,7 +37,7 @@ public abstract class Filter implements java.io.Serializable {
    * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
    */
   public BitSet bits(IndexReader reader) throws IOException {
-    return null;
+    throw new UnsupportedOperationException();
   }
 	
   /**
