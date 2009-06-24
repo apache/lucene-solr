@@ -93,8 +93,13 @@ import org.apache.lucene.index.IndexReader;
  * searcher.search(query, new Collector() {
  *   private int docBase;
  * 
- *   // ignore scorer
+ *   <em>// ignore scorer</em>
  *   public void setScorer(Scorer scorer) {
+ *   }
+ *
+ *   <em>// accept docs out of order (for a BitSet it doesn't matter)</em>
+ *   public boolean acceptsDocsOutOfOrder() {
+ *     return true;
  *   }
  * 
  *   public void collect(int doc) {
