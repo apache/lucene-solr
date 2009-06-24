@@ -72,14 +72,10 @@ public class CoreContainer
   protected Map<String ,IndexSchema> indexSchemaCache;
   protected String adminHandler;
   protected boolean shareSchema;
-  protected final String solrHome;
+  protected String solrHome;
 
-  @Deprecated
   public CoreContainer() {
-    solrHome =".";
-  }
-  public CoreContainer(String home) {
-    solrHome =home;
+    solrHome = SolrResourceLoader.locateSolrHome();
   }
 
   public Properties getContainerProperties() {
@@ -115,7 +111,7 @@ public class CoreContainer
       log.info("looking for solr.xml: " + fconf.getAbsolutePath());
 
       if (fconf.exists()) {
-        cores = new CoreContainer(solrHome);
+        cores = new CoreContainer();
         cores.load(solrHome, fconf);
         abortOnConfigurationError = false;
         // if any core aborts on startup, then abort
@@ -153,7 +149,6 @@ public class CoreContainer
    */
   public CoreContainer(String dir, File configFile ) throws ParserConfigurationException, IOException, SAXException 
   {
-    solrHome = dir;
     this.load(dir, configFile);
   }
   
@@ -163,7 +158,7 @@ public class CoreContainer
    */
   public CoreContainer(SolrResourceLoader loader) {
     this.loader = loader;
-    solrHome = loader.getInstanceDir();
+    this.solrHome = loader.getInstanceDir();
   }
 
   //-------------------------------------------------------------------
@@ -181,6 +176,7 @@ public class CoreContainer
   public void load(String dir, File configFile ) throws ParserConfigurationException, IOException, SAXException {
     this.configFile = configFile;
     this.loader = new SolrResourceLoader(dir);
+    solrHome = loader.getInstanceDir();
     FileInputStream cfgis = new FileInputStream(configFile);
     try {
       Config cfg = new Config(loader, null, cfgis, null);
