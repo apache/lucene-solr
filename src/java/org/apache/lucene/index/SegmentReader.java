@@ -745,6 +745,8 @@ class SegmentReader extends IndexReader implements Cloneable {
     
     if (deletedDocs != null) {
       deletedDocsRef.decRef();
+      // null so if an app hangs on to us we still free most ram
+      deletedDocs = null;
     }
 
     Iterator it = norms.values().iterator();
@@ -757,6 +759,8 @@ class SegmentReader extends IndexReader implements Cloneable {
       // close everything, nothing is shared anymore with other readers
       if (tis != null) {
         tis.close();
+        // null so if an app hangs on to us we still free most ram
+        tis = null;
       }
       
       if (freqStream != null)

@@ -85,14 +85,6 @@ public class SimpleFSDirectory extends FSDirectory {
           super.close();
         }
       }
-  
-      protected void finalize() throws Throwable {
-        try {
-          close();
-        } finally {
-          super.finalize();
-        }
-      }
     }
   
     protected final Descriptor file;

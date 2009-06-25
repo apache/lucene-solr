@@ -319,14 +319,4 @@ class NativeFSLock extends Lock {
   public String toString() {
     return "NativeFSLock@" + path;
   }
-
-  public void finalize() throws Throwable {
-    try {
-      if (isLocked()) {
-        release();
-      }
-    } finally {
-      super.finalize();
-    }
-  }
 }

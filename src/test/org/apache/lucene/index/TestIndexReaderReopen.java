@@ -45,6 +45,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.BitVector;
 
 public class TestIndexReaderReopen extends LuceneTestCase {
     
@@ -1214,10 +1215,11 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
     // At this point they share the same BitVector
     assertTrue(sr1.deletedDocs==sr2.deletedDocs);
+    final BitVector delDocs = sr1.deletedDocs;
     r1.close();
 
     r2.deleteDocument(0);
-    assertTrue(sr1.deletedDocs==sr2.deletedDocs);
+    assertTrue(delDocs==sr2.deletedDocs);
     r2.close();
     dir.close();
   }

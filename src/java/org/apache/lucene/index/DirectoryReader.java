@@ -794,6 +794,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   protected synchronized void doClose() throws IOException {
     IOException ioe = null;
+    normsCache = null;
     for (int i = 0; i < subReaders.length; i++) {
       // try to close each reader, even if an exception is thrown
       try {

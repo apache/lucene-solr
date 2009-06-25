@@ -116,7 +116,18 @@ Changes in runtime behavior
     deleted. You can call IndexReader.isDeleted(n) prior to calling document(n).
     (Shai Erera via Mike McCandless)
 
-API Changes
+ 8. LUCENE-1715: Finalizers have been removed from the 4 core classes
+    that still had them, since they will cause GC to take longer, thus
+    tying up memory for longer, and at best they mask buggy app code.
+    DirectoryReader (returned from IndexReader.open) & IndexWriter
+    previously released the write lock during finalize.
+    SimpleFSDirectory.FSIndexInput closed the descriptor in its
+    finalizer, and NativeFSLock released the lock.  It's possible
+    applications will be affected by this, but only if the application
+    is failing to close reader/writers.  (Brian Groose via Mike
+    McCandless)
+
+ API Changes
 
 1. LUCENE-1419: Add expert API to set custom indexing chain. This API is 
    package-protected for now, so we don't have to officially support it.
