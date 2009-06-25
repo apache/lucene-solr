@@ -142,7 +142,7 @@ public class JdbcDataSource extends
               javax.sql.DataSource dataSource = (javax.sql.DataSource) jndival;
               String user = (String) initProps.get("user");
               String pass = (String) initProps.get("password");
-              if(user != null){
+              if(user == null || user.trim().equals("")){
                 c = dataSource.getConnection();
               } else {
                 c = dataSource.getConnection(user, pass);
