@@ -127,6 +127,8 @@ public final class NumericRangeQuery extends MultiTermQuery {
     Number min, Number max, final boolean minInclusive, final boolean maxInclusive
   ) {
     assert (valSize == 32 || valSize == 64);
+    if (min == null && max == null)
+      throw new IllegalArgumentException("At least one value must be non-null");
     if (precisionStep < 1 || precisionStep > valSize)
       throw new IllegalArgumentException("precisionStep may only be 1.."+valSize);
     this.field = field.intern();
