@@ -307,7 +307,6 @@ public class DocBuilder {
     ContextImpl ctx = new ContextImpl(entity, vr, null,
             pk == null ? Context.FULL_DUMP : Context.DELTA_DUMP,
             session, parentCtx, this);
-    vr.context = ctx;
     entityProcessor.init(ctx);
 
     if (requestParameters.start > 0) {
@@ -347,7 +346,6 @@ public class DocBuilder {
 
           Map<String, Object> arow = entityProcessor.nextRow();
           if (arow == null) {
-            entityProcessor.destroy();
             break;
           }
 
@@ -425,6 +423,7 @@ public class DocBuilder {
       if (verboseDebug) {
         writer.log(SolrWriter.END_ENTITY, null, null);
       }
+      entityProcessor.destroy();
     }
   }
 
@@ -587,7 +586,6 @@ public class DocBuilder {
 
     EntityProcessor entityProcessor = getEntityProcessor(entity);
     ContextImpl context1 = new ContextImpl(entity, resolver, null, Context.FIND_DELTA, session, null, this);
-    resolver.context = context1;
     entityProcessor.init(context1);
 
     Set<Map<String, Object>> myModifiedPks = new HashSet<Map<String, Object>>();

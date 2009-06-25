@@ -49,6 +49,8 @@ public class EntityProcessorWrapper extends EntityProcessor {
 
   protected List<Map<String, Object>> rowcache;
 
+  private  Context contextCopy;
+
   public EntityProcessorWrapper(EntityProcessor delegate, DocBuilder docBuilder) {
     this.delegate = delegate;
     this.docBuilder = docBuilder;
@@ -58,6 +60,9 @@ public class EntityProcessorWrapper extends EntityProcessor {
     rowcache = null;
     this.context = context;
     resolver = (VariableResolverImpl) context.getVariableResolver();
+    //context has to be set correctly . keep the copy of the old one so that it can be restored in destroy
+    contextCopy = resolver.context;
+    resolver.context = context;
     if (entityName == null) {
       onError = resolver.replaceTokens(context.getEntityAttribute(ON_ERROR));
       if (onError == null) onError = ABORT;
@@ -255,6 +260,8 @@ public class EntityProcessorWrapper extends EntityProcessor {
 
   public void destroy() {
     delegate.destroy();
+    resolver.context = contextCopy;
+    contextCopy = null;
   }
 
   @Override

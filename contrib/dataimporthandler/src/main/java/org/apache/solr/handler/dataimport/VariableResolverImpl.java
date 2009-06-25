@@ -37,7 +37,7 @@ public class VariableResolverImpl extends VariableResolver {
   /**
    * Used for creating Evaluators
    */
-  ContextImpl context;
+  Context context;
 
   private final TemplateString templateString = new TemplateString();
 
