@@ -113,7 +113,7 @@ public abstract class IndexReader implements Cloneable {
   private boolean closed;
   protected boolean hasChanges;
   
-  private volatile int refCount;
+  private int refCount;
 
   private boolean disableFakeNorms = false;
 
