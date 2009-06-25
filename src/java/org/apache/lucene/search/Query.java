@@ -105,7 +105,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
    */
   // TODO (3.0): change to throw UnsupportedOperationException.
   public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
-    return new QueryWeightWrapper(weight(searcher));
+    return new QueryWeightWrapper(createWeight(searcher));
   }
 
   /**
