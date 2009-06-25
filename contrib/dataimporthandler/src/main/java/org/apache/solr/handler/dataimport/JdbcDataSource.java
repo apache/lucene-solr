@@ -17,6 +17,8 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrException;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,7 +103,7 @@ public class JdbcDataSource extends
     final String driver = initProps.getProperty(DRIVER);
 
     if (url == null && jndiName == null)
-      throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
+      throw new DataImportHandlerException(SEVERE,
               "JDBC URL or JNDI name has to be specified");
 
     if (driver != null) {
@@ -146,7 +148,7 @@ public class JdbcDataSource extends
                 c = dataSource.getConnection(user, pass);
               }
             } else {
-              throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
+              throw new DataImportHandlerException(SEVERE,
                       "the jndi name : '"+jndiName +"' is not a valid javax.sql.DataSource");
             }
           }
@@ -245,7 +247,7 @@ public class JdbcDataSource extends
                 + (System.currentTimeMillis() - start));
         colNames = readFieldNames(resultSet.getMetaData());
       } catch (Exception e) {
-        throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
+        throw new DataImportHandlerException(SEVERE,
                 "Unable to execute query: " + query, e);
       }
       if (resultSet == null) {
@@ -332,6 +334,7 @@ public class JdbcDataSource extends
       } catch (SQLException e) {
         logError("Error reading data ", e);
         close();
+        wrapAndThrow(SEVERE,e);
         return false;
       }
     }
