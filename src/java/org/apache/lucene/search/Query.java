@@ -88,18 +88,24 @@ public abstract class Query implements java.io.Serializable, Cloneable {
    * @deprecated use {@link #createQueryWeight(Searcher)} instead.
    */
   protected Weight createWeight(Searcher searcher) throws IOException {
-    return createQueryWeight(searcher);
+    throw new UnsupportedOperationException();
   }
 
   /**
    * Expert: Constructs an appropriate {@link QueryWeight} implementation for
    * this query.
-   * 
    * <p>
    * Only implemented by primitive queries, which re-write to themselves.
+   * <p>
+   * <b>NOTE:</b> in 3.0 this method will throw
+   * {@link UnsupportedOperationException}. It is implemented now by calling
+   * {@link #createWeight(Searcher)} for backwards compatibility, for
+   * {@link Query} implementations that did not override it yet (but did
+   * override {@link #createWeight(Searcher)}).
    */
+  // TODO (3.0): change to throw UnsupportedOperationException.
   public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
-    throw new UnsupportedOperationException();
+    return new QueryWeightWrapper(weight(searcher));
   }
 
   /**
