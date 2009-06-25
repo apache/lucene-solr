@@ -26,9 +26,9 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
+import java.text.DecimalFormat;
 import java.util.Date;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.LucenePackage;
 import org.apache.solr.common.util.NamedList;
@@ -192,15 +192,16 @@ public class SystemInfoHandler extends RequestHandlerBase
     jvm.add( "processors", runtime.availableProcessors() );
     
     long used = runtime.totalMemory() - runtime.freeMemory();
-    int percentUsed = (int)(((double)(used)/(double)runtime.maxMemory())*100);
+    // not thread safe, but could be thread local
+    DecimalFormat df = new DecimalFormat("#.#");
+    double percentUsed = ((double)(used)/(double)runtime.maxMemory())*100;
 
-    
     SimpleOrderedMap<Object> mem = new SimpleOrderedMap<Object>();
-    mem.add( "free",  FileUtils.byteCountToDisplaySize( runtime.freeMemory()  ) );
-    mem.add( "total", FileUtils.byteCountToDisplaySize( runtime.totalMemory() ) );
-    mem.add( "max",   FileUtils.byteCountToDisplaySize( runtime.maxMemory()   ) );
-    mem.add( "used",  FileUtils.byteCountToDisplaySize( used ) + " (%"+percentUsed+")");
-    jvm.add( "memory", mem );
+    mem.add("free", humanReadableUnits(runtime.freeMemory(), df));
+    mem.add("total", humanReadableUnits(runtime.totalMemory(), df));
+    mem.add("max", humanReadableUnits(runtime.maxMemory(), df));
+    mem.add("used", humanReadableUnits(used, df) + " (%" + df.format(percentUsed) + ")");
+    jvm.add("memory", mem);
 
     // JMX properties -- probably should be moved to a different handler
     SimpleOrderedMap<Object> jmx = new SimpleOrderedMap<Object>();
@@ -292,6 +293,30 @@ public class SystemInfoHandler extends RequestHandlerBase
   public String getSource() {
     return "$URL$";
   }
+  
+  private static final long ONE_KB = 1024;
+  private static final long ONE_MB = ONE_KB * ONE_KB;
+  private static final long ONE_GB = ONE_KB * ONE_MB;
+
+  /**
+   * Return good default units based on byte size.
+   */
+  private static String humanReadableUnits(long bytes, DecimalFormat df) {
+    String newSizeAndUnits;
+
+    if (bytes / ONE_GB > 0) {
+      newSizeAndUnits = String.valueOf(df.format((float)bytes / ONE_GB)) + " GB";
+    } else if (bytes / ONE_MB > 0) {
+      newSizeAndUnits = String.valueOf(df.format((float)bytes / ONE_MB)) + " MB";
+    } else if (bytes / ONE_KB > 0) {
+      newSizeAndUnits = String.valueOf(df.format((float)bytes / ONE_KB)) + " KB";
+    } else {
+      newSizeAndUnits = String.valueOf(bytes) + " bytes";
+    }
+
+    return newSizeAndUnits;
+  }
+  
 }
 
 

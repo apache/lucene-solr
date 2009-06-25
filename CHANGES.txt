@@ -422,6 +422,9 @@ Bug Fixes
 
 49. SOLR-1207: equals method should compare this and other of DocList in DocSetBase (koji)
 
+50. SOLR-1242: Human readable JVM info from system handler does integer cutoff rounding, even when dealing
+               with GB. Fixed to round to one decimal place. (Jay Hill, Mark Miller)
+
 
 Other Changes
 ----------------------
