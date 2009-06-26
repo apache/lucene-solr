@@ -294,7 +294,9 @@ public class BooleanQuery extends Query {
         BooleanClause c = (BooleanClause) cIter.next();
         Scorer subScorer = w.scorer(reader, true, false);
         if (subScorer == null) {
-          return null;
+          if (c.isRequired()) {
+            return null;
+          }
         } else if (c.isRequired()) {
           required.add(subScorer);
         } else if (c.isProhibited()) {

@@ -16,7 +16,13 @@ package org.apache.lucene.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.Term;
 
@@ -49,6 +55,33 @@ public class TestBooleanQuery extends LuceneTestCase {
     } catch (IllegalArgumentException e) {
       // okay
     }
+  }
+
+  // LUCENE-1630
+  public void testNullOrSubScorer() throws Throwable {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new Field("field", "a b c d", Field.Store.NO, Field.Index.ANALYZED));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    IndexSearcher s = new IndexSearcher(r);
+    BooleanQuery q = new BooleanQuery();
+    q.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
+
+    // PhraseQuery w/ no terms added returns a null scorer
+    PhraseQuery pq = new PhraseQuery();
+    q.add(pq, BooleanClause.Occur.SHOULD);
+    assertEquals(1, s.search(q, 10).totalHits);
+
+    DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(1.0f);
+    dmq.add(new TermQuery(new Term("field", "a")));
+    dmq.add(pq);
+    assertEquals(1, s.search(dmq, 10).totalHits);
+    
+    r.close();
+    w.close();
+    dir.close();
   }
   
 }

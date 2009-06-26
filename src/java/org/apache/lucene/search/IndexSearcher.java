@@ -219,7 +219,9 @@ public class IndexSearcher extends Searcher {
       hcw.setNextReader(reader, 0);
       if (filter == null) {
         Scorer scorer = weight.scorer(reader, true, true);
-        scorer.score(hcw);
+        if (scorer != null) {
+          scorer.score(hcw);
+        }
       } else {
         searchWithFilter(reader, weight, filter, hcw);
       }
@@ -239,7 +241,9 @@ public class IndexSearcher extends Searcher {
       for (int i = 0; i < subReaders.length; i++) { // search each subreader
         collector.setNextReader(subReaders[i], docStarts[i]);
         Scorer scorer = weight.scorer(subReaders[i], !collector.acceptsDocsOutOfOrder(), true);
-        scorer.score(collector);
+        if (scorer != null) {
+          scorer.score(collector);
+        }
       }
     } else {
       for (int i = 0; i < subReaders.length; i++) { // search each subreader

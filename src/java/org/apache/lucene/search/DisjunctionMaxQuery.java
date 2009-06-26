@@ -134,9 +134,7 @@ public class DisjunctionMaxQuery extends Query {
       for (Iterator iter = weights.iterator(); iter.hasNext();) {
         QueryWeight w = (QueryWeight) iter.next();
         Scorer subScorer = w.scorer(reader, true, false);
-        if (subScorer == null) {
-          return null;
-        } else if (subScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+        if (subScorer != null && subScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           scorers[idx++] = subScorer;
         }
       }
