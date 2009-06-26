@@ -24,15 +24,31 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MergePolicy;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-
+import java.io.PrintStream;
 
 /**
- * Create an index.
- * <br>Other side effects: index writer object in perfRunData is set.
- * <br>Relevant properties: <code>merge.factor, max.buffered,
+ * Create an index. <br>
+ * Other side effects: index writer object in perfRunData is set. <br>
+ * Relevant properties: <code>merge.factor, max.buffered,
  *  max.field.length, ram.flush.mb [default 0], autocommit
  *  [default true]</code>.
+ * <p>
+ * This task also supports a "writer.info.stream" property with the following
+ * values:
+ * <ul>
+ * <li>SystemOut - sets {@link IndexWriter#setInfoStream(java.io.PrintStream)}
+ * to {@link System#out}.
+ * <li>SystemErr - sets {@link IndexWriter#setInfoStream(java.io.PrintStream)}
+ * to {@link System#err}.
+ * <li>&lt;file_name&gt; - attempts to create a file given that name and sets
+ * {@link IndexWriter#setInfoStream(java.io.PrintStream)} to that file. If this
+ * denotes an invalid file name, or some error occurs, an exception will be
+ * thrown.
+ * </ul>
  */
 public class CreateIndexTask extends PerfTask {
 
@@ -62,7 +78,6 @@ public class CreateIndexTask extends PerfTask {
 
     final String mergePolicy = config.get("merge.policy",
                                           "org.apache.lucene.index.LogByteSizeMergePolicy");
-    err = null;
     try {
       writer.setMergePolicy((MergePolicy) Class.forName(mergePolicy).newInstance());
     } catch (IllegalAccessException iae) {
@@ -90,6 +105,18 @@ public class CreateIndexTask extends PerfTask {
     } else {
       writer.setMaxBufferedDocs(maxBuffered);
       writer.setRAMBufferSizeMB(ramBuffer);
+    }
+    
+    String infoStreamVal = config.get("writer.info.stream", null);
+    if (infoStreamVal != null) {
+      if (infoStreamVal.equals("SystemOut")) {
+        writer.setInfoStream(System.out);
+      } else if (infoStreamVal.equals("SystemErr")) {
+        writer.setInfoStream(System.err);
+      } else {
+        File f = new File(infoStreamVal).getAbsoluteFile();
+        writer.setInfoStream(new PrintStream(new BufferedOutputStream(new FileOutputStream(f))));
+      }
     }
   }
   
@@ -124,7 +151,7 @@ public class CreateIndexTask extends PerfTask {
                                          runData.getConfig().get("autocommit", OpenIndexTask.DEFAULT_AUTO_COMMIT),
                                          runData.getAnalyzer(),
                                          true, indexDeletionPolicy);
-    CreateIndexTask.setIndexWriterConfig(writer, config);
+    setIndexWriterConfig(writer, config);
     runData.setIndexWriter(writer);
     return 1;
   }

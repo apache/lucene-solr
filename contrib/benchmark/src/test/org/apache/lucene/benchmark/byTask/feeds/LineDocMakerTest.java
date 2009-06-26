@@ -91,7 +91,7 @@ public class LineDocMakerTest extends BenchmarkTestCase {
     tasks.addTask(new CloseIndexTask(runData));
     tasks.doLogic();
     
-    IndexSearcher searcher = new IndexSearcher(runData.getDirectory());
+    IndexSearcher searcher = new IndexSearcher(runData.getDirectory(), true);
     TopDocs td = searcher.search(new TermQuery(new Term("body", "body")), 10);
     assertEquals(1, td.totalHits);
     assertNotNull(td.scoreDocs[0]);

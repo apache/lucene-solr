@@ -37,15 +37,15 @@ public class EnwikiDocMaker extends DocMaker {
     Document doc = reuseFields ? ds.doc : new Document();
     doc.getFields().clear();
 
-    Field body = ds.getField(BODY_FIELD, storeVal, Index.ANALYZED, termVecVal);
+    Field body = ds.getField(BODY_FIELD, storeVal, bodyIndexVal, termVecVal);
     body.setValue(dd.getBody());
     doc.add(body);
     
-    Field title = ds.getField(TITLE_FIELD, storeVal, Index.ANALYZED, termVecVal);
+    Field title = ds.getField(TITLE_FIELD, storeVal, indexVal, termVecVal);
     title.setValue(dd.getTitle());
     doc.add(title);
     
-    Field date = ds.getField(DATE_FIELD, storeVal, Index.ANALYZED, termVecVal);
+    Field date = ds.getField(DATE_FIELD, storeVal, indexVal, termVecVal);
     date.setValue(dd.getDate());
     doc.add(date);
     

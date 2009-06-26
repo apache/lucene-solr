@@ -3,6 +3,16 @@ Lucene Benchmark Contrib Change Log
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
 $Id:$
+
+6/26/2009
+  LUCENE-1716: Added the following support: 
+  doc.tokenized.norms: specifies whether to store norms
+  doc.body.tokenized.norms: special attribute for the body field
+  doc.index.props: specifies whether DocMaker should index the properties set on
+  DocData
+  writer.info.stream: specifies the info stream to set on IndexWriter (supported
+  values are: SystemOut, SystemErr and a file name). (Shai Erera via Mike McCandless)
+  
 6/23/09
   LUCENE-1714: WriteLineDocTask incorrectly  normalized text, by replacing only 
   occurrences of "\t" with a space. It now replaces "\r\n" in addition to that, 

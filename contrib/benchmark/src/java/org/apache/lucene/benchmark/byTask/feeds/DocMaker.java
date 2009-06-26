@@ -43,6 +43,12 @@ import org.apache.lucene.document.Field.TermVector;
  * <b>false</b>).
  * <li><b>doc.tokenized</b> - specifies whether fields should be tokenized
  * (default <b>true</b>).
+ * <li><b>doc.tokenized.norms</b> - specifies whether norms should be stored in
+ * the index or not. (default <b>false</b>).
+ * <li><b>doc.body.tokenized.norms</b> - specifies whether norms should be
+ * stored in the index for the body field. This can be set to true, while
+ * <code>doc.tokenized.norms</code> is set to false, to allow norms storing just
+ * for the body field. (default <b>true</b>).
  * <li><b>doc.term.vector</b> - specifies whether term vectors should be stored
  * for fields (default <b>false</b>).
  * <li><b>doc.term.vector.positions</b> - specifies whether term vectors should
@@ -53,6 +59,8 @@ import org.apache.lucene.document.Field.TermVector;
  * the document's content in the document (default <b>false</b>).
  * <li><b>doc.reuse.fields</b> - specifies whether Field and Document objects
  * should be reused (default <b>true</b>).
+ * <li><b>doc.index.props</b> - specifies whether the properties returned by
+ * {@link DocData#getProps()} will be indexed. (default <b>false</b>).
  * </ul>
  */
 public class DocMaker {
@@ -69,7 +77,7 @@ public class DocMaker {
     Document doc;
     DocData docData = new DocData();
     
-    public DocState(boolean reuseFields, Store store, Index index, TermVector termVector) {
+    public DocState(boolean reuseFields, Store store, Index index, Index bodyIndex, TermVector termVector) {
 
       this.reuseFields = reuseFields;
       
@@ -77,7 +85,7 @@ public class DocMaker {
         fields =  new HashMap();
         
         // Initialize the map with the default fields.
-        fields.put(BODY_FIELD, new Field(BODY_FIELD, "", store, index, termVector));
+        fields.put(BODY_FIELD, new Field(BODY_FIELD, "", store, bodyIndex, termVector));
         fields.put(TITLE_FIELD, new Field(TITLE_FIELD, "", store, index, termVector));
         fields.put(DATE_FIELD, new Field(DATE_FIELD, "", store, index, termVector));
         fields.put(ID_FIELD, new Field(ID_FIELD, "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
@@ -123,12 +131,14 @@ public class DocMaker {
   protected Config config;
 
   protected Store storeVal = Store.NO;
-  protected Index indexVal = Index.ANALYZED;
+  protected Index indexVal = Index.ANALYZED_NO_NORMS;
+  protected Index bodyIndexVal = Index.ANALYZED;
   protected TermVector termVecVal = TermVector.NO;
   
   protected ContentSource source;
   protected boolean reuseFields;
   protected DocState localDocState;
+  protected boolean indexProperties;
   
   private int lastPrintedNumUniqueTexts = 0;
 
@@ -146,7 +156,7 @@ public class DocMaker {
     doc.getFields().clear();
     
     // Set ID_FIELD
-    Field idField = ds.getField(ID_FIELD, storeVal, indexVal, termVecVal);
+    Field idField = ds.getField(ID_FIELD, storeVal, Index.NOT_ANALYZED_NO_NORMS, termVecVal);
     idField.setValue("doc" + docid);
     doc.add(idField);
     
@@ -190,7 +200,7 @@ public class DocMaker {
         bdy = body.substring(0, size); // use part
         docData.setBody(body.substring(size)); // some left
       }
-      Field bodyField = ds.getField(BODY_FIELD, storeVal, indexVal, termVecVal);
+      Field bodyField = ds.getField(BODY_FIELD, storeVal, bodyIndexVal, termVecVal);
       bodyField.setValue(bdy);
       doc.add(bodyField);
       
@@ -201,16 +211,19 @@ public class DocMaker {
       }
     }
 
-    Properties props = docData.getProps();
-    if (props != null) {
-      for (Iterator iterator = props.entrySet().iterator(); iterator.hasNext();) {
-        Entry entry = (Entry) iterator.next();
-        Field f = ds.getField((String) entry.getKey(), storeVal, indexVal, termVecVal);
-        f.setValue((String) entry.getValue());
-        doc.add(f);
+    if (indexProperties) {
+      Properties props = docData.getProps();
+      if (props != null) {
+        for (Iterator iterator = props.entrySet().iterator(); iterator.hasNext();) {
+          Entry entry = (Entry) iterator.next();
+          Field f = ds.getField((String) entry.getKey(), storeVal, indexVal, termVecVal);
+          f.setValue((String) entry.getValue());
+          doc.add(f);
+        }
+        docData.setProps(null);
       }
-      docData.setProps(null);
     }
+    
     //System.out.println("============== Created doc "+numDocsCreated+" :\n"+doc+"\n==========");
     return doc;
   }
@@ -222,7 +235,7 @@ public class DocMaker {
   protected DocState getDocState() {
     DocState ds = (DocState) docState.get();
     if (ds == null) {
-      ds = new DocState(true, storeVal, indexVal, termVecVal);
+      ds = new DocState(true, storeVal, indexVal, bodyIndexVal, termVecVal);
       docState.set(ds);
     }
     return ds;
@@ -357,9 +370,17 @@ public class DocMaker {
 
     boolean stored = config.get("doc.stored", false);
     boolean tokenized = config.get("doc.tokenized", true);
+    boolean norms = config.get("doc.tokenized.norms", false);
+    boolean bodyNorms = config.get("doc.body.tokenized.norms", true);
     boolean termVec = config.get("doc.term.vector", false);
     storeVal = (stored ? Field.Store.YES : Field.Store.NO);
-    indexVal = (tokenized ? Field.Index.ANALYZED : Field.Index.NOT_ANALYZED);
+    if (tokenized) {
+      indexVal = norms ? Index.ANALYZED : Index.ANALYZED_NO_NORMS;
+      bodyIndexVal = bodyNorms ? Index.ANALYZED : Index.ANALYZED_NO_NORMS;
+    } else {
+      indexVal = norms ? Index.NOT_ANALYZED : Index.NOT_ANALYZED_NO_NORMS;
+      bodyIndexVal = bodyNorms ? Index.NOT_ANALYZED : Index.NOT_ANALYZED_NO_NORMS;
+    }
     boolean termVecPositions = config.get("doc.term.vector.positions", false);
     boolean termVecOffsets = config.get("doc.term.vector.offsets", false);
     if (termVecPositions && termVecOffsets) {
@@ -377,13 +398,15 @@ public class DocMaker {
     
     reuseFields = config.get("doc.reuse.fields", true);
     if (!reuseFields) {
-      localDocState = new DocState(false, storeVal, indexVal, termVecVal);
+      localDocState = new DocState(false, storeVal, indexVal, bodyIndexVal, termVecVal);
     } else {
       // In a multi-rounds run, it is important to reset DocState since settings
       // of fields may change between rounds, and this is the only way to reset
       // the cache of all threads.
       docState = new ThreadLocal();
     }
+    
+    indexProperties = config.get("doc.index.props", false);
   }
 
 }
