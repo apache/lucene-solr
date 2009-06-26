@@ -50,6 +50,7 @@ public class TestCheckIndex extends LuceneTestCase {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
     checker.setInfoStream(new PrintStream(bos));
+    //checker.setInfoStream(System.out);
     CheckIndex.Status indexStatus = checker.checkIndex();
     if (indexStatus.clean == false) {
       System.out.println("CheckIndex failed");
@@ -61,6 +62,27 @@ public class TestCheckIndex extends LuceneTestCase {
     assertTrue(seg.openReaderPassed);
 
     assertNotNull(seg.diagnostics);
+    
+    assertNotNull(seg.fieldNormStatus);
+    assertNull(seg.fieldNormStatus.error);
+    assertEquals(1, seg.fieldNormStatus.totFields);
+
+    assertNotNull(seg.termIndexStatus);
+    assertNull(seg.termIndexStatus.error);
+    assertEquals(1, seg.termIndexStatus.termCount);
+    assertEquals(19, seg.termIndexStatus.totFreq);
+    assertEquals(18, seg.termIndexStatus.totPos);
+
+    assertNotNull(seg.storedFieldStatus);
+    assertNull(seg.storedFieldStatus.error);
+    assertEquals(18, seg.storedFieldStatus.docCount);
+    assertEquals(18, seg.storedFieldStatus.totFields);
+
+    assertNotNull(seg.termVectorStatus);
+    assertNull(seg.termVectorStatus.error);
+    assertEquals(18, seg.termVectorStatus.docCount);
+    assertEquals(18, seg.termVectorStatus.totVectors);
+
     assertTrue(seg.diagnostics.size() > 0);
     final List onlySegments = new ArrayList();
     onlySegments.add("_0");

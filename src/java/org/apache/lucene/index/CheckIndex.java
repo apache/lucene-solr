@@ -179,6 +179,76 @@ public class CheckIndex {
        *  debugging details that IndexWriter records into
        *  each segment it creates */
       public Map diagnostics;
+
+      /** Status for testing of field norms (null if field norms could not be tested). */
+      public FieldNormStatus fieldNormStatus;
+
+      /** Status for testing of indexed terms (null if indexed terms could not be tested). */
+      public TermIndexStatus termIndexStatus;
+
+      /** Status for testing of stored fields (null if stored fields could not be tested). */
+      public StoredFieldStatus storedFieldStatus;
+
+      /** Status for testing of term vectors (null if term vectors could not be tested). */
+      public TermVectorStatus termVectorStatus;
+    }
+
+    /**
+     * Status from testing field norms.
+     */
+    public static final class FieldNormStatus {
+      /** Number of fields successfully tested */
+      public long totFields = 0L;
+
+      /** Exception thrown during term index test (null on success) */
+      public Throwable error = null;
+    }
+
+    /**
+     * Status from testing term index.
+     */
+    public static final class TermIndexStatus {
+      /** Total term count */
+      public long termCount = 0L;
+
+      /** Total frequency across all terms. */
+      public long totFreq = 0L;
+      
+      /** Total number of positions. */
+      public long totPos = 0L;
+
+      /** Exception thrown during term index test (null on success) */
+      public Throwable error = null;
+    }
+
+    /**
+     * Status from testing stored fields.
+     */
+    public static final class StoredFieldStatus {
+      
+      /** Number of documents tested. */
+      public int docCount = 0;
+      
+      /** Total number of stored fields tested. */
+      public long totFields = 0;
+      
+      /** Exception thrown during stored fields test (null on success) */
+      public Throwable error = null;
+    }
+
+    /**
+     * Status from testing stored fields.
+     */
+    public static final class TermVectorStatus {
+      
+      /** Number of documents tested. */
+      public int docCount = 0;
+      
+      /** Total number of term vectors tested. */
+      public long totVectors = 0;
+      
+      /** Exception thrown during term vector test (null on success) */
+      public Throwable error = null;
     }
   }
 
@@ -443,107 +513,38 @@ public class CheckIndex {
         if (reader.maxDoc() != info.docCount)
           throw new RuntimeException("SegmentReader.maxDoc() " + reader.maxDoc() + " != SegmentInfos.docCount " + info.docCount);
 
-        if (infoStream != null)
-          infoStream.print("    test: fields, norms.......");
+        // Test getFieldNames()
+        if (infoStream != null) {
+          infoStream.print("    test: fields..............");
+        }         
         Collection fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
-        Iterator it = fieldNames.iterator();
-        final byte[] b = new byte[reader.maxDoc()];
-        while(it.hasNext()) {
-          final String fieldName = (String) it.next();
-          reader.norms(fieldName, b, 0);
-        }
         msg("OK [" + fieldNames.size() + " fields]");
         segInfoStat.numFields = fieldNames.size();
-        if (infoStream != null)
-          infoStream.print("    test: terms, freq, prox...");
-        final TermEnum termEnum = reader.terms();
-        final TermPositions termPositions = reader.termPositions();
+        
+        // Test Field Norms
+        segInfoStat.fieldNormStatus = testFieldNorms(fieldNames, reader);
 
-        // Used only to count up # deleted docs for this
-        // term
-        final MySegmentTermDocs myTermDocs = new MySegmentTermDocs(reader);
+        // Test the Term Index
+        segInfoStat.termIndexStatus = testTermIndex(info, reader);
 
-        long termCount = 0;
-        long totFreq = 0;
-        long totPos = 0;
-        final int maxDoc = reader.maxDoc();
+        // Test Stored Fields
+        segInfoStat.storedFieldStatus = testStoredFields(info, reader, nf);
 
-        while(termEnum.next()) {
-          termCount++;
-          final Term term = termEnum.term();
-          final int docFreq = termEnum.docFreq();
-          termPositions.seek(term);
-          int lastDoc = -1;
-          int freq0 = 0;
-          totFreq += docFreq;
-          while(termPositions.next()) {
-            freq0++;
-            final int doc = termPositions.doc();
-            final int freq = termPositions.freq();
-            if (doc <= lastDoc)
-              throw new RuntimeException("term " + term + ": doc " + doc + " <= lastDoc " + lastDoc);
-            if (doc >= maxDoc)
-              throw new RuntimeException("term " + term + ": doc " + doc + " >= maxDoc " + maxDoc);
+        // Test Term Vectors
+        segInfoStat.termVectorStatus = testTermVectors(info, reader, nf);
 
-            lastDoc = doc;
-            if (freq <= 0)
-              throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " is out of bounds");
-            
-            int lastPos = -1;
-            totPos += freq;
-            for(int j=0;j<freq;j++) {
-              final int pos = termPositions.nextPosition();
-              if (pos < -1)
-                throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " is out of bounds");
-              if (pos < lastPos)
-                throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " < lastPos " + lastPos);
-            }
-          }
-
-          // Now count how many deleted docs occurred in
-          // this term:
-          final int delCount;
-          if (reader.hasDeletions()) {
-            myTermDocs.seek(term);
-            while(myTermDocs.next()) {
-            }
-            delCount = myTermDocs.delCount;
-          } else
-            delCount = 0;
-
-          if (freq0 + delCount != docFreq)
-            throw new RuntimeException("term " + term + " docFreq=" + docFreq + " != num docs seen " + freq0 + " + num docs deleted " + delCount);
+        // Rethrow the first exception we encountered
+        //  This will cause stats for failed segments to be incremented properly
+        if (segInfoStat.fieldNormStatus.error != null) {
+          throw new RuntimeException("Field Norm test failed");
+        } else if (segInfoStat.termIndexStatus.error != null) {
+          throw new RuntimeException("Term Index test failed");
+        } else if (segInfoStat.storedFieldStatus.error != null) {
+          throw new RuntimeException("Stored Field test failed");
+        } else if (segInfoStat.termVectorStatus.error != null) {
+          throw new RuntimeException("Term Vector test failed");
         }
 
-        msg("OK [" + termCount + " terms; " + totFreq + " terms/docs pairs; " + totPos + " tokens]");
-
-        if (infoStream != null)
-          infoStream.print("    test: stored fields.......");
-        int docCount = 0;
-        long totFields = 0;
-        for(int j=0;j<info.docCount;j++)
-          if (!reader.isDeleted(j)) {
-            docCount++;
-            Document doc = reader.document(j);
-            totFields += doc.getFields().size();
-          }
-
-        if (docCount != reader.numDocs())
-          throw new RuntimeException("docCount=" + docCount + " but saw " + docCount + " undeleted docs");
-
-        msg("OK [" + totFields + " total field count; avg " + nf.format((((float) totFields)/docCount)) + " fields per doc]");
-
-        if (infoStream != null)
-          infoStream.print("    test: term vectors........");
-        int totVectors = 0;
-        for(int j=0;j<info.docCount;j++)
-          if (!reader.isDeleted(j)) {
-            TermFreqVector[] tfv = reader.getTermFreqVectors(j);
-            if (tfv != null)
-              totVectors += tfv.length;
-          }
-
-        msg("OK [" + totVectors + " total vector count; avg " + nf.format((((float) totVectors)/docCount)) + " term/freq vector fields per doc]");
         msg("");
 
       } catch (Throwable t) {
@@ -574,7 +575,191 @@ public class CheckIndex {
 
     return result;
   }
+
+  /**
+   * Test field norms.
+   */
+  private Status.FieldNormStatus testFieldNorms(Collection fieldNames, SegmentReader reader) {
+    final Status.FieldNormStatus status = new Status.FieldNormStatus();
+
+    try {
+      // Test Field Norms
+      if (infoStream != null) {
+        infoStream.print("    test: field norms.........");
+      }
+      Iterator it = fieldNames.iterator();
+      final byte[] b = new byte[reader.maxDoc()];
+      while (it.hasNext()) {
+        final String fieldName = (String) it.next();
+        reader.norms(fieldName, b, 0);
+        ++status.totFields;
+      }
+
+      msg("OK [" + status.totFields + " fields]");
+    } catch (Throwable e) {
+      msg("ERROR [" + String.valueOf(e.getMessage()) + "]");
+      status.error = e;
+      if (infoStream != null) {
+        e.printStackTrace(infoStream);
+      }
+    }
+
+    return status;
+  }
+
+  /**
+   * Test the term index.
+   */
+  private Status.TermIndexStatus testTermIndex(SegmentInfo info, SegmentReader reader) {
+    final Status.TermIndexStatus status = new Status.TermIndexStatus();
+
+    try {
+      if (infoStream != null) {
+        infoStream.print("    test: terms, freq, prox...");
+      }
+
+      final TermEnum termEnum = reader.terms();
+      final TermPositions termPositions = reader.termPositions();
+
+      // Used only to count up # deleted docs for this term
+      final MySegmentTermDocs myTermDocs = new MySegmentTermDocs(reader);
+
+      final int maxDoc = reader.maxDoc();
+
+      while (termEnum.next()) {
+        status.termCount++;
+        final Term term = termEnum.term();
+        final int docFreq = termEnum.docFreq();
+        termPositions.seek(term);
+        int lastDoc = -1;
+        int freq0 = 0;
+        status.totFreq += docFreq;
+        while (termPositions.next()) {
+          freq0++;
+          final int doc = termPositions.doc();
+          final int freq = termPositions.freq();
+          if (doc <= lastDoc)
+            throw new RuntimeException("term " + term + ": doc " + doc + " <= lastDoc " + lastDoc);
+          if (doc >= maxDoc)
+            throw new RuntimeException("term " + term + ": doc " + doc + " >= maxDoc " + maxDoc);
+
+          lastDoc = doc;
+          if (freq <= 0)
+            throw new RuntimeException("term " + term + ": doc " + doc + ": freq " + freq + " is out of bounds");
+            
+          int lastPos = -1;
+          status.totPos += freq;
+          for(int j=0;j<freq;j++) {
+            final int pos = termPositions.nextPosition();
+            if (pos < -1)
+              throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " is out of bounds");
+            if (pos < lastPos)
+              throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " < lastPos " + lastPos);
+          }
+        }
+
+        // Now count how many deleted docs occurred in
+        // this term:
+        final int delCount;
+        if (reader.hasDeletions()) {
+          myTermDocs.seek(term);
+          while(myTermDocs.next()) { }
+          delCount = myTermDocs.delCount;
+        } else {
+          delCount = 0; 
+        }
+
+        if (freq0 + delCount != docFreq) {
+          throw new RuntimeException("term " + term + " docFreq=" + 
+                                     docFreq + " != num docs seen " + freq0 + " + num docs deleted " + delCount);
+        }
+      }
+
+      msg("OK [" + status.termCount + " terms; " + status.totFreq + " terms/docs pairs; " + status.totPos + " tokens]");
+
+    } catch (Throwable e) {
+      msg("ERROR [" + String.valueOf(e.getMessage()) + "]");
+      status.error = e;
+      if (infoStream != null) {
+        e.printStackTrace(infoStream);
+      }
+    }
+
+    return status;
+  }
   
+  /**
+   * Test stored fields for a segment.
+   */
+  private Status.StoredFieldStatus testStoredFields(SegmentInfo info, SegmentReader reader, NumberFormat format) {
+    final Status.StoredFieldStatus status = new Status.StoredFieldStatus();
+
+    try {
+      if (infoStream != null) {
+        infoStream.print("    test: stored fields.......");
+      }
+
+      // Scan stored fields for all documents
+      for (int j = 0; j < info.docCount; ++j) {
+        if (!reader.isDeleted(j)) {
+          status.docCount++;
+          Document doc = reader.document(j);
+          status.totFields += doc.getFields().size();
+        }
+      }      
+
+      // Validate docCount
+      if (status.docCount != reader.numDocs()) {
+        throw new RuntimeException("docCount=" + status.docCount + " but saw " + status.docCount + " undeleted docs");
+      }
+
+      msg("OK [" + status.totFields + " total field count; avg " + 
+          format.format((((float) status.totFields)/status.docCount)) + " fields per doc]");      
+    } catch (Throwable e) {
+      msg("ERROR [" + String.valueOf(e.getMessage()) + "]");
+      status.error = e;
+      if (infoStream != null) {
+        e.printStackTrace(infoStream);
+      }
+    }
+
+    return status;
+  }
+
+  /**
+   * Test term vectors for a segment.
+   */
+  private Status.TermVectorStatus testTermVectors(SegmentInfo info, SegmentReader reader, NumberFormat format) {
+    final Status.TermVectorStatus status = new Status.TermVectorStatus();
+    
+    try {
+      if (infoStream != null) {
+        infoStream.print("    test: term vectors........");
+      }
+
+      for (int j = 0; j < info.docCount; ++j) {
+        if (!reader.isDeleted(j)) {
+          status.docCount++;
+          TermFreqVector[] tfv = reader.getTermFreqVectors(j);
+          if (tfv != null) {
+            status.totVectors += tfv.length;
+          }
+        }
+      }
+      
+      msg("OK [" + status.totVectors + " total vector count; avg " + 
+          format.format((((float) status.totVectors) / status.docCount)) + " term/freq vector fields per doc]");
+    } catch (Throwable e) {
+      msg("ERROR [" + String.valueOf(e.getMessage()) + "]");
+      status.error = e;
+      if (infoStream != null) {
+        e.printStackTrace(infoStream);
+      }
+    }
+    
+    return status;
+  }
+
   /** Repairs the index using previously returned result
    *  from {@link #checkIndex}.  Note that this does not
    *  remove any of the unreferenced files after it's done;

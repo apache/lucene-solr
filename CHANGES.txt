@@ -276,6 +276,11 @@ Changes in runtime behavior
 26. LUCENE-1703: Add IndexWriter.waitForMerges.  (Tim Smith via Mike
     McCandless)
 
+27. LUCENE-1625: CheckIndex's programmatic API now returns separate
+    classes detailing the status of each component in the index, and
+    includes more detailed status than previously.  (Tim Smith via
+    Mike McCandless)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()
