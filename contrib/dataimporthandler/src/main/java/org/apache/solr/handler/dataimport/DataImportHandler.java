@@ -97,6 +97,8 @@ public class DataImportHandler extends RequestHandlerBase implements
           if(name.startsWith("/")){
             myName = name.substring(1);
           }
+          // some users may have '/' in the handler name. replace with '_'
+          myName = myName.replaceAll("/","_") ;
         }
       }
       String debug = (String) initArgs.get(ENABLE_DEBUG);
