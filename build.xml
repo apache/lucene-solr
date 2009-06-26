@@ -219,12 +219,6 @@
     </compile>
   </target>
 
-  <!-- GCJ -->
-  <target name="gcj" depends="jar,jar-demo">
-    <exec executable="make" dir="src/gcj" failonerror="true"/>
-  </target>
-
-
   <!-- TODO: Remove dependency on demo from test -->
   <target name="compile-test" depends="compile-demo,common.compile-test"/>
 

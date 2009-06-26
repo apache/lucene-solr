@@ -242,9 +242,9 @@ Changes in runtime behavior
 
 22. LUCENE-1677: The global property
     org.apache.lucene.SegmentReader.class, and
-    ReadOnlySegmentReader.class, along with the src/gcj/*
-    specializations for GCJ, are now deprecated, to be removed in
-    3.0.  (Earwin Burrfoot via Mike McCandless)
+    ReadOnlySegmentReader.class are now deprecated, to be removed in
+    3.0.  src/gcj/* has been removed. (Earwin Burrfoot via Mike
+    McCandless)
 
 23. LUCENE-1673: Deprecated NumberTools in favour of the new
     NumericRangeQuery and its new indexing format for numeric or
