@@ -290,7 +290,10 @@ public final class NumericRangeQuery extends MultiTermQuery {
           } else if (min instanceof Double) {
             minBound = NumericUtils.doubleToSortableLong(min.doubleValue());
           }
-          if (!minInclusive && min != null) minBound++;
+          if (!minInclusive && min != null) {
+            if (minBound == Long.MAX_VALUE) break;
+            minBound++;
+          }
           
           // upper
           long maxBound = Long.MAX_VALUE;
@@ -299,7 +302,10 @@ public final class NumericRangeQuery extends MultiTermQuery {
           } else if (max instanceof Double) {
             maxBound = NumericUtils.doubleToSortableLong(max.doubleValue());
           }
-          if (!maxInclusive && max != null) maxBound--;
+          if (!maxInclusive && max != null) {
+            if (maxBound == Long.MIN_VALUE) break;
+            maxBound--;
+          }
           
           NumericUtils.splitLongRange(new NumericUtils.LongRangeBuilder() {
             //@Override
@@ -319,7 +325,10 @@ public final class NumericRangeQuery extends MultiTermQuery {
           } else if (min instanceof Float) {
             minBound = NumericUtils.floatToSortableInt(min.floatValue());
           }
-          if (!minInclusive && min != null) minBound++;
+          if (!minInclusive && min != null) {
+            if (minBound == Integer.MAX_VALUE) break;
+            minBound++;
+          }
           
           // upper
           int maxBound = Integer.MAX_VALUE;
@@ -328,7 +337,10 @@ public final class NumericRangeQuery extends MultiTermQuery {
           } else if (max instanceof Float) {
             maxBound = NumericUtils.floatToSortableInt(max.floatValue());
           }
-          if (!maxInclusive && max != null) maxBound--;
+          if (!maxInclusive && max != null) {
+            if (maxBound == Integer.MIN_VALUE) break;
+            maxBound--;
+          }
           
           NumericUtils.splitIntRange(new NumericUtils.IntRangeBuilder() {
             //@Override

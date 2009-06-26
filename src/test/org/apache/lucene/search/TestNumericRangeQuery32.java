@@ -150,6 +150,12 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   public void testInverseRange() throws Exception {
     NumericRangeFilter f = NumericRangeFilter.newIntRange("field8", 8, new Integer(1000), new Integer(-1000), true, true);
     assertSame("A inverse range should return the EMPTY_DOCIDSET instance", DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(searcher.getIndexReader()));
+    f = NumericRangeFilter.newIntRange("field8", 8, new Integer(Integer.MAX_VALUE), null, false, false);
+    assertSame("A exclusive range starting with Integer.MAX_VALUE should return the EMPTY_DOCIDSET instance",
+      DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(searcher.getIndexReader()));
+    f = NumericRangeFilter.newIntRange("field8", 8, null, new Integer(Integer.MIN_VALUE), false, false);
+    assertSame("A exclusive range ending with Integer.MIN_VALUE should return the EMPTY_DOCIDSET instance",
+      DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(searcher.getIndexReader()));
   }
   
   private void testLeftOpenRange(int precisionStep) throws Exception {
