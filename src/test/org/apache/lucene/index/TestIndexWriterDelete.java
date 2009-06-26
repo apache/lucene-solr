@@ -264,6 +264,138 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     }
   }
 
+  // test deleteAll()
+  public void testDeleteAll() throws IOException {
+    for (int pass=0;pass<2;pass++) {
+      boolean autoCommit = (0==pass);
+      Directory dir = new MockRAMDirectory();
+      IndexWriter modifier = new IndexWriter(dir, autoCommit,
+                                             new WhitespaceAnalyzer(), true);
+      modifier.setMaxBufferedDocs(2);
+      modifier.setMaxBufferedDeleteTerms(2);
+
+      int id = 0;
+      int value = 100;
+
+      for (int i = 0; i < 7; i++) {
+        addDoc(modifier, ++id, value);
+      }
+      modifier.commit();
+
+      IndexReader reader = IndexReader.open(dir);
+      assertEquals(7, reader.numDocs());
+      reader.close();
+
+      // Add 1 doc (so we will have something buffered)
+      addDoc(modifier, 99, value);
+
+      // Delete all
+      modifier.deleteAll();
+
+      // Delete all shouldn't be on disk yet
+      reader = IndexReader.open(dir);
+      assertEquals(7, reader.numDocs());
+      reader.close();
+
+      // Add 2 new docs (after the deleteAll, before the commit)      
+      addDoc(modifier, 101, value);
+      addDoc(modifier, 102, value);
+
+      // commit the delete all
+      modifier.commit();
+
+      // Validate there are no docs left
+      reader = IndexReader.open(dir);
+      assertEquals(2, reader.numDocs());
+      reader.close();
+
+      modifier.close();
+      dir.close();
+    }
+  }
+
+  // test rollback of deleteAll()
+  public void testDeleteAllRollback() throws IOException {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter modifier = new IndexWriter(dir, false,
+                                           new WhitespaceAnalyzer(), true);
+    modifier.setMaxBufferedDocs(2);
+    modifier.setMaxBufferedDeleteTerms(2);
+    
+    int id = 0;
+    int value = 100;
+    
+    for (int i = 0; i < 7; i++) {
+      addDoc(modifier, ++id, value);
+    }
+    modifier.commit();
+    
+    addDoc(modifier, ++id, value);
+
+    IndexReader reader = IndexReader.open(dir);
+    assertEquals(7, reader.numDocs());
+    reader.close();
+    
+    // Delete all
+    modifier.deleteAll(); 
+
+    // Roll it back
+    modifier.rollback();
+    modifier.close();
+    
+    // Validate that the docs are still there
+    reader = IndexReader.open(dir);
+    assertEquals(7, reader.numDocs());
+    reader.close();
+    
+    dir.close();
+  }
+
+
+  // test deleteAll() w/ near real-time reader
+  public void testDeleteAllNRT() throws IOException {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter modifier = new IndexWriter(dir, false,
+                                           new WhitespaceAnalyzer(), true);
+    modifier.setMaxBufferedDocs(2);
+    modifier.setMaxBufferedDeleteTerms(2);
+    
+    int id = 0;
+    int value = 100;
+    
+    for (int i = 0; i < 7; i++) {
+      addDoc(modifier, ++id, value);
+    }
+    modifier.commit();
+
+    IndexReader reader = modifier.getReader();
+    assertEquals(7, reader.numDocs());
+    reader.close();
+
+    addDoc(modifier, ++id, value);
+    addDoc(modifier, ++id, value);
+    
+    // Delete all
+    modifier.deleteAll(); 
+
+    reader = modifier.getReader();
+    assertEquals(0, reader.numDocs());
+    reader.close();
+    
+
+    // Roll it back
+    modifier.rollback();
+    modifier.close();
+    
+    // Validate that the docs are still there
+    reader = IndexReader.open(dir);
+    assertEquals(7, reader.numDocs());
+    reader.close();
+    
+    dir.close();
+  }
+
+
   private void addDoc(IndexWriter modifier, int id, int value)
       throws IOException {
     Document doc = new Document();

@@ -3236,6 +3236,53 @@ public class IndexWriter {
     closeInternal(false);
   }
 
+  /**
+   * Delete all documents in the index.
+   *
+   * <p>This method will drop all buffered documents and will 
+   *    remove all segments from the index. This change will not be
+   *    visible until a {@link #commit()} has been called. This method
+   *    can be rolled back using {@link #rollback()}.</p>
+   *
+   * <p>NOTE: this method is much faster than using deleteDocuments( new MatchAllDocsQuery() ).</p>
+   *
+   * <p>NOTE: this method will forcefully abort all merges
+   *    in progress.  If other threads are running {@link
+   *    #optimize()} or any of the addIndexes methods, they
+   *    will receive {@link MergePolicy.MergeAbortedException}s.
+   */
+  public synchronized void deleteAll() throws IOException {
+    docWriter.pauseAllThreads();
+    try {
+
+      // Abort any running merges
+      finishMerges(false);
+
+      // Remove any buffered docs
+      docWriter.abort();
+
+      // Remove all segments
+      segmentInfos.clear();
+
+      // Ask deleter to locate unreferenced files & remove them:
+      deleter.checkpoint(segmentInfos, false);
+      deleter.refresh();
+
+      // Don't bother saving any changes in our segmentInfos
+      readerPool.clear(null);      
+
+      // Mark that the index has changed
+      ++changeCount;
+    } catch (OutOfMemoryError oom) {
+      handleOOM(oom, "deleteAll");
+    } finally {
+      docWriter.resumeAllThreads();
+      if (infoStream != null) {
+        message("hit exception during deleteAll");
+      }
+    }
+  }
+
   private synchronized void finishMerges(boolean waitForMerges) throws IOException {
     if (!waitForMerges) {
 
