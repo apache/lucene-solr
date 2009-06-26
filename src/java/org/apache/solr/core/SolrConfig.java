@@ -151,6 +151,7 @@ public class SolrConfig extends Config {
     fieldValueCacheConfig = conf;
     unlockOnStartup = getBool("mainIndex/unlockOnStartup", false);
     useColdSearcher = getBool("query/useColdSearcher",false);
+    dataDir = get("dataDir", null);
 
     userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache");
 
@@ -303,6 +304,7 @@ public class SolrConfig extends Config {
   public final int maxWarmingSearchers;
   public final boolean unlockOnStartup;
   public final boolean useColdSearcher;
+  protected String dataDir;
   
   //JMX configuration
   public final JmxConfiguration jmxConfig;
@@ -537,4 +539,6 @@ public class SolrConfig extends Config {
   public List<PluginInfo> getHighlightingFormatterInfo() { return highlightingFormatterInfo; }
 
   public List<PluginInfo> getHighlightingFragmenterInfo() { return highlightingFragmenterInfo; }
+
+  public String getDataDir() { return dataDir; }
 }
