@@ -247,7 +247,7 @@ class StatsValues {
   
   public void reset(){
     min = Double.MAX_VALUE;
-    max = Double.MIN_VALUE;
+    max = Double.NEGATIVE_INFINITY;
     sum = count = missing = 0;
     sumOfSquares = 0;
     facets = null;
