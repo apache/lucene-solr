@@ -277,6 +277,7 @@ public class DocBuilder {
         key = map.get(root.pk);
       }
       if(key == null && map.size() ==1){
+        //iterating through the map just to get the first and only item
         for (Map.Entry<String, Object> e : map.entrySet()) {
           key = e.getValue();
           break;
@@ -286,7 +287,7 @@ public class DocBuilder {
         LOG.warn("no key was available for deleteted pk query");
         continue;
       }
-      writer.deleteDoc(map.get(root.pk));
+      writer.deleteDoc(key);
       importStatistics.deletedDocCount.incrementAndGet();      
       iter.remove();
     }

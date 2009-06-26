@@ -161,6 +161,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
 
   @SuppressWarnings("unchecked")
   protected Map<String, Object> applyTransformer(Map<String, Object> row) {
+    if(row == null) return null;
     if (transformers == null)
       loadTransformers();
     if (transformers == Collections.EMPTY_LIST)
@@ -247,11 +248,17 @@ public class EntityProcessorWrapper extends EntityProcessor {
   }
 
   public Map<String, Object> nextModifiedRowKey() {
-    return delegate.nextModifiedRowKey();
+    Map<String, Object> row = delegate.nextModifiedRowKey();
+    row = applyTransformer(row);
+    rowcache = null;
+    return row;
   }
 
   public Map<String, Object> nextDeletedRowKey() {
-    return delegate.nextDeletedRowKey();
+    Map<String, Object> row = delegate.nextDeletedRowKey();
+    row = applyTransformer(row);
+    rowcache = null;
+    return row;
   }
 
   public Map<String, Object> nextModifiedParentRowKey() {
