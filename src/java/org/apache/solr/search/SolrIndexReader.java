@@ -27,6 +27,7 @@ import org.apache.lucene.document.FieldSelector;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
 
 /** Solr wrapper for IndexReader that contains extra context.
  * This is currently experimental, for internal use only, and subject to change.
@@ -153,6 +154,7 @@ public class SolrIndexReader extends FilterIndexReader {
     StringBuilder sb = new StringBuilder();
     sb.append("SolrIndexReader{this=").append(Integer.toHexString(this.hashCode()));
     sb.append(",r=").append(shortName(in));
+    sb.append(",refCnt=").append(getRefCount());
     sb.append(",segments=");
     sb.append(subReaders == null ? 1 : subReaders.length);
     if (parent != null) {
@@ -332,7 +334,9 @@ public class SolrIndexReader extends FilterIndexReader {
   // protected void doCommit() throws IOException { in.commit(); }
 
   @Override
-  protected void doClose() throws IOException { in.close(); }
+  protected void doClose() throws IOException {
+    in.close();
+  }
 
   @Override
   public Collection getFieldNames(IndexReader.FieldOption fieldNames) {
@@ -370,6 +374,38 @@ public class SolrIndexReader extends FilterIndexReader {
       o = ((SolrIndexReader)o).in;
     }
     return in.equals(o);
+  }
+
+  @Override
+  public int getRefCount() {
+    return in.getRefCount();
+  }
+
+  @Override
+  public IndexReader reopen(IndexCommit commit) throws CorruptIndexException, IOException {
+    return in.reopen(commit);
+  }
+
+  @Override
+  public Object clone() {
+    // hmmm, is this right?
+    return super.clone();
+  }
+
+  @Override
+  public IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
+    // hmmm, is this right?
+    return super.clone(openReadOnly);
+  }
+
+  @Override
+  public Map getCommitUserData() {
+    return in.getCommitUserData();
+  }
+
+  @Override
+  public long getUniqueTermCount() throws IOException {
+    return super.getUniqueTermCount();
   }
 
   @Override

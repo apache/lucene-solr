@@ -227,14 +227,14 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       log.debug("Closing " + name);
     }
     core.getInfoRegistry().remove(name);
-    try {
-      super.close();
-    }
-    finally {
-      if(closeReader) reader.close();
-      for (SolrCache cache : cacheList) {
-        cache.close();
-      }
+
+    // super.close();
+    // can't use super.close() since it just calls reader.close() and that may only be called once
+    // per reader (even if incRef() was previously called).
+    if (closeReader) reader.decRef();
+
+    for (SolrCache cache : cacheList) {
+      cache.close();
     }
   }
 
@@ -624,6 +624,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
   // query must be positive
   protected DocSet getDocSetNC(Query query, DocSet filter) throws IOException {
+    query = QueryUtils.simplifyQuery(query);
     DocSetCollector collector = new DocSetCollector(maxDoc()>>6, maxDoc());
 
     if (filter==null) {
