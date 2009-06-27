@@ -74,6 +74,14 @@ public class TestBooleanQuery extends LuceneTestCase {
     q.add(pq, BooleanClause.Occur.SHOULD);
     assertEquals(1, s.search(q, 10).totalHits);
 
+    // A required clause which returns null scorer should return null scorer to
+    // IndexSearcher.
+    q = new BooleanQuery();
+    pq = new PhraseQuery();
+    q.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);
+    q.add(pq, BooleanClause.Occur.MUST);
+    assertEquals(0, s.search(q, 10).totalHits);
+
     DisjunctionMaxQuery dmq = new DisjunctionMaxQuery(1.0f);
     dmq.add(new TermQuery(new Term("field", "a")));
     dmq.add(pq);
