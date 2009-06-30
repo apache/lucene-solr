@@ -49,7 +49,7 @@ public class MappingCharFilter extends BaseCharFilter {
       int firstChar = nextChar();
       if (firstChar == -1) return -1;
       NormalizeCharMap nm = normMap.submap != null ?
-        (NormalizeCharMap)normMap.submap.get(Character.valueOf((char) firstChar)) : null;
+        (NormalizeCharMap)normMap.submap.get(CharacterCache.valueOf((char) firstChar)) : null;
       if (nm == null) return firstChar;
       NormalizeCharMap result = match(nm);
       if (result == null) return firstChar;
@@ -94,7 +94,7 @@ public class MappingCharFilter extends BaseCharFilter {
     if (map.submap != null) {
       int chr = nextChar();
       if (chr != -1) {
-        NormalizeCharMap subMap = (NormalizeCharMap) map.submap.get(Character.valueOf((char) chr));
+        NormalizeCharMap subMap = (NormalizeCharMap) map.submap.get(CharacterCache.valueOf((char) chr));
         if (subMap != null) {
           result = match(subMap);
         }

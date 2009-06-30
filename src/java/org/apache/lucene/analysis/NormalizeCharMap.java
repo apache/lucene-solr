@@ -39,7 +39,7 @@ public class NormalizeCharMap {
       if (currMap.submap == null) {
         currMap.submap = new HashMap(1);
       }
-      NormalizeCharMap map = (NormalizeCharMap) currMap.submap.get(Character.valueOf(c));
+      NormalizeCharMap map = (NormalizeCharMap) currMap.submap.get(CharacterCache.valueOf(c));
       if (map == null) {
         map = new NormalizeCharMap();
         currMap.submap.put(new Character(c), map);

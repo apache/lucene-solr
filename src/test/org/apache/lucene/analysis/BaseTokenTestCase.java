@@ -27,7 +27,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public abstract class BaseTokenTestCase extends LuceneTestCase {
   public static String tsToString(TokenStream in) throws IOException {
-    StringBuilder out = new StringBuilder();
+    StringBuffer out = new StringBuffer();
     Token t = in.next();
     if (null != t)
       out.append(new String(t.termBuffer(), 0, t.termLength()));
