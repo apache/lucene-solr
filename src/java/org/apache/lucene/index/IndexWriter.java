@@ -3260,6 +3260,7 @@ public class IndexWriter {
 
       // Remove any buffered docs
       docWriter.abort();
+      docWriter.setFlushedDocCount(0);
 
       // Remove all segments
       segmentInfos.clear();

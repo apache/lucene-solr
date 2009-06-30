@@ -297,9 +297,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       assertEquals(7, reader.numDocs());
       reader.close();
 
-      // Add 2 new docs (after the deleteAll, before the commit)      
+      // Add a doc and update a doc (after the deleteAll, before the commit)
       addDoc(modifier, 101, value);
-      addDoc(modifier, 102, value);
+      updateDoc(modifier, 102, value);
 
       // commit the delete all
       modifier.commit();
@@ -393,6 +393,18 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     reader.close();
     
     dir.close();
+  }
+
+
+  private void updateDoc(IndexWriter modifier, int id, int value)
+      throws IOException {
+    Document doc = new Document();
+    doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(new Field("id", String.valueOf(id), Field.Store.YES,
+        Field.Index.NOT_ANALYZED));
+    doc.add(new Field("value", String.valueOf(value), Field.Store.NO,
+        Field.Index.NOT_ANALYZED));
+    modifier.updateDocument(new Term("id", String.valueOf(id)), doc);
   }
 
 
