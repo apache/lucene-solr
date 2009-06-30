@@ -385,9 +385,12 @@ Bug fixes
     your documents all have a single term for a given field, and you
     need to create many RangeFilters with varying lower/upper bounds,
     then this is likely a much faster way to create the filters than
-    RangeFilter.  However, it comes at the expense of added RAM
-    consumption and slower first-time usage due to populating the
-    FieldCache.  (Tim Sturge, Matt Ericson via Mike McCandless)
+    RangeFilter.  FieldCacheRangeFilter allows ranges on all data types,
+	FieldCache supports (term ranges, byte, short, int, long, float, double).
+	However, it comes at the expense of added RAM consumption and slower
+	first-time usage due to populating the FieldCache.  It also does not
+	support collation  (Tim Sturge, Matt Ericson via Mike McCandless and
+	Uwe Schindler)
 
  8. LUCENE-1296: add protected method CachingWrapperFilter.docIdSetToCache 
     to allow subclasses to choose which DocIdSet implementation to use
