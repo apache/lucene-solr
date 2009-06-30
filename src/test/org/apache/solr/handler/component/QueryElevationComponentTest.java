@@ -153,7 +153,7 @@ public class QueryElevationComponentTest extends AbstractSolrTestCase {
     
     // now switch the order:
     booster.setTopQueryResults( reader, query, new String[] { "a", "x" }, null );
-    assertQ("All six should make it", req
+    assertQ("All four should make it", req
             ,"//*[@numFound='4']"
             ,"//result/doc[1]/int[@name='id'][.='a']"
             ,"//result/doc[2]/int[@name='id'][.='x']"
@@ -163,7 +163,7 @@ public class QueryElevationComponentTest extends AbstractSolrTestCase {
     
     // Test reverse sort
     args.put( CommonParams.SORT, "score asc" );
-    assertQ("All six should make it", req
+    assertQ("All four should make it", req
         ,"//*[@numFound='4']"
         ,"//result/doc[4]/int[@name='id'][.='a']"
         ,"//result/doc[3]/int[@name='id'][.='x']"
