@@ -87,6 +87,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     // unbounded id
 
+    result = search.search(q,FieldCacheRangeFilter.newStringRange("id",null,null,T,T), numDocs).scoreDocs;
+    assertEquals("find all", numDocs, result.length);
+
     result = search.search(q,FieldCacheRangeFilter.newStringRange("id",minIP,null,T,F), numDocs).scoreDocs;
     assertEquals("min and up", numDocs, result.length);
 
@@ -230,6 +233,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     
     // unbounded id
 
+    result = search.search(q,FieldCacheRangeFilter.newShortRange("id",null,null,T,T), numDocs).scoreDocs;
+    assertEquals("find all", numDocs, result.length);
+
     result = search.search(q,FieldCacheRangeFilter.newShortRange("id",minIdO,null,T,F), numDocs).scoreDocs;
     assertEquals("min and up", numDocs, result.length);
 
@@ -316,6 +322,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     assertEquals("up to med", 1+ medId-minId, result.length);
     
     // unbounded id
+
+    result = search.search(q,FieldCacheRangeFilter.newIntRange("id",null,null,T,T), numDocs).scoreDocs;
+    assertEquals("find all", numDocs, result.length);
 
     result = search.search(q,FieldCacheRangeFilter.newIntRange("id",minIdO,null,T,F), numDocs).scoreDocs;
     assertEquals("min and up", numDocs, result.length);
@@ -404,6 +413,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     
     // unbounded id
 
+    result = search.search(q,FieldCacheRangeFilter.newLongRange("id",null,null,T,T), numDocs).scoreDocs;
+    assertEquals("find all", numDocs, result.length);
+
     result = search.search(q,FieldCacheRangeFilter.newLongRange("id",minIdO,null,T,F), numDocs).scoreDocs;
     assertEquals("min and up", numDocs, result.length);
 
@@ -475,6 +487,8 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     result = search.search(q,FieldCacheRangeFilter.newFloatRange("id",medIdO,null,F,F), numDocs).scoreDocs;
     count += result.length;
     assertEquals("sum of two concenatted ranges", numDocs, count);
+    result = search.search(q,FieldCacheRangeFilter.newFloatRange("id",null,null,T,T), numDocs).scoreDocs;
+    assertEquals("find all", numDocs, result.length);
     result = search.search(q,FieldCacheRangeFilter.newFloatRange("id",new Float(Float.POSITIVE_INFINITY),null,F,F), numDocs).scoreDocs;
     assertEquals("infinity special case", 0, result.length);
     result = search.search(q,FieldCacheRangeFilter.newFloatRange("id",null,new Float(Float.NEGATIVE_INFINITY),F,F), numDocs).scoreDocs;
@@ -501,6 +515,8 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     result = search.search(q,FieldCacheRangeFilter.newDoubleRange("id",medIdO,null,F,F), numDocs).scoreDocs;
     count += result.length;
     assertEquals("sum of two concenatted ranges", numDocs, count);
+    result = search.search(q,FieldCacheRangeFilter.newDoubleRange("id",null,null,T,T), numDocs).scoreDocs;
+    assertEquals("find all", numDocs, result.length);
     result = search.search(q,FieldCacheRangeFilter.newDoubleRange("id",new Double(Double.POSITIVE_INFINITY),null,F,F), numDocs).scoreDocs;
     assertEquals("infinity special case", 0, result.length);
     result = search.search(q,FieldCacheRangeFilter.newDoubleRange("id",null, new Double(Double.NEGATIVE_INFINITY),F,F), numDocs).scoreDocs;

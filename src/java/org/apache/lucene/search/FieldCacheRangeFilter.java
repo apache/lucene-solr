@@ -61,8 +61,6 @@ public abstract class FieldCacheRangeFilter extends Filter {
   final boolean includeUpper;
   
   private FieldCacheRangeFilter(String field, FieldCache.Parser parser, Object lowerVal, Object upperVal, boolean includeLower, boolean includeUpper) {
-    if (lowerVal == null && upperVal == null)
-      throw new IllegalArgumentException("At least one value must be non-null");
     this.field = field;
     this.parser = parser;
     this.lowerVal = lowerVal;

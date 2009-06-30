@@ -391,6 +391,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     QueryUtils.checkHashEquals(NumericRangeQuery.newLongRange("test4", 4, new Long(10L), new Long(20L), false, false));
     QueryUtils.checkHashEquals(NumericRangeQuery.newLongRange("test5", 4, new Long(10L), null, true, true));
     QueryUtils.checkHashEquals(NumericRangeQuery.newLongRange("test6", 4, null, new Long(20L), true, true));
+    QueryUtils.checkHashEquals(NumericRangeQuery.newLongRange("test7", 4, null, null, true, true));
     QueryUtils.checkEqual(
       NumericRangeQuery.newLongRange("test8", 4, new Long(10L), new Long(20L), true, true), 
       NumericRangeQuery.newLongRange("test8", 4, new Long(10L), new Long(20L), true, true)

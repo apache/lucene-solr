@@ -391,6 +391,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test4", 4, new Integer(10), new Integer(20), false, false));
     QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test5", 4, new Integer(10), null, true, true));
     QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test6", 4, null, new Integer(20), true, true));
+    QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test7", 4, null, null, true, true));
     QueryUtils.checkEqual(
       NumericRangeQuery.newIntRange("test8", 4, new Integer(10), new Integer(20), true, true), 
       NumericRangeQuery.newIntRange("test8", 4, new Integer(10), new Integer(20), true, true)
