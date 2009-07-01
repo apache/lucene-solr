@@ -26,6 +26,12 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.cn.smart.Utility;
 
+/**
+ * Graph representing possible token pairs (bigrams) at each start offset in the sentence.
+ * <p>
+ * For each start offset, a list of possible token pairs is stored.
+ * </p>
+ */
 public class BiSegGraph {
 
   private Map tokenPairListTable = new HashMap();
@@ -39,15 +45,8 @@ public class BiSegGraph {
     generateBiSegGraph(segGraph);
   }
 
-  /**
-   * 生成两两词之间的二叉图表，将结果保存在一个MultiTokenPairMap中
-   * 
-   * @param segGraph 所有的Token列表
-   * @param smooth 平滑系数
-   * @param biDict 二叉词典
-   * @return
-   * 
-   * @see MultiTokenPairMap
+  /*
+   * Generate a BiSegGraph based upon a SegGraph
    */
   private void generateBiSegGraph(SegGraph segGraph) {
     double smooth = 0.1;
@@ -57,7 +56,7 @@ public class BiSegGraph {
 
     int next;
     char[] idBuffer;
-    // 为segGraph中的每个元素赋以一个下标
+    // get the list of tokens ordered and indexed
     segTokenList = segGraph.makeIndex();
     // 因为startToken（"始##始"）的起始位置是-1因此key为-1时可以取出startToken
     int key = -1;
@@ -119,31 +118,29 @@ public class BiSegGraph {
   }
 
   /**
-   * 查看SegTokenPair的结束位置为to(SegTokenPair.to为to)是否存在SegTokenPair，
-   * 如果没有则说明to处没有SegTokenPair或者还没有添加
+   * Returns true if their is a list of token pairs at this offset (index of the second token)
    * 
-   * @param to SegTokenPair.to
-   * @return
+   * @param to index of the second token in the token pair
+   * @return true if a token pair exists
    */
   public boolean isToExist(int to) {
     return tokenPairListTable.get(new Integer(to)) != null;
   }
 
   /**
-   * 取出SegTokenPair.to为to的所有SegTokenPair，如果没有则返回null
+   * Return a {@link List} of all token pairs at this offset (index of the second token)
    * 
-   * @param to
-   * @return 所有相同SegTokenPair.to的SegTokenPair的序列
+   * @param to index of the second token in the token pair
+   * @return {@link List} of token pairs.
    */
   public List getToList(int to) {
     return (List) tokenPairListTable.get(new Integer(to));
   }
 
   /**
-   * 向BiSegGraph中增加一个SegTokenPair，这些SegTokenPair按照相同SegTokenPair.
-   * to放在同一个ArrayList中
+   * Add a {@link SegTokenPair}
    * 
-   * @param tokenPair
+   * @param tokenPair {@link SegTokenPair}
    */
   public void addSegTokenPair(SegTokenPair tokenPair) {
     int to = tokenPair.to;
@@ -158,16 +155,16 @@ public class BiSegGraph {
   }
 
   /**
-   * @return TokenPair的列数，也就是Map中不同列号的TokenPair种数。
+   * Get the number of {@link SegTokenPair} entries in the table.
+   * @return number of {@link SegTokenPair} entries
    */
   public int getToCount() {
     return tokenPairListTable.size();
   }
 
   /**
-   * 用veterbi算法计算从起点到终点的最短路径
-   * 
-   * @return
+   * Find the shortest path with the Viterbi algorithm.
+   * @return {@link List}
    */
   public List getShortPath() {
     int current;
@@ -198,7 +195,7 @@ public class BiSegGraph {
       path.add(newNode);
     }
 
-    // 接下来从nodePaths中计算从起点到终点的真实路径
+    // Calculate PathNodes
     int preNode, lastNode;
     lastNode = path.size() - 1;
     current = lastNode;

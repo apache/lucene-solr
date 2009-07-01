@@ -17,6 +17,12 @@
 
 package org.apache.lucene.analysis.cn.smart;
 
+import org.apache.lucene.analysis.cn.smart.hhmm.BiSegGraph; // for javadoc
+import org.apache.lucene.analysis.cn.smart.hhmm.SegTokenFilter; // for javadoc
+
+/**
+ * SmartChineseAnalyzer utility constants and methods
+ */
 public class Utility {
 
   public static final char[] STRING_CHAR_ARRAY = new String("未##串")
@@ -30,24 +36,29 @@ public class Utility {
 
   public static final char[] END_CHAR_ARRAY = new String("末##末").toCharArray();
 
+  /**
+   * Delimiters will be filtered to this character by {@link SegTokenFilter}
+   */
   public static final char[] COMMON_DELIMITER = new char[] { ',' };
 
   /**
-   * 需要跳过的符号，例如制表符，回车，换行等等。
+   * Space-like characters that need to be skipped: such as space, tab, newline, carriage return.
    */
   public static final String SPACES = " 　\t\r\n";
 
+  /**
+   * Maximum bigram frequency (used in the {@link BiSegGraph} smoothing function). 
+   */
   public static final int MAX_FREQUENCE = 2079997 + 80000;
 
   /**
-   * 比较两个整数数组的大小, 分别从数组的一定位置开始逐个比较, 当依次相等且都到达末尾时, 返回相等, 否则未到达末尾的大于到达末尾的;
-   * 当未到达末尾时有一位不相等, 该位置数值大的数组大于小的
+   * compare two arrays starting at the specified offsets.
    * 
-   * @param larray
-   * @param lstartIndex larray的起始位置
-   * @param rarray
-   * @param rstartIndex rarray的起始位置
-   * @return 0表示相等，1表示larray > rarray, -1表示larray < rarray
+   * @param larray left array
+   * @param lstartIndex start offset into larray
+   * @param rarray right array
+   * @param rstartIndex start offset into rarray
+   * @return 0 if the arrays are equal，1 if larray > rarray, -1 if larray < rarray
    */
   public static int compareArray(char[] larray, int lstartIndex, char[] rarray,
       int rstartIndex) {
@@ -74,21 +85,19 @@ public class Utility {
     }
     if (li == larray.length) {
       if (ri == rarray.length) {
-        // 两者一直相等到末尾，因此返回相等，也就是结果0
+        // Both arrays are equivalent, return 0.
         return 0;
       } else {
-        // 此时不可能ri>rarray.length因此只有ri<rarray.length
-        // 表示larray已经结束，rarray没有结束，因此larray < rarray，返回-1
+        // larray < rarray because larray has ended first.
         return -1;
       }
     } else {
-      // 此时不可能li>larray.length因此只有li < larray.length，表示li没有到达larray末尾
+      // differing lengths
       if (ri == rarray.length) {
-        // larray没有结束，但是rarray已经结束，因此larray > rarray
+        // larray > rarray because rarray has ended first.
         return 1;
       } else {
-        // 此时不可能ri>rarray.length因此只有ri < rarray.length
-        // 表示larray和rarray都没有结束，因此按下一个数的大小判断
+        // determine by comparison
         if (larray[li] > rarray[ri])
           return 1;
         else
@@ -98,18 +107,20 @@ public class Utility {
   }
 
   /**
-   * 根据前缀来判断两个字符数组的大小，当前者为后者的前缀时，表示相等，当不为前缀时，按照普通字符串方式比较
+   * Compare two arrays, starting at the specified offsets, but treating shortArray as a prefix to longArray.
+   * As long as shortArray is a prefix of longArray, return 0.
+   * Otherwise, behave as {@link Utility#compareArray(char[], int, char[], int)}
    * 
-   * @param shortArray
-   * @param shortIndex
-   * @param longArray
-   * @param longIndex
-   * @return
+   * @param shortArray prefix array
+   * @param shortIndex offset into shortArray
+   * @param longArray long array (word)
+   * @param longIndex offset into longArray
+   * @return 0 if shortArray is a prefix of longArray, otherwise act as {@link Utility#compareArray(char[], int, char[], int)}
    */
   public static int compareArrayByPrefix(char[] shortArray, int shortIndex,
       char[] longArray, int longIndex) {
 
-    // 空数组是所有数组的前缀，不考虑index
+    // a null prefix is a prefix of longArray
     if (shortArray == null)
       return 0;
     else if (longArray == null)
@@ -122,24 +133,27 @@ public class Utility {
       li++;
     }
     if (si == shortArray.length) {
-      // shortArray 是 longArray的prefix
+      // shortArray is a prefix of longArray
       return 0;
     } else {
-      // 此时不可能si>shortArray.length因此只有si <
-      // shortArray.length，表示si没有到达shortArray末尾
-
-      // shortArray没有结束，但是longArray已经结束，因此shortArray > longArray
+      // shortArray > longArray because longArray ended first.
       if (li == longArray.length)
         return 1;
       else
-        // 此时不可能li>longArray.length因此只有li < longArray.length
-        // 表示shortArray和longArray都没有结束，因此按下一个数的大小判断
+        // determine by comparison
         return (shortArray[si] > longArray[li]) ? 1 : -1;
     }
   }
 
+  /**
+   * Return the internal {@link CharType} constant of a given character. 
+   * @param ch input character
+   * @return constant from {@link CharType} describing the character type.
+   * 
+   * @see CharType
+   */
   public static int getCharType(char ch) {
-    // 最多的是汉字
+    // Most (but not all!) of these are Han Ideographic Characters
     if (ch >= 0x4E00 && ch <= 0x9FA5)
       return CharType.HANZI;
     if ((ch >= 0x0041 && ch <= 0x005A) || (ch >= 0x0061 && ch <= 0x007A))
@@ -148,12 +162,12 @@ public class Utility {
       return CharType.DIGIT;
     if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '　')
       return CharType.SPACE_LIKE;
-    // 最前面的其它的都是标点符号了
+    // Punctuation Marks
     if ((ch >= 0x0021 && ch <= 0x00BB) || (ch >= 0x2010 && ch <= 0x2642)
         || (ch >= 0x3001 && ch <= 0x301E))
       return CharType.DELIMITER;
 
-    // 全角字符区域
+    // Full-Width range
     if ((ch >= 0xFF21 && ch <= 0xFF3A) || (ch >= 0xFF41 && ch <= 0xFF5A))
       return CharType.FULLWIDTH_LETTER;
     if (ch >= 0xFF10 && ch <= 0xFF19)

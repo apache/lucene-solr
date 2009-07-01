@@ -23,42 +23,53 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Graph representing possible tokens at each start offset in the sentence.
+ * <p>
+ * For each start offset, a list of possible tokens is stored.
+ * </p>
+ */
 public class SegGraph {
 
   /**
-   * 用一个ArrayList记录startOffset相同的Token，这个startOffset就是Token的key
+   * Map of start offsets to ArrayList of tokens at that position
    */
-  private Map tokenListTable = new HashMap();
+  private Map /* <Integer, ArrayList<SegToken>> */ tokenListTable = new HashMap();
 
   private int maxStart = -1;
 
   /**
-   * 查看startOffset为s的Token是否存在，如果没有则说明s处没有Token或者还没有添加
+   * Returns true if a mapping for the specified start offset exists
    * 
    * @param s startOffset
-   * @return
+   * @return true if there are tokens for the startOffset
    */
   public boolean isStartExist(int s) {
     return tokenListTable.get(new Integer(s)) != null;
   }
 
   /**
-   * 取出startOffset为s的所有Tokens，如果没有则返回null
+   * Get the list of tokens at the specified start offset
    * 
-   * @param s
-   * @return 所有相同startOffset的Token的序列
+   * @param s startOffset
+   * @return List of tokens at the specified start offset.
    */
   public List getStartList(int s) {
     return (List) tokenListTable.get(new Integer(s));
   }
 
+  /**
+   * Get the highest start offset in the map
+   * 
+   * @return maximum start offset, or -1 if the map is empty.
+   */
   public int getMaxStart() {
     return maxStart;
   }
 
   /**
-   * 为SegGraph中的所有Tokens生成一个统一的index，index从0开始，
-   * 按照startOffset递增的顺序排序，相同startOffset的Tokens按照放置先后顺序排序
+   * Set the {@link SegToken#index} for each token, based upon its order by startOffset. 
+   * @return a {@link List} of these ordered tokens.
    */
   public List makeIndex() {
     List result = new ArrayList();
@@ -82,9 +93,8 @@ public class SegGraph {
   }
 
   /**
-   * 向Map中增加一个Token，这些Token按照相同startOffset放在同一个列表中，
-   * 
-   * @param token
+   * Add a {@link SegToken} to the mapping, creating a new mapping at the token's startOffset if one does not exist. 
+   * @param token {@link SegToken}
    */
   public void addToken(SegToken token) {
     int s = token.startOffset;
@@ -101,18 +111,18 @@ public class SegGraph {
   }
 
   /**
-   * 获取SegGraph中不同起始（Start）位置Token类的个数，每个开始位置可能有多个Token，因此位置数与Token数并不一致
-   * 
-   * @return
+   * Get the number of startOffsets.
+   *
+   * @return number of startOffsets in the mapping
    */
   public int getStartCount() {
     return tokenListTable.size();
   }
 
   /**
-   * 将Map中存储的所有Token按照起始位置从小到大的方式组成一个列表
+   * Return a {@link List} of all tokens in the map, ordered by startOffset.
    * 
-   * @return
+   * @return {@link List} of all tokens in the map.
    */
   public List toTokenList() {
     List result = new ArrayList();

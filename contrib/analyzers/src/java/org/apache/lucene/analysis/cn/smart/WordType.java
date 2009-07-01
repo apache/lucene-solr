@@ -17,22 +17,49 @@
 
 package org.apache.lucene.analysis.cn.smart;
 
+/**
+ * Internal SmartChineseAnalyzer token type constants
+ */
 public class WordType {
 
+  /**
+   * Start of a Sentence
+   */
   public final static int SENTENCE_BEGIN = 0;
 
-  public final static int SENTENCE_END = 1;// 句子的开头和结束
+  /**
+   * End of a Sentence
+   */
+  public final static int SENTENCE_END = 1;
 
-  public final static int CHINESE_WORD = 2;// 中文词
+  /**
+   * Chinese Word 
+   */
+  public final static int CHINESE_WORD = 2;
 
+  /**
+   * ASCII String
+   */
   public final static int STRING = 3;
 
-  public final static int NUMBER = 4; // ascii字符串和数字
+  /**
+   * ASCII Alphanumeric 
+   */
+  public final static int NUMBER = 4;
 
-  public final static int DELIMITER = 5; // 所有标点符号
+  /**
+   * Punctuation Symbol
+   */
+  public final static int DELIMITER = 5;
 
+  /**
+   * Full-Width String
+   */
   public final static int FULLWIDTH_STRING = 6;
 
-  public final static int FULLWIDTH_NUMBER = 7;// 含有全角字符的字符串，含全角数字的数字
+  /**
+   * Full-Width Alphanumeric
+   */
+  public final static int FULLWIDTH_NUMBER = 7;
 
 }

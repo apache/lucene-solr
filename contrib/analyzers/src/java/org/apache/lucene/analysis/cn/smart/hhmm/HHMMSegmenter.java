@@ -23,18 +23,18 @@ import org.apache.lucene.analysis.cn.smart.CharType;
 import org.apache.lucene.analysis.cn.smart.Utility;
 import org.apache.lucene.analysis.cn.smart.WordType;
 
+/**
+ * Finds the optimal segmentation of a sentence into Chinese words
+ */
 public class HHMMSegmenter {
 
   private static WordDictionary wordDict = WordDictionary.getInstance();
 
   /**
-   * 寻找sentence中所有可能的Token，最后再添加两个特殊Token，"始##始",
-   * "末##末"，"始##始"Token的起始位置是-1,"末##末"Token的起始位置是句子的长度
+   * Create the {@link SegGraph} for a sentence.
    * 
-   * @param sentence 输入的句子，不包含"始##始","末##末"等
-   * @param coreDict 核心字典
-   * @return 所有可能的Token
-   * @see MultiTokenMap
+   * @param sentence input sentence, without start and end markers
+   * @return {@link SegGraph} corresponding to the input sentence.
    */
   private SegGraph createSegGraph(String sentence) {
     int i = 0, j;
@@ -168,16 +168,16 @@ public class HHMMSegmenter {
   }
 
   /**
-   * 为sentence中的每个字符确定唯一的字符类型
+   * Get the character types for every character in a sentence.
    * 
    * @see Utility.charType(char)
-   * @param sentence 输入的完成句子
-   * @return 返回的字符类型数组，如果输入为null，返回也是null
+   * @param sentence input sentence
+   * @return array of character types corresponding to character positions in the sentence
    */
   private static int[] getCharTypes(String sentence) {
     int length = sentence.length();
     int[] charTypeArray = new int[length];
-    // 生成对应单个汉字的字符类型数组
+    // the type of each character by position
     for (int i = 0; i < length; i++) {
       charTypeArray[i] = Utility.getCharType(sentence.charAt(i));
     }
@@ -185,6 +185,11 @@ public class HHMMSegmenter {
     return charTypeArray;
   }
 
+  /**
+   * Return a list of {@link PathNode} representing the best segmentation of a sentence
+   * @param sentence input sentence
+   * @return best segmentation as a {@link List}
+   */
   public List process(String sentence) {
     SegGraph segGraph = createSegGraph(sentence);
     BiSegGraph biSegGraph = new BiSegGraph(segGraph);

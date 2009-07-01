@@ -1,51 +1,22 @@
 <html>
 <head></head>
 <body>
-Analyzer for Chinese.
+Analyzers for Chinese.
+<p>
+Three analyzers are provided for Chinese, each of which treats Chinese text in a different way.
+<ul>
+	<li>ChineseAnalyzer: Index unigrams (individual Chinese characters) as a token.
+	<li>CJKAnalyzer: Index bigrams (overlapping groups of two adjacent Chinese characters) as tokens.
+	<li>SmartChineseAnalyzer: Index words (attempt to segment Chinese text into words) as tokens.
+</ul>
 
-
-<h2>About SmartChineseAnalyzer</h2>
-<p>SmartChineseAnalyzer 是一个智能中文分词模块， 与 ChineseAnalyzer （切分每个汉字）和
-CJKAnalyzer （组合每两个汉字）不同， 它能够利用概率对汉语句子进行最优切分， 并内嵌英文tokenizer，
-能有效处理中英文混合的文本内容。目前SmartChineseAnalyzer的词典库只支持简体中文。</p>
-
-<p>它的原理基于自然语言处理领域的隐马尔科夫模型(HMM)， 利用大量语料库的训练来统计汉语词汇的词频和跳转概率，
-从而根据这些统计结果对整个汉语句子计算最似然(likelihood)的切分。</p>
-
-<p>三种分词模块的分词结果比较, 由此可以看出智能分词更符合句子的原本语义， 从而提高搜索的准确率。
-<pre>语句： 我是中国人</pre>
+Example phrase： "我是中国人"
 <ol>
-	<li>SmartChineseAnalyzer: 我－是－中国－人</li>
 	<li>ChineseAnalyzer: 我－是－中－国－人</li>
 	<li>CJKAnalyzer: 我是－是中－中国－国人</li>
+	<li>SmartChineseAnalyzer: 我－是－中国－人</li>
 </ol>
 </p>
 
-<h3>分词词典的设置</h3>
-<p>因为智能分词需要词典来保存词汇的统计值，默认情况下，SmartChineseAnalyzer使用内置的词典库，当需要指定的词典库时，需要指定词典位置，如何指定词典位置请参考
-org.apache.lucene.analysis.cn.smart.AnalyzerProfile。</p>
-
-<p><b>词库的下载地址为：<a
-	href="http://code.google.com/p/imdict-chinese-analyzer/downloads/list">http://code.google.com/p/imdict-chinese-analyzer/downloads/list</a>
-</b> 下载文件analysis-data.zip保存到本地，解压即可使用。</p>
-
-<p>最简单的指定词典库的办法就是运行时加上参数-Danalysis.data.dir
-<pre>如： java -Danalysis.data.dir=/path/to/analysis-data com.example.YourApplication</pre>
-</p>
-
-<h3>版本要求</h3>
-<p>SmartChineseAnalyzer的JVM要求java 1.4及以上版本；Lucene
-要求2.4.0及以上版本，Lucene 2.3.X版应该也可以使用，但未经测试，有需要的用户可自行测试。</p>
-
-<h3>源文件和文本编码</h3>
-除特定的二进制码文件外，SmartChineseAnalyzer的所有文本和Java源码都采用UTF-8编码，
-因此在读取文本和编译Java源码是请注意采用正确的方式，以避免产生乱码错误。
-
-<h3>SmartChineseAnalyzer的授权</h3>
-<p>SmartChineseAnalyzer的算法和语料库词典来自于ictclas1.0项目(<a
-	href="http://www.ictclas.org">http://www.ictclas.org</a>)，
-其中词典已经著作权人www.ictclas.org允许，以apache license
-v2(APLv2)协议发布。在遵循APLv2的条件下，欢迎用户使用。
-在此感谢www.ictclas.org以及ictclas分词软件的工作人员的辛勤工作和无私奉献！</p>
 </body>
 </html>

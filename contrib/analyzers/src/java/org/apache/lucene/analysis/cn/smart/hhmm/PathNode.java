@@ -17,6 +17,12 @@
 
 package org.apache.lucene.analysis.cn.smart.hhmm;
 
+/**
+ * SmartChineseAnalyzer internal node representation
+ * <p>
+ * Used by {@link BiSegGraph} to maximize the segmentation with the Viterbi algorithm.
+ * </p>
+ */
 public class PathNode implements Comparable {
   public double weight;
 

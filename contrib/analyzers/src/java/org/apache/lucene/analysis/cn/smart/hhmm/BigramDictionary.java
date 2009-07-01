@@ -32,6 +32,9 @@ import java.nio.ByteOrder;
 
 import org.apache.lucene.analysis.cn.smart.AnalyzerProfile;
 
+/**
+ * SmartChineseAnalyzer Bigram dictionary.
+ */
 public class BigramDictionary extends AbstractDictionary {
 
   private BigramDictionary() {
@@ -43,12 +46,8 @@ public class BigramDictionary extends AbstractDictionary {
 
   public static final int PRIME_BIGRAM_LENGTH = 402137;
 
-  /**
-   * bigramTable 来存储词与词之间的跳转频率， bigramHashTable 和 frequencyTable
-   * 就是用来存储这些频率的数据结构。 为了提高查询速度和节省内存， 采用 hash 值来代替关联词作为查询依据， 关联词就是
-   * (formWord+'@'+toWord) ， 利用 FNV1 hash 算法来计算关联词的hash值 ，并保存在 bigramHashTable
-   * 中，利用 hash 值来代替关联词有可能会产生很小概率的冲突， 但是 long 类型
-   * (64bit)的hash值有效地将此概率降到极低。bigramHashTable[i]与frequencyTable[i]一一对应
+  /*
+   * The word associations are stored as FNV1 hashcodes, which have a small probability of collision, but save memory.  
    */
   private long[] bigramHashTable;
 
@@ -128,7 +127,7 @@ public class BigramDictionary extends AbstractDictionary {
         bigramHashTable = new long[PRIME_BIGRAM_LENGTH];
         frequencyTable = new int[PRIME_BIGRAM_LENGTH];
         for (int i = 0; i < PRIME_BIGRAM_LENGTH; i++) {
-          // 实际上将0作为初始值有一点问题，因为某个字符串可能hash值为0，但是概率非常小，因此影响不大
+          // it is possible for a value to hash to 0, but the probability is extremely low
           bigramHashTable[i] = 0;
           frequencyTable[i] = 0;
         }
@@ -141,10 +140,9 @@ public class BigramDictionary extends AbstractDictionary {
   }
 
   /**
-   * 将词库文件加载到WordDictionary的相关数据结构中，只是加载，没有进行合并和修改操作
+   * Load the datafile into this BigramDictionary
    * 
-   * @param dctFilePath
-   * @return
+   * @param dctFilePath path to the Bigramdictionary (bigramdict.mem)
    * @throws FileNotFoundException
    * @throws IOException
    * @throws UnsupportedEncodingException
@@ -159,14 +157,14 @@ public class BigramDictionary extends AbstractDictionary {
     String tmpword;
     RandomAccessFile dctFile = new RandomAccessFile(dctFilePath, "r");
 
-    // 字典文件中第一个汉字出现的位置是0，最后一个是6768
+    // GB2312 characters 0 - 6768
     for (i = GB2312_FIRST_CHAR; i < GB2312_FIRST_CHAR + CHAR_NUM_IN_FILE; i++) {
       String currentStr = getCCByGB2312Id(i);
       // if (i == 5231)
       // System.out.println(i);
 
-      dctFile.read(intBuffer);// 原词库文件在c下开发，所以写入的文件为little
-      // endian编码，而java为big endian，必须转换过来
+      dctFile.read(intBuffer);
+      // the dictionary was developed for C, and byte order must be converted to work with Java
       cnt = ByteBuffer.wrap(intBuffer).order(ByteOrder.LITTLE_ENDIAN).getInt();
       if (cnt <= 0) {
         continue;
@@ -272,9 +270,8 @@ public class BigramDictionary extends AbstractDictionary {
       return -1;
   }
 
-  /**
-   * @param c
-   * @return
+  /*
+   * lookup the index into the frequency array.
    */
   private int getBigramItemIndex(char carray[]) {
     long hashId = hash1(carray);

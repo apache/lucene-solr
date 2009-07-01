@@ -25,14 +25,12 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 
 /**
- * 
- * 包含一个完整句子的Token，从文件中读出，是下一步分词的对象
- * 
+ * Tokenizes input into sentences.
  */
 public class SentenceTokenizer extends Tokenizer {
 
   /**
-   * 用来切断句子的标点符号 。，！？；,!?;
+   * End of sentence punctuation: 。，！？；,!?;
    */
   public final static String PUNCTION = "。，！？；,!?;";
 
@@ -62,7 +60,7 @@ public class SentenceTokenizer extends Tokenizer {
       if (ci == -1) {
         break;
       } else if (PUNCTION.indexOf(ch) != -1) {
-        // 找到了句子末尾
+        // End of a sentence
         buffer.append(ch);
         tokenEnd++;
         break;
@@ -78,8 +76,7 @@ public class SentenceTokenizer extends Tokenizer {
         pch = ch;
         ci = bufferInput.read();
         ch = (char) ci;
-        // 如果碰上了两个连续的skip字符，例如两个回车，两个空格或者，
-        // 一个回车，一个空格等等，将其视为句子结束，以免句子太长而内存不足
+        // Two spaces, such as CR, LF
         if (Utility.SPACES.indexOf(ch) != -1
             && Utility.SPACES.indexOf(pch) != -1) {
           // buffer.append(ch);

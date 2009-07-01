@@ -17,15 +17,21 @@
 
 package org.apache.lucene.analysis.cn.smart.hhmm;
 
+/**
+ * A pair of tokens in {@link SegGraph}
+ */
 public class SegTokenPair {
 
   public char[] charArray;
 
   /**
-   * from和to是Token对的index号，表示本TokenPair的两个Token在segGragh中的位置。
+   * index of the first token in {@link SegGraph}
    */
   public int from;
 
+  /**
+   * index of the second token in {@link SegGraph}
+   */
   public int to;
 
   public double weight;

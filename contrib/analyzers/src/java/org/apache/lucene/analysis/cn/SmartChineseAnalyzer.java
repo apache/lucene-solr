@@ -33,23 +33,26 @@ import org.apache.lucene.analysis.cn.smart.SentenceTokenizer;
 import org.apache.lucene.analysis.cn.smart.WordSegmenter;
 import org.apache.lucene.analysis.cn.smart.WordTokenizer;
 
+import org.apache.lucene.analysis.cn.smart.AnalyzerProfile; // for javadoc
+
 /**
- * 
- * SmartChineseAnalyzer 是一个智能中文分词模块， 能够利用概率对汉语句子进行最优切分，
- * 并内嵌英文tokenizer，能有效处理中英文混合的文本内容。
- * 
- * 它的原理基于自然语言处理领域的隐马尔科夫模型(HMM)， 利用大量语料库的训练来统计汉语词汇的词频和跳转概率，
- * 从而根据这些统计结果对整个汉语句子计算最似然(likelihood)的切分。
- * 
- * 因为智能分词需要词典来保存词汇的统计值，SmartChineseAnalyzer的运行需要指定词典位置，如何指定词典位置请参考
- * org.apache.lucene.analysis.cn.smart.AnalyzerProfile
- * 
- * SmartChineseAnalyzer的算法和语料库词典来自于ictclas1.0项目(http://www.ictclas.org)，
- * 其中词典已获取www.ictclas.org的apache license v2(APLv2)的授权。在遵循APLv2的条件下，欢迎用户使用。
- * 在此感谢www.ictclas.org以及ictclas分词软件的工作人员的无私奉献！
- * 
- * @see org.apache.lucene.analysis.cn.smart.AnalyzerProfile
- * 
+ * <p>
+ * SmartChineseAnalyzer is an analyzer for Chinese or mixed Chinese-English text.
+ * The analyzer uses probabilistic knowledge to find the optimal word segmentation for Simplified Chinese text.
+ * The text is first broken into sentences, then each sentence is segmented into words.
+ * </p>
+ * <p>
+ * Segmentation is based upon the <a href="http://en.wikipedia.org/wiki/Hidden_Markov_Model">Hidden Markov Model</a>. 
+ * A large training corpus was used to calculate Chinese word frequency probability.
+ * </p>
+ * <p>
+ * This analyzer requires a dictionary to provide statistical data. 
+ * To specify the location of the dictionary data, refer to {@link AnalyzerProfile}
+ * </p>
+ * <p>
+ * The included dictionary data is from <a href="http://www.ictclas.org">ICTCLAS1.0</a>.
+ * Thanks to ICTCLAS for their hard work, and for contributing the data under the Apache 2 License!
+ * </p>
  */
 public class SmartChineseAnalyzer extends Analyzer {
 
@@ -57,15 +60,23 @@ public class SmartChineseAnalyzer extends Analyzer {
 
   private WordSegmenter wordSegment;
 
+  /**
+   * Create a new SmartChineseAnalyzer, using the default stopword list.
+   */
   public SmartChineseAnalyzer() {
     this(true);
   }
 
   /**
-   * SmartChineseAnalyzer内部带有默认停止词库，主要是标点符号。如果不希望结果中出现标点符号，
-   * 可以将useDefaultStopWords设为true， useDefaultStopWords为false时不使用任何停止词
+   * <p>
+   * Create a new SmartChineseAnalyzer, optionally using the default stopword list.
+   * </p>
+   * <p>
+   * The included default stopword list is simply a list of punctuation.
+   * If you do not use this list, punctuation will not be removed from the text!
+   * </p>
    * 
-   * @param useDefaultStopWords
+   * @param useDefaultStopWords true to use the default stopword list.
    */
   public SmartChineseAnalyzer(boolean useDefaultStopWords) {
     if (useDefaultStopWords) {
@@ -76,10 +87,14 @@ public class SmartChineseAnalyzer extends Analyzer {
   }
 
   /**
-   * 使用自定义的而不使用内置的停止词库，停止词可以使用SmartChineseAnalyzer.loadStopWords(InputStream)加载
-   * 
-   * @param stopWords
-   * @see SmartChineseAnalyzer.loadStopWords(InputStream)
+   * <p>
+   * Create a new SmartChineseAnalyzer, using the provided {@link Set} of stopwords.
+   * </p>
+   * <p>
+   * Note: the set should include punctuation, unless you want to index punctuation!
+   * </p>
+   * @param stopWords {@link Set} of stopwords to use.
+   * @see SmartChineseAnalyzer#loadStopWords(InputStream)
    */
   public SmartChineseAnalyzer(Set stopWords) {
     this.stopWords = stopWords;
@@ -90,8 +105,8 @@ public class SmartChineseAnalyzer extends Analyzer {
     TokenStream result = new SentenceTokenizer(reader);
     result = new WordTokenizer(result, wordSegment);
     // result = new LowerCaseFilter(result);
-    // 不再需要LowerCaseFilter，因为SegTokenFilter已经将所有英文字符转换成小写
-    // stem太严格了, This is not bug, this feature:)
+    // LowerCaseFilter is not needed, as SegTokenFilter lowercases Basic Latin text.
+    // The porter stemming is too strict, this is not a bug, this is a feature:)
     result = new PorterStemFilter(result);
     if (stopWords != null) {
       result = new StopFilter(result, stopWords, false);
@@ -100,13 +115,17 @@ public class SmartChineseAnalyzer extends Analyzer {
   }
 
   /**
-   * 从停用词文件中加载停用词， 停用词文件是普通UTF-8编码的文本文件， 每一行是一个停用词，注释利用“//”， 停用词中包括中文标点符号， 中文空格，
-   * 以及使用率太高而对索引意义不大的词。
+   * Utility function to return a {@link Set} of stopwords from a UTF-8 encoded {@link InputStream}.
+   * The comment "//" can be used in the stopword list.
    * 
-   * @param input 停用词文件
-   * @return 停用词组成的HashSet
+   * @param input {@link InputStream} of UTF-8 encoded stopwords
+   * @return {@link Set} of stopwords.
    */
   public static Set loadStopWords(InputStream input) {
+    /*
+     * Note: WordListLoader is not used here because this method allows for inline "//" comments.
+     * WordListLoader will only filter out these comments if they are on a separate line.
+     */
     String line;
     Set stopWords = new HashSet();
     try {

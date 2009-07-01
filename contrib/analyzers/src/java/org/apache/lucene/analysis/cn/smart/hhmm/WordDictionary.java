@@ -33,6 +33,10 @@ import java.nio.ByteOrder;
 import org.apache.lucene.analysis.cn.smart.AnalyzerProfile;
 import org.apache.lucene.analysis.cn.smart.Utility;
 
+/**
+ * SmartChineseAnalyzer Word Dictionary
+ *
+ */
 public class WordDictionary extends AbstractDictionary {
 
   private WordDictionary() {
@@ -41,7 +45,7 @@ public class WordDictionary extends AbstractDictionary {
   private static WordDictionary singleInstance;
 
   /**
-   * 一个较大的素数，保证hash查找能够遍历所有位置
+   * Large prime number for hash function
    */
   public static final int PRIME_INDEX_LENGTH = 12071;
 
@@ -66,6 +70,10 @@ public class WordDictionary extends AbstractDictionary {
 
   // static Logger log = Logger.getLogger(WordDictionary.class);
 
+  /**
+   * Get the singleton dictionary instance.
+   * @return singleton
+   */
   public synchronized static WordDictionary getInstance() {
     if (singleInstance == null) {
       singleInstance = new WordDictionary();
@@ -82,10 +90,9 @@ public class WordDictionary extends AbstractDictionary {
   }
 
   /**
-   * 从外部文件夹dctFileRoot加载词典库文件，首先测试是否有coredict.mem文件， 如果有则直接作为序列化对象加载，
-   * 如果没有则加载词典库源文件coredict.dct
+   * Attempt to load dictionary from provided directory, first trying coredict.mem, failing back on coredict.dct
    * 
-   * @param dctFileName 词典库文件的路径
+   * @param dctFileRoot path to dictionary directory
    */
   public void load(String dctFileRoot) {
     String dctFilePath = dctFileRoot + "/coredict.dct";
@@ -119,9 +126,8 @@ public class WordDictionary extends AbstractDictionary {
   }
 
   /**
-   * 从jar内部加载词典库文件，要求保证WordDictionary类当前路径中有coredict.mem文件，以将其作为序列化对象加载
+   * Load coredict.mem internally from the jar file.
    * 
-   * @param dctFileName 词典库文件的路径
    * @throws ClassNotFoundException
    * @throws IOException
    */
@@ -171,10 +177,10 @@ public class WordDictionary extends AbstractDictionary {
   }
 
   /**
-   * 将词库文件加载到WordDictionary的相关数据结构中，只是加载，没有进行合并和修改操作
+   * Load the datafile into this WordDictionary
    * 
-   * @param dctFilePath
-   * @return
+   * @param dctFilePath path to word dictionary (coredict.mem)
+   * @return number of words read
    * @throws FileNotFoundException
    * @throws IOException
    * @throws UnsupportedEncodingException
@@ -188,13 +194,13 @@ public class WordDictionary extends AbstractDictionary {
     String tmpword;
     RandomAccessFile dctFile = new RandomAccessFile(dctFilePath, "r");
 
-    // 字典文件中第一个汉字出现的位置是0，最后一个是6768
+    // GB2312 characters 0 - 6768
     for (i = GB2312_FIRST_CHAR; i < GB2312_FIRST_CHAR + CHAR_NUM_IN_FILE; i++) {
       // if (i == 5231)
       // System.out.println(i);
 
-      dctFile.read(intBuffer);// 原词库文件在c下开发，所以写入的文件为little
-      // endian编码，而java为big endian，必须转换过来
+      dctFile.read(intBuffer);
+      // the dictionary was developed for C, and byte order must be converted to work with Java
       cnt = ByteBuffer.wrap(intBuffer).order(ByteOrder.LITTLE_ENDIAN).getInt();
       if (cnt <= 0) {
         wordItem_charArrayTable[i] = null;
@@ -287,8 +293,8 @@ public class WordDictionary extends AbstractDictionary {
     wordItem_frequencyTable[delimiterIndex] = null;
   }
 
-  /**
-   * 本程序不做词性标注，因此将相同词不同词性的频率合并到同一个词下，以减小存储空间，加快搜索速度
+  /*
+   * since we aren't doing POS-tagging, merge the frequencies for entries of the same word (with different POS)
    */
   private void mergeSameWords() {
     int i;
@@ -350,12 +356,9 @@ public class WordDictionary extends AbstractDictionary {
     }
   }
 
-  /**
+  /*
    * 计算字符c在哈希表中应该在的位置，然后将地址列表中该位置的值初始化
    * 
-   * @param c
-   * @param j
-   * @return
    */
   private boolean setTableIndex(char c, int j) {
     int index = getAvaliableTableIndex(c);
@@ -390,10 +393,6 @@ public class WordDictionary extends AbstractDictionary {
       return -1;
   }
 
-  /**
-   * @param c
-   * @return
-   */
   private short getWordItemTableIndex(char c) {
     int hash1 = (int) (hash1(c) % PRIME_INDEX_LENGTH);
     int hash2 = hash2(c) % PRIME_INDEX_LENGTH;
@@ -465,32 +464,33 @@ public class WordDictionary extends AbstractDictionary {
   }
 
   /**
-   * charArray这个单词对应的词组在不在WordDictionary中出现
+   * Returns true if the input word appears in the dictionary
    * 
-   * @param charArray
-   * @return true表示存在，false表示不存在
+   * @param charArray input word
+   * @return true if the word exists
    */
   public boolean isExist(char[] charArray) {
     return findInTable(charArray) != -1;
   }
 
   /**
-   * @see{getPrefixMatch(char[] charArray, int knownStart)}
-   * @param charArray
-   * @return
+   * Find the first word in the dictionary that starts with the supplied prefix
+   * 
+   * @see #getPrefixMatch(char[], int)
+   * @param charArray input prefix
+   * @return index of word, or -1 if not found
    */
   public int getPrefixMatch(char[] charArray) {
     return getPrefixMatch(charArray, 0);
   }
 
   /**
-   * 从词典中查找以charArray对应的单词为前缀(prefix)的单词的位置, 并返回第一个满足条件的位置。为了减小搜索代价,
-   * 可以根据已有知识设置起始搜索位置, 如果不知道起始位置，默认是0
+   * Find the nth word in the dictionary that starts with the supplied prefix
    * 
-   * @see{getPrefixMatch(char[] charArray)}
-   * @param charArray 前缀单词
-   * @param knownStart 已知的起始位置
-   * @return 满足前缀条件的第一个单词的位置
+   * @see #getPrefixMatch(char[])
+   * @param charArray input prefix
+   * @param knownStart relative position in the dictionary to start
+   * @return index of word, or -1 if not found
    */
   public int getPrefixMatch(char[] charArray, int knownStart) {
     short index = getWordItemTableIndex(charArray[0]);
@@ -521,11 +521,10 @@ public class WordDictionary extends AbstractDictionary {
   }
 
   /**
-   * 获取idArray对应的词的词频，若pos为-1则获取所有词性的词频
+   * Get the frequency of a word from the dictionary
    * 
-   * @param charArray 输入的单词对应的charArray
-   * @param pos 词性，-1表示要求求出所有的词性的词频
-   * @return idArray对应的词频
+   * @param charArray input word
+   * @return word frequency, or zero if the word is not found
    */
   public int getFrequency(char[] charArray) {
     short hashIndex = getWordItemTableIndex(charArray[0]);
@@ -539,12 +538,11 @@ public class WordDictionary extends AbstractDictionary {
   }
 
   /**
-   * 判断charArray对应的字符串是否跟词典中charArray[0]对应的wordIndex的charArray相等,
-   * 也就是说charArray的位置查找结果是不是就是wordIndex
+   * Return true if the dictionary entry at itemIndex for table charArray[0] is charArray
    * 
-   * @param charArray 输入的charArray词组，第一个数表示词典中的索引号
-   * @param itemIndex 位置编号
-   * @return 是否相等
+   * @param charArray input word
+   * @param itemIndex item index for table charArray[0]
+   * @return true if the entry exists
    */
   public boolean isEqual(char[] charArray, int itemIndex) {
     short hashIndex = getWordItemTableIndex(charArray[0]);

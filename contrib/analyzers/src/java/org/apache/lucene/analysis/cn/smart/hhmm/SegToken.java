@@ -17,6 +17,9 @@
 
 package org.apache.lucene.analysis.cn.smart.hhmm;
 
+/**
+ * SmartChineseAnalyzer internal token
+ */
 public class SegToken {
   public char[] charArray;
 
@@ -51,13 +54,6 @@ public class SegToken {
   // + endOffset + ")/w(" + weight + ")t(" + wordType + ")";
   // }
 
-  /**
-   * 判断两个Token相等的充要条件是他们的起始位置相等，因为这样他们的原句中的内容一样，
-   * 而pos与weight都可以从词典中查到多个，可以用一对多的方法表示，因此只需要一个Token
-   * 
-   * @param t
-   * @return
-   */
   // public boolean equals(RawToken t) {
   // return this.startOffset == t.startOffset
   // && this.endOffset == t.endOffset;
