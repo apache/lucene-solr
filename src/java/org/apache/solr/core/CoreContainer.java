@@ -295,11 +295,11 @@ public class CoreContainer
 
   /**
    * Registers a SolrCore descriptor in the registry using the specified name.
-   * If returnPrev==false, the old core, if different, is closed. if true, it is returned w/o closing the core
+   * If returnPrevNotClosed==false, the old core, if different, is closed. if true, it is returned w/o closing the core
    *
    * @return a previous core having the same name if it existed
    */
-  public SolrCore register(String name, SolrCore core, boolean returnPrev) {
+  public SolrCore register(String name, SolrCore core, boolean returnPrevNotClosed) {
     if( core == null ) {
       throw new RuntimeException( "Can not register a null core." );
     }
@@ -322,7 +322,7 @@ public class CoreContainer
     }
     else {
       log.info( "replacing core: "+name );
-      if (!returnPrev) {
+      if (!returnPrevNotClosed) {
         old.close();
       }
       return old;
