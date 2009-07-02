@@ -27,6 +27,7 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.clustering.SearchClusteringEngine;
@@ -58,23 +59,22 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 	private CachingController controller = new CachingController();
 	private Class<? extends IClusteringAlgorithm> clusteringAlgorithmClass;
 	
-	private SolrCore core;
 	private String idFieldName;
 
-	public NamedList cluster(Query query, DocList docList, SolrParams solrParams) {
+	public Object cluster(Query query, DocList docList, SolrQueryRequest sreq) {
 		try {
 			// Prepare attributes for Carrot2 clustering call
 			Map<String, Object> attributes = new HashMap<String, Object>();
-			List<Document> documents = getDocuments(docList, core, query, solrParams);
+			List<Document> documents = getDocuments(docList, query, sreq);
 			attributes.put(AttributeNames.DOCUMENTS, documents);
 			attributes.put(AttributeNames.QUERY, query.toString());
 			
 			// Pass extra overriding attributes from the request, if any
-			extractCarrotAttributes(solrParams, attributes);
+			extractCarrotAttributes(sreq.getParams(), attributes);
 
 			// Perform clustering and convert to named list
 			return clustersToNamedList(controller.process(attributes,
-					clusteringAlgorithmClass).getClusters(), solrParams);
+					clusteringAlgorithmClass).getClusters(), sreq.getParams());
 		} catch (Exception e) {
 			log.error("Carrot2 clustering failed", e);
 			throw new RuntimeException(e);
@@ -91,7 +91,6 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 		extractCarrotAttributes(initParams, initAttributes);
 		this.controller.init(initAttributes);
 		
-		this.core = core;
 		this.idFieldName = core.getSchema().getUniqueKeyField().getName();
 
 		// Make sure the requested Carrot2 clustering algorithm class is available 
@@ -116,9 +115,11 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 	/**
 	 * Prepares Carrot2 documents for clustering.
 	 */
-	private List<Document> getDocuments(DocList docList, SolrCore core,
-			Query query, SolrParams solrParams) {
+	private List<Document> getDocuments(DocList docList,
+			Query query, final SolrQueryRequest sreq) throws IOException {
 		SolrHighlighter highligher = null;
+                SolrParams solrParams = sreq.getParams();
+                SolrCore core = sreq.getCore();
 
 		// Names of fields to deliver content for clustering
 		String urlField = solrParams.get(CarrotParams.URL_FIELD_NAME, "url");
@@ -145,13 +146,16 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 			snippetFieldAry = new String[] { snippetField };
 			args.put(HighlightParams.FIELDS, snippetFieldAry);
 			args.put(HighlightParams.HIGHLIGHT, "true");
-			req = new LocalSolrQueryRequest(core, query.toString(), "", 0, 1, args);
+			req = new LocalSolrQueryRequest(core, query.toString(), "", 0, 1, args) {
+                          @Override
+                          public SolrIndexSearcher getSearcher() {
+                            return sreq.getSearcher();
+                          }
+                        };
 		}
 
-		RefCounted<SolrIndexSearcher> refCounter = core.getSearcher();
-		SolrIndexSearcher searcher = refCounter.get();
+		SolrIndexSearcher searcher = sreq.getSearcher();
 		List<Document> result = new ArrayList<Document>(docList.size());
-		try {
 			FieldSelector fieldSelector = new SetBasedFieldSelector(fieldsToLoad,
 					Collections.emptySet());
 			float[] scores = { 1.0f };
@@ -173,11 +177,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 				carrotDocument.addField("solrId", doc.get(idFieldName));
 				result.add(carrotDocument);
 			}
-		} catch (IOException e) {
-			log.error("IOException", e);
-		} finally {
-			refCounter.decref();
-		}
+
 		return result;
 	}
 
@@ -194,9 +194,9 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 		return result.toString().trim();
 	}
 
-	private NamedList clustersToNamedList(List<Cluster> carrotClusters,
+	private List clustersToNamedList(List<Cluster> carrotClusters,
 			SolrParams solrParams) {
-		NamedList result = new NamedList();
+          List result = new ArrayList();
 		clustersToNamedList(carrotClusters, result, solrParams.getBool(
 				CarrotParams.OUTPUT_SUB_CLUSTERS, false), solrParams.getInt(
 				CarrotParams.NUM_DESCRIPTIONS, Integer.MAX_VALUE));
@@ -204,33 +204,27 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 	}
 
 	private void clustersToNamedList(List<Cluster> outputClusters,
-			NamedList parent, boolean outputSubClusters, int maxLabels) {
+			List parent, boolean outputSubClusters, int maxLabels) {
 		for (Cluster outCluster : outputClusters) {
-			NamedList cluster = new NamedList();
-			parent.add("cluster", cluster);
+			NamedList cluster = new SimpleOrderedMap();
+			parent.add(cluster);
 
 			List<String> labels = outCluster.getPhrases();
-			NamedList labelsNL = new NamedList();
-			cluster.add("labels", labelsNL);
-			int labelsAdded = 0;
-			for (String label : labels) {
-				if (++labelsAdded > maxLabels) {
-					break;
-				}
-				labelsNL.add("label", label);
-			}
+                  if (labels.size() > maxLabels)
+                    labels = labels.subList(0,maxLabels);
+			cluster.add("labels", labels);
 
 			List<Document> docs = outCluster.getDocuments();
-			NamedList docsNL = new NamedList();
-			cluster.add("docs", docsNL);
+			List docList = new ArrayList();
+			cluster.add("docs", docList);
 			for (Document doc : docs) {
-				docsNL.add("doc", doc.getField("solrId"));
+				docList.add(doc.getField("solrId"));
 			}
 
 			if (outputSubClusters) {
-				NamedList subclustersNL = new NamedList();
-				cluster.add("clusters", subclustersNL);
-				clustersToNamedList(outCluster.getSubclusters(), subclustersNL,
+				List subclusters = new ArrayList();
+				cluster.add("clusters",subclusters);
+				clustersToNamedList(outCluster.getSubclusters(), subclusters,
 						outputSubClusters, maxLabels);
 			}
 		}

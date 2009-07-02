@@ -18,6 +18,7 @@ package org.apache.solr.handler.clustering.carrot2;
  */
 
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.search.*;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -28,6 +29,7 @@ import org.apache.solr.handler.clustering.ClusteringComponent;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.carrot2.util.attribute.AttributeUtils;
 
 /**
@@ -82,12 +84,12 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTest {
 		return engine;
 	}
 
-	private NamedList checkEngine(CarrotClusteringEngine engine,
+	private List checkEngine(CarrotClusteringEngine engine,
 			int expectedNumClusters) throws IOException {
 		return checkEngine(engine, expectedNumClusters, new ModifiableSolrParams());
 	}
 
-	private NamedList checkEngine(CarrotClusteringEngine engine,
+	private List checkEngine(CarrotClusteringEngine engine,
 			int expectedNumClusters, SolrParams clusteringParams) throws IOException {
 		// Get all documents to cluster
 		RefCounted<SolrIndexSearcher> ref = h.getCore().getSearcher();
@@ -107,45 +109,42 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTest {
 		solrParams.add(clusteringParams);
 
 		// Perform clustering
-		NamedList results = engine.cluster(query, docList, solrParams);
+                LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), solrParams);
+		List results = (List)engine.cluster(query, docList, req);
+                req.close();
 		assertEquals("number of clusters", expectedNumClusters, results.size());
 		checkClusters(results, false);
 		return results;
 	}
 
-	private void checkClusters(NamedList results, int expectedDocCount,
+	private void checkClusters(List results, int expectedDocCount,
 			int expectedLabelCount, int expectedSubclusterCount) {
 		for (int i = 0; i < results.size(); i++) {
-			if (results.getName(i).equals("cluster")) {
-				NamedList cluster = (NamedList) results.getVal(i);
+				NamedList cluster = (NamedList) results.get(i);
 				checkCluster(cluster, expectedDocCount, expectedLabelCount,
 						expectedSubclusterCount);
-			}
 		}
 	}
 
-	private void checkClusters(NamedList results, boolean hasSubclusters) {
+	private void checkClusters(List results, boolean hasSubclusters) {
 		for (int i = 0; i < results.size(); i++) {
-			if (results.getName(i).equals("cluster")) {
-				NamedList cluster = (NamedList) results.getVal(i);
-				checkCluster(cluster, hasSubclusters);
-			}
+                  checkCluster((NamedList)results.get(i), hasSubclusters );
 		}
 	}
 
 	private void checkCluster(NamedList cluster, boolean hasSubclusters) {
-		NamedList docs = (NamedList) cluster.get("docs");
+		List docs = (List)cluster.get("docs");
 		assertNotNull("docs is null and it shouldn't be", docs);
 		for (int j = 0; j < docs.size(); j++) {
-			String id = (String) docs.getVal(j);
+			String id = (String) docs.get(j);
 			assertNotNull("id is null and it shouldn't be", id);
 		}
 
-		NamedList labels = (NamedList) cluster.get("labels");
+		List labels = (List) cluster.get("labels");
 		assertNotNull("labels is null but it shouldn't be", labels);
 
 		if (hasSubclusters) {
-			NamedList subclusters = (NamedList) cluster.get("clusters");
+			List subclusters = (List) cluster.get("clusters");
 			assertNotNull("subclusters is null but it shouldn't be", subclusters);
 		}
 	}
@@ -154,12 +153,12 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTest {
 			int expectedLabelCount, int expectedSubclusterCount) {
 		checkCluster(cluster, expectedSubclusterCount > 0);
 		assertEquals("number of docs in cluster", expectedDocCount,
-				((NamedList) cluster.get("docs")).size());
+				((List) cluster.get("docs")).size());
 		assertEquals("number of labels in cluster", expectedLabelCount,
-				((NamedList) cluster.get("labels")).size());
+				((List) cluster.get("labels")).size());
 
 		if (expectedSubclusterCount > 0) {
-			NamedList subclusters = (NamedList) cluster.get("clusters");
+			List subclusters = (List) cluster.get("clusters");
 			assertEquals("numClusters", expectedSubclusterCount, subclusters.size());
 			assertEquals("number of subclusters in cluster",
 					expectedSubclusterCount, subclusters.size());

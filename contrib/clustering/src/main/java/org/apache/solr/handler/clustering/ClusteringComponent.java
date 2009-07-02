@@ -72,8 +72,8 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       SearchClusteringEngine engine = searchClusteringEngines.get(name);
       if (engine != null) {
         DocListAndSet results = rb.getResults();
-        NamedList nl = engine.cluster(rb.getQuery(), results.docList, params);
-        rb.rsp.add("clusters", nl);
+        Object clusters = engine.cluster(rb.getQuery(), results.docList, rb.req);
+        rb.rsp.add("clusters", clusters);
       } else {
         log.warn("No engine for: " + name);
       }
