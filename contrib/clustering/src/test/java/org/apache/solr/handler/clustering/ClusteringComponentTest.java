@@ -16,18 +16,16 @@ package org.apache.solr.handler.clustering;
  * limitations under the License.
  */
 
-import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.handler.component.SpellCheckComponent;
-import org.apache.solr.handler.component.QueryComponent;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.QueryComponent;
+import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.request.SolrRequestHandler;
 
 
 /**
@@ -45,7 +43,7 @@ public class ClusteringComponentTest extends AbstractClusteringTest {
 
     params.add(ClusteringComponent.COMPONENT_NAME, "true");
     params.add(CommonParams.Q, "*:*");
-    
+
     params.add(ClusteringParams.USE_SEARCH_RESULTS, "true");
 
 
@@ -76,7 +74,7 @@ public class ClusteringComponentTest extends AbstractClusteringTest {
     //System.out.println("Clusters: " + clusters);
     assertTrue("clusters is null and it shouldn't be", clusters != null);
 
-    
+
   }
 
 }
