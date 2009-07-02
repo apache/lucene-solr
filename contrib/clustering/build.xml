@@ -150,12 +150,14 @@
   </target>
 	
   <target name="dist" depends="build">
-  	<copy file="${dest}/${fullnamever}.jar" todir="${solr-path}/build/web/WEB-INF/lib"/>
+  <!--
+    <copy file="${dest}/${fullnamever}.jar" todir="${solr-path}/build/web/WEB-INF/lib"/>
     <copy todir="${solr-path}/build/web/WEB-INF/lib" flatten="true">
       <fileset dir="lib">
         <include name="**/*.jar"/>
       </fileset>
     </copy>
+  -->
     <copy file="${dest}/${fullnamever}.jar" todir="${solr-path}/dist"/>
   </target>
 	
