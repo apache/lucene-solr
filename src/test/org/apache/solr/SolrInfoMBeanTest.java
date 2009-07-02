@@ -72,7 +72,7 @@ public class SolrInfoMBeanTest extends TestCase
         }
       }
     }
-    assertTrue( "there are at leaset 10 SolrInfoMBean that should be found in the classpath.", checked > 10 );
+    assertTrue( "there are at least 10 SolrInfoMBean that should be found in the classpath.", checked > 10 );
   }
 
   private static List<Class> getClassesForPackage(String pckgname) throws Exception {
@@ -81,7 +81,7 @@ public class SolrInfoMBeanTest extends TestCase
     String path = pckgname.replace('.', '/');
     Enumeration<URL> resources = cld.getResources(path);
     while (resources.hasMoreElements()) {
-      directories.add(new File(URLDecoder.decode(resources.nextElement().getPath(), "UTF-8")));
+      directories.add(new File(resources.nextElement().getPath()));
     }
       
     ArrayList<Class> classes = new ArrayList<Class>();
