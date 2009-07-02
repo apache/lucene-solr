@@ -127,7 +127,7 @@ Changes in runtime behavior
     is failing to close reader/writers.  (Brian Groose via Mike
     McCandless)
 
- API Changes
+API Changes
 
 1. LUCENE-1419: Add expert API to set custom indexing chain. This API is 
    package-protected for now, so we don't have to officially support it.
@@ -343,7 +343,7 @@ Bug fixes
 16. LUCENE-1681: Fix infinite loop caused by a call to DocValues methods 
     getMinValue, getMaxValue, getAverageValue. (Simon Willnauer via Mark Miller)
 
- New features
+New features
 
  1. LUCENE-1411: Added expert API to open an IndexWriter on a prior
     commit, obtained from IndexReader.listCommits.  This makes it
