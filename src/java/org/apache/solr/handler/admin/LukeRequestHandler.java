@@ -149,6 +149,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     info.add( "key", getFieldFlagsKey() );
     info.add( "NOTE", "Document Frequency (df) is not updated when a document is marked for deletion.  df values include deleted documents." ); 
     rsp.add( "info", info );
+    rsp.setHttpCaching(false);
   }
 
   

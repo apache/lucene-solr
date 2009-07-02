@@ -76,6 +76,7 @@ public class ThreadDumpHandler extends RequestHandlerBase
       lst.add( "thread", getThreadInfo( ti, tmbean ) );
     }
     system.add( "threadDump", lst );
+    rsp.setHttpCaching(false);
   }
 
   //--------------------------------------------------------------------------------

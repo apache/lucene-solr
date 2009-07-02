@@ -44,6 +44,7 @@ public class PropertiesRequestHandler extends RequestHandlerBase
       props = System.getProperties();
     }
     rsp.add( "system.properties", props );
+    rsp.setHttpCaching(false);
   }
   
   //////////////////////// SolrInfoMBeans methods //////////////////////

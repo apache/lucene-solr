@@ -64,6 +64,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     rsp.add( "lucene", getLuceneInfo() );
     rsp.add( "jvm", getJvmInfo() );
     rsp.add( "system", getSystemInfo() );
+    rsp.setHttpCaching(false);
   }
   
   /**

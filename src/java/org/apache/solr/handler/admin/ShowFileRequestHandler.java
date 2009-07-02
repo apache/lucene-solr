@@ -183,6 +183,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   
       rsp.add( RawResponseWriter.CONTENT, content );
     }
+    rsp.setHttpCaching(false);
   }
   
   /**

@@ -49,6 +49,7 @@ public class PluginInfoHandler extends RequestHandlerBase
     
     boolean stats = params.getBool( "stats", false );
     rsp.add( "plugins", getSolrInfoBeans( req.getCore(), stats ) );
+    rsp.setHttpCaching(false);
   }
   
   private static SimpleOrderedMap<Object> getSolrInfoBeans( SolrCore core, boolean stats )

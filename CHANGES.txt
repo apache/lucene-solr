@@ -425,6 +425,7 @@ Bug Fixes
 50. SOLR-1242: Human readable JVM info from system handler does integer cutoff rounding, even when dealing
                with GB. Fixed to round to one decimal place. (Jay Hill, Mark Miller)
 
+51. SOLR-1243: Admin RequestHandlers should not be cached over HTTP. (Mark Miller)
 
 Other Changes
 ----------------------

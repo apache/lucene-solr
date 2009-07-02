@@ -166,6 +166,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       cores.persist();
       rsp.add("saved", cores.getConfigFile().getAbsolutePath());
     }
+    rsp.setHttpCaching(false);
   }
 
   protected boolean handleMergeAction(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
