@@ -160,7 +160,7 @@ public class SnapPuller {
           executorStartTime = System.currentTimeMillis();
           replicationHandler.doSnapPull(null);
         } catch (Exception e) {
-          LOG.error("Exception in pulling snapshot", e);
+          LOG.error("Exception in fetching index", e);
         }
       }
     };
@@ -239,7 +239,7 @@ public class SnapPuller {
       try {
         response = getLatestVersion();
       } catch (Exception e) {
-        LOG.error("Master at: "+masterUrl + " is not available. Snappull failed. Exception: " + e.getMessage());
+        LOG.error("Master at: "+masterUrl + " is not available. Index fetch failed. Exception: " + e.getMessage());
         return false;
       }
       long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
@@ -267,7 +267,7 @@ public class SnapPuller {
       LOG.info("Starting replication process");
       // get the list of files first
       fetchFileList(latestVersion);
-      LOG.info("Number of files in latest snapshot in master: " + filesToDownload.size());
+      LOG.info("Number of files in latest index in master: " + filesToDownload.size());
 
       // Create the sync service
       fsyncService = Executors.newSingleThreadExecutor();
@@ -299,7 +299,6 @@ public class SnapPuller {
           }
         } else {
           terminateAndWaitFsyncService();
-          LOG.info("Conf files are not downloaded or are in sync");
           if (isSnapNeeded) {
             modifyIndexProps(tmpIndexDir.getName());
           } else {
@@ -318,7 +317,7 @@ public class SnapPuller {
         throw e;
       } catch (Exception e) {
         delTree(tmpIndexDir);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Snappull failed : ", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
       } finally {
         delTree(tmpIndexDir);
       }
