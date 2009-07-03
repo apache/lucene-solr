@@ -67,7 +67,8 @@ public final class HashDocSet extends DocSetBase {
     // https://issues.apache.org/jira/browse/SOLR-390
     for (int i=tsize-1; i>=0; i--) table[i]=EMPTY;
 
-    for (int i=offset; i<len; i++) {
+    int end = offset + len;
+    for (int i=offset; i<end; i++) {
       put(docs[i]);
     }
 

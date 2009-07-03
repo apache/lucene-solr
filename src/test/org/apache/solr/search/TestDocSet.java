@@ -71,11 +71,38 @@ public class TestDocSet extends TestCase {
     return new BitDocSet(bs);
   }
 
+  public DocSet getDocSlice(OpenBitSet bs) {
+    int len = (int)bs.cardinality();
+    int[] arr = new int[len+5];
+    arr[0]=10; arr[1]=20; arr[2]=30; arr[arr.length-1]=1; arr[arr.length-2]=2;
+    int offset = 3;
+    int end = offset + len;
+
+    OpenBitSetIterator iter = new OpenBitSetIterator(bs);
+    // put in opposite order... DocLists are not ordered.
+    for (int i=end-1; i>=offset; i--) {
+      arr[i] = iter.nextDoc();
+    }
+
+    return new DocSlice(offset, len, arr, null, len*2, 100.0f);
+  }
+
+
   public DocSet getDocSet(OpenBitSet bs) {
-    switch(rand.nextInt(3)) {
-      case 0: return getIntDocSet(bs);
-      case 1: return getHashDocSet(bs);
-      case 2: return getBitDocSet(bs);    
+    switch(rand.nextInt(10)) {
+      case 0: return getHashDocSet(bs);
+
+      case 1: return getBitDocSet(bs);
+      case 2: return getBitDocSet(bs);
+      case 3: return getBitDocSet(bs);
+
+      case 4: return getIntDocSet(bs);
+      case 5: return getIntDocSet(bs);
+      case 6: return getIntDocSet(bs);
+      case 7: return getIntDocSet(bs);
+      case 8: return getIntDocSet(bs);
+
+      case 9: return getDocSlice(bs);
     }
     return null;
   }
@@ -88,8 +115,8 @@ public class TestDocSet extends TestCase {
   }
 
   public void iter(DocSet d1, DocSet d2) {
-    // HashDocSet doesn't iterate in order.
-    if (d1 instanceof HashDocSet || d2 instanceof HashDocSet) return;
+    // HashDocSet and DocList doesn't iterate in order.
+    if (d1 instanceof HashDocSet || d2 instanceof HashDocSet || d1 instanceof DocList || d2 instanceof DocList) return;
 
     DocIterator i1 = d1.iterator();
     DocIterator i2 = d2.iterator();
@@ -149,7 +176,7 @@ public class TestDocSet extends TestCase {
     // 64 bits for the bit doc set.  Smaller sets can hit more boundary conditions though.
 
     doMany(130, 10000);
-    //doMany(130, 1000000);
+    // doMany(130, 1000000);
   }
 
   public DocSet getRandomDocSet(int n, int maxDoc) {
@@ -419,6 +446,4 @@ public class TestDocSet extends TestCase {
       doFilterTest(sir);
     }
   }
-
-
 }

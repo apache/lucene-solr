@@ -85,8 +85,9 @@ public class DocSlice extends DocSetBase implements DocList {
 
 
   public boolean exists(int doc) {
-    for (int i: docs) {
-      if (i==doc) return true;
+    int end = offset+len;
+    for (int i=offset; i<end; i++) {
+      if (docs[i]==doc) return true;
     }
     return false;
   }
@@ -120,5 +121,24 @@ public class DocSlice extends DocSetBase implements DocList {
         return scores[pos-1];
       }
     };
+  }
+
+
+  @Override
+  public DocSet intersection(DocSet other) {
+    if (other instanceof SortedIntDocSet || other instanceof HashDocSet) {
+      return other.intersection(this);
+    }
+    HashDocSet h = new HashDocSet(docs,offset,len);
+    return h.intersection(other);
+  }
+
+  @Override
+  public int intersectionSize(DocSet other) {
+    if (other instanceof SortedIntDocSet || other instanceof HashDocSet) {
+      return other.intersectionSize(this);
+    }
+    HashDocSet h = new HashDocSet(docs,offset,len);
+    return h.intersectionSize(other);  
   }
 }
