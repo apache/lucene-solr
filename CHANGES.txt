@@ -427,6 +427,11 @@ Bug Fixes
 
 51. SOLR-1243: Admin RequestHandlers should not be cached over HTTP. (Mark Miller)
 
+52. SOLR-1260: Fix implementations of set operations for DocList subclasses
+    and fix a bug in HashDocSet construction when offset != 0.  These bugs
+    never manifested in normal Solr use and only potentially affect
+    custom code. (yonik)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
