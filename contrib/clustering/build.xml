@@ -29,7 +29,6 @@
 
   <path id="common.classpath">
     <fileset dir="lib"/>
-    <fileset dir="lib/downloads"/>
     <pathelement location="${solr-path}/build/solr" />
     <pathelement location="${solr-path}/build/solrj" />
     <fileset dir="${solr-path}/lib" includes="*.jar"/>
@@ -47,7 +46,10 @@
 
   </target>
   <target name="clean-downloads">
-    <delete dir="lib/downloads"/>
+      <delete file="lib/colt-1.2.0.jar"/>
+      <delete file="lib/pcj-1.2.jar"/>
+      <delete file="lib/nni-1.0.0.jar"/>
+      <delete file="lib/simple-xml-1.7.3.jar"/>
   </target>
 	
   <target name="init">
@@ -59,30 +61,30 @@
   </target>
 
   <target name="check-files" depends="proxy.setup">
-      <available file="lib/downloads/colt-1.2.0.jar" property="colt.exists"/>
-      <available file="lib/downloads/pcj-1.2.jar" property="pcj.exists"/>
-      <available file="lib/downloads/nni-1.0.0.jar" property="nni.exists"/>
-    <available file="lib/downloads/simple-xml-1.7.3.jar" property="simplexml.exists"/>
+      <available file="lib/colt-1.2.0.jar" property="colt.exists"/>
+      <available file="lib/pcj-1.2.jar" property="pcj.exists"/>
+      <available file="lib/nni-1.0.0.jar" property="nni.exists"/>
+    <available file="lib/simple-xml-1.7.3.jar" property="simplexml.exists"/>
   </target>
   <!-- http://mirrors.ibiblio.org/pub/mirrors/maven2/org/simpleframework/simple-xml/1.7.3/simple-xml-1.7.3.jar -->
   <target name="get-colt" depends="check-files" unless="colt.exists">
     <!-- Get the LGPL deps and put them in a separate dir -->
-    <get src="http://repo1.maven.org/maven2/colt/colt/1.2.0/colt-1.2.0.jar" dest="lib/downloads/colt-1.2.0.jar"/>
+    <get src="http://repo1.maven.org/maven2/colt/colt/1.2.0/colt-1.2.0.jar" dest="lib/colt-1.2.0.jar"/>
   </target>
   <target name="get-nni" depends="check-files" unless="nni.exists">
     <!-- Get the LGPL deps and put them in a separate dir -->
-    <get src="http://download.carrot2.org/maven2/org/carrot2/nni/1.0.0/nni-1.0.0.jar" dest="lib/downloads/nni-1.0.0.jar"/>
+    <get src="http://download.carrot2.org/maven2/org/carrot2/nni/1.0.0/nni-1.0.0.jar" dest="lib/nni-1.0.0.jar"/>
   </target>
   
   <!-- Compile time dep. only -->
   <target name="get-simple-xml" depends="check-files" unless="simplexml.exists">
     <!-- Get the LGPL deps and put them in a separate dir -->
-    <get src="http://mirrors.ibiblio.org/pub/mirrors/maven2/org/simpleframework/simple-xml/1.7.3/simple-xml-1.7.3.jar" dest="lib/downloads/simple-xml-1.7.3.jar"/>
+    <get src="http://mirrors.ibiblio.org/pub/mirrors/maven2/org/simpleframework/simple-xml/1.7.3/simple-xml-1.7.3.jar" dest="lib/simple-xml-1.7.3.jar"/>
 
   </target>
   <target name="get-pcj" depends="check-files" unless="pcj.exists">
     <!-- Get the LGPL deps and put them in a separate dir -->
-    <get src="http://repo1.maven.org/maven2/pcj/pcj/1.2/pcj-1.2.jar" dest="lib/downloads/pcj-1.2.jar"/>
+    <get src="http://repo1.maven.org/maven2/pcj/pcj/1.2/pcj-1.2.jar" dest="lib/pcj-1.2.jar"/>
   </target>
   <target name="get-libraries" depends="init, get-colt, get-pcj, get-nni, get-simple-xml"/>
 
@@ -110,14 +112,6 @@
     <copy file="${dest}/${fullnamever}.jar" todir="${example}/clustering/solr/lib"/>
     <copy todir="${example}/clustering/solr/lib">
       <fileset dir="lib">
-        <include name="*.jar"/>
-      </fileset>
-      <fileset dir="lib/downloads">
-        <include name="*.jar"/>
-      </fileset>
-    </copy>
-    <copy todir="${example}/clustering/solr/lib">
-      <fileset dir="lib/downloads">
         <include name="*.jar"/>
       </fileset>
     </copy>
