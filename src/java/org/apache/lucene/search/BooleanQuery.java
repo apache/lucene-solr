@@ -34,7 +34,7 @@ public class BooleanQuery extends Query {
 
   /** Thrown when an attempt is made to add more than {@link
    * #getMaxClauseCount()} clauses. This typically happens if
-   * a PrefixQuery, FuzzyQuery, WildcardQuery, or RangeQuery 
+   * a PrefixQuery, FuzzyQuery, WildcardQuery, or TermRangeQuery 
    * is expanded to many terms during search. 
    */
   public static class TooManyClauses extends RuntimeException {
@@ -58,8 +58,8 @@ public class BooleanQuery extends Query {
    * so this parameter indirectly controls the maximum buffer requirements for
    * query search.
    * <p>When this parameter becomes a bottleneck for a Query one can use a
-   * Filter. For example instead of a {@link RangeQuery} one can use a
-   * {@link RangeFilter}.
+   * Filter. For example instead of a {@link TermRangeQuery} one can use a
+   * {@link TermRangeFilter}.
    * <p>Normally the buffers are allocated by the JVM. When using for example
    * {@link org.apache.lucene.store.MMapDirectory} the buffering is left to
    * the operating system.

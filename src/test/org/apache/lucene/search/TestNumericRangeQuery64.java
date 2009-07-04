@@ -226,38 +226,38 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       }
       // test inclusive range
       NumericRangeQuery tq=NumericRangeQuery.newLongRange(field, precisionStep, new Long(lower), new Long(upper), true, true);
-      RangeQuery cq=new RangeQuery(field, NumericUtils.longToPrefixCoded(lower), NumericUtils.longToPrefixCoded(upper), true, true);
+      TermRangeQuery cq=new TermRangeQuery(field, NumericUtils.longToPrefixCoded(lower), NumericUtils.longToPrefixCoded(upper), true, true);
       cq.setConstantScoreRewrite(true);
       TopDocs tTopDocs = searcher.search(tq, 1);
       TopDocs cTopDocs = searcher.search(cq, 1);
-      assertEquals("Returned count for NumericRangeQuery and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
       termCountT += tq.getTotalNumberOfTerms();
       termCountC += cq.getTotalNumberOfTerms();
       // test exclusive range
       tq=NumericRangeQuery.newLongRange(field, precisionStep, new Long(lower), new Long(upper), false, false);
-      cq=new RangeQuery(field, NumericUtils.longToPrefixCoded(lower), NumericUtils.longToPrefixCoded(upper), false, false);
+      cq=new TermRangeQuery(field, NumericUtils.longToPrefixCoded(lower), NumericUtils.longToPrefixCoded(upper), false, false);
       cq.setConstantScoreRewrite(true);
       tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
-      assertEquals("Returned count for NumericRangeQuery and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
       termCountT += tq.getTotalNumberOfTerms();
       termCountC += cq.getTotalNumberOfTerms();
       // test left exclusive range
       tq=NumericRangeQuery.newLongRange(field, precisionStep, new Long(lower), new Long(upper), false, true);
-      cq=new RangeQuery(field, NumericUtils.longToPrefixCoded(lower), NumericUtils.longToPrefixCoded(upper), false, true);
+      cq=new TermRangeQuery(field, NumericUtils.longToPrefixCoded(lower), NumericUtils.longToPrefixCoded(upper), false, true);
       cq.setConstantScoreRewrite(true);
       tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
-      assertEquals("Returned count for NumericRangeQuery and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
       termCountT += tq.getTotalNumberOfTerms();
       termCountC += cq.getTotalNumberOfTerms();
       // test right exclusive range
       tq=NumericRangeQuery.newLongRange(field, precisionStep, new Long(lower), new Long(upper), true, false);
-      cq=new RangeQuery(field, NumericUtils.longToPrefixCoded(lower), NumericUtils.longToPrefixCoded(upper), true, false);
+      cq=new TermRangeQuery(field, NumericUtils.longToPrefixCoded(lower), NumericUtils.longToPrefixCoded(upper), true, false);
       cq.setConstantScoreRewrite(true);
       tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
-      assertEquals("Returned count for NumericRangeQuery and RangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
+      assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
       termCountT += tq.getTotalNumberOfTerms();
       termCountC += cq.getTotalNumberOfTerms();
     }

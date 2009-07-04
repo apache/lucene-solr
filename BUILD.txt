@@ -67,7 +67,8 @@ Step 3) Install JavaCC
 
 Building the Lucene distribution from the source does not require the JavaCC
 parser generator, but if you wish to regenerate any of the pre-generated
-parser pieces, you will need to install JavaCC.
+parser pieces, you will need to install JavaCC. Version 4.1 is tested to
+work correctly.
 
   http://javacc.dev.java.net
 

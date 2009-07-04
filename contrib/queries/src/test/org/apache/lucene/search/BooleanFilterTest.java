@@ -30,7 +30,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanFilter;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FilterClause;
-import org.apache.lucene.search.RangeFilter;
+import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.DocIdBitSet;
 
@@ -84,7 +84,7 @@ public class BooleanFilterTest extends TestCase
 	
   private Filter getRangeFilter(String field,String lowerPrice, String upperPrice, boolean old)
 	{
-    Filter f = new RangeFilter(field,lowerPrice,upperPrice,true,true);
+    Filter f = new TermRangeFilter(field,lowerPrice,upperPrice,true,true);
     if (old) {
       return getOldBitSetFilter(f);
     }

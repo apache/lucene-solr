@@ -34,7 +34,7 @@ import java.util.BitSet;
  * be used by itself. Normally you subclass it to provide a Filter
  * counterpart for a {@link MultiTermQuery} subclass.
  * <P>
- * For example, {@link RangeFilter} and {@link PrefixFilter} extend
+ * For example, {@link TermRangeFilter} and {@link PrefixFilter} extend
  * <code>MultiTermQueryWrapperFilter</code>.
  * This class also provides the functionality behind
  * {@link MultiTermQuery#getFilter}, this is why it is not abstract.

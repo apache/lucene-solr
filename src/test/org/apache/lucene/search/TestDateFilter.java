@@ -66,11 +66,11 @@ public class TestDateFilter
 
 	// filter that should preserve matches
 	//DateFilter df1 = DateFilter.Before("datefield", now);
-    RangeFilter df1 = new RangeFilter("datefield", DateTools.timeToString(now - 2000, DateTools.Resolution.MILLISECOND),
+    TermRangeFilter df1 = new TermRangeFilter("datefield", DateTools.timeToString(now - 2000, DateTools.Resolution.MILLISECOND),
                                       DateTools.timeToString(now, DateTools.Resolution.MILLISECOND), false, true);
 	// filter that should discard matches
 	//DateFilter df2 = DateFilter.Before("datefield", now - 999999);
-    RangeFilter df2 = new RangeFilter("datefield", DateTools.timeToString(0, DateTools.Resolution.MILLISECOND),
+    TermRangeFilter df2 = new TermRangeFilter("datefield", DateTools.timeToString(0, DateTools.Resolution.MILLISECOND),
                                       DateTools.timeToString(now - 2000, DateTools.Resolution.MILLISECOND), true, false);
 
     // search something that doesn't exist with DateFilter
@@ -127,11 +127,11 @@ public class TestDateFilter
 
 	// filter that should preserve matches
 	//DateFilter df1 = DateFilter.After("datefield", now);
-    RangeFilter df1 = new RangeFilter("datefield", DateTools.timeToString(now, DateTools.Resolution.MILLISECOND),
+    TermRangeFilter df1 = new TermRangeFilter("datefield", DateTools.timeToString(now, DateTools.Resolution.MILLISECOND),
                                       DateTools.timeToString(now + 999999, DateTools.Resolution.MILLISECOND), true, false);
 	// filter that should discard matches
 	//DateFilter df2 = DateFilter.After("datefield", now + 999999);
-    RangeFilter df2 = new RangeFilter("datefield", DateTools.timeToString(now + 999999, DateTools.Resolution.MILLISECOND),
+    TermRangeFilter df2 = new TermRangeFilter("datefield", DateTools.timeToString(now + 999999, DateTools.Resolution.MILLISECOND),
                                           DateTools.timeToString(now + 999999999, DateTools.Resolution.MILLISECOND), false, true);
 
     // search something that doesn't exist with DateFilter

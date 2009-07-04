@@ -31,7 +31,7 @@ import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.RangeQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.Parameter;
@@ -173,7 +173,6 @@ public class QueryParser implements QueryParserConstants {
       return res!=null ? res : newBooleanQuery(false);
     }
     catch (ParseException tme) {
-      // rethrow to include the original query:
       // rethrow to include the original query:
       ParseException e = new ParseException("Cannot parse '" +query+ "': " + tme.getMessage());
       e.initCause(tme);
@@ -877,22 +876,15 @@ public class QueryParser implements QueryParserConstants {
   }
 
   /**
-   * Builds a new RangeQuery instance
+   * Builds a new TermRangeQuery instance
    * @param field Field
    * @param part1 min
    * @param part2 max
    * @param inclusive true if range is inclusive
-   * @return new RangeQuery instance
+   * @return new TermRangeQuery instance
    */
   protected Query newRangeQuery(String field, String part1, String part2, boolean inclusive) {
-    RangeQuery query;
-
-    if (constantScoreRewrite) {
-      // TODO: remove in Lucene 3.0
-      query = new ConstantScoreRangeQuery(field, part1, part2, inclusive, inclusive, rangeCollator);
-    } else {
-      query = new RangeQuery(field, part1, part2, inclusive, inclusive, rangeCollator);
-    }
+    final TermRangeQuery query = new TermRangeQuery(field, part1, part2, inclusive, inclusive, rangeCollator);
     query.setConstantScoreRewrite(constantScoreRewrite);
     return query;
   }

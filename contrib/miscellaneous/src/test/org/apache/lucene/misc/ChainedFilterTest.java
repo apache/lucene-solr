@@ -40,7 +40,7 @@ public class ChainedFilterTest extends TestCase {
   private IndexSearcher searcher;
   private Query query;
   // private DateFilter dateFilter;   DateFilter was deprecated and removed
-  private RangeFilter dateFilter;
+  private TermRangeFilter dateFilter;
   private QueryWrapperFilter bobFilter;
   private QueryWrapperFilter sueFilter;
 
@@ -76,7 +76,7 @@ public class ChainedFilterTest extends TestCase {
     //Date pastTheEnd = parseDate("2099 Jan 1");
     // dateFilter = DateFilter.Before("date", pastTheEnd);
     // just treat dates as strings and select the whole range for now...
-    dateFilter = new RangeFilter("date","","ZZZZ",true,true);
+    dateFilter = new TermRangeFilter("date","","ZZZZ",true,true);
 
     bobFilter = new QueryWrapperFilter(
         new TermQuery(new Term("owner", "bob")));

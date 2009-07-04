@@ -50,7 +50,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.RangeQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
@@ -431,11 +431,11 @@ public class TestQueryParser extends LuceneTestCase {
 
   public void testRange() throws Exception {
     assertQueryEquals("[ a TO z]", null, "[a TO z]");
-    assertTrue(((RangeQuery)getQuery("[ a TO z]", null)).getConstantScoreRewrite());
+    assertTrue(((TermRangeQuery)getQuery("[ a TO z]", null)).getConstantScoreRewrite());
 
     QueryParser qp = new QueryParser("field", new SimpleAnalyzer());
 	  qp.setConstantScoreRewrite(false);
-    assertFalse(((RangeQuery)qp.parse("[ a TO z]")).getConstantScoreRewrite());
+    assertFalse(((TermRangeQuery)qp.parse("[ a TO z]")).getConstantScoreRewrite());
     
     assertQueryEquals("[ a TO z ]", null, "[a TO z]");
     assertQueryEquals("{ a TO z}", null, "{a TO z}");
@@ -481,7 +481,7 @@ public class TestQueryParser extends LuceneTestCase {
     result = is.search(qp.parse("[ \u0633 TO \u0638 ]"), null, 1000).scoreDocs;
     assertEquals("The index Term should be included.", 1, result.length);
 
-    // Test RangeQuery
+    // Test TermRangeQuery
     qp.setConstantScoreRewrite(false);
     result = is.search(qp.parse("[ \u062F TO \u0698 ]"), null, 1000).scoreDocs;
     assertEquals("The index Term should not be included.", 0, result.length);

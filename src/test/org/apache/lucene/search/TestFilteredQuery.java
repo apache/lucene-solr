@@ -177,8 +177,8 @@ extends LuceneTestCase {
    * This tests FilteredQuery's rewrite correctness
    */
   public void testRangeQuery() throws Exception {
-    RangeQuery rq = new RangeQuery(
-        new Term("sorter", "b"), new Term("sorter", "d"), true);
+    TermRangeQuery rq = new TermRangeQuery(
+        "sorter", "b", "d", true, true);
 
     Query filteredquery = new FilteredQuery(rq, filter);
     ScoreDoc[] hits = searcher.search(filteredquery, null, 1000).scoreDocs;

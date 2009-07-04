@@ -22,21 +22,23 @@ import java.text.Collator;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.ToStringUtils;
 
 /**
- * A Query that matches documents within an exclusive range.
+ * A Query that matches documents within an exclusive range of terms.
  *
  * <p>This query matches the documents looking for terms that fall into the
  * supplied range according to {@link String#compareTo(String)}. It is not intended
  * for numerical ranges, use {@link NumericRangeQuery} instead.
  *
- * <p>See {@link MultiTermQuery#setConstantScoreRewrite} for the tradeoffs between
+ * <p>This query is in constant score mode per default.
+ * See {@link MultiTermQuery#setConstantScoreRewrite} for the tradeoffs between
  * enabling and disabling constantScoreRewrite mode.
  */
 
-public class RangeQuery extends MultiTermQuery {
-  private Term lowerTerm;
-  private Term upperTerm;
+public class TermRangeQuery extends MultiTermQuery {
+  private String lowerTerm;
+  private String upperTerm;
   private Collator collator;
   private String field;
   private boolean includeLower;
@@ -65,8 +67,8 @@ public class RangeQuery extends MultiTermQuery {
    *          If true, the <code>upperTerm</code> is
    *          included in the range.
    */
-  public RangeQuery(String field, String lowerTerm, String upperTerm, boolean includeLower, boolean includeUpper) {
-    init(new Term(field, lowerTerm), new Term(field, upperTerm), includeLower, includeUpper, null);
+  public TermRangeQuery(String field, String lowerTerm, String upperTerm, boolean includeLower, boolean includeUpper) {
+    this(field, lowerTerm, upperTerm, includeLower, includeUpper, null);
   }
 
   /** Constructs a query selecting all terms greater/equal than
@@ -99,59 +101,27 @@ public class RangeQuery extends MultiTermQuery {
    *  their membership in the range bounded by <code>lowerTerm</code> and
    *  <code>upperTerm</code>.
    */
-  public RangeQuery(String field, String lowerTerm, String upperTerm, boolean includeLower, boolean includeUpper,
+  public TermRangeQuery(String field, String lowerTerm, String upperTerm, boolean includeLower, boolean includeUpper,
                     Collator collator) {
-    init(new Term(field, lowerTerm), new Term(field,upperTerm), includeLower, includeUpper, collator);
-  }
-
-  /** @deprecated Please use {@link #RangeQuery(String,
-   *  String, String, boolean, boolean, Collator)} instead */
-  public RangeQuery(Term lowerTerm, Term upperTerm, boolean inclusive,
-                    Collator collator) {
-    init(lowerTerm, upperTerm, inclusive, inclusive, collator);
-  }
-  
-  /** @deprecated Please use {@link #RangeQuery(String,
-   *  String, String, boolean, boolean)} instead */
-  public RangeQuery(Term lowerTerm, Term upperTerm, boolean inclusive) {
-    init(lowerTerm, upperTerm, inclusive, inclusive, null);
-  }
-
-  private void init(Term lowerTerm, Term upperTerm, boolean includeLower, boolean includeUpper, Collator collator) {
-    if (lowerTerm == null && upperTerm == null)
-      throw new IllegalArgumentException("At least one term must be non-null");
-    if (lowerTerm != null && upperTerm != null && lowerTerm.field() != upperTerm.field())
-      throw new IllegalArgumentException("Both terms must be for the same field");
-
-    if (lowerTerm == null)
-      this.field = upperTerm.field();
-    else
-      this.field = lowerTerm.field();
+    this.field = field;
     this.lowerTerm = lowerTerm;
     this.upperTerm = upperTerm;
     this.includeLower = includeLower;
     this.includeUpper = includeUpper;
     this.collator = collator;
+    setConstantScoreRewrite(true);
   }
-  
+
   /** Returns the field name for this query */
   public String getField() {
     return field;
   }
-
-  /** Returns the lower term of this range query.
-   *  @deprecated Use {@link #getLowerTermText} instead. */
-  public Term getLowerTerm() { return lowerTerm; }
-
-  /** Returns the upper term of this range query.
-   *  @deprecated Use {@link #getUpperTermText} instead. */
-  public Term getUpperTerm() { return upperTerm; }
   
   /** Returns the lower value of this range query */
-  public String getLowerTermText() { return lowerTerm == null ? null : lowerTerm.text(); }
+  public String getLowerTerm() { return lowerTerm; }
 
   /** Returns the upper value of this range query */
-  public String getUpperTermText() { return upperTerm == null ? null : upperTerm.text(); }
+  public String getUpperTerm() { return upperTerm; }
   
   /** Returns <code>true</code> if the lower endpoint is inclusive */
   public boolean includesLower() { return includeLower; }
@@ -159,18 +129,12 @@ public class RangeQuery extends MultiTermQuery {
   /** Returns <code>true</code> if the upper endpoint is inclusive */
   public boolean includesUpper() { return includeUpper; }
 
-  /** Returns <code>true</code> if the range query is inclusive 
-   *  @deprecated Use {@link #includesLower}, {@link #includesUpper}  instead. 
-   */
-  public boolean isInclusive() { return includeUpper && includeLower; }
-
   /** Returns the collator used to determine range inclusion, if any. */
   public Collator getCollator() { return collator; }
   
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
-    //TODO: when the deprecated 'Term' constructors are removed we can remove these null checks
-    return new RangeTermEnum(reader, collator, getField(), lowerTerm == null ? null : lowerTerm.text(),
-        upperTerm == null ? null : upperTerm.text(), includeLower, includeUpper);
+    return new TermRangeTermEnum(reader, collator, field, lowerTerm,
+        upperTerm, includeLower, includeUpper);
   }
 
   /** Prints a user-readable version of this query. */
@@ -181,14 +145,11 @@ public class RangeQuery extends MultiTermQuery {
           buffer.append(":");
       }
       buffer.append(includeLower ? '[' : '{');
-      buffer.append(lowerTerm != null ? lowerTerm.text() : "*");
+      buffer.append(lowerTerm != null ? lowerTerm : "*");
       buffer.append(" TO ");
-      buffer.append(upperTerm != null ? upperTerm.text() : "*");
+      buffer.append(upperTerm != null ? upperTerm : "*");
       buffer.append(includeUpper ? ']' : '}');
-      if (getBoost() != 1.0f) {
-          buffer.append("^");
-          buffer.append(Float.toString(getBoost()));
-      }
+      buffer.append(ToStringUtils.boost(getBoost()));
       return buffer.toString();
   }
 
@@ -213,7 +174,7 @@ public class RangeQuery extends MultiTermQuery {
       return false;
     if (getClass() != obj.getClass())
       return false;
-    RangeQuery other = (RangeQuery) obj;
+    TermRangeQuery other = (TermRangeQuery) obj;
     if (collator == null) {
       if (other.collator != null)
         return false;

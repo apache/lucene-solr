@@ -31,9 +31,9 @@ import org.apache.lucene.document.NumericField; // for javadocs
  * even if the range itself changes. 
  * 
  * <p>This means that FieldCacheRangeFilter is much faster (sometimes more than 100x as fast) 
- * as building a {@link RangeFilter} (or {@link ConstantScoreRangeQuery} on a {@link RangeFilter})
+ * as building a {@link TermRangeFilter} (or {@link ConstantScoreRangeQuery} on a {@link TermRangeFilter})
  * for each query, if using a {@link #newStringRange}. However, if the range never changes it
- * is slower (around 2x as slow) than building a CachingWrapperFilter on top of a single RangeFilter.
+ * is slower (around 2x as slow) than building a CachingWrapperFilter on top of a single TermRangeFilter.
  *
  * For numeric data types, this filter may be significantly faster than {@link NumericRangeFilter}.
  * Furthermore, it does not need the numeric values encoded by {@link NumericField}. But

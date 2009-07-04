@@ -281,6 +281,12 @@ API Changes
     includes more detailed status than previously.  (Tim Smith via
     Mike McCandless)
 
+28. LUCENE-1713: Deprecated RangeQuery and RangeFilter and renamed
+    to TermRangeQuery and TermRangeFilter. TermRangeQuery is in
+    constant score rewrite mode by default. The new classes also have
+    new ctors taking field and term ranges as Strings (see also
+    LUCENE-1424).  (Uwe Schindler)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()
@@ -374,7 +380,7 @@ New features
     packaged as War file (Mark Harwood)    
 
  6. LUCENE-1424: Moved constant score query rewrite capability into
-    MultiTermQuery, allowing RangeQuery, PrefixQuery and WildcardQuery
+    MultiTermQuery, allowing TermRangeQuery, PrefixQuery and WildcardQuery
     to switch betwen constant-score rewriting or BooleanQuery
     expansion rewriting via a new setConstantScoreRewrite method.
     Deprecated ConstantScoreRangeQuery (Mark Miller via Mike

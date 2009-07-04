@@ -59,7 +59,7 @@ import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.RangeFilter;
+import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -484,7 +484,7 @@ public class HighlighterTest extends TestCase implements Formatter {
         numHighlights = 0;
         String queryString = FIELD_NAME + ":[kannedy TO kznnedy]";
 
-        // Need to explicitly set the QueryParser property to use RangeQuery
+        // Need to explicitly set the QueryParser property to use TermRangeQuery
         // rather
         // than RangeFilters
         QueryParser parser = new QueryParser(FIELD_NAME, new StandardAnalyzer());
@@ -701,7 +701,7 @@ public class HighlighterTest extends TestCase implements Formatter {
 
       public void run() throws Exception {
         numHighlights = 0;
-        RangeFilter rf = new RangeFilter("contents", "john", "john", true, true);
+        TermRangeFilter rf = new TermRangeFilter("contents", "john", "john", true, true);
         SpanQuery clauses[] = { new SpanTermQuery(new Term("contents", "john")),
             new SpanTermQuery(new Term("contents", "kennedy")), };
         SpanNearQuery snq = new SpanNearQuery(clauses, 1, true);
@@ -723,7 +723,7 @@ public class HighlighterTest extends TestCase implements Formatter {
 
       public void run() throws Exception {
         numHighlights = 0;
-        RangeFilter rf = new RangeFilter("contents", "john", "john", true, true);
+        TermRangeFilter rf = new TermRangeFilter("contents", "john", "john", true, true);
         PhraseQuery pq = new PhraseQuery();
         pq.add(new Term("contents", "john"));
         pq.add(new Term("contents", "kennedy"));

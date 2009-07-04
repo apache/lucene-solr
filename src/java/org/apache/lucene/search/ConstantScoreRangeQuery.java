@@ -29,31 +29,32 @@ import java.text.Collator;
  * Either or both endpoints may be open.  Open endpoints may not be exclusive
  * (you can't select all but the first or last term without explicitly specifying the term to exclude.)
  *
- * @deprecated Please use {@link RangeQuery}, and call
- * {@link RangeQuery#setConstantScoreRewrite}, instead.
+ * @deprecated Use {@link TermRangeQuery} for term ranges or
+ * {@link NumericRangeQuery} for numeric ranges instead.
+ * This class will be removed in Lucene 3.0.
  * @version $Id$
  */
-public class ConstantScoreRangeQuery extends RangeQuery
+public class ConstantScoreRangeQuery extends TermRangeQuery
 {
 
   public ConstantScoreRangeQuery(String fieldName, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper)
   {
     super(fieldName, lowerVal, upperVal, includeLower, includeUpper);
-    this.constantScoreRewrite = true;
+    setConstantScoreRewrite(true);
   }
 
   public ConstantScoreRangeQuery(String fieldName, String lowerVal,
                                  String upperVal, boolean includeLower,
                                  boolean includeUpper, Collator collator) {
     super(fieldName, lowerVal, upperVal, includeLower, includeUpper, collator);
-    this.constantScoreRewrite = true;
+    setConstantScoreRewrite(true);
   }
 
   public String getLowerVal() {
-    return getLowerTermText();
+    return getLowerTerm();
   }
 
   public String getUpperVal() {
-    return getUpperTermText();
+    return getUpperTerm();
   }
 }

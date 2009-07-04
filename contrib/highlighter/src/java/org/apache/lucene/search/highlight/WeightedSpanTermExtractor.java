@@ -45,7 +45,7 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.RangeQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -145,8 +145,8 @@ public class WeightedSpanTermExtractor {
         query = mtq;
       }
       String field;
-      if(mtq instanceof RangeQuery) {
-        field = ((RangeQuery)mtq).getField();
+      if(mtq instanceof TermRangeQuery) {
+        field = ((TermRangeQuery)mtq).getField();
       } else {
         field = mtq.getTerm().field();
       }
@@ -472,10 +472,10 @@ public class WeightedSpanTermExtractor {
   }
   
   private MultiTermQuery copyMultiTermQuery(MultiTermQuery query) {
-    if(query instanceof RangeQuery) {
-      RangeQuery q = (RangeQuery)query;
+    if(query instanceof TermRangeQuery) {
+      TermRangeQuery q = (TermRangeQuery)query;
       q.setBoost(query.getBoost());
-      return new RangeQuery(q.getField(), q.getLowerTermText(), q.getUpperTermText(), q.includesLower(), q.includesUpper());
+      return new TermRangeQuery(q.getField(), q.getLowerTerm(), q.getUpperTerm(), q.includesLower(), q.includesUpper());
     } else if(query instanceof WildcardQuery) {
       MultiTermQuery q = new WildcardQuery(query.getTerm());
       q.setBoost(query.getBoost());

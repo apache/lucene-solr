@@ -18,7 +18,7 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.RangeQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.util.NumericUtils; // for javadocs
 
@@ -33,7 +33,7 @@ import java.util.Calendar;   // for javadoc
  * which makes them suitable for use as field values and search terms.
  *
  * <P>Note that this class saves dates with millisecond granularity,
- * which is bad for {@link RangeQuery} and {@link PrefixQuery}, as those
+ * which is bad for {@link TermRangeQuery} and {@link PrefixQuery}, as those
  * queries are expanded to a BooleanQuery with a potentially large number
  * of terms when searching. Thus you might want to use
  * {@link DateTools} instead.

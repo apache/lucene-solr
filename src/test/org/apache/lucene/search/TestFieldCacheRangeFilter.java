@@ -30,7 +30,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.store.RAMDirectory;
 
 /**
- * A basic 'positive' Unit test class for the RangeFilter class.
+ * A basic 'positive' Unit test class for the FieldCacheRangeFilter class.
  *
  * <p>
  * NOTE: at the moment, this class only tests for 'positive' results,

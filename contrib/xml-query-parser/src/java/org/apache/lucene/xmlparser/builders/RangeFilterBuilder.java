@@ -4,7 +4,7 @@
 package org.apache.lucene.xmlparser.builders;
 
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.RangeFilter;
+import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.FilterBuilder;
 import org.apache.lucene.xmlparser.ParserException;
@@ -39,7 +39,7 @@ public class RangeFilterBuilder implements FilterBuilder {
 		String upperTerm=e.getAttribute("upperTerm");
 		boolean includeLower=DOMUtils.getAttribute(e,"includeLower",true);
 		boolean includeUpper=DOMUtils.getAttribute(e,"includeUpper",true);
-		return new RangeFilter(fieldName,lowerTerm,upperTerm,includeLower,includeUpper);
+		return new TermRangeFilter(fieldName,lowerTerm,upperTerm,includeLower,includeUpper);
 	}
 
 }

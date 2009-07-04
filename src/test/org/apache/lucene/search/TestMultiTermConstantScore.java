@@ -87,7 +87,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
 
   /** macro for readability */
   public static Query csrq(String f, String l, String h, boolean il, boolean ih) {
-    RangeQuery query = new RangeQuery(f, l, h, il, ih);
+    TermRangeQuery query = new TermRangeQuery(f, l, h, il, ih);
     query.setConstantScoreRewrite(true);
     return query;
   }
@@ -95,7 +95,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   /** macro for readability */
   public static Query csrq(String f, String l, String h, boolean il,
       boolean ih, Collator c) {
-    RangeQuery query = new RangeQuery(f, l, h, il, ih, c);
+    TermRangeQuery query = new TermRangeQuery(f, l, h, il, ih, c);
     query.setConstantScoreRewrite(true);
     return query;
   }
@@ -220,10 +220,10 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     IndexReader reader = IndexReader.open(small);
     IndexSearcher search = new IndexSearcher(reader);
 
-    // first do a regular RangeQuery which uses term expansion so
+    // first do a regular TermRangeQuery which uses term expansion so
     // docs with more terms in range get higher scores
 
-    Query rq = new RangeQuery(new Term("data", "1"), new Term("data", "4"), T);
+    Query rq = new TermRangeQuery("data", "1", "4", T, T);
 
     ScoreDoc[] expected = search.search(rq, null, 1000).scoreDocs;
     int numHits = expected.length;

@@ -36,7 +36,8 @@ import org.apache.lucene.index.IndexReader;
     <li> {@link PrefixQuery}
     <li> {@link MultiPhraseQuery}
     <li> {@link FuzzyQuery}
-    <li> {@link RangeQuery}
+    <li> {@link TermRangeQuery}
+    <li> {@link NumericRangeQuery}
     <li> {@link org.apache.lucene.search.spans.SpanQuery}
     </ul>
     <p>A parser for queries is contained in:
@@ -146,7 +147,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
    * correspondence with queries). This is an optimization of the OR of
    * all queries. We handle the common optimization cases of equal
    * queries and overlapping clauses of boolean OR queries (as generated
-   * by MultiTermQuery.rewrite() and RangeQuery.rewrite()).
+   * by MultiTermQuery.rewrite()).
    * Be careful overriding this method as queries[0] determines which
    * method will be called and is not necessarily of the same type as
    * the other queries.

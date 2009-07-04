@@ -30,7 +30,7 @@ import org.apache.lucene.index.Term;
  * Term enumerations are always ordered by Term.compareTo().  Each term in
  * the enumeration is greater than all that precede it.
  */
-public class RangeTermEnum extends FilteredTermEnum {
+public class TermRangeTermEnum extends FilteredTermEnum {
 
   private Collator collator = null;
   private boolean endEnum = false;
@@ -67,14 +67,14 @@ public class RangeTermEnum extends FilteredTermEnum {
    * 
    * @throws IOException
    */
-  public RangeTermEnum(IndexReader reader, Collator collator, String field,
+  public TermRangeTermEnum(IndexReader reader, Collator collator, String field,
       String lowerTermText, String upperTermText, boolean includeLower, boolean includeUpper) throws IOException {
     this.collator = collator;
     this.upperTermText = upperTermText;
     this.lowerTermText = lowerTermText;
     this.includeLower = includeLower;
     this.includeUpper = includeUpper;
-    this.field = field;
+    this.field = field.intern();
     
     // do a little bit of normalization...
     // open ended range queries should always be inclusive.
