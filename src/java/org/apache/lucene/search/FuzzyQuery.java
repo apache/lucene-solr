@@ -211,7 +211,7 @@ public class FuzzyQuery extends MultiTermQuery {
 
   public int hashCode() {
     final int prime = 31;
-    int result = 1;
+    int result = super.hashCode();
     result = prime * result + Float.floatToIntBits(minimumSimilarity);
     result = prime * result + prefixLength;
     result = prime * result + ((term == null) ? 0 : term.hashCode());
@@ -221,7 +221,7 @@ public class FuzzyQuery extends MultiTermQuery {
   public boolean equals(Object obj) {
     if (this == obj)
       return true;
-    if (obj == null)
+    if (!super.equals(obj))
       return false;
     if (getClass() != obj.getClass())
       return false;
