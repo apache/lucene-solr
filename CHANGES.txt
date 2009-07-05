@@ -349,6 +349,10 @@ Bug fixes
 16. LUCENE-1681: Fix infinite loop caused by a call to DocValues methods 
     getMinValue, getMaxValue, getAverageValue. (Simon Willnauer via Mark Miller)
 
+17. LUCENE-1599: Add clone support for SpanQuerys. SpanRegexQuery counts
+    on this functionality and does not work correctly without it.
+    (Mark Miller)
+
 New features
 
  1. LUCENE-1411: Added expert API to open an IndexWriter on a prior

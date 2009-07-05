@@ -31,7 +31,7 @@ import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.search.Query;
 
 /** Matches the union of its clauses.*/
-public class SpanOrQuery extends SpanQuery {
+public class SpanOrQuery extends SpanQuery implements Cloneable {
   private List clauses;
   private String field;
 
@@ -78,6 +78,18 @@ public class SpanOrQuery extends SpanQuery {
       SpanQuery clause = (SpanQuery)i.next();
       clause.extractTerms(terms);
     }
+  }
+  
+  public Object clone() {
+    int sz = clauses.size();
+    SpanQuery[] newClauses = new SpanQuery[sz];
+
+    for (int i = 0; i < sz; i++) {
+      SpanQuery clause = (SpanQuery) clauses.get(i);
+      newClauses[i] = (SpanQuery) clause.clone();
+    }
+    SpanOrQuery soq = new SpanOrQuery(newClauses);
+    return soq;
   }
 
   public Query rewrite(IndexReader reader) throws IOException {

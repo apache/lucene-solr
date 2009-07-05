@@ -33,7 +33,7 @@ import org.apache.lucene.util.ToStringUtils;
 /** Matches spans which are near one another.  One can specify <i>slop</i>, the
  * maximum number of intervening unmatched positions, as well as whether
  * matches are required to be in-order. */
-public class SpanNearQuery extends SpanQuery {
+public class SpanNearQuery extends SpanQuery implements Cloneable {
   private List clauses;
   private int slop;
   private boolean inOrder;
@@ -150,6 +150,17 @@ public class SpanNearQuery extends SpanQuery {
     } else {
       return this;                         // no clauses rewrote
     }
+  }
+  
+  public Object clone() {
+    int sz = clauses.size();
+    SpanQuery[] newClauses = new SpanQuery[sz];
+
+    for (int i = 0; i < sz; i++) {
+      SpanQuery clause = (SpanQuery) clauses.get(i);
+      newClauses[i] = (SpanQuery) clause.clone();
+    }
+    return new SpanNearQuery(newClauses, slop, inOrder);
   }
 
   /** Returns true iff <code>o</code> is equal to this. */

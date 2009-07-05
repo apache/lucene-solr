@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.Set;
 
 /** Removes matches which overlap with another SpanQuery. */
-public class SpanNotQuery extends SpanQuery {
+public class SpanNotQuery extends SpanQuery implements Cloneable {
   private SpanQuery include;
   private SpanQuery exclude;
 
@@ -68,6 +68,9 @@ public class SpanNotQuery extends SpanQuery {
     return buffer.toString();
   }
 
+  public Object clone() {
+    return  new SpanNotQuery((SpanQuery)include.clone(),(SpanQuery) exclude.clone());
+  }
 
   public Spans getSpans(final IndexReader reader) throws IOException {
     return new PayloadSpans() {
