@@ -89,6 +89,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
       newClauses[i] = (SpanQuery) clause.clone();
     }
     SpanOrQuery soq = new SpanOrQuery(newClauses);
+    soq.setBoost(getBoost());
     return soq;
   }
 

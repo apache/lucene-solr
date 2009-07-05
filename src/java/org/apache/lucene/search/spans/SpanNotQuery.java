@@ -69,7 +69,9 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
   }
 
   public Object clone() {
-    return  new SpanNotQuery((SpanQuery)include.clone(),(SpanQuery) exclude.clone());
+    SpanNotQuery spanNotQuery = new SpanNotQuery((SpanQuery)include.clone(),(SpanQuery) exclude.clone());
+    spanNotQuery.setBoost(getBoost());
+    return  spanNotQuery;
   }
 
   public Spans getSpans(final IndexReader reader) throws IOException {

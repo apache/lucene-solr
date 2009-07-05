@@ -28,7 +28,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ToStringUtils;
 
 /** Matches spans near the beginning of a field. */
-public class SpanFirstQuery extends SpanQuery {
+public class SpanFirstQuery extends SpanQuery implements Cloneable {
   private SpanQuery match;
   private int end;
 
@@ -62,6 +62,12 @@ public class SpanFirstQuery extends SpanQuery {
     buffer.append(")");
     buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
+  }
+  
+  public Object clone() {
+    SpanFirstQuery spanFirstQuery = new SpanFirstQuery((SpanQuery) match.clone(), end);
+    spanFirstQuery.setBoost(getBoost());
+    return spanFirstQuery;
   }
   
   public void extractTerms(Set terms) {

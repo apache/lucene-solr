@@ -160,7 +160,9 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       SpanQuery clause = (SpanQuery) clauses.get(i);
       newClauses[i] = (SpanQuery) clause.clone();
     }
-    return new SpanNearQuery(newClauses, slop, inOrder);
+    SpanNearQuery spanNearQuery = new SpanNearQuery(newClauses, slop, inOrder);
+    spanNearQuery.setBoost(getBoost());
+    return spanNearQuery;
   }
 
   /** Returns true iff <code>o</code> is equal to this. */
