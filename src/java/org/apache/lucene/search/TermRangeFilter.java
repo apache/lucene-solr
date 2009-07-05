@@ -85,4 +85,22 @@ public class TermRangeFilter extends MultiTermQueryWrapperFilter {
   public static TermRangeFilter More(String fieldName, String lowerTerm) {
       return new TermRangeFilter(fieldName, lowerTerm, null, true, false);
   }
+
+  /** Returns the field name for this filter */
+  public String getField() { return ((TermRangeQuery) query).getField(); }
+  
+  /** Returns the lower value of this range filter */
+  public String getLowerTerm() { return ((TermRangeQuery) query).getLowerTerm(); }
+
+  /** Returns the upper value of this range filter */
+  public String getUpperTerm() { return ((TermRangeQuery) query).getUpperTerm(); }
+  
+  /** Returns <code>true</code> if the lower endpoint is inclusive */
+  public boolean includesLower() { return ((TermRangeQuery) query).includesLower(); }
+  
+  /** Returns <code>true</code> if the upper endpoint is inclusive */
+  public boolean includesUpper() { return ((TermRangeQuery) query).includesUpper(); }
+
+  /** Returns the collator used to determine range inclusion, if any. */
+  public Collator getCollator() { return ((TermRangeQuery) query).getCollator(); }
 }

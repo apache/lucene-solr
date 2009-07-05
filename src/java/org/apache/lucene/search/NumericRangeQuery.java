@@ -227,7 +227,8 @@ public final class NumericRangeQuery extends MultiTermQuery {
   //@Override
   public final boolean equals(final Object o) {
     if (o==this) return true;
-    if (o==null) return false;
+    if (!super.equals(o))
+      return false;
     if (o instanceof NumericRangeQuery) {
       final NumericRangeQuery q=(NumericRangeQuery)o;
       return (
@@ -236,8 +237,7 @@ public final class NumericRangeQuery extends MultiTermQuery {
         (q.max == null ? max == null : q.max.equals(max)) &&
         minInclusive == q.minInclusive &&
         maxInclusive == q.maxInclusive &&
-        precisionStep == q.precisionStep &&
-        getBoost() == q.getBoost()
+        precisionStep == q.precisionStep
       );
     }
     return false;
@@ -245,11 +245,11 @@ public final class NumericRangeQuery extends MultiTermQuery {
 
   //@Override
   public final int hashCode() {
-    int hash = Float.floatToIntBits(getBoost()) ^ field.hashCode();
-    hash += precisionStep^0x64365465;
+    int hash = super.hashCode();
+    hash += field.hashCode()^0x4565fd66 + precisionStep^0x64365465;
     if (min != null) hash += min.hashCode()^0x14fa55fb;
     if (max != null) hash += max.hashCode()^0x733fa5fe;
-    return hash+
+    return hash +
       (Boolean.valueOf(minInclusive).hashCode()^0x14fa55fb)+
       (Boolean.valueOf(maxInclusive).hashCode()^0x733fa5fe);
   }

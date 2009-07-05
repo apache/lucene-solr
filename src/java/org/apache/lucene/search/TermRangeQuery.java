@@ -113,9 +113,7 @@ public class TermRangeQuery extends MultiTermQuery {
   }
 
   /** Returns the field name for this query */
-  public String getField() {
-    return field;
-  }
+  public String getField() { return field; }
   
   /** Returns the lower value of this range query */
   public String getLowerTerm() { return lowerTerm; }
@@ -133,8 +131,8 @@ public class TermRangeQuery extends MultiTermQuery {
   public Collator getCollator() { return collator; }
   
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
-    return new TermRangeTermEnum(reader, collator, field, lowerTerm,
-        upperTerm, includeLower, includeUpper);
+    return new TermRangeTermEnum(reader, field, lowerTerm,
+        upperTerm, includeLower, includeUpper, collator);
   }
 
   /** Prints a user-readable version of this query. */

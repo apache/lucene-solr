@@ -50,10 +50,6 @@ public class TermRangeTermEnum extends FilteredTermEnum {
    * explicitly specifying the term to exclude.)
    * 
    * @param reader
-   * @param collator
-   *          The collator to use to collate index Terms, to determine their
-   *          membership in the range bounded by <code>lowerTerm</code> and
-   *          <code>upperTerm</code>.
    * @param field
    *          An interned field that holds both lower and upper terms.
    * @param lowerTermText
@@ -64,11 +60,15 @@ public class TermRangeTermEnum extends FilteredTermEnum {
    *          If true, the <code>lowerTerm</code> is included in the range.
    * @param includeUpper
    *          If true, the <code>upperTerm</code> is included in the range.
+   * @param collator
+   *          The collator to use to collate index Terms, to determine their
+   *          membership in the range bounded by <code>lowerTerm</code> and
+   *          <code>upperTerm</code>.
    * 
    * @throws IOException
    */
-  public TermRangeTermEnum(IndexReader reader, Collator collator, String field,
-      String lowerTermText, String upperTermText, boolean includeLower, boolean includeUpper) throws IOException {
+  public TermRangeTermEnum(IndexReader reader, String field, String lowerTermText, String upperTermText, 
+    boolean includeLower, boolean includeUpper, Collator collator) throws IOException {
     this.collator = collator;
     this.upperTermText = upperTermText;
     this.lowerTermText = lowerTermText;
