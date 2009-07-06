@@ -47,10 +47,11 @@ import org.apache.lucene.benchmark.byTask.utils.StringBufferReader;
  * (<b>default=trec</b>).
  * <li><b>html.parser</b> - specifies the {@link HTMLParser} class to use for
  * parsing the TREC documents content (<b>default=DemoHTMLParser</b>).
+ * <li><b>content.source.encoding</b> - if not specified, ISO-8859-1 is used.
  * </ul>
  */
 public class TrecContentSource extends ContentSource {
-  // TODO (3.0): change StringBuffer to StringBuffer
+  // TODO (3.0): change StringBuffer to StringBuilder
 
   private static final class DateFormatInfo {
     DateFormat[] dfs;
@@ -181,8 +182,8 @@ public class TrecContentSource extends ContentSource {
         System.out.println("opening: " + f + " length: " + f.length());
       }
       try {
-        GZIPInputStream zis = new GZIPInputStream(new FileInputStream(f), 1 << 16);
-        reader = new BufferedReader(new InputStreamReader(zis), 1 << 16);
+        GZIPInputStream zis = new GZIPInputStream(new FileInputStream(f), BUFFER_SIZE);
+        reader = new BufferedReader(new InputStreamReader(zis, encoding), BUFFER_SIZE);
         return;
       } catch (Exception e) {
         retries++;
@@ -333,6 +334,9 @@ public class TrecContentSource extends ContentSource {
     } catch (Exception e) {
       // Should not get here. Throw runtime exception.
       throw new RuntimeException(e);
+    }
+    if (encoding == null) {
+      encoding = "ISO-8859-1";
     }
   }
 

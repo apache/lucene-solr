@@ -34,9 +34,9 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 /**
  * Represents content from a specified source, such as TREC, Reuters etc. A
  * {@link ContentSource} is responsible for creating {@link DocData} objects for
- * its documents to be consumed by {@link ToDeleteDocMaker}. It also keeps track of
- * various statistics, such as how many documents were generated, size in bytes
- * etc.
+ * its documents to be consumed by {@link ToDeleteDocMaker}. It also keeps track
+ * of various statistics, such as how many documents were generated, size in
+ * bytes etc.
  * <p>
  * Supports the following configuration parameters:
  * <ul>
@@ -44,6 +44,9 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
  * forever (<b>default=true</b>).
  * <li><b>content.source.verbose</b> - specifies whether messages should be
  * output by the content source (<b>default=false</b>).
+ * <li><b>content.source.encoding</b> - specifies which encoding to use when
+ * reading the files of that content source. Certain implementations may define
+ * a default value if this parameter is not specified. (<b>default=null</b>).
  * <li><b>content.source.log.step</b> - specifies for how many documents a
  * message should be logged. If set to 0 it means no logging should occur.
  * <b>NOTE:</b> if verbose is set to false, logging should not occur even if
@@ -71,6 +74,7 @@ public abstract class ContentSource {
   protected boolean forever;
   protected int logStep;
   protected boolean verbose;
+  protected String encoding;
   
   private CompressorStreamFactory csFactory = new CompressorStreamFactory();
 
@@ -196,6 +200,7 @@ public abstract class ContentSource {
     forever = config.get("content.source.forever", true);
     logStep = config.get("content.source.log.step", 0);
     verbose = config.get("content.source.verbose", false);
+    encoding = config.get("content.source.encoding", null);
   }
 
 }

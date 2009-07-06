@@ -39,6 +39,7 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
  * Config properties:
  * <ul>
  * <li>docs.file=&lt;path to the file&gt;
+ * <li>content.source.encoding - default to UTF-8.
  * </ul>
  */
 public class LineDocSource extends ContentSource {
@@ -54,7 +55,7 @@ public class LineDocSource extends ContentSource {
         reader.close();
       }
       InputStream is = getInputStream(file);
-      reader = new BufferedReader(new InputStreamReader(is, "UTF-8"), BUFFER_SIZE);
+      reader = new BufferedReader(new InputStreamReader(is, encoding), BUFFER_SIZE);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -111,6 +112,9 @@ public class LineDocSource extends ContentSource {
       throw new IllegalArgumentException("docs.file must be set");
     }
     file = new File(fileName).getAbsoluteFile();
+    if (encoding == null) {
+      encoding = "UTF-8";
+    }
   }
 
 }

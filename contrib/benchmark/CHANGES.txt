@@ -4,6 +4,12 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+7/6/2009
+  LUCENE-1730: Fix TrecContentSource to use ISO-8859-1 when reading the TREC files, 
+  unless a different encoding is specified. Additionally, ContentSource now supports 
+  a content.source.encoding parameter in the configuration file. 
+  (Shai Erera via Mark Miller)
+
 6/26/2009
   LUCENE-1716: Added the following support: 
   doc.tokenized.norms: specifies whether to store norms

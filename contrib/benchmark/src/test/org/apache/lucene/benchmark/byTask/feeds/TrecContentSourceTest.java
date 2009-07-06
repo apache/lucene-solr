@@ -40,7 +40,7 @@ public class TrecContentSourceTest extends TestCase {
       this.forever = forever;
     }
     
-    protected void openNextFile() throws NoMoreDataException, IOException {
+    void openNextFile() throws NoMoreDataException, IOException {
       if (reader != null) {
         if (!forever) {
           throw new NoMoreDataException();
