@@ -62,7 +62,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  *  Field field = new Field(name, stream);
  *  field.setOmitNorms(true);
  *  field.setOmitTermFreqAndPositions(true);
- *  Document doc = new Document();
+ *  Document document = new Document();
  *  document.add(field);
  *  <em>// use this code to index many documents:</em>
  *  stream.set<em>???</em>Value(value1)

@@ -42,14 +42,14 @@ import org.apache.lucene.index.Term;
  * For code examples see {@link NumericField}.
  *
  * <h4>Searching</h4>
- * <p>This class has no constructor, you can create filters depending on the data type
+ * <p>This class has no constructor, you can create queries depending on the data type
  * by using the static factories {@linkplain #newLongRange NumericRangeQuery.newLongRange()},
  * {@linkplain #newIntRange NumericRangeQuery.newIntRange()}, {@linkplain #newDoubleRange NumericRangeQuery.newDoubleRange()},
  * and {@linkplain #newFloatRange NumericRangeQuery.newFloatRange()}, e.g.:
  * <pre>
- * Filter f = NumericRangeQuery.newFloatRange(field, <a href="#precisionStepDesc">precisionStep</a>,
- *                                            new Float(0.3f), new Float(0.10f),
- *                                            true, true);
+ * Query q = NumericRangeQuery.newFloatRange(field, <a href="#precisionStepDesc">precisionStep</a>,
+ *                                           new Float(0.3f), new Float(0.10f),
+ *                                           true, true);
  * </pre>
  *
  * <h3>How it works</h3>

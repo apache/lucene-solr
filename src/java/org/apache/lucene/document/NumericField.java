@@ -50,12 +50,12 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * <pre>
  *  <em>// init</em>
  *  NumericField field = new NumericField(name, precisionStep, Field.Store.XXX, true);
- *  Document doc = new Document();
+ *  Document document = new Document();
  *  document.add(field);
  *  <em>// use this code to index many documents:</em>
- *  stream.set<em>???</em>Value(value1)
+ *  field.set<em>???</em>Value(value1)
  *  writer.addDocument(document);
- *  stream.set<em>???</em>Value(value2)
+ *  field.set<em>???</em>Value(value2)
  *  writer.addDocument(document);
  *  ...
  * </pre>
