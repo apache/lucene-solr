@@ -521,6 +521,12 @@ New features
     All standard parsers now also implement Serializable and enforce
     their singleton status.  (Uwe Schindler, Mike McCandless)
     
+31. LUCENE-1486: Added ComplexPhraseQueryParser, an extension of QueryParser 
+    that allows a subset of the Lucene query language to be embedded in
+    PhraseQuerys. Wildcard, Range, and Fuzzy queries, as well as limited 
+    boolean logic, can be used within quote operators with this parser, ie: 
+    "(jo* -john) smyth~". (Mark Harwood via Mark Miller)
+    
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing
