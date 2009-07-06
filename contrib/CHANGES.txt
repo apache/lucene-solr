@@ -61,6 +61,10 @@ New features
  
  6. LUCENE-1578: Support for loading unoptimized readers to the
     constructor of InstantiatedIndex. (Karl Wettin)
+
+ 7. LUCENE-1704: Allow specifying the Tidy configuration file when
+    parsing HTML docs with contrib/ant.  (Keith Sprochi via Mike
+    McCandless)
  
 Optimizations
 
