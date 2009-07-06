@@ -235,11 +235,11 @@ public class EnwikiContentSource extends ContentSource {
                                   "SEP", "OCT", "NOV", "DEC"};
 
   static {
-    ELEMENTS.put("page", Integer.valueOf(PAGE));
-    ELEMENTS.put("text", Integer.valueOf(BODY));
-    ELEMENTS.put("timestamp", Integer.valueOf(DATE));
-    ELEMENTS.put("title", Integer.valueOf(TITLE));
-    ELEMENTS.put("id", Integer.valueOf(ID));
+    ELEMENTS.put("page", new Integer(PAGE));
+    ELEMENTS.put("text", new Integer(BODY));
+    ELEMENTS.put("timestamp", new Integer(DATE));
+    ELEMENTS.put("title", new Integer(TITLE));
+    ELEMENTS.put("id", new Integer(ID));
   }
   
   /**

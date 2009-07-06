@@ -59,8 +59,8 @@ public abstract class ContentSource {
   private static final int OTHER = 1;
   private static final Map extensionToType = new HashMap();
   static {
-    extensionToType.put(".bz2", Integer.valueOf(BZIP));
-    extensionToType.put(".bzip", Integer.valueOf(BZIP));
+    extensionToType.put(".bz2", new Integer(BZIP));
+    extensionToType.put(".bzip", new Integer(BZIP));
   }
   
   protected static final int BUFFER_SIZE = 1 << 16; // 64K
