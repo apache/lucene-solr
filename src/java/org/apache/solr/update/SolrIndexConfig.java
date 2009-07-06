@@ -20,6 +20,8 @@ package org.apache.solr.update;
 import org.apache.solr.core.SolrConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 //
 // For performance reasons, we don't want to re-read
@@ -30,6 +32,8 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
  * @version $Id$
  */
 public class SolrIndexConfig {
+  public static final Logger log = LoggerFactory.getLogger(SolrIndexConfig.class);
+  
   public static final String defaultsName ="indexDefaults";
   public static final String DEFAULT_MERGE_POLICY_CLASSNAME = LogByteSizeMergePolicy.class.getName();
   public static final String DEFAULT_MERGE_SCHEDULER_CLASSNAME = ConcurrentMergeScheduler.class.getName();
@@ -65,6 +69,8 @@ public class SolrIndexConfig {
   public final String mergePolicyClassName;
   public final String mergeSchedulerClassname;
   public final boolean luceneAutoCommit;
+  
+  public String infoStreamFile = null;
 
   public SolrIndexConfig(SolrConfig solrConfig, String prefix, SolrIndexConfig def)  {
     if (prefix == null)
@@ -84,5 +90,12 @@ public class SolrIndexConfig {
     mergePolicyClassName = solrConfig.get(prefix + "/mergePolicy", def.mergePolicyClassName);
     mergeSchedulerClassname = solrConfig.get(prefix + "/mergeScheduler", def.mergeSchedulerClassname);
     luceneAutoCommit = solrConfig.getBool(prefix + "/luceneAutoCommit", def.luceneAutoCommit);
+    
+    boolean infoStreamEnabled = solrConfig.getBool(prefix + "/infoStream", false);
+    if(infoStreamEnabled) {
+      infoStreamFile= solrConfig.get(prefix + "/infoStream/@file", null);
+      log.info("IndexWriter infoStream debug log is enabled: " + infoStreamFile);
+    }
+
   }
 }

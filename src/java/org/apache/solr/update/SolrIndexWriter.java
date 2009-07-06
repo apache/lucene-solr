@@ -27,7 +27,14 @@ import org.apache.solr.schema.IndexSchema;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.text.DateFormat;
+import java.util.Date;
 
 /**
  * An IndexWriter that is configured via Solr config mechanisms.
@@ -42,6 +49,8 @@ public class SolrIndexWriter extends IndexWriter {
 
   String name;
   IndexSchema schema;
+
+  private PrintStream infoStream;
 
   private void init(String name, IndexSchema schema, SolrIndexConfig config) throws IOException {
     log.debug("Opened Writer " + name);
@@ -73,6 +82,14 @@ public class SolrIndexWriter extends IndexWriter {
         setMergeScheduler(scheduler);
       }
 
+      String infoStreamFile = config.infoStreamFile;
+      if (infoStreamFile != null) {
+        File f = new File(infoStreamFile);
+        f.getParentFile().mkdirs();
+        FileOutputStream fos = new FileOutputStream(f, true);
+        infoStream = new TimeLoggingPrintStream(fos, true);
+        setInfoStream(infoStream);
+      }
       //if (config.commitLockTimeout != -1) setWriteLockTimeout(config.commitLockTimeout);
     }
 
@@ -196,6 +213,9 @@ public class SolrIndexWriter extends IndexWriter {
   public void close() throws IOException {
     log.debug("Closing Writer " + name);
     super.close();
+    if(infoStream != null) {
+      infoStream.close();
+    }
   }
 
   @Override
@@ -206,6 +226,24 @@ public class SolrIndexWriter extends IndexWriter {
       super.finalize();
     }
     
+  }
+  
+  // Helper class for adding timestamps to infoStream logging
+  class TimeLoggingPrintStream extends PrintStream {
+    private DateFormat dateFormat;
+    public TimeLoggingPrintStream(OutputStream underlyingOutputStream,
+        boolean autoFlush) {
+      super(underlyingOutputStream, autoFlush);
+      this.dateFormat = DateFormat.getDateTimeInstance();
+    }
+
+    // We might ideally want to override print(String) as well, but
+    // looking through the code that writes to infoStream, it appears
+    // that all the classes except CheckIndex just use println.
+    public void println(String x) {
+      print(dateFormat.format(new Date()) + " ");
+      super.println(x);
+    }
   }
 
 }
