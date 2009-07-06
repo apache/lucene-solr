@@ -50,8 +50,8 @@ public class TestRussianStem extends TestCase
         BufferedReader inWords =
             new BufferedReader(
                 new InputStreamReader(
-                    new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/wordsUnicode.txt")),
-                    "Unicode"));
+                    new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/wordsUTF8.txt")),
+                    "UTF-8"));
         while ((str = inWords.readLine()) != null)
         {
             words.add(str);
@@ -62,8 +62,8 @@ public class TestRussianStem extends TestCase
         BufferedReader inStems =
             new BufferedReader(
                 new InputStreamReader(
-                    new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/stemsUnicode.txt")),
-                    "Unicode"));
+                    new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/stemsUTF8.txt")),
+                    "UTF-8"));
         while ((str = inStems.readLine()) != null)
         {
             stems.add(str);

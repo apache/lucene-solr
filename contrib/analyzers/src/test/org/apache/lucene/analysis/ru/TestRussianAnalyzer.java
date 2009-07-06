@@ -62,13 +62,13 @@ public class TestRussianAnalyzer extends TestCase
         RussianAnalyzer ra = new RussianAnalyzer(RussianCharsets.UnicodeRussian);
         inWords =
             new InputStreamReader(
-                new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/testUnicode.txt")),
-                "Unicode");
+                new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/testUTF8.txt")),
+                "UTF-8");
 
         sampleUnicode =
             new InputStreamReader(
-                new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/resUnicode.htm")),
-                "Unicode");
+                new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/resUTF8.htm")),
+                "UTF-8");
 
         TokenStream in = ra.tokenStream("all", inWords);
 
