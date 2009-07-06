@@ -34,6 +34,7 @@ import org.apache.lucene.util.ToStringUtils;
  * <p>This query is in constant score mode per default.
  * See {@link MultiTermQuery#setConstantScoreRewrite} for the tradeoffs between
  * enabling and disabling constantScoreRewrite mode.
+ * @since 2.9
  */
 
 public class TermRangeQuery extends MultiTermQuery {
@@ -109,7 +110,7 @@ public class TermRangeQuery extends MultiTermQuery {
     this.includeLower = includeLower;
     this.includeUpper = includeUpper;
     this.collator = collator;
-    setConstantScoreRewrite(true);
+    this.constantScoreRewrite = true;
   }
 
   /** Returns the field name for this query */

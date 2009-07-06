@@ -21,13 +21,17 @@ import java.text.Collator;
 
 /**
  * A range query that returns a constant score equal to its boost for
- * all documents in the range.
- * <p>
- * It does not have an upper bound on the number of clauses covered in the range.
- * <p>
- * If an endpoint is null, it is said to be "open".
- * Either or both endpoints may be open.  Open endpoints may not be exclusive
- * (you can't select all but the first or last term without explicitly specifying the term to exclude.)
+ * all documents in the exclusive range of terms.
+ *
+ * <p>It does not have an upper bound on the number of clauses covered in the range.
+ *
+ * <p>This query matches the documents looking for terms that fall into the
+ * supplied range according to {@link String#compareTo(String)}. It is not intended
+ * for numerical ranges, use {@link NumericRangeQuery} instead.
+ *
+ * <p>This query is in
+ * {@linkplain MultiTermQuery#setConstantScoreRewrite(boolean) constant score rewrite mode}.
+ * If you want to change this, use the new {@link TermRangeQuery} instead.
  *
  * @deprecated Use {@link TermRangeQuery} for term ranges or
  * {@link NumericRangeQuery} for numeric ranges instead.
@@ -40,14 +44,14 @@ public class ConstantScoreRangeQuery extends TermRangeQuery
   public ConstantScoreRangeQuery(String fieldName, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper)
   {
     super(fieldName, lowerVal, upperVal, includeLower, includeUpper);
-    setConstantScoreRewrite(true);
+    this.constantScoreRewrite = true;
   }
 
   public ConstantScoreRangeQuery(String fieldName, String lowerVal,
                                  String upperVal, boolean includeLower,
                                  boolean includeUpper, Collator collator) {
     super(fieldName, lowerVal, upperVal, includeLower, includeUpper, collator);
-    setConstantScoreRewrite(true);
+    this.constantScoreRewrite = true;
   }
 
   public String getLowerVal() {
@@ -56,5 +60,11 @@ public class ConstantScoreRangeQuery extends TermRangeQuery
 
   public String getUpperVal() {
     return getUpperTerm();
+  }
+
+  /** Changes of mode are not supported by this class (fixed to constant score rewrite mode) */
+  public void setConstantScoreRewrite(boolean constantScoreRewrite) {
+    if (!constantScoreRewrite)
+      throw new UnsupportedOperationException("Use TermRangeQuery instead to enable boolean query rewrite.");
   }
 }

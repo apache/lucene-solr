@@ -29,6 +29,7 @@ import java.text.Collator;
  *
  * <p>If you construct a large number of range filters with different ranges but on the 
  * same field, {@link FieldCacheRangeFilter} may have significantly better performance. 
+ * @since 2.9
  */
 public class TermRangeFilter extends MultiTermQueryWrapperFilter {
     
