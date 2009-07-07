@@ -108,10 +108,10 @@ public class SolrWriter {
       String filePath = configDir;
       if (configDir != null && !configDir.endsWith(File.separator))
         filePath += File.separator;
-      filePath += SolrWriter.IMPORTER_PROPERTIES;
+      filePath += persistFilename;
       propOutput = new FileOutputStream(filePath);
       props.store(propOutput, null);
-      log.info("Wrote last indexed time to " + SolrWriter.IMPORTER_PROPERTIES);
+      log.info("Wrote last indexed time to " + persistFilename);
     } catch (FileNotFoundException e) {
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
               "Unable to persist Index Start Time", e);
