@@ -127,6 +127,9 @@ Changes in runtime behavior
     is failing to close reader/writers.  (Brian Groose via Mike
     McCandless)
 
+ 9. LUCENE-1717: Fixed IndexWriter to account for RAM usage of
+    buffered deletions.  (Mike McCandless)
+
 API Changes
 
 1. LUCENE-1419: Add expert API to set custom indexing chain. This API is 

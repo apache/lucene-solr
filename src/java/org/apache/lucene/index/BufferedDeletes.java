@@ -35,6 +35,7 @@ class BufferedDeletes {
   HashMap terms = new HashMap();
   HashMap queries = new HashMap();
   List docIDs = new ArrayList();
+  long bytesUsed;
 
   // Number of documents a delete term applies to.
   final static class Num {
@@ -60,17 +61,21 @@ class BufferedDeletes {
     }
   }
 
-
+  int size() {
+    // We use numTerms not terms.size() intentionally, so
+    // that deletes by the same term multiple times "count",
+    // ie if you ask to flush every 1000 deletes then even
+    // dup'd terms are counted towards that 1000
+    return numTerms + queries.size() + docIDs.size();
+  }
 
   void update(BufferedDeletes in) {
     numTerms += in.numTerms;
+    bytesUsed += in.bytesUsed;
     terms.putAll(in.terms);
     queries.putAll(in.queries);
     docIDs.addAll(in.docIDs);
-    in.terms.clear();
-    in.numTerms = 0;
-    in.queries.clear();
-    in.docIDs.clear();
+    in.clear();
   }
     
   void clear() {
@@ -78,6 +83,11 @@ class BufferedDeletes {
     queries.clear();
     docIDs.clear();
     numTerms = 0;
+    bytesUsed = 0;
+  }
+
+  void addBytesUsed(long b) {
+    bytesUsed += b;
   }
 
   boolean any() {

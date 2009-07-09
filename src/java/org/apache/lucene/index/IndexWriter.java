@@ -1729,17 +1729,28 @@ public class IndexWriter {
   }
 
   /** Determines the amount of RAM that may be used for
-   * buffering added documents before they are flushed as a
-   * new Segment.  Generally for faster indexing performance
-   * it's best to flush by RAM usage instead of document
-   * count and use as large a RAM buffer as you can.
+   * buffering added documents and deletions before they are
+   * flushed to the Directory.  Generally for faster
+   * indexing performance it's best to flush by RAM usage
+   * instead of document count and use as large a RAM buffer
+   * as you can.
    *
    * <p>When this is set, the writer will flush whenever
-   * buffered documents use this much RAM.  Pass in {@link
-   * #DISABLE_AUTO_FLUSH} to prevent triggering a flush due
-   * to RAM usage.  Note that if flushing by document count
-   * is also enabled, then the flush will be triggered by
-   * whichever comes first.</p>
+   * buffered documents and deletions use this much RAM.
+   * Pass in {@link #DISABLE_AUTO_FLUSH} to prevent
+   * triggering a flush due to RAM usage.  Note that if
+   * flushing by document count is also enabled, then the
+   * flush will be triggered by whichever comes first.</p>
+   *
+   * <p> <b>NOTE</b>: the account of RAM usage for pending
+   * deletions is only approximate.  Specifically, if you
+   * delete by Query, Lucene currently has no way to measure
+   * the RAM usage if individual Queries so the accounting
+   * will under-estimate and you should compensate by either
+   * calling commit() periodically yourself, or by using
+   * {@link #setMaxBufferedDeleteTerms} to flush by count
+   * instead of RAM usage (each buffered delete Query counts
+   * as one).
    *
    * <p> The default value is {@link #DEFAULT_RAM_BUFFER_SIZE_MB}.</p>
    * 
@@ -4089,7 +4100,10 @@ public class IndexWriter {
 
     flushCount++;
 
-    flushDeletes |= docWriter.deletesFull();
+    // If we are flushing because too many deletes
+    // accumulated, then we should apply the deletes to free
+    // RAM:
+    flushDeletes |= docWriter.doApplyDeletes();
 
     // When autoCommit=true we must always flush deletes
     // when flushing a segment; otherwise deletes may become

@@ -38,6 +38,7 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Constants;
 
 /**
  * This class accepts multiple added documents and directly
@@ -887,8 +888,25 @@ final class DocumentsWriter {
   }
 
   synchronized boolean deletesFull() {
-    return maxBufferedDeleteTerms != IndexWriter.DISABLE_AUTO_FLUSH
-      && ((deletesInRAM.numTerms + deletesInRAM.queries.size() + deletesInRAM.docIDs.size()) >= maxBufferedDeleteTerms);
+    return (ramBufferSize != IndexWriter.DISABLE_AUTO_FLUSH &&
+            (deletesInRAM.bytesUsed + deletesFlushed.bytesUsed + numBytesUsed) >= ramBufferSize) ||
+      (maxBufferedDeleteTerms != IndexWriter.DISABLE_AUTO_FLUSH &&
+       ((deletesInRAM.size() + deletesFlushed.size()) >= maxBufferedDeleteTerms));
+  }
+
+  synchronized boolean doApplyDeletes() {
+    // Very similar to deletesFull(), except we don't count
+    // numBytesAlloc, because we are checking whether
+    // deletes (alone) are consuming too many resources now
+    // and thus should be applied.  We apply deletes if RAM
+    // usage is > 1/2 of our allowed RAM buffer, to prevent
+    // too-frequent flushing of a long tail of tiny segments
+    // when merges (which always apply deletes) are
+    // infrequent.
+    return (ramBufferSize != IndexWriter.DISABLE_AUTO_FLUSH &&
+            (deletesInRAM.bytesUsed + deletesFlushed.bytesUsed) >= ramBufferSize/2) ||
+      (maxBufferedDeleteTerms != IndexWriter.DISABLE_AUTO_FLUSH &&
+       ((deletesInRAM.size() + deletesFlushed.size()) >= maxBufferedDeleteTerms));
   }
 
   synchronized private boolean timeToFlushDeletes() {
@@ -1015,20 +1033,24 @@ final class DocumentsWriter {
     else
       num.setNum(docIDUpto);
     deletesInRAM.numTerms++;
+
+    deletesInRAM.addBytesUsed(BYTES_PER_DEL_TERM + term.text.length()*CHAR_NUM_BYTE);
   }
 
   // Buffer a specific docID for deletion.  Currently only
   // used when we hit a exception when adding a document
   synchronized private void addDeleteDocID(int docID) {
     deletesInRAM.docIDs.add(new Integer(flushedDocCount+docID));
+    deletesInRAM.addBytesUsed(BYTES_PER_DEL_DOCID);
   }
 
   synchronized private void addDeleteQuery(Query query, int docID) {
     deletesInRAM.queries.put(query, new Integer(flushedDocCount + docID));
+    deletesInRAM.addBytesUsed(BYTES_PER_DEL_QUERY);
   }
 
   synchronized boolean doBalanceRAM() {
-    return ramBufferSize != IndexWriter.DISABLE_AUTO_FLUSH && !bufferIsFull && (numBytesUsed >= ramBufferSize || numBytesAlloc >= freeTrigger);
+    return ramBufferSize != IndexWriter.DISABLE_AUTO_FLUSH && !bufferIsFull && (numBytesUsed+deletesInRAM.bytesUsed+deletesFlushed.bytesUsed >= ramBufferSize || numBytesAlloc >= freeTrigger);
   }
 
   /** Does the synchronized work to finish/flush the
@@ -1043,7 +1065,6 @@ final class DocumentsWriter {
     synchronized(this) {
 
       assert docWriter == null || docWriter.docID == perThread.docState.docID;
-
 
       if (aborting) {
 
@@ -1109,7 +1130,7 @@ final class DocumentsWriter {
   final SkipDocWriter skipDocWriter = new SkipDocWriter();
 
   long getRAMUsed() {
-    return numBytesUsed;
+    return numBytesUsed + deletesInRAM.bytesUsed + deletesFlushed.bytesUsed;
   }
 
   long numBytesAlloc;
@@ -1137,9 +1158,33 @@ final class DocumentsWriter {
 
   // Coarse estimates used to measure RAM usage of buffered deletes
   final static int OBJECT_HEADER_BYTES = 8;
-  final static int POINTER_NUM_BYTE = 4;
+  final static int POINTER_NUM_BYTE = Constants.JRE_IS_64BIT ? 8 : 4;
   final static int INT_NUM_BYTE = 4;
   final static int CHAR_NUM_BYTE = 2;
+
+  /* Rough logic: HashMap has an array[Entry] w/ varying
+     load factor (say 2 * POINTER).  Entry is object w/ Term
+     key, BufferedDeletes.Num val, int hash, Entry next
+     (OBJ_HEADER + 3*POINTER + INT).  Term is object w/
+     String field and String text (OBJ_HEADER + 2*POINTER).
+     We don't count Term's field since it's interned.
+     Term's text is String (OBJ_HEADER + 4*INT + POINTER +
+     OBJ_HEADER + string.length*CHAR).  BufferedDeletes.num is
+     OBJ_HEADER + INT. */
+ 
+  final static int BYTES_PER_DEL_TERM = 8*POINTER_NUM_BYTE + 5*OBJECT_HEADER_BYTES + 6*INT_NUM_BYTE;
+
+  /* Rough logic: del docIDs are List<Integer>.  Say list
+     allocates ~2X size (2*POINTER).  Integer is OBJ_HEADER
+     + int */
+  final static int BYTES_PER_DEL_DOCID = 2*POINTER_NUM_BYTE + OBJECT_HEADER_BYTES + INT_NUM_BYTE;
+
+  /* Rough logic: HashMap has an array[Entry] w/ varying
+     load factor (say 2 * POINTER).  Entry is object w/
+     Query key, Integer val, int hash, Entry next
+     (OBJ_HEADER + 3*POINTER + INT).  Query we often
+     undercount (say 24 bytes).  Integer is OBJ_HEADER + INT. */
+  final static int BYTES_PER_DEL_QUERY = 5*POINTER_NUM_BYTE + 2*OBJECT_HEADER_BYTES + 2*INT_NUM_BYTE + 24;
 
   /* Initial chunks size of the shared byte[] blocks used to
      store postings data */
@@ -1285,17 +1330,20 @@ final class DocumentsWriter {
     // We flush when we've used our target usage
     final long flushTrigger = ramBufferSize;
 
-    if (numBytesAlloc > freeTrigger) {
+    final long deletesRAMUsed = deletesInRAM.bytesUsed+deletesFlushed.bytesUsed;
+
+    if (numBytesAlloc+deletesRAMUsed > freeTrigger) {
 
       if (infoStream != null)
         message("  RAM: now balance allocations: usedMB=" + toMB(numBytesUsed) +
                 " vs trigger=" + toMB(flushTrigger) +
                 " allocMB=" + toMB(numBytesAlloc) +
+                " deletesMB=" + toMB(deletesRAMUsed) +
                 " vs trigger=" + toMB(freeTrigger) +
                 " byteBlockFree=" + toMB(byteBlockAllocator.freeByteBlocks.size()*BYTE_BLOCK_SIZE) +
                 " charBlockFree=" + toMB(freeCharBlocks.size()*CHAR_BLOCK_SIZE*CHAR_NUM_BYTE));
 
-      final long startBytesAlloc = numBytesAlloc;
+      final long startBytesAlloc = numBytesAlloc + deletesRAMUsed;
 
       int iter = 0;
 
@@ -1305,12 +1353,12 @@ final class DocumentsWriter {
 
       boolean any = true;
 
-      while(numBytesAlloc > freeLevel) {
+      while(numBytesAlloc+deletesRAMUsed > freeLevel) {
       
         synchronized(this) {
           if (0 == byteBlockAllocator.freeByteBlocks.size() && 0 == freeCharBlocks.size() && 0 == freeIntBlocks.size() && !any) {
             // Nothing else to free -- must flush now.
-            bufferIsFull = numBytesUsed > flushTrigger;
+            bufferIsFull = numBytesUsed+deletesRAMUsed > flushTrigger;
             if (infoStream != null) {
               if (numBytesUsed > flushTrigger)
                 message("    nothing to free; now set bufferIsFull");
@@ -1345,7 +1393,7 @@ final class DocumentsWriter {
       }
 
       if (infoStream != null)
-        message("    after free: freedMB=" + nf.format((startBytesAlloc-numBytesAlloc)/1024./1024.) + " usedMB=" + nf.format(numBytesUsed/1024./1024.) + " allocMB=" + nf.format(numBytesAlloc/1024./1024.));
+        message("    after free: freedMB=" + nf.format((startBytesAlloc-numBytesAlloc-deletesRAMUsed)/1024./1024.) + " usedMB=" + nf.format((numBytesUsed+deletesRAMUsed)/1024./1024.) + " allocMB=" + nf.format(numBytesAlloc/1024./1024.));
       
     } else {
       // If we have not crossed the 100% mark, but have
@@ -1355,10 +1403,11 @@ final class DocumentsWriter {
       // flush.
       synchronized(this) {
 
-        if (numBytesUsed > flushTrigger) {
+        if (numBytesUsed+deletesRAMUsed > flushTrigger) {
           if (infoStream != null)
             message("  RAM: now flush @ usedMB=" + nf.format(numBytesUsed/1024./1024.) +
                     " allocMB=" + nf.format(numBytesAlloc/1024./1024.) +
+                    " deletesMB=" + nf.format(deletesRAMUsed/1024./1024.) +
                     " triggerMB=" + nf.format(flushTrigger/1024./1024.));
 
           bufferIsFull = true;
