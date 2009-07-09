@@ -133,15 +133,15 @@ public class TestReplicationHandler extends TestCase {
     //get docs from slave and check if number is equal to master
     NamedList slaveQueryRsp = query("*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    
-    if(slaveQueryResult.getNumFound() == 0) {
+
+    if (slaveQueryResult.getNumFound() == 0) {
       //try sleeping again in case of slower comp
       Thread.sleep(5000);
-      
-       slaveQueryRsp = query("*:*", slaveClient);
-       slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+
+      slaveQueryRsp = query("*:*", slaveClient);
+      slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     }
-    
+
     assertEquals(500, slaveQueryResult.getNumFound());
 
     //compare results
@@ -196,15 +196,15 @@ public class TestReplicationHandler extends TestCase {
     //get docs from slave and check if number is equal to master
     NamedList slaveQueryRsp = query("*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    
-    if(slaveQueryResult.getNumFound() == 0) {
+
+    if (slaveQueryResult.getNumFound() == 0) {
       //try sleeping again in case of slower comp
       Thread.sleep(5000);
-      
-       slaveQueryRsp = query("*:*", slaveClient);
-       slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+
+      slaveQueryRsp = query("*:*", slaveClient);
+      slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     }
-    
+
     assertEquals(500, slaveQueryResult.getNumFound());
 
     //compare results
@@ -381,6 +381,53 @@ public class TestReplicationHandler extends TestCase {
     assertEquals(null, cmp);
 
   }
+
+  public void testReplicateAfterWrite2Slave() throws Exception {
+
+    //add 500 docs to master
+    for (int i = 0; i < 500; i++)
+      index(masterClient, "id", i, "name", "name = " + i);
+
+    masterClient.commit();
+
+    NamedList masterQueryRsp = query("*:*", masterClient);
+    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    assertEquals(500, masterQueryResult.getNumFound());
+
+    String masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=disableReplication";
+    URL url = new URL(masterUrl);
+    InputStream stream = url.openStream();
+    try {
+      stream.close();
+    } catch (IOException e) {
+      //e.printStackTrace();
+    }
+
+    index(slaveClient, "id", 555, "name", "name = " + 555);
+    slaveClient.commit(true, true);
+
+    //this doc is added to slave so it should show an item w/ that result
+    NamedList slaveQueryRsp = query("id:555", slaveClient);
+    SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(1, slaveQueryResult.getNumFound());
+
+    masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=enableReplication";
+    url = new URL(masterUrl);
+    stream = url.openStream();
+    try {
+      stream.close();
+    } catch (IOException e) {
+      //e.printStackTrace();
+    }
+
+    //sleep for pollinterval time 3s, to let slave pull data.
+    Thread.sleep(3000);
+    //the slave should have done a full copy of the index so the doc with id:555 should not be there in the slave now
+    slaveQueryRsp = query("id:555", slaveClient);
+    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(0, slaveQueryResult.getNumFound());
+  }
+
 
   /* character copy of file using UTF-8 */
   void copyFile(File src, File dst) throws IOException {

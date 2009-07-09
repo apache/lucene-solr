@@ -280,6 +280,7 @@ public class SnapPuller {
       if (isIndexStale())
         isSnapNeeded = true;
       boolean successfulInstall = false;
+      boolean deleteTmpIdxDir = true;
       try {
         File indexDir = new File(core.getIndexDir());
         downloadIndexFiles(isSnapNeeded, tmpIndexDir, latestVersion);
@@ -300,7 +301,8 @@ public class SnapPuller {
         } else {
           terminateAndWaitFsyncService();
           if (isSnapNeeded) {
-            modifyIndexProps(tmpIndexDir.getName());
+            successfulInstall = modifyIndexProps(tmpIndexDir.getName());
+            deleteTmpIdxDir =  false;
           } else {
             successfulInstall = copyIndexFiles(tmpIndexDir, indexDir);
           }
@@ -316,10 +318,9 @@ public class SnapPuller {
       } catch (SolrException e) {
         throw e;
       } catch (Exception e) {
-        delTree(tmpIndexDir);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Index fetch failed : ", e);
       } finally {
-        delTree(tmpIndexDir);
+        if(deleteTmpIdxDir) delTree(tmpIndexDir);
       }
       return successfulInstall;
     } finally {
@@ -582,7 +583,7 @@ public class SnapPuller {
   /**
    * If the index is stale by any chance, load index from a different dir in the data dir.
    */
-  private void modifyIndexProps(String snap) {
+  private boolean modifyIndexProps(String snap) {
     LOG.info("New index installed. Updating index properties...");
     File idxprops = new File(solrCore.getDataDir() + "index.properties");
     Properties p = new Properties();
@@ -608,6 +609,7 @@ public class SnapPuller {
     } finally {
       IOUtils.closeQuietly(os);
     }
+      return true;
   }
 
   private final Map<String, FileInfo> confFileInfoCache = new HashMap<String, FileInfo>();
