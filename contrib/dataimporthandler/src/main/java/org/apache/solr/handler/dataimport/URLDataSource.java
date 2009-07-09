@@ -49,15 +49,22 @@ public class URLDataSource extends DataSource<Reader> {
 
   private int readTimeout = READ_TIMEOUT;
 
+  private Context context;
+
+  private Properties initProps;
+
   public URLDataSource() {
   }
 
   public void init(Context context, Properties initProps) {
-    baseUrl = initProps.getProperty(BASE_URL);
-    if (initProps.get(ENCODING) != null)
-      encoding = initProps.getProperty(ENCODING);
-    String cTimeout = initProps.getProperty(CONNECTION_TIMEOUT_FIELD_NAME);
-    String rTimeout = initProps.getProperty(READ_TIMEOUT_FIELD_NAME);
+    this.context = context;
+    this.initProps = initProps;
+    
+    baseUrl = getInitPropWithReplacements(BASE_URL);
+    if (getInitPropWithReplacements(ENCODING) != null)
+      encoding = getInitPropWithReplacements(ENCODING);
+    String cTimeout = getInitPropWithReplacements(CONNECTION_TIMEOUT_FIELD_NAME);
+    String rTimeout = getInitPropWithReplacements(READ_TIMEOUT_FIELD_NAME);
     if (cTimeout != null) {
       try {
         connectionTimeout = Integer.parseInt(cTimeout);
@@ -72,7 +79,6 @@ public class URLDataSource extends DataSource<Reader> {
         LOG.warn("Invalid read timeout: " + rTimeout);
       }
     }
-
   }
 
   public Reader getData(String query) {
@@ -109,6 +115,18 @@ public class URLDataSource extends DataSource<Reader> {
   }
 
   public void close() {
+  }
+
+  public String getBaseUrl() {
+    return baseUrl;
+  }
+
+  private String getInitPropWithReplacements(String propertyName) {
+    final String expr = initProps.getProperty(propertyName);
+    if (expr == null) {
+      return null;
+    }
+    return context.getVariableResolver().replaceTokens(expr);
   }
 
   private static final Pattern URIMETHOD = Pattern.compile("\\w{3,}:/");

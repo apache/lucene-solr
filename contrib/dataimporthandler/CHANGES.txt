@@ -246,6 +246,8 @@ Bug Fixes
 26.SOLR-1146: ConcurrentModificationException in DataImporter.getStatusMessages
               (Walter Ferrara, Noble Paul via shalin)
 
+             
+
 Documentation
 ----------------------
 
@@ -288,6 +290,8 @@ Other
               Context#getResolvedEntityAttribute is added which returns the resolved value of an entity's attribute.
               Introduced a DocWrapper which takes care of maintaining document level session variables.
               (Noble Paul, shalin)
+
+10.SOLR-1265: Add variable resolving for URLDataSource properties like baseUrl.  (Chris Eldredge via ehatcher)
 
 ================== Release 1.3.0 20080915 ==================
 
