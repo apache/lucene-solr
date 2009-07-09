@@ -40,6 +40,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.PriorityQueue;
@@ -59,7 +60,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SolrQueryParser;
 
 /**
  * This handler exposes the internal lucene index.  It is inspired by and 
@@ -273,7 +273,6 @@ public class LukeRequestHandler extends RequestHandlerBase
   private static SimpleOrderedMap<Object> getIndexedFieldsInfo( 
     final SolrIndexSearcher searcher, final Set<String> fields, final int numTerms ) 
     throws Exception {
-    SolrQueryParser qp = searcher.getSchema().getSolrQueryParser(null);
 
     IndexReader reader = searcher.getReader();
     IndexSchema schema = searcher.getSchema();
@@ -303,7 +302,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
       // If numTerms==0, the call is just asking for a quick field list
       if( ttinfo != null && sfield != null && sfield.indexed() ) {
-        Query q = qp.parse( fieldName+":[* TO *]" ); 
+        Query q = new ConstantScoreRangeQuery(fieldName,null,null,false,false); 
         TopDocs top = searcher.search( q, 1 );
         if( top.totalHits > 0 ) {
           // Find a document with this field

@@ -439,6 +439,11 @@ Bug Fixes
     never manifested in normal Solr use and only potentially affect
     custom code. (yonik)
 
+53. SOLR-1171: Fix LukeRequestHandler so it doesn't rely on SolrQueryParser
+    and report incorrect stats when field names contain characters
+    SolrQueryParser considers special.
+    (hossman)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
