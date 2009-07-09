@@ -132,6 +132,12 @@
     <servlet-name>ping</servlet-name>
     <url-pattern>/admin/ping</url-pattern>
   </servlet-mapping>
+
+  <!-- @Deprecated -->
+  <servlet-mapping>
+    <servlet-name>Logging</servlet-name>
+    <url-pattern>/admin/logging.jsp</url-pattern>
+  </servlet-mapping>
   
   <mime-mapping>
     <extension>.xsl</extension>

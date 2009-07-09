@@ -22,13 +22,10 @@
                  java.net.InetAddress,
                  java.net.UnknownHostException"%>
 <%@ page import="java.util.Date"%>
-<%@ page import="java.util.logging.Level"%>
-<%@ page import="java.util.logging.Logger"%>
 <%@include file="header.jsp" %>
 <%
 
   String action = request.getParameter("action");
-  String logging = request.getParameter("log");
   String enableActionStatus = "";
   boolean isValid = false;
 
@@ -36,10 +33,6 @@
     // Validate fname
     if ("Enable".compareTo(action) == 0) isValid = true;
     if ("Disable".compareTo(action) == 0) isValid = true;
-  }
-  if (logging != null) {
-    action = "Set Log Level";
-    isValid = true;
   }
   if (isValid) {
     if ("Enable".compareTo(action) == 0) {
@@ -70,26 +63,11 @@
           enableActionStatus += "Disable Failed: " + e.toString();
       }
     }
-    if (logging != null) {
-      try {
-        Logger log = SolrCore.log;
-        Logger parent = log.getParent();
-        while (parent != null) {
-          log = parent;
-          parent = log.getParent();
-        }
-        log.setLevel(Level.parse(logging));
-        enableActionStatus = "Set Log Level (" + logging + ") Succeeded";
-      } catch(Exception e) {
-          enableActionStatus += "Set Log Level (" + logging + ") Failed: "
-                                 + e.toString();
-      }
-    }
   } else {
     enableActionStatus = "Illegal Action";
   }
   // :TODO: might want to rework this so any logging change happens *after*
-  SolrCore.log.log(Level.INFO, enableActionStatus);
+  SolrCore.log.info(enableActionStatus);
 %>
 <br clear="all">
 <table>
