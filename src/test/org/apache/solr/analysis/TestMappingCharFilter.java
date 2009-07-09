@@ -42,6 +42,22 @@ public class TestMappingCharFilter extends BaseTokenTestCase {
     normMap.add( "empty", "" );
   }
 
+  public void testReaderReset() throws Exception {
+    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "x" ) ) );
+    char[] buf = new char[10];
+    int len = cs.read(buf, 0, 10);
+    assertEquals( 1, len );
+    assertEquals( 'x', buf[0]) ;
+    len = cs.read(buf, 0, 10);
+    assertEquals( -1, len );
+
+    // rewind
+    cs.reset();
+    len = cs.read(buf, 0, 10);
+    assertEquals( 1, len );
+    assertEquals( 'x', buf[0]) ;
+  }
+
   public void testNothingChange() throws Exception {
     CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "x" ) ) );
     TokenStream ts = new CharStreamAwareWhitespaceTokenizer( cs );

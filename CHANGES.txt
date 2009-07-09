@@ -247,6 +247,9 @@ New Features
     This is an advanced debug log file that can be used to aid developers in fixing IndexWriter bugs. See the commented
     out example in the example solrconfig.xml under the indexDefaults section. 
 	(Chris Harris, Mark Miller)
+
+64. SOLR-1256: Show the output of CharFilters in analysis.jsp. (koji)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

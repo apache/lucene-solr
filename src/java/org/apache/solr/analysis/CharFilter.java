@@ -60,4 +60,16 @@ public abstract class CharFilter extends CharStream {
   public int read(char[] cbuf, int off, int len) throws IOException {
     return input.read(cbuf, off, len);
   }
+
+  public boolean markSupported(){
+    return input.markSupported();
+  }
+
+  public void mark( int readAheadLimit ) throws IOException {
+    input.mark(readAheadLimit);
+  }
+
+  public void reset() throws IOException {
+    input.reset();
+  }
 }

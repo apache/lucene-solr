@@ -120,16 +120,4 @@ public class MappingCharFilter extends BaseCharFilter {
     }
     return l == 0 ? -1 : l;
   }
-
-  public boolean markSupported(){
-    return false;
-  }
-
-  public void mark( int readAheadLimit ) throws IOException {
-    throw new IOException( "mark/reset not supported" );
-  }
-
-  public void reset() throws IOException {
-    throw new IOException( "mark/reset not supported" );
-  }
 }

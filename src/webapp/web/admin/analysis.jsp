@@ -19,6 +19,9 @@
                  org.apache.lucene.analysis.Token,
                  org.apache.lucene.analysis.TokenStream,
                  org.apache.lucene.index.Payload,
+                 org.apache.solr.analysis.CharReader,
+                 org.apache.solr.analysis.CharStream,
+                 org.apache.solr.analysis.CharFilterFactory,
                  org.apache.solr.analysis.TokenFilterFactory,
                  org.apache.solr.analysis.TokenizerChain,
                  org.apache.solr.analysis.TokenizerFactory,
@@ -171,19 +174,32 @@
 
 <%!
   private static void doAnalyzer(JspWriter out, SchemaField field, String val, boolean queryAnalyser, boolean verbose, Set<Tok> match) throws Exception {
-    Reader reader = new StringReader(val);
+    CharStream reader = CharReader.get(new StringReader(val));
 
     FieldType ft = field.getType();
      Analyzer analyzer = queryAnalyser ?
              ft.getQueryAnalyzer() : ft.getAnalyzer();
      if (analyzer instanceof TokenizerChain) {
        TokenizerChain tchain = (TokenizerChain)analyzer;
+       CharFilterFactory[] cfiltfacs = tchain.getCharFilterFactories();
        TokenizerFactory tfac = tchain.getTokenizerFactory();
        TokenFilterFactory[] filtfacs = tchain.getTokenFilterFactories();
 
-       TokenStream tstream = tfac.create(tchain.charStream(reader));
+       if( cfiltfacs != null ){
+         for(CharFilterFactory cfiltfac : cfiltfacs ){
+           reader = cfiltfac.create(reader);
+           if(verbose){
+             writeHeader(out, cfiltfac.getClass(), cfiltfac.getArgs());
+             writeCharStream(out, reader);
+           }
+         }
+       }
+
+       // StringReader should support reset()
+       reader.reset();
+       TokenStream tstream = tfac.create(reader);
        List<Token> tokens = getTokens(tstream);
-       tstream = tfac.create(tchain.charStream(reader));
+       tstream = tfac.create(reader);
        if (verbose) {
          writeHeader(out, tfac.getClass(), tfac.getArgs());
        }
@@ -450,6 +466,32 @@
       );
     }
     
+    out.println("</table>");
+  }
+
+  static void writeCharStream(JspWriter out, CharStream input) throws IOException {
+    out.println("<table width=\"auto\" class=\"analysis\" border=\"1\">");
+    out.println("<tr>");
+
+    out.print("<th NOWRAP>");
+    XML.escapeCharData("text",out);
+    out.println("</th>");
+
+    // StringReader should support reset()
+    input.reset();
+    final int BUFFER_SIZE = 1024;
+    char[] buf = new char[BUFFER_SIZE];
+    int len = 0;
+    StringBuilder sb = new StringBuilder();
+    do {
+      len = input.read( buf, 0, BUFFER_SIZE );
+      sb.append(buf, 0, len);
+    } while( len == BUFFER_SIZE );
+    out.print("<td class=\"debugdata\">");
+    XML.escapeCharData(sb.toString(),out);
+    out.println("</td>");
+    
+    out.println("</tr>");
     out.println("</table>");
   }
 
