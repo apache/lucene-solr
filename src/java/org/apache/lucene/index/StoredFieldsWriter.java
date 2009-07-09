@@ -17,30 +17,31 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Map;
 import java.io.IOException;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 
 /** This is a DocFieldConsumer that writes stored fields. */
-final class StoredFieldsWriter extends DocFieldConsumer {
+final class StoredFieldsWriter {
 
   FieldsWriter fieldsWriter;
   final DocumentsWriter docWriter;
+  final FieldInfos fieldInfos;
   int lastDocID;
 
   PerDoc[] docFreeList = new PerDoc[1];
   int freeCount;
 
-  public StoredFieldsWriter(DocumentsWriter docWriter) {
+  public StoredFieldsWriter(DocumentsWriter docWriter, FieldInfos fieldInfos) {
     this.docWriter = docWriter;
+    this.fieldInfos = fieldInfos;
   }
 
-  public DocFieldConsumerPerThread addThread(DocFieldProcessorPerThread docFieldProcessorPerThread) throws IOException {
-    return new StoredFieldsWriterPerThread(docFieldProcessorPerThread, this);
+  public StoredFieldsWriterPerThread addThread(DocumentsWriter.DocState docState) throws IOException {
+    return new StoredFieldsWriterPerThread(docState, this);
   }
 
-  synchronized public void flush(Map threadsAndFields, SegmentWriteState state) throws IOException {
+  synchronized public void flush(SegmentWriteState state) throws IOException {
 
     if (state.numDocsInStore > 0) {
       // It's possible that all documents seen in this segment

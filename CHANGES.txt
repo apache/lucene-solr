@@ -130,6 +130,11 @@ Changes in runtime behavior
  9. LUCENE-1717: Fixed IndexWriter to account for RAM usage of
     buffered deletions.  (Mike McCandless)
 
+10. LUCENE-1727: Ensure that fields are stored & retrieved in the
+    exact order in which they were added to the document.  This was
+    true in all Lucene releases before 2.3, but was broken in 2.3 and
+    2.4, and is now fixed in 2.9.  (Mike McCandless)
+
 API Changes
 
 1. LUCENE-1419: Add expert API to set custom indexing chain. This API is 

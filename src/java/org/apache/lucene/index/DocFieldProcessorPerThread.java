@@ -23,6 +23,7 @@ import java.util.List;
 import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.util.ArrayUtil;
 
 /**
  * Gathers all Fieldables for a document under the same
@@ -50,13 +51,16 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
   int hashMask = 1;
   int totalFieldCount;
 
+  final StoredFieldsWriterPerThread fieldsWriter;
+
   final DocumentsWriter.DocState docState;
-  
+
   public DocFieldProcessorPerThread(DocumentsWriterThreadState threadState, DocFieldProcessor docFieldProcessor) throws IOException {
     this.docState = threadState.docState;
     this.docFieldProcessor = docFieldProcessor;
     this.fieldInfos = docFieldProcessor.fieldInfos;
     this.consumer = docFieldProcessor.consumer.addThread(this);
+    fieldsWriter = docFieldProcessor.fieldsWriter.addThread(docState);
   }
 
   public void abort() {
@@ -68,6 +72,7 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
         field = next;
       }
     }
+    fieldsWriter.abort();
     consumer.abort();
   }
 
@@ -148,6 +153,8 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
   public DocumentsWriter.DocWriter processDocument() throws IOException {
 
     consumer.startDocument();
+    fieldsWriter.startDocument();
+
     final Document doc = docState.doc;
 
     assert docFieldProcessor.docWriter.writer.testPoint("DocumentsWriter.ThreadState.init start");
@@ -220,6 +227,9 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
       }
 
       fp.fields[fp.fieldCount++] = field;
+      if (field.isStored()) {
+        fieldsWriter.addField(field, fp.fieldInfo);
+      }
     }
 
     // If we are writing vectors then we must visit
@@ -236,7 +246,21 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
     if (docState.maxTermPrefix != null && docState.infoStream != null)
       docState.infoStream.println("WARNING: document contains at least one immense term (longer than the max length " + DocumentsWriter.MAX_TERM_LENGTH + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + docState.maxTermPrefix + "...'"); 
 
-    return consumer.finishDocument();
+    final DocumentsWriter.DocWriter one = fieldsWriter.finishDocument();
+    final DocumentsWriter.DocWriter two = consumer.finishDocument();
+    if (one == null) {
+      return two;
+    } else if (two == null) {
+      return one;
+    } else {
+      PerDoc both = getPerDoc();
+      both.docID = docState.docID;
+      assert one.docID == docState.docID;
+      assert two.docID == docState.docID;
+      both.one = one;
+      both.two = two;
+      return both;
+    }
   }
 
   void quickSort(DocFieldProcessorPerField[] array, int lo, int hi) {
@@ -298,5 +322,63 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
 
     quickSort(array, lo, left);
     quickSort(array, left + 1, hi);
+  }
+
+  PerDoc[] docFreeList = new PerDoc[1];
+  int freeCount;
+  int allocCount;
+
+  synchronized PerDoc getPerDoc() {
+    if (freeCount == 0) {
+      allocCount++;
+      if (allocCount > docFreeList.length) {
+        // Grow our free list up front to make sure we have
+        // enough space to recycle all outstanding PerDoc
+        // instances
+        assert allocCount == 1+docFreeList.length;
+        docFreeList = new PerDoc[ArrayUtil.getNextSize(allocCount)];
+      }
+      return new PerDoc();
+    } else
+      return docFreeList[--freeCount];
+  }
+
+  synchronized void freePerDoc(PerDoc perDoc) {
+    assert freeCount < docFreeList.length;
+    docFreeList[freeCount++] = perDoc;
+  }
+
+  class PerDoc extends DocumentsWriter.DocWriter {
+
+    DocumentsWriter.DocWriter one;
+    DocumentsWriter.DocWriter two;
+
+    public long sizeInBytes() {
+      return one.sizeInBytes() + two.sizeInBytes();
+    }
+
+    public void finish() throws IOException {
+      try {
+        try {
+          one.finish();
+        } finally {
+          two.finish();
+        }
+      } finally {
+        freePerDoc(this);
+      }
+    }
+
+    public void abort() {
+      try {
+        try {
+          one.abort();
+        } finally {
+          two.abort();
+        }
+      } finally {
+        freePerDoc(this);
+      }
+    }
   }
 }

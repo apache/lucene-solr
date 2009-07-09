@@ -36,15 +36,18 @@ final class DocFieldProcessor extends DocConsumer {
   final DocumentsWriter docWriter;
   final FieldInfos fieldInfos = new FieldInfos();
   final DocFieldConsumer consumer;
+  final StoredFieldsWriter fieldsWriter;
 
   public DocFieldProcessor(DocumentsWriter docWriter, DocFieldConsumer consumer) {
     this.docWriter = docWriter;
     this.consumer = consumer;
     consumer.setFieldInfos(fieldInfos);
+    fieldsWriter = new StoredFieldsWriter(docWriter, fieldInfos);
   }
 
   public void closeDocStore(SegmentWriteState state) throws IOException {
     consumer.closeDocStore(state);
+    fieldsWriter.closeDocStore(state);
   }
 
   public void flush(Collection threads, SegmentWriteState state) throws IOException {
@@ -56,7 +59,7 @@ final class DocFieldProcessor extends DocConsumer {
       childThreadsAndFields.put(perThread.consumer, perThread.fields());
       perThread.trimFields(state);
     }
-
+    fieldsWriter.flush(state);
     consumer.flush(childThreadsAndFields, state);
 
     // Important to save after asking consumer to flush so
@@ -69,6 +72,7 @@ final class DocFieldProcessor extends DocConsumer {
   }
 
   public void abort() {
+    fieldsWriter.abort();
     consumer.abort();
   }
 

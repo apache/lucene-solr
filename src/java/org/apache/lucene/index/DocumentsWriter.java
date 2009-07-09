@@ -214,9 +214,7 @@ final class DocumentsWriter {
                                                            new TermsHash(documentsWriter, false, termVectorsWriter, null));
       final NormsWriter normsWriter = new NormsWriter();
       final DocInverter docInverter = new DocInverter(termsHash, normsWriter);
-      final StoredFieldsWriter fieldsWriter = new StoredFieldsWriter(documentsWriter);
-      final DocFieldConsumers docFieldConsumers = new DocFieldConsumers(docInverter, fieldsWriter);
-      return new DocFieldProcessor(documentsWriter, docFieldConsumers);
+      return new DocFieldProcessor(documentsWriter, docInverter);
     }
   };
 

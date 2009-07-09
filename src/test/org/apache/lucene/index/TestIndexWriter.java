@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.SinkTokenizer;
@@ -4407,5 +4408,37 @@ public class TestIndexWriter extends LuceneTestCase
     ir.close();
     dir.close();
 
+  }
+
+  // LUCENE-1727: make sure doc fields are stored in order
+  public void testStoredFieldsOrder() throws Throwable {
+    Directory d = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(d, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new Field("zzz", "a b c", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field("aaa", "a b c", Field.Store.YES, Field.Index.NO));
+    doc.add(new Field("zzz", "1 2 3", Field.Store.YES, Field.Index.NO));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    doc = r.document(0);
+    Iterator it = doc.getFields().iterator();
+    assertTrue(it.hasNext());
+    Field f = (Field) it.next();
+    assertEquals(f.name(), "zzz");
+    assertEquals(f.stringValue(), "a b c");
+
+    assertTrue(it.hasNext());
+    f = (Field) it.next();
+    assertEquals(f.name(), "aaa");
+    assertEquals(f.stringValue(), "a b c");
+
+    assertTrue(it.hasNext());
+    f = (Field) it.next();
+    assertEquals(f.name(), "zzz");
+    assertEquals(f.stringValue(), "1 2 3");
+    assertFalse(it.hasNext());
+    r.close();
+    w.close();
+    d.close();
   }
 }
