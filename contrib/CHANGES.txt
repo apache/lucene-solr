@@ -65,6 +65,9 @@ New features
  7. LUCENE-1704: Allow specifying the Tidy configuration file when
     parsing HTML docs with contrib/ant.  (Keith Sprochi via Mike
     McCandless)
+
+ 8. LUCENE-1522: Added contrib/fast-vector-highlighter, a new alternative
+    highlighter.  (Koji Sekiguchi via Mike McCandless)
  
 Optimizations
 

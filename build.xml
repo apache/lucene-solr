@@ -312,6 +312,7 @@
           <packageset dir="contrib/collation/src/java"/>
           <packageset dir="contrib/db/bdb-je/src/java"/>
           <packageset dir="contrib/db/bdb/src/java"/>
+          <packageset dir="contrib/fast-vector-highlighter/src/java"/>
           <packageset dir="contrib/highlighter/src/java"/>
           <packageset dir="contrib/instantiated/src/java"/>
           <packageset dir="contrib/lucli/src/java"/>
@@ -343,6 +344,7 @@
           <group title="contrib: Benchmark" packages="org.apache.lucene.benchmark*"/>
           <group title="contrib: Collation" packages="org.apache.lucene.collation*"/>
           <group title="contrib: DB" packages="org.apache.lucene.store.db*:org.apache.lucene.store.je*:com.sleepycat*"/>
+          <group title="contrib: Fast Vector Highlighter" packages="org.apache.lucene.search.vectorhighlight*"/>
           <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*"/>
           <group title="contrib: Instantiated" packages="org.apache.lucene.store.instantiated*"/>
           <group title="contrib: Lucli" packages="lucli*"/>

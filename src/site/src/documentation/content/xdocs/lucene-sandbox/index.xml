@@ -104,6 +104,14 @@
                         repository for the Highlighter contribution.</a>
             </section>
 
+            <section id="Fast Vector Highlighter"><title>Fast Vector Highlighter</title>
+                <p>
+                  An alternative set of classes for highlighting matching terms in search results.
+                </p>
+                    <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/fast-vector-highlighter/">The
+                        repository for the Fast Vector Highlighter contribution.</a>
+            </section>
+
             <section id="Javascript Query Constructor"><title>Javascript Query Constructor</title>
                 <p>
                     Javascript library to support client-side query-building. Provides support for a user interface similar to
