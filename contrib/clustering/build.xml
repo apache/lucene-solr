@@ -46,10 +46,14 @@
 
   </target>
   <target name="clean-downloads">
-      <delete file="lib/colt-1.2.0.jar"/>
-      <delete file="lib/pcj-1.2.jar"/>
-      <delete file="lib/nni-1.0.0.jar"/>
-      <delete file="lib/simple-xml-1.7.3.jar"/>
+    <delete>
+      <fileset dir="lib">
+        <include name="colt-*.jar"/>
+        <include name="pcj-*.jar"/>
+        <include name="nni-*.jar"/>
+        <include name="simple-xml-*.jar"/>
+      </fileset>
+    </delete>
   </target>
 	
   <target name="init">
@@ -57,7 +61,6 @@
     <mkdir dir="${build.javadoc}" />
     <ant dir="../../" inheritall="false" target="compile" />
     <ant dir="../../" inheritall="false" target="make-manifest" />
-    <mkdir dir="lib/downloads" />
   </target>
 
   <target name="check-files" depends="proxy.setup">
@@ -108,13 +111,7 @@
   </target>
 
   <target name="example" depends="build">
-    <!-- Copy the jar into example/solr/lib -->
-    <copy file="${dest}/${fullnamever}.jar" todir="${example}/clustering/solr/lib"/>
-    <copy todir="${example}/clustering/solr/lib">
-      <fileset dir="lib">
-        <include name="*.jar"/>
-      </fileset>
-    </copy>
+    <!-- NOOP .. example is self contained in this directory -->
   </target>
 
 
