@@ -43,12 +43,24 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     private String term1 = "xx";
     private String term2 = "yy";
     private String term3 = "zz";
+
+    private class SeekCountingDirectory extends RAMDirectory {
+      public IndexInput openInput(String name) throws IOException {
+        IndexInput ii = super.openInput(name);
+        if (name.endsWith(".prx")) {
+          // we decorate the proxStream with a wrapper class that allows to count the number of calls of seek()
+          ii = new SeeksCountingStream(ii);
+        }
+        return ii;
+      }
+    }
     
     private void createIndex(int numHits) throws IOException {
         int numDocs = 500;
         
-        Directory directory = new RAMDirectory();
+        Directory directory = new SeekCountingDirectory();
         IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+        writer.setUseCompoundFile(false);
         writer.setMaxBufferedDocs(10);
         for (int i = 0; i < numDocs; i++) {
             Document doc = new Document();
@@ -74,9 +86,6 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         
         SegmentReader reader = SegmentReader.getOnlySegmentReader(directory);
 
-        // we decorate the proxStream with a wrapper class that allows to count the number of calls of seek()
-        reader.proxStream = new SeeksCountingStream(reader.proxStream);
-        
         this.searcher = new IndexSearcher(reader);        
     }
     
@@ -96,6 +105,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         assertEquals(numHits, hits.length);
         
         // check if the number of calls of seek() does not exceed the number of hits
+        assertTrue(this.seeksCounter > 0);
         assertTrue(this.seeksCounter <= numHits + 1);
     }
     

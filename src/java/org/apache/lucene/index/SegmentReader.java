@@ -40,18 +40,12 @@ import org.apache.lucene.util.CloseableThreadLocal;
 
 /** @version $Id */
 class SegmentReader extends IndexReader implements Cloneable {
-  protected Directory directory;
   protected boolean readOnly;
 
-  private String segment;
   private SegmentInfo si;
   private int readBufferSize;
 
-  FieldInfos fieldInfos;
-  private FieldsReader fieldsReaderOrig = null;
   CloseableThreadLocal fieldsReaderLocal = new FieldsReaderLocal();
-  TermInfosReader tis;
-  TermVectorsReader termVectorsReaderOrig = null;
   CloseableThreadLocal termVectorsLocal = new CloseableThreadLocal();
 
   BitVector deletedDocs = null;
@@ -64,31 +58,189 @@ class SegmentReader extends IndexReader implements Cloneable {
   private boolean rollbackDeletedDocsDirty = false;
   private boolean rollbackNormsDirty = false;
   private int rollbackPendingDeleteCount;
-  IndexInput freqStream;
-  IndexInput proxStream;
 
   // optionally used for the .nrm file shared by multiple norms
   private IndexInput singleNormStream;
   private Ref singleNormRef;
 
-  // Counts how many other reader share the core objects
-  // (freqStream, proxStream, tis, etc.) of this reader;
-  // when coreRef drops to 0, these core objects may be
-  // closed.  A given insance of SegmentReader may be
-  // closed, even those it shares core objects with other
-  // SegmentReaders:
-  private Ref coreRef = new Ref();
+  CoreReaders core;
 
-  // Compound File Reader when based on a compound file segment
-  CompoundFileReader cfsReader = null;
-  CompoundFileReader storeCFSReader = null;
+  // Holds core readers that are shared (unchanged) when
+  // SegmentReader is cloned or reopened
+  static final class CoreReaders {
+
+    // Counts how many other reader share the core objects
+    // (freqStream, proxStream, tis, etc.) of this reader;
+    // when coreRef drops to 0, these core objects may be
+    // closed.  A given insance of SegmentReader may be
+    // closed, even those it shares core objects with other
+    // SegmentReaders:
+    private final Ref ref = new Ref();
+
+    final String segment;
+    final FieldInfos fieldInfos;
+    final IndexInput freqStream;
+    final IndexInput proxStream;
+
+    final Directory dir;
+    final Directory cfsDir;
+    final int readBufferSize;
+
+    TermInfosReader tis;
+    FieldsReader fieldsReaderOrig;
+    TermVectorsReader termVectorsReaderOrig;
+    CompoundFileReader cfsReader;
+    CompoundFileReader storeCFSReader;
+
+    CoreReaders(Directory dir, SegmentInfo si, int readBufferSize) throws IOException {
+      segment = si.name;
+      this.readBufferSize = readBufferSize;
+      this.dir = dir;
+
+      boolean success = false;
+
+      try {
+        Directory dir0 = dir;
+        if (si.getUseCompoundFile()) {
+          cfsReader = new CompoundFileReader(dir, segment + "." + IndexFileNames.COMPOUND_FILE_EXTENSION, readBufferSize);
+          dir0 = cfsReader;
+        }
+        cfsDir = dir0;
+
+        fieldInfos = new FieldInfos(cfsDir, segment + "." + IndexFileNames.FIELD_INFOS_EXTENSION);
+
+        tis = new TermInfosReader(cfsDir, segment, fieldInfos, readBufferSize);
+
+        // make sure that all index files have been read or are kept open
+        // so that if an index update removes them we'll still have them
+        freqStream = cfsDir.openInput(segment + "." + IndexFileNames.FREQ_EXTENSION, readBufferSize);
+
+        if (fieldInfos.hasProx()) {
+          proxStream = cfsDir.openInput(segment + "." + IndexFileNames.PROX_EXTENSION, readBufferSize);
+        } else {
+          proxStream = null;
+        }
+        success = true;
+      } finally {
+        if (!success) {
+          decRef();
+        }
+      }
+    }
+
+    synchronized TermVectorsReader getTermVectorsReaderOrig() {
+      return termVectorsReaderOrig;
+    }
+
+    synchronized FieldsReader getFieldsReaderOrig() {
+      return fieldsReaderOrig;
+    }
+
+    synchronized void incRef() {
+      ref.incRef();
+    }
+
+    synchronized Directory getCFSReader() {
+      return cfsReader;
+    }
+
+    synchronized void decRef() throws IOException {
+
+      if (ref.decRef() == 0) {
+
+        // close everything, nothing is shared anymore with other readers
+        if (tis != null) {
+          tis.close();
+          // null so if an app hangs on to us we still free most ram
+          tis = null;
+        }
+        
+        if (freqStream != null) {
+          freqStream.close();
+        }
+
+        if (proxStream != null) {
+          proxStream.close();
+        }
+
+        if (termVectorsReaderOrig != null) {
+          termVectorsReaderOrig.close();
+        }
   
+        if (fieldsReaderOrig != null) {
+          fieldsReaderOrig.close();
+        }
+  
+        if (cfsReader != null) {
+          cfsReader.close();
+        }
+  
+        if (storeCFSReader != null) {
+          storeCFSReader.close();
+        }
+      }
+    }
+
+    synchronized void openDocStores(SegmentInfo si) throws IOException {
+
+      assert si.name.equals(segment);
+
+      if (fieldsReaderOrig == null) {
+        final Directory storeDir;
+        if (si.getDocStoreOffset() != -1) {
+          if (si.getDocStoreIsCompoundFile()) {
+            assert storeCFSReader == null;
+            storeCFSReader = new CompoundFileReader(dir,
+                                                    si.getDocStoreSegment() + "." + IndexFileNames.COMPOUND_FILE_STORE_EXTENSION,
+                                                    readBufferSize);
+            storeDir = storeCFSReader;
+            assert storeDir != null;
+          } else {
+            storeDir = dir;
+            assert storeDir != null;
+          }
+        } else if (si.getUseCompoundFile()) {
+          // In some cases, we were originally opened when CFS
+          // was not used, but then we are asked to open doc
+          // stores after the segment has switched to CFS
+          if (cfsReader == null) {
+            cfsReader = new CompoundFileReader(dir, segment + "." + IndexFileNames.COMPOUND_FILE_EXTENSION, readBufferSize);
+          }
+          storeDir = cfsReader;
+          assert storeDir != null;
+        } else {
+          storeDir = dir;
+          assert storeDir != null;
+        }
+
+        final String storesSegment;
+        if (si.getDocStoreOffset() != -1) {
+          storesSegment = si.getDocStoreSegment();
+        } else {
+          storesSegment = segment;
+        }
+
+        fieldsReaderOrig = new FieldsReader(storeDir, storesSegment, fieldInfos, readBufferSize,
+                                            si.getDocStoreOffset(), si.docCount);
+
+        // Verify two sources of "maxDoc" agree:
+        if (si.getDocStoreOffset() == -1 && fieldsReaderOrig.size() != si.docCount) {
+          throw new CorruptIndexException("doc counts differ for segment " + segment + ": fieldsReader shows " + fieldsReaderOrig.size() + " but segmentInfo shows " + si.docCount);
+        }
+
+        if (fieldInfos.hasVectors()) { // open term vector files only as needed
+          termVectorsReaderOrig = new TermVectorsReader(storeDir, storesSegment, fieldInfos, readBufferSize, si.getDocStoreOffset(), si.docCount);
+        }
+      }
+    }
+  }
+
   /**
    * Sets the initial value 
    */
   private class FieldsReaderLocal extends CloseableThreadLocal {
     protected Object initialValue() {
-      return (FieldsReader) fieldsReaderOrig.clone();
+      return core.getFieldsReaderOrig().clone();
     }
   }
   
@@ -421,41 +573,19 @@ class SegmentReader extends IndexReader implements Cloneable {
     } catch (Exception e) {
       throw new RuntimeException("cannot load SegmentReader class: " + e, e);
     }
-    instance.directory = dir;
     instance.readOnly = readOnly;
-    instance.segment = si.name;
     instance.si = si;
     instance.readBufferSize = readBufferSize;
 
     boolean success = false;
 
     try {
-      // Use compound file directory for some files, if it exists
-      Directory cfsDir = instance.directory();
-      if (si.getUseCompoundFile()) {
-        instance.cfsReader = new CompoundFileReader(instance.directory(), instance.segment + "." + IndexFileNames.COMPOUND_FILE_EXTENSION, readBufferSize);
-        cfsDir = instance.cfsReader;
-      }
-
-      instance.fieldInfos = new FieldInfos(cfsDir, instance.segment + ".fnm");
-
+      instance.core = new CoreReaders(dir, si, readBufferSize);
       if (doOpenStores) {
-        instance.openDocStores();
+        instance.core.openDocStores(si);
       }
-
-      boolean anyProx = instance.fieldInfos.hasProx();
-
-      instance.tis = new TermInfosReader(cfsDir, instance.segment, instance.fieldInfos, readBufferSize);
-
       instance.loadDeletedDocs();
-
-      // make sure that all index files have been read or are kept open
-      // so that if an index update removes them we'll still have them
-      instance.freqStream = cfsDir.openInput(instance.segment + ".frq", readBufferSize);
-      if (anyProx)
-        instance.proxStream = cfsDir.openInput(instance.segment + ".prx", readBufferSize);
-      instance.openNorms(cfsDir, readBufferSize);
-
+      instance.openNorms(instance.core.cfsDir, readBufferSize);
       success = true;
     } finally {
 
@@ -471,64 +601,8 @@ class SegmentReader extends IndexReader implements Cloneable {
     return instance;
   }
 
-  synchronized void openDocStores(SegmentReader orig) throws IOException {
-    if (fieldsReaderOrig == null) {
-      orig.openDocStores();
-      
-      fieldsReaderOrig = orig.fieldsReaderOrig;
-      termVectorsReaderOrig = orig.termVectorsReaderOrig;
-      storeCFSReader = orig.storeCFSReader;
-      cfsReader = orig.cfsReader;
-    }
-  }
-
-  synchronized void openDocStores() throws IOException {
-    if (fieldsReaderOrig == null) {
-      final Directory storeDir;
-      if (si.getDocStoreOffset() != -1) {
-        if (si.getDocStoreIsCompoundFile()) {
-          storeCFSReader = new CompoundFileReader(directory(),
-                                                  si.getDocStoreSegment() + "." + IndexFileNames.COMPOUND_FILE_STORE_EXTENSION,
-                                                  readBufferSize);
-          storeDir = storeCFSReader;
-          assert storeDir != null;
-        } else {
-          storeDir = directory();
-          assert storeDir != null;
-        }
-      } else if (si.getUseCompoundFile()) {
-        // In some cases, we were originally opened when CFS
-        // was not used, but then we are asked to open doc
-        // stores after the segment has switched to CFS
-        if (cfsReader == null) {
-          cfsReader = new CompoundFileReader(directory(), segment + "." + IndexFileNames.COMPOUND_FILE_EXTENSION, readBufferSize);
-        }
-        storeDir = cfsReader;
-        assert storeDir != null;
-      } else {
-        storeDir = directory();
-        assert storeDir != null;
-      }
-
-      final String storesSegment;
-      if (si.getDocStoreOffset() != -1) {
-        storesSegment = si.getDocStoreSegment();
-      } else {
-        storesSegment = segment;
-      }
-
-      fieldsReaderOrig = new FieldsReader(storeDir, storesSegment, fieldInfos, readBufferSize,
-                                          si.getDocStoreOffset(), si.docCount);
-
-      // Verify two sources of "maxDoc" agree:
-      if (si.getDocStoreOffset() == -1 && fieldsReaderOrig.size() != si.docCount) {
-        throw new CorruptIndexException("doc counts differ for segment " + si.name + ": fieldsReader shows " + fieldsReaderOrig.size() + " but segmentInfo shows " + si.docCount);
-      }
-
-      if (fieldInfos.hasVectors()) { // open term vector files only as needed
-        termVectorsReaderOrig = new TermVectorsReader(storeDir, storesSegment, fieldInfos, readBufferSize, si.getDocStoreOffset(), si.docCount);
-      }
-    }
+  void openDocStores() throws IOException {
+    core.openDocStores(si);
   }
 
   private void loadDeletedDocs() throws IOException {
@@ -586,8 +660,8 @@ class SegmentReader extends IndexReader implements Cloneable {
                                   && (!si.hasDeletions() || this.si.getDelFileName().equals(si.getDelFileName()));
     boolean normsUpToDate = true;
     
-    boolean[] fieldNormsChanged = new boolean[fieldInfos.size()];
-    final int fieldCount = fieldInfos.size();
+    boolean[] fieldNormsChanged = new boolean[core.fieldInfos.size()];
+    final int fieldCount = core.fieldInfos.size();
     for (int i = 0; i < fieldCount; i++) {
       if (!this.si.getNormFileName(i).equals(si.getNormFileName(i))) {
         normsUpToDate = false;
@@ -618,23 +692,12 @@ class SegmentReader extends IndexReader implements Cloneable {
 
     boolean success = false;
     try {
-      coreRef.incRef();
-      clone.coreRef = coreRef;
+      core.incRef();
+      clone.core = core;
       clone.readOnly = openReadOnly;
-      clone.directory = directory;
       clone.si = si;
-      clone.segment = segment;
       clone.readBufferSize = readBufferSize;
-      clone.cfsReader = cfsReader;
-      clone.storeCFSReader = storeCFSReader;
 
-      clone.fieldInfos = fieldInfos;
-      clone.tis = tis;
-      clone.freqStream = freqStream;
-      clone.proxStream = proxStream;
-      clone.termVectorsReaderOrig = termVectorsReaderOrig;
-      clone.fieldsReaderOrig = fieldsReaderOrig;
-      
       if (!openReadOnly && hasChanges) {
         // My pending changes transfer to the new reader
         clone.pendingDeleteCount = pendingDeleteCount;
@@ -670,16 +733,16 @@ class SegmentReader extends IndexReader implements Cloneable {
 
         // Clone unchanged norms to the cloned reader
         if (doClone || !fieldNormsChanged[i]) {
-          final String curField = fieldInfos.fieldInfo(i).name;
+          final String curField = core.fieldInfos.fieldInfo(i).name;
           Norm norm = (Norm) this.norms.get(curField);
           if (norm != null)
             clone.norms.put(curField, norm.clone());
         }
       }
-      
+
       // If we are not cloning, then this will open anew
       // any norms that have changed:
-      clone.openNorms(si.getUseCompoundFile() ? cfsReader : directory(), readBufferSize);
+      clone.openNorms(si.getUseCompoundFile() ? core.getCFSReader() : directory(), readBufferSize);
 
       success = true;
     } finally {
@@ -716,7 +779,7 @@ class SegmentReader extends IndexReader implements Cloneable {
       }
 
       if (normsDirty) {               // re-write norms
-        si.setNumFields(fieldInfos.size());
+        si.setNumFields(core.fieldInfos.size());
         Iterator it = norms.values().iterator();
         while (it.hasNext()) {
           Norm norm = (Norm) it.next();
@@ -734,7 +797,7 @@ class SegmentReader extends IndexReader implements Cloneable {
   FieldsReader getFieldsReader() {
     return (FieldsReader) fieldsReaderLocal.get();
   }
-  
+
   protected void doClose() throws IOException {
     termVectorsLocal.close();
     fieldsReaderLocal.close();
@@ -749,32 +812,8 @@ class SegmentReader extends IndexReader implements Cloneable {
     while (it.hasNext()) {
       ((Norm) it.next()).decRef();
     }
-
-    if (coreRef.decRef() == 0) {
-
-      // close everything, nothing is shared anymore with other readers
-      if (tis != null) {
-        tis.close();
-        // null so if an app hangs on to us we still free most ram
-        tis = null;
-      }
-      
-      if (freqStream != null)
-        freqStream.close();
-      if (proxStream != null)
-        proxStream.close();
-  
-      if (termVectorsReaderOrig != null)
-        termVectorsReaderOrig.close();
-  
-      if (fieldsReaderOrig != null)
-        fieldsReaderOrig.close();
-  
-      if (cfsReader != null)
-        cfsReader.close();
-  
-      if (storeCFSReader != null)
-        storeCFSReader.close();
+    if (core != null) {
+      core.decRef();
     }
   }
 
@@ -837,16 +876,16 @@ class SegmentReader extends IndexReader implements Cloneable {
 
   public TermEnum terms() {
     ensureOpen();
-    return tis.terms();
+    return core.tis.terms();
   }
 
   public TermEnum terms(Term t) throws IOException {
     ensureOpen();
-    return tis.terms(t);
+    return core.tis.terms(t);
   }
 
-  FieldInfos getFieldInfos() {
-    return fieldInfos;
+  FieldInfos fieldInfos() {
+    return core.fieldInfos;
   }
 
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
@@ -878,7 +917,7 @@ class SegmentReader extends IndexReader implements Cloneable {
 
   public int docFreq(Term t) throws IOException {
     ensureOpen();
-    TermInfo ti = tis.get(t);
+    TermInfo ti = core.tis.get(t);
     if (ti != null)
       return ti.docFreq;
     else
@@ -899,11 +938,11 @@ class SegmentReader extends IndexReader implements Cloneable {
   }
 
   public void setTermInfosIndexDivisor(int indexDivisor) throws IllegalStateException {
-    tis.setIndexDivisor(indexDivisor);
+    core.tis.setIndexDivisor(indexDivisor);
   }
 
   public int getTermInfosIndexDivisor() {
-    return tis.getIndexDivisor();
+    return core.tis.getIndexDivisor();
   }
 
   /**
@@ -913,8 +952,8 @@ class SegmentReader extends IndexReader implements Cloneable {
     ensureOpen();
 
     Set fieldSet = new HashSet();
-    for (int i = 0; i < fieldInfos.size(); i++) {
-      FieldInfo fi = fieldInfos.fieldInfo(i);
+    for (int i = 0; i < core.fieldInfos.size(); i++) {
+      FieldInfo fi = core.fieldInfos.fieldInfo(i);
       if (fieldOption == IndexReader.FieldOption.ALL) {
         fieldSet.add(fi.name);
       }
@@ -1018,8 +1057,8 @@ class SegmentReader extends IndexReader implements Cloneable {
   private void openNorms(Directory cfsDir, int readBufferSize) throws IOException {
     long nextNormSeek = SegmentMerger.NORMS_HEADER.length; //skip header (header unused for now)
     int maxDoc = maxDoc();
-    for (int i = 0; i < fieldInfos.size(); i++) {
-      FieldInfo fi = fieldInfos.fieldInfo(i);
+    for (int i = 0; i < core.fieldInfos.size(); i++) {
+      FieldInfo fi = core.fieldInfos.fieldInfo(i);
       if (norms.containsKey(fi.name)) {
         // in case this SegmentReader is being re-opened, we might be able to
         // reuse some norm instances and skip loading them here
@@ -1085,18 +1124,26 @@ class SegmentReader extends IndexReader implements Cloneable {
    * Create a clone from the initial TermVectorsReader and store it in the ThreadLocal.
    * @return TermVectorsReader
    */
-  private TermVectorsReader getTermVectorsReader() {
-    assert termVectorsReaderOrig != null;
-    TermVectorsReader tvReader = (TermVectorsReader)termVectorsLocal.get();
+  TermVectorsReader getTermVectorsReader() {
+    TermVectorsReader tvReader = (TermVectorsReader) termVectorsLocal.get();
     if (tvReader == null) {
-      try {
-        tvReader = (TermVectorsReader)termVectorsReaderOrig.clone();
-      } catch (CloneNotSupportedException cnse) {
+      TermVectorsReader orig = core.getTermVectorsReaderOrig();
+      if (orig == null) {
         return null;
+      } else {
+        try {
+          tvReader = (TermVectorsReader) orig.clone();
+        } catch (CloneNotSupportedException cnse) {
+          return null;
+        }
       }
       termVectorsLocal.set(tvReader);
     }
     return tvReader;
+  }
+
+  TermVectorsReader getTermVectorsReaderOrig() {
+    return core.getTermVectorsReaderOrig();
   }
   
   /** Return a term frequency vector for the specified document and field. The
@@ -1108,8 +1155,8 @@ class SegmentReader extends IndexReader implements Cloneable {
   public TermFreqVector getTermFreqVector(int docNumber, String field) throws IOException {
     // Check if this field is invalid or has no stored term vector
     ensureOpen();
-    FieldInfo fi = fieldInfos.fieldInfo(field);
-    if (fi == null || !fi.storeTermVector || termVectorsReaderOrig == null) 
+    FieldInfo fi = core.fieldInfos.fieldInfo(field);
+    if (fi == null || !fi.storeTermVector) 
       return null;
     
     TermVectorsReader termVectorsReader = getTermVectorsReader();
@@ -1122,13 +1169,12 @@ class SegmentReader extends IndexReader implements Cloneable {
 
   public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
     ensureOpen();
-    FieldInfo fi = fieldInfos.fieldInfo(field);
-    if (fi == null || !fi.storeTermVector || termVectorsReaderOrig == null)
+    FieldInfo fi = core.fieldInfos.fieldInfo(field);
+    if (fi == null || !fi.storeTermVector)
       return;
 
     TermVectorsReader termVectorsReader = getTermVectorsReader();
-    if (termVectorsReader == null)
-    {
+    if (termVectorsReader == null) {
       return;
     }
 
@@ -1139,8 +1185,6 @@ class SegmentReader extends IndexReader implements Cloneable {
 
   public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
     ensureOpen();
-    if (termVectorsReaderOrig == null)
-      return;
 
     TermVectorsReader termVectorsReader = getTermVectorsReader();
     if (termVectorsReader == null)
@@ -1158,8 +1202,6 @@ class SegmentReader extends IndexReader implements Cloneable {
    */
   public TermFreqVector[] getTermFreqVectors(int docNumber) throws IOException {
     ensureOpen();
-    if (termVectorsReaderOrig == null)
-      return null;
     
     TermVectorsReader termVectorsReader = getTermVectorsReader();
     if (termVectorsReader == null)
@@ -1168,16 +1210,11 @@ class SegmentReader extends IndexReader implements Cloneable {
     return termVectorsReader.get(docNumber);
   }
   
-  /** Returns the field infos of this segment */
-  FieldInfos fieldInfos() {
-    return fieldInfos;
-  }
-  
   /**
    * Return the name of the segment this reader is reading.
    */
   public String getSegmentName() {
-    return segment;
+    return core.segment;
   }
   
   /**
@@ -1220,18 +1257,18 @@ class SegmentReader extends IndexReader implements Cloneable {
     // Don't ensureOpen here -- in certain cases, when a
     // cloned/reopened reader needs to commit, it may call
     // this method on the closed original reader
-    return directory;
+    return core.dir;
   }
 
   // This is necessary so that cloned SegmentReaders (which
   // share the underlying postings data) will map to the
   // same entry in the FieldCache.  See LUCENE-1579.
   public final Object getFieldCacheKey() {
-    return freqStream;
+    return core.freqStream;
   }
 
   public long getUniqueTermCount() {
-    return tis.size();
+    return core.tis.size();
   }
 
   /**
@@ -1257,4 +1294,5 @@ class SegmentReader extends IndexReader implements Cloneable {
 
     throw new IllegalArgumentException(reader + " is not a SegmentReader or a single-segment DirectoryReader");
   }
+
 }

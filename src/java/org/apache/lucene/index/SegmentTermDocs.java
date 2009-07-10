@@ -45,16 +45,16 @@ class SegmentTermDocs implements TermDocs {
   
   protected SegmentTermDocs(SegmentReader parent) {
     this.parent = parent;
-    this.freqStream = (IndexInput) parent.freqStream.clone();
+    this.freqStream = (IndexInput) parent.core.freqStream.clone();
     synchronized (parent) {
       this.deletedDocs = parent.deletedDocs;
     }
-    this.skipInterval = parent.tis.getSkipInterval();
-    this.maxSkipLevels = parent.tis.getMaxSkipLevels();
+    this.skipInterval = parent.core.tis.getSkipInterval();
+    this.maxSkipLevels = parent.core.tis.getMaxSkipLevels();
   }
 
   public void seek(Term term) throws IOException {
-    TermInfo ti = parent.tis.get(term);
+    TermInfo ti = parent.core.tis.get(term);
     seek(ti, term);
   }
 
@@ -63,13 +63,13 @@ class SegmentTermDocs implements TermDocs {
     Term term;
     
     // use comparison of fieldinfos to verify that termEnum belongs to the same segment as this SegmentTermDocs
-    if (termEnum instanceof SegmentTermEnum && ((SegmentTermEnum) termEnum).fieldInfos == parent.fieldInfos) {        // optimized case
+    if (termEnum instanceof SegmentTermEnum && ((SegmentTermEnum) termEnum).fieldInfos == parent.core.fieldInfos) {        // optimized case
       SegmentTermEnum segmentTermEnum = ((SegmentTermEnum) termEnum);
       term = segmentTermEnum.term();
       ti = segmentTermEnum.termInfo();
     } else  {                                         // punt case
       term = termEnum.term();
-      ti = parent.tis.get(term);        
+      ti = parent.core.tis.get(term);
     }
     
     seek(ti, term);
@@ -77,7 +77,7 @@ class SegmentTermDocs implements TermDocs {
 
   void seek(TermInfo ti, Term term) throws IOException {
     count = 0;
-    FieldInfo fi = parent.fieldInfos.fieldInfo(term.field);
+    FieldInfo fi = parent.core.fieldInfos.fieldInfo(term.field);
     currentFieldOmitTermFreqAndPositions = (fi != null) ? fi.omitTermFreqAndPositions : false;
     currentFieldStoresPayloads = (fi != null) ? fi.storePayloads : false;
     if (ti == null) {

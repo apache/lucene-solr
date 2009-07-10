@@ -253,7 +253,7 @@ final class SegmentMerger {
       if (reader instanceof SegmentReader) {
         SegmentReader segmentReader = (SegmentReader) reader;
         boolean same = true;
-        FieldInfos segmentFieldInfos = segmentReader.getFieldInfos();
+        FieldInfos segmentFieldInfos = segmentReader.fieldInfos();
         int numFieldInfos = segmentFieldInfos.size();
         for (int j = 0; same && j < numFieldInfos; j++) {
           same = fieldInfos.fieldName(j).equals(segmentFieldInfos.fieldName(j));
@@ -285,7 +285,7 @@ final class SegmentMerger {
       // with the fieldInfos of the last segment in this
       // case, to keep that numbering.
       final SegmentReader sr = (SegmentReader) readers.get(readers.size()-1);
-      fieldInfos = (FieldInfos) sr.fieldInfos.clone();
+      fieldInfos = (FieldInfos) sr.core.fieldInfos.clone();
     } else {
       fieldInfos = new FieldInfos();		  // merge field names
     }
@@ -294,7 +294,7 @@ final class SegmentMerger {
       IndexReader reader = (IndexReader) iter.next();
       if (reader instanceof SegmentReader) {
         SegmentReader segmentReader = (SegmentReader) reader;
-        FieldInfos readerFieldInfos = segmentReader.getFieldInfos();
+        FieldInfos readerFieldInfos = segmentReader.fieldInfos();
         int numReaderFieldInfos = readerFieldInfos.size();
         for (int j = 0; j < numReaderFieldInfos; j++) {
           FieldInfo fi = readerFieldInfos.fieldInfo(j);
@@ -468,7 +468,7 @@ final class SegmentMerger {
         final SegmentReader matchingSegmentReader = matchingSegmentReaders[idx++];
         TermVectorsReader matchingVectorsReader = null;
         if (matchingSegmentReader != null) {
-          TermVectorsReader vectorsReader = matchingSegmentReader.termVectorsReaderOrig;
+          TermVectorsReader vectorsReader = matchingSegmentReader.getTermVectorsReaderOrig();
 
           // If the TV* files are an older format then they cannot read raw docs:
           if (vectorsReader != null && vectorsReader.canReadRawDocs()) {

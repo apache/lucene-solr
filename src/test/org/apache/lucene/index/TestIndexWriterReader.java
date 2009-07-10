@@ -42,7 +42,7 @@ import org.apache.lucene.util._TestUtil;
 public class TestIndexWriterReader extends LuceneTestCase {
   static PrintStream infoStream;
 
-  private static class HeavyAtomicInt {
+  public static class HeavyAtomicInt {
     private int value;
     public HeavyAtomicInt(int start) {
       value = start;
