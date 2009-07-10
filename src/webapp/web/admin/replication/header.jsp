@@ -20,7 +20,8 @@
 				 org.apache.solr.common.util.SimpleOrderedMap,
 				 org.apache.solr.request.LocalSolrQueryRequest,
 				 org.apache.solr.request.SolrQueryResponse,
-				 org.apache.solr.request.SolrRequestHandler"%>
+				 org.apache.solr.request.SolrRequestHandler,
+                                 java.util.Map"%>
 <%@ page import="org.apache.solr.handler.ReplicationHandler" %>
 <%
 request.setCharacterEncoding("UTF-8");
@@ -55,11 +56,15 @@ public NamedList executeCommand(String command, SolrCore core, SolrRequestHandle
 %>
 
 <%
-final SolrRequestHandler rh = core.getRequestHandler(ReplicationHandler.class);
-  if(rh == null){
+final Map<String,SolrRequestHandler> all = core.getRequestHandlers(ReplicationHandler.class);
+  if(all.isEmpty()){
     response.sendError( 404, "No ReplicationHandler registered" );
     return;
   }
+
+// :HACK: we should be more deterministic if multiple instances
+final SolrRequestHandler rh = all.values().iterator().next();
+
 NamedList namedlist = executeCommand("details",core,rh);
 NamedList detailsMap = (NamedList)namedlist.get("details");
 if(detailsMap != null)

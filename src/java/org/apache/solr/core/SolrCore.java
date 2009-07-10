@@ -768,8 +768,11 @@ public final class SolrCore implements SolrInfoMBean {
     return reqHandlers.get(handlerName);
   }
 
-  public SolrRequestHandler getRequestHandler(Class clazz) {
-    return reqHandlers.get(clazz);
+  /**
+   * Returns an unmodifieable Map containing the registered handlers of the specified type.
+   */
+  public Map<String,SolrRequestHandler> getRequestHandlers(Class clazz) {
+    return reqHandlers.getAll(clazz);
   }
   
   /**

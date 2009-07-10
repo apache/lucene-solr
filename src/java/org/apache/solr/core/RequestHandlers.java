@@ -74,11 +74,16 @@ final class RequestHandlers {
     return handlers.get(normalize(handlerName));
   }
 
-  public SolrRequestHandler get(Class clazz) {
-    for (SolrRequestHandler requestHandler : handlers.values()) {
-      if(requestHandler.getClass() == clazz) return requestHandler;
+  /**
+   * @return a Map of all registered handlers of the specified type.
+   */
+  public Map<String,SolrRequestHandler> getAll(Class clazz) {
+    Map<String,SolrRequestHandler> result 
+      = new HashMap<String,SolrRequestHandler>(7);
+    for (Map.Entry<String,SolrRequestHandler> e : handlers.entrySet()) {
+      if(clazz.isInstance(e.getValue())) result.put(e.getKey(), e.getValue());
     }
-    return null;
+    return result;
   }
 
   /**

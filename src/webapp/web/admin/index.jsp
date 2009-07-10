@@ -29,7 +29,7 @@
 <%-- jsp:include page="header.jsp"/ --%>
 <%-- do a verbatim include so we can use the local vars --%>
 <%@include file="header.jsp" %>
-<%SolrRequestHandler replicationhandler = core.getRequestHandler(ReplicationHandler.class);%>
+<%boolean replicationhandler = !core.getRequestHandlers(ReplicationHandler.class).isEmpty();%>
 <br clear="all">
 <table>
 
@@ -45,7 +45,7 @@
     [<a href="file/?file=<%=core.getConfigResource()%>">Config</a>]
     <% } %>
     [<a href="analysis.jsp?highlight=on">Analysis</a>]
-    [<a href="schema.jsp">Schema Browser</a>] <%if(replicationhandler != null ){%>[<a href="replication/index.jsp">Replication</a>]<%}%>
+    [<a href="schema.jsp">Schema Browser</a>] <%if(replicationhandler){%>[<a href="replication/index.jsp">Replication</a>]<%}%>
     <br>
     [<a href="stats.jsp">Statistics</a>]
     [<a href="registry.jsp">Info</a>]
