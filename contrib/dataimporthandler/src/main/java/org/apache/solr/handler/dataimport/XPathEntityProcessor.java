@@ -242,6 +242,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
         if (ABORT.equals(onError)) {
           wrapAndThrow(SEVERE, e);
         } else if (SKIP.equals(onError)) {
+          if (LOG.isDebugEnabled()) LOG.debug("Skipping url : " + s, e);
           wrapAndThrow(DataImportHandlerException.SKIP, e);
         } else {
           LOG.warn("Failed for url : " + s, e);
