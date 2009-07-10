@@ -21,13 +21,13 @@
 				 org.apache.solr.request.LocalSolrQueryRequest,
 				 org.apache.solr.request.SolrQueryResponse,
 				 org.apache.solr.request.SolrRequestHandler"%>
-
-<html>
-<head>
-
+<%@ page import="org.apache.solr.handler.ReplicationHandler" %>
 <%
 request.setCharacterEncoding("UTF-8");
 %>
+
+<html>
+<head>
 
 <%@include file="../_info.jsp" %>
 
@@ -55,7 +55,11 @@ public NamedList executeCommand(String command, SolrCore core, SolrRequestHandle
 %>
 
 <%
-final SolrRequestHandler rh = core.getRequestHandler("/replication");
+final SolrRequestHandler rh = core.getRequestHandler(ReplicationHandler.class);
+  if(rh == null){
+    response.sendError( 404, "No ReplicationHandler registered" );
+    return;
+  }
 NamedList namedlist = executeCommand("details",core,rh);
 NamedList detailsMap = (NamedList)namedlist.get("details");
 if(detailsMap != null)

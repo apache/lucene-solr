@@ -66,12 +66,19 @@ final class RequestHandlers {
   public RequestHandlers(SolrCore core) {
       this.core = core;
   }
-  
+
   /**
    * @return the RequestHandler registered at the given name 
    */
   public SolrRequestHandler get(String handlerName) {
     return handlers.get(normalize(handlerName));
+  }
+
+  public SolrRequestHandler get(Class clazz) {
+    for (SolrRequestHandler requestHandler : handlers.values()) {
+      if(requestHandler.getClass() == clazz) return requestHandler;
+    }
+    return null;
   }
 
   /**

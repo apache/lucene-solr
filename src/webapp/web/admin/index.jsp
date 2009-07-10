@@ -24,11 +24,12 @@
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Collection" %>
 <%@ page import="org.apache.solr.request.SolrRequestHandler"%>
+<%@ page import="org.apache.solr.handler.ReplicationHandler" %>
 
 <%-- jsp:include page="header.jsp"/ --%>
 <%-- do a verbatim include so we can use the local vars --%>
 <%@include file="header.jsp" %>
-<%SolrRequestHandler replicationhandler = core.getRequestHandler("/replication");%>
+<%SolrRequestHandler replicationhandler = core.getRequestHandler(ReplicationHandler.class);%>
 <br clear="all">
 <table>
 
