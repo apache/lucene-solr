@@ -106,7 +106,8 @@ public class DataImporter {
       Map<String, DataConfig.Field> fields = new HashMap<String, DataConfig.Field>();
       initEntity(e, fields, false);
       verifyWithSchema(fields);
-    }
+      identifyPk(e);
+    }    
   }
 
   private void verifyWithSchema(Map<String, DataConfig.Field> fields) {
@@ -143,6 +144,22 @@ public class DataImporter {
     for (DataConfig.Entity entity : config.document.entities) {
       initEntity(entity, fields, false);
     }
+  }
+
+  private void identifyPk(DataConfig.Entity entity) {
+    String schemaPk = schema.getUniqueKeyField().getName();
+    //if no fields are mentioned . solr uniqeKey is same as dih 'pk'
+    entity.pkMappingFromSchema = schemaPk;
+    for (DataConfig.Field field : entity.fields) {
+      if(field.getName().equals(schemaPk)) {
+        entity.pkMappingFromSchema = field.column;
+        //get the corresponding column mapping for the solr uniqueKey
+        // But if there are multiple columns mapping to the solr uniqueKey, it will fail
+        // so , in one off cases we may need pk
+        break;
+      }
+    } 
+
   }
 
   void loadDataConfig(String configFile) {

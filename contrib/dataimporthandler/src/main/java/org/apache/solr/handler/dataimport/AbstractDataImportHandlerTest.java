@@ -68,7 +68,7 @@ public abstract class AbstractDataImportHandlerTest extends
 
   protected void runDeltaImport(String dataConfig) throws Exception {
     LocalSolrQueryRequest request = lrf.makeRequest("command", "delta-import",
-            "debug", "on", "clean", "true", "commit", "true", "dataConfig",
+            "debug", "on", "clean", "false", "commit", "true", "dataConfig",
             dataConfig);
     h.query("/dataimport", request);
   }

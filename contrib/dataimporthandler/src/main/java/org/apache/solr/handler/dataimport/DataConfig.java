@@ -78,6 +78,8 @@ public class DataConfig {
 
     public String pk;
 
+    public String pkMappingFromSchema;
+
     public String dataSource;
 
     public Map<String, String> allAttributes;

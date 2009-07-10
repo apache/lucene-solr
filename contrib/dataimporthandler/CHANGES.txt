@@ -246,6 +246,8 @@ Bug Fixes
 26.SOLR-1146: ConcurrentModificationException in DataImporter.getStatusMessages
               (Walter Ferrara, Noble Paul via shalin)
 
+27.SOLR-1229: Fixes for deletedPkQuery, particularly when using transformed Solr unique id's
+              (Lance Norskog, Noble Paul via ehatcher)
              
 
 Documentation

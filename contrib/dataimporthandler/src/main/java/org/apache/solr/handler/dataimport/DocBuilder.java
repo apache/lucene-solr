@@ -273,16 +273,11 @@ public class DocBuilder {
     while (iter.hasNext()) {
       Map<String, Object> map = iter.next();
       Object key = null;
-      if(root.pk != null){
-        key = map.get(root.pk);
-      }
-      if(key == null && map.size() ==1){
-        //iterating through the map just to get the first and only item
-        for (Map.Entry<String, Object> e : map.entrySet()) {
-          key = e.getValue();
-          break;
-        }
-      }
+      if(root.pkMappingFromSchema != null){
+        key = map.get(root.pkMappingFromSchema);
+      } else if(root.pk != null){
+          key = map.get(root.pk);
+     } 
       if(key == null) {
         LOG.warn("no key was available for deleteted pk query");
         continue;
