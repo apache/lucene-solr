@@ -122,9 +122,12 @@ final class FieldInfos {
   /** Returns true if any fields do not omitTermFreqAndPositions */
   boolean hasProx() {
     final int numFields = byNumber.size();
-    for(int i=0;i<numFields;i++)
-      if (!fieldInfo(i).omitTermFreqAndPositions)
+    for(int i=0;i<numFields;i++) {
+      final FieldInfo fi = fieldInfo(i);
+      if (fi.isIndexed && !fi.omitTermFreqAndPositions) {
         return true;
+      }
+    }
     return false;
   }
   

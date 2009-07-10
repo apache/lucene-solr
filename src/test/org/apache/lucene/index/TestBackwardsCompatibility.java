@@ -209,22 +209,24 @@ public class TestBackwardsCompatibility extends LuceneTestCase
             !oldName.startsWith("20.") &&
             !oldName.startsWith("21.") &&
             !oldName.startsWith("22.")) {
-          // Test on indices >= 2.3
-          assertEquals(5, fields.size());
-          Field f = (Field) d.getField("id");
-          assertEquals(""+i, f.stringValue());
 
-          f = (Field) d.getField("utf8");
-          assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
+          if (d.getField("content3") == null) {
+            assertEquals(5, fields.size());
+            Field f = (Field) d.getField("id");
+            assertEquals(""+i, f.stringValue());
 
-          f = (Field) d.getField("autf8");
-          assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
+            f = (Field) d.getField("utf8");
+            assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
+
+            f = (Field) d.getField("autf8");
+            assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
         
-          f = (Field) d.getField("content2");
-          assertEquals("here is more content with aaa aaa aaa", f.stringValue());
+            f = (Field) d.getField("content2");
+            assertEquals("here is more content with aaa aaa aaa", f.stringValue());
 
-          f = (Field) d.getField("fie\u2C77ld");
-          assertEquals("field with non-ascii name", f.stringValue());
+            f = (Field) d.getField("fie\u2C77ld");
+            assertEquals("field with non-ascii name", f.stringValue());
+          }
         }       
       } else
         // Only ID 7 is deleted
@@ -257,10 +259,16 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     dir.close();
   }
 
+  private int compare(String name, String v) {
+    int v0 = Integer.parseInt(name.substring(0, 2));
+    int v1 = Integer.parseInt(v);
+    return v0 - v1;
+  }
+
   /* Open pre-lockless index, add docs, do a delete &
    * setNorm, and search */
   public void changeIndexWithAdds(String dirName, boolean autoCommit) throws IOException {
-
+    String origDirName = dirName;
     dirName = fullDir(dirName);
 
     Directory dir = FSDirectory.open(new File(dirName));
@@ -274,7 +282,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     }
 
     // make sure writer sees right total -- writer seems not to know about deletes in .del?
-    assertEquals("wrong doc count", 45, writer.docCount());
+    final int expected;
+    if (compare(origDirName, "24") < 0) {
+      expected = 45;
+    } else {
+      expected = 46;
+    }
+    assertEquals("wrong doc count", expected, writer.docCount());
     writer.close();
 
     // make sure searching sees right # hits
@@ -386,6 +400,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     assertEquals("wrong doc count", 35, writer.docCount());
     writer.close();
 
+    // open fresh writer so we get no prx file in the added segment
+    writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    writer.setUseCompoundFile(doCFS);
+    writer.setMaxBufferedDocs(10);
+    addNoProxDoc(writer);
+    writer.close();
+
     // Delete one doc so we get a .del file:
     IndexReader reader = IndexReader.open(dir);
     Term searchTerm = new Term("id", "7");
@@ -489,6 +510,17 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     doc.add(new Field("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("content2", "here is more content with aaa aaa aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("fie\u2C77ld", "field with non-ascii name", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    writer.addDocument(doc);
+  }
+
+  private void addNoProxDoc(IndexWriter writer) throws IOException {
+    Document doc = new Document();
+    Field f = new Field("content3", "aaa", Field.Store.YES, Field.Index.ANALYZED);
+    f.setOmitTf(true);
+    doc.add(f);
+    f = new Field("content4", "aaa", Field.Store.YES, Field.Index.NO);
+    f.setOmitTf(true);
+    doc.add(f);
     writer.addDocument(doc);
   }
 

@@ -443,11 +443,7 @@ class SegmentReader extends IndexReader implements Cloneable {
         instance.openDocStores();
       }
 
-      boolean anyProx = false;
-      final int numFields = instance.fieldInfos.size();
-      for(int i=0;!anyProx && i<numFields;i++)
-        if (!instance.fieldInfos.fieldInfo(i).omitTermFreqAndPositions)
-          anyProx = true;
+      boolean anyProx = instance.fieldInfos.hasProx();
 
       instance.tis = new TermInfosReader(cfsDir, instance.segment, instance.fieldInfos, readBufferSize);
 
