@@ -30,7 +30,7 @@ import java.sql.Clob;
 import java.util.Properties;
 
 /**
- * This can be useful for users who has a DB field containing xml and wish to use a nested XPathEntityProcessor
+ * This can be useful for users who have a DB field containing xml and wish to use a nested XPathEntityProcessor
  * <p/>
  * The datasouce may be configured as follows
  * <p/>
