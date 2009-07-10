@@ -148,6 +148,13 @@ final class WordDelimiterFilter extends TokenFilter {
   final int splitOnNumerics;
 
   /**
+   * If 1, causes trailing "'s" to be removed for each subword. (Defaults to 1)
+   * <p/>
+   * "O'Neil's" => "O", "Neil"
+   */
+  final int stemEnglishPossessive;
+  
+  /**
    * If not null is the set of tokens to protect from being delimited
    *
    */
@@ -165,9 +172,10 @@ final class WordDelimiterFilter extends TokenFilter {
    * @param splitOnCaseChange 1, causes "PowerShot" to be two tokens; ("Power-Shot" remains two parts regards)
    * @param preserveOriginal If 1, includes original words in subwords: "500-42" => "500" "42" "500-42"
    * @param splitOnNumerics 1, causes "j2se" to be three tokens; "j" "2" "se"
+   * @param stemEnglishPossessive If 1, causes trailing "'s" to be removed for each subword: "O'Neil's" => "O", "Neil"
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
-  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange, int preserveOriginal,int splitOnNumerics, CharArraySet protWords) {
+  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange, int preserveOriginal,int splitOnNumerics, int stemEnglishPossessive, CharArraySet protWords) {
     super(in);
     this.generateWordParts = generateWordParts;
     this.generateNumberParts = generateNumberParts;
@@ -178,14 +186,27 @@ final class WordDelimiterFilter extends TokenFilter {
     this.preserveOriginal = preserveOriginal;
     this.charTypeTable = charTypeTable;
     this.splitOnNumerics = splitOnNumerics;
+    this.stemEnglishPossessive = stemEnglishPossessive;
     this.protWords = protWords;
+  }
+  
+  /**
+   * Compatibility constructor
+   * 
+   * @deprecated Use
+   *             {@link #WordDelimiterFilter(TokenStream, byte[], int, int, int, int, int, int, int, int, int, CharArraySet)}
+   *             instead.
+   */
+  @Deprecated
+  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange, int preserveOriginal,int splitOnNumerics, CharArraySet protWords) {
+    this(in,charTypeTable,generateWordParts,generateNumberParts,catenateWords,catenateNumbers,catenateAll,splitOnCaseChange,preserveOriginal, 1, 1, null);
   }
 
   /**
    * Compatibility constructor
    * 
    * @deprecated Use
-   *             {@link #WordDelimiterFilter(TokenStream, byte[], int, int, int, int, int, int, int, int, CharArraySet)}
+   *             {@link #WordDelimiterFilter(TokenStream, byte[], int, int, int, int, int, int, int, int, int, CharArraySet)}
    *             instead.
    */
   @Deprecated
@@ -203,16 +224,27 @@ final class WordDelimiterFilter extends TokenFilter {
    * @param splitOnCaseChange 1, causes "PowerShot" to be two tokens; ("Power-Shot" remains two parts regards)
    * @param preserveOriginal If 1, includes original words in subwords: "500-42" => "500" "42" "500-42"
    * @param splitOnNumerics 1, causes "j2se" to be three tokens; "j" "2" "se"
+   * @param stemEnglishPossessive If 1, causes trailing "'s" to be removed for each subword: "O'Neil's" => "O", "Neil"
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
+  public WordDelimiterFilter(TokenStream in, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange, int preserveOriginal,int splitOnNumerics, int stemEnglishPossessive, CharArraySet protWords) {
+    this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal, splitOnNumerics, stemEnglishPossessive, protWords);
+  }
+  
+  /**
+   * @deprecated Use
+   *             {@link #WordDelimiterFilter(TokenStream, int, int, int, int, int, int, int, int, int, CharArraySet)}
+   *             instead.
+   */
+  @Deprecated
   public WordDelimiterFilter(TokenStream in, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange, int preserveOriginal,int splitOnNumerics, CharArraySet protWords) {
-    this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal, splitOnNumerics, protWords);
+    this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal, splitOnNumerics, 1, protWords);
   }
 
   /**   * Compatibility constructor
    * 
    * @deprecated Use
-   *             {@link #WordDelimiterFilter(TokenStream, int, int, int, int, int, int, int, int, CharArraySet)}
+   *             {@link #WordDelimiterFilter(TokenStream, int, int, int, int, int, int, int, int, int, CharArraySet)}
    *             instead.
    */
   @Deprecated
@@ -223,7 +255,7 @@ final class WordDelimiterFilter extends TokenFilter {
    * Compatibility constructor
    * 
    * @deprecated Use
-   *             {@link #WordDelimiterFilter(TokenStream, int, int, int, int, int, int, int, int, CharArraySet)}
+   *             {@link #WordDelimiterFilter(TokenStream, int, int, int, int, int, int, int, int, int, CharArraySet)}
    *             instead.
    */
   @Deprecated
@@ -234,7 +266,7 @@ final class WordDelimiterFilter extends TokenFilter {
    * Compatibility constructor
    * 
    * @deprecated Use
-   *             {@link #WordDelimiterFilter(TokenStream, int, int, int, int, int, int, int, int, CharArraySet)}
+   *             {@link #WordDelimiterFilter(TokenStream, int, int, int, int, int, int, int, int, int, CharArraySet)}
    *             instead.
    */
   @Deprecated
@@ -388,7 +420,7 @@ final class WordDelimiterFilter extends TokenFilter {
             // check and remove "'s" from the end of a token.
             // the pattern to check for is
             //   ALPHA "'" ("s"|"S") (SUBWORD_DELIM | END)
-            if ((lastType & ALPHA)!=0) {
+            if (stemEnglishPossessive != 0 && ((lastType & ALPHA)!=0)) {
               if (ch=='\'' && pos+1< len
                       && (termBuffer[pos+1]=='s' || termBuffer[pos+1]=='S'))
               {

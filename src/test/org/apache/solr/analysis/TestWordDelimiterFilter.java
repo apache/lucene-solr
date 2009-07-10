@@ -359,5 +359,34 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
 
 
   }
+  
+  public void doSplitPossessive(int stemPossessive, final String input, final String... output) throws Exception {
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new TokenStream() {
+      boolean done=false;
+      @Override
+      public Token next() throws IOException {
+        if (done) return null;
+        done = true;
+        return new Token(input,0,input.length());
+      }
+    }
+            ,1,1,0,0,0,1,0,1,stemPossessive,null
+    );
+
+    for(String expected : output) {
+      Token t = wdf.next();
+      assertEquals(expected, t.term());
+    }
+
+    assertEquals(null, wdf.next());
+  }
+  
+  /*
+   * Test option that allows disabling the special "'s" stemming, instead treating the single quote like other delimiters. 
+   */
+  public void testPossessives() throws Exception {
+    doSplitPossessive(1, "ra's", "ra");
+    doSplitPossessive(0, "ra's", "ra", "s");
+  }
 
 }

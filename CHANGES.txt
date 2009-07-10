@@ -250,6 +250,11 @@ New Features
 
 64. SOLR-1256: Show the output of CharFilters in analysis.jsp. (koji)
 
+65. SOLR-1266: Added stemEnglishPossessive option (default=true) to WordDelimiterFilter
+    that allows disabling of english possessive stemming (removal of trailing 's from tokens)
+    (Robert Muir via yonik)
+
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

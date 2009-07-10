@@ -71,6 +71,7 @@ public class WordDelimiterFilterFactory extends BaseTokenFilterFactory implement
   int splitOnCaseChange=0;
   int splitOnNumerics=0;
   int preserveOriginal=0;
+  int stemEnglishPossessive=0;
 
   @Override
   public void init(Map<String, String> args) {
@@ -83,6 +84,7 @@ public class WordDelimiterFilterFactory extends BaseTokenFilterFactory implement
     splitOnCaseChange = getInt("splitOnCaseChange", 1);
     splitOnNumerics = getInt("splitOnNumerics", 1);
     preserveOriginal = getInt("preserveOriginal", 0);
+    stemEnglishPossessive = getInt("stemEnglishPossessive", 1);
   }
 
   public WordDelimiterFilter create(TokenStream input) {
@@ -90,6 +92,6 @@ public class WordDelimiterFilterFactory extends BaseTokenFilterFactory implement
                                    generateWordParts, generateNumberParts,
                                    catenateWords, catenateNumbers, catenateAll,
                                    splitOnCaseChange, preserveOriginal,
-                                   splitOnNumerics, protectedWords);
+                                   splitOnNumerics, stemEnglishPossessive, protectedWords);
   }
 }
