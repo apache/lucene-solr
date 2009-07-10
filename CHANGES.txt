@@ -295,6 +295,14 @@ API Changes
     new ctors taking field and term ranges as Strings (see also
     LUCENE-1424).  (Uwe Schindler)
 
+29. LUCENE-1609: The termInfosIndexDivisor must now be specified
+    up-front when opening the IndexReader.  Attempts to call
+    IndexReader.setTermInfosIndexDivisor will hit an
+    UnsupportedOperationException.  This was done to enable removal of
+    all synchronization in TermInfosReader, which previously could
+    cause threads to pile up in certain cases. (Dan Rosher via Mike
+    McCandless)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()
@@ -360,6 +368,9 @@ Bug fixes
 17. LUCENE-1599: Add clone support for SpanQuerys. SpanRegexQuery counts
     on this functionality and does not work correctly without it.
     (Billow Gao, Mark Miller)
+
+18. LUCENE-1718: Fix termInfosIndexDivisor to carry over to reopened
+    readers (Mike McCandless)
 
 New features
 

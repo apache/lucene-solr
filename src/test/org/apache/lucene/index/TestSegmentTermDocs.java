@@ -26,7 +26,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
 import java.io.IOException;
-import org.apache.lucene.search.Similarity;
 
 public class TestSegmentTermDocs extends LuceneTestCase {
   private Document testDoc = new Document();
@@ -53,8 +52,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
 
   public void testTermDocs(int indexDivisor) throws IOException {
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = SegmentReader.get(info);
-    reader.setTermInfosIndexDivisor(indexDivisor);
+    SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
     assertTrue(reader != null);
     SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
     assertTrue(segTermDocs != null);
@@ -76,8 +74,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   public void testBadSeek(int indexDivisor) throws IOException {
     {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = SegmentReader.get(info);
-      reader.setTermInfosIndexDivisor(indexDivisor);
+      SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
       assertTrue(reader != null);
       SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
       assertTrue(segTermDocs != null);
@@ -87,8 +84,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     }
     {
       //After adding the document, we should be able to read it back in
-      SegmentReader reader = SegmentReader.get(info);
-      reader.setTermInfosIndexDivisor(indexDivisor);
+      SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
       assertTrue(reader != null);
       SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
       assertTrue(segTermDocs != null);
@@ -123,9 +119,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     writer.optimize();
     writer.close();
     
-    IndexReader reader = IndexReader.open(dir);
-    reader.setTermInfosIndexDivisor(indexDivisor);
-    assertEquals(indexDivisor, reader.getTermInfosIndexDivisor());
+    IndexReader reader = IndexReader.open(dir, null, true, indexDivisor);
 
     TermDocs tdocs = reader.termDocs();
     
@@ -238,21 +232,6 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     testTermDocs(2);
     testBadSeek(2);
     testSkipTo(2);
-  }
-  
-  public void testIndexDivisorAfterLoad() throws IOException {
-    dir = new MockRAMDirectory();
-    testDoc = new Document();
-    DocHelper.setupDoc(testDoc);
-    SegmentInfo si = DocHelper.writeDoc(dir, testDoc);
-    SegmentReader reader = SegmentReader.get(si);
-    assertEquals(1, reader.docFreq(new Term("keyField", "Keyword")));
-    try {
-      reader.setTermInfosIndexDivisor(2);
-      fail("did not hit IllegalStateException exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
   }
 
   private void addDoc(IndexWriter writer, String value) throws IOException

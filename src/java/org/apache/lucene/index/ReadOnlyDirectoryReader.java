@@ -23,16 +23,17 @@ import java.io.IOException;
 import java.util.Map;
 
 class ReadOnlyDirectoryReader extends DirectoryReader {
-  ReadOnlyDirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy) throws IOException {
-    super(directory, sis, deletionPolicy, true);
+  ReadOnlyDirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy, int termInfosIndexDivisor) throws IOException {
+    super(directory, sis, deletionPolicy, true, termInfosIndexDivisor);
   }
 
-  ReadOnlyDirectoryReader(Directory directory, SegmentInfos infos, SegmentReader[] oldReaders, int[] oldStarts, Map oldNormsCache, boolean doClone) throws IOException {
-    super(directory, infos, oldReaders, oldStarts, oldNormsCache, true, doClone);
+  ReadOnlyDirectoryReader(Directory directory, SegmentInfos infos, SegmentReader[] oldReaders, int[] oldStarts, Map oldNormsCache, boolean doClone,
+                          int termInfosIndexDivisor) throws IOException {
+    super(directory, infos, oldReaders, oldStarts, oldNormsCache, true, doClone, termInfosIndexDivisor);
   }
   
-  ReadOnlyDirectoryReader(IndexWriter writer, SegmentInfos infos) throws IOException {
-    super(writer, infos);
+  ReadOnlyDirectoryReader(IndexWriter writer, SegmentInfos infos, int termInfosIndexDivisor) throws IOException {
+    super(writer, infos, termInfosIndexDivisor);
   }
   
   protected void acquireWriteLock() {

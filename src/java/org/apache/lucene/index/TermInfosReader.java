@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.util.cache.Cache;
 import org.apache.lucene.util.cache.SimpleLRUCache;
 import org.apache.lucene.util.CloseableThreadLocal;
@@ -30,22 +29,19 @@ import org.apache.lucene.util.CloseableThreadLocal;
  * set.  */
 
 final class TermInfosReader {
-  private Directory directory;
-  private String segment;
-  private FieldInfos fieldInfos;
+  private final Directory directory;
+  private final String segment;
+  private final FieldInfos fieldInfos;
 
-  private CloseableThreadLocal threadResources = new CloseableThreadLocal();
-  private SegmentTermEnum origEnum;
-  private long size;
+  private final CloseableThreadLocal threadResources = new CloseableThreadLocal();
+  private final SegmentTermEnum origEnum;
+  private final long size;
 
-  private Term[] indexTerms = null;
-  private TermInfo[] indexInfos;
-  private long[] indexPointers;
+  private final Term[] indexTerms;
+  private final TermInfo[] indexInfos;
+  private final long[] indexPointers;
   
-  private SegmentTermEnum indexEnum;
-  
-  private int indexDivisor = 1;
-  private int totalIndexInterval;
+  private final int totalIndexInterval;
 
   private final static int DEFAULT_CACHE_SIZE = 1024;
   
@@ -59,14 +55,13 @@ final class TermInfosReader {
     Cache termInfoCache;
   }
   
-  TermInfosReader(Directory dir, String seg, FieldInfos fis)
-       throws CorruptIndexException, IOException {
-    this(dir, seg, fis, BufferedIndexInput.BUFFER_SIZE);
-  }
-
-  TermInfosReader(Directory dir, String seg, FieldInfos fis, int readBufferSize)
+  TermInfosReader(Directory dir, String seg, FieldInfos fis, int readBufferSize, int indexDivisor)
        throws CorruptIndexException, IOException {
     boolean success = false;
+
+    if (indexDivisor < 1 && indexDivisor != -1) {
+      throw new IllegalArgumentException("indexDivisor must be -1 (don't load terms index) or greater than 0: got " + indexDivisor);
+    }
 
     try {
       directory = dir;
@@ -76,11 +71,40 @@ final class TermInfosReader {
       origEnum = new SegmentTermEnum(directory.openInput(segment + "." + IndexFileNames.TERMS_EXTENSION,
           readBufferSize), fieldInfos, false);
       size = origEnum.size;
-      totalIndexInterval = origEnum.indexInterval;
 
-      indexEnum = new SegmentTermEnum(directory.openInput(segment + "." + IndexFileNames.TERMS_INDEX_EXTENSION,
-          readBufferSize), fieldInfos, true);
 
+      if (indexDivisor != -1) {
+        // Load terms index
+        totalIndexInterval = origEnum.indexInterval * indexDivisor;
+        final SegmentTermEnum indexEnum = new SegmentTermEnum(directory.openInput(segment + "." + IndexFileNames.TERMS_INDEX_EXTENSION,
+                                                                                  readBufferSize), fieldInfos, true);
+
+        try {
+          int indexSize = 1+((int)indexEnum.size-1)/indexDivisor;  // otherwise read index
+
+          indexTerms = new Term[indexSize];
+          indexInfos = new TermInfo[indexSize];
+          indexPointers = new long[indexSize];
+        
+          for (int i = 0; indexEnum.next(); i++) {
+            indexTerms[i] = indexEnum.term();
+            indexInfos[i] = indexEnum.termInfo();
+            indexPointers[i] = indexEnum.indexPointer;
+        
+            for (int j = 1; j < indexDivisor; j++)
+              if (!indexEnum.next())
+                break;
+          }
+        } finally {
+          indexEnum.close();
+        }
+      } else {
+        // Do not load terms index:
+        totalIndexInterval = -1;
+        indexTerms = null;
+        indexInfos = null;
+        indexPointers = null;
+      }
       success = true;
     } finally {
       // With lock-less commits, it's entirely possible (and
@@ -102,48 +126,9 @@ final class TermInfosReader {
     return origEnum.maxSkipLevels;
   }
 
-  /**
-   * <p>Sets the indexDivisor, which subsamples the number
-   * of indexed terms loaded into memory.  This has a
-   * similar effect as {@link
-   * IndexWriter#setTermIndexInterval} except that setting
-   * must be done at indexing time while this setting can be
-   * set per reader.  When set to N, then one in every
-   * N*termIndexInterval terms in the index is loaded into
-   * memory.  By setting this to a value > 1 you can reduce
-   * memory usage, at the expense of higher latency when
-   * loading a TermInfo.  The default value is 1.</p>
-   *
-   * <b>NOTE:</b> you must call this before the term
-   * index is loaded.  If the index is already loaded,
-   * an IllegalStateException is thrown.
-   *
-   + @throws IllegalStateException if the term index has
-   * already been loaded into memory.
-   */
-  public void setIndexDivisor(int indexDivisor) throws IllegalStateException {
-    if (indexDivisor < 1)
-      throw new IllegalArgumentException("indexDivisor must be > 0: got " + indexDivisor);
-
-    if (indexTerms != null)
-      throw new IllegalStateException("index terms are already loaded");
-
-    this.indexDivisor = indexDivisor;
-    totalIndexInterval = origEnum.indexInterval * indexDivisor;
-  }
-
-  /** Returns the indexDivisor.
-   * @see #setIndexDivisor
-   */
-  public int getIndexDivisor() {
-    return indexDivisor;
-  }
-  
   final void close() throws IOException {
     if (origEnum != null)
       origEnum.close();
-    if (indexEnum != null)
-      indexEnum.close();
     threadResources.close();
   }
 
@@ -164,30 +149,6 @@ final class TermInfosReader {
     return resources;
   }
 
-  private synchronized void ensureIndexIsRead() throws IOException {
-    if (indexTerms != null)                                    // index already read
-      return;                                                  // do nothing
-    try {
-      int indexSize = 1+((int)indexEnum.size-1)/indexDivisor;  // otherwise read index
-
-      indexTerms = new Term[indexSize];
-      indexInfos = new TermInfo[indexSize];
-      indexPointers = new long[indexSize];
-        
-      for (int i = 0; indexEnum.next(); i++) {
-        indexTerms[i] = indexEnum.term();
-        indexInfos[i] = indexEnum.termInfo();
-        indexPointers[i] = indexEnum.indexPointer;
-        
-        for (int j = 1; j < indexDivisor; j++)
-            if (!indexEnum.next())
-                break;
-      }
-    } finally {
-        indexEnum.close();
-        indexEnum = null;
-    }
-  }
 
   /** Returns the offset of the greatest index entry which is less than or equal to term.*/
   private final int getIndexOffset(Term term) {
@@ -223,7 +184,7 @@ final class TermInfosReader {
     if (size == 0) return null;
 
     ensureIndexIsRead();
-    
+
     TermInfo ti;
     ThreadResources resources = getThreadResources();
     Cache cache = null;
@@ -300,6 +261,12 @@ final class TermInfosReader {
 	return null;
 
     return enumerator.term();
+  }
+
+  private void ensureIndexIsRead() {
+    if (indexTerms == null) {
+      throw new IllegalStateException("terms index was not loaded when this reader was created");
+    }
   }
 
   /** Returns the position of a Term in the set or -1. */

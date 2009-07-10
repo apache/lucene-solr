@@ -51,6 +51,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
   private Lock writeLock;
   private SegmentInfos segmentInfos;
   private boolean stale;
+  private final int termInfosIndexDivisor;
 
   private boolean rollbackHasChanges;
   private SegmentInfos rollbackSegmentInfos;
@@ -62,25 +63,27 @@ class DirectoryReader extends IndexReader implements Cloneable {
   private int numDocs = -1;
   private boolean hasDeletions = false;
 
-  static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly) throws CorruptIndexException, IOException {
+  static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly,
+                          final int termInfosIndexDivisor) throws CorruptIndexException, IOException {
     return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
         SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName);
         if (readOnly)
-          return new ReadOnlyDirectoryReader(directory, infos, deletionPolicy);
+          return new ReadOnlyDirectoryReader(directory, infos, deletionPolicy, termInfosIndexDivisor);
         else
-          return new DirectoryReader(directory, infos, deletionPolicy, false);
+          return new DirectoryReader(directory, infos, deletionPolicy, false, termInfosIndexDivisor);
       }
     }.run(commit);
   }
 
   /** Construct reading the named set of readers. */
-  DirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws IOException {
+  DirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws IOException {
     this.directory = directory;
     this.readOnly = readOnly;
     this.segmentInfos = sis;
     this.deletionPolicy = deletionPolicy;
+    this.termInfosIndexDivisor = termInfosIndexDivisor;
 
     if (!readOnly) {
       // We assume that this segments_N was previously
@@ -97,7 +100,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     for (int i = sis.size()-1; i >= 0; i--) {
       boolean success = false;
       try {
-        readers[i] = SegmentReader.get(readOnly, sis.info(i));
+        readers[i] = SegmentReader.get(readOnly, sis.info(i), termInfosIndexDivisor);
         success = true;
       } finally {
         if (!success) {
@@ -117,10 +120,11 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   // Used by near real-time search
-  DirectoryReader(IndexWriter writer, SegmentInfos infos) throws IOException {
+  DirectoryReader(IndexWriter writer, SegmentInfos infos, int termInfosIndexDivisor) throws IOException {
     this.directory = writer.getDirectory();
     this.readOnly = true;
     this.segmentInfos = infos;
+    this.termInfosIndexDivisor = termInfosIndexDivisor;
     if (!readOnly) {
       // We assume that this segments_N was previously
       // properly sync'd:
@@ -140,7 +144,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
       try {
         final SegmentInfo info = infos.info(upto);
         if (info.dir == dir) {
-          readers[upto++] = writer.readerPool.getReadOnlyClone(info, true);
+          readers[upto++] = writer.readerPool.getReadOnlyClone(info, true, termInfosIndexDivisor);
         }
         success = true;
       } finally {
@@ -171,10 +175,11 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   /** This contructor is only used for {@link #reopen()} */
   DirectoryReader(Directory directory, SegmentInfos infos, SegmentReader[] oldReaders, int[] oldStarts,
-                     Map oldNormsCache, boolean readOnly, boolean doClone) throws IOException {
+                  Map oldNormsCache, boolean readOnly, boolean doClone, int termInfosIndexDivisor) throws IOException {
     this.directory = directory;
     this.readOnly = readOnly;
     this.segmentInfos = infos;
+    this.termInfosIndexDivisor = termInfosIndexDivisor;
     if (!readOnly) {
       // We assume that this segments_N was previously
       // properly sync'd:
@@ -218,7 +223,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
           assert !doClone;
 
           // this is a new reader; in case we hit an exception we can close it safely
-          newReader = SegmentReader.get(readOnly, infos.info(i));
+          newReader = SegmentReader.get(readOnly, infos.info(i), termInfosIndexDivisor);
         } else {
           newReader = newReaders[i].reopenSegment(infos.info(i), doClone, readOnly);
         }
@@ -426,10 +431,10 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   private synchronized DirectoryReader doReopen(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
     DirectoryReader reader;
-	  if (openReadOnly) {
-      reader = new ReadOnlyDirectoryReader(directory, infos, subReaders, starts, normsCache, doClone);
+    if (openReadOnly) {
+      reader = new ReadOnlyDirectoryReader(directory, infos, subReaders, starts, normsCache, doClone, termInfosIndexDivisor);
     } else {
-      reader = new DirectoryReader(directory, infos, subReaders, starts, normsCache, false, doClone);
+      reader = new DirectoryReader(directory, infos, subReaders, starts, normsCache, false, doClone, termInfosIndexDivisor);
     }
     reader.setDisableFakeNorms(getDisableFakeNorms());
     return reader;
@@ -825,18 +830,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
   
   public IndexReader[] getSequentialSubReaders() {
     return subReaders;
-  }
-
-  public void setTermInfosIndexDivisor(int indexDivisor) throws IllegalStateException {
-    for (int i = 0; i < subReaders.length; i++)
-      subReaders[i].setTermInfosIndexDivisor(indexDivisor);
-  }
-
-  public int getTermInfosIndexDivisor() throws IllegalStateException {
-    if (subReaders.length > 0)
-      return subReaders[0].getTermInfosIndexDivisor();
-    else
-      throw new IllegalStateException("no readers");
   }
 
   public void setDisableFakeNorms(boolean disableFakeNorms) {

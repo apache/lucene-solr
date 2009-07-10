@@ -425,6 +425,23 @@ public class IndexWriter {
    * @throws IOException
    */
   public IndexReader getReader() throws IOException {
+    return getReader(IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+  }
+
+  /** Expert: like {@link #getReader}, except you can
+   *  specify which termInfosIndexDivisor should be used for
+   *  any newly opened readers.
+   * @param termInfosIndexDivisor Subsambles which indexed
+   *  terms are loaded into RAM. This has the same effect as {@link
+   *  IndexWriter#setTermIndexInterval} except that setting
+   *  must be done at indexing time while this setting can be
+   *  set per reader.  When set to N, then one in every
+   *  N*termIndexInterval terms in the index is loaded into
+   *  memory.  By setting this to a value > 1 you can reduce
+   *  memory usage, at the expense of higher latency when
+   *  loading a TermInfo.  The default value is 1.  Set this
+   *  to -1 to skip loading the terms index entirely. */
+  public IndexReader getReader(int termInfosIndexDivisor) throws IOException {
     if (infoStream != null) {
       message("flush at getReader");
     }
@@ -440,7 +457,7 @@ public class IndexWriter {
     // reader; in theory we could do similar retry logic,
     // just like we do when loading segments_N
     synchronized(this) {
-      return new ReadOnlyDirectoryReader(this, segmentInfos);
+      return new ReadOnlyDirectoryReader(this, segmentInfos, termInfosIndexDivisor);
     }
   }
 
@@ -590,8 +607,8 @@ public class IndexWriter {
     // Returns a ref to a clone.  NOTE: this clone is not
     // enrolled in the pool, so you should simply close()
     // it when you're done (ie, do not call release()).
-    public synchronized SegmentReader getReadOnlyClone(SegmentInfo info, boolean doOpenStores) throws IOException {
-      SegmentReader sr = get(info, doOpenStores);
+    public synchronized SegmentReader getReadOnlyClone(SegmentInfo info, boolean doOpenStores, int termInfosIndexDivisor) throws IOException {
+      SegmentReader sr = get(info, doOpenStores, BufferedIndexInput.BUFFER_SIZE, termInfosIndexDivisor);
       try {
         return (SegmentReader) sr.clone(true);
       } finally {
@@ -601,10 +618,10 @@ public class IndexWriter {
    
     // Returns a ref
     public synchronized SegmentReader get(SegmentInfo info, boolean doOpenStores) throws IOException {
-      return get(info, doOpenStores, BufferedIndexInput.BUFFER_SIZE);
+      return get(info, doOpenStores, BufferedIndexInput.BUFFER_SIZE, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
     }
 
-    public synchronized SegmentReader get(SegmentInfo info, boolean doOpenStores, int readBufferSize) throws IOException {
+    public synchronized SegmentReader get(SegmentInfo info, boolean doOpenStores, int readBufferSize, int termsIndexDivisor) throws IOException {
 
       if (poolReaders) {
         readBufferSize = BufferedIndexInput.BUFFER_SIZE;
@@ -615,10 +632,21 @@ public class IndexWriter {
         // TODO: we may want to avoid doing this while
         // synchronized
         // Returns a ref, which we xfer to readerMap:
-        sr = SegmentReader.get(info, readBufferSize, doOpenStores);
+        sr = SegmentReader.get(info, readBufferSize, doOpenStores, termsIndexDivisor);
         readerMap.put(info, sr);
-      } else if (doOpenStores) {
-        sr.openDocStores();
+      } else {
+        if (doOpenStores) {
+          sr.openDocStores();
+        }
+        if (termsIndexDivisor != -1 && !sr.termsIndexLoaded()) {
+          // If this reader was originally opened because we
+          // needed to merge it, we didn't load the terms
+          // index.  But now, if the caller wants the terms
+          // index (eg because it's doing deletes, or an NRT
+          // reader is being opened) we ask the reader to
+          // load its terms index.
+          sr.loadTermsIndex(termsIndexDivisor);
+        }
       }
 
       // Return a ref to our caller
@@ -3769,7 +3797,7 @@ public class IndexWriter {
         SegmentReader sReader = null;
         synchronized(this) {
           if (segmentInfos.size() == 1) { // add existing index, if any
-            sReader = readerPool.get(segmentInfos.info(0), true);
+            sReader = readerPool.get(segmentInfos.info(0), true, BufferedIndexInput.BUFFER_SIZE, -1);
           }
         }
         
@@ -4867,7 +4895,8 @@ public class IndexWriter {
         // Hold onto the "live" reader; we will use this to
         // commit merged deletes
         SegmentReader reader = merge.readers[i] = readerPool.get(info, merge.mergeDocStores,
-                                                                 MERGE_READ_BUFFER_SIZE);
+                                                                 MERGE_READ_BUFFER_SIZE,
+                                                                 -1);
 
         // We clone the segment readers because other
         // deletes may come in while we're merging so we
@@ -4923,7 +4952,7 @@ public class IndexWriter {
       // keep deletes (it's costly to open entire reader
       // when we just need deletes)
 
-      final SegmentReader mergedReader = readerPool.get(merge.info, false);
+      final SegmentReader mergedReader = readerPool.get(merge.info, false, BufferedIndexInput.BUFFER_SIZE, -1);
       try {
         if (poolReaders && mergedSegmentWarmer != null) {
           mergedSegmentWarmer.warm(mergedReader);

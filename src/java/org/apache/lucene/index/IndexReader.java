@@ -115,6 +115,8 @@ public abstract class IndexReader implements Cloneable {
   
   private int refCount;
 
+  static int DEFAULT_TERMS_INDEX_DIVISOR = 1;
+
   private boolean disableFakeNorms = false;
 
   /** Expert: returns the current refCount for this reader */
@@ -228,7 +230,7 @@ public abstract class IndexReader implements Cloneable {
     final Directory dir = FSDirectory.getDirectory(path);
     IndexReader r = null;
     try {
-      r = open(dir, null, null, readOnly);
+      r = open(dir, null, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
     } finally {
       if (r == null)
         dir.close();
@@ -265,7 +267,7 @@ public abstract class IndexReader implements Cloneable {
     final Directory dir = FSDirectory.getDirectory(path);
     IndexReader r = null;
     try {
-      r = open(dir, null, null, readOnly);
+      r = open(dir, null, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
     } finally {
       if (r == null)
         dir.close();
@@ -282,7 +284,7 @@ public abstract class IndexReader implements Cloneable {
    * Use {@link #open(Directory, boolean)} instead
    */
   public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
-    return open(directory, null, null, false);
+    return open(directory, null, null, false, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /** Returns an IndexReader reading the index in the given
@@ -296,7 +298,7 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(directory, null, null, readOnly);
+    return open(directory, null, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /** Expert: returns a read/write IndexReader reading the index in the given
@@ -308,7 +310,7 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), null, commit, false);
+    return open(commit.getDirectory(), null, commit, false, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /** Expert: returns an IndexReader reading the index in the given
@@ -322,7 +324,7 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), null, commit, readOnly);
+    return open(commit.getDirectory(), null, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /** Expert: returns a read/write IndexReader reading the index in the given
@@ -337,7 +339,7 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
-    return open(directory, deletionPolicy, null, false);
+    return open(directory, deletionPolicy, null, false, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -355,7 +357,35 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(directory, deletionPolicy, null, readOnly);
+    return open(directory, deletionPolicy, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
+  }
+
+  /** Expert: returns an IndexReader reading the index in
+   *  the given Directory, with a custom {@link
+   *  IndexDeletionPolicy}.  You should pass readOnly=true,
+   *  since it gives much better concurrent performance,
+   *  unless you intend to do write operations (delete
+   *  documents or change norms) with the reader.
+   * @param directory the index directory
+   * @param deletionPolicy a custom deletion policy (only used
+   *  if you use this reader to perform deletes or to set
+   *  norms); see {@link IndexWriter} for details.
+   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
+   * @param termInfosIndexDivisor Subsambles which indexed
+   *  terms are loaded into RAM. This has the same effect as {@link
+   *  IndexWriter#setTermIndexInterval} except that setting
+   *  must be done at indexing time while this setting can be
+   *  set per reader.  When set to N, then one in every
+   *  N*termIndexInterval terms in the index is loaded into
+   *  memory.  By setting this to a value > 1 you can reduce
+   *  memory usage, at the expense of higher latency when
+   *  loading a TermInfo.  The default value is 1.  Set this
+   *  to -1 to skip loading the terms index entirely.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
+    return open(directory, deletionPolicy, null, readOnly, termInfosIndexDivisor);
   }
 
   /** Expert: returns a read/write IndexReader reading the index in the given
@@ -373,7 +403,7 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), deletionPolicy, commit, false);
+    return open(commit.getDirectory(), deletionPolicy, commit, false, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -393,11 +423,41 @@ public abstract class IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), deletionPolicy, commit, readOnly);
+    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
-  private static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly) throws CorruptIndexException, IOException {
-    return DirectoryReader.open(directory, deletionPolicy, commit, readOnly);
+  /** Expert: returns an IndexReader reading the index in
+   *  the given Directory, using a specific commit and with
+   *  a custom {@link IndexDeletionPolicy}.  You should pass
+   *  readOnly=true, since it gives much better concurrent
+   *  performance, unless you intend to do write operations
+   *  (delete documents or change norms) with the reader.
+   * @param commit the specific {@link IndexCommit} to open;
+   * see {@link IndexReader#listCommits} to list all commits
+   * in a directory
+   * @param deletionPolicy a custom deletion policy (only used
+   *  if you use this reader to perform deletes or to set
+   *  norms); see {@link IndexWriter} for details.
+   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
+   * @param termInfosIndexDivisor Subsambles which indexed
+   *  terms are loaded into RAM. This has the same effect as {@link
+   *  IndexWriter#setTermIndexInterval} except that setting
+   *  must be done at indexing time while this setting can be
+   *  set per reader.  When set to N, then one in every
+   *  N*termIndexInterval terms in the index is loaded into
+   *  memory.  By setting this to a value > 1 you can reduce
+   *  memory usage, at the expense of higher latency when
+   *  loading a TermInfo.  The default value is 1.  Set this
+   *  to -1 to skip loading the terms index entirely.
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
+    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, termInfosIndexDivisor);
+  }
+
+  private static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
+    return DirectoryReader.open(directory, deletionPolicy, commit, readOnly, termInfosIndexDivisor);
   }
 
   /**
@@ -668,17 +728,20 @@ public abstract class IndexReader implements Cloneable {
    * index is loaded.  If the index is already loaded, 
    * an IllegalStateException is thrown.
    * @throws IllegalStateException if the term index has already been loaded into memory
+   * @deprecated Please use {@link IndexReader#open(Directory, IndexDeletionPolicy, boolean, int)} to specify the required TermInfos index divisor instead.
    */
   public void setTermInfosIndexDivisor(int indexDivisor) throws IllegalStateException {
-    throw new UnsupportedOperationException("This reader does not support this method.");
+    throw new UnsupportedOperationException("Please pass termInfosIndexDivisor up-front when opening IndexReader");
   }
 
   /** <p>For IndexReader implementations that use
    *  TermInfosReader to read terms, this returns the
    *  current indexDivisor.
-   *  @see #setTermInfosIndexDivisor */
+   *  @see #setTermInfosIndexDivisor
+   * @deprecated Please use {@link IndexReader#open(Directory, IndexDeletionPolicy, boolean, int)} to specify the required TermInfos index divisor instead.
+   */
   public int getTermInfosIndexDivisor() {
-    throw new UnsupportedOperationException("This reader does not support this method.");
+    throw new UnsupportedOperationException("Please pass termInfosIndexDivisor up-front when opening IndexReader");
   }
 
   /**

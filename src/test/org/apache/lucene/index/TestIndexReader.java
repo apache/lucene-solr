@@ -1800,4 +1800,40 @@ public class TestIndexReader extends LuceneTestCase
     writer.close();
     dir.close();
   }
+
+  // LUCENE-1609: don't load terms index
+  public void testNoTermsIndex() throws Throwable {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new Field("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(new Field("number", "0 1 2 3 4 5 6 7 8 9", Field.Store.NO, Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    writer.addDocument(doc);
+    writer.close();
+
+    IndexReader r = IndexReader.open(dir, null, true, -1);
+    try {
+      r.docFreq(new Term("field", "f"));
+      fail("did not hit expected exception");
+    } catch (IllegalStateException ise) {
+      // expected
+    }
+    assertFalse(((SegmentReader) r.getSequentialSubReaders()[0]).termsIndexLoaded());
+
+    writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    writer.addDocument(doc);
+    writer.close();
+
+    // LUCENE-1718: ensure re-open carries over no terms index:
+    IndexReader r2 = r.reopen();
+    r.close();
+    IndexReader[] subReaders = r2.getSequentialSubReaders();
+    assertEquals(2, subReaders.length);
+    for(int i=0;i<2;i++) {
+      assertFalse(((SegmentReader) subReaders[i]).termsIndexLoaded());
+    }
+    r2.close();
+    dir.close();
+  }
 }

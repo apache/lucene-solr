@@ -81,10 +81,12 @@ class SegmentReader extends IndexReader implements Cloneable {
     final FieldInfos fieldInfos;
     final IndexInput freqStream;
     final IndexInput proxStream;
+    final TermInfosReader tisNoIndex;
 
     final Directory dir;
     final Directory cfsDir;
     final int readBufferSize;
+    final int termsIndexDivisor;
 
     TermInfosReader tis;
     FieldsReader fieldsReaderOrig;
@@ -92,7 +94,7 @@ class SegmentReader extends IndexReader implements Cloneable {
     CompoundFileReader cfsReader;
     CompoundFileReader storeCFSReader;
 
-    CoreReaders(Directory dir, SegmentInfo si, int readBufferSize) throws IOException {
+    CoreReaders(Directory dir, SegmentInfo si, int readBufferSize, int termsIndexDivisor) throws IOException {
       segment = si.name;
       this.readBufferSize = readBufferSize;
       this.dir = dir;
@@ -109,7 +111,14 @@ class SegmentReader extends IndexReader implements Cloneable {
 
         fieldInfos = new FieldInfos(cfsDir, segment + "." + IndexFileNames.FIELD_INFOS_EXTENSION);
 
-        tis = new TermInfosReader(cfsDir, segment, fieldInfos, readBufferSize);
+        this.termsIndexDivisor = termsIndexDivisor;
+        TermInfosReader reader = new TermInfosReader(cfsDir, segment, fieldInfos, readBufferSize, termsIndexDivisor);
+        if (termsIndexDivisor == -1) {
+          tisNoIndex = reader;
+        } else {
+          tis = reader;
+          tisNoIndex = null;
+        }
 
         // make sure that all index files have been read or are kept open
         // so that if an index update removes them we'll still have them
@@ -144,6 +153,43 @@ class SegmentReader extends IndexReader implements Cloneable {
       return cfsReader;
     }
 
+    synchronized TermInfosReader getTermsReader() {
+      if (tis != null) {
+        return tis;
+      } else {
+        return tisNoIndex;
+      }
+    }      
+
+    synchronized boolean termsIndexIsLoaded() {
+      return tis != null;
+    }      
+
+    // NOTE: only called from IndexWriter when a near
+    // real-time reader is opened, or applyDeletes is run,
+    // sharing a segment that's still being merged.  This
+    // method is not fully thread safe, and relies on the
+    // synchronization in IndexWriter
+    synchronized void loadTermsIndex(SegmentInfo si, int termsIndexDivisor) throws IOException {
+      if (tis == null) {
+        Directory dir0;
+        if (si.getUseCompoundFile()) {
+          // In some cases, we were originally opened when CFS
+          // was not used, but then we are asked to open the
+          // terms reader with index, the segment has switched
+          // to CFS
+          if (cfsReader == null) {
+            cfsReader = new CompoundFileReader(dir, segment + "." + IndexFileNames.COMPOUND_FILE_EXTENSION, readBufferSize);
+          }
+          dir0 = cfsReader;
+        } else {
+          dir0 = dir;
+        }
+
+        tis = new TermInfosReader(dir0, segment, fieldInfos, readBufferSize, termsIndexDivisor);
+      }
+    }
+
     synchronized void decRef() throws IOException {
 
       if (ref.decRef() == 0) {
@@ -153,6 +199,10 @@ class SegmentReader extends IndexReader implements Cloneable {
           tis.close();
           // null so if an app hangs on to us we still free most ram
           tis = null;
+        }
+        
+        if (tisNoIndex != null) {
+          tisNoIndex.close();
         }
         
         if (freqStream != null) {
@@ -534,15 +584,15 @@ class SegmentReader extends IndexReader implements Cloneable {
    * @deprecated
    */
   public static SegmentReader get(SegmentInfo si) throws CorruptIndexException, IOException {
-    return get(false, si.dir, si, BufferedIndexInput.BUFFER_SIZE, true);
+    return get(false, si.dir, si, BufferedIndexInput.BUFFER_SIZE, true, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   /**
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static SegmentReader get(boolean readOnly, SegmentInfo si) throws CorruptIndexException, IOException {
-    return get(readOnly, si.dir, si, BufferedIndexInput.BUFFER_SIZE, true);
+  public static SegmentReader get(boolean readOnly, SegmentInfo si, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
+    return get(readOnly, si.dir, si, BufferedIndexInput.BUFFER_SIZE, true, termInfosIndexDivisor);
   }
 
   /**
@@ -550,8 +600,8 @@ class SegmentReader extends IndexReader implements Cloneable {
    * @throws IOException if there is a low-level IO error
    * @deprecated
    */
-  static SegmentReader get(SegmentInfo si, int readBufferSize, boolean doOpenStores) throws CorruptIndexException, IOException {
-    return get(false, si.dir, si, readBufferSize, doOpenStores);
+  static SegmentReader get(SegmentInfo si, int readBufferSize, boolean doOpenStores, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
+    return get(false, si.dir, si, readBufferSize, doOpenStores, termInfosIndexDivisor);
   }
 
   /**
@@ -562,7 +612,8 @@ class SegmentReader extends IndexReader implements Cloneable {
                                   Directory dir,
                                   SegmentInfo si,
                                   int readBufferSize,
-                                  boolean doOpenStores)
+                                  boolean doOpenStores,
+                                  int termInfosIndexDivisor)
     throws CorruptIndexException, IOException {
     SegmentReader instance;
     try {
@@ -580,7 +631,7 @@ class SegmentReader extends IndexReader implements Cloneable {
     boolean success = false;
 
     try {
-      instance.core = new CoreReaders(dir, si, readBufferSize);
+      instance.core = new CoreReaders(dir, si, readBufferSize, termInfosIndexDivisor);
       if (doOpenStores) {
         instance.core.openDocStores(si);
       }
@@ -876,12 +927,12 @@ class SegmentReader extends IndexReader implements Cloneable {
 
   public TermEnum terms() {
     ensureOpen();
-    return core.tis.terms();
+    return core.getTermsReader().terms();
   }
 
   public TermEnum terms(Term t) throws IOException {
     ensureOpen();
-    return core.tis.terms(t);
+    return core.getTermsReader().terms(t);
   }
 
   FieldInfos fieldInfos() {
@@ -917,7 +968,7 @@ class SegmentReader extends IndexReader implements Cloneable {
 
   public int docFreq(Term t) throws IOException {
     ensureOpen();
-    TermInfo ti = core.tis.get(t);
+    TermInfo ti = core.getTermsReader().get(t);
     if (ti != null)
       return ti.docFreq;
     else
@@ -935,14 +986,6 @@ class SegmentReader extends IndexReader implements Cloneable {
   public int maxDoc() {
     // Don't call ensureOpen() here (it could affect performance)
     return si.docCount;
-  }
-
-  public void setTermInfosIndexDivisor(int indexDivisor) throws IllegalStateException {
-    core.tis.setIndexDivisor(indexDivisor);
-  }
-
-  public int getTermInfosIndexDivisor() {
-    return core.tis.getIndexDivisor();
   }
 
   /**
@@ -1097,6 +1140,19 @@ class SegmentReader extends IndexReader implements Cloneable {
         nextNormSeek += maxDoc; // increment also if some norms are separate
       }
     }
+  }
+
+  boolean termsIndexLoaded() {
+    return core.termsIndexIsLoaded();
+  }
+
+  // NOTE: only called from IndexWriter when a near
+  // real-time reader is opened, or applyDeletes is run,
+  // sharing a segment that's still being merged.  This
+  // method is not thread safe, and relies on the
+  // synchronization in IndexWriter
+  void loadTermsIndex(int termsIndexDivisor) throws IOException {
+    core.loadTermsIndex(si, termsIndexDivisor);
   }
 
   // for testing only
@@ -1268,8 +1324,15 @@ class SegmentReader extends IndexReader implements Cloneable {
   }
 
   public long getUniqueTermCount() {
-    return core.tis.size();
+    return core.getTermsReader().size();
   }
+
+  /*
+  // nocommit
+  final TermInfosReader getTermInfosReader() {
+    return terms.getTermsReader();
+  }
+  */
 
   /**
    * Lotsa tests did hacks like:<br/>

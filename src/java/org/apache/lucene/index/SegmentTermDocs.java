@@ -49,12 +49,12 @@ class SegmentTermDocs implements TermDocs {
     synchronized (parent) {
       this.deletedDocs = parent.deletedDocs;
     }
-    this.skipInterval = parent.core.tis.getSkipInterval();
-    this.maxSkipLevels = parent.core.tis.getMaxSkipLevels();
+    this.skipInterval = parent.core.getTermsReader().getSkipInterval();
+    this.maxSkipLevels = parent.core.getTermsReader().getMaxSkipLevels();
   }
 
   public void seek(Term term) throws IOException {
-    TermInfo ti = parent.core.tis.get(term);
+    TermInfo ti = parent.core.getTermsReader().get(term);
     seek(ti, term);
   }
 
@@ -69,7 +69,7 @@ class SegmentTermDocs implements TermDocs {
       ti = segmentTermEnum.termInfo();
     } else  {                                         // punt case
       term = termEnum.term();
-      ti = parent.core.tis.get(term);
+      ti = parent.core.getTermsReader().get(term);
     }
     
     seek(ti, term);
