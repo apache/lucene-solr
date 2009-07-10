@@ -189,15 +189,9 @@
       <path id="javadoc.classpath">
          <path refid="compile.classpath"/>
          <path refid="compile.classpath.solrj"/>
-        <fileset dir="contrib/clustering/lib">
-          <include name="*.jar"/>
-        </fileset>
-        <fileset dir="contrib/clustering/lib/downloads">
-          <include name="*.jar"/>
-        </fileset>
-        <fileset dir="contrib/extraction/lib">
-          <include name="*.jar"/>
-        </fileset>
+          <fileset dir="contrib">
+            <include name="**/lib/**.jar"/>
+          </fileset>
          <pathelement location="${dest}/client/solrj"/>
       </path>
 
