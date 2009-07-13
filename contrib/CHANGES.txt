@@ -68,6 +68,10 @@ New features
 
  8. LUCENE-1522: Added contrib/fast-vector-highlighter, a new alternative
     highlighter.  (Koji Sekiguchi via Mike McCandless)
+
+ 9. LUCENE-1740: Added "analyzer" command to Lucli, enabling changing
+    the analyzer from the default StandardAnalyzer.  (Bernd Fondermann
+    via Mike McCandless)
  
 Optimizations
 

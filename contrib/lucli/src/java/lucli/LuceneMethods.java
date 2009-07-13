@@ -104,11 +104,28 @@ class LuceneMethods {
   private String fieldsArray[]; //Fields as an array
   private Searcher searcher;
   private Query query; //current query string
+  private String analyzerClassFQN = null; // Analyzer class, if NULL, use default Analyzer
 
   public LuceneMethods(String index) {
     indexName = index;
     message("Lucene CLI. Using directory '" + indexName + "'. Type 'help' for instructions.");
   }
+
+    private Analyzer createAnalyzer() {
+        if (analyzerClassFQN == null) return new StandardAnalyzer();
+        try {
+            Class aClass = Class.forName(analyzerClassFQN);
+            Object obj = aClass.newInstance();
+            if (!(obj instanceof Analyzer)) {
+                message("Given class is not an Analyzer: " + analyzerClassFQN);
+                return new StandardAnalyzer();
+            }
+            return (Analyzer)obj;
+        } catch (Exception e) {
+            message("Unable to use Analyzer " + analyzerClassFQN);
+            return new StandardAnalyzer();
+        }
+    }
 
 
   public void info() throws java.io.IOException {
@@ -185,9 +202,9 @@ class LuceneMethods {
     //another option is to just do message(doc);
   }
 
-  public void optimize() throws IOException {
+    public void optimize() throws IOException {
     //open the index writer. False: don't create a new one
-    IndexWriter indexWriter = new IndexWriter(indexName, new StandardAnalyzer(), false);
+    IndexWriter indexWriter = new IndexWriter(indexName, createAnalyzer(), false);
     message("Starting to optimize index.");
     long start = System.currentTimeMillis();
     indexWriter.optimize();
@@ -196,10 +213,10 @@ class LuceneMethods {
   }
 
 
-  private Query explainQuery(String queryString) throws IOException, ParseException {
+    private Query explainQuery(String queryString) throws IOException, ParseException {
 
     searcher = new IndexSearcher(indexName);
-    Analyzer analyzer = new StandardAnalyzer();
+    Analyzer analyzer = createAnalyzer();
     getFieldInfo();
 
     int arraySize = indexedFields.size();
@@ -220,7 +237,7 @@ class LuceneMethods {
   private Hits initSearch(String queryString) throws IOException, ParseException {
 
     searcher = new IndexSearcher(indexName);
-    Analyzer analyzer = new StandardAnalyzer();
+    Analyzer analyzer = createAnalyzer();
     getFieldInfo();
 
     int arraySize = fields.size();
@@ -278,7 +295,7 @@ class LuceneMethods {
     Map tokenMap = new HashMap();
     final int maxFieldLength = 10000;
 
-    Analyzer analyzer = new StandardAnalyzer();
+    Analyzer analyzer = createAnalyzer();
     Iterator fields = doc.getFields().iterator();
     final Token reusableToken = new Token();
     while (fields.hasNext()) {
@@ -374,5 +391,14 @@ class LuceneMethods {
     return entries;
   }
 
+    public void analyzer(String word) {
+        if ("current".equals(word)) {
+            String current = analyzerClassFQN == null ? "StandardAnalyzer" : analyzerClassFQN;
+            message("The currently used Analyzer class is: " + current);
+            return;
+        }
+        analyzerClassFQN = word;
+        message("Switched to Analyzer class " + analyzerClassFQN);
+    }
 }
 

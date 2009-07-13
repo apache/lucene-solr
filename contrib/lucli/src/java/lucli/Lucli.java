@@ -95,6 +95,7 @@ public class Lucli {
 	final static int INDEX = 7;
 	final static int TOKENS = 8;
 	final static int EXPLAIN = 9;
+	final static int ANALYZER = 10;
 
 	String historyFile;
 	TreeMap commandMap = new TreeMap();
@@ -124,6 +125,7 @@ public class Lucli {
 		addCommand("index", INDEX, "Choose a different lucene index. Example index my_index", 1);
 		addCommand("tokens", TOKENS, "Does a search and shows the top 10 tokens for each document. Verbose! Example: tokens foo", 1);
 		addCommand("explain", EXPLAIN, "Explanation that describes how the document scored against query. Example: explain foo", 1);
+		addCommand("analyzer", ANALYZER, "Specifies the Analyzer class to be used. Example: analyzer org.apache.lucene.analysis.SimpleAnalyzer", 1);
 
 		//parse command line arguments
 		parseArgs(args);
@@ -233,6 +235,9 @@ public class Lucli {
 					query += words[ii] + " ";
 				}
 				luceneMethods.search(query, true, false, cr);
+				break;
+			case ANALYZER:
+				luceneMethods.analyzer(words[1]);
 				break;
 			case HELP:
 				help();
