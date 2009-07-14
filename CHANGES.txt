@@ -135,6 +135,13 @@ Changes in runtime behavior
     true in all Lucene releases before 2.3, but was broken in 2.3 and
     2.4, and is now fixed in 2.9.  (Mike McCandless)
 
+11. LUCENE-1678: The addition of Analyzer.reusableTokenStream
+    accidentally broke back compatibility of external analyzers that
+    subclassed core analyzers that implemented tokenStream but not
+    reusableTokenStream.  This is now fixed, such that if
+    reusableTokenStream is invoked on such a subclass, that method
+    will forcefully fallback to tokenStream.  (Mike McCandless)
+
 API Changes
 
 1. LUCENE-1419: Add expert API to set custom indexing chain. This API is 

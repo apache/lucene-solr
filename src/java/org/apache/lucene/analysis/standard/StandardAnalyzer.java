@@ -44,7 +44,6 @@ import java.util.Set;
  */
 public class StandardAnalyzer extends Analyzer {
   private Set stopSet;
-  private Version matchVersion;
 
   /**
    * Specifies whether deprecated acronyms should be replaced with HOST type.
@@ -262,7 +261,7 @@ public class StandardAnalyzer extends Analyzer {
   }
 
   private final void init(Version matchVersion) {
-    this.matchVersion = matchVersion;
+    setOverridesTokenStreamMethod(StandardAnalyzer.class);
     if (matchVersion.onOrAfter(Version.LUCENE_29)) {
       enableStopPositionIncrements = true;
     } else {
@@ -314,6 +313,12 @@ public class StandardAnalyzer extends Analyzer {
 
   /** @deprecated Use {@link #tokenStream} instead */
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
+    if (overridesTokenStreamMethod) {
+      // LUCENE-1678: force fallback to tokenStream() if we
+      // have been subclassed and that subclass overrides
+      // tokenStream but not reusableTokenStream
+      return tokenStream(fieldName, reader);
+    }
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();
     if (streams == null) {
       streams = new SavedStreams();

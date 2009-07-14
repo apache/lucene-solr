@@ -19,6 +19,7 @@ package org.apache.lucene.analysis;
 
 import java.io.Reader;
 import java.io.IOException;
+import java.lang.reflect.Method;
 
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -32,7 +33,8 @@ import org.apache.lucene.store.AlreadyClosedException;
  */
 public abstract class Analyzer {
   /** Creates a TokenStream which tokenizes all the text in the provided
-   * Reader.  Must be able to handle null field name for backward compatibility.
+   * Reader.  Must be able to handle null field name for
+   * backward compatibility.
    */
   public abstract TokenStream tokenStream(String fieldName, Reader reader);
 
@@ -76,6 +78,29 @@ public abstract class Analyzer {
       } else {
         throw npe;
       }
+    }
+  }
+
+  protected boolean overridesTokenStreamMethod;
+
+  /** @deprecated This is only present to preserve
+   *  back-compat of classes that subclass a core analyzer
+   *  and override tokenStream but not reusableTokenStream */
+  protected void setOverridesTokenStreamMethod(Class baseClass) {
+
+    final Class[] params = new Class[2];
+    params[0] = String.class;
+    params[1] = Reader.class;
+    
+    try {
+      Method m = this.getClass().getMethod("tokenStream", params);
+      if (m != null) {
+        overridesTokenStreamMethod = m.getDeclaringClass() != baseClass;
+      } else {
+        overridesTokenStreamMethod = false;
+      }
+    } catch (NoSuchMethodException nsme) {
+      overridesTokenStreamMethod = false;
     }
   }
 

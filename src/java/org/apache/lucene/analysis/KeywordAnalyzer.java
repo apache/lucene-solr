@@ -25,18 +25,27 @@ import java.io.Reader;
  * for data like zip codes, ids, and some product names.
  */
 public class KeywordAnalyzer extends Analyzer {
+  public KeywordAnalyzer() {
+    setOverridesTokenStreamMethod(KeywordAnalyzer.class);
+  }
   public TokenStream tokenStream(String fieldName,
                                  final Reader reader) {
     return new KeywordTokenizer(reader);
   }
   public TokenStream reusableTokenStream(String fieldName,
                                          final Reader reader) throws IOException {
+    if (overridesTokenStreamMethod) {
+      // LUCENE-1678: force fallback to tokenStream() if we
+      // have been subclassed and that subclass overrides
+      // tokenStream but not reusableTokenStream
+      return tokenStream(fieldName, reader);
+    }
     Tokenizer tokenizer = (Tokenizer) getPreviousTokenStream();
     if (tokenizer == null) {
       tokenizer = new KeywordTokenizer(reader);
       setPreviousTokenStream(tokenizer);
     } else
-      	tokenizer.reset(reader);
+      tokenizer.reset(reader);
     return tokenizer;
   }
 }

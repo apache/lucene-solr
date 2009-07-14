@@ -19,8 +19,10 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.Reader;
 
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.Payload;
@@ -129,6 +131,21 @@ public class TestAnalyzers extends LuceneTestCase {
     x = StandardTokenizer.NUM;
     x = StandardTokenizer.CJ;
     String[] y = StandardTokenizer.TOKEN_TYPES;
+  }
+
+  private static class MyStandardAnalyzer extends StandardAnalyzer {
+    public TokenStream tokenStream(String field, Reader reader) {
+      return new WhitespaceAnalyzer().tokenStream(field, reader);
+    }
+  }
+
+  public void testSubclassOverridingOnlyTokenStream() throws Throwable {
+    Analyzer a = new MyStandardAnalyzer();
+    TokenStream ts = a.reusableTokenStream("field", new StringReader("the"));
+    // StandardAnalyzer will discard "the" (it's a
+    // stopword), by my subclass will not:
+    assertTrue(ts.incrementToken());
+    assertFalse(ts.incrementToken());
   }
 }
 

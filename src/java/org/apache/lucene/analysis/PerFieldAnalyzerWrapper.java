@@ -55,6 +55,7 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
    */
   public PerFieldAnalyzerWrapper(Analyzer defaultAnalyzer) {
     this.defaultAnalyzer = defaultAnalyzer;
+    setOverridesTokenStreamMethod(PerFieldAnalyzerWrapper.class);
   }
 
   /**
@@ -77,6 +78,12 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
   }
   
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
+    if (overridesTokenStreamMethod) {
+      // LUCENE-1678: force fallback to tokenStream() if we
+      // have been subclassed and that subclass overrides
+      // tokenStream but not reusableTokenStream
+      return tokenStream(fieldName, reader);
+    }
     Analyzer analyzer = (Analyzer) analyzerMap.get(fieldName);
     if (analyzer == null)
       analyzer = defaultAnalyzer;
