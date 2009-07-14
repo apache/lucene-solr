@@ -215,16 +215,21 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
           if (queue == null) {
             return initSpanQueue(target);
           }
-
+  
+          boolean skipCalled = false;
           while (queue.size() != 0 && top().doc() < target) {
             if (top().skipTo(target)) {
               queue.adjustTop();
             } else {
               queue.pop();
             }
+            skipCalled = true;
           }
-
-          return queue.size() != 0;
+  
+          if (skipCalled) {
+            return queue.size() != 0;
+          }
+          return next();
         }
 
         public int doc() { return top().doc(); }

@@ -378,6 +378,9 @@ Bug fixes
 
 18. LUCENE-1718: Fix termInfosIndexDivisor to carry over to reopened
     readers (Mike McCandless)
+    
+19. LUCENE-1583: SpanOrQuery skipTo() doesn't always move forwards as Spans
+	documentation indicates it should.  (Moti Nisenson via Mark Miller)
 
 New features
 

@@ -331,6 +331,23 @@ public class TestSpans extends LuceneTestCase {
     assertFalse("final next", spans.next());
   }
   
+  public void testSpanOrMovesForward() throws Exception {
+    Spans spans = orSpans(new String[] {"w1", "xx"});
+
+    spans.next();
+    int doc = spans.doc();
+    assertEquals(0, doc);
+    
+    spans.skipTo(0);
+    doc = spans.doc();
+    
+    // LUCENE-1583:
+    // according to Spans, a skipTo to the same doc or less
+    // should still call next() on the underlying Spans
+    assertEquals(1, doc);
+
+  }
+  
   public void testSpanOrDouble() throws Exception {
     Spans spans = orSpans(new String[] {"w5", "yy"});
     tstNextSpans(spans, 0, 4, 5);
