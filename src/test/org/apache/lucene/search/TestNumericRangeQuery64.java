@@ -51,27 +51,33 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       
       NumericField
         field8 = new NumericField("field8", 8, Field.Store.YES, true),
+        field6 = new NumericField("field6", 6, Field.Store.YES, true),
         field4 = new NumericField("field4", 4, Field.Store.YES, true),
         field2 = new NumericField("field2", 2, Field.Store.YES, true),
+        fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE, Field.Store.YES, true),
         ascfield8 = new NumericField("ascfield8", 8, Field.Store.NO, true),
+        ascfield6 = new NumericField("ascfield6", 6, Field.Store.NO, true),
         ascfield4 = new NumericField("ascfield4", 4, Field.Store.NO, true),
         ascfield2 = new NumericField("ascfield2", 2, Field.Store.NO, true);
       
       Document doc = new Document();
       // add fields, that have a distance to test general functionality
-      doc.add(field8); doc.add(field4); doc.add(field2);
+      doc.add(field8); doc.add(field6); doc.add(field4); doc.add(field2); doc.add(fieldNoTrie);
       // add ascending fields with a distance of 1, beginning at -noDocs/2 to test the correct splitting of range and inclusive/exclusive
-      doc.add(ascfield8); doc.add(ascfield4); doc.add(ascfield2);
+      doc.add(ascfield8); doc.add(ascfield6); doc.add(ascfield4); doc.add(ascfield2);
       
       // Add a series of noDocs docs with increasing long values, by updating the fields
       for (int l=0; l<noDocs; l++) {
         long val=distance*l+startOffset;
         field8.setLongValue(val);
+        field6.setLongValue(val);
         field4.setLongValue(val);
         field2.setLongValue(val);
+        fieldNoTrie.setLongValue(val);
 
         val=l-(noDocs/2);
         ascfield8.setLongValue(val);
+        ascfield6.setLongValue(val);
         ascfield4.setLongValue(val);
         ascfield2.setLongValue(val);
         writer.addDocument(doc);
@@ -139,6 +145,10 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     testRange(8);
   }
   
+  public void testRange_6bit() throws Exception {
+    testRange(6);
+  }
+  
   public void testRange_4bit() throws Exception {
     testRange(4);
   }
@@ -178,6 +188,10 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     testLeftOpenRange(8);
   }
   
+  public void testLeftOpenRange_6bit() throws Exception {
+    testLeftOpenRange(6);
+  }
+  
   public void testLeftOpenRange_4bit() throws Exception {
     testLeftOpenRange(4);
   }
@@ -204,6 +218,10 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   
   public void testRightOpenRange_8bit() throws Exception {
     testRightOpenRange(8);
+  }
+  
+  public void testRightOpenRange_6bit() throws Exception {
+    testRightOpenRange(6);
   }
   
   public void testRightOpenRange_4bit() throws Exception {
@@ -261,13 +279,21 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       termCountT += tq.getTotalNumberOfTerms();
       termCountC += cq.getTotalNumberOfTerms();
     }
-    System.out.println("Average number of terms during random search on '" + field + "':");
-    System.out.println(" Trie query: " + (((double)termCountT)/(50*4)));
-    System.out.println(" Classical query: " + (((double)termCountC)/(50*4)));
+    if (precisionStep == Integer.MAX_VALUE) {
+      assertEquals("Total number of terms should be equal for unlimited precStep", termCountT, termCountC);
+    } else {
+      System.out.println("Average number of terms during random search on '" + field + "':");
+      System.out.println(" Trie query: " + (((double)termCountT)/(50*4)));
+      System.out.println(" Classical query: " + (((double)termCountC)/(50*4)));
+    }
   }
   
   public void testRandomTrieAndClassicRangeQuery_8bit() throws Exception {
     testRandomTrieAndClassicRangeQuery(8);
+  }
+  
+  public void testRandomTrieAndClassicRangeQuery_6bit() throws Exception {
+    testRandomTrieAndClassicRangeQuery(6);
   }
   
   public void testRandomTrieAndClassicRangeQuery_4bit() throws Exception {
@@ -276,6 +302,10 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   
   public void testRandomTrieAndClassicRangeQuery_2bit() throws Exception {
     testRandomTrieAndClassicRangeQuery(2);
+  }
+  
+  public void testRandomTrieAndClassicRangeQuery_NoTrie() throws Exception {
+    testRandomTrieAndClassicRangeQuery(Integer.MAX_VALUE);
   }
   
   private void testRangeSplit(int precisionStep) throws Exception {
@@ -311,6 +341,10 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     testRangeSplit(8);
   }
   
+  public void testRangeSplit_6bit() throws Exception {
+    testRangeSplit(6);
+  }
+  
   public void testRangeSplit_4bit() throws Exception {
     testRangeSplit(4);
   }
@@ -337,6 +371,10 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
 
   public void testDoubleRange_8bit() throws Exception {
     testDoubleRange(8);
+  }
+  
+  public void testDoubleRange_6bit() throws Exception {
+    testDoubleRange(6);
   }
   
   public void testDoubleRange_4bit() throws Exception {
@@ -374,6 +412,10 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
 
   public void testSorting_8bit() throws Exception {
     testSorting(8);
+  }
+  
+  public void testSorting_6bit() throws Exception {
+    testSorting(6);
   }
   
   public void testSorting_4bit() throws Exception {

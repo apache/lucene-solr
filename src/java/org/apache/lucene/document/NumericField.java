@@ -21,6 +21,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.NumericTokenStream;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.search.NumericRangeQuery; // javadocs
 import org.apache.lucene.search.NumericRangeFilter; // javadocs
 import org.apache.lucene.search.SortField; // javadocs
@@ -72,7 +73,10 @@ import org.apache.lucene.search.FieldCache; // javadocs
  *
  * <p>Values indexed by this field can be loaded into the {@link FieldCache}
  * and can be sorted (use {@link SortField}{@code .TYPE} to specify the correct
- * type; {@link SortField#AUTO} does not work with this type of field)
+ * type; {@link SortField#AUTO} does not work with this type of field).
+ * Values solely used for sorting can be indexed using a <code>precisionStep</code>
+ * of {@link Integer#MAX_VALUE} (at least &ge;64), because this step only produces
+ * one value token with highest precision.
  *
  * <p><font color="red"><b>NOTE:</b> This API is experimental and
  * might change in incompatible ways in the next release.</font>
@@ -84,7 +88,34 @@ public final class NumericField extends AbstractField {
   private final NumericTokenStream tokenStream;
 
   /**
-   * Creates a field for numeric values. The instance is not yet initialized with
+   * Creates a field for numeric values using the default <code>precisionStep</code>
+   * {@link NumericUtils#PRECISION_STEP_DEFAULT} (4). The instance is not yet initialized with
+   * a numeric value, before indexing a document containing this field,
+   * set a value using the various set<em>???</em>Value() methods.
+   * This constrcutor creates an indexed, but not stored field.
+   * @param name the field name
+   */
+  public NumericField(String name) {
+    this(name, NumericUtils.PRECISION_STEP_DEFAULT, Field.Store.NO, true);
+  }
+  
+  /**
+   * Creates a field for numeric values using the default <code>precisionStep</code>
+   * {@link NumericUtils#PRECISION_STEP_DEFAULT} (4). The instance is not yet initialized with
+   * a numeric value, before indexing a document containing this field,
+   * set a value using the various set<em>???</em>Value() methods.
+   * @param name the field name
+   * @param store if the field should be stored in plain text form
+   *  (according to <code>toString(value)</code> of the used data type)
+   * @param index if the field should be indexed using {@link NumericTokenStream}
+   */
+  public NumericField(String name, Field.Store store, boolean index) {
+    this(name, NumericUtils.PRECISION_STEP_DEFAULT, store, index);
+  }
+  
+  /**
+   * Creates a field for numeric values with the specified
+   * <code>precisionStep</code>. The instance is not yet initialized with
    * a numeric value, before indexing a document containing this field,
    * set a value using the various set<em>???</em>Value() methods.
    * This constrcutor creates an indexed, but not stored field.
@@ -96,7 +127,8 @@ public final class NumericField extends AbstractField {
   }
 
   /**
-   * Creates a field for numeric values. The instance is not yet initialized with
+   * Creates a field for numeric values with the specified
+   * <code>precisionStep</code>. The instance is not yet initialized with
    * a numeric value, before indexing a document containing this field,
    * set a value using the various set<em>???</em>Value() methods.
    * @param name the field name

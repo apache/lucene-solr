@@ -20,61 +20,67 @@ package org.apache.lucene.analysis;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 public class TestNumericTokenStream extends LuceneTestCase {
 
-  static final int precisionStep = 8;
   static final long lvalue = 4573245871874382L;
   static final int ivalue = 123456;
 
   public void testLongStreamNewAPI() throws Exception {
-    final NumericTokenStream stream=new NumericTokenStream(precisionStep).setLongValue(lvalue);
+    final NumericTokenStream stream=new NumericTokenStream().setLongValue(lvalue);
     stream.setUseNewAPI(true);
     // use getAttribute to test if attributes really exist, if not an IAE will be throwed
     final TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
-    for (int shift=0; shift<64; shift+=precisionStep) {
+    final TypeAttribute typeAtt = (TypeAttribute) stream.getAttribute(TypeAttribute.class);
+    for (int shift=0; shift<64; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertTrue("New token is available", stream.incrementToken());
       assertEquals("Term is correctly encoded", NumericUtils.longToPrefixCoded(lvalue, shift), termAtt.term());
+      assertEquals("Type correct", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, typeAtt.type());
     }
     assertFalse("No more tokens available", stream.incrementToken());
   }
   
   public void testLongStreamOldAPI() throws Exception {
-    final NumericTokenStream stream=new NumericTokenStream(precisionStep).setLongValue(lvalue);
+    final NumericTokenStream stream=new NumericTokenStream().setLongValue(lvalue);
     stream.setUseNewAPI(false);
     Token tok=new Token();
-    for (int shift=0; shift<64; shift+=precisionStep) {
+    for (int shift=0; shift<64; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertNotNull("New token is available", tok=stream.next(tok));
       assertEquals("Term is correctly encoded", NumericUtils.longToPrefixCoded(lvalue, shift), tok.term());
+      assertEquals("Type correct", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, tok.type());
     }
     assertNull("No more tokens available", stream.next(tok));
   }
 
   public void testIntStreamNewAPI() throws Exception {
-    final NumericTokenStream stream=new NumericTokenStream(precisionStep).setIntValue(ivalue);
+    final NumericTokenStream stream=new NumericTokenStream().setIntValue(ivalue);
     stream.setUseNewAPI(true);
     // use getAttribute to test if attributes really exist, if not an IAE will be throwed
     final TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
-    for (int shift=0; shift<32; shift+=precisionStep) {
+    final TypeAttribute typeAtt = (TypeAttribute) stream.getAttribute(TypeAttribute.class);
+    for (int shift=0; shift<32; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertTrue("New token is available", stream.incrementToken());
       assertEquals("Term is correctly encoded", NumericUtils.intToPrefixCoded(ivalue, shift), termAtt.term());
+      assertEquals("Type correct", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, typeAtt.type());
     }
     assertFalse("No more tokens available", stream.incrementToken());
   }
   
   public void testIntStreamOldAPI() throws Exception {
-    final NumericTokenStream stream=new NumericTokenStream(precisionStep).setIntValue(ivalue);
+    final NumericTokenStream stream=new NumericTokenStream().setIntValue(ivalue);
     stream.setUseNewAPI(false);
     Token tok=new Token();
-    for (int shift=0; shift<32; shift+=precisionStep) {
+    for (int shift=0; shift<32; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertNotNull("New token is available", tok=stream.next(tok));
       assertEquals("Term is correctly encoded", NumericUtils.intToPrefixCoded(ivalue, shift), tok.term());
+      assertEquals("Type correct", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, tok.type());
     }
     assertNull("No more tokens available", stream.next(tok));
   }
   
   public void testNotInitialized() throws Exception {
-    final NumericTokenStream stream=new NumericTokenStream(precisionStep);
+    final NumericTokenStream stream=new NumericTokenStream();
     
     try {
       stream.reset();

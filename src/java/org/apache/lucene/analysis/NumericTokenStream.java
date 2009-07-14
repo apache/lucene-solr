@@ -77,7 +77,10 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  *
  * <p>Values indexed by this stream can be loaded into the {@link FieldCache}
  * and can be sorted (use {@link SortField}{@code .TYPE} to specify the correct
- * type; {@link SortField#AUTO} does not work with this type of field)
+ * type; {@link SortField#AUTO} does not work with this type of field).
+ * Values solely used for sorting can be indexed using a <code>precisionStep</code>
+ * of {@link Integer#MAX_VALUE} (at least &ge;64), because this step only produces
+ * one value token with highest precision.
  *
  * <p><font color="red"><b>NOTE:</b> This API is experimental and
  * might change in incompatible ways in the next release.</font>
@@ -86,24 +89,30 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  */
 public final class NumericTokenStream extends TokenStream {
 
-  /** The full precision 64 bit token gets this token type assigned. */
-  public static final String TOKEN_TYPE_FULL_PREC_64  = "fullPrecNumeric64";
+  /** The full precision token gets this token type assigned. */
+  public static final String TOKEN_TYPE_FULL_PREC  = "fullPrecNumeric";
 
-  /** The lower precision 64 bit tokens gets this token type assigned. */
-  public static final String TOKEN_TYPE_LOWER_PREC_64 = "lowerPrecNumeric64";
-
-  /** The full precision 32 bit token gets this token type assigned. */
-  public static final String TOKEN_TYPE_FULL_PREC_32  = "fullPrecNumeric32";
-
-  /** The lower precision 32 bit tokens gets this token type assigned. */
-  public static final String TOKEN_TYPE_LOWER_PREC_32 = "lowerPrecNumeric32";
+  /** The lower precision tokens gets this token type assigned. */
+  public static final String TOKEN_TYPE_LOWER_PREC = "lowerPrecNumeric";
 
   /**
-   * Creates a token stream for numeric values. The stream is not yet initialized,
+   * Creates a token stream for numeric values using the default <code>precisionStep</code>
+   * {@link NumericUtils#PRECISION_STEP_DEFAULT} (4). The stream is not yet initialized,
+   * before using set a value using the various set<em>???</em>Value() methods.
+   */
+  public NumericTokenStream() {
+    this(NumericUtils.PRECISION_STEP_DEFAULT);
+  }
+  
+  /**
+   * Creates a token stream for numeric values with the specified
+   * <code>precisionStep</code>. The stream is not yet initialized,
    * before using set a value using the various set<em>???</em>Value() methods.
    */
   public NumericTokenStream(final int precisionStep) {
     this.precisionStep = precisionStep;
+    if (precisionStep < 1)
+      throw new IllegalArgumentException("precisionStep must be >=1");
     termAtt = (TermAttribute) addAttribute(TermAttribute.class);
     typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
     posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
@@ -165,8 +174,6 @@ public final class NumericTokenStream extends TokenStream {
   public void reset() {
     if (valSize == 0)
       throw new IllegalStateException("call set???Value() before usage");
-    if (precisionStep < 1 || precisionStep > valSize)
-      throw new IllegalArgumentException("precisionStep may only be 1.."+valSize);
     shift = 0;
   }
 
@@ -180,15 +187,13 @@ public final class NumericTokenStream extends TokenStream {
     final char[] buffer;
     switch (valSize) {
       case 64:
-        buffer = termAtt.resizeTermBuffer(NumericUtils.LONG_BUF_SIZE);
+        buffer = termAtt.resizeTermBuffer(NumericUtils.BUF_SIZE_LONG);
         termAtt.setTermLength(NumericUtils.longToPrefixCoded(value, shift, buffer));
-        typeAtt.setType((shift == 0) ? TOKEN_TYPE_FULL_PREC_64 : TOKEN_TYPE_LOWER_PREC_64);
         break;
       
       case 32:
-        buffer = termAtt.resizeTermBuffer(NumericUtils.INT_BUF_SIZE);
+        buffer = termAtt.resizeTermBuffer(NumericUtils.BUF_SIZE_INT);
         termAtt.setTermLength(NumericUtils.intToPrefixCoded((int) value, shift, buffer));
-        typeAtt.setType((shift == 0) ? TOKEN_TYPE_FULL_PREC_32 : TOKEN_TYPE_LOWER_PREC_32);
         break;
       
       default:
@@ -196,6 +201,7 @@ public final class NumericTokenStream extends TokenStream {
         throw new IllegalArgumentException("valSize must be 32 or 64");
     }
     
+    typeAtt.setType((shift == 0) ? TOKEN_TYPE_FULL_PREC : TOKEN_TYPE_LOWER_PREC);
     posIncrAtt.setPositionIncrement((shift == 0) ? 1 : 0);
     shift += precisionStep;
     return true;
@@ -215,15 +221,13 @@ public final class NumericTokenStream extends TokenStream {
     final char[] buffer;
     switch (valSize) {
       case 64:
-        buffer = reusableToken.resizeTermBuffer(NumericUtils.LONG_BUF_SIZE);
+        buffer = reusableToken.resizeTermBuffer(NumericUtils.BUF_SIZE_LONG);
         reusableToken.setTermLength(NumericUtils.longToPrefixCoded(value, shift, buffer));
-        reusableToken.setType((shift == 0) ? TOKEN_TYPE_FULL_PREC_64 : TOKEN_TYPE_LOWER_PREC_64);
         break;
       
       case 32:
-        buffer = reusableToken.resizeTermBuffer(NumericUtils.INT_BUF_SIZE);
+        buffer = reusableToken.resizeTermBuffer(NumericUtils.BUF_SIZE_INT);
         reusableToken.setTermLength(NumericUtils.intToPrefixCoded((int) value, shift, buffer));
-        reusableToken.setType((shift == 0) ? TOKEN_TYPE_FULL_PREC_32 : TOKEN_TYPE_LOWER_PREC_32);
         break;
       
       default:
@@ -231,6 +235,7 @@ public final class NumericTokenStream extends TokenStream {
         throw new IllegalArgumentException("valSize must be 32 or 64");
     }
 
+    reusableToken.setType((shift == 0) ? TOKEN_TYPE_FULL_PREC : TOKEN_TYPE_LOWER_PREC);
     reusableToken.setPositionIncrement((shift == 0) ? 1 : 0);
     shift += precisionStep;
     return reusableToken;

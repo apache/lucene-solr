@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
 import org.apache.lucene.document.NumericField; // for javadocs
+import org.apache.lucene.util.NumericUtils; // for javadocs
 
 /**
  * Implementation of a {@link Filter} that implements <em>trie-based</em> range filtering
@@ -65,6 +66,21 @@ public final class NumericRangeFilter extends MultiTermQueryWrapperFilter {
   }
   
   /**
+   * Factory that creates a <code>NumericRangeFilter</code>, that queries a <code>long</code>
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
+   * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
+   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   */
+  public static NumericRangeFilter newLongRange(final String field,
+    Long min, Long max, final boolean minInclusive, final boolean maxInclusive
+  ) {
+    return new NumericRangeFilter(
+      NumericRangeQuery.newLongRange(field, min, max, minInclusive, maxInclusive)
+    );
+  }
+  
+  /**
    * Factory that creates a <code>NumericRangeFilter</code>, that filters a <code>int</code>
    * range using the given <a href="NumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>.
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
@@ -76,6 +92,21 @@ public final class NumericRangeFilter extends MultiTermQueryWrapperFilter {
   ) {
     return new NumericRangeFilter(
       NumericRangeQuery.newIntRange(field, precisionStep, min, max, minInclusive, maxInclusive)
+    );
+  }
+  
+  /**
+   * Factory that creates a <code>NumericRangeFilter</code>, that queries a <code>int</code>
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
+   * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
+   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   */
+  public static NumericRangeFilter newIntRange(final String field,
+    Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
+  ) {
+    return new NumericRangeFilter(
+      NumericRangeQuery.newIntRange(field, min, max, minInclusive, maxInclusive)
     );
   }
   
@@ -95,6 +126,21 @@ public final class NumericRangeFilter extends MultiTermQueryWrapperFilter {
   }
   
   /**
+   * Factory that creates a <code>NumericRangeFilter</code>, that queries a <code>double</code>
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
+   * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
+   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   */
+  public static NumericRangeFilter newDoubleRange(final String field,
+    Double min, Double max, final boolean minInclusive, final boolean maxInclusive
+  ) {
+    return new NumericRangeFilter(
+      NumericRangeQuery.newDoubleRange(field, min, max, minInclusive, maxInclusive)
+    );
+  }
+  
+  /**
    * Factory that creates a <code>NumericRangeFilter</code>, that filters a <code>float</code>
    * range using the given <a href="NumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>.
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
@@ -109,6 +155,21 @@ public final class NumericRangeFilter extends MultiTermQueryWrapperFilter {
     );
   }
 
+  /**
+   * Factory that creates a <code>NumericRangeFilter</code>, that queries a <code>float</code>
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
+   * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
+   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   */
+  public static NumericRangeFilter newFloatRange(final String field,
+    Float min, Float max, final boolean minInclusive, final boolean maxInclusive
+  ) {
+    return new NumericRangeFilter(
+      NumericRangeQuery.newFloatRange(field, min, max, minInclusive, maxInclusive)
+    );
+  }
+  
   /** Returns the field name for this filter */
   public String getField() { return ((NumericRangeQuery)query).getField(); }
 

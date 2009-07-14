@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
+import org.apache.lucene.document.NumericField; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.search.NumericRangeFilter; // for javadocs
 
@@ -62,9 +63,15 @@ import org.apache.lucene.search.NumericRangeFilter; // for javadocs
 public final class NumericUtils {
 
   private NumericUtils() {} // no instance!
-
+  
   /**
-   * Longs are stored at lower precision by shifting off lower bits. The shift count is
+   * The default precision step used by {@link NumericField}, {@link NumericTokenStream},
+   * {@link NumericRangeQuery}, and {@link NumericRangeFilter} as default
+   */
+  public static final int PRECISION_STEP_DEFAULT = 4;
+  
+  /**
+   * Expert: Longs are stored at lower precision by shifting off lower bits. The shift count is
    * stored as <code>SHIFT_START_LONG+shift</code> in the first character
    */
   public static final char SHIFT_START_LONG = (char)0x20;
@@ -74,10 +81,10 @@ public final class NumericUtils {
    * for encoding <code>long</code> values.
    * @see #longToPrefixCoded(long,int,char[])
    */
-  public static final int LONG_BUF_SIZE = 63/7 + 2;
+  public static final int BUF_SIZE_LONG = 63/7 + 2;
 
   /**
-   * Integers are stored at lower precision by shifting off lower bits. The shift count is
+   * Expert: Integers are stored at lower precision by shifting off lower bits. The shift count is
    * stored as <code>SHIFT_START_INT+shift</code> in the first character
    */
   public static final char SHIFT_START_INT  = (char)0x60;
@@ -87,14 +94,14 @@ public final class NumericUtils {
    * for encoding <code>int</code> values.
    * @see #intToPrefixCoded(int,int,char[])
    */
-  public static final int INT_BUF_SIZE = 31/7 + 2;
+  public static final int BUF_SIZE_INT = 31/7 + 2;
 
   /**
    * Expert: Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
    * This is method is used by {@link NumericTokenStream}.
    * @param val the numeric value
    * @param shift how many bits to strip from the right
-   * @param buffer that will contain the encoded chars, must be at least of {@link #LONG_BUF_SIZE}
+   * @param buffer that will contain the encoded chars, must be at least of {@link #BUF_SIZE_LONG}
    * length
    * @return number of chars written to buffer
    */
@@ -122,7 +129,7 @@ public final class NumericUtils {
    * @param shift how many bits to strip from the right
    */
   public static String longToPrefixCoded(final long val, final int shift) {
-    final char[] buffer = new char[LONG_BUF_SIZE];
+    final char[] buffer = new char[BUF_SIZE_LONG];
     final int len = longToPrefixCoded(val, shift, buffer);
     return new String(buffer, 0, len);
   }
@@ -142,7 +149,7 @@ public final class NumericUtils {
    * This is method is used by {@link NumericTokenStream}.
    * @param val the numeric value
    * @param shift how many bits to strip from the right
-   * @param buffer that will contain the encoded chars, must be at least of {@link #INT_BUF_SIZE}
+   * @param buffer that will contain the encoded chars, must be at least of {@link #BUF_SIZE_INT}
    * length
    * @return number of chars written to buffer
    */
@@ -170,7 +177,7 @@ public final class NumericUtils {
    * @param shift how many bits to strip from the right
    */
   public static String intToPrefixCoded(final int val, final int shift) {
-    final char[] buffer = new char[INT_BUF_SIZE];
+    final char[] buffer = new char[BUF_SIZE_INT];
     final int len = intToPrefixCoded(val, shift, buffer);
     return new String(buffer, 0, len);
   }
@@ -294,8 +301,6 @@ public final class NumericUtils {
   public static void splitLongRange(final LongRangeBuilder builder,
     final int precisionStep,  final long minBound, final long maxBound
   ) {
-    if (precisionStep<1 || precisionStep>64)
-      throw new IllegalArgumentException("precisionStep may only be 1..64");
     splitRange(builder, 64, precisionStep, minBound, maxBound);
   }
   
@@ -310,8 +315,6 @@ public final class NumericUtils {
   public static void splitIntRange(final IntRangeBuilder builder,
     final int precisionStep,  final int minBound, final int maxBound
   ) {
-    if (precisionStep<1 || precisionStep>32)
-      throw new IllegalArgumentException("precisionStep may only be 1..32");
     splitRange(builder, 32, precisionStep, (long)minBound, (long)maxBound);
   }
   
@@ -320,6 +323,8 @@ public final class NumericUtils {
     final Object builder, final int valSize,
     final int precisionStep, long minBound, long maxBound
   ) {
+    if (precisionStep < 1)
+      throw new IllegalArgumentException("precisionStep must be >=1");
     if (minBound > maxBound) return;
     for (int shift=0; ; shift += precisionStep) {
       // calculate new bounds for inner precision

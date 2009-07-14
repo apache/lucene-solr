@@ -38,8 +38,9 @@ import org.apache.lucene.index.Term;
  * An important setting is the <a href="#precisionStepDesc"><code>precisionStep</code></a>, which specifies,
  * how many different precisions per numeric value are indexed to speed up range queries.
  * Lower values create more terms but speed up search, higher values create less terms, but
- * slow down search. Suitable values are 2, 4, or 8. A good starting point to test is 4.
- * For code examples see {@link NumericField}.
+ * slow down search. Suitable values are between <b>1</b> and <b>8</b>. A good starting point to test is <b>4</b>,
+ * which is the default value for all <code>Numeric*</code> classes. For a discussion about ideal
+ * values, see below. Indexing code examples can be found in {@link NumericField}.
  *
  * <h4>Searching</h4>
  * <p>This class has no constructor, you can create queries depending on the data type
@@ -51,6 +52,8 @@ import org.apache.lucene.index.Term;
  *                                           new Float(0.3f), new Float(0.10f),
  *                                           true, true);
  * </pre>
+ * The used <a href="#precisionStepDesc"><code>precisionStep</code></a> must be compatible
+ * to the one used during indexing (see below). The default is also <b>4</b>.
  *
  * <h3>How it works</h3>
  *
@@ -101,18 +104,31 @@ import org.apache.lucene.index.Term;
  * be found out by testing. <b>Important:</b> You can index with a lower precision step value and test search speed
  * using a multiple of the original step value.</p>
  *
+ * <p>Good values for <code>precisionStep</code> are depending on usage and data type:
+ * <ul>
+ *  <li>The default for all data types is <b>4</b>, which is used, when no <code>precisionStep</code> is given.
+ *  <li>Ideal value in most cases for <em>64 bit</em> data types <em>(long, double)</em> is <b>6</b> or <b>8</b>.
+ *  <li>Ideal value in most cases for <em>32 bit</em> data types <em>(int, float)</em> is <b>4</b>.
+ *  <li>Steps <b>&ge;64</b> for <em>long/double</em> and <b>&ge;32</b> for <em>int/float</em> produces one token
+ *  per value in the index and querying is as slow as a conventional {@link TermRangeQuery}. But it can be used
+ *  to produce fields, that are solely used for sorting (in this case simply use {@link Integer#MAX_VALUE} as
+ *  <code>precisionStep</code>). Using {@link NumericField NumericFields} for sorting
+ *  is ideal, because building the field cache is much faster than with text-only numbers.
+ *  Sorting is also possible with range query optimized fields using one of the above <code>precisionSteps</code>.
+ * </ul>
+ *
  * <p>This dramatically improves the performance of Apache Lucene with range queries, which
  * are no longer dependent on the index size and the number of distinct values because there is
  * an upper limit unrelated to either of these properties.</p>
  *
  * <p>Comparisions of the different types of RangeQueries on an index with about 500,000 docs showed
- * that the old {@link RangeQuery} (with raised {@link BooleanQuery} clause count) took about 30-40
- * secs to complete, {@link ConstantScoreRangeQuery} took 5 secs and executing
- * this class took &lt;100ms to complete (on an Opteron64 machine, Java 1.5, 8 bit precision step).
- * This query type was developed for a geographic portal, where the performance for
+ * that {@link TermRangeQuery} in boolean rewrite mode (with raised {@link BooleanQuery} clause count)
+ * took about 30-40 secs to complete, {@link TermRangeQuery} in constant score rewrite mode took 5 secs
+ * and executing this class took &lt;100ms to complete (on an Opteron64 machine, Java 1.5, 8 bit
+ * precision step). This query type was developed for a geographic portal, where the performance for
  * e.g. bounding boxes or exact date/time stamps is important.</p>
  *
- * <p>The query is in {@linkplain #setConstantScoreRewrite constant score mode} per default.
+ * <p>The query defaults to {@linkplain #setConstantScoreRewrite constant score rewrite mode}.
  * With precision steps of &le;4, this query can be run in conventional {@link BooleanQuery}
  * rewrite mode without changing the max clause count.
  *
@@ -127,8 +143,8 @@ public final class NumericRangeQuery extends MultiTermQuery {
     Number min, Number max, final boolean minInclusive, final boolean maxInclusive
   ) {
     assert (valSize == 32 || valSize == 64);
-    if (precisionStep < 1 || precisionStep > valSize)
-      throw new IllegalArgumentException("precisionStep may only be 1.."+valSize);
+    if (precisionStep < 1)
+      throw new IllegalArgumentException("precisionStep must be >=1");
     this.field = field.intern();
     this.precisionStep = precisionStep;
     this.valSize = valSize;
@@ -153,6 +169,19 @@ public final class NumericRangeQuery extends MultiTermQuery {
   }
   
   /**
+   * Factory that creates a <code>NumericRangeQuery</code>, that queries a <code>long</code>
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
+   * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
+   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   */
+  public static NumericRangeQuery newLongRange(final String field,
+    Long min, Long max, final boolean minInclusive, final boolean maxInclusive
+  ) {
+    return new NumericRangeQuery(field, NumericUtils.PRECISION_STEP_DEFAULT, 64, min, max, minInclusive, maxInclusive);
+  }
+  
+  /**
    * Factory that creates a <code>NumericRangeQuery</code>, that queries a <code>int</code>
    * range using the given <a href="#precisionStepDesc"><code>precisionStep</code></a>.
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
@@ -163,6 +192,19 @@ public final class NumericRangeQuery extends MultiTermQuery {
     Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
   ) {
     return new NumericRangeQuery(field, precisionStep, 32, min, max, minInclusive, maxInclusive);
+  }
+  
+  /**
+   * Factory that creates a <code>NumericRangeQuery</code>, that queries a <code>int</code>
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
+   * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
+   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   */
+  public static NumericRangeQuery newIntRange(final String field,
+    Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
+  ) {
+    return new NumericRangeQuery(field, NumericUtils.PRECISION_STEP_DEFAULT, 32, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -179,6 +221,19 @@ public final class NumericRangeQuery extends MultiTermQuery {
   }
   
   /**
+   * Factory that creates a <code>NumericRangeQuery</code>, that queries a <code>double</code>
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
+   * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
+   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   */
+  public static NumericRangeQuery newDoubleRange(final String field,
+    Double min, Double max, final boolean minInclusive, final boolean maxInclusive
+  ) {
+    return new NumericRangeQuery(field, NumericUtils.PRECISION_STEP_DEFAULT, 64, min, max, minInclusive, maxInclusive);
+  }
+  
+  /**
    * Factory that creates a <code>NumericRangeQuery</code>, that queries a <code>float</code>
    * range using the given <a href="#precisionStepDesc"><code>precisionStep</code></a>.
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
@@ -189,6 +244,19 @@ public final class NumericRangeQuery extends MultiTermQuery {
     Float min, Float max, final boolean minInclusive, final boolean maxInclusive
   ) {
     return new NumericRangeQuery(field, precisionStep, 32, min, max, minInclusive, maxInclusive);
+  }
+  
+  /**
+   * Factory that creates a <code>NumericRangeQuery</code>, that queries a <code>float</code>
+   * range using the default <code>precisionStep</code> {@link NumericUtils#PRECISION_STEP_DEFAULT} (4).
+   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
+   * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
+   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   */
+  public static NumericRangeQuery newFloatRange(final String field,
+    Float min, Float max, final boolean minInclusive, final boolean maxInclusive
+  ) {
+    return new NumericRangeQuery(field, NumericUtils.PRECISION_STEP_DEFAULT, 32, min, max, minInclusive, maxInclusive);
   }
   
   //@Override

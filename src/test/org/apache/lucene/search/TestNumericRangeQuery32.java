@@ -53,13 +53,14 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
         field8 = new NumericField("field8", 8, Field.Store.YES, true),
         field4 = new NumericField("field4", 4, Field.Store.YES, true),
         field2 = new NumericField("field2", 2, Field.Store.YES, true),
+        fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE, Field.Store.YES, true),
         ascfield8 = new NumericField("ascfield8", 8, Field.Store.NO, true),
         ascfield4 = new NumericField("ascfield4", 4, Field.Store.NO, true),
         ascfield2 = new NumericField("ascfield2", 2, Field.Store.NO, true);
       
       Document doc = new Document();
       // add fields, that have a distance to test general functionality
-      doc.add(field8); doc.add(field4); doc.add(field2);
+      doc.add(field8); doc.add(field4); doc.add(field2); doc.add(fieldNoTrie);
       // add ascending fields with a distance of 1, beginning at -noDocs/2 to test the correct splitting of range and inclusive/exclusive
       doc.add(ascfield8); doc.add(ascfield4); doc.add(ascfield2);
       
@@ -69,6 +70,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
         field8.setIntValue(val);
         field4.setIntValue(val);
         field2.setIntValue(val);
+        fieldNoTrie.setIntValue(val);
 
         val=l-(noDocs/2);
         ascfield8.setIntValue(val);
@@ -261,9 +263,13 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       termCountT += tq.getTotalNumberOfTerms();
       termCountC += cq.getTotalNumberOfTerms();
     }
-    System.out.println("Average number of terms during random search on '" + field + "':");
-    System.out.println(" Trie query: " + (((double)termCountT)/(50*4)));
-    System.out.println(" Classical query: " + (((double)termCountC)/(50*4)));
+    if (precisionStep == Integer.MAX_VALUE) {
+      assertEquals("Total number of terms should be equal for unlimited precStep", termCountT, termCountC);
+    } else {
+      System.out.println("Average number of terms during random search on '" + field + "':");
+      System.out.println(" Trie query: " + (((double)termCountT)/(50*4)));
+      System.out.println(" Classical query: " + (((double)termCountC)/(50*4)));
+    }
   }
   
   public void testRandomTrieAndClassicRangeQuery_8bit() throws Exception {
@@ -276,6 +282,10 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   
   public void testRandomTrieAndClassicRangeQuery_2bit() throws Exception {
     testRandomTrieAndClassicRangeQuery(2);
+  }
+  
+  public void testRandomTrieAndClassicRangeQuery_NoTrie() throws Exception {
+    testRandomTrieAndClassicRangeQuery(Integer.MAX_VALUE);
   }
   
   private void testRangeSplit(int precisionStep) throws Exception {
