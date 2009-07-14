@@ -43,7 +43,7 @@ public class SearchWithSortTask extends ReadTask {
    * If nomaxscore is present, then we turn off maxScore tracking
    * in {@link org.apache.lucene.search.TopFieldCollector}.
    * 
-   * name,byline:int,subject:auto
+   * name:string,page:int,subject:string
    * 
    */
   public void setParams(String sortField) {
@@ -70,8 +70,7 @@ public class SearchWithSortTask extends ReadTask {
           fieldName = field.substring(0, index);
           typeString = field.substring(1+index, field.length());
         } else {
-          typeString = "auto";
-          fieldName = field;
+          throw new RuntimeException("You must specify the sort type ie page:int,subject:string");
         }
         int type = getType(typeString);
         sortField0 = new SortField(fieldName, type);

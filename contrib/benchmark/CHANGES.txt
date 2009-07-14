@@ -4,6 +4,11 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+7/14/2009
+  LUCENE-1725: Fix the example Sort algorithm - auto is now deprecated and no longer works
+  with Benchmark. Benchmark will now throw an exception if you specify sort fields without
+  a type. The example sort algorithm is now typed.  (Mark Miller)
+
 7/6/2009
   LUCENE-1730: Fix TrecContentSource to use ISO-8859-1 when reading the TREC files, 
   unless a different encoding is specified. Additionally, ContentSource now supports 

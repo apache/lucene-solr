@@ -57,7 +57,7 @@ log.queries=true
       { "TestSortSpeed"
         OpenReader  
         { "LoadFieldCacheAndSearch" SearchWithSort(sort_field:int) > : 1 
-        { "SearchWithSort" SearchWithSort(sort_field) > : 5000
+        { "SearchWithSort" SearchWithSort(sort_field:int) > : 5000
         CloseReader 
       
       }
