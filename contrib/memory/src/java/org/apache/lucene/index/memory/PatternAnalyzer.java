@@ -70,55 +70,60 @@ public class PatternAnalyzer extends Analyzer {
   /** <code>"\\s+"</code>; Divides text at whitespaces (Character.isWhitespace(c)) */
   public static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
   
-  private static final Set EXTENDED_ENGLISH_STOP_WORDS = makeStopSet(new String[] {
-    "a", "about", "above", "across", "adj", "after", "afterwards",
-    "again", "against", "albeit", "all", "almost", "alone", "along",
-    "already", "also", "although", "always", "among", "amongst", "an",
-    "and", "another", "any", "anyhow", "anyone", "anything",
-    "anywhere", "are", "around", "as", "at", "be", "became", "because",
-    "become", "becomes", "becoming", "been", "before", "beforehand",
-    "behind", "being", "below", "beside", "besides", "between",
-    "beyond", "both", "but", "by", "can", "cannot", "co", "could",
-    "down", "during", "each", "eg", "either", "else", "elsewhere",
-    "enough", "etc", "even", "ever", "every", "everyone", "everything",
-    "everywhere", "except", "few", "first", "for", "former",
-    "formerly", "from", "further", "had", "has", "have", "he", "hence",
-    "her", "here", "hereafter", "hereby", "herein", "hereupon", "hers",
-    "herself", "him", "himself", "his", "how", "however", "i", "ie", "if",
-    "in", "inc", "indeed", "into", "is", "it", "its", "itself", "last",
-    "latter", "latterly", "least", "less", "ltd", "many", "may", "me",
-    "meanwhile", "might", "more", "moreover", "most", "mostly", "much",
-    "must", "my", "myself", "namely", "neither", "never",
-    "nevertheless", "next", "no", "nobody", "none", "noone", "nor",
-    "not", "nothing", "now", "nowhere", "of", "off", "often", "on",
-    "once one", "only", "onto", "or", "other", "others", "otherwise",
-    "our", "ours", "ourselves", "out", "over", "own", "per", "perhaps",
-    "rather", "s", "same", "seem", "seemed", "seeming", "seems",
-    "several", "she", "should", "since", "so", "some", "somehow",
-    "someone", "something", "sometime", "sometimes", "somewhere",
-    "still", "such", "t", "than", "that", "the", "their", "them",
-    "themselves", "then", "thence", "there", "thereafter", "thereby",
-    "therefor", "therein", "thereupon", "these", "they", "this",
-    "those", "though", "through", "throughout", "thru", "thus", "to",
-    "together", "too", "toward", "towards", "under", "until", "up",
-    "upon", "us", "very", "via", "was", "we", "well", "were", "what",
-    "whatever", "whatsoever", "when", "whence", "whenever",
-    "whensoever", "where", "whereafter", "whereas", "whereat",
-    "whereby", "wherefrom", "wherein", "whereinto", "whereof",
-    "whereon", "whereto", "whereunto", "whereupon", "wherever",
-    "wherewith", "whether", "which", "whichever", "whichsoever",
-    "while", "whilst", "whither", "who", "whoever", "whole", "whom",
-    "whomever", "whomsoever", "whose", "whosoever", "why", "will",
-    "with", "within", "without", "would", "xsubj", "xcal", "xauthor",
-    "xother ", "xnote", "yet", "you", "your", "yours", "yourself",
-    "yourselves"});
+  private static final Set EXTENDED_ENGLISH_STOP_WORDS;
+  static {
+    EXTENDED_ENGLISH_STOP_WORDS = new HashSet();
+  
+    EXTENDED_ENGLISH_STOP_WORDS.addAll(Arrays.asList(new String[] {
+      "a", "about", "above", "across", "adj", "after", "afterwards",
+      "again", "against", "albeit", "all", "almost", "alone", "along",
+      "already", "also", "although", "always", "among", "amongst", "an",
+      "and", "another", "any", "anyhow", "anyone", "anything",
+      "anywhere", "are", "around", "as", "at", "be", "became", "because",
+      "become", "becomes", "becoming", "been", "before", "beforehand",
+      "behind", "being", "below", "beside", "besides", "between",
+      "beyond", "both", "but", "by", "can", "cannot", "co", "could",
+      "down", "during", "each", "eg", "either", "else", "elsewhere",
+      "enough", "etc", "even", "ever", "every", "everyone", "everything",
+      "everywhere", "except", "few", "first", "for", "former",
+      "formerly", "from", "further", "had", "has", "have", "he", "hence",
+      "her", "here", "hereafter", "hereby", "herein", "hereupon", "hers",
+      "herself", "him", "himself", "his", "how", "however", "i", "ie", "if",
+      "in", "inc", "indeed", "into", "is", "it", "its", "itself", "last",
+      "latter", "latterly", "least", "less", "ltd", "many", "may", "me",
+      "meanwhile", "might", "more", "moreover", "most", "mostly", "much",
+      "must", "my", "myself", "namely", "neither", "never",
+      "nevertheless", "next", "no", "nobody", "none", "noone", "nor",
+      "not", "nothing", "now", "nowhere", "of", "off", "often", "on",
+      "once one", "only", "onto", "or", "other", "others", "otherwise",
+      "our", "ours", "ourselves", "out", "over", "own", "per", "perhaps",
+      "rather", "s", "same", "seem", "seemed", "seeming", "seems",
+      "several", "she", "should", "since", "so", "some", "somehow",
+      "someone", "something", "sometime", "sometimes", "somewhere",
+      "still", "such", "t", "than", "that", "the", "their", "them",
+      "themselves", "then", "thence", "there", "thereafter", "thereby",
+      "therefor", "therein", "thereupon", "these", "they", "this",
+      "those", "though", "through", "throughout", "thru", "thus", "to",
+      "together", "too", "toward", "towards", "under", "until", "up",
+      "upon", "us", "very", "via", "was", "we", "well", "were", "what",
+      "whatever", "whatsoever", "when", "whence", "whenever",
+      "whensoever", "where", "whereafter", "whereas", "whereat",
+      "whereby", "wherefrom", "wherein", "whereinto", "whereof",
+      "whereon", "whereto", "whereunto", "whereupon", "wherever",
+      "wherewith", "whether", "which", "whichever", "whichsoever",
+      "while", "whilst", "whither", "who", "whoever", "whole", "whom",
+      "whomever", "whomsoever", "whose", "whosoever", "why", "will",
+      "with", "within", "without", "would", "xsubj", "xcal", "xauthor",
+      "xother ", "xnote", "yet", "you", "your", "yours", "yourself",
+      "yourselves"}));
+  }
     
   /**
    * A lower-casing word analyzer with English stop words (can be shared
    * freely across threads without harm); global per class loader.
    */
   public static final PatternAnalyzer DEFAULT_ANALYZER = new PatternAnalyzer(
-    NON_WORD_PATTERN, true, makeStopSet(StopAnalyzer.ENGLISH_STOP_WORDS));
+    NON_WORD_PATTERN, true, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
     
   /**
    * A lower-casing word analyzer with <b>extended </b> English stop words
@@ -191,7 +196,7 @@ public class PatternAnalyzer extends Analyzer {
     }
     else {
       stream = new PatternTokenizer(text, pattern, toLowerCase);
-      if (stopWords != null) stream = new StopFilter(stream, stopWords);
+      if (stopWords != null) stream = new StopFilter(false, stream, stopWords);
     }
     
     return stream;
@@ -304,9 +309,9 @@ public class PatternAnalyzer extends Analyzer {
   }
     
   /** somewhat oversized to minimize hash collisions */
-  private static Set makeStopSet(String[] stopWords) {
-    Set stops = new HashSet(stopWords.length * 2, 0.3f); 
-    stops.addAll(Arrays.asList(stopWords));
+  private static Set makeStopSet(Set stopWords) {
+    Set stops = new HashSet(stopWords.size() * 2, 0.3f); 
+    stops.addAll(stopWords);
     return stops;
 //    return Collections.unmodifiableSet(stops);
   }

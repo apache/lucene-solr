@@ -271,7 +271,7 @@ public class MemoryIndexTest extends TestCase {
     boolean toLowerCase = true;
 //    boolean toLowerCase = false;
 //    Set stopWords = null;
-    Set stopWords = StopFilter.makeStopSet(StopAnalyzer.ENGLISH_STOP_WORDS);
+    Set stopWords = StopAnalyzer.ENGLISH_STOP_WORDS_SET;
     
     Analyzer[] analyzers = new Analyzer[] { 
         new SimpleAnalyzer(),

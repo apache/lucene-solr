@@ -23,7 +23,9 @@ import java.text.Collator;
 import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
@@ -768,7 +770,9 @@ public class TestQueryParser extends LuceneTestCase {
 
   public void testBoost()
     throws Exception {
-    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(new String[]{"on"});
+    Set stopWords = new HashSet(1);
+    stopWords.add("on");
+    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(stopWords);
     QueryParser qp = new QueryParser("field", oneStopAnalyzer);
     Query q = qp.parse("on^1.0");
     assertNotNull(q);

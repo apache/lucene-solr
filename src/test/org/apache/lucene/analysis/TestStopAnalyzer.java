@@ -23,12 +23,13 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.StringReader;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.HashSet;
 
 public class TestStopAnalyzer extends LuceneTestCase {
   
-  private StopAnalyzer stop = new StopAnalyzer();
+  private StopAnalyzer stop = new StopAnalyzer(false);
   private Set inValidTokens = new HashSet();
   
   public TestStopAnalyzer(String s) {
@@ -37,8 +38,10 @@ public class TestStopAnalyzer extends LuceneTestCase {
 
   protected void setUp() throws Exception {
     super.setUp();
-    for (int i = 0; i < StopAnalyzer.ENGLISH_STOP_WORDS.length; i++) {
-      inValidTokens.add(StopAnalyzer.ENGLISH_STOP_WORDS[i]);
+    
+    Iterator it = StopAnalyzer.ENGLISH_STOP_WORDS_SET.iterator();
+    while(it.hasNext()) {
+      inValidTokens.add(it.next());
     }
   }
 

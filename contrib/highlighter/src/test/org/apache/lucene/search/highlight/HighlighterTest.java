@@ -23,9 +23,11 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringTokenizer;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -982,7 +984,8 @@ public class HighlighterTest extends TestCase implements Formatter {
 
       public void run() throws Exception {
         String goodWord = "goodtoken";
-        String stopWords[] = { "stoppedtoken" };
+        Set stopWords = new HashSet(1);
+        stopWords.add("stoppedtoken");
 
         TermQuery query = new TermQuery(new Term("data", goodWord));
 
@@ -991,7 +994,8 @@ public class HighlighterTest extends TestCase implements Formatter {
         sb.append(goodWord);
         for (int i = 0; i < 10000; i++) {
           sb.append(" ");
-          sb.append(stopWords[0]);
+          // only one stopword
+          sb.append(stopWords.iterator().next());
         }
         SimpleHTMLFormatter fm = new SimpleHTMLFormatter();
         Highlighter hg = getHighlighter(query, "data", new StandardAnalyzer(stopWords).tokenStream(
@@ -1024,7 +1028,9 @@ public class HighlighterTest extends TestCase implements Formatter {
   public void testMaxSizeEndHighlight() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
       public void run() throws Exception {
-        String stopWords[] = { "in", "it" };
+        Set stopWords = new HashSet();
+        stopWords.add("in");
+        stopWords.add("it");
         TermQuery query = new TermQuery(new Term("text", "searchterm"));
 
         String text = "this is a text with searchterm in it";

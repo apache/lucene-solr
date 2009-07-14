@@ -55,6 +55,7 @@ public final class StopFilter extends TokenFilter {
    * @param enablePositionIncrements true if token positions should record the removed stop words
    * @param input input TokenStream
    * @param stopWords array of stop words
+   * @deprecated Use {@link #StopFilter(boolean, TokenStream, Set)} instead.
    */
   public StopFilter(boolean enablePositionIncrements, TokenStream input, String [] stopWords)
   {
@@ -77,6 +78,7 @@ public final class StopFilter extends TokenFilter {
    * @param in input TokenStream
    * @param stopWords array of stop words
    * @param ignoreCase true if case is ignored
+   * @deprecated Use {@link #StopFilter(boolean, TokenStream, Set, boolean)} instead.
    */
   public StopFilter(boolean enablePositionIncrements, TokenStream in, String[] stopWords, boolean ignoreCase) {
     super(in);

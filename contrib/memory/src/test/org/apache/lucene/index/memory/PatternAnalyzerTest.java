@@ -135,7 +135,7 @@ public class PatternAnalyzerTest extends TestCase {
           
           for (int stops=0; stops < maxStops; stops++) {
             Set stopWords = null;
-            if (stops != 0) stopWords = StopFilter.makeStopSet(StopAnalyzer.ENGLISH_STOP_WORDS);
+            if (stops != 0) stopWords = StopAnalyzer.ENGLISH_STOP_WORDS_SET;
                 
             for (int toLower=0; toLower < maxToLower; toLower++) {
               boolean toLowerCase = toLower != 0;

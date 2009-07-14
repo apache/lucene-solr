@@ -2,6 +2,7 @@ package org.apache.lucene.analysis;
 
 import java.util.AbstractSet;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 
 /**
@@ -53,6 +54,12 @@ public class CharArraySet extends AbstractSet {
     this(c.size(), ignoreCase);
     addAll(c);
   }
+  /** Create set from entries */
+  private CharArraySet(char[][] entries, boolean ignoreCase, int count){
+    this.entries = entries;
+    this.ignoreCase = ignoreCase;
+    this.count = count;
+  }
 
   /** true if the <code>len</code> chars of <code>text</code> starting at <code>off</code>
    * are in the set */
@@ -100,7 +107,7 @@ public class CharArraySet extends AbstractSet {
   public boolean add(CharSequence text) {
     return add(text.toString()); // could be more efficient
   }
-
+  
   /** Add this String into the set */
   public boolean add(String text) {
     return add(text.toCharArray());
@@ -228,6 +235,26 @@ public class CharArraySet extends AbstractSet {
     }
     return add(o.toString());
   }
+  
+  /**
+   * Returns an unmodifiable {@link CharArraySet}. This allows to provide
+   * unmodifiable views of internal sets for "read-only" use.
+   * 
+   * @param set
+   *          a set for which the unmodifiable set is returned.
+   * @return an new unmodifiable {@link CharArraySet}.
+   * @throws NullPointerException
+   *           if the given set is <code>null</code>.
+   */
+  public static CharArraySet unmodifiableSet(CharArraySet set) {
+    if (set == null)
+      throw new NullPointerException("Given set is null");
+    /*
+     * Instead of delegating calls to the given set copy the low-level values to
+     * the unmodifiable Subclass
+     */
+    return new UnmodifiableCharArraySet(set.entries, set.ignoreCase, set.count);
+  }
 
   /** The Iterator<String> for this set.  Strings are constructed on the fly, so
    * use <code>nextCharArray</code> for more efficient access. */
@@ -269,6 +296,41 @@ public class CharArraySet extends AbstractSet {
 
   public Iterator iterator() {
     return new CharArraySetIterator();
+  }
+  
+  /**
+   * Efficient unmodifiable {@link CharArraySet}. This implementation does not
+   * delegate calls to a give {@link CharArraySet} like
+   * {@link Collections#unmodifiableSet(java.util.Set)} does. Instead is passes
+   * the internal representation of a {@link CharArraySet} to a super
+   * constructor and overrides all mutators. 
+   */
+  private static final class UnmodifiableCharArraySet extends CharArraySet {
+
+    private UnmodifiableCharArraySet(char[][] entries, boolean ignoreCase,
+        int count) {
+      super(entries, ignoreCase, count);
+    }
+
+    public boolean add(Object o){
+      throw new UnsupportedOperationException();
+    }
+    
+    public boolean addAll(Collection coll) {
+      throw new UnsupportedOperationException();
+    }
+    
+    public boolean add(char[] text) {
+      throw new UnsupportedOperationException();
+    }
+
+    public boolean add(CharSequence text) {
+      throw new UnsupportedOperationException();
+    }
+
+    public boolean add(String text) {
+      throw new UnsupportedOperationException();
+    }
   }
 
 }

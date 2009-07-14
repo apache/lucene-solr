@@ -101,15 +101,19 @@ public class StandardAnalyzer extends Analyzer {
 
 
   /** An array containing some common English words that are usually not
-  useful for searching. */
+  useful for searching. 
+  @deprecated Use {@link #STOP_WORDS_SET} instead */
   public static final String[] STOP_WORDS = StopAnalyzer.ENGLISH_STOP_WORDS;
+  
+  /** An unmodifiable set containing some common English words that are usually not
+  useful for searching. */
+  public static final Set/*<String>*/ STOP_WORDS_SET = StopAnalyzer.ENGLISH_STOP_WORDS_SET; 
 
   /** Builds an analyzer with the default stop words ({@link
-   * #STOP_WORDS}).
-   * @deprecated Use {@link #StandardAnalyzer(Version)},
-   * instead. */
+   * #STOP_WORDS_SET}).
+   * @deprecated Use {@link #StandardAnalyzer(Version)} instead. */
   public StandardAnalyzer() {
-    this(Version.LUCENE_24, STOP_WORDS);
+    this(Version.LUCENE_24, STOP_WORDS_SET);
   }
 
   /** Builds an analyzer with the default stop words ({@link
@@ -118,7 +122,7 @@ public class StandardAnalyzer extends Analyzer {
    * <a href="#version">above</a>}
    */
   public StandardAnalyzer(Version matchVersion) {
-    this(matchVersion, STOP_WORDS);
+    this(matchVersion, STOP_WORDS_SET);
   }
 
   /** Builds an analyzer with the given stop words.
@@ -138,22 +142,9 @@ public class StandardAnalyzer extends Analyzer {
   }
 
   /** Builds an analyzer with the given stop words.
-   * @deprecated Use {@link #StandardAnalyzer(Version,
-   * String[])} instead */
+   * @deprecated Use {@link #StandardAnalyzer(Version, Set)} instead */
   public StandardAnalyzer(String[] stopWords) {
-    this(Version.LUCENE_24, stopWords);
-  }
-
-  /** Builds an analyzer with the given stop words.
-   * @param matchVersion Lucene version to match See {@link
-   * <a href="#version">above</a>}
-   * @param stopWords Array of stop words */
-  public StandardAnalyzer(Version matchVersion, String[] stopWords) {
-    if (stopWords == null) {
-      stopWords = STOP_WORDS;
-    }
-    stopSet = StopFilter.makeStopSet(stopWords);
-    init(matchVersion);
+    this(Version.LUCENE_24, StopFilter.makeStopSet(stopWords));
   }
 
   /** Builds an analyzer with the stop words from the given file.
@@ -203,8 +194,9 @@ public class StandardAnalyzer extends Analyzer {
    * @deprecated Remove in 3.X and make true the only valid value
    */
   public StandardAnalyzer(boolean replaceInvalidAcronym) {
-    this(Version.LUCENE_24, STOP_WORDS);
+    this(Version.LUCENE_24, STOP_WORDS_SET);
     this.replaceInvalidAcronym = replaceInvalidAcronym;
+    useDefaultStopPositionIncrements = true;
   }
 
   /**
@@ -243,7 +235,7 @@ public class StandardAnalyzer extends Analyzer {
    * @deprecated Remove in 3.X and make true the only valid value
    */
   public StandardAnalyzer(String [] stopwords, boolean replaceInvalidAcronym) throws IOException{
-    this(Version.LUCENE_24, stopwords);
+    this(Version.LUCENE_24, StopFilter.makeStopSet(stopwords));
     this.replaceInvalidAcronym = replaceInvalidAcronym;
   }
 

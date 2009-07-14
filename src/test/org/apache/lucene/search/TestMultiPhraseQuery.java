@@ -31,6 +31,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.LinkedList;
 
 /**
@@ -169,7 +170,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase
     
   public void testPhrasePrefixWithBooleanQuery() throws IOException {
     RAMDirectory indexStore = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, new StandardAnalyzer(new String[]{}), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(indexStore, new StandardAnalyzer(new HashSet(0)), true, IndexWriter.MaxFieldLength.LIMITED);
     add("This is a test", "object", writer);
     add("a note", "note", writer);
     writer.close();

@@ -309,6 +309,11 @@ API Changes
     all synchronization in TermInfosReader, which previously could
     cause threads to pile up in certain cases. (Dan Rosher via Mike
     McCandless)
+    
+30. LUCENE-1688: Deprecate static final String stop word array in and 
+    StopAnalzyer and replace it with an immutable implementation of 
+    CharArraySet.  (Simon Willnauer via Mark Miller)
+
 
 Bug fixes
 
@@ -604,6 +609,11 @@ Optimizations
  9. LUCENE-1653: Avoid creating a Calendar in every call to 
     DateTools#dateToString, DateTools#timeToString and
     DateTools#round.  (Shai Erera via Mark Miller)
+    
+10. LUCENE-1688: Deprecate static final String stop word array and 
+    replace it with an immutable implementation of CharArraySet.
+    Removes conversions between Set and array.
+    (Simon Willnauer via Mark Miller)
 
 Documentation
 
