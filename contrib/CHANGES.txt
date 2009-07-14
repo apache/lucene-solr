@@ -72,6 +72,9 @@ New features
  9. LUCENE-1740: Added "analyzer" command to Lucli, enabling changing
     the analyzer from the default StandardAnalyzer.  (Bernd Fondermann
     via Mike McCandless)
+
+10. LUCENE-1272: Add get/setBoost to MoreLikeThis. (Jonathan
+    Leibiusky via Mike McCandless)
  
 Optimizations
 

@@ -282,6 +282,27 @@ public final class MoreLikeThis {
     private final IndexReader ir;
 
     /**
+     * Boost factor to use when boosting the terms
+     */
+    private float boostFactor = 1;
+
+    /**
+     * Returns the boost factor used when boosting terms
+     * @return the boost factor used when boosting terms
+     */
+    public float getBoostFactor() {
+        return boostFactor;
+    }
+
+    /**
+     * Sets the boost factor to use when boosting terms
+     * @param boostFactor
+     */
+    public void setBoostFactor(float boostFactor) {
+        this.boostFactor = boostFactor;
+    }
+
+    /**
      * Constructor requiring an IndexReader.
      */
     public MoreLikeThis(IndexReader ir) {
@@ -586,7 +607,7 @@ public final class MoreLikeThis {
                 }
                 float myScore = ((Float) ar[2]).floatValue();
 
-                tq.setBoost(myScore / bestScore);
+                tq.setBoost(boostFactor * myScore / bestScore);
             }
 
             try {
