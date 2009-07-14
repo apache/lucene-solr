@@ -159,23 +159,6 @@ public class SignatureUpdateProcessorFactory extends
         next.processAdd(cmd);
     }
 
-    @Override
-    public void processDelete(DeleteUpdateCommand cmd) throws IOException {
-      if (next != null)
-        next.processDelete(cmd);
-    }
-
-    @Override
-    public void processCommit(CommitUpdateCommand cmd) throws IOException {
-      if (next != null)
-        next.processCommit(cmd);
-    }
-
-    @Override
-    public void finish() throws IOException {
-      if (next != null)
-        next.finish();
-    }
   }
 
   // for testing
