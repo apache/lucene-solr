@@ -401,6 +401,9 @@
    <dynamicField name="*_d"  type="sdouble" indexed="true"  stored="true"/>
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
 
+   <dynamicField name="ignored_*" type="ignored"/>
+   <dynamicField name="attr_*" type="text" indexed="true" stored="true" multiValued="true"/>
+
    <dynamicField name="random*" type="random" />
 
    <!-- uncomment the following to ignore any fields that don't already match an existing 

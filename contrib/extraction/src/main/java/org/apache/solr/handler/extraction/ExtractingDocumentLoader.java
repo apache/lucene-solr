@@ -36,9 +36,11 @@ import org.apache.tika.sax.XHTMLContentHandler;
 import org.apache.tika.sax.xpath.Matcher;
 import org.apache.tika.sax.xpath.MatchingContentHandler;
 import org.apache.tika.sax.xpath.XPathParser;
+import org.apache.tika.exception.TikaException;
 import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.XMLSerializer;
 import org.xml.sax.ContentHandler;
+import org.xml.sax.SAXException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -187,10 +189,10 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
           }
           rsp.add(stream.getName() + "_metadata", metadataNL);
         }
-      } catch (Exception e) {
-        //TODO: handle here with an option to not fail and just log the exception
+      } catch (SAXException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-
+      } catch (TikaException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } finally {
         IOUtils.closeQuietly(inputStream);
       }

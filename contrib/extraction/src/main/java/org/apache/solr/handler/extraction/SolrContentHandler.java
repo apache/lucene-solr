@@ -19,16 +19,11 @@ package org.apache.solr.handler.extraction;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.StrField;
-import org.apache.solr.schema.TextField;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.UUIDField;
 import org.apache.tika.metadata.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,14 +32,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 import java.text.DateFormat;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Stack;
-import java.util.UUID;
+import java.util.*;
 
 
 /**
@@ -60,29 +48,22 @@ import java.util.UUID;
  */
 public class SolrContentHandler extends DefaultHandler implements ExtractingParams {
   private transient static Logger log = LoggerFactory.getLogger(SolrContentHandler.class);
-  protected SolrInputDocument document;
+  private SolrInputDocument document;
 
-  protected Collection<String> dateFormats = DateUtil.DEFAULT_DATE_FORMATS;
+  private Collection<String> dateFormats = DateUtil.DEFAULT_DATE_FORMATS;
 
-  protected Metadata metadata;
-  protected SolrParams params;
-  protected StringBuilder catchAllBuilder = new StringBuilder(2048);
-  //private StringBuilder currentBuilder;
-  protected IndexSchema schema;
-  //create empty so we don't have to worry about null checks
-  protected Map<String, StringBuilder> fieldBuilders = Collections.emptyMap();
-  protected Stack<StringBuilder> bldrStack = new Stack<StringBuilder>();
+  private Metadata metadata;
+  private SolrParams params;
+  private StringBuilder catchAllBuilder = new StringBuilder(2048);
+  private IndexSchema schema;
+  private Map<String, StringBuilder> fieldBuilders = Collections.emptyMap();
+  private LinkedList<StringBuilder> bldrStack = new LinkedList<StringBuilder>();
 
-  protected boolean ignoreUndeclaredFields = false;
-  protected boolean indexAttribs = false;
-  protected String defaultFieldName;
+  private boolean captureAttribs;
+  private boolean lowerNames;
+  private String contentFieldName = "content";
 
-  protected String metadataPrefix = "";
-
-  /**
-   * Only access through getNextId();
-   */
-  private static long identifier = Long.MIN_VALUE;
+  private String unknownFieldPrefix = "";
 
 
   public SolrContentHandler(Metadata metadata, SolrParams params, IndexSchema schema) {
@@ -97,22 +78,18 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     this.params = params;
     this.schema = schema;
     this.dateFormats = dateFormats;
-    this.ignoreUndeclaredFields = params.getBool(IGNORE_UNDECLARED_FIELDS, false);
-    this.indexAttribs = params.getBool(INDEX_ATTRIBUTES, false);
-    this.defaultFieldName = params.get(DEFAULT_FIELDNAME);
-    this.metadataPrefix = params.get(METADATA_PREFIX, "");
-    //if there's no default field and we are intending to index, then throw an exception
-    if (defaultFieldName == null && params.getBool(EXTRACT_ONLY, false) == false) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No default field name specified");
-    }
-    String[] captureFields = params.getParams(CAPTURE_FIELDS);
+
+    this.lowerNames = params.getBool(LOWERNAMES, false);
+    this.captureAttribs = params.getBool(CAPTURE_ATTRIBUTES, false);
+    this.unknownFieldPrefix = params.get(UNKNOWN_FIELD_PREFIX, "");
+    String[] captureFields = params.getParams(CAPTURE_ELEMENTS);
     if (captureFields != null && captureFields.length > 0) {
       fieldBuilders = new HashMap<String, StringBuilder>();
       for (int i = 0; i < captureFields.length; i++) {
         fieldBuilders.put(captureFields[i], new StringBuilder());
       }
     }
-    bldrStack.push(catchAllBuilder);
+    bldrStack.add(catchAllBuilder);
   }
 
 
@@ -128,73 +105,27 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     //handle the metadata extracted from the document
     for (String name : metadata.names()) {
       String[] vals = metadata.getValues(name);
-      name = findMappedMetadataName(name);
-      SchemaField schFld = schema.getFieldOrNull(name);
-      if (schFld != null) {
-        boost = getBoost(name);
-        if (schFld.multiValued()) {
-          for (int i = 0; i < vals.length; i++) {
-            String val = vals[i];
-            document.addField(name, transformValue(val, schFld), boost);
-          }
-        } else {
-          StringBuilder builder = new StringBuilder();
-          for (int i = 0; i < vals.length; i++) {
-            builder.append(vals[i]).append(' ');
-          }
-          document.addField(name, transformValue(builder.toString().trim(), schFld), boost);
-        }
-      } else {
-        //TODO: error or log?
-        if (ignoreUndeclaredFields == false) {
-          // Arguably we should handle this as a special case. Why? Because unlike basically
-          // all the other fields in metadata, this one was probably set not by Tika by in
-          // ExtractingDocumentLoader.load(). You shouldn't have to define a mapping for this
-          // field just because you specified a resource.name parameter to the handler, should
-          // you?
-          if (name != Metadata.RESOURCE_NAME_KEY) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field: " + name);
-          }
-        }
-      }
+      addField(name, null, vals);
     }
+
     //handle the literals from the params
     Iterator<String> paramNames = params.getParameterNamesIterator();
     while (paramNames.hasNext()) {
-      String name = paramNames.next();
-      if (name.startsWith(LITERALS_PREFIX)) {
-        String fieldName = name.substring(LITERALS_PREFIX.length());
-        //no need to map names here, since they are literals from the user
-        SchemaField schFld = schema.getFieldOrNull(fieldName);
-        if (schFld != null) {
-          String[] values = params.getParams(name);
-          if (schFld.multiValued() == false && values.length > 1) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The Field " + fieldName + " is not multivalued");
-          }
-          boost = getBoost(fieldName);
-          for (int i = 0; i < values.length; i++) {
-            //no need to transform here, b/c we can assume the user sent it in correctly
-            document.addField(fieldName, values[i], boost);
+      String pname = paramNames.next();
+      if (!pname.startsWith(LITERALS_PREFIX)) continue;
 
-          }
-        } else {
-          handleUndeclaredField(fieldName);
-        }
-      }
+      String name = pname.substring(LITERALS_PREFIX.length());
+      addField(name, null, params.getParams(pname));
     }
+
+
     //add in the content
-    document.addField(defaultFieldName, catchAllBuilder.toString(), getBoost(defaultFieldName));
+    addField(contentFieldName, catchAllBuilder.toString(), null);
 
     //add in the captured content
     for (Map.Entry<String, StringBuilder> entry : fieldBuilders.entrySet()) {
       if (entry.getValue().length() > 0) {
-        String fieldName = findMappedName(entry.getKey());
-        SchemaField schFld = schema.getFieldOrNull(fieldName);
-        if (schFld != null) {
-          document.addField(fieldName, transformValue(entry.getValue().toString(), schFld), getBoost(fieldName));
-        } else {
-          handleUndeclaredField(fieldName);
-        }
+        addField(entry.getKey(), entry.getValue().toString(), null);
       }
     }
     if (log.isDebugEnabled()) {
@@ -203,6 +134,75 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     return document;
   }
 
+  // Naming rules:
+  // 1) optionally map names to nicenames (lowercase+underscores)
+  // 2) execute "map" commands
+  // 3) if resulting field is unknown, map it to a common prefix
+  private void addField(String fname, String fval, String[] vals) {
+    if (lowerNames) {
+      StringBuilder sb = new StringBuilder();
+      for (int i=0; i<fname.length(); i++) {
+        char ch = fname.charAt(i);
+        if (!Character.isLetterOrDigit(ch)) ch='_';
+        else ch=Character.toLowerCase(ch);
+        sb.append(ch);
+      }
+      fname = sb.toString();
+    }    
+
+    String name = findMappedName(fname);
+    SchemaField sf = schema.getFieldOrNull(name);
+    if (sf==null && unknownFieldPrefix.length() > 0) {
+      name = unknownFieldPrefix + name;
+      sf = schema.getFieldOrNull(name);
+    }
+
+    // Arguably we should handle this as a special case. Why? Because unlike basically
+    // all the other fields in metadata, this one was probably set not by Tika by in
+    // ExtractingDocumentLoader.load(). You shouldn't have to define a mapping for this
+    // field just because you specified a resource.name parameter to the handler, should
+    // you?
+    if (sf == null && unknownFieldPrefix.length()==0 && name == Metadata.RESOURCE_NAME_KEY) {
+      return;
+    }
+
+    // normalize val params so vals.length>1
+    if (vals != null && vals.length==1) {
+      fval = vals[0];
+      vals = null;
+    }
+
+    // single valued field with multiple values... catenate them.
+    if (sf != null && !sf.multiValued() && vals != null) {
+      StringBuilder builder = new StringBuilder();
+      boolean first=true;
+      for (String val : vals) {
+        if (first) {
+          first=false;
+        } else {
+          builder.append(' ');
+        }
+        builder.append(val);
+      }
+      fval = builder.toString();
+      vals=null;
+    }
+
+    float boost = getBoost(name);
+
+    if (fval != null) {
+      document.addField(name, transformValue(fval, sf), boost);
+    }
+
+    if (vals != null) {
+      for (String val : vals) {
+        document.addField(name, transformValue(val, sf), boost);
+      }
+    }
+
+    // no value set - throw exception for debugging
+    // if (vals==null && fval==null) throw new RuntimeException(name + " has no non-null value ");
+  }
 
 
   @Override
@@ -213,7 +213,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
       builder.setLength(0);
     }
     bldrStack.clear();
-    bldrStack.push(catchAllBuilder);
+    bldrStack.add(catchAllBuilder);
   }
 
 
@@ -222,33 +222,18 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     StringBuilder theBldr = fieldBuilders.get(localName);
     if (theBldr != null) {
       //we need to switch the currentBuilder
-      bldrStack.push(theBldr);
+      bldrStack.add(theBldr);
     }
-    if (indexAttribs == true) {
+    if (captureAttribs == true) {
       for (int i = 0; i < attributes.getLength(); i++) {
-        String fieldName = findMappedName(localName);
-        SchemaField schFld = schema.getFieldOrNull(fieldName);
-        if (schFld != null) {
-          document.addField(fieldName, transformValue(attributes.getValue(i), schFld), getBoost(fieldName));
-        } else {
-          handleUndeclaredField(fieldName);
-        }
+        addField(localName, attributes.getValue(i), null);
       }
     } else {
       for (int i = 0; i < attributes.getLength(); i++) {
-        bldrStack.peek().append(attributes.getValue(i)).append(' ');
+        bldrStack.getLast().append(attributes.getValue(i)).append(' ');
       }
     }
-  }
-
-  protected void handleUndeclaredField(String fieldName) {
-    if (ignoreUndeclaredFields == false) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field: " + fieldName);
-    } else {
-      if (log.isInfoEnabled()) {
-        log.info("Ignoring Field: " + fieldName);
-      }
-    }
+    bldrStack.getLast().append(' ');
   }
 
   @Override
@@ -256,17 +241,16 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     StringBuilder theBldr = fieldBuilders.get(localName);
     if (theBldr != null) {
       //pop the stack
-      bldrStack.pop();
+      bldrStack.removeLast();
       assert (bldrStack.size() >= 1);
     }
-
-
+    bldrStack.getLast().append(' ');
   }
 
 
   @Override
   public void characters(char[] chars, int offset, int length) throws SAXException {
-    bldrStack.peek().append(chars, offset, length);
+    bldrStack.getLast().append(chars, offset, length);
   }
 
 
@@ -281,7 +265,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
    */
   protected String transformValue(String val, SchemaField schFld) {
     String result = val;
-    if (schFld.getType() instanceof DateField) {
+    if (schFld != null && schFld.getType() instanceof DateField) {
       //try to transform the date
       try {
         Date date = DateUtil.parseDate(val, dateFormats);
@@ -289,8 +273,8 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
         result = df.format(date);
 
       } catch (Exception e) {
-        //TODO: error or log?
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid value: " + val + " for field: " + schFld, e);
+        // Let the specific fieldType handle errors
+        // throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid value: " + val + " for field: " + schFld, e);
       }
     }
     return result;
@@ -316,21 +300,5 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   protected String findMappedName(String name) {
     return params.get(MAP_PREFIX + name, name);
   }
-
-  /**
-   * Get the name mapping for the metadata field.  Prepends metadataPrefix onto the returned result.
-   *
-   * @param name The name to check to see if there is a mapping
-   * @return The new name, else <code>name</code>
-   */
-  protected String findMappedMetadataName(String name) {
-    return metadataPrefix + params.get(MAP_PREFIX + name, name);
-  }
-
-
-  protected synchronized long getNextId() {
-    return identifier++;
-  }
-
 
 }

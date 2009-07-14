@@ -640,14 +640,12 @@
     </arr>
   </requestHandler>
 
-<!--
-  <requestHandler name="/update/extract" class="org.apache.solr.handler.extraction.ExtractingRequestHandler">
+  <requestHandler name="/update/extract" class="org.apache.solr.handler.extraction.ExtractingRequestHandler" startup="lazy">
     <lst name="defaults">
-      <str name="ext.map.Last-Modified">last_modified</str>
-      <bool name="ext.ignore.und.fl">true</bool>
+      <str name="uprefix">ignored_</str>
+      <str name="map.content">text</str>
     </lst>
   </requestHandler>
--->
 
 
   <!-- A component to return terms and document frequency of those terms.
