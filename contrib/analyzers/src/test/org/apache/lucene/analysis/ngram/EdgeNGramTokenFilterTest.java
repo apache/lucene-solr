@@ -109,4 +109,16 @@ public class EdgeNGramTokenFilterTest extends TestCase {
     assertEquals("(cde,2,5)", nextToken.toString());
     assertNull(tokenizer.next(reusableToken));
   }
+  
+  public void testSmallTokenInStream() throws Exception {
+    input = new WhitespaceTokenizer(new StringReader("abc de fgh"));
+    EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 3, 3);
+    final Token reusableToken = new Token();
+    Token nextToken = tokenizer.next(reusableToken);
+    assertEquals("(abc,0,3)", nextToken.toString());
+    nextToken = tokenizer.next(reusableToken);
+    assertNotNull(nextToken);
+    assertEquals("(fgh,0,3)", nextToken.toString());
+    assertNull(tokenizer.next(reusableToken));
+  }
 }

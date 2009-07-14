@@ -36,6 +36,9 @@ Bug fixes
     StandardTokenizer so that stop words with mixed case are filtered
     out.  (Rafael Cunha de Almeida, Douglas Campos via Mike McCandless)
 
+ 8. LUCENE-1491: EdgeNGramTokenFilter no longer stops on tokens shorter than minimum n-gram size.
+    (Todd Teak via Otis Gospodnetic)
+
 New features
 
  1. LUCENE-1531: Added support for BoostingTermQuery to XML query parser. (Karl Wettin)

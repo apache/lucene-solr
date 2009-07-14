@@ -64,19 +64,25 @@ public class NGramTokenFilter extends TokenFilter {
   /** Returns the next token in the stream, or null at EOS. */
   public final Token next(final Token reusableToken) throws IOException {
     assert reusableToken != null;
-    if (ngrams.size() > 0) {
-      return (Token) ngrams.removeFirst();
+    if (!ngrams.isEmpty()) {
+        return (Token)ngrams.removeFirst();
     }
 
-    Token nextToken = input.next(reusableToken);
-    if (nextToken == null)
-      return null;
+    Token token = null;
 
-    ngram(nextToken);
-    if (ngrams.size() > 0)
-      return (Token) ngrams.removeFirst();
-    else
-      return null;
+    while (ngrams.isEmpty() && (token = input.next()) != null) {
+        ngram(token);
+    }
+
+    if (token == null) {
+        return null;
+    }
+
+    if (!ngrams.isEmpty()) {
+        return (Token)ngrams.removeFirst();
+    } else {
+        return null;
+    }
   }
 
   private void ngram(Token token) { 

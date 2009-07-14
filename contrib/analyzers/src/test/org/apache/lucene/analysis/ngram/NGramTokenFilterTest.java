@@ -120,4 +120,16 @@ public class NGramTokenFilterTest extends TestCase {
 
         assertTrue(tokens.isEmpty());
     }
+    
+    public void testSmallTokenInStream() throws Exception {
+      input = new WhitespaceTokenizer(new StringReader("abc de fgh"));
+      NGramTokenFilter filter = new NGramTokenFilter(input, 3, 3);
+      final Token reusableToken = new Token();
+      Token nextToken = filter.next(reusableToken);
+      assertEquals("(abc,0,3)", nextToken.toString());
+      nextToken = filter.next(reusableToken);
+      assertNotNull(nextToken);
+      assertEquals("(fgh,0,3)", nextToken.toString());
+      assertNull(filter.next(reusableToken));
+    }
 }
