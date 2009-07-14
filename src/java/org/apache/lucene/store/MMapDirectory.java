@@ -30,6 +30,8 @@ import java.security.PrivilegedExceptionAction;
 import java.security.PrivilegedActionException;
 import java.lang.reflect.Method;
 
+import org.apache.lucene.util.Constants;
+
 /** File-based {@link Directory} implementation that uses
  *  mmap for reading, and {@link
  *  SimpleFSDirectory.SimpleFSIndexOutput} for writing.
@@ -40,6 +42,10 @@ import java.lang.reflect.Method;
  * be sure your have plenty of virtual address space, e.g. by
  * using a 64 bit JRE, or a 32 bit JRE with indexes that are
  * guaranteed to fit within the address space.
+ * On 32 bit platforms also consult {@link #setMaxChunkSize}
+ * if you have problems with mmap failing because of fragmented
+ * address space. If you get an OutOfMemoryException, it is recommened
+ * to reduce the chunk size, until it works.
  *
  * <p>Due to <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4724038">
  * this bug</a> in Sun's JRE, MMapDirectory's {@link IndexInput#close}
@@ -92,6 +98,7 @@ public class MMapDirectory extends FSDirectory {
   static final Object[] NO_PARAMS = new Object[0];
   
   private boolean useUnmapHack = false;
+  private int maxBBuf = Constants.JRE_IS_64BIT ? Integer.MAX_VALUE : (256*1024*1024);
   
   /**
    * <code>true</code>, if this platform supports unmapping mmaped files.
@@ -109,7 +116,7 @@ public class MMapDirectory extends FSDirectory {
     }
     UNMAP_SUPPORTED = v;
   }
-
+  
   /**
    * This method enables the workaround for unmapping the buffers
    * from address space after closing {@link IndexInput}, that is
@@ -164,6 +171,31 @@ public class MMapDirectory extends FSDirectory {
       }
     }
   }
+  
+  /**
+   * Sets the maximum chunk size (default is {@link Integer#MAX_VALUE} for
+   * 64 bit JVMs and 256 MiBytes for 32 bit JVMs) used for memory mapping.
+   * Especially on 32 bit platform, the address space can be very fragmented,
+   * so large index files cannot be mapped.
+   * Using a lower chunk size makes the directory implementation a little
+   * bit slower (as the correct chunk must be resolved on each seek)
+   * but the chance is higher that mmap does not fail. On 64 bit
+   * Java platforms, this parameter should always be {@link Integer#MAX_VALUE},
+   * as the adress space is big enough.
+   */
+  public void setMaxChunkSize(final int maxBBuf) {
+    if (maxBBuf<=0)
+      throw new IllegalArgumentException("Maximum chunk size for mmap must be >0");
+    this.maxBBuf=maxBBuf;
+  }
+  
+  /**
+   * Returns the current mmap chunk size.
+   * @see #setMaxChunkSize
+   */
+  public int getMaxChunkSize() {
+    return maxBBuf;
+  } 
 
   private class MMapIndexInput extends IndexInput {
 
@@ -357,17 +389,15 @@ public class MMapDirectory extends FSDirectory {
     }
   }
   
-  private final int MAX_BBUF = Integer.MAX_VALUE;
-
   /** Creates an IndexInput for the file with the given name. */
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
     File f =  new File(getFile(), name);
     RandomAccessFile raf = new RandomAccessFile(f, "r");
     try {
-      return (raf.length() <= MAX_BBUF)
+      return (raf.length() <= (long) maxBBuf)
              ? (IndexInput) new MMapIndexInput(raf)
-             : (IndexInput) new MultiMMapIndexInput(raf, MAX_BBUF);
+             : (IndexInput) new MultiMMapIndexInput(raf, maxBBuf);
     } finally {
       raf.close();
     }

@@ -546,6 +546,11 @@ New features
     boolean logic, can be used within quote operators with this parser, ie: 
     "(jo* -john) smyth~". (Mark Harwood via Mark Miller)
     
+32. LUCENE-1741: User configureable maximum chunk size in MMapDirectory.
+    On 32 bit platforms, the address space can be very fragmented, so
+    one big ByteBuffer for the whole file may not fit into address space.
+    (Eks Dev via Uwe Schindler)
+    
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing
