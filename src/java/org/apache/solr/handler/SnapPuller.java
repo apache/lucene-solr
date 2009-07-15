@@ -50,7 +50,7 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
 /**
- * <p/> Provides functionality equivalent to the snappull script as well as a timer for scheduling pulls from the
+ * <p/> Provides functionality of downloading changed index files as well as config files and a timer for scheduling fetches from the
  * master. </p>
  *
  * @version $Id$
@@ -158,7 +158,7 @@ public class SnapPuller {
         }
         try {
           executorStartTime = System.currentTimeMillis();
-          replicationHandler.doSnapPull(null);
+          replicationHandler.doFetch(null);
         } catch (Exception e) {
           LOG.error("Exception in fetching index", e);
         }
@@ -275,20 +275,20 @@ public class SnapPuller {
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generateion of master is older than that of the slave , it means they are not compatible to be copied
       // then a new index direcory to be created and all the files need to be copied
-      boolean isSnapNeeded = commit.getGeneration() >= latestGeneration;
+      boolean isFullCopyNeeded = commit.getGeneration() >= latestGeneration;
       File tmpIndexDir = createTempindexDir(core);
       if (isIndexStale())
-        isSnapNeeded = true;
+        isFullCopyNeeded = true;
       boolean successfulInstall = false;
       boolean deleteTmpIdxDir = true;
       try {
         File indexDir = new File(core.getIndexDir());
-        downloadIndexFiles(isSnapNeeded, tmpIndexDir, latestVersion);
+        downloadIndexFiles(isFullCopyNeeded, tmpIndexDir, latestVersion);
         LOG.info("Total time taken for download : " + ((System.currentTimeMillis() - replicationStartTime) / 1000) + " secs");
         Collection<Map<String, Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
         if (!modifiedConfFiles.isEmpty()) {
           downloadConfFiles(confFilesToDownload, latestVersion);
-          if (isSnapNeeded) {
+          if (isFullCopyNeeded) {
             modifyIndexProps(tmpIndexDir.getName());
           } else {
             successfulInstall = copyIndexFiles(tmpIndexDir, indexDir);
@@ -300,7 +300,7 @@ public class SnapPuller {
           }
         } else {
           terminateAndWaitFsyncService();
-          if (isSnapNeeded) {
+          if (isFullCopyNeeded) {
             successfulInstall = modifyIndexProps(tmpIndexDir.getName());
             deleteTmpIdxDir =  false;
           } else {
@@ -417,10 +417,10 @@ public class SnapPuller {
    * All the files are copied to a temp dir first
    */
   private File createTempindexDir(SolrCore core) {
-    String snapName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT).format(new Date());
-    File snapDir = new File(core.getDataDir(), snapName);
-    snapDir.mkdirs();
-    return snapDir;
+    String tmpIdxDirName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT).format(new Date());
+    File tmpIdxDir = new File(core.getDataDir(), tmpIdxDirName);
+    tmpIdxDir.mkdirs();
+    return tmpIdxDir;
   }
 
   private void reloadCore() {
@@ -465,14 +465,14 @@ public class SnapPuller {
    * Download the index files. If a new index is needed, download all the files.
    *
    * @param downloadCompleteIndex is it a fresh index copy
-   * @param snapDir               the directory to which files need to be downloadeed to
+   * @param tmpIdxDir               the directory to which files need to be downloadeed to
    * @param latestVersion         the version number
    */
-  private void downloadIndexFiles(boolean downloadCompleteIndex, File snapDir, long latestVersion) throws Exception {
+  private void downloadIndexFiles(boolean downloadCompleteIndex, File tmpIdxDir, long latestVersion) throws Exception {
     for (Map<String, Object> file : filesToDownload) {
       File localIndexFile = new File(solrCore.getIndexDir(), (String) file.get(NAME));
       if (!localIndexFile.exists() || downloadCompleteIndex) {
-        fileFetcher = new FileFetcher(snapDir, file, (String) file.get(NAME), false, latestVersion);
+        fileFetcher = new FileFetcher(tmpIdxDir, file, (String) file.get(NAME), false, latestVersion);
         currentFile = file;
         fileFetcher.fetchFile();
         filesDownloaded.add(new HashMap<String, Object>(file));
@@ -507,19 +507,19 @@ public class SnapPuller {
    * <p/>
    * Todo may be we should try a simple copy if it fails
    */
-  private boolean copyAFile(File snapDir, File indexDir, String fname, List<String> copiedfiles) {
-    File indexFileInSnap = new File(snapDir, fname);
+  private boolean copyAFile(File tmpIdxDir, File indexDir, String fname, List<String> copiedfiles) {
+    File indexFileInTmpDir = new File(tmpIdxDir, fname);
     File indexFileInIndex = new File(indexDir, fname);
-    boolean success = indexFileInSnap.renameTo(indexFileInIndex);
+    boolean success = indexFileInTmpDir.renameTo(indexFileInIndex);
     if (!success) {
-      LOG.error("Unable to move index file from: " + indexFileInSnap
+      LOG.error("Unable to move index file from: " + indexFileInTmpDir
               + " to: " + indexFileInIndex);
       for (String f : copiedfiles) {
         File indexFile = new File(indexDir, f);
         if (indexFile.exists())
           indexFile.delete();
       }
-      delTree(snapDir);
+      delTree(tmpIdxDir);
       return false;
     }
     return true;
@@ -528,7 +528,7 @@ public class SnapPuller {
   /**
    * Copy all index files from the temp index dir to the actual index. The segments_N file is copied last.
    */
-  private boolean copyIndexFiles(File snapDir, File indexDir) throws IOException {
+  private boolean copyIndexFiles(File tmpIdxDir, File indexDir) throws IOException {
     String segmentsFile = null;
     List<String> copiedfiles = new ArrayList<String>();
     for (Map<String, Object> f : filesDownloaded) {
@@ -542,12 +542,12 @@ public class SnapPuller {
         segmentsFile = fname;
         continue;
       }
-      if (!copyAFile(snapDir, indexDir, fname, copiedfiles)) return false;
+      if (!copyAFile(tmpIdxDir, indexDir, fname, copiedfiles)) return false;
       copiedfiles.add(fname);
     }
     //copy the segments file last
     if (segmentsFile != null) {
-      if (!copyAFile(snapDir, indexDir, segmentsFile, copiedfiles)) return false;
+      if (!copyAFile(tmpIdxDir, indexDir, segmentsFile, copiedfiles)) return false;
     }
     return true;
   }
@@ -583,7 +583,7 @@ public class SnapPuller {
   /**
    * If the index is stale by any chance, load index from a different dir in the data dir.
    */
-  private boolean modifyIndexProps(String snap) {
+  private boolean modifyIndexProps(String tmpIdxDirName) {
     LOG.info("New index installed. Updating index properties...");
     File idxprops = new File(solrCore.getDataDir() + "index.properties");
     Properties p = new Properties();
@@ -598,7 +598,7 @@ public class SnapPuller {
         IOUtils.closeQuietly(is);
       }
     }
-    p.put("index", snap);
+    p.put("index", tmpIdxDirName);
     FileOutputStream os = null;
     try {
       os = new FileOutputStream(idxprops);
@@ -764,7 +764,7 @@ public class SnapPuller {
   private class FileFetcher {
     boolean includeChecksum = true;
 
-    File snapDir;
+    private File copy2Dir;
 
     String fileName;
 
@@ -794,7 +794,7 @@ public class SnapPuller {
 
     FileFetcher(File dir, Map<String, Object> fileDetails, String saveAs,
                 boolean isConf, long latestVersion) throws FileNotFoundException {
-      this.snapDir = dir;
+      this.copy2Dir = dir;
       this.fileName = (String) fileDetails.get(NAME);
       this.size = (Long) fileDetails.get(SIZE);
       this.isConf = isConf;
@@ -804,7 +804,7 @@ public class SnapPuller {
       }
       indexVersion = latestVersion;
 
-      this.file = new File(snapDir, saveAs);
+      this.file = new File(copy2Dir, saveAs);
       this.fileChannel = new FileOutputStream(file).getChannel();
       if (includeChecksum)
         checksum = new Adler32();
@@ -903,7 +903,7 @@ public class SnapPuller {
         //if it fails for the same pacaket for   MAX_RETRIES fail and come out
         if (errorCount > MAX_RETRIES) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                  "Snappull failed for file:" + fileName, e);
+                  "Fetch failed for file:" + fileName, e);
         }
         return ERR;
       }

@@ -143,7 +143,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       final SolrParams paramsCopy = new ModifiableSolrParams(solrParams);
       new Thread() {
         public void run() {
-          doSnapPull(paramsCopy);
+          doFetch(paramsCopy);
         }
       }.start();
       rsp.add(STATUS, OK_STATUS);
@@ -244,7 +244,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private volatile SnapPuller tempSnapPuller;
 
-  void doSnapPull(SolrParams solrParams) {
+  void doFetch(SolrParams solrParams) {
     String masterUrl = solrParams == null ? null : solrParams.get(MASTER_URL);
     if (!snapPullLock.tryLock())
       return;
