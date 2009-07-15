@@ -914,6 +914,8 @@ New Features
     solr.xml and can be used in solrconfig.xml and schema.xml (Henri Biestro, hossman, ryan, shalin)
 
 71. SOLR-1129 : Support binding dynamic fields to beans in SolrJ (Avlesh Singh , noble)
+
+72. SOLR-920 : Cache and reuse IndexSchema . A new attribute added in solr.xml called 'shareSchema' (noble)
     
 Changes in runtime behavior
  1. SOLR-559: use Lucene updateDocument, deleteDocuments methods.  This
