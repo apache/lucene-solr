@@ -142,8 +142,10 @@ public abstract class DocIdSetIterator {
    * @since 2.9
    */
   public int advance(int target) throws IOException {
-    while (nextDoc() < target) {}
-    return doc;
+    if (target == NO_MORE_DOCS) {
+      return doc = NO_MORE_DOCS;
+    }
+    return doc = skipTo(target) ? doc() : NO_MORE_DOCS;
   }
 
 }
