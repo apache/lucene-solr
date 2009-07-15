@@ -108,7 +108,7 @@ public final class StopAnalyzer extends Analyzer {
    * @param stopWords Array of stop words
    * @param enablePositionIncrements See {@link
    * StopFilter#setEnablePositionIncrements} 
-   * @deprecated Use {@link #StopAnalyzer(Set, boolean) instead*/
+   * @deprecated Use {@link #StopAnalyzer(Set, boolean)} instead*/
   public StopAnalyzer(String[] stopWords, boolean enablePositionIncrements) {
     this.stopWords = StopFilter.makeStopSet(stopWords);
     this.enablePositionIncrements = enablePositionIncrements;
