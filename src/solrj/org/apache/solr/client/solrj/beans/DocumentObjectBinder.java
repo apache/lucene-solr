@@ -19,11 +19,9 @@ package org.apache.solr.client.solrj.beans;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
-
-import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.Method;
-import java.lang.reflect.Array;
+import java.lang.reflect.*;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.concurrent.ConcurrentHashMap;
 import java.nio.ByteBuffer;
 
@@ -49,7 +47,6 @@ public class DocumentObjectBinder {
       T obj = null;
       try {
         obj = clazz.newInstance();
-        result.add(obj);
       } catch (Exception e) {
         throw new RuntimeException("Could not instantiate object of " + clazz,e);
       }
@@ -57,6 +54,7 @@ public class DocumentObjectBinder {
         DocField docField = fields.get(i);
         docField.inject(obj, sdoc);
       }
+      result.add(obj);
     }
     return result;
   }
@@ -112,6 +110,14 @@ public class DocumentObjectBinder {
     private Class type;
     private boolean isArray = false, isList=false;
 
+    /*
+     * dynamic fields may use a Map based data structure to bind a given field.
+     * if a mapping is done using, "Map<String, List<String>> foo", <code>isContainedInMap</code>
+     * is set to <code>TRUE</code> as well as <code>isList</code> is set to <code>TRUE</code>
+     */
+    boolean isContainedInMap =false;
+    private Pattern dynamicFieldNamePatternMatcher;
+
     public DocField(AccessibleObject member) {
       if (member instanceof java.lang.reflect.Field) {
         field = (java.lang.reflect.Field) member;
@@ -158,6 +164,13 @@ public class DocumentObjectBinder {
             name = setter.getName();
           }
         }
+      }
+      //dynamic fields are annotated as @Field("categories_*")
+      else if(annotation.value().indexOf('*') >= 0){
+        //if the field was annotated as a dynamic field, convert the name into a pattern
+        //the wildcard (*) is supposed to be either a prefix or a suffix, hence the use of replaceFirst
+        name = annotation.value().replaceFirst("\\*", "\\.*");
+        dynamicFieldNamePatternMatcher = Pattern.compile("^"+name+"$");
       } else {
         name = annotation.value();
       }
@@ -189,40 +202,150 @@ public class DocumentObjectBinder {
         isArray = true;
         type = type.getComponentType();
       }
-    }
-
-    public <T> void inject(T obj, SolrDocument sdoc) {
-      Object val = sdoc.getFieldValue(name);
-      if(val == null) return;
-      if (isArray) {
-        if (val instanceof List) {
-          List collection = (List) val;
-          set(obj, collection.toArray((Object[]) Array.newInstance(type,collection.size())));
-        } else {
-          Object[] arr = (Object[]) Array.newInstance(type, 1);
-          arr[0] = val;
-          set(obj, arr);
-        }
-      } else if (isList) {
-        if (val instanceof List) {
-          set(obj, val);
-        } else {
-          ArrayList l = new ArrayList();
-          l.add(val);
-          set(obj, l);
-        }
-      } else {
-        if (val instanceof List) {
-          List l = (List) val;
-          if(l.size()>0) 
-            set(obj, l.get(0));
-        } 
-        else {
-          set(obj,val) ;
+      //corresponding to the support for dynamicFields
+      else if (type == Map.class || type == HashMap.class) {
+        isContainedInMap = true;
+        //assigned a default type
+        type = Object.class;
+        if(field != null){
+          if(field.getGenericType() instanceof ParameterizedType){
+            //check what are the generic values
+            ParameterizedType parameterizedType = (ParameterizedType) field.getGenericType();
+            Type[] types = parameterizedType.getActualTypeArguments();
+            if(types != null && types.length == 2 && types[0] == String.class){
+              //the key should always be String
+              //Raw and primitive types
+              if(types[1] instanceof Class){
+                //the value could be multivalued then it is a List ,Collection,ArrayList
+                if(types[1]== Collection.class || types[1] == List.class || types[1] == ArrayList.class){
+                  type = Object.class;
+                  isList = true;
+                }else{
+                  //else assume it is a primitive and put in the source type itself
+                  type = (Class) types[1];
+                }
+              }
+              //Of all the Parameterized types, only List is supported
+              else if(types[1] instanceof ParameterizedType){
+                Type rawType = ((ParameterizedType)types[1]).getRawType();
+                if(rawType== Collection.class || rawType == List.class || rawType == ArrayList.class){
+                  type = Object.class;
+                  isList = true;
+                }
+              }
+              //Array types
+              else if(types[1] instanceof GenericArrayType){
+                type = (Class) ((GenericArrayType) types[1]).getGenericComponentType();
+                isArray = true;
+              }
+              //Throw an Exception if types are not known
+              else{
+                throw new RuntimeException("Allowed type for values of mapping a dynamicField are : " +
+                    "Object, Object[] and List");
+              }
+            }
+          }
         }
       }
     }
-    
+
+    /**
+     * Called by the {@link #inject} method to read the value(s) for a field
+     * This method supports reading of all "matching" fieldName's in the <code>SolrDocument</code>
+     *
+     * Returns <code>SolrDocument.getFieldValue</code> for regular fields,
+     * and <code>Map<String, List<Object>></code> for a dynamic field. The key is all matching fieldName's.
+     */
+    @SuppressWarnings("unchecked")
+    private Object getFieldValue(SolrDocument sdoc){
+      Object fieldValue = sdoc.getFieldValue(name);
+      if(fieldValue != null) {
+        //this is not a dynamic field. so return te value
+        return fieldValue;
+      }
+      //reading dynamic field values
+      if(dynamicFieldNamePatternMatcher != null){
+        Map<String, Object> allValuesMap = null;
+        ArrayList allValuesList = null;
+        if(isContainedInMap){
+         allValuesMap = new HashMap<String, Object>();
+        } else {
+          allValuesList = new ArrayList();
+        }
+        for(String field : sdoc.getFieldNames()){
+          if(dynamicFieldNamePatternMatcher.matcher(field).find()){
+            Object val = sdoc.getFieldValue(field);
+            if(val == null) continue;
+            if(isContainedInMap){
+              if(isList){
+                if (!(val instanceof List)) {
+                  ArrayList al = new ArrayList();
+                  al.add(val);
+                  val = al;
+                }
+              } else if(isArray){
+                if (!(val instanceof List)) {
+                  Object[] arr= (Object[]) Array.newInstance(type,1);
+                  arr[0] = val;
+                  val= arr;
+                } else {
+                  val = Array.newInstance(type,((List)val).size());
+                }
+              }
+              allValuesMap.put(field, val);
+            }else {
+              if (val instanceof Collection) {
+                allValuesList.addAll((Collection) val);
+              } else {
+                allValuesList.add(val);
+              }
+            }
+          }
+        }
+        if (isContainedInMap) {
+          return allValuesMap.isEmpty() ? null : allValuesMap;
+        } else {
+          return allValuesList.isEmpty() ? null : allValuesList;
+        }
+      }
+      return null;
+    }
+    <T> void inject(T obj, SolrDocument sdoc) {
+      Object val = getFieldValue(sdoc);
+      if(val == null) {
+        System.out.println("val null for "+ name);
+        return;
+      }
+      if(isArray && !isContainedInMap){
+        List list = null;
+        if(val.getClass().isArray()){
+          set(obj,val);
+          return;
+        } else if (val instanceof List) {
+          list = (List) val;
+        } else{
+          list = new ArrayList();
+          list.add(val);
+        }
+        set(obj, list.toArray((Object[]) Array.newInstance(type,list.size())));        
+      } else if(isList && !isContainedInMap){
+        if (!(val instanceof List)) {
+          ArrayList list = new ArrayList();
+          list.add(val);
+          val =  list;
+        }
+        set(obj, val);
+      } else if(isContainedInMap){
+        if (val instanceof Map) {
+          set(obj,  val);
+        }
+      } else {
+        set(obj, val);
+      }
+
+    }
+
+
     private void set(Object obj, Object v) {
       if(v!= null && type == ByteBuffer.class && v.getClass()== byte[].class) {
         v = ByteBuffer.wrap((byte[])v);

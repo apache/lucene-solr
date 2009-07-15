@@ -18,8 +18,6 @@ package org.apache.solr.client.solrj.beans;
 
 import junit.framework.TestCase;
 
-import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
-import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -34,6 +32,7 @@ import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 public class TestDocumentObjectBinder extends TestCase 
 {
@@ -57,7 +56,7 @@ public class TestDocumentObjectBinder extends TestCase
     SolrInputField catfield = out.getField( "cat" );
     Assert.assertEquals( 3, catfield.getValueCount() );
     Assert.assertEquals( "[aaa, bbb, ccc]", catfield.getValue().toString() );
-  
+
     // Test the error on not settable stuff...
     NotGettableItem ng = new NotGettableItem();
     ng.setInStock( false );
@@ -79,7 +78,21 @@ public class TestDocumentObjectBinder extends TestCase
     Assert.assertEquals("hello", l.get(0).categories[0]);
 
   }
-  
+
+  public void testDynamicFieldBinding(){
+    DocumentObjectBinder binder = new DocumentObjectBinder();
+    XMLResponseParser parser = new XMLResponseParser();
+    NamedList<Object> nl = parser.processResponse(new StringReader(xml));
+    QueryResponse res = new QueryResponse(nl, null);
+    List<Item> l = binder.getBeans(Item.class,res.getResults());
+    Assert.assertArrayEquals(new String[]{"Mobile Store","iPod Store","CCTV Store"}, l.get(3).getAllSuppliers());
+    Assert.assertTrue(l.get(3).supplier.containsKey("supplier_1"));
+    Assert.assertTrue(l.get(3).supplier.containsKey("supplier_2"));
+    Assert.assertEquals(2, l.get(3).supplier.size());
+    Assert.assertEquals("[Mobile Store, iPod Store]", l.get(3).supplier.get("supplier_1").toString());
+    Assert.assertEquals("[CCTV Store]", l.get(3).supplier.get("supplier_2").toString());
+  }
+
   public void testToAndFromSolrDocument()
   {
     Item item = new Item();
@@ -118,6 +131,20 @@ public class TestDocumentObjectBinder extends TestCase
     int mwyMileage;
 
     boolean inStock = false;
+
+    @Field("supplier_*")
+    Map<String, List<String>> supplier;
+
+    private String[] allSuppliers;
+
+    @Field("supplier_*")
+    public void setAllSuppliers(String[] allSuppliers){
+      this.allSuppliers = allSuppliers;  
+    }
+
+    public String[] getAllSuppliers(){
+      return this.allSuppliers;
+    }
 
     @Field
     public void setInStock(Boolean b) {
@@ -175,6 +202,7 @@ public class TestDocumentObjectBinder extends TestCase
     "<str>car power adapter for iPod, white</str></arr><str name=\"id\">IW-02</str><bool name=\"inStock\">false</bool>" +
     "<str name=\"manu\">Belkin</str><str name=\"name\">iPod &amp; iPod Mini USB 2.0 Cable</str>" +
     "<int name=\"popularity\">1</int><float name=\"price\">11.5</float><str name=\"sku\">IW-02</str>" +
+    "<str name=\"supplier_1\">Mobile Store</str><str name=\"supplier_1\">iPod Store</str><str name=\"supplier_2\">CCTV Store</str>" +
     "<date name=\"timestamp\">2008-04-16T10:35:57.140Z</date><float name=\"weight\">2.0</float></doc></result>\n" +
     "</response>";
 }
