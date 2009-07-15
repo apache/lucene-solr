@@ -744,19 +744,19 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
         LOG.info("Replication enabled for following config files: " + includeConfFiles);
       }
-      List snapshot = master.getAll("snapshot");
-      boolean snapshotOnCommit = snapshot.contains("commit");
-      boolean snapshotOnOptimize = snapshot.contains("optimize");
+      List backup = master.getAll("backupAfter");
+      boolean backupOnCommit = backup.contains("commit");
+      boolean backupOnOptimize = backup.contains("optimize");
       List replicateAfter = master.getAll(REPLICATE_AFTER);
       replicateOnCommit = replicateAfter.contains("commit");
       replicateOnOptimize = replicateAfter.contains("optimize");
 
-      if (replicateOnOptimize || snapshotOnOptimize) {
-        core.getUpdateHandler().registerOptimizeCallback(getEventListener(snapshotOnOptimize, replicateOnOptimize));
+      if (replicateOnOptimize || backupOnOptimize) {
+        core.getUpdateHandler().registerOptimizeCallback(getEventListener(backupOnOptimize, replicateOnOptimize));
       }
-      if (replicateOnCommit || snapshotOnCommit) {
+      if (replicateOnCommit || backupOnCommit) {
         replicateOnCommit = true;
-        core.getUpdateHandler().registerCommitCallback(getEventListener(snapshotOnCommit, replicateOnCommit));
+        core.getUpdateHandler().registerCommitCallback(getEventListener(backupOnCommit, replicateOnCommit));
       }
       if (replicateAfter.contains("startup")) {
         replicateOnStart = true;
