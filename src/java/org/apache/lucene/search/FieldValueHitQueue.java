@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -54,7 +53,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue {
     }
     
     public String toString() {
-      return "slot:" + slot + " docID:" + docID;
+      return "slot:" + slot + " docID:" + docID + " score=" + score;
     }
   }
 
@@ -134,7 +133,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue {
       initialize(size);
     }
   
-    protected boolean lessThan(Object a, Object b) {
+    protected boolean lessThan(final Object a, final Object b) {
       final Entry hitA = (Entry) a;
       final Entry hitB = (Entry) b;
 

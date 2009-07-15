@@ -297,7 +297,6 @@ class BooleanScorer2 extends Scorer {
    */
   public void score(Collector collector) throws IOException {
     collector.setScorer(this);
-    int doc;
     while ((doc = countingSumScorer.nextDoc()) != NO_MORE_DOCS) {
       collector.collect(doc);
     }
@@ -317,14 +316,13 @@ class BooleanScorer2 extends Scorer {
   }
   
   protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
-    // null pointer exception when next() was not called before:
-    int docNr = firstDocID;
+    doc = firstDocID;
     collector.setScorer(this);
-    while (docNr < max) {
-      collector.collect(docNr);
-      docNr = countingSumScorer.nextDoc();
+    while (doc < max) {
+      collector.collect(doc);
+      doc = countingSumScorer.nextDoc();
     }
-    return docNr != NO_MORE_DOCS;
+    return doc != NO_MORE_DOCS;
   }
 
   /** @deprecated use {@link #docID()} instead. */
