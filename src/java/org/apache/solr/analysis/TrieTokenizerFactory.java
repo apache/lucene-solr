@@ -16,12 +16,8 @@
  */
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.search.trie.TrieUtils;
-import org.apache.lucene.search.trie.IntTrieTokenStream;
-import org.apache.lucene.search.trie.LongTrieTokenStream;
+import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.DateField;
 import static org.apache.solr.schema.TrieField.TrieTypes;
@@ -30,22 +26,23 @@ import java.io.IOException;
 import java.io.Reader;
 
 /**
- * Index time tokenizer for trie fields. It uses methods in TrieUtils to create multiple trie encoded string per number.
+ * Tokenizer for trie fields. It uses NumericTokenStream to create multiple trie encoded string per number.
  * Each string created by this tokenizer for a given number differs from the previous by the given precisionStep.
+ * For query time token streams that only contain the highest precision term, use 32/64 as precisionStep.
  * <p/>
- * Refer to {@linkplain org.apache.lucene.search.trie package description} for more details.
+ * Refer to {@link org.apache.lucene.search.NumericRangeQuery} for more details.
  *
  * @version $Id$
- * @see org.apache.lucene.search.trie.TrieUtils
+ * @see org.apache.lucene.search.NumericRangeQuery
  * @see org.apache.solr.schema.TrieField
  * @since solr 1.4
  */
-public class TrieIndexTokenizerFactory extends BaseTokenizerFactory {
+public class TrieTokenizerFactory extends BaseTokenizerFactory {
   protected static final DateField dateField = new DateField();
   protected final int precisionStep;
   protected final TrieTypes type;
 
-  public TrieIndexTokenizerFactory(TrieTypes type, int precisionStep) {
+  public TrieTokenizerFactory(TrieTypes type, int precisionStep) {
     this.type = type;
     this.precisionStep = precisionStep;
   }
@@ -59,15 +56,15 @@ public class TrieIndexTokenizerFactory extends BaseTokenizerFactory {
         builder.append(buf, 0, len);
       switch (type) {
         case INTEGER:
-          return new IntTrieTokenStream(Integer.parseInt(builder.toString()), precisionStep);
+          return new NumericTokenStream(precisionStep).setIntValue(Integer.parseInt(builder.toString()));
         case FLOAT:
-          return new IntTrieTokenStream(TrieUtils.floatToSortableInt(Float.parseFloat(builder.toString())), precisionStep);
+          return new NumericTokenStream(precisionStep).setFloatValue(Float.parseFloat(builder.toString()));
         case LONG:
-          return new LongTrieTokenStream(Long.parseLong(builder.toString()), precisionStep);
+          return new NumericTokenStream(precisionStep).setLongValue(Long.parseLong(builder.toString()));
         case DOUBLE:
-          return new LongTrieTokenStream(TrieUtils.doubleToSortableLong(Double.parseDouble(builder.toString())), precisionStep);
+          return new NumericTokenStream(precisionStep).setDoubleValue(Double.parseDouble(builder.toString()));
         case DATE:
-          return new LongTrieTokenStream(dateField.parseMath(null, builder.toString()).getTime(), precisionStep);
+          return new NumericTokenStream(precisionStep).setLongValue(dateField.parseMath(null, builder.toString()).getTime());
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field");
       }

@@ -84,6 +84,10 @@ class DocSetCollector extends Collector {
   public void setNextReader(IndexReader reader, int docBase) throws IOException {
     this.base = docBase;
   }
+
+  public boolean acceptsDocsOutOfOrder() {
+    return false;
+  }
 }
 
 class DocSetDelegateCollector extends DocSetCollector {

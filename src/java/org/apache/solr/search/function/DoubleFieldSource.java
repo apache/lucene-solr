@@ -18,7 +18,7 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.ExtendedFieldCache;
+import org.apache.lucene.search.FieldCache;
 
 import java.io.IOException;
 
@@ -31,13 +31,13 @@ import java.io.IOException;
  */
 
 public class DoubleFieldSource extends FieldCacheSource {
-  protected ExtendedFieldCache.DoubleParser parser;
+  protected FieldCache.DoubleParser parser;
 
   public DoubleFieldSource(String field) {
     this(field, null);
   }
 
-  public DoubleFieldSource(String field, ExtendedFieldCache.DoubleParser parser) {
+  public DoubleFieldSource(String field, FieldCache.DoubleParser parser) {
     super(field);
     this.parser = parser;
   }
@@ -48,8 +48,8 @@ public class DoubleFieldSource extends FieldCacheSource {
 
   public DocValues getValues(IndexReader reader) throws IOException {
     final double[] arr = (parser == null) ?
-            ((ExtendedFieldCache) cache).getDoubles(reader, field) :
-            ((ExtendedFieldCache) cache).getDoubles(reader, field, parser);
+            ((FieldCache) cache).getDoubles(reader, field) :
+            ((FieldCache) cache).getDoubles(reader, field, parser);
     return new DocValues() {
       public float floatVal(int doc) {
         return (float) arr[doc];

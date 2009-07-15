@@ -18,7 +18,6 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.ExtendedFieldCache;
 
 /**
  * A base class for ValueSource implementations that retrieve values for
@@ -28,7 +27,7 @@ import org.apache.lucene.search.ExtendedFieldCache;
  */
 public abstract class FieldCacheSource extends ValueSource {
   protected String field;
-  protected FieldCache cache = ExtendedFieldCache.EXT_DEFAULT;
+  protected FieldCache cache = FieldCache.DEFAULT;
 
   public FieldCacheSource(String field) {
     this.field=field;

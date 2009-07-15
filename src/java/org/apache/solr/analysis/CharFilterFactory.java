@@ -19,6 +19,8 @@ package org.apache.solr.analysis;
 
 import java.util.Map;
 
+import org.apache.lucene.analysis.CharStream;
+
 /**
 *
 * @version $Id$

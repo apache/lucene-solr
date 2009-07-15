@@ -18,7 +18,8 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.analysis.TokenizerFactory;
+import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.CharReader;
 
 import java.io.Reader;
 

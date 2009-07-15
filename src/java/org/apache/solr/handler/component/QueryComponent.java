@@ -21,12 +21,11 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.ExtendedFieldCache.DoubleParser;
-import org.apache.lucene.search.ExtendedFieldCache.LongParser;
+import org.apache.lucene.search.FieldCache.DoubleParser;
+import org.apache.lucene.search.FieldCache.LongParser;
 import org.apache.lucene.search.FieldCache.FloatParser;
 import org.apache.lucene.search.FieldCache.IntParser;
 import org.apache.lucene.search.FieldCache.Parser;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -45,7 +44,6 @@ import org.apache.solr.search.*;
 import org.apache.solr.util.SolrPluginUtils;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.net.URL;
 import java.util.*;
 import java.text.Collator;
@@ -615,7 +613,7 @@ public class QueryComponent extends SearchComponent
   static ScoreDocComparator comparatorLong (final IndexReader reader, final String fieldname, Parser parser)
   throws IOException {
     final String field = fieldname.intern();
-    final long[] fieldOrder = parser == null ? ExtendedFieldCache.EXT_DEFAULT.getLongs(reader, field) :  ExtendedFieldCache.EXT_DEFAULT.getLongs(reader, field, (LongParser) parser);
+    final long[] fieldOrder = parser == null ? FieldCache.DEFAULT.getLongs(reader, field) :  FieldCache.DEFAULT.getLongs(reader, field, (LongParser) parser);
     return new ScoreDocComparator() {
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {
@@ -680,7 +678,7 @@ public class QueryComponent extends SearchComponent
   static ScoreDocComparator comparatorDouble(final IndexReader reader, final String fieldname, Parser parser)
   throws IOException {
     final String field = fieldname.intern();
-    final double[] fieldOrder = parser == null ? ExtendedFieldCache.EXT_DEFAULT.getDoubles(reader, field) :  ExtendedFieldCache.EXT_DEFAULT.getDoubles(reader, field, (DoubleParser) parser);
+    final double[] fieldOrder = parser == null ? FieldCache.DEFAULT.getDoubles(reader, field) :  FieldCache.DEFAULT.getDoubles(reader, field, (DoubleParser) parser);
     return new ScoreDocComparator () {
 
       public final int compare (final ScoreDoc i, final ScoreDoc j) {

@@ -252,12 +252,12 @@
       </analyzer>
     </fieldType>
 
-    <!-- charFilter + "CharStream aware" WhitespaceTokenizer  -->
+    <!-- charFilter + WhitespaceTokenizer  -->
     <!--
     <fieldType name="textCharNorm" class="solr.TextField" positionIncrementGap="100" >
       <analyzer>
         <charFilter class="solr.MappingCharFilterFactory" mapping="mapping-ISOLatin1Accent.txt"/>
-        <tokenizer class="solr.CharStreamAwareWhitespaceTokenizerFactory"/>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
       </analyzer>
     </fieldType>
     -->
@@ -347,7 +347,7 @@
    <!-- "default" values can be specified for fields, indicating which
         value should be used if no value is specified when adding a document.
      -->
-   <field name="popularity" type="sint" indexed="true" stored="true" default="0"/>
+   <field name="popularity" type="sint" indexed="true" stored="true"/>
    <field name="inStock" type="boolean" indexed="true" stored="true"/>
 
    <!-- Some sample docs exists solely to demonstrate the spellchecker

@@ -18,7 +18,6 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.search.ExtendedFieldCache;
 import org.apache.lucene.index.IndexReader;
 
 import java.io.IOException;

@@ -18,7 +18,7 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.ExtendedFieldCache;
+import org.apache.lucene.search.FieldCache;
 
 
 import java.io.IOException;
@@ -32,13 +32,13 @@ import java.io.IOException;
  */
 
 public class LongFieldSource extends FieldCacheSource {
-  protected ExtendedFieldCache.LongParser parser;
+  protected FieldCache.LongParser parser;
 
   public LongFieldSource(String field) {
     this(field, null);
   }
 
-  public LongFieldSource(String field, ExtendedFieldCache.LongParser parser) {
+  public LongFieldSource(String field, FieldCache.LongParser parser) {
     super(field);
     this.parser = parser;
   }
@@ -49,8 +49,8 @@ public class LongFieldSource extends FieldCacheSource {
 
   public DocValues getValues(IndexReader reader) throws IOException {
     final long[] arr = (parser == null) ?
-            ((ExtendedFieldCache) cache).getLongs(reader, field) :
-            ((ExtendedFieldCache) cache).getLongs(reader, field, parser);
+            ((FieldCache) cache).getLongs(reader, field) :
+            ((FieldCache) cache).getLongs(reader, field, parser);
     return new DocValues() {
       public float floatVal(int doc) {
         return (float) arr[doc];

@@ -552,6 +552,17 @@ Other Changes
     hitting "/admin/logging.jsp" should switch to "/admin/logging".
     (hossman)
 
+42. Upgraded to Lucene 2.9-dev r794238. Other changes include:
+    LUCENE-1614 - Use Lucene's DocIdSetIterator.NO_MORE_DOCS as the sentinel value.
+    LUCENE-1630 - Add acceptsDocsOutOfOrder method to Collector implementations.
+    LUCENE-1673, LUCENE-1701 - Trie has moved to Lucene core and renamed to NumericRangeQuery.
+    LUCENE-1662, LUCENE-1687 - Replace usage of ExtendedFieldCache by FieldCache.
+    (shalin)
+
+42. SOLR-1241: Solr's CharFilter has been moved to Lucene. Remove CharFilter and related classes
+    from Solr and use Lucene's corresponding code (koji via shalin)
+
+43. SOLR-1261: Lucene trunk renamed RangeQuery & Co to TermRangeQuery (Uwe Schindler via shalin)
 
 Build
 ----------------------

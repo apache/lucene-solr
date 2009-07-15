@@ -317,13 +317,13 @@ public class QueryParsing {
       Term t = q.getTerm();
       FieldType ft = writeFieldName(t.field(), schema, out, flags);
       writeFieldVal(t.text(), ft, out, flags);
-    } else if (query instanceof ConstantScoreRangeQuery) {
-      ConstantScoreRangeQuery q = (ConstantScoreRangeQuery)query;
+    } else if (query instanceof TermRangeQuery) {
+      TermRangeQuery q = (TermRangeQuery)query;
       String fname = q.getField();
       FieldType ft = writeFieldName(fname, schema, out, flags);
       out.append( q.includesLower() ? '[' : '{' );
-      String lt = q.getLowerVal();
-      String ut = q.getUpperVal();
+      String lt = q.getLowerTerm();
+      String ut = q.getUpperTerm();
       if (lt==null) {
         out.append('*');
       } else {
@@ -339,17 +339,17 @@ public class QueryParsing {
       }
 
       out.append( q.includesUpper() ? ']' : '}' );
-    } else if (query instanceof RangeQuery) {
-      RangeQuery q = (RangeQuery)query;
+    } else if (query instanceof NumericRangeQuery) {
+      NumericRangeQuery q = (NumericRangeQuery)query;
       String fname = q.getField();
       FieldType ft = writeFieldName(fname, schema, out, flags);
-      out.append( q.isInclusive() ? '[' : '{' );
-      Term lt = q.getLowerTerm();
-      Term ut = q.getUpperTerm();
+      out.append( q.includesMin() ? '[' : '{' );
+      Number lt = q.getMin();
+      Number ut = q.getMax();
       if (lt==null) {
         out.append('*');
       } else {
-        writeFieldVal(lt.text(), ft, out, flags);
+        writeFieldVal(lt.toString(), ft, out, flags);
       }
 
       out.append(" TO ");
@@ -357,11 +357,10 @@ public class QueryParsing {
       if (ut==null) {
         out.append('*');
       } else {
-        writeFieldVal(ut.text(), ft, out, flags);
+        writeFieldVal(ut.toString(), ft, out, flags);
       }
 
-      out.append( q.isInclusive() ? ']' : '}' );
-
+      out.append( q.includesMax() ? ']' : '}' );
     } else if (query instanceof BooleanQuery) {
       BooleanQuery q = (BooleanQuery)query;
       boolean needParens=false;

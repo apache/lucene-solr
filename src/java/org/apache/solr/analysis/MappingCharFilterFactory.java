@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.MappingCharFilter;
+import org.apache.lucene.analysis.NormalizeCharMap;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
@@ -37,7 +40,7 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
 public class MappingCharFilterFactory extends BaseCharFilterFactory implements
     ResourceLoaderAware {
 
-  protected NormalizeMap normMap;
+  protected NormalizeCharMap normMap;
   private String mapping;
 
   public void inform(ResourceLoader loader) {
@@ -62,7 +65,7 @@ public class MappingCharFilterFactory extends BaseCharFilterFactory implements
       catch( IOException e ){
         throw new RuntimeException( e );
       }
-      normMap = new NormalizeMap();
+      normMap = new NormalizeCharMap();
       parseRules( wlist, normMap );
     }
   }
@@ -73,8 +76,8 @@ public class MappingCharFilterFactory extends BaseCharFilterFactory implements
 
   // "source" => "target"
   static Pattern p = Pattern.compile( "\"(.*)\"\\s*=>\\s*\"(.*)\"\\s*$" );
-  
-  protected void parseRules( List<String> rules, NormalizeMap normMap ){
+
+  protected void parseRules( List<String> rules, NormalizeCharMap normMap ){
     for( String rule : rules ){
       Matcher m = p.matcher( rule );
       if( !m.find() )

@@ -309,7 +309,7 @@ public class SimpleFacets {
     throws IOException {
 
     DocSet hasVal = searcher.getDocSet
-      (new ConstantScoreRangeQuery(fieldName, null, null, false, false));
+      (new TermRangeQuery(fieldName, null, null, false, false));
     return docs.andNotSize(hasVal);
   }
 
@@ -665,14 +665,13 @@ public class SimpleFacets {
   }
 
   /**
-   * Macro for getting the numDocs of a ConstantScoreRangeQuery over docs
+   * Macro for getting the numDocs of a TermRangeQuery over docs
    * @see SolrIndexSearcher#numDocs
-   * @see ConstantScoreRangeQuery
+   * @see TermRangeQuery
    */
   protected int rangeCount(String field, String low, String high,
                            boolean iLow, boolean iHigh) throws IOException {
-    return searcher.numDocs(new ConstantScoreRangeQuery(field,low,high,
-                                                        iLow,iHigh),
+    return searcher.numDocs(new TermRangeQuery(field,low,high,iLow,iHigh),
                             base);
   }
   

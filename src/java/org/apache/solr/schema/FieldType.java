@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.RangeQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.Sorting;
@@ -436,23 +436,22 @@ public abstract class FieldType extends FieldProperties {
    * handle nulls in part1 and/or part2 as well as unequal minInclusive and maxInclusive parameters gracefully.
    *
    * @param parser
-   *@param field        the name of the field
+   * @param field        the name of the field
    * @param part1        the lower boundary of the range, nulls are allowed.
    * @param part2        the upper boundary of the range, nulls are allowed
    * @param minInclusive whether the minimum of the range is inclusive or not
    * @param maxInclusive whether the maximum of the range is inclusive or not
-*      @return a Query instance to perform range search according to given parameters
+*    @return a Query instance to perform range search according to given parameters
    *
    * @see org.apache.solr.search.SolrQueryParser#getRangeQuery(String, String, String, boolean)
    */
   public Query getRangeQuery(QParser parser, String field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
-    RangeQuery rangeQuery = new RangeQuery(
+    // constant score mode is now enabled per default
+    return new TermRangeQuery(
             field,
             part1 == null ? null : toInternal(part1),
             part2 == null ? null : toInternal(part2),
             minInclusive, maxInclusive);
-    rangeQuery.setConstantScoreRewrite(true);
-    return rangeQuery;
   }
 
 }

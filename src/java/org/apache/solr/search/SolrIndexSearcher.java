@@ -934,6 +934,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
           }
           public void setNextReader(IndexReader reader, int docBase) throws IOException {
           }
+          public boolean acceptsDocsOutOfOrder() {
+            return true;
+          }
         };
       } else {
         collector = new Collector() {
@@ -947,6 +950,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
             if (score > topscore[0]) topscore[0]=score;            
           }
           public void setNextReader(IndexReader reader, int docBase) throws IOException {
+          }
+          public boolean acceptsDocsOutOfOrder() {
+            return true;
           }
         };
       }
@@ -1050,6 +1056,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
              if (score > topscore[0]) topscore[0]=score;
            }
            public void setNextReader(IndexReader reader, int docBase) throws IOException {
+           }
+           public boolean acceptsDocsOutOfOrder() {
+             return false;
            }
          });
        }

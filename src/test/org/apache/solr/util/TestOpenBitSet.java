@@ -23,6 +23,7 @@ import java.util.Random;
 import java.util.BitSet;
 
 import org.apache.lucene.util.OpenBitSetIterator;
+import org.apache.lucene.search.DocIdSetIterator;
 
 /**
  * @deprecated
@@ -62,7 +63,7 @@ public class TestOpenBitSet extends TestCase {
         iterator.skipTo(bb+1);
         bb = iterator.doc();
       }
-      assertEquals(aa,bb);
+      assertEquals(aa == -1 ? DocIdSetIterator.NO_MORE_DOCS : aa, bb);
     } while (aa>=0);
   }
 

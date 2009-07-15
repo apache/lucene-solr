@@ -19,9 +19,8 @@ package org.apache.solr.schema;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.trie.IntTrieRangeQuery;
-import org.apache.lucene.search.trie.LongTrieRangeQuery;
-import org.apache.lucene.search.trie.TrieUtils;
+import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.FieldCache;
 import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.TextResponseWriter;
@@ -33,8 +32,9 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * Provides field types to support for Lucene's Trie Range Queries. See {@linkplain org.apache.lucene.search.trie
- * package description} for more details. It supports integer, float, long, double and date types.
+ * Provides field types to support for Lucene's Trie Range Queries.
+ * See {@link org.apache.lucene.search.NumericRangeQuery} for more details.
+ * It supports integer, float, long, double and date types.
  * <p/>
  * For each number being added to this field, multiple terms are generated as per the algorithm described in the above
  * link. The possible number of terms increases dramatically with higher precision steps (factor 2^precisionStep). For
@@ -46,7 +46,7 @@ import java.util.Map;
  * generated, range search will be no faster than any other number field, but sorting will be possible.
  *
  * @version $Id$
- * @see org.apache.lucene.search.trie.TrieUtils
+ * @see org.apache.lucene.search.NumericRangeQuery
  * @since solr 1.4
  */
 public class TrieField extends FieldType {
@@ -78,11 +78,12 @@ public class TrieField extends FieldType {
                 "Invalid type specified in schema.xml for field: " + args.get("name"), e);
       }
     }
-
+    
     CharFilterFactory[] filterFactories = new CharFilterFactory[0];
     TokenFilterFactory[] tokenFilterFactories = new TokenFilterFactory[0];
-    analyzer = new TokenizerChain(filterFactories, new TrieIndexTokenizerFactory(type, precisionStep), tokenFilterFactories);
-    queryAnalyzer = new TokenizerChain(filterFactories, new TrieQueryTokenizerFactory(type), tokenFilterFactories);
+    analyzer = new TokenizerChain(filterFactories, new TrieTokenizerFactory(type, precisionStep), tokenFilterFactories);
+    // for query time we only need one token, so we use the biggest possible precisionStep:
+    queryAnalyzer = new TokenizerChain(filterFactories, new TrieTokenizerFactory(type, Integer.MAX_VALUE), tokenFilterFactories);
   }
 
   @Override
@@ -107,12 +108,14 @@ public class TrieField extends FieldType {
   public SortField getSortField(SchemaField field, boolean top) {
     switch (type) {
       case INTEGER:
+        return new SortField(field.getName(), FieldCache.NUMERIC_UTILS_INT_PARSER, top);
       case FLOAT:
-        return TrieUtils.getIntSortField(field.getName(), top);
-      case LONG:
-      case DOUBLE:
+        return new SortField(field.getName(), FieldCache.NUMERIC_UTILS_FLOAT_PARSER, top);
       case DATE:
-        return TrieUtils.getLongSortField(field.getName(), top);
+      case LONG:
+        return new SortField(field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER, top);
+      case DOUBLE:
+        return new SortField(field.getName(), FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, top);
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + field.name);
     }
@@ -121,15 +124,14 @@ public class TrieField extends FieldType {
   public ValueSource getValueSource(SchemaField field) {
     switch (type) {
       case INTEGER:
-        return new IntFieldSource(field.getName(), TrieUtils.FIELD_CACHE_INT_PARSER);
+        return new IntFieldSource(field.getName(), FieldCache.NUMERIC_UTILS_INT_PARSER);
       case FLOAT:
-        return new FloatFieldSource(field.getName(), TrieUtils.FIELD_CACHE_FLOAT_PARSER);
-      case LONG:
-        return new LongFieldSource(field.getName(), TrieUtils.FIELD_CACHE_LONG_PARSER);
-      case DOUBLE:
-        return new DoubleFieldSource(field.getName(), TrieUtils.FIELD_CACHE_DOUBLE_PARSER);
+        return new FloatFieldSource(field.getName(), FieldCache.NUMERIC_UTILS_FLOAT_PARSER);
       case DATE:
-        return new LongFieldSource(field.getName(), TrieUtils.FIELD_CACHE_LONG_PARSER);
+      case LONG:
+        return new LongFieldSource(field.getName(), FieldCache.NUMERIC_UTILS_LONG_PARSER);
+      case DOUBLE:
+        return new DoubleFieldSource(field.getName(), FieldCache.NUMERIC_UTILS_DOUBLE_PARSER);
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + field.name);
     }
@@ -167,31 +169,31 @@ public class TrieField extends FieldType {
     Query query = null;
     switch (type) {
       case INTEGER:
-        query = new IntTrieRangeQuery(field, precisionStep,
+        query = NumericRangeQuery.newIntRange(field, precisionStep,
                 min == null ? null : Integer.parseInt(min),
                 max == null ? null : Integer.parseInt(max),
                 minInclusive, maxInclusive);
         break;
       case FLOAT:
-        query = new IntTrieRangeQuery(field, precisionStep,
-                min == null ? null : TrieUtils.floatToSortableInt(Float.parseFloat(min)),
-                max == null ? null : TrieUtils.floatToSortableInt(Float.parseFloat(max)),
+        query = NumericRangeQuery.newFloatRange(field, precisionStep,
+                min == null ? null : Float.parseFloat(min),
+                max == null ? null : Float.parseFloat(max),
                 minInclusive, maxInclusive);
         break;
       case LONG:
-        query = new LongTrieRangeQuery(field, precisionStep,
+        query = NumericRangeQuery.newLongRange(field, precisionStep,
                 min == null ? null : Long.parseLong(min),
                 max == null ? null : Long.parseLong(max),
                 minInclusive, maxInclusive);
         break;
       case DOUBLE:
-        query = new LongTrieRangeQuery(field, precisionStep,
-                min == null ? null : TrieUtils.doubleToSortableLong(Double.parseDouble(min)),
-                max == null ? null : TrieUtils.doubleToSortableLong(Double.parseDouble(max)),
+        query = NumericRangeQuery.newDoubleRange(field, precisionStep,
+                min == null ? null : Double.parseDouble(min),
+                max == null ? null : Double.parseDouble(max),
                 minInclusive, maxInclusive);
         break;
       case DATE:
-        query = new LongTrieRangeQuery(field, precisionStep,
+        query = NumericRangeQuery.newLongRange(field, precisionStep,
                 min == null ? null : dateField.parseMath(null, min).getTime(),
                 max == null ? null : dateField.parseMath(null, max).getTime(),
                 minInclusive, maxInclusive);
