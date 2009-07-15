@@ -103,15 +103,18 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     final SolrParams solrParams = req.getParams();
     String command = solrParams.get(COMMAND);
     if (command == null) {
-      rsp.add("status", "OK");
+      rsp.add(STATUS, OK_STATUS);
+      rsp.add("message", "No command");
       return;
     }
     // This command does not give the current index version of the master
     // It gives the current 'replicateable' index version
     if(CMD_ENABLE_REPL.equalsIgnoreCase(command)){
       replicationEnabled.set(true);
+      rsp.add(STATUS, OK_STATUS);
     } else if(CMD_DISABLE_REPL.equalsIgnoreCase(command)){
       replicationEnabled.set(false);
+      rsp.add(STATUS, OK_STATUS);
     } else if (command.equals(CMD_INDEX_VERSION)) {
       IndexCommit commitPoint = indexCommitPoint;  // make a copy so it won't change
       if (commitPoint != null && replicationEnabled.get()) {
@@ -128,23 +131,46 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (command.equals(CMD_GET_FILE_LIST)) {
       getFileList(solrParams, rsp);
     } else if (command.equalsIgnoreCase(CMD_BACKUP)) {
-      doSnapShoot(solrParams, rsp);
+      doSnapShoot(new ModifiableSolrParams(solrParams), rsp);
+      rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_FETCH_INDEX)) {
+      String masterUrl = solrParams.get(MASTER_URL);
+      if (!isSlave && masterUrl == null) {
+        rsp.add(STATUS,ERR_STATUS);
+        rsp.add("message","No slave configured or no 'masterUrl' Specified");
+        return;
+      }
+      final SolrParams paramsCopy = new ModifiableSolrParams(solrParams);
       new Thread() {
         public void run() {
-          doSnapPull(solrParams);
+          doSnapPull(paramsCopy);
         }
       }.start();
-      rsp.add("status", "OK");
+      rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_DISABLE_POLL)) {
-      if (snapPuller != null)
+      if (snapPuller != null){
         snapPuller.disablePoll();
+        rsp.add(STATUS, OK_STATUS);
+      } else {
+        rsp.add(STATUS, ERR_STATUS);
+        rsp.add("message","No slave configured");
+      }
     } else if (command.equalsIgnoreCase(CMD_ENABLE_POLL)) {
-      if (snapPuller != null)
+      if (snapPuller != null){
         snapPuller.enablePoll();
+        rsp.add(STATUS, OK_STATUS);
+      }else {
+        rsp.add(STATUS,ERR_STATUS);
+        rsp.add("message","No slave configured");
+      }
     } else if (command.equalsIgnoreCase(CMD_ABORT_FETCH)) {
-      if (snapPuller != null)
+      if (snapPuller != null){
         snapPuller.abortPull();
+        rsp.add(STATUS, OK_STATUS);
+      } else {
+        rsp.add(STATUS,ERR_STATUS);
+        rsp.add("message","No slave configured");
+      }
     } else if (command.equals(CMD_FILE_CHECKSUM)) {
       // this command is not used by anyone
       getFileChecksum(solrParams, rsp);
@@ -220,8 +246,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   void doSnapPull(SolrParams solrParams) {
     String masterUrl = solrParams == null ? null : solrParams.get(MASTER_URL);
-    if (!isSlave && masterUrl == null)
-      return;
     if (!snapPullLock.tryLock())
       return;
     try {
@@ -939,6 +963,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   public static final String MASTER_URL = "masterUrl";
 
+  public static final String STATUS = "status";
+
   public static final String COMMAND = "command";
 
   public static final String CMD_DETAILS = "details";
@@ -1004,5 +1030,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   public static final String EXTERNAL = "external";
 
   public static final String INTERNAL = "internal";
+
+  public static final String ERR_STATUS = "ERROR";
+
+  public static final String OK_STATUS = "OK";
+
 
 }
