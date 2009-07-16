@@ -4,7 +4,10 @@ Lucene contrib change Log
 
 Changes in runtime behavior
 
- (None)
+ 1. LUCENE-1505: Local lucene now uses org.apache.lucene.util.NumericUtils for all
+    number conversion.  You'll need to fully re-index any previously created indexes.
+    This isn't a break in back-compatibility because local Lucene has not yet
+    been released.  (Mike McCandless)
 
 API Changes
 

@@ -26,7 +26,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.spatial.NumberUtils;
+import org.apache.lucene.util.NumericUtils;
 
 
 
@@ -158,11 +158,11 @@ public class BoundaryBoxFilter extends Filter {
     buffer.append(":");
     buffer.append(includeLower ? "[" : "{");
     if (null != lowerTerm) {
-      buffer.append(NumberUtils.SortableStr2double(lowerTerm));
+      buffer.append(NumericUtils.prefixCodedToDouble(lowerTerm));
     }
     buffer.append("-");
     if (null != upperTerm) {
-      buffer.append(NumberUtils.SortableStr2double(upperTerm));
+      buffer.append(NumericUtils.prefixCodedToDouble(upperTerm));
     }
     buffer.append(includeUpper ? "]" : "}");
     return buffer.toString();

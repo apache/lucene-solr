@@ -260,12 +260,28 @@ public final class NumericUtils {
   }
 
   /**
+   * Convenience method: this just returns:
+   *   longToPrefixCoded(doubleToSortableLong(val))
+   */
+  public static String doubleToPrefixCoded(double val) {
+    return longToPrefixCoded(doubleToSortableLong(val));
+  }
+
+  /**
    * Converts a sortable <code>long</code> back to a <code>double</code>.
    * @see #doubleToSortableLong
    */
   public static double sortableLongToDouble(long val) {
     if (val<0) val ^= 0x7fffffffffffffffL;
     return Double.longBitsToDouble(val);
+  }
+
+  /**
+   * Convenience method: this just returns:
+   *    sortableLongToDouble(prefixCodedToLong(val))
+   */
+  public static double prefixCodedToDouble(String val) {
+    return sortableLongToDouble(prefixCodedToLong(val));
   }
 
   /**
@@ -282,12 +298,28 @@ public final class NumericUtils {
   }
 
   /**
+   * Convenience method: this just returns:
+   *   intToPrefixCoded(floatToSortableInt(val))
+   */
+  public static String floatToPrefixCoded(float val) {
+    return intToPrefixCoded(floatToSortableInt(val));
+  }
+
+  /**
    * Converts a sortable <code>int</code> back to a <code>float</code>.
    * @see #floatToSortableInt
    */
   public static float sortableIntToFloat(int val) {
     if (val<0) val ^= 0x7fffffff;
     return Float.intBitsToFloat(val);
+  }
+
+  /**
+   * Convenience method: this just returns:
+   *    sortableIntToFloat(prefixCodedToInt(val))
+   */
+  public static float prefixCodedToFloat(String val) {
+    return sortableIntToFloat(prefixCodedToInt(val));
   }
 
   /**

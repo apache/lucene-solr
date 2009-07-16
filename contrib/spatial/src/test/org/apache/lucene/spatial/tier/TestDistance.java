@@ -29,7 +29,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.spatial.NumberUtils;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.spatial.tier.LatLongDistanceFilter;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -69,8 +69,8 @@ public class TestDistance extends TestCase{
     doc.add(new Field("name", name,Field.Store.YES, Field.Index.TOKENIZED));
     
     // convert the lat / long to lucene fields
-    doc.add(new Field(latField, NumberUtils.double2sortableStr(lat),Field.Store.YES, Field.Index.UN_TOKENIZED));
-    doc.add(new Field(lngField, NumberUtils.double2sortableStr(lng),Field.Store.YES, Field.Index.UN_TOKENIZED));
+    doc.add(new Field(latField, NumericUtils.doubleToPrefixCoded(lat),Field.Store.YES, Field.Index.UN_TOKENIZED));
+    doc.add(new Field(lngField, NumericUtils.doubleToPrefixCoded(lng),Field.Store.YES, Field.Index.UN_TOKENIZED));
     
     // add a default meta field to make searching all documents easy 
     doc.add(new Field("metafile", "doc",Field.Store.YES, Field.Index.TOKENIZED));

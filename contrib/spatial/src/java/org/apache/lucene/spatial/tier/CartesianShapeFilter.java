@@ -25,7 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.spatial.NumberUtils;
+import org.apache.lucene.util.NumericUtils;
 
 public class CartesianShapeFilter extends Filter {
 
@@ -56,9 +56,8 @@ public class CartesianShapeFilter extends Filter {
     // iterate through each boxid
     for (int i =0; i< sz; i++) {
       double boxId = area.get(i).doubleValue();
-          
       termDocs.seek(new Term(fieldName,
-          NumberUtils.double2sortableStr(boxId)));
+          NumericUtils.doubleToPrefixCoded(boxId)));
       
       // iterate through all documents
       // which have this boxId

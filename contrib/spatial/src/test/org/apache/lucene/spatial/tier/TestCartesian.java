@@ -37,7 +37,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.function.CustomScoreQuery;
 import org.apache.lucene.search.function.FieldScoreQuery;
 import org.apache.lucene.search.function.FieldScoreQuery.Type;
-import org.apache.lucene.spatial.NumberUtils;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
 import org.apache.lucene.spatial.tier.projections.CartesianTierPlotter;
 import org.apache.lucene.spatial.tier.projections.IProjector;
@@ -96,8 +96,8 @@ public class TestCartesian extends TestCase{
     doc.add(new Field("name", name,Field.Store.YES, Field.Index.TOKENIZED));
     
     // convert the lat / long to lucene fields
-    doc.add(new Field(latField, NumberUtils.double2sortableStr(lat),Field.Store.YES, Field.Index.UN_TOKENIZED));
-    doc.add(new Field(lngField, NumberUtils.double2sortableStr(lng),Field.Store.YES, Field.Index.UN_TOKENIZED));
+    doc.add(new Field(latField, NumericUtils.doubleToPrefixCoded(lat),Field.Store.YES, Field.Index.UN_TOKENIZED));
+    doc.add(new Field(lngField, NumericUtils.doubleToPrefixCoded(lng),Field.Store.YES, Field.Index.UN_TOKENIZED));
     
     // add a default meta field to make searching all documents easy 
     doc.add(new Field("metafile", "doc",Field.Store.YES, Field.Index.TOKENIZED));
@@ -106,7 +106,7 @@ public class TestCartesian extends TestCase{
     for (int i =0; i < ctpsize; i++){
       CartesianTierPlotter ctp = ctps.get(i);
       doc.add(new Field(ctp.getTierFieldName(), 
-          NumberUtils.double2sortableStr(ctp.getTierBoxId(lat,lng)),
+          NumericUtils.doubleToPrefixCoded(ctp.getTierBoxId(lat,lng)),
           Field.Store.YES, 
           Field.Index.NO_NORMS));
       
@@ -212,8 +212,8 @@ public class TestCartesian extends TestCase{
       Document d = hits.doc(i);
       
       String name = d.get("name");
-      double rsLat = NumberUtils.SortableStr2double(d.get(latField));
-      double rsLng = NumberUtils.SortableStr2double(d.get(lngField)); 
+      double rsLat = NumericUtils.prefixCodedToDouble(d.get(latField));
+      double rsLng = NumericUtils.prefixCodedToDouble(d.get(lngField)); 
       Double geo_distance = distances.get(hits.id(i));
       
       double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
@@ -296,8 +296,8 @@ public class TestCartesian extends TestCase{
 	      Document d = hits.doc(i);
 	      
 	      String name = d.get("name");
-	      double rsLat = NumberUtils.SortableStr2double(d.get(latField));
-	      double rsLng = NumberUtils.SortableStr2double(d.get(lngField)); 
+	      double rsLat = NumericUtils.prefixCodedToDouble(d.get(latField));
+	      double rsLng = NumericUtils.prefixCodedToDouble(d.get(lngField)); 
 	      Double geo_distance = distances.get(hits.id(i));
 	      
 	      double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);

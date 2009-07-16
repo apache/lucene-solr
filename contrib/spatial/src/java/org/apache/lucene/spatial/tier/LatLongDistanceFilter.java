@@ -27,7 +27,7 @@ import java.util.logging.Logger;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.spatial.NumberUtils;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.spatial.tier.DistanceHandler.Precision;
 
 
@@ -91,8 +91,8 @@ public class LatLongDistanceFilter extends DistanceFilter {
     //   TODO: Why is this a WeakHashMap? 
     WeakHashMap<String,Double> cdistance = new WeakHashMap<String,Double>(maxdocs);
     long start = System.currentTimeMillis();
-    String[] latIndex = FieldCache.DEFAULT.getStrings(reader, latField);
-    String[] lngIndex = FieldCache.DEFAULT.getStrings(reader, lngField);
+    double[] latIndex = FieldCache.DEFAULT.getDoubles(reader, latField);
+    double[] lngIndex = FieldCache.DEFAULT.getDoubles(reader, lngField);
 
     /* store calculated distances for reuse by other components */
     distances = new HashMap<Integer,Double>(maxdocs);
@@ -105,11 +105,8 @@ public class LatLongDistanceFilter extends DistanceFilter {
     while(td.next()) {
       int doc = td.doc();
       
-      String sx = latIndex[doc];
-      String sy = lngIndex[doc];
-  
-      double x = NumberUtils.SortableStr2double(sx);
-      double y = NumberUtils.SortableStr2double(sy);
+      double x = latIndex[doc];
+      double y = lngIndex[doc];
       
       // round off lat / longs if necessary
 //      x = DistanceHandler.getPrecision(x, precise);
@@ -168,8 +165,8 @@ public class LatLongDistanceFilter extends DistanceFilter {
     }
     
     long start = System.currentTimeMillis();
-    String[] latIndex = FieldCache.DEFAULT.getStrings(reader, latField);
-    String[] lngIndex = FieldCache.DEFAULT.getStrings(reader, lngField);
+    double[] latIndex = FieldCache.DEFAULT.getDoubles(reader, latField);
+    double[] lngIndex = FieldCache.DEFAULT.getDoubles(reader, lngField);
     
     /* loop over all set bits (hits from the boundary box filters) */
     int i = bits.nextSetBit(0);
@@ -186,10 +183,8 @@ public class LatLongDistanceFilter extends DistanceFilter {
       // filter chain, lat / lngs can be retrived from 
       // memory rather than document base.
 
-      String sx = latIndex[i];
-      String sy = lngIndex[i];
-      x = NumberUtils.SortableStr2double(sx);
-      y = NumberUtils.SortableStr2double(sy);
+      x = latIndex[i];
+      y = lngIndex[i];
       
       // round off lat / longs if necessary
 //      x = DistanceHandler.getPrecision(x, precise);
