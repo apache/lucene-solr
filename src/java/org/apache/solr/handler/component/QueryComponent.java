@@ -191,7 +191,12 @@ public class QueryComponent extends SearchComponent
 
       SolrIndexReader reader = searcher.getReader();
       SolrIndexReader[] readers = reader.getLeafReaders();
-      if (readers.length==1) readers=null;
+      SolrIndexReader subReader = reader;
+      if (readers.length==1) {
+        // if there is a single segment, use that subReader and avoid looking up each time
+        subReader = readers[0];
+        readers=null;
+      }
       int[] offsets = reader.getLeafOffsets();
 
       for (SortField sortField: sortFields) {
@@ -207,7 +212,7 @@ public class QueryComponent extends SearchComponent
         DocList docList = rb.getResults().docList;
         ArrayList<Object> vals = new ArrayList<Object>(docList.size());
         DocIterator it = rb.getResults().docList.iterator();
-        SolrIndexReader subReader = reader;
+
         int offset = 0;
         int idx = 0;
 
