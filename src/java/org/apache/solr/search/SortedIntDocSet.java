@@ -592,7 +592,7 @@ public class SortedIntDocSet extends DocSetBase {
           public DocIdSetIterator iterator() throws IOException {
             return new DocIdSetIterator() {
               int idx = startIdx;
-              int adjustedDoc;
+              int adjustedDoc = -1;
 
               public int doc() {
                 return adjustedDoc;
