@@ -107,6 +107,34 @@ public class FunctionQuery extends Query {
       vals = func.getValues(reader);
     }
 
+    @Override
+    public int docID() {
+      return doc;
+    }
+
+    @Override
+    // instead of matching all docs, we could also embed a query.
+    // the score could either ignore the subscore, or boost it.
+    // Containment:  floatline(foo:myTerm, "myFloatField", 1.0, 0.0f)
+    // Boost:        foo:myTerm^floatline("myFloatField",1.0,0.0f)
+    public int nextDoc() throws IOException {
+      for(;;) {
+        ++doc;
+        if (doc>=maxDoc) {
+          return doc=NO_MORE_DOCS;
+        }
+        if (hasDeletions && reader.isDeleted(doc)) continue;
+        return doc;
+      }
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      // this will work even if target==NO_MORE_DOCS
+      doc=target-1;
+      return nextDoc();
+    }
+
     // instead of matching all docs, we could also embed a query.
     // the score could either ignore the subscore, or boost it.
     // Containment:  floatline(foo:myTerm, "myFloatField", 1.0, 0.0f)

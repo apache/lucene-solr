@@ -78,6 +78,27 @@ class ValueSourceScorer extends Scorer {
     return true;
   }
 
+  @Override
+  public int docID() {
+    return doc;
+  }
+
+  @Override
+  public int nextDoc() throws IOException {
+    for(;;) {
+      doc++;
+      if (doc >= maxDoc) return doc=NO_MORE_DOCS;
+      if (matches(doc)) return doc;
+    }
+  }
+
+  @Override
+  public int advance(int target) throws IOException {
+    // also works fine when target==NO_MORE_DOCS
+    doc = target-1;
+    return nextDoc();
+  }
+
   public int doc() {
     return doc;
   }
