@@ -88,29 +88,17 @@ class QueryDocValues extends DocValues {
       if (doc < lastDocRequested) {
         // out-of-order access.... reset scorer.
         scorer = weight.scorer(reader);
-        boolean more = scorer.next();
-        if (more) {
-          scorerDoc = scorer.doc();
-        } else {
-          // pretend we skipped to the end
-          scorerDoc = Integer.MAX_VALUE;
-        }
+        scorerDoc = scorer.nextDoc();
       }
       lastDocRequested = doc;
 
       if (scorerDoc < doc) {
-        boolean more = scorer.skipTo(doc);
-        if (more) {
-          scorerDoc = scorer.doc();
-        } else {
-          // pretend we skipped to the end
-          scorerDoc = Integer.MAX_VALUE;
-        }
+        scorerDoc = scorer.nextDoc();
       }
 
       if (scorerDoc > doc) {
         // query doesn't match this document... either because we hit the
-        // end (Integer.MAX_VALUE), or because the next doc is after this doc.
+        // end, or because the next doc is after this doc.
         return defVal;
       }
 
@@ -119,8 +107,8 @@ class QueryDocValues extends DocValues {
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "caught exception in QueryDocVals("+q+") doc="+doc, e);
     }
-  }
-  
+  }  
+
   public int intVal(int doc) {
     return (int)floatVal(doc);
   }

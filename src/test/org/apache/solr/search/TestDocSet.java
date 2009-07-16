@@ -373,12 +373,11 @@ public class TestDocSet extends TestCase {
 
     // test for next() equivalence
     for(;;) {
-      boolean nexta = ia.next();
-      boolean nextb = ib.next();
-      assertEquals(nexta, nextb);
-      if (!nexta) break;
-      assertEquals(ia.doc(), ib.doc());
-
+      int da = ia.nextDoc();
+      int db = ib.nextDoc();
+      assertEquals(da, db);
+      assertEquals(ia.docID(), ib.docID());
+      if (da==DocIdSetIterator.NO_MORE_DOCS) break;
     }
 
     for (int i=0; i<10; i++) {
@@ -387,20 +386,20 @@ public class TestDocSet extends TestCase {
       ib = b.iterator();
       int doc = -1;
       for (;;) {
-        boolean nexta,nextb;
+        int da,db;
         if (rand.nextBoolean()) {
-          nexta = ia.next();
-          nextb = ib.next();
+          da = ia.nextDoc();
+          db = ib.nextDoc();
         } else {
           int target = doc + rand.nextInt(10) + 1;  // keep in mind future edge cases like probing (increase if necessary)
-          nexta = ia.skipTo(target);
-          nextb = ib.skipTo(target);
+          da = ia.advance(target);
+          db = ib.advance(target);
         }
 
-        assertEquals(nexta, nextb);        
-        if (!nexta) break;
-        doc = ia.doc();
-        assertEquals(doc, ib.doc());
+        assertEquals(da, db);
+        assertEquals(ia.docID(), ib.docID());
+        if (da==DocIdSetIterator.NO_MORE_DOCS) break;
+        doc = da;
       }
     }
   }

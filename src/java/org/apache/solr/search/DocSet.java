@@ -267,18 +267,24 @@ abstract class DocSetBase implements DocSet {
           public DocIdSetIterator iterator() throws IOException {
             return new DocIdSetIterator() {
               int pos=base-1;
-              public int doc() {
-                return pos-base;
+              int adjustedDoc=-1;
+
+              @Override
+              public int docID() {
+                return adjustedDoc;
               }
 
-              public boolean next() throws IOException {
+              @Override
+              public int nextDoc() throws IOException {
                 pos = bs.nextSetBit(pos+1);
-                return pos>=0 && pos<max;
+                return adjustedDoc = (pos>=0 && pos<max) ? pos-base : NO_MORE_DOCS;
               }
 
-              public boolean skipTo(int target) throws IOException {
+              @Override
+              public int advance(int target) throws IOException {
+                if (target==NO_MORE_DOCS) return adjustedDoc=NO_MORE_DOCS;
                 pos = bs.nextSetBit(target+base);
-                return pos>=0 && pos<max;
+                return adjustedDoc = (pos>=0 && pos<max) ? pos-base : NO_MORE_DOCS;
               }
             };
           }

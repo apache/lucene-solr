@@ -111,25 +111,29 @@ public class BoostedQuery extends Query {
       this.vals = vs.getValues(reader);
     }
 
-    public boolean next() throws IOException {
-      return scorer.next();
+    @Override
+    public int docID() {
+      return scorer.docID();
     }
 
-    public int doc() {
-      return scorer.doc();
+    @Override
+    public int advance(int target) throws IOException {
+      return scorer.advance(target);
     }
 
+    @Override
+    public int nextDoc() throws IOException {
+      return scorer.nextDoc();
+    }
+
+    @Override   
     public float score() throws IOException {
-      float score = qWeight * scorer.score() * vals.floatVal(scorer.doc());
+      float score = qWeight * scorer.score() * vals.floatVal(scorer.docID());
 
       // Current Lucene priority queues can't handle NaN and -Infinity, so
       // map to -Float.MAX_VALUE. This conditional handles both -infinity
       // and NaN since comparisons with NaN are always false.
       return score>Float.NEGATIVE_INFINITY ? score : -Float.MAX_VALUE;
-    }
-
-    public boolean skipTo(int target) throws IOException {
-      return scorer.skipTo(target);
     }
 
     public Explanation explain(int doc) throws IOException {

@@ -36,6 +36,7 @@ public class SortedIntDocSet extends DocSetBase {
    */
   public SortedIntDocSet(int[] docs) {
     this.docs = docs;
+    // if (firstNonSorted(docs,0,docs.length)>=0) throw new RuntimeException("NON SORTED DOCS!!!");
   }
 
   /**
@@ -62,6 +63,24 @@ public class SortedIntDocSet extends DocSetBase {
     int[] newArr = new int[newSize];
     System.arraycopy(arr, 0, newArr, 0, newSize);
     return newArr;
+  }
+
+  /** Returns the index of the first non-sorted element or -1 if they are all sorted */
+  public static int firstNonSorted(int[] arr, int offset, int len) {
+    if (len <= 1) return -1;
+    int lower = arr[offset];
+    int end = offset + len;
+    for(int i=offset+1; i<end; i++) {
+      int next = arr[i];
+      if (next <= lower) {
+        for (int j=i-1; j>offset; j--) {
+          if (arr[j]<next) return j+1;
+        }
+        return offset;
+      }
+      lower = next;
+    }
+    return -1;
   }
 
   public static int intersectionSize(int[] smallerSortedList, int[] biggerSortedList) {
@@ -573,24 +592,30 @@ public class SortedIntDocSet extends DocSetBase {
           public DocIdSetIterator iterator() throws IOException {
             return new DocIdSetIterator() {
               int idx = startIdx;
-              int doc;
+              int adjustedDoc;
+
               public int doc() {
-                return doc - base;
+                return adjustedDoc;
               }
 
-              public boolean next() throws IOException {
-                if (idx > endIdx) return false;
-                doc = docs[idx++];
-                return true;
+              @Override
+              public int docID() {
+                return adjustedDoc;
               }
 
-              public boolean skipTo(int target) throws IOException {
-                if (idx > endIdx) return false;
+              @Override
+              public int nextDoc() throws IOException {
+                return adjustedDoc = (idx > endIdx) ? NO_MORE_DOCS : (docs[idx++] - base);
+              }
+
+              @Override
+              public int advance(int target) throws IOException {
+                if (idx > endIdx || target==NO_MORE_DOCS) return adjustedDoc=NO_MORE_DOCS;
                 target += base;
 
                 // probe next
-                doc = docs[idx++];
-                if (doc >= target) return true;
+                int rawDoc = docs[idx++];
+                if (rawDoc >= target) return adjustedDoc=rawDoc-base;
 
                 int high = endIdx;
 
@@ -599,28 +624,28 @@ public class SortedIntDocSet extends DocSetBase {
                 // binary search
                 while (idx <= high) {
                   int mid = (idx+high) >>> 1;
-                  doc = docs[mid];
+                  rawDoc = docs[mid];
 
-                  if (doc < target) {
+                  if (rawDoc < target) {
                     idx = mid+1;
                   }
-                  else if (doc > target) {
+                  else if (rawDoc > target) {
                     high = mid-1;
                   }
                   else {
                     idx=mid+1;
-                    return true;
+                    return adjustedDoc=rawDoc - base;
                   }
                 }
 
                 // low is on the insertion point...
                 if (idx <= endIdx) {
-                  doc = docs[idx++];
-                  return true;
+                  return adjustedDoc = docs[idx++] - base;
                 } else {
-                  return false;
+                  return adjustedDoc=NO_MORE_DOCS;
                 }
               }
+
             };
           }
         };
