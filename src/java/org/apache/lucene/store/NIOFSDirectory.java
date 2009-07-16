@@ -66,7 +66,7 @@ public class NIOFSDirectory extends FSDirectory {
   /** Creates an IndexInput for the file with the given name. */
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
-    return new NIOFSIndexInput(new File(getFile(), name), bufferSize);
+    return new NIOFSIndexInput(new File(getFile(), name), bufferSize, getReadChunkSize());
   }
 
   /** Creates an IndexOutput for the file with the given name. */
@@ -75,7 +75,7 @@ public class NIOFSDirectory extends FSDirectory {
     return new SimpleFSDirectory.SimpleFSIndexOutput(new File(directory, name));
   }
 
-  private static class NIOFSIndexInput extends SimpleFSDirectory.SimpleFSIndexInput {
+  protected static class NIOFSIndexInput extends SimpleFSDirectory.SimpleFSIndexInput {
 
     private ByteBuffer byteBuf; // wraps the buffer for NIO
 
@@ -84,8 +84,13 @@ public class NIOFSDirectory extends FSDirectory {
 
     final FileChannel channel;
 
+    /** @deprecated Please use ctor taking chunkSize */
     public NIOFSIndexInput(File path, int bufferSize) throws IOException {
-      super(path, bufferSize);
+      this(path, bufferSize, FSDirectory.DEFAULT_READ_CHUNK_SIZE);
+    }
+    
+    public NIOFSIndexInput(File path, int bufferSize, int chunkSize) throws IOException {
+      super(path, bufferSize, chunkSize);
       channel = file.getChannel();
     }
 
@@ -129,17 +134,46 @@ public class NIOFSDirectory extends FSDirectory {
             otherByteBuf.clear();
           otherByteBuf.limit(len);
           bb = otherByteBuf;
-        } else
+        } else {
           // Always wrap when offset != 0
           bb = ByteBuffer.wrap(b, offset, len);
+        }
       }
 
+      int readOffset = bb.position();
+      int readLength = bb.limit() - readOffset;
+      assert readLength == len;
+
       long pos = getFilePointer();
-      while (bb.hasRemaining()) {
-        int i = channel.read(bb, pos);
-        if (i == -1)
-          throw new IOException("read past EOF");
-        pos += i;
+
+      try {
+        while (readLength > 0) {
+          final int limit;
+          if (readLength > chunkSize) {
+            // LUCENE-1566 - work around JVM Bug by breaking
+            // very large reads into chunks
+            limit = readOffset + chunkSize;
+          } else {
+            limit = readOffset + readLength;
+          }
+          bb.limit(limit);
+          int i = channel.read(bb, pos);
+          if (i == -1) {
+            throw new IOException("read past EOF");
+          }
+          pos += i;
+          readOffset += i;
+          readLength -= i;
+        }
+      } catch (OutOfMemoryError e) {
+        // propagate OOM up and add a hint for 32bit VM Users hitting the bug
+        // with a large chunk size in the fast path.
+        final OutOfMemoryError outOfMemoryError = new OutOfMemoryError(
+              "OutOfMemoryError likely caused by the Sun VM Bug described in "
+              + "https://issues.apache.org/jira/browse/LUCENE-1566; try calling FSDirectory.setReadChunkSize "
+              + "with a a value smaller than the current chunk size (" + chunkSize + ")");
+        outOfMemoryError.initCause(e);
+        throw outOfMemoryError;
       }
     }
   }

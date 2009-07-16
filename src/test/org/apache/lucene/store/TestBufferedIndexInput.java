@@ -18,7 +18,9 @@ package org.apache.lucene.store;
  */
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -33,59 +35,142 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.NIOFSDirectory.NIOFSIndexInput;
+import org.apache.lucene.store.SimpleFSDirectory.SimpleFSIndexInput;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.ArrayUtil;
 
 public class TestBufferedIndexInput extends LuceneTestCase {
-	// Call readByte() repeatedly, past the buffer boundary, and see that it
-	// is working as expected.
-	// Our input comes from a dynamically generated/ "file" - see
-	// MyBufferedIndexInput below.
-    public void testReadByte() throws Exception {
-    	MyBufferedIndexInput input = new MyBufferedIndexInput(); 
-    	for(int i=0; i<BufferedIndexInput.BUFFER_SIZE*10; i++){
-     		assertEquals(input.readByte(), byten(i));
-    	}
+  
+  private static void writeBytes(File aFile, long size) throws IOException{
+    OutputStream stream = null;
+    try {
+      stream = new FileOutputStream(aFile);
+      for (int i = 0; i < size; i++) {
+        stream.write(byten(i));  
+      }
+      stream.flush();
+    } finally {
+      if (stream != null) {
+        stream.close();
+      }
     }
+  }
+
+  private static final long TEST_FILE_LENGTH = 1024*1024;
  
-	// Call readBytes() repeatedly, with various chunk sizes (from 1 byte to
-    // larger than the buffer size), and see that it returns the bytes we expect.
-	// Our input comes from a dynamically generated "file" -
-    // see MyBufferedIndexInput below.
-    public void testReadBytes() throws Exception {
-    	MyBufferedIndexInput input = new MyBufferedIndexInput();
-    	int pos=0;
-    	// gradually increasing size:
-    	for(int size=1; size<BufferedIndexInput.BUFFER_SIZE*10; size=size+size/200+1){
-    		checkReadBytes(input, size, pos);
-    		pos+=size;
-    	}
-    	// wildly fluctuating size:
-    	for(long i=0; i<1000; i++){
-    		// The following function generates a fluctuating (but repeatable)
-    		// size, sometimes small (<100) but sometimes large (>10000)
-    		int size1 = (int)( i%7 + 7*(i%5)+ 7*5*(i%3) + 5*5*3*(i%2));
-    		int size2 = (int)( i%11 + 11*(i%7)+ 11*7*(i%5) + 11*7*5*(i%3) + 11*7*5*3*(i%2) );
-    		int size = (i%3==0)?size2*10:size1; 
-    		checkReadBytes(input, size, pos);
-    		pos+=size;
-    	}
-    	// constant small size (7 bytes):
-    	for(int i=0; i<BufferedIndexInput.BUFFER_SIZE; i++){
-    		checkReadBytes(input, 7, pos);
-    		pos+=7;
-    	}
+  // Call readByte() repeatedly, past the buffer boundary, and see that it
+  // is working as expected.
+  // Our input comes from a dynamically generated/ "file" - see
+  // MyBufferedIndexInput below.
+  public void testReadByte() throws Exception {
+    MyBufferedIndexInput input = new MyBufferedIndexInput();
+    for (int i = 0; i < BufferedIndexInput.BUFFER_SIZE * 10; i++) {
+      assertEquals(input.readByte(), byten(i));
     }
-   private void checkReadBytes(BufferedIndexInput input, int size, int pos) throws IOException{
-	   // Just to see that "offset" is treated properly in readBytes(), we
-	   // add an arbitrary offset at the beginning of the array
-	   int offset = size % 10; // arbitrary
-	   byte[] b = new byte[offset+size];
-	   input.readBytes(b, offset, size);
-	   for(int i=0; i<size; i++){
-		   assertEquals(b[offset+i], byten(pos+i));
-	   }
-   }
+  }
+ 
+  // Call readBytes() repeatedly, with various chunk sizes (from 1 byte to
+  // larger than the buffer size), and see that it returns the bytes we expect.
+  // Our input comes from a dynamically generated "file" -
+  // see MyBufferedIndexInput below.
+  public void testReadBytes() throws Exception {
+    final Random r = newRandom();
+
+    MyBufferedIndexInput input = new MyBufferedIndexInput();
+    runReadBytes(input, BufferedIndexInput.BUFFER_SIZE, r);
+
+    // This tests the workaround code for LUCENE-1566 where readBytesInternal
+    // provides a workaround for a JVM Bug that incorrectly raises a OOM Error
+    // when a large byte buffer is passed to a file read.
+    // NOTE: this does only test the chunked reads and NOT if the Bug is triggered.
+    //final int tmpFileSize = 1024 * 1024 * 5;
+    final int inputBufferSize = 128;
+    File tmpInputFile = File.createTempFile("IndexInput", "tmpFile");
+    tmpInputFile.deleteOnExit();
+    writeBytes(tmpInputFile, TEST_FILE_LENGTH);
+
+    // run test with chunk size of 10 bytes
+    runReadBytesAndClose(new SimpleFSIndexInput(tmpInputFile,
+                                                inputBufferSize, 10), inputBufferSize, r);
+    // run test with chunk size of 100 MB - default
+    runReadBytesAndClose(new SimpleFSIndexInput(tmpInputFile,
+                                                inputBufferSize), inputBufferSize, r);
+    // run test with chunk size of 10 bytes
+    runReadBytesAndClose(new NIOFSIndexInput(tmpInputFile,
+                                             inputBufferSize, 10), inputBufferSize, r);
+    // run test with chunk size of 100 MB - default
+    runReadBytesAndClose(new NIOFSIndexInput(tmpInputFile,
+                                             inputBufferSize), inputBufferSize, r);
+  }
+
+  private void runReadBytesAndClose(IndexInput input, int bufferSize, Random r)
+      throws IOException {
+    try {
+      runReadBytes(input, bufferSize, r);
+    } finally {
+      input.close();
+    }
+  }
+  
+  private void runReadBytes(IndexInput input, int bufferSize, Random r)
+      throws IOException {
+
+    int pos = 0;
+    // gradually increasing size:
+    for (int size = 1; size < bufferSize * 10; size = size + size / 200 + 1) {
+      checkReadBytes(input, size, pos);
+      pos += size;
+      if (pos >= TEST_FILE_LENGTH) {
+        // wrap
+        pos = 0;
+        input.seek(0L);
+      }
+    }
+    // wildly fluctuating size:
+    for (long i = 0; i < 1000; i++) {
+      final int size = r.nextInt(10000);
+      checkReadBytes(input, 1+size, pos);
+      pos += 1+size;
+      if (pos >= TEST_FILE_LENGTH) {
+        // wrap
+        pos = 0;
+        input.seek(0L);
+      }
+    }
+    // constant small size (7 bytes):
+    for (int i = 0; i < bufferSize; i++) {
+      checkReadBytes(input, 7, pos);
+      pos += 7;
+      if (pos >= TEST_FILE_LENGTH) {
+        // wrap
+        pos = 0;
+        input.seek(0L);
+      }
+    }
+  }
+
+  private byte[] buffer = new byte[10];
+    
+  private void checkReadBytes(IndexInput input, int size, int pos) throws IOException{
+    // Just to see that "offset" is treated properly in readBytes(), we
+    // add an arbitrary offset at the beginning of the array
+    int offset = size % 10; // arbitrary
+    buffer = ArrayUtil.grow(buffer, offset+size);
+    assertEquals(pos, input.getFilePointer());
+    long left = TEST_FILE_LENGTH - input.getFilePointer();
+    if (left <= 0) {
+      return;
+    } else if (left < size) {
+      size = (int) left;
+    }
+    input.readBytes(buffer, offset, size);
+    assertEquals(pos+size, input.getFilePointer());
+    for(int i=0; i<size; i++) {
+      assertEquals("pos=" + i + " filepos=" + (pos+i), byten(pos+i), buffer[offset+i]);
+    }
+  }
    
    // This tests that attempts to readBytes() past an EOF will fail, while
    // reads up to the EOF will succeed. The EOF is determined by the

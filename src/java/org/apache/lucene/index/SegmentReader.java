@@ -1327,13 +1327,6 @@ class SegmentReader extends IndexReader implements Cloneable {
     return core.getTermsReader().size();
   }
 
-  /*
-  // nocommit
-  final TermInfosReader getTermInfosReader() {
-    return terms.getTermsReader();
-  }
-  */
-
   /**
    * Lotsa tests did hacks like:<br/>
    * SegmentReader reader = (SegmentReader) IndexReader.open(dir);<br/>

@@ -61,7 +61,7 @@ public class SimpleFSDirectory extends FSDirectory {
   /** Creates an IndexInput for the file with the given name. */
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
-    return new SimpleFSIndexInput(new File(directory, name), bufferSize);
+    return new SimpleFSIndexInput(new File(directory, name), bufferSize, getReadChunkSize());
   }
 
   protected static class SimpleFSIndexInput extends BufferedIndexInput {
@@ -89,14 +89,23 @@ public class SimpleFSDirectory extends FSDirectory {
   
     protected final Descriptor file;
     boolean isClone;
-  
+    //  LUCENE-1566 - maximum read length on a 32bit JVM to prevent incorrect OOM 
+    protected final int chunkSize;
+
+    /** @deprecated Please use ctor taking chunkSize */
     public SimpleFSIndexInput(File path) throws IOException {
-      this(path, BufferedIndexInput.BUFFER_SIZE);
+      this(path, BufferedIndexInput.BUFFER_SIZE, SimpleFSDirectory.DEFAULT_READ_CHUNK_SIZE);
     }
   
+    /** @deprecated Please use ctor taking chunkSize */
     public SimpleFSIndexInput(File path, int bufferSize) throws IOException {
+      this(path, bufferSize, SimpleFSDirectory.DEFAULT_READ_CHUNK_SIZE);
+    }
+    
+    public SimpleFSIndexInput(File path, int bufferSize, int chunkSize) throws IOException {
       super(bufferSize);
       file = new Descriptor(path, "r");
+      this.chunkSize = chunkSize;
     }
   
     /** IndexInput methods */
@@ -109,13 +118,33 @@ public class SimpleFSDirectory extends FSDirectory {
           file.position = position;
         }
         int total = 0;
-        do {
-          int i = file.read(b, offset+total, len-total);
-          if (i == -1)
-            throw new IOException("read past EOF");
-          file.position += i;
-          total += i;
-        } while (total < len);
+
+        try {
+          do {
+            final int readLength;
+            if (total + chunkSize > len) {
+              readLength = len - total;
+            } else {
+              // LUCENE-1566 - work around JVM Bug by breaking very large reads into chunks
+              readLength = chunkSize;
+            }
+            final int i = file.read(b, offset + total, readLength);
+            if (i == -1) {
+              throw new IOException("read past EOF");
+            }
+            file.position += i;
+            total += i;
+          } while (total < len);
+        } catch (OutOfMemoryError e) {
+          // propagate OOM up and add a hint for 32bit VM Users hitting the bug
+          // with a large chunk size in the fast path.
+          final OutOfMemoryError outOfMemoryError = new OutOfMemoryError(
+              "OutOfMemoryError likely caused by the Sun VM Bug described in "
+              + "https://issues.apache.org/jira/browse/LUCENE-1566; try calling FSDirectory.setReadChunkSize "
+              + "with a a value smaller than the current chunks size (" + chunkSize + ")");
+          outOfMemoryError.initCause(e);
+          throw outOfMemoryError;
+        }
       }
     }
   

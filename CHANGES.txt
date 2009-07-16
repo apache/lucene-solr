@@ -387,6 +387,16 @@ Bug fixes
 19. LUCENE-1583: SpanOrQuery skipTo() doesn't always move forwards as Spans
 	documentation indicates it should.  (Moti Nisenson via Mark Miller)
 
+19. LUCENE-1566: Sun JVM Bug
+    http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6478546 causes
+    invalid OutOfMemoryError when reading too many bytes at once from
+    a file on 32bit JVMs that have a large maximum heap size.  This
+    fix adds set/getReadChunkSize to FSDirectory so that large reads
+    are broken into chunks, to work around this JVM bug.  On 32bit
+    JVMs the default chunk size is 100 MB; on 64bit JVMs, which don't
+    show the bug, the default is Integer.MAX_VALUE. (Simon Willnauer
+    via Mike McCandless)
+
 New features
 
  1. LUCENE-1411: Added expert API to open an IndexWriter on a prior
