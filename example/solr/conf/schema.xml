@@ -300,7 +300,22 @@
         <tokenizer class="solr.StandardTokenizerFactory"/>
         <filter class="solr.DoubleMetaphoneFilterFactory" inject="false"/>
       </analyzer>
-    </fieldtype> 
+    </fieldtype>
+
+    <fieldtype name="payloads" stored="false" indexed="true" class="solr.TextField" >
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <!--
+         Attributes:
+         delimiter - a one character delimiter - will throw an exception if the delim is more than one char.  Default is | (pipe)
+         encoder - Values: float -> org.apache.lucene.analysis.payloads.FloatEncoder, integer -> o.a.l.a.p.IntegerEncoder
+              identity -> o.a.l.a.p.IdentityEncoder, Fully Qualified class name implementing PayloadEncoder
+              Encoder must have a no arg constructor.
+         -->
+        <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float"/>
+      </analyzer>
+    </fieldtype>
+
     
 
     <!-- since fields of this type are by default not stored or indexed, any data added to 
@@ -365,6 +380,8 @@
    <!-- non-tokenized version of manufacturer to make it easier to sort or group
         results by manufacturer.  copied from "manu" via copyField -->
    <field name="manu_exact" type="string" indexed="true" stored="false"/>
+
+   <field name="catPay" type="payloads" indexed="true" stored="true"/>
 
    <!-- Here, default is used to create a "timestamp" field indicating
         When each document was indexed.
