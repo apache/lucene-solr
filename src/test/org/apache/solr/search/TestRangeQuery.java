@@ -105,6 +105,10 @@ public class TestRangeQuery extends AbstractSolrTestCase {
     frange_fields.put("foo_l", longs);
     frange_fields.put("foo_d", doubles);
 
+    frange_fields.put("foo_ti", ints);
+    frange_fields.put("foo_tl", longs);
+    frange_fields.put("foo_td", doubles);
+
     frange_fields.put("foo_pi", ints);
     frange_fields.put("foo_pl", longs);
     frange_fields.put("foo_pd", doubles);
