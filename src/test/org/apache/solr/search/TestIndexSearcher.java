@@ -54,8 +54,8 @@ public class TestIndexSearcher extends AbstractSolrTestCase {
     SolrIndexReader r2 = sr2.getSearcher().getReader();
 
     // make sure the readers share the first segment
-    // TODO: doesn't currently work going from segment -> multi
-    // assertEquals(r1.getLeafReaders()[0], r2.getLeafReaders()[0]);
+    // Didn't work w/ older versions of lucene2.9 going from segment -> multi
+    assertEquals(r1.getLeafReaders()[0], r2.getLeafReaders()[0]);
 
     assertU(adoc("id","5", "v_f","3.14159"));
     assertU(adoc("id","6", "v_f","8983"));
