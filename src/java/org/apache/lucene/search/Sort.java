@@ -130,6 +130,9 @@ implements Serializable {
    * automatically.
    * 
    * @see SortField#AUTO
+   * @deprecated Please specify the type explicitly by
+   * first creating a {@link SortField} and then use {@link
+   * #Sort(SortField)}
    */
   public Sort(String field) {
     setSort(field, false);
@@ -141,6 +144,9 @@ implements Serializable {
    * determined automatically.
    * 
    * @see SortField#AUTO
+   * @deprecated Please specify the type explicitly by
+   * first creating a {@link SortField} and then use {@link
+   * #Sort(SortField)}
    */
   public Sort(String field, boolean reverse) {
     setSort(field, reverse);
@@ -151,6 +157,9 @@ implements Serializable {
    * <code>field</code> is determined automatically.
    * 
    * @see SortField#AUTO
+   * @deprecated Please specify the type explicitly by
+   * first creating {@link SortField}s and then use {@link
+   * #Sort(SortField[])}
    */
   public Sort(String[] fields) {
     setSort(fields);
@@ -169,6 +178,9 @@ implements Serializable {
   /**
    * Sets the sort to the terms in <code>field</code> then by index order
    * (document number).
+   * @deprecated Please specify the type explicitly by
+   * first creating a {@link SortField} and then use {@link
+   * #setSort(SortField)}
    */
   public final void setSort(String field) {
     setSort(field, false);
@@ -177,12 +189,18 @@ implements Serializable {
   /**
    * Sets the sort to the terms in <code>field</code> possibly in reverse,
    * then by index order (document number).
+   * @deprecated Please specify the type explicitly by
+   * first creating a {@link SortField} and then use {@link
+   * #setSort(SortField)}
    */
   public void setSort(String field, boolean reverse) {
     fields = new SortField[] { new SortField(field, SortField.AUTO, reverse) };
   }
 
-  /** Sets the sort to the terms in each field in succession. */
+  /** Sets the sort to the terms in each field in succession.
+   * @deprecated Please specify the type explicitly by
+   * first creating {@link SortField}s and then use {@link
+   * #setSort(SortField[])} */
   public void setSort(String[] fieldnames) {
     final int n = fieldnames.length;
     SortField[] nfields = new SortField[n];
