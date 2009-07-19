@@ -39,7 +39,11 @@ import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.CloseableThreadLocal;
 
 /** @version $Id */
-class SegmentReader extends IndexReader implements Cloneable {
+/**
+ * <p><b>NOTE:</b> This API is new and still experimental
+ * (subject to change suddenly in the next release)</p>
+ */
+public class SegmentReader extends IndexReader implements Cloneable {
   protected boolean readOnly;
 
   private SegmentInfo si;
@@ -676,7 +680,7 @@ class SegmentReader extends IndexReader implements Cloneable {
   
   /**
    * Clones the norm bytes.  May be overridden by subclasses.  New and experimental.
-   * @param bv Byte array to clone
+   * @param bytes Byte array to clone
    * @return New BitVector
    */
   protected byte[] cloneNormBytes(byte[] bytes) {

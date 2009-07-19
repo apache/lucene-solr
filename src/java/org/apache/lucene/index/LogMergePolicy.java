@@ -65,7 +65,7 @@ public abstract class LogMergePolicy extends MergePolicy {
   
   private boolean useCompoundFile = true;
   private boolean useCompoundDocStore = true;
-  private IndexWriter writer;
+  protected IndexWriter writer;
 
   protected boolean verbose() {
     return writer != null && writer.verbose();
@@ -154,7 +154,8 @@ public abstract class LogMergePolicy extends MergePolicy {
 
   protected long sizeDocs(SegmentInfo info) throws IOException {
     if (calibrateSizeByDeletes) {
-      return (info.docCount - (long)info.getDelCount());
+      int delCount = writer.numDeletedDocs(info);
+      return (info.docCount - (long)delCount);
     } else {
       return info.docCount;
     }
@@ -163,7 +164,8 @@ public abstract class LogMergePolicy extends MergePolicy {
   protected long sizeBytes(SegmentInfo info) throws IOException {
     long byteSize = info.sizeInBytes();
     if (calibrateSizeByDeletes) {
-      float delRatio = (info.docCount <= 0 ? 0.0f : ((float)info.getDelCount() / (float)info.docCount));
+      int delCount = writer.numDeletedDocs(info);
+      float delRatio = (info.docCount <= 0 ? 0.0f : ((float)delCount / (float)info.docCount));
       return (info.docCount <= 0 ?  byteSize : (long)((float)byteSize * (1.0f - delRatio)));
     } else {
       return byteSize;
@@ -186,12 +188,13 @@ public abstract class LogMergePolicy extends MergePolicy {
       (numToOptimize != 1 || isOptimized(writer, optimizeInfo));
   }
 
-  /** Returns true if this single nfo is optimized (has no
+  /** Returns true if this single info is optimized (has no
    *  pending norms or deletes, is in the same dir as the
    *  writer, and matches the current compound file setting */
   private boolean isOptimized(IndexWriter writer, SegmentInfo info)
     throws IOException {
-    return !info.hasDeletions() &&
+    boolean hasDeletions = writer.numDeletedDocs(info) > 0;
+    return !hasDeletions &&
       !info.hasSeparateNorms() &&
       info.dir == writer.getDirectory() &&
       info.getUseCompoundFile() == useCompoundFile;
@@ -303,16 +306,8 @@ public abstract class LogMergePolicy extends MergePolicy {
     int firstSegmentWithDeletions = -1;
     for(int i=0;i<numSegments;i++) {
       final SegmentInfo info = segmentInfos.info(i);
-      boolean deletionsInRAM = false;
-      SegmentReader sr = writer.readerPool.getIfExists(info);
-      try {
-        deletionsInRAM = sr != null && sr.hasDeletions();
-      } finally {
-        if (sr != null) {
-          writer.readerPool.release(sr);
-        }
-      }
-      if (info.hasDeletions() || deletionsInRAM) {
+      int delCount = writer.numDeletedDocs(info);
+      if (delCount > 0) {
         if (verbose())
           message("  segment " + info.name + " has deletions");
         if (firstSegmentWithDeletions == -1)

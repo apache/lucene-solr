@@ -28,7 +28,14 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Collections;
 
-final class SegmentInfo {
+/**
+ * Information about a segment such as it's name, directory, and files related
+ * to the segment.
+ * 
+ * * <p><b>NOTE:</b> This API is new and still experimental
+ * (subject to change suddenly in the next release)</p>
+ */
+public final class SegmentInfo {
 
   static final int NO = -1;          // e.g. no norms; no deletes;
   static final int YES = 1;          // e.g. have norms; have deletes;
@@ -150,7 +157,7 @@ final class SegmentInfo {
   }
 
   // returns Map<String, String>
-  Map getDiagnostics() {
+  public Map getDiagnostics() {
     return diagnostics;
   }
 
@@ -251,7 +258,7 @@ final class SegmentInfo {
 
   /** Returns total size in bytes of all of files used by
    *  this segment. */
-  long sizeInBytes() throws IOException {
+  public long sizeInBytes() throws IOException {
     if (sizeInBytes == -1) {
       List files = files();
       final int size = files.size();
@@ -267,7 +274,7 @@ final class SegmentInfo {
     return sizeInBytes;
   }
 
-  boolean hasDeletions()
+  public boolean hasDeletions()
     throws IOException {
     // Cases:
     //
@@ -325,7 +332,7 @@ final class SegmentInfo {
     return si;
   }
 
-  String getDelFileName() {
+  public String getDelFileName() {
     if (delGen == NO) {
       // In this case we know there is no deletion filename
       // against this segment
@@ -341,7 +348,7 @@ final class SegmentInfo {
    *
    * @param fieldNumber the field index to check
    */
-  boolean hasSeparateNorms(int fieldNumber)
+  public boolean hasSeparateNorms(int fieldNumber)
     throws IOException {
     if ((normGen == null && preLockless) || (normGen != null && normGen[fieldNumber] == CHECK_DIR)) {
       // Must fallback to directory file exists check:
@@ -357,7 +364,7 @@ final class SegmentInfo {
   /**
    * Returns true if any fields in this segment have separate norms.
    */
-  boolean hasSeparateNorms()
+  public boolean hasSeparateNorms()
     throws IOException {
     if (normGen == null) {
       if (!preLockless) {
@@ -424,7 +431,7 @@ final class SegmentInfo {
    *
    * @param number field index
    */
-  String getNormFileName(int number) throws IOException {
+  public String getNormFileName(int number) throws IOException {
     String prefix;
 
     long gen;
@@ -470,7 +477,7 @@ final class SegmentInfo {
    * Returns true if this segment is stored as a compound
    * file; else, false.
    */
-  boolean getUseCompoundFile() throws IOException {
+  public boolean getUseCompoundFile() throws IOException {
     if (isCompoundFile == NO) {
       return false;
     } else if (isCompoundFile == YES) {
@@ -480,7 +487,7 @@ final class SegmentInfo {
     }
   }
 
-  int getDelCount() throws IOException {
+  public int getDelCount() throws IOException {
     if (delCount == -1) {
       if (hasDeletions()) {
         final String delFileName = getDelFileName();
@@ -497,11 +504,11 @@ final class SegmentInfo {
     assert delCount <= docCount;
   }
 
-  int getDocStoreOffset() {
+  public int getDocStoreOffset() {
     return docStoreOffset;
   }
   
-  boolean getDocStoreIsCompoundFile() {
+  public boolean getDocStoreIsCompoundFile() {
     return docStoreIsCompoundFile;
   }
   
@@ -510,7 +517,7 @@ final class SegmentInfo {
     clearFiles();
   }
   
-  String getDocStoreSegment() {
+  public String getDocStoreSegment() {
     return docStoreSegment;
   }
   
@@ -559,7 +566,7 @@ final class SegmentInfo {
     clearFiles();
   }
 
-  boolean getHasProx() {
+  public boolean getHasProx() {
     return hasProx;
   }
 

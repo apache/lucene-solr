@@ -34,7 +34,14 @@ import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Map;
 
-final class SegmentInfos extends Vector {
+/**
+ * A collection of segmentInfo objects with methods for operating on
+ * those segments in relation to the file system.
+ * 
+ * <p><b>NOTE:</b> This API is new and still experimental
+ * (subject to change suddenly in the next release)</p>
+ */
+public final class SegmentInfos extends Vector {
 
   /** The file format version, a negative number. */
   /* Works since counter, the old 1st entry, is always >= 0 */
@@ -767,7 +774,7 @@ final class SegmentInfos extends Vector {
     version = other.version;
   }
 
-  public final void rollbackCommit(Directory dir) throws IOException {
+  final void rollbackCommit(Directory dir) throws IOException {
     if (pendingSegnOutput != null) {
       try {
         pendingSegnOutput.close();
@@ -796,7 +803,7 @@ final class SegmentInfos extends Vector {
    *  end, so that it is not visible to readers.  Once this
    *  is called you must call {@link #finishCommit} to complete
    *  the commit or {@link #rollbackCommit} to abort it. */
-  public final void prepareCommit(Directory dir) throws IOException {
+  final void prepareCommit(Directory dir) throws IOException {
     if (pendingSegnOutput != null)
       throw new IllegalStateException("prepareCommit was already called");
     write(dir);
@@ -822,7 +829,7 @@ final class SegmentInfos extends Vector {
     return files;
   }
 
-  public final void finishCommit(Directory dir) throws IOException {
+  final void finishCommit(Directory dir) throws IOException {
     if (pendingSegnOutput == null)
       throw new IllegalStateException("prepareCommit was not called");
     boolean success = false;
@@ -882,12 +889,12 @@ final class SegmentInfos extends Vector {
 
   /** Writes & syncs to the Directory dir, taking care to
    *  remove the segments file on exception */
-  public final void commit(Directory dir) throws IOException {
+  final void commit(Directory dir) throws IOException {
     prepareCommit(dir);
     finishCommit(dir);
   }
 
-  synchronized String segString(Directory directory) {
+  public synchronized String segString(Directory directory) {
     StringBuffer buffer = new StringBuffer();
     final int count = size();
     for(int i = 0; i < count; i++) {
@@ -906,7 +913,7 @@ final class SegmentInfos extends Vector {
     return userData;
   }
 
-  public void setUserData(Map data) {
+  void setUserData(Map data) {
     if (data == null) {
       userData = Collections.EMPTY_MAP;
     } else {
@@ -925,7 +932,7 @@ final class SegmentInfos extends Vector {
   }
 
   // Used only for testing
-  boolean hasExternalSegments(Directory dir) {
+  public boolean hasExternalSegments(Directory dir) {
     final int numSegments = size();
     for(int i=0;i<numSegments;i++)
       if (info(i).dir != dir)

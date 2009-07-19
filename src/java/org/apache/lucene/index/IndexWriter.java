@@ -493,14 +493,14 @@ public class IndexWriter {
     }
     
     // used only by asserts
-    synchronized boolean infoIsLive(SegmentInfo info) {
+    public synchronized boolean infoIsLive(SegmentInfo info) {
       int idx = segmentInfos.indexOf(info);
       assert idx != -1;
       assert segmentInfos.get(idx) == info;
       return true;
     }
 
-    synchronized SegmentInfo mapToLive(SegmentInfo info) {
+    public synchronized SegmentInfo mapToLive(SegmentInfo info) {
       int idx = segmentInfos.indexOf(info);
       if (idx != -1) {
         info = (SegmentInfo) segmentInfos.get(idx);
@@ -508,11 +508,23 @@ public class IndexWriter {
       return info;
     }
     
-    synchronized void release(SegmentReader sr) throws IOException {
+    /**
+     * Release the segment reader (i.e. decRef it and close if there
+     * are no more references.
+     * @param sr
+     * @throws IOException
+     */
+    public synchronized void release(SegmentReader sr) throws IOException {
       release(sr, false);
     }
-
-    synchronized void release(SegmentReader sr, boolean drop) throws IOException {
+    
+    /**
+     * Release the segment reader (i.e. decRef it and close if there
+     * are no more references.
+     * @param sr
+     * @throws IOException
+     */
+    public synchronized void release(SegmentReader sr, boolean drop) throws IOException {
 
       final boolean pooled = readerMap.containsKey(sr.getSegmentInfo());
 
@@ -552,7 +564,7 @@ public class IndexWriter {
     
     /** Remove all our references to readers, and commits
      *  any pending changes. */
-    public synchronized void close() throws IOException {
+    synchronized void close() throws IOException {
       Iterator iter = readerMap.entrySet().iterator();
       while (iter.hasNext()) {
         Map.Entry ent = (Map.Entry) iter.next();
@@ -582,7 +594,11 @@ public class IndexWriter {
       }
     }
     
-    public synchronized void commit() throws IOException {
+    /**
+     * Commit all segment reader in the pool.
+     * @throws IOException
+     */
+    synchronized void commit() throws IOException {
       Iterator iter = readerMap.entrySet().iterator();
       while (iter.hasNext()) {
         Map.Entry ent = (Map.Entry) iter.next();
@@ -604,9 +620,11 @@ public class IndexWriter {
       }
     }
     
-    // Returns a ref to a clone.  NOTE: this clone is not
-    // enrolled in the pool, so you should simply close()
-    // it when you're done (ie, do not call release()).
+    /**
+     * Returns a ref to a clone.  NOTE: this clone is not
+     * enrolled in the pool, so you should simply close()
+     * it when you're done (ie, do not call release()).
+     */
     public synchronized SegmentReader getReadOnlyClone(SegmentInfo info, boolean doOpenStores, int termInfosIndexDivisor) throws IOException {
       SegmentReader sr = get(info, doOpenStores, BufferedIndexInput.BUFFER_SIZE, termInfosIndexDivisor);
       try {
@@ -616,11 +634,30 @@ public class IndexWriter {
       }
     }
    
-    // Returns a ref
+    /**
+     * Obtain a SegmentReader from the readerPool.  The reader
+     * must be returned by calling {@link #release(SegmentReader)}
+     * @see #release(SegmentReader)
+     * @param info
+     * @param doOpenStores
+     * @return 
+     * @throws IOException
+     */
     public synchronized SegmentReader get(SegmentInfo info, boolean doOpenStores) throws IOException {
       return get(info, doOpenStores, BufferedIndexInput.BUFFER_SIZE, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
     }
-
+    /**
+     * Obtain a SegmentReader from the readerPool.  The reader
+     * must be returned by calling {@link #release(SegmentReader)}
+     * 
+     * @see #release(SegmentReader)
+     * @param info
+     * @param doOpenStores
+     * @param readBufferSize
+     * @param termsIndexDivisor
+     * @return
+     * @throws IOException
+     */
     public synchronized SegmentReader get(SegmentInfo info, boolean doOpenStores, int readBufferSize, int termsIndexDivisor) throws IOException {
 
       if (poolReaders) {
@@ -661,6 +698,26 @@ public class IndexWriter {
         sr.incRef();
       }
       return sr;
+    }
+  }
+  
+  /**
+   * Obtain the number of deleted docs for a pooled reader.
+   * If the reader isn't being pooled, the segmentInfo's 
+   * delCount is returned.
+   */
+  public int numDeletedDocs(SegmentInfo info) throws IOException {
+    SegmentReader reader = readerPool.getIfExists(info);
+    try {
+      if (reader != null) {
+        return reader.numDeletedDocs();
+      } else {
+        return info.getDelCount();
+      }
+    } finally {
+      if (reader != null) {
+        readerPool.release(reader);
+      }
     }
   }
   

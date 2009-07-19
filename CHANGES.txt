@@ -314,6 +314,10 @@ API Changes
     StopAnalzyer and replace it with an immutable implementation of 
     CharArraySet.  (Simon Willnauer via Mark Miller)
 
+31. LUCENE-1742: SegmentInfos, SegmentInfo and SegmentReader have been
+    made public as expert, experimental APIs.  These APIs may suddenly
+    change from release to release (Jason Rutherglen via Mike
+    McCandless).
 
 Bug fixes
 
