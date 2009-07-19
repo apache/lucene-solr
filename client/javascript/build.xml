@@ -89,15 +89,15 @@
 	<!-- start solr server, using example/reuters/testsolr/solr -->
   <target name="reuters-start">
   	<copy todir="example/reuters/testsolr/solr/lib" overwrite="true">
-  	  <fileset dir="../velocity/src/main/solr/lib/" />
+  	  <fileset dir="../../contrib/velocity/src/main/solr/lib/" />
   	</copy>
   	<copy file="dist/solrjs-${version}-templates.jar" todir="example/reuters/testsolr/solr/lib" />
     <java jar="../../example/start.jar" fork="true" failonerror="true" dir="../../example">
-    	<sysproperty key="solr.solr.home" value="../contrib/javascript/example/reuters/testsolr/solr"/>	
+    	<sysproperty key="solr.solr.home" value="../client/javascript/example/reuters/testsolr/solr"/>	
     </java>	
   </target>
 
-  <!-- import testdata (server has to be online) -->
+  <!-- import testdata (server has to be online via reuters-start) -->
   <target name="reuters-import">
   	<javac srcdir="example/reuters/importer/java">
   		<classpath>
