@@ -90,9 +90,17 @@ public class WikipediaTokenizer extends Tokenizer {
 
   /** @deprecated Please use {@link #TOKEN_TYPES} instead */
   public static final String [] tokenImage = TOKEN_TYPES;
-
+  /**
+   * Only output tokens
+   */
   public static final int TOKENS_ONLY = 0;
+  /**
+   * Only output untokenized tokens, which are tokens that would normally be split into several tokens
+   */
   public static final int UNTOKENIZED_ONLY = 1;
+  /**
+   * Output the both the untokenized token and the splits
+   */
   public static final int BOTH = 2;
   /**
    * This flag is used to indicate that the produced "Token" would, if {@link #TOKENS_ONLY} was used, produce multiple tokens.
@@ -121,7 +129,14 @@ public class WikipediaTokenizer extends Tokenizer {
     this(input, TOKENS_ONLY, Collections.EMPTY_SET);
   }
 
-
+  /**
+   * Createa a new instance of the {@link org.apache.lucene.wikipedia.analysis.WikipediaTokenizer}.  Attaches the
+   * <conde>input</code> to a the newly created JFlex scanner.
+   *
+   * @param input The input
+   * @param tokenOutput One of {@link #TOKENS_ONLY}, {@link #UNTOKENIZED_ONLY}, {@link #BOTH}
+   * @param untokenizedTypes
+   */
   public WikipediaTokenizer(Reader input, int tokenOutput, Set untokenizedTypes) {
     super(input);
     this.tokenOutput = tokenOutput;
