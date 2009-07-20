@@ -39,7 +39,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
 
   // class has to be public so that Class.forName.newInstance() will work
   public static final class WriteLineDocMaker extends DocMaker {
-
+  
     public Document makeDocument() throws Exception {
       Document doc = new Document();
       doc.add(new Field(BODY_FIELD, "body", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
@@ -52,7 +52,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   
   // class has to be public so that Class.forName.newInstance() will work
   public static final class NewLinesDocMaker extends DocMaker {
-    
+  
     public Document makeDocument() throws Exception {
       Document doc = new Document();
       doc.add(new Field(BODY_FIELD, "body\r\ntext\ttwo", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
@@ -61,6 +61,35 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       return doc;
     }
     
+  }
+  
+  // class has to be public so that Class.forName.newInstance() will work
+  public static final class NoBodyDocMaker extends DocMaker {
+    public Document makeDocument() throws Exception {
+      Document doc = new Document();
+      doc.add(new Field(TITLE_FIELD, "title", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(new Field(DATE_FIELD, "date", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      return doc;
+    }
+  }
+  
+  // class has to be public so that Class.forName.newInstance() will work
+  public static final class NoTitleDocMaker extends DocMaker {
+    public Document makeDocument() throws Exception {
+      Document doc = new Document();
+      doc.add(new Field(BODY_FIELD, "body", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(new Field(DATE_FIELD, "date", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      return doc;
+    }
+  }
+  
+  // class has to be public so that Class.forName.newInstance() will work
+  public static final class JustDateDocMaker extends DocMaker {
+    public Document makeDocument() throws Exception {
+      Document doc = new Document();
+      doc.add(new Field(DATE_FIELD, "date", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      return doc;
+    }
   }
   
   private static final CompressorStreamFactory csFactory = new CompressorStreamFactory();
@@ -90,10 +119,13 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       String line = br.readLine();
       assertNotNull(line);
       String[] parts = line.split(Character.toString(WriteLineDocTask.SEP));
-      assertEquals(3, parts.length);
+      int numExpParts = expBody == null ? 2 : 3;
+      assertEquals(numExpParts, parts.length);
       assertEquals(expTitle, parts[0]);
       assertEquals(expDate, parts[1]);
-      assertEquals(expBody, parts[2]);
+      if (expBody != null) {
+        assertEquals(expBody, parts[2]);
+      }
       assertNull(br.readLine());
     } finally {
       br.close();
@@ -149,4 +181,44 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     
     doReadTest(file, false, "title text", "date text", "body text two");
   }
+  
+  public void testEmptyBody() throws Exception {
+    // WriteLineDocTask threw away documents w/ no BODY element, even if they
+    // had a TITLE element (LUCENE-1755). It should throw away documents if they
+    // don't have BODY nor TITLE
+    File file = new File(getWorkDir(), "one-line");
+    PerfRunData runData = createPerfRunData(file, false, null, NoBodyDocMaker.class.getName());
+    WriteLineDocTask wldt = new WriteLineDocTask(runData);
+    wldt.doLogic();
+    wldt.close();
+    
+    doReadTest(file, false, "title", "date", null);
+  }
+  
+  public void testEmptyTitle() throws Exception {
+    File file = new File(getWorkDir(), "one-line");
+    PerfRunData runData = createPerfRunData(file, false, null, NoTitleDocMaker.class.getName());
+    WriteLineDocTask wldt = new WriteLineDocTask(runData);
+    wldt.doLogic();
+    wldt.close();
+    
+    doReadTest(file, false, "", "date", "body");
+  }
+  
+  public void testJustDate() throws Exception {
+    File file = new File(getWorkDir(), "one-line");
+    PerfRunData runData = createPerfRunData(file, false, null, JustDateDocMaker.class.getName());
+    WriteLineDocTask wldt = new WriteLineDocTask(runData);
+    wldt.doLogic();
+    wldt.close();
+    
+    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"));
+    try {
+      String line = br.readLine();
+      assertNull(line);
+    } finally {
+      br.close();
+    }
+  }
+  
 }

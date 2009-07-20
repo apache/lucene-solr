@@ -4,6 +4,10 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+7/20/2009
+  LUCENE-1755: Fix WriteLineDocTask to output a document if it contains either 
+  a title or body (or both).  (Shai Erera via Mark Miller)
+
 7/14/2009
   LUCENE-1725: Fix the example Sort algorithm - auto is now deprecated and no longer works
   with Benchmark. Benchmark will now throw an exception if you specify sort fields without

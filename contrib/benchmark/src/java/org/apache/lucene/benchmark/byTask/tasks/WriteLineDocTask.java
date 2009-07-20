@@ -97,11 +97,12 @@ public class WriteLineDocTask extends PerfTask {
     Document doc = docSize > 0 ? docMaker.makeDocument(docSize) : docMaker.makeDocument();
 
     Field f = doc.getField(DocMaker.BODY_FIELD);
-    String body = f != null ? NORMALIZER.reset(f.stringValue()).replaceAll(" ") : null;
+    String body = f != null ? NORMALIZER.reset(f.stringValue()).replaceAll(" ") : "";
     
-    if (body != null) {
-      f = doc.getField(DocMaker.TITLE_FIELD);
-      String title = f != null ? NORMALIZER.reset(f.stringValue()).replaceAll(" ") : "";
+    f = doc.getField(DocMaker.TITLE_FIELD);
+    String title = f != null ? NORMALIZER.reset(f.stringValue()).replaceAll(" ") : "";
+    
+    if (body.length() > 0 || title.length() > 0) {
       
       f = doc.getField(DocMaker.DATE_FIELD);
       String date = f != null ? NORMALIZER.reset(f.stringValue()).replaceAll(" ") : "";
