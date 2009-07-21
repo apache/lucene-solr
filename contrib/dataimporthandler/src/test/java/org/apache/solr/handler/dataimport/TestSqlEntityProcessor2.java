@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -68,6 +69,24 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTest {
 
     assertQ(req("id:1"), "//*[@numFound='1']");
     assertQ(req("desc:hello"), "//*[@numFound='1']");
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testCompositePk_FullImportNoCommit() throws Exception {
+    List parentRow = new ArrayList();
+    parentRow.add(createMap("id", "10"));
+    MockDataSource.setIterator("select * from x", parentRow.iterator());
+
+    List childRow = new ArrayList();
+    childRow.add(createMap("desc", "hello"));
+
+    MockDataSource.setIterator("select * from y where y.A=10", childRow
+            .iterator());
+
+
+    super.runFullImport(dataConfig,createMap("commit","false"));
+    assertQ(req("id:10"), "//*[@numFound='0']");
   }
 
   @Test

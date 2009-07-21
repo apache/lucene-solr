@@ -182,11 +182,11 @@ public class DocBuilder {
       // Do not commit unnecessarily if this is a delta-import and no documents were created or deleted
       if (!requestParameters.clean) {
         if (importStatistics.docCount.get() > 0 || importStatistics.deletedDocCount.get() > 0) {
-          commit(lastIndexTimeProps);
+          finish(lastIndexTimeProps);
         }
       } else {
         // Finished operation normally, commit now
-        commit(lastIndexTimeProps);
+        finish(lastIndexTimeProps);
       }
       if (document.onImportEnd != null) {
         invokeEventListener(document.onImportEnd);
@@ -199,17 +199,18 @@ public class DocBuilder {
   }
 
   @SuppressWarnings("unchecked")
-  private void commit(Properties lastIndexTimeProps) {
-    LOG.info("Full Import completed successfully");
+  private void finish(Properties lastIndexTimeProps) {
+    LOG.info("Import completed successfully");
     statusMessages.put("", "Indexing completed. Added/Updated: "
             + importStatistics.docCount + " documents. Deleted "
             + importStatistics.deletedDocCount + " documents.");
-    writer.commit(requestParameters.optimize);
-    addStatusMessage("Committed");
-    if (requestParameters.optimize)
-      addStatusMessage("Optimized");
-    if (requestParameters.commit)
-      writer.persist(lastIndexTimeProps);
+    if(requestParameters.commit) {
+      writer.commit(requestParameters.optimize);
+      addStatusMessage("Committed");
+      if (requestParameters.optimize)
+        addStatusMessage("Optimized");
+    }
+    writer.persist(lastIndexTimeProps);
   }
 
   void rollback() {

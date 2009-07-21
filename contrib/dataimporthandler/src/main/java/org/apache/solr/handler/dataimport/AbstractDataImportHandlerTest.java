@@ -19,6 +19,7 @@ package org.apache.solr.handler.dataimport;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.common.util.NamedList;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -70,6 +71,17 @@ public abstract class AbstractDataImportHandlerTest extends
     LocalSolrQueryRequest request = lrf.makeRequest("command", "delta-import",
             "debug", "on", "clean", "false", "commit", "true", "dataConfig",
             dataConfig);
+    h.query("/dataimport", request);
+  }
+  protected void runFullImport(String dataConfig, Map<String ,String > extraParams) throws Exception {
+    NamedList l = new NamedList();
+    l.add("command", "full-import");
+    l.add("debug", "on");
+    l.add("dataConfig", dataConfig);
+    for (Map.Entry<String, String> e : extraParams.entrySet()) {
+      l.add(e.getKey(),e.getValue());
+    }
+    LocalSolrQueryRequest request = new LocalSolrQueryRequest(h.getCore(), l);  
     h.query("/dataimport", request);
   }
 

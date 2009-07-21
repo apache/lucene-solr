@@ -515,8 +515,11 @@ public class DataImporter {
         rows = Integer.parseInt((String) requestParams.get("rows"));
       if (requestParams.containsKey("clean"))
         clean = Boolean.parseBoolean((String) requestParams.get("clean"));
-      if (requestParams.containsKey("optimize"))
+      if (requestParams.containsKey("optimize")) {
         optimize = Boolean.parseBoolean((String) requestParams.get("optimize"));
+        if (optimize)
+          commit = true;
+      }
 
       Object o = requestParams.get("entity");
 
