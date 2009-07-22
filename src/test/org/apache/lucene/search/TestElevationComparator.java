@@ -115,7 +115,7 @@ public class TestElevationComparator extends LuceneTestCase {
    for (int i = 0; i < vals.length - 1; i += 2) {
      q.add(new TermQuery(new Term(vals[i], vals[i + 1])), BooleanClause.Occur.SHOULD);
      priority.put(vals[i + 1], new Integer(max--));
-     System.out.println(" pri doc=" + vals[i+1] + " pri=" + (1+max));
+     // System.out.println(" pri doc=" + vals[i+1] + " pri=" + (1+max));
    }
    return q;
  }
