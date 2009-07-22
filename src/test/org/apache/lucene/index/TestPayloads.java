@@ -532,6 +532,7 @@ public class TestPayloads extends LuceneTestCase {
         
         public boolean incrementToken() throws IOException {
             if (!first) return false;
+            first = false;
             termAtt.setTermBuffer(term);
             payloadAtt.setPayload(new Payload(payload));
             return true;
