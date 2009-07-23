@@ -54,6 +54,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     //After adding the document, we should be able to read it back in
     SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
     assertTrue(reader != null);
+    assertEquals(indexDivisor, reader.getTermInfosIndexDivisor());
     SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
     assertTrue(segTermDocs != null);
     segTermDocs.seek(new Term(DocHelper.TEXT_FIELD_2_KEY, "field"));

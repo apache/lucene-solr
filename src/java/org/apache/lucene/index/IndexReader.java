@@ -736,12 +736,11 @@ public abstract class IndexReader implements Cloneable {
 
   /** <p>For IndexReader implementations that use
    *  TermInfosReader to read terms, this returns the
-   *  current indexDivisor.
-   *  @see #setTermInfosIndexDivisor
-   * @deprecated Please use {@link IndexReader#open(Directory, IndexDeletionPolicy, boolean, int)} to specify the required TermInfos index divisor instead.
+   *  current indexDivisor as specified when the reader was
+   *  opened.
    */
   public int getTermInfosIndexDivisor() {
-    throw new UnsupportedOperationException("Please pass termInfosIndexDivisor up-front when opening IndexReader");
+    throw new UnsupportedOperationException("This reader does not support this method.");
   }
 
   /**

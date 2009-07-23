@@ -846,6 +846,10 @@ class DirectoryReader extends IndexReader implements Cloneable {
     return directory;
   }
 
+  public int getTermInfosIndexDivisor() {
+    return termInfosIndexDivisor;
+  }
+
   /**
    * Expert: return the IndexCommit that this reader has opened.
    * <p/>
