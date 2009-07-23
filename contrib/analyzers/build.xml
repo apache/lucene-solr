@@ -21,10 +21,52 @@
 
   <description>
     Additional Analyzers
+      - common:	Additional Analyzers
+      - smartcn:	Smart Analyzer for Simplified Chinese Text
   </description>
 
-  <property name="javac.source" value="1.4" />
-  <property name="javac.target" value="1.4" />
+  <target name="common">
+    <ant dir="common" />
+  </target>
 
-  <import file="../contrib-build.xml"/>
+  <target name="smartcn">
+    <ant dir="smartcn" />
+  </target>
+
+  <target name="default" depends="common,smartcn" />
+
+  <target name="clean">
+    <ant dir="common" target="clean" />
+    <ant dir="smartcn" target="clean" />
+  </target>
+  <target name="compile-core">
+    <ant dir="common" target="compile-core" />
+    <ant dir="smartcn" target="compile-core" />
+  </target>
+  <target name="compile-test">
+    <ant dir="common" target="compile-test" />
+    <ant dir="smartcn" target="compile-test" />
+  </target>
+  <target name="test">
+    <ant dir="common" target="test" />
+    <ant dir="smartcn" target="test" />
+  </target>
+
+  <target name="build-artifacts-and-tests" depends="default,compile-test" />
+
+  <target name="dist-maven" depends="default">
+    <ant dir="common" target="dist-maven" />
+    <ant dir="smartcn" target="dist-maven" />
+  </target>  	
+
+  <target name="javadocs">
+    <ant dir="common" target="javadocs" />
+    <ant dir="smartcn" target="javadocs" />
+  </target>  	
+
+  <target name="javadocs-index.html">
+    <ant dir="common" target="javadocs-index.html" />
+    <ant dir="smartcn" target="javadocs-index.html" />
+  </target>
+	
 </project>
