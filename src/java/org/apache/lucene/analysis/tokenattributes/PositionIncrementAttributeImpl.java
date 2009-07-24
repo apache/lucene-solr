@@ -17,10 +17,13 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.Attribute;
+import java.io.Serializable;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.AttributeImpl;
 
 /** The positionIncrement determines the position of this token
- * relative to the previous Token in a TokenStream, used in phrase
+ * relative to the previous Token in a {@link TokenStream}, used in phrase
  * searching.
  *
  * <p>The default value is one.
@@ -50,15 +53,50 @@ import org.apache.lucene.util.Attribute;
  * 
  * @see org.apache.lucene.index.TermPositions
  */
-public interface PositionIncrementAttribute extends Attribute {
+public class PositionIncrementAttributeImpl extends AttributeImpl implements PositionIncrementAttribute, Cloneable, Serializable {
+  private int positionIncrement = 1;
+  
   /** Set the position increment. The default value is one.
    *
    * @param positionIncrement the distance from the prior term
    */
-  public void setPositionIncrement(int positionIncrement);
+  public void setPositionIncrement(int positionIncrement) {
+    if (positionIncrement < 0)
+      throw new IllegalArgumentException
+        ("Increment must be zero or greater: " + positionIncrement);
+    this.positionIncrement = positionIncrement;
+  }
 
   /** Returns the position increment of this Token.
    * @see #setPositionIncrement
    */
-  public int getPositionIncrement();
+  public int getPositionIncrement() {
+    return positionIncrement;
+  }
+
+  public void clear() {
+    this.positionIncrement = 1;
+  }
+  
+  public boolean equals(Object other) {
+    if (other == this) {
+      return true;
+    }
+    
+    if (other instanceof PositionIncrementAttributeImpl) {
+      return positionIncrement == ((PositionIncrementAttributeImpl) other).positionIncrement;
+    }
+ 
+    return false;
+  }
+
+  public int hashCode() {
+    return positionIncrement;
+  }
+  
+  public void copyTo(AttributeImpl target) {
+    PositionIncrementAttribute t = (PositionIncrementAttribute) target;
+    t.setPositionIncrement(positionIncrement);
+  }  
+
 }

@@ -61,24 +61,4 @@ public final class LengthFilter extends TokenFilter {
     // reached EOS -- return null
     return false;
   }
-
-  /**
-   * Returns the next input Token whose term() is the right len
-   * @deprecated
-   */
-  public final Token next(final Token reusableToken) throws IOException
-  {
-    assert reusableToken != null;
-    // return the first non-stop word found
-    for (Token nextToken = input.next(reusableToken); nextToken != null; nextToken = input.next(reusableToken))
-    {
-      int len = nextToken.termLength();
-      if (len >= min && len <= max) {
-          return nextToken;
-      }
-      // note: else we ignore it but should we index each part of it?
-    }
-    // reached EOS -- return null
-    return null;
-  }
 }

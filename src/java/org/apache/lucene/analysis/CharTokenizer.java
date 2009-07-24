@@ -94,49 +94,16 @@ public abstract class CharTokenizer extends Tokenizer {
     return true;
   }
 
-  /** @deprecated */
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
   public final Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    reusableToken.clear();
-    int length = 0;
-    int start = bufferIndex;
-    char[] buffer = reusableToken.termBuffer();
-    while (true) {
+    return super.next(reusableToken);
+  }
 
-      if (bufferIndex >= dataLen) {
-        offset += dataLen;
-        dataLen = input.read(ioBuffer);
-        if (dataLen == -1) {
-          if (length > 0)
-            break;
-          else
-            return null;
-        }
-        bufferIndex = 0;
-      }
-
-      final char c = ioBuffer[bufferIndex++];
-
-      if (isTokenChar(c)) {               // if it's a token char
-
-        if (length == 0)			           // start of token
-          start = offset + bufferIndex - 1;
-        else if (length == buffer.length)
-          buffer = reusableToken.resizeTermBuffer(1+length);
-
-        buffer[length++] = normalize(c); // buffer it, normalized
-
-        if (length == MAX_WORD_LEN)		   // buffer overflow!
-          break;
-
-      } else if (length > 0)             // at non-Letter w/ chars
-        break;                           // return 'em
-    }
-
-    reusableToken.setTermLength(length);
-    reusableToken.setStartOffset(input.correctOffset(start));
-    reusableToken.setEndOffset(input.correctOffset(start+length));
-    return reusableToken;
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws IOException {
+    return super.next();
   }
 
   public void reset(Reader input) throws IOException {

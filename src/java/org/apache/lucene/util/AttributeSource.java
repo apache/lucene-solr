@@ -18,14 +18,17 @@ package org.apache.lucene.util;
  */
 
 import java.util.Iterator;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.IdentityHashMap;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Map.Entry;
 
-import org.apache.lucene.analysis.TokenStream;
-
+import org.apache.lucene.analysis.TokenStream; // for javadocs
 
 /**
- * An AttributeSource contains a list of different {@link Attribute}s,
+ * An AttributeSource contains a list of different {@link AttributeImpl}s,
  * and methods to add and get them. There can only be a single instance
  * of an attribute in the same AttributeSource instance. This is ensured
  * by passing in the actual type of the Attribute (Class&lt;Attribute&gt;) to 
@@ -40,43 +43,147 @@ import org.apache.lucene.analysis.TokenStream;
  */
 public class AttributeSource {
   /**
-   * An AttributeAcceptor defines only a single method {@link #accept(Class)}.
-   * It can be used for e. g. buffering purposes to specify which attributes
-   * to buffer. 
+   * An AttributeFactory creates instances of {@link AttributeImpl}s.
    */
-  public static abstract class AttributeAcceptor {
-    /** Return true, to accept this attribute; false otherwise */
-    public abstract boolean accept(Class attClass);
+  public static abstract class AttributeFactory {
+    /**
+     * returns an {@link AttributeImpl} for the supplied {@link Attribute} interface class.
+     */
+    public abstract AttributeImpl createAttributeInstance(Class attClass);
+    
+    /**
+     * This is the default factory that creates {@link AttributeImpl}s using the
+     * class name of the supplied {@link Attribute} interface class by appending <code>Impl</code> to it.
+     */
+    public static final AttributeFactory DEFAULT_ATTRIBUTE_FACTORY = new DefaultAttributeFactory();
+    
+    private static final class DefaultAttributeFactory extends AttributeFactory {
+      private static final IdentityHashMap/*<Class<? extends Attribute>,Class<? extends AttributeImpl>>*/ attClassImplMap = new IdentityHashMap();
+      
+      private DefaultAttributeFactory() {}
+    
+      public AttributeImpl createAttributeInstance(Class attClass) {
+        try {
+          return (AttributeImpl) getClassForInterface(attClass).newInstance();
+        } catch (InstantiationException e) {
+          throw new IllegalArgumentException("Could not instantiate class " + attClass);
+        } catch (IllegalAccessException e) {
+          throw new IllegalArgumentException("Could not instantiate class " + attClass);      
+        }
+      }
+      
+      private static Class getClassForInterface(Class attClass) {
+        synchronized(attClassImplMap) {
+          Class clazz = (Class) attClassImplMap.get(attClass);
+          if (clazz == null) {
+            try {
+              attClassImplMap.put(attClass, clazz = Class.forName(attClass.getName() + "Impl"));
+            } catch (ClassNotFoundException e) {
+              throw new IllegalArgumentException("Could not find implementing class for " + attClass.getName());
+            }
+          }
+          return clazz;
+        }
+      }
+    }
   }
+      
+  // These two maps must always be in sync!!!
+  // So they are private, final and read-only from the outside (read-only iterators)
+  private final Map/*<Class<Attribute>,AttributeImpl>*/ attributes;
+  private final Map/*<Class<AttributeImpl>,AttributeImpl>*/ attributeImpls;
+
+  private AttributeFactory factory;
   
   /**
-   * Default AttributeAcceptor that accepts all attributes.
+   * An AttributeSource using the default attribute factory {@link AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY}.
    */
-  public static final AttributeAcceptor AllAcceptor = new AttributeAcceptor() {
-    public boolean accept(Class attClass) {return true;}      
-  };
-
-  /**
-   * Holds the Class&lt;Attribute&gt; -> Attribute mapping
-   */
-  protected Map attributes;
-
   public AttributeSource() {
-    this.attributes = new LinkedHashMap();
+    this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY);
   }
   
+  /**
+   * An AttributeSource that uses the same attributes as the supplied one.
+   */
   public AttributeSource(AttributeSource input) {
     if (input == null) {
       throw new IllegalArgumentException("input AttributeSource must not be null");
     }
     this.attributes = input.attributes;
+    this.attributeImpls = input.attributeImpls;
+    this.factory = input.factory;
   }
   
-  /** Returns an iterator that iterates the attributes 
+  /**
+   * An AttributeSource using the supplied {@link AttributeFactory} for creating new {@link Attribute} instances.
+   */
+  public AttributeSource(AttributeFactory factory) {
+    this.attributes = new LinkedHashMap();
+    this.attributeImpls = new LinkedHashMap();
+    this.factory = factory;
+  }
+  
+  /**
+   * returns the used AttributeFactory.
+   */
+  public AttributeFactory getAttributeFactory() {
+    return this.factory;
+  }
+  
+  /** Returns a new iterator that iterates the attribute classes
    * in the same order they were added in.
    */
-  public Iterator getAttributesIterator() {
-    return attributes.values().iterator();
+  public Iterator/*<Class<? extends Attribute>>*/ getAttributeClassesIterator() {
+    return Collections.unmodifiableSet(attributes.keySet()).iterator();
+  }
+  
+  /** Returns a new iterator that iterates all unique Attribute implementations.
+   * This iterator may contain less entries that {@link #getAttributeClassesIterator},
+   * if one instance implements more than one Attribute interface.
+   */
+  public Iterator/*<AttributeImpl>*/ getAttributeImplsIterator() {
+    return Collections.unmodifiableCollection(attributeImpls.values()).iterator();
+  }
+  
+  /** a cache that stores all interfaces for known implementation classes for performance (slow reflection) */
+  private static final IdentityHashMap/*<Class<? extends AttributeImpl>,LinkedList<Class<? extends Attribute>>>*/ knownImplClasses = new IdentityHashMap();
+  
+  /** Adds a custom AttributeImpl instance with one or more Attribute interfaces. */
+  public void addAttributeImpl(final AttributeImpl att) {
+    final Class clazz = att.getClass();
+    if (attributeImpls.containsKey(clazz)) return;
+    LinkedList foundInterfaces;
+    synchronized(knownImplClasses) {
+      foundInterfaces = (LinkedList) knownImplClasses.get(clazz);
+      if (foundInterfaces == null) {
+        knownImplClasses.put(clazz, foundInterfaces=new LinkedList());
+        // find all interfaces that this attribute instance implements
+        // and that extend the Attribute interface
+        Class actClazz = clazz;
+        do {
+          Class[] interfaces = actClazz.getInterfaces();
+          for (int i = 0; i < interfaces.length; i++) {
+            final Class curInterface = interfaces[i];
+            if (Attribute.class.isAssignableFrom(curInterface)) {
+              foundInterfaces.add(curInterface);
+            }
+          }
+          actClazz = actClazz.getSuperclass();
+        } while (actClazz != null);
+      }
+    }
+    
+    // add all interfaces of this AttributeImpl to the maps
+    for (Iterator it = foundInterfaces.iterator(); it.hasNext(); ) {
+      final Class curInterface = (Class) it.next();
+      // Attribute is a superclass of this interface
+      if (!attributes.containsKey(curInterface)) {
+        // invalidate state to force recomputation in captureState()
+        this.currentState = null;
+        attributes.put(curInterface, att);
+        attributeImpls.put(clazz, att);
+      }
+    }
   }
   
   /**
@@ -85,18 +192,11 @@ public class AttributeSource {
    * already in this AttributeSource and returns it. Otherwise a
    * new instance is created, added to this AttributeSource and returned. 
    */
-  public Attribute addAttribute(Class attClass) {
-    Attribute att = (Attribute) attributes.get(attClass);
+  public AttributeImpl addAttribute(Class attClass) {
+    AttributeImpl att = (AttributeImpl) attributes.get(attClass);
     if (att == null) {
-      try {
-        att = (Attribute) attClass.newInstance();
-      } catch (InstantiationException e) {
-        throw new IllegalArgumentException("Could not instantiate class " + attClass);
-      } catch (IllegalAccessException e) {
-        throw new IllegalArgumentException("Could not instantiate class " + attClass);      
-      }
-      
-      attributes.put(attClass, att);
+      att = this.factory.createAttributeInstance(attClass);
+      addAttributeImpl(att);
     }
     return att;
   }
@@ -121,10 +221,10 @@ public class AttributeSource {
    * @throws IllegalArgumentException if this AttributeSource does not contain the
    *         Attribute
    */
-  public Attribute getAttribute(Class attClass) {
-    Attribute att = (Attribute) this.attributes.get(attClass);
+  public AttributeImpl getAttribute(Class attClass) {
+    AttributeImpl att = (AttributeImpl) this.attributes.get(attClass);
     if (att == null) {
-      throw new IllegalArgumentException("This token does not have the attribute '" + attClass + "'.");
+      throw new IllegalArgumentException("This AttributeSource does not have the attribute '" + attClass + "'.");
     }
 
     return att;
@@ -132,52 +232,72 @@ public class AttributeSource {
   
   /**
    * Resets all Attributes in this AttributeSource by calling
-   * {@link Attribute#clear()} on each Attribute.
+   * {@link AttributeImpl#clear()} on each Attribute implementation.
    */
   public void clearAttributes() {
-    Iterator it = getAttributesIterator();
+    Iterator it = getAttributeImplsIterator();
     while (it.hasNext()) {
-      ((Attribute) it.next()).clear();
+      ((AttributeImpl) it.next()).clear();
     }
   }
   
   /**
-   * Captures the current state of the passed in TokenStream.
-   * <p>
-   * This state will contain all of the passed in TokenStream's
-   * {@link Attribute}s. If only a subset of the attributes is needed
-   * please use {@link #captureState(AttributeAcceptor)} 
+   * This class holds the state of an AttributeSource.
+   * @see #captureState
+   * @see #restoreState
    */
-  public AttributeSource captureState() {
-    return captureState(AllAcceptor);
-  }
-
-  /**
-   * Captures the current state of the passed in TokenStream.
-   * <p>
-   * This state will contain all of the passed in TokenStream's
-   * {@link Attribute}s which the {@link AttributeAcceptor} accepts. 
-   */
-  public AttributeSource captureState(AttributeAcceptor acceptor) {
-    AttributeSource state = new AttributeSource();
-     
-    Iterator it = getAttributesIterator();
-    while(it.hasNext()) {
-      Attribute att = (Attribute) it.next();
-      if (acceptor.accept(att.getClass())) {
-        Attribute clone = (Attribute) att.clone();
-        state.attributes.put(att.getClass(), clone);
-      }
-    }
+  public static final class State implements Cloneable {
+    private AttributeImpl attribute;
+    private State next;
     
-    return state;
+    public Object clone() {
+      State clone = new State();
+      clone.attribute = (AttributeImpl) attribute.clone();
+      
+      if (next != null) {
+        clone.next = (State) next.clone();
+      }
+      
+      return clone;
+    }
+  }
+  
+  private State currentState = null;
+  
+  private void computeCurrentState() {
+    currentState = new State();
+    State c = currentState;
+    Iterator it = getAttributeImplsIterator();
+    c.attribute = (AttributeImpl) it.next();
+    while (it.hasNext()) {
+      c.next = new State();
+      c = c.next;
+      c.attribute = (AttributeImpl) it.next();
+    }        
   }
   
   /**
-   * Restores this state by copying the values of all attributes 
-   * that this state contains into the attributes of the targetStream.
+   * Captures the state of all Attributes. The return value can be passed to
+   * {@link #restoreState} to restore the state of this or another AttributeSource.
+   */
+  public State captureState() {
+    if (!hasAttributes()) {
+      return null;
+    }
+      
+    if (currentState == null) {
+      computeCurrentState();
+    }
+    return (State) this.currentState.clone();
+  }
+  
+  /**
+   * Restores this state by copying the values of all attribute implementations
+   * that this state contains into the attributes implementations of the targetStream.
    * The targetStream must contain a corresponding instance for each argument
-   * contained in this state.
+   * contained in this state (e.g. it is not possible to restore the state of
+   * an AttributeSource containing a TermAttribute into a AttributeSource using
+   * a Token instance as implementation).
    * <p>
    * Note that this method does not affect attributes of the targetStream
    * that are not contained in this state. In other words, if for example
@@ -186,19 +306,22 @@ public class AttributeSource {
    * reset its value to the default, in which case the caller should first
    * call {@link TokenStream#clearAttributes()} on the targetStream.   
    */
-  public void restoreState(AttributeSource target) {
-    Iterator it = getAttributesIterator();
-    while (it.hasNext()) {
-      Attribute att = (Attribute) it.next();
-      Attribute targetAtt = target.getAttribute(att.getClass());
-      att.copyTo(targetAtt);
-    }
+  public void restoreState(State state) {
+    if (state == null)  return;
+    
+    do {
+      AttributeImpl targetImpl = (AttributeImpl) attributeImpls.get(state.attribute.getClass());
+      if (targetImpl == null)
+        throw new IllegalArgumentException("State contains an AttributeImpl that is not in this AttributeSource");
+      state.attribute.copyTo(targetImpl);
+      state = state.next;
+    } while (state != null);
   }
-  
+
   public int hashCode() {
     int code = 0;
     if (hasAttributes()) {
-      Iterator it = getAttributesIterator();
+      Iterator it = getAttributeImplsIterator();
       while (it.hasNext()) {
         code = code * 31 + it.next().hashCode();
       }
@@ -220,16 +343,17 @@ public class AttributeSource {
           return false;
         }
         
-        if (attributes.size() != other.attributes.size()) {
+        if (this.attributeImpls.size() != other.attributeImpls.size()) {
           return false;
         }
   
-        Iterator it = getAttributesIterator();
-        while (it.hasNext()) {
-          Class attName = it.next().getClass();
-          
-          Attribute otherAtt = (Attribute) other.attributes.get(attName);
-          if (otherAtt == null || !otherAtt.equals(attributes.get(attName))) {
+        // it is only equal if all attribute impls are the same in the same order
+        Iterator thisIt = this.getAttributeImplsIterator();
+        Iterator otherIt = other.getAttributeImplsIterator();
+        while (thisIt.hasNext() && otherIt.hasNext()) {
+          AttributeImpl thisAtt = (AttributeImpl) thisIt.next();
+          AttributeImpl otherAtt = (AttributeImpl) otherIt.next();
+          if (otherAtt.getClass() != thisAtt.getClass() || !otherAtt.equals(thisAtt)) {
             return false;
           }
         }
@@ -240,38 +364,48 @@ public class AttributeSource {
     } else
       return false;
   }
-
   
-// TODO: Java 1.5
-//  private Map<Class<? extends Attribute>, Attribute> attributes;  
-//  public <T extends Attribute> T addAttribute(Class<T> attClass) {
-//    T att = (T) attributes.get(attClass);
-//    if (att == null) {
-//      try {
-//        att = attClass.newInstance();
-//      } catch (InstantiationException e) {
-//        throw new IllegalArgumentException("Could not instantiate class " + attClass);
-//      } catch (IllegalAccessException e) {
-//        throw new IllegalArgumentException("Could not instantiate class " + attClass);      
-//      }
-//      
-//      attributes.put(attClass, att);
-//    }
-//    return att;
-//  }
-//
-//  public boolean hasAttribute(Class<? extends Attribute> attClass) {
-//    return this.attributes.containsKey(attClass);
-//  }
-//
-//  public <T extends Attribute> T getAttribute(Class<T> attClass) {
-//    Attribute att = this.attributes.get(attClass);
-//    if (att == null) {
-//      throw new IllegalArgumentException("This token does not have the attribute '" + attClass + "'.");
-//    }
-//
-//    return (T) att;
-//  }
-//
+  public String toString() {
+    StringBuffer sb = new StringBuffer();
+    sb.append('(');
+    
+    if (hasAttributes()) {
+      Iterator it = getAttributeImplsIterator();
+      if (it.hasNext()) {
+        sb.append(it.next().toString());
+      }
+      while (it.hasNext()) {
+        sb.append(',');
+        sb.append(it.next().toString());
+      }
+    }
+    sb.append(')');
+    return sb.toString();
+  }
+  
+  /**
+   * Performs a clone of all {@link AttributeImpl} instances returned in a new
+   * AttributeSource instance. This method can be used to e.g. create another TokenStream
+   * with exactly the same attributes (using {@link #AttributeSource(AttributeSource)})
+   */
+  public AttributeSource cloneAttributes() {
+    AttributeSource clone = new AttributeSource(this.factory);
+    
+    // first clone the impls
+    Iterator/*<AttributeImpl>*/ implIt = getAttributeImplsIterator();
+    while (implIt.hasNext()) {
+      AttributeImpl impl = (AttributeImpl) implIt.next();
+      clone.attributeImpls.put(impl.getClass(), impl.clone());
+    }
+    
+    // now the interfaces
+    Iterator/*<Entry<Class<Attribute>, AttributeImpl>>*/ attIt = this.attributes.entrySet().iterator(); 
+    while (attIt.hasNext()) {
+      Entry/*<Class<Attribute>, AttributeImpl>*/ entry = (Entry/*<Class<Attribute>, AttributeImpl>*/) attIt.next();
+      clone.attributes.put(entry.getKey(), clone.attributeImpls.get(entry.getValue().getClass()));
+    }
+    
+    return clone;
+  }
 
 }

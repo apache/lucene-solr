@@ -141,11 +141,11 @@ public class TestDocumentWriter extends LuceneTestCase {
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new TokenFilter(new WhitespaceTokenizer(reader)) {
           boolean first=true;
-          AttributeSource state;
+          AttributeSource.State state;
 
           public boolean incrementToken() throws IOException {
             if (state != null) {
-              state.restoreState(this);
+              restoreState(state);
               payloadAtt.setPayload(null);
               posIncrAtt.setPositionIncrement(0);
               termAtt.setTermBuffer(new char[]{'b'}, 0, 1);

@@ -1,5 +1,8 @@
 package org.apache.lucene.analysis;
 
+import java.io.IOException;
+
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.ArrayUtil;
 
 /**
@@ -53,24 +56,21 @@ import org.apache.lucene.util.ArrayUtil;
  * accents from Latin1 characters.  For example, '&agrave;' will be replaced by
  * 'a'.
  */
-public class ASCIIFoldingFilter extends TokenFilter {
+public final class ASCIIFoldingFilter extends TokenFilter {
   public ASCIIFoldingFilter(TokenStream input)
   {
     super(input);
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
   private char[] output = new char[512];
   private int outputPos;
+  private TermAttribute termAtt;
 
-  public Token next(Token result)
-      throws java.io.IOException
-  {
-    result = input.next(result);
-
-    if (result != null)
-    {
-      final char[] buffer = result.termBuffer();
-      final int length = result.termLength();
+  public boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
+      final char[] buffer = termAtt.termBuffer();
+      final int length = termAtt.termLength();
 
       // If no characters actually require rewriting then we
       // just return token as-is:
@@ -79,13 +79,13 @@ public class ASCIIFoldingFilter extends TokenFilter {
         if (c >= '\u0080')
         {
           foldToASCII(buffer, length);
-          result.setTermBuffer(output, 0, outputPos);
+          termAtt.setTermBuffer(output, 0, outputPos);
           break;
         }
       }
-      return result;
+      return true;
     } else {
-      return null;
+      return false;
     }
   }
 

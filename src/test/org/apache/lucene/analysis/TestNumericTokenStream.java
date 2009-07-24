@@ -27,9 +27,8 @@ public class TestNumericTokenStream extends LuceneTestCase {
   static final long lvalue = 4573245871874382L;
   static final int ivalue = 123456;
 
-  public void testLongStreamNewAPI() throws Exception {
+  public void testLongStream() throws Exception {
     final NumericTokenStream stream=new NumericTokenStream().setLongValue(lvalue);
-    stream.setUseNewAPI(true);
     // use getAttribute to test if attributes really exist, if not an IAE will be throwed
     final TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
     final TypeAttribute typeAtt = (TypeAttribute) stream.getAttribute(TypeAttribute.class);
@@ -40,22 +39,9 @@ public class TestNumericTokenStream extends LuceneTestCase {
     }
     assertFalse("No more tokens available", stream.incrementToken());
   }
-  
-  public void testLongStreamOldAPI() throws Exception {
-    final NumericTokenStream stream=new NumericTokenStream().setLongValue(lvalue);
-    stream.setUseNewAPI(false);
-    Token tok=new Token();
-    for (int shift=0; shift<64; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
-      assertNotNull("New token is available", tok=stream.next(tok));
-      assertEquals("Term is correctly encoded", NumericUtils.longToPrefixCoded(lvalue, shift), tok.term());
-      assertEquals("Type correct", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, tok.type());
-    }
-    assertNull("No more tokens available", stream.next(tok));
-  }
 
-  public void testIntStreamNewAPI() throws Exception {
+  public void testIntStream() throws Exception {
     final NumericTokenStream stream=new NumericTokenStream().setIntValue(ivalue);
-    stream.setUseNewAPI(true);
     // use getAttribute to test if attributes really exist, if not an IAE will be throwed
     final TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
     final TypeAttribute typeAtt = (TypeAttribute) stream.getAttribute(TypeAttribute.class);
@@ -65,18 +51,6 @@ public class TestNumericTokenStream extends LuceneTestCase {
       assertEquals("Type correct", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, typeAtt.type());
     }
     assertFalse("No more tokens available", stream.incrementToken());
-  }
-  
-  public void testIntStreamOldAPI() throws Exception {
-    final NumericTokenStream stream=new NumericTokenStream().setIntValue(ivalue);
-    stream.setUseNewAPI(false);
-    Token tok=new Token();
-    for (int shift=0; shift<32; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
-      assertNotNull("New token is available", tok=stream.next(tok));
-      assertEquals("Term is correctly encoded", NumericUtils.intToPrefixCoded(ivalue, shift), tok.term());
-      assertEquals("Type correct", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, tok.type());
-    }
-    assertNull("No more tokens available", stream.next(tok));
   }
   
   public void testNotInitialized() throws Exception {
@@ -89,18 +63,9 @@ public class TestNumericTokenStream extends LuceneTestCase {
       // pass
     }
 
-    stream.setUseNewAPI(true);
     try {
       stream.incrementToken();
       fail("incrementToken() should not succeed.");
-    } catch (IllegalStateException e) {
-      // pass
-    }
-
-    stream.setUseNewAPI(false);
-    try {
-      stream.next(new Token());
-      fail("next() should not succeed.");
     } catch (IllegalStateException e) {
       // pass
     }

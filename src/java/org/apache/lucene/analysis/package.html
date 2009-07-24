@@ -442,57 +442,73 @@ are retrieved from the input stream in the <code>incrementToken()</code> method.
 in the TermAttribute the length of the term can be determined and too short or too long tokens are skipped. 
 Note how <code>incrementToken()</code> can efficiently access the instance variable; no attribute lookup or downcasting
 is neccessary. The same is true for the consumer, which can simply use local references to the Attributes.
+
 <h4>Adding a custom Attribute</h4>
 Now we're going to implement our own custom Attribute for part-of-speech tagging and call it consequently 
-<code>PartOfSpeechAttribute</code>:
+<code>PartOfSpeechAttribute</code>. First we need to define the interface of the new Attribute:
 <pre>
-  public static enum PartOfSpeech {
-    Noun, Verb, Adjective, Adverb, Pronoun, Preposition, Conjunction, Article, Unknown
-  }
+  public interface PartOfSpeechAttribute extends Attribute {
+    public static enum PartOfSpeech {
+      Noun, Verb, Adjective, Adverb, Pronoun, Preposition, Conjunction, Article, Unknown
+    }
   
-  public static final class PartOfSpeechAttribute extends Attribute {
-    
-    private PartOfSpeech pos = PartOfSpeech.Unknown;
-    
-    public void setPartOfSpeech(PartOfSpeech pos) {
-      this.pos = pos;
-    }
-    
-    public PartOfSpeech getPartOfSpeech() {
-      return pos;
-    }
-
-    public void clear() {
-      pos = PartOfSpeech.Unknown;
-    }
-
-    public void copyTo(Attribute target) {
-      ((PartOfSpeechAttribute) target).pos = pos;
-    }
-
-    public boolean equals(Object other) {
-      if (other == this) {
-        return true;
-      }
-      
-      if (other instanceof PartOfSpeechAttribute) {
-        return pos == ((PartOfSpeechAttribute) other).pos;
-      }
-   
-      return false;
-    }
-
-    public int hashCode() {
-      return pos.ordinal();
-    }
-
-    public String toString() {
-      return "PartOfSpeech=" + pos;
-    }
+    public void setPartOfSpeech(PartOfSpeech pos);
+  
+    public PartOfSpeech getPartOfSpeech();
   }
 </pre>
-This is a simple Attribute that has only a single variable that stores the part-of-speech of a token. It extends the
-new <code>Attribute</code> class and therefore implements its abstract methods <code>clear(), copyTo(), equals(), hashCode(), toString()</code>.
+
+Now we also need to write the implementing class. The name of that class is important here: By default, Lucene
+checks if there is a class with the name of the Attribute with the postfix 'Impl'. In this example, we would
+consequently call the implementing class <code>PartOfSpeechAttributeImpl</code>. <br/>
+This should be the usual behavior. However, there is also an expert-API that allows changing these naming conventions:
+{@link org.apache.lucene.util.AttributeSource.AttributeFactory}. The factory accepts an Attribute interface as argument
+and returns an actual instance. You can implement your own factory if you need to change the default behavior. <br/><br/>
+
+Now here is the actual class that implements our new Attribute. Notice that the class has to extend
+{@link org.apache.lucene.util.AttributeSource.AttributeImpl}:
+
+<pre>
+public final class PartOfSpeechAttributeImpl extends AttributeImpl 
+                            implements PartOfSpeechAttribute{
+  
+  private PartOfSpeech pos = PartOfSpeech.Unknown;
+  
+  public void setPartOfSpeech(PartOfSpeech pos) {
+    this.pos = pos;
+  }
+  
+  public PartOfSpeech getPartOfSpeech() {
+    return pos;
+  }
+
+  public void clear() {
+    pos = PartOfSpeech.Unknown;
+  }
+
+  public void copyTo(AttributeImpl target) {
+    ((PartOfSpeechAttributeImpl) target).pos = pos;
+  }
+
+  public boolean equals(Object other) {
+    if (other == this) {
+      return true;
+    }
+    
+    if (other instanceof PartOfSpeechAttributeImpl) {
+      return pos == ((PartOfSpeechAttributeImpl) other).pos;
+    }
+ 
+    return false;
+  }
+
+  public int hashCode() {
+    return pos.ordinal();
+  }
+}
+</pre>
+This is a simple Attribute implementation has only a single variable that stores the part-of-speech of a token. It extends the
+new <code>AttributeImpl</code> class and therefore implements its abstract methods <code>clear(), copyTo(), equals(), hashCode()</code>.
 Now we need a TokenFilter that can set this new PartOfSpeechAttribute for each token. In this example we show a very naive filter
 that tags every word with a leading upper-case letter as a 'Noun' and all other words as 'Unknown'.
 <pre>
@@ -523,7 +539,9 @@ that tags every word with a leading upper-case letter as a 'Noun' and all other 
   }
 </pre>
 Just like the LengthFilter, this new filter accesses the attributes it needs in the constructor and
-stores references in instance variables. Now we need to add the filter to the chain:
+stores references in instance variables. Notice how you only need to pass in the interface of the new
+Attribute and instantiating the correct class is automatically been taken care of.
+Now we need to add the filter to the chain:
 <pre>
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream stream = new WhitespaceTokenizer(reader);
@@ -582,7 +600,8 @@ of a sentence or not. Then the PartOfSpeechTaggingFilter can make use of this kn
 as nouns if not the first word of a sentence (we know, this is still not a correct behavior, but hey, it's a good exercise). 
 As a small hint, this is how the new Attribute class could begin:
 <pre>
-  public class FirstTokenOfSentenceAttribute extends Attribute {
+  public class FirstTokenOfSentenceAttributeImpl extends Attribute
+                   implements FirstTokenOfSentenceAttribute {
     
     private boolean firstToken;
     

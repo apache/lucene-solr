@@ -17,25 +17,63 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Payload;
-import org.apache.lucene.util.Attribute;
+import java.io.Serializable;
+
+import org.apache.lucene.util.AttributeImpl;
 
 /**
- * The payload of a Token. See also {@link Payload}.
+ * A Token's lexical type. The Default value is "word". 
  * 
  * <p><font color="#FF0000">
  * WARNING: The status of the new TokenStream, AttributeSource and Attributes is experimental. 
  * The APIs introduced in these classes with Lucene 2.9 might change in the future. 
  * We will make our best efforts to keep the APIs backwards-compatible.</font>
  */
-public interface PayloadAttribute extends Attribute {
-  /**
-   * Returns this Token's payload.
-   */ 
-  public Payload getPayload();
+public class TypeAttributeImpl extends AttributeImpl implements TypeAttribute, Cloneable, Serializable {
+  private String type;
+  public static final String DEFAULT_TYPE = "word";
+  
+  public TypeAttributeImpl() {
+    this(DEFAULT_TYPE); 
+  }
+  
+  public TypeAttributeImpl(String type) {
+    this.type = type;
+  }
+  
+  /** Returns this Token's lexical type.  Defaults to "word". */
+  public String type() {
+    return type;
+  }
 
-  /** 
-   * Sets this Token's payload.
-   */
-  public void setPayload(Payload payload);
+  /** Set the lexical type.
+      @see #type() */
+  public void setType(String type) {
+    this.type = type;
+  }
+
+  public void clear() {
+    type = DEFAULT_TYPE;    
+  }
+
+  public boolean equals(Object other) {
+    if (other == this) {
+      return true;
+    }
+    
+    if (other instanceof TypeAttributeImpl) {
+      return type.equals(((TypeAttributeImpl) other).type);
+    }
+    
+    return false;
+  }
+
+  public int hashCode() {
+    return type.hashCode();
+  }
+  
+  public void copyTo(AttributeImpl target) {
+    TypeAttribute t = (TypeAttribute) target;
+    t.setType(new String(type));
+  }
 }

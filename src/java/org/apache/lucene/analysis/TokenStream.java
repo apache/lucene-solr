@@ -18,10 +18,15 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.IOException;
-import java.util.Iterator;
 
-import org.apache.lucene.index.Payload;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
 
 /** A TokenStream enumerates the sequence of tokens, either from
@@ -36,13 +41,13 @@ import org.apache.lucene.util.AttributeSource;
   </ul>
   A new TokenStream API is introduced with Lucene 2.9. Since
   2.9 Token is deprecated and the preferred way to store
-  the information of a token is to use {@link Attribute}s.
+  the information of a token is to use {@link AttributeImpl}s.
   <p>
   For that reason TokenStream extends {@link AttributeSource}
-  now. Note that only one instance per {@link Attribute} is
+  now. Note that only one instance per {@link AttributeImpl} is
   created and reused for every token. This approach reduces
   object creations and allows local caching of references to
-  the {@link Attribute}s. See {@link #incrementToken()} for further details.
+  the {@link AttributeImpl}s. See {@link #incrementToken()} for further details.
   <p>
   <b>The workflow of the new TokenStream API is as follows:</b>
   <ol>
@@ -60,19 +65,8 @@ import org.apache.lucene.util.AttributeSource;
   <p>
   Sometimes it is desirable to capture a current state of a
   TokenStream, e. g. for buffering purposes (see {@link CachingTokenFilter},
-  {@link TeeTokenFilter}/{@link SinkTokenizer}). For this usecase
-  {@link AttributeSource#captureState()} and {@link AttributeSource#restoreState(AttributeSource)} can be used.  
-  <p>
-  <b>NOTE:</b> In order to enable the new API the method
-  {@link #useNewAPI()} has to be called with useNewAPI=true.
-  Otherwise the deprecated method {@link #next(Token)} will 
-  be used by Lucene consumers (indexer and queryparser) to
-  consume the tokens. {@link #next(Token)} will be removed
-  in Lucene 3.0.
-  <p>
-  NOTE: To use the old API subclasses must override {@link #next(Token)}.
-  It's also OK to instead override {@link #next()} but that
-  method is slower compared to {@link #next(Token)}.
+  {@link TeeSinkTokenFilter}). For this usecase
+  {@link AttributeSource#captureState} and {@link AttributeSource#restoreState} can be used.  
  * <p><font color="#FF0000">
  * WARNING: The status of the new TokenStream, AttributeSource and Attributes is experimental. 
  * The APIs introduced in these classes with Lucene 2.9 might change in the future. 
@@ -80,110 +74,203 @@ import org.apache.lucene.util.AttributeSource;
   */
 
 public abstract class TokenStream extends AttributeSource {
-  private static boolean useNewAPIDefault = false;
-  private boolean useNewAPI = useNewAPIDefault;
+
+  /** @deprecated Remove this when old API is removed! */
+  private static final AttributeFactory DEFAULT_TOKEN_WRAPPER_ATTRIBUTE_FACTORY
+    = new TokenWrapperAttributeFactory(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY);
   
-  protected TokenStream() {
-    super();
+  /** @deprecated Remove this when old API is removed! */
+  private static final Class[] METHOD_NO_PARAMS = new Class[0];
+
+  /** @deprecated Remove this when old API is removed! */
+  private static final Class[] METHOD_TOKEN_PARAM = new Class[]{Token.class};
+  
+  /** @deprecated Remove this when old API is removed! */
+  private final TokenWrapper tokenWrapper;
+  
+  /** @deprecated Remove this when old API is removed! */
+  private static boolean onlyUseNewAPI = false;
+
+  /** @deprecated Remove this when old API is removed! */
+  private final boolean
+    hasIncrementToken = isMethodOverridden("incrementToken", METHOD_NO_PARAMS),
+    hasReusableNext = onlyUseNewAPI ? false : isMethodOverridden("next", METHOD_TOKEN_PARAM),
+    hasNext = onlyUseNewAPI ? false : isMethodOverridden("next", METHOD_NO_PARAMS);
+  
+  /** @deprecated Remove this when old API is removed! */
+  private boolean isMethodOverridden(String name, Class[] params) {
+    try {
+      return this.getClass().getMethod(name, params).getDeclaringClass() != TokenStream.class;
+    } catch (NoSuchMethodException e) {
+      // should not happen
+      throw new RuntimeException(e);
+    }
   }
   
+  /** @deprecated Remove this when old API is removed! */
+  private static final class TokenWrapperAttributeFactory extends AttributeFactory {
+    private final AttributeFactory delegate;
+  
+    private TokenWrapperAttributeFactory(AttributeFactory delegate) {
+      this.delegate = delegate;
+    }
+  
+    public AttributeImpl createAttributeInstance(Class attClass) {
+      return attClass.isAssignableFrom(TokenWrapper.class)
+        ? new TokenWrapper()
+        : delegate.createAttributeInstance(attClass);
+    }
+    
+    // this is needed for TeeSinkTokenStream's check for compatibility of AttributeSource,
+    // so two TokenStreams using old API have the same AttributeFactory wrapped by this one.
+    public boolean equals(Object other) {
+      if (this == other) return true;
+      if (other instanceof TokenWrapperAttributeFactory) {
+        final TokenWrapperAttributeFactory af = (TokenWrapperAttributeFactory) other;
+        return this.delegate.equals(af.delegate);
+      }
+      return false;
+    }
+  }
+
+  /**
+   * A TokenStream using the default attribute factory.
+   */
+  protected TokenStream() {
+    super(onlyUseNewAPI
+      ? AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY
+      : TokenStream.DEFAULT_TOKEN_WRAPPER_ATTRIBUTE_FACTORY
+    );
+    tokenWrapper = initTokenWrapper(null);
+    check();
+  }
+  
+  /**
+   * A TokenStream that uses the same attributes as the supplied one.
+   */
   protected TokenStream(AttributeSource input) {
     super(input);
-  }
-
-  /**
-   * Returns whether or not the new TokenStream APIs are used
-   * by default. 
-   * (see {@link #incrementToken()}, {@link AttributeSource}).
-   */
-  public static boolean useNewAPIDefault() {
-    return useNewAPIDefault;
-  }
-
-  /**
-   * Use this API to enable or disable the new TokenStream API.
-   * by default. Can be overridden by calling {@link #setUseNewAPI(boolean)}. 
-   * (see {@link #incrementToken()}, {@link AttributeSource}).
-   * <p>
-   * If set to true, the indexer will call {@link #incrementToken()} 
-   * to consume Tokens from this stream.
-   * <p>
-   * If set to false, the indexer will call {@link #next(Token)}
-   * instead. 
-   */
-  public static void setUseNewAPIDefault(boolean use) {
-    useNewAPIDefault = use;
+    tokenWrapper = initTokenWrapper(input);
+    check();
   }
   
   /**
-   * Returns whether or not the new TokenStream APIs are used 
-   * for this stream.
-   * (see {@link #incrementToken()}, {@link AttributeSource}).
+   * A TokenStream using the supplied AttributeFactory for creating new {@link Attribute} instances.
    */
-  public boolean useNewAPI() {
-    return useNewAPI;
+  protected TokenStream(AttributeFactory factory) {
+    super(onlyUseNewAPI
+      ? factory
+      : new TokenWrapperAttributeFactory(factory)
+    );
+    tokenWrapper = initTokenWrapper(null);
+    check();
   }
 
-  /**
-   * Use this API to enable or disable the new TokenStream API
-   * for this stream. Overrides {@link #setUseNewAPIDefault(boolean)}.
-   * (see {@link #incrementToken()}, {@link AttributeSource}).
-   * <p>
-   * If set to true, the indexer will call {@link #incrementToken()} 
-   * to consume Tokens from this stream.
-   * <p>
-   * If set to false, the indexer will call {@link #next(Token)}
-   * instead. 
-   * <p>
-   * <b>NOTE: All streams and filters in one chain must use the
-   * same API. </b>
-   */
-  public void setUseNewAPI(boolean use) {
-    useNewAPI = use;
-  }
-    	
-	/**
-	 * Consumers (e. g. the indexer) use this method to advance the stream 
-	 * to the next token. Implementing classes must implement this method 
-	 * and update the appropriate {@link Attribute}s with content of the 
-	 * next token.
-	 * <p>
-	 * This method is called for every token of a document, so an efficient
-	 * implementation is crucial for good performance. To avoid calls to 
-	 * {@link #addAttribute(Class)} and {@link #getAttribute(Class)} and
-	 * downcasts, references to all {@link Attribute}s that this stream uses 
-	 * should be retrieved during instantiation.   
-	 * <p>
-	 * To make sure that filters and consumers know which attributes are available
-   * the attributes must be added during instantiation. Filters and 
-   * consumers are not required to check for availability of attributes in {@link #incrementToken()}.
-	 * 
-	 * @return false for end of stream; true otherwise
-	 *
-	 * <p>
-	 * <b>Note that this method will be defined abstract in Lucene 3.0.</b>
-	 */
-	public boolean incrementToken() throws IOException {
-	  // subclasses must implement this method; will be made abstract in Lucene 3.0
-	  return false;
-	}
-	
-  /** Returns the next token in the stream, or null at EOS.
-   *  @deprecated The returned Token is a "full private copy" (not
-   *  re-used across calls to next()) but will be slower
-   *  than calling {@link #next(Token)} instead.. */
-  public Token next() throws IOException {
-    final Token reusableToken = new Token();
-    Token nextToken = next(reusableToken);
-
-    if (nextToken != null) {
-      Payload p = nextToken.getPayload();
-      if (p != null) {
-        nextToken.setPayload((Payload) p.clone());
+  /** @deprecated Remove this when old API is removed! */
+  private TokenWrapper initTokenWrapper(AttributeSource input) {
+    if (onlyUseNewAPI) {
+      // no wrapper needed
+      return null;
+    } else {
+      // if possible get the wrapper from the filter's input stream
+      if (input instanceof TokenStream && ((TokenStream) input).tokenWrapper != null) {
+        return ((TokenStream) input).tokenWrapper;
+      }
+      // check that all attributes are implemented by the same TokenWrapper instance
+      final AttributeImpl att = addAttribute(TermAttribute.class);
+      if (att instanceof TokenWrapper &&
+        addAttribute(TypeAttribute.class) == att &&
+        addAttribute(PositionIncrementAttribute.class) == att &&
+        addAttribute(FlagsAttribute.class) == att &&
+        addAttribute(OffsetAttribute.class) == att &&
+        addAttribute(PayloadAttribute.class) == att
+      ) {
+        return (TokenWrapper) att;
+      } else {
+        throw new UnsupportedOperationException(
+          "If onlyUseNewAPI is disabled, all basic Attributes must be implemented by the internal class "+
+          "TokenWrapper. Please make sure, that all TokenStreams/TokenFilters in this chain have been "+
+          "instantiated with this flag disabled and do not add any custom instances for the basic Attributes!"
+        );
       }
     }
+  }
 
-    return nextToken;
+  /** @deprecated Remove this when old API is removed! */
+  private void check() {
+    if (onlyUseNewAPI && !hasIncrementToken) {
+      throw new UnsupportedOperationException(getClass().getName()+" does not implement incrementToken() which is needed for onlyUseNewAPI.");
+    }
+
+    // a TokenStream subclass must at least implement one of the methods!
+    if (!(hasIncrementToken || hasNext || hasReusableNext)) {
+      throw new UnsupportedOperationException(getClass().getName()+" does not implement any of incrementToken(), next(Token), next().");
+    }
+  }
+  
+  /**
+   * For extra performance you can globally enable the new {@link #incrementToken}
+   * API using {@link Attribute}s. There will be a small, but in most cases neglectible performance 
+   * increase by enabling this, but it only works if <b>all</b> TokenStreams and -Filters
+   * use the new API and implement {@link #incrementToken}. This setting can only be enabled
+   * globally.
+   * <P>This setting only affects TokenStreams instantiated after this call. All TokenStreams
+   * already created use the other setting.
+   * <P>All core analyzers are compatible with this setting, if you have own
+   * TokenStreams/-Filters, that are also compatible, enable this.
+   * <P>When enabled, tokenization may throw {@link UnsupportedOperationException}s,
+   * if the whole tokenizer chain is not compatible.
+   * <P>The default is <code>false</code>, so there is the fallback to the old API available.
+   * @deprecated This setting will be <code>true</code> per default in Lucene 3.0,
+   * when {@link #incrementToken} is abstract and must be always implemented.
+   */
+  public static void setOnlyUseNewAPI(boolean onlyUseNewAPI) {
+    TokenStream.onlyUseNewAPI = onlyUseNewAPI;
+  }
+  
+  /** Returns if only the new API is used.
+   * @see #setOnlyUseNewAPI
+   * @deprecated This setting will be <code>true</code> per default in Lucene 3.0,
+   * when {@link #incrementToken} is abstract and must be always implemented.
+   */
+  public static boolean getOnlyUseNewAPI() {
+    return onlyUseNewAPI;
+  }
+  
+  /**
+   * Consumers (e. g. the indexer) use this method to advance the stream 
+   * to the next token. Implementing classes must implement this method 
+   * and update the appropriate {@link AttributeImpl}s with content of the 
+   * next token.
+   * <p>
+   * This method is called for every token of a document, so an efficient
+   * implementation is crucial for good performance. To avoid calls to 
+   * {@link #addAttribute(Class)} and {@link #getAttribute(Class)} and
+   * downcasts, references to all {@link AttributeImpl}s that this stream uses 
+   * should be retrieved during instantiation.   
+   * <p>
+   * To make sure that filters and consumers know which attributes are available
+   * the attributes must be added during instantiation. Filters and 
+   * consumers are not required to check for availability of attributes in {@link #incrementToken()}.
+   * 
+   * @return false for end of stream; true otherwise
+   *
+   * <p>
+   * <b>Note that this method will be defined abstract in Lucene 3.0.</b>
+   */
+  public boolean incrementToken() throws IOException {
+    assert !onlyUseNewAPI && tokenWrapper != null;
+    
+    final Token token;
+    if (hasReusableNext) {
+      token = next(tokenWrapper.delegate);
+    } else {
+      assert hasNext;
+      token = next();
+    }
+    if (token == null) return false;
+    tokenWrapper.delegate = token;
+    return true;
   }
 
   /** Returns the next token in the stream, or null at EOS.
@@ -215,12 +302,46 @@ public abstract class TokenStream extends AttributeSource {
    *  good idea to assert that it is not null.)
    *  @return next token in the stream or null if end-of-stream was hit
    *  @deprecated The new {@link #incrementToken()} and {@link AttributeSource}
-   *  APIs should be used instead. See also {@link #useNewAPI()}.
+   *  APIs should be used instead.
    */
   public Token next(final Token reusableToken) throws IOException {
-    // We don't actually use inputToken, but still add this assert
     assert reusableToken != null;
-    return next();
+    
+    if (onlyUseNewAPI)
+      throw new UnsupportedOperationException("This TokenStream only supports the new Attributes API.");
+    
+    if (hasIncrementToken) {
+      tokenWrapper.delegate = reusableToken;
+      return incrementToken() ? tokenWrapper.delegate : null;
+    } else {
+      assert hasNext;
+      final Token token = next();
+      if (token == null) return null;
+      tokenWrapper.delegate = token;
+      return token;
+    }
+  }
+
+  /** Returns the next token in the stream, or null at EOS.
+   * @deprecated The returned Token is a "full private copy" (not
+   * re-used across calls to next()) but will be slower
+   * than calling {@link #next(Token)} or using the new
+   * {@link #incrementToken()} method with the new
+   * {@link AttributeSource} API.
+   */
+  public Token next() throws IOException {
+    if (onlyUseNewAPI)
+      throw new UnsupportedOperationException("This TokenStream only supports the new Attributes API.");
+    
+    if (hasIncrementToken) {
+      return incrementToken() ? ((Token) tokenWrapper.delegate.clone()) : null;
+    } else {
+      assert hasReusableNext;
+      final Token token = next(tokenWrapper.delegate);
+      if (token == null) return null;
+      tokenWrapper.delegate = token;
+      return (Token) token.clone();
+    }
   }
 
   /** Resets this stream to the beginning. This is an
@@ -240,24 +361,4 @@ public abstract class TokenStream extends AttributeSource {
   /** Releases resources associated with this stream. */
   public void close() throws IOException {}
   
-  public String toString() {
-    StringBuffer sb = new StringBuffer();
-    sb.append('(');
-    
-    if (hasAttributes()) {
-      // TODO Java 1.5
-      //Iterator<Attribute> it = attributes.values().iterator();
-      Iterator it = getAttributesIterator();
-      if (it.hasNext()) {
-        sb.append(it.next().toString());
-      }
-      while (it.hasNext()) {
-        sb.append(',');
-        sb.append(it.next().toString());
-      }
-    }
-    sb.append(')');
-    return sb.toString();
-  }
-
 }

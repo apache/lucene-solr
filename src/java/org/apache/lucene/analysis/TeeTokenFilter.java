@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 
 /**
@@ -30,8 +29,8 @@ import java.util.Iterator;
  * part of the analysis workflow and saving off those tokens for use in another field.
  *
  * <pre>
-SinkTokenizer sink1 = new SinkTokenizer(null);
-SinkTokenizer sink2 = new SinkTokenizer(null);
+SinkTokenizer sink1 = new SinkTokenizer();
+SinkTokenizer sink2 = new SinkTokenizer();
 
 TokenStream source1 = new TeeTokenFilter(new TeeTokenFilter(new WhitespaceTokenizer(reader1), sink1), sink2);
 TokenStream source2 = new TeeTokenFilter(new TeeTokenFilter(new WhitespaceTokenizer(reader2), sink1), sink2);
@@ -46,14 +45,22 @@ d.add(new Field("f2", final2));
 d.add(new Field("f3", final3));
 d.add(new Field("f4", final4));
  * </pre>
- * In this example, sink1 and sink2 will both get tokens from both reader1 and reader2 after whitespace tokenizer
-   and now we can further wrap any of these in extra analysis, and more "sources" can be inserted if desired.
- Note, the EntityDetect and URLDetect TokenStreams are for the example and do not currently exist in Lucene
+ * In this example, <code>sink1</code> and <code>sink2<code> will both get tokens from both
+ * <code>reader1</code> and <code>reader2</code> after whitespace tokenizer
+ * and now we can further wrap any of these in extra analysis, and more "sources" can be inserted if desired.
+ * It is important, that tees are consumed before sinks (in the above example, the field names must be
+ * less the sink's field names).
+ * Note, the EntityDetect and URLDetect TokenStreams are for the example and do not currently exist in Lucene
  <p/>
  *
- * See http://issues.apache.org/jira/browse/LUCENE-1058
+ * See <a href="http://issues.apache.org/jira/browse/LUCENE-1058">LUCENE-1058</a>.
+ * <p/>
+ * WARNING: {@link TeeTokenFilter} and {@link SinkTokenizer} only work with the old TokenStream API.
+ * If you switch to the new API, you need to use {@link TeeSinkTokenFilter} instead, which offers 
+ * the same functionality.
+
  * @see SinkTokenizer
- *
+ * @deprecated Use {@link TeeSinkTokenFilter} instead
  **/
 public class TeeTokenFilter extends TokenFilter {
   SinkTokenizer sink;
@@ -61,21 +68,8 @@ public class TeeTokenFilter extends TokenFilter {
   public TeeTokenFilter(TokenStream input, SinkTokenizer sink) {
     super(input);
     this.sink = sink;
-    Iterator it = getAttributesIterator();
-    while (it.hasNext()) {
-      sink.addAttribute(it.next().getClass());
-    }
   }
   
-  public boolean incrementToken() throws IOException {
-    if (input.incrementToken()) {
-      sink.add(captureState());
-      return true;
-    }
-    return false;
-  }
-
-  /** @deprecated */
   public Token next(final Token reusableToken) throws IOException {
     assert reusableToken != null;
     Token nextToken = input.next(reusableToken);

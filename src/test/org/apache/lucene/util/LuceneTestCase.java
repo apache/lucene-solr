@@ -44,7 +44,6 @@ public abstract class LuceneTestCase extends TestCase {
 
   protected void setUp() throws Exception {
     ConcurrentMergeScheduler.setTestMode();
-    TokenStream.setUseNewAPIDefault(true);
   }
 
   protected void tearDown() throws Exception {

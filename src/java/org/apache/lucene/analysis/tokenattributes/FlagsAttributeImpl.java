@@ -17,7 +17,9 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.Attribute;
+import java.io.Serializable;
+
+import org.apache.lucene.util.AttributeImpl;
 
 /**
  * This attribute can be used to pass different flags down the tokenizer chain,
@@ -29,7 +31,9 @@ import org.apache.lucene.util.Attribute;
  * We will make our best efforts to keep the APIs backwards-compatible.</font>
 
  */
-public interface FlagsAttribute extends Attribute {
+public class FlagsAttributeImpl extends AttributeImpl implements FlagsAttribute, Cloneable, Serializable {
+  private int flags = 0;
+  
   /**
    * EXPERIMENTAL:  While we think this is here to stay, we may want to change it to be a long.
    * <p/>
@@ -40,10 +44,39 @@ public interface FlagsAttribute extends Attribute {
    *
    * @return The bits
    */
-  public int getFlags();
+  public int getFlags() {
+    return flags;
+  }
 
   /**
    * @see #getFlags()
    */
-  public void setFlags(int flags);  
+  public void setFlags(int flags) {
+    this.flags = flags;
+  }
+  
+  public void clear() {
+    flags = 0;
+  }
+
+  public boolean equals(Object other) {
+    if (this == other) {
+      return true;
+    }
+    
+    if (other instanceof FlagsAttributeImpl) {
+      return ((FlagsAttributeImpl) other).flags == flags;
+    }
+    
+    return false;
+  }
+
+  public int hashCode() {
+    return flags;
+  }
+  
+  public void copyTo(AttributeImpl target) {
+    FlagsAttribute t = (FlagsAttribute) target;
+    t.setFlags(flags);
+  }
 }

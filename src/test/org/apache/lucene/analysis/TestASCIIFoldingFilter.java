@@ -17,6 +17,7 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.StringReader;
@@ -34,84 +35,84 @@ public class TestASCIIFoldingFilter extends LuceneTestCase {
       +" ð ñ ò ó ô õ ö ø œ ß þ ù ú û ü ý ÿ ﬁ ﬂ"));
     ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream);
 
-    final Token reusableToken = new Token();
+    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
 
-    assertEquals("Des", filter.next(reusableToken).term());
-    assertEquals("mot", filter.next(reusableToken).term());
-    assertEquals("cles", filter.next(reusableToken).term());
-    assertEquals("A", filter.next(reusableToken).term());
-    assertEquals("LA", filter.next(reusableToken).term());
-    assertEquals("CHAINE", filter.next(reusableToken).term());
-    assertEquals("A", filter.next(reusableToken).term());
-    assertEquals("A", filter.next(reusableToken).term());
-    assertEquals("A", filter.next(reusableToken).term());
-    assertEquals("A", filter.next(reusableToken).term());
-    assertEquals("A", filter.next(reusableToken).term());
-    assertEquals("A", filter.next(reusableToken).term());
-    assertEquals("AE", filter.next(reusableToken).term());
-    assertEquals("C", filter.next(reusableToken).term());
-    assertEquals("E", filter.next(reusableToken).term());
-    assertEquals("E", filter.next(reusableToken).term());
-    assertEquals("E", filter.next(reusableToken).term());
-    assertEquals("E", filter.next(reusableToken).term());
-    assertEquals("I", filter.next(reusableToken).term());
-    assertEquals("I", filter.next(reusableToken).term());
-    assertEquals("I", filter.next(reusableToken).term());
-    assertEquals("I", filter.next(reusableToken).term());
-    assertEquals("IJ", filter.next(reusableToken).term());
-    assertEquals("D", filter.next(reusableToken).term());
-    assertEquals("N", filter.next(reusableToken).term());
-    assertEquals("O", filter.next(reusableToken).term());
-    assertEquals("O", filter.next(reusableToken).term());
-    assertEquals("O", filter.next(reusableToken).term());
-    assertEquals("O", filter.next(reusableToken).term());
-    assertEquals("O", filter.next(reusableToken).term());
-    assertEquals("O", filter.next(reusableToken).term());
-    assertEquals("OE", filter.next(reusableToken).term());
-    assertEquals("TH", filter.next(reusableToken).term());
-    assertEquals("U", filter.next(reusableToken).term());
-    assertEquals("U", filter.next(reusableToken).term());
-    assertEquals("U", filter.next(reusableToken).term());
-    assertEquals("U", filter.next(reusableToken).term());
-    assertEquals("Y", filter.next(reusableToken).term());
-    assertEquals("Y", filter.next(reusableToken).term());
-    assertEquals("a", filter.next(reusableToken).term());
-    assertEquals("a", filter.next(reusableToken).term());
-    assertEquals("a", filter.next(reusableToken).term());
-    assertEquals("a", filter.next(reusableToken).term());
-    assertEquals("a", filter.next(reusableToken).term());
-    assertEquals("a", filter.next(reusableToken).term());
-    assertEquals("ae", filter.next(reusableToken).term());
-    assertEquals("c", filter.next(reusableToken).term());
-    assertEquals("e", filter.next(reusableToken).term());
-    assertEquals("e", filter.next(reusableToken).term());
-    assertEquals("e", filter.next(reusableToken).term());
-    assertEquals("e", filter.next(reusableToken).term());
-    assertEquals("i", filter.next(reusableToken).term());
-    assertEquals("i", filter.next(reusableToken).term());
-    assertEquals("i", filter.next(reusableToken).term());
-    assertEquals("i", filter.next(reusableToken).term());
-    assertEquals("ij", filter.next(reusableToken).term());
-    assertEquals("d", filter.next(reusableToken).term());
-    assertEquals("n", filter.next(reusableToken).term());
-    assertEquals("o", filter.next(reusableToken).term());
-    assertEquals("o", filter.next(reusableToken).term());
-    assertEquals("o", filter.next(reusableToken).term());
-    assertEquals("o", filter.next(reusableToken).term());
-    assertEquals("o", filter.next(reusableToken).term());
-    assertEquals("o", filter.next(reusableToken).term());
-    assertEquals("oe", filter.next(reusableToken).term());
-    assertEquals("ss", filter.next(reusableToken).term());
-    assertEquals("th", filter.next(reusableToken).term());
-    assertEquals("u", filter.next(reusableToken).term());
-    assertEquals("u", filter.next(reusableToken).term());
-    assertEquals("u", filter.next(reusableToken).term());
-    assertEquals("u", filter.next(reusableToken).term());
-    assertEquals("y", filter.next(reusableToken).term());
-    assertEquals("y", filter.next(reusableToken).term());
-    assertEquals("fi", filter.next(reusableToken).term());
-    assertEquals("fl", filter.next(reusableToken).term());
-    assertNull(filter.next(reusableToken));
+    assertTermEquals("Des", filter, termAtt);
+    assertTermEquals("mot", filter, termAtt);
+    assertTermEquals("cles", filter, termAtt);
+    assertTermEquals("A", filter, termAtt);
+    assertTermEquals("LA", filter, termAtt);
+    assertTermEquals("CHAINE", filter, termAtt);
+    assertTermEquals("A", filter, termAtt);
+    assertTermEquals("A", filter, termAtt);
+    assertTermEquals("A", filter, termAtt);
+    assertTermEquals("A", filter, termAtt);
+    assertTermEquals("A", filter, termAtt);
+    assertTermEquals("A", filter, termAtt);
+    assertTermEquals("AE", filter, termAtt);
+    assertTermEquals("C", filter, termAtt);
+    assertTermEquals("E", filter, termAtt);
+    assertTermEquals("E", filter, termAtt);
+    assertTermEquals("E", filter, termAtt);
+    assertTermEquals("E", filter, termAtt);
+    assertTermEquals("I", filter, termAtt);
+    assertTermEquals("I", filter, termAtt);
+    assertTermEquals("I", filter, termAtt);
+    assertTermEquals("I", filter, termAtt);
+    assertTermEquals("IJ", filter, termAtt);
+    assertTermEquals("D", filter, termAtt);
+    assertTermEquals("N", filter, termAtt);
+    assertTermEquals("O", filter, termAtt);
+    assertTermEquals("O", filter, termAtt);
+    assertTermEquals("O", filter, termAtt);
+    assertTermEquals("O", filter, termAtt);
+    assertTermEquals("O", filter, termAtt);
+    assertTermEquals("O", filter, termAtt);
+    assertTermEquals("OE", filter, termAtt);
+    assertTermEquals("TH", filter, termAtt);
+    assertTermEquals("U", filter, termAtt);
+    assertTermEquals("U", filter, termAtt);
+    assertTermEquals("U", filter, termAtt);
+    assertTermEquals("U", filter, termAtt);
+    assertTermEquals("Y", filter, termAtt);
+    assertTermEquals("Y", filter, termAtt);
+    assertTermEquals("a", filter, termAtt);
+    assertTermEquals("a", filter, termAtt);
+    assertTermEquals("a", filter, termAtt);
+    assertTermEquals("a", filter, termAtt);
+    assertTermEquals("a", filter, termAtt);
+    assertTermEquals("a", filter, termAtt);
+    assertTermEquals("ae", filter, termAtt);
+    assertTermEquals("c", filter, termAtt);
+    assertTermEquals("e", filter, termAtt);
+    assertTermEquals("e", filter, termAtt);
+    assertTermEquals("e", filter, termAtt);
+    assertTermEquals("e", filter, termAtt);
+    assertTermEquals("i", filter, termAtt);
+    assertTermEquals("i", filter, termAtt);
+    assertTermEquals("i", filter, termAtt);
+    assertTermEquals("i", filter, termAtt);
+    assertTermEquals("ij", filter, termAtt);
+    assertTermEquals("d", filter, termAtt);
+    assertTermEquals("n", filter, termAtt);
+    assertTermEquals("o", filter, termAtt);
+    assertTermEquals("o", filter, termAtt);
+    assertTermEquals("o", filter, termAtt);
+    assertTermEquals("o", filter, termAtt);
+    assertTermEquals("o", filter, termAtt);
+    assertTermEquals("o", filter, termAtt);
+    assertTermEquals("oe", filter, termAtt);
+    assertTermEquals("ss", filter, termAtt);
+    assertTermEquals("th", filter, termAtt);
+    assertTermEquals("u", filter, termAtt);
+    assertTermEquals("u", filter, termAtt);
+    assertTermEquals("u", filter, termAtt);
+    assertTermEquals("u", filter, termAtt);
+    assertTermEquals("y", filter, termAtt);
+    assertTermEquals("y", filter, termAtt);
+    assertTermEquals("fi", filter, termAtt);
+    assertTermEquals("fl", filter, termAtt);
+    assertFalse(filter.incrementToken());
   }
 
 
@@ -1891,11 +1892,16 @@ public class TestASCIIFoldingFilter extends LuceneTestCase {
 
     TokenStream stream = new WhitespaceTokenizer(new StringReader(inputText.toString()));
     ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream);
-    final Token reusableToken = new Token();
+    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
     Iterator expectedIter = expectedOutputTokens.iterator();
-    while (expectedIter.hasNext()) {
-      assertEquals(expectedIter.next(), filter.next(reusableToken).term());
+    while (expectedIter.hasNext()) {;
+      assertTermEquals((String)expectedIter.next(), filter, termAtt);
     }
-    assertNull(filter.next(reusableToken));
+    assertFalse(filter.incrementToken());
+  }
+  
+  void assertTermEquals(String expected, TokenStream stream, TermAttribute termAtt) throws Exception {
+    assertTrue(stream.incrementToken());
+    assertEquals(expected, termAtt.term());
   }
 }

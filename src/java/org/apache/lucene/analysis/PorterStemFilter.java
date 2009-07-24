@@ -57,16 +57,4 @@ public final class PorterStemFilter extends TokenFilter {
       termAtt.setTermBuffer(stemmer.getResultBuffer(), 0, stemmer.getResultLength());
     return true;
   }
-  
-  /** @deprecated */
-  public final Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    Token nextToken = input.next(reusableToken);
-    if (nextToken == null)
-      return null;
-
-    if (stemmer.stem(nextToken.termBuffer(), 0, nextToken.termLength()))
-      nextToken.setTermBuffer(stemmer.getResultBuffer(), 0, stemmer.getResultLength());
-    return nextToken;
-  }
 }

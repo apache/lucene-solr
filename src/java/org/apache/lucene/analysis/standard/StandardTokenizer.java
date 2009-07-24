@@ -147,7 +147,7 @@ public class StandardTokenizer extends Tokenizer {
    *
    * @see org.apache.lucene.analysis.TokenStream#next()
    */
-  public boolean incrementToken() throws IOException {
+  public final boolean incrementToken() throws IOException {
     int posIncr = 1;
 
     while(true) {
@@ -183,66 +183,33 @@ public class StandardTokenizer extends Tokenizer {
         posIncr++;
     }
   }
-  
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws IOException {
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws IOException {
+    return super.next();
+  }
+
   /*
    * (non-Javadoc)
    *
-   * @see org.apache.lucene.analysis.TokenStream#next()
+   * @see org.apache.lucene.analysis.TokenStream#reset()
    */
-  /** @deprecated */
-  public Token next(final Token reusableToken) throws IOException {
-      assert reusableToken != null;
-      int posIncr = 1;
+  public void reset() throws IOException {
+    super.reset();
+    scanner.yyreset(input);
+  }
 
-      while(true) {
-        int tokenType = scanner.getNextToken();
-
-        if (tokenType == StandardTokenizerImpl.YYEOF) {
-          return null;
-        }
-
-        if (scanner.yylength() <= maxTokenLength) {
-          reusableToken.clear();
-          reusableToken.setPositionIncrement(posIncr);
-          scanner.getText(reusableToken);
-          final int start = scanner.yychar();
-          reusableToken.setStartOffset(input.correctOffset(start));
-          reusableToken.setEndOffset(input.correctOffset(start+reusableToken.termLength()));
-          // This 'if' should be removed in the next release. For now, it converts
-          // invalid acronyms to HOST. When removed, only the 'else' part should
-          // remain.
-          if (tokenType == StandardTokenizerImpl.ACRONYM_DEP) {
-            if (replaceInvalidAcronym) {
-              reusableToken.setType(StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.HOST]);
-              reusableToken.setTermLength(reusableToken.termLength() - 1); // remove extra '.'
-            } else {
-              reusableToken.setType(StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.ACRONYM]);
-            }
-          } else {
-            reusableToken.setType(StandardTokenizerImpl.TOKEN_TYPES[tokenType]);
-          }
-          return reusableToken;
-        } else
-          // When we skip a too-long term, we still increment the
-          // position increment
-          posIncr++;
-      }
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.apache.lucene.analysis.TokenStream#reset()
-     */
-    public void reset() throws IOException {
-      super.reset();
-      scanner.yyreset(input);
-    }
-
-    public void reset(Reader reader) throws IOException {
-      setInput(reader);
-      reset();
-    }
+  public void reset(Reader reader) throws IOException {
+    setInput(reader);
+    reset();
+  }
 
   /**
    * Prior to https://issues.apache.org/jira/browse/LUCENE-1068, StandardTokenizer mischaracterized as acronyms tokens like www.abc.com

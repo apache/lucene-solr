@@ -531,66 +531,41 @@ public class QueryParser implements QueryParserConstants {
     PositionIncrementAttribute posIncrAtt = null;
     int numTokens = 0;
 
-    org.apache.lucene.analysis.Token reusableToken = null;
-    org.apache.lucene.analysis.Token nextToken = null;
-
-
-    boolean useNewAPI = TokenStream.useNewAPIDefault();
-
-    if (useNewAPI) {
-      boolean success = false;
-      try {
-        buffer.reset();
-        success = true;
-      } catch (IOException e) {
-        // success==false if we hit an exception
+    boolean success = false;
+    try {
+      buffer.reset();
+      success = true;
+    } catch (IOException e) {
+      // success==false if we hit an exception
+    }
+    if (success) {
+      if (buffer.hasAttribute(TermAttribute.class)) {
+        termAtt = (TermAttribute) buffer.getAttribute(TermAttribute.class);
       }
-      if (success) {
-        if (buffer.hasAttribute(TermAttribute.class)) {
-          termAtt = (TermAttribute) buffer.getAttribute(TermAttribute.class);
-        }
-        if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
-          posIncrAtt = (PositionIncrementAttribute) buffer.getAttribute(PositionIncrementAttribute.class);
-        }
+      if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
+        posIncrAtt = (PositionIncrementAttribute) buffer.getAttribute(PositionIncrementAttribute.class);
       }
-    } else {
-      reusableToken = new org.apache.lucene.analysis.Token();
     }
 
     int positionCount = 0;
     boolean severalTokensAtSamePosition = false;
 
-    if (useNewAPI) {
-      if (termAtt != null) {
-        try {
-          while (buffer.incrementToken()) {
-            numTokens++;
-            int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
-            if (positionIncrement != 0) {
-              positionCount += positionIncrement;
-            } else {
-              severalTokensAtSamePosition = true;
-            }
+    boolean hasMoreTokens = false;
+    if (termAtt != null) {
+      try {
+        hasMoreTokens = buffer.incrementToken();
+        while (hasMoreTokens) {
+          numTokens++;
+          int positionIncrement = (posIncrAtt != null) ? posIncrAtt.getPositionIncrement() : 1;
+          if (positionIncrement != 0) {
+            positionCount += positionIncrement;
+          } else {
+            severalTokensAtSamePosition = true;
           }
-        } catch (IOException e) {
-          // ignore
+          hasMoreTokens = buffer.incrementToken();
         }
-      }
-    } else {
-      while (true) {
-        try {
-          nextToken = buffer.next(reusableToken);
-        }
-        catch (IOException e) {
-          nextToken = null;
-        }
-        if (nextToken == null)
-          break;
-        numTokens++;
-        if (nextToken.getPositionIncrement() != 0)
-          positionCount += nextToken.getPositionIncrement();
-        else
-          severalTokensAtSamePosition = true;
+      } catch (IOException e) {
+        // ignore
       }
     }
     try {
@@ -609,16 +584,9 @@ public class QueryParser implements QueryParserConstants {
     else if (numTokens == 1) {
       String term = null;
       try {
-
-        if (useNewAPI) {
-          boolean hasNext = buffer.incrementToken();
-          assert hasNext == true;
-          term = termAtt.term();
-        } else {
-          nextToken = buffer.next(reusableToken);
-          assert nextToken != null;
-          term = nextToken.term();
-        }
+        boolean hasNext = buffer.incrementToken();
+        assert hasNext == true;
+        term = termAtt.term();
       } catch (IOException e) {
         // safe to ignore, because we know the number of tokens
       }
@@ -631,15 +599,9 @@ public class QueryParser implements QueryParserConstants {
           for (int i = 0; i < numTokens; i++) {
             String term = null;
             try {
-              if (useNewAPI) {
-                boolean hasNext = buffer.incrementToken();
-                assert hasNext == true;
-                term = termAtt.term();
-              } else {
-                nextToken = buffer.next(reusableToken);
-                assert nextToken != null;
-                term = nextToken.term();
-              }
+              boolean hasNext = buffer.incrementToken();
+              assert hasNext == true;
+              term = termAtt.term();
             } catch (IOException e) {
               // safe to ignore, because we know the number of tokens
             }
@@ -660,18 +622,11 @@ public class QueryParser implements QueryParserConstants {
             String term = null;
             int positionIncrement = 1;
             try {
-              if (useNewAPI) {
-                boolean hasNext = buffer.incrementToken();
-                assert hasNext == true;
-                term = termAtt.term();
-                if (posIncrAtt != null) {
-                  positionIncrement = posIncrAtt.getPositionIncrement();
-                }
-              } else {
-                nextToken = buffer.next(reusableToken);
-                assert nextToken != null;
-                term = nextToken.term();
-                positionIncrement = nextToken.getPositionIncrement();
+              boolean hasNext = buffer.incrementToken();
+              assert hasNext == true;
+              term = termAtt.term();
+              if (posIncrAtt != null) {
+                positionIncrement = posIncrAtt.getPositionIncrement();
               }
             } catch (IOException e) {
               // safe to ignore, because we know the number of tokens
@@ -707,19 +662,11 @@ public class QueryParser implements QueryParserConstants {
           int positionIncrement = 1;
 
           try {
-            if (useNewAPI) {
-
-              boolean hasNext = buffer.incrementToken();
-              assert hasNext == true;
-              term = termAtt.term();
-              if (posIncrAtt != null) {
-                positionIncrement = posIncrAtt.getPositionIncrement();
-              }
-            } else {
-              nextToken = buffer.next(reusableToken);
-              assert nextToken != null;
-              term = nextToken.term();
-              positionIncrement = nextToken.getPositionIncrement();
+            boolean hasNext = buffer.incrementToken();
+            assert hasNext == true;
+            term = termAtt.term();
+            if (posIncrAtt != null) {
+              positionIncrement = posIncrAtt.getPositionIncrement();
             }
           } catch (IOException e) {
             // safe to ignore, because we know the number of tokens
@@ -1625,12 +1572,6 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
-  private boolean jj_3R_3() {
-    if (jj_scan_token(STAR)) return true;
-    if (jj_scan_token(COLON)) return true;
-    return false;
-  }
-
   private boolean jj_3R_2() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -1644,6 +1585,12 @@ public class QueryParser implements QueryParserConstants {
     jj_scanpos = xsp;
     if (jj_3R_3()) return true;
     }
+    return false;
+  }
+
+  private boolean jj_3R_3() {
+    if (jj_scan_token(STAR)) return true;
+    if (jj_scan_token(COLON)) return true;
     return false;
   }
 

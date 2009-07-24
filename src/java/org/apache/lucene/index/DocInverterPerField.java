@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.io.Reader;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -83,7 +82,6 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           final int valueLength = stringValue.length();
           perThread.singleTokenTokenStream.reinit(stringValue, 0, valueLength);
           fieldState.attributeSource = perThread.singleTokenTokenStream;
-          perThread.localTokenStream.reset();
           consumer.start(field);
 
           boolean success = false;
@@ -132,20 +130,14 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           try {
             int offsetEnd = fieldState.offset-1;
             
-            boolean useNewTokenStreamAPI = stream.useNewAPI();
-            Token localToken = null;
-            
-            if (useNewTokenStreamAPI) {
-              fieldState.attributeSource = stream;
-            } else {              
-              fieldState.attributeSource = perThread.localTokenStream;
-              localToken = perThread.localToken;
-            }         
-            
-            consumer.start(field);
+            boolean hasMoreTokens = stream.incrementToken();
+
+            fieldState.attributeSource = stream;
 
             OffsetAttribute offsetAttribute = (OffsetAttribute) fieldState.attributeSource.addAttribute(OffsetAttribute.class);
             PositionIncrementAttribute posIncrAttribute = (PositionIncrementAttribute) fieldState.attributeSource.addAttribute(PositionIncrementAttribute.class);
+            
+            consumer.start(field);
             
             for(;;) {
 
@@ -155,14 +147,8 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
               // non-aborting and (above) this one document
               // will be marked as deleted, but still
               // consume a docID
-              Token token = null;
-              if (useNewTokenStreamAPI) {
-                if (!stream.incrementToken()) break;
-              } else {
-                token = stream.next(localToken);
-                if (token == null) break;
-                perThread.localTokenStream.set(token);
-              }
+              
+              if (!hasMoreTokens) break;
               
               final int posIncr = posIncrAttribute.getPositionIncrement();
               fieldState.position += posIncr;
@@ -194,6 +180,8 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
                   docState.infoStream.println("maxFieldLength " +maxFieldLength+ " reached for field " + fieldInfo.name + ", ignoring following tokens");
                 break;
               }
+
+              hasMoreTokens = stream.incrementToken();
             }
             fieldState.offset = offsetEnd+1;
           } finally {

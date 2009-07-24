@@ -45,7 +45,7 @@ public class KeywordTokenizer extends Tokenizer {
     offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
   }
   
-  public boolean incrementToken() throws IOException {
+  public final boolean incrementToken() throws IOException {
     if (!done) {
       done = true;
       int upto = 0;
@@ -65,28 +65,16 @@ public class KeywordTokenizer extends Tokenizer {
     return false;
   }
 
-  /** @deprecated */
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    if (!done) {
-      done = true;
-      int upto = 0;
-      reusableToken.clear();
-      char[] buffer = reusableToken.termBuffer();
-      while (true) {
-        final int length = input.read(buffer, upto, buffer.length-upto);
-        if (length == -1) break;
-        upto += length;
-        if (upto == buffer.length)
-          buffer = reusableToken.resizeTermBuffer(1+buffer.length);
-      }
-      reusableToken.setTermLength(upto);
-      reusableToken.setStartOffset(input.correctOffset(0));
-      reusableToken.setEndOffset(input.correctOffset(upto));
-      
-      return reusableToken;
-    }
-    return null;
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws IOException {
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws IOException {
+    return super.next();
   }
 
   public void reset(Reader input) throws IOException {

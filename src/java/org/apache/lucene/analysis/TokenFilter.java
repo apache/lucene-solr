@@ -42,7 +42,7 @@ public abstract class TokenFilter extends TokenStream {
     super(input);
     this.input = input;
   }
-    
+  
   /** Close the input TokenStream. */
   public void close() throws IOException {
     input.close();
@@ -50,20 +50,6 @@ public abstract class TokenFilter extends TokenStream {
 
   /** Reset the filter as well as the input TokenStream. */
   public void reset() throws IOException {
-    super.reset();
     input.reset();
   }
-  
-  public boolean useNewAPI() {
-    return input.useNewAPI();
-  }
-
-  /**
-   * Sets whether or not to use the new TokenStream API. Settings this
-   * will apply to this Filter and all TokenStream/Filters upstream.
-   */
-  public void setUseNewAPI(boolean use) {
-    input.setUseNewAPI(use);
-  }
-
 }

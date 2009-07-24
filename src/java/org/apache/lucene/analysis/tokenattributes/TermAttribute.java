@@ -17,9 +17,6 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
-import java.io.Serializable;
-
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Attribute;
 
 /**
@@ -30,12 +27,7 @@ import org.apache.lucene.util.Attribute;
  * The APIs introduced in these classes with Lucene 2.9 might change in the future. 
  * We will make our best efforts to keep the APIs backwards-compatible.</font>
  */
-public class TermAttribute extends Attribute implements Cloneable, Serializable {
-  private static int MIN_BUFFER_SIZE = 10;
-  
-  private char[] termBuffer;
-  private int termLength;
-  
+public interface TermAttribute extends Attribute {
   /** Returns the Token's term text.
    * 
    * This method has a performance penalty
@@ -45,38 +37,20 @@ public class TermAttribute extends Attribute implements Cloneable, Serializable 
    * String, use this method, which is nothing more than
    * a convenience call to <b>new String(token.termBuffer(), 0, token.termLength())</b>
    */
-  public String term() {
-    initTermBuffer();
-    return new String(termBuffer, 0, termLength);
-  }
-
+  public String term();
+  
   /** Copies the contents of buffer, starting at offset for
    *  length characters, into the termBuffer array.
    *  @param buffer the buffer to copy
    *  @param offset the index in the buffer of the first character to copy
    *  @param length the number of characters to copy
    */
-  public void setTermBuffer(char[] buffer, int offset, int length) {
-    char[] newCharBuffer = growTermBuffer(length);
-    if (newCharBuffer != null) {
-      termBuffer = newCharBuffer;
-    }
-    System.arraycopy(buffer, offset, termBuffer, 0, length);
-    termLength = length;
-  }
+  public void setTermBuffer(char[] buffer, int offset, int length);
 
   /** Copies the contents of buffer into the termBuffer array.
    *  @param buffer the buffer to copy
    */
-  public void setTermBuffer(String buffer) {
-    int length = buffer.length();
-    char[] newCharBuffer = growTermBuffer(length);
-    if (newCharBuffer != null) {
-      termBuffer = newCharBuffer;
-    }
-    buffer.getChars(0, length, termBuffer, 0);
-    termLength = length;
-  }
+  public void setTermBuffer(String buffer);
 
   /** Copies the contents of buffer, starting at offset and continuing
    *  for length characters, into the termBuffer array.
@@ -84,17 +58,8 @@ public class TermAttribute extends Attribute implements Cloneable, Serializable 
    *  @param offset the index in the buffer of the first character to copy
    *  @param length the number of characters to copy
    */
-  public void setTermBuffer(String buffer, int offset, int length) {
-    assert offset <= buffer.length();
-    assert offset + length <= buffer.length();
-    char[] newCharBuffer = growTermBuffer(length);
-    if (newCharBuffer != null) {
-      termBuffer = newCharBuffer;
-    }
-    buffer.getChars(offset, offset + length, termBuffer, 0);
-    termLength = length;
-  }
-
+  public void setTermBuffer(String buffer, int offset, int length);
+  
   /** Returns the internal termBuffer character array which
    *  you can then directly alter.  If the array is too
    *  small for your token, use {@link
@@ -102,10 +67,7 @@ public class TermAttribute extends Attribute implements Cloneable, Serializable 
    *  altering the buffer be sure to call {@link
    *  #setTermLength} to record the number of valid
    *  characters that were placed into the termBuffer. */
-  public char[] termBuffer() {
-    initTermBuffer();
-    return termBuffer;
-  }
+  public char[] termBuffer();
 
   /** Grows the termBuffer to at least size newSize, preserving the
    *  existing content. Note: If the next operation is to change
@@ -117,63 +79,12 @@ public class TermAttribute extends Attribute implements Cloneable, Serializable 
    *  @param newSize minimum size of the new termBuffer
    *  @return newly created termBuffer with length >= newSize
    */
-  public char[] resizeTermBuffer(int newSize) {
-    char[] newCharBuffer = growTermBuffer(newSize);
-    if (termBuffer == null) {
-      // If there were termText, then preserve it.
-      // note that if termBuffer is null then newCharBuffer cannot be null
-      assert newCharBuffer != null;
-      termBuffer = newCharBuffer;
-    } else if (newCharBuffer != null) {
-      // Note: if newCharBuffer != null then termBuffer needs to grow.
-      // If there were a termBuffer, then preserve it
-      System.arraycopy(termBuffer, 0, newCharBuffer, 0, termBuffer.length);
-      termBuffer = newCharBuffer;      
-    }
-    return termBuffer;
-  }
-
-  /** Allocates a buffer char[] of at least newSize
-   *  @param newSize minimum size of the buffer
-   *  @return newly created buffer with length >= newSize or null if the current termBuffer is big enough
-   */
-  private char[] growTermBuffer(int newSize) {
-    if (termBuffer != null) {
-      if (termBuffer.length >= newSize)
-        // Already big enough
-        return null;
-      else
-        // Not big enough; create a new array with slight
-        // over allocation:
-        return new char[ArrayUtil.getNextSize(newSize)];
-    } else {
-
-      // determine the best size
-      // The buffer is always at least MIN_BUFFER_SIZE
-      if (newSize < MIN_BUFFER_SIZE) {
-        newSize = MIN_BUFFER_SIZE;
-      }
-
-      return new char[newSize];
-    }
-  }
-
-  // TODO: once we remove the deprecated termText() method
-  // and switch entirely to char[] termBuffer we don't need
-  // to use this method anymore
-  private void initTermBuffer() {
-    if (termBuffer == null) {
-        termBuffer = new char[MIN_BUFFER_SIZE];
-        termLength = 0;
-    }
-  }
+  public char[] resizeTermBuffer(int newSize);
 
   /** Return number of valid characters (length of the term)
    *  in the termBuffer array. */
-  public int termLength() {
-    return termLength;
-  }
-
+  public int termLength();
+  
   /** Set number of valid characters (length of the term) in
    *  the termBuffer array. Use this to truncate the termBuffer
    *  or to synchronize with external manipulation of the termBuffer.
@@ -181,61 +92,5 @@ public class TermAttribute extends Attribute implements Cloneable, Serializable 
    *  use {@link #resizeTermBuffer(int)} first.
    *  @param length the truncated length
    */
-  public void setTermLength(int length) {
-    initTermBuffer();
-    if (length > termBuffer.length)
-      throw new IllegalArgumentException("length " + length + " exceeds the size of the termBuffer (" + termBuffer.length + ")");
-    termLength = length;
-  }
-
-  public int hashCode() {
-    initTermBuffer();
-    int code = termLength;
-    code = code * 31 + ArrayUtil.hashCode(termBuffer, 0, termLength);
-    return code;
-  }
-
-  public void clear() {
-    termLength = 0;    
-  }
-
-  public Object clone() {
-    TermAttribute t = (TermAttribute)super.clone();
-    // Do a deep clone
-    if (termBuffer != null) {
-      t.termBuffer = (char[]) termBuffer.clone();
-    }
-    return t;
-  }
-  
-  public boolean equals(Object other) {
-    if (other == this) {
-      return true;
-    }
-    
-    if (other instanceof TermAttribute) {
-      initTermBuffer();
-      TermAttribute o = ((TermAttribute) other);
-      o.initTermBuffer();
-      
-      for(int i=0;i<termLength;i++) {
-        if (termBuffer[i] != o.termBuffer[i]) {
-          return false;
-        }
-      }
-      return true;
-    }
-    
-    return false;
-  }
-
-  public String toString() {
-    initTermBuffer();
-    return "term=" + new String(termBuffer, 0, termLength);
-  }
-  
-  public void copyTo(Attribute target) {
-    TermAttribute t = (TermAttribute) target;
-    t.setTermBuffer(termBuffer, 0, termLength);
-  }
+  public void setTermLength(int length);
 }

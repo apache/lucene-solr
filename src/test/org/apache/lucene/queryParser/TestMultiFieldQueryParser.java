@@ -17,6 +17,7 @@ package org.apache.lucene.queryParser;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
@@ -317,8 +318,8 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     }
 
     private static class EmptyTokenStream extends TokenStream {
-      public Token next(final Token reusableToken) {
-        return null;
+      public boolean incrementToken() throws IOException {
+        return false;
       }
     }
   }

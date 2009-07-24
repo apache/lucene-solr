@@ -28,6 +28,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.SinkTokenizer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -3521,47 +3522,21 @@ public class TestIndexWriter extends LuceneTestCase
     }
   }
 
-  private static class MyAnalyzer extends Analyzer {
-
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream s = new WhitespaceTokenizer(reader);
-      s.addAttribute(PositionIncrementAttribute.class);
-      return s;
-    }
-    
-  }
-  
   // LUCENE-1255
   public void testNegativePositions() throws Throwable {
     SinkTokenizer tokens = new SinkTokenizer();
-    tokens.addAttribute(TermAttribute.class);
-    tokens.addAttribute(PositionIncrementAttribute.class);
-
-    AttributeSource state = new AttributeSource();
-    TermAttribute termAtt = (TermAttribute) state.addAttribute(TermAttribute.class);
-    PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) state.addAttribute(PositionIncrementAttribute.class);
-    termAtt.setTermBuffer("a");
-    posIncrAtt.setPositionIncrement(0);
-    tokens.add(state);
-
-    state = new AttributeSource();
-    termAtt = (TermAttribute) state.addAttribute(TermAttribute.class);
-    posIncrAtt = (PositionIncrementAttribute) state.addAttribute(PositionIncrementAttribute.class);
-
-    termAtt.setTermBuffer("b");
-    posIncrAtt.setPositionIncrement(1);
-    tokens.add(state);
-    
-    state = new AttributeSource();
-    termAtt = (TermAttribute) state.addAttribute(TermAttribute.class);
-    posIncrAtt = (PositionIncrementAttribute) state.addAttribute(PositionIncrementAttribute.class);
-
-    termAtt.setTermBuffer("c");
-    posIncrAtt.setPositionIncrement(1);
-    tokens.add(state);
+    Token t = new Token();
+    t.setTermBuffer("a");
+    t.setPositionIncrement(0);
+    tokens.add(t);
+    t.setTermBuffer("b");
+    t.setPositionIncrement(1);
+    tokens.add(t);
+    t.setTermBuffer("c");
+    tokens.add(t);
 
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new MyAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     doc.add(new Field("field", tokens));
     w.addDocument(doc);

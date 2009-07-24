@@ -17,14 +17,19 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.TermPositions;     // for javadoc
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeImpl;
 
 /** 
-  This class is now deprecated and a new TokenStream API was introduced with Lucene 2.9.
-  See Javadocs in {@link TokenStream} for further details.
-  <p> 
   A Token is an occurrence of a term from the text of a field.  It consists of
   a term's text, the start and end offset of the term in the text of the field,
   and a type string.
@@ -44,11 +49,13 @@ import org.apache.lucene.util.ArrayUtil;
   {@link TermPositions#getPayload(byte[], int)} to retrieve the payloads from the index.
   
   <br><br>
-  <p><font color="#FF0000">
-  WARNING: The status of the <b>Payloads</b> feature is experimental. 
-  The APIs introduced here might change in the future and will not be 
-  supported anymore in such a case.</font>
-
+  
+  <p><b>NOTE:</b> As of 2.9, Token implements all {@link Attribute} interfaces
+  that are part of core Lucene and can be found in the {@code tokenattributes} subpackage.
+  Even though it is not necessary to use Token anymore, with the new TokenStream API it can
+  be used as convenience class that implements all {@link Attribute}s, which is especially useful
+  to easily switch from the old to the new TokenStream API.
+  
   <br><br>
 
   <p><b>NOTE:</b> As of 2.3, Token stores the term text
@@ -118,10 +125,10 @@ import org.apache.lucene.util.ArrayUtil;
   </p>
 
   @see org.apache.lucene.index.Payload
-  @deprecated A new TokenStream API was introduced with Lucene 2.9.
-              See javadocs in {@link TokenStream} for further details.
 */
-public class Token implements Cloneable {
+public class Token extends AttributeImpl 
+                   implements Cloneable, TermAttribute, TypeAttribute, PositionIncrementAttribute,
+                              FlagsAttribute, OffsetAttribute, PayloadAttribute {
 
   public static final String DEFAULT_TYPE = "word";
 
@@ -134,7 +141,7 @@ public class Token implements Cloneable {
   /**
    * Characters for the term text.
    * @deprecated This will be made private. Instead, use:
-   * {@link termBuffer()}, 
+   * {@link #termBuffer()}, 
    * {@link #setTermBuffer(char[], int, int)},
    * {@link #setTermBuffer(String)}, or
    * {@link #setTermBuffer(String, int, int)}
@@ -144,28 +151,28 @@ public class Token implements Cloneable {
   /**
    * Length of term text in the buffer.
    * @deprecated This will be made private. Instead, use:
-   * {@link termLength()}, or @{link setTermLength(int)}.
+   * {@link #termLength()}, or @{link setTermLength(int)}.
    */
   int termLength;
 
   /**
    * Start in source text.
    * @deprecated This will be made private. Instead, use:
-   * {@link startOffset()}, or @{link setStartOffset(int)}.
+   * {@link #startOffset()}, or @{link setStartOffset(int)}.
    */
   int startOffset;
 
   /**
    * End in source text.
    * @deprecated This will be made private. Instead, use:
-   * {@link endOffset()}, or @{link setEndOffset(int)}.
+   * {@link #endOffset()}, or @{link setEndOffset(int)}.
    */
   int endOffset;
 
   /**
    * The lexical type of the token.
    * @deprecated This will be made private. Instead, use:
-   * {@link type()}, or @{link setType(String)}.
+   * {@link #type()}, or @{link setType(String)}.
    */
   String type = DEFAULT_TYPE;
 
@@ -173,13 +180,13 @@ public class Token implements Cloneable {
   
   /**
    * @deprecated This will be made private. Instead, use:
-   * {@link getPayload()}, or @{link setPayload(Payload)}.
+   * {@link #getPayload()}, or @{link setPayload(Payload)}.
    */
   Payload payload;
   
   /**
    * @deprecated This will be made private. Instead, use:
-   * {@link getPositionIncrement()}, or @{link setPositionIncrement(String)}.
+   * {@link #getPositionIncrement()}, or @{link setPositionIncrement(String)}.
    */
   int positionIncrement = 1;
 
@@ -561,6 +568,13 @@ public class Token implements Cloneable {
   public void setEndOffset(int offset) {
     this.endOffset = offset;
   }
+  
+  /** Set the starting and ending offset.
+  @see #startOffset() and #endOffset()*/
+  public void setOffset(int startOffset, int endOffset) {
+    this.startOffset = startOffset;
+    this.endOffset = endOffset;
+  }
 
   /** Returns this Token's lexical type.  Defaults to "word". */
   public final String type() {
@@ -640,19 +654,15 @@ public class Token implements Cloneable {
   }
 
   public Object clone() {
-    try {
-      Token t = (Token)super.clone();
-      // Do a deep clone
-      if (termBuffer != null) {
-        t.termBuffer = (char[]) termBuffer.clone();
-      }
-      if (payload != null) {
-        t.setPayload((Payload) payload.clone());
-      }
-      return t;
-    } catch (CloneNotSupportedException e) {
-      throw new RuntimeException(e);  // shouldn't happen
+    Token t = (Token)super.clone();
+    // Do a deep clone
+    if (termBuffer != null) {
+      t.termBuffer = (char[]) termBuffer.clone();
     }
+    if (payload != null) {
+      t.setPayload((Payload) payload.clone());
+    }
+    return t;
   }
 
   /** Makes a clone, but replaces the term buffer &
@@ -861,5 +871,10 @@ public class Token implements Cloneable {
     endOffset = prototype.endOffset;
     type = prototype.type;
     payload =  prototype.payload;
+  }
+
+  public void copyTo(AttributeImpl target) {
+    Token to = (Token) target;
+    to.reinit(this);
   }
 }

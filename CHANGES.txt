@@ -64,6 +64,22 @@ Changes in backwards compatibility policy
     process. It is not recommended to implement it, but rather extend
     Searcher.  (Shai Erera via Mike McCandless)
 
+ 4. LUCENE-1422, LUCENE-1693: The new TokenStream API (see below) using
+    Attributes has some backwards breaks in rare cases.
+    We did our best to make the transition as easy as possible. You should
+    not have problems, if your tokenizers still implement next(Token) or
+    next(), the calls are automatically wrapped. The indexer and query parser
+    use the new API using incrementToken() calls. All core TokenStreams
+    are implemented using the new API. You can mix old and new API
+    style TokenFilters/TokenStream. Problems only occur when you have done
+    the following:
+    You have overridden next(Token) or next() in one of the non-abstract core
+    TokenStreams/-Filters. This classes should normally be final, but some
+    of them are not. In this case next(Token)/next() would never be called.
+    To early fail with a hard compile/runtime error, the next(Token)/next()
+    methods in these TokenStreams/-Filters were made final.
+    (Michael Busch, Uwe Schindler)
+
 Changes in runtime behavior
 
  1. LUCENE-1424: QueryParser now by default uses constant score query
@@ -156,14 +172,16 @@ API Changes
    and deprecate FSDirectory.getDirectory().  FSDirectory instances
    are not required to be singletons per path. (yonik)
 
-4. LUCENE-1422: New TokenStream API that uses a new class called 
+4. LUCENE-1422, LUCENE-1693: New TokenStream API that uses a new class called 
    AttributeSource instead of the now deprecated Token class. All attributes
    that the Token class had have been moved into separate classes:
    TermAttribute, OffsetAttribute, PositionIncrementAttribute, 
    PayloadAttribute, TypeAttribute and FlagsAttribute. The new API
    is much more flexible; it allows to combine the Attributes arbitrarily 
    and also to define custom Attributes. The new API has the same performance
-   as the old next(Token) approach. (Michael Busch)
+   as the old next(Token) approach.
+   For conformance with this new API Tee-/SinkTokenizer was deprecated
+   and replaced by a new TeeSinkTokenFilter. (Michael Busch, Uwe Schindler)
 
 5. LUCENE-1467: Add nextDoc() and next(int) methods to OpenBitSetIterator.
    These methods can be used to avoid additional calls to doc(). 

@@ -206,40 +206,6 @@ public final class NumericTokenStream extends TokenStream {
     shift += precisionStep;
     return true;
   }
-
-  // @Override
-  /** @deprecated Will be removed in Lucene 3.0 */
-  public Token next(final Token reusableToken) {
-    assert reusableToken != null;
-    if (valSize == 0)
-      throw new IllegalStateException("call set???Value() before usage");
-    if (shift >= valSize)
-      return null;
-    
-    reusableToken.clear();
-
-    final char[] buffer;
-    switch (valSize) {
-      case 64:
-        buffer = reusableToken.resizeTermBuffer(NumericUtils.BUF_SIZE_LONG);
-        reusableToken.setTermLength(NumericUtils.longToPrefixCoded(value, shift, buffer));
-        break;
-      
-      case 32:
-        buffer = reusableToken.resizeTermBuffer(NumericUtils.BUF_SIZE_INT);
-        reusableToken.setTermLength(NumericUtils.intToPrefixCoded((int) value, shift, buffer));
-        break;
-      
-      default:
-        // should not happen
-        throw new IllegalArgumentException("valSize must be 32 or 64");
-    }
-
-    reusableToken.setType((shift == 0) ? TOKEN_TYPE_FULL_PREC : TOKEN_TYPE_LOWER_PREC);
-    reusableToken.setPositionIncrement((shift == 0) ? 1 : 0);
-    shift += precisionStep;
-    return reusableToken;
-  }
   
   // @Override
   public String toString() {

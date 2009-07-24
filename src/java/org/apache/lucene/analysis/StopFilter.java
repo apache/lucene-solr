@@ -235,27 +235,6 @@ public final class StopFilter extends TokenFilter {
   }
 
   /**
-   * Returns the next input Token whose term() is not a stop word.
-   * @deprecated
-   */
-  public final Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    // return the first non-stop word found
-    int skippedPositions = 0;
-    for (Token nextToken = input.next(reusableToken); nextToken != null; nextToken = input.next(reusableToken)) {
-      if (!stopWords.contains(nextToken.termBuffer(), 0, nextToken.termLength())) {
-        if (enablePositionIncrements) {
-          nextToken.setPositionIncrement(nextToken.getPositionIncrement() + skippedPositions);
-        }
-        return nextToken;
-      }
-      skippedPositions += nextToken.getPositionIncrement();
-    }
-    // reached EOS -- return null
-    return null;
-  }
-
-  /**
    * @see #setEnablePositionIncrementsDefault(boolean). 
    * @deprecated Please specify this when you create the StopFilter
    */

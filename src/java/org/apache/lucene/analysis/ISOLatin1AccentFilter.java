@@ -57,27 +57,17 @@ public class ISOLatin1AccentFilter extends TokenFilter {
     } else
       return false;
   }
-  
-  /** @deprecated */
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
   public final Token next(final Token reusableToken) throws java.io.IOException {
-    assert reusableToken != null;
-    Token nextToken = input.next(reusableToken);
-    if (nextToken != null) {
-      final char[] buffer = nextToken.termBuffer();
-      final int length = nextToken.termLength();
-      // If no characters actually require rewriting then we
-      // just return token as-is:
-      for(int i=0;i<length;i++) {
-        final char c = buffer[i];
-        if (c >= '\u00c0' && c <= '\uFB06') {
-          removeAccents(buffer, length);
-          nextToken.setTermBuffer(output, 0, outputPos);
-          break;
-        }
-      }
-      return nextToken;
-    } else
-      return null;
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
   }
 
   /**
