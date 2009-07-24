@@ -191,8 +191,9 @@ public abstract class FieldType extends FieldProperties {
     }
     if (val==null) return null;
     if (!field.indexed() && !field.stored()) {
+      if (log.isTraceEnabled())
         log.trace("Ignoring unindexed/unstored field: " + field);
-        return null;
+      return null;
     }
 
 
@@ -262,17 +263,17 @@ public abstract class FieldType extends FieldProperties {
     return toExternal(f); // by default use the string
   }
 
-  /** :TODO: document this method */
+  /** Given an indexed term, return the human readable representation */
   public String indexedToReadable(String indexedForm) {
     return indexedForm;
   }
 
-  /** :TODO: document this method */
+  /** Given the stored field, return the human readable representation */
   public String storedToReadable(Fieldable f) {
     return toExternal(f);
   }
 
-  /** :TODO: document this method */
+  /** Given the stored field, return the indexed form */
   public String storedToIndexed(Fieldable f) {
     // right now, the transformation of single valued fields like SortableInt
     // is done when the Field is created, not at analysis time... this means
