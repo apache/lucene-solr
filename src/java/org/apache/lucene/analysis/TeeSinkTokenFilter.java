@@ -150,9 +150,13 @@ public final class TeeSinkTokenFilter extends TokenFilter {
   }
   
   /**
-   * TODO: Missing Docs
+   * A filter that decides which {@link AttributeSource} states to store in the sink.
    */
   public static interface SinkFilter {
+    /**
+     * Returns true, iff the current state of the passed-in {@link AttributeSource} shall be stored
+     * in the sink. 
+     */
     boolean accept(AttributeSource source);
   }
   

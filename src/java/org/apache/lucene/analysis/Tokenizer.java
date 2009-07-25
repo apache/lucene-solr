@@ -30,10 +30,6 @@ import java.io.IOException;
   <p>
   NOTE: subclasses overriding {@link #next(Token)} must  
   call {@link Token#clear()}.
- * <p><font color="#FF0000">
- * WARNING: The status of the new TokenStream, AttributeSource and Attributes is experimental. 
- * The APIs introduced in these classes with Lucene 2.9 might change in the future. 
- * We will make our best efforts to keep the APIs backwards-compatible.</font>
  */
 
 public abstract class Tokenizer extends TokenStream {

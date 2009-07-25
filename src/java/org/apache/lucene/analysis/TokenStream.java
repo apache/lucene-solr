@@ -68,11 +68,7 @@ import org.apache.lucene.util.AttributeSource;
   {@link TeeSinkTokenFilter}). For this usecase
   {@link AttributeSource#captureState} and {@link AttributeSource#restoreState} can be used.  
  * <p><font color="#FF0000">
- * WARNING: The status of the new TokenStream, AttributeSource and Attributes is experimental. 
- * The APIs introduced in these classes with Lucene 2.9 might change in the future. 
- * We will make our best efforts to keep the APIs backwards-compatible.</font>
-  */
-
+ */
 public abstract class TokenStream extends AttributeSource {
 
   /** @deprecated Remove this when old API is removed! */

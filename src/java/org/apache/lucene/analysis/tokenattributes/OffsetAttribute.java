@@ -21,11 +21,6 @@ import org.apache.lucene.util.Attribute;
 
 /**
  * The start and end character offset of a Token. 
- * 
- * <p><font color="#FF0000">
- * WARNING: The status of the new TokenStream, AttributeSource and Attributes is experimental. 
- * The APIs introduced in these classes with Lucene 2.9 might change in the future. 
- * We will make our best efforts to keep the APIs backwards-compatible.</font>
  */
 public interface OffsetAttribute extends Attribute {
   /** Returns this Token's starting offset, the position of the first character

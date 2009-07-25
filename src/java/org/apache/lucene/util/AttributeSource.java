@@ -35,11 +35,6 @@ import org.apache.lucene.analysis.TokenStream; // for javadocs
  * the {@link #addAttribute(Class)}, which then checks if an instance of
  * that type is already present. If yes, it returns the instance, otherwise
  * it creates a new instance and returns it.
- * 
- * <p><font color="#FF0000">
- * WARNING: The status of the new TokenStream, AttributeSource and Attributes is experimental. 
- * The APIs introduced in these classes with Lucene 2.9 might change in the future. 
- * We will make our best efforts to keep the APIs backwards-compatible.</font>
  */
 public class AttributeSource {
   /**

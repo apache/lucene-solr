@@ -24,11 +24,6 @@ import org.apache.lucene.util.AttributeImpl;
 
 /**
  * The payload of a Token. See also {@link Payload}.
- * 
- * <p><font color="#FF0000">
- * WARNING: The status of the new TokenStream, AttributeSource and Attributes is experimental. 
- * The APIs introduced in these classes with Lucene 2.9 might change in the future. 
- * We will make our best efforts to keep the APIs backwards-compatible.</font>
  */
 public class PayloadAttributeImpl extends AttributeImpl implements PayloadAttribute, Cloneable, Serializable {
   private Payload payload;  

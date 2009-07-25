@@ -24,12 +24,6 @@ import org.apache.lucene.util.AttributeImpl;
 /**
  * This attribute can be used to pass different flags down the tokenizer chain,
  * e. g. from one TokenFilter to another one. 
- * 
- * <p><font color="#FF0000">
- * WARNING: The status of the new TokenStream, AttributeSource and Attributes is experimental. 
- * The APIs introduced in these classes with Lucene 2.9 might change in the future. 
- * We will make our best efforts to keep the APIs backwards-compatible.</font>
-
  */
 public class FlagsAttributeImpl extends AttributeImpl implements FlagsAttribute, Cloneable, Serializable {
   private int flags = 0;

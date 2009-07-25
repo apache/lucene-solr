@@ -235,7 +235,7 @@ public class Token extends AttributeImpl
    *  @param text term text
    *  @param start start offset
    *  @param end end offset
-   *  @deprecated
+   *  @deprecated Use {@link #Token(char[], int, int, int, int)} instead.
    */
   public Token(String text, int start, int end) {
     termText = text;
@@ -251,7 +251,7 @@ public class Token extends AttributeImpl
    *  @param start start offset
    *  @param end end offset
    *  @param typ token type
-   *  @deprecated
+   *  @deprecated Use {@link #Token(char[], int, int, int, int)} and {@link #setType(String)} instead.
    */
   public Token(String text, int start, int end, String typ) {
     termText = text;
@@ -269,7 +269,7 @@ public class Token extends AttributeImpl
    * @param start
    * @param end
    * @param flags token type bits
-   * @deprecated
+   * @deprecated Use {@link #Token(char[], int, int, int, int)} and {@link #setFlags(int)} instead.
    */
   public Token(String text, int start, int end, int flags) {
     termText = text;

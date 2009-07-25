@@ -45,13 +45,6 @@ import org.apache.lucene.util.AttributeImpl;
  * occur with no intervening stop words.
  *
  * </ul>
- * 
- * <p><font color="#FF0000">
- * WARNING: The status of the new TokenStream, AttributeSource and Attributes is experimental. 
- * The APIs introduced in these classes with Lucene 2.9 might change in the future. 
- * We will make our best efforts to keep the APIs backwards-compatible.</font>
- * 
- * @see org.apache.lucene.index.TermPositions
  */
 public class PositionIncrementAttributeImpl extends AttributeImpl implements PositionIncrementAttribute, Cloneable, Serializable {
   private int positionIncrement = 1;

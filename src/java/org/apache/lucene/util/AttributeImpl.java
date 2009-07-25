@@ -26,10 +26,6 @@ import java.lang.reflect.Field;
  * <p>
  * Attributes are used to add data in a dynamic, yet type-safe way to a source
  * of usually streamed objects, e. g. a {@link org.apache.lucene.analysis.TokenStream}.
- * <p><font color="#FF0000">
- * WARNING: The status of the new TokenStream, AttributeSource and Attributes is experimental. 
- * The APIs introduced in these classes with Lucene 2.9 might change in the future. 
- * We will make our best efforts to keep the APIs backwards-compatible.</font>
  */
 public abstract class AttributeImpl implements Cloneable, Serializable {  
   /**
