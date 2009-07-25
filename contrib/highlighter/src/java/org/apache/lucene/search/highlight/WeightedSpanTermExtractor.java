@@ -136,7 +136,7 @@ public class WeightedSpanTermExtractor {
       terms.putAll(disjunctTerms);
     } else if (query instanceof MultiTermQuery && (highlightCnstScrRngQuery || expandMultiTermQuery)) {
       MultiTermQuery mtq = ((MultiTermQuery)query);
-      if(mtq.getRewriteMethod() == MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE) {
+      if(mtq.getRewriteMethod() != MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE) {
         mtq = copyMultiTermQuery(mtq);
         mtq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
         query = mtq;
