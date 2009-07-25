@@ -31,6 +31,7 @@ public class KeywordTokenizer extends Tokenizer {
   private static final int DEFAULT_BUFFER_SIZE = 256;
 
   private boolean done;
+  private int finalOffset;
   private TermAttribute termAtt;
   private OffsetAttribute offsetAtt;
   
@@ -59,10 +60,16 @@ public class KeywordTokenizer extends Tokenizer {
           buffer = termAtt.resizeTermBuffer(1+buffer.length);
       }
       termAtt.setTermLength(upto);
-      offsetAtt.setOffset(input.correctOffset(0), input.correctOffset(upto));
+      finalOffset = input.correctOffset(upto);
+      offsetAtt.setOffset(input.correctOffset(0), finalOffset);
       return true;
     }
     return false;
+  }
+  
+  public final void end() {
+    // set final offset 
+    offsetAtt.setOffset(finalOffset, finalOffset);
   }
 
   /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should

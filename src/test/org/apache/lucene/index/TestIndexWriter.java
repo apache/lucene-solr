@@ -17,17 +17,26 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
-import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CachingTokenFilter;
+import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.SinkTokenizer;
+import org.apache.lucene.analysis.StopAnalyzer;
+import org.apache.lucene.analysis.TeeSinkTokenFilter;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -35,8 +44,6 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
@@ -55,7 +62,6 @@ import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
@@ -4150,6 +4156,41 @@ public class TestIndexWriter extends LuceneTestCase
     Field f = new Field("field", "abcd", Field.Store.NO, Field.Index.NOT_ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
     doc.add(f);
     doc.add(f);
+    Field f2 = new Field("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    doc.add(f2);
+    doc.add(f);
+    w.addDocument(doc);
+    w.close();
+
+    IndexReader r = IndexReader.open(dir);
+    TermVectorOffsetInfo[] termOffsets = ((TermPositionVector) r.getTermFreqVector(0, "field")).getOffsets(0);
+
+    // Token "" occurred once
+    assertEquals(1, termOffsets.length);
+    assertEquals(8, termOffsets[0].getStartOffset());
+    assertEquals(8, termOffsets[0].getEndOffset());
+
+    // Token "abcd" occurred three times
+    termOffsets = ((TermPositionVector) r.getTermFreqVector(0, "field")).getOffsets(1);
+    assertEquals(3, termOffsets.length);
+    assertEquals(0, termOffsets[0].getStartOffset());
+    assertEquals(4, termOffsets[0].getEndOffset());
+    assertEquals(4, termOffsets[1].getStartOffset());
+    assertEquals(8, termOffsets[1].getEndOffset());
+    assertEquals(8, termOffsets[2].getStartOffset());
+    assertEquals(12, termOffsets[2].getEndOffset());
+    r.close();
+    dir.close();
+  }
+
+  // LUCENE-1442
+  public void testDoubleOffsetCounting2() throws Exception {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new SimpleAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+    Field f = new Field("field", "abcd", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    doc.add(f);
+    doc.add(f);
     w.addDocument(doc);
     w.close();
 
@@ -4158,11 +4199,194 @@ public class TestIndexWriter extends LuceneTestCase
     assertEquals(2, termOffsets.length);
     assertEquals(0, termOffsets[0].getStartOffset());
     assertEquals(4, termOffsets[0].getEndOffset());
-    assertEquals(4, termOffsets[1].getStartOffset());
-    assertEquals(8, termOffsets[1].getEndOffset());
+    assertEquals(5, termOffsets[1].getStartOffset());
+    assertEquals(9, termOffsets[1].getEndOffset());
     r.close();
     dir.close();
   }
+
+  // LUCENE-1448
+  public void testEndOffsetPositionCharAnalyzer() throws Exception {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+    Field f = new Field("field", "abcd   ", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    doc.add(f);
+    doc.add(f);
+    w.addDocument(doc);
+    w.close();
+
+    IndexReader r = IndexReader.open(dir);
+    TermVectorOffsetInfo[] termOffsets = ((TermPositionVector) r.getTermFreqVector(0, "field")).getOffsets(0);
+    assertEquals(2, termOffsets.length);
+    assertEquals(0, termOffsets[0].getStartOffset());
+    assertEquals(4, termOffsets[0].getEndOffset());
+    assertEquals(8, termOffsets[1].getStartOffset());
+    assertEquals(12, termOffsets[1].getEndOffset());
+    r.close();
+    dir.close();
+  }
+
+  // LUCENE-1448
+  public void testEndOffsetPositionWithCachingTokenFilter() throws Exception {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    Analyzer analyzer = new WhitespaceAnalyzer();
+    IndexWriter w = new IndexWriter(dir, analyzer, IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+    TokenStream stream = new CachingTokenFilter(analyzer.tokenStream("field", new StringReader("abcd   ")));
+    Field f = new Field("field", stream, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    doc.add(f);
+    doc.add(f);
+    w.addDocument(doc);
+    w.close();
+
+    IndexReader r = IndexReader.open(dir);
+    TermVectorOffsetInfo[] termOffsets = ((TermPositionVector) r.getTermFreqVector(0, "field")).getOffsets(0);
+    assertEquals(2, termOffsets.length);
+    assertEquals(0, termOffsets[0].getStartOffset());
+    assertEquals(4, termOffsets[0].getEndOffset());
+    assertEquals(8, termOffsets[1].getStartOffset());
+    assertEquals(12, termOffsets[1].getEndOffset());
+    r.close();
+    dir.close();
+  }
+
+  // LUCENE-1448
+  public void testEndOffsetPositionWithTeeSinkTokenFilter() throws Exception {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    Analyzer analyzer = new WhitespaceAnalyzer();
+    IndexWriter w = new IndexWriter(dir, analyzer, IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(analyzer.tokenStream("field", new StringReader("abcd   ")));
+    TokenStream sink = tee.newSinkTokenStream();
+    Field f1 = new Field("field", tee, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    Field f2 = new Field("field", sink, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    doc.add(f1);
+    doc.add(f2);
+    w.addDocument(doc);
+    w.close();
+
+    IndexReader r = IndexReader.open(dir);
+    TermVectorOffsetInfo[] termOffsets = ((TermPositionVector) r.getTermFreqVector(0, "field")).getOffsets(0);
+    assertEquals(2, termOffsets.length);
+    assertEquals(0, termOffsets[0].getStartOffset());
+    assertEquals(4, termOffsets[0].getEndOffset());
+    assertEquals(8, termOffsets[1].getStartOffset());
+    assertEquals(12, termOffsets[1].getEndOffset());
+    r.close();
+    dir.close();
+  }
+  
+  // LUCENE-1448
+  public void testEndOffsetPositionStopFilter() throws Exception {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new StopAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+    Field f = new Field("field", "abcd the", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    doc.add(f);
+    doc.add(f);
+    w.addDocument(doc);
+    w.close();
+
+    IndexReader r = IndexReader.open(dir);
+    TermVectorOffsetInfo[] termOffsets = ((TermPositionVector) r.getTermFreqVector(0, "field")).getOffsets(0);
+    assertEquals(2, termOffsets.length);
+    assertEquals(0, termOffsets[0].getStartOffset());
+    assertEquals(4, termOffsets[0].getEndOffset());
+    assertEquals(9, termOffsets[1].getStartOffset());
+    assertEquals(13, termOffsets[1].getEndOffset());
+    r.close();
+    dir.close();
+  }
+
+  // LUCENE-1448
+  public void testEndOffsetPositionStandard() throws Exception {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new StandardAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+    Field f = new Field("field", "abcd the  ", Field.Store.NO,
+        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    Field f2 = new Field("field", "crunch man", Field.Store.NO,
+        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    doc.add(f);
+    doc.add(f2);
+    w.addDocument(doc);
+    w.close();
+
+    IndexReader r = IndexReader.open(dir);
+    TermPositionVector tpv = ((TermPositionVector) r.getTermFreqVector(0, "field"));
+    TermVectorOffsetInfo[] termOffsets = tpv.getOffsets(0);
+    assertEquals(1, termOffsets.length);
+    assertEquals(0, termOffsets[0].getStartOffset());
+    assertEquals(4, termOffsets[0].getEndOffset());
+    termOffsets = tpv.getOffsets(1);
+    assertEquals(11, termOffsets[0].getStartOffset());
+    assertEquals(17, termOffsets[0].getEndOffset());
+    termOffsets = tpv.getOffsets(2);
+    assertEquals(18, termOffsets[0].getStartOffset());
+    assertEquals(21, termOffsets[0].getEndOffset());
+    r.close();
+    dir.close();
+  }
+
+  // LUCENE-1448
+  public void testEndOffsetPositionStandardEmptyField() throws Exception {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new StandardAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+    Field f = new Field("field", "", Field.Store.NO,
+                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    Field f2 = new Field("field", "crunch man", Field.Store.NO,
+        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    doc.add(f);
+    doc.add(f2);
+    w.addDocument(doc);
+    w.close();
+
+    IndexReader r = IndexReader.open(dir);
+    TermPositionVector tpv = ((TermPositionVector) r.getTermFreqVector(0, "field"));
+    TermVectorOffsetInfo[] termOffsets = tpv.getOffsets(0);
+    assertEquals(1, termOffsets.length);
+    assertEquals(0, termOffsets[0].getStartOffset());
+    assertEquals(6, termOffsets[0].getEndOffset());
+    termOffsets = tpv.getOffsets(1);
+    assertEquals(7, termOffsets[0].getStartOffset());
+    assertEquals(10, termOffsets[0].getEndOffset());
+    r.close();
+    dir.close();
+  }
+
+  // LUCENE-1448
+  public void testEndOffsetPositionStandardEmptyField2() throws Exception {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new StandardAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+
+    Field f = new Field("field", "abcd", Field.Store.NO,
+                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    doc.add(f);
+    doc.add(new Field("field", "", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+
+    Field f2 = new Field("field", "crunch", Field.Store.NO,
+        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    doc.add(f2);
+
+    w.addDocument(doc);
+    w.close();
+
+    IndexReader r = IndexReader.open(dir);
+    TermPositionVector tpv = ((TermPositionVector) r.getTermFreqVector(0, "field"));
+    TermVectorOffsetInfo[] termOffsets = tpv.getOffsets(0);
+    assertEquals(1, termOffsets.length);
+    assertEquals(0, termOffsets[0].getStartOffset());
+    assertEquals(4, termOffsets[0].getEndOffset());
+    termOffsets = tpv.getOffsets(1);
+    assertEquals(5, termOffsets[0].getStartOffset());
+    assertEquals(11, termOffsets[0].getEndOffset());
+    r.close();
+    dir.close();
+  }
+
 
   // LUCENE-1468 -- make sure opening an IndexWriter with
   // create=true does not remove non-index files

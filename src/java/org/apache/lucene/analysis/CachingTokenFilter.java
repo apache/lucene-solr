@@ -36,6 +36,7 @@ import org.apache.lucene.util.AttributeSource;
 public class CachingTokenFilter extends TokenFilter {
   private List cache = null;
   private Iterator iterator = null; 
+  private AttributeSource.State finalState;
   
   public CachingTokenFilter(TokenStream input) {
     super(input);
@@ -69,6 +70,12 @@ public class CachingTokenFilter extends TokenFilter {
     restoreState((AttributeSource.State) iterator.next());
     return true;
   }
+  
+  public final void end() throws IOException {
+    if (finalState != null) {
+      restoreState(finalState);
+    }
+  }
 
   public void reset() throws IOException {
     if(cache != null) {
@@ -80,6 +87,9 @@ public class CachingTokenFilter extends TokenFilter {
     while(input.incrementToken()) {
       cache.add(captureState());
     }
+    // capture final state
+    input.end();
+    finalState = captureState();
   }
 
 }

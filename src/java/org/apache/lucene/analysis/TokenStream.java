@@ -268,6 +268,22 @@ public abstract class TokenStream extends AttributeSource {
     tokenWrapper.delegate = token;
     return true;
   }
+  
+  /**
+   * This method is called by the consumer after the last token has been consumed, 
+   * i.e. after {@link #incrementToken()} returned <code>false</code> (using the new TokenStream API)
+   * or after {@link #next(Token)} or {@link #next()} returned <code>null</code> (old TokenStream API).
+   * <p/>
+   * This method can be used to perform any end-of-stream operations, such as setting the final
+   * offset of a stream. The final offset of a stream might differ from the offset of the last token
+   * e.g. in case one or more whitespaces followed after the last token, but a {@link WhitespaceTokenizer}
+   * was used.
+   * 
+   * @throws IOException
+   */
+  public void end() throws IOException {
+    // do nothing by default
+  }
 
   /** Returns the next token in the stream, or null at EOS.
    *  When possible, the input Token should be used as the

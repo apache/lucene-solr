@@ -149,6 +149,17 @@ public final class TeeSinkTokenFilter extends TokenFilter {
     return false;
   }
   
+  public final void end() throws IOException {
+    super.end();
+    AttributeSource.State finalState = captureState();
+    for (Iterator it = sinks.iterator(); it.hasNext(); ) {
+      final SinkTokenStream sink = (SinkTokenStream) ((WeakReference) it.next()).get();
+      if (sink != null) {
+        sink.setFinalState(finalState);
+      }
+    }
+  }
+  
   /**
    * A filter that decides which {@link AttributeSource} states to store in the sink.
    */
@@ -162,6 +173,7 @@ public final class TeeSinkTokenFilter extends TokenFilter {
   
   public static final class SinkTokenStream extends TokenStream {
     private final List cachedStates = new LinkedList();
+    private AttributeSource.State finalState;
     private Iterator it = null;
     private SinkFilter filter;
     
@@ -181,6 +193,10 @@ public final class TeeSinkTokenFilter extends TokenFilter {
       cachedStates.add(state);
     }
     
+    private void setFinalState(AttributeSource.State finalState) {
+      this.finalState = finalState;
+    }
+    
     public final boolean incrementToken() throws IOException {
       // lazy init the iterator
       if (it == null) {
@@ -195,12 +211,18 @@ public final class TeeSinkTokenFilter extends TokenFilter {
       restoreState(state);
       return true;
     }
+  
+    public final void end() throws IOException {
+      if (finalState != null) {
+        restoreState(finalState);
+      }
+    }
     
     public final void reset() {
       it = cachedStates.iterator();
     }
   }
-  
+    
   private static final SinkFilter ACCEPT_ALL_FILTER = new SinkFilter() {
     public boolean accept(AttributeSource source) {
       return true;

@@ -609,6 +609,11 @@ New features
     CONSTANT_SCORE_AUTO_REWRITE tries to pick the most performant
     constant-score rewrite method.  (Mike McCandless)
     
+34. LUCENE-1448: Added TokenStream.end(), to perform end-of-stream
+    operations.  This is currently used to fix offset problems when 
+    multiple fields with the same name are added to a document.
+    (Mike McCandless, Mark Miller, Michael Busch)
+    
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing

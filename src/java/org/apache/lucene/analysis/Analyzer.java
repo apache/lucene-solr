@@ -24,6 +24,8 @@ import java.lang.reflect.Method;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.store.AlreadyClosedException;
 
+import org.apache.lucene.document.Fieldable;
+
 /** An Analyzer builds TokenStreams, which analyze text.  It thus represents a
  *  policy for extracting index terms from text.
  *  <p>
@@ -121,6 +123,24 @@ public abstract class Analyzer {
   public int getPositionIncrementGap(String fieldName)
   {
     return 0;
+  }
+
+  /**
+   * Just like {@link #getPositionIncrementGap}, except for
+   * Token offsets instead.  By default this returns 1 for
+   * tokenized fields and, as if the fields were joined
+   * with an extra space character, and 0 for un-tokenized
+   * fields.  This method is only called if the field
+   * produced at least one token for indexing.
+   *
+   * @param Fieldable the field just indexed
+   * @return offset gap, added to the next token emitted from {@link #tokenStream(String,Reader)}
+   */
+  public int getOffsetGap(Fieldable field) {
+    if (field.isTokenized())
+      return 1;
+    else
+      return 0;
   }
 
   /** Frees persistent resources used by this Analyzer */

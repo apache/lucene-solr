@@ -39,6 +39,13 @@ public abstract class TokenFilter extends TokenStream {
     this.input = input;
   }
   
+  /** Performs end-of-stream operations, if any, and calls then <code>end()</code> on the
+   * input TokenStream.<p/> 
+   * <b>NOTE:</b> Be sure to call <code>super.end()</code> first when overriding this method.*/
+  public void end() throws IOException {
+    input.end();
+  }
+  
   /** Close the input TokenStream. */
   public void close() throws IOException {
     input.close();

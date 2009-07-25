@@ -183,6 +183,12 @@ public class StandardTokenizer extends Tokenizer {
         posIncr++;
     }
   }
+  
+  public final void end() {
+    // set final offset
+    int finalOffset = input.correctOffset(scanner.yychar() + scanner.yylength());
+    offsetAtt.setOffset(finalOffset, finalOffset);
+  }
 
   /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
    * not be overridden. Delegates to the backwards compatibility layer. */

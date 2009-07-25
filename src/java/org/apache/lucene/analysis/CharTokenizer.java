@@ -63,6 +63,7 @@ public abstract class CharTokenizer extends Tokenizer {
         offset += dataLen;
         dataLen = input.read(ioBuffer);
         if (dataLen == -1) {
+          dataLen = 0;                            // so next offset += dataLen won't decrement offset
           if (length > 0)
             break;
           else
@@ -92,6 +93,12 @@ public abstract class CharTokenizer extends Tokenizer {
     termAtt.setTermLength(length);
     offsetAtt.setOffset(input.correctOffset(start), input.correctOffset(start+length));
     return true;
+  }
+  
+  public final void end() {
+    // set final offset
+    int finalOffset = input.correctOffset(offset);
+    offsetAtt.setOffset(finalOffset, finalOffset);
   }
 
   /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should

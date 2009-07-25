@@ -74,6 +74,8 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
       // tokenized.
       if (field.isIndexed() && doInvert) {
 
+        final boolean anyToken;
+        
         if (fieldState.length > 0)
           fieldState.position += docState.analyzer.getPositionIncrementGap(fieldInfo.name);
 
@@ -95,6 +97,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           fieldState.offset += valueLength;
           fieldState.length++;
           fieldState.position++;
+          anyToken = valueLength > 0;
         } else {                                  // tokenized field
           final TokenStream stream;
           final TokenStream streamValue = field.tokenStreamValue();
@@ -124,6 +127,8 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           // reset the TokenStream to the first token
           stream.reset();
 
+          final int startLength = fieldState.length;
+          
           // deprecated
           final boolean allowMinus1Position = docState.allowMinus1Position;
 
@@ -183,12 +188,18 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
 
               hasMoreTokens = stream.incrementToken();
             }
-            fieldState.offset = offsetEnd+1;
+            // trigger streams to perform end-of-stream operations
+            stream.end();
+            
+            fieldState.offset += offsetAttribute.endOffset();
+            anyToken = fieldState.length > startLength;
           } finally {
             stream.close();
           }
         }
 
+        if (anyToken)
+          fieldState.offset += docState.analyzer.getOffsetGap(field);
         fieldState.boost *= field.getBoost();
       }
     }
