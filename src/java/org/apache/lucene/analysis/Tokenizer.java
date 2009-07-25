@@ -38,13 +38,31 @@ public abstract class Tokenizer extends TokenStream {
 
   /** Construct a tokenizer with null input. */
   protected Tokenizer() {}
-
+  
   /** Construct a token stream processing the given input. */
   protected Tokenizer(Reader input) {
     this.input = CharReader.get(input);
   }
 
+  /** Construct a token stream processing the given input. */
   protected Tokenizer(CharStream input) {
+    this.input = input;
+  }
+  
+  /** Construct a tokenizer with null input using the given AttributeFactory. */
+  protected Tokenizer(AttributeFactory factory) {
+    super(factory);
+  }
+
+  /** Construct a token stream processing the given input using the given AttributeFactory. */
+  protected Tokenizer(AttributeFactory factory, Reader input) {
+    super(factory);
+    this.input = CharReader.get(input);
+  }
+  
+  /** Construct a token stream processing the given input using the given AttributeFactory. */
+  protected Tokenizer(AttributeFactory factory, CharStream input) {
+    super(factory);
     this.input = input;
   }
   
