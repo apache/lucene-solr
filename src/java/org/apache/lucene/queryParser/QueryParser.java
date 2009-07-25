@@ -25,6 +25,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
@@ -118,7 +119,7 @@ public class QueryParser implements QueryParserConstants {
   private Operator operator = OR_OPERATOR;
 
   boolean lowercaseExpandedTerms = true;
-  boolean constantScoreRewrite= true;
+  MultiTermQuery.RewriteMethod multiTermRewriteMethod = MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
   boolean allowLeadingWildcard = false;
   boolean enablePositionIncrements = false;
 
@@ -331,40 +332,48 @@ public class QueryParser implements QueryParserConstants {
   }
 
   /**
-   * @deprecated Please use {@link #setConstantScoreRewrite} instead.
+   * @deprecated Please use {@link #setMultiTermRewriteMethod} instead.
    */
   public void setUseOldRangeQuery(boolean useOldRangeQuery) {
-    constantScoreRewrite = !useOldRangeQuery;
+    if (useOldRangeQuery) {
+      setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    } else {
+      setMultiTermRewriteMethod(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
+    }
   }
 
 
   /**
-   * @deprecated Please use {@link #getConstantScoreRewrite} instead.
+   * @deprecated Please use {@link #getMultiTermRewriteMethod} instead.
    */
   public boolean getUseOldRangeQuery() {
-    return !constantScoreRewrite;
+    if (getMultiTermRewriteMethod() == MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   /**
-   * By default QueryParser uses constant-score rewriting
+   * By default QueryParser uses {@link MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}
    * when creating a PrefixQuery, WildcardQuery or RangeQuery. This implementation is generally preferable because it 
    * a) Runs faster b) Does not have the scarcity of terms unduly influence score 
    * c) avoids any "TooManyBooleanClauses" exception.
    * However, if your application really needs to use the
    * old-fashioned BooleanQuery expansion rewriting and the above
-   * points are not relevant then set this option to <code>true</code>
-   * Default is <code>false</code>.
+   * points are not relevant then use this to change
+   * the rewrite method.
    */
-  public void setConstantScoreRewrite(boolean v) {
-    constantScoreRewrite = v;
+  public void setMultiTermRewriteMethod(MultiTermQuery.RewriteMethod method) {
+    multiTermRewriteMethod = method;
   }
 
 
   /**
-   * @see #setConstantScoreRewrite(boolean)
+   * @see #setMultiTermRewriteMethod
    */
-  public boolean getConstantScoreRewrite() {
-    return constantScoreRewrite;
+  public MultiTermQuery.RewriteMethod getMultiTermRewriteMethod() {
+    return multiTermRewriteMethod;
   }
 
   /**
@@ -805,7 +814,7 @@ public class QueryParser implements QueryParserConstants {
    */
   protected Query newPrefixQuery(Term prefix){
     PrefixQuery query = new PrefixQuery(prefix);
-    query.setConstantScoreRewrite(constantScoreRewrite);
+    query.setRewriteMethod(multiTermRewriteMethod);
     return query;
   }
 
@@ -831,7 +840,7 @@ public class QueryParser implements QueryParserConstants {
    */
   protected Query newRangeQuery(String field, String part1, String part2, boolean inclusive) {
     final TermRangeQuery query = new TermRangeQuery(field, part1, part2, inclusive, inclusive, rangeCollator);
-    query.setConstantScoreRewrite(constantScoreRewrite);
+    query.setRewriteMethod(multiTermRewriteMethod);
     return query;
   }
 
@@ -850,7 +859,7 @@ public class QueryParser implements QueryParserConstants {
    */
   protected Query newWildcardQuery(Term t) {
     WildcardQuery query = new WildcardQuery(t);
-    query.setConstantScoreRewrite(constantScoreRewrite);
+    query.setRewriteMethod(multiTermRewriteMethod);
     return query;
   }
 
@@ -1572,6 +1581,12 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
+  private boolean jj_3R_3() {
+    if (jj_scan_token(STAR)) return true;
+    if (jj_scan_token(COLON)) return true;
+    return false;
+  }
+
   private boolean jj_3R_2() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -1585,12 +1600,6 @@ public class QueryParser implements QueryParserConstants {
     jj_scanpos = xsp;
     if (jj_3R_3()) return true;
     }
-    return false;
-  }
-
-  private boolean jj_3R_3() {
-    if (jj_scan_token(STAR)) return true;
-    if (jj_scan_token(COLON)) return true;
     return false;
   }
 

@@ -71,6 +71,7 @@ public class FuzzyQuery extends MultiTermQuery {
     
     this.minimumSimilarity = minimumSimilarity;
     this.prefixLength = prefixLength;
+    rewriteMethod = SCORING_BOOLEAN_QUERY_REWRITE;
   }
   
   /**
@@ -115,8 +116,8 @@ public class FuzzyQuery extends MultiTermQuery {
     return term;
   }
 
-  public void setConstantScoreRewrite(boolean constantScoreRewrite) {
-    throw new UnsupportedOperationException("FuzzyQuery cannot rewrite to a constant score query");
+  public void setRewriteMethod(RewriteMethod method) {
+    throw new UnsupportedOperationException("FuzzyQuery cannot change rewrite method");
   }
   
   public Query rewrite(IndexReader reader) throws IOException {

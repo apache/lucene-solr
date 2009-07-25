@@ -82,11 +82,12 @@ Changes in backwards compatibility policy
 
 Changes in runtime behavior
 
- 1. LUCENE-1424: QueryParser now by default uses constant score query
+ 1. LUCENE-1424: QueryParser now by default uses constant score auto
     rewriting when it generates a WildcardQuery and PrefixQuery (it
-    already does so for RangeQuery, as well).  Call
-    setConstantScoreRewrite(false) to revert to BooleanQuery rewriting
-    method.  (Mark Miller via Mike McCandless)
+    already does so for TermRangeQuery, as well).  Call
+    setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE)
+    to revert to slower BooleanQuery rewriting method.  (Mark Miller via Mike
+    McCandless)
     
  2. LUCENE-1575: As of 2.9, the core collectors as well as
     IndexSearcher's search methods that return top N results, no
@@ -314,10 +315,10 @@ API Changes
     includes more detailed status than previously.  (Tim Smith via
     Mike McCandless)
 
-28. LUCENE-1713: Deprecated RangeQuery and RangeFilter and renamed
-    to TermRangeQuery and TermRangeFilter. TermRangeQuery is in
-    constant score rewrite mode by default. The new classes also have
-    new ctors taking field and term ranges as Strings (see also
+28. LUCENE-1713: Deprecated RangeQuery and RangeFilter and renamed to
+    TermRangeQuery and TermRangeFilter. TermRangeQuery is in constant
+    score auto rewrite mode by default. The new classes also have new
+    ctors taking field and term ranges as Strings (see also
     LUCENE-1424).  (Uwe Schindler)
 
 29. LUCENE-1609: The termInfosIndexDivisor must now be specified
@@ -452,7 +453,7 @@ New features
  6. LUCENE-1424: Moved constant score query rewrite capability into
     MultiTermQuery, allowing TermRangeQuery, PrefixQuery and WildcardQuery
     to switch betwen constant-score rewriting or BooleanQuery
-    expansion rewriting via a new setConstantScoreRewrite method.
+    expansion rewriting via a new setRewriteMethod method.
     Deprecated ConstantScoreRangeQuery (Mark Miller via Mike
     McCandless)
 
@@ -597,6 +598,16 @@ New features
     On 32 bit platforms, the address space can be very fragmented, so
     one big ByteBuffer for the whole file may not fit into address space.
     (Eks Dev via Uwe Schindler)
+
+33. LUCENE-1644: Enable 4 rewrite modes for queries deriving from
+    MultiTermQuery (WildcardQuery, PrefixQuery, TermRangeQuery,
+    NumericRangeQuery): CONSTANT_SCORE_FILTER_REWRITE first creates a
+    filter and then assigns constant score (boost) to docs;
+    CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE create a BooleanQuery but
+    uses a constant score (boost); SCORING_BOOLEAN_QUERY_REWRITE also
+    creates a BooleanQuery but keeps the BooleanQuery's scores;
+    CONSTANT_SCORE_AUTO_REWRITE tries to pick the most performant
+    constant-score rewrite method.  (Mike McCandless)
     
 Optimizations
 

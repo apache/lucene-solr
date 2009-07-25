@@ -24,7 +24,15 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing terms with a specified prefix. A PrefixQuery
- * is built by QueryParser for input like <code>app*</code>. */
+ * is built by QueryParser for input like <code>app*</code>.
+ *
+ * <p><b>NOTE</b>: Currently this query uses {@link
+ * MultiTermQuery#SCORING_BOOLEAN_QUERY_REWRITE}, which
+ * assigns not-very-useful scores to the resulting hits.  In
+ * 3.0 this default will change to {@link
+ * MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}; you
+ * can use {@link MultiTermQuery#setRewriteMethod} to change
+ * it. */
 public class PrefixQuery extends MultiTermQuery {
   private Term prefix;
 

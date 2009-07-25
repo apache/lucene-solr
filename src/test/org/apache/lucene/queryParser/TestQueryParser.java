@@ -46,6 +46,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -433,11 +434,11 @@ public class TestQueryParser extends LuceneTestCase {
 
   public void testRange() throws Exception {
     assertQueryEquals("[ a TO z]", null, "[a TO z]");
-    assertTrue(((TermRangeQuery)getQuery("[ a TO z]", null)).getConstantScoreRewrite());
+    assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((TermRangeQuery)getQuery("[ a TO z]", null)).getRewriteMethod());
 
     QueryParser qp = new QueryParser("field", new SimpleAnalyzer());
-	  qp.setConstantScoreRewrite(false);
-    assertFalse(((TermRangeQuery)qp.parse("[ a TO z]")).getConstantScoreRewrite());
+    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    assertEquals(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE,((TermRangeQuery)qp.parse("[ a TO z]")).getRewriteMethod());
     
     assertQueryEquals("[ a TO z ]", null, "[a TO z]");
     assertQueryEquals("{ a TO z}", null, "{a TO z}");
@@ -476,7 +477,7 @@ public class TestQueryParser extends LuceneTestCase {
     // supported).
       
     // Test ConstantScoreRangeQuery
-    qp.setConstantScoreRewrite(true);
+    qp.setMultiTermRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
     ScoreDoc[] result = is.search(qp.parse("[ \u062F TO \u0698 ]"), null, 1000).scoreDocs;
     assertEquals("The index Term should not be included.", 0, result.length);
 
@@ -484,7 +485,7 @@ public class TestQueryParser extends LuceneTestCase {
     assertEquals("The index Term should be included.", 1, result.length);
 
     // Test TermRangeQuery
-    qp.setConstantScoreRewrite(false);
+    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     result = is.search(qp.parse("[ \u062F TO \u0698 ]"), null, 1000).scoreDocs;
     assertEquals("The index Term should not be included.", 0, result.length);
 

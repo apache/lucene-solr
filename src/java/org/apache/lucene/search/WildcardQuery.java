@@ -30,8 +30,14 @@ import java.io.IOException;
  * a Wildcard term should not start with one of the wildcards <code>*</code> or
  * <code>?</code>.
  * 
- * @see WildcardTermEnum
- */
+ * <p><b>NOTE</b>: Currently this query uses {@link
+ * MultiTermQuery#SCORING_BOOLEAN_QUERY_REWRITE}, which
+ * assigns not-very-useful scores to the resulting hits.  In
+ * 3.0 this default will change to {@link
+ * MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}; you can use {@link
+ * MultiTermQuery#setRewriteMethod} to change it.
+ *
+ * @see WildcardTermEnum */
 public class WildcardQuery extends MultiTermQuery {
   private boolean termContainsWildcard;
   protected Term term;

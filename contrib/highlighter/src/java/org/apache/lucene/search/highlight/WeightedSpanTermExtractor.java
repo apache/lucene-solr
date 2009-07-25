@@ -28,14 +28,11 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.index.FilterIndexReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.FuzzyQuery;
@@ -139,9 +136,9 @@ public class WeightedSpanTermExtractor {
       terms.putAll(disjunctTerms);
     } else if (query instanceof MultiTermQuery && (highlightCnstScrRngQuery || expandMultiTermQuery)) {
       MultiTermQuery mtq = ((MultiTermQuery)query);
-      if(mtq.getConstantScoreRewrite()) {
+      if(mtq.getRewriteMethod() == MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE) {
         mtq = copyMultiTermQuery(mtq);
-        mtq.setConstantScoreRewrite(false);
+        mtq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
         query = mtq;
       }
       String field;

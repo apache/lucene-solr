@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.text.Collator;
 
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -31,9 +30,9 @@ import org.apache.lucene.util.ToStringUtils;
  * supplied range according to {@link String#compareTo(String)}. It is not intended
  * for numerical ranges, use {@link NumericRangeQuery} instead.
  *
- * <p>This query is in constant score mode per default.
- * See {@link MultiTermQuery#setConstantScoreRewrite} for the tradeoffs between
- * enabling and disabling constantScoreRewrite mode.
+ * <p>This query uses the {@link
+ * MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}
+ * rewrite method.
  * @since 2.9
  */
 
@@ -110,7 +109,7 @@ public class TermRangeQuery extends MultiTermQuery {
     this.includeLower = includeLower;
     this.includeUpper = includeUpper;
     this.collator = collator;
-    this.constantScoreRewrite = true;
+    rewriteMethod = CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
   }
 
   /** Returns the field name for this query */

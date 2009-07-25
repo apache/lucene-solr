@@ -25,7 +25,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
@@ -104,13 +103,13 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       switch (i) {
         case 0:
           type = " (constant score)";
-          q.setConstantScoreRewrite(true);
+          q.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
           topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
           terms = q.getTotalNumberOfTerms();
           break;
         case 1:
           type = " (boolean query)";
-          q.setConstantScoreRewrite(false);
+          q.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
           topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
           terms = q.getTotalNumberOfTerms();
           break;
@@ -229,7 +228,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       // test inclusive range
       NumericRangeQuery tq=NumericRangeQuery.newIntRange(field, precisionStep, new Integer(lower), new Integer(upper), true, true);
       TermRangeQuery cq=new TermRangeQuery(field, NumericUtils.intToPrefixCoded(lower), NumericUtils.intToPrefixCoded(upper), true, true);
-      cq.setConstantScoreRewrite(true);
+      cq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
       TopDocs tTopDocs = searcher.search(tq, 1);
       TopDocs cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
@@ -238,7 +237,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       // test exclusive range
       tq=NumericRangeQuery.newIntRange(field, precisionStep, new Integer(lower), new Integer(upper), false, false);
       cq=new TermRangeQuery(field, NumericUtils.intToPrefixCoded(lower), NumericUtils.intToPrefixCoded(upper), false, false);
-      cq.setConstantScoreRewrite(true);
+      cq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
       tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
@@ -247,7 +246,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       // test left exclusive range
       tq=NumericRangeQuery.newIntRange(field, precisionStep, new Integer(lower), new Integer(upper), false, true);
       cq=new TermRangeQuery(field, NumericUtils.intToPrefixCoded(lower), NumericUtils.intToPrefixCoded(upper), false, true);
-      cq.setConstantScoreRewrite(true);
+      cq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
       tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
@@ -256,7 +255,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       // test right exclusive range
       tq=NumericRangeQuery.newIntRange(field, precisionStep, new Integer(lower), new Integer(upper), true, false);
       cq=new TermRangeQuery(field, NumericUtils.intToPrefixCoded(lower), NumericUtils.intToPrefixCoded(upper), true, false);
-      cq.setConstantScoreRewrite(true);
+      cq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
       tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );

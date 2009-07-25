@@ -88,7 +88,13 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   /** macro for readability */
   public static Query csrq(String f, String l, String h, boolean il, boolean ih) {
     TermRangeQuery query = new TermRangeQuery(f, l, h, il, ih);
-    query.setConstantScoreRewrite(true);
+    query.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
+    return query;
+  }
+
+  public static Query csrq(String f, String l, String h, boolean il, boolean ih, MultiTermQuery.RewriteMethod method) {
+    TermRangeQuery query = new TermRangeQuery(f, l, h, il, ih);
+    query.setRewriteMethod(method);
     return query;
   }
 
@@ -96,21 +102,21 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public static Query csrq(String f, String l, String h, boolean il,
       boolean ih, Collator c) {
     TermRangeQuery query = new TermRangeQuery(f, l, h, il, ih, c);
-    query.setConstantScoreRewrite(true);
+    query.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
     return query;
   }
 
   /** macro for readability */
   public static Query cspq(Term prefix) {
     PrefixQuery query = new PrefixQuery(prefix);
-    query.setConstantScoreRewrite(true);
+    query.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
     return query;
   }
 
   /** macro for readability */
   public static Query cswcq(Term wild) {
     WildcardQuery query = new WildcardQuery(wild);
-    query.setConstantScoreRewrite(true);
+    query.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
     return query;
   }
 
@@ -156,6 +162,14 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
           result[i].score);
     }
 
+    result = search.search(csrq("data", "1", "6", T, T, MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE), null, 1000).scoreDocs;
+    numHits = result.length;
+    assertEquals("wrong number of results", 6, numHits);
+    for (int i = 0; i < numHits; i++) {
+      assertEquals("score for " + i + " was not the same", score,
+          result[i].score);
+    }
+
   }
 
   public void testBoost() throws IOException {
@@ -197,6 +211,18 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     bq.add(q2, BooleanClause.Occur.SHOULD);
 
     ScoreDoc[] hits = search.search(bq, null, 1000).scoreDocs;
+    assertEquals(1, hits[0].doc);
+    assertEquals(0, hits[1].doc);
+    assertTrue(hits[0].score > hits[1].score);
+
+    q1 = csrq("data", "A", "A", T, T, MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE); // matches document #0
+    q1.setBoost(.1f);
+    q2 = csrq("data", "Z", "Z", T, T, MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE); // matches document #1
+    bq = new BooleanQuery(true);
+    bq.add(q1, BooleanClause.Occur.SHOULD);
+    bq.add(q2, BooleanClause.Occur.SHOULD);
+
+    hits = search.search(bq, null, 1000).scoreDocs;
     assertEquals(1, hits[0].doc);
     assertEquals(0, hits[1].doc);
     assertTrue(hits[0].score > hits[1].score);
@@ -268,19 +294,37 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     result = search.search(csrq("id", minIP, maxIP, T, T), null, numDocs).scoreDocs;
     assertEquals("find all", numDocs, result.length);
 
+    result = search.search(csrq("id", minIP, maxIP, T, T, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), null, numDocs).scoreDocs;
+    assertEquals("find all", numDocs, result.length);
+
     result = search.search(csrq("id", minIP, maxIP, T, F), null, numDocs).scoreDocs;
+    assertEquals("all but last", numDocs - 1, result.length);
+
+    result = search.search(csrq("id", minIP, maxIP, T, F, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), null, numDocs).scoreDocs;
     assertEquals("all but last", numDocs - 1, result.length);
 
     result = search.search(csrq("id", minIP, maxIP, F, T), null, numDocs).scoreDocs;
     assertEquals("all but first", numDocs - 1, result.length);
 
+    result = search.search(csrq("id", minIP, maxIP, F, T, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), null, numDocs).scoreDocs;
+    assertEquals("all but first", numDocs - 1, result.length);
+
     result = search.search(csrq("id", minIP, maxIP, F, F), null, numDocs).scoreDocs;
+    assertEquals("all but ends", numDocs - 2, result.length);
+
+    result = search.search(csrq("id", minIP, maxIP, F, F, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), null, numDocs).scoreDocs;
     assertEquals("all but ends", numDocs - 2, result.length);
 
     result = search.search(csrq("id", medIP, maxIP, T, T), null, numDocs).scoreDocs;
     assertEquals("med and up", 1 + maxId - medId, result.length);
 
+    result = search.search(csrq("id", medIP, maxIP, T, T, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), null, numDocs).scoreDocs;
+    assertEquals("med and up", 1 + maxId - medId, result.length);
+
     result = search.search(csrq("id", minIP, medIP, T, T), null, numDocs).scoreDocs;
+    assertEquals("up to med", 1 + medId - minId, result.length);
+
+    result = search.search(csrq("id", minIP, medIP, T, T, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), null, numDocs).scoreDocs;
     assertEquals("up to med", 1 + medId - minId, result.length);
 
     // unbounded id
@@ -307,24 +351,51 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
 
     result = search.search(csrq("id", minIP, minIP, F, F), null, numDocs).scoreDocs;
     assertEquals("min,min,F,F", 0, result.length);
+
+    result = search.search(csrq("id", minIP, minIP, F, F, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), null, numDocs).scoreDocs;
+    assertEquals("min,min,F,F", 0, result.length);
+
     result = search.search(csrq("id", medIP, medIP, F, F), null, numDocs).scoreDocs;
     assertEquals("med,med,F,F", 0, result.length);
+
+    result = search.search(csrq("id", medIP, medIP, F, F, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), null, numDocs).scoreDocs;
+    assertEquals("med,med,F,F", 0, result.length);
+
     result = search.search(csrq("id", maxIP, maxIP, F, F), null, numDocs).scoreDocs;
+    assertEquals("max,max,F,F", 0, result.length);
+
+    result = search.search(csrq("id", maxIP, maxIP, F, F, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), null, numDocs).scoreDocs;
     assertEquals("max,max,F,F", 0, result.length);
 
     result = search.search(csrq("id", minIP, minIP, T, T), null, numDocs).scoreDocs;
     assertEquals("min,min,T,T", 1, result.length);
+
+    result = search.search(csrq("id", minIP, minIP, T, T, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), null, numDocs).scoreDocs;
+    assertEquals("min,min,T,T", 1, result.length);
+
     result = search.search(csrq("id", null, minIP, F, T), null, numDocs).scoreDocs;
+    assertEquals("nul,min,F,T", 1, result.length);
+
+    result = search.search(csrq("id", null, minIP, F, T, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), null, numDocs).scoreDocs;
     assertEquals("nul,min,F,T", 1, result.length);
 
     result = search.search(csrq("id", maxIP, maxIP, T, T), null, numDocs).scoreDocs;
     assertEquals("max,max,T,T", 1, result.length);
+
+    result = search.search(csrq("id", maxIP, maxIP, T, T, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), null, numDocs).scoreDocs;
+    assertEquals("max,max,T,T", 1, result.length);
+
     result = search.search(csrq("id", maxIP, null, T, F), null, numDocs).scoreDocs;
+    assertEquals("max,nul,T,T", 1, result.length);
+
+    result = search.search(csrq("id", maxIP, null, T, F, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), null, numDocs).scoreDocs;
     assertEquals("max,nul,T,T", 1, result.length);
 
     result = search.search(csrq("id", medIP, medIP, T, T), null, numDocs).scoreDocs;
     assertEquals("med,med,T,T", 1, result.length);
 
+    result = search.search(csrq("id", medIP, medIP, T, T, MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT), null, numDocs).scoreDocs;
+    assertEquals("med,med,T,T", 1, result.length);
   }
 
   public void testRangeQueryIdCollating() throws IOException {

@@ -123,14 +123,20 @@ import org.apache.lucene.index.Term;
  *
  * <p>Comparisions of the different types of RangeQueries on an index with about 500,000 docs showed
  * that {@link TermRangeQuery} in boolean rewrite mode (with raised {@link BooleanQuery} clause count)
- * took about 30-40 secs to complete, {@link TermRangeQuery} in constant score rewrite mode took 5 secs
+ * took about 30-40 secs to complete, {@link TermRangeQuery} in constant score filter rewrite mode took 5 secs
  * and executing this class took &lt;100ms to complete (on an Opteron64 machine, Java 1.5, 8 bit
  * precision step). This query type was developed for a geographic portal, where the performance for
  * e.g. bounding boxes or exact date/time stamps is important.</p>
  *
- * <p>The query defaults to {@linkplain #setConstantScoreRewrite constant score rewrite mode}.
- * With precision steps of &le;4, this query can be run in conventional {@link BooleanQuery}
- * rewrite mode without changing the max clause count.
+ * <p>The query defaults to {@linkplain MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}
+ * for 32 bit (int/float) ranges with precisionStep <= 8 and
+ * 64 bit (long/double) ranges with precisionStep <= 6.
+ * Otherwise it uses {@linkplain
+ * MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE} as the
+ * number of terms is likely to be high.
+ * With precision steps of &le;4, this query can be run with
+ * one of the BooleanQuery rewrite methods without changing
+ * BooleanQuery's default max clause count.
  *
  * <p><font color="red"><b>NOTE:</b> This API is experimental and
  * might change in incompatible ways in the next release.</font>
@@ -152,7 +158,28 @@ public final class NumericRangeQuery extends MultiTermQuery {
     this.max = max;
     this.minInclusive = minInclusive;
     this.maxInclusive = maxInclusive;
-    setConstantScoreRewrite(true);
+
+    final MultiTermQuery.RewriteMethod rewriteMethod;
+    if (valSize == 64) {
+      if (precisionStep > 6) {
+        // Likely to hit too many terms, so set to
+        // CONSTANT_SCORE_FILTER right off
+        rewriteMethod = CONSTANT_SCORE_FILTER_REWRITE;
+      } else {
+        rewriteMethod = CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
+      }
+    } else if (valSize == 32) {
+      if (precisionStep > 8) {
+        // Likely to hit too many terms, so set to
+        // CONSTANT_SCORE_FILTER right off
+        rewriteMethod = CONSTANT_SCORE_FILTER_REWRITE;
+      } else {
+        rewriteMethod = CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
+      }
+    } else {
+      throw new IllegalStateException("unrecognized valSize " + valSize);
+    }
+    setRewriteMethod(rewriteMethod);
   }
   
   /**

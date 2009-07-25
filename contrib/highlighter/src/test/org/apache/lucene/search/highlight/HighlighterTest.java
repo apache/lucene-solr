@@ -53,6 +53,7 @@ import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.Hits;
@@ -548,7 +549,7 @@ public class HighlighterTest extends TestCase implements Formatter {
     numHighlights = 0;
 
     query = new WildcardQuery(new Term(FIELD_NAME, "ken*"));
-    ((WildcardQuery)query).setConstantScoreRewrite(true);
+    ((WildcardQuery)query).setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
     searcher = new IndexSearcher(ramDir);
     // can't rewrite ConstantScore if you want to highlight it -
     // it rewrites to ConstantScoreQuery which cannot be highlighted
@@ -1186,7 +1187,7 @@ public class HighlighterTest extends TestCase implements Formatter {
     searchers[1] = new IndexSearcher(ramDir2);
     MultiSearcher multiSearcher = new MultiSearcher(searchers);
     QueryParser parser = new QueryParser(FIELD_NAME, new StandardAnalyzer());
-    parser.setConstantScoreRewrite(false);
+    parser.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     query = parser.parse("multi*");
     System.out.println("Searching for: " + query.toString(FIELD_NAME));
     // at this point the multisearcher calls combine(query[])
@@ -1487,7 +1488,7 @@ public class HighlighterTest extends TestCase implements Formatter {
 
   public void doSearching(String queryString) throws Exception {
     QueryParser parser = new QueryParser(FIELD_NAME, new StandardAnalyzer());
-    parser.setConstantScoreRewrite(false);
+    parser.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     query = parser.parse(queryString);
     doSearching(query);
   }

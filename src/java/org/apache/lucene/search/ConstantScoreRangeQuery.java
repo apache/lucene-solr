@@ -29,9 +29,8 @@ import java.text.Collator;
  * supplied range according to {@link String#compareTo(String)}. It is not intended
  * for numerical ranges, use {@link NumericRangeQuery} instead.
  *
- * <p>This query is in
- * {@linkplain MultiTermQuery#setConstantScoreRewrite(boolean) constant score rewrite mode}.
- * If you want to change this, use the new {@link TermRangeQuery} instead.
+ * <p>This query is hardwired to {@link MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}.
+ * If you want to change this, use {@link TermRangeQuery} instead.
  *
  * @deprecated Use {@link TermRangeQuery} for term ranges or
  * {@link NumericRangeQuery} for numeric ranges instead.
@@ -44,14 +43,14 @@ public class ConstantScoreRangeQuery extends TermRangeQuery
   public ConstantScoreRangeQuery(String fieldName, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper)
   {
     super(fieldName, lowerVal, upperVal, includeLower, includeUpper);
-    this.constantScoreRewrite = true;
+    rewriteMethod = CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
   }
 
   public ConstantScoreRangeQuery(String fieldName, String lowerVal,
                                  String upperVal, boolean includeLower,
                                  boolean includeUpper, Collator collator) {
     super(fieldName, lowerVal, upperVal, includeLower, includeUpper, collator);
-    this.constantScoreRewrite = true;
+    rewriteMethod = CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
   }
 
   public String getLowerVal() {
@@ -63,8 +62,7 @@ public class ConstantScoreRangeQuery extends TermRangeQuery
   }
 
   /** Changes of mode are not supported by this class (fixed to constant score rewrite mode) */
-  public void setConstantScoreRewrite(boolean constantScoreRewrite) {
-    if (!constantScoreRewrite)
-      throw new UnsupportedOperationException("Use TermRangeQuery instead to enable boolean query rewrite.");
+  public void setRewriteMethod(RewriteMethod method) {
+    throw new UnsupportedOperationException("Use TermRangeQuery instead to change the rewrite method.");
   }
 }

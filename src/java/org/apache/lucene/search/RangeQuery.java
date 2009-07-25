@@ -30,9 +30,10 @@ import org.apache.lucene.index.Term;
  * supplied range according to {@link Term#compareTo(Term)}. It is not intended
  * for numerical ranges, use {@link NumericRangeQuery} instead.
  *
- * <p>This query is in
- * {@linkplain MultiTermQuery#setConstantScoreRewrite(boolean) boolean query rewrite mode}.
- * If you want to change this, use the new {@link TermRangeQuery} instead.
+ * <p>This query uses {@linkplain
+ * MultiTermQuery#SCORING_BOOLEAN_QUERY_REWRITE}.  If you
+ * want to change this, use the new {@link TermRangeQuery}
+ * instead.
  *
  * @deprecated Use {@link TermRangeQuery} for term ranges or
  * {@link NumericRangeQuery} for numeric ranges instead.
@@ -93,7 +94,7 @@ public class RangeQuery extends Query {
       inclusive, inclusive,
       collator
     );
-    delegate.setConstantScoreRewrite(false);
+    delegate.setRewriteMethod(TermRangeQuery.SCORING_BOOLEAN_QUERY_REWRITE);
   }
   
   public void setBoost(float b) {

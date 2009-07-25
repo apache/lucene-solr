@@ -37,7 +37,8 @@ import java.util.BitSet;
  * For example, {@link TermRangeFilter} and {@link PrefixFilter} extend
  * <code>MultiTermQueryWrapperFilter</code>.
  * This class also provides the functionality behind
- * {@link MultiTermQuery#getFilter}, this is why it is not abstract.
+ * {@link MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE};
+ * this is why it is not abstract.
  */
 public class MultiTermQueryWrapperFilter extends Filter {
     
@@ -93,21 +94,34 @@ public class MultiTermQueryWrapperFilter extends Filter {
   public void clearTotalNumberOfTerms() {
     query.clearTotalNumberOfTerms();
   }
-  
+
   abstract class TermGenerator {
     public void generate(IndexReader reader, TermEnum enumerator) throws IOException {
+      final int[] docs = new int[32];
+      final int[] freqs = new int[32];
       TermDocs termDocs = reader.termDocs();
       try {
+        int termCount = 0;
         do {
           Term term = enumerator.term();
           if (term == null)
             break;
-          query.numberOfTerms++;
+          termCount++;
           termDocs.seek(term);
-          while (termDocs.next()) {
-            handleDoc(termDocs.doc());
+          while (true) {
+            final int count = termDocs.read(docs, freqs);
+            if (count != 0) {
+              for(int i=0;i<count;i++) {
+                handleDoc(docs[i]);
+              }
+            } else {
+              break;
+            }
           }
         } while (enumerator.next());
+
+        query.incTotalNumberOfTerms(termCount);
+
       } finally {
         termDocs.close();
       }

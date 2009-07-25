@@ -29,6 +29,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
@@ -77,9 +78,9 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
   public Query parse(String query) throws ParseException {
     if (isPass2ResolvingPhrases) {
-      boolean oldConstantScoreRewriteSetting = getConstantScoreRewrite();
+      MultiTermQuery.RewriteMethod oldMethod = getMultiTermRewriteMethod();
       try {
-        // Temporarily set constantScoreRewrite to false so that Parser will
+        // Temporarily force BooleanQuery rewrite so that Parser will
         // generate visible
         // collection of terms which we can convert into SpanQueries.
         // ConstantScoreRewrite mode produces an
@@ -88,10 +89,10 @@ public class ComplexPhraseQueryParser extends QueryParser {
         // QueryParser is not guaranteed threadsafe anyway so this temporary
         // state change should not
         // present an issue
-        setConstantScoreRewrite(false);
+        setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
         return super.parse(query);
       } finally {
-        setConstantScoreRewrite(oldConstantScoreRewriteSetting);
+        setMultiTermRewriteMethod(oldMethod);
       }
     }
 
@@ -165,7 +166,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
       // that can be turned into SpanOr clause
       TermRangeQuery rangeQuery = new TermRangeQuery(field, part1, part2, inclusive, inclusive,
           getRangeCollator());
-      rangeQuery.setConstantScoreRewrite(false);;
+      rangeQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
       return rangeQuery;
     }
     return super.newRangeQuery(field, part1, part2, inclusive);
