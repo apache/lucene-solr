@@ -310,9 +310,18 @@ public abstract class MultiTermQuery extends Query {
     public void setDocCountPercent(double percent) {
       throw new UnsupportedOperationException("Please create a private instance");
     }
+
+    // Make sure we are still a singleton even after deserializing
+    protected Object readResolve() {
+      return CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
+    }
   };
 
-  /** Constructs a query for terms matching <code>term</code>. */
+  /**
+   * Constructs a query for terms matching <code>term</code>.
+   * @deprecated check sub class for possible term access - the Term does not
+   * make sense for all MultiTermQuerys and will be removed.
+   */
   public MultiTermQuery(Term term) {
     this.term = term;
   }

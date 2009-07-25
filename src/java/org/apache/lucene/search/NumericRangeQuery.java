@@ -129,8 +129,8 @@ import org.apache.lucene.index.Term;
  * e.g. bounding boxes or exact date/time stamps is important.</p>
  *
  * <p>The query defaults to {@linkplain MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}
- * for 32 bit (int/float) ranges with precisionStep <= 8 and
- * 64 bit (long/double) ranges with precisionStep <= 6.
+ * for 32 bit (int/float) ranges with precisionStep &le;8 and
+ * 64 bit (long/double) ranges with precisionStep &le;6.
  * Otherwise it uses {@linkplain
  * MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE} as the
  * number of terms is likely to be high.
@@ -159,27 +159,27 @@ public final class NumericRangeQuery extends MultiTermQuery {
     this.minInclusive = minInclusive;
     this.maxInclusive = maxInclusive;
 
-    final MultiTermQuery.RewriteMethod rewriteMethod;
-    if (valSize == 64) {
-      if (precisionStep > 6) {
-        // Likely to hit too many terms, so set to
-        // CONSTANT_SCORE_FILTER right off
-        rewriteMethod = CONSTANT_SCORE_FILTER_REWRITE;
-      } else {
-        rewriteMethod = CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
-      }
-    } else if (valSize == 32) {
-      if (precisionStep > 8) {
-        // Likely to hit too many terms, so set to
-        // CONSTANT_SCORE_FILTER right off
-        rewriteMethod = CONSTANT_SCORE_FILTER_REWRITE;
-      } else {
-        rewriteMethod = CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
-      }
-    } else {
-      throw new IllegalStateException("unrecognized valSize " + valSize);
+    // For bigger precisionSteps this query likely
+    // hits too many terms, so set to CONSTANT_SCORE_FILTER right off
+    // (especially as the FilteredTermEnum is costly if wasted only for AUTO tests because it
+    // creates new enums from IndexReader for each sub-range)
+    switch (valSize) {
+      case 64:
+        setRewriteMethod( (precisionStep > 6) ?
+          CONSTANT_SCORE_FILTER_REWRITE : 
+          CONSTANT_SCORE_AUTO_REWRITE_DEFAULT
+        );
+        break;
+      case 32:
+        setRewriteMethod( (precisionStep > 8) ?
+          CONSTANT_SCORE_FILTER_REWRITE : 
+          CONSTANT_SCORE_AUTO_REWRITE_DEFAULT
+        );
+        break;
+      default:
+        // should never happen
+        throw new IllegalArgumentException("valSize must be 32 or 64");
     }
-    setRewriteMethod(rewriteMethod);
   }
   
   /**
