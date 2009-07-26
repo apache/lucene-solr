@@ -67,7 +67,6 @@ import org.apache.lucene.util.AttributeSource;
   TokenStream, e. g. for buffering purposes (see {@link CachingTokenFilter},
   {@link TeeSinkTokenFilter}). For this usecase
   {@link AttributeSource#captureState} and {@link AttributeSource#restoreState} can be used.  
- * <p><font color="#FF0000">
  */
 public abstract class TokenStream extends AttributeSource {
 
