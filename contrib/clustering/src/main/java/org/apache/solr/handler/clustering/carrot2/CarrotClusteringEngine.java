@@ -194,7 +194,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
                                    SolrParams solrParams) {
     List result = new ArrayList();
     clustersToNamedList(carrotClusters, result, solrParams.getBool(
-            CarrotParams.OUTPUT_SUB_CLUSTERS, false), solrParams.getInt(
+            CarrotParams.OUTPUT_SUB_CLUSTERS, true), solrParams.getInt(
             CarrotParams.NUM_DESCRIPTIONS, Integer.MAX_VALUE));
     return result;
   }
@@ -210,7 +210,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
         labels = labels.subList(0, maxLabels);
       cluster.add("labels", labels);
 
-      List<Document> docs = outCluster.getDocuments();
+      List<Document> docs = outputSubClusters ? outCluster.getDocuments() : outCluster.getAllDocuments();
       List docList = new ArrayList();
       cluster.add("docs", docList);
       for (Document doc : docs) {
