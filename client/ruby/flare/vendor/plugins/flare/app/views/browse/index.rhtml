@@ -1,10 +1,23 @@
+<%
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+%>
 <div id="sidebar"><div class="boxContent">
-	<div class="searchbar">
+  <div class="searchbar">
   <% form_tag(:action=>'add_query') do %>
     <%= text_field_with_auto_complete :search, :query %>
     <%=submit_tag "search"%>
   <% end %>
-	</div>
+  </div>
 <!-- <h2>browse facets</h2> -->
 
 <% if @flare.facet_queries.size > 0%>
@@ -42,13 +55,13 @@
 </div></div> 
 
 <div id="variables">
-	<div class="clear">
-		<%=link_to '[clear constraints]', :action => 'clear'%>
-	</div>
-	
+  <div class="clear">
+    <%=link_to '[clear constraints]', :action => 'clear'%>
+  </div>
+  
 <div>
   <span class="varheader">Saved searches:</span>
-  	<div id="queries">
+    <div id="queries">
       <% @flare.applied_facet_queries.each_with_index do |q, i| %>
             <%=link_to q[:negative] ? "-" : "+", :action => :invert_saved_constraint, :index => i%>
             <%=q[:name]%>
@@ -56,29 +69,29 @@
       <% end %>
     </div>
 <span class="varheader">Queries:</span>
-	<div id="queries">
+  <div id="queries">
 <% @flare.queries.each_with_index do |q,i| %>
 <%=link_to q[:negative] ? "-" : '+', :action => :invert_query, :index => i%>
 <span id="query_<%=i%>"><%=q[:query]%></span>
 <%= in_place_editor "query_#{i}", :url=> url_for(:action=>"update_query", :index=>i, :script=>true) %>
 <%=link_to image_tag("x-close.gif"), :action => :remove_query, :index => i %><br/>
 <% end %>
-	</div>
+  </div>
 </div>
 
 <div>
 <span class="varheader">Filters:</span>
-	<div id="filters">
+  <div id="filters">
 <% @flare.filters.each_with_index do |filter, i| %>
       <%=link_to filter[:negative] ? "-" : "+", :action => :invert_filter, :index => i%>
       <%=filter[:field]%>:<%=filter[:value]%>
       <%=link_to image_tag("x-close.gif"), :action => :remove_filter, :index => i %><br/>
 <% end %>
-	</div>
+  </div>
 </div>
 
 <div class="clear">
-	<%=link_to '[clear constraints]', :action => 'clear'%>
+  <%=link_to '[clear constraints]', :action => 'clear'%>
 </div>
 
 <% form_tag({:action=>'save'},{:id => 'savesearch', :style => "display:none;"}) do %>

@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 class SimileController < ApplicationController
   before_filter :flare_before
   

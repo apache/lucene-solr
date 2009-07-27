@@ -10,7 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 class DocumentController < ApplicationController
   # Currently not used, as partials are used for rendering documents in search results
   # TODO: how best to allow pluggable document rendering?
