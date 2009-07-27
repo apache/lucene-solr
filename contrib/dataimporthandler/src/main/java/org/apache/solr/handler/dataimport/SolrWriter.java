@@ -86,7 +86,7 @@ public class SolrWriter {
 
   public void deleteDoc(Object id) {
     try {
-      log.info("deleted from document to Solr: " + id);
+      log.info("Deleting document: " + id);
       DeleteUpdateCommand delCmd = new DeleteUpdateCommand();
       delCmd.id = id.toString();
       delCmd.fromPending = true;
