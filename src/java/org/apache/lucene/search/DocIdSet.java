@@ -28,7 +28,7 @@ public abstract class DocIdSet {
 
   /** An empty {@code DocIdSet} instance for easy use (this is currently
    * implemented using a {@link SortedVIntList}). */
-  public static final DocIdSet EMPTY_DOCIDSET = new SortedVIntList(new int[0]) {
+  public static final DocIdSet EMPTY_DOCIDSET = new DocIdSet() {
     
     private final DocIdSetIterator iterator = new DocIdSetIterator() {
       public int advance(int target) throws IOException { return NO_MORE_DOCS; }
