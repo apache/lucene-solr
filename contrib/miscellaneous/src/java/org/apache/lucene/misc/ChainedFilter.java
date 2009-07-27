@@ -54,13 +54,12 @@ package org.apache.lucene.misc;
  * <http://www.apache.org/>.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Filter;
-
 import java.io.IOException;
+
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.EmptyDocIdSetIterator;
+import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetDISI;
 import org.apache.lucene.util.SortedVIntList;
@@ -150,11 +149,11 @@ public class ChainedFilter extends Filter
     throws IOException {
         DocIdSet docIdSet = filter.getDocIdSet(reader);
         if (docIdSet == null) {
-          return EmptyDocIdSetIterator.getInstance();
+          return DocIdSet.EMPTY_DOCIDSET.iterator();
         } else {
           DocIdSetIterator iter = docIdSet.iterator();
           if (iter == null) {
-            return EmptyDocIdSetIterator.getInstance();
+            return DocIdSet.EMPTY_DOCIDSET.iterator();
           } else {
             return iter;
           }
@@ -275,11 +274,11 @@ public class ChainedFilter extends Filter
       } else {
         DocIdSetIterator disi;
         if (dis == null) {
-          disi = EmptyDocIdSetIterator.getInstance();
+          disi = DocIdSet.EMPTY_DOCIDSET.iterator();
         } else {
           disi = dis.iterator();
           if (disi == null) {
-            disi = EmptyDocIdSetIterator.getInstance();            
+            disi = DocIdSet.EMPTY_DOCIDSET.iterator();            
           }
         }
 

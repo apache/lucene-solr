@@ -83,9 +83,9 @@ extends Query {
         }
         Filter f = FilteredQuery.this.filter;
         DocIdSet docIdSet = f.getDocIdSet(ir);
-        DocIdSetIterator docIdSetIterator = docIdSet == null ? EmptyDocIdSetIterator.getInstance() : docIdSet.iterator();
+        DocIdSetIterator docIdSetIterator = docIdSet == null ? DocIdSet.EMPTY_DOCIDSET.iterator() : docIdSet.iterator();
         if (docIdSetIterator == null) {
-          docIdSetIterator = EmptyDocIdSetIterator.getInstance();
+          docIdSetIterator = DocIdSet.EMPTY_DOCIDSET.iterator();
         }
         if (docIdSetIterator.advance(i) == i) {
           return inner;

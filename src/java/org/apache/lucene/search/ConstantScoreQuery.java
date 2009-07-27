@@ -115,11 +115,11 @@ public class ConstantScoreQuery extends Query {
       theScore = w.getValue();
       DocIdSet docIdSet = filter.getDocIdSet(reader);
       if (docIdSet == null) {
-        docIdSetIterator = EmptyDocIdSetIterator.getInstance();
+        docIdSetIterator = DocIdSet.EMPTY_DOCIDSET.iterator();
       } else {
         DocIdSetIterator iter = docIdSet.iterator();
         if (iter == null) {
-          docIdSetIterator = EmptyDocIdSetIterator.getInstance();
+          docIdSetIterator = DocIdSet.EMPTY_DOCIDSET.iterator();
         } else {
           docIdSetIterator = iter;
         }
