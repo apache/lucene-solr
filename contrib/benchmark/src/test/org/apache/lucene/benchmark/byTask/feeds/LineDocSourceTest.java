@@ -39,8 +39,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 
-/** Tests the functionality of {@link LineDocMaker}. */
-public class LineDocMakerTest extends BenchmarkTestCase {
+/** Tests the functionality of {@link LineDocSource}. */
+public class LineDocSourceTest extends BenchmarkTestCase {
 
   private static final CompressorStreamFactory csFactory = new CompressorStreamFactory();
 
@@ -70,7 +70,7 @@ public class LineDocMakerTest extends BenchmarkTestCase {
 
     Properties props = new Properties();
     
-    // LineDocMaker specific settings.
+    // LineDocSource specific settings.
     props.setProperty("docs.file", file.getAbsolutePath());
     if (setBZCompress) {
       props.setProperty("bzip.compression", bz2CompressVal);
@@ -78,7 +78,7 @@ public class LineDocMakerTest extends BenchmarkTestCase {
     
     // Indexing configuration.
     props.setProperty("analyzer", SimpleAnalyzer.class.getName());
-    props.setProperty("doc.maker", LineDocMaker.class.getName());
+    props.setProperty("content.source", LineDocSource.class.getName());
     props.setProperty("directory", "RAMDirectory");
     
     // Create PerfRunData
@@ -98,7 +98,7 @@ public class LineDocMakerTest extends BenchmarkTestCase {
     searcher.close();
   }
   
-  /* Tests LineDocMaker with a bzip2 input stream. */
+  /* Tests LineDocSource with a bzip2 input stream. */
   public void testBZip2() throws Exception {
     File file = new File(getWorkDir(), "one-line.bz2");
     createBZ2LineFile(file);

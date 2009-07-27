@@ -42,51 +42,13 @@ import org.apache.lucene.document.Field.TermVector;
  * 0..N; this is useful with UpdateDoc to test updating random documents; if
  * this is unspecified or -1, then docid is sequentially assigned
  * </ul>
+ * @deprecated Please use {@link DocMaker} instead, with content.source=LineDocSource
  */
 public class LineDocMaker extends DocMaker {
-
-  private Random r;
-  private int numDocs;
-
-  public Document makeDocument() throws Exception {
-
-    DocState ds = reuseFields ? getDocState() : localDocState;
-    DocData dd = source.getNextDocData(ds.docData);
-    Document doc = reuseFields ? ds.doc : new Document();
-    doc.getFields().clear();
-
-    Field body = ds.getField(BODY_FIELD, storeVal, bodyIndexVal, termVecVal);
-    body.setValue(dd.getBody());
-    doc.add(body);
-    
-    Field title = ds.getField(TITLE_FIELD, storeVal, indexVal, termVecVal);
-    title.setValue(dd.getTitle());
-    doc.add(title);
-    
-    Field date = ds.getField(DATE_FIELD, storeVal, indexVal, termVecVal);
-    date.setValue(dd.getDate());
-    doc.add(date);
-    
-    String docID = "doc" + (r != null ? r.nextInt(numDocs) : incrNumDocsCreated());
-    Field id = ds.getField(ID_FIELD, Store.YES, Index.NOT_ANALYZED_NO_NORMS, TermVector.NO);
-    id.setValue(docID);
-    doc.add(id);
-    
-    return doc;
-  }
-
-  public Document makeDocument(int size) throws Exception {
-    throw new RuntimeException("cannot change document size with LineDocMaker");
-  }
-  
   public void setConfig(Config config) {
     super.setConfig(config);
     source = new LineDocSource();
     source.setConfig(config);
-    numDocs = config.get("doc.random.id.limit", -1);
-    if (numDocs != -1) {
-      r = new Random(179);
-    }
+    System.out.println("NOTE: LineDocMaker is deprecated; please use DocMaker instead (which is the default if you don't specify doc.maker) with content.source=LineDocSource");
   }
-
 }

@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.Random;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.Format;
@@ -60,6 +61,9 @@ import org.apache.lucene.document.Field.TermVector;
  * <li><b>doc.reuse.fields</b> - specifies whether Field and Document objects
  * should be reused (default <b>true</b>).
  * <li><b>doc.index.props</b> - specifies whether the properties returned by
+ * <li><b>doc.random.id.limit</b> - if specified, docs will be assigned random
+ * IDs from 0 to this limit.  This is useful with UpdateDoc
+ * for testing performance of IndexWriter.updateDocument.
  * {@link DocData#getProps()} will be indexed. (default <b>false</b>).
  * </ul>
  */
@@ -70,11 +74,14 @@ public class DocMaker {
     private int cnt;
   }
 
+  private Random r;
+  private int updateDocIDLimit;
+
   static class DocState {
     
-    private Map fields;
-    private boolean reuseFields;
-    Document doc;
+    private final Map fields;
+    private final boolean reuseFields;
+    final Document doc;
     DocData docData = new DocData();
     
     public DocState(boolean reuseFields, Store store, Index index, Index bodyIndex, TermVector termVector) {
@@ -92,6 +99,9 @@ public class DocMaker {
         fields.put(NAME_FIELD, new Field(NAME_FIELD, "", store, index, termVector));
         
         doc = new Document();
+      } else {
+        fields = null;
+        doc = null;
       }
     }
 
@@ -150,14 +160,14 @@ public class DocMaker {
   // use only part of the body, modify it to keep the rest (or use all if size==0).
   // reset the docdata properties so they are not added more than once.
   private Document createDocument(DocData docData, int size, int cnt) throws UnsupportedEncodingException {
-    int docid = incrNumDocsCreated();
-    DocState ds = reuseFields ? getDocState() : localDocState;
-    Document doc = reuseFields ? ds.doc : new Document();
+
+    final DocState ds = reuseFields ? getDocState() : localDocState;
+    final Document doc = reuseFields ? ds.doc : new Document();
     doc.getFields().clear();
     
     // Set ID_FIELD
     Field idField = ds.getField(ID_FIELD, storeVal, Index.NOT_ANALYZED_NO_NORMS, termVecVal);
-    idField.setValue("doc" + docid);
+    idField.setValue("doc" + (r != null ? r.nextInt(updateDocIDLimit) : incrNumDocsCreated()));
     doc.add(idField);
     
     // Set NAME_FIELD
@@ -407,6 +417,11 @@ public class DocMaker {
     }
     
     indexProperties = config.get("doc.index.props", false);
+
+    updateDocIDLimit = config.get("doc.random.id.limit", -1);
+    if (updateDocIDLimit != -1) {
+      r = new Random(179);
+    }
   }
 
 }

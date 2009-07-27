@@ -4,6 +4,16 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+7/24/2009
+  LUCENE-1595: Deprecate LineDocMaker and EnwikiDocMaker in favor of
+  using DocMaker directly, with content.source = LineDocSource or
+  EnwikiContentSource.  NOTE: with this change, the "id" field from
+  the Wikipedia XML export is now indexed as the "docname" field
+  (previously it was indexed as "docid").  Additionaly, the
+  SearchWithSort task now accepts all types that SortField can accept
+  and no longer falls back to SortField.AUTO, which has been
+  deprecated. (Mike McCandless)
+
 7/20/2009
   LUCENE-1755: Fix WriteLineDocTask to output a document if it contains either 
   a title or body (or both).  (Shai Erera via Mark Miller)

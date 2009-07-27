@@ -299,7 +299,7 @@ public class TestPerfTasksLogic extends TestCase {
   }
 
   /**
-   * Test WriteLineDoc and LineDocMaker.
+   * Test WriteLineDoc and LineDocSource.
    */
   public void testLineDocFile() throws Exception {
     File lineFile = new File(System.getProperty("tempDir"), "test.reuters.lines.txt");
@@ -334,7 +334,7 @@ public class TestPerfTasksLogic extends TestCase {
     String algLines2[] = {
       "# ----- properties ",
       "analyzer=org.apache.lucene.analysis.SimpleAnalyzer",
-      "doc.maker=org.apache.lucene.benchmark.byTask.feeds.LineDocMaker",
+      "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
       "docs.file=" + lineFile.getAbsolutePath().replace('\\', '/'),
       "content.source.forever=false",
       "doc.reuse.fields=false",
@@ -355,7 +355,7 @@ public class TestPerfTasksLogic extends TestCase {
     iw.close();
 
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
-    assertEquals(numLines + " lines were were created but " + ir.numDocs() + " docs are in the index", numLines, ir.numDocs());
+    assertEquals(numLines + " lines were created but " + ir.numDocs() + " docs are in the index", numLines, ir.numDocs());
     ir.close();
 
     lineFile.delete();

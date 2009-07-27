@@ -172,7 +172,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   public void testCharsReplace() throws Exception {
     // WriteLineDocTask replaced only \t characters w/ a space, since that's its
     // separator char. However, it didn't replace newline characters, which
-    // resulted in errors in LineDocMaker.
+    // resulted in errors in LineDocSource.
     File file = new File(getWorkDir(), "one-line");
     PerfRunData runData = createPerfRunData(file, false, null, NewLinesDocMaker.class.getName());
     WriteLineDocTask wldt = new WriteLineDocTask(runData);

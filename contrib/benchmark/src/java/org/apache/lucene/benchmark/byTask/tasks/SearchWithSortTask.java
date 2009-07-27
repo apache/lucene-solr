@@ -56,6 +56,8 @@ public class SearchWithSortTask extends ReadTask {
       SortField sortField0;
       if (field.equals("doc")) {
         sortField0 = SortField.FIELD_DOC;
+      } if (field.equals("score")) {
+        sortField0 = SortField.FIELD_SCORE;
       } else if (field.equals("noscore")) {
         doScore = false;
         continue;
@@ -90,14 +92,22 @@ public class SearchWithSortTask extends ReadTask {
     int type;
     if (typeString.equals("float")) {
       type = SortField.FLOAT;
+    } else if (typeString.equals("double")) {
+      type = SortField.DOUBLE;
+    } else if (typeString.equals("byte")) {
+      type = SortField.BYTE;
+    } else if (typeString.equals("short")) {
+      type = SortField.SHORT;
     } else if (typeString.equals("int")) {
       type = SortField.INT;
+    } else if (typeString.equals("long")) {
+      type = SortField.LONG;
     } else if (typeString.equals("string")) {
       type = SortField.STRING;
     } else if (typeString.equals("string_val")) {
       type = SortField.STRING_VAL;
     } else {
-      type = SortField.AUTO;
+      throw new RuntimeException("Unrecognized sort field type " + typeString);
     }
     return type;
   }
