@@ -79,8 +79,9 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
       "literal.id","simple2",
       "uprefix", "t_",
       "lowernames", "true",
-      "captureAttr", "true",  "map.a","t_href",
-      "map.content_language", "abcxyz",  // test that lowernames is applied before mapping, and uprefix is applied after mapping
+      "captureAttr", "true",
+      "map.a","t_href",
+      "map.content_type", "abcxyz",  // test that lowernames is applied before mapping, and uprefix is applied after mapping
       "commit", "true"  // test immediate commit
     );
 
@@ -88,7 +89,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
     // assertQ(req("q","id:simple2","indent","true"), "//*[@numFound='0']");
 
     // test both lowernames and unknown field mapping
-    assertQ(req("+id:simple2 +t_content_type:[* TO *]"), "//*[@numFound='1']");
+    //assertQ(req("+id:simple2 +t_content_type:[* TO *]"), "//*[@numFound='1']");
     assertQ(req("+id:simple2 +t_href:[* TO *]"), "//*[@numFound='1']");
     assertQ(req("+id:simple2 +t_abcxyz:[* TO *]"), "//*[@numFound='1']");
 
@@ -98,7 +99,6 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
       "uprefix", "t_",
       "lowernames", "true",
       "captureAttr", "true",  "map.a","t_href",
-      "map.content_language", "abcxyz",
       "commit", "true"
 
       ,"boost.t_href", "100.0"
@@ -106,6 +106,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
 
     assertQ(req("t_href:http"), "//*[@numFound='2']");
     assertQ(req("t_href:http"), "//doc[1]/str[.='simple3']");
+    assertQ(req("+id:simple3 +t_content_type:[* TO *]"), "//*[@numFound='1']");//test lowercase and then uprefix
 
     // test capture
      loadLocal("simple.html",

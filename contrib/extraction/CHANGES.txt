@@ -29,3 +29,8 @@ $Id:$
 3. SOLR-1075: Upgrade to Tika 0.3.  See http://www.apache.org/dist/lucene/tika/CHANGES-0.3.txt (gsingers)
 
 4. SOLR-1128: Added metadata output to "extract only" option.  (gsingers)
+
+5. SOLR-1310: Upgrade to Tika 0.4. Note there are some differences in detecting Languages now.
+    See http://www.lucidimagination.com/search/document/d6f1899a85b2a45c/vote_apache_tika_0_4_release_candidate_2#d6f1899a85b2a45c
+    for discussion on language detection.
+    See http://www.apache.org/dist/lucene/tika/CHANGES-0.4.txt. (gsingers)
