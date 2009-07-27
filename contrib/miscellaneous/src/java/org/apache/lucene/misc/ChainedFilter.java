@@ -60,6 +60,7 @@ import org.apache.lucene.search.Filter;
 import java.io.IOException;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.EmptyDocIdSetIterator;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetDISI;
 import org.apache.lucene.util.SortedVIntList;
@@ -146,9 +147,18 @@ public class ChainedFilter extends Filter
     }
 
     private DocIdSetIterator getDISI(Filter filter, IndexReader reader)
-    throws IOException
-    {
-        return filter.getDocIdSet(reader).iterator();
+    throws IOException {
+        DocIdSet docIdSet = filter.getDocIdSet(reader);
+        if (docIdSet == null) {
+          return EmptyDocIdSetIterator.getInstance();
+        } else {
+          DocIdSetIterator iter = docIdSet.iterator();
+          if (iter == null) {
+            return EmptyDocIdSetIterator.getInstance();
+          } else {
+            return iter;
+          }
+        }
     }
 
     private OpenBitSetDISI initialResult(IndexReader reader, int logic, int[] index)
@@ -241,13 +251,11 @@ public class ChainedFilter extends Filter
     }
 
     private void doChain(OpenBitSetDISI result, int logic, DocIdSet dis)
-    throws IOException
-    {
+    throws IOException {
       
       if (dis instanceof OpenBitSet) {
         // optimized case for OpenBitSets
-        switch (logic)
-        {
+        switch (logic) {
             case OR:
                 result.or((OpenBitSet) dis);
                 break;
@@ -265,9 +273,17 @@ public class ChainedFilter extends Filter
                 break;
         }
       } else {
-        DocIdSetIterator disi = dis.iterator();      
-        switch (logic)
-        {
+        DocIdSetIterator disi;
+        if (dis == null) {
+          disi = EmptyDocIdSetIterator.getInstance();
+        } else {
+          disi = dis.iterator();
+          if (disi == null) {
+            disi = EmptyDocIdSetIterator.getInstance();            
+          }
+        }
+
+        switch (logic) {
             case OR:
                 result.inPlaceOr(disi);
                 break;

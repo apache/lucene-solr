@@ -22,6 +22,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import junit.framework.Assert;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -102,4 +114,30 @@ public class TestDocIdSet extends LuceneTestCase {
       fail();
     }
   }
+  
+  public void testNullDocIdSet() throws Exception {
+    // Tests that if a Filter produces a null DocIdSet, which is given to
+    // IndexSearcher, everything works fine. This came up in LUCENE-1754.
+    Directory dir = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new Field("c", "val", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+    writer.addDocument(doc);
+    writer.close();
+    
+    // First verify the document is searchable.
+    IndexSearcher searcher = new IndexSearcher(dir, true);
+    Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits);
+    
+    // Now search w/ a Filter which returns a null DocIdSet
+    Filter f = new Filter() {
+      public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+        return null;
+      }
+    };
+    
+    Assert.assertEquals(0, searcher.search(new MatchAllDocsQuery(), f, 10).totalHits);
+    searcher.close();
+  }
+
 }

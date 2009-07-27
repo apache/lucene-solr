@@ -30,6 +30,8 @@ public abstract class DocIdSet {
    * implemented using a {@link SortedVIntList}). */
   public static final DocIdSet EMPTY_DOCIDSET = new SortedVIntList(new int[0]);
     
-  /** Provides a {@link DocIdSetIterator} to access the set. */
+  /** Provides a {@link DocIdSetIterator} to access the set.
+   * This may (but is not required to) return null if there
+   * are no docs that match. */
   public abstract DocIdSetIterator iterator() throws IOException;
 }

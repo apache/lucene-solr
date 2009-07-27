@@ -39,10 +39,12 @@ public abstract class Filter implements java.io.Serializable {
   public BitSet bits(IndexReader reader) throws IOException {
     throw new UnsupportedOperationException();
   }
-	
+
   /**
-   * @return a DocIdSet that provides the documents which should be
-   * permitted or prohibited in search results.
+   * @return a DocIdSet that provides the documents which should be permitted or
+   *         prohibited in search results. <b>NOTE:</b> null can be returned if
+   *         no documents will be accepted by this Filter.
+   * 
    * @see DocIdBitSet
    */
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {

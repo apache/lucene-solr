@@ -331,6 +331,9 @@ public class CustomScoreQuery extends Query {
       // false for "topScorer" because we will not invoke
       // score(Collector) on these scorers:
       Scorer subQueryScorer = subQueryWeight.scorer(reader, true, false);
+      if (subQueryScorer == null) {
+        return null;
+      }
       Scorer[] valSrcScorers = new Scorer[valSrcWeights.length];
       for(int i = 0; i < valSrcScorers.length; i++) {
          valSrcScorers[i] = valSrcWeights[i].scorer(reader, true, false);
@@ -339,7 +342,8 @@ public class CustomScoreQuery extends Query {
     }
 
     public Explanation explain(IndexReader reader, int doc) throws IOException {
-      return scorer(reader, true, false).explain(doc);
+      Scorer scorer = scorer(reader, true, false);
+      return scorer == null ? new Explanation(0.0f, "no matching docs") : scorer.explain(doc);
     }
     
     public boolean scoresDocsOutOfOrder() {

@@ -218,36 +218,26 @@ class BooleanScorer2 extends Scorer {
   }
 
   private Scorer makeCountingSumScorerNoReq() throws IOException { // No required scorers
-    if (optionalScorers.size() == 0) {
-      return new NonMatchingScorer(); // no clauses or only prohibited clauses
-    } else { // No required scorers. At least one optional scorer.
-      // minNrShouldMatch optional scorers are required, but at least 1
-      int nrOptRequired = (minNrShouldMatch < 1) ? 1 : minNrShouldMatch;
-      if (optionalScorers.size() < nrOptRequired) { 
-        return new NonMatchingScorer(); // fewer optional clauses than minimum (at least 1) that should match
-      } else { // optionalScorers.size() >= nrOptRequired, no required scorers
-        Scorer requiredCountingSumScorer =
-              (optionalScorers.size() > nrOptRequired)
-              ? countingDisjunctionSumScorer(optionalScorers, nrOptRequired)
-              : // optionalScorers.size() == nrOptRequired (all optional scorers are required), no required scorers
-              (optionalScorers.size() == 1)
-              ? new SingleMatchScorer((Scorer) optionalScorers.get(0))
-              : countingConjunctionSumScorer(optionalScorers);
-        return addProhibitedScorers(requiredCountingSumScorer);
-      }
-    }
+    // minNrShouldMatch optional scorers are required, but at least 1
+    int nrOptRequired = (minNrShouldMatch < 1) ? 1 : minNrShouldMatch;
+    Scorer requiredCountingSumScorer;
+    if (optionalScorers.size() > nrOptRequired)
+      requiredCountingSumScorer = countingDisjunctionSumScorer(optionalScorers, nrOptRequired);
+    else if (optionalScorers.size() == 1)
+      requiredCountingSumScorer = new SingleMatchScorer((Scorer) optionalScorers.get(0));
+    else
+      requiredCountingSumScorer = countingConjunctionSumScorer(optionalScorers);
+    return addProhibitedScorers(requiredCountingSumScorer);
   }
 
   private Scorer makeCountingSumScorerSomeReq() throws IOException { // At least one required scorer.
-    if (optionalScorers.size() < minNrShouldMatch) {
-      return new NonMatchingScorer(); // fewer optional clauses than minimum that should match
-    } else if (optionalScorers.size() == minNrShouldMatch) { // all optional scorers also required.
+    if (optionalScorers.size() == minNrShouldMatch) { // all optional scorers also required.
       ArrayList allReq = new ArrayList(requiredScorers);
       allReq.addAll(optionalScorers);
       return addProhibitedScorers(countingConjunctionSumScorer(allReq));
     } else { // optionalScorers.size() > minNrShouldMatch, and at least one required scorer
       Scorer requiredCountingSumScorer =
-            (requiredScorers.size() == 1)
+            requiredScorers.size() == 1
             ? new SingleMatchScorer((Scorer) requiredScorers.get(0))
             : countingConjunctionSumScorer(requiredScorers);
       if (minNrShouldMatch > 0) { // use a required disjunction scorer over the optional scorers
@@ -260,9 +250,10 @@ class BooleanScorer2 extends Scorer {
       } else { // minNrShouldMatch == 0
         return new ReqOptSumScorer(
                       addProhibitedScorers(requiredCountingSumScorer),
-                      ((optionalScorers.size() == 1)
+                      optionalScorers.size() == 1
                         ? new SingleMatchScorer((Scorer) optionalScorers.get(0))
-                        : countingDisjunctionSumScorer(optionalScorers, 1))); // require 1 in combined, optional scorer.
+                        // require 1 in combined, optional scorer.
+                        : countingDisjunctionSumScorer(optionalScorers, 1));
       }
     }
   }

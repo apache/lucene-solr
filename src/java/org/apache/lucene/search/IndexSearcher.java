@@ -267,8 +267,17 @@ public class IndexSearcher extends Searcher {
     assert docID == -1 || docID == DocIdSetIterator.NO_MORE_DOCS;
 
     // CHECKME: use ConjunctionScorer here?
-    DocIdSetIterator filterIter = filter.getDocIdSet(reader).iterator();
+    DocIdSet filterDocIdSet = filter.getDocIdSet(reader);
+    if (filterDocIdSet == null) {
+      // this means the filter does not accept any documents.
+      return;
+    }
     
+    DocIdSetIterator filterIter = filterDocIdSet.iterator();
+    if (filterIter == null) {
+      // this means the filter does not accept any documents.
+      return;
+    }
     int filterDoc = filterIter.nextDoc();
     int scorerDoc = scorer.advance(filterDoc);
     

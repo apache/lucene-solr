@@ -227,9 +227,12 @@ public class BooleanQuery extends Query {
       float sum = 0.0f;
       boolean fail = false;
       int shouldMatchCount = 0;
-      for (int i = 0 ; i < weights.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.get(i);
-        QueryWeight w = (QueryWeight)weights.get(i);
+      for (Iterator wIter = weights.iterator(), cIter = clauses.iterator(); wIter.hasNext();) {
+        QueryWeight w = (QueryWeight) wIter.next();
+        BooleanClause c = (BooleanClause) cIter.next();
+        if (w.scorer(reader, true, true) == null) {
+          continue;
+        }
         Explanation e = w.explain(reader, doc);
         if (!c.isProhibited()) maxCoord++;
         if (e.isMatch()) {
@@ -244,7 +247,7 @@ public class BooleanQuery extends Query {
             sumExpl.addDetail(r);
             fail = true;
           }
-          if (c.getOccur().equals(Occur.SHOULD))
+          if (c.getOccur() == Occur.SHOULD)
             shouldMatchCount++;
         } else if (c.isRequired()) {
           Explanation r = new Explanation(0.0f, "no match on required clause (" + c.getQuery().toString() + ")");
@@ -310,6 +313,16 @@ public class BooleanQuery extends Query {
       scoreDocsInOrder |= !allowDocsOutOfOrder; // until it is removed, factor in the static setting.
       if (!scoreDocsInOrder && topScorer && required.size() == 0 && prohibited.size() < 32) {
         return new BooleanScorer(similarity, minNrShouldMatch, optional, prohibited);
+      }
+      
+      if (required.size() == 0 && optional.size() == 0) {
+        // no required and optional clauses.
+        return null;
+      } else if (optional.size() < minNrShouldMatch) {
+        // either >1 req scorer, or there are 0 req scorers and at least 1
+        // optional scorer. Therefore if there are not enough optional scorers
+        // no documents will be matched by the query
+        return null;
       }
       
       // Return a BooleanScorer2

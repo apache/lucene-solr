@@ -337,6 +337,16 @@ API Changes
     made public as expert, experimental APIs.  These APIs may suddenly
     change from release to release (Jason Rutherglen via Mike
     McCandless).
+    
+32. LUCENE-1754: QueryWeight.scorer() can return null if no documents
+    are going to be matched by the query. Similarly,
+    Filter.getDocIdSet() can return null if no documents are going to
+    be accepted by the Filter. Note that these 'can' return null,
+    however they don't have to and can return a Scorer/DocIdSet which
+    does not match / reject all documents.  This is already the
+    behavior of some QueryWeight/Filter implementations, and is
+    documented here just for emphasis. (Shai Erera via Mike
+    McCandless)
 
 Bug fixes
 
@@ -662,6 +672,11 @@ Optimizations
     replace it with an immutable implementation of CharArraySet.
     Removes conversions between Set and array.
     (Simon Willnauer via Mark Miller)
+
+11. LUCENE-1754: BooleanQuery.queryWeight.scorer() will return null if
+    it won't match any documents (e.g. if there are no required and
+    optional scorers, or not enough optional scorers to satisfy
+    minShouldMatch).  (Shai Erera via Mike McCandless)
 
 Documentation
 

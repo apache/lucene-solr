@@ -100,12 +100,13 @@ public class CachingWrapperFilter extends Filter {
 
     final DocIdSet docIdSet = docIdSetToCache(filter.getDocIdSet(reader), reader);
 
-    synchronized (cache) {  // update cache
-      cache.put(reader, docIdSet);
+    if (docIdSet != null) {
+      synchronized (cache) {  // update cache
+        cache.put(reader, docIdSet);
+      }
     }
 
     return docIdSet;
-    
   }
 
   public String toString() {

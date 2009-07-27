@@ -75,8 +75,11 @@ public abstract class QueryWeight implements Weight, Serializable {
    * <p>
    * <b>NOTE:</b> even if <code>scoreDocsInOrder</code> is false, it is
    * recommended to check whether the returned <code>Scorer</code> indeed scores
-   * documents out of order (i.e., call {@link #scoresDocsOutOfOrder()}), as some
-   * <code>Scorer</code> implementations will always return documents in-order.
+   * documents out of order (i.e., call {@link #scoresDocsOutOfOrder()}), as
+   * some <code>Scorer</code> implementations will always return documents
+   * in-order.<br>
+   * <b>NOTE:</b> null can be returned if no documents will be scored by this
+   * query.
    * 
    * @param reader
    *          the {@link IndexReader} for which to return the {@link Scorer}.

@@ -1007,12 +1007,14 @@ final class DocumentsWriter {
       int limit = ((Integer) entry.getValue()).intValue();
       QueryWeight weight = query.queryWeight(searcher);
       Scorer scorer = weight.scorer(reader, true, false);
-      while(true)  {
-        int doc = scorer.nextDoc();
-        if (((long) docIDStart) + doc >= limit)
-          break;
-        reader.deleteDocument(doc);
-        any = true;
+      if (scorer != null) {
+        while(true)  {
+          int doc = scorer.nextDoc();
+          if (((long) docIDStart) + doc >= limit)
+            break;
+          reader.deleteDocument(doc);
+          any = true;
+        }
       }
     }
     searcher.close();

@@ -133,7 +133,7 @@ public abstract class Analyzer {
    * fields.  This method is only called if the field
    * produced at least one token for indexing.
    *
-   * @param Fieldable the field just indexed
+   * @param field the field just indexed
    * @return offset gap, added to the next token emitted from {@link #tokenStream(String,Reader)}
    */
   public int getOffsetGap(Fieldable field) {

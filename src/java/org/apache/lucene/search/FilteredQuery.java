@@ -82,7 +82,11 @@ extends Query {
           inner.addDetail(preBoost);
         }
         Filter f = FilteredQuery.this.filter;
-        DocIdSetIterator docIdSetIterator = f.getDocIdSet(ir).iterator();
+        DocIdSet docIdSet = f.getDocIdSet(ir);
+        DocIdSetIterator docIdSetIterator = docIdSet == null ? EmptyDocIdSetIterator.getInstance() : docIdSet.iterator();
+        if (docIdSetIterator == null) {
+          docIdSetIterator = EmptyDocIdSetIterator.getInstance();
+        }
         if (docIdSetIterator.advance(i) == i) {
           return inner;
         } else {
@@ -100,7 +104,17 @@ extends Query {
       public Scorer scorer(IndexReader indexReader, boolean scoreDocsInOrder, boolean topScorer)
           throws IOException {
         final Scorer scorer = weight.scorer(indexReader, scoreDocsInOrder, false);
-        final DocIdSetIterator docIdSetIterator = filter.getDocIdSet(indexReader).iterator();
+        if (scorer == null) {
+          return null;
+        }
+        DocIdSet docIdSet = filter.getDocIdSet(indexReader);
+        if (docIdSet == null) {
+          return null;
+        }
+        final DocIdSetIterator docIdSetIterator = docIdSet.iterator();
+        if (docIdSetIterator == null) {
+          return null;
+        }
 
         return new Scorer(similarity) {
 

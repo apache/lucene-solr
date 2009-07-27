@@ -113,7 +113,17 @@ public class ConstantScoreQuery extends Query {
     public ConstantScorer(Similarity similarity, IndexReader reader, QueryWeight w) throws IOException {
       super(similarity);
       theScore = w.getValue();
-      docIdSetIterator = filter.getDocIdSet(reader).iterator();
+      DocIdSet docIdSet = filter.getDocIdSet(reader);
+      if (docIdSet == null) {
+        docIdSetIterator = EmptyDocIdSetIterator.getInstance();
+      } else {
+        DocIdSetIterator iter = docIdSet.iterator();
+        if (iter == null) {
+          docIdSetIterator = EmptyDocIdSetIterator.getInstance();
+        } else {
+          docIdSetIterator = iter;
+        }
+      }
     }
 
     /** @deprecated use {@link #nextDoc()} instead. */
