@@ -80,11 +80,12 @@ public class CoreDescriptor {
 
   /**@return the default data directory. */
   public String getDefaultDataDir() {
-    return coreContainer.loader.getInstanceDir() + SolrResourceLoader.normalizeDir(instanceDir) + "data"+File.separator;
+    return "data" + File.separator;
   }
 
   public String getDataDir() {
-    if (dataDir == null) return getDefaultDataDir();
+    String dataDir = this.dataDir;
+    if (dataDir == null) dataDir = getDefaultDataDir();
     if (new File(dataDir).isAbsolute()) {
       return dataDir;
     } else {
