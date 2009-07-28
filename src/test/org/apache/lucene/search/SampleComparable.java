@@ -134,11 +134,15 @@ implements Comparable, Serializable {
     };
   }
 
-  public static SortComparator getComparator() {
-    return new SortComparator() {
+  private static final class InnerSortComparator extends SortComparator {
       protected Comparable getComparable (String termtext) {
         return new SampleComparable (termtext);
       }
+      public int hashCode() { return this.getClass().getName().hashCode(); }
+      public boolean equals(Object that) { return this.getClass().equals(that.getClass()); }
     };
+  
+  public static SortComparator getComparator() {
+    return new InnerSortComparator();
   }
 }
