@@ -348,6 +348,9 @@ API Changes
     documented here just for emphasis. (Shai Erera via Mike
     McCandless)
 
+33. LUCENE-1705: Added IndexWriter.deleteAllDocuments.  (Tim Smith via
+    Mike McCandless)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()
