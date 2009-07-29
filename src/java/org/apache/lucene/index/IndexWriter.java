@@ -186,6 +186,15 @@ import java.util.Map;
   last commit.  If you opened the writer with autoCommit
   false you can also just call {@link #rollback()}
   directly.</p>
+
+  <a name="thread-safety"></a><p><b>NOTE</b>: {@link
+  <code>IndexWriter</code>} instances are completely thread
+  safe, meaning multiple threads can call any of its
+  methods, concurrently.  If your application requires
+  external synchronization, you should <b>not</b> use the
+  <code>IndexWriter</code> instance for synchronization as
+  this can lead to deadlock.  Use a private
+  <code>Object</code> instead. </p>
 */
 
 /*
