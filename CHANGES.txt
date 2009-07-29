@@ -514,7 +514,7 @@ New features
     Rutherglen, Mike McCandless)
 
 14. LUCENE-1506: Added FilteredDocIdSet, an abstract class which you
-    subclass to implement the "match" method to aceept or reject each
+    subclass to implement the "match" method to accept or reject each
     docID.  Unlike ChainedFilter (under contrib/misc),
     FilteredDocIdSet never requires you to materialize the full
     bitset.  Instead, match() is called on demand per docID.  (John
