@@ -67,6 +67,14 @@ import java.util.Map;
  if you want to make changes with the resulting IndexReader.
  </p>
 
+ <a name="thread-safety"></a><p><b>NOTE</b>: {@link
+ <code>IndexReader</code>} instances are completely thread
+ safe, meaning multiple threads can call any of its methods,
+ concurrently.  If your application requires external
+ synchronization, you should <b>not</b> synchronize on the
+ <code>IndexReader</code> instance; use your own
+ (non-Lucene) objects instead.
+ 
  @version $Id$
 */
 public abstract class IndexReader implements Cloneable {

@@ -191,10 +191,10 @@ import java.util.Map;
   <code>IndexWriter</code>} instances are completely thread
   safe, meaning multiple threads can call any of its
   methods, concurrently.  If your application requires
-  external synchronization, you should <b>not</b> use the
-  <code>IndexWriter</code> instance for synchronization as
-  this can lead to deadlock.  Use a private
-  <code>Object</code> instead. </p>
+  external synchronization, you should <b>not</b>
+  synchronize on the <code>IndexWriter</code> instance as
+  this may cause deadlock; use your own (non-Lucene) objects
+  instead. </p>
 */
 
 /*
