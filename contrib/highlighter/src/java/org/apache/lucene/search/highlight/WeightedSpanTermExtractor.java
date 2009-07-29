@@ -98,13 +98,12 @@ public class WeightedSpanTermExtractor {
   private void extract(Query query, Map terms) throws IOException {
     if (query instanceof BooleanQuery) {
       BooleanClause[] queryClauses = ((BooleanQuery) query).getClauses();
-      Map booleanTerms = new PositionCheckingMap();
+  
       for (int i = 0; i < queryClauses.length; i++) {
         if (!queryClauses[i].isProhibited()) {
-          extract(queryClauses[i].getQuery(), booleanTerms);
+          extract(queryClauses[i].getQuery(), terms);
         }
       }
-      terms.putAll(booleanTerms);
     } else if (query instanceof PhraseQuery) {
       Term[] phraseQueryTerms = ((PhraseQuery) query).getTerms();
       SpanQuery[] clauses = new SpanQuery[phraseQueryTerms.length];
@@ -129,11 +128,9 @@ public class WeightedSpanTermExtractor {
     } else if (query instanceof FilteredQuery) {
       extract(((FilteredQuery) query).getQuery(), terms);
     } else if (query instanceof DisjunctionMaxQuery) {
-      Map disjunctTerms = new PositionCheckingMap();
       for (Iterator iterator = ((DisjunctionMaxQuery) query).iterator(); iterator.hasNext();) {
-        extract((Query) iterator.next(), disjunctTerms);
+        extract((Query) iterator.next(), terms);
       }
-      terms.putAll(disjunctTerms);
     } else if (query instanceof MultiTermQuery && (highlightCnstScrRngQuery || expandMultiTermQuery)) {
       MultiTermQuery mtq = ((MultiTermQuery)query);
       if(mtq.getRewriteMethod() != MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE) {

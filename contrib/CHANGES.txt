@@ -41,6 +41,9 @@ Bug fixes
 
  8. LUCENE-1491: EdgeNGramTokenFilter no longer stops on tokens shorter than minimum n-gram size.
     (Todd Teak via Otis Gospodnetic)
+    
+ 9. LUCENE-1752: Missing highlights when terms were repeated in separate, nested, boolean or 
+    disjunction queries. (Koji Sekiguchi, Mark Miller)
 
 New features
 

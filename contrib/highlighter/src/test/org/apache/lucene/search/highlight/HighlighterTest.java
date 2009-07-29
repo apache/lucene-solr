@@ -53,13 +53,13 @@ import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiSearcher;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeFilter;
@@ -176,6 +176,31 @@ public class HighlighterTest extends TestCase implements Formatter {
 
     // Not sure we can assert anything here - just running to check we dont
     // throw any exceptions
+  }
+
+  // LUCENE-1752
+  public void testRepeatingTermsInMultBooleans() throws Exception {
+    String content = "x y z a b c d e f g b c g";
+    String ph1 = "\"a b c d\"";
+    String ph2 = "\"b c g\"";
+    String f1 = "f1";
+    String f2 = "f2";
+    String f1c = f1 + ":";
+    String f2c = f2 + ":";
+    String q = "(" + f1c + ph1 + " OR " + f2c + ph1 + ") AND (" + f1c + ph2
+        + " OR " + f2c + ph2 + ")";
+    Analyzer analyzer = new WhitespaceAnalyzer();
+    QueryParser qp = new QueryParser(f1, analyzer);
+    Query query = qp.parse(q);
+    CachingTokenFilter stream = new CachingTokenFilter(analyzer.tokenStream(f1,
+        new StringReader(content)));
+    Scorer scorer = new SpanScorer(query, f1, stream, false);
+    Highlighter h = new Highlighter(this, scorer);
+
+    h.getBestFragment(analyzer, f1, content);
+
+    assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
+        numHighlights == 7);
   }
 
   public void testSimpleSpanPhraseHighlighting() throws Exception {
