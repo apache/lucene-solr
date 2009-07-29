@@ -52,10 +52,7 @@ public class TermAttributeImpl extends AttributeImpl implements TermAttribute, C
    *  @param length the number of characters to copy
    */
   public void setTermBuffer(char[] buffer, int offset, int length) {
-    char[] newCharBuffer = growTermBuffer(length);
-    if (newCharBuffer != null) {
-      termBuffer = newCharBuffer;
-    }
+    growTermBuffer(length);
     System.arraycopy(buffer, offset, termBuffer, 0, length);
     termLength = length;
   }
@@ -65,10 +62,7 @@ public class TermAttributeImpl extends AttributeImpl implements TermAttribute, C
    */
   public void setTermBuffer(String buffer) {
     int length = buffer.length();
-    char[] newCharBuffer = growTermBuffer(length);
-    if (newCharBuffer != null) {
-      termBuffer = newCharBuffer;
-    }
+    growTermBuffer(length);
     buffer.getChars(0, length, termBuffer, 0);
     termLength = length;
   }
@@ -82,10 +76,7 @@ public class TermAttributeImpl extends AttributeImpl implements TermAttribute, C
   public void setTermBuffer(String buffer, int offset, int length) {
     assert offset <= buffer.length();
     assert offset + length <= buffer.length();
-    char[] newCharBuffer = growTermBuffer(length);
-    if (newCharBuffer != null) {
-      termBuffer = newCharBuffer;
-    }
+    growTermBuffer(length);
     buffer.getChars(offset, offset + length, termBuffer, 0);
     termLength = length;
   }
@@ -113,53 +104,43 @@ public class TermAttributeImpl extends AttributeImpl implements TermAttribute, C
    *  @return newly created termBuffer with length >= newSize
    */
   public char[] resizeTermBuffer(int newSize) {
-    char[] newCharBuffer = growTermBuffer(newSize);
     if (termBuffer == null) {
-      // If there were termText, then preserve it.
-      // note that if termBuffer is null then newCharBuffer cannot be null
-      assert newCharBuffer != null;
-      termBuffer = newCharBuffer;
-    } else if (newCharBuffer != null) {
-      // Note: if newCharBuffer != null then termBuffer needs to grow.
-      // If there were a termBuffer, then preserve it
-      System.arraycopy(termBuffer, 0, newCharBuffer, 0, termBuffer.length);
-      termBuffer = newCharBuffer;      
-    }
-    return termBuffer;
+      // The buffer is always at least MIN_BUFFER_SIZE
+      termBuffer = new char[ArrayUtil.getNextSize(newSize < MIN_BUFFER_SIZE ? MIN_BUFFER_SIZE : newSize)]; 
+    } else {
+      if(termBuffer.length < newSize){
+        // Not big enough; create a new array with slight
+        // over allocation and preserve content
+        final char[] newCharBuffer = new char[ArrayUtil.getNextSize(newSize)];
+        System.arraycopy(termBuffer, 0, newCharBuffer, 0, termBuffer.length);
+        termBuffer = newCharBuffer;
+      }
+    } 
+    return termBuffer;   
   }
 
-  /** Allocates a buffer char[] of at least newSize
+
+  /** Allocates a buffer char[] of at least newSize, without preserving the existing content.
+   * its always used in places that set the content 
    *  @param newSize minimum size of the buffer
-   *  @return newly created buffer with length >= newSize or null if the current termBuffer is big enough
    */
-  private char[] growTermBuffer(int newSize) {
-    if (termBuffer != null) {
-      if (termBuffer.length >= newSize)
-        // Already big enough
-        return null;
-      else
+  private void growTermBuffer(int newSize) {
+    if (termBuffer == null) {
+      // The buffer is always at least MIN_BUFFER_SIZE
+      termBuffer = new char[ArrayUtil.getNextSize(newSize < MIN_BUFFER_SIZE ? MIN_BUFFER_SIZE : newSize)];   
+    } else {
+      if(termBuffer.length < newSize){
         // Not big enough; create a new array with slight
         // over allocation:
-        return new char[ArrayUtil.getNextSize(newSize)];
-    } else {
-
-      // determine the best size
-      // The buffer is always at least MIN_BUFFER_SIZE
-      if (newSize < MIN_BUFFER_SIZE) {
-        newSize = MIN_BUFFER_SIZE;
+        termBuffer = new char[ArrayUtil.getNextSize(newSize)];
       }
-
-      return new char[newSize];
-    }
+    } 
   }
-
-  // TODO: once we remove the deprecated termText() method
-  // and switch entirely to char[] termBuffer we don't need
-  // to use this method anymore
+  
   private void initTermBuffer() {
     if (termBuffer == null) {
-        termBuffer = new char[MIN_BUFFER_SIZE];
-        termLength = 0;
+      termBuffer = new char[ArrayUtil.getNextSize(MIN_BUFFER_SIZE)];
+      termLength = 0;
     }
   }
 

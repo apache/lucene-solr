@@ -384,10 +384,7 @@ public class Token extends AttributeImpl
    */
   public final void setTermBuffer(char[] buffer, int offset, int length) {
     termText = null;
-    char[] newCharBuffer = growTermBuffer(length);
-    if (newCharBuffer != null) {
-      termBuffer = newCharBuffer;
-    }
+    growTermBuffer(length);
     System.arraycopy(buffer, offset, termBuffer, 0, length);
     termLength = length;
   }
@@ -397,11 +394,8 @@ public class Token extends AttributeImpl
    */
   public final void setTermBuffer(String buffer) {
     termText = null;
-    int length = buffer.length();
-    char[] newCharBuffer = growTermBuffer(length);
-    if (newCharBuffer != null) {
-      termBuffer = newCharBuffer;
-    }
+    final int length = buffer.length();
+    growTermBuffer(length);
     buffer.getChars(0, length, termBuffer, 0);
     termLength = length;
   }
@@ -416,10 +410,7 @@ public class Token extends AttributeImpl
     assert offset <= buffer.length();
     assert offset + length <= buffer.length();
     termText = null;
-    char[] newCharBuffer = growTermBuffer(length);
-    if (newCharBuffer != null) {
-      termBuffer = newCharBuffer;
-    }
+    growTermBuffer(length);
     buffer.getChars(offset, offset + length, termBuffer, 0);
     termLength = length;
   }
@@ -447,76 +438,68 @@ public class Token extends AttributeImpl
    *  @return newly created termBuffer with length >= newSize
    */
   public char[] resizeTermBuffer(int newSize) {
-    char[] newCharBuffer = growTermBuffer(newSize);
     if (termBuffer == null) {
-      // If there were termText, then preserve it.
-      // note that if termBuffer is null then newCharBuffer cannot be null
-      assert newCharBuffer != null;
+      // The buffer is always at least MIN_BUFFER_SIZE
+      newSize = newSize < MIN_BUFFER_SIZE ? MIN_BUFFER_SIZE : newSize;
+      //Preserve termText 
       if (termText != null) {
-        termText.getChars(0, termText.length(), newCharBuffer, 0);
+        final int ttLen = termText.length();
+        newSize = newSize < ttLen ? ttLen : newSize;
+        termBuffer = new char[ArrayUtil.getNextSize(newSize)];
+        termText.getChars(0, termText.length(), termBuffer, 0);
+        termText = null;
+      } else { // no term Text, the first allocation
+        termBuffer = new char[ArrayUtil.getNextSize(newSize)];
+      }    
+    } else {
+      if(termBuffer.length < newSize){
+        // Not big enough; create a new array with slight
+        // over allocation and preserve content
+        final char[] newCharBuffer = new char[ArrayUtil.getNextSize(newSize)];
+        System.arraycopy(termBuffer, 0, newCharBuffer, 0, termBuffer.length);
+        termBuffer = newCharBuffer;
       }
-      termBuffer = newCharBuffer;
-    } else if (newCharBuffer != null) {
-      // Note: if newCharBuffer != null then termBuffer needs to grow.
-      // If there were a termBuffer, then preserve it
-      System.arraycopy(termBuffer, 0, newCharBuffer, 0, termBuffer.length);
-      termBuffer = newCharBuffer;      
-    }
-    termText = null;
-    return termBuffer;
+    } 
+    return termBuffer;   
   }
 
-  /** Allocates a buffer char[] of at least newSize
+  /** Allocates a buffer char[] of at least newSize, without preserving the existing content.
+   * its always used in places that set the content 
    *  @param newSize minimum size of the buffer
-   *  @return newly created buffer with length >= newSize or null if the current termBuffer is big enough
    */
-  private char[] growTermBuffer(int newSize) {
-    if (termBuffer != null) {
-      if (termBuffer.length >= newSize)
-        // Already big enough
-        return null;
-      else
+  private void growTermBuffer(int newSize) {
+    if (termBuffer == null) {
+      // The buffer is always at least MIN_BUFFER_SIZE    
+      termBuffer = new char[ArrayUtil.getNextSize(newSize < MIN_BUFFER_SIZE ? MIN_BUFFER_SIZE : newSize)];   
+    } else {
+      if(termBuffer.length < newSize){
         // Not big enough; create a new array with slight
         // over allocation:
-        return new char[ArrayUtil.getNextSize(newSize)];
-    } else {
-
-      // determine the best size
-      // The buffer is always at least MIN_BUFFER_SIZE
-      if (newSize < MIN_BUFFER_SIZE) {
-        newSize = MIN_BUFFER_SIZE;
+        termBuffer = new char[ArrayUtil.getNextSize(newSize)];
       }
-
-      // If there is already a termText, then the size has to be at least that big
-      if (termText != null) {
-        int ttLength = termText.length();
-        if (newSize < ttLength) {
-          newSize = ttLength;
-        }
-      }
-
-      return new char[newSize];
-    }
+    } 
   }
+  
 
   // TODO: once we remove the deprecated termText() method
   // and switch entirely to char[] termBuffer we don't need
-  // to use this method anymore
+  // to use this method anymore, only for late init of the buffer
   private void initTermBuffer() {
     if (termBuffer == null) {
       if (termText == null) {
-        termBuffer = new char[MIN_BUFFER_SIZE];
+        termBuffer = new char[ArrayUtil.getNextSize(MIN_BUFFER_SIZE)];
         termLength = 0;
       } else {
         int length = termText.length();
         if (length < MIN_BUFFER_SIZE) length = MIN_BUFFER_SIZE;
-        termBuffer = new char[length];
+        termBuffer = new char[ArrayUtil.getNextSize(length)];
         termLength = termText.length();
         termText.getChars(0, termText.length(), termBuffer, 0);
         termText = null;
       }
-    } else if (termText != null)
+    } else {
       termText = null;
+    }
   }
 
   /** Return number of valid characters (length of the term)
@@ -660,7 +643,7 @@ public class Token extends AttributeImpl
       t.termBuffer = (char[]) termBuffer.clone();
     }
     if (payload != null) {
-      t.setPayload((Payload) payload.clone());
+      t.payload = (Payload) payload.clone();
     }
     return t;
   }
@@ -876,5 +859,9 @@ public class Token extends AttributeImpl
   public void copyTo(AttributeImpl target) {
     Token to = (Token) target;
     to.reinit(this);
+    // reinit shares the payload, so clone it:
+    if (payload !=null) {
+      to.payload = (Payload) payload.clone();
+    }
   }
 }

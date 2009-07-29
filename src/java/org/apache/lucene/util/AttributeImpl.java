@@ -19,6 +19,7 @@ package org.apache.lucene.util;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 /**
  * Base class for Attributes that can be added to a 
@@ -53,15 +54,16 @@ public abstract class AttributeImpl implements Cloneable, Serializable {
     try {
       for (int i = 0; i < fields.length; i++) {
         Field f = fields[i];
+        if (Modifier.isStatic(f.getModifiers())) continue;
         f.setAccessible(true);
         Object value = f.get(this);
+        if (buffer.length()>0) {
+          buffer.append(',');
+        }
         if (value == null) {
           buffer.append(f.getName() + "=null");
         } else {
           buffer.append(f.getName() + "=" + value);
-        }
-        if (i < fields.length - 1) {
-          buffer.append(',');
         }
       }
     } catch (IllegalAccessException e) {

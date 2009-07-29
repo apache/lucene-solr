@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.tokenattributes;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,48 +17,16 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Payload;
-import org.apache.lucene.analysis.tokenattributes.TestSimpleAttributeImpls;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestToken extends LuceneTestCase {
+public class TestTermAttributeImpl extends LuceneTestCase {
 
-  public TestToken(String name) {
+  public TestTermAttributeImpl(String name) {
     super(name);
   }
 
-  public void testCtor() throws Exception {
-    Token t = new Token();
-    char[] content = "hello".toCharArray();
-    t.setTermBuffer(content, 0, content.length);
-    char[] buf = t.termBuffer();
-    assertNotSame(t.termBuffer(), content);
-    assertEquals("hello", t.term());
-    assertEquals("word", t.type());
-    assertEquals(0, t.getFlags());
-
-    t = new Token(6, 22);
-    t.setTermBuffer(content, 0, content.length);
-    assertEquals("hello", t.term());
-    assertEquals("(hello,6,22)", t.toString());
-    assertEquals("word", t.type());
-    assertEquals(0, t.getFlags());
-
-    t = new Token(6, 22, 7);
-    t.setTermBuffer(content, 0, content.length);
-    assertEquals("hello", t.term());
-    assertEquals("(hello,6,22)", t.toString());
-    assertEquals(7, t.getFlags());
-
-    t = new Token(6, 22, "junk");
-    t.setTermBuffer(content, 0, content.length);
-    assertEquals("hello", t.term());
-    assertEquals("(hello,6,22,type=junk)", t.toString());
-    assertEquals(0, t.getFlags());
-  }
-
   public void testResize() {
-    Token t = new Token();
+    TermAttributeImpl t = new TermAttributeImpl();
     char[] content = "hello".toCharArray();
     t.setTermBuffer(content, 0, content.length);
     for (int i = 0; i < 2000; i++)
@@ -70,7 +38,7 @@ public class TestToken extends LuceneTestCase {
   }
 
   public void testGrow() {
-    Token t = new Token();
+    TermAttributeImpl t = new TermAttributeImpl();
     StringBuffer buf = new StringBuffer("ab");
     for (int i = 0; i < 20; i++)
     {
@@ -84,7 +52,7 @@ public class TestToken extends LuceneTestCase {
     assertEquals(1179654, t.termBuffer().length);
 
     // now as a string, first variant
-    t = new Token();
+    t = new TermAttributeImpl();
     buf = new StringBuffer("ab");
     for (int i = 0; i < 20; i++)
     {
@@ -98,7 +66,7 @@ public class TestToken extends LuceneTestCase {
     assertEquals(1179654, t.termBuffer().length);
 
     // now as a string, second variant
-    t = new Token();
+    t = new TermAttributeImpl();
     buf = new StringBuffer("ab");
     for (int i = 0; i < 20; i++)
     {
@@ -112,7 +80,7 @@ public class TestToken extends LuceneTestCase {
     assertEquals(1179654, t.termBuffer().length);
 
     // Test for slow growth to a long term
-    t = new Token();
+    t = new TermAttributeImpl();
     buf = new StringBuffer("a");
     for (int i = 0; i < 20000; i++)
     {
@@ -126,7 +94,7 @@ public class TestToken extends LuceneTestCase {
     assertEquals(20167, t.termBuffer().length);
 
     // Test for slow growth to a long term
-    t = new Token();
+    t = new TermAttributeImpl();
     buf = new StringBuffer("a");
     for (int i = 0; i < 20000; i++)
     {
@@ -142,61 +110,49 @@ public class TestToken extends LuceneTestCase {
 
   public void testToString() throws Exception {
     char[] b = {'a', 'l', 'o', 'h', 'a'};
-    Token t = new Token("", 0, 5);
+    TermAttributeImpl t = new TermAttributeImpl();
     t.setTermBuffer(b, 0, 5);
-    assertEquals("(aloha,0,5)", t.toString());
+    assertEquals("term=aloha", t.toString());
 
-    t.setTermText("hi there");
-    assertEquals("(hi there,0,5)", t.toString());
+    t.setTermBuffer("hi there");
+    assertEquals("term=hi there", t.toString());
   }
 
   public void testMixedStringArray() throws Exception {
-    Token t = new Token("hello", 0, 5);
-    assertEquals(t.termText(), "hello");
+    TermAttributeImpl t = new TermAttributeImpl();
+    t.setTermBuffer("hello");
     assertEquals(t.termLength(), 5);
     assertEquals(t.term(), "hello");
-    t.setTermText("hello2");
+    t.setTermBuffer("hello2");
     assertEquals(t.termLength(), 6);
     assertEquals(t.term(), "hello2");
     t.setTermBuffer("hello3".toCharArray(), 0, 6);
-    assertEquals(t.termText(), "hello3");
+    assertEquals(t.term(), "hello3");
 
     // Make sure if we get the buffer and change a character
-    // that termText() reflects the change
+    // that term() reflects the change
     char[] buffer = t.termBuffer();
     buffer[1] = 'o';
-    assertEquals(t.termText(), "hollo3");
+    assertEquals(t.term(), "hollo3");
   }
   
   public void testClone() throws Exception {
-    Token t = new Token(0, 5);
+    TermAttributeImpl t = new TermAttributeImpl();
     char[] content = "hello".toCharArray();
     t.setTermBuffer(content, 0, 5);
     char[] buf = t.termBuffer();
-    Token copy = (Token) TestSimpleAttributeImpls.assertCloneIsEqual(t);
+    TermAttributeImpl copy = (TermAttributeImpl) TestSimpleAttributeImpls.assertCloneIsEqual(t);
     assertEquals(t.term(), copy.term());
     assertNotSame(buf, copy.termBuffer());
-
-    Payload pl = new Payload(new byte[]{1,2,3,4});
-    t.setPayload(pl);
-    copy = (Token) TestSimpleAttributeImpls.assertCloneIsEqual(t);
-    assertEquals(pl, copy.getPayload());
-    assertNotSame(pl, copy.getPayload());
   }
   
   public void testCopyTo() throws Exception {
-    Token t = new Token(0, 5);
+    TermAttributeImpl t = new TermAttributeImpl();
     char[] content = "hello".toCharArray();
     t.setTermBuffer(content, 0, 5);
     char[] buf = t.termBuffer();
-    Token copy = (Token) TestSimpleAttributeImpls.assertCopyIsEqual(t);
+    TermAttributeImpl copy = (TermAttributeImpl) TestSimpleAttributeImpls.assertCopyIsEqual(t);
     assertEquals(t.term(), copy.term());
     assertNotSame(buf, copy.termBuffer());
-
-    Payload pl = new Payload(new byte[]{1,2,3,4});
-    t.setPayload(pl);
-    copy = (Token) TestSimpleAttributeImpls.assertCopyIsEqual(t);
-    assertEquals(pl, copy.getPayload());
-    assertNotSame(pl, copy.getPayload());
   }
 }
