@@ -267,6 +267,23 @@ public class TestTokenStreamBWComp extends LuceneTestCase {
         stream.addAttribute(PositionIncrementAttribute.class) instanceof PositionIncrementAttributeImpl);
       assertTrue("TypeAttribute is implemented by TypeAttributeImpl",
         stream.addAttribute(TypeAttribute.class) instanceof TypeAttributeImpl);
+        
+      // try to call old API, this should fail
+      try {
+        stream.reset();
+        Token reusableToken = new Token();
+        while ((reusableToken = stream.next(reusableToken)) != null);
+        fail("If only the new API is allowed, this should fail with an UOE");
+      } catch (UnsupportedOperationException uoe) {
+        assertTrue("This TokenStream only supports the new Attributes API.".equals(uoe.getMessage()));
+      }
+      try {
+        stream.reset();
+        while (stream.next() != null);
+        fail("If only the new API is allowed, this should fail with an UOE");
+      } catch (UnsupportedOperationException uoe) {
+        assertTrue("This TokenStream only supports the new Attributes API.".equals(uoe.getMessage()));
+      }
       
       // Test if the wrapper API (onlyUseNewAPI==false) uses TokenWrapper
       // as attribute instance.
