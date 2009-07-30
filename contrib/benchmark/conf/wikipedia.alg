@@ -37,7 +37,7 @@ log.step=5000
 
 docs.file=temp/enwiki-20070527-pages-articles.xml
 
-doc.maker=org.apache.lucene.benchmark.byTask.feeds.EnwikiDocMaker
+content.source=org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource
 
 query.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker
 
