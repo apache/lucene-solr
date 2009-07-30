@@ -16,17 +16,18 @@ package org.apache.lucene.search.highlight;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * {@link Fragmenter} implementation which does not fragment the text.
  * This is useful for highlighting the entire content of a document or field.
  */
 public class NullFragmenter implements Fragmenter {
-  public void start(String s) {
+  public void start(String s, TokenStream tokenStream) {
   }
 
-  public boolean isNewFragment(Token token) {
+  public boolean isNewFragment() {
     return false;
   }
+
 }

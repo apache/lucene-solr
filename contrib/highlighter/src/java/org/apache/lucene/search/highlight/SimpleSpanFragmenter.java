@@ -17,9 +17,12 @@ package org.apache.lucene.search.highlight;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.apache.lucene.analysis.Token;
-
 import java.util.List;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 
 /**
@@ -34,6 +37,9 @@ public class SimpleSpanFragmenter implements Fragmenter {
   private SpanScorer spanScorer;
   private int waitForPos = -1;
   private int textSize;
+  private TermAttribute termAtt;
+  private PositionIncrementAttribute posIncAtt;
+  private OffsetAttribute offsetAtt;
 
   /**
    * @param spanscorer SpanScorer that was used to score hits
@@ -50,12 +56,12 @@ public class SimpleSpanFragmenter implements Fragmenter {
     this.fragmentSize = fragmentSize;
     this.spanScorer = spanscorer;
   }
-
+  
   /* (non-Javadoc)
-   * @see org.apache.lucene.search.highlight.Fragmenter#isNewFragment(org.apache.lucene.analysis.Token)
+   * @see org.apache.lucene.search.highlight.Fragmenter#isNewFragment()
    */
-  public boolean isNewFragment(Token token) {
-    position += token.getPositionIncrement();
+  public boolean isNewFragment() {
+    position += posIncAtt.getPositionIncrement();
 
     if (waitForPos == position) {
       waitForPos = -1;
@@ -63,7 +69,7 @@ public class SimpleSpanFragmenter implements Fragmenter {
       return false;
     }
 
-    WeightedSpanTerm wSpanTerm = spanScorer.getWeightedSpanTerm(token.term());
+    WeightedSpanTerm wSpanTerm = spanScorer.getWeightedSpanTerm(termAtt.term());
 
     if (wSpanTerm != null) {
       List positionSpans = wSpanTerm.getPositionSpans();
@@ -76,8 +82,8 @@ public class SimpleSpanFragmenter implements Fragmenter {
       }
     }
 
-    boolean isNewFrag = token.endOffset() >= (fragmentSize * currentNumFrags)
-        && (textSize - token.endOffset()) >= (fragmentSize >>> 1);
+    boolean isNewFrag = offsetAtt.endOffset() >= (fragmentSize * currentNumFrags)
+        && (textSize - offsetAtt.endOffset()) >= (fragmentSize >>> 1);
     
     if (isNewFrag) {
       currentNumFrags++;
@@ -86,12 +92,16 @@ public class SimpleSpanFragmenter implements Fragmenter {
     return isNewFrag;
   }
 
+
   /* (non-Javadoc)
-   * @see org.apache.lucene.search.highlight.Fragmenter#start(java.lang.String)
+   * @see org.apache.lucene.search.highlight.Fragmenter#start(java.lang.String, org.apache.lucene.analysis.TokenStream)
    */
-  public void start(String originalText) {
+  public void start(String originalText, TokenStream tokenStream) {
     position = -1;
     currentNumFrags = 1;
     textSize = originalText.length();
+    termAtt = (TermAttribute) tokenStream.getAttribute(TermAttribute.class);
+    posIncAtt = (PositionIncrementAttribute) tokenStream.getAttribute(PositionIncrementAttribute.class);
+    offsetAtt = (OffsetAttribute) tokenStream.getAttribute(OffsetAttribute.class);
   }
 }

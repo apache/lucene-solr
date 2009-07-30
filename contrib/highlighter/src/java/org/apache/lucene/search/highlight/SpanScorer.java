@@ -7,9 +7,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.CachingTokenFilter;
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.Query;
 
 
@@ -26,6 +27,8 @@ public class SpanScorer implements Scorer {
   private float maxTermWeight;
   private int position = -1;
   private String defaultField;
+  private TermAttribute termAtt;
+  private PositionIncrementAttribute posIncAtt;
   private static boolean highlightCnstScrRngQuery;
 
   /**
@@ -176,9 +179,9 @@ public class SpanScorer implements Scorer {
    * @see org.apache.lucene.search.highlight.Scorer#getTokenScore(org.apache.lucene.analysis.Token,
    *      int)
    */
-  public float getTokenScore(Token token) {
-    position += token.getPositionIncrement();
-    String termText = token.term();
+  public float getTokenScore() {
+    position += posIncAtt.getPositionIncrement();
+    String termText = termAtt.term();
 
     WeightedSpanTerm weightedSpanTerm;
 
@@ -203,6 +206,11 @@ public class SpanScorer implements Scorer {
     return score;
   }
 
+  public void init(TokenStream tokenStream) {
+    termAtt = (TermAttribute) tokenStream.getAttribute(TermAttribute.class);
+    posIncAtt = (PositionIncrementAttribute) tokenStream.getAttribute(PositionIncrementAttribute.class);
+  }
+  
   /**
    * Retrieve the WeightedSpanTerm for the specified token. Useful for passing
    * Span information to a Fragmenter.

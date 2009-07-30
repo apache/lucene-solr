@@ -42,8 +42,8 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
@@ -98,7 +98,7 @@ public class WeightedSpanTermExtractor {
   private void extract(Query query, Map terms) throws IOException {
     if (query instanceof BooleanQuery) {
       BooleanClause[] queryClauses = ((BooleanQuery) query).getClauses();
-  
+
       for (int i = 0; i < queryClauses.length; i++) {
         if (!queryClauses[i].isProhibited()) {
           extract(queryClauses[i].getQuery(), terms);
@@ -441,7 +441,7 @@ public class WeightedSpanTermExtractor {
    * This class makes sure that if both position sensitive and insensitive
    * versions of the same term are added, the position insensitive one wins.
    */
-  private class PositionCheckingMap extends HashMap {
+  static private class PositionCheckingMap extends HashMap {
 
     public void putAll(Map m) {
       Iterator it = m.keySet().iterator();

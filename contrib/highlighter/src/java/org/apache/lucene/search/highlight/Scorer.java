@@ -1,4 +1,5 @@
 package org.apache.lucene.search.highlight;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,34 +17,45 @@ package org.apache.lucene.search.highlight;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Adds to the score for a fragment based on its tokens
  */
-public interface Scorer
-{
-	/**
-	 * called when a new fragment is started for consideration
-	 * @param newFragment
-	 */
-	public void startFragment(TextFragment newFragment);
+public interface Scorer {
 
-	/**
-	 * Called for each token in the current fragment
-	 * @param token The token to be scored
-	 * @return a score which is passed to the Highlighter class to influence the mark-up of the text
-	 * (this return value is NOT used to score the fragment)
-	 */
-	public float getTokenScore(Token token);
-	
+  /**
+   * Called to init the Scorer with a TokenStream. You can grab references to
+   * the attributes you are interested in here and access them from
+   * getTokenScore().
+   * 
+   * @param tokenStream
+   */
+  public void init(TokenStream tokenStream);
 
-	/**
-	 * Called when the highlighter has no more tokens for the current fragment - the scorer returns
-	 * the weighting it has derived for the most recent fragment, typically based on the tokens
-	 * passed to getTokenScore(). 
-	 *
-	 */	
-	public float getFragmentScore();
+  /**
+   * called when a new fragment is started for consideration
+   * 
+   * @param newFragment
+   */
+  public void startFragment(TextFragment newFragment);
+
+  /**
+   * Called for each token in the current fragment. The Highlighter will
+   * increment the TokenStream passed to init on every call.
+   * 
+   * @return a score which is passed to the Highlighter class to influence the
+   *         mark-up of the text (this return value is NOT used to score the
+   *         fragment)
+   */
+  public float getTokenScore();
+
+  /**
+   * Called when the highlighter has no more tokens for the current fragment -
+   * the scorer returns the weighting it has derived for the most recent
+   * fragment, typically based on the tokens passed to getTokenScore().
+   * 
+   */
+  public float getFragmentScore();
 
 }

@@ -11,7 +11,12 @@ Changes in runtime behavior
 
 API Changes
 
- (None)
+ 1. LUCENE-1695: Update the Highlighter to use the new TokenStream API. This issue breaks backwards
+    compatibility with some public classes. If you have implemented custom Fregmenters or Scorers, 
+    you will need to adjust them to work with the new TokenStream API. Rather than getting passed a 
+    Token at a time, you will be given a TokenStream to init your impl with - store the Attributes 
+    you are interested in locally and access them on each call to the method that used to pass a new 
+    Token. Look at the included updated impls for examples.  (Mark Miller)
 
 Bug fixes
 
@@ -41,9 +46,6 @@ Bug fixes
 
  8. LUCENE-1491: EdgeNGramTokenFilter no longer stops on tokens shorter than minimum n-gram size.
     (Todd Teak via Otis Gospodnetic)
-    
- 9. LUCENE-1752: Missing highlights when terms were repeated in separate, nested, boolean or 
-    disjunction queries. (Koji Sekiguchi, Mark Miller)
 
 New features
 

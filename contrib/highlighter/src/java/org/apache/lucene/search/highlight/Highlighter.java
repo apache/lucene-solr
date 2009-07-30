@@ -22,8 +22,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -214,8 +216,14 @@ public class Highlighter
 	{
 		ArrayList docFrags = new ArrayList();
 		StringBuffer newText=new StringBuffer();
-
+		
+	    TermAttribute termAtt = (TermAttribute) tokenStream.addAttribute(TermAttribute.class);
+	    OffsetAttribute offsetAtt = (OffsetAttribute) tokenStream.addAttribute(OffsetAttribute.class);
+	    tokenStream.addAttribute(PositionIncrementAttribute.class);
+	    tokenStream.reset();
+	    
 		TextFragment currentFrag =	new TextFragment(newText,newText.length(), docFrags.size());
+		fragmentScorer.init(tokenStream);
 		fragmentScorer.startFragment(currentFrag);
 		docFrags.add(currentFrag);
 
@@ -223,28 +231,27 @@ public class Highlighter
 
 		try
 		{
-                  final Token reusableToken = new Token();
+
 			String tokenText;
 			int startOffset;
 			int endOffset;
 			int lastEndOffset = 0;
-			textFragmenter.start(text);
+			textFragmenter.start(text, tokenStream);
 
-			TokenGroup tokenGroup=new TokenGroup();
-			
-			for (Token nextToken = tokenStream.next(reusableToken);
-			     (nextToken!= null)&&(nextToken.startOffset()< maxDocCharsToAnalyze);
-			     nextToken = tokenStream.next(reusableToken))
+			TokenGroup tokenGroup=new TokenGroup(tokenStream);
+
+			for (boolean next = tokenStream.incrementToken(); next && (offsetAtt.startOffset()< maxDocCharsToAnalyze);
+			      next = tokenStream.incrementToken())
 			{
-				if(	(nextToken.endOffset()>text.length())
+				if(	(offsetAtt.endOffset()>text.length())
 					||
-					(nextToken.startOffset()>text.length())
+					(offsetAtt.startOffset()>text.length())
 					)						
 				{
-					throw new InvalidTokenOffsetsException("Token "+nextToken.toString()
+					throw new InvalidTokenOffsetsException("Token "+ termAtt.term()
 							+" exceeds length of provided text sized "+text.length());
 				}
-				if((tokenGroup.numTokens>0)&&(tokenGroup.isDistinct(nextToken)))
+				if((tokenGroup.numTokens>0)&&(tokenGroup.isDistinct()))
 				{
 					//the current token is distinct from previous tokens -
 					// markup the cached token group info
@@ -260,7 +267,7 @@ public class Highlighter
 					tokenGroup.clear();
 
 					//check if current token marks the start of a new fragment
-					if(textFragmenter.isNewFragment(nextToken))
+					if(textFragmenter.isNewFragment())
 					{
 						currentFrag.setScore(fragmentScorer.getFragmentScore());
 						//record stats for a new fragment
@@ -271,7 +278,7 @@ public class Highlighter
 					}
 				}
 
-				tokenGroup.addToken(nextToken,fragmentScorer.getTokenScore(nextToken));
+				tokenGroup.addToken(fragmentScorer.getTokenScore());
 
 //				if(lastEndOffset>maxDocBytesToAnalyze)
 //				{
@@ -332,7 +339,7 @@ public class Highlighter
 				//The above code caused a problem as a result of Christoph Goller's 11th Sept 03
 				//fix to PriorityQueue. The correct method to use here is the new "insert" method
 				// USE ABOVE CODE IF THIS DOES NOT COMPILE!
-				fragQueue.insert(currentFrag);
+				fragQueue.insertWithOverflow(currentFrag);
 			}
 
 			//return the most relevant fragments

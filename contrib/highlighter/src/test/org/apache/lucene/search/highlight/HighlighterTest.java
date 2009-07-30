@@ -38,10 +38,14 @@ import junit.framework.TestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.LowerCaseTokenizer;
+import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -62,9 +66,8 @@ import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermRangeFilter;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -75,6 +78,7 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -87,7 +91,7 @@ public class HighlighterTest extends TestCase implements Formatter {
   static final String FIELD_NAME = "contents";
   private Query query;
   RAMDirectory ramDir;
-  public Searcher searcher = null;
+  public IndexSearcher searcher = null;
   public Hits hits = null;
   int numHighlights = 0;
   Analyzer analyzer = new StandardAnalyzer();
@@ -108,11 +112,40 @@ public class HighlighterTest extends TestCase implements Formatter {
     super(arg0);
   }
 
+  public void testHits() throws Exception {
+    Analyzer analyzer = new SimpleAnalyzer();
+    QueryParser qp = new QueryParser(FIELD_NAME, analyzer);
+    query = qp.parse("\"very long\"");
+    searcher = new IndexSearcher(ramDir, false);
+    TopDocs hits = searcher.search(query, 10);
+
+    Highlighter highlighter = new Highlighter(null);
+
+
+    for (int i = 0; i < hits.scoreDocs.length; i++) {
+      Document doc = searcher.doc(hits.scoreDocs[i].doc);
+      String storedField = doc.get(FIELD_NAME);
+
+      TokenStream stream = TokenSources.getAnyTokenStream(searcher
+          .getIndexReader(), hits.scoreDocs[i].doc, FIELD_NAME, doc, analyzer);
+      CachingTokenFilter ctf = new CachingTokenFilter(stream);
+      SpanScorer scorer = new SpanScorer(query, FIELD_NAME, ctf);
+     // ctf.reset();
+      Fragmenter fragmenter = new SimpleSpanFragmenter(scorer);
+      highlighter.setFragmentScorer(scorer);
+      highlighter.setTextFragmenter(fragmenter);
+
+      String fragment = highlighter.getBestFragment(ctf, storedField);
+
+      System.out.println(fragment);
+    }
+  }
+  
   public void testHighlightingWithDefaultField() throws Exception {
 
     String s1 = "I call our world Flatland, not because we call it so,";
 
-    QueryParser parser = new QueryParser(FIELD_NAME, new StandardAnalyzer());
+    QueryParser parser = new QueryParser(FIELD_NAME, new StandardAnalyzer(Version.LUCENE_CURRENT));
 
     // Verify that a query against the default field results in text being
     // highlighted
@@ -144,7 +177,7 @@ public class HighlighterTest extends TestCase implements Formatter {
    */
   private static String highlightField(Query query, String fieldName, String text)
       throws IOException, InvalidTokenOffsetsException {
-    CachingTokenFilter tokenStream = new CachingTokenFilter(new StandardAnalyzer().tokenStream(
+    CachingTokenFilter tokenStream = new CachingTokenFilter(new StandardAnalyzer(Version.LUCENE_CURRENT).tokenStream(
         fieldName, new StringReader(text)));
     // Assuming "<B>", "</B>" used to highlight
     SimpleHTMLFormatter formatter = new SimpleHTMLFormatter();
@@ -908,10 +941,12 @@ public class HighlighterTest extends TestCase implements Formatter {
         Query query = parser.parse(srchkey);
 
         TokenStream tokenStream = analyzer.tokenStream(null, new StringReader(s));
+
         Highlighter highlighter = getHighlighter(query, null, tokenStream, HighlighterTest.this);
 
         // Get 3 best fragments and seperate with a "..."
         tokenStream = analyzer.tokenStream(null, new StringReader(s));
+
         String result = highlighter.getBestFragments(tokenStream, s, 3, "...");
         String expectedResult = "<B>football</B>-<B>soccer</B> in the euro 2004 <B>footie</B> competition";
         assertTrue("overlapping analyzer should handle highlights OK, expected:" + expectedResult
@@ -1075,10 +1110,11 @@ public class HighlighterTest extends TestCase implements Formatter {
   }
 
   public void testUnRewrittenQuery() throws Exception {
-    TestHighlightRunner helper = new TestHighlightRunner() {
+    final TestHighlightRunner helper = new TestHighlightRunner() {
 
       public void run() throws Exception {
         numHighlights = 0;
+        SpanScorer.setHighlightCnstScrRngQuery(false);
         // test to show how rewritten query can still be used
         searcher = new IndexSearcher(ramDir);
         Analyzer analyzer = new StandardAnalyzer();
@@ -1154,12 +1190,16 @@ public class HighlighterTest extends TestCase implements Formatter {
       public void startFragment(TextFragment newFragment) {
       }
 
-      public float getTokenScore(Token token) {
+      public float getTokenScore() {
         return 0;
       }
 
       public float getFragmentScore() {
         return 1;
+      }
+
+      public void init(TokenStream tokenStream) {
+        
       }
     });
     highlighter.setTextFragmenter(new SimpleFragmenter(2000));
@@ -1292,27 +1332,44 @@ public class HighlighterTest extends TestCase implements Formatter {
     return new TokenStream() {
       Iterator iter;
       List lst;
+      private TermAttribute termAtt;
+      private PositionIncrementAttribute posIncrAtt;
+      private OffsetAttribute offsetAtt;
       {
+        termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+        posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+        offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
         lst = new ArrayList();
         Token t;
         t = createToken("hi", 0, 2);
+        t.setPositionIncrement(1);
         lst.add(t);
         t = createToken("hispeed", 0, 8);
+        t.setPositionIncrement(1);
         lst.add(t);
         t = createToken("speed", 3, 8);
         t.setPositionIncrement(0);
         lst.add(t);
         t = createToken("10", 8, 10);
+        t.setPositionIncrement(1);
         lst.add(t);
         t = createToken("foo", 11, 14);
+        t.setPositionIncrement(1);
         lst.add(t);
         iter = lst.iterator();
       }
 
-      public Token next(final Token reusableToken) throws IOException {
-        assert reusableToken != null;
-        return iter.hasNext() ? (Token) iter.next() : null;
+      public boolean incrementToken() throws IOException {
+        if(iter.hasNext()) {
+          Token token = (Token) iter.next();
+          termAtt.setTermBuffer(token.term());
+          posIncrAtt.setPositionIncrement(token.getPositionIncrement());
+          offsetAtt.setOffset(token.startOffset(), token.endOffset());
+          return true;
+        }
+        return false;
       }
+     
     };
   }
 
@@ -1322,26 +1379,42 @@ public class HighlighterTest extends TestCase implements Formatter {
     return new TokenStream() {
       Iterator iter;
       List lst;
+      private TermAttribute termAtt;
+      private PositionIncrementAttribute posIncrAtt;
+      private OffsetAttribute offsetAtt;
       {
+        termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+        posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+        offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
         lst = new ArrayList();
         Token t;
         t = createToken("hispeed", 0, 8);
+        t.setPositionIncrement(1);
         lst.add(t);
         t = createToken("hi", 0, 2);
         t.setPositionIncrement(0);
         lst.add(t);
         t = createToken("speed", 3, 8);
+        t.setPositionIncrement(1);
         lst.add(t);
         t = createToken("10", 8, 10);
+        t.setPositionIncrement(1);
         lst.add(t);
         t = createToken("foo", 11, 14);
+        t.setPositionIncrement(1);
         lst.add(t);
         iter = lst.iterator();
       }
 
-      public Token next(final Token reusableToken) throws IOException {
-        assert reusableToken != null;
-        return iter.hasNext() ? (Token) iter.next() : null;
+      public boolean incrementToken() throws IOException {
+        if(iter.hasNext()) {
+          Token token = (Token) iter.next();
+          termAtt.setTermBuffer(token.term());
+          posIncrAtt.setPositionIncrement(token.getPositionIncrement());
+          offsetAtt.setOffset(token.startOffset(), token.endOffset());
+          return true;
+        }
+        return false;
       }
     };
   }
@@ -1611,7 +1684,11 @@ class SynonymAnalyzer extends Analyzer {
    *      java.io.Reader)
    */
   public TokenStream tokenStream(String arg0, Reader arg1) {
-    return new SynonymTokenizer(new LowerCaseTokenizer(arg1), synonyms);
+    LowerCaseTokenizer stream = new LowerCaseTokenizer(arg1);
+    stream.addAttribute(TermAttribute.class);
+    stream.addAttribute(PositionIncrementAttribute.class);
+    stream.addAttribute(OffsetAttribute.class);
+    return new SynonymTokenizer(stream, synonyms);
   }
 }
 
@@ -1622,47 +1699,70 @@ class SynonymAnalyzer extends Analyzer {
 class SynonymTokenizer extends TokenStream {
   private TokenStream realStream;
   private Token currentRealToken = null;
+  private org.apache.lucene.analysis.Token cRealToken = null;
   private Map synonyms;
   StringTokenizer st = null;
+  private TermAttribute realTermAtt;
+  private PositionIncrementAttribute realPosIncrAtt;
+  private OffsetAttribute realOffsetAtt;
+  private TermAttribute termAtt;
+  private PositionIncrementAttribute posIncrAtt;
+  private OffsetAttribute offsetAtt;
 
   public SynonymTokenizer(TokenStream realStream, Map synonyms) {
     this.realStream = realStream;
     this.synonyms = synonyms;
+    realTermAtt = (TermAttribute) realStream.getAttribute(TermAttribute.class);
+    realPosIncrAtt = (PositionIncrementAttribute) realStream.getAttribute(PositionIncrementAttribute.class);
+    realOffsetAtt = (OffsetAttribute) realStream.getAttribute(OffsetAttribute.class);
+
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
   }
 
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
+  public boolean incrementToken() throws IOException {
+
     if (currentRealToken == null) {
-      Token nextRealToken = realStream.next(reusableToken);
-      if (nextRealToken == null) {
-        return null;
+      boolean next = realStream.incrementToken();
+      if (!next) {
+        return false;
       }
-      String expansions = (String) synonyms.get(nextRealToken.term());
+      //Token nextRealToken = new Token(, offsetAtt.startOffset(), offsetAtt.endOffset());
+      termAtt.setTermBuffer(realTermAtt.term());
+      offsetAtt.setOffset(realOffsetAtt.startOffset(), realOffsetAtt.endOffset());
+      posIncrAtt.setPositionIncrement(realPosIncrAtt.getPositionIncrement());
+
+      String expansions = (String) synonyms.get(realTermAtt.term());
       if (expansions == null) {
-        return nextRealToken;
+        return true;
       }
       st = new StringTokenizer(expansions, ",");
       if (st.hasMoreTokens()) {
-        currentRealToken = (Token) nextRealToken.clone();
+        currentRealToken = new Token(realOffsetAtt.startOffset(), realOffsetAtt.endOffset());
+        currentRealToken.setTermBuffer(realTermAtt.term());
       }
-      return currentRealToken;
+      
+      return true;
     } else {
-      reusableToken.reinit(st.nextToken(),
-                           currentRealToken.startOffset(),
-                           currentRealToken.endOffset());
-      reusableToken.setPositionIncrement(0);
+      String tok = st.nextToken();
+      termAtt.setTermBuffer(tok);
+      offsetAtt.setOffset(currentRealToken.startOffset(), currentRealToken.endOffset());
+      posIncrAtt.setPositionIncrement(0);
       if (!st.hasMoreTokens()) {
         currentRealToken = null;
         st = null;
       }
-      return reusableToken;
+      return true;
     }
+    
   }
 
   static abstract class TestHighlightRunner {
     static final int STANDARD = 0;
     static final int SPAN = 1;
     int mode = STANDARD;
+    Fragmenter frag = new SimpleFragmenter(20);
 
     public Highlighter getHighlighter(Query query, String fieldName, TokenStream stream,
         Formatter formatter) {
@@ -1725,7 +1825,7 @@ class SynonymTokenizer extends TokenStream {
         if (mode == SPAN) {
           ((CachingTokenFilter) tokenStream).reset();
         }
-        highlighter.setTextFragmenter(new SimpleFragmenter(20));
+        highlighter.setTextFragmenter(frag);
 
         String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
             fragmentSeparator);

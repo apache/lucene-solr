@@ -1,4 +1,5 @@
 package org.apache.lucene.search.highlight;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,118 +16,117 @@ package org.apache.lucene.search.highlight;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
- * One, or several overlapping tokens, along with the score(s) and the
- * scope of the original text
+ * One, or several overlapping tokens, along with the score(s) and the scope of
+ * the original text
  */
-public class TokenGroup
-{
-	
-	private static final int MAX_NUM_TOKENS_PER_GROUP=50;
-	Token [] tokens=new Token[MAX_NUM_TOKENS_PER_GROUP];
-	float [] scores=new float[MAX_NUM_TOKENS_PER_GROUP];
-	int numTokens=0;
-	int startOffset=0;
-	int endOffset=0;
-	float tot;
+public class TokenGroup {
 
+  private static final int MAX_NUM_TOKENS_PER_GROUP = 50;
+  Token [] tokens=new Token[MAX_NUM_TOKENS_PER_GROUP];
+  float[] scores = new float[MAX_NUM_TOKENS_PER_GROUP];
+  int numTokens = 0;
+  int startOffset = 0;
+  int endOffset = 0;
+  float tot;
   int matchStartOffset, matchEndOffset;
 
+  private OffsetAttribute offsetAtt;
+  private TermAttribute termAtt;
 
-  void addToken(Token token, float score)
-	{
-	    if(numTokens < MAX_NUM_TOKENS_PER_GROUP)
-        {	    
-			if(numTokens==0)
-			{
-				startOffset=matchStartOffset=token.startOffset();
-				endOffset=matchEndOffset=token.endOffset();
-				tot += score;
-			}
-			else
-			{
-				startOffset=Math.min(startOffset,token.startOffset());
-				endOffset=Math.max(endOffset,token.endOffset());
-        if (score>0) {
-          if (tot==0) {
-            matchStartOffset=token.startOffset();
-            matchEndOffset=token.endOffset();
+  public TokenGroup(TokenStream tokenStream) {
+    offsetAtt = (OffsetAttribute) tokenStream.getAttribute(OffsetAttribute.class);
+    termAtt = (TermAttribute) tokenStream.getAttribute(TermAttribute.class);
+  }
+
+  void addToken(float score) {
+    if (numTokens < MAX_NUM_TOKENS_PER_GROUP) {
+      int termStartOffset = offsetAtt.startOffset();
+      int termEndOffset = offsetAtt.endOffset();
+      if (numTokens == 0) {
+        startOffset = matchStartOffset = termStartOffset;
+        endOffset = matchEndOffset = termEndOffset;
+        tot += score;
+      } else {
+        startOffset = Math.min(startOffset, termStartOffset);
+        endOffset = Math.max(endOffset, termEndOffset);
+        if (score > 0) {
+          if (tot == 0) {
+            matchStartOffset = offsetAtt.startOffset();
+            matchEndOffset = offsetAtt.endOffset();
           } else {
-            matchStartOffset=Math.min(matchStartOffset,token.startOffset());
-            matchEndOffset=Math.max(matchEndOffset,token.endOffset());
+            matchStartOffset = Math.min(matchStartOffset, termStartOffset);
+            matchEndOffset = Math.max(matchEndOffset, termEndOffset);
           }
-          tot+=score;
+          tot += score;
         }
       }
-			tokens[numTokens]= (Token) token.clone();
-			scores[numTokens]=score;
-			numTokens++;
-        }
-	}
+      Token token = new Token(termStartOffset, termEndOffset);
+      token.setTermBuffer(termAtt.term());
+      tokens[numTokens] = token;
+      scores[numTokens] = score;
+      numTokens++;
+    }
+  }
 
-	boolean isDistinct(Token token)
-	{
-		return token.startOffset()>=endOffset;
-	}
+  boolean isDistinct() {
+    return offsetAtt.startOffset() >= endOffset;
+  }
 
+  void clear() {
+    numTokens = 0;
+    tot = 0;
+  }
+  
+  /* 
+  * @param index a value between 0 and numTokens -1
+  * @return the "n"th token
+  */
+ public Token getToken(int index)
+ {
+     return tokens[index];
+ }
 
-	void clear()
-	{
-		numTokens=0;
-		tot=0;
-	}
-	
-	/**
-	 * 
-	 * @param index a value between 0 and numTokens -1
-	 * @return the "n"th token
-	 */
-	public Token getToken(int index)
-	{
-		return tokens[index];
-	}
+  /**
+   * 
+   * @param index a value between 0 and numTokens -1
+   * @return the "n"th score
+   */
+  public float getScore(int index) {
+    return scores[index];
+  }
 
-	/**
-	 * 
-	 * @param index a value between 0 and numTokens -1
-	 * @return the "n"th score
-	 */
-	public float getScore(int index)
-	{
-		return scores[index];
-	}
+  /**
+   * @return the end position in the original text
+   */
+  public int getEndOffset() {
+    return endOffset;
+  }
 
-	/**
-	 * @return the end position in the original text
-	 */
-	public int getEndOffset()
-	{
-		return endOffset;
-	}
+  /**
+   * @return the number of tokens in this group
+   */
+  public int getNumTokens() {
+    return numTokens;
+  }
 
-	/**
-	 * @return the number of tokens in this group
-	 */
-	public int getNumTokens()
-	{
-		return numTokens;
-	}
+  /**
+   * @return the start position in the original text
+   */
+  public int getStartOffset() {
+    return startOffset;
+  }
 
-	/**
-	 * @return the start position in the original text
-	 */
-	public int getStartOffset()
-	{
-		return startOffset;
-	}
-
-	/**
-	 * @return all tokens' scores summed up
-	 */
-	public float getTotalScore()
-	{
-		return tot;
-	}
+  /**
+   * @return all tokens' scores summed up
+   */
+  public float getTotalScore() {
+    return tot;
+  }
 }

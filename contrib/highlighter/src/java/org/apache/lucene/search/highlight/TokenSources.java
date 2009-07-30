@@ -29,6 +29,8 @@ import java.util.Comparator;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermFreqVector;
@@ -135,32 +137,45 @@ public class TokenSources
      * @param tokenPositionsGuaranteedContiguous true if the token position numbers have no overlaps or gaps. If looking
      * to eek out the last drops of performance, set to true. If in doubt, set to false.
      */
-    public static TokenStream getTokenStream(TermPositionVector tpv, boolean tokenPositionsGuaranteedContiguous)
-    {
+    public static TokenStream getTokenStream(TermPositionVector tpv, boolean tokenPositionsGuaranteedContiguous) {
         //an object used to iterate across an array of tokens
-        class StoredTokenStream extends TokenStream
-        {
-            Token tokens[];
-            int currentToken=0;
-            StoredTokenStream(Token tokens[])
-            {
-                this.tokens=tokens;
+        class StoredTokenStream extends TokenStream {
+          Token tokens[];
+          int currentToken = 0;
+          TermAttribute termAtt;
+          OffsetAttribute offsetAtt;
+    
+          StoredTokenStream(Token tokens[]) {
+            this.tokens = tokens;
+            termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+            offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+          }
+    
+          public Token next(final Token reusableToken) {
+            System.out.println("next token");
+            assert reusableToken != null;
+            if (currentToken >= tokens.length) {
+              return null;
             }
-            public Token next(final Token reusableToken)
-            {
-                assert reusableToken != null;
-                if(currentToken>=tokens.length)
-                {
-                    return null;
-                }
-                return tokens[currentToken++];
-            }            
-        }        
+            return tokens[currentToken++];
+          }
+    
+          public boolean incrementToken() throws IOException {
+            System.out.println("inc token");
+            if (currentToken >= tokens.length) {
+              return false;
+            }
+            Token token = tokens[currentToken++];
+            termAtt.setTermBuffer(token.term());
+            offsetAtt.setOffset(token.startOffset(), token.endOffset());
+            return true;
+          }
+        }      
         //code to reconstruct the original sequence of Tokens
         String[] terms=tpv.getTerms();          
         int[] freq=tpv.getTermFrequencies();
         int totalTokens=0;
-        Token newToken = new Token();
+
         for (int t = 0; t < freq.length; t++)
         {
             totalTokens+=freq[t];
@@ -190,8 +205,9 @@ public class TokenSources
                 }
                 for (int tp = 0; tp < offsets.length; tp++)
                 {
-                  newToken.reinit(terms[t], offsets[tp].getStartOffset(), offsets[tp].getEndOffset());
-                  unsortedTokens.add(newToken.clone());
+                  Token token = new Token(offsets[tp].getStartOffset(), offsets[tp].getEndOffset());
+                  token.setTermBuffer(terms[t]);
+                  unsortedTokens.add(token);
                 }
             }
             else
@@ -204,8 +220,8 @@ public class TokenSources
                 //tokens stored with positions - can use this to index straight into sorted array
                 for (int tp = 0; tp < pos.length; tp++)
                 {
-                  newToken.reinit(terms[t], offsets[tp].getStartOffset(), offsets[tp].getEndOffset());
-                  tokensInOriginalOrder[pos[tp]] = (Token) newToken.clone();
+                  Token token = new Token(terms[t], offsets[tp].getStartOffset(), offsets[tp].getEndOffset());
+                  tokensInOriginalOrder[pos[tp]] = token;
                 }                
             }
         }
@@ -218,7 +234,7 @@ public class TokenSources
                 {
                     Token t1=(Token) o1;
                     Token t2=(Token) o2;
-                    if(t1.startOffset()>t2.startOffset())
+                    if(t1.startOffset()>t2.endOffset())
                         return 1;
                     if(t1.startOffset()<t2.startOffset())
                         return -1;
