@@ -17,6 +17,8 @@
 
 package org.apache.solr.analysis;
 
+import junit.framework.TestCase;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -115,5 +117,10 @@ public class TestCapitalizationFilter extends BaseTokenTestCase {
     termBuffer = "kiTTEN".toCharArray();
     factory.processWord(termBuffer, 0, termBuffer.length, 0 );
     assertEquals( "kiTTEN",  new String(termBuffer, 0, termBuffer.length));
+
+    factory.keep = null;
+    termBuffer = "kiTTEN".toCharArray();
+    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
+    assertEquals( "Kitten",  new String(termBuffer, 0, termBuffer.length));
   }
 }

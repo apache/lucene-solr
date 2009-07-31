@@ -449,6 +449,9 @@ Bug Fixes
     SolrQueryParser considers special.
     (hossman)
 
+54. SOLR-1317: Fix CapitalizationFilterFactory to work when keep parameter is not specified.
+    (ehatcher)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)

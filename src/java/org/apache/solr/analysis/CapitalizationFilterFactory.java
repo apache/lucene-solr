@@ -141,7 +141,7 @@ public class CapitalizationFilterFactory extends BaseTokenFilterFactory {
       return;
     }
 
-    if (keep.contains(buffer, offset, length)) {
+    if (keep != null && keep.contains(buffer, offset, length)) {
       if (wordCount == 0 && forceFirstLetter) {
         buffer[offset] = Character.toUpperCase(buffer[offset]);
       }
