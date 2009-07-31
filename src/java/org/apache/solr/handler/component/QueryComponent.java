@@ -282,6 +282,7 @@ public class QueryComponent extends SearchComponent
         break;
       case SortField.CUSTOM:
         comparator = sortField.getFactory().newComparator (reader, fieldname);
+        // comparator = sortField.getComparatorSource().newComparator(fieldname,2,1,false);
         break;
       default:
         throw new RuntimeException ("unknown field type: "+sortField.getType());

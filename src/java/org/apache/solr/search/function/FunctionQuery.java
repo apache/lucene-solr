@@ -19,6 +19,8 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
+import org.apache.solr.search.SolrIndexReader;
+
 import java.io.IOException;
 import java.util.Set;
 
@@ -84,7 +86,12 @@ public class FunctionQuery extends Query {
     }
 
     public Explanation explain(IndexReader reader, int doc) throws IOException {
-      return scorer(reader).explain(doc);
+      SolrIndexReader topReader = (SolrIndexReader)reader;
+      SolrIndexReader[] subReaders = topReader.getLeafReaders();
+      int[] offsets = topReader.getLeafOffsets();
+      int readerPos = SolrIndexReader.readerIndex(doc, offsets);
+      int readerBase = offsets[readerPos];
+      return scorer(subReaders[readerPos]).explain(doc-readerBase);
     }
   }
 

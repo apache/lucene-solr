@@ -205,6 +205,26 @@ public class TrieField extends FieldType {
     return query;
   }
 
+  @Override
+  public String toInternal(String val) {
+    return super.toInternal(val);
+  }
+
+  @Override
+  public String toExternal(Fieldable f) {
+    return super.toExternal(f);
+  }
+
+  @Override
+  public String indexedToReadable(String indexedForm) {
+    return super.indexedToReadable(indexedForm);
+  }
+
+  @Override
+  public String storedToIndexed(Fieldable f) {
+    return super.storedToIndexed(f);
+  }
+
   public enum TrieTypes {
     INTEGER,
     LONG,

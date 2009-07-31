@@ -45,6 +45,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
     assertU(adoc("id","5", "v_f","3.14159"));
     assertU(adoc("id","6", "v_f","8983"));
     assertU(adoc("id","7", "v_f","1.5"));
+    assertU(adoc("id","8", "v_ti","5"));
     assertU(optimize());
 
 
@@ -83,6 +84,11 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             req("q","{!field f=v_f}1.5")
             ,"//result[@numFound='1']"
             );    
+
+    assertQ(
+            req("q","{!field f=v_ti}5")
+            ,"//result[@numFound='1']"
+            );
 
      assertQ("test multi term field query on text type",
             req("q","{!field f=v_t}Hello  DUDE")
