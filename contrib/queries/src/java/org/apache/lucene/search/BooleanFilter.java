@@ -108,10 +108,7 @@ public class BooleanFilter extends Filter
     if (res !=null)
       return finalResult(res, reader.maxDoc());
 
-    if (emptyDocIdSet == null)
-      emptyDocIdSet = new OpenBitSetDISI(1);
-
-    return emptyDocIdSet;
+    return DocIdSet.EMPTY_DOCIDSET;
   }
 
   // TODO: in 3.0, instead of removing this deprecated
@@ -125,8 +122,6 @@ public class BooleanFilter extends Filter
       ? (DocIdSet) new SortedVIntList(result)
       : (DocIdSet) result;
   }
-
-  private static DocIdSet emptyDocIdSet = null;
 
   /**
   * Adds a new FilterClause to the Boolean Filter container
