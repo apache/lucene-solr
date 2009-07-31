@@ -85,10 +85,12 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             ,"//result[@numFound='1']"
             );    
 
+    /** future test
     assertQ(
             req("q","{!field f=v_ti}5")
             ,"//result[@numFound='1']"
             );
+     **/
 
      assertQ("test multi term field query on text type",
             req("q","{!field f=v_t}Hello  DUDE")
