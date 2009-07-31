@@ -28,9 +28,46 @@ import java.util.regex.Pattern;
  */
 public class JavaUtilRegexCapabilities implements RegexCapabilities {
   private Pattern pattern;
-
+  private int flags = 0;
+  
+  // Define the optional flags from Pattern that can be used.
+  // Do this here to keep Pattern contained within this class.
+  
+  public static final int FLAG_CANON_EQ = Pattern.CANON_EQ;
+  public static final int FLAG_CASE_INSENSITIVE = Pattern.CASE_INSENSITIVE;
+  public static final int FLAG_COMMENTS = Pattern.COMMENTS;
+  public static final int FLAG_DOTALL = Pattern.DOTALL;
+  public static final int FLAG_LITERAL = Pattern.LITERAL;
+  public static final int FLAG_MULTILINE = Pattern.MULTILINE;
+  public static final int FLAG_UNICODE_CASE = Pattern.UNICODE_CASE;
+  public static final int FLAG_UNIX_LINES = Pattern.UNIX_LINES;
+  
+  /**
+   * Default constructor that uses java.util.regex.Pattern 
+   * with its default flags.
+   */
+  public JavaUtilRegexCapabilities()  {
+    this.flags = 0;
+  }
+  
+  /**
+   * Constructor that allows for the modification of the flags that
+   * the java.util.regex.Pattern will use to compile the regular expression.
+   * This gives the user the ability to fine-tune how the regular expression 
+   * to match the functionlity that they need. 
+   * The {@link java.util.regex.Pattern Pattern} class supports specifying 
+   * these fields via the regular expression text itself, but this gives the caller
+   * another option to modify the behavior. Useful in cases where the regular expression text
+   * cannot be modified, or if doing so is undesired.
+   * 
+   * @flags The flags that are ORed together.
+   */
+  public JavaUtilRegexCapabilities(int flags) {
+    this.flags = flags;
+  }
+  
   public void compile(String pattern) {
-    this.pattern = Pattern.compile(pattern);
+    this.pattern = Pattern.compile(pattern, this.flags);
   }
 
   public boolean match(String string) {

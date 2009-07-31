@@ -27,9 +27,40 @@ import org.apache.regexp.RegexpTunnel;
  */
 public class JakartaRegexpCapabilities implements RegexCapabilities {
   private RE regexp;
+  
+  // Define the flags that are possible. Redefine them here
+  // to avoid exposign the RE class to the caller.
+  
+  private int flags = RE.MATCH_NORMAL;
 
+  /**
+   * Flag to specify normal, case-sensitive matching behaviour. This is the default.
+   */
+  public static final int FLAG_MATCH_NORMAL = RE.MATCH_NORMAL;
+  
+  /**
+   * Flag to specify that matching should be case-independent (folded)
+   */
+  public static final int FLAG_MATCH_CASEINDEPENDENT = RE.MATCH_CASEINDEPENDENT;
+ 
+  /**
+   * Contructs a RegexCapabilities with the default MATCH_NORMAL match style.
+   */
+  public JakartaRegexpCapabilities() {}
+  
+  /**
+   * Constructs a RegexCapabilities with the provided match flags.
+   * Multiple flags should be ORed together.
+   * 
+   * @param flags The matching style
+   */
+  public JakartaRegexpCapabilities(int flags)
+  {
+    this.flags = flags;
+  }
+  
   public void compile(String pattern) {
-    regexp = new RE(pattern);
+    regexp = new RE(pattern, this.flags);
   }
 
   public boolean match(String string) {

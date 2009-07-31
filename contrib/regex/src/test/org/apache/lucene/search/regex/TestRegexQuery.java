@@ -33,6 +33,7 @@ public class TestRegexQuery extends TestCase {
   private IndexSearcher searcher;
   private final String FN = "field";
 
+
   public void setUp() {
     RAMDirectory directory = new RAMDirectory();
     try {
@@ -59,8 +60,12 @@ public class TestRegexQuery extends TestCase {
 
   private Term newTerm(String value) { return new Term(FN, value); }
 
-  private int  regexQueryNrHits(String regex) throws Exception {
+  private int  regexQueryNrHits(String regex, RegexCapabilities capability) throws Exception {
     RegexQuery query = new RegexQuery( newTerm(regex));
+    
+    if ( capability != null )
+      query.setRegexImplementation(capability);
+    
     return searcher.search(query).length();
   }
 
@@ -68,19 +73,20 @@ public class TestRegexQuery extends TestCase {
     SpanRegexQuery srq1 = new SpanRegexQuery( newTerm(regex1));
     SpanRegexQuery srq2 = new SpanRegexQuery( newTerm(regex2));
     SpanNearQuery query = new SpanNearQuery( new SpanQuery[]{srq1, srq2}, slop, ordered);
+    
     return searcher.search(query).length();
   }
 
   public void testRegex1() throws Exception {
-    assertEquals(1, regexQueryNrHits("^q.[aeiou]c.*$"));
+    assertEquals(1, regexQueryNrHits("^q.[aeiou]c.*$", null));
   }
 
   public void testRegex2() throws Exception {
-    assertEquals(0, regexQueryNrHits("^.[aeiou]c.*$"));
+    assertEquals(0, regexQueryNrHits("^.[aeiou]c.*$", null));
   }
 
   public void testRegex3() throws Exception {
-    assertEquals(0, regexQueryNrHits("^q.[aeiou]c$"));
+    assertEquals(0, regexQueryNrHits("^q.[aeiou]c$", null));
   }
 
   public void testSpanRegex1() throws Exception {
@@ -97,6 +103,22 @@ public class TestRegexQuery extends TestCase {
 
     RegexQuery query2 = new RegexQuery( newTerm("foo.*"));
     assertFalse(query1.equals(query2));
+  }
+  
+  public void testJakartaCaseSensativeFail() throws Exception {
+    assertEquals(0, regexQueryNrHits("^.*DOG.*$", null));
+  }
+
+  public void testJavaUtilCaseSensativeFail() throws Exception {
+    assertEquals(0, regexQueryNrHits("^.*DOG.*$", null));
+  }
+  
+  public void testJakartaCaseInsensative() throws Exception {
+    assertEquals(1, regexQueryNrHits("^.*DOG.*$", new JakartaRegexpCapabilities(JakartaRegexpCapabilities.FLAG_MATCH_CASEINDEPENDENT)));
+  }
+  
+  public void testJavaUtilCaseInsensative() throws Exception {
+    assertEquals(1, regexQueryNrHits("^.*DOG.*$", new JavaUtilRegexCapabilities(JavaUtilRegexCapabilities.FLAG_CASE_INSENSITIVE)));
   }
 
 }

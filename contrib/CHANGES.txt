@@ -87,6 +87,14 @@ New features
 10. LUCENE-1272: Add get/setBoost to MoreLikeThis. (Jonathan
     Leibiusky via Mike McCandless)
  
+11. LUCENE-1745: Added constructors to JakartaRegexpCapabilities and
+    JavaUtilRegexCapabilities as well as static flags to support
+    configuring a RegexCapabilities implementation with the
+    implementation-specific modifier flags. Allows for callers to
+    customize the RegexQuery using the implementation-specific options
+    and fine tune how regular expressions are compiled and
+    matched. (Marc Zampetti zampettim@aim.com via Mike McCandless)
+ 
 Optimizations
 
   1. LUCENE-1643: Re-use the collation key (RawCollationKey) for
