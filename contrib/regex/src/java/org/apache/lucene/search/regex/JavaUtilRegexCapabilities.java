@@ -71,7 +71,7 @@ public class JavaUtilRegexCapabilities implements RegexCapabilities {
   }
 
   public boolean match(String string) {
-    return pattern.matcher(string).lookingAt();
+    return pattern.matcher(string).matches();
   }
 
   public String prefix() {

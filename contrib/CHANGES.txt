@@ -47,6 +47,11 @@ Bug fixes
  8. LUCENE-1491: EdgeNGramTokenFilter no longer stops on tokens shorter than minimum n-gram size.
     (Todd Teak via Otis Gospodnetic)
 
+ 9. LUCENE-1683: Fixed JavaUtilRegexCapabilities (an impl used by
+    RegexQuery) to use Matcher.matches() not Matcher.lookingAt() so
+    that the regexp must match the entire string, not just a prefix.
+    (Trejkaz via Mike McCandless)
+
 New features
 
  1. LUCENE-1531: Added support for BoostingTermQuery to XML query parser. (Karl Wettin)
