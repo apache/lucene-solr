@@ -151,17 +151,7 @@ public class TokenSources
             offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
           }
     
-          public Token next(final Token reusableToken) {
-            System.out.println("next token");
-            assert reusableToken != null;
-            if (currentToken >= tokens.length) {
-              return null;
-            }
-            return tokens[currentToken++];
-          }
-    
           public boolean incrementToken() throws IOException {
-            System.out.println("inc token");
             if (currentToken >= tokens.length) {
               return false;
             }
