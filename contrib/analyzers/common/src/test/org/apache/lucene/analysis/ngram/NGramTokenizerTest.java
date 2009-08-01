@@ -17,10 +17,12 @@ package org.apache.lucene.analysis.ngram;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Token;
 
+import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayList;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 import junit.framework.TestCase;
 
@@ -29,7 +31,6 @@ import junit.framework.TestCase;
  */
 public class NGramTokenizerTest extends TestCase {
     private StringReader input;
-    private ArrayList tokens = new ArrayList();
     
     public void setUp() {
         input = new StringReader("abcde");
@@ -54,69 +55,48 @@ public class NGramTokenizerTest extends TestCase {
         }
         assertTrue(gotException);
     }
+    
+    private void checkStream(TokenStream stream, String[] exp) throws IOException {
+      TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
+      for (int i = 0; i < exp.length; i++) {
+        assertTrue(stream.incrementToken());
+        assertEquals(exp[i], termAtt.toString());
+      }
+      assertFalse(stream.incrementToken());
+    }
 
     public void testUnigrams() throws Exception {
         NGramTokenizer tokenizer = new NGramTokenizer(input, 1, 1);
         
-        final Token reusableToken = new Token();
-        for (Token nextToken = tokenizer.next(reusableToken); nextToken != null; nextToken = tokenizer.next(reusableToken)) {
-          tokens.add(nextToken.toString());
-//        System.out.println(token.term());
-//        System.out.println(token);
-//        Thread.sleep(1000);
-      }
-
-        assertEquals(5, tokens.size());
-        ArrayList exp = new ArrayList();
-        exp.add("(a,0,1)"); exp.add("(b,1,2)"); exp.add("(c,2,3)"); exp.add("(d,3,4)"); exp.add("(e,4,5)");
-        assertEquals(exp, tokens);
+        String[] exp = new String[] {
+            "(a,0,1)", "(b,1,2)", "(c,2,3)", "(d,3,4)", "(e,4,5)"
+          };
+          
+        checkStream(tokenizer, exp);
     }
 
     public void testBigrams() throws Exception {
         NGramTokenizer tokenizer = new NGramTokenizer(input, 2, 2);
-        final Token reusableToken = new Token();
-        for (Token nextToken = tokenizer.next(reusableToken); nextToken != null; nextToken = tokenizer.next(reusableToken)) {
-          tokens.add(nextToken.toString());
-//        System.out.println(token.term());
-//        System.out.println(token);
-//        Thread.sleep(1000);
-      }
-
-        assertEquals(4, tokens.size());
-        ArrayList exp = new ArrayList();
-        exp.add("(ab,0,2)"); exp.add("(bc,1,3)"); exp.add("(cd,2,4)"); exp.add("(de,3,5)");
-        assertEquals(exp, tokens);
+        String[] exp = new String[] {
+            "(ab,0,2)", "(bc,1,3)", "(cd,2,4)", "(de,3,5)"
+          };
+          
+        checkStream(tokenizer, exp);
     }
 
     public void testNgrams() throws Exception {
         NGramTokenizer tokenizer = new NGramTokenizer(input, 1, 3);
-        final Token reusableToken = new Token();
-        for (Token nextToken = tokenizer.next(reusableToken); nextToken != null; nextToken = tokenizer.next(reusableToken)) {
-          tokens.add(nextToken.toString());
-//        System.out.println(token.term());
-//        System.out.println(token);
-//        Thread.sleep(1000);
-      }
-
-        assertEquals(12, tokens.size());
-        ArrayList exp = new ArrayList();
-        exp.add("(a,0,1)"); exp.add("(b,1,2)"); exp.add("(c,2,3)"); exp.add("(d,3,4)"); exp.add("(e,4,5)");
-        exp.add("(ab,0,2)"); exp.add("(bc,1,3)"); exp.add("(cd,2,4)"); exp.add("(de,3,5)");
-        exp.add("(abc,0,3)"); exp.add("(bcd,1,4)"); exp.add("(cde,2,5)");
-        assertEquals(exp, tokens);
+        String[] exp = new String[] {
+            "(a,0,1)", "(b,1,2)", "(c,2,3)", "(d,3,4)", "(e,4,5)",
+            "(ab,0,2)", "(bc,1,3)", "(cd,2,4)", "(de,3,5)",
+            "(abc,0,3)", "(bcd,1,4)", "(cde,2,5)"
+        };
+          
+        checkStream(tokenizer, exp);
     }
 
     public void testOversizedNgrams() throws Exception {
         NGramTokenizer tokenizer = new NGramTokenizer(input, 6, 7);
-
-        final Token reusableToken = new Token();
-        for (Token nextToken = tokenizer.next(reusableToken); nextToken != null; nextToken = tokenizer.next(reusableToken)) {
-          tokens.add(nextToken.toString());
-//        System.out.println(token.term());
-//        System.out.println(token);
-//        Thread.sleep(1000);
-      }
-
-        assertTrue(tokens.isEmpty());
+        assertFalse(tokenizer.incrementToken());
     }
 }

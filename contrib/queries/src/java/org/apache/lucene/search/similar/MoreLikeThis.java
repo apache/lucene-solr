@@ -28,9 +28,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 
 import java.util.Set;
@@ -829,9 +829,10 @@ public final class MoreLikeThis {
 		   TokenStream ts = analyzer.tokenStream(fieldName, r);
 			int tokenCount=0;
 			// for every token
-                        final Token reusableToken = new Token();
-			for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
-				String word = nextToken.term();
+			TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+			
+			while (ts.incrementToken()) {
+				String word = termAtt.term();
 				tokenCount++;
 				if(tokenCount>maxNumTokensParsed)
 				{

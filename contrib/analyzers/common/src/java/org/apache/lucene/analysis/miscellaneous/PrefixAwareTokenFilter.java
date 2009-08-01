@@ -29,6 +29,7 @@ import java.io.IOException;
  * to be used when updating the token values in the second stream based on that token.
  *
  * The default implementation adds last prefix token end offset to the suffix token start and end offsets.
+ * @deprecated
  */
 public class PrefixAwareTokenFilter extends TokenStream {
 

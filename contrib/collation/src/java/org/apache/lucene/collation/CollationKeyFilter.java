@@ -21,6 +21,7 @@ package org.apache.lucene.collation;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.IndexableBinaryStringTools;
 
 import java.io.IOException;
@@ -73,8 +74,9 @@ import java.text.Collator;
  *   {@link ICUCollationKeyFilter} on the query side, or vice versa.
  * </p>
  */
-public class CollationKeyFilter extends TokenFilter {
+public final class CollationKeyFilter extends TokenFilter {
   private Collator collator = null;
+  private TermAttribute termAtt;
 
   /**
    * @param input Source token stream
@@ -83,25 +85,26 @@ public class CollationKeyFilter extends TokenFilter {
   public CollationKeyFilter(TokenStream input, Collator collator) {
     super(input);
     this.collator = collator;
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
-  public final Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    Token nextToken = input.next(reusableToken);
-    if (nextToken != null) {
-      char[] termBuffer = nextToken.termBuffer();
-      String termText = new String(termBuffer, 0, nextToken.termLength());
+  public boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
+      char[] termBuffer = termAtt.termBuffer();
+      String termText = new String(termBuffer, 0, termAtt.termLength());
       byte[] collationKey = collator.getCollationKey(termText).toByteArray();
       ByteBuffer collationKeyBuf = ByteBuffer.wrap(collationKey);
       int encodedLength
         = IndexableBinaryStringTools.getEncodedLength(collationKeyBuf);
       if (encodedLength > termBuffer.length) {
-        nextToken.resizeTermBuffer(encodedLength);
+        termAtt.resizeTermBuffer(encodedLength);
       }
-      nextToken.setTermLength(encodedLength);
-      CharBuffer wrappedTermBuffer = CharBuffer.wrap(nextToken.termBuffer());
+      termAtt.setTermLength(encodedLength);
+      CharBuffer wrappedTermBuffer = CharBuffer.wrap(termAtt.termBuffer());
       IndexableBinaryStringTools.encode(collationKeyBuf, wrappedTermBuffer);
+      return true;
+    } else {
+      return false;
     }
-    return nextToken;
   }
 }

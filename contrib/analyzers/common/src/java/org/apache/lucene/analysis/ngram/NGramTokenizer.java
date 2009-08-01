@@ -19,6 +19,8 @@ package org.apache.lucene.analysis.ngram;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -36,6 +38,9 @@ public class NGramTokenizer extends Tokenizer {
   private int inLen;
   private String inStr;
   private boolean started = false;
+  
+  private TermAttribute termAtt;
+  private OffsetAttribute offsetAtt;
 
   /**
    * Creates NGramTokenizer with given min and max n-grams.
@@ -53,6 +58,9 @@ public class NGramTokenizer extends Tokenizer {
     }
     this.minGram = minGram;
     this.maxGram = maxGram;
+    
+    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
   }
   /**
    * Creates NGramTokenizer with default min and max n-grams.
@@ -63,8 +71,7 @@ public class NGramTokenizer extends Tokenizer {
   }
 
   /** Returns the next token in the stream, or null at EOS. */
-  public final Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
+  public final boolean incrementToken() throws IOException {
     if (!started) {
       started = true;
       gramSize = minGram;
@@ -78,13 +85,27 @@ public class NGramTokenizer extends Tokenizer {
       pos = 0;                           // reset to beginning of string
       gramSize++;                        // increase n-gram size
       if (gramSize > maxGram)            // we are done
-        return null;
+        return false;
       if (pos+gramSize > inLen)
-        return null;
+        return false;
     }
 
     int oldPos = pos;
     pos++;
-    return reusableToken.reinit(inStr, oldPos, gramSize, input.correctOffset(oldPos), input.correctOffset(oldPos+gramSize));
+    termAtt.setTermBuffer(inStr, oldPos, gramSize);
+    offsetAtt.setOffset(input.correctOffset(oldPos), input.correctOffset(oldPos+gramSize));
+    return true;
+  }
+  
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
   }
 }

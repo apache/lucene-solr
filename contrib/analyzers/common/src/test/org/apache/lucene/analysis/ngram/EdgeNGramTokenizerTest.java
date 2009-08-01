@@ -17,9 +17,10 @@ package org.apache.lucene.analysis.ngram;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Token;
 
 import java.io.StringReader;
+
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 import junit.framework.TestCase;
 
@@ -65,46 +66,46 @@ public class EdgeNGramTokenizerTest extends TestCase {
 
   public void testFrontUnigram() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.FRONT, 1, 1);
-    final Token reusableToken = new Token();
-    Token nextToken = tokenizer.next(reusableToken);
-    assertEquals("(a,0,1)", nextToken.toString());
-    assertNull(tokenizer.next(reusableToken));
+    TermAttribute termAtt = (TermAttribute) tokenizer.addAttribute(TermAttribute.class);
+    assertTrue(tokenizer.incrementToken());
+    assertEquals("(a,0,1)", termAtt.toString());
+    assertFalse(tokenizer.incrementToken());
   }
 
   public void testBackUnigram() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.BACK, 1, 1);
-    final Token reusableToken = new Token();
-    Token nextToken = tokenizer.next(reusableToken);
-    assertEquals("(e,4,5)", nextToken.toString());
-    assertNull(tokenizer.next(reusableToken));
+    TermAttribute termAtt = (TermAttribute) tokenizer.addAttribute(TermAttribute.class);
+    assertTrue(tokenizer.incrementToken());
+    assertEquals("(e,4,5)", termAtt.toString());
+    assertFalse(tokenizer.incrementToken());
   }
 
   public void testOversizedNgrams() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.FRONT, 6, 6);
-    assertNull(tokenizer.next(new Token()));
+    assertFalse(tokenizer.incrementToken());
   }
 
   public void testFrontRangeOfNgrams() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.FRONT, 1, 3);
-    final Token reusableToken = new Token();
-    Token nextToken = tokenizer.next(reusableToken);
-    assertEquals("(a,0,1)", nextToken.toString());
-    nextToken = tokenizer.next(reusableToken);
-    assertEquals("(ab,0,2)", nextToken.toString());
-    nextToken = tokenizer.next(reusableToken);
-    assertEquals("(abc,0,3)", nextToken.toString());
-    assertNull(tokenizer.next(reusableToken));
+    TermAttribute termAtt = (TermAttribute) tokenizer.addAttribute(TermAttribute.class);
+    assertTrue(tokenizer.incrementToken());
+    assertEquals("(a,0,1)", termAtt.toString());
+    assertTrue(tokenizer.incrementToken());
+    assertEquals("(ab,0,2)", termAtt.toString());
+    assertTrue(tokenizer.incrementToken());
+    assertEquals("(abc,0,3)", termAtt.toString());
+    assertFalse(tokenizer.incrementToken());
   }
 
   public void testBackRangeOfNgrams() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.BACK, 1, 3);
-    final Token reusableToken = new Token();
-    Token nextToken = tokenizer.next(reusableToken);
-    assertEquals("(e,4,5)", nextToken.toString());
-    nextToken = tokenizer.next(reusableToken);
-    assertEquals("(de,3,5)", nextToken.toString());
-    nextToken = tokenizer.next(reusableToken);
-    assertEquals("(cde,2,5)", nextToken.toString());
-    assertNull(tokenizer.next(reusableToken));
+    TermAttribute termAtt = (TermAttribute) tokenizer.addAttribute(TermAttribute.class);
+    assertTrue(tokenizer.incrementToken());
+    assertEquals("(e,4,5)", termAtt.toString());
+    assertTrue(tokenizer.incrementToken());
+    assertEquals("(de,3,5)", termAtt.toString());
+    assertTrue(tokenizer.incrementToken());
+    assertEquals("(cde,2,5)", termAtt.toString());
+    assertFalse(tokenizer.incrementToken());
   }
 }

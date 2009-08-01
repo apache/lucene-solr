@@ -24,6 +24,7 @@ import java.io.IOException;
 
 /**
  * Links two PrefixAwareTokenFilter
+ * @deprecated
  */
 public class PrefixAndSuffixAwareTokenFilter extends TokenStream {
 

@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.reverse;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 import java.io.IOException;
 
@@ -30,16 +30,20 @@ import java.io.IOException;
  */
 public final class ReverseStringFilter extends TokenFilter {
 
+  private TermAttribute termAtt;
+
   public ReverseStringFilter(TokenStream in) {
     super(in);
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
-  public final Token next(Token in) throws IOException {
-    assert in != null;
-    Token token=input.next(in);
-    if( token == null ) return null;
-    reverse( token.termBuffer(), token.termLength() );
-    return token;
+  public boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
+      reverse( termAtt.termBuffer(), termAtt.termLength() );
+      return true;
+    } else {
+      return false;
+    }
   }
 
   public static String reverse( final String input ){

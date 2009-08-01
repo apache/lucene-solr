@@ -26,8 +26,8 @@ import java.io.StringReader;
 
 import junit.framework.TestCase;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Test case for RussianAnalyzer.
@@ -77,26 +77,21 @@ public class TestRussianAnalyzer extends TestCase
                 sampleUnicode,
                 RussianCharsets.UnicodeRussian);
 
-        final Token reusableToken = new Token();
-        final Token reusableSampleToken = new Token();
-        Token nextToken;
-        Token nextSampleToken;
+        TermAttribute text = (TermAttribute) in.getAttribute(TermAttribute.class);
+        TermAttribute sampleText = (TermAttribute) sample.getAttribute(TermAttribute.class);
+
         for (;;)
         {
-            nextToken = in.next(reusableToken);
+          if (in.incrementToken() == false)
+            break;
 
-            if (nextToken == null)
-            {
-                break;
-            }
-
-            nextSampleToken = sample.next(reusableSampleToken);
+            boolean nextSampleToken = sample.incrementToken();
             assertEquals(
                 "Unicode",
-                nextToken.term(),
-                nextSampleToken == null
+                text.term(),
+                nextSampleToken == false
                 ? null
-                : nextSampleToken.term());
+                : sampleText.term());
         }
 
         inWords.close();
@@ -118,29 +113,22 @@ public class TestRussianAnalyzer extends TestCase
                 sampleKOI8,
                 RussianCharsets.KOI8);
 
-        final Token reusableToken = new Token();
-        final Token reusableSampleToken = new Token();
-        Token nextToken;
-        Token nextSampleToken;
+        TermAttribute text = (TermAttribute) in.getAttribute(TermAttribute.class);
+        TermAttribute sampleText = (TermAttribute) sample.getAttribute(TermAttribute.class);
+
         for (;;)
         {
-            nextToken = in.next(reusableToken);
+          if (in.incrementToken() == false)
+            break;
 
-            if (nextToken == null)
-            {
-                break;
-            }
-
-            nextSampleToken = sample.next(reusableSampleToken);
+            boolean nextSampleToken = sample.incrementToken();
             assertEquals(
                 "KOI8",
-                nextToken.term(),
-                nextSampleToken == null
+                text.term(),
+                nextSampleToken == false
                 ? null
-                : nextSampleToken.term());
-
+                : sampleText.term());
         }
-
         inWordsKOI8.close();
         sampleKOI8.close();
     }
@@ -159,27 +147,21 @@ public class TestRussianAnalyzer extends TestCase
                 sample1251,
                 RussianCharsets.CP1251);
 
-        final Token reusableToken = new Token();
-        final Token reusableSampleToken = new Token();
-        Token nextToken;
-        Token nextSampleToken;
+        TermAttribute text = (TermAttribute) in.getAttribute(TermAttribute.class);
+        TermAttribute sampleText = (TermAttribute) sample.getAttribute(TermAttribute.class);
+
         for (;;)
         {
-          nextToken = in.next(reusableToken);
+          if (in.incrementToken() == false)
+            break;
 
-            if (nextToken == null)
-            {
-                break;
-            }
-
-            nextSampleToken = sample.next(reusableSampleToken);
+            boolean nextSampleToken = sample.incrementToken();
             assertEquals(
                 "1251",
-                nextToken.term(),
-                nextSampleToken == null
+                text.term(),
+                nextSampleToken == false
                 ? null
-                : nextSampleToken.term());
-
+                : sampleText.term());
         }
 
         inWords1251.close();
@@ -192,10 +174,13 @@ public class TestRussianAnalyzer extends TestCase
         RussianAnalyzer ra = new RussianAnalyzer();
         TokenStream stream = ra.tokenStream("", reader);
 
-        final Token reusableToken = new Token();
+        TermAttribute termText = (TermAttribute) stream.getAttribute(TermAttribute.class);
         try {
-            assertEquals("text", stream.next(reusableToken).term());
-            assertNotNull("RussianAnalyzer's tokenizer skips numbers from input text", stream.next(reusableToken));
+            assertTrue(stream.incrementToken());
+            assertEquals("text", termText.term());
+            assertTrue(stream.incrementToken());
+            assertEquals("RussianAnalyzer's tokenizer skips numbers from input text", "1000", termText.term());
+            assertFalse(stream.incrementToken());
         }
         catch (IOException e)
         {

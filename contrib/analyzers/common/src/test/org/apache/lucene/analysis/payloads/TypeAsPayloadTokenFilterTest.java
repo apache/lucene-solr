@@ -19,8 +19,10 @@ package org.apache.lucene.analysis.payloads;
 import junit.framework.TestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -45,32 +47,39 @@ public class TypeAsPayloadTokenFilterTest extends TestCase {
 
     TypeAsPayloadTokenFilter nptf = new TypeAsPayloadTokenFilter(new WordTokenFilter(new WhitespaceTokenizer(new StringReader(test))));
     int count = 0;
-    final Token reusableToken = new Token();
-    for (Token nextToken = nptf.next(reusableToken); nextToken != null; nextToken = nptf.next(reusableToken)) {
-      assertTrue(nextToken.type() + " is not null and it should be", nextToken.type().equals(String.valueOf(Character.toUpperCase(nextToken.termBuffer()[0]))));
-      assertTrue("nextToken.getPayload() is null and it shouldn't be", nextToken.getPayload() != null);
-      String type = new String(nextToken.getPayload().getData(), "UTF-8");
+    TermAttribute termAtt = (TermAttribute) nptf.getAttribute(TermAttribute.class);
+    TypeAttribute typeAtt = (TypeAttribute) nptf.getAttribute(TypeAttribute.class);
+    PayloadAttribute payloadAtt = (PayloadAttribute) nptf.getAttribute(PayloadAttribute.class);
+    
+    while (nptf.incrementToken()) {
+      assertTrue(typeAtt.type() + " is not null and it should be", typeAtt.type().equals(String.valueOf(Character.toUpperCase(termAtt.termBuffer()[0]))));
+      assertTrue("nextToken.getPayload() is null and it shouldn't be", payloadAtt.getPayload() != null);
+      String type = new String(payloadAtt.getPayload().getData(), "UTF-8");
       assertTrue("type is null and it shouldn't be", type != null);
-      assertTrue(type + " is not equal to " + nextToken.type(), type.equals(nextToken.type()) == true);
+      assertTrue(type + " is not equal to " + typeAtt.type(), type.equals(typeAtt.type()) == true);
       count++;
     }
+
     assertTrue(count + " does not equal: " + 10, count == 10);
   }
 
-  private class WordTokenFilter extends TokenFilter {
+  private final class WordTokenFilter extends TokenFilter {
+    private TermAttribute termAtt;
+    private TypeAttribute typeAtt;
+    
     private WordTokenFilter(TokenStream input) {
       super(input);
+      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
     }
 
-
-
-    public Token next(final Token reusableToken) throws IOException {
-      assert reusableToken != null;
-      Token nextToken = input.next(reusableToken);
-      if (nextToken != null) {
-        nextToken.setType(String.valueOf(Character.toUpperCase(nextToken.termBuffer()[0])));
+    public boolean incrementToken() throws IOException {
+      if (input.incrementToken()) {
+        typeAtt.setType(String.valueOf(Character.toUpperCase(termAtt.termBuffer()[0])));
+        return true;
+      } else {
+        return false;
       }
-      return nextToken;
     }
   }
 

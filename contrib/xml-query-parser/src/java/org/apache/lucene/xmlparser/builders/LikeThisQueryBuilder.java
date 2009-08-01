@@ -9,8 +9,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.search.similar.MoreLikeThisQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.xmlparser.DOMUtils;
@@ -72,14 +72,14 @@ public class LikeThisQueryBuilder implements QueryBuilder {
 		if((stopWords!=null)&&(fields!=null))
 		{
 		    stopWordsSet=new HashSet();
-                    final Token reusableToken = new Token();
 		    for (int i = 0; i < fields.length; i++)
             {
                 TokenStream ts = analyzer.tokenStream(fields[i],new StringReader(stopWords));
+                TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
                 try
                 {
-	                for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
-	                    stopWordsSet.add(nextToken.term());
+	                while(ts.incrementToken()) {
+	                    stopWordsSet.add(termAtt.term());
 	                }
                 }
                 catch(IOException ioe)

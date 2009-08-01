@@ -17,18 +17,12 @@ package org.apache.lucene.analysis.ar;
  * limitations under the License.
  */
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.StringReader;
 
 import junit.framework.TestCase;
 
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Test the Arabic Normalization Filter
@@ -95,11 +89,10 @@ public class TestArabicNormalizationFilter extends TestCase {
   private void check(final String input, final String expected) throws IOException {
     ArabicLetterTokenizer tokenStream = new ArabicLetterTokenizer(new StringReader(input));
     ArabicNormalizationFilter filter = new ArabicNormalizationFilter(tokenStream);
-    final Token reusableToken = new Token();
-    Token nextToken = filter.next(reusableToken);
-    if (nextToken == null)
-      fail();
-    assertEquals(expected, nextToken.term());
+    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
+    
+    assertTrue(filter.incrementToken());
+    assertEquals(expected, termAtt.term());
     filter.close();
   }
 

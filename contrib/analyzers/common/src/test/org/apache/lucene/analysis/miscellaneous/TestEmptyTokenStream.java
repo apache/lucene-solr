@@ -17,20 +17,19 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
-
 import java.io.IOException;
 
+import junit.framework.TestCase;
+
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Token;
 
 public class TestEmptyTokenStream extends TestCase {
 
   public void test() throws IOException {
     TokenStream ts = new EmptyTokenStream();
-    assertNull(ts.next());
+    assertFalse(ts.incrementToken());
     ts.reset();
-    assertNull(ts.next(new Token()));
+    assertFalse(ts.incrementToken());
   }
 
 }

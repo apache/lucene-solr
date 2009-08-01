@@ -23,8 +23,8 @@ import java.io.StringReader;
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Test the Brazilian Stem Filter, which only modifies the term text.
@@ -122,12 +122,10 @@ public class TestBrazilianStemmer extends TestCase {
   private void check(final String input, final String expected) throws IOException {
     Analyzer analyzer = new BrazilianAnalyzer(); 
     TokenStream stream = analyzer.tokenStream("dummy", new StringReader(input));
-    final Token reusableToken = new Token();
-    Token nextToken = stream.next(reusableToken);
-    if (nextToken == null)
-      fail();
-    assertEquals(expected, nextToken.term());
-    assertTrue(stream.next(nextToken) == null);
+    TermAttribute text = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    assertTrue(stream.incrementToken());
+    assertEquals(expected, text.term());
+    assertFalse(stream.incrementToken());
     stream.close();
   }
 

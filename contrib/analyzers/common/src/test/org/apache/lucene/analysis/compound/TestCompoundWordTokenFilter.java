@@ -31,15 +31,14 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.apache.lucene.analysis.Token;
+import junit.framework.TestCase;
+
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.compound.CompoundWordTokenFilterBase;
-import org.apache.lucene.analysis.compound.DictionaryCompoundWordTokenFilter;
-import org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
-
-import junit.framework.TestCase;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 public class TestCompoundWordTokenFilter extends TestCase {
   private static String[] locations = {
@@ -155,16 +154,18 @@ public class TestCompoundWordTokenFilter extends TestCase {
 
   private void assertFiltersTo(TokenFilter tf, String[] s, int[] startOffset,
       int[] endOffset, int[] posIncr) throws Exception {
-    final Token reusableToken = new Token();
+    TermAttribute termAtt = (TermAttribute) tf.getAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) tf.getAttribute(OffsetAttribute.class);
+    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) tf.getAttribute(PositionIncrementAttribute.class);
+    
     for (int i = 0; i < s.length; ++i) {
-      Token nextToken = tf.next(reusableToken);
-      assertNotNull(nextToken);
-      assertEquals(s[i], nextToken.term());
-      assertEquals(startOffset[i], nextToken.startOffset());
-      assertEquals(endOffset[i], nextToken.endOffset());
-      assertEquals(posIncr[i], nextToken.getPositionIncrement());
+      assertTrue(tf.incrementToken());
+      assertEquals(s[i], termAtt.term());
+      assertEquals(startOffset[i], offsetAtt.startOffset());
+      assertEquals(endOffset[i], offsetAtt.endOffset());
+      assertEquals(posIncr[i], posIncAtt.getPositionIncrement());
     }
-    assertNull(tf.next(reusableToken));
+    assertFalse(tf.incrementToken());
   }
 
   private void getHyphenationPatternFileContents() {

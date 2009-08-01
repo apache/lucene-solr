@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.tartarus.snowball.SnowballProgram;
 
 /**
@@ -33,9 +34,12 @@ public class SnowballFilter extends TokenFilter {
 
   private SnowballProgram stemmer;
 
+  private TermAttribute termAtt;
+  
   public SnowballFilter(TokenStream input, SnowballProgram stemmer) {
     super(input);
     this.stemmer = stemmer;
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
   /**
@@ -56,21 +60,34 @@ public class SnowballFilter extends TokenFilter {
     } catch (Exception e) {
       throw new RuntimeException(e.toString());
     }
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
   /** Returns the next input Token, after being stemmed */
-  public final Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    Token nextToken = input.next(reusableToken);
-    if (nextToken == null)
-      return null;
-    String originalTerm = nextToken.term();
-    stemmer.setCurrent(originalTerm);
-    stemmer.stem();
-    String finalTerm = stemmer.getCurrent();
-    // Don't bother updating, if it is unchanged.
-    if (!originalTerm.equals(finalTerm))
-      nextToken.setTermBuffer(finalTerm);
-    return nextToken;
+  public final boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
+      String originalTerm = termAtt.term();
+      stemmer.setCurrent(originalTerm);
+      stemmer.stem();
+      String finalTerm = stemmer.getCurrent();
+      // Don't bother updating, if it is unchanged.
+      if (!originalTerm.equals(finalTerm))
+        termAtt.setTermBuffer(finalTerm);
+      return true;
+    } else {
+      return false;
+    }
+  }
+  
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
   }
 }

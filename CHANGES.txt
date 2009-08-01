@@ -356,6 +356,9 @@ API Changes
 33. LUCENE-1705: Added IndexWriter.deleteAllDocuments.  (Tim Smith via
     Mike McCandless)
 
+34. LUCENE-1460: Changed TokenStreams/TokenFilters in contrib to
+    use the new TokenStream API. (Robert Muir, Michael Busch)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()

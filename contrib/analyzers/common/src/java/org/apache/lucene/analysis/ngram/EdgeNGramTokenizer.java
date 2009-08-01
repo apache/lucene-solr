@@ -20,6 +20,8 @@ package org.apache.lucene.analysis.ngram;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter.Side;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -35,6 +37,9 @@ public class EdgeNGramTokenizer extends Tokenizer {
   public static final Side DEFAULT_SIDE = Side.FRONT;
   public static final int DEFAULT_MAX_GRAM_SIZE = 1;
   public static final int DEFAULT_MIN_GRAM_SIZE = 1;
+  
+  private TermAttribute termAtt;
+  private OffsetAttribute offsetAtt;
 
   // Replace this with an enum when the Java 1.5 upgrade is made, the impl will be simplified
   /** Specifies which side of the input the n-gram should be generated from */
@@ -100,6 +105,9 @@ public class EdgeNGramTokenizer extends Tokenizer {
     this.minGram = minGram;
     this.maxGram = maxGram;
     this.side = side;
+    
+    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
   }
   /**
    * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
@@ -114,8 +122,7 @@ public class EdgeNGramTokenizer extends Tokenizer {
   }
 
   /** Returns the next token in the stream, or null at EOS. */
-  public final Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
+  public final boolean incrementToken() throws IOException {
     // if we are just starting, read the whole input
     if (!started) {
       started = true;
@@ -128,21 +135,32 @@ public class EdgeNGramTokenizer extends Tokenizer {
 
     // if the remaining input is too short, we can't generate any n-grams
     if (gramSize > inLen) {
-      return null;
+      return false;
     }
 
     // if we have hit the end of our n-gram size range, quit
     if (gramSize > maxGram) {
-      return null;
+      return false;
     }
 
     // grab gramSize chars from front or back
     int start = side == Side.FRONT ? 0 : inLen - gramSize;
     int end = start + gramSize;
-    reusableToken.setTermBuffer(inStr, start, gramSize);
-    reusableToken.setStartOffset(input.correctOffset(start));
-    reusableToken.setEndOffset(input.correctOffset(end));
+    termAtt.setTermBuffer(inStr, start, gramSize);
+    offsetAtt.setOffset(input.correctOffset(start), input.correctOffset(end));
     gramSize++;
-    return reusableToken;
+    return true;
+  }
+  
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
   }
 }

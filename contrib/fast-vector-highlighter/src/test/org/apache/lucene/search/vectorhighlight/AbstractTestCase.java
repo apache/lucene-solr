@@ -28,6 +28,8 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -193,11 +195,15 @@ public abstract class AbstractTestCase extends TestCase {
       ch = 0;
     }
 
-    public Token next( Token reusableToken ) throws IOException {
+    TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    public boolean incrementToken() throws IOException {
       if( !getNextPartialSnippet() )
-        return null;
-      reusableToken.reinit( snippet, startTerm, lenTerm, startOffset, startOffset + lenTerm );
-      return reusableToken;
+        return false;
+      
+      termAtt.setTermBuffer(snippet, startTerm, lenTerm);
+      offsetAtt.setOffset(startOffset, startOffset + lenTerm);
+      return true;
     }
 
     public int getFinalOffset() {

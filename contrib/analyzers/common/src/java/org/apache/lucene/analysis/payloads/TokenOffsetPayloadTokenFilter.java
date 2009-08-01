@@ -17,12 +17,14 @@ package org.apache.lucene.analysis.payloads;
  */
 
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.Payload;
-
-import java.io.IOException;
 
 
 /**
@@ -32,22 +34,37 @@ import java.io.IOException;
  *
  **/
 public class TokenOffsetPayloadTokenFilter extends TokenFilter {
-
+  protected OffsetAttribute offsetAtt;
+  protected PayloadAttribute payAtt;
 
   public TokenOffsetPayloadTokenFilter(TokenStream input) {
     super(input);
+    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    payAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
   }
 
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    Token nextToken = input.next(reusableToken);
-    if (nextToken != null){
+  public final boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
       byte[] data = new byte[8];
-      PayloadHelper.encodeInt(nextToken.startOffset(), data, 0);
-      PayloadHelper.encodeInt(nextToken.endOffset(), data, 4);
+      PayloadHelper.encodeInt(offsetAtt.startOffset(), data, 0);
+      PayloadHelper.encodeInt(offsetAtt.endOffset(), data, 4);
       Payload payload = new Payload(data);
-      nextToken.setPayload(payload);
+      payAtt.setPayload(payload);
+      return true;
+    } else {
+    return false;
     }
-    return nextToken;
+  }
+  
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
   }
 }

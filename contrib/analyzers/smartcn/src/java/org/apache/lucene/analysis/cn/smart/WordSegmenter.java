@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.cn.smart;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.cn.smart.hhmm.HHMMSegmenter;
 import org.apache.lucene.analysis.cn.smart.hhmm.SegToken;
 import org.apache.lucene.analysis.cn.smart.hhmm.SegTokenFilter;
@@ -37,11 +36,11 @@ class WordSegmenter {
   /**
    * Segment a sentence into words with {@link HHMMSegmenter}
    * 
-   * @param sentenceToken sentence {@link Token}
+   * @param sentence input sentence
+   * @param startOffset start offset of sentence
    * @return {@link List} of {@link SegToken}
    */
-  public List segmentSentence(Token sentenceToken) {
-    String sentence = sentenceToken.term();
+  public List segmentSentence(String sentence, int startOffset) {
 
     List segTokenList = hhmmSegmenter.process(sentence);
 
@@ -49,25 +48,25 @@ class WordSegmenter {
 
     // tokens from sentence, excluding WordType.SENTENCE_BEGIN and WordType.SENTENCE_END
     for (int i = 1; i < segTokenList.size() - 1; i++) {
-      result.add(convertSegToken((SegToken) segTokenList.get(i), sentence,
-          sentenceToken.startOffset(), "word"));
+      result.add(convertSegToken((SegToken) segTokenList.get(i), sentence, startOffset));
     }
     return result;
 
   }
 
   /**
-   * Convert a {@link SegToken} to a Lucene {@link Token}
+   * Process a {@link SegToken} so that it is ready for indexing.
+   * 
+   * This method calculates offsets and normalizes the token with {@link SegTokenFilter}.
    * 
    * @param st input {@link SegToken}
    * @param sentence associated Sentence
    * @param sentenceStartOffset offset into sentence
-   * @param type token type, default is word
-   * @return Lucene {@link Token}
+   * @return Lucene {@link SegToken}
    */
-  public Token convertSegToken(SegToken st, String sentence,
-      int sentenceStartOffset, String type) {
-    Token result;
+  public SegToken convertSegToken(SegToken st, String sentence,
+      int sentenceStartOffset) {
+
     switch (st.wordType) {
       case WordType.STRING:
       case WordType.NUMBER:
@@ -81,9 +80,8 @@ class WordSegmenter {
     }
 
     st = tokenFilter.filter(st);
-
-    result = new Token(st.charArray, 0, st.charArray.length, st.startOffset
-        + sentenceStartOffset, st.endOffset + sentenceStartOffset);
-    return result;
+    st.startOffset += sentenceStartOffset;
+    st.endOffset += sentenceStartOffset;
+    return st;
   }
 }

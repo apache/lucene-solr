@@ -59,8 +59,8 @@ import java.io.StringReader;
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Test case for FrenchAnalyzer.
@@ -76,13 +76,12 @@ public class TestFrenchAnalyzer extends TestCase {
 
 		TokenStream ts = a.tokenStream("dummy", new StringReader(input));
 
-                final Token reusableToken = new Token();
+		TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
 		for (int i = 0; i < output.length; i++) {
-			Token nextToken = ts.next(reusableToken);
-			assertNotNull(nextToken);
-			assertEquals(nextToken.term(), output[i]);
+			assertTrue(ts.incrementToken());
+			assertEquals(termAtt.term(), output[i]);
 		}
-		assertNull(ts.next(reusableToken));
+		assertFalse(ts.incrementToken());
 		ts.close();
 	}
 

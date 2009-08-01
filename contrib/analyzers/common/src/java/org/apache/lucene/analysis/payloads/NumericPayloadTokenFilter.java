@@ -20,6 +20,8 @@ package org.apache.lucene.analysis.payloads;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.Payload;
 
 import java.io.IOException;
@@ -34,19 +36,37 @@ public class NumericPayloadTokenFilter extends TokenFilter {
   private String typeMatch;
   private Payload thePayload;
 
+  private PayloadAttribute payloadAtt;
+  private TypeAttribute typeAtt;
+
   public NumericPayloadTokenFilter(TokenStream input, float payload, String typeMatch) {
     super(input);
     //Need to encode the payload
     thePayload = new Payload(PayloadHelper.encodeFloat(payload));
     this.typeMatch = typeMatch;
+    payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
   }
 
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    Token nextToken = input.next(reusableToken);
-    if (nextToken != null && nextToken.type().equals(typeMatch)){
-      nextToken.setPayload(thePayload);
+  public final boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
+      if (typeAtt.type().equals(typeMatch))
+        payloadAtt.setPayload(thePayload);
+      return true;
+    } else {
+      return false;
     }
-    return nextToken;
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
   }
 }

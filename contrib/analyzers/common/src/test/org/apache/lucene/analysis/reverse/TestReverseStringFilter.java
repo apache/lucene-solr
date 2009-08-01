@@ -19,9 +19,9 @@ package org.apache.lucene.analysis.reverse;
 
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestReverseStringFilter extends LuceneTestCase {
@@ -29,13 +29,18 @@ public class TestReverseStringFilter extends LuceneTestCase {
     TokenStream stream = new WhitespaceTokenizer(
         new StringReader("Do have a nice day"));     // 1-4 length string
     ReverseStringFilter filter = new ReverseStringFilter(stream);
-    final Token reusableToken = new Token();
-    assertEquals("oD", filter.next(reusableToken).term());
-    assertEquals("evah", filter.next(reusableToken).term());
-    assertEquals("a", filter.next(reusableToken).term());
-    assertEquals("ecin", filter.next(reusableToken).term());
-    assertEquals("yad", filter.next(reusableToken).term());
-    assertNull(filter.next(reusableToken));
+    TermAttribute text = (TermAttribute) filter.getAttribute(TermAttribute.class);
+    assertTrue(filter.incrementToken());
+    assertEquals("oD", text.term());
+    assertTrue(filter.incrementToken());
+    assertEquals("evah", text.term());
+    assertTrue(filter.incrementToken());
+    assertEquals("a", text.term());
+    assertTrue(filter.incrementToken());
+    assertEquals("ecin", text.term());
+    assertTrue(filter.incrementToken());
+    assertEquals("yad", text.term());
+    assertFalse(filter.incrementToken());
   }
 
   public void testReverseString() throws Exception {

@@ -17,12 +17,13 @@ package org.apache.lucene.analysis.cn;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Title: ChineseFilter
@@ -56,19 +57,21 @@ public final class ChineseFilter extends TokenFilter {
 
     private Map stopTable;
 
+    private TermAttribute termAtt;
+    
     public ChineseFilter(TokenStream in) {
         super(in);
 
         stopTable = new HashMap(STOP_WORDS.length);
         for (int i = 0; i < STOP_WORDS.length; i++)
             stopTable.put(STOP_WORDS[i], STOP_WORDS[i]);
+        termAtt = (TermAttribute) addAttribute(TermAttribute.class);
     }
 
-    public final Token next(final Token reusableToken) throws java.io.IOException {
-        assert reusableToken != null;
+    public boolean incrementToken() throws IOException {
 
-        for (Token nextToken = input.next(reusableToken); nextToken != null; nextToken = input.next(reusableToken)) {
-            String text = nextToken.term();
+        while (input.incrementToken()) {
+            String text = termAtt.term();
 
           // why not key off token type here assuming ChineseTokenizer comes first?
             if (stopTable.get(text) == null) {
@@ -79,7 +82,7 @@ public final class ChineseFilter extends TokenFilter {
 
                     // English word/token should larger than 1 character.
                     if (text.length()>1) {
-                        return nextToken;
+                        return true;
                     }
                     break;
                 case Character.OTHER_LETTER:
@@ -87,13 +90,13 @@ public final class ChineseFilter extends TokenFilter {
                     // One Chinese character as one Chinese word.
                     // Chinese word extraction to be added later here.
 
-                    return nextToken;
+                    return true;
                 }
 
             }
 
         }
-        return null;
+        return false;
     }
 
 }

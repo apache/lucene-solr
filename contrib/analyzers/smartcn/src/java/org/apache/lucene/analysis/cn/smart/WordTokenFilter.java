@@ -21,20 +21,27 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.cn.smart.hhmm.SegToken;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
  * A {@link TokenFilter} that breaks sentences into words.
  */
-public class WordTokenFilter extends TokenFilter {
+public final class WordTokenFilter extends TokenFilter {
 
   private WordSegmenter wordSegmenter;
 
   private Iterator tokenIter;
 
   private List tokenBuffer;
+  
+  private TermAttribute termAtt;
+  private OffsetAttribute offsetAtt;
+  private TypeAttribute typeAtt;
 
   /**
    * Construct a new WordTokenizer.
@@ -44,32 +51,34 @@ public class WordTokenFilter extends TokenFilter {
   public WordTokenFilter(TokenStream in) {
     super(in);
     this.wordSegmenter = new WordSegmenter();
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
   }
-
-  public Token next(final Token reusableSentenceToken) throws IOException {
-    if (tokenIter != null && tokenIter.hasNext())
-      return (Token) tokenIter.next();
-    else {
-      Token nextToken = input.next(reusableSentenceToken);
-      if (processNextSentence(nextToken)) {
-        return (Token) tokenIter.next();
-      } else
-        return null;
-    }
-  }
-
-  /**
-   * Process the next input sentence, placing tokens into tokenBuffer
-   * 
-   * @param reusableSentenceToken input sentence
-   * @return true if more tokens were placed into tokenBuffer.
-   * @throws IOException
-   */
-  private boolean processNextSentence(final Token reusableSentenceToken) throws IOException {
-    if (reusableSentenceToken == null)
-      return false;
-    tokenBuffer = wordSegmenter.segmentSentence(reusableSentenceToken);
-    tokenIter = tokenBuffer.iterator();
-    return tokenBuffer != null && tokenIter.hasNext();
+  
+  public boolean incrementToken() throws IOException {   
+    if (tokenIter == null || !tokenIter.hasNext()) {
+      // there are no remaining tokens from the current sentence... are there more sentences?
+      if (input.incrementToken()) {
+        // a new sentence is available: process it.
+        tokenBuffer = wordSegmenter.segmentSentence(termAtt.term(), offsetAtt.startOffset());
+        tokenIter = tokenBuffer.iterator();
+        /* 
+         * it should not be possible to have a sentence with 0 words, check just in case.
+         * returning EOS isn't the best either, but its the behavior of the original code.
+         */
+        if (!tokenIter.hasNext())
+          return false;
+      } else {
+        return false; // no more sentences, end of stream!
+      }
+    } 
+    
+    // There are remaining tokens from the current sentence, return the next one. 
+    SegToken nextWord = (SegToken) tokenIter.next();
+    termAtt.setTermBuffer(nextWord.charArray, 0, nextWord.charArray.length);
+    offsetAtt.setOffset(nextWord.startOffset, nextWord.endOffset);
+    typeAtt.setType("word");
+    return true;
   }
 }

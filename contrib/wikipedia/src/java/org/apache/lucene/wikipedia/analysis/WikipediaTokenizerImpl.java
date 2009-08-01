@@ -19,7 +19,7 @@ package org.apache.lucene.wikipedia.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 
 /**
@@ -476,7 +476,7 @@ public final int getPositionIncrement(){
 /**
  * Fills Lucene token with the current token text.
  */
-final void getText(Token t) {
+final void getText(TermAttribute t) {
   t.setTermBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
 }
 

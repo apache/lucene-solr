@@ -18,11 +18,11 @@ package org.apache.lucene.analysis.el;
 
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
-
 import junit.framework.TestCase;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 
 /**
@@ -41,13 +41,12 @@ public class GreekAnalyzerTest extends TestCase {
 	 */
 	private void assertAnalyzesTo(Analyzer a, String input, String[] output) throws Exception {
 		TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-                final Token reusableToken = new Token();
+		TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
 		for (int i=0; i<output.length; i++) {
-		        Token nextToken = ts.next(reusableToken);
-			assertNotNull(nextToken);
-			assertEquals(nextToken.term(), output[i]);
+			assertTrue(ts.incrementToken());
+			assertEquals(termAtt.term(), output[i]);
 		}
-		assertNull(ts.next(reusableToken));
+		assertFalse(ts.incrementToken());
 		ts.close();
 	}
 

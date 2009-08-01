@@ -75,6 +75,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -317,11 +319,14 @@ class LuceneMethods {
           int position = 0;
           // Tokenize field and add to postingTable
           TokenStream stream = analyzer.tokenStream(fieldName, reader);
+          TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
+          PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) stream.addAttribute(PositionIncrementAttribute.class);
+          
           try {
-            for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
-              position += (nextToken.getPositionIncrement() - 1);
+            while (stream.incrementToken()) {
+              position += (posIncrAtt.getPositionIncrement() - 1);
               position++;
-              String name = nextToken.term();
+              String name = termAtt.term();
               Integer Count = (Integer) tokenMap.get(name);
               if (Count == null) { // not in there yet
                 tokenMap.put(name, new Integer(1)); //first one

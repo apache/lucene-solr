@@ -20,9 +20,10 @@ package org.apache.lucene.analysis.ngram;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 import java.io.IOException;
-import java.util.LinkedList;
 
 /**
  * Tokenizes the given token into n-grams of given size(s).
@@ -66,11 +67,18 @@ public class EdgeNGramTokenFilter extends TokenFilter {
   private int minGram;
   private int maxGram;
   private Side side;
-  private LinkedList ngrams;
+  private char[] curTermBuffer;
+  private int curTermLength;
+  private int curGramSize;
+  
+  private TermAttribute termAtt;
+  private OffsetAttribute offsetAtt;
+
 
   protected EdgeNGramTokenFilter(TokenStream input) {
     super(input);
-    this.ngrams = new LinkedList();
+    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
   }
 
   /**
@@ -99,7 +107,8 @@ public class EdgeNGramTokenFilter extends TokenFilter {
     this.minGram = minGram;
     this.maxGram = maxGram;
     this.side = side;
-    this.ngrams = new LinkedList();
+    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
   }
 
   /**
@@ -114,54 +123,42 @@ public class EdgeNGramTokenFilter extends TokenFilter {
     this(input, Side.getSide(sideLabel), minGram, maxGram);
   }
 
-  /** Returns the next token in the stream, or null at EOS. */
-  public final Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    if (!ngrams.isEmpty()) {
-        return (Token)ngrams.removeFirst();
-    }
-
-    Token token = null;
-
-    while (ngrams.isEmpty() && (token = input.next()) != null) {
-        ngram(token);
-    }
-
-    if (token == null) {
-        return null;
-    }
-
-    if (!ngrams.isEmpty()) {
-        return (Token)ngrams.removeFirst();
-    } else {
-        return null;
+  public final boolean incrementToken() throws IOException {
+    while (true) {
+      if (curTermBuffer == null) {
+        if (!input.incrementToken()) {
+          return false;
+        } else {
+          curTermBuffer = (char[]) termAtt.termBuffer().clone();
+          curTermLength = termAtt.termLength();
+          curGramSize = minGram;
+        }
+      }
+      if (curGramSize <= maxGram) {
+        if (! (curGramSize > curTermLength         // if the remaining input is too short, we can't generate any n-grams
+            || curGramSize > maxGram)) {       // if we have hit the end of our n-gram size range, quit
+          // grab gramSize chars from front or back
+          int start = side == Side.FRONT ? 0 : curTermLength - curGramSize;
+          int end = start + curGramSize;
+          offsetAtt.setOffset(start, end);
+          termAtt.setTermBuffer(curTermBuffer, start, curGramSize);
+          curGramSize++;
+          return true;
+        }
+      }
+      curTermBuffer = null;
     }
   }
+  
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
 
-  private void ngram(final Token token) {
-    int termLength = token.termLength();
-    char[] termBuffer = token.termBuffer();
-    int gramSize = minGram;
-    while (gramSize <= maxGram) {
-      // if the remaining input is too short, we can't generate any n-grams
-      if (gramSize > termLength) {
-        return;
-      }
-
-      // if we have hit the end of our n-gram size range, quit
-      if (gramSize > maxGram) {
-        return;
-      }
-
-      // grab gramSize chars from front or back
-      int start = side == Side.FRONT ? 0 : termLength - gramSize;
-      int end = start + gramSize;
-      Token tok = (Token) token.clone();
-      tok.setStartOffset(start);
-      tok.setEndOffset(end);
-      tok.setTermBuffer(termBuffer, start, gramSize);
-      ngrams.add(tok);
-      gramSize++;
-    }
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
   }
 }

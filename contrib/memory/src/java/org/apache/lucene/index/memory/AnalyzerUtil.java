@@ -31,9 +31,13 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.PorterStemFilter;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeSource;
 
 /**
  * Various fulltext analysis utilities avoiding redundant code in several
@@ -71,21 +75,24 @@ public class AnalyzerUtil {
       public TokenStream tokenStream(final String fieldName, Reader reader) {
         return new TokenFilter(child.tokenStream(fieldName, reader)) {
           private int position = -1;
-          
-          public Token next(final Token reusableToken) throws IOException {
-            assert reusableToken != null;
-            Token nextToken = input.next(reusableToken); // from filter super class
-            log.println(toString(nextToken));
-            return nextToken;
+          private TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+          private PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+          private OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+          private TypeAttribute typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+         
+          public boolean incrementToken() throws IOException {
+            boolean hasNext = input.incrementToken();
+            log.println(toString(hasNext));
+            return hasNext;
           }
           
-          private String toString(Token token) {
-            if (token == null) return "[" + logName + ":EOS:" + fieldName + "]\n";
+          private String toString(boolean hasNext) {
+            if (!hasNext) return "[" + logName + ":EOS:" + fieldName + "]\n";
             
-            position += token.getPositionIncrement();
+            position += posIncrAtt.getPositionIncrement();
             return "[" + logName + ":" + position + ":" + fieldName + ":"
-                + token.term() + ":" + token.startOffset()
-                + "-" + token.endOffset() + ":" + token.type()
+                + termAtt.term() + ":" + offsetAtt.startOffset()
+                + "-" + offsetAtt.endOffset() + ":" + typeAtt.type()
                 + "]";
           }         
         };
@@ -121,9 +128,8 @@ public class AnalyzerUtil {
         return new TokenFilter(child.tokenStream(fieldName, reader)) {
           private int todo = maxTokens;
           
-          public Token next(final Token reusableToken) throws IOException {
-            assert reusableToken != null;
-            return --todo >= 0 ? input.next(reusableToken) : null;
+          public boolean incrementToken() throws IOException {
+            return --todo >= 0 ? input.incrementToken() : false;
           }
         };
       }
@@ -240,11 +246,10 @@ public class AnalyzerUtil {
           final ArrayList tokens2 = new ArrayList();
           TokenStream tokenStream = new TokenFilter(child.tokenStream(fieldName, reader)) {
 
-            public Token next(final Token reusableToken) throws IOException {
-              assert reusableToken != null;
-              Token nextToken = input.next(reusableToken); // from filter super class
-              if (nextToken != null) tokens2.add(nextToken.clone());
-              return nextToken;
+            public boolean incrementToken() throws IOException {
+              boolean hasNext = input.incrementToken();
+              if (hasNext) tokens2.add(captureState());
+              return hasNext;
             }
           };
           
@@ -255,10 +260,10 @@ public class AnalyzerUtil {
 
             private Iterator iter = tokens.iterator();
 
-            public Token next(Token token) {
-              assert token != null;
-              if (!iter.hasNext()) return null;
-              return (Token) iter.next();
+            public boolean incrementToken() {
+              if (!iter.hasNext()) return false;
+              restoreState((AttributeSource.State) iter.next());
+              return true;
             }
           };
         }
@@ -302,13 +307,13 @@ public class AnalyzerUtil {
     // compute frequencies of distinct terms
     HashMap map = new HashMap();
     TokenStream stream = analyzer.tokenStream("", new StringReader(text));
+    TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
     try {
-      final Token reusableToken = new Token();
-      for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
-        MutableInteger freq = (MutableInteger) map.get(nextToken.term());
+      while (stream.incrementToken()) {
+        MutableInteger freq = (MutableInteger) map.get(termAtt.term());
         if (freq == null) {
           freq = new MutableInteger(1);
-          map.put(nextToken.term(), freq);
+          map.put(termAtt.term(), freq);
         } else {
           freq.setValue(freq.intValue() + 1);
         }

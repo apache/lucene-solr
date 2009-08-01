@@ -17,9 +17,12 @@ package org.apache.lucene.analysis.ru;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Normalizes token text to lower case, analyzing given ("russian") charset.
@@ -31,26 +34,27 @@ public final class RussianLowerCaseFilter extends TokenFilter
 {
     char[] charset;
 
+    private TermAttribute termAtt;
+
     public RussianLowerCaseFilter(TokenStream in, char[] charset)
     {
         super(in);
         this.charset = charset;
+        termAtt = (TermAttribute) addAttribute(TermAttribute.class);
     }
 
-    public final Token next(final Token reusableToken) throws java.io.IOException
+    public final boolean incrementToken() throws IOException
     {
-        assert reusableToken != null;
-        Token nextToken = input.next(reusableToken);
-
-        if (nextToken == null)
-            return null;
-
-        char[] chArray = nextToken.termBuffer();
-        int chLen = nextToken.termLength();
+      if (input.incrementToken()) {
+        char[] chArray = termAtt.termBuffer();
+        int chLen = termAtt.termLength();
         for (int i = 0; i < chLen; i++)
         {
-            chArray[i] = RussianCharsets.toLowerCase(chArray[i], charset);
+          chArray[i] = RussianCharsets.toLowerCase(chArray[i], charset);
         }
-        return nextToken;
+        return true;
+      } else {
+        return false;
+      }
     }
 }

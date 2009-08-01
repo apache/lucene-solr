@@ -27,9 +27,9 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -114,10 +114,10 @@ public final class SynExpand {
 
 		// [1] Parse query into separate words so that when we expand we can avoid dups
 		TokenStream ts = a.tokenStream( field, new StringReader( query));
-                
-                final Token reusableToken = new Token();
-		for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
-			String word = nextToken.term();
+		TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+		
+		while (ts.incrementToken()) {
+		  String word = termAtt.term();
 			if ( already.add( word))
 				top.add( word);
 		}

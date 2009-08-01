@@ -28,6 +28,12 @@ import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
  * Base class for decomposition token filters.
@@ -54,6 +60,15 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   protected final int minSubwordSize;
   protected final int maxSubwordSize;
   protected final boolean onlyLongestMatch;
+  
+  private TermAttribute termAtt;
+  private OffsetAttribute offsetAtt;
+  private FlagsAttribute flagsAtt;
+  private PositionIncrementAttribute posIncAtt;
+  private TypeAttribute typeAtt;
+  private PayloadAttribute payloadAtt;
+  
+  private final Token wrapper = new Token();
 
   protected CompoundWordTokenFilterBase(TokenStream input, String[] dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     this(input,makeDictionary(dictionary),minWordSize,minSubwordSize,maxSubwordSize, onlyLongestMatch);
@@ -90,6 +105,13 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
       this.dictionary = new CharArraySet(dictionary.size(), false);
       addAllLowerCase(this.dictionary, dictionary);
     }
+    
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
+    posIncAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
   }
 
   /**
@@ -105,24 +127,52 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     return dict;
   }
   
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
+  private final void setToken(final Token token) throws IOException {
+    termAtt.setTermBuffer(token.termBuffer(), 0, token.termLength());
+    flagsAtt.setFlags(token.getFlags());
+    typeAtt.setType(token.type());
+    offsetAtt.setOffset(token.startOffset(), token.endOffset());
+    posIncAtt.setPositionIncrement(token.getPositionIncrement());
+    payloadAtt.setPayload(token.getPayload());
+  }
+  
+  public final boolean incrementToken() throws IOException {
     if (tokens.size() > 0) {
-      return (Token)tokens.removeFirst();
+      setToken((Token)tokens.removeFirst());
+      return true;
     }
 
-    Token nextToken = input.next(reusableToken);
-    if (nextToken == null) {
-      return null;
-    }
-
-    decompose(nextToken);
+    if (input.incrementToken() == false)
+      return false;
+    
+    wrapper.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
+    wrapper.setStartOffset(offsetAtt.startOffset());
+    wrapper.setEndOffset(offsetAtt.endOffset());
+    wrapper.setFlags(flagsAtt.getFlags());
+    wrapper.setType(typeAtt.type());
+    wrapper.setPositionIncrement(posIncAtt.getPositionIncrement());
+    wrapper.setPayload(payloadAtt.getPayload());
+    
+    decompose(wrapper);
 
     if (tokens.size() > 0) {
-      return (Token)tokens.removeFirst();
+      setToken((Token)tokens.removeFirst());
+      return true;
     } else {
-      return null;
+      return false;
     }
+  }
+  
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
   }
   
   protected static final void addAllLowerCase(Set target, Collection col) {

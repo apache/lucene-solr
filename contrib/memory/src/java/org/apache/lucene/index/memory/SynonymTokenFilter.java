@@ -19,9 +19,12 @@ package org.apache.lucene.index.memory;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeSource;
 
 /**
  * Injects additional tokens for synonyms of token terms fetched from the
@@ -39,8 +42,12 @@ public class SynonymTokenFilter extends TokenFilter {
   
   private String[] stack = null;
   private int index = 0;
-  private Token current = null;
+  private AttributeSource.State current = null;
   private int todo = 0;
+  
+  private TermAttribute termAtt;
+  private TypeAttribute typeAtt;
+  private PositionIncrementAttribute posIncrAtt;
   
   /**
    * Creates an instance for the given underlying stream and synonym table.
@@ -64,28 +71,29 @@ public class SynonymTokenFilter extends TokenFilter {
     
     this.synonyms = synonyms;
     this.maxSynonyms = maxSynonyms;
+    
+    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    this.typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    this.posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
   }
   
   /** Returns the next token in the stream, or null at EOS. */
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
+  public final boolean incrementToken() throws IOException {
     while (todo > 0 && index < stack.length) { // pop from stack
-      Token nextToken = createToken(stack[index++], current, reusableToken);
-      if (nextToken != null) {
+      if (createToken(stack[index++], current)) {
         todo--;
-        return nextToken;
+        return true;
       }
     }
     
-    Token nextToken = input.next(reusableToken);
-    if (nextToken == null) return null; // EOS; iterator exhausted
+    if (!input.incrementToken()) return false; // EOS; iterator exhausted 
     
-    stack = synonyms.getSynonyms(nextToken.term()); // push onto stack
+    stack = synonyms.getSynonyms(termAtt.term()); // push onto stack
     if (stack.length > maxSynonyms) randomize(stack);
     index = 0;
-    current = (Token) nextToken.clone();
+    current = captureState();
     todo = maxSynonyms;
-    return nextToken;
+    return true;
   }
   
   /**
@@ -101,12 +109,12 @@ public class SynonymTokenFilter extends TokenFilter {
    * @return a new token, or null to indicate that the given synonym should be
    *         ignored
    */
-  protected Token createToken(String synonym, Token current, final Token reusableToken) {
-    reusableToken.reinit(current, synonym);
-    reusableToken.setTermBuffer(synonym);
-    reusableToken.setType(SYNONYM_TOKEN_TYPE);
-    reusableToken.setPositionIncrement(0);
-    return reusableToken;
+  protected boolean createToken(String synonym, AttributeSource.State current) {
+    restoreState(current);
+    termAtt.setTermBuffer(synonym);
+    typeAtt.setType(SYNONYM_TOKEN_TYPE);
+    posIncrAtt.setPositionIncrement(0);
+    return true;
   }
   
   /**

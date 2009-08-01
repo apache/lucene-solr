@@ -20,6 +20,8 @@ package org.apache.lucene.analysis.payloads;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.Payload;
 
 import java.io.IOException;
@@ -32,19 +34,37 @@ import java.io.IOException;
  *
  **/
 public class TypeAsPayloadTokenFilter extends TokenFilter {
+  private PayloadAttribute payloadAtt;
+  private TypeAttribute typeAtt;
 
   public TypeAsPayloadTokenFilter(TokenStream input) {
     super(input);
-
+    payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
   }
 
 
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    Token nextToken = input.next(reusableToken);
-    if (nextToken != null && nextToken.type() != null && nextToken.type().equals("") == false){
-      nextToken.setPayload(new Payload(nextToken.type().getBytes("UTF-8")));
+  public final boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
+      String type = typeAtt.type();
+      if (type != null && type.equals("") == false) {
+        payloadAtt.setPayload(new Payload(type.getBytes("UTF-8")));
+      }
+      return true;
+    } else {
+      return false;
     }
-    return nextToken;
+  }
+  
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
   }
 }

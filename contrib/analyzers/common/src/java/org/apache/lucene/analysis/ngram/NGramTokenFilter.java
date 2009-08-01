@@ -17,12 +17,13 @@ package org.apache.lucene.analysis.ngram;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-
-import java.io.IOException;
-import java.util.LinkedList;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Tokenizes the input into n-grams of the given size(s).
@@ -32,7 +33,14 @@ public class NGramTokenFilter extends TokenFilter {
   public static final int DEFAULT_MAX_NGRAM_SIZE = 2;
 
   private int minGram, maxGram;
-  private LinkedList ngrams;
+  
+  private char[] curTermBuffer;
+  private int curTermLength;
+  private int curGramSize;
+  private int curPos;
+  
+  private TermAttribute termAtt;
+  private OffsetAttribute offsetAtt;
 
   /**
    * Creates NGramTokenFilter with given min and max n-grams.
@@ -50,7 +58,9 @@ public class NGramTokenFilter extends TokenFilter {
     }
     this.minGram = minGram;
     this.maxGram = maxGram;
-    this.ngrams = new LinkedList();
+    
+    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
   }
 
   /**
@@ -62,40 +72,41 @@ public class NGramTokenFilter extends TokenFilter {
   }
 
   /** Returns the next token in the stream, or null at EOS. */
-  public final Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    if (!ngrams.isEmpty()) {
-        return (Token)ngrams.removeFirst();
-    }
-
-    Token token = null;
-
-    while (ngrams.isEmpty() && (token = input.next()) != null) {
-        ngram(token);
-    }
-
-    if (token == null) {
-        return null;
-    }
-
-    if (!ngrams.isEmpty()) {
-        return (Token)ngrams.removeFirst();
-    } else {
-        return null;
+  public final boolean incrementToken() throws IOException {
+    while (true) {
+      if (curTermBuffer == null) {
+        if (!input.incrementToken()) {
+          return false;
+        } else {
+          curTermBuffer = (char[]) termAtt.termBuffer().clone();
+          curTermLength = termAtt.termLength();
+          curGramSize = minGram;
+          curPos = 0;
+        }
+      }
+      while (curGramSize <= maxGram) {
+        while (curPos+curGramSize <= curTermLength) {     // while there is input
+          termAtt.setTermBuffer(curTermBuffer, curPos, curGramSize);
+          offsetAtt.setOffset(curPos, curPos+curGramSize);
+          curPos++;
+          return true;
+        }
+        curGramSize++;                         // increase n-gram size
+        curPos = 0;
+      }
+      curTermBuffer = null;
     }
   }
+  
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
 
-  private void ngram(Token token) { 
-    char[] termBuffer = token.termBuffer();
-    int termLength = token.termLength();
-    int gramSize = minGram;
-    while (gramSize <= maxGram) {
-      int pos = 0;                        // reset to beginning of string
-      while (pos+gramSize <= termLength) {     // while there is input
-        ngrams.add(token.clone(termBuffer, pos, gramSize, pos, pos+gramSize));
-        pos++;
-      }
-      gramSize++;                         // increase n-gram size
-    }
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
   }
 }

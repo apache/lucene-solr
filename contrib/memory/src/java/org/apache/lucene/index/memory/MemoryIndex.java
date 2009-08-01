@@ -28,8 +28,10 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.IndexReader;
@@ -274,18 +276,21 @@ public class MemoryIndex implements Serializable {
     return new TokenStream() {
       private Iterator iter = keywords.iterator();
       private int start = 0;
-      public Token next(final Token reusableToken) {
-        assert reusableToken != null;
-        if (!iter.hasNext()) return null;
+      private TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      private OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+      
+      public boolean incrementToken() {
+        if (!iter.hasNext()) return false;
         
         Object obj = iter.next();
         if (obj == null) 
           throw new IllegalArgumentException("keyword must not be null");
         
         String term = obj.toString();
-        reusableToken.reinit(term, start, start+reusableToken.termLength());
+        termAtt.setTermBuffer(term);
+        offsetAtt.setOffset(start, start+termAtt.termLength());
         start += term.length() + 1; // separate words by 1 (blank) character
-        return reusableToken;
+        return true;
       }
     };
   }
@@ -350,13 +355,17 @@ public class MemoryIndex implements Serializable {
       int numTokens = 0;
       int numOverlapTokens = 0;
       int pos = -1;
-      final Token reusableToken = new Token();
-      for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
-        String term = nextToken.term();
+      
+      TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
+      PositionIncrementAttribute posIncrAttribute = (PositionIncrementAttribute) stream.addAttribute(PositionIncrementAttribute.class);
+      OffsetAttribute offsetAtt = (OffsetAttribute) stream.addAttribute(OffsetAttribute.class);
+      
+      while (stream.incrementToken()) {
+        String term = termAtt.term();
         if (term.length() == 0) continue; // nothing to do
 //        if (DEBUG) System.err.println("token='" + term + "'");
         numTokens++;
-        final int posIncr = nextToken.getPositionIncrement();
+        final int posIncr = posIncrAttribute.getPositionIncrement();
         if (posIncr == 0)
           numOverlapTokens++;
         pos += posIncr;
@@ -369,7 +378,7 @@ public class MemoryIndex implements Serializable {
         if (stride == 1) {
           positions.add(pos);
         } else {
-          positions.add(pos, nextToken.startOffset(), nextToken.endOffset());
+          positions.add(pos, offsetAtt.startOffset(), offsetAtt.endOffset());
         }
       }
       

@@ -22,9 +22,14 @@ import java.io.StringReader;
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 public class TestSnowball extends TestCase {
 
@@ -32,12 +37,12 @@ public class TestSnowball extends TestCase {
                                String input,
                                String[] output) throws Exception {
     TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-    final Token reusableToken = new Token();
+    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
     for (int i = 0; i < output.length; i++) {
-      Token nextToken = ts.next(reusableToken);
-      assertEquals(output[i], nextToken.term());
+      assertTrue(ts.incrementToken());
+      assertEquals(output[i], termAtt.term());
     }
-    assertNull(ts.next(reusableToken));
+    assertFalse(ts.incrementToken());
     ts.close();
   }
 
@@ -49,33 +54,51 @@ public class TestSnowball extends TestCase {
 
 
   public void testFilterTokens() throws Exception {
-    final Token tok = new Token(2, 7, "wrd");
-    tok.setTermBuffer("accents");
-    tok.setPositionIncrement(3);
-    Payload tokPayload = new Payload(new byte[]{0,1,2,3});
-    tok.setPayload(tokPayload);
-    int tokFlags = 77;
-    tok.setFlags(tokFlags);
+    SnowballFilter filter = new SnowballFilter(new TestTokenStream(), "English");
+    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) filter.getAttribute(OffsetAttribute.class);
+    TypeAttribute typeAtt = (TypeAttribute) filter.getAttribute(TypeAttribute.class);
+    PayloadAttribute payloadAtt = (PayloadAttribute) filter.getAttribute(PayloadAttribute.class);
+    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) filter.getAttribute(PositionIncrementAttribute.class);
+    FlagsAttribute flagsAtt = (FlagsAttribute) filter.getAttribute(FlagsAttribute.class);
+    
+    filter.incrementToken();
 
-    SnowballFilter filter = new SnowballFilter(
-        new TokenStream() {
-          public Token next(final Token reusableToken) {
-            assert reusableToken != null;
-            return tok;
-          }
-        },
-        "English"
-    );
-
-    final Token reusableToken = new Token();
-    Token nextToken = filter.next(reusableToken);
-
-    assertEquals("accent", nextToken.term());
-    assertEquals(2, nextToken.startOffset());
-    assertEquals(7, nextToken.endOffset());
-    assertEquals("wrd", nextToken.type());
-    assertEquals(3, nextToken.getPositionIncrement());
-    assertEquals(tokFlags, nextToken.getFlags());
-    assertEquals(tokPayload, nextToken.getPayload());
+    assertEquals("accent", termAtt.term());
+    assertEquals(2, offsetAtt.startOffset());
+    assertEquals(7, offsetAtt.endOffset());
+    assertEquals("wrd", typeAtt.type());
+    assertEquals(3, posIncAtt.getPositionIncrement());
+    assertEquals(77, flagsAtt.getFlags());
+    assertEquals(new Payload(new byte[]{0,1,2,3}), payloadAtt.getPayload());
+  }
+  
+  private final class TestTokenStream extends TokenStream {
+    private TermAttribute termAtt;
+    private OffsetAttribute offsetAtt;
+    private TypeAttribute typeAtt;
+    private PayloadAttribute payloadAtt;
+    private PositionIncrementAttribute posIncAtt;
+    private FlagsAttribute flagsAtt;
+    
+    TestTokenStream() {
+      super();
+      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+      typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+      payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+      posIncAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+      flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
+    }
+    
+    public boolean incrementToken() {
+      termAtt.setTermBuffer("accents");
+      offsetAtt.setOffset(2, 7);
+      typeAtt.setType("wrd");
+      posIncAtt.setPositionIncrement(3);
+      payloadAtt.setPayload(new Payload(new byte[]{0,1,2,3}));
+      flagsAtt.setFlags(77);
+      return true;
+    }
   }
 }

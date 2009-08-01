@@ -20,8 +20,10 @@ package org.apache.lucene.analysis.cn.smart;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
  * Tokenizes input text into sentences.
@@ -29,7 +31,7 @@ import org.apache.lucene.analysis.Tokenizer;
  * The output tokens can then be broken into words with {@link WordTokenFilter}
  * </p>
  */
-public class SentenceTokenizer extends Tokenizer {
+public final class SentenceTokenizer extends Tokenizer {
 
   /**
    * End of sentence punctuation: 。，！？；,!?;
@@ -39,12 +41,19 @@ public class SentenceTokenizer extends Tokenizer {
   private final StringBuffer buffer = new StringBuffer();
 
   private int tokenStart = 0, tokenEnd = 0;
+  
+  private TermAttribute termAtt;
+  private OffsetAttribute offsetAtt;
+  private TypeAttribute typeAtt;
 
   public SentenceTokenizer(Reader reader) {
     super(reader);
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
   }
 
-  public Token next(final Token reusableToken) throws IOException {
+  public boolean incrementToken() throws IOException {
     buffer.setLength(0);
     int ci;
     char ch, pch;
@@ -83,11 +92,12 @@ public class SentenceTokenizer extends Tokenizer {
       }
     }
     if (buffer.length() == 0)
-      return null;
+      return false;
     else {
-      reusableToken.clear();
-      reusableToken.reinit(buffer.toString(), input.correctOffset(tokenStart), input.correctOffset(tokenEnd), "sentence");
-      return reusableToken;
+      termAtt.setTermBuffer(buffer.toString());
+      offsetAtt.setOffset(input.correctOffset(tokenStart), input.correctOffset(tokenEnd));
+      typeAtt.setType("sentence");
+      return true;
     }
   }
 

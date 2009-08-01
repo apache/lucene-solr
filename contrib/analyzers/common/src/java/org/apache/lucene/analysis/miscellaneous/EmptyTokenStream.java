@@ -27,8 +27,19 @@ import java.io.IOException;
  */
 public class EmptyTokenStream extends TokenStream {
 
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    return null;
+  public final boolean incrementToken() throws IOException {
+    return false;
+  }
+  
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
   }
 }

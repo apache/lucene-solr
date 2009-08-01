@@ -25,6 +25,7 @@ import java.util.Iterator;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Removes elisions from a token stream. For example, "l'avion" (the plane) will be
@@ -36,7 +37,8 @@ import org.apache.lucene.analysis.TokenFilter;
  */
 public class ElisionFilter extends TokenFilter {
   private Set articles = null;
-
+  private TermAttribute termAtt;
+  
   private static char[] apostrophes = {'\'', '’'};
 
   public void setArticles(Set articles) {
@@ -54,6 +56,7 @@ public class ElisionFilter extends TokenFilter {
     super(input);
     this.articles = new HashSet(Arrays.asList(new String[] { "l", "m", "t",
         "qu", "n", "s", "j" }));
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
   /**
@@ -62,6 +65,7 @@ public class ElisionFilter extends TokenFilter {
   public ElisionFilter(TokenStream input, Set articles) {
     super(input);
     setArticles(articles);
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
   /**
@@ -70,39 +74,50 @@ public class ElisionFilter extends TokenFilter {
   public ElisionFilter(TokenStream input, String[] articles) {
     super(input);
     setArticles(new HashSet(Arrays.asList(articles)));
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
   /**
    * Returns the next input Token with term() without elisioned start
    */
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    Token nextToken = input.next(reusableToken);
-    if (nextToken == null)
-      return null;
+  public final boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
+      char[] termBuffer = termAtt.termBuffer();
+      int termLength = termAtt.termLength();
 
-    char[] termBuffer = nextToken.termBuffer();
-    int termLength = nextToken.termLength();
-
-    int minPoz = Integer.MAX_VALUE;
-    for (int i = 0; i < apostrophes.length; i++) {
-      char apos = apostrophes[i];
-      // The equivalent of String.indexOf(ch)
-      for (int poz = 0; poz < termLength ; poz++) {
-        if (termBuffer[poz] == apos) {
+      int minPoz = Integer.MAX_VALUE;
+      for (int i = 0; i < apostrophes.length; i++) {
+        char apos = apostrophes[i];
+        // The equivalent of String.indexOf(ch)
+        for (int poz = 0; poz < termLength ; poz++) {
+          if (termBuffer[poz] == apos) {
             minPoz = Math.min(poz, minPoz);
             break;
+          }
         }
       }
-    }
 
-    // An apostrophe has been found. If the prefix is an article strip it off.
-    if (minPoz != Integer.MAX_VALUE
-        && articles.contains(new String(nextToken.termBuffer(), 0, minPoz).toLowerCase())) {
-      nextToken.setTermBuffer(nextToken.termBuffer(), minPoz + 1, nextToken.termLength() - (minPoz + 1));
-    }
+      // An apostrophe has been found. If the prefix is an article strip it off.
+      if (minPoz != Integer.MAX_VALUE
+          && articles.contains(new String(termAtt.termBuffer(), 0, minPoz).toLowerCase())) {
+        termAtt.setTermBuffer(termAtt.termBuffer(), minPoz + 1, termAtt.termLength() - (minPoz + 1));
+      }
 
-    return nextToken;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
   }
 
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
+  }
 }

@@ -19,35 +19,33 @@ package org.apache.lucene.analysis.ar;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * A TokenFilter that applies {@link ArabicNormalizer} to normalize the orthography.
  * 
  */
 
-public class ArabicNormalizationFilter extends TokenFilter {
+public final class ArabicNormalizationFilter extends TokenFilter {
 
   protected ArabicNormalizer normalizer = null;
-
+  private TermAttribute termAtt;
+  
   public ArabicNormalizationFilter(TokenStream input) {
     super(input);
     normalizer = new ArabicNormalizer();
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
-
-
-  public Token next(Token reusableToken) throws IOException {
-    if ((reusableToken = input.next(reusableToken)) == null) {
-      return null;
+  public boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
+      int newlen = normalizer.normalize(termAtt.termBuffer(), termAtt.termLength());
+      termAtt.setTermLength(newlen);
+      return true;
     } else {
-      int oldlen = reusableToken.termLength();
-      int newlen = normalizer.normalize(reusableToken.termBuffer(), oldlen);
-      if (oldlen != newlen)
-        reusableToken.setTermLength(newlen);
-      return reusableToken;
+      return false;
     }
   }
 }

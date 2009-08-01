@@ -19,43 +19,33 @@ package org.apache.lucene.analysis.ar;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * A TokenFilter that applies {@link ArabicStemmer} to stem Arabic words..
  * 
  */
 
-public class ArabicStemFilter extends TokenFilter {
+public final class ArabicStemFilter extends TokenFilter {
 
   protected ArabicStemmer stemmer = null;
-
+  private TermAttribute termAtt;
+  
   public ArabicStemFilter(TokenStream input) {
     super(input);
     stemmer = new ArabicStemmer();
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
-
-
-  /**
-   * @return  Returns the next token in the stream, or null at EOS
-   */
-  public Token next(Token reusableToken) throws IOException {
-    /**
-     * The actual token in the input stream.
-     */
-
-
-    if ((reusableToken = input.next(reusableToken)) == null) {
-      return null;
+  public boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
+      int newlen = stemmer.stem(termAtt.termBuffer(), termAtt.termLength());
+      termAtt.setTermLength(newlen);
+      return true;
     } else {
-      int oldlen = reusableToken.termLength();
-      int newlen = stemmer.stem(reusableToken.termBuffer(), oldlen);
-      if (oldlen != newlen)
-        reusableToken.setTermLength(newlen);
-      return reusableToken;
+      return false;
     }
   }
 }

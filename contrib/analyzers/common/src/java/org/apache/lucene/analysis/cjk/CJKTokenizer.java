@@ -17,10 +17,13 @@ package org.apache.lucene.analysis.cjk;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.Tokenizer;
-
+import java.io.IOException;
 import java.io.Reader;
+
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 
 /**
@@ -88,6 +91,10 @@ public final class CJKTokenizer extends Tokenizer {
      */
     private boolean preIsTokened = false;
 
+    private TermAttribute termAtt;
+    private OffsetAttribute offsetAtt;
+    private TypeAttribute typeAtt;
+    
     //~ Constructors -----------------------------------------------------------
 
     /**
@@ -97,25 +104,26 @@ public final class CJKTokenizer extends Tokenizer {
      */
     public CJKTokenizer(Reader in) {
       super(in);
+      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+      typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
     }
 
     //~ Methods ----------------------------------------------------------------
 
     /**
-     * Returns the next token in the stream, or null at EOS.
+     * Returns true for the next token in the stream, or false at EOS.
      * See http://java.sun.com/j2se/1.3/docs/api/java/lang/Character.UnicodeBlock.html
      * for detail.
      *
-     * @param reusableToken a reusable token
-     * @return Token
+     * @return false for end of stream, true otherwise
      *
      * @throws java.io.IOException - throw IOException when read error <br>
      *         happened in the InputStream
      *
      */
-    public final Token next(final Token reusableToken) throws java.io.IOException {
+    public boolean incrementToken() throws IOException {
         /** how many character(s) has been stored in buffer */
-        assert reusableToken != null;
 
         while(true) { // loop until we find a non-empty token
 
@@ -147,7 +155,7 @@ public final class CJKTokenizer extends Tokenizer {
 
                     break;
                 } else {
-                    return null;
+                    return false;
                 }
             } else {
                 //get current character
@@ -252,10 +260,12 @@ public final class CJKTokenizer extends Tokenizer {
         }
       
         if (length > 0) {
-            return reusableToken.reinit
-                (buffer, 0, length, input.correctOffset(start), input.correctOffset(start+length), TOKEN_TYPE_NAMES[tokenType]);
+          termAtt.setTermBuffer(buffer, 0, length);
+          offsetAtt.setOffset(input.correctOffset(start), input.correctOffset(start+length));
+          typeAtt.setType(TOKEN_TYPE_NAMES[tokenType]);
+          return true;
         } else if (dataLen == -1) {
-          return null;
+          return false;
         }
 
         // Cycle back and try for the next token (don't

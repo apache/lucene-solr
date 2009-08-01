@@ -26,8 +26,8 @@ import java.io.StringReader;
 
 import junit.framework.TestCase;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Test the German stemmer. The stemming algorithm is known to work less 
@@ -68,11 +68,9 @@ public class TestGermanStemFilter extends TestCase {
   private void check(final String input, final String expected) throws IOException {
     StandardTokenizer tokenStream = new StandardTokenizer(new StringReader(input));
     GermanStemFilter filter = new GermanStemFilter(tokenStream);
-    final Token reusableToken = new Token();
-    Token nextToken = filter.next(reusableToken);
-    if (nextToken == null)
-      fail();
-    assertEquals(expected, nextToken.term());
+    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
+    assertTrue(filter.incrementToken());
+    assertEquals(expected, termAtt.term());
     filter.close();
   }
 

@@ -22,8 +22,8 @@ import java.io.StringReader;
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Test the CzechAnalyzer
@@ -39,13 +39,12 @@ public class TestCzechAnalyzer extends TestCase {
 
   private void assertAnalyzesTo(Analyzer a, String input, String[] output) throws Exception {
     TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-    final Token reusableToken = new Token();
+    TermAttribute text = (TermAttribute) ts.getAttribute(TermAttribute.class);
     for (int i=0; i<output.length; i++) {
-      Token nextToken = ts.next(reusableToken);
-      assertNotNull(nextToken);
-      assertEquals(nextToken.term(), output[i]);
+      assertTrue(ts.incrementToken());
+      assertEquals(text.term(), output[i]);
     }
-    assertNull(ts.next(reusableToken));
+    assertFalse(ts.incrementToken());
     ts.close();
   }
 }

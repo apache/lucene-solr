@@ -17,15 +17,15 @@ package org.apache.lucene.analysis.nl;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
 import java.util.Map;
+import java.util.Set;
+
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * A filter that stems Dutch words. It supports a table of words that should
@@ -39,10 +39,13 @@ public final class DutchStemFilter extends TokenFilter {
    */
   private DutchStemmer stemmer = null;
   private Set exclusions = null;
+  
+  private TermAttribute termAtt;
 
   public DutchStemFilter(TokenStream _in) {
     super(_in);
     stemmer = new DutchStemmer();
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
   /**
@@ -62,24 +65,23 @@ public final class DutchStemFilter extends TokenFilter {
   }
 
   /**
-   * @return Returns the next token in the stream, or null at EOS
+   * Returns the next token in the stream, or null at EOS
    */
-  public Token next(Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    Token nextToken = input.next(reusableToken);
-    if (nextToken == null)
-      return null;
+  public boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
+      String term = termAtt.term();
 
-    String term = nextToken.term();
-
-    // Check the exclusion table.
-    if (exclusions == null || !exclusions.contains(term)) {
-      String s = stemmer.stem(term);
-      // If not stemmed, don't waste the time adjusting the token.
-      if ((s != null) && !s.equals(term))
-        nextToken.setTermBuffer(s);
+      // Check the exclusion table.
+      if (exclusions == null || !exclusions.contains(term)) {
+        String s = stemmer.stem(term);
+        // If not stemmed, don't waste the time adjusting the token.
+        if ((s != null) && !s.equals(term))
+          termAtt.setTermBuffer(s);
+      }
+      return true;
+    } else {
+      return false;
     }
-    return nextToken;
   }
 
   /**

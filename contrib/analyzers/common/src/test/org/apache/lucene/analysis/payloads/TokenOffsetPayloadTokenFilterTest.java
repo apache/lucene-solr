@@ -17,8 +17,9 @@ package org.apache.lucene.analysis.payloads;
  */
 
 import junit.framework.TestCase;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.Payload;
 
 import java.io.IOException;
@@ -43,16 +44,17 @@ public class TokenOffsetPayloadTokenFilterTest extends TestCase {
 
     TokenOffsetPayloadTokenFilter nptf = new TokenOffsetPayloadTokenFilter(new WhitespaceTokenizer(new StringReader(test)));
     int count = 0;
-    final Token reusableToken = new Token();
-    for (Token nextToken = nptf.next(reusableToken); nextToken != null; nextToken = nptf.next(reusableToken)) {
-      assertTrue("nextToken is null and it shouldn't be", nextToken != null);
-      Payload pay = nextToken.getPayload();
+    PayloadAttribute payloadAtt = (PayloadAttribute) nptf.getAttribute(PayloadAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) nptf.getAttribute(OffsetAttribute.class);
+    
+    while (nptf.incrementToken()) {
+      Payload pay = payloadAtt.getPayload();
       assertTrue("pay is null and it shouldn't be", pay != null);
       byte [] data = pay.getData();
       int start = PayloadHelper.decodeInt(data, 0);
-      assertTrue(start + " does not equal: " + nextToken.startOffset(), start == nextToken.startOffset());
+      assertTrue(start + " does not equal: " + offsetAtt.startOffset(), start == offsetAtt.startOffset());
       int end = PayloadHelper.decodeInt(data, 4);
-      assertTrue(end + " does not equal: " + nextToken.endOffset(), end == nextToken.endOffset());
+      assertTrue(end + " does not equal: " + offsetAtt.endOffset(), end == offsetAtt.endOffset());
       count++;
     }
     assertTrue(count + " does not equal: " + 10, count == 10);

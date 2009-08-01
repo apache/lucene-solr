@@ -27,6 +27,7 @@ import java.util.Iterator;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
@@ -181,13 +182,14 @@ public class FuzzyLikeThisQuery extends Query
     {
         if(f.queryString==null) return;
         TokenStream ts=analyzer.tokenStream(f.fieldName,new StringReader(f.queryString));
-        final Token reusableToken = new Token();
+        TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+        
         int corpusNumDocs=reader.numDocs();
         Term internSavingTemplateTerm =new Term(f.fieldName); //optimization to avoid constructing new Term() objects
         HashSet processedTerms=new HashSet();
-        for (Token nextToken = ts.next(reusableToken); nextToken!=null; nextToken = ts.next(reusableToken))
+        while (ts.incrementToken()) 
         {
-                String term = nextToken.term();
+                String term = termAtt.term();
         	if(!processedTerms.contains(term))
         	{
         		processedTerms.add(term);

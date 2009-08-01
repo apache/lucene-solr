@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /** Set the positionIncrement of all tokens to the "positionIncrement",
  * except the first return token which retains its original positionIncrement value.
@@ -34,6 +35,8 @@ public class PositionFilter extends TokenFilter {
   
   /** The first token must have non-zero positionIncrement **/
   private boolean firstTokenPositioned = false;
+  
+  private PositionIncrementAttribute posIncrAtt;
 
   /**
    * Constructs a PositionFilter that assigns a position increment of zero to
@@ -43,6 +46,7 @@ public class PositionFilter extends TokenFilter {
    */
   public PositionFilter(final TokenStream input) {
     super(input);
+    posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
   }
 
   /**
@@ -58,18 +62,29 @@ public class PositionFilter extends TokenFilter {
     this.positionIncrement = positionIncrement;
   }
 
-  public Token next(Token reusableToken) throws IOException {
-
-    assert reusableToken != null;
-    reusableToken = input.next(reusableToken);
-    if (null != reusableToken) {
+  public final boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
       if (firstTokenPositioned) {
-        reusableToken.setPositionIncrement(positionIncrement);
+        posIncrAtt.setPositionIncrement(positionIncrement);
       } else {
         firstTokenPositioned = true;
       }
+      return true;
+    } else {
+      return false;
     }
-    return reusableToken;
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
   }
 
   public void reset() throws IOException {

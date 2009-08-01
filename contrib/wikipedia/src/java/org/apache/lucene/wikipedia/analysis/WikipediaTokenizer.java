@@ -20,6 +20,12 @@ package org.apache.lucene.wikipedia.analysis;
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeSource;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -114,6 +120,12 @@ public class WikipediaTokenizer extends Tokenizer {
   private int tokenOutput = TOKENS_ONLY;
   private Set untokenizedTypes = Collections.EMPTY_SET;
   private Iterator tokens = null;
+  
+  private OffsetAttribute offsetAtt;
+  private TypeAttribute typeAtt;
+  private PositionIncrementAttribute posIncrAtt;
+  private TermAttribute termAtt;
+  private FlagsAttribute flagsAtt;
 
   void setInput(Reader reader) {
     this.input = CharReader.get(reader);
@@ -142,41 +154,59 @@ public class WikipediaTokenizer extends Tokenizer {
     this.tokenOutput = tokenOutput;
     this.scanner = new WikipediaTokenizerImpl(input);
     this.untokenizedTypes = untokenizedTypes;
+    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    this.typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    this.posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    this.flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
   }
 
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
+  }
+  
   /*
   * (non-Javadoc)
   *
   * @see org.apache.lucene.analysis.TokenStream#next()
   */
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
+  public final boolean incrementToken() throws IOException {
     if (tokens != null && tokens.hasNext()){
-      return (Token)tokens.next();
+      AttributeSource.State state = (AttributeSource.State) tokens.next();
+      restoreState(state);
+      return true;
     }
     int tokenType = scanner.getNextToken();
 
     if (tokenType == WikipediaTokenizerImpl.YYEOF) {
-      return null;
+      return false;
     }
     String type = WikipediaTokenizerImpl.TOKEN_TYPES[tokenType];
     if (tokenOutput == TOKENS_ONLY || untokenizedTypes.contains(type) == false){
-      setupToken(reusableToken);
+      setupToken();
     } else if (tokenOutput == UNTOKENIZED_ONLY && untokenizedTypes.contains(type) == true){
-      collapseTokens(reusableToken, tokenType);
+      collapseTokens(tokenType);
 
     }
     else if (tokenOutput == BOTH){
       //collapse into a single token, add it to tokens AND output the individual tokens
       //output the untokenized Token first
-      collapseAndSaveTokens(reusableToken, tokenType, type);
+      collapseAndSaveTokens(tokenType, type);
     }
-    reusableToken.setPositionIncrement(scanner.getPositionIncrement());
-    reusableToken.setType(type);
-    return reusableToken;
+    posIncrAtt.setPositionIncrement(scanner.getPositionIncrement());
+    typeAtt.setType(type);
+    return true;
   }
 
-  private void collapseAndSaveTokens(final Token reusableToken, int tokenType, String type) throws IOException {
+  private void collapseAndSaveTokens(int tokenType, String type) throws IOException {
     //collapse
     StringBuffer buffer = new StringBuffer(32);
     int numAdded = scanner.setText(buffer);
@@ -186,9 +216,8 @@ public class WikipediaTokenizer extends Tokenizer {
     int tmpTokType;
     int numSeen = 0;
     List tmp = new ArrayList();
-    Token saved = new Token();
-    setupSavedToken(saved, 0, type);
-    tmp.add(saved);
+    setupSavedToken(0, type);
+    tmp.add(captureState());
     //while we can get a token and that token is the same type and we have not transitioned to a new wiki-item of the same type
     while ((tmpTokType = scanner.getNextToken()) != WikipediaTokenizerImpl.YYEOF && tmpTokType == tokenType && scanner.getNumWikiTokensSeen() > numSeen){
       int currPos = scanner.yychar();
@@ -197,18 +226,16 @@ public class WikipediaTokenizer extends Tokenizer {
         buffer.append(' ');
       }
       numAdded = scanner.setText(buffer);
-      saved = new Token();
-      setupSavedToken(saved, scanner.getPositionIncrement(), type);
-      tmp.add(saved);
+      setupSavedToken(scanner.getPositionIncrement(), type);
+      tmp.add(captureState());
       numSeen++;
       lastPos = currPos + numAdded;
     }
     //trim the buffer
     String s = buffer.toString().trim();
-    reusableToken.setTermBuffer(s.toCharArray(), 0, s.length());
-    reusableToken.setStartOffset(input.correctOffset(theStart));
-    reusableToken.setEndOffset(input.correctOffset(theStart + s.length()));
-    reusableToken.setFlags(UNTOKENIZED_TOKEN_FLAG);
+    termAtt.setTermBuffer(s.toCharArray(), 0, s.length());
+    offsetAtt.setOffset(input.correctOffset(theStart), input.correctOffset(theStart + s.length()));
+    flagsAtt.setFlags(UNTOKENIZED_TOKEN_FLAG);
     //The way the loop is written, we will have proceeded to the next token.  We need to pushback the scanner to lastPos
     if (tmpTokType != WikipediaTokenizerImpl.YYEOF){
       scanner.yypushback(scanner.yylength());
@@ -216,13 +243,13 @@ public class WikipediaTokenizer extends Tokenizer {
     tokens = tmp.iterator();
   }
 
-  private void setupSavedToken(Token saved, int positionInc, String type){
-    setupToken(saved);
-    saved.setPositionIncrement(positionInc);
-    saved.setType(type);
+  private void setupSavedToken(int positionInc, String type){
+    setupToken();
+    posIncrAtt.setPositionIncrement(positionInc);
+    typeAtt.setType(type);
   }
 
-  private void collapseTokens(final Token reusableToken, int tokenType) throws IOException {
+  private void collapseTokens(int tokenType) throws IOException {
     //collapse
     StringBuffer buffer = new StringBuffer(32);
     int numAdded = scanner.setText(buffer);
@@ -244,10 +271,9 @@ public class WikipediaTokenizer extends Tokenizer {
     }
     //trim the buffer
     String s = buffer.toString().trim();
-    reusableToken.setTermBuffer(s.toCharArray(), 0, s.length());
-    reusableToken.setStartOffset(input.correctOffset(theStart));
-    reusableToken.setEndOffset(input.correctOffset(theStart + s.length()));
-    reusableToken.setFlags(UNTOKENIZED_TOKEN_FLAG);
+    termAtt.setTermBuffer(s.toCharArray(), 0, s.length());
+    offsetAtt.setOffset(input.correctOffset(theStart), input.correctOffset(theStart + s.length()));
+    flagsAtt.setFlags(UNTOKENIZED_TOKEN_FLAG);
     //The way the loop is written, we will have proceeded to the next token.  We need to pushback the scanner to lastPos
     if (tmpTokType != WikipediaTokenizerImpl.YYEOF){
       scanner.yypushback(scanner.yylength());
@@ -256,11 +282,10 @@ public class WikipediaTokenizer extends Tokenizer {
     }
   }
 
-  private void setupToken(final Token reusableToken) {
-    scanner.getText(reusableToken);
+  private void setupToken() {
+    scanner.getText(termAtt);
     final int start = scanner.yychar();
-    reusableToken.setStartOffset(input.correctOffset(start));
-    reusableToken.setEndOffset(input.correctOffset(start + reusableToken.termLength()));
+    offsetAtt.setOffset(input.correctOffset(start), input.correctOffset(start + termAtt.termLength()));
   }
 
   /*

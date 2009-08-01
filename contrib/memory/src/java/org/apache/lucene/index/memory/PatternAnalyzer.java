@@ -30,8 +30,9 @@ import java.util.regex.Pattern;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Efficient Lucene analyzer/tokenizer that preferably operates on a String rather than a
@@ -331,6 +332,8 @@ public class PatternAnalyzer extends Analyzer {
     private Matcher matcher;
     private int pos = 0;
     private static final Locale locale = Locale.getDefault();
+    private TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    private OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
     
     public PatternTokenizer(String str, Pattern pattern, boolean toLowerCase) {
       this.str = str;
@@ -338,9 +341,8 @@ public class PatternAnalyzer extends Analyzer {
       this.toLowerCase = toLowerCase;
     }
 
-    public Token next(final Token reusableToken) {
-      assert reusableToken != null;
-      if (matcher == null) return null;
+    public final boolean incrementToken() {
+      if (matcher == null) return false;
       
       while (true) { // loop takes care of leading and trailing boundary cases
         int start = pos;
@@ -357,9 +359,11 @@ public class PatternAnalyzer extends Analyzer {
         if (start != end) { // non-empty match (header/trailer)
           String text = str.substring(start, end);
           if (toLowerCase) text = text.toLowerCase(locale);
-          return reusableToken.reinit(text, start, end);
+          termAtt.setTermBuffer(text);
+          offsetAtt.setOffset(start, end);
+          return true;
         }
-        if (!isMatch) return null;
+        if (!isMatch) return false;
       }
     }
     
@@ -381,6 +385,8 @@ public class PatternAnalyzer extends Analyzer {
     private final boolean toLowerCase;
     private final Set stopWords;
     private static final Locale locale = Locale.getDefault();
+    private TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    private OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
     
     public FastStringTokenizer(String str, boolean isLetter, boolean toLowerCase, Set stopWords) {
       this.str = str;
@@ -389,8 +395,7 @@ public class PatternAnalyzer extends Analyzer {
       this.stopWords = stopWords;
     }
 
-    public Token next(final Token reusableToken) {
-      assert reusableToken != null;
+    public boolean incrementToken() {
       // cache loop instance vars (performance)
       String s = str;
       int len = s.length();
@@ -430,9 +435,11 @@ public class PatternAnalyzer extends Analyzer {
       pos = i;
       if (text == null)
       {
-        return null;
+        return false;
       }
-      return reusableToken.reinit(text, start, i);
+      termAtt.setTermBuffer(text);
+      offsetAtt.setOffset(start, i);
+      return true;
     }
     
     private boolean isTokenChar(char c, boolean isLetter) {

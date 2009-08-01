@@ -295,14 +295,21 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
     public TokenArrayAnalyzer( Token... tokens ){
       this.tokens = tokens;
     }
+    
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new TokenStream(){
+      final Token reusableToken = new Token();
+      
+      TokenStream.setOnlyUseNewAPI(true);
+      TokenStream ts = new TokenStream(){
         int p = 0;
-        public Token next( Token reusableToken ) throws IOException {
-          if( p >= tokens.length ) return null;
-          return tokens[p++];
+        public boolean incrementToken() throws IOException {
+          if( p >= tokens.length ) return false;
+          tokens[p++].copyTo(reusableToken);
+          return true;
         }
       };
+      ts.addAttributeImpl(reusableToken);
+      return ts;
     }
   }
 }

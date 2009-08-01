@@ -21,50 +21,49 @@ import java.io.IOException;
 import java.io.StringReader;
 
 import junit.framework.TestCase;
-import org.apache.lucene.analysis.Token;
+
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 
 public class TestCJKTokenizer extends TestCase{
+  
+  class TestToken {
+    String termText;
+    int start;
+    int end;
+    String type;
+  }
 
-  public Token newToken(String termText, int start, int end, int type) {
-    Token token = new Token(start, end);
-    token.setTermBuffer(termText);
-    token.setType(CJKTokenizer.TOKEN_TYPE_NAMES[type]);
+  public TestToken newToken(String termText, int start, int end, int type) {
+    TestToken token = new TestToken();
+    token.termText = termText;
+    token.type = CJKTokenizer.TOKEN_TYPE_NAMES[type];
+    token.start = start;
+    token.end = end;
     return token;
   }
 
-  public void checkCJKToken(final String str, final Token[] out_tokens) throws IOException {
+  public void checkCJKToken(final String str, final TestToken[] out_tokens) throws IOException {
     CJKTokenizer tokenizer = new CJKTokenizer(new StringReader(str));
-    int i = 0;
-    System.out.println("string[" + str + "]");
-    System.out.print("tokens[");
-    final Token reusableToken = new Token();
-    for (Token token = tokenizer.next(reusableToken) ;
-         token != null                               ; 
-         token = tokenizer.next(reusableToken)       ) {
-      if (token.term().equals(out_tokens[i].term()) 
-          && token.startOffset() == out_tokens[i].startOffset() 
-          && token.endOffset() == out_tokens[i].endOffset() 
-          && token.type().equals(out_tokens[i].type()) ) {
-        System.out.print( token.term() + " ");
-      }
-      else {
-        fail(token.term() + " (start: " + token.startOffset() 
-             + " end: " + token.endOffset() + " type: " + token.type() + ") != "
-             + out_tokens[i].term() + " (start: " + out_tokens[i].startOffset() 
-             + " end: " + out_tokens[i].endOffset() 
-             + " type: " + out_tokens[i].type() + ")");
-        break;
-      }
-      ++i;
+    TermAttribute termAtt = (TermAttribute) tokenizer.getAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) tokenizer.getAttribute(OffsetAttribute.class);
+    TypeAttribute typeAtt = (TypeAttribute) tokenizer.getAttribute(TypeAttribute.class);
+    for (int i = 0; i < out_tokens.length; i++) {
+      assertTrue(tokenizer.incrementToken());
+      assertEquals(termAtt.term(), out_tokens[i].termText);
+      assertEquals(offsetAtt.startOffset(), out_tokens[i].start);
+      assertEquals(offsetAtt.endOffset(), out_tokens[i].end);
+      assertEquals(typeAtt.type(), out_tokens[i].type);
     }
-    System.out.println("]" + System.getProperty("line.separator"));
+    assertFalse(tokenizer.incrementToken());
   }
   
   public void testJa1() throws IOException {
     String str = "\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341";
        
-    Token[] out_tokens = { 
+    TestToken[] out_tokens = { 
       newToken("\u4e00\u4e8c", 0, 2, CJKTokenizer.DOUBLE_TOKEN_TYPE), 
       newToken("\u4e8c\u4e09", 1, 3, CJKTokenizer.DOUBLE_TOKEN_TYPE),
       newToken("\u4e09\u56db", 2, 4, CJKTokenizer.DOUBLE_TOKEN_TYPE),
@@ -81,7 +80,7 @@ public class TestCJKTokenizer extends TestCase{
   public void testJa2() throws IOException {
     String str = "\u4e00 \u4e8c\u4e09\u56db \u4e94\u516d\u4e03\u516b\u4e5d \u5341";
        
-    Token[] out_tokens = { 
+    TestToken[] out_tokens = { 
       newToken("\u4e00", 0, 1, CJKTokenizer.DOUBLE_TOKEN_TYPE), 
       newToken("\u4e8c\u4e09", 2, 4, CJKTokenizer.DOUBLE_TOKEN_TYPE),
       newToken("\u4e09\u56db", 3, 5, CJKTokenizer.DOUBLE_TOKEN_TYPE),
@@ -97,7 +96,7 @@ public class TestCJKTokenizer extends TestCase{
   public void testC() throws IOException {
     String str = "abc defgh ijklmn opqrstu vwxy z";
        
-    Token[] out_tokens = { 
+    TestToken[] out_tokens = { 
       newToken("abc", 0, 3, CJKTokenizer.SINGLE_TOKEN_TYPE), 
       newToken("defgh", 4, 9, CJKTokenizer.SINGLE_TOKEN_TYPE),
       newToken("ijklmn", 10, 16, CJKTokenizer.SINGLE_TOKEN_TYPE),
@@ -111,7 +110,7 @@ public class TestCJKTokenizer extends TestCase{
   public void testMix() throws IOException {
     String str = "\u3042\u3044\u3046\u3048\u304aabc\u304b\u304d\u304f\u3051\u3053";
        
-    Token[] out_tokens = { 
+    TestToken[] out_tokens = { 
       newToken("\u3042\u3044", 0, 2, CJKTokenizer.DOUBLE_TOKEN_TYPE), 
       newToken("\u3044\u3046", 1, 3, CJKTokenizer.DOUBLE_TOKEN_TYPE),
       newToken("\u3046\u3048", 2, 4, CJKTokenizer.DOUBLE_TOKEN_TYPE),
@@ -128,7 +127,7 @@ public class TestCJKTokenizer extends TestCase{
   public void testMix2() throws IOException {
     String str = "\u3042\u3044\u3046\u3048\u304aab\u3093c\u304b\u304d\u304f\u3051 \u3053";
        
-    Token[] out_tokens = { 
+    TestToken[] out_tokens = { 
       newToken("\u3042\u3044", 0, 2, CJKTokenizer.DOUBLE_TOKEN_TYPE), 
       newToken("\u3044\u3046", 1, 3, CJKTokenizer.DOUBLE_TOKEN_TYPE),
       newToken("\u3046\u3048", 2, 4, CJKTokenizer.DOUBLE_TOKEN_TYPE),
@@ -147,7 +146,7 @@ public class TestCJKTokenizer extends TestCase{
   public void testSingleChar() throws IOException {
     String str = "\u4e00";
        
-    Token[] out_tokens = { 
+    TestToken[] out_tokens = { 
       newToken("\u4e00", 0, 1, CJKTokenizer.DOUBLE_TOKEN_TYPE), 
     };
     checkCJKToken(str, out_tokens);

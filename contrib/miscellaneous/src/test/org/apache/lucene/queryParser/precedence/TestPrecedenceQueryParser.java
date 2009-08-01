@@ -26,6 +26,8 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
@@ -57,28 +59,27 @@ public class TestPrecedenceQueryParser extends TestCase {
     boolean inPhrase = false;
     int savedStart = 0, savedEnd = 0;
 
-    public Token next(final Token reusableToken) throws IOException {
-      assert reusableToken != null;
+    TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    
+    public boolean incrementToken() throws IOException {
       if (inPhrase) {
         inPhrase = false;
-        reusableToken.setTermBuffer("phrase2");
-        reusableToken.setStartOffset(savedStart);
-        reusableToken.setEndOffset(savedEnd);
-        return reusableToken;
+        termAtt.setTermBuffer("phrase2");
+        offsetAtt.setOffset(savedStart, savedEnd);
+        return true;
       } else
-        for (Token nextToken = input.next(reusableToken); nextToken != null; nextToken = input.next(reusableToken)) {
-          if (nextToken.term().equals("phrase")) {
+        while(input.incrementToken())
+          if (termAtt.term().equals("phrase")) {
             inPhrase = true;
-            savedStart = nextToken.startOffset();
-            savedEnd = nextToken.endOffset();
-            nextToken.setTermBuffer("phrase1");
-            nextToken.setStartOffset(savedStart);
-            nextToken.setEndOffset(savedEnd);
-            return nextToken;
-          } else if (!nextToken.term().equals("stop"))
-            return nextToken;
-        }
-      return null;
+            savedStart = offsetAtt.startOffset();
+            savedEnd = offsetAtt.endOffset();
+            termAtt.setTermBuffer("phrase1");
+            offsetAtt.setOffset(savedStart, savedEnd);
+            return true;
+          } else if (!termAtt.term().equals("stop"))
+            return true;
+      return false;
     }
   }
 

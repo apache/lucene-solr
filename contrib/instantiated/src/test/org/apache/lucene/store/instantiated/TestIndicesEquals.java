@@ -27,6 +27,7 @@ import junit.framework.TestCase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -44,6 +45,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.util.AttributeSource;
 
 /**
  * Asserts equality of content and behaviour of two index readers.
@@ -175,23 +177,26 @@ public class TestIndicesEquals extends TestCase {
               t.setPayload(new Payload(new byte[]{2}));
               tokens.add(t);
               tokens.add(createToken("fin", 7, 9));
-              document.add(new Field("f", new TokenStream() {
+              final Token reusableToken = new Token();
+              TokenStream ts = new TokenStream() {
                 Iterator<Token> it = tokens.iterator();
-
-                public Token next(final Token reusableToken) throws IOException {
-                  assert reusableToken != null;
+                
+                public final boolean incrementToken() throws IOException {
                   if (!it.hasNext()) {
-                    return null;
+                    return false;
                   }
-                  // Resettable token streams need to return clones.
-                  Token nextToken = (Token) it.next();
-                  return (Token) nextToken.clone();
+
+                  reusableToken.reinit(it.next());
+                  return true;
                 }
 
                 public void reset() throws IOException {
                   it = tokens.iterator();
                 }
-              }));
+              };
+              ts.addAttributeImpl(reusableToken);
+              
+              document.add(new Field("f", ts));
             }
           }
         }

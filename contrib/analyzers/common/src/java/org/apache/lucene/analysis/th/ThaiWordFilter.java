@@ -22,6 +22,9 @@ import java.lang.Character.UnicodeBlock;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+
 import java.text.BreakIterator;
 
 /**
@@ -32,46 +35,62 @@ import java.text.BreakIterator;
 public class ThaiWordFilter extends TokenFilter {
   
   private BreakIterator breaker = null;
-  private Token thaiToken = null;
   
+  private TermAttribute termAtt;
+  private OffsetAttribute offsetAtt;
+    
+  private State thaiState = null;
+
   public ThaiWordFilter(TokenStream input) {
     super(input);
     breaker = BreakIterator.getWordInstance(new Locale("th"));
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
   }
   
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    if (thaiToken != null) {
+  public final boolean incrementToken() throws IOException {
+    if (thaiState != null) {
       int start = breaker.current();
       int end = breaker.next();
       if (end != BreakIterator.DONE) {
-        reusableToken.reinit(thaiToken, thaiToken.termBuffer(), start, end - start);
-        reusableToken.setStartOffset(thaiToken.startOffset()+start);
-        reusableToken.setEndOffset(thaiToken.startOffset()+end);
-        return reusableToken;
+        restoreState(thaiState);
+        termAtt.setTermBuffer(termAtt.termBuffer(), start, end - start);
+        offsetAtt.setOffset(offsetAtt.startOffset() + start, offsetAtt.startOffset() + end);
+        return true;
       }
-      thaiToken = null;
+      thaiState = null;
     }
 
-    Token nextToken = input.next(reusableToken);
-    if (nextToken == null || nextToken.termLength() == 0) {
-      return null;
-    }
+    if (input.incrementToken() == false || termAtt.termLength() == 0)
+      return false;
 
-    String text = nextToken.term();
+    String text = termAtt.term();
     if (UnicodeBlock.of(text.charAt(0)) != UnicodeBlock.THAI) {
-      nextToken.setTermBuffer(text.toLowerCase());
-      return nextToken;
+      termAtt.setTermBuffer(text.toLowerCase());
+      return true;
     }
+    
+    thaiState = captureState();
 
-    thaiToken = (Token) nextToken.clone();
     breaker.setText(text);
     int end = breaker.next();
     if (end != BreakIterator.DONE) {
-      nextToken.setTermBuffer(text, 0, end);
-      nextToken.setEndOffset(nextToken.startOffset() + end);
-      return nextToken;
+      termAtt.setTermBuffer(text, 0, end);
+      offsetAtt.setOffset(offsetAtt.startOffset(), offsetAtt.startOffset() + end);
+      return true;
     }
-    return null;
+    return false;
+  }
+  
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
   }
 }

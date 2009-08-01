@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.payloads;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.Payload;
@@ -65,7 +64,7 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
     assertTermEquals("lazy", filter, "JJ".getBytes("UTF-8"));
     assertTermEquals("brown", filter, "JJ".getBytes("UTF-8"));
     assertTermEquals("dogs", filter, "NN".getBytes("UTF-8"));
-    assertTrue(filter.next(new Token()) == null);
+    assertFalse(filter.incrementToken());
   }
 
 
@@ -106,10 +105,11 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
   }
 
   void assertTermEquals(String expected, TokenStream stream, byte[] expectPay) throws Exception {
-    Token tok = new Token();
-    assertTrue(stream.next(tok) != null);
-    assertEquals(expected, tok.term());
-    Payload payload = tok.getPayload();
+    TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    PayloadAttribute payloadAtt = (PayloadAttribute) stream.getAttribute(PayloadAttribute.class);
+    assertTrue(stream.incrementToken());
+    assertEquals(expected, termAtt.term());
+    Payload payload = payloadAtt.getPayload();
     if (payload != null) {
       assertTrue(payload.length() + " does not equal: " + expectPay.length, payload.length() == expectPay.length);
       for (int i = 0; i < expectPay.length; i++) {

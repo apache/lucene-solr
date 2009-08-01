@@ -18,10 +18,14 @@ package org.apache.lucene.analysis.th;
  */
 
 import java.io.StringReader;
+
 import junit.framework.TestCase;
+
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
  * Test case for ThaiAnalyzer, modified from TestFrenchAnalyzer
@@ -70,19 +74,20 @@ public class TestThaiAnalyzer extends TestCase {
 		throws Exception {
 
 		TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-                final Token reusableToken = new Token();
+		TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
+		OffsetAttribute offsetAtt = (OffsetAttribute) ts.getAttribute(OffsetAttribute.class);
+		TypeAttribute typeAtt = (TypeAttribute) ts.getAttribute(TypeAttribute.class);
 		for (int i = 0; i < output.length; i++) {
-			Token nextToken = ts.next(reusableToken);
-			assertNotNull(nextToken);
-			assertEquals(nextToken.term(), output[i]);
+			assertTrue(ts.incrementToken());
+			assertEquals(termAtt.term(), output[i]);
 			if (startOffsets != null)
-				assertEquals(nextToken.startOffset(), startOffsets[i]);
+				assertEquals(offsetAtt.startOffset(), startOffsets[i]);
 			if (endOffsets != null)
-				assertEquals(nextToken.endOffset(), endOffsets[i]);
+				assertEquals(offsetAtt.endOffset(), endOffsets[i]);
 			if (types != null)
-				assertEquals(nextToken.type(), types[i]);
+				assertEquals(typeAtt.type(), types[i]);
 		}
-		assertNull(ts.next(reusableToken));
+		assertFalse(ts.incrementToken());
 		ts.close();
 	}
 	

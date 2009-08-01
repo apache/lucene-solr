@@ -16,13 +16,12 @@ package org.apache.lucene.analysis.payloads;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-
-import java.io.IOException;
 
 
 /**
@@ -37,7 +36,7 @@ import java.io.IOException;
  *
  * @see PayloadEncoder
  */
-public class DelimitedPayloadTokenFilter extends TokenFilter {
+public final class DelimitedPayloadTokenFilter extends TokenFilter {
   public static final char DEFAULT_DELIMITER = '|';
   protected char delimiter = DEFAULT_DELIMITER;
   protected TermAttribute termAtt;
@@ -80,29 +79,6 @@ public class DelimitedPayloadTokenFilter extends TokenFilter {
         payAtt.setPayload(null);
       }
       result = true;
-    }
-    return result;
-  }
-
-  
-  public Token next(Token reusableToken) throws IOException {
-    Token result = input.next(reusableToken);
-    if (result != null) {
-      final char[] buffer = result.termBuffer();
-      final int length = result.termLength();
-      boolean seen = false;
-      for (int i = 0; i < length; i++) {
-        if (buffer[i] == delimiter) {
-          result.setTermBuffer(buffer, 0, i);
-          result.setPayload(encoder.encode(buffer, i + 1, (length - (i + 1))));
-          seen = true;
-          break;//at this point, we know the whole piece, so we can exit.  If we don't see the delimiter, then the termAtt is the same
-        }
-      }
-      if (seen == false) {
-        //no delimiter
-        payAtt.setPayload(null);
-      }
     }
     return result;
   }

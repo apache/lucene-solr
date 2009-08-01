@@ -22,7 +22,7 @@ import java.io.StringReader;
 
 import junit.framework.TestCase;
 
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
 
 public class TestChineseTokenizer extends TestCase
@@ -34,12 +34,12 @@ public class TestChineseTokenizer extends TestCase
 
         int correctStartOffset = 0;
         int correctEndOffset = 1;
-        final Token reusableToken = new Token();
-        for (Token nextToken = tokenizer.next(reusableToken); nextToken != null; nextToken = tokenizer.next(reusableToken)) {
-            assertEquals(correctStartOffset, nextToken.startOffset());
-            assertEquals(correctEndOffset, nextToken.endOffset());
-            correctStartOffset++;
-            correctEndOffset++;
+        OffsetAttribute offsetAtt = (OffsetAttribute) tokenizer.getAttribute(OffsetAttribute.class);
+        while (tokenizer.incrementToken()) {
+          assertEquals(correctStartOffset, offsetAtt.startOffset());
+          assertEquals(correctEndOffset, offsetAtt.endOffset());
+          correctStartOffset++;
+          correctEndOffset++;
         }
     }
 }

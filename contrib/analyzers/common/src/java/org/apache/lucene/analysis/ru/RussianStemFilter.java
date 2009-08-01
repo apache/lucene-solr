@@ -20,6 +20,8 @@ package org.apache.lucene.analysis.ru;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+
 import java.io.IOException;
 
 /**
@@ -37,28 +39,31 @@ public final class RussianStemFilter extends TokenFilter
      */
     private RussianStemmer stemmer = null;
 
+    private TermAttribute termAtt;
+
     public RussianStemFilter(TokenStream in, char[] charset)
     {
         super(in);
         stemmer = new RussianStemmer(charset);
+        termAtt = (TermAttribute) addAttribute(TermAttribute.class);
     }
 
     /**
-     * @return  Returns the next token in the stream, or null at EOS
+     * Returns the next token in the stream, or null at EOS
      */
-    public final Token next(final Token reusableToken) throws IOException
+    public final boolean incrementToken() throws IOException
     {
-        assert reusableToken != null;
-        Token nextToken = input.next(reusableToken);
-        if (nextToken == null)
-            return null;
-
-        String term = nextToken.term();
+      if (input.incrementToken()) {
+        String term = termAtt.term();
         String s = stemmer.stem(term);
         if (s != null && !s.equals(term))
-          nextToken.setTermBuffer(s);
-        return nextToken;
+          termAtt.setTermBuffer(s);
+        return true;
+      } else {
+        return false;
+      }
     }
+
 
     /**
      * Set a alternative/custom RussianStemmer for this filter.

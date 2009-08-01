@@ -17,10 +17,12 @@ package org.apache.lucene.analysis.payloads;
  */
 
 import junit.framework.TestCase;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -44,36 +46,44 @@ public class NumericPayloadTokenFilterTest extends TestCase {
 
     NumericPayloadTokenFilter nptf = new NumericPayloadTokenFilter(new WordTokenFilter(new WhitespaceTokenizer(new StringReader(test))), 3, "D");
     boolean seenDogs = false;
-    final Token reusableToken = new Token();
-    for (Token nextToken = nptf.next(reusableToken); nextToken != null; nextToken = nptf.next(reusableToken)) {
-      if (nextToken.term().equals("dogs")){
+    TermAttribute termAtt = (TermAttribute) nptf.getAttribute(TermAttribute.class);
+    TypeAttribute typeAtt = (TypeAttribute) nptf.getAttribute(TypeAttribute.class);
+    PayloadAttribute payloadAtt = (PayloadAttribute) nptf.getAttribute(PayloadAttribute.class);
+    while (nptf.incrementToken()) {
+      if (termAtt.term().equals("dogs")) {
         seenDogs = true;
-        assertTrue(nextToken.type() + " is not equal to " + "D", nextToken.type().equals("D") == true);
-        assertTrue("nextToken.getPayload() is null and it shouldn't be", nextToken.getPayload() != null);
-        byte [] bytes = nextToken.getPayload().getData();//safe here to just use the bytes, otherwise we should use offset, length
-        assertTrue(bytes.length + " does not equal: " + nextToken.getPayload().length(), bytes.length == nextToken.getPayload().length());
-        assertTrue(nextToken.getPayload().getOffset() + " does not equal: " + 0, nextToken.getPayload().getOffset() == 0);
+        assertTrue(typeAtt.type() + " is not equal to " + "D", typeAtt.type().equals("D") == true);
+        assertTrue("payloadAtt.getPayload() is null and it shouldn't be", payloadAtt.getPayload() != null);
+        byte [] bytes = payloadAtt.getPayload().getData();//safe here to just use the bytes, otherwise we should use offset, length
+        assertTrue(bytes.length + " does not equal: " + payloadAtt.getPayload().length(), bytes.length == payloadAtt.getPayload().length());
+        assertTrue(payloadAtt.getPayload().getOffset() + " does not equal: " + 0, payloadAtt.getPayload().getOffset() == 0);
         float pay = PayloadHelper.decodeFloat(bytes);
         assertTrue(pay + " does not equal: " + 3, pay == 3);
       } else {
-        assertTrue(nextToken.type() + " is not null and it should be", nextToken.type().equals("word"));
+        assertTrue(typeAtt.type() + " is not null and it should be", typeAtt.type().equals("word"));
       }
     }
     assertTrue(seenDogs + " does not equal: " + true, seenDogs == true);
   }
 
-  private class WordTokenFilter extends TokenFilter {
+  private final class WordTokenFilter extends TokenFilter {
+    private TermAttribute termAtt;
+    private TypeAttribute typeAtt;
+    
     private WordTokenFilter(TokenStream input) {
       super(input);
+      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
     }
-
-    public Token next(final Token reusableToken) throws IOException {
-      assert reusableToken != null;
-      Token nextToken = input.next(reusableToken);
-      if (nextToken != null && nextToken.term().equals("dogs")) {
-        nextToken.setType("D");
+    
+    public boolean incrementToken() throws IOException {
+      if (input.incrementToken()) {
+        if (termAtt.term().equals("dogs"))
+          typeAtt.setType("D");
+        return true;
+      } else {
+        return false;
       }
-      return nextToken;
     }
   }
 

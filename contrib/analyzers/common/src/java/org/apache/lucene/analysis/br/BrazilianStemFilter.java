@@ -17,13 +17,12 @@ package org.apache.lucene.analysis.br;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Token;
+import java.io.IOException;
+import java.util.Set;
+
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Based on GermanStemFilter
@@ -36,10 +35,12 @@ public final class BrazilianStemFilter extends TokenFilter {
    */
   private BrazilianStemmer stemmer = null;
   private Set exclusions = null;
-
+  private TermAttribute termAtt;
+  
   public BrazilianStemFilter(TokenStream in) {
     super(in);
     stemmer = new BrazilianStemmer();
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
   public BrazilianStemFilter(TokenStream in, Set exclusiontable) {
@@ -47,26 +48,20 @@ public final class BrazilianStemFilter extends TokenFilter {
     this.exclusions = exclusiontable;
   }
 
-  /**
-   * @return Returns the next token in the stream, or null at EOS.
-   */
-  public final Token next(final Token reusableToken)
-      throws IOException {
-    assert reusableToken != null;
-    Token nextToken = input.next(reusableToken);
-    if (nextToken == null)
-      return null;
-
-    String term = nextToken.term();
-
-    // Check the exclusion table.
-    if (exclusions == null || !exclusions.contains(term)) {
-      String s = stemmer.stem(term);
-      // If not stemmed, don't waste the time adjusting the token.
-      if ((s != null) && !s.equals(term))
-        nextToken.setTermBuffer(s);
+  public boolean incrementToken() throws IOException {
+    if (input.incrementToken()) {
+      String term = termAtt.term();
+      // Check the exclusion table.
+      if (exclusions == null || !exclusions.contains(term)) {
+        String s = stemmer.stem(term);
+        // If not stemmed, don't waste the time adjusting the token.
+        if ((s != null) && !s.equals(term))
+          termAtt.setTermBuffer(s);
+      }
+      return true;
+    } else {
+      return false;
     }
-    return nextToken;
   }
 }
 
