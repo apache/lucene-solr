@@ -80,6 +80,11 @@ Changes in backwards compatibility policy
     methods in these TokenStreams/-Filters were made final.
     (Michael Busch, Uwe Schindler)
 
+ 5. LUCENE-1763: MergePolicy now requires an IndexWriter instance to
+    be passed upon instantiation. As a result, IndexWriter was removed
+    as a method argument from all MergePolicy methods. (Shai Erera via
+    Mike McCandless)
+ 
 Changes in runtime behavior
 
  1. LUCENE-1424: QueryParser now by default uses constant score auto

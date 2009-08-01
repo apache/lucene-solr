@@ -65,8 +65,11 @@ public abstract class LogMergePolicy extends MergePolicy {
   
   private boolean useCompoundFile = true;
   private boolean useCompoundDocStore = true;
-  protected IndexWriter writer;
 
+  public LogMergePolicy(IndexWriter writer) {
+    super(writer);
+  }
+  
   protected boolean verbose() {
     return writer != null && writer.verbose();
   }
@@ -166,13 +169,13 @@ public abstract class LogMergePolicy extends MergePolicy {
     if (calibrateSizeByDeletes) {
       int delCount = writer.numDeletedDocs(info);
       float delRatio = (info.docCount <= 0 ? 0.0f : ((float)delCount / (float)info.docCount));
-      return (info.docCount <= 0 ?  byteSize : (long)((float)byteSize * (1.0f - delRatio)));
+      return (info.docCount <= 0 ?  byteSize : (long)(byteSize * (1.0f - delRatio)));
     } else {
       return byteSize;
     }
   }
   
-  private boolean isOptimized(SegmentInfos infos, IndexWriter writer, int maxNumSegments, Set segmentsToOptimize) throws IOException {
+  private boolean isOptimized(SegmentInfos infos, int maxNumSegments, Set segmentsToOptimize) throws IOException {
     final int numSegments = infos.size();
     int numToOptimize = 0;
     SegmentInfo optimizeInfo = null;
@@ -185,13 +188,13 @@ public abstract class LogMergePolicy extends MergePolicy {
     }
 
     return numToOptimize <= maxNumSegments &&
-      (numToOptimize != 1 || isOptimized(writer, optimizeInfo));
+      (numToOptimize != 1 || isOptimized(optimizeInfo));
   }
 
   /** Returns true if this single info is optimized (has no
    *  pending norms or deletes, is in the same dir as the
    *  writer, and matches the current compound file setting */
-  private boolean isOptimized(IndexWriter writer, SegmentInfo info)
+  private boolean isOptimized(SegmentInfo info)
     throws IOException {
     boolean hasDeletions = writer.numDeletedDocs(info) > 0;
     return !hasDeletions &&
@@ -208,12 +211,13 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  setting is true.  This method returns multiple merges
    *  (mergeFactor at a time) so the {@link MergeScheduler}
    *  in use may make use of concurrency. */
-  public MergeSpecification findMergesForOptimize(SegmentInfos infos, IndexWriter writer, int maxNumSegments, Set segmentsToOptimize) throws IOException {
+  public MergeSpecification findMergesForOptimize(SegmentInfos infos,
+      int maxNumSegments, Set segmentsToOptimize) throws IOException {
     MergeSpecification spec;
 
     assert maxNumSegments > 0;
 
-    if (!isOptimized(infos, writer, maxNumSegments, segmentsToOptimize)) {
+    if (!isOptimized(infos, maxNumSegments, segmentsToOptimize)) {
 
       // Find the newest (rightmost) segment that needs to
       // be optimized (other segments may have been flushed
@@ -245,7 +249,7 @@ public abstract class LogMergePolicy extends MergePolicy {
 
             // Since we must optimize down to 1 segment, the
             // choice is simple:
-            if (last > 1 || !isOptimized(writer, infos.info(0)))
+            if (last > 1 || !isOptimized(infos.info(0)))
               spec.add(new OneMerge(infos.range(0, last), useCompoundFile));
           } else if (last > maxNumSegments) {
 
@@ -291,12 +295,8 @@ public abstract class LogMergePolicy extends MergePolicy {
    * index.  We simply merge adjacent segments that have
    * deletes, up to mergeFactor at a time.
    */ 
-  public MergeSpecification findMergesToExpungeDeletes(SegmentInfos segmentInfos,
-                                                       IndexWriter writer)
-    throws CorruptIndexException, IOException
-  {
-    this.writer = writer;
-
+  public MergeSpecification findMergesToExpungeDeletes(SegmentInfos segmentInfos)
+      throws CorruptIndexException, IOException {
     final int numSegments = segmentInfos.size();
 
     if (verbose())
@@ -347,10 +347,9 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  multiple levels have too many segments, this method
    *  will return multiple merges, allowing the {@link
    *  MergeScheduler} to use concurrency. */
-  public MergeSpecification findMerges(SegmentInfos infos, IndexWriter writer) throws IOException {
+  public MergeSpecification findMerges(SegmentInfos infos) throws IOException {
 
     final int numSegments = infos.size();
-    this.writer = writer;
     if (verbose())
       message("findMerges: " + numSegments + " segments");
 

@@ -612,8 +612,8 @@ public class TestPerfTasksLogic extends TestCase {
 
   public static class MyMergePolicy extends LogDocMergePolicy {
     boolean called;
-    public MyMergePolicy() {
-      super();
+    public MyMergePolicy(IndexWriter writer) {
+      super(writer);
       called = true;
     }
   }

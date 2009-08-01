@@ -354,7 +354,7 @@ public class IndexWriter {
   // merges
   private HashSet mergingSegments = new HashSet();
 
-  private MergePolicy mergePolicy = new LogByteSizeMergePolicy();
+  private MergePolicy mergePolicy = new LogByteSizeMergePolicy(this);
   private MergeScheduler mergeScheduler = new ConcurrentMergeScheduler();
   private LinkedList pendingMerges = new LinkedList();
   private Set runningMerges = new HashSet();
@@ -2899,7 +2899,7 @@ public class IndexWriter {
     MergePolicy.MergeSpecification spec;
 
     synchronized(this) {
-      spec = mergePolicy.findMergesToExpungeDeletes(segmentInfos, this);
+      spec = mergePolicy.findMergesToExpungeDeletes(segmentInfos);
       if (spec != null) {
         final int numMerges = spec.merges.size();
         for(int i=0;i<numMerges;i++)
@@ -3014,7 +3014,7 @@ public class IndexWriter {
 
     final MergePolicy.MergeSpecification spec;
     if (optimize) {
-      spec = mergePolicy.findMergesForOptimize(segmentInfos, this, maxNumSegmentsOptimize, segmentsToOptimize);
+      spec = mergePolicy.findMergesForOptimize(segmentInfos, maxNumSegmentsOptimize, segmentsToOptimize);
 
       if (spec != null) {
         final int numMerges = spec.merges.size();
@@ -3026,7 +3026,7 @@ public class IndexWriter {
       }
 
     } else
-      spec = mergePolicy.findMerges(segmentInfos, this);
+      spec = mergePolicy.findMerges(segmentInfos);
 
     if (spec != null) {
       final int numMerges = spec.merges.size();

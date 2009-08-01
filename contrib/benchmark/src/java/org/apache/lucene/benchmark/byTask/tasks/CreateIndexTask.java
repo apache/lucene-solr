@@ -60,38 +60,19 @@ public class CreateIndexTask extends PerfTask {
 
     final String mergeScheduler = config.get("merge.scheduler",
                                              "org.apache.lucene.index.ConcurrentMergeScheduler");
-    RuntimeException err = null;
     try {
       writer.setMergeScheduler((MergeScheduler) Class.forName(mergeScheduler).newInstance());
-    } catch (IllegalAccessException iae) {
-      err = new RuntimeException("unable to instantiate class '" + mergeScheduler + "' as merge scheduler");
-      err.initCause(iae);
-    } catch (InstantiationException ie) {
-      err = new RuntimeException("unable to instantiate class '" + mergeScheduler + "' as merge scheduler");
-      err.initCause(ie);
-    } catch (ClassNotFoundException cnfe) {
-      err = new RuntimeException("unable to load class '" + mergeScheduler + "' as merge scheduler");
-      err.initCause(cnfe);
+    } catch (Exception e) {
+      throw new RuntimeException("unable to instantiate class '" + mergeScheduler + "' as merge scheduler", e);
     }
-    if (err != null)
-      throw err;
 
     final String mergePolicy = config.get("merge.policy",
                                           "org.apache.lucene.index.LogByteSizeMergePolicy");
     try {
-      writer.setMergePolicy((MergePolicy) Class.forName(mergePolicy).newInstance());
-    } catch (IllegalAccessException iae) {
-      err = new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy");
-      err.initCause(iae);
-    } catch (InstantiationException ie) {
-      err = new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy");
-      err.initCause(ie);
-    } catch (ClassNotFoundException cnfe) {
-      err = new RuntimeException("unable to load class '" + mergePolicy + "' as merge policy");
-      err.initCause(cnfe);
+      writer.setMergePolicy((MergePolicy) Class.forName(mergePolicy).getConstructor(new Class[] { IndexWriter.class }).newInstance(new Object[] { writer }));
+    } catch (Exception e) {
+      throw new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy", e);
     }
-    if (err != null)
-      throw err;
 
     writer.setUseCompoundFile(config.get("compound",true));
     writer.setMergeFactor(config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR));
