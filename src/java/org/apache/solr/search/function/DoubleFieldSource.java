@@ -72,7 +72,7 @@ public class DoubleFieldSource extends FieldCacheSource {
       }
 
       public String toString(int doc) {
-        return description() + '=' + floatVal(doc);
+        return description() + '=' + doubleVal(doc);
       }
 
       @Override

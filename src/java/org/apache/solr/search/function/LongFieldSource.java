@@ -69,11 +69,11 @@ public class LongFieldSource extends FieldCacheSource {
       }
 
       public String strVal(int doc) {
-        return Double.toString(arr[doc]);
+        return Long.toString(arr[doc]);
       }
 
       public String toString(int doc) {
-        return description() + '=' + floatVal(doc);
+        return description() + '=' + longVal(doc);
       }
 
 
