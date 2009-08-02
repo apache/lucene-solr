@@ -431,7 +431,7 @@ Bug fixes
 19. LUCENE-1583: SpanOrQuery skipTo() doesn't always move forwards as Spans
 	documentation indicates it should.  (Moti Nisenson via Mark Miller)
 
-19. LUCENE-1566: Sun JVM Bug
+20. LUCENE-1566: Sun JVM Bug
     http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6478546 causes
     invalid OutOfMemoryError when reading too many bytes at once from
     a file on 32bit JVMs that have a large maximum heap size.  This
@@ -440,6 +440,13 @@ Bug fixes
     JVMs the default chunk size is 100 MB; on 64bit JVMs, which don't
     show the bug, the default is Integer.MAX_VALUE. (Simon Willnauer
     via Mike McCandless)
+    
+21. LUCENE-1448: Added TokenStream.end() to perform end-of-stream
+    operations (ie to return the end offset of the tokenization).  
+    This is important when multiple fields with the same name are added
+    to a document, to ensure offsets recorded in term vectors for all 
+    of the instances are correct.  
+    (Mike McCandless, Mark Miller, Michael Busch)
 
 New features
 
