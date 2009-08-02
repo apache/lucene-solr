@@ -142,11 +142,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
     assertEquals( 1, ffl.fragInfos.size() );
     assertEquals( "subInfos=(searchengines((102,116))searchengines((157,171)))/2.0(96,196)", ffl.fragInfos.get( 0 ).toString() );
   }
-/*
- * ----------------------------------
- *  THIS TEST DEPENDS ON LUCENE-1448
- *  UNCOMMENT WHEN IT IS COMMITTED.
- * ----------------------------------
+
   public void test1PhraseLongMVB() throws Exception {
     makeIndexLongMVB();
 
@@ -158,5 +154,4 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
     assertEquals( 1, ffl.fragInfos.size() );
     assertEquals( "subInfos=(sppeeeed((88,93)))/1.0(82,182)", ffl.fragInfos.get( 0 ).toString() );
   }
-*/
 }

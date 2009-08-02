@@ -146,11 +146,7 @@ public class FieldTermStackTest extends AbstractTestCase {
     assertEquals( "search(157,163,24)", stack.pop().toString() );
     assertEquals( "engines(164,171,25)", stack.pop().toString() );
   }
-/*
- * ----------------------------------
- *  THIS TEST DEPENDS ON LUCENE-1448
- *  UNCOMMENT WHEN IT IS COMMITTED.
- * ----------------------------------
+
   public void test1PhraseMVB() throws Exception {
     makeIndexLongMVB();
     
@@ -162,5 +158,4 @@ public class FieldTermStackTest extends AbstractTestCase {
     assertEquals( "ee(90,92,63)", stack.pop().toString() );
     assertEquals( "ed(91,93,64)", stack.pop().toString() );
   }
-*/
 }

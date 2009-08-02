@@ -84,11 +84,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     assertEquals( " most <b>search engines</b> use only one of these methods. Even the <b>search engines</b> that says they can use t",
         sfb.createFragment( reader, 0, F, ffl ) );
   }
-/*
- * ----------------------------------
- *  THIS TEST DEPENDS ON LUCENE-1448
- *  UNCOMMENT WHEN IT IS COMMITTED.
- * ----------------------------------
+
   public void test1PhraseLongMVB() throws Exception {
     makeIndexLongMVB();
 
@@ -100,5 +96,4 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
     assertEquals( "ssing <b>speed</b>, the", sfb.createFragment( reader, 0, F, ffl ) );
   }
-*/
 }

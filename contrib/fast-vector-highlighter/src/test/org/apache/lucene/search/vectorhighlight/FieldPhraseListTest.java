@@ -164,11 +164,7 @@ public class FieldPhraseListTest extends AbstractTestCase {
     assertEquals( "searchengines(1.0)((102,116))", fpl.phraseList.get( 0 ).toString() );
     assertEquals( "searchengines(1.0)((157,171))", fpl.phraseList.get( 1 ).toString() );
   }
-/*
- * ----------------------------------
- *  THIS TEST DEPENDS ON LUCENE-1448
- *  UNCOMMENT WHEN IT IS COMMITTED.
- * ----------------------------------
+
   public void test1PhraseLongMVB() throws Exception {
     makeIndexLongMVB();
 
@@ -178,5 +174,4 @@ public class FieldPhraseListTest extends AbstractTestCase {
     assertEquals( 1, fpl.phraseList.size() );
     assertEquals( "sppeeeed(1.0)((88,93))", fpl.phraseList.get( 0 ).toString() );
   }
-*/
 }

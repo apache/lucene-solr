@@ -206,8 +206,12 @@ public abstract class AbstractTestCase extends TestCase {
       return true;
     }
 
-    public int getFinalOffset() {
+    private int getFinalOffset() {
       return nextStartOffset;
+    }
+    
+    public final void end(){
+      offsetAtt.setOffset(getFinalOffset(),getFinalOffset());
     }
     
     protected boolean getNextPartialSnippet() throws IOException {
