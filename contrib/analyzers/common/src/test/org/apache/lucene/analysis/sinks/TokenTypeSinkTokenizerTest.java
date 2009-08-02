@@ -26,6 +26,8 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 public class TokenTypeSinkTokenizerTest extends TestCase {
 
@@ -61,17 +63,22 @@ public class TokenTypeSinkTokenizerTest extends TestCase {
   }
 
   private class WordTokenFilter extends TokenFilter {
+    private TermAttribute termAtt;
+    private TypeAttribute typeAtt;
+    
     private WordTokenFilter(TokenStream input) {
       super(input);
+      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
     }
 
-    public Token next(final Token reusableToken) throws IOException {
-      assert reusableToken != null;
-      Token nextToken = input.next(reusableToken);
-      if (nextToken != null && nextToken.term().equals("dogs")) {
-        nextToken.setType("D");
+    public final boolean incrementToken() throws IOException {
+      if (!input.incrementToken()) return false;
+      
+      if (termAtt.term().equals("dogs")) {
+        typeAtt.setType("D");
       }
-      return nextToken;
+      return true;
     }
   }
 }

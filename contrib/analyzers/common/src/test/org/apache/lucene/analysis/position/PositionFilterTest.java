@@ -23,25 +23,28 @@ import junit.framework.TestCase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.shingle.ShingleFilter;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 public class PositionFilterTest extends TestCase {
 
   public class TestTokenStream extends TokenStream {
 
     protected int index = 0;
-    protected Token[] testToken;
+    protected String[] testToken;
+    protected TermAttribute termAtt;
 
-    public TestTokenStream(Token[] testToken) {
+    public TestTokenStream(String[] testToken) {
       super();
       this.testToken = testToken;
+      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
     }
 
-    public Token next(final Token reusableToken) throws IOException {
-      assert reusableToken != null;
+    public final boolean incrementToken() throws IOException {
       if (index < testToken.length) {
-        return testToken[index++];
+        termAtt.setTermBuffer(testToken[index++]);
+        return true;
       } else {
-        return null;
+        return false;
       }
     }
     public void reset() {
@@ -52,13 +55,13 @@ public class PositionFilterTest extends TestCase {
   public static void main(String[] args) {
     junit.textui.TestRunner.run(PositionFilterTest.class);
   }
-  public static final Token[] TEST_TOKEN = new Token[]{
-    createToken("please"),
-    createToken("divide"),
-    createToken("this"),
-    createToken("sentence"),
-    createToken("into"),
-    createToken("shingles"),
+  public static final String[] TEST_TOKEN = new String[]{
+    "please",
+    "divide",
+    "this",
+    "sentence",
+    "into",
+    "shingles",
   };
   public static final int[] TEST_TOKEN_POSITION_INCREMENTS = new int[]{
     1, 0, 0, 0, 0, 0
@@ -67,28 +70,28 @@ public class PositionFilterTest extends TestCase {
     1, 5, 5, 5, 5, 5
   };
 
-  public static final Token[] SIX_GRAM_NO_POSITIONS_TOKENS = new Token[]{
-    createToken("please"),
-    createToken("please divide"),
-    createToken("please divide this"),
-    createToken("please divide this sentence"),
-    createToken("please divide this sentence into"),
-    createToken("please divide this sentence into shingles"),
-    createToken("divide"),
-    createToken("divide this"),
-    createToken("divide this sentence"),
-    createToken("divide this sentence into"),
-    createToken("divide this sentence into shingles"),
-    createToken("this"),
-    createToken("this sentence"),
-    createToken("this sentence into"),
-    createToken("this sentence into shingles"),
-    createToken("sentence"),
-    createToken("sentence into"),
-    createToken("sentence into shingles"),
-    createToken("into"),
-    createToken("into shingles"),
-    createToken("shingles"),
+  public static final String[] SIX_GRAM_NO_POSITIONS_TOKENS = new String[]{
+    "please",
+    "please divide",
+    "please divide this",
+    "please divide this sentence",
+    "please divide this sentence into",
+    "please divide this sentence into shingles",
+    "divide",
+    "divide this",
+    "divide this sentence",
+    "divide this sentence into",
+    "divide this sentence into shingles",
+    "this",
+    "this sentence",
+    "this sentence into",
+    "this sentence into shingles",
+    "sentence",
+    "sentence into",
+    "sentence into shingles",
+    "into",
+    "into shingles",
+    "shingles",
   };
   public static final int[] SIX_GRAM_NO_POSITIONS_INCREMENTS = new int[]{
     1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
@@ -138,7 +141,7 @@ public class PositionFilterTest extends TestCase {
   }
 
   protected TokenStream filterTest(final TokenStream filter,
-                                   final Token[] tokensToCompare,
+                                   final String[] tokensToCompare,
                                    final int[] positionIncrements)
       throws IOException {
 
@@ -151,7 +154,7 @@ public class PositionFilterTest extends TestCase {
 
       if (null != nextToken) {
         final String termText = nextToken.term();
-        final String goldText = tokensToCompare[i].term();
+        final String goldText = tokensToCompare[i];
 
         assertEquals("Wrong termText", goldText, termText);
         assertEquals("Wrong positionIncrement for token \"" + termText + "\"",
@@ -162,13 +165,5 @@ public class PositionFilterTest extends TestCase {
       i++;
     }
     return filter;
-  }
-
-  private static Token createToken(String term) {
-    final Token token = new Token();
-    if (null != term) {
-      token.setTermBuffer(term);
-    }
-    return token;
   }
 }
