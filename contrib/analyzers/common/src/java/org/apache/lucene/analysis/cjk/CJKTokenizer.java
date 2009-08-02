@@ -272,4 +272,10 @@ public final class CJKTokenizer extends Tokenizer {
         // return an empty string)
       }
     }
+    
+    public final void end() {
+      // set final offset
+      final int finalOffset = offset;
+      this.offsetAtt.setOffset(finalOffset, finalOffset);
+    }    
 }

@@ -152,6 +152,12 @@ public class EdgeNGramTokenizer extends Tokenizer {
     return true;
   }
   
+  public final void end() {
+    // set final offset
+    final int finalOffset = inLen;
+    this.offsetAtt.setOffset(finalOffset, finalOffset);
+  }    
+  
   /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
    * not be overridden. Delegates to the backwards compatibility layer. */
   public final Token next(final Token reusableToken) throws java.io.IOException {

@@ -139,6 +139,11 @@ public final class ChineseTokenizer extends Tokenizer {
                 break;
             }
         }
-
     }
+    
+    public final void end() {
+      // set final offset
+      final int finalOffset = offset;
+      this.offsetAtt.setOffset(finalOffset, finalOffset);
+    }    
 }

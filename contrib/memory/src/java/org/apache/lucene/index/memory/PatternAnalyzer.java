@@ -367,6 +367,11 @@ public class PatternAnalyzer extends Analyzer {
       }
     }
     
+    public final void end() {
+      // set final offset
+      final int finalOffset = str.length();
+    	this.offsetAtt.setOffset(finalOffset, finalOffset);
+    }    
   } 
   
   
@@ -441,6 +446,12 @@ public class PatternAnalyzer extends Analyzer {
       offsetAtt.setOffset(start, i);
       return true;
     }
+    
+    public final void end() {
+      // set final offset
+      final int finalOffset = str.length();
+      this.offsetAtt.setOffset(finalOffset, finalOffset);
+    }    
     
     private boolean isTokenChar(char c, boolean isLetter) {
       return isLetter ? Character.isLetter(c) : !Character.isWhitespace(c);
