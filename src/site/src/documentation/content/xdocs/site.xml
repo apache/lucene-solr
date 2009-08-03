@@ -62,6 +62,7 @@ See http://forrest.apache.org/docs/linking.html for more info
 		    <javadoc-contrib-memory label="Memory" href="ext:javadocs-contrib-memory"/>
 		    <javadoc-contrib-misc label="Miscellaneous" href="ext:javadocs-contrib-misc"/>
 		    <javadoc-contrib-queries label="Queries" href="ext:javadocs-contrib-queries"/>
+                    <javadoc-contrib-queryparser label="Query Parser Framework" href="ext:javadocs-contrib-queryparser"/>
 		    <javadoc-contrib-regex label="Regex" href="ext:javadocs-contrib-regex"/>
 <!-- This package has currently no content			
 		    <javadoc-contrib-similarity label="Similarity" href="ext:javadocs-contrib-similarity"/>
@@ -114,6 +115,7 @@ See http://forrest.apache.org/docs/linking.html for more info
 	<javadocs-contrib-memory href="api/contrib-memory/index.html"/>
 	<javadocs-contrib-misc href="api/contrib-misc/index.html"/>
 	<javadocs-contrib-queries href="api/contrib-queries/index.html"/>
+        <javadocs-contrib-queryparser href="api/contrib-queryparser/index.html"/>
 	<javadocs-contrib-regex href="api/contrib-regex/index.html"/>
 	<javadocs-contrib-remote href="api/contrib-remote/index.html"/>
 	<javadocs-contrib-similarity href="api/contrib-similarity/index.html"/>
