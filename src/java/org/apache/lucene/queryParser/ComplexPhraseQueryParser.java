@@ -54,8 +54,8 @@ import org.apache.lucene.search.spans.SpanTermQuery;
  * currently simply feeds all phrase content through an analyzer to select
  * phrase terms - any "special" syntax such as * ~ * etc are not given special
  * status
- * 
- * 
+ *
+ * @deprecated use new the flexible query parser instead
  */
 public class ComplexPhraseQueryParser extends QueryParser {
   private ArrayList/*<ComplexPhraseQuery>*/complexPhrases = null;

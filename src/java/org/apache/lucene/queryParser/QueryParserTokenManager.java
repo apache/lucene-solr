@@ -34,7 +34,11 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.Parameter;
 
-/** Token Manager. */
+/** Token Manager. 
+ *
+ * @deprecated use the equivalent class defined in the new <tt>queryparser</tt> project, 
+ * 				currently located in contrib: org.apache.lucene.queryParser.original.parser.TextParserTokenManager
+ */
 public class QueryParserTokenManager implements QueryParserConstants
 {
 

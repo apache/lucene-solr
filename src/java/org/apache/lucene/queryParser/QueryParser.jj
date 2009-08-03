@@ -120,7 +120,11 @@ import org.apache.lucene.util.Parameter;
  * use a different method for date conversion.
  * </p>
  *
- * <p>Note that QueryParser is <em>not</em> thread-safe.</p>
+ * <p>Note that QueryParser is <em>not</em> thread-safe.</p> 
+ *
+ * @deprecated use the equivalent class defined in the new <tt>queryparser</tt> project, 
+ * 				currently located in contrib: org.apache.lucene.queryParser.original.LuceneQueryParserHelper
+ *
  */
 public class QueryParser {
 

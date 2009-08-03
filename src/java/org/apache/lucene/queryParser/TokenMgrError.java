@@ -2,7 +2,12 @@
 /* JavaCCOptions: */
 package org.apache.lucene.queryParser;
 
-/** Token Manager Error. */
+/** Token Manager Error. 
+ *
+ * @deprecated use the equivalent class defined in the new <tt>queryparser</tt> project, 
+ * 				currently located in contrib: org.apache.lucene.queryParser.original.parser.TokenMgrError
+ *
+ */
 public class TokenMgrError extends Error
 {
 

@@ -20,7 +20,6 @@ package org.apache.lucene.queryParser;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.BooleanClause;
@@ -32,6 +31,8 @@ import org.apache.lucene.search.Query;
 /**
  * A QueryParser which constructs queries to search multiple fields.
  *
+ * @deprecated use the equivalent class defined in the new <tt>queryparser</tt> project, 
+ * 				currently located in contrib: org.apache.lucene.queryParser.original.OriginalQueryParserHelper
  *
  * @version $Revision$
  */

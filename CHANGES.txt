@@ -359,6 +359,11 @@ API Changes
 34. LUCENE-1460: Changed TokenStreams/TokenFilters in contrib to
     use the new TokenStream API. (Robert Muir, Michael Busch)
 
+35. LUCENE-1567: Deprecated Queryparser, which will be replaced by a
+    new QueryParser framework in Lucene 3.0, that is currently located
+    in contrib. (see New Features 35.) 
+    (Luis Alves and Adriano Campos via Michael Busch)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()
@@ -641,7 +646,14 @@ New features
     operations.  This is currently used to fix offset problems when 
     multiple fields with the same name are added to a document.
     (Mike McCandless, Mark Miller, Michael Busch)
-    
+ 
+35. LUCENE-1567: Added a new QueryParser framework to contrib, that 
+    allows implementing a new query syntax in a flexible and efficient 
+    way. This new QueryParser will be moved to Lucene's core in release
+    3.0 and will then replace the current core QueryParser, which
+    has been deprecated with this patch.
+    (Luis Alves and Adriano Campos via Michael Busch)
+   
 Optimizations
 
  1. LUCENE-1427: Fixed QueryWrapperFilter to not waste time computing

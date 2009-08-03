@@ -100,6 +100,13 @@ New features
     and fine tune how regular expressions are compiled and
     matched. (Marc Zampetti zampettim@aim.com via Mike McCandless)
  
+12. LUCENE-1567: Added a new QueryParser framework, that allows 
+    implementing a new query syntax in a flexible and efficient way.
+    This new QueryParser will be moved to Lucene's core in release
+    3.0 and will then replace the current core QueryParser, which
+    has been deprecated with this patch.
+    (Luis Alves and Adriano Campos via Michael Busch)
+
 Optimizations
 
   1. LUCENE-1643: Re-use the collation key (RawCollationKey) for

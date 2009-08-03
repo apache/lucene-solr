@@ -16,6 +16,7 @@ package org.apache.lucene.queryParser;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *  
  */
 
 import java.io.*;
@@ -23,7 +24,11 @@ import java.io.*;
 /** An efficient implementation of JavaCC's CharStream interface.  <p>Note that
  * this does not do line-number counting, but instead keeps track of the
  * character position of the token in the input, as required by Lucene's {@link
- * org.apache.lucene.analysis.Token} API. */
+ * org.apache.lucene.analysis.Token} API. 
+ *   
+ * @deprecated this class will be removed in Lucene 3.0, when the {@link QueryParser} is removed
+ * 
+ * */
 public final class FastCharStream implements CharStream {
   char[] buffer = null;
 

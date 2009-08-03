@@ -330,6 +330,7 @@
           <packageset dir="contrib/wikipedia/src/java"/>
           <packageset dir="contrib/wordnet/src/java"/>
           <packageset dir="contrib/xml-query-parser/src/java"/>
+          <packageset dir="contrib/queryparser/src/java"/>
           <!-- end alpha sort -->
 
           <!-- If the main javadoc Group listing includes an "Other   -->
@@ -352,6 +353,7 @@
           <group title="contrib: Memory" packages="org.apache.lucene.index.memory*"/>
           <group title="contrib: Miscellaneous " packages="org.apache.lucene.misc*:org.apache.lucene.queryParser.analyzing*:org.apache.lucene.queryParser.precedence*"/>
           <group title="contrib: Queries" packages="org.apache.lucene.search.similar*"/>
+          <group title="contrib: Query Parser" packages="org.apache.lucene.queryParser*"/>
           <group title="contrib: RegEx" packages="org.apache.lucene.search.regex*:org.apache.regexp*"/>
           <group title="contrib: Snowball" packages="org.apache.lucene.analysis.snowball*:net.sf.snowball*"/>
           <group title="contrib: Spatial" packages="org.apache.lucene.spatial*"/>
@@ -361,7 +363,7 @@
           <group title="contrib: Wikipedia" packages="org.apache.lucene.wikipedia*"/>
           <group title="contrib: WordNet" packages="org.apache.lucene.wordnet*"/>
           <group title="contrib: XML Query Parser" packages="org.apache.lucene.xmlparser*"/>
-
+          
         </sources>
       </invoke-javadoc>
   	</sequential>
