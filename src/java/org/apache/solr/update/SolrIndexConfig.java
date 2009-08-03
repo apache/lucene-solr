@@ -81,7 +81,7 @@ public class SolrIndexConfig {
     maxBufferedDocs=solrConfig.getInt(prefix+"/maxBufferedDocs",def.maxBufferedDocs);
     maxMergeDocs=solrConfig.getInt(prefix+"/maxMergeDocs",def.maxMergeDocs);
     mergeFactor=solrConfig.getInt(prefix+"/mergeFactor",def.mergeFactor);
-    ramBufferSizeMB = solrConfig.getDouble(prefix+"ramBufferSizeMB", def.ramBufferSizeMB);
+    ramBufferSizeMB = solrConfig.getDouble(prefix+"/ramBufferSizeMB", def.ramBufferSizeMB);
 
     maxFieldLength=solrConfig.getInt(prefix+"/maxFieldLength",def.maxFieldLength);
     writeLockTimeout=solrConfig.getInt(prefix+"/writeLockTimeout", def.writeLockTimeout);
