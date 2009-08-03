@@ -72,13 +72,19 @@ class NearSpansOrdered implements PayloadSpans {
   };
   
   private SpanNearQuery query;
+  private boolean collectPayloads = true;
+  
+  public NearSpansOrdered(SpanNearQuery spanNearQuery, IndexReader reader) throws IOException {
+    this(spanNearQuery, reader, true);
+  }
 
-  public NearSpansOrdered(SpanNearQuery spanNearQuery, IndexReader reader)
+  public NearSpansOrdered(SpanNearQuery spanNearQuery, IndexReader reader, boolean collectPayloads)
   throws IOException {
     if (spanNearQuery.getClauses().length < 2) {
       throw new IllegalArgumentException("Less than 2 clauses: "
                                          + spanNearQuery);
     }
+    this.collectPayloads = collectPayloads;
     allowedSlop = spanNearQuery.getSlop();
     SpanQuery[] clauses = spanNearQuery.getClauses();
     subSpans = new PayloadSpans[clauses.length];
@@ -101,6 +107,7 @@ class NearSpansOrdered implements PayloadSpans {
   public int end() { return matchEnd; }
 
   // TODO: Remove warning after API has been finalized
+  // TODO: Would be nice to be able to lazy load payloads
   public Collection/*<byte[]>*/ getPayload() throws IOException {
     return matchPayload;
   }
@@ -122,7 +129,9 @@ class NearSpansOrdered implements PayloadSpans {
       }
       more = true;
     }
-    matchPayload.clear();
+    if(collectPayloads) {
+      matchPayload.clear();
+    }
     return advanceAfterOrdered();
   }
 
@@ -145,7 +154,9 @@ class NearSpansOrdered implements PayloadSpans {
         return false;
       }
     }
-    matchPayload.clear();
+    if(collectPayloads) {
+      matchPayload.clear();
+    }
     return advanceAfterOrdered();
   }
   
@@ -250,7 +261,7 @@ class NearSpansOrdered implements PayloadSpans {
     int lastEnd = matchEnd;
     for (int i = subSpans.length - 2; i >= 0; i--) {
       PayloadSpans prevSpans = subSpans[i];
-      if (prevSpans.isPayloadAvailable()) {
+      if (collectPayloads && prevSpans.isPayloadAvailable()) {
         Collection payload = prevSpans.getPayload();
         possiblePayload = new ArrayList(payload.size());
         possiblePayload.addAll(payload);
@@ -274,7 +285,7 @@ class NearSpansOrdered implements PayloadSpans {
           } else { // prevSpans still before (lastStart, lastEnd)
             prevStart = ppStart;
             prevEnd = ppEnd;
-            if (prevSpans.isPayloadAvailable()) {
+            if (collectPayloads && prevSpans.isPayloadAvailable()) {
               Collection payload = prevSpans.getPayload();
               possiblePayload = new ArrayList(payload.size());
               possiblePayload.addAll(payload);
@@ -283,7 +294,7 @@ class NearSpansOrdered implements PayloadSpans {
         }
       }
 
-      if (possiblePayload != null) {
+      if (collectPayloads && possiblePayload != null) {
         possibleMatchPayloads.addAll(possiblePayload);
       }
       
@@ -302,7 +313,7 @@ class NearSpansOrdered implements PayloadSpans {
     
     boolean match = matchSlop <= allowedSlop;
     
-    if(match && possibleMatchPayloads.size() > 0) {
+    if(collectPayloads && match && possibleMatchPayloads.size() > 0) {
       matchPayload.addAll(possibleMatchPayloads);
     }
 

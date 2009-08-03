@@ -33,9 +33,11 @@ public interface PayloadSpans extends Spans{
    * This is invalid until {@link #next()} is called for
    * the first time.
    * This method must not be called more than once after each call
-   * of {@link #next()}. However, payloads are loaded lazily,
+   * of {@link #next()}. However, most SpanQuerys load payloads lazily,
    * so if the payload data for the current position is not needed,
-   * this method may not be called at all for performance reasons.<br>
+   * this method may not be called at all for performance reasons.
+   * The ordered case of SpanNearQuery does not load lazily and has
+   * an option to turn off payload loading.<br>
    * <br>
     * Note that the return type is a collection, thus the ordering should not be relied upon.
     * <br/>

@@ -647,6 +647,12 @@ New features
     3.0 and will then replace the current core QueryParser, which
     has been deprecated with this patch.
     (Luis Alves and Adriano Campos via Michael Busch)
+    
+36. LUCENE-1776: Add an option to not collect payloads for an ordered
+    SpanNearQuery. Payloads were not lazily loaded in this case as
+    the javadocs implied. If you have payloads and want to use an ordered
+    SpanNearQuery that does not need to use the payloads, you can
+    disable loading them with a new constructor switch.  (Mark Miller)
    
 Optimizations
 

@@ -39,12 +39,17 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   private boolean inOrder;
 
   private String field;
+  private boolean collectPayloads;
 
   /** Construct a SpanNearQuery.  Matches spans matching a span from each
    * clause, with up to <code>slop</code> total unmatched positions between
    * them.  * When <code>inOrder</code> is true, the spans from each clause
    * must be * ordered as in <code>clauses</code>. */
   public SpanNearQuery(SpanQuery[] clauses, int slop, boolean inOrder) {
+    this(clauses, slop, inOrder, true);     
+  }
+  
+  public SpanNearQuery(SpanQuery[] clauses, int slop, boolean inOrder, boolean collectPayloads) {
 
     // copy clauses array into an ArrayList
     this.clauses = new ArrayList(clauses.length);
@@ -57,7 +62,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       }
       this.clauses.add(clause);
     }
-
+    this.collectPayloads = collectPayloads;
     this.slop = slop;
     this.inOrder = inOrder;
   }
@@ -126,7 +131,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       return ((SpanQuery)clauses.get(0)).getPayloadSpans(reader);
 
     return inOrder
-            ? (PayloadSpans) new NearSpansOrdered(this, reader)
+            ? (PayloadSpans) new NearSpansOrdered(this, reader, collectPayloads)
             : (PayloadSpans) new NearSpansUnordered(this, reader);
   }
 
