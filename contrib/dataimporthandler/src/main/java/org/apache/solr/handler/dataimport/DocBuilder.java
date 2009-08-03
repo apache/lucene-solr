@@ -364,8 +364,6 @@ public class DocBuilder {
             handleSpecialCommands(arow, doc);
             addFields(entity, doc, arow, vr);
           }
-          if (isRoot)
-            vr.removeNamespace(null);
           if (entity.entities != null) {
             vr.addNamespace(entity.name, arow);
             for (DataConfig.Entity child : entity.entities) {
