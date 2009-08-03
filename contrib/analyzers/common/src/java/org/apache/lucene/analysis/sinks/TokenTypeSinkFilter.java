@@ -1,4 +1,5 @@
 package org.apache.lucene.analysis.sinks;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,41 +17,29 @@ package org.apache.lucene.analysis.sinks;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.SinkTokenizer;
-import org.apache.lucene.analysis.TeeSinkTokenFilter;
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TeeSinkTokenFilter.SinkFilter;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeSource;
 
-import java.util.List;
-
-
-/**
- * If the {@link org.apache.lucene.analysis.Token#type()} matches the passed in <code>typeToMatch</code> then
- * add it to the sink
- *
- * @deprecated Use {@link TokenTypeSinkFilter} and {@link TeeSinkTokenFilter} instead.
- **/
-public class TokenTypeSinkTokenizer extends SinkTokenizer {
-
+public class TokenTypeSinkFilter extends SinkFilter {
   private String typeToMatch;
+  private TypeAttribute typeAtt;
 
-  public TokenTypeSinkTokenizer(String typeToMatch) {
+  public TokenTypeSinkFilter(String typeToMatch) {
     this.typeToMatch = typeToMatch;
   }
 
-  public TokenTypeSinkTokenizer(int initCap, String typeToMatch) {
-    super(initCap);
-    this.typeToMatch = typeToMatch;
-  }
-
-  public TokenTypeSinkTokenizer(List/*<Token>*/ input, String typeToMatch) {
-    super(input);
-    this.typeToMatch = typeToMatch;
-  }
-
-  public void add(Token t) {
-    //check to see if this is a Category
-    if (t != null && typeToMatch.equals(t.type())){
-      super.add(t);
+  public boolean accept(AttributeSource source) {
+    if (typeAtt == null) {
+      typeAtt = (TypeAttribute) source.getAttribute(TypeAttribute.class);
     }
+    
+    //check to see if this is a Category
+    if (typeAtt != null && typeToMatch.equals(typeAtt.type())){
+      return true;
+    }
+
+    return false;
   }
+
 }

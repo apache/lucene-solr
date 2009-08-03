@@ -16,13 +16,14 @@ package org.apache.lucene.analysis.sinks;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
-import org.apache.lucene.analysis.TeeTokenFilter;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.Token;
-
-import java.io.StringReader;
 import java.io.IOException;
+import java.io.StringReader;
+
+import junit.framework.TestCase;
+
+import org.apache.lucene.analysis.TeeSinkTokenFilter;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.TeeSinkTokenFilter.SinkTokenStream;
 
 public class TokenRangeSinkTokenizerTest extends TestCase {
 
@@ -39,16 +40,24 @@ public class TokenRangeSinkTokenizerTest extends TestCase {
   }
 
   public void test() throws IOException {
-    TokenRangeSinkTokenizer rangeToks = new TokenRangeSinkTokenizer(2, 4);
+    TokenRangeSinkFilter sinkFilter = new TokenRangeSinkFilter(2, 4);
     String test = "The quick red fox jumped over the lazy brown dogs";
-    TeeTokenFilter tee = new TeeTokenFilter(new WhitespaceTokenizer(new StringReader(test)), rangeToks);
+    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(new WhitespaceTokenizer(new StringReader(test)));
+    SinkTokenStream rangeToks = tee.newSinkTokenStream(sinkFilter);
+    
     int count = 0;
-    final Token reusableToken = new Token();
-    for (Token nextToken = tee.next(reusableToken); nextToken != null; nextToken = tee.next(reusableToken)) {
-      assertTrue("nextToken is null and it shouldn't be", nextToken != null);
+    tee.reset();
+    while(tee.incrementToken()) {
       count++;
     }
+    
+    int sinkCount = 0;
+    rangeToks.reset();
+    while (rangeToks.incrementToken()) {
+      sinkCount++;
+    }
+    
     assertTrue(count + " does not equal: " + 10, count == 10);
-    assertTrue("rangeToks Size: " + rangeToks.getTokens().size() + " is not: " + 2, rangeToks.getTokens().size() == 2);
+    assertTrue("rangeToks Size: " + sinkCount + " is not: " + 2, sinkCount == 2);
   }
 }

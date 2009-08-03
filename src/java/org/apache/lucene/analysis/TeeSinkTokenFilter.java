@@ -22,7 +22,6 @@ import java.lang.ref.WeakReference;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Collections;
 
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
@@ -163,12 +162,20 @@ public final class TeeSinkTokenFilter extends TokenFilter {
   /**
    * A filter that decides which {@link AttributeSource} states to store in the sink.
    */
-  public static interface SinkFilter {
+  public static abstract class SinkFilter {
     /**
      * Returns true, iff the current state of the passed-in {@link AttributeSource} shall be stored
      * in the sink. 
      */
-    boolean accept(AttributeSource source);
+    public abstract boolean accept(AttributeSource source);
+    
+    /**
+     * Called by {@link SinkTokenStream#reset()}. This method does nothing by default
+     * and can optionally be overridden.
+     */
+    public void reset() throws IOException {
+      // nothing to do; can be overridden
+    }
   }
   
   public static final class SinkTokenStream extends TokenStream {

@@ -1,6 +1,7 @@
 package org.apache.lucene.analysis.sinks;
 
 import org.apache.lucene.analysis.SinkTokenizer;
+import org.apache.lucene.analysis.TeeSinkTokenFilter;
 import org.apache.lucene.analysis.Token;
 
 import java.io.IOException;
@@ -24,7 +25,7 @@ import java.io.IOException;
 
 /**
  * Counts the tokens as they go by and saves to the internal list those between the range of lower and upper, exclusive of upper
- *
+ * @deprecated Use {@link TokenRangeSinkFilter} and {@link TeeSinkTokenFilter} instead.
  **/
 public class TokenRangeSinkTokenizer extends SinkTokenizer {
   private int lower;

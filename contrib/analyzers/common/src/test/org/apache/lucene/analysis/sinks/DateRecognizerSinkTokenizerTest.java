@@ -16,14 +16,15 @@ package org.apache.lucene.analysis.sinks;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
-import org.apache.lucene.analysis.TeeTokenFilter;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.Token;
-
-import java.io.StringReader;
 import java.io.IOException;
+import java.io.StringReader;
 import java.text.SimpleDateFormat;
+
+import junit.framework.TestCase;
+
+import org.apache.lucene.analysis.TeeSinkTokenFilter;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.TeeSinkTokenFilter.SinkTokenStream;
 
 public class DateRecognizerSinkTokenizerTest extends TestCase {
 
@@ -40,21 +41,24 @@ public class DateRecognizerSinkTokenizerTest extends TestCase {
   }
 
   public void test() throws IOException {
-    DateRecognizerSinkTokenizer sink = new DateRecognizerSinkTokenizer(new SimpleDateFormat("MM/dd/yyyy"));
+    DateRecognizerSinkFilter sinkFilter = new DateRecognizerSinkFilter(new SimpleDateFormat("MM/dd/yyyy"));
     String test = "The quick red fox jumped over the lazy brown dogs on 7/11/2006  The dogs finally reacted on 7/12/2006";
-    TeeTokenFilter tee = new TeeTokenFilter(new WhitespaceTokenizer(new StringReader(test)), sink);
+    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(new WhitespaceTokenizer(new StringReader(test)));
+    SinkTokenStream sink = tee.newSinkTokenStream(sinkFilter);
     int count = 0;
-    final Token reusableToken = new Token();
-    for (Token nextToken = tee.next(reusableToken); nextToken != null; nextToken = tee.next(reusableToken)) {
-      assertTrue("nextToken is null and it shouldn't be", nextToken != null);
-      if (nextToken.termBuffer()[0] == '7'){
-        assertTrue(nextToken.type() + " is not equal to " + DateRecognizerSinkTokenizer.DATE_TYPE,
-                nextToken.type().equals(DateRecognizerSinkTokenizer.DATE_TYPE) == true);
-      }
+    
+    tee.reset();
+    while (tee.incrementToken()) {
       count++;
     }
     assertTrue(count + " does not equal: " + 18, count == 18);
-    assertTrue("sink Size: " + sink.getTokens().size() + " is not: " + 2, sink.getTokens().size() == 2);
+    
+    int sinkCount = 0;
+    sink.reset();
+    while (sink.incrementToken()) {
+      sinkCount++;
+    }
+    assertTrue("sink Size: " + sinkCount + " is not: " + 2, sinkCount == 2);
 
   }
 }

@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.sinks;
  */
 
 import org.apache.lucene.analysis.SinkTokenizer;
+import org.apache.lucene.analysis.TeeSinkTokenFilter;
 import org.apache.lucene.analysis.Token;
 
 import java.text.DateFormat;
@@ -31,8 +32,8 @@ import java.util.Date;
  * If the value is a Date, it will add it to the sink.
  * <p/>
  * Also marks the sink token with {@link org.apache.lucene.analysis.Token#type()} equal to {@link #DATE_TYPE}
- *
- *
+ * 
+ * @deprecated Use {@link DateRecognizerSinkFilter} and {@link TeeSinkTokenFilter} instead.
  **/
 public class DateRecognizerSinkTokenizer extends SinkTokenizer {
   public static final String DATE_TYPE = "date";

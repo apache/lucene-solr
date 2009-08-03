@@ -248,7 +248,7 @@ public class TestTeeSinkTokenFilter extends LuceneTestCase {
     }
   }
 
-  class ModuloSinkFilter implements TeeSinkTokenFilter.SinkFilter {
+  class ModuloSinkFilter extends TeeSinkTokenFilter.SinkFilter {
     int count = 0;
     int modCount;
 
