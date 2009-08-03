@@ -106,6 +106,13 @@ New features
     3.0 and will then replace the current core QueryParser, which
     has been deprecated with this patch.
     (Luis Alves and Adriano Campos via Michael Busch)
+    
+13. LUCENE-1486: Added ComplexPhraseQueryParser, an extension of QueryParser 
+    that allows a subset of the Lucene query language to be embedded in
+    PhraseQuerys. Wildcard, Range, and Fuzzy queries, as well as limited 
+    boolean logic, can be used within quote operators with this parser, ie: 
+    "(jo* -john) smyth~". (Mark Harwood via Mark Miller)
+
 
 Optimizations
 

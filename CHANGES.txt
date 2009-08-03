@@ -621,18 +621,12 @@ New features
     All standard parsers now also implement Serializable and enforce
     their singleton status.  (Uwe Schindler, Mike McCandless)
     
-31. LUCENE-1486: Added ComplexPhraseQueryParser, an extension of QueryParser 
-    that allows a subset of the Lucene query language to be embedded in
-    PhraseQuerys. Wildcard, Range, and Fuzzy queries, as well as limited 
-    boolean logic, can be used within quote operators with this parser, ie: 
-    "(jo* -john) smyth~". (Mark Harwood via Mark Miller)
-    
-32. LUCENE-1741: User configureable maximum chunk size in MMapDirectory.
+31. LUCENE-1741: User configureable maximum chunk size in MMapDirectory.
     On 32 bit platforms, the address space can be very fragmented, so
     one big ByteBuffer for the whole file may not fit into address space.
     (Eks Dev via Uwe Schindler)
 
-33. LUCENE-1644: Enable 4 rewrite modes for queries deriving from
+32. LUCENE-1644: Enable 4 rewrite modes for queries deriving from
     MultiTermQuery (WildcardQuery, PrefixQuery, TermRangeQuery,
     NumericRangeQuery): CONSTANT_SCORE_FILTER_REWRITE first creates a
     filter and then assigns constant score (boost) to docs;
@@ -642,7 +636,7 @@ New features
     CONSTANT_SCORE_AUTO_REWRITE tries to pick the most performant
     constant-score rewrite method.  (Mike McCandless)
     
-34. LUCENE-1448: Added TokenStream.end(), to perform end-of-stream
+33. LUCENE-1448: Added TokenStream.end(), to perform end-of-stream
     operations.  This is currently used to fix offset problems when 
     multiple fields with the same name are added to a document.
     (Mike McCandless, Mark Miller, Michael Busch)

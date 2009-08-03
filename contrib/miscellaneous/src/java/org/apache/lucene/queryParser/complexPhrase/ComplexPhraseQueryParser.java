@@ -1,4 +1,4 @@
-package org.apache.lucene.queryParser;
+package org.apache.lucene.queryParser.complexPhrase;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,11 +25,13 @@ import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
@@ -54,8 +56,8 @@ import org.apache.lucene.search.spans.SpanTermQuery;
  * currently simply feeds all phrase content through an analyzer to select
  * phrase terms - any "special" syntax such as * ~ * etc are not given special
  * status
- *
- * @deprecated use new the flexible query parser instead
+ * 
+ * 
  */
 public class ComplexPhraseQueryParser extends QueryParser {
   private ArrayList/*<ComplexPhraseQuery>*/complexPhrases = null;
