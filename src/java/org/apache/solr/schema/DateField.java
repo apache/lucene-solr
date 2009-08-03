@@ -22,6 +22,8 @@ import org.apache.solr.request.XMLWriter;
 import org.apache.solr.request.TextResponseWriter;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.search.function.*;
 import org.apache.solr.search.QParser;
@@ -158,7 +160,8 @@ public class DateField extends FieldType {
       if (0 < zz) {
         math = val.substring(zz+1);
         try {
-          p.setNow(toObject(val.substring(0,zz)));
+          // p.setNow(toObject(val.substring(0,zz)));
+          p.setNow(parseDate(val.substring(0,zz+1)));
         } catch (ParseException e) {
           throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
                                    "Invalid Date in Date Math String:'"
@@ -193,6 +196,7 @@ public class DateField extends FieldType {
   public String toExternal(Fieldable f) {
     return indexedToReadable(f.stringValue());
   }
+
   public Date toObject(String indexedForm) throws java.text.ParseException {
     return parseDate(indexedToReadable(indexedForm));
   }
@@ -241,6 +245,13 @@ public class DateField extends FieldType {
    */
   protected String formatDate(Date d) {
     return fmtThreadLocal.get().format(d);
+  }
+
+  /**
+   * Return the standard human readable form of the date
+   */
+  public String toExternal(Date d) {
+    return fmtThreadLocal.get().format(d) + 'Z';  
   }
 
   /**
@@ -336,6 +347,16 @@ public class DateField extends FieldType {
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     return new DateFieldSource(field.getName(), field.getType());
   }
+
+  /** DateField specific range query */
+  public Query getRangeQuery(QParser parser, SchemaField sf, Date part1, Date part2, boolean minInclusive, boolean maxInclusive) {
+    return new TermRangeQuery(
+            sf.getName(),
+            part1 == null ? null : toInternal(part1),
+            part2 == null ? null : toInternal(part2),
+            minInclusive, maxInclusive);
+  }
+
 }
 
 

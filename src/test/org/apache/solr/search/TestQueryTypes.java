@@ -46,7 +46,64 @@ public class TestQueryTypes extends AbstractSolrTestCase {
     assertU(adoc("id","6", "v_f","8983"));
     assertU(adoc("id","7", "v_f","1.5"));
     assertU(adoc("id","8", "v_ti","5"));
+
+    Object[] arr = new Object[] {
+    "id",999.0
+    ,"v_s","wow dude"
+    ,"v_t","wow"
+    ,"v_ti",-1
+    ,"v_tis",-1
+    ,"v_tl",-1234567891234567890L
+    ,"v_tls",-1234567891234567890L
+    ,"v_tf",-2.0f
+    ,"v_tfs",-2.0f
+    ,"v_td",-2.0
+    ,"v_tds",-2.0
+    ,"v_tdt","2000-05-10T01:01:01Z"
+    ,"v_tdts","2002-08-26T01:01:01Z"
+    };
+    String[] sarr = new String[arr.length];
+    for (int i=0; i<arr.length; i++) {
+      sarr[i] = arr[i].toString();
+    }
+
+    assertU(adoc(sarr));
     assertU(optimize());
+
+    // test field queries
+    for (int i=0; i<arr.length; i+=2) {
+      String f = arr[i].toString();
+      String v = arr[i+1].toString();
+
+      // normal lucene fielded query
+      assertQ(req( "q",f+":\""+v+'"')
+              ,"//result[@numFound='1']"
+              ,"//*[@name='id'][.='999.0']"
+              ,"//*[@name='" + f + "'][.='" + v + "']"
+              );
+      // System.out.println("#########################################" + f + "=" + v);
+
+      // field qparser
+      assertQ(req( "q", "{!field f="+f+"}"+v)
+              ,"//result[@numFound='1']"
+              );
+
+      // lucene range
+      assertQ(req( "q", f + ":[\"" + v + "\" TO \"" + v + "\"]" )
+              ,"//result[@numFound='1']"
+              );
+
+      // frange qparser
+      assertQ(req( "q", "{!frange v="+f+" l='"+v+"' u='"+v+"'}" )
+              ,"//result[@numFound='1']"
+              );
+
+      // function query... just make sure it doesn't throw an exception
+       assertQ(req( "q", "+id:999 _val_:\"" + f + "\"")
+            ,"//result[@numFound='1']"
+        );
+
+    }
 
 
     // Some basic tests to ensure that parsing local params is working
@@ -85,12 +142,10 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             ,"//result[@numFound='1']"
             );    
 
-    /** future test
     assertQ(
             req("q","{!field f=v_ti}5")
             ,"//result[@numFound='1']"
             );
-     **/
 
      assertQ("test multi term field query on text type",
             req("q","{!field f=v_t}Hello  DUDE")

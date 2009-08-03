@@ -26,6 +26,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.TrieField;
+import org.apache.solr.schema.SchemaField;
 
 // TODO: implement the analysis of simple fields with
 // FieldType.toInternal() instead of going through the
@@ -118,8 +119,8 @@ public class SolrQueryParser extends QueryParser {
 
   protected Query getRangeQuery(String field, String part1, String part2, boolean inclusive) throws ParseException {
     checkNullField(field);
-    FieldType ft = schema.getFieldType(field);
-    return ft.getRangeQuery(parser, field,
+    SchemaField sf = schema.getField(field);
+    return sf.getType().getRangeQuery(parser, sf,
             "*".equals(part1) ? null : part1,
             "*".equals(part2) ? null : part2,
             inclusive, inclusive);

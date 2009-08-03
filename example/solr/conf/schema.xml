@@ -63,6 +63,7 @@
 
     <!-- The optional sortMissingLast and sortMissingFirst attributes are
          currently supported on types that are sorted internally as strings.
+	 This includes "string","boolean","sint","slong","sfloat","sdouble","pdate"
        - If sortMissingLast="true", then a sort on this field will cause documents
          without the field to come after documents with the field,
          regardless of the requested sort order (asc or desc).
@@ -74,25 +75,31 @@
          field first in an ascending sort and last in a descending sort.
     -->    
 
+    <!-- Default numeric field types.  For faster range queries, use the tint/tfloat/tlong/tdouble types.
+      Note: the statistics component does not yet work with these field types.
+    -->
+    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
-    <!-- numeric field types that store and index the text
-         value verbatim (and hence don't support range queries, since the
-         lexicographic ordering isn't equal to the numeric ordering) -->
-    <fieldType name="integer" class="solr.IntField" omitNorms="true"/>
-    <fieldType name="long" class="solr.LongField" omitNorms="true"/>
-    <fieldType name="float" class="solr.FloatField" omitNorms="true"/>
-    <fieldType name="double" class="solr.DoubleField" omitNorms="true"/>
+    <!--
+     Numeric field types for single-valued fields that index extra tokens with
+     lower precision to accelerate range queries when the number of values between
+     the range endpoints is large. See the javadoc for NumericRangeQuery for
+     internal implementation details.
 
+     For single-valued fields, smaller precisionStep values (specified in bits)
+     will lead to more tokens indexed per value, slightly higher index size, and
+     faster range queries.
 
-    <!-- Numeric field types that manipulate the value into
-         a string value that isn't human-readable in its internal form,
-         but with a lexicographic ordering the same as the numeric ordering,
-         so that range queries work correctly. -->
-    <fieldType name="sint" class="solr.SortableIntField" sortMissingLast="true" omitNorms="true"/>
-    <fieldType name="slong" class="solr.SortableLongField" sortMissingLast="true" omitNorms="true"/>
-    <fieldType name="sfloat" class="solr.SortableFloatField" sortMissingLast="true" omitNorms="true"/>
-    <fieldType name="sdouble" class="solr.SortableDoubleField" sortMissingLast="true" omitNorms="true"/>
-
+     Note: precisionStep is disabled for multiValued fields.
+     Note: faceting does not currently work for these fields.
+    -->
+    <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
 
     <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and
          is a more restricted form of the canonical representation of dateTime
@@ -114,35 +121,33 @@
                       
          Consult the DateField javadocs for more information.
       -->
-    <fieldType name="date" class="solr.DateField" sortMissingLast="true" omitNorms="true"/>
+    <fieldType name="date" class="solr.TrieDateField" omitNorms="true" precisionStep="0" positionIncrementGap="0"/>
+
+    <!-- A Trie based single-valued date field for faster date range queries and date faceting -->
+    <fieldType name="tdate" class="solr.TrieDateField" omitNorms="true" precisionStep="8" positionIncrementGap="0"/>
+
+
+    <!-- plain numeric field types that store and index the text
+         value verbatim (and hence don't support range queries, since the
+         lexicographic ordering isn't equal to the numeric ordering)
+         These should only be used for compatibility with existing indexes.
+         Use Trie based fields instead.
+	  -->
+    <fieldType name="pint" class="solr.IntField" omitNorms="true"/>
+    <fieldType name="plong" class="solr.LongField" omitNorms="true"/>
+    <fieldType name="pfloat" class="solr.FloatField" omitNorms="true"/>
+    <fieldType name="pdouble" class="solr.DoubleField" omitNorms="true"/>
+    <fieldType name="pdate" class="solr.DateField" sortMissingLast="true" omitNorms="true"/>
+
 
     <!--
-          Numeric field types that manipulate the value into trie encoded strings which are not
-          human readable in the internal form. Range searches on such fields use the fast Trie Range Queries
-          which are much faster than range searches on the SortableNumberField types.
-
-          For the fast range search to work, trie fields must be indexed.
-
-          For each number being added to this field, multiple terms are generated as per the algorithm described in
-          org.apache.lucene.search.trie package description. The possible number of terms depend on the precisionStep
-          attribute and increase dramatically with higher precision steps (factor 2**precisionStep). The default
-          value of precisionStep is 8.
-          
-          Note that if you use a precisionStep of 32 for int/float and 64 for long/double, then multiple terms
-          will not be generated, and range search will be no faster than any other number field.
-     -->
-    <fieldType name="tint" class="solr.TrieField" type="integer" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
-    <fieldType name="tfloat" class="solr.TrieField" type="float" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
-    <fieldType name="tlong" class="solr.TrieField" type="long" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
-    <fieldType name="tdouble" class="solr.TrieField" type="double" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
-
-    <fieldType name="tdouble4" class="solr.TrieField" type="double" precisionStep="4" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
-
-    <!--
-          This date field manipulates the value into a trie encoded strings for fast range searches. They follow the
-          same format and semantics as the normal DateField and support the date math syntax.
-    -->
-    <fieldType name="tdate" class="solr.TrieField" type="date" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
+       These types should only be used for back compatibility with existing
+       indexes, or if "sortMissingLast" funcitonallity is needed. Use Trie based fields instead.
+	  -->
+    <fieldType name="sint" class="solr.SortableIntField" sortMissingLast="true" omitNorms="true"/>
+    <fieldType name="slong" class="solr.SortableLongField" sortMissingLast="true" omitNorms="true"/>
+    <fieldType name="sfloat" class="solr.SortableFloatField" sortMissingLast="true" omitNorms="true"/>
+    <fieldType name="sdouble" class="solr.SortableDoubleField" sortMissingLast="true" omitNorms="true"/>
 
 
     <!-- The "RandomSortField" is not used to store or search any
@@ -356,17 +361,17 @@
    <field name="features" type="text" indexed="true" stored="true" multiValued="true" termVectors="true" termPositions="true" termOffsets="true"/>
    <field name="includes" type="text" indexed="true" stored="true"/>
 
-   <field name="weight" type="sfloat" indexed="true" stored="true"/>
-   <field name="price"  type="sfloat" indexed="true" stored="true"/>
+   <field name="weight" type="float" indexed="true" stored="true"/>
+   <field name="price"  type="float" indexed="true" stored="true"/>
    <!-- "default" values can be specified for fields, indicating which
         value should be used if no value is specified when adding a document.
      -->
-   <field name="popularity" type="sint" indexed="true" stored="true"/>
+   <field name="popularity" type="int" indexed="true" stored="true"/>
    <field name="inStock" type="boolean" indexed="true" stored="true"/>
 
    <!-- Some sample docs exists solely to demonstrate the spellchecker
         functionality, this is the only field they contain.
-        Typically you might build the spellchecker of "catchall" type field
+        Typically you might build the spellchecker off "catchall" type field
         containing all of the text in each document.
      -->
    <field name="word" type="string" indexed="true" stored="true"/>
@@ -389,17 +394,6 @@
    
    <field name="spell" type="textSpell" indexed="true" stored="true" multiValued="true"/>
 
-   <!-- Some examples of trie fields -->
-   <field name="tint" type="tint" indexed="true" stored="false" />
-   <field name="tfloat" type="tfloat" indexed="true" stored="false" />
-   <field name="tlong" type="tlong" indexed="true" stored="false" />
-   <field name="tdouble" type="tdouble" indexed="true" stored="false" />
-
-   <!-- A double with a custom precisionStep -->
-   <field name="tdouble4" type="tdouble4" indexed="true" stored="false" />
-
-   <!-- An example for the trie date field -->
-   <field name="tdate" type="tdate" indexed="true" stored="true" />
 
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
@@ -408,19 +402,21 @@
         EXAMPLE:  name="*_i" will match any field ending in _i (like myid_i, z_i)
         Longer patterns will be matched first.  if equal size patterns
         both match, the first appearing in the schema will be used.  -->
-   <dynamicField name="*_i"  type="sint"    indexed="true"  stored="true"/>
+   <dynamicField name="*_i"  type="int"    indexed="true"  stored="true"/>
    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
-   <dynamicField name="*_l"  type="slong"   indexed="true"  stored="true"/>
+   <dynamicField name="*_l"  type="long"   indexed="true"  stored="true"/>
    <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>
    <dynamicField name="*_b"  type="boolean" indexed="true"  stored="true"/>
-   <dynamicField name="*_f"  type="sfloat"  indexed="true"  stored="true"/>
-   <dynamicField name="*_d"  type="sdouble" indexed="true"  stored="true"/>
+   <dynamicField name="*_f"  type="float"  indexed="true"  stored="true"/>
+   <dynamicField name="*_d"  type="double" indexed="true"  stored="true"/>
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
 
-   <dynamicField name="ignored_*" type="ignored"/>
+   <dynamicField name="*_pi"  type="pint"    indexed="true"  stored="true"/>
+
+   <dynamicField name="ignored_*" type="ignored" multiValued="true"/>
    <dynamicField name="attr_*" type="text" indexed="true" stored="true" multiValued="true"/>
 
-   <dynamicField name="random*" type="random" />
+   <dynamicField name="random_*" type="random" />
 
    <!-- uncomment the following to ignore any fields that don't already match an existing 
         field name or dynamic field, rather than reporting them as an error. 

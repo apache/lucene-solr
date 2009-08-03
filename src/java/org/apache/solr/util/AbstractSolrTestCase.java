@@ -180,7 +180,8 @@ public abstract class AbstractSolrTestCase extends TestCase {
       String results = h.validateXPath(response, tests);
       if (null != results) {
         fail(m + "query failed XPath: " + results +
-             " xml response was: " + response);
+             "\n xml response was: " + response +
+             "\n request was: " + req.getParamString());
       }
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);

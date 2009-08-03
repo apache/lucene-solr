@@ -233,7 +233,7 @@ public abstract class FieldType extends FieldProperties {
 
   /**
    * Convert an external value (from XML update command or from query string)
-   * into the internal format.
+   * into the internal format for both storing and indexing (which can be modified by any analyzers).
    * @see #toExternal
    */
   public String toInternal(String val) {
@@ -280,7 +280,11 @@ public abstract class FieldType extends FieldProperties {
     // that the indexed form is the same as the stored field form.
     return f.stringValue();
   }
-
+  
+  /** Given the readable value, return the term value that will match it. */
+  public String readableToIndexed(String val) {
+    return toInternal(val);
+  }
 
   /*********
   // default analyzer for non-text fields.
@@ -437,7 +441,7 @@ public abstract class FieldType extends FieldProperties {
    * handle nulls in part1 and/or part2 as well as unequal minInclusive and maxInclusive parameters gracefully.
    *
    * @param parser
-   * @param field        the name of the field
+   * @param field        the schema field
    * @param part1        the lower boundary of the range, nulls are allowed.
    * @param part2        the upper boundary of the range, nulls are allowed
    * @param minInclusive whether the minimum of the range is inclusive or not
@@ -446,10 +450,10 @@ public abstract class FieldType extends FieldProperties {
    *
    * @see org.apache.solr.search.SolrQueryParser#getRangeQuery(String, String, String, boolean)
    */
-  public Query getRangeQuery(QParser parser, String field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     // constant score mode is now enabled per default
     return new TermRangeQuery(
-            field,
+            field.getName(),
             part1 == null ? null : toInternal(part1),
             part2 == null ? null : toInternal(part2),
             minInclusive, maxInclusive);

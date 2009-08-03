@@ -303,7 +303,13 @@ public class QueryParsing {
 
   static void writeFieldVal(String val, FieldType ft, Appendable out, int flags) throws IOException {
     if (ft!=null) {
-      out.append(ft.toExternal(new Field("",val, Field.Store.YES, Field.Index.UN_TOKENIZED)));
+      try {
+        out.append(ft.indexedToReadable(val));
+      } catch (Exception e) {
+        out.append("EXCEPTION(val=");
+        out.append(val);
+        out.append(")");
+      }
     } else {
       out.append(val);
     }
@@ -349,7 +355,7 @@ public class QueryParsing {
       if (lt==null) {
         out.append('*');
       } else {
-        writeFieldVal(lt.toString(), ft, out, flags);
+        out.append(lt.toString());
       }
 
       out.append(" TO ");
@@ -357,7 +363,7 @@ public class QueryParsing {
       if (ut==null) {
         out.append('*');
       } else {
-        writeFieldVal(ut.toString(), ft, out, flags);
+        out.append(ut.toString());
       }
 
       out.append( q.includesMax() ? ']' : '}' );

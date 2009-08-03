@@ -94,6 +94,7 @@ public class TestRangeQuery extends AbstractSolrTestCase {
     norm_fields.put("foo_ti", ints);
     norm_fields.put("foo_tl", longs);
     norm_fields.put("foo_td", doubles);
+    norm_fields.put("foo_tdt", dates);
 
     norm_fields.put("foo_s", strings);
     norm_fields.put("foo_dt", dates);
@@ -108,6 +109,7 @@ public class TestRangeQuery extends AbstractSolrTestCase {
     frange_fields.put("foo_ti", ints);
     frange_fields.put("foo_tl", longs);
     frange_fields.put("foo_td", doubles);
+    frange_fields.put("foo_tdt", dates);
 
     frange_fields.put("foo_pi", ints);
     frange_fields.put("foo_pl", longs);

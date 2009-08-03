@@ -47,6 +47,11 @@ public class LongFieldSource extends FieldCacheSource {
     return "long(" + field + ')';
   }
 
+
+  public long externalToLong(String extVal) {
+    return Long.parseLong(extVal);
+  }
+
   public DocValues getValues(IndexReader reader) throws IOException {
     final long[] arr = (parser == null) ?
             ((FieldCache) cache).getLongs(reader, field) :
@@ -76,7 +81,6 @@ public class LongFieldSource extends FieldCacheSource {
         return description() + '=' + longVal(doc);
       }
 
-
       @Override
       public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
         long lower,upper;
@@ -86,14 +90,14 @@ public class LongFieldSource extends FieldCacheSource {
         if (lowerVal==null) {
           lower = Long.MIN_VALUE;
         } else {
-          lower = Long.parseLong(lowerVal);
+          lower = externalToLong(lowerVal);
           if (!includeLower && lower < Long.MAX_VALUE) lower++;
         }
 
          if (upperVal==null) {
           upper = Long.MAX_VALUE;
         } else {
-          upper = Long.parseLong(upperVal);
+          upper = externalToLong(upperVal);
           if (!includeUpper && upper > Long.MIN_VALUE) upper--;
         }
 
@@ -116,7 +120,7 @@ public class LongFieldSource extends FieldCacheSource {
   }
 
   public boolean equals(Object o) {
-    if (o.getClass() != LongFieldSource.class) return false;
+    if (o.getClass() != this.getClass()) return false;
     LongFieldSource other = (LongFieldSource) o;
     return super.equals(other)
             && this.parser == null ? other.parser == null :
@@ -124,7 +128,7 @@ public class LongFieldSource extends FieldCacheSource {
   }
 
   public int hashCode() {
-    int h = parser == null ? Long.class.hashCode() : parser.getClass().hashCode();
+    int h = parser == null ? this.getClass().hashCode() : parser.getClass().hashCode();
     h += super.hashCode();
     return h;
   }

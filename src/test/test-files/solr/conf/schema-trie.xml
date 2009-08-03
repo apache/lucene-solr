@@ -88,14 +88,14 @@
     <fieldType name="sfloat" class="solr.SortableFloatField" sortMissingLast="true" omitNorms="true"/>
     <fieldType name="sdouble" class="solr.SortableDoubleField" sortMissingLast="true" omitNorms="true"/>
 
-    <fieldType name="tint" class="solr.TrieField" type="integer" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
-    <fieldType name="tfloat" class="solr.TrieField" type="float" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
-    <fieldType name="tlong" class="solr.TrieField" type="long" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
-    <fieldType name="tdouble" class="solr.TrieField" type="double" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
+    <fieldType name="tint" class="solr.TrieIntField" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
+    <fieldType name="tfloat" class="solr.TrieFloatField" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
+    <fieldType name="tlong" class="solr.TrieLongField" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
+    <fieldType name="tdouble" class="solr.TrieDoubleField" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
 
-    <fieldType name="tdouble4" class="solr.TrieField" type="double" precisionStep="4" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
+    <fieldType name="tdouble4" class="solr.TrieDoubleField" type="double" precisionStep="4" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
 
-    <fieldType name="tdate" class="solr.TrieField" type="date" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
+    <fieldType name="tdate" class="solr.TrieDateField" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
 
 
     <!-- The format for this date field is of the form 1995-12-31T23:59:59Z, and

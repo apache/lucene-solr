@@ -48,7 +48,7 @@ import org.apache.solr.common.params.FacetParams;
  * @version $Id$
  * @since solr 1.3
  */
-abstract public class SolrExampleTests extends SolrExampleTestBase 
+abstract public class SolrExampleTests extends SolrExampleTestBase
 {
   /**
    * query the example
@@ -336,6 +336,8 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     server.deleteByQuery( "*:*" );// delete everything!
     server.commit();
     assertNumFound( "*:*", 0 ); // make sure it got in
+
+    String f = "val_pi";
     
     int i=0;               // 0   1   2   3   4   5   6   7   8   9 
     int[] nums = new int[] { 23, 26, 38, 46, 55, 63, 77, 84, 92, 94 };
@@ -343,7 +345,7 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField( "id", "doc"+i++ );
       doc.setField( "name", "doc: "+num );
-      doc.setField( "popularity", num );
+      doc.setField( f, num );
       server.add( doc );
     }
     server.commit();
@@ -351,10 +353,10 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     
     SolrQuery query = new SolrQuery( "*:*" );
     query.setRows( 0 );
-    query.setGetFieldStatistics( "popularity" );
+    query.setGetFieldStatistics( f );
     
     QueryResponse rsp = server.query( query );
-    FieldStatsInfo stats = rsp.getFieldStatsInfo().get( "popularity" );
+    FieldStatsInfo stats = rsp.getFieldStatsInfo().get( f );
     assertNotNull( stats );
     
     assertEquals( 23.0, stats.getMin() );
@@ -373,14 +375,14 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField( "id", "doc"+i++ );
       doc.setField( "name", "doc: "+num );
-      doc.setField( "popularity", num );
+      doc.setField( f, num );
       server.add( doc );
     }
     server.commit();
     assertNumFound( "*:*", nums.length ); // make sure they all got in
     
     rsp = server.query( query );
-    stats = rsp.getFieldStatsInfo().get( "popularity" );
+    stats = rsp.getFieldStatsInfo().get( f );
     assertNotNull( stats );
     
     assertEquals( 5.0, stats.getMin() );
@@ -399,7 +401,7 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField( "id", "doc"+i );
       doc.setField( "name", "doc: "+num );
-      doc.setField( "popularity", num );
+      doc.setField( f, num );
       doc.setField( "inStock", i < 5 );
       server.add( doc );
     }
@@ -408,9 +410,9 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     assertNumFound( "inStock:false", 5 ); // make sure they all got in
 
     // facet on 'inStock'
-    query.addStatsFieldFacets( "popularity", "inStock" );
+    query.addStatsFieldFacets( f, "inStock" );
     rsp = server.query( query );
-    stats = rsp.getFieldStatsInfo().get( "popularity" );
+    stats = rsp.getFieldStatsInfo().get( f );
     assertNotNull( stats );
     
     List<FieldStatsInfo> facets = stats.getFacets().get( "inStock" );

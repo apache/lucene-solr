@@ -33,11 +33,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.BoolField;
-import org.apache.solr.schema.DateField;
+import org.apache.solr.schema.*;
 import org.apache.solr.search.*;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DateMathParser;
@@ -556,13 +552,13 @@ public class SimpleFacets {
 
       final NamedList resInner = new SimpleOrderedMap();
       resOuter.add(key, resInner);
-      final FieldType trash = schema.getFieldType(f);
-      if (! (trash instanceof DateField)) {
+      final SchemaField sf = schema.getField(f);
+      if (! (sf.getType() instanceof DateField)) {
         throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
            "Can not date facet on a field which is not a DateField: " + f);
       }
-      final DateField ft = (DateField) trash;
+      final DateField ft = (DateField) sf.getType();
       final String startS
         = required.getFieldParam(f,FacetParams.FACET_DATE_START);
       final Date start;
@@ -600,7 +596,9 @@ public class SimpleFacets {
         while (low.before(end)) {
           dmp.setNow(low);
           final String lowI = ft.toInternal(low);
-          final String label = ft.indexedToReadable(lowI);
+          // final String label = ft.indexedToReadable(lowI);
+          String label = ft.toExternal(low);
+          
           Date high = dmp.parseMath(gap);
           if (end.before(high)) {
             if (params.getFieldBool(f,FacetParams.FACET_DATE_HARD_END,false)) {
@@ -615,7 +613,8 @@ public class SimpleFacets {
                "date facet infinite loop (is gap negative?)");
           }
           final String highI = ft.toInternal(high);
-          resInner.add(label, rangeCount(f,lowI,highI,true,true));
+          // resInner.add(label, rangeCount(sf,lowI,highI,true,true));
+          resInner.add(label, rangeCount(sf,low,high,true,true));
           low = high;
         }
       } catch (java.text.ParseException e) {
@@ -647,15 +646,15 @@ public class SimpleFacets {
         
           if (all || others.contains(FacetDateOther.BEFORE)) {
             resInner.add(FacetDateOther.BEFORE.toString(),
-                         rangeCount(f,null,startI,false,false));
+                         rangeCount(sf,null,start,false,false));
           }
           if (all || others.contains(FacetDateOther.AFTER)) {
             resInner.add(FacetDateOther.AFTER.toString(),
-                         rangeCount(f,endI,null,false,false));
+                         rangeCount(sf,end,null,false,false));
           }
           if (all || others.contains(FacetDateOther.BETWEEN)) {
             resInner.add(FacetDateOther.BETWEEN.toString(),
-                         rangeCount(f,startI,endI,true,true));
+                         rangeCount(sf,start,end,true,true));
           }
         }
       }
@@ -665,14 +664,20 @@ public class SimpleFacets {
   }
 
   /**
-   * Macro for getting the numDocs of a TermRangeQuery over docs
+   * Macro for getting the numDocs of range over docs
    * @see SolrIndexSearcher#numDocs
    * @see TermRangeQuery
    */
-  protected int rangeCount(String field, String low, String high,
+  protected int rangeCount(SchemaField sf, String low, String high,
                            boolean iLow, boolean iHigh) throws IOException {
-    return searcher.numDocs(new TermRangeQuery(field,low,high,iLow,iHigh),
-                            base);
+    Query rangeQ = sf.getType().getRangeQuery(null, sf,low,high,iLow,iHigh);
+    return searcher.numDocs(rangeQ ,base);
+  }
+
+  protected int rangeCount(SchemaField sf, Date low, Date high,
+                           boolean iLow, boolean iHigh) throws IOException {
+    Query rangeQ = ((DateField)(sf.getType())).getRangeQuery(null, sf,low,high,iLow,iHigh);
+    return searcher.numDocs(rangeQ ,base);
   }
   
   /**
