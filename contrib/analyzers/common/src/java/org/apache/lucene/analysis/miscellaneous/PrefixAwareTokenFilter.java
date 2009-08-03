@@ -19,6 +19,12 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.Payload;
 
 import java.io.IOException;
@@ -29,28 +35,58 @@ import java.io.IOException;
  * to be used when updating the token values in the second stream based on that token.
  *
  * The default implementation adds last prefix token end offset to the suffix token start and end offsets.
- * @deprecated
+ * <p/>
+ * <b>NOTE:</b> This filter might not behave correctly if used with custom Attributes, i.e. Attributes other than
+ * the ones located in org.apache.lucene.analysis.tokenattributes. 
  */
 public class PrefixAwareTokenFilter extends TokenStream {
 
   private TokenStream prefix;
   private TokenStream suffix;
+  
+  private TermAttribute termAtt;
+  private PositionIncrementAttribute posIncrAtt;
+  private PayloadAttribute payloadAtt;
+  private OffsetAttribute offsetAtt;
+  private TypeAttribute typeAtt;
+  private FlagsAttribute flagsAtt;
+
+  private TermAttribute p_termAtt;
+  private PositionIncrementAttribute p_posIncrAtt;
+  private PayloadAttribute p_payloadAtt;
+  private OffsetAttribute p_offsetAtt;
+  private TypeAttribute p_typeAtt;
+  private FlagsAttribute p_flagsAtt;
 
   public PrefixAwareTokenFilter(TokenStream prefix, TokenStream suffix) {
+    super(suffix);
     this.suffix = suffix;
     this.prefix = prefix;
     prefixExhausted = false;
+    
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+    payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
+
+    p_termAtt = (TermAttribute) prefix.addAttribute(TermAttribute.class);
+    p_posIncrAtt = (PositionIncrementAttribute) prefix.addAttribute(PositionIncrementAttribute.class);
+    p_payloadAtt = (PayloadAttribute) prefix.addAttribute(PayloadAttribute.class);
+    p_offsetAtt = (OffsetAttribute) prefix.addAttribute(OffsetAttribute.class);
+    p_typeAtt = (TypeAttribute) prefix.addAttribute(TypeAttribute.class);
+    p_flagsAtt = (FlagsAttribute) prefix.addAttribute(FlagsAttribute.class);
   }
 
   private Token previousPrefixToken = new Token();
+  private Token reusableToken = new Token();
 
   private boolean prefixExhausted;
 
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-
+  public final boolean incrementToken() throws IOException {
     if (!prefixExhausted) {
-      Token nextToken = prefix.next(reusableToken);
+      Token nextToken = getNextPrefixInputToken(reusableToken);
       if (nextToken == null) {
         prefixExhausted = true;
       } else {
@@ -60,16 +96,63 @@ public class PrefixAwareTokenFilter extends TokenStream {
         if (p != null) {
           previousPrefixToken.setPayload((Payload) p.clone());
         }
-        return nextToken;
+        setCurrentToken(nextToken);
+        return true;
       }
     }
 
-    Token nextToken = suffix.next(reusableToken);
+    Token nextToken = getNextSuffixInputToken(reusableToken);
     if (nextToken == null) {
-      return null;
+      return false;
     }
 
-    return updateSuffixToken(nextToken, previousPrefixToken);
+    nextToken = updateSuffixToken(nextToken, previousPrefixToken);
+    setCurrentToken(nextToken);
+    return true;
+  }
+  
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
+  }
+  
+  private void setCurrentToken(Token token) {
+    if (token == null) return;
+    termAtt.setTermBuffer(token.termBuffer(), 0, token.termLength());
+    posIncrAtt.setPositionIncrement(token.getPositionIncrement());
+    flagsAtt.setFlags(token.getFlags());
+    offsetAtt.setOffset(token.startOffset(), token.endOffset());
+    typeAtt.setType(token.type());
+    payloadAtt.setPayload(token.getPayload());
+  }
+  
+  private Token getNextPrefixInputToken(Token token) throws IOException {
+    if (!prefix.incrementToken()) return null;
+    token.setTermBuffer(p_termAtt.termBuffer(), 0, p_termAtt.termLength());
+    token.setPositionIncrement(p_posIncrAtt.getPositionIncrement());
+    token.setFlags(p_flagsAtt.getFlags());
+    token.setOffset(p_offsetAtt.startOffset(), p_offsetAtt.endOffset());
+    token.setType(p_typeAtt.type());
+    token.setPayload(p_payloadAtt.getPayload());
+    return token;
+  }
+
+  private Token getNextSuffixInputToken(Token token) throws IOException {
+    if (!suffix.incrementToken()) return null;
+    token.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
+    token.setPositionIncrement(posIncrAtt.getPositionIncrement());
+    token.setFlags(flagsAtt.getFlags());
+    token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
+    token.setType(typeAtt.type());
+    token.setPayload(payloadAtt.getPayload());
+    return token;
   }
 
   /**

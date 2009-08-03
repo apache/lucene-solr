@@ -22,6 +22,11 @@ import java.io.IOException;
 import junit.framework.TestCase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttributeImpl;
 
 public class ShingleFilterTest extends TestCase {
 
@@ -29,18 +34,31 @@ public class ShingleFilterTest extends TestCase {
 
     protected int index = 0;
     protected Token[] testToken;
+    
+    private TermAttribute termAtt;
+    private OffsetAttribute offsetAtt;
+    private PositionIncrementAttribute posIncrAtt;
+    private TypeAttribute typeAtt;
 
     public TestTokenStream(Token[] testToken) {
       super();
       this.testToken = testToken;
+      this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+      this.posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+      this.typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
     }
 
-    public Token next(final Token reusableToken) throws IOException {
-      assert reusableToken != null;
+    public final boolean incrementToken() throws IOException {
       if (index < testToken.length) {
-        return testToken[index++];
+        Token t = testToken[index++];
+        termAtt.setTermBuffer(t.termBuffer(), 0, t.termLength());
+        offsetAtt.setOffset(t.startOffset(), t.endOffset());
+        posIncrAtt.setPositionIncrement(t.getPositionIncrement());
+        typeAtt.setType(TypeAttributeImpl.DEFAULT_TYPE);
+        return true;
       } else {
-        return null;
+        return false;
       }
     }
   }
@@ -163,25 +181,29 @@ public class ShingleFilterTest extends TestCase {
     this.shingleFilterTest(3, TEST_TOKEN, TRI_GRAM_TOKENS,
                            TRI_GRAM_POSITION_INCREMENTS, TRI_GRAM_TYPES);
   }
-
+  
   protected void shingleFilterTest(int maxSize, Token[] tokensToShingle, Token[] tokensToCompare,
                                    int[] positionIncrements, String[] types)
     throws IOException {
 
     TokenStream filter = new ShingleFilter(new TestTokenStream(tokensToShingle), maxSize);
+    TermAttribute termAtt = (TermAttribute) filter.addAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) filter.addAttribute(OffsetAttribute.class);
+    PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) filter.addAttribute(PositionIncrementAttribute.class);
+    TypeAttribute typeAtt = (TypeAttribute) filter.addAttribute(TypeAttribute.class);
+
     int i = 0;
-    final Token reusableToken = new Token();
-    for (Token nextToken = filter.next(reusableToken); nextToken != null; nextToken = filter.next(reusableToken)) {
-      String termText = nextToken.term();
+    while (filter.incrementToken()) {
+      String termText = termAtt.term();
       String goldText = tokensToCompare[i].term();
       assertEquals("Wrong termText", goldText, termText);
       assertEquals("Wrong startOffset for token \"" + termText + "\"",
-          tokensToCompare[i].startOffset(), nextToken.startOffset());
+          tokensToCompare[i].startOffset(), offsetAtt.startOffset());
       assertEquals("Wrong endOffset for token \"" + termText + "\"",
-          tokensToCompare[i].endOffset(), nextToken.endOffset());
+          tokensToCompare[i].endOffset(), offsetAtt.endOffset());
       assertEquals("Wrong positionIncrement for token \"" + termText + "\"",
-          positionIncrements[i], nextToken.getPositionIncrement());
-      assertEquals("Wrong type for token \"" + termText + "\"", types[i], nextToken.type());
+          positionIncrements[i], posIncrAtt.getPositionIncrement());
+      assertEquals("Wrong type for token \"" + termText + "\"", types[i], typeAtt.type());
       i++;
     }
   }

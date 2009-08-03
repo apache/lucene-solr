@@ -21,6 +21,8 @@ import junit.framework.TestCase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -34,22 +36,22 @@ public class TestPrefixAndSuffixAwareTokenFilter extends TestCase {
         new WhitespaceTokenizer(new StringReader("hello world")),
         new SingleTokenTokenStream(createToken("$", 0, 0)));
 
-    Token token = new Token();
-    assertNext(ts, token, "^", 0, 0);
-    assertNext(ts, token, "hello", 0, 5);
-    assertNext(ts, token, "world", 6, 11);
-    assertNext(ts, token, "$", 11, 11);
-    assertNull(ts.next(token));
+    assertNext(ts, "^", 0, 0);
+    assertNext(ts, "hello", 0, 5);
+    assertNext(ts, "world", 6, 11);
+    assertNext(ts, "$", 11, 11);
+    assertFalse(ts.incrementToken());
   }
 
 
-  private Token assertNext(TokenStream ts, final Token reusableToken, String text, int startOffset, int endOffset) throws IOException {
-    Token nextToken = ts.next(reusableToken);
-    assertNotNull(nextToken);
-    assertEquals(text, nextToken.term());
-    assertEquals(startOffset, nextToken.startOffset());
-    assertEquals(endOffset, nextToken.endOffset());
-    return nextToken;
+  private void assertNext(TokenStream ts, String text, int startOffset, int endOffset) throws IOException {
+    TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) ts.addAttribute(OffsetAttribute.class);
+
+    assertTrue(ts.incrementToken());
+    assertEquals(text, termAtt.term());
+    assertEquals(startOffset, offsetAtt.startOffset());
+    assertEquals(endOffset, offsetAtt.endOffset());
   }
 
   private static Token createToken(String term, int start, int offset)

@@ -18,6 +18,12 @@ API Changes
     you are interested in locally and access them on each call to the method that used to pass a new 
     Token. Look at the included updated impls for examples.  (Mark Miller)
 
+ 2. LUCENE-1460: Change contrib TokenStreams/Filters to use the new
+    TokenStream API. (Robert Muir, Michael Busch)
+
+ 3. LUCENE-1775: Change remaining TokenFilters (shingle, prefix-suffix) to
+    use the new TokenStream API. (Robert Muir, Michael Busch)
+
 Bug fixes
 
  1. LUCENE-1423: InstantiatedTermEnum#skipTo(Term) throws ArrayIndexOutOfBounds on empty index.

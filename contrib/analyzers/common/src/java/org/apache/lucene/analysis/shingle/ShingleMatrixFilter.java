@@ -30,6 +30,12 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.EmptyTokenStream;
 import org.apache.lucene.analysis.payloads.PayloadHelper;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.Payload;
 
 
@@ -104,6 +110,9 @@ import org.apache.lucene.index.Payload;
  * <p>The filter also has basic support for calculating weights for the shingles
  * based on the weights of the tokens from the input stream, output shingle size, et c.
  * See {@link #calculateShingleWeight(org.apache.lucene.analysis.Token, java.util.List, int, java.util.List, java.util.List)}.
+ * <p/>
+ * <b>NOTE:</b> This filter might not behave correctly if used with custom Attributes, i.e. Attributes other than
+ * the ones located in org.apache.lucene.analysis.tokenattributes. 
  */
 public class ShingleMatrixFilter extends TokenStream {
 
@@ -183,7 +192,21 @@ public class ShingleMatrixFilter extends TokenStream {
 
   private TokenStream input;
 
+  private TermAttribute termAtt;
+  private PositionIncrementAttribute posIncrAtt;
+  private PayloadAttribute payloadAtt;
+  private OffsetAttribute offsetAtt;
+  private TypeAttribute typeAtt;
+  private FlagsAttribute flagsAtt;
 
+  private TermAttribute in_termAtt;
+  private PositionIncrementAttribute in_posIncrAtt;
+  private PayloadAttribute in_payloadAtt;
+  private OffsetAttribute in_offsetAtt;
+  private TypeAttribute in_typeAtt;
+  private FlagsAttribute in_flagsAtt;
+
+  
   /**
    * Creates a shingle filter based on a user defined matrix.
    *
@@ -205,8 +228,22 @@ public class ShingleMatrixFilter extends TokenStream {
     this.ignoringSinglePrefixOrSuffixShingle = ignoringSinglePrefixOrSuffixShingle;
     this.settingsCodec = settingsCodec;
 
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+    payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
+
     // set the input to be an empty token stream, we already have the data.
     this.input = new EmptyTokenStream();
+    
+    in_termAtt = (TermAttribute) input.addAttribute(TermAttribute.class);
+    in_posIncrAtt = (PositionIncrementAttribute) input.addAttribute(PositionIncrementAttribute.class);
+    in_payloadAtt = (PayloadAttribute) input.addAttribute(PayloadAttribute.class);
+    in_offsetAtt = (OffsetAttribute) input.addAttribute(OffsetAttribute.class);
+    in_typeAtt = (TypeAttribute) input.addAttribute(TypeAttribute.class);
+    in_flagsAtt = (FlagsAttribute) input.addAttribute(FlagsAttribute.class);
   }
 
   /**
@@ -273,6 +310,19 @@ public class ShingleMatrixFilter extends TokenStream {
     this.spacerCharacter = spacerCharacter;
     this.ignoringSinglePrefixOrSuffixShingle = ignoringSinglePrefixOrSuffixShingle;
     this.settingsCodec = settingsCodec;
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+    payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
+    
+    in_termAtt = (TermAttribute) input.addAttribute(TermAttribute.class);
+    in_posIncrAtt = (PositionIncrementAttribute) input.addAttribute(PositionIncrementAttribute.class);
+    in_payloadAtt = (PayloadAttribute) input.addAttribute(PayloadAttribute.class);
+    in_offsetAtt = (OffsetAttribute) input.addAttribute(OffsetAttribute.class);
+    in_typeAtt = (TypeAttribute) input.addAttribute(TypeAttribute.class);
+    in_flagsAtt = (FlagsAttribute) input.addAttribute(FlagsAttribute.class);
   }
 
   // internal filter instance variables
@@ -302,10 +352,10 @@ public class ShingleMatrixFilter extends TokenStream {
   }
 
   private Matrix matrix;
-
-
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
+  
+  private Token reusableToken = new Token();
+  
+  public final boolean incrementToken() throws IOException {
     if (matrix == null) {
       matrix = new Matrix();
       // fill matrix with maximumShingleSize columns
@@ -321,9 +371,39 @@ public class ShingleMatrixFilter extends TokenStream {
     do {
       token = produceNextToken(reusableToken);
     } while (token == request_next_token);
+    if (token == null) return false;
+    
+    termAtt.setTermBuffer(token.termBuffer(), 0, token.termLength());
+    posIncrAtt.setPositionIncrement(token.getPositionIncrement());
+    flagsAtt.setFlags(token.getFlags());
+    offsetAtt.setOffset(token.startOffset(), token.endOffset());
+    typeAtt.setType(token.type());
+    payloadAtt.setPayload(token.getPayload());
+    return true;
+  }
+  
+  private Token getNextInputToken(Token token) throws IOException {
+    if (!input.incrementToken()) return null;
+    token.setTermBuffer(in_termAtt.termBuffer(), 0, in_termAtt.termLength());
+    token.setPositionIncrement(in_posIncrAtt.getPositionIncrement());
+    token.setFlags(in_flagsAtt.getFlags());
+    token.setOffset(in_offsetAtt.startOffset(), in_offsetAtt.endOffset());
+    token.setType(in_typeAtt.type());
+    token.setPayload(in_payloadAtt.getPayload());
     return token;
   }
 
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
+
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
+  }
   
   private static final Token request_next_token = new Token();
 
@@ -573,7 +653,7 @@ public class ShingleMatrixFilter extends TokenStream {
       token = readColumnBuf;
       readColumnBuf = null;
     } else {
-      token = input.next(new Token());
+      token = getNextInputToken(new Token());
     }
 
     if (token == null) {
@@ -585,7 +665,7 @@ public class ShingleMatrixFilter extends TokenStream {
 
     currentReaderRow.getTokens().add(token);
     TokenPositioner tokenPositioner;
-    while ((readColumnBuf = input.next(new Token())) != null
+    while ((readColumnBuf = getNextInputToken(new Token())) != null
         && (tokenPositioner = settingsCodec.getTokenPositioner(readColumnBuf)) != TokenPositioner.newColumn) {
 
       if (tokenPositioner == TokenPositioner.sameRow) {
@@ -599,7 +679,7 @@ public class ShingleMatrixFilter extends TokenStream {
     }
 
     if (readColumnBuf == null) {
-      readColumnBuf = input.next(new Token());
+      readColumnBuf = getNextInputToken(new Token());
       if (readColumnBuf == null) {
         currentReaderColumn.setLast(true);
       }

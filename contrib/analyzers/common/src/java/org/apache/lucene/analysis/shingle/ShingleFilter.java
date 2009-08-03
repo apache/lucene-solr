@@ -18,12 +18,17 @@ package org.apache.lucene.analysis.shingle;
  */
 
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.Iterator;
+import java.util.LinkedList;
 
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeSource;
 
 /**
  * <p>A ShingleFilter constructs shingles (token n-grams) from a token stream.
@@ -39,8 +44,6 @@ import org.apache.lucene.analysis.Token;
 public class ShingleFilter extends TokenFilter {
 
   private LinkedList shingleBuf = new LinkedList();
-  private LinkedList outputBuf = new LinkedList();
-  private LinkedList tokenBuf = new LinkedList();
   private StringBuffer[] shingles;
   private String tokenType = "shingle";
 
@@ -81,6 +84,11 @@ public class ShingleFilter extends TokenFilter {
   public ShingleFilter(TokenStream input, int maxShingleSize) {
     super(input);
     setMaxShingleSize(maxShingleSize);
+    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    this.posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+    this.typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    
   }
 
   /**
@@ -148,23 +156,69 @@ public class ShingleFilter extends TokenFilter {
       shingles[i].setLength(0);
     }
   }
+  
+  private AttributeSource.State nextToken;
+  private int shingleBufferPosition;
+  private int[] endOffsets;
 
   /* (non-Javadoc)
    * @see org.apache.lucene.analysis.TokenStream#next()
    */
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    if (outputBuf.isEmpty()) {
-      fillOutputBuf(reusableToken);
+  public final boolean incrementToken() throws IOException {
+    while (true) {
+      if (nextToken == null) {
+        if (!fillShingleBuffer()) {
+          return false;
+        }
+      }
+      
+      nextToken = (AttributeSource.State) shingleBuf.getFirst();
+      
+      if (shingleBufferPosition == 0 && (! shingleBuf.isEmpty()) && outputUnigrams) {
+        restoreState(nextToken);
+        posIncrAtt.setPositionIncrement(1);
+        shingleBufferPosition++;
+        return true;
+      }
+  
+      if (shingleBufferPosition < shingleBuf.size()) {
+        restoreState(nextToken);
+        typeAtt.setType(tokenType);
+        offsetAtt.setOffset(offsetAtt.startOffset(), endOffsets[shingleBufferPosition]);
+        StringBuffer buf = shingles[shingleBufferPosition];
+        int termLength = buf.length();
+        char[] termBuffer = termAtt.termBuffer();
+        if (termBuffer.length < termLength)
+          termBuffer = termAtt.resizeTermBuffer(termLength);
+        buf.getChars(0, termLength, termBuffer, 0);
+        termAtt.setTermLength(termLength);
+        if ((! outputUnigrams) && shingleBufferPosition == 1) {
+          posIncrAtt.setPositionIncrement(1);
+        } else {
+          posIncrAtt.setPositionIncrement(0);
+        }
+        shingleBufferPosition++;
+        if (shingleBufferPosition == shingleBuf.size()) {
+          nextToken = null;
+          shingleBufferPosition = 0;
+        }
+        return true;
+      } else {
+        nextToken = null;
+        shingleBufferPosition = 0;
+      }
     }
-    Token nextToken = null;
-    if ( ! outputBuf.isEmpty())
-    {
-      nextToken = (Token)outputBuf.remove(0);
-    }
-    return nextToken;
   }
-
+  
+  private int numFillerTokensToInsert;
+  private AttributeSource.State currentToken;
+  private boolean hasCurrentToken;
+   
+  private TermAttribute termAtt;
+  private OffsetAttribute offsetAtt;
+  private PositionIncrementAttribute posIncrAtt;
+  private TypeAttribute typeAtt;
+  
   /**
    * Get the next token from the input stream and push it on the token buffer.
    * If we encounter a token with position increment > 1, we put filler tokens
@@ -174,41 +228,53 @@ public class ShingleFilter extends TokenFilter {
    * @return the next token, or null if at end of input stream
    * @throws IOException if the input stream has a problem
    */
-  private Token getNextToken(final Token reusableToken) throws IOException {
-    if (tokenBuf.isEmpty()) {
-      Token nextToken = input.next(reusableToken);
-      if (nextToken != null) {
-        for (int i = 1; i < nextToken.getPositionIncrement(); i++) {
-          Token fillerToken = (Token) nextToken.clone();
-          // A filler token occupies no space
-          fillerToken.setEndOffset(fillerToken.startOffset());
-          fillerToken.setTermBuffer(FILLER_TOKEN, 0, FILLER_TOKEN.length);
-          tokenBuf.add(fillerToken);
-        }
-        tokenBuf.add(nextToken.clone());
-        return getNextToken(nextToken);
-      } else {
-        return null;
-      }
-    } else {
-      return (Token)tokenBuf.remove(0);
+  private boolean getNextToken() throws IOException {
+    
+    while (true) {
+  	  if (numFillerTokensToInsert > 0) {
+  	    if (currentToken == null) {
+  	      currentToken = captureState();
+  	    } else {
+  	      restoreState(currentToken);
+  	    }
+  	    numFillerTokensToInsert--;
+        // A filler token occupies no space
+  	    offsetAtt.setOffset(offsetAtt.startOffset(), offsetAtt.startOffset());
+  	    termAtt.setTermBuffer(FILLER_TOKEN, 0, FILLER_TOKEN.length);
+        return true;
+  	  } 
+  	  
+  	  if (hasCurrentToken) {
+  	    if (currentToken != null) {
+  	      restoreState(currentToken);
+  	      currentToken = null;
+  	    }
+  	    hasCurrentToken = false;
+  	    return true;
+  	  }
+  	  
+  	  if (!input.incrementToken()) return false;
+  	  hasCurrentToken = true;
+  	  
+  	  if (posIncrAtt.getPositionIncrement() > 1) {
+  	    numFillerTokensToInsert = posIncrAtt.getPositionIncrement() - 1;
+  	  }
     }
-  }
+	}
 
   /**
    * Fill the output buffer with new shingles.
    *
    * @throws IOException if there's a problem getting the next token
    */
-  private void fillOutputBuf(Token token) throws IOException {
+  private boolean fillShingleBuffer() throws IOException {
     boolean addedToken = false;
     /*
      * Try to fill the shingle buffer.
      */
     do {
-      token = getNextToken(token);
-      if (token != null) {
-        shingleBuf.add(token.clone());
+      if (getNextToken()) {
+        shingleBuf.add(captureState());
         if (shingleBuf.size() > maxShingleSize)
         {
           shingleBuf.remove(0);
@@ -219,69 +285,55 @@ public class ShingleFilter extends TokenFilter {
       }
     } while (shingleBuf.size() < maxShingleSize);
 
+    if (shingleBuf.isEmpty()) {
+      return false;
+    }
+    
     /*
      * If no new token could be added to the shingle buffer, we have reached
      * the end of the input stream and have to discard the least recent token.
      */
     if (! addedToken) {
-      if (shingleBuf.isEmpty()) {
-        return;
-      } else {
-        shingleBuf.remove(0);
-      }
+      shingleBuf.remove(0);
+    }
+    
+    if (shingleBuf.isEmpty()) {
+      return false;
     }
 
     clearShingles();
 
-    int[] endOffsets = new int[shingleBuf.size()];
+    endOffsets = new int[shingleBuf.size()];
     for (int i = 0; i < endOffsets.length; i++) {
       endOffsets[i] = 0;
     }
 
     int i = 0;
-    Token shingle = null;
     for (Iterator it = shingleBuf.iterator(); it.hasNext(); ) {
-      shingle = (Token) it.next();
+      restoreState((AttributeSource.State) it.next());
       for (int j = i; j < shingles.length; j++) {
         if (shingles[j].length() != 0) {
           shingles[j].append(TOKEN_SEPARATOR);
         }
-        shingles[j].append(shingle.termBuffer(), 0, shingle.termLength());
+        shingles[j].append(termAtt.termBuffer(), 0, termAtt.termLength());
       }
 
-      endOffsets[i] = shingle.endOffset();
+      endOffsets[i] = offsetAtt.endOffset();
       i++;
     }
+    
+    return true;
+  }
+  
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
+  }
 
-    if ((! shingleBuf.isEmpty()) && outputUnigrams) {
-      Token unigram = (Token) shingleBuf.getFirst();
-      unigram.setPositionIncrement(1);
-      outputBuf.add(unigram);
-    }
-
-    /*
-     * Push new tokens to the output buffer.
-     */
-    if (!shingleBuf.isEmpty()) {
-      Token firstShingle = (Token) shingleBuf.get(0);
-      shingle = (Token) firstShingle.clone();
-      shingle.setType(tokenType);
-    }
-    for (int j = 1; j < shingleBuf.size(); j++) {
-      shingle.setEndOffset(endOffsets[j]);
-      StringBuffer buf = shingles[j];
-      int termLength = buf.length();
-      char[] termBuffer = shingle.termBuffer();
-      if (termBuffer.length < termLength)
-        termBuffer = shingle.resizeTermBuffer(termLength);
-      buf.getChars(0, termLength, termBuffer, 0);
-      shingle.setTermLength(termLength);
-      if ((! outputUnigrams) && j == 1) {
-        shingle.setPositionIncrement(1);
-      } else {
-        shingle.setPositionIncrement(0);
-      }
-      outputBuf.add(shingle.clone());
-    }
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
   }
 }

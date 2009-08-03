@@ -24,13 +24,16 @@ import java.io.IOException;
 
 /**
  * Links two PrefixAwareTokenFilter
- * @deprecated
+ * <p/>
+ * <b>NOTE:</b> This filter might not behave correctly if used with custom Attributes, i.e. Attributes other than
+ * the ones located in org.apache.lucene.analysis.tokenattributes. 
  */
 public class PrefixAndSuffixAwareTokenFilter extends TokenStream {
 
   private PrefixAwareTokenFilter suffix;
 
   public PrefixAndSuffixAwareTokenFilter(TokenStream prefix, TokenStream input, TokenStream suffix) {
+    super(suffix);
     prefix = new PrefixAwareTokenFilter(prefix, input) {
       public Token updateSuffixToken(Token suffixToken, Token lastInputToken) {
         return PrefixAndSuffixAwareTokenFilter.this.updateInputToken(suffixToken, lastInputToken);
@@ -56,11 +59,21 @@ public class PrefixAndSuffixAwareTokenFilter extends TokenStream {
   }
 
 
-  public Token next(final Token reusableToken) throws IOException {
-    assert reusableToken != null;
-    return suffix.next(reusableToken);
+  public final boolean incrementToken() throws IOException {
+    return suffix.incrementToken();
+  }
+  
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next(final Token reusableToken) throws java.io.IOException {
+    return super.next(reusableToken);
   }
 
+  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
+   * not be overridden. Delegates to the backwards compatibility layer. */
+  public final Token next() throws java.io.IOException {
+    return super.next();
+  }
 
   public void reset() throws IOException {
     suffix.reset();

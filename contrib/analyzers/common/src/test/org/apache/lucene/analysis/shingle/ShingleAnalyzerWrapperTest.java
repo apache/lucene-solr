@@ -23,6 +23,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -157,10 +159,13 @@ public class ShingleAnalyzerWrapperTest extends TestCase {
     TokenStream ts = analyzer.tokenStream("content",
                                           new StringReader("this sentence"));
     int j = -1;
-    final Token reusableToken = new Token();
-    for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
-      j += nextToken.getPositionIncrement();
-      String termText = nextToken.term();
+    
+    PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) ts.addAttribute(PositionIncrementAttribute.class);
+    TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+    
+    while (ts.incrementToken()) {
+      j += posIncrAtt.getPositionIncrement();
+      String termText = termAtt.term();
       q.add(new Term("content", termText), j);
     }
 
@@ -182,9 +187,11 @@ public class ShingleAnalyzerWrapperTest extends TestCase {
 
     TokenStream ts = analyzer.tokenStream("content",
                                           new StringReader("test sentence"));
-    final Token reusableToken = new Token();
-    for (Token nextToken = ts.next(reusableToken); nextToken != null; nextToken = ts.next(reusableToken)) {
-      String termText =  nextToken.term();
+    
+    TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+    
+    while (ts.incrementToken()) {
+      String termText =  termAtt.term();
       q.add(new TermQuery(new Term("content", termText)),
             BooleanClause.Occur.SHOULD);
     }
