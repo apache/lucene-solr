@@ -114,6 +114,7 @@ public class SqlEntityProcessor extends EntityProcessorBase {
       String deltaImportQuery = context.getEntityAttribute(DELTA_IMPORT_QUERY);
       if(deltaImportQuery != null) return deltaImportQuery;
     }
+    LOG.warn("'deltaImportQuery' attribute is not specified for entity : "+ entityName);
     return getDeltaImportQuery(queryString);
   }
 
