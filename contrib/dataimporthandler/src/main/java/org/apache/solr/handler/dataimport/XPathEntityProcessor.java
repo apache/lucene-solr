@@ -186,17 +186,22 @@ public class XPathEntityProcessor extends EntityProcessorBase {
       r = getNext();
       if (r == null) {
         Object hasMore = context.getSessionAttribute(HAS_MORE, Context.SCOPE_ENTITY);
-        if ("true".equals(hasMore) || Boolean.TRUE.equals(hasMore)) {
-          String url = (String) context.getSessionAttribute(NEXT_URL, Context.SCOPE_ENTITY);
-          if (url == null)
-            url = context.getEntityAttribute(URL);
-          addNamespace();
-          initQuery(resolver.replaceTokens(url));
-          r = getNext();
-          if (r == null)
+        try {
+          if ("true".equals(hasMore) || Boolean.TRUE.equals(hasMore)) {
+            String url = (String) context.getSessionAttribute(NEXT_URL, Context.SCOPE_ENTITY);
+            if (url == null)
+              url = context.getEntityAttribute(URL);
+            addNamespace();
+            initQuery(resolver.replaceTokens(url));
+            r = getNext();
+            if (r == null)
+              return null;
+          } else {
             return null;
-        } else {
-          return null;
+          }
+        } finally {
+          context.setSessionAttribute(HAS_MORE,null,Context.SCOPE_ENTITY);
+          context.setSessionAttribute(NEXT_URL,null,Context.SCOPE_ENTITY);
         }
       }
       addCommonFields(r);

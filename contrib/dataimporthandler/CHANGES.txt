@@ -251,6 +251,8 @@ Bug Fixes
               
 28.SOLR-1286: Fix the commit parameter always defaulting to "true" even if "false" is explicitly passed in.
               (Jay Hill, Noble Paul via ehatcher)
+            
+29.SOLR-1323: Reset XPathEntityProcessor's $hasMore/$nextUrl when fetching next URL (noble, ehatcher)
              
 
 Documentation
