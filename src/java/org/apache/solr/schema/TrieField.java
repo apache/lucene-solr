@@ -223,9 +223,7 @@ public class TrieField extends FieldType {
 
   @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
-    // don't use a precisionStep if the field is multiValued
-    int ps = field.multiValued() ? Integer.MAX_VALUE : precisionStep;
-
+    int ps = precisionStep;
     Query query = null;
     switch (type) {
       case INTEGER:
@@ -405,7 +403,7 @@ public class TrieField extends FieldType {
       return null;
     }
 
-    int ps = field.multiValued() ? Integer.MAX_VALUE : precisionStep; 
+    int ps = precisionStep;
 
     byte[] arr=null;
     TokenStream ts=null;

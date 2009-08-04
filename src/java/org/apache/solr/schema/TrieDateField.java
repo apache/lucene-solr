@@ -163,7 +163,7 @@ public class TrieDateField extends DateField {
       return null;
     }
 
-    int ps = field.multiValued() ? Integer.MAX_VALUE : precisionStep;
+    int ps = precisionStep;
 
     byte[] arr=null;
     TokenStream ts=null;
@@ -198,8 +198,7 @@ public class TrieDateField extends DateField {
   
   @Override
   public Query getRangeQuery(QParser parser, SchemaField sf, Date min, Date max, boolean minInclusive, boolean maxInclusive) {
-    // don't use a precisionStep if the field is multiValued
-    int ps = sf.multiValued() ? Integer.MAX_VALUE : precisionStep;
+    int ps = precisionStep;
     Query query = NumericRangeQuery.newLongRange(sf.getName(), ps,
               min == null ? null : min.getTime(),
               max == null ? null : max.getTime(),

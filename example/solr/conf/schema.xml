@@ -75,7 +75,7 @@
          field first in an ascending sort and last in a descending sort.
     -->    
 
-    <!-- Default numeric field types.  For faster range queries, use the tint/tfloat/tlong/tdouble types.
+    <!-- Default numeric field types.  For faster range queries, consider the tint/tfloat/tlong/tdouble types.
       Note: the statistics component does not yet work with these field types.
     -->
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
@@ -84,16 +84,14 @@
     <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
     <!--
-     Numeric field types for single-valued fields that index extra tokens with
-     lower precision to accelerate range queries when the number of values between
-     the range endpoints is large. See the javadoc for NumericRangeQuery for
-     internal implementation details.
+     Numeric field types that index each value at various levels of precision
+     to accelerate range queries when the number of values between the range
+     endpoints is large. See the javadoc for NumericRangeQuery for internal
+     implementation details.
 
-     For single-valued fields, smaller precisionStep values (specified in bits)
-     will lead to more tokens indexed per value, slightly higher index size, and
-     faster range queries.
+     Smaller precisionStep values (specified in bits) will lead to more tokens
+     indexed per value, slightly larger index size, and faster range queries.
 
-     Note: precisionStep is disabled for multiValued fields.
      Note: faceting does not currently work for these fields.
     -->
     <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
@@ -123,8 +121,8 @@
       -->
     <fieldType name="date" class="solr.TrieDateField" omitNorms="true" precisionStep="0" positionIncrementGap="0"/>
 
-    <!-- A Trie based single-valued date field for faster date range queries and date faceting -->
-    <fieldType name="tdate" class="solr.TrieDateField" omitNorms="true" precisionStep="8" positionIncrementGap="0"/>
+    <!-- A Trie based date field for faster date range queries and date faceting. -->
+    <fieldType name="tdate" class="solr.TrieDateField" omitNorms="true" precisionStep="6" positionIncrementGap="0"/>
 
 
     <!-- plain numeric field types that store and index the text
@@ -132,7 +130,7 @@
          lexicographic ordering isn't equal to the numeric ordering)
          These should only be used for compatibility with existing indexes.
          Use Trie based fields instead.
-	  -->
+    -->
     <fieldType name="pint" class="solr.IntField" omitNorms="true"/>
     <fieldType name="plong" class="solr.LongField" omitNorms="true"/>
     <fieldType name="pfloat" class="solr.FloatField" omitNorms="true"/>
@@ -143,7 +141,7 @@
     <!--
        These types should only be used for back compatibility with existing
        indexes, or if "sortMissingLast" functionality is needed. Use Trie based fields instead.
-	  -->
+    -->
     <fieldType name="sint" class="solr.SortableIntField" sortMissingLast="true" omitNorms="true"/>
     <fieldType name="slong" class="solr.SortableLongField" sortMissingLast="true" omitNorms="true"/>
     <fieldType name="sfloat" class="solr.SortableFloatField" sortMissingLast="true" omitNorms="true"/>
