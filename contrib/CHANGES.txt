@@ -9,6 +9,7 @@ Changes in runtime behavior
     This isn't a break in back-compatibility because local Lucene has not yet
     been released.  (Mike McCandless)
 
+
 API Changes
 
  1. LUCENE-1695: Update the Highlighter to use the new TokenStream API. This issue breaks backwards
@@ -23,6 +24,16 @@ API Changes
 
  3. LUCENE-1775: Change remaining TokenFilters (shingle, prefix-suffix) to
     use the new TokenStream API. (Robert Muir, Michael Busch)
+    
+ 4. LUCENE-1685: The position aware SpanScorer has become the default scorer
+    for Highlighting. The SpanScorer implementation has replaced QueryScorer
+    and the old term highlighting QueryScorer has been renamed to 
+    QueryTermScorer. Multi-term queries are also now expanded by default. If
+    you were previously rewritting the query for multi-term query highlighting,
+    you should no longer do that (unless you switch to using QueryTermScorer).
+    The SpanScorer API (now QueryScorer) has also been improved to more closely
+    match the API of the previous QueryScorer implementation.  (Mark Miller)  
+
 
 Bug fixes
 
@@ -57,6 +68,7 @@ Bug fixes
     RegexQuery) to use Matcher.matches() not Matcher.lookingAt() so
     that the regexp must match the entire string, not just a prefix.
     (Trejkaz via Mike McCandless)
+
 
 New features
 
@@ -121,15 +133,6 @@ New features
     
 14. Added web-based demo of functionality in contrib's XML Query Parser
     packaged as War file (Mark Harwood)
-
-15. LUCENE-1685: The position aware SpanScorer has become the default scorer
-    for Highlighting. The SpanScorer implementation has replaced QueryScorer
-    and the old term highlighting QueryScorer has been renamed to 
-    QueryTermScorer. Multi-term queries are also now expanded by default. If
-    you were previously rewritting the query for multi-term query highlighting,
-    you should no longer do that (unless you switch to using QueryTermScorer).
-    The SpanScorer API (now QueryScorer) has also been improved to more closely
-    match the API of the previous QueryScorer implementation.  (Mark Miller)  
 
 
 Optimizations
