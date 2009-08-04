@@ -57,11 +57,11 @@ import org.apache.lucene.search.spans.Spans;
 public class WeightedSpanTermExtractor {
 
   private String fieldName;
-  private CachingTokenFilter cachedTokenFilter;
+  private TokenStream tokenStream;
   private Map readers = new HashMap(10); // Map<String, IndexReader>
   private String defaultField;
-  private boolean highlightCnstScrRngQuery;
   private boolean expandMultiTermQuery;
+  private boolean cachedTokenStream;
 
   public WeightedSpanTermExtractor() {
   }
@@ -131,7 +131,7 @@ public class WeightedSpanTermExtractor {
       for (Iterator iterator = ((DisjunctionMaxQuery) query).iterator(); iterator.hasNext();) {
         extract((Query) iterator.next(), terms);
       }
-    } else if (query instanceof MultiTermQuery && (highlightCnstScrRngQuery || expandMultiTermQuery)) {
+    } else if (query instanceof MultiTermQuery && expandMultiTermQuery) {
       MultiTermQuery mtq = ((MultiTermQuery)query);
       if(mtq.getRewriteMethod() != MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE) {
         mtq = copyMultiTermQuery(mtq);
@@ -240,8 +240,7 @@ public class WeightedSpanTermExtractor {
       while (spans.next()) {
         spanPositions.add(new PositionSpan(spans.start(), spans.end() - 1));
       }
-
-      cachedTokenFilter.reset();
+      
     }
 
     if (spanPositions.size() == 0) {
@@ -301,15 +300,21 @@ public class WeightedSpanTermExtractor {
     return rv;
   }
 
-  private IndexReader getReaderForField(String field) {
+  private IndexReader getReaderForField(String field) throws IOException {
+    if(!cachedTokenStream && !(tokenStream instanceof CachingTokenFilter)) {
+      tokenStream = new CachingTokenFilter(tokenStream);
+      cachedTokenStream = true;
+    }
     IndexReader reader = (IndexReader) readers.get(field);
     if (reader == null) {
       MemoryIndex indexer = new MemoryIndex();
-      indexer.addField(field, cachedTokenFilter);
+      indexer.addField(field, tokenStream);
+      tokenStream.reset();
       IndexSearcher searcher = indexer.createSearcher();
       reader = searcher.getIndexReader();
       readers.put(field, reader);
     }
+
     return reader;
   }
 
@@ -328,7 +333,7 @@ public class WeightedSpanTermExtractor {
   public Map getWeightedSpanTerms(Query query, CachingTokenFilter cachingTokenFilter)
       throws IOException {
     this.fieldName = null;
-    this.cachedTokenFilter = cachingTokenFilter;
+    this.tokenStream = cachingTokenFilter;
 
     Map terms = new PositionCheckingMap();
     try {
@@ -354,14 +359,14 @@ public class WeightedSpanTermExtractor {
    * @return
    * @throws IOException
    */
-  public Map getWeightedSpanTerms(Query query, CachingTokenFilter cachingTokenFilter,
+  public Map getWeightedSpanTerms(Query query, TokenStream tokenStream,
       String fieldName) throws IOException {
     if (fieldName != null) {
       this.fieldName = fieldName.intern();
     }
 
     Map terms = new PositionCheckingMap();
-    this.cachedTokenFilter = cachingTokenFilter;
+    this.tokenStream = tokenStream;
     try {
       extract(query, terms);
     } finally {
@@ -391,7 +396,7 @@ public class WeightedSpanTermExtractor {
   public Map getWeightedSpanTermsWithScores(Query query, TokenStream tokenStream, String fieldName,
       IndexReader reader) throws IOException {
     this.fieldName = fieldName;
-    this.cachedTokenFilter = new CachingTokenFilter(tokenStream);
+    this.tokenStream = tokenStream;
 
     Map terms = new PositionCheckingMap();
     extract(query, terms);
@@ -418,23 +423,6 @@ public class WeightedSpanTermExtractor {
     }
 
     return terms;
-  }
-
-  /**
-   * @deprecated {@link ConstantScoreRangeQuery} is deprecated. Use
-   *             getExpandMultiTermQuery instead.
-   */
-  public boolean isHighlightCnstScrRngQuery() {
-    return highlightCnstScrRngQuery;
-  }
-  
-  /**
-   * @param highlightCnstScrRngQuery
-   * @deprecated {@link ConstantScoreRangeQuery} is deprecated. Use the
-   *             setExpandMultiTermQuery option.
-   */
-  public void setHighlightCnstScrRngQuery(boolean highlightCnstScrRngQuery) {
-    this.highlightCnstScrRngQuery = highlightCnstScrRngQuery;
   }
   
   /**
@@ -494,5 +482,13 @@ public class WeightedSpanTermExtractor {
 
   public void setExpandMultiTermQuery(boolean expandMultiTermQuery) {
     this.expandMultiTermQuery = expandMultiTermQuery;
+  }
+  
+  public boolean isCachedTokenStream() {
+    return cachedTokenStream;
+  }
+  
+  public TokenStream getTokenStream() {
+    return tokenStream;
   }
 }

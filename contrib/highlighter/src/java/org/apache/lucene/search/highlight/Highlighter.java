@@ -223,7 +223,10 @@ public class Highlighter
 	    tokenStream.reset();
 	    
 		TextFragment currentFrag =	new TextFragment(newText,newText.length(), docFrags.size());
-		fragmentScorer.init(tokenStream);
+		TokenStream newStream = fragmentScorer.init(tokenStream);
+		if(newStream != null) {
+		  tokenStream = newStream;
+		}
 		fragmentScorer.startFragment(currentFrag);
 		docFrags.add(currentFrag);
 

@@ -5,7 +5,7 @@ The highlight package contains classes to provide "keyword in context" features
 typically used to highlight search terms in the text of results pages.
 The Highlighter class is the central component and can be used to extract the
 most interesting sections of a piece of text and highlight them, with the help of
-Fragmenter, FragmentScorer, Formatter classes.
+Fragmenter, fragment Scorer, and Formatter classes.
 
 <h2>Example Usage</h2>
 
@@ -14,14 +14,16 @@ Fragmenter, FragmentScorer, Formatter classes.
   IndexSearcher searcher = new IndexSearcher(directory);
   QueryParser parser = new QueryParser("notv", analyzer);
   Query query = parser.parse("million");
-  //query = query.rewrite(reader); //required to expand search terms
-  Hits hits = searcher.search(query);
+
+  TopDocs hits = searcher.search(query, 10);
 
   SimpleHTMLFormatter htmlFormatter = new SimpleHTMLFormatter();
   Highlighter highlighter = new Highlighter(htmlFormatter, new QueryScorer(query));
   for (int i = 0; i < 10; i++) {
-    String text = hits.doc(i).get("notv");
-    TokenStream tokenStream = TokenSources.getAnyTokenStream(searcher.getIndexReader(), hits.id(i), "notv", analyzer);
+    int id = hits.scoreDocs[i].doc;
+    Document doc = searcher.doc(id);
+    String text = doc.get("notv");
+    TokenStream tokenStream = TokenSources.getAnyTokenStream(searcher.getIndexReader(), id, "notv", analyzer);
     TextFragment[] frag = highlighter.getBestTextFragments(tokenStream, text, false, 10);//highlighter.getBestFragments(tokenStream, text, 3, "...");
     for (int j = 0; j < frag.length; j++) {
       if ((frag[j] != null) && (frag[j].getScore() > 0)) {
@@ -29,8 +31,8 @@ Fragmenter, FragmentScorer, Formatter classes.
       }
     }
     //Term vector
-    text = hits.doc(i).get("tv");
-    tokenStream = TokenSources.getAnyTokenStream(searcher.getIndexReader(), hits.id(i), "tv", analyzer);
+    text = doc.get("tv");
+    tokenStream = TokenSources.getAnyTokenStream(searcher.getIndexReader(), hits.scoreDocs[i].doc, "tv", analyzer);
     frag = highlighter.getBestTextFragments(tokenStream, text, false, 10);
     for (int j = 0; j < frag.length; j++) {
       if ((frag[j] != null) && (frag[j].getScore() > 0)) {

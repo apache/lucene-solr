@@ -38,7 +38,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.highlight.Highlighter;
-import org.apache.lucene.search.highlight.QueryScorer;
+import org.apache.lucene.search.highlight.QueryTermScorer;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.search.highlight.TokenSources;
@@ -242,7 +242,7 @@ public abstract class ReadTask extends PerfTask {
   }
 
   protected Highlighter getHighlighter(Query q){
-    return new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(q));
+    return new Highlighter(new SimpleHTMLFormatter(), new QueryTermScorer(q));
   }
 
   /**

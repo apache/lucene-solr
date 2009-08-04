@@ -34,7 +34,7 @@ public class SimpleSpanFragmenter implements Fragmenter {
   private int fragmentSize;
   private int currentNumFrags;
   private int position = -1;
-  private SpanScorer spanScorer;
+  private QueryScorer queryScorer;
   private int waitForPos = -1;
   private int textSize;
   private TermAttribute termAtt;
@@ -42,19 +42,19 @@ public class SimpleSpanFragmenter implements Fragmenter {
   private OffsetAttribute offsetAtt;
 
   /**
-   * @param spanscorer SpanScorer that was used to score hits
+   * @param queryScorer QueryScorer that was used to score hits
    */
-  public SimpleSpanFragmenter(SpanScorer spanscorer) {
-    this(spanscorer, DEFAULT_FRAGMENT_SIZE);
+  public SimpleSpanFragmenter(QueryScorer queryScorer) {
+    this(queryScorer, DEFAULT_FRAGMENT_SIZE);
   }
 
   /**
-   * @param spanscorer SpanScorer that was used to score hits
+   * @param queryScorer QueryScorer that was used to score hits
    * @param fragmentSize size in bytes of each fragment
    */
-  public SimpleSpanFragmenter(SpanScorer spanscorer, int fragmentSize) {
+  public SimpleSpanFragmenter(QueryScorer queryScorer, int fragmentSize) {
     this.fragmentSize = fragmentSize;
-    this.spanScorer = spanscorer;
+    this.queryScorer = queryScorer;
   }
   
   /* (non-Javadoc)
@@ -69,7 +69,7 @@ public class SimpleSpanFragmenter implements Fragmenter {
       return false;
     }
 
-    WeightedSpanTerm wSpanTerm = spanScorer.getWeightedSpanTerm(termAtt.term());
+    WeightedSpanTerm wSpanTerm = queryScorer.getWeightedSpanTerm(termAtt.term());
 
     if (wSpanTerm != null) {
       List positionSpans = wSpanTerm.getPositionSpans();

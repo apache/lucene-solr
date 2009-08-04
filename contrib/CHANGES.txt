@@ -120,7 +120,16 @@ New features
     "(jo* -john) smyth~". (Mark Harwood via Mark Miller)
     
 14. Added web-based demo of functionality in contrib's XML Query Parser
-    packaged as War file (Mark Harwood)    
+    packaged as War file (Mark Harwood)
+
+15. LUCENE-1685: The position aware SpanScorer has become the default scorer
+    for Highlighting. The SpanScorer implementation has replaced QueryScorer
+    and the old term highlighting QueryScorer has been renamed to 
+    QueryTermScorer. Multi-term queries are also now expanded by default. If
+    you were previously rewritting the query for multi-term query highlighting,
+    you should no longer do that (unless you switch to using QueryTermScorer).
+    The SpanScorer API (now QueryScorer) has also been improved to more closely
+    match the API of the previous QueryScorer implementation.  (Mark Miller)  
 
 
 Optimizations

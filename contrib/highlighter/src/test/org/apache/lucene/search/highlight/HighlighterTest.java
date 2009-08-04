@@ -118,8 +118,9 @@ public class HighlighterTest extends TestCase implements Formatter {
     query = qp.parse("\"very long\"");
     searcher = new IndexSearcher(ramDir, false);
     TopDocs hits = searcher.search(query, 10);
-
-    Highlighter highlighter = new Highlighter(null);
+    
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(scorer);
 
 
     for (int i = 0; i < hits.scoreDocs.length; i++) {
@@ -128,14 +129,12 @@ public class HighlighterTest extends TestCase implements Formatter {
 
       TokenStream stream = TokenSources.getAnyTokenStream(searcher
           .getIndexReader(), hits.scoreDocs[i].doc, FIELD_NAME, doc, analyzer);
-      CachingTokenFilter ctf = new CachingTokenFilter(stream);
-      SpanScorer scorer = new SpanScorer(query, FIELD_NAME, ctf);
-     // ctf.reset();
+
       Fragmenter fragmenter = new SimpleSpanFragmenter(scorer);
-      highlighter.setFragmentScorer(scorer);
+
       highlighter.setTextFragmenter(fragmenter);
 
-      String fragment = highlighter.getBestFragment(ctf, storedField);
+      String fragment = highlighter.getBestFragment(stream, storedField);
 
       System.out.println(fragment);
     }
@@ -181,10 +180,10 @@ public class HighlighterTest extends TestCase implements Formatter {
         fieldName, new StringReader(text)));
     // Assuming "<B>", "</B>" used to highlight
     SimpleHTMLFormatter formatter = new SimpleHTMLFormatter();
-    Highlighter highlighter = new Highlighter(formatter, new SpanScorer(query, fieldName,
-        tokenStream, FIELD_NAME));
+    QueryScorer scorer = new QueryScorer(query, fieldName, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(formatter, scorer);
     highlighter.setTextFragmenter(new SimpleFragmenter(Integer.MAX_VALUE));
-    tokenStream.reset();
+
     String rv = highlighter.getBestFragments(tokenStream, text, 1, "(FIELD TEXT TRUNCATED)");
     return rv.length() == 0 ? text : rv;
   }
@@ -194,13 +193,14 @@ public class HighlighterTest extends TestCase implements Formatter {
 
     int maxNumFragmentsRequired = 2;
 
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(scorer);
+    
     for (int i = 0; i < hits.length(); i++) {
       String text = hits.doc(i).get(FIELD_NAME);
-      CachingTokenFilter tokenStream = new CachingTokenFilter(analyzer.tokenStream(FIELD_NAME,
-          new StringReader(text)));
-      Highlighter highlighter = new Highlighter(new SpanScorer(query, FIELD_NAME, tokenStream));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME,
+          new StringReader(text));
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
-      tokenStream.reset();
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
@@ -225,9 +225,10 @@ public class HighlighterTest extends TestCase implements Formatter {
     Analyzer analyzer = new WhitespaceAnalyzer();
     QueryParser qp = new QueryParser(f1, analyzer);
     Query query = qp.parse(q);
-    CachingTokenFilter stream = new CachingTokenFilter(analyzer.tokenStream(f1,
-        new StringReader(content)));
-    Scorer scorer = new SpanScorer(query, f1, stream, false);
+
+    QueryScorer scorer = new QueryScorer(query, f1);
+    scorer.setExpandMultiTermQuery(false);
+
     Highlighter h = new Highlighter(this, scorer);
 
     h.getBestFragment(analyzer, f1, content);
@@ -241,14 +242,14 @@ public class HighlighterTest extends TestCase implements Formatter {
 
     int maxNumFragmentsRequired = 2;
 
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(this, scorer);
+    
     for (int i = 0; i < hits.length(); i++) {
       String text = hits.doc(i).get(FIELD_NAME);
-      CachingTokenFilter tokenStream = new CachingTokenFilter(analyzer.tokenStream(FIELD_NAME,
-          new StringReader(text)));
-      Highlighter highlighter = new Highlighter(this,
-          new SpanScorer(query, FIELD_NAME, tokenStream));
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
-      tokenStream.reset();
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
@@ -264,14 +265,13 @@ public class HighlighterTest extends TestCase implements Formatter {
 
     int maxNumFragmentsRequired = 2;
 
+    QueryScorer scorer =  new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(this,scorer);
+    highlighter.setTextFragmenter(new SimpleFragmenter(40));
+    
     for (int i = 0; i < hits.length(); i++) {
       String text = hits.doc(i).get(FIELD_NAME);
-      CachingTokenFilter tokenStream = new CachingTokenFilter(analyzer.tokenStream(FIELD_NAME,
-          new StringReader(text)));
-      Highlighter highlighter = new Highlighter(this,
-          new SpanScorer(query, FIELD_NAME, tokenStream));
-      highlighter.setTextFragmenter(new SimpleFragmenter(40));
-      tokenStream.reset();
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
@@ -291,10 +291,10 @@ public class HighlighterTest extends TestCase implements Formatter {
       String text = hits.doc(i).get(FIELD_NAME);
       CachingTokenFilter tokenStream = new CachingTokenFilter(analyzer.tokenStream(FIELD_NAME,
           new StringReader(text)));
-      Highlighter highlighter = new Highlighter(this,
-          new SpanScorer(query, FIELD_NAME, tokenStream));
+      QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+      Highlighter highlighter = new Highlighter(this, scorer);
+
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
-      tokenStream.reset();
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
@@ -310,14 +310,15 @@ public class HighlighterTest extends TestCase implements Formatter {
 
     int maxNumFragmentsRequired = 2;
 
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(this, scorer);
+    
     for (int i = 0; i < hits.length(); i++) {
       String text = hits.doc(i).get(FIELD_NAME);
       CachingTokenFilter tokenStream = new CachingTokenFilter(analyzer
           .tokenStream(FIELD_NAME, new StringReader(text)));
-      SpanScorer spanscorer = new SpanScorer(query, FIELD_NAME, tokenStream);
-      Highlighter highlighter = new Highlighter(this, spanscorer);
-      highlighter.setTextFragmenter(new SimpleSpanFragmenter(spanscorer, 5));
-      tokenStream.reset();
+
+      highlighter.setTextFragmenter(new SimpleSpanFragmenter(scorer, 5));
 
       String result = highlighter.getBestFragments(tokenStream, text,
           maxNumFragmentsRequired, "...");
@@ -328,15 +329,16 @@ public class HighlighterTest extends TestCase implements Formatter {
     doSearching("\"been shot\"");
 
     maxNumFragmentsRequired = 2;
+    
+    scorer = new QueryScorer(query, FIELD_NAME);
+    highlighter = new Highlighter(this, scorer);
 
     for (int i = 0; i < hits.length(); i++) {
       String text = hits.doc(i).get(FIELD_NAME);
       CachingTokenFilter tokenStream = new CachingTokenFilter(analyzer
           .tokenStream(FIELD_NAME, new StringReader(text)));
-      SpanScorer spanscorer = new SpanScorer(query, FIELD_NAME, tokenStream);
-      Highlighter highlighter = new Highlighter(this, spanscorer);
-      highlighter.setTextFragmenter(new SimpleSpanFragmenter(spanscorer, 20));
-      tokenStream.reset();
+
+      highlighter.setTextFragmenter(new SimpleSpanFragmenter(scorer, 20));
 
       String result = highlighter.getBestFragments(tokenStream, text,
           maxNumFragmentsRequired, "...");
@@ -350,15 +352,16 @@ public class HighlighterTest extends TestCase implements Formatter {
     doSearching("y \"x y z\"");
 
     int maxNumFragmentsRequired = 2;
-
+    
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(this,scorer);
+    
     for (int i = 0; i < hits.length(); i++) {
       String text = hits.doc(i).get(FIELD_NAME);
       CachingTokenFilter tokenStream = new CachingTokenFilter(analyzer.tokenStream(FIELD_NAME,
           new StringReader(text)));
-      Highlighter highlighter = new Highlighter(this,
-          new SpanScorer(query, FIELD_NAME, tokenStream));
+
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
-      tokenStream.reset();
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
@@ -421,7 +424,7 @@ public class HighlighterTest extends TestCase implements Formatter {
 
   public void testSimpleHighlighter() throws Exception {
     doSearching("Kennedy");
-    Highlighter highlighter = new Highlighter(new QueryScorer(query));
+    Highlighter highlighter = new Highlighter(new QueryTermScorer(query));
     highlighter.setTextFragmenter(new SimpleFragmenter(40));
     int maxNumFragmentsRequired = 2;
     for (int i = 0; i < hits.length(); i++) {
@@ -579,18 +582,15 @@ public class HighlighterTest extends TestCase implements Formatter {
       String text = hits.doc(i).get(HighlighterTest.FIELD_NAME);
       int maxNumFragmentsRequired = 2;
       String fragmentSeparator = "...";
-      SpanScorer scorer = null;
+      QueryScorer scorer = null;
       TokenStream tokenStream = null;
 
       tokenStream = new CachingTokenFilter(analyzer.tokenStream(HighlighterTest.FIELD_NAME,
           new StringReader(text)));
       
-      SpanScorer.setHighlightCnstScrRngQuery(true);
-      scorer = new SpanScorer(query, HighlighterTest.FIELD_NAME, (CachingTokenFilter) tokenStream);
-      
-      Highlighter highlighter = new Highlighter(this, scorer);
+      scorer = new QueryScorer(query, HighlighterTest.FIELD_NAME);
 
-      ((CachingTokenFilter) tokenStream).reset();
+      Highlighter highlighter = new Highlighter(this, scorer);
 
       highlighter.setTextFragmenter(new SimpleFragmenter(20));
 
@@ -619,17 +619,15 @@ public class HighlighterTest extends TestCase implements Formatter {
       String text = hits.doc(i).get(HighlighterTest.FIELD_NAME);
       int maxNumFragmentsRequired = 2;
       String fragmentSeparator = "...";
-      SpanScorer scorer = null;
+      QueryScorer scorer = null;
       TokenStream tokenStream = null;
 
       tokenStream = new CachingTokenFilter(analyzer.tokenStream(HighlighterTest.FIELD_NAME,
           new StringReader(text)));
       
-      scorer = new SpanScorer(query, HighlighterTest.FIELD_NAME, (CachingTokenFilter) tokenStream, true);
+      scorer = new QueryScorer(query, HighlighterTest.FIELD_NAME);
 
       Highlighter highlighter = new Highlighter(this, scorer);
-
-      ((CachingTokenFilter) tokenStream).reset();
 
       highlighter.setTextFragmenter(new SimpleFragmenter(20));
 
@@ -650,17 +648,15 @@ public class HighlighterTest extends TestCase implements Formatter {
       String text = hits.doc(i).get(HighlighterTest.FIELD_NAME);
       int maxNumFragmentsRequired = 2;
       String fragmentSeparator = "...";
-      SpanScorer scorer = null;
+      QueryScorer scorer = null;
       TokenStream tokenStream = null;
 
       tokenStream = new CachingTokenFilter(analyzer.tokenStream(HighlighterTest.FIELD_NAME,
           new StringReader(text)));
       
-      scorer = new SpanScorer(query, null, (CachingTokenFilter) tokenStream, true);
+      scorer = new QueryScorer(query, null);
 
       Highlighter highlighter = new Highlighter(this, scorer);
-
-      ((CachingTokenFilter) tokenStream).reset();
 
       highlighter.setTextFragmenter(new SimpleFragmenter(20));
 
@@ -681,17 +677,15 @@ public class HighlighterTest extends TestCase implements Formatter {
       String text = hits.doc(i).get(HighlighterTest.FIELD_NAME);
       int maxNumFragmentsRequired = 2;
       String fragmentSeparator = "...";
-      SpanScorer scorer = null;
+      QueryScorer scorer = null;
       TokenStream tokenStream = null;
 
       tokenStream = new CachingTokenFilter(analyzer.tokenStream(HighlighterTest.FIELD_NAME,
           new StringReader(text)));
       
-      scorer = new SpanScorer(query, "random_field", (CachingTokenFilter) tokenStream, HighlighterTest.FIELD_NAME, true);
+      scorer = new QueryScorer(query, "random_field", HighlighterTest.FIELD_NAME);
 
       Highlighter highlighter = new Highlighter(this, scorer);
-
-      ((CachingTokenFilter) tokenStream).reset();
 
       highlighter.setTextFragmenter(new SimpleFragmenter(20));
 
@@ -744,7 +738,7 @@ public class HighlighterTest extends TestCase implements Formatter {
 
       public void run() throws Exception {
         TermQuery query = new TermQuery(new Term("data", "help"));
-        Highlighter hg = new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(query));
+        Highlighter hg = new Highlighter(new SimpleHTMLFormatter(), new QueryTermScorer(query));
         hg.setTextFragmenter(new NullFragmenter());
 
         String match = null;
@@ -900,7 +894,7 @@ public class HighlighterTest extends TestCase implements Formatter {
 
         Highlighter highlighter = getHighlighter(wTerms, HighlighterTest.this);// new
         // Highlighter(new
-        // QueryScorer(wTerms));
+        // QueryTermScorer(wTerms));
         TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(texts[0]));
         highlighter.setTextFragmenter(new SimpleFragmenter(2));
 
@@ -965,7 +959,7 @@ public class HighlighterTest extends TestCase implements Formatter {
       public void run() throws Exception {
         numHighlights = 0;
         doSearching("Kennedy");
-        // new Highlighter(HighlighterTest.this, new QueryScorer(query));
+        // new Highlighter(HighlighterTest.this, new QueryTermScorer(query));
 
         for (int i = 0; i < hits.length(); i++) {
           String text = hits.doc(i).get(FIELD_NAME);
@@ -995,7 +989,7 @@ public class HighlighterTest extends TestCase implements Formatter {
 
           Highlighter highlighter = getHighlighter(query, FIELD_NAME, tokenStream,
               HighlighterTest.this);// new Highlighter(this, new
-          // QueryScorer(query));
+          // QueryTermScorer(query));
           highlighter.setTextFragmenter(new SimpleFragmenter(20));
           String stringResults[] = highlighter.getBestFragments(tokenStream, text, 10);
 
@@ -1027,7 +1021,7 @@ public class HighlighterTest extends TestCase implements Formatter {
         TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(texts[0]));
         Highlighter highlighter = getHighlighter(query, FIELD_NAME, tokenStream,
             HighlighterTest.this);// new Highlighter(this, new
-        // QueryScorer(query));
+        // QueryTermScorer(query));
         highlighter.setMaxDocBytesToAnalyze(30);
 
         highlighter.getBestFragment(tokenStream, texts[0]);
@@ -1062,7 +1056,7 @@ public class HighlighterTest extends TestCase implements Formatter {
         Highlighter hg = getHighlighter(query, "data", new StandardAnalyzer(stopWords).tokenStream(
             "data", new StringReader(sb.toString())), fm);// new Highlighter(fm,
         // new
-        // QueryScorer(query));
+        // QueryTermScorer(query));
         hg.setTextFragmenter(new NullFragmenter());
         hg.setMaxDocBytesToAnalyze(100);
         match = hg.getBestFragment(new StandardAnalyzer(stopWords), "data", sb.toString());
@@ -1114,7 +1108,6 @@ public class HighlighterTest extends TestCase implements Formatter {
 
       public void run() throws Exception {
         numHighlights = 0;
-        SpanScorer.setHighlightCnstScrRngQuery(false);
         // test to show how rewritten query can still be used
         searcher = new IndexSearcher(ramDir);
         Analyzer analyzer = new StandardAnalyzer();
@@ -1136,12 +1129,14 @@ public class HighlighterTest extends TestCase implements Formatter {
 
         for (int i = 0; i < hits.length(); i++) {
           String text = hits.doc(i).get(FIELD_NAME);
-          TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
-          Highlighter highlighter = getHighlighter(query, FIELD_NAME, tokenStream,
-              HighlighterTest.this);
+          TokenStream tokenStream = new CachingTokenFilter(analyzer.tokenStream(FIELD_NAME, new StringReader(text)));
+          Highlighter highlighter = getHighlighter(query, FIELD_NAME, tokenStream, HighlighterTest.this, false);
+
           highlighter.setTextFragmenter(new SimpleFragmenter(40));
+
           String highlightedText = highlighter.getBestFragments(tokenStream, text,
               maxNumFragmentsRequired, "...");
+
           System.out.println(highlightedText);
         }
         // We expect to have zero highlights if the query is multi-terms and is
@@ -1198,8 +1193,8 @@ public class HighlighterTest extends TestCase implements Formatter {
         return 1;
       }
 
-      public void init(TokenStream tokenStream) {
-        
+      public TokenStream init(TokenStream tokenStream) {
+        return null;
       }
     });
     highlighter.setTextFragmenter(new SimpleFragmenter(2000));
@@ -1266,7 +1261,7 @@ public class HighlighterTest extends TestCase implements Formatter {
 
     // create an instance of the highlighter with the tags used to surround
     // highlighted text
-    Highlighter highlighter = new Highlighter(this, new QueryScorer(query));
+    Highlighter highlighter = new Highlighter(this, new QueryTermScorer(query));
 
     for (int i = 0; i < hits.length(); i++) {
       String text = hits.doc(i).get(FIELD_NAME);
@@ -1293,9 +1288,10 @@ public class HighlighterTest extends TestCase implements Formatter {
         if (mode == this.SPAN) {
           TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(docMainText));
           CachingTokenFilter ctf = new CachingTokenFilter(tokenStream);
-          fieldSpecificScorer = new SpanScorer(query, FIELD_NAME, ctf);
+          fieldSpecificScorer = new QueryScorer(query, FIELD_NAME);
+
         } else if (mode == this.STANDARD) {
-          fieldSpecificScorer = new QueryScorer(query, "contents");
+          fieldSpecificScorer = new QueryTermScorer(query, "contents");
         }
         Highlighter fieldSpecificHighlighter = new Highlighter(new SimpleHTMLFormatter(),
             fieldSpecificScorer);
@@ -1308,9 +1304,10 @@ public class HighlighterTest extends TestCase implements Formatter {
         if (mode == this.SPAN) {
           TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(docMainText));
           CachingTokenFilter ctf = new CachingTokenFilter(tokenStream);
-          fieldInSpecificScorer = new SpanScorer(query, null, ctf);
+          fieldInSpecificScorer = new QueryScorer(query, null);
+
         } else if (mode == this.STANDARD) {
-          fieldInSpecificScorer = new QueryScorer(query);
+          fieldInSpecificScorer = new QueryTermScorer(query);
         }
 
         Highlighter fieldInSpecificHighlighter = new Highlighter(new SimpleHTMLFormatter(),
@@ -1535,9 +1532,9 @@ public class HighlighterTest extends TestCase implements Formatter {
     Query query = parser.parse( q );
     IndexSearcher searcher = new IndexSearcher( dir );
     // This scorer can return negative idf -> null fragment
-    Scorer scorer = new QueryScorer( query, searcher.getIndexReader(), "t_text1" );
+    Scorer scorer = new QueryTermScorer( query, searcher.getIndexReader(), "t_text1" );
     // This scorer doesn't use idf (patch version)
-    //Scorer scorer = new QueryScorer( query, "t_text1" );
+    //Scorer scorer = new QueryTermScorer( query, "t_text1" );
     Highlighter h = new Highlighter( scorer );
 
     TopDocs hits = searcher.search(query, null, 10);
@@ -1606,10 +1603,10 @@ public class HighlighterTest extends TestCase implements Formatter {
       String text = hits.doc(i).get(FIELD_NAME);
       CachingTokenFilter tokenStream = new CachingTokenFilter(analyzer.tokenStream(FIELD_NAME,
           new StringReader(text)));
-      Highlighter highlighter = new Highlighter(this,
-          new SpanScorer(query, FIELD_NAME, tokenStream));
+      QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+      Highlighter highlighter = new Highlighter(this, scorer);
+
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
-      tokenStream.reset();
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
@@ -1763,34 +1760,34 @@ class SynonymTokenizer extends TokenStream {
     static final int SPAN = 1;
     int mode = STANDARD;
     Fragmenter frag = new SimpleFragmenter(20);
-
-    public Highlighter getHighlighter(Query query, String fieldName, TokenStream stream,
-        Formatter formatter) {
+    
+    public Highlighter getHighlighter(Query query, String fieldName, TokenStream stream, Formatter formatter) {
+      return getHighlighter(query, fieldName, stream, formatter, true);
+    }
+    
+    public Highlighter getHighlighter(Query query, String fieldName, TokenStream stream, Formatter formatter, boolean expanMultiTerm) {
+      Scorer scorer = null;
       if (mode == STANDARD) {
-        return new Highlighter(formatter, new QueryScorer(query));
+        scorer = new QueryTermScorer(query);
       } else if (mode == SPAN) {
-        CachingTokenFilter tokenStream = new CachingTokenFilter(stream);
-        Highlighter highlighter;
-        try {
-          highlighter = new Highlighter(formatter, new SpanScorer(query, fieldName, tokenStream));
-          tokenStream.reset();
-        } catch (IOException e) {
-          throw new RuntimeException(e);
+        scorer = new QueryScorer(query, fieldName);
+        if(!expanMultiTerm) {
+          ((QueryScorer)scorer).setExpandMultiTermQuery(false);
         }
-
-        return highlighter;
       } else {
         throw new RuntimeException("Unknown highlight mode");
       }
+      
+      return new Highlighter(formatter, scorer);
     }
 
     Highlighter getHighlighter(WeightedTerm[] weightedTerms, Formatter formatter) {
       if (mode == STANDARD) {
-        return new Highlighter(formatter, new QueryScorer(weightedTerms));
+        return new Highlighter(formatter, new QueryTermScorer(weightedTerms));
       } else if (mode == SPAN) {
         Highlighter highlighter;
 
-        highlighter = new Highlighter(formatter, new SpanScorer((WeightedSpanTerm[]) weightedTerms));
+        highlighter = new Highlighter(formatter, new QueryScorer((WeightedSpanTerm[]) weightedTerms));
 
         return highlighter;
       } else {
@@ -1815,16 +1812,14 @@ class SynonymTokenizer extends TokenStream {
         if (mode == SPAN) {
           tokenStream = new CachingTokenFilter(analyzer.tokenStream(HighlighterTest.FIELD_NAME,
               new StringReader(text)));
-          scorer = new SpanScorer(query, HighlighterTest.FIELD_NAME,
-              (CachingTokenFilter) tokenStream, expandMT);
+          scorer = new QueryScorer(query, HighlighterTest.FIELD_NAME);
+
         } else if (mode == STANDARD) {
-          scorer = new QueryScorer(query);
+          scorer = new QueryTermScorer(query);
           tokenStream = analyzer.tokenStream(HighlighterTest.FIELD_NAME, new StringReader(text));
         }
         Highlighter highlighter = new Highlighter(formatter, scorer);
-        if (mode == SPAN) {
-          ((CachingTokenFilter) tokenStream).reset();
-        }
+
         highlighter.setTextFragmenter(frag);
 
         String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,

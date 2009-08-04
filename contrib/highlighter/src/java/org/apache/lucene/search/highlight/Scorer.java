@@ -17,6 +17,8 @@ package org.apache.lucene.search.highlight;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.TokenStream;
 
 /**
@@ -30,8 +32,9 @@ public interface Scorer {
    * getTokenScore().
    * 
    * @param tokenStream
+   * @throws IOException 
    */
-  public void init(TokenStream tokenStream);
+  public TokenStream init(TokenStream tokenStream) throws IOException;
 
   /**
    * called when a new fragment is started for consideration
