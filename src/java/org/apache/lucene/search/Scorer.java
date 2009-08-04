@@ -125,6 +125,9 @@ public abstract class Scorer extends DocIdSetIterator {
    * <br>When this method is used, the {@link #next()}, {@link #skipTo(int)} and
    * {@link #score(HitCollector)} methods should not be used.
    * @param doc The document number for the explanation.
+   *
+   * @deprecated Please use {@link IndexSearcher#explain}
+   * or {@link QueryWeight#explain} instead.
    */
   public abstract Explanation explain(int doc) throws IOException;
 
