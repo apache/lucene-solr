@@ -118,6 +118,9 @@ New features
     PhraseQuerys. Wildcard, Range, and Fuzzy queries, as well as limited 
     boolean logic, can be used within quote operators with this parser, ie: 
     "(jo* -john) smyth~". (Mark Harwood via Mark Miller)
+    
+14. Added web-based demo of functionality in contrib's XML Query Parser
+    packaged as War file (Mark Harwood)    
 
 
 Optimizations
