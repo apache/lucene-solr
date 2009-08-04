@@ -93,9 +93,6 @@ public class FieldMaskingSpanQuery extends SpanQuery {
   public Spans getSpans(IndexReader reader) throws IOException {
     return maskedQuery.getSpans(reader);
   }
-  public PayloadSpans getPayloadSpans(IndexReader reader) throws IOException {
-    return maskedQuery.getPayloadSpans(reader);
-  }
 
   /** @deprecated use {@link #extractTerms(Set)} instead. */
   public Collection getTerms() {

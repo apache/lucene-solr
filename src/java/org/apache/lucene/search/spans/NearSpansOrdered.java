@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Collection;
@@ -48,13 +47,13 @@ import java.util.Set;
  * <pre>t1 t2 .. t3      </pre>
  * <pre>      t1 .. t2 t3</pre>
  */
-class NearSpansOrdered implements PayloadSpans {
+class NearSpansOrdered implements Spans {
   private final int allowedSlop;
   private boolean firstTime = true;
   private boolean more = false;
 
   /** The spans in the same order as the SpanNearQuery */
-  private final PayloadSpans[] subSpans;
+  private final Spans[] subSpans;
 
   /** Indicates that all subSpans have same doc() */
   private boolean inSameDoc = false;
@@ -64,7 +63,7 @@ class NearSpansOrdered implements PayloadSpans {
   private int matchEnd = -1;
   private List/*<byte[]>*/ matchPayload;
 
-  private final PayloadSpans[] subSpansByDoc;
+  private final Spans[] subSpansByDoc;
   private final Comparator spanDocComparator = new Comparator() {
     public int compare(Object o1, Object o2) {
       return ((Spans)o1).doc() - ((Spans)o2).doc();
@@ -87,11 +86,11 @@ class NearSpansOrdered implements PayloadSpans {
     this.collectPayloads = collectPayloads;
     allowedSlop = spanNearQuery.getSlop();
     SpanQuery[] clauses = spanNearQuery.getClauses();
-    subSpans = new PayloadSpans[clauses.length];
+    subSpans = new Spans[clauses.length];
     matchPayload = new LinkedList();
-    subSpansByDoc = new PayloadSpans[clauses.length];
+    subSpansByDoc = new Spans[clauses.length];
     for (int i = 0; i < clauses.length; i++) {
-      subSpans[i] = clauses[i].getPayloadSpans(reader);
+      subSpans[i] = clauses[i].getSpans(reader);
       subSpansByDoc[i] = subSpans[i]; // used in toSameDoc()
     }
     query = spanNearQuery; // kept for toString() only.
@@ -260,7 +259,7 @@ class NearSpansOrdered implements PayloadSpans {
     int lastStart = matchStart;
     int lastEnd = matchEnd;
     for (int i = subSpans.length - 2; i >= 0; i--) {
-      PayloadSpans prevSpans = subSpans[i];
+      Spans prevSpans = subSpans[i];
       if (collectPayloads && prevSpans.isPayloadAvailable()) {
         Collection payload = prevSpans.getPayload();
         possiblePayload = new ArrayList(payload.size());

@@ -84,6 +84,13 @@ Changes in backwards compatibility policy
     be passed upon instantiation. As a result, IndexWriter was removed
     as a method argument from all MergePolicy methods. (Shai Erera via
     Mike McCandless)
+    
+ 6. LUCENE-1748: LUCENE-1001 introduced PayloadSpans, but this was a back
+    compat break and caused custom SpanQuery implementations to fail at runtime
+    in a variety of ways. This issue attempts to remedy things by causing
+    a compile time break on custom SpanQuery implementations and removing 
+    the PayloadSpans class, with its functionality now moved to Spans.
+    (Hugh Cayless, Mark Miller)
  
 Changes in runtime behavior
 
@@ -363,6 +370,13 @@ API Changes
     new QueryParser framework in Lucene 3.0, that is currently located
     in contrib. (see New Features 35.) 
     (Luis Alves and Adriano Campos via Michael Busch)
+    
+36. LUCENE-1748: LUCENE-1001 introduced PayloadSpans, but this was a back
+    compat break and caused custom SpanQuery implementations to fail at runtime
+    in a variety of ways. This issue attempts to remedy things by causing
+    a compile time break on custom SpanQuery implementations and removing 
+    the PayloadSpans class, with its functionality now moved to Spans.
+    (Hugh Cayless, Mark Miller)
 
 Bug fixes
 

@@ -57,6 +57,14 @@ final class JustCompileSearchSpans {
     public int start() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
+
+    public Collection getPayload() throws IOException {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
+
+    public boolean isPayloadAvailable() {
+      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
+    }
     
   }
 
@@ -81,7 +89,7 @@ final class JustCompileSearchSpans {
     
   }
 
-  static final class JustCompilePayloadSpans implements PayloadSpans {
+  static final class JustCompilePayloadSpans implements Spans {
 
     public Collection getPayload() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);

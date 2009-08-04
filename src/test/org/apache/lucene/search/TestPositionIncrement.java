@@ -45,7 +45,6 @@ import org.apache.lucene.analysis.LowerCaseTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.search.payloads.PayloadSpanUtil;
-import org.apache.lucene.search.spans.PayloadSpans;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -279,7 +278,7 @@ public class TestPositionIncrement extends LuceneTestCase {
       count = 0;
       boolean sawZero = false;
       //System.out.println("\ngetPayloadSpans test");
-      PayloadSpans pspans = snq.getPayloadSpans(is.getIndexReader());
+      Spans pspans = snq.getSpans(is.getIndexReader());
       while (pspans.next()) {
         //System.out.println(pspans.doc() + " - " + pspans.start() + " - "+ pspans.end());
         Collection payloads = pspans.getPayload();

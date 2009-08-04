@@ -1,6 +1,5 @@
 package org.apache.lucene.search.payloads;
 
-import org.apache.lucene.search.BooleanClause;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,6 +25,7 @@ import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FilteredQuery;
@@ -33,11 +33,11 @@ import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.spans.PayloadSpans;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.search.spans.Spans;
 
 /**
  * Experimental class to get set of payloads for most standard Lucene queries.
@@ -173,7 +173,7 @@ public class PayloadSpanUtil {
 
   private void getPayloads(Collection payloads, SpanQuery query)
       throws IOException {
-    PayloadSpans spans = query.getPayloadSpans(reader);
+    Spans spans = query.getSpans(reader);
 
     while (spans.next() == true) {
       if (spans.isPayloadAvailable()) {

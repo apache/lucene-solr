@@ -125,18 +125,14 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
   public Spans getSpans(final IndexReader reader) throws IOException {
     if (clauses.size() == 0)                      // optimize 0-clause case
-      return new SpanOrQuery(getClauses()).getPayloadSpans(reader);
+      return new SpanOrQuery(getClauses()).getSpans(reader);
 
     if (clauses.size() == 1)                      // optimize 1-clause case
-      return ((SpanQuery)clauses.get(0)).getPayloadSpans(reader);
+      return ((SpanQuery)clauses.get(0)).getSpans(reader);
 
     return inOrder
-            ? (PayloadSpans) new NearSpansOrdered(this, reader, collectPayloads)
-            : (PayloadSpans) new NearSpansUnordered(this, reader);
-  }
-
-  public PayloadSpans getPayloadSpans(IndexReader reader) throws IOException {
-    return (PayloadSpans) getSpans(reader);
+            ? (Spans) new NearSpansOrdered(this, reader, collectPayloads)
+            : (Spans) new NearSpansUnordered(this, reader);
   }
 
   public Query rewrite(IndexReader reader) throws IOException {

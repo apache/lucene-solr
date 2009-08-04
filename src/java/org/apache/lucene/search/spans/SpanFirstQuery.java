@@ -74,13 +74,9 @@ public class SpanFirstQuery extends SpanQuery implements Cloneable {
 	    match.extractTerms(terms);
   }
 
-  public PayloadSpans getPayloadSpans(IndexReader reader) throws IOException {
-    return (PayloadSpans) getSpans(reader);
-  }
-
   public Spans getSpans(final IndexReader reader) throws IOException {
-    return new PayloadSpans() {
-        private PayloadSpans spans = match.getPayloadSpans(reader);
+    return new Spans() {
+        private Spans spans = match.getSpans(reader);
 
         public boolean next() throws IOException {
           while (spans.next()) {                  // scan to next match
