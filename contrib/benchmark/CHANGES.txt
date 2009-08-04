@@ -4,6 +4,10 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+8/04/2009
+  LUCENE-1773: Add FastVectorHighlighter tasks.  (Koji Sekiguchi via
+  Mike McCandless)
+
 8/03/2009
   LUCENE-1778: Add support for log.step setting per task type. Perviously, if
   you included a log.step line in the .alg file, it had been applied to all

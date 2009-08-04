@@ -105,6 +105,7 @@
         <pathelement path="${common.dir}/build/classes/java"/>
         <pathelement path="${common.dir}/build/classes/demo"/>
         <pathelement path="${common.dir}/build/contrib/highlighter/classes/java"/>
+        <pathelement path="${common.dir}/build/contrib/fast-vector-highlighter/classes/java"/>
     	<fileset dir="lib">
     		<include name="**/*.jar"/>
     	</fileset>
@@ -148,8 +149,13 @@
          <fileset dir="${common.dir}/contrib/highlighter" includes="build.xml"/>
       </subant>
     </target>
+    <target name="compile-vector-highlighter">
+      <subant target="compile">
+         <fileset dir="${common.dir}/contrib/fast-vector-highlighter" includes="build.xml"/>
+      </subant>
+    </target>
 
-    <target name="init" depends="common.init,compile-demo, compile-highlighter,check-files"/>
+    <target name="init" depends="common.init,compile-demo,compile-highlighter,compile-vector-highlighter,check-files"/>
 
     <!-- make sure online collections (reuters) are first downloaded -->
     <target name="test" depends="init,get-files">

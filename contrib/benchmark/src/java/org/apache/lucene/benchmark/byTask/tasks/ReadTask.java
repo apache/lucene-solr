@@ -121,13 +121,12 @@ public abstract class ReadTask extends PerfTask {
             boolean retrieve = withRetrieve();
             int numHighlight = Math.min(numToHighlight(), scoreDocs.length);
             Analyzer analyzer = getRunData().getAnalyzer();
-            Highlighter highlighter = null;
+            BenchmarkHighlighter highlighter = null;
             int maxFrags = 1;
             if (numHighlight > 0) {
-              highlighter = getHighlighter(q);
+              highlighter = getBenchmarkHighlighter(q);
               maxFrags = maxNumFragments();
             }
-            boolean merge = isMergeContiguousFragments();
             for (int m = 0; m < traversalSize; m++) {
               int id = scoreDocs[m].doc;
               res++;
@@ -139,8 +138,7 @@ public abstract class ReadTask extends PerfTask {
                   for (Iterator iterator = fieldsToHighlight.iterator(); iterator.hasNext();) {
                     String field = (String) iterator.next();
                     String text = document.get(field);
-                    TokenStream ts = TokenSources.getAnyTokenStream(ir, id, field, document, analyzer);
-                    res += doHighlight(ts, text, highlighter, merge, maxFrags);
+                    res += highlighter.doHighlight(ir, id, field, document, analyzer, text);
                   }
                 }
               }
@@ -241,8 +239,15 @@ public abstract class ReadTask extends PerfTask {
     return 0;
   }
 
+  /**
+   * @deprecated Use {@link #getBenchmarkHighlighter(Query)}
+   */
   protected Highlighter getHighlighter(Query q){
     return new Highlighter(new SimpleHTMLFormatter(), new QueryTermScorer(q));
+  }
+  
+  protected BenchmarkHighlighter getBenchmarkHighlighter(Query q){
+    return null;
   }
 
   /**
@@ -256,11 +261,15 @@ public abstract class ReadTask extends PerfTask {
   /**
    *
    * @return true if the highlighter should merge contiguous fragments
+   * @deprecated
    */
   public boolean isMergeContiguousFragments(){
     return false;
   }
 
+  /**
+   * @deprecated
+   */
   protected int doHighlight(TokenStream ts, String text,  Highlighter highlighter, boolean mergeContiguous, int maxFragments) throws IOException, InvalidTokenOffsetsException {
     TextFragment[] frag = highlighter.getBestTextFragments(ts, text, mergeContiguous, maxFragments);
     return frag != null ? frag.length : 0;
