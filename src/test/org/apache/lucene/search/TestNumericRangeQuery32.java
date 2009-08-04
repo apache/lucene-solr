@@ -80,7 +80,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     
       writer.optimize();
       writer.close();
-      searcher=new IndexSearcher(directory);
+      searcher=new IndexSearcher(directory, true);
     } catch (Exception e) {
       throw new Error(e);
     }
