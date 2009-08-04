@@ -4,6 +4,15 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+8/03/2009
+  LUCENE-1778: Add support for log.step setting per task type. Perviously, if
+  you included a log.step line in the .alg file, it had been applied to all
+  tasks. Now, you can include a log.step.AddDoc, or log.step.DeleteDoc (for 
+  example) to control logging for just these tasks. If you want to ommit logging
+  for any other task, include log.step=-1. The syntax is "log.step." together
+  with the Task's 'short' name (i.e., without the 'Task' part).
+  (Shai Erera via Mark Miller)
+
 7/24/2009
   LUCENE-1595: Deprecate LineDocMaker and EnwikiDocMaker in favor of
   using DocMaker directly, with content.source = LineDocSource or

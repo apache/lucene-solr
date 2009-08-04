@@ -116,8 +116,17 @@ herein.
 Each benchmark run has a DocMaker and a QueryMaker. These two should usually
 match, so that "meaningful" queries are used for a certain collection.
 Properties set at the header of the alg file define which "makers" should be
-used. You can also specify your own makers, implementing the DocMaker and
-QureyMaker interfaces.
+used. You can also specify your own makers, extending DocMaker and implementing
+QureyMaker.
+	<blockquote>
+		<b>Note:</b> since 2.9, DocMaker is a concrete class which accepts a 
+		ContentSource. In most cases, you can use the DocMaker class to create 
+		Documents, while providing your own ContentSource implementation. For 
+		example, the current Benchmark package includes ContentSource 
+		implementations for TREC, Enwiki and Reuters collections, as well as 
+		others like LineDocSource which reads a 'line' file produced by 
+		WriteLineDocTask.
+	</blockquote>
 </p>
 
 <p>
@@ -436,7 +445,6 @@ regular index/search work tasks, report tasks, and control tasks.
      <font color="#FF0066">OpenIndex</font> both leave the
      index open for later update operations.
      <font color="#FF0066">CloseIndex</font> would close it.
-     </li>
      <li>
      <font color="#FF0066">OpenReader</font>, similarly, would
      leave an index reader open for later search operations.
@@ -455,7 +463,24 @@ regular index/search work tasks, report tasks, and control tasks.
      and traverse and retrieve).
      Notice that each of the 3 search task types maintains
      its own queryMaker instance.
-     </li>
+	 <li>
+	 <font color="#FF0066">CommitIndex</font> and 
+	 <font color="#FF0066">Optimize</font> can be used to commit
+	 changes to the index and/or optimize the index created thus
+	 far.
+	 <li>
+	 <font color="#FF0066">WriteLineDoc</font> prepares a 'line'
+	 file where each line holds a document with <i>title</i>, 
+	 <i>date</i> and <i>body</i> elements, seperated by [TAB].
+	 A line file is useful if one wants to measure pure indexing
+	 performance, without the overhead of parsing the data.<br>
+	 You can use LineDocSource as a ContentSource over a 'line'
+	 file.
+	 <li>
+	 <font color="#FF0066">ConsumeContentSource</font> consumes
+	 a ContentSource. Useful for e.g. testing a ContentSource
+	 performance, without the overhead of preparing a Document
+	 out of it.
  </ul
  </li>
  </ol>
@@ -544,11 +569,10 @@ Here is a list of currently defined properties:
   </li>
 
   <li><b>Logging</b>:
-    <ul><li>doc.add.log.step
-    </li><li>doc.delete.log.step
+    <ul><li>log.step
+	</li><li>log.step.[class name]Task ie log.step.DeleteDoc (e.g. log.step.Wonderful for the WonderfulTask example above).
     </li><li>log.queries
     </li><li>task.max.depth.log
-    </li><li>doc.tokenize.log.step
     </li></ul>
   </li>
 

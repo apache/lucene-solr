@@ -1,7 +1,5 @@
 package org.apache.lucene.benchmark.byTask.tasks;
 
-import org.apache.lucene.benchmark.byTask.PerfRunData;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,12 +17,11 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
  * limitations under the License.
  */
 
+import org.apache.lucene.benchmark.byTask.PerfRunData;
+
 /**
- * Delete a document by docid.
- * <br>Other side effects: none.
- * <br>Relevant properties: <code>doc.delete.step, delete.log.step</code>.
- * <br>If no docid param is supplied, deletes doc with <code>id = last-deleted-doc + doc.delete.step</code>. 
- * <br>Takes optional param: document id. 
+ * Delete a document by docid. If no docid param is supplied, deletes doc with
+ * <code>id = last-deleted-doc + doc.delete.step</code>.
  */
 public class DeleteDocTask extends PerfTask {
 
@@ -35,11 +32,6 @@ public class DeleteDocTask extends PerfTask {
   
   public DeleteDocTask(PerfRunData runData) {
     super(runData);
-    // Override log.step, which is read by PerfTask
-    int deleteLogStep = runData.getConfig().get("delete.log.step", -1);
-    if (deleteLogStep != -1) {
-      logStep = deleteLogStep;
-    }
   }
 
   private int deleteStep = -1;

@@ -33,7 +33,7 @@ doc.stored=true
 doc.tokenized=true
 doc.term.vector=false
 log.step=10000
-delete.log.step=100
+log.step.DeleteDoc=100
 
 docs.dir=reuters-out
 #docs.dir=reuters-111

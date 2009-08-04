@@ -31,11 +31,23 @@ import org.apache.lucene.benchmark.byTask.utils.Format;
  * {@link #doLogic()} method, which performss the actual task. <br>
  * Tasks performing some work that should be measured for the task, can overide
  * {@link #setup()} and/or {@link #tearDown()} and place that work there. <br>
- * Relevant properties: <code>task.max.depth.log</code>.
+ * Relevant properties: <code>task.max.depth.log</code>.<br>
+ * Also supports the following logging attributes:
+ * <ul>
+ * <li>log.step - specifies how often to log messages about the current running
+ * task. Default is 1000 {@link #doLogic()} invocations. Set to -1 to disable
+ * logging.
+ * <li>log.step.[class Task Name] - specifies the same as 'log.step', only for a
+ * particular task name. For example, log.step.AddDoc will be applied only for
+ * {@link AddDocTask}, but not for {@link DeleteDocTask}. It's a way to control
+ * per task logging settings. If you want to ommit logging for any other task,
+ * include log.step=-1. The syntax is "log.step." together with the Task's
+ * 'short' name (i.e., without the 'Task' part).
+ * </ul>
  */
 public abstract class PerfTask implements Cloneable {
 
-  private static final int DEFAULT_LOG_STEP = 1000;
+  static final int DEFAULT_LOG_STEP = 1000;
   
   private PerfRunData runData;
   
@@ -66,14 +78,14 @@ public abstract class PerfTask implements Cloneable {
   private void checkObsoleteSettings(Config config) {
     if (config.get("doc.add.log.step", null) != null) {
       throw new RuntimeException("doc.add.log.step is not supported anymore. " +
-      		"Use log.step and refer to CHANGES to read on the recent API changes " +
-      		"done to Benchmark's DocMaker and Task-based logging.");
+      		"Use log.step.AddDoc and refer to CHANGES to read on the recent " +
+      		"API changes done to Benchmark's DocMaker and Task-based logging.");
     }
     
     if (config.get("doc.delete.log.step", null) != null) {
       throw new RuntimeException("doc.delete.log.step is not supported anymore. " +
-          "Use delete.log.step and refer to CHANGES to read on the recent API changes " +
-          "done to Benchmark's DocMaker and Task-based logging.");
+          "Use log.step.DeleteDoc and refer to CHANGES to read on the recent " +
+          "API changes done to Benchmark's DocMaker and Task-based logging.");
     }
   }
   
@@ -82,7 +94,21 @@ public abstract class PerfTask implements Cloneable {
     this.runData = runData;
     Config config = runData.getConfig();
     this.maxDepthLogStart = config.get("task.max.depth.log",0);
-    logStep = config.get("log.step", DEFAULT_LOG_STEP);
+
+    String logStepAtt = "log.step";
+    // TODO (1.5): call getClass().getSimpleName() instead.
+    String taskName = getClass().getName();
+    int idx = taskName.lastIndexOf('.');
+    // To support test internal classes. when we move to getSimpleName, this can be removed.
+    int idx2 = taskName.indexOf('$', idx);
+    if (idx2 != -1) idx = idx2;
+    String taskLogStepAtt = "log.step." + taskName.substring(idx + 1, taskName.length() - 4 /* w/o the 'Task' part */);
+    if (config.get(taskLogStepAtt, null) != null) {
+      logStepAtt = taskLogStepAtt;
+    }
+
+    // It's important to read this from Config, to support vals-by-round.
+    logStep = config.get(logStepAtt, DEFAULT_LOG_STEP);
     // To avoid the check 'if (logStep > 0)' in tearDown(). This effectively
     // turns logging off.
     if (logStep <= 0) {
