@@ -22,7 +22,6 @@ package org.apache.lucene.spatial.geometry;
  * Abstract base lat-lng class which can manipulate fixed point or floating
  * point based coordinates. Instances are immutable.
  * 
- * @see FixedLatLngTest
  * @see FloatLatLng
  * 
  */
@@ -62,8 +61,6 @@ public abstract class LatLng {
    * The x dimension corresponds to latitude and y corresponds to longitude.
    * The translation starts with the normalized latlng and adds 180 to the latitude and 
    * 90 to the longitude (subject to fixed point scaling).
-   * 
-   * @return
    */
   public CartesianPoint toCartesian() {
     LatLng ll=normalize();
@@ -80,7 +77,6 @@ public abstract class LatLng {
   /**
    * The inverse of toCartesian().  Always returns a FixedLatLng.
    * @param pt
-   * @return
    */
   public static LatLng fromCartesian(CartesianPoint pt) {
     int lat=pt.getY() - 90 * FixedLatLng.SCALE_FACTOR_INT;
@@ -158,7 +154,6 @@ public abstract class LatLng {
   /**
    * Calculate the midpoint between this point an another.  Respects fixed vs floating point
    * @param other
-   * @return
    */
   public abstract LatLng calculateMidpoint(LatLng other);
 }

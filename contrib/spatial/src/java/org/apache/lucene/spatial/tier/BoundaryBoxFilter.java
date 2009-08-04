@@ -18,7 +18,6 @@
 package org.apache.lucene.spatial.tier;
 
 import java.io.IOException;
-import java.util.BitSet;
 import java.util.logging.Logger;
 
 import org.apache.lucene.index.IndexReader;
@@ -26,7 +25,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.OpenBitSet;
 
 
 
@@ -84,15 +85,15 @@ public class BoundaryBoxFilter extends Filter {
     
     
   /**
-   * Returns a BitSet with true for documents which should be
+   * Returns a DocIdSet with true for documents which should be
    * permitted in search results, and false for those that should
    * not.
    */
   @Override
-  public BitSet bits(IndexReader reader) throws IOException {
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     long start = System.currentTimeMillis();
     
-    BitSet bits = new BitSet(reader.maxDoc());
+    OpenBitSet bits = new OpenBitSet(reader.maxDoc());
     TermEnum enumerator =
         (null != lowerTerm
          ? reader.terms(new Term(fieldName, lowerTerm))
@@ -128,7 +129,7 @@ public class BoundaryBoxFilter extends Filter {
               // we have a good term, find the docs 
               termDocs.seek(enumerator.term());
               while (termDocs.next()) {
-                bits.set(termDocs.doc());
+                bits.fastSet(termDocs.doc());
               }
             }
           } 

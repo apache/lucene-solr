@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial.tier;
 
 import java.io.IOException;
-import java.util.BitSet;
 
 import junit.framework.TestCase;
 
@@ -27,10 +26,9 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.spatial.tier.LatLongDistanceFilter;
 import org.apache.lucene.store.RAMDirectory;
 
 
@@ -41,7 +39,6 @@ public class TestDistance extends TestCase{
 
   
   private RAMDirectory directory;
-  private IndexSearcher searcher;
   // reston va
   private double lat = 38.969398; 
   private double lng= -77.386398;
@@ -103,13 +100,13 @@ public class TestDistance extends TestCase{
   public void testLatLongFilterOnDeletedDocs() throws Exception {
     writer.deleteDocuments(new Term("name", "Potomac"));
     IndexReader r = writer.getReader();
-    LatLongDistanceFilter f = new LatLongDistanceFilter(lat, lng, 1.0, latField, lngField);
-    f.bits(r);
+    LatLongDistanceFilter f = new LatLongDistanceFilter(new QueryWrapperFilter(new MatchAllDocsQuery()),
+                                                        lat, lng, 1.0, latField, lngField);
 
-    BitSet allSet = new BitSet(r.maxDoc());
-    allSet.set(0, r.maxDoc());
-    f.bits(r, allSet);
-    r.close();
+    IndexReader[] readers = r.getSequentialSubReaders();
+    for(int i=0;i<readers.length;i++) {
+      f.getDocIdSet(readers[i]);
+    }
   }
  
   

@@ -16,38 +16,81 @@
 
 package org.apache.lucene.spatial.tier;
 
-import java.io.IOException;
-import java.util.BitSet;
 import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.HashMap;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.spatial.ISerialChainFilter;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.spatial.tier.DistanceHandler.Precision;
 
+public abstract class DistanceFilter extends Filter {
 
-public abstract class DistanceFilter extends ISerialChainFilter {
+  final protected Filter startingFilter;
+  protected Precision precise;
+  protected Map<Integer,Double> distances;
+  protected double distance;
 
-	public DistanceFilter() {
-		super();
-	}
+  protected int nextDocBase; 
+  protected final WeakHashMap<String,Double> distanceLookupCache;
 
-	public abstract Map<Integer,Double> getDistances();
+  /** Filters the startingFilter by precise distance
+   *  checking filter */
+  public DistanceFilter(Filter startingFilter, double distance) {
+    if (startingFilter == null) {
+      throw new IllegalArgumentException("please provide a non-null startingFilter; you can use QueryWrapperFilter(MatchAllDocsQuery) as a no-op filter");
+    }
+    this.startingFilter = startingFilter;
+    this.distance = distance;
 
-	public abstract Double getDistance(int docid);
+    // NOTE: neither of the distance filters use precision
+    // now - if we turn that on, we'll need to pass top
+    // reader into here
+    // setPrecision(reader.maxDoc());
 
-	@Override
-	public abstract BitSet bits(IndexReader reader) throws IOException;
+    /* store calculated distances for reuse by other components */
+    distances = new HashMap<Integer,Double>();
 
-	@Override
-	public abstract BitSet bits(IndexReader reader, BitSet bits) throws Exception;
+    // create an intermediate cache to avoid recomputing
+    //   distances for the same point 
+    //   TODO: Why is this a WeakHashMap? 
+    distanceLookupCache = new WeakHashMap<String,Double>();
+  }
 
-	/** Returns true if <code>o</code> is equal to this. */
-	@Override
-	public abstract boolean equals(Object o);
+  public Map<Integer,Double> getDistances(){
+    return distances;
+  }
+  
+  public Double getDistance(int docid){
+    return distances.get(docid);
+  }
+  
+  public void setDistances(Map<Integer, Double> distances) {
+    this.distances = distances;
+  }
 
-	/** Returns a hash code value for this object.*/
-	@Override
-	public abstract int hashCode();
+  /** You must call this before re-using this DistanceFilter
+   *  across searches */
+  public void reset() {
+    nextDocBase = 0;
+  }
 
-	public abstract void setDistances(Map<Integer, Double> distances);
+  /** Returns true if <code>o</code> is equal to this. */
+  public abstract boolean equals(Object o);
 
+  /** Returns a hash code value for this object.*/
+  public abstract int hashCode();
+
+  /*
+  private void setPrecision(int maxDocs) {
+    precise = Precision.EXACT;
+    
+    if (maxDocs > 1000 && distance > 10) {
+      precise = Precision.TWENTYFEET;
+    }
+    
+    if (maxDocs > 10000 && distance > 10){
+      precise = Precision.TWOHUNDREDFEET;
+    }
+  }
+  */
 }

@@ -46,9 +46,6 @@ public class CartesianPoint {
 
   /**
    * Return a new point translated in the x and y dimensions
-   * @param i
-   * @param translation
-   * @return
    */
   public CartesianPoint translate(int deltaX, int deltaY) {
     return new CartesianPoint(this.x+deltaX, this.y+deltaY);

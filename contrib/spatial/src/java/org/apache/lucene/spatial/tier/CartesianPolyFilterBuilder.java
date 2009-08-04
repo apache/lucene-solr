@@ -33,6 +33,12 @@ import org.apache.lucene.spatial.tier.projections.SinusoidalProjector;
  */
 public class CartesianPolyFilterBuilder {
 
+  // Finer granularity than 1 mile isn't accurate with
+  // standard java math.  Also, there's already a 2nd
+  // precise filter, if needed, in DistanceQueryBuilder,
+  // that will make the filtering exact.
+  public static final double MILES_FLOOR = 1.0;
+
   private IProjector projector = new SinusoidalProjector();
   private Logger log = Logger.getLogger(getClass().getName());
   
@@ -42,10 +48,12 @@ public class CartesianPolyFilterBuilder {
     this.tierPrefix = tierPrefix;
   }
   
-  public Shape getBoxShape(double latitude, double longitude, int miles)
+  public Shape getBoxShape(double latitude, double longitude, double miles)
   {  
+    if (miles < MILES_FLOOR) {
+      miles = MILES_FLOOR;
+    }
     Rectangle box = DistanceUtils.getInstance().getBoundary(latitude, longitude, miles);
-    
     double latY = box.getMaxPoint().getY();//box.getY();
     double latX = box.getMinPoint().getY() ; //box.getMaxY();
     
@@ -104,7 +112,7 @@ public class CartesianPolyFilterBuilder {
     return shape;
   }
   
-  public Filter getBoundingArea(double latitude, double longitude, int miles) 
+  public Filter getBoundingArea(double latitude, double longitude, double miles) 
   {
     Shape shape = getBoxShape(latitude, longitude, miles);
     return new CartesianShapeFilter(shape, shape.getTierId());

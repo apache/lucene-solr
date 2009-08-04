@@ -21,8 +21,8 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
-import org.apache.lucene.spatial.SerialChainFilter;
 import org.apache.lucene.spatial.geohash.GeoHashDistanceFilter;
+import org.apache.lucene.misc.ChainedFilter;
 
 
 public class DistanceQueryBuilder {
@@ -31,39 +31,39 @@ public class DistanceQueryBuilder {
   
   public BoundaryBoxFilter latFilter;
   public BoundaryBoxFilter lngFilter;
-  public DistanceFilter distanceFilter;
   
   private final double lat;
   private final double lng;
   private final double miles;
-  private Filter cartesianFilter;
-  private boolean needPrecision = true;
+  private final Filter filter;
+  final DistanceFilter distanceFilter;
+
   /**
    * Create a distance query using
    * a boundary box wrapper around a more precise
    * DistanceFilter.
    * 
-   * @see SerialChainFilter
    * @param lat
    * @param lng
    * @param miles
    */
   public DistanceQueryBuilder (double lat, double lng, double miles, 
-      String latField, String lngField, String tierFieldPrefix,boolean needPrecise){
+      String latField, String lngField, String tierFieldPrefix, boolean needPrecise) {
 
     this.lat = lat;
     this.lng = lng;
     this.miles = miles;
-    this.needPrecision = needPrecise;
-    
     
     CartesianPolyFilterBuilder cpf = new CartesianPolyFilterBuilder(tierFieldPrefix);
-    cartesianFilter = cpf.getBoundingArea(lat, lng, (int)miles);
+    Filter cartesianFilter = cpf.getBoundingArea(lat, lng, miles);
 
     /* create precise distance filter */
-    if( needPrecise)
-    	distanceFilter = new LatLongDistanceFilter(lat, lng, miles, latField, lngField);
-    
+    if (needPrecise) {
+      filter = distanceFilter = new LatLongDistanceFilter(cartesianFilter, lat, lng, miles, latField, lngField);
+    } else {
+      filter = cartesianFilter;
+      distanceFilter = null;
+    }
   }
 
   /**
@@ -71,80 +71,54 @@ public class DistanceQueryBuilder {
    * a boundary box wrapper around a more precise
    * DistanceFilter.
    * 
-   * @see SerialChainFilter
    * @param lat
    * @param lng
    * @param miles
    */
   public DistanceQueryBuilder (double lat, double lng, double miles, 
-      String geoHashFieldPrefix, String tierFieldPrefix,boolean needPrecise){
+      String geoHashFieldPrefix, String tierFieldPrefix, boolean needPrecise){
 
     this.lat = lat;
     this.lng = lng;
     this.miles = miles;
-    this.needPrecision = needPrecise;
     
     CartesianPolyFilterBuilder cpf = new CartesianPolyFilterBuilder(tierFieldPrefix);
-    cartesianFilter = cpf.getBoundingArea(lat, lng, (int)miles);
+    Filter cartesianFilter = cpf.getBoundingArea(lat, lng, miles);
 
     /* create precise distance filter */
-    if( needPrecise)
-    	distanceFilter = new GeoHashDistanceFilter(lat, lng, miles, geoHashFieldPrefix);
-    
+    if (needPrecise) {
+      filter = distanceFilter = new GeoHashDistanceFilter(cartesianFilter, lat, lng, miles, geoHashFieldPrefix);
+    } else {
+      filter = cartesianFilter;
+      distanceFilter = null;
+    }
   }
 
   
-   /**
+  /**
   * Create a distance query using
   * a boundary box wrapper around a more precise
   * DistanceFilter.
-  * 
-  * @see SerialChainFilter
-  * @param lat
-  * @param lng
-  * @param miles
   */
   public Filter getFilter() {
-	Filter [] f;
-	int [] chain;
-	
-	if (needPrecision){
-		f = new Filter[]{cartesianFilter, distanceFilter};
-		chain = new int[] {SerialChainFilter.AND, 
-				SerialChainFilter.SERIALAND};
-	}else{
-		f= new Filter[]{cartesianFilter};
-		chain = new int[] {SerialChainFilter.AND};
-	}
-    return new SerialChainFilter( f, chain );
+    if (distanceFilter != null) {
+      distanceFilter.reset();
+    }
+    return filter;
   }
   
   public Filter getFilter(Query query) {
+    // Chain the Query (as filter) with our distance filter
+    if (distanceFilter != null) {
+      distanceFilter.reset();
+    }
     QueryWrapperFilter qf = new QueryWrapperFilter(query);
-    
-    Filter [] f;
-    int [] chain;
-    
-	if (needPrecision){
-		f = new Filter[]{cartesianFilter, qf, distanceFilter};
-		chain = new int[] {SerialChainFilter.AND, 
-	              SerialChainFilter.AND,
-	              SerialChainFilter.SERIALAND};
-	}else{
-		f= new Filter[]{cartesianFilter, qf};
-		chain = new int[] {SerialChainFilter.AND, 
-	              SerialChainFilter.AND};
-	}
-    return new SerialChainFilter(f,chain); 
+    return new ChainedFilter(new Filter[] {qf, filter},
+                             ChainedFilter.AND);
   }
     
-//  public Query getQuery() {
-//      return new ConstantScoreQuery(getFilter());
-//  }
-
-  
   public Query getQuery(Query query){
-  	return new ConstantScoreQuery(getFilter(query));
+    return new ConstantScoreQuery(getFilter(query));
   }
   
   public double getLat() {

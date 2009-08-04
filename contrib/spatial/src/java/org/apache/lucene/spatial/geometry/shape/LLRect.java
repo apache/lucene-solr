@@ -41,7 +41,6 @@ public class LLRect {
   /**
    * Return the area in units of lat-lng squared.  This is a contrived unit
    * that only has value when comparing to something else.
-   * @return
    */
   public double area() {
     return Math.abs((ll.getLat()-ur.getLat()) * (ll.getLng()-ur.getLng()));
@@ -79,7 +78,6 @@ public class LLRect {
    * @param center
    * @param widthMi
    * @param heightMi
-   * @return
    */
   public static LLRect createBox(LatLng center, double widthMi, double heightMi) {
     double miplatdeg=DistanceApproximation.getMilesPerLngDeg(center.getLat());
@@ -97,7 +95,6 @@ public class LLRect {
   
   /**
    * Returns a rectangle shape for the bounding box
-   * @return
    */
   public Rectangle toRectangle() {
     return new Rectangle(ll.getLng(), ll.getLat(), ur.getLng(), ur.getLat());

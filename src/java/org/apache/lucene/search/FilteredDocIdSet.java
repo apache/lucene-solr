@@ -54,7 +54,7 @@ public abstract class FilteredDocIdSet extends DocIdSet {
    * @param docid docid to be tested
    * @return true if input docid should be in the result set, false otherwise.
    */
-  protected abstract boolean match(int docid);
+  protected abstract boolean match(int docid) throws IOException;
 	
   /**
    * Implementation of the contract to build a DocIdSetIterator.
@@ -64,7 +64,7 @@ public abstract class FilteredDocIdSet extends DocIdSet {
   // @Override
   public DocIdSetIterator iterator() throws IOException {
     return new FilteredDocIdSetIterator(_innerSet.iterator()) {
-      protected boolean match(int docid) {
+      protected boolean match(int docid) throws IOException {
         return FilteredDocIdSet.this.match(docid);
       }
     };

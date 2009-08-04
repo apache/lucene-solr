@@ -18,17 +18,14 @@
 package org.apache.lucene.spatial.geohash;
 
 import java.io.IOException;
-import java.util.BitSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.WeakHashMap;
-import java.util.logging.Logger;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.FilteredDocIdSet;
 import org.apache.lucene.spatial.tier.DistanceFilter;
 import org.apache.lucene.spatial.tier.DistanceUtils;
-import org.apache.lucene.spatial.tier.DistanceHandler.Precision;
 
 
 
@@ -39,167 +36,62 @@ public class GeoHashDistanceFilter extends DistanceFilter {
    */
   private static final long serialVersionUID = 1L;
   
-  private double distance;
   private double lat;
   private double lng;
   private String geoHashField;
   
-  private Logger log = Logger.getLogger(getClass().getName());
-  
-  private Map<Integer,Double> distances = null;
-  private Precision precise = null;
-  int offset = 0; 
-  int nextOffset;
-  
   /**
    * Provide a distance filter based from a center point with a radius
    * in miles
+   * @param startingFilter
    * @param lat
    * @param lng
    * @param miles
-   * @param latField
-   * @param lngField
    */
-  public GeoHashDistanceFilter(double lat, double lng, double miles, String geoHashField){
-    distance = miles;
+  public GeoHashDistanceFilter(Filter startingFilter, double lat, double lng, double miles, String geoHashField) {
+    super(startingFilter, miles);
     this.lat = lat;
     this.lng = lng;
     this.geoHashField = geoHashField;
-    
   }
-  
-  
-  public Map<Integer,Double> getDistances(){
-    return distances;
-  }
-  
-  public Double getDistance(int docid){
-    return distances.get(docid);
-  }
-  
+
   @Override
-  public BitSet bits(IndexReader reader) throws IOException {
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
 
-    /* Create a BitSet to store the result */
-    int maxdocs = reader.numDocs();
-    BitSet bits = new BitSet(maxdocs);
-    
-    setPrecision(maxdocs);
-    // create an intermediate cache to avoid recomputing
-    //   distances for the same point 
-    //   TODO: Why is this a WeakHashMap? 
-    WeakHashMap<String,Double> cdistance = new WeakHashMap<String,Double>(maxdocs);
-    
-    String[] geoHashCache = FieldCache.DEFAULT.getStrings(reader, geoHashField);
-    
+    final String[] geoHashValues = FieldCache.DEFAULT.getStrings(reader, geoHashField);
 
-    /* store calculated distances for reuse by other components */
-    distances = new HashMap<Integer,Double>(maxdocs);
-    for (int i = 0 ; i < maxdocs; i++) {
-      
-      String geoHash = geoHashCache[i];
-      double[] coords = GeoHashUtils.decode(geoHash);
-      double x = coords[0];
-      double y = coords[1];
-      
-      // round off lat / longs if necessary
-//      x = DistanceHandler.getPrecision(x, precise);
-//      y = DistanceHandler.getPrecision(y, precise);
-      
-      
-      Double cachedDistance = cdistance.get(geoHash);
-      
-      
-      double d;
-      
-      if(cachedDistance != null){
-        d = cachedDistance.doubleValue();
-      } else {
-        d = DistanceUtils.getInstance().getDistanceMi(lat, lng, x, y);
-        cdistance.put(geoHash, d);
-      }
-      distances.put(i, d);
-      
-      if (d < distance){
-        bits.set(i);
-      }
-      
-    }
-    
-    return bits;
-  }
+    final int docBase = nextDocBase;
+    nextDocBase += reader.maxDoc();
 
-  
-  @Override
-  public BitSet bits(IndexReader reader, BitSet bits) throws Exception {
-
-  
-    /* Create a BitSet to store the result */
-    int size = bits.cardinality();
-    BitSet result = new BitSet(size);
-    
-
-    /* create an intermediate cache to avoid recomputing
-         distances for the same point  */
-    HashMap<String,Double> cdistance = new HashMap<String,Double>(size);
-    
-
-    /* store calculated distances for reuse by other components */
-    offset += reader.maxDoc();
-    if (distances == null)
-    	distances = new HashMap<Integer,Double>(size);
-    
-    long start = System.currentTimeMillis();
-    String[] geoHashCache = FieldCache.DEFAULT.getStrings(reader, geoHashField);
- 
-    /* loop over all set bits (hits from the boundary box filters) */
-    int i = bits.nextSetBit(0);
-    while (i >= 0){
-      
-      // if we have a completed
-      // filter chain, lat / lngs can be retrived from 
-      // memory rather than document base.
-
-      String geoHash = geoHashCache[i];
-      double[] coords = GeoHashUtils.decode(geoHash);
-      double x = coords[0];
-      double y = coords[1];
-      
-      // round off lat / longs if necessary
-//      x = DistanceHandler.getPrecision(x, precise);
-//      y = DistanceHandler.getPrecision(y, precise);
-
-      
-      Double cachedDistance = cdistance.get(geoHash);
-      double d;
-      
-      if(cachedDistance != null){
-        d = cachedDistance.doubleValue();
+    return new FilteredDocIdSet(startingFilter.getDocIdSet(reader)) {
+      public boolean match(int doc) {
         
-      } else {
-        d = DistanceUtils.getInstance().getDistanceMi(lat, lng, x, y);
-        //d = DistanceUtils.getLLMDistance(lat, lng, x, y);
-        cdistance.put(geoHash, d);
-      }
+        String geoHash = geoHashValues[doc];
+        double[] coords = GeoHashUtils.decode(geoHash);
+        double x = coords[0];
+        double y = coords[1];
       
-      distances.put(i, d);
-        
-      if (d < distance){
-        result.set(i);
-      }
-      i = bits.nextSetBit(i+1);
-    }
-    
-    long end = System.currentTimeMillis();
-    log.fine("Time taken : "+ (end - start) + 
-        ", results : "+ distances.size() + 
-        ", cached : "+ cdistance.size() +
-        ", incoming size: "+ size);
-  
+        // round off lat / longs if necessary
+        //      x = DistanceHandler.getPrecision(x, precise);
+        //      y = DistanceHandler.getPrecision(y, precise);
+        Double cachedDistance = distanceLookupCache.get(geoHash);
+        double d;
+      
+        if (cachedDistance != null) {
+          d = cachedDistance.doubleValue();
+        } else {
+          d = DistanceUtils.getInstance().getDistanceMi(lat, lng, x, y);
+          distanceLookupCache.put(geoHash, d);
+        }
 
-    cdistance = null;
-    nextOffset += offset;
-    return result;
+        if (d < distance){
+          distances.put(doc+docBase, d);
+          return true;
+        } else {
+          return false;
+        }
+      }
+    };
   }
 
   /** Returns true if <code>o</code> is equal to this. */
@@ -209,7 +101,8 @@ public class GeoHashDistanceFilter extends DistanceFilter {
     if (!(o instanceof GeoHashDistanceFilter)) return false;
     GeoHashDistanceFilter other = (GeoHashDistanceFilter) o;
 
-    if (this.distance != other.distance ||
+    if (!this.startingFilter.equals(other.startingFilter) ||
+        this.distance != other.distance ||
         this.lat != other.lat ||
         this.lng != other.lng ||
         !this.geoHashField.equals(other.geoHashField) ) {
@@ -222,26 +115,11 @@ public class GeoHashDistanceFilter extends DistanceFilter {
   @Override
   public int hashCode() {
     int h = new Double(distance).hashCode();
+    h ^= startingFilter.hashCode();
     h ^= new Double(lat).hashCode();
     h ^= new Double(lng).hashCode();
     h ^= geoHashField.hashCode();
     
     return h;
-  }
-  
-  private void setPrecision(int maxDocs) {
-    precise = Precision.EXACT;
-    
-    if (maxDocs > 1000 && distance > 10) {
-      precise = Precision.TWENTYFEET;
-    }
-    
-    if (maxDocs > 10000 && distance > 10){
-      precise = Precision.TWOHUNDREDFEET;
-    }
-  }
-
-  public void setDistances(Map<Integer, Double> distances) {
-    this.distances = distances;
   }
 }

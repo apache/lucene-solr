@@ -56,9 +56,6 @@ public class Ellipse implements Geometry2D {
 
   /**
    * Constructor given bounding rectangle and a rotation.
-   * 
-   * @param
-   * @param
    */
   public Ellipse(Point2D p1, Point2D p2, double angle) {
     center = new Point2D();

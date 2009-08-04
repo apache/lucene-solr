@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial.tier;
 
 import java.io.IOException;
-import java.util.BitSet;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -25,7 +24,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.OpenBitSet;
 
 public class CartesianShapeFilter extends Filter {
 
@@ -43,16 +44,16 @@ public class CartesianShapeFilter extends Filter {
   }
   
   @Override
-  public BitSet bits(IndexReader reader) throws IOException {
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     long start = System.currentTimeMillis();
       
-    BitSet bits = new BitSet(reader.maxDoc());
+    OpenBitSet bits = new OpenBitSet(reader.maxDoc());
 
     TermDocs termDocs = reader.termDocs();
     List<Double> area = shape.getArea();
     int sz = area.size();
     log.fine("Area size "+ sz);
-    
+
     // iterate through each boxid
     for (int i =0; i< sz; i++) {
       double boxId = area.get(i).doubleValue();
@@ -62,7 +63,7 @@ public class CartesianShapeFilter extends Filter {
       // iterate through all documents
       // which have this boxId
       while (termDocs.next()) {
-        bits.set(termDocs.doc());
+        bits.fastSet(termDocs.doc());
       }
     }
     
@@ -70,5 +71,4 @@ public class CartesianShapeFilter extends Filter {
     log.fine("BoundaryBox Time Taken: "+ (end - start) + " found: "+bits.cardinality()+" candidates");
     return bits;
   }
-
 }

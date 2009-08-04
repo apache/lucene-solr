@@ -82,7 +82,6 @@ public class CartesianTierPlotter {
    * 
    * @param latitude
    * @param longitude
-   * @return
    */
   public double getTierBoxId (double latitude, double longitude) {
     
@@ -106,7 +105,6 @@ public class CartesianTierPlotter {
   /**
    * get the string name representing current tier
    * _localTier&lt;tiedId&gt;
-   * @return
    */
   public String getTierFieldName (){
     
@@ -117,7 +115,6 @@ public class CartesianTierPlotter {
    * get the string name representing tierId
    * _localTier&lt;tierId&gt;
    * @param tierId
-   * @return
    */
   public String getTierFieldName (int tierId){
     
@@ -133,12 +130,8 @@ public class CartesianTierPlotter {
    *  
    *  Distances less than a mile return 15, finer granularity is
    *  in accurate
-   * 
-   * @param latitude
-   * @param longitude
-   * @return
    */
-  public int bestFit(int miles){
+  public int bestFit(double miles){
     
     //28,892 a rough circumference of the earth
     int circ = 28892;
@@ -146,7 +139,6 @@ public class CartesianTierPlotter {
     double r = miles / 2.0;
     
     double corner = r - Math.sqrt(Math.pow(r, 2) / 2.0d);
-    System.out.println("corner "+ corner);
     double times = circ / corner;
     int bestFit =  (int)Math.ceil(log2(times)) + 1;
     
@@ -162,7 +154,6 @@ public class CartesianTierPlotter {
    * a log to the base 2 formula
    * <code>Math.log(value) / Math.log(2)</code>
    * @param value
-   * @return
    */
   public double log2(double value) {
     
