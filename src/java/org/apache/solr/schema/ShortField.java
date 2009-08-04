@@ -56,7 +56,27 @@ public class ShortField extends FieldType {
 
   @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
-    writer.writeShort(name, f.stringValue());
+    String s = f.stringValue();
+
+    // these values may be from a legacy lucene index, which may
+    // not be properly formatted in some output formats, or may
+    // incorrectly have a zero length.
+
+    if (s.length()==0) {
+      // zero length value means someone mistakenly indexed the value
+      // instead of simply leaving it out.  Write a null value instead of a numeric.
+      writer.writeNull(name);
+      return;
+    }
+
+    try {
+      short val = Short.parseShort(s);
+      writer.writeShort(name, val);
+    } catch (NumberFormatException e){
+      // can't parse - write out the contents as a string so nothing is lost and
+      // clients don't get a parse error.
+      writer.writeStr(name, s, true);
+    }
   }
 
   @Override

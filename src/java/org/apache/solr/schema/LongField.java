@@ -55,22 +55,26 @@ public class LongField extends FieldType {
   @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
     String s = f.stringValue();
-    int len = s.length();
-    // these values may be from a legacy lucene index, which may contain
-    // integer values padded with zeros, or a zero length value.
-    if (len>=2) {
-      char ch = s.charAt(0);
-      if ((ch=='0') || (ch=='-' && s.charAt(1)=='0')) {
-        s = Long.toString(Long.parseLong(s));
-      }
-    } else if (len == 0) {
+
+    // these values may be from a legacy lucene index, which may
+    // not be properly formatted in some output formats, or may
+    // incorrectly have a zero length.
+
+    if (s.length()==0) {
       // zero length value means someone mistakenly indexed the value
-      // instead of simply leaving it out.  Write a null value instead
-      // of an integer value in this case.
+      // instead of simply leaving it out.  Write a null value instead of a numeric.
       writer.writeNull(name);
       return;
     }
-    writer.writeLong(name, s);
+
+    try {
+      long val = Long.parseLong(s);
+      writer.writeLong(name, val);
+    } catch (NumberFormatException e){
+      // can't parse - write out the contents as a string so nothing is lost and
+      // clients don't get a parse error.
+      writer.writeStr(name, s, true);
+    }
   }
 
   @Override
