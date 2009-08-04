@@ -142,7 +142,7 @@
 
     <!--
        These types should only be used for back compatibility with existing
-       indexes, or if "sortMissingLast" funcitonallity is needed. Use Trie based fields instead.
+       indexes, or if "sortMissingLast" functionality is needed. Use Trie based fields instead.
 	  -->
     <fieldType name="sint" class="solr.SortableIntField" sortMissingLast="true" omitNorms="true"/>
     <fieldType name="slong" class="solr.SortableLongField" sortMissingLast="true" omitNorms="true"/>
@@ -152,12 +152,12 @@
 
     <!-- The "RandomSortField" is not used to store or search any
          data.  You can declare fields of this type it in your schema
-         to generate psuedo-random orderings of your docs for sorting 
+         to generate pseudo-random orderings of your docs for sorting 
          purposes.  The ordering is generated based on the field name 
          and the version of the index, As long as the index version
          remains unchanged, and the same field name is reused,
          the ordering of the docs will be consistent.  
-         If you want differend psuedo-random orderings of documents,
+         If you want different psuedo-random orderings of documents,
          for the same version of the index, use a dynamicField and
          change the name
      -->
@@ -286,11 +286,11 @@
         <!-- The PatternReplaceFilter gives you the flexibility to use
              Java Regular expression to replace any sequence of characters
              matching a pattern with an arbitrary replacement string, 
-             which may include back refrences to portions of the orriginal
+             which may include back references to portions of the orriginal
              string matched by the pattern.
              
              See the Java Regular Expression documentation for more
-             infomation on pattern and replacement string syntax.
+             information on pattern and replacement string syntax.
              
              http://java.sun.com/j2se/1.5.0/docs/api/java/util/regex/package-summary.html
           -->
