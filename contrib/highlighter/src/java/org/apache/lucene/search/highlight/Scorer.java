@@ -32,7 +32,10 @@ public interface Scorer {
    * getTokenScore().
    * 
    * @param tokenStream
-   * @throws IOException 
+   * @return either a TokenStream that the Highlighter should continue using (eg
+   *         if you read the tokenSream in this method) or null to continue
+   *         using the same TokenStream that was passed in.
+   * @throws IOException
    */
   public TokenStream init(TokenStream tokenStream) throws IOException;
 
