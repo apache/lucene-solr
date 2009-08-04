@@ -70,7 +70,7 @@ NamedList detailsMap = (NamedList)namedlist.get("details");
 if(detailsMap != null)
 if("true".equals((String)detailsMap.get("isSlave"))){
 %>
-	<meta http-equiv="refresh" content="2"/>
+	<meta http-equiv="refresh" content="10"/>
 <%}%>
 
 </head>
