@@ -469,9 +469,7 @@ New features
     IndexReader.getCommitUserData instance and static methods.
     (Shalin Shekhar Mangar via Mike McCandless)
 
- 3. LUCENE-1406: Added Arabic analyzer.  (Robert Muir via Grant Ingersoll)
-
- 4. LUCENE-1420: Similarity now has a computeNorm method that allows
+ 3. LUCENE-1420: Similarity now has a computeNorm method that allows
     custom Similarity classes to override how norm is computed.  It's
     provided a FieldInvertState instance that contains details from
     inverting the field.  The default impl is boost *
@@ -480,14 +478,14 @@ New features
     overlapping tokens (tokens with 0 position increment) should be
     counted in lengthNorm.  (Andrzej Bialecki via Mike McCandless)
 
- 5. LUCENE-1424: Moved constant score query rewrite capability into
+ 4. LUCENE-1424: Moved constant score query rewrite capability into
     MultiTermQuery, allowing TermRangeQuery, PrefixQuery and WildcardQuery
     to switch betwen constant-score rewriting or BooleanQuery
     expansion rewriting via a new setRewriteMethod method.
     Deprecated ConstantScoreRangeQuery (Mark Miller via Mike
     McCandless)
 
- 6. LUCENE-1461: Added FieldCacheRangeFilter, a RangeFilter for
+ 5. LUCENE-1461: Added FieldCacheRangeFilter, a RangeFilter for
     single-term fields that uses FieldCache to compute the filter.  If
     your documents all have a single term for a given field, and you
     need to create many RangeFilters with varying lower/upper bounds,
@@ -499,82 +497,82 @@ New features
     support collation  (Tim Sturge, Matt Ericson via Mike McCandless and
     Uwe Schindler)
 
- 7. LUCENE-1296: add protected method CachingWrapperFilter.docIdSetToCache 
+ 6. LUCENE-1296: add protected method CachingWrapperFilter.docIdSetToCache 
     to allow subclasses to choose which DocIdSet implementation to use
     (Paul Elschot via Mike McCandless)
     
- 8. LUCENE-1390: Added ASCIIFoldingFilter, a Filter that converts 
+ 7. LUCENE-1390: Added ASCIIFoldingFilter, a Filter that converts 
     alphabetic, numeric, and symbolic Unicode characters which are not in 
     the first 127 ASCII characters (the "Basic Latin" Unicode block) into 
     their ASCII equivalents, if one exists. ISOLatin1AccentFilter, which
     handles a subset of this filter, has been deprecated.
     (Andi Vajda, Steven Rowe via Mark Miller)
 
- 9. LUCENE-1478: Added new SortField constructor allowing you to
+ 8. LUCENE-1478: Added new SortField constructor allowing you to
     specify a custom FieldCache parser to generate numeric values from
     terms for a field.  (Uwe Schindler via Mike McCandless)
 
-10. LUCENE-1528: Add support for Ideographic Space to the queryparser.
+ 9. LUCENE-1528: Add support for Ideographic Space to the queryparser.
     (Luis Alves via Michael Busch)
 
-11. LUCENE-1487: Added FieldCacheTermsFilter, to filter by multiple
+10. LUCENE-1487: Added FieldCacheTermsFilter, to filter by multiple
     terms on single-valued fields.  The filter loads the FieldCache
     for the field the first time it's called, and subsequent usage of
     that field, even with different Terms in the filter, are fast.
     (Tim Sturge, Shalin Shekhar Mangar via Mike McCandless).
 
-12. LUCENE-1314: Add clone(), clone(boolean readOnly) and
+11. LUCENE-1314: Add clone(), clone(boolean readOnly) and
     reopen(boolean readOnly) to IndexReader.  Cloning an IndexReader
     gives you a new reader which you can make changes to (deletions,
     norms) without affecting the original reader.  Now, with clone or
     reopen you can change the readOnly of the original reader.  (Jason
     Rutherglen, Mike McCandless)
 
-13. LUCENE-1506: Added FilteredDocIdSet, an abstract class which you
+12. LUCENE-1506: Added FilteredDocIdSet, an abstract class which you
     subclass to implement the "match" method to accept or reject each
     docID.  Unlike ChainedFilter (under contrib/misc),
     FilteredDocIdSet never requires you to materialize the full
     bitset.  Instead, match() is called on demand per docID.  (John
     Wang via Mike McCandless)
 
-14. LUCENE-1398: Add ReverseStringFilter to contrib/analyzers, a filter
+13. LUCENE-1398: Add ReverseStringFilter to contrib/analyzers, a filter
     to reverse the characters in each token.  (Koji Sekiguchi via yonik)
 
-15. LUCENE-1551: Add expert IndexReader.reopen(IndexCommit) to allow
+14. LUCENE-1551: Add expert IndexReader.reopen(IndexCommit) to allow
     efficiently opening a new reader on a specific commit, sharing
     resources with the original reader.  (Torin Danil via Mike
     McCandless)
 
-16. LUCENE-1434: Added org.apache.lucene.util.IndexableBinaryStringTools,
+15. LUCENE-1434: Added org.apache.lucene.util.IndexableBinaryStringTools,
     to encode byte[] as String values that are valid terms, and
     maintain sort order of the original byte[] when the bytes are
     interpreted as unsigned.  (Steven Rowe via Mike McCandless)
 
-17. LUCENE-1543: Allow MatchAllDocsQuery to optionally use norms from
+16. LUCENE-1543: Allow MatchAllDocsQuery to optionally use norms from
     a specific fields to set the score for a document.  (Karl Wettin
     via Mike McCandless)
 
-18. LUCENE-1586: Add IndexReader.getUniqueTermCount().  (Mike
+17. LUCENE-1586: Add IndexReader.getUniqueTermCount().  (Mike
     McCandless via Derek)
 
-19. LUCENE-1516: Added "near real-time search" to IndexWriter, via a
+18. LUCENE-1516: Added "near real-time search" to IndexWriter, via a
     new expert getReader() method.  This method returns a reader that
     searches the full index, including any uncommitted changes in the
     current IndexWriter session.  This should result in a faster
     turnaround than the normal approach of commiting the changes and
     then reopening a reader.  (Jason Rutherglen via Mike McCandless)
 
-20. LUCENE-1603: Added new MultiTermQueryWrapperFilter, to wrap any
+19. LUCENE-1603: Added new MultiTermQueryWrapperFilter, to wrap any
     MultiTermQuery as a Filter.  Also made some improvements to
     MultiTermQuery: return DocIdSet.EMPTY_DOCIDSET if there are no
     terms in the enum; track the total number of terms it visited
     during rewrite (getTotalNumberOfTerms).  FilteredTermEnum is also
     more friendly to subclassing.  (Uwe Schindler via Mike McCandless)
 
-21. LUCENE-1605: Added BitVector.subset().  (Jeremy Volkman via Mike
+20. LUCENE-1605: Added BitVector.subset().  (Jeremy Volkman via Mike
     McCandless)
     
-22. LUCENE-1618: Added FileSwitchDirectory that enables files with
+21. LUCENE-1618: Added FileSwitchDirectory that enables files with
     specified extensions to be stored in a primary directory and the
     rest of the files to be stored in the secondary directory.  For
     example, this can be useful for the large doc-store (stored
@@ -582,19 +580,19 @@ New features
     index files in a RAMDirectory. (Jason Rutherglen via Mike
     McCandless)
 
-23. LUCENE-1494: Added FieldMaskingSpanQuery which can be used to
+22. LUCENE-1494: Added FieldMaskingSpanQuery which can be used to
     cross-correlate Spans from different fields.
     (Paul Cowan and Chris Hostetter)
 
-24. LUCENE-1634: Add calibrateSizeByDeletes to LogMergePolicy, to take
+23. LUCENE-1634: Add calibrateSizeByDeletes to LogMergePolicy, to take
     deletions into account when considering merges.  (Yasuhiro Matsuda
     via Mike McCandless)
 
-25. LUCENE-1550: Added new n-gram based String distance measure for spell checking.
+24. LUCENE-1550: Added new n-gram based String distance measure for spell checking.
     See the Javadocs for NGramDistance.java for a reference paper on why
     this is helpful (Tom Morton via Grant Ingersoll)
 
-26. LUCENE-1470, LUCENE-1582, LUCENE-1602, LUCENE-1673, LUCENE-1701, LUCENE-1712:
+25. LUCENE-1470, LUCENE-1582, LUCENE-1602, LUCENE-1673, LUCENE-1701, LUCENE-1712:
     Added NumericRangeQuery and NumericRangeFilter, a fast alternative to
     RangeQuery/RangeFilter for numeric searches. They depend on a specific
     structure of terms in the index that can be created by indexing
@@ -606,24 +604,24 @@ New features
     and loaded into the FieldCache.  (Uwe Schindler, Yonik Seeley,
     Mike McCandless)
 
-27. LUCENE-1405: Added support for Ant resource collections in contrib/ant
+26. LUCENE-1405: Added support for Ant resource collections in contrib/ant
     <index> task.  (Przemyslaw Sztoch via Erik Hatcher)
 
-28. LUCENE-1699: Allow setting a TokenStream on Field/Fieldable for indexing
+27. LUCENE-1699: Allow setting a TokenStream on Field/Fieldable for indexing
     in conjunction with any other ways to specify stored field values,
     currently binary or string values.  (yonik)
     
-29. LUCENE-1701: Made the standard FieldCache.Parsers public and added
+28. LUCENE-1701: Made the standard FieldCache.Parsers public and added
     parsers for fields generated using NumericField/NumericTokenStream.
     All standard parsers now also implement Serializable and enforce
     their singleton status.  (Uwe Schindler, Mike McCandless)
     
-30. LUCENE-1741: User configureable maximum chunk size in MMapDirectory.
+29. LUCENE-1741: User configureable maximum chunk size in MMapDirectory.
     On 32 bit platforms, the address space can be very fragmented, so
     one big ByteBuffer for the whole file may not fit into address space.
     (Eks Dev via Uwe Schindler)
 
-31. LUCENE-1644: Enable 4 rewrite modes for queries deriving from
+30. LUCENE-1644: Enable 4 rewrite modes for queries deriving from
     MultiTermQuery (WildcardQuery, PrefixQuery, TermRangeQuery,
     NumericRangeQuery): CONSTANT_SCORE_FILTER_REWRITE first creates a
     filter and then assigns constant score (boost) to docs;
@@ -633,19 +631,19 @@ New features
     CONSTANT_SCORE_AUTO_REWRITE tries to pick the most performant
     constant-score rewrite method.  (Mike McCandless)
     
-32. LUCENE-1448: Added TokenStream.end(), to perform end-of-stream
+31. LUCENE-1448: Added TokenStream.end(), to perform end-of-stream
     operations.  This is currently used to fix offset problems when 
     multiple fields with the same name are added to a document.
     (Mike McCandless, Mark Miller, Michael Busch)
  
-34. LUCENE-1567: Added a new QueryParser framework to contrib, that 
+32. LUCENE-1567: Added a new QueryParser framework to contrib, that 
     allows implementing a new query syntax in a flexible and efficient 
     way. This new QueryParser will be moved to Lucene's core in release
     3.0 and will then replace the current core QueryParser, which
     has been deprecated with this patch.
     (Luis Alves and Adriano Campos via Michael Busch)
     
-35. LUCENE-1776: Add an option to not collect payloads for an ordered
+33. LUCENE-1776: Add an option to not collect payloads for an ordered
     SpanNearQuery. Payloads were not lazily loaded in this case as
     the javadocs implied. If you have payloads and want to use an ordered
     SpanNearQuery that does not need to use the payloads, you can

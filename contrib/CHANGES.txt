@@ -134,6 +134,8 @@ New features
 14. Added web-based demo of functionality in contrib's XML Query Parser
     packaged as War file (Mark Harwood)
 
+15. LUCENE-1406: Added Arabic analyzer.  (Robert Muir via Grant Ingersoll)
+
 
 Optimizations
 
