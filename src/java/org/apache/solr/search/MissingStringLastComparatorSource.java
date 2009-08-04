@@ -206,7 +206,7 @@ class MissingLastOrdComparator extends FieldComparator {
 
     public Comparable value(int slot) {
       Comparable v = values[slot];
-      return v==null ? nullVal : null;
+      return v==null ? nullVal : v;
     }
 
     public String[] getValues() {

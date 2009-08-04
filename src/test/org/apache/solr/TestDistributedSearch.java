@@ -497,6 +497,7 @@ public class TestDistributedSearch extends TestCase {
 
     // these queries should be exactly ordered and scores should exactly match
     query("q","*:*", "sort",i1+" desc");
+    query("q","*:*", "sort",i1+" asc");
     query("q","*:*", "sort",i1+" desc", "fl","*,score");
     query("q","*:*", "sort",tlong+" desc");
     handle.put("maxScore", SKIPVAL);
