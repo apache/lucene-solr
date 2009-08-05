@@ -595,8 +595,6 @@ public class SimpleFacets {
         Date low = start;
         while (low.before(end)) {
           dmp.setNow(low);
-          final String lowI = ft.toInternal(low);
-          // final String label = ft.indexedToReadable(lowI);
           String label = ft.toExternal(low);
           
           Date high = dmp.parseMath(gap);
@@ -612,8 +610,6 @@ public class SimpleFacets {
               (SolrException.ErrorCode.BAD_REQUEST,
                "date facet infinite loop (is gap negative?)");
           }
-          final String highI = ft.toInternal(high);
-          // resInner.add(label, rangeCount(sf,lowI,highI,true,true));
           resInner.add(label, rangeCount(sf,low,high,true,true));
           low = high;
         }
@@ -638,10 +634,7 @@ public class SimpleFacets {
 
         // no matter what other values are listed, we don't do
         // anything if "none" is specified.
-        if (! others.contains(FacetDateOther.NONE) ) {
-          final String startI = ft.toInternal(start);
-          final String endI = ft.toInternal(end);
-          
+        if (! others.contains(FacetDateOther.NONE) ) {          
           boolean all = others.contains(FacetDateOther.ALL);
         
           if (all || others.contains(FacetDateOther.BEFORE)) {
