@@ -22,6 +22,8 @@ import org.apache.lucene.util.ArrayUtil;
 
 /**
  *  Encode a character array Integer as a {@link org.apache.lucene.index.Payload}.
+ * <p/>
+ * See {@link org.apache.lucene.analysis.payloads.PayloadHelper#encodeInt(int, byte[], int)}.
  *
  **/
 public class IntegerEncoder extends AbstractEncoder implements PayloadEncoder {
