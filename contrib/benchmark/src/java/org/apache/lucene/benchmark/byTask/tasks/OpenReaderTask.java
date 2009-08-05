@@ -53,7 +53,6 @@ public class OpenReaderTask extends PerfTask {
       IndexDeletionPolicy indexDeletionPolicy = CreateIndexTask.getIndexDeletionPolicy(config);
       r = IndexReader.open(dir, indexDeletionPolicy, readOnly); 
     }
-    System.out.println("--> openReader: "+r.getCommitUserData());
     getRunData().setIndexReader(r);
     return 1;
   }
