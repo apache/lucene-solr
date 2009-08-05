@@ -4,6 +4,9 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+8/4/2009
+  LUCENE-1770: Add EnwikiQueryMaker (Mark Miller)
+
 8/04/2009
   LUCENE-1773: Add FastVectorHighlighter tasks.  (Koji Sekiguchi via
   Mike McCandless)

@@ -34,8 +34,7 @@ docs.dir=reuters-out
 content.source=org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource
 docs.file=temp/enwiki-20070527-pages-articles.xml
 
-# Use LUCENE-1770 WikipediaQueryMaker
-query.maker=org.apache.lucene.benchmark.byTask.feeds.WikipediaQueryMaker
+query.maker=org.apache.lucene.benchmark.byTask.feeds.EnwikiQueryMaker
 #query.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker
 
 # task at this depth or less would print when they start
