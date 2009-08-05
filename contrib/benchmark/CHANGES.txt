@@ -8,8 +8,15 @@ $Id:$
   LUCENE-1770: Add EnwikiQueryMaker (Mark Miller)
 
 8/04/2009
-  LUCENE-1773: Add FastVectorHighlighter tasks.  (Koji Sekiguchi via
-  Mike McCandless)
+  LUCENE-1773: Add FastVectorHighlighter tasks.  This change is a
+  non-backwards compatible change in how subclasses of ReadTask define
+  a highlighter.  The methods doHighlight, isMergeContiguousFragments,
+  maxNumFragments and getHighlighter are no longer used and have been
+  mark deprecated and package protected private so there's a compile
+  time error.  Instead, the new getBenchmarkHighlighter method should
+  return an appropriate highlighter for the task. The configuration of
+  the highlighter tasks (maxFrags, mergeContiguous, etc.) is now
+  accepted as params to the task.  (Koji Sekiguchi via Mike McCandless)
 
 8/03/2009
   LUCENE-1778: Add support for log.step setting per task type. Perviously, if

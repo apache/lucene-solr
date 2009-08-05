@@ -19,9 +19,13 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.TextFragment;
-import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
+import org.apache.lucene.search.highlight.QueryScorer;
+import org.apache.lucene.search.highlight.TokenSources;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 
@@ -47,9 +51,15 @@ public class CountingHighlighterTestTask extends SearchTravRetHighlightTask {
     return document;
   }
 
-  protected int doHighlight(TokenStream ts, String text,  Highlighter highlighter, boolean mergeContiguous, int maxFragments) throws IOException, InvalidTokenOffsetsException {
-    TextFragment[] frag = highlighter.getBestTextFragments(ts, text, mergeContiguous, maxFragments);
-    numHighlightedResults += frag != null ? frag.length : 0;
-    return frag != null ? frag.length : 0;
+  public BenchmarkHighlighter getBenchmarkHighlighter(Query q) {
+    highlighter = new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(q));
+    return new BenchmarkHighlighter() {
+      public int doHighlight(IndexReader reader, int doc, String field, Document document, Analyzer analyzer, String text) throws Exception {
+        TokenStream ts = TokenSources.getAnyTokenStream(reader, doc, field, document, analyzer);
+        TextFragment[] frag = highlighter.getBestTextFragments(ts, text, mergeContiguous, maxFrags);
+        numHighlightedResults += frag != null ? frag.length : 0;
+        return frag != null ? frag.length : 0;
+      }
+    };
   }
 }

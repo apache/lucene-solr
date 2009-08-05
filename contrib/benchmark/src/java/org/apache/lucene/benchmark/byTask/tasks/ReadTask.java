@@ -38,10 +38,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.highlight.Highlighter;
-import org.apache.lucene.search.highlight.QueryTermScorer;
-import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
-import org.apache.lucene.search.highlight.TextFragment;
-import org.apache.lucene.search.highlight.TokenSources;
 import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.store.Directory;
 
@@ -122,10 +118,8 @@ public abstract class ReadTask extends PerfTask {
             int numHighlight = Math.min(numToHighlight(), scoreDocs.length);
             Analyzer analyzer = getRunData().getAnalyzer();
             BenchmarkHighlighter highlighter = null;
-            int maxFrags = 1;
             if (numHighlight > 0) {
               highlighter = getBenchmarkHighlighter(q);
-              maxFrags = maxNumFragments();
             }
             for (int m = 0; m < traversalSize; m++) {
               int id = scoreDocs[m].doc;
@@ -242,37 +236,50 @@ public abstract class ReadTask extends PerfTask {
   /**
    * @deprecated Use {@link #getBenchmarkHighlighter(Query)}
    */
-  protected Highlighter getHighlighter(Query q){
-    return new Highlighter(new SimpleHTMLFormatter(), new QueryTermScorer(q));
+  final Highlighter getHighlighter(Query q) {
+    // not called
+    return null;
   }
   
+  /**
+   * Return an appropriate highlighter to be used with
+   * highlighting tasks
+   */
   protected BenchmarkHighlighter getBenchmarkHighlighter(Query q){
     return null;
   }
 
   /**
-   *
    * @return the maxiumum number of highlighter fragments
+   * @deprecated Please define getBenchmarkHighlighter instead
    */
-  public int maxNumFragments(){
+  final int maxNumFragments(){
+    // not called -- we switched this method to final to
+    // force any external subclasses to cutover to
+    // getBenchmarkHighlighter instead
     return 10;
   }
 
   /**
    *
    * @return true if the highlighter should merge contiguous fragments
-   * @deprecated
+   * @deprecated Please define getBenchmarkHighlighter instead
    */
-  public boolean isMergeContiguousFragments(){
+  final boolean isMergeContiguousFragments(){
+    // not called -- we switched this method to final to
+    // force any external subclasses to cutover to
+    // getBenchmarkHighlighter instead
     return false;
   }
 
   /**
-   * @deprecated
+   * @deprecated Please define getBenchmarkHighlighter instead
    */
-  protected int doHighlight(TokenStream ts, String text,  Highlighter highlighter, boolean mergeContiguous, int maxFragments) throws IOException, InvalidTokenOffsetsException {
-    TextFragment[] frag = highlighter.getBestTextFragments(ts, text, mergeContiguous, maxFragments);
-    return frag != null ? frag.length : 0;
+  final int doHighlight(TokenStream ts, String text,  Highlighter highlighter, boolean mergeContiguous, int maxFragments) throws IOException, InvalidTokenOffsetsException {
+    // not called -- we switched this method to final to
+    // force any external subclasses to cutover to
+    // getBenchmarkHighlighter instead
+    return 0;
   }
   
   protected Sort getSort() {

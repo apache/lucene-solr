@@ -101,10 +101,6 @@ public class SearchTravRetVectorHighlightTask extends SearchTravTask {
     };
   }
 
-  public int maxNumFragments() {
-    return maxFrags;
-  }
-
   protected Collection/*<String>*/ getFieldsToHighlight(Document document) {
     Collection result = super.getFieldsToHighlight(document);
     //if stored is false, then result will be empty, in which case just get all the param fields

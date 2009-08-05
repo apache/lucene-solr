@@ -24,13 +24,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Highlighter;
-import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.search.highlight.QueryScorer;
 import org.apache.lucene.search.highlight.SimpleHTMLFormatter;
 import org.apache.lucene.search.highlight.TextFragment;
 import org.apache.lucene.search.highlight.TokenSources;
 
-import java.io.IOException;
 import java.util.Set;
 import java.util.Collection;
 import java.util.HashSet;
@@ -101,17 +99,6 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
         return frag != null ? frag.length : 0;
       }
     };
-  }
-
-  /**
-   * @deprecated
-   */
-  public boolean isMergeContiguousFragments() {
-    return mergeContiguous;
-  }
-
-  public int maxNumFragments() {
-    return maxFrags;
   }
 
   protected Collection/*<String>*/ getFieldsToHighlight(Document document) {
