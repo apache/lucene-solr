@@ -539,7 +539,8 @@ public class HighlighterTest extends AbstractSolrTestCase {
      //long document
      assertU(adoc("tv_text", "keyword is only here",
                   "t_text", "a piece of text to be substituted",
-                  "id", "1"));
+                  "id", "1",
+                  "foo_t","hi"));
      assertU(commit());
      assertU(optimize());
 
@@ -559,12 +560,12 @@ public class HighlighterTest extends AbstractSolrTestCase {
             );
 
     // with an alternate
-    args.put("hl.alternateField", "id");
+    args.put("hl.alternateField", "foo_t");
     sumLRF = h.getRequestFactory("standard", 0, 200, args);
     assertQ("Alternate summarization",
             sumLRF.makeRequest("tv_text:keyword"),
             "//lst[@name='highlighting']/lst[@name='1' and count(*)=1]",
-            "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str[.='1']"
+            "//lst[@name='highlighting']/lst[@name='1']/arr[@name='t_text']/str[.='hi']"
             );
 
     // with an alternate + max length
