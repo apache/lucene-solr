@@ -21,7 +21,7 @@ import org.apache.lucene.index.Payload;
 
 /**
  *  Encode a character array Float as a {@link org.apache.lucene.index.Payload}.
- *
+ * <p/>
  * @see {@link org.apache.lucene.analysis.payloads.PayloadHelper#encodeFloat(float, byte[], int)}
  *
  **/
