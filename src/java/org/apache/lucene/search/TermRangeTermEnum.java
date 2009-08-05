@@ -22,6 +22,7 @@ import java.text.Collator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * Subclass of FilteredTermEnum for enumerating all terms that match the
@@ -75,7 +76,7 @@ public class TermRangeTermEnum extends FilteredTermEnum {
     this.lowerTermText = lowerTermText;
     this.includeLower = includeLower;
     this.includeUpper = includeUpper;
-    this.field = field.intern();
+    this.field = StringHelper.intern(field);
     
     // do a little bit of normalization...
     // open ended range queries should always be inclusive.

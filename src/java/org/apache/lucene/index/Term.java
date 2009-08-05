@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import org.apache.lucene.util.StringHelper;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -33,7 +35,8 @@ public final class Term implements Comparable, java.io.Serializable {
    * <p>Note that a null field or null text value results in undefined
    * behavior for most Lucene APIs that accept a Term parameter. */
   public Term(String fld, String txt) {
-    this(fld, txt, true);
+    field = StringHelper.intern(fld);
+    text = txt;
   }
 
   /** Constructs a Term with the given field and empty text.
@@ -47,8 +50,8 @@ public final class Term implements Comparable, java.io.Serializable {
   }
 
   Term(String fld, String txt, boolean intern) {
-    field = intern ? fld.intern() : fld;	  // field names are interned
-    text = txt;					  // unless already known to be
+    field = intern ? StringHelper.intern(fld) : fld;	  // field names are interned
+    text = txt;					          // unless already known to be
   }
 
   /** Returns the field of this term, an interned string.   The field indicates
@@ -130,6 +133,6 @@ public final class Term implements Comparable, java.io.Serializable {
     throws java.io.IOException, ClassNotFoundException
   {
       in.defaultReadObject();
-      field = field.intern();
+      field = StringHelper.intern(field);
   }
 }

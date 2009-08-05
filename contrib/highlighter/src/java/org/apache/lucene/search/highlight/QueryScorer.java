@@ -11,6 +11,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * {@link Scorer} implementation which scores text fragments by the number of
@@ -67,7 +68,7 @@ public class QueryScorer implements Scorer {
    */
   public QueryScorer(Query query, IndexReader reader, String field, String defaultField)
     throws IOException {
-    this.defaultField = defaultField.intern();
+    this.defaultField = StringHelper.intern(defaultField);
     init(query, field, reader, true);
   }
 
@@ -75,7 +76,7 @@ public class QueryScorer implements Scorer {
    * @param defaultField - The default field for queries with the field name unspecified
    */
   public QueryScorer(Query query, String field, String defaultField) {
-    this.defaultField = defaultField.intern();
+    this.defaultField = StringHelper.intern(defaultField);
     init(query, field, null, true);
   }
 

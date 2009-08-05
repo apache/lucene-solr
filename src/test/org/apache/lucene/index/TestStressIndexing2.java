@@ -20,6 +20,7 @@ import org.apache.lucene.analysis.*;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.search.TermQuery;
 
 import java.util.*;
@@ -266,7 +267,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     TermDocs termDocs2 = r2.termDocs();
 
     // create mapping from id2 space to id2 based on idField
-    idField = idField.intern();
+    idField = StringHelper.intern(idField);
     TermEnum termEnum = r1.terms (new Term (idField, ""));
     do {
       Term term = termEnum.term();

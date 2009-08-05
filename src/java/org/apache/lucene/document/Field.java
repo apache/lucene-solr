@@ -20,6 +20,7 @@ package org.apache.lucene.document;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexWriter;   // for javadoc
 import org.apache.lucene.util.Parameter;
+import org.apache.lucene.util.StringHelper;
 
 import java.io.Reader;
 import java.io.Serializable;
@@ -337,7 +338,7 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
          + "for a field that is not indexed");
           
     if (internName) // field names are optionally interned
-      name = name.intern();        
+      name = StringHelper.intern(name);
     
     this.name = name; 
     
@@ -417,7 +418,7 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     if (reader == null)
       throw new NullPointerException("reader cannot be null");
     
-    this.name = name.intern();        // field names are interned
+    this.name = StringHelper.intern(name);        // field names are interned
     this.fieldsData = reader;
     
     this.isStored = false;
@@ -464,7 +465,7 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     if (tokenStream == null)
       throw new NullPointerException("tokenStream cannot be null");
     
-    this.name = name.intern();        // field names are interned
+    this.name = StringHelper.intern(name);        // field names are interned
     this.fieldsData = null;
     this.tokenStream = tokenStream;
 
@@ -509,7 +510,7 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     if (value == null)
       throw new IllegalArgumentException("value cannot be null");
     
-    this.name = name.intern();
+    this.name = StringHelper.intern(name);        // field names are interned
     fieldsData = value;
     
     if (store == Store.YES) {

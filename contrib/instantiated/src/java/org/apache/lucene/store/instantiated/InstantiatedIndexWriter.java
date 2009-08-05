@@ -43,6 +43,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * This class, similar to {@link org.apache.lucene.index.IndexWriter}, has no locking mechanism.
@@ -458,7 +459,7 @@ public class InstantiatedIndexWriter {
       FieldSetting fieldSetting = fieldSettingsByFieldName.get(field.name());
       if (fieldSetting == null) {
         fieldSetting = new FieldSetting();
-        fieldSetting.fieldName = field.name().intern();
+        fieldSetting.fieldName = StringHelper.intern(field.name());
         fieldSettingsByFieldName.put(fieldSetting.fieldName, fieldSetting);
         fieldNameBuffer.add(fieldSetting.fieldName);
       }

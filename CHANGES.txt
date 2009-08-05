@@ -717,6 +717,12 @@ Optimizations
     optional scorers, or not enough optional scorers to satisfy
     minShouldMatch).  (Shai Erera via Mike McCandless)
 
+12. LUCENE-1607: To speed up string interning for commonly used
+    strings, the StringHelper.intern() interface was added with a
+    default implementation that uses a lockless cache.
+    (Earwin Burrfoot, yonik)
+    
+
 Documentation
 
 Build

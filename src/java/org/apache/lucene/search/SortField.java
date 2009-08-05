@@ -25,6 +25,7 @@ import org.apache.lucene.document.NumericField; // javadocs
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * Stores information about how to sort documents by terms in an individual
@@ -272,7 +273,7 @@ implements Serializable {
       if (type != SCORE && type != DOC)
         throw new IllegalArgumentException("field can only be null when type is SCORE or DOC");
     } else {
-      this.field = field.intern();
+      this.field = StringHelper.intern(field);
     }
   }
 
@@ -510,7 +511,7 @@ implements Serializable {
    * @deprecated
    */
   static int detectFieldType(IndexReader reader, String fieldKey) throws IOException {
-    String field = fieldKey.intern();
+    String field = StringHelper.intern(fieldKey);
     TermEnum enumerator = reader.terms(new Term(field));
     try {
       Term term = enumerator.term();

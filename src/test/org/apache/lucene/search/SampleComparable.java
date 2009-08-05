@@ -21,6 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -69,7 +70,7 @@ implements Comparable, Serializable {
     return new SortComparatorSource () {
       public ScoreDocComparator newComparator (final IndexReader reader, String fieldname)
       throws IOException {
-        final String field = fieldname.intern ();
+        final String field = StringHelper.intern(fieldname);
         final TermEnum enumerator = reader.terms (new Term (fieldname, ""));
         try {
           return new ScoreDocComparator () {
@@ -104,7 +105,7 @@ implements Comparable, Serializable {
        */
       protected Comparable[] fillCache (IndexReader reader, TermEnum enumerator, String fieldname)
       throws IOException {
-        final String field = fieldname.intern ();
+        final String field = StringHelper.intern(fieldname);
         Comparable[] retArray = new Comparable[reader.maxDoc ()];
         if (retArray.length > 0) {
           TermDocs termDocs = reader.termDocs ();

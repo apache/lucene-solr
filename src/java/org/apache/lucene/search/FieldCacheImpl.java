@@ -21,6 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -103,7 +104,7 @@ class FieldCacheImpl implements ExtendedFieldCache {
 
     /** Creates one of these objects. */
     Entry (String field, int type, Locale locale) {
-      this.field = field.intern();
+      this.field = StringHelper.intern(field);
       this.type = type;
       this.custom = null;
       this.locale = locale;
@@ -111,7 +112,7 @@ class FieldCacheImpl implements ExtendedFieldCache {
 
     /** Creates one of these objects for a custom comparator/parser. */
     Entry (String field, Object custom) {
-      this.field = field.intern();
+      this.field = StringHelper.intern(field);
       this.type = SortField.CUSTOM;
       this.custom = custom;
       this.locale = null;
@@ -119,7 +120,7 @@ class FieldCacheImpl implements ExtendedFieldCache {
 
     /** Creates one of these objects for a custom type with parser, needed by FieldSortedHitQueue. */
     Entry (String field, int type, Parser parser) {
-      this.field = field.intern();
+      this.field = StringHelper.intern(field);
       this.type = type;
       this.custom = parser;
       this.locale = null;
@@ -463,7 +464,7 @@ class FieldCacheImpl implements ExtendedFieldCache {
 
     protected Object createValue(IndexReader reader, Object fieldKey)
         throws IOException {
-      String field = ((String) fieldKey).intern();
+      String field = StringHelper.intern((String) fieldKey);
       final String[] retArray = new String[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field));
@@ -495,7 +496,7 @@ class FieldCacheImpl implements ExtendedFieldCache {
 
     protected Object createValue(IndexReader reader, Object fieldKey)
         throws IOException {
-      String field = ((String) fieldKey).intern();
+      String field = StringHelper.intern((String) fieldKey);
       final int[] retArray = new int[reader.maxDoc()];
       String[] mterms = new String[reader.maxDoc()+1];
       TermDocs termDocs = reader.termDocs();
@@ -574,7 +575,7 @@ class FieldCacheImpl implements ExtendedFieldCache {
 
     protected Object createValue(IndexReader reader, Object fieldKey)
         throws IOException {
-      String field = ((String)fieldKey).intern();
+      String field = StringHelper.intern((String) fieldKey);
       TermEnum enumerator = reader.terms (new Term (field));
       try {
         Term term = enumerator.term();

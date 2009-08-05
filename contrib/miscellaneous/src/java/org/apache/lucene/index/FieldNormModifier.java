@@ -23,6 +23,7 @@ import java.util.Date;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * Given a directory and a list of fields, updates the fieldNorms in place for every document.
@@ -103,7 +104,7 @@ public class FieldNormModifier {
    * @param field the field whose norms should be reset
    */
   public void reSetNorms(String field) throws IOException {
-    String fieldName = field.intern();
+    String fieldName = StringHelper.intern(field);
     int[] termCounts = new int[0];
     byte[] fakeNorms = new byte[0];
     

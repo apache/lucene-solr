@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.StringHelper;
 
 import java.io.File;
 import java.io.IOException;
@@ -105,7 +106,7 @@ public class LengthNormModifier {
    * @param field the field whose norms should be reset
    */
   public void reSetNorms(String field) throws IOException {
-    String fieldName = field.intern();
+    String fieldName = StringHelper.intern(field);
     int[] termCounts = new int[0];
     
     IndexReader reader = null;

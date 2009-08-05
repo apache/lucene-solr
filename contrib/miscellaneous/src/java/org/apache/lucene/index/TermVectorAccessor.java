@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import org.apache.lucene.util.StringHelper;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +54,7 @@ public class TermVectorAccessor {
    */
   public void accept(IndexReader indexReader, int documentNumber, String fieldName, TermVectorMapper mapper) throws IOException {
 
-    fieldName = fieldName.intern();
+    fieldName = StringHelper.intern(fieldName);
 
     decoratedMapper.decorated = mapper;
     decoratedMapper.termVectorStored = false;

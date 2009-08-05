@@ -24,6 +24,17 @@ package org.apache.lucene.util;
  * $Id$
  */
 public abstract class StringHelper {
+  /**
+   * Expert:
+   * The StringInterner implementation used by Lucene.
+   * This shouldn't be changed to an incompatible implementation after other Lucene APIs have been used.
+   */
+  public static StringInterner interner = new SimpleStringInterner(1024,8);
+
+  /** Return the same string object for all equal strings */
+  public static String intern(String s) {
+    return interner.intern(s);
+  }
 
   /**
    * Compares two byte[] arrays, element by element, and returns the

@@ -24,6 +24,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -643,7 +644,7 @@ final class FieldsReader implements Cloneable {
 
       this.isTokenized = tokenize;
 
-      this.name = fi.name.intern();
+      this.name = StringHelper.intern(fi.name);
       this.isIndexed = fi.isIndexed;
       this.omitNorms = fi.omitNorms;          
       this.omitTermFreqAndPositions = fi.omitTermFreqAndPositions;

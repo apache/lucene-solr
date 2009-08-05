@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.StringHelper;
 
 import java.io.*;
 
@@ -42,7 +43,7 @@ public class LuceneDictionary implements Dictionary {
 
   public LuceneDictionary(IndexReader reader, String field) {
     this.reader = reader;
-    this.field = field.intern();
+    this.field = StringHelper.intern(field);
   }
 
   public final Iterator getWordsIterator() {

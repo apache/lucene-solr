@@ -17,7 +17,8 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.search.PhraseQuery; // for javadocs
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.analysis.TokenStream; // for javadocs
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.StringHelper; // for javadocs
 
 
 /**
@@ -54,7 +55,7 @@ public abstract class AbstractField implements Fieldable {
   protected AbstractField(String name, Field.Store store, Field.Index index, Field.TermVector termVector) {
     if (name == null)
       throw new NullPointerException("name cannot be null");
-    this.name = name.intern();        // field names are interned
+    this.name = StringHelper.intern(name);        // field names are interned
 
     if (store == Field.Store.YES){
       this.isStored = true;

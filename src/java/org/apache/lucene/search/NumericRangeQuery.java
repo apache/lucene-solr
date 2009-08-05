@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
 import org.apache.lucene.document.NumericField; // for javadocs
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 
@@ -151,7 +152,7 @@ public final class NumericRangeQuery extends MultiTermQuery {
     assert (valSize == 32 || valSize == 64);
     if (precisionStep < 1)
       throw new IllegalArgumentException("precisionStep must be >=1");
-    this.field = field.intern();
+    this.field = StringHelper.intern(field);
     this.precisionStep = precisionStep;
     this.valSize = valSize;
     this.min = min;

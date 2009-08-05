@@ -50,6 +50,7 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * Class used to extract {@link WeightedSpanTerm}s from a {@link Query} based on whether Terms from the query are contained in a supplied TokenStream.
@@ -68,7 +69,7 @@ public class WeightedSpanTermExtractor {
 
   public WeightedSpanTermExtractor(String defaultField) {
     if (defaultField != null) {
-      this.defaultField = defaultField.intern();
+      this.defaultField = StringHelper.intern(defaultField);
     }
   }
 
@@ -362,7 +363,7 @@ public class WeightedSpanTermExtractor {
   public Map getWeightedSpanTerms(Query query, TokenStream tokenStream,
       String fieldName) throws IOException {
     if (fieldName != null) {
-      this.fieldName = fieldName.intern();
+      this.fieldName = StringHelper.intern(fieldName);
     }
 
     Map terms = new PositionCheckingMap();

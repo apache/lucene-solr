@@ -22,6 +22,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
 import java.util.*;
@@ -248,7 +249,7 @@ final class FieldInfos {
   private FieldInfo addInternal(String name, boolean isIndexed,
                                 boolean storeTermVector, boolean storePositionWithTermVector, 
                                 boolean storeOffsetWithTermVector, boolean omitNorms, boolean storePayloads, boolean omitTermFreqAndPositions) {
-    name = name.intern();
+    name = StringHelper.intern(name);
     FieldInfo fi = new FieldInfo(name, isIndexed, byNumber.size(), storeTermVector, storePositionWithTermVector,
                                  storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
     byNumber.add(fi);
@@ -352,7 +353,7 @@ final class FieldInfos {
     }
 
     for (int i = 0; i < size; i++) {
-      String name = input.readString().intern();
+      String name = StringHelper.intern(input.readString());
       byte bits = input.readByte();
       boolean isIndexed = (bits & IS_INDEXED) != 0;
       boolean storeTermVector = (bits & STORE_TERMVECTOR) != 0;
