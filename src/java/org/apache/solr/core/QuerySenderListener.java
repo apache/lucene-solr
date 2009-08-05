@@ -42,7 +42,8 @@ class QuerySenderListener extends AbstractSolrEventListener {
     for (NamedList nlst : (List<NamedList>)args.get("queries")) {
       try {
         // bind the request to a particular searcher (the newSearcher)
-        LocalSolrQueryRequest req = new LocalSolrQueryRequest(core,nlst) {
+        NamedList params = addEventParms(currentSearcher, nlst);
+        LocalSolrQueryRequest req = new LocalSolrQueryRequest(core,params) {
           @Override public SolrIndexSearcher getSearcher() { return searcher; }
           @Override public void close() { }
         };
@@ -73,7 +74,6 @@ class QuerySenderListener extends AbstractSolrEventListener {
     }
     log.info("QuerySenderListener done.");
   }
-
 
 
 }

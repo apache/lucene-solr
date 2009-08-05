@@ -34,8 +34,8 @@
          local query request for each NamedList in sequence. -->
     <listener event="newSearcher" class="solr.QuerySenderListener">
       <arr name="queries">
-        <lst> <str name="q">solr</str> <str name="start">0</str> <str name="rows">10</str> </lst>
-        <lst> <str name="q">rocks</str> <str name="start">0</str> <str name="rows">10</str> </lst>
+        <lst> <str name="q">solr</str> <str name="start">0</str> <str name="rows">10</str> <str name="qt">mock</str></lst>
+        <lst> <str name="q">rocks</str> <str name="start">0</str> <str name="rows">10</str> <str name="qt">mock</str></lst>
       </arr>
     </listener>
 
@@ -44,10 +44,15 @@
          requests or to gain prewarming data from. -->
     <listener event="firstSearcher" class="solr.QuerySenderListener">
       <arr name="queries">
-        <lst> <str name="q">fast_warm</str> <str name="start">0</str> <str name="rows">10</str> </lst>
+        <lst> <str name="q">fast_warm</str> <str name="start">0</str> <str name="rows">10</str>
+          <str name="qt">mock</str>
+        </lst>
       </arr>
     </listener>
   
   </query>
-  
+  <requestHandler name="mock" class="org.apache.solr.core.MockQuerySenderListenerReqHandler" default="true">
+    <!-- default values for query parameters -->
+
+  </requestHandler>
 </config>

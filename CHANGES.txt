@@ -254,6 +254,10 @@ New Features
     that allows disabling of english possessive stemming (removal of trailing 's from tokens)
     (Robert Muir via yonik)
 
+66. SOLR-1237: firstSearcher and newSearcher can now be identified via the CommonParams.EVENT (evt) parameter in a request.  This allows a
+  RequestHandler or SearchComponent to know when a newSearcher or firstSearcher event happened.  QuerySenderListender is the only implementation
+  in Solr that implements this, but outside implementations may wish to.  See the AbstractSolrEventListener for a helper method. (gsingers)
+
 
 Optimizations
 ----------------------
