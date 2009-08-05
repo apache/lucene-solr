@@ -412,16 +412,12 @@ public class TestSort extends LuceneTestCase implements Serializable {
       bottomValue = slotValues[bottom];
     }
 
-    public void setNextReader(IndexReader reader, int docBase, int numSlotsFull) throws IOException {
+    public void setNextReader(IndexReader reader, int docBase) throws IOException {
       docValues = FieldCache.DEFAULT.getInts(reader, "parser", new FieldCache.IntParser() {
           public final int parseInt(final String val) {
             return (val.charAt(0)-'A') * 123456;
           }
         });
-    }
-
-    public int sortType() {
-      return 0;
     }
 
     public Comparable value(int slot) {

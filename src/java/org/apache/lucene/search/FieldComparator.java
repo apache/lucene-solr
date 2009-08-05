@@ -31,12 +31,53 @@ import org.apache.lucene.search.FieldCache.ShortParser;
 import org.apache.lucene.search.FieldCache.StringIndex;
 
 /**
- * A FieldComparator compares hits across multiple IndexReaders.
- * 
- * A comparator can compare a hit at hit 'slot a' with hit 'slot b',
- * compare a hit on 'doc i' with hit 'slot a', or copy a hit at 'doc i'
- * to 'slot a'. Each slot refers to a hit while each doc refers to the
- * current IndexReader.
+ * Expert: a FieldComparator compares hits so as to determine their
+ * sort order when collecting the top results with {@link
+ * TopFieldCollector}.  The concrete public FieldComparator
+ * classes here correspond to the SortField types.
+ *
+ * <p>This API is designed to achieve high performance
+ * sorting, by exposing a tight interaction with {@link
+ * FieldValueHitQueue} as it visits hits.  Whenever a hit is
+ * competitive, it's enrolled into a virtual slot, which is
+ * an int ranging from 0 to numHits-1.  The {@link
+ * FieldComparator} is made aware of segment transitions
+ * during searching in case any internal state it's tracking
+ * needs to be recomputed during these transitions.</p>
+ *
+ * <p>A comparator must define these functions:</p>
+ *
+ * <ul>
+ *
+ *  <li> {@link #compare} Compare a hit at 'slot a'
+ *       with hit 'slot b'.
+ *
+ *  <li> {@link #setBottom} This method is called by
+ *       {@link FieldValueHitQueue} to notify the
+ *       FieldComparator of the current weakest ("bottom")
+ *       slot.  Note that this slot may not hold the weakest
+ *       value according to your comparator, in cases where
+ *       your comparator is not the primary one (ie, is only
+ *       used to break ties from the comparators before it).
+ *
+ *  <li> {@link #compareBottom} Compare a new hit (docID)
+ *       against the "weakest" (bottom) entry in the queue.
+ *
+ *  <li> {@link #copy} Installs a new hit into the
+ *       priority queue.  The {@link FieldValueHitQueue}
+ *       calls this method when a new hit is competitive.
+ *
+ *  <li> {@link #setNextReader} Invoked
+ *       when the search is switching to the next segment.
+ *       You may need to update internal state of the
+ *       comparator, for example retrieving new values from
+ *       the {@link FieldCache}.
+ *
+ *  <li> {@link #value} Return the sort value stored in
+ *       the specified slot.  This is only called at the end
+ *       of the search, in order to populate {@link
+ *       FieldDoc#fields} when returning the top results.
+ * </ul>
  *
  * <b>NOTE:</b> This API is experimental and might change in
  * incompatible ways in the next release.
@@ -70,16 +111,12 @@ public abstract class FieldComparator {
       values[slot] = currentReaderValues[doc];
     }
 
-    public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) throws IOException {
+    public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getBytes(reader, field, parser);
     }
     
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
-    }
-
-    public int sortType() {
-      return SortField.BYTE;
     }
 
     public Comparable value(int slot) {
@@ -111,7 +148,7 @@ public abstract class FieldComparator {
       docIDs[slot] = docBase + doc;
     }
 
-    public void setNextReader(IndexReader reader, int docBase, int numSlotsFull) {
+    public void setNextReader(IndexReader reader, int docBase) {
       // TODO: can we "map" our docIDs to the current
       // reader? saves having to then subtract on every
       // compare call
@@ -120,10 +157,6 @@ public abstract class FieldComparator {
     
     public void setBottom(final int bottom) {
       this.bottom = docIDs[bottom];
-    }
-
-    public int sortType() {
-      return SortField.DOC;
     }
 
     public Comparable value(int slot) {
@@ -173,16 +206,12 @@ public abstract class FieldComparator {
       values[slot] = currentReaderValues[doc];
     }
 
-    public void setNextReader(IndexReader reader, int docBase, int numSlotsFull) throws IOException {
+    public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getDoubles(reader, field, parser);
     }
     
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
-    }
-
-    public int sortType() {
-      return SortField.DOUBLE;
     }
 
     public Comparable value(int slot) {
@@ -236,16 +265,12 @@ public abstract class FieldComparator {
       values[slot] = currentReaderValues[doc];
     }
 
-    public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) throws IOException {
+    public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getFloats(reader, field, parser);
     }
     
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
-    }
-
-    public int sortType() {
-      return SortField.FLOAT;
     }
 
     public Comparable value(int slot) {
@@ -303,16 +328,12 @@ public abstract class FieldComparator {
       values[slot] = currentReaderValues[doc];
     }
 
-    public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) throws IOException {
+    public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getInts(reader, field, parser);
     }
     
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
-    }
-
-    public int sortType() {
-      return SortField.INT;
     }
 
     public Comparable value(int slot) {
@@ -366,16 +387,12 @@ public abstract class FieldComparator {
       values[slot] = currentReaderValues[doc];
     }
 
-    public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) throws IOException {
+    public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getLongs(reader, field, parser);
     }
     
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
-    }
-
-    public int sortType() {
-      return SortField.LONG;
     }
 
     public Comparable value(int slot) {
@@ -413,7 +430,7 @@ public abstract class FieldComparator {
       scores[slot] = scorer.score();
     }
 
-    public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) {
+    public void setNextReader(IndexReader reader, int docBase) {
     }
     
     public void setBottom(final int bottom) {
@@ -426,10 +443,6 @@ public abstract class FieldComparator {
       this.scorer = new ScoreCachingWrappingScorer(scorer);
     }
     
-    public int sortType() {
-      return SortField.SCORE;
-    }
-
     public Comparable value(int slot) {
       return new Float(scores[slot]);
     }
@@ -462,16 +475,12 @@ public abstract class FieldComparator {
       values[slot] = currentReaderValues[doc];
     }
 
-    public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) throws IOException {
+    public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getShorts(reader, field, parser);
     }
     
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
-    }
-
-    public int sortType() {
-      return SortField.BYTE;
     }
 
     public Comparable value(int slot) {
@@ -526,7 +535,7 @@ public abstract class FieldComparator {
       values[slot] = currentReaderValues[doc];
     }
 
-    public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) throws IOException {
+    public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getStrings(reader, field);
     }
     
@@ -534,18 +543,20 @@ public abstract class FieldComparator {
       this.bottom = values[bottom];
     }
 
-    public int sortType() {
-      return SortField.STRING;
-    }
-
     public Comparable value(int slot) {
       return values[slot];
     }
   }
 
-  // NOTE: there were a number of other interesting String
-  // comparators explored, but this one seemed to perform
-  // best all around.  See LUCENE-1483 for details.
+  /** Sorts by field's natural String sort order, using
+   *  ordinals.  This is functionally equivalent to {@link
+   *  StringValComparator}, but it first resolves the string
+   *  to their relative ordinal positions (using the index
+   *  returned by {@link FieldCache#getStringIndex}), and
+   *  does most comparisons using the ordinals.  For medium
+   *  to large results, this comparator will be much faster
+   *  than {@link StringValComparator}.  For very small
+   *  result sets it may be slower. */
   public static final class StringOrdValComparator extends FieldComparator {
 
     private final int[] ords;
@@ -652,7 +663,7 @@ public abstract class FieldComparator {
       readerGen[slot] = currentReaderGen;
     }
 
-    public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) throws IOException {
+    public void setNextReader(IndexReader reader, int docBase) throws IOException {
       StringIndex currentReaderValues = FieldCache.DEFAULT.getStringIndex(reader, field);
       currentReaderGen++;
       order = currentReaderValues.order;
@@ -673,10 +684,6 @@ public abstract class FieldComparator {
       assert bottomOrd >= 0;
       assert bottomOrd < lookup.length;
       bottomValue = values[bottom];
-    }
-
-    public int sortType() {
-      return SortField.STRING;
     }
 
     public Comparable value(int slot) {
@@ -744,16 +751,12 @@ public abstract class FieldComparator {
       values[slot] = currentReaderValues[doc];
     }
 
-    public void setNextReader(IndexReader reader, int docBase, int numSlotsFull) throws IOException {
+    public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getStrings(reader, field);
     }
     
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
-    }
-
-    public int sortType() {
-      return SortField.STRING_VAL;
     }
 
     public Comparable value(int slot) {
@@ -788,7 +791,7 @@ public abstract class FieldComparator {
   }
 
   /**
-   * Compare hit at slot1 with hit at slot2.  Return 
+   * Compare hit at slot1 with hit at slot2.
    * 
    * @param slot1 first slot to compare
    * @param slot2 second slot to compare
@@ -799,16 +802,25 @@ public abstract class FieldComparator {
   public abstract int compare(int slot1, int slot2);
 
   /**
-   * Set the bottom queue slot, ie the "weakest" (sorted
-   * last) entry in the queue.
+   * Set the bottom slot, ie the "weakest" (sorted last)
+   * entry in the queue.  When {@link #compareBottom} is
+   * called, you should compare against this slot.  This
+   * will always be called before {@link #compareBottom}.
    * 
-   * @param slot the currently weakest (sorted lost) slot in the queue
+   * @param slot the currently weakest (sorted last) slot in the queue
    */
   public abstract void setBottom(final int slot);
 
   /**
    * Compare the bottom of the queue with doc.  This will
-   * only invoked after setBottom has been called.  
+   * only invoked after setBottom has been called.  This
+   * should return the same result as {@link
+   * #compare(int,int)}} as if bottom were slot1 and the new
+   * document were slot 2.
+   *    
+   * <p>For a search that hits many results, this method
+   * will be the hotspot (invoked by far the most
+   * frequently).</p>
    * 
    * @param doc that was hit
    * @return any N < 0 if the doc's value is sorted after
@@ -819,7 +831,10 @@ public abstract class FieldComparator {
   public abstract int compareBottom(int doc) throws IOException;
 
   /**
-   * Copy hit (doc,score) to hit slot.
+   * This method is called when a new hit is competitive.
+   * You should copy any state associated with this document
+   * that will be required for future comparisons, into the
+   * specified slot.
    * 
    * @param slot which slot to copy the hit to
    * @param doc docID relative to current reader
@@ -834,22 +849,21 @@ public abstract class FieldComparator {
    * @throws IOException
    * @throws IOException
    */
-  public abstract void setNextReader(IndexReader reader, int docBase, int numSlotsFull) throws IOException;
+  public abstract void setNextReader(IndexReader reader, int docBase) throws IOException;
 
-  /** Sets the Scorer to use in case a document's score is needed. */
+  /** Sets the Scorer to use in case a document's score is
+   *  needed.
+   * 
+   * @param scorer Scorer instance that you should use to
+   * obtain the current hit's score, if necessary. */
   public void setScorer(Scorer scorer) {
     // Empty implementation since most comparators don't need the score. This
     // can be overridden by those that need it.
   }
   
   /**
-   * @return SortField.TYPE
-   */
-  public abstract int sortType();
-
-  /**
-   * Return the actual value at slot.
-   * 
+   * Return the actual value in the slot.
+   *
    * @param slot the value
    * @return value in this slot upgraded to Comparable
    */

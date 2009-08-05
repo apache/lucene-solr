@@ -108,8 +108,8 @@ public class DistanceFieldComparatorSource extends FieldComparatorSource {
 		}
 
 		@Override
-		public void setNextReader(IndexReader reader, int docBase,
-				int numSlotsFull) throws IOException {
+                  public void setNextReader(IndexReader reader, int docBase)
+                  throws IOException {
 			
 			// each reader in a segmented base
 			// has an offset based on the maxDocs of previous readers
@@ -119,12 +119,6 @@ public class DistanceFieldComparatorSource extends FieldComparatorSource {
 		@Override
 		public Comparable<Double> value(int slot) {
 			return values[slot];
-		}
-
-		@Override
-		public int sortType() {
-
-			return SortField.DOUBLE;
 		}
 	}
 

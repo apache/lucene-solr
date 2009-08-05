@@ -21,7 +21,6 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
-import org.apache.lucene.search.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -165,12 +164,8 @@ class ElevationComparatorSource extends FieldComparatorSource {
        values[slot] = docVal(doc);
      }
 
-     public void setNextReader(IndexReader reader, int docBase, int numSlotsFull) throws IOException {
+     public void setNextReader(IndexReader reader, int docBase) throws IOException {
        idIndex = FieldCache.DEFAULT.getStringIndex(reader, fieldname);
-     }
-
-     public int sortType() {
-       return SortField.CUSTOM;
      }
 
      public Comparable value(int slot) {

@@ -87,9 +87,8 @@ public abstract class TopFieldCollector extends TopDocsCollector {
     }
     
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
-      final int numSlotsFull = queueFull ? numHits : totalHits;
       this.docBase = docBase;
-      comparator.setNextReader(reader, docBase, numSlotsFull);
+      comparator.setNextReader(reader, docBase);
     }
     
     public void setScorer(Scorer scorer) throws IOException {
@@ -428,10 +427,9 @@ public abstract class TopFieldCollector extends TopDocsCollector {
     }
 
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
-      final int numSlotsFull = queueFull ? numHits : totalHits;
       this.docBase = docBase;
       for (int i = 0; i < comparators.length; i++) {
-        comparators[i].setNextReader(reader, docBase, numSlotsFull);
+        comparators[i].setNextReader(reader, docBase);
       }
     }
 

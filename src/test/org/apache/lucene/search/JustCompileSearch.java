@@ -221,12 +221,8 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    public void setNextReader(IndexReader reader, int docBase, int numSlotsFull)
+    public void setNextReader(IndexReader reader, int docBase)
         throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    public int sortType() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

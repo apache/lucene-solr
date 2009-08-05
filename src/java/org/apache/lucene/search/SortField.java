@@ -443,16 +443,20 @@ implements Serializable {
   }
 
 
-  /** Returns the {@link FieldComparator} to use for sorting.
+  /** Returns the {@link FieldComparator} to use for
+   * sorting.
+   *
+   * <b>NOTE:</b> This API is experimental and might change in
+   * incompatible ways in the next release.
+   *
    * @param numHits number of top hits the queue will store
    * @param sortPos position of this SortField within {@link
    *   Sort}.  The comparator is primary if sortPos==0,
    *   secondary if sortPos==1, etc.  Some comparators can
    *   optimize themselves when they are the primary sort.
-   * @param reversed True if the SortField is reversed
    * @return {@link FieldComparator} to use when sorting
    */
-  public FieldComparator getComparator(final int numHits, final int sortPos, final boolean reversed) throws IOException {
+  public FieldComparator getComparator(final int numHits, final int sortPos) throws IOException {
 
     if (locale != null) {
       // TODO: it'd be nice to allow FieldCache.getStringIndex
@@ -488,10 +492,10 @@ implements Serializable {
 
     case SortField.CUSTOM:
       assert factory == null && comparatorSource != null;
-      return comparatorSource.newComparator(field, numHits, sortPos, reversed);
+      return comparatorSource.newComparator(field, numHits, sortPos, reverse);
 
     case SortField.STRING:
-      return new FieldComparator.StringOrdValComparator(numHits, field, sortPos, reversed);
+      return new FieldComparator.StringOrdValComparator(numHits, field, sortPos, reverse);
 
     case SortField.STRING_VAL:
       return new FieldComparator.StringValComparator(numHits, field);

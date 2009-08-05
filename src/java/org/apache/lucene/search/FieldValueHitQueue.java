@@ -76,7 +76,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue {
       SortField field = fields[0];
       // AUTO is resolved before we are called
       assert field.getType() != SortField.AUTO;
-      comparator = field.getComparator(size, 0, field.reverse);
+      comparator = field.getComparator(size, 0);
       oneReverseMul = field.reverse ? -1 : 1;
 
       comparators[0] = comparator;
@@ -127,7 +127,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue {
         assert field.getType() != SortField.AUTO;
 
         reverseMul[i] = field.reverse ? -1 : 1;
-        comparators[i] = field.getComparator(size, i, field.reverse);
+        comparators[i] = field.getComparator(size, i);
       }
 
       initialize(size);
