@@ -116,6 +116,10 @@ public class DistanceQueryBuilder {
     return new ChainedFilter(new Filter[] {qf, filter},
                              ChainedFilter.AND);
   }
+
+  public DistanceFilter getDistanceFilter() {
+    return distanceFilter;
+  }
     
   public Query getQuery(Query query){
     return new ConstantScoreQuery(getFilter(query));
