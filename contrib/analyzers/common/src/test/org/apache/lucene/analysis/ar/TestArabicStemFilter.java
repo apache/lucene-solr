@@ -50,6 +50,10 @@ public class TestArabicStemFilter extends TestCase {
     check("فالحسن", "حسن");
   }    
 
+  public void testLlPrefix() throws IOException {
+    check("للاخر", "اخر"); 
+  }
+  
   public void testWaPrefix() throws IOException {
     check("وحسن", "حسن");
   } 

@@ -27,6 +27,7 @@ import java.util.Hashtable;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WordlistLoader;
@@ -36,10 +37,9 @@ import org.apache.lucene.analysis.WordlistLoader;
  * <p>
  * This analyzer implements light-stemming as specified by:
  * <i>
- * Improving Stemming for Arabic Information Retrieval: 
- *      Light Stemming and Co-occurrence Analysis
+ * Light Stemming for Arabic Information Retrieval
  * </i>    
- * http://ciir.cs.umass.edu/pubfiles/ir-249.pdf
+ * http://www.mtholyoke.edu/~lballest/Pubs/arab_stem05.pdf
  * <p>
  * The analysis package contains three primary components:
  * <ul>
@@ -109,12 +109,13 @@ public final class ArabicAnalyzer extends Analyzer {
   /**
    * Creates a TokenStream which tokenizes all the text in the provided Reader.
    *
-   * @return  A TokenStream build from a StandardTokenizer filtered with
-   * 			StandardFilter, StopFilter, ArabicNormalizationFilter and ArabicStemFilter.
+   * @return  A TokenStream build from an ArabicTokenizer filtered with
+   * 			StopFilter, LowerCaseFilter, ArabicNormalizationFilter and ArabicStemFilter.
    */
   public final TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new ArabicLetterTokenizer( reader );
     result = new StopFilter( result, stoptable );
+    result = new LowerCaseFilter(result);
     result = new ArabicNormalizationFilter( result );
     result = new ArabicStemFilter( result );
 

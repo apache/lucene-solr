@@ -47,6 +47,7 @@ public class ArabicStemmer {
       ("" + BEH + ALEF + LAM).toCharArray(),
       ("" + KAF + ALEF + LAM).toCharArray(),
       ("" + FEH + ALEF + LAM).toCharArray(),
+      ("" + LAM + LAM).toCharArray(),
       ("" + WAW).toCharArray(),
   };
   

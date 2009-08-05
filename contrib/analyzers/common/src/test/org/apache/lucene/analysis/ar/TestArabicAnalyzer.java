@@ -17,6 +17,12 @@ package org.apache.lucene.analysis.ar;
  * limitations under the License.
  */
 
+import java.io.StringReader;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+
 import junit.framework.TestCase;
 
 /**
@@ -31,6 +37,48 @@ public class TestArabicAnalyzer extends TestCase {
     new ArabicAnalyzer();
   }
   
-  /* TODO: more tests */
+  /**
+   * Some simple tests showing some features of the analyzer, how some regular forms will conflate
+   */
+  public void testBasicFeatures() throws Exception {
+    ArabicAnalyzer a = new ArabicAnalyzer();
+    assertAnalyzesTo(a, "كبير", new String[] { "كبير" });
+    assertAnalyzesTo(a, "كبيرة", new String[] { "كبير" }); // feminine marker
+    
+    assertAnalyzesTo(a, "مشروب", new String[] { "مشروب" });
+    assertAnalyzesTo(a, "مشروبات", new String[] { "مشروب" }); // plural -at
+    
+    assertAnalyzesTo(a, "أمريكيين", new String[] { "امريك" }); // plural -in
+    assertAnalyzesTo(a, "امريكي", new String[] { "امريك" }); // singular with bare alif
+    
+    assertAnalyzesTo(a, "كتاب", new String[] { "كتاب" }); 
+    assertAnalyzesTo(a, "الكتاب", new String[] { "كتاب" }); // definite article
+    
+    assertAnalyzesTo(a, "ما ملكت أيمانكم", new String[] { "ملكت", "ايمانكم"});
+    assertAnalyzesTo(a, "الذين ملكت أيمانكم", new String[] { "ملكت", "ايمانكم" }); // stopwords
+  }
+
+  /**
+   * Non-arabic text gets treated in a similar way as SimpleAnalyzer.
+   */
+  public void testEnglishInput() throws Exception {
+    assertAnalyzesTo(new ArabicAnalyzer(), "English text.", new String[] {
+        "english", "text" });
+  }
+  
+  private void assertAnalyzesTo(Analyzer a, String input, String[] output)
+      throws Exception {
+    TokenStream ts = a.tokenStream("dummy", new StringReader(input));
+    TermAttribute termAtt = (TermAttribute) ts
+        .getAttribute(TermAttribute.class);
+
+    for (int i = 0; i < output.length; i++) {
+      assertTrue(ts.incrementToken());
+      assertEquals(output[i], termAtt.term());
+    }
+
+    assertFalse(ts.incrementToken());
+    ts.close();
+  }
 
 }

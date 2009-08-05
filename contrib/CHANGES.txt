@@ -8,6 +8,12 @@ Changes in runtime behavior
     number conversion.  You'll need to fully re-index any previously created indexes.
     This isn't a break in back-compatibility because local Lucene has not yet
     been released.  (Mike McCandless)
+ 
+ 2. LUCENE-1758: ArabicAnalyzer now uses the light10 algorithm, has a refined
+    default stopword list, and lowercases non-Arabic text.  
+    You'll need to fully re-index any previously created indexes. This isn't a 
+    break in back-compatibility because ArabicAnalyzer has not yet been 
+    released.  (Robert Muir)
 
 
 API Changes
