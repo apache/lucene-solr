@@ -66,10 +66,6 @@ public class TestPayloadSpans extends LuceneTestCase {
     indexReader = searcher.getIndexReader();
   }
 
-  protected void tearDown() {
-
-  }
-
   public void testSpanTermQuery() throws Exception {
     SpanTermQuery stq;
     Spans spans;

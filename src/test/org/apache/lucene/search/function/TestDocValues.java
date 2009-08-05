@@ -30,17 +30,6 @@ public class TestDocValues extends LuceneTestCase {
     super(name);
   }
 
-  /* @override */
-  protected void tearDown() throws Exception {
-    super.tearDown();
-  }
-
-  /* @override */
-  protected void setUp() throws Exception {
-    // prepare a small index with just a few documents.
-    super.setUp();
-  }
-
   public void testGetMinValue() {
     float[] innerArray = new float[] { 1.0f, 2.0f, -1.0f, 100.0f };
     DocValuesTestImpl docValues = new DocValuesTestImpl(innerArray);

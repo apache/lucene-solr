@@ -17,9 +17,9 @@ package org.apache.lucene.util.cache;
 * limitations under the License.
 */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestSimpleLRUCache extends TestCase {
+public class TestSimpleLRUCache extends LuceneTestCase {
 
   public void testLRUCache() throws Exception {
     final int n = 100;

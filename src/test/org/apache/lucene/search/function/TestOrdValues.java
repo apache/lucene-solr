@@ -42,17 +42,6 @@ public class TestOrdValues extends FunctionTestSetup {
     super(name);
   }
 
-  /* @override */
-  protected void tearDown() throws Exception {
-    super.tearDown();
-  }
-
-  /* @override */
-  protected void setUp() throws Exception {
-    // prepare a small index with just a few documents.  
-    super.setUp();
-  }
-
   /** Test OrdFieldSource */
   public void testOrdFieldRank () throws CorruptIndexException, Exception {
     doTestRank(ID_FIELD,true);

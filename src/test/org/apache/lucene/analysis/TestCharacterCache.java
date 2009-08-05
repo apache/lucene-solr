@@ -16,11 +16,11 @@
  */
 package org.apache.lucene.analysis;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 /**
  * Testcase for {@link CharacterCache}
  */
-public class TestCharacterCache extends TestCase {
+public class TestCharacterCache extends LuceneTestCase {
 
   public void testValueOf() {
     for (int i = 0; i < 256; i++) {

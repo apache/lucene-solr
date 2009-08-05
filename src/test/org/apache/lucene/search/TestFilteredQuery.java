@@ -39,16 +39,15 @@ import java.util.BitSet;
  * @version $Id$
  * @since   1.4
  */
-public class TestFilteredQuery
-extends LuceneTestCase {
+public class TestFilteredQuery extends LuceneTestCase {
 
   private IndexSearcher searcher;
   private RAMDirectory directory;
   private Query query;
   private Filter filter;
 
-  public void setUp()
-  throws Exception {
+  public void setUp() throws Exception {
+    super.setUp();
     directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter (directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 
@@ -96,6 +95,7 @@ extends LuceneTestCase {
   throws Exception {
     searcher.close();
     directory.close();
+    super.tearDown();
   }
 
   public void testFilteredQuery()

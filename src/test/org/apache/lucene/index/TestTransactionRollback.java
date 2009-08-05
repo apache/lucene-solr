@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -42,7 +42,7 @@ import org.apache.lucene.store.MockRAMDirectory;
  * A "keep all" deletion policy is used to ensure we keep all commit points for testing purposes
  */
 
-public class TestTransactionRollback extends TestCase {
+public class TestTransactionRollback extends LuceneTestCase {
 	
   private static final String FIELD_RECORD_ID = "record_id";
   private Directory dir;
@@ -122,6 +122,7 @@ public class TestTransactionRollback extends TestCase {
   */
 
   protected void setUp() throws Exception {
+    super.setUp();
     dir = new MockRAMDirectory();
 		
     //Build index, of records 1 to 100, committing after each batch of 10

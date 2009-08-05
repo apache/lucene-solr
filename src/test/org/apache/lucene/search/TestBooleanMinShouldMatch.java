@@ -42,8 +42,6 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     public IndexSearcher s;
 
     public void setUp() throws Exception {
-
-
         super.setUp();
 
 

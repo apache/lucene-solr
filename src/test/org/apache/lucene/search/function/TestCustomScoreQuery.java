@@ -39,17 +39,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     super(name);
   }
 
-  /* @override */
-  protected void tearDown() throws Exception {
-    super.tearDown();
-  }
-
-  /* @override */
-  protected void setUp() throws Exception {
-    // prepare a small index with just a few documents.  
-    super.setUp();
-  }
-
   /** Test that CustomScoreQuery of Type.BYTE returns the expected scores. */
   public void testCustomScoreByte () throws CorruptIndexException, Exception {
     // INT field values are small enough to be parsed as byte

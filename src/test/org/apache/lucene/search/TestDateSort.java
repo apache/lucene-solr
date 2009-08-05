@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.util.Arrays;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.DateTools;
@@ -38,7 +38,7 @@ import org.apache.lucene.store.RAMDirectory;
  * Test date sorting, i.e. auto-sorting of fields with type "long".
  * See http://issues.apache.org/jira/browse/LUCENE-1045 
  */
-public class TestDateSort extends TestCase {
+public class TestDateSort extends LuceneTestCase {
 
   private static final String TEXT_FIELD = "text";
   private static final String DATE_TIME_FIELD = "dateTime";
@@ -46,6 +46,7 @@ public class TestDateSort extends TestCase {
   private static Directory directory;
 
   public void setUp() throws Exception {
+    super.setUp();
     // Create an index writer.
     directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true,

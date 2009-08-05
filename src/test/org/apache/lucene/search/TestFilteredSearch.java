@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -34,8 +34,7 @@ import org.apache.lucene.util.OpenBitSet;
 /**
  *
  */
-public class TestFilteredSearch extends TestCase
-{
+public class TestFilteredSearch extends LuceneTestCase {
 
   public TestFilteredSearch(String name) {
     super(name);

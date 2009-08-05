@@ -76,7 +76,6 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
   /* @override */
   protected void tearDown() throws Exception {
     super.tearDown();
-    super.tearDown();
     dir = null;
     anlzr = null;
   }

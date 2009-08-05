@@ -40,7 +40,8 @@ public class TestTeeTokenFilter extends LuceneTestCase {
     super(s);
   }
 
-  protected void setUp() {
+  protected void setUp() throws Exception {
+    super.setUp();
     tokens1 = new String[]{"The", "quick", "Burgundy", "Fox", "jumped", "over", "the", "lazy", "Red", "Dogs"};
     tokens2 = new String[]{"The", "Lazy", "Dogs", "should", "stay", "on", "the", "porch"};
     buffer1 = new StringBuffer();
@@ -53,10 +54,6 @@ public class TestTeeTokenFilter extends LuceneTestCase {
       buffer2.append(tokens2[i]).append(' ');
 
     }
-  }
-
-  protected void tearDown() {
-
   }
 
   public void test() throws IOException {

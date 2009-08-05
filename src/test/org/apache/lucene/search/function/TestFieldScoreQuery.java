@@ -44,17 +44,6 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     super(name);
   }
 
-  /* @override */
-  protected void tearDown() throws Exception {
-    super.tearDown();
-  }
-
-  /* @override */
-  protected void setUp() throws Exception {
-    // prepare a small index with just a few documents.  
-    super.setUp();
-  }
-
   /** Test that FieldScoreQuery of Type.BYTE returns docs in expected order. */
   public void testRankByte () throws CorruptIndexException, Exception {
     // INT field values are small enough to be parsed as byte

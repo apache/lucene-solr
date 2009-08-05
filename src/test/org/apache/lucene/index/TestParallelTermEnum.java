@@ -34,7 +34,6 @@ public class TestParallelTermEnum extends LuceneTestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        super.setUp();
         Document doc;
 
         RAMDirectory rd1 = new RAMDirectory();
@@ -67,7 +66,6 @@ public class TestParallelTermEnum extends LuceneTestCase {
     }
 
     protected void tearDown() throws Exception {
-        super.tearDown();
         super.tearDown();
 
         ir1.close();

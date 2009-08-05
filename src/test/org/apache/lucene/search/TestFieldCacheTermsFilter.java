@@ -17,7 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
+
 import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -34,7 +35,7 @@ import java.util.List;
  *
  * @see org.apache.lucene.search.FieldCacheTermsFilter
  */
-public class TestFieldCacheTermsFilter extends TestCase {
+public class TestFieldCacheTermsFilter extends LuceneTestCase {
   public void testMissingTerms() throws Exception {
     String fieldName = "field1";
     MockRAMDirectory rd = new MockRAMDirectory();

@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -29,7 +29,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.RAMDirectory;
 
-public class TestSloppyPhraseQuery extends TestCase {
+public class TestSloppyPhraseQuery extends LuceneTestCase {
 
   private static final String S_1 = "A A A";
   private static final String S_2 = "A 1 2 3 A 4 5 6 A";

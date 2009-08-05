@@ -59,6 +59,7 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
    * initializes searcher with a document set
    */
   protected void setUp() throws Exception {
+    super.setUp();
     final String docText[] = {
         "docThatNeverMatchesSoWeCanRequireLastDocCollectedToBeGreaterThanZero",
         "one blah three",
@@ -92,6 +93,7 @@ public class TestTimeLimitedCollector extends LuceneTestCase {
 
   public void tearDown() throws Exception {
     searcher.close();
+    super.tearDown();
   }
 
   private void add(String value, IndexWriter iw) throws IOException {

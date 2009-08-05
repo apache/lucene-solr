@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.util.ConcurrentModificationException;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -39,7 +39,7 @@ import org.apache.lucene.store.RAMDirectory;
  * See {@link http://issues.apache.org/jira/browse/LUCENE-1096}.
  * @deprecated Hits will be removed in Lucene 3.0
  */
-public class TestSearchHitsWithDeletions extends TestCase {
+public class TestSearchHitsWithDeletions extends LuceneTestCase {
 
   private static boolean VERBOSE = false;  
   private static final String TEXT_FIELD = "text";
@@ -48,6 +48,7 @@ public class TestSearchHitsWithDeletions extends TestCase {
   private static Directory directory;
 
   public void setUp() throws Exception {
+    super.setUp();
     // Create an index writer.
     directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);

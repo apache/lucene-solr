@@ -45,8 +45,7 @@ public class TestTermScorer extends LuceneTestCase
         super(s);
     }
 
-    protected void setUp() throws Exception
-    {
+    protected void setUp() throws Exception {
         super.setUp();
         directory = new RAMDirectory();
 

@@ -1,13 +1,13 @@
 package org.apache.lucene.util;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 
 /**
  *
  *
  **/
-public class ArrayUtilTest extends TestCase {
+public class ArrayUtilTest extends LuceneTestCase {
 
   public void testParseInt() throws Exception {
     int test;

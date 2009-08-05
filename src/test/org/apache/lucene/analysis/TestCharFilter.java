@@ -19,9 +19,9 @@ package org.apache.lucene.analysis;
 
 import java.io.StringReader;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestCharFilter extends TestCase {
+public class TestCharFilter extends LuceneTestCase {
 
   public void testCharFilter1() throws Exception {
     CharStream cs = new CharFilter1( CharReader.get( new StringReader("") ) );
