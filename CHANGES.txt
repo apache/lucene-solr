@@ -662,6 +662,9 @@ New features
     the javadocs implied. If you have payloads and want to use an ordered
     SpanNearQuery that does not need to use the payloads, you can
     disable loading them with a new constructor switch.  (Mark Miller)
+
+34. LUCENE-1341: Added BoostingNearQuery to enable SpanNearQuery functionality
+  with payloads (Peter Keegan, Grant Ingersoll)    
    
 Optimizations
 

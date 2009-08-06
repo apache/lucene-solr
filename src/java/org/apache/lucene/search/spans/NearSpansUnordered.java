@@ -27,10 +27,15 @@ import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
-class NearSpansUnordered implements Spans {
+/**
+ * Expert:
+ * Only public for subclassing.  Most implementations should not need this class
+ */
+public class NearSpansUnordered implements Spans {
   private SpanNearQuery query;
 
   private List ordered = new ArrayList();         // spans in query order
+  private Spans[] subSpans;  
   private int slop;                               // from query
 
   private SpansCell first;                        // linked list of spans
@@ -122,13 +127,17 @@ class NearSpansUnordered implements Spans {
 
     SpanQuery[] clauses = query.getClauses();
     queue = new CellQueue(clauses.length);
+    subSpans = new Spans[clauses.length];    
     for (int i = 0; i < clauses.length; i++) {
       SpansCell cell =
         new SpansCell(clauses[i].getSpans(reader), i);
       ordered.add(cell);
+      subSpans[i] = cell.spans;
     }
   }
-
+  public Spans[] getSubSpans() {
+	  return subSpans;
+  }
   public boolean next() throws IOException {
     if (firstTime) {
       initList(true);

@@ -38,7 +38,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   private int slop;
   private boolean inOrder;
 
-  private String field;
+  protected String field;
   private boolean collectPayloads;
 
   /** Construct a SpanNearQuery.  Matches spans matching a span from each

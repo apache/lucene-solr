@@ -46,8 +46,12 @@ import java.util.Set;
  * matches twice:
  * <pre>t1 t2 .. t3      </pre>
  * <pre>      t1 .. t2 t3</pre>
+ *
+ *
+ * Expert:
+ * Only public for subclassing.  Most implementations should not need this class
  */
-class NearSpansOrdered implements Spans {
+public class NearSpansOrdered implements Spans {
   private final int allowedSlop;
   private boolean firstTime = true;
   private boolean more = false;
@@ -104,6 +108,10 @@ class NearSpansOrdered implements Spans {
 
   // inherit javadocs
   public int end() { return matchEnd; }
+  
+  public Spans[] getSubSpans() {
+	  return subSpans;
+  }  
 
   // TODO: Remove warning after API has been finalized
   // TODO: Would be nice to be able to lazy load payloads
