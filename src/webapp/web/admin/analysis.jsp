@@ -199,7 +199,6 @@
        reader.reset();
        TokenStream tstream = tfac.create(reader);
        List<Token> tokens = getTokens(tstream);
-       tstream = tfac.create(reader);
        if (verbose) {
          writeHeader(out, tfac.getClass(), tfac.getArgs());
        }
