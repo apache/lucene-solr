@@ -28,7 +28,7 @@ import java.util.ArrayList;
 
 public class TestCSVLoader extends AbstractSolrTestCase {
 
-  public String getSchemaFile() { return "schema.xml"; }
+  public String getSchemaFile() { return "schema12.xml"; }
   public String getSolrConfigFile() { return "solrconfig.xml"; }
 
   String filename = "solr_tmp.csv";
