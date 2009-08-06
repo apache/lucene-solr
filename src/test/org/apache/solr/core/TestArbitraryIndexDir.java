@@ -52,7 +52,7 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
 
   @Override
   public String getSchemaFile() {
-    return "schema.xml";
+    return "schema12.xml";
   }
 
   @Override
