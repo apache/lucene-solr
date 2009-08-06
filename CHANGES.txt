@@ -456,6 +456,10 @@ Bug Fixes
 54. SOLR-1317: Fix CapitalizationFilterFactory to work when keep parameter is not specified.
     (ehatcher)
 
+55. SOLR-1342: CapitalizationFilterFactory uses incorrect term length calculations.
+    (Robert Muir via Mark Miller)
+
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)

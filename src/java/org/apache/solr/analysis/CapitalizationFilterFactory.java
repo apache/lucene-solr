@@ -209,7 +209,7 @@ class CapitalizationFilter extends TokenFilter {
         //make a backup in case we exceed the word count
         System.arraycopy(termBuffer, 0, backup, 0, termBufferLength);
       }
-      if (termBuffer.length < factory.maxTokenLength) {
+      if (termBufferLength < factory.maxTokenLength) {
         int wordCount = 0;
 
         int lastWordStart = 0;
@@ -226,8 +226,8 @@ class CapitalizationFilter extends TokenFilter {
         }
 
         // process the last word
-        if (lastWordStart < termBuffer.length) {
-          factory.processWord(termBuffer, lastWordStart, termBuffer.length - lastWordStart, wordCount++);
+        if (lastWordStart < termBufferLength) {
+          factory.processWord(termBuffer, lastWordStart, termBufferLength - lastWordStart, wordCount++);
         }
 
         if (wordCount > factory.maxWordCount) {
