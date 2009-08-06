@@ -32,7 +32,7 @@ import java.io.FileFilter;
 public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
 
   public String getSchemaFile() {
-    return "schema.xml";
+    return "schema12.xml";
   }
 
   public String getSolrConfigFile() {
