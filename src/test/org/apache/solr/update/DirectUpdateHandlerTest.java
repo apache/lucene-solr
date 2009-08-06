@@ -38,7 +38,7 @@ import org.apache.solr.util.AbstractSolrTestCase;
  */
 public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
 
-  public String getSchemaFile() { return "schema.xml"; }
+  public String getSchemaFile() { return "schema12.xml"; }
   public String getSolrConfigFile() { return "solrconfig.xml"; }
   
 
@@ -112,7 +112,7 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("\"A\" should be found.", req
             ,"//*[@numFound='1']"
-            ,"//result/doc[1]/int[@name='id'][.='A']"
+            ,"//result/doc[1]/str[@name='id'][.='A']"
             );
   }
 
@@ -134,8 +134,8 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("\"A\" and \"B\" should be found.", req
             ,"//*[@numFound='2']"
-            ,"//result/doc[1]/int[@name='id'][.='A']"
-            ,"//result/doc[2]/int[@name='id'][.='B']"
+            ,"//result/doc[1]/str[@name='id'][.='A']"
+            ,"//result/doc[2]/str[@name='id'][.='B']"
             );
 
     // delete "B"
@@ -144,8 +144,8 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     // search - "A","B" should be found.
     assertQ("\"A\" and \"B\" should be found.", req
             ,"//*[@numFound='2']"
-            ,"//result/doc[1]/int[@name='id'][.='A']"
-            ,"//result/doc[2]/int[@name='id'][.='B']"
+            ,"//result/doc[1]/str[@name='id'][.='A']"
+            ,"//result/doc[2]/str[@name='id'][.='B']"
             );
  
     // commit
@@ -154,7 +154,7 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     // search - "B" should not be found.
     assertQ("\"B\" should not be found.", req
         ,"//*[@numFound='1']"
-        ,"//result/doc[1]/int[@name='id'][.='A']"
+        ,"//result/doc[1]/str[@name='id'][.='A']"
         );
   }
 
@@ -181,7 +181,7 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("\"B\" should not be found.", req
             ,"//*[@numFound='1']"
-            ,"//result/doc[1]/int[@name='id'][.='A']"
+            ,"//result/doc[1]/str[@name='id'][.='A']"
             );
 
     // Add a doc after the rollback to make sure we can continue to add/delete documents
@@ -190,7 +190,7 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     assertU(commit());
     assertQ("\"ZZZ\" must be found.", req("q", "id:ZZZ")
             ,"//*[@numFound='1']"
-            ,"//result/doc[1]/int[@name='id'][.='ZZZ']"
+            ,"//result/doc[1]/str[@name='id'][.='ZZZ']"
             );
   }
 
@@ -212,8 +212,8 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
     assertQ("\"A\" and \"B\" should be found.", req
             ,"//*[@numFound='2']"
-            ,"//result/doc[1]/int[@name='id'][.='A']"
-            ,"//result/doc[2]/int[@name='id'][.='B']"
+            ,"//result/doc[1]/str[@name='id'][.='A']"
+            ,"//result/doc[2]/str[@name='id'][.='B']"
             );
 
     // delete "B"
@@ -222,8 +222,8 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     // search - "A","B" should be found.
     assertQ("\"A\" and \"B\" should be found.", req
         ,"//*[@numFound='2']"
-        ,"//result/doc[1]/int[@name='id'][.='A']"
-        ,"//result/doc[2]/int[@name='id'][.='B']"
+        ,"//result/doc[1]/str[@name='id'][.='A']"
+        ,"//result/doc[2]/str[@name='id'][.='B']"
         );
 
     // rollback "B"
@@ -233,8 +233,8 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     // search - "B" should be found.
     assertQ("\"B\" should be found.", req
         ,"//*[@numFound='2']"
-        ,"//result/doc[1]/int[@name='id'][.='A']"
-        ,"//result/doc[2]/int[@name='id'][.='B']"
+        ,"//result/doc[1]/str[@name='id'][.='A']"
+        ,"//result/doc[2]/str[@name='id'][.='B']"
         );
 
     // Add a doc after the rollback to make sure we can continue to add/delete documents
@@ -243,7 +243,7 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     assertU(commit());
     assertQ("\"ZZZ\" must be found.", req("q", "id:ZZZ")
             ,"//*[@numFound='1']"
-            ,"//result/doc[1]/int[@name='id'][.='ZZZ']"
+            ,"//result/doc[1]/str[@name='id'][.='ZZZ']"
             );
   }
   
