@@ -289,7 +289,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       BooleanQuery mltQuery = new BooleanQuery();
       mltQuery.add(mltquery, BooleanClause.Occur.MUST);
       mltQuery.add(
-          new TermQuery(new Term(uniqueKeyField.getName(), doc.get(uniqueKeyField.getName()))), 
+          new TermQuery(new Term(uniqueKeyField.getName(), uniqueKeyField.getType().storedToIndexed(doc.getFieldable(uniqueKeyField.getName())))), 
             BooleanClause.Occur.MUST_NOT);
       
       DocListAndSet results = new DocListAndSet();
