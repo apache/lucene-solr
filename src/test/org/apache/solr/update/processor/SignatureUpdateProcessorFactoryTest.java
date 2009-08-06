@@ -39,7 +39,7 @@ public class SignatureUpdateProcessorFactoryTest extends AbstractSolrTestCase {
 
   @Override
   public String getSchemaFile() {
-    return "schema.xml";
+    return "schema12.xml";
   }
 
   @Override
