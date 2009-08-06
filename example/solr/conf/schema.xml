@@ -359,6 +359,7 @@
    <field name="features" type="text" indexed="true" stored="true" multiValued="true" termVectors="true" termPositions="true" termOffsets="true"/>
    <field name="includes" type="text" indexed="true" stored="true"/>
 
+
    <field name="weight" type="float" indexed="true" stored="true"/>
    <field name="price"  type="float" indexed="true" stored="true"/>
    <!-- "default" values can be specified for fields, indicating which
@@ -366,6 +367,9 @@
      -->
    <field name="popularity" type="int" indexed="true" stored="true"/>
    <field name="inStock" type="boolean" indexed="true" stored="true"/>
+
+
+   <field name="title" type="text" indexed="true" stored="true"/>
 
    <!-- Some sample docs exists solely to demonstrate the spellchecker
         functionality, this is the only field they contain.
@@ -408,6 +412,13 @@
    <dynamicField name="*_f"  type="float"  indexed="true"  stored="true"/>
    <dynamicField name="*_d"  type="double" indexed="true"  stored="true"/>
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
+
+   <!-- some trie-coded dynamic fields for faster range queries -->
+   <dynamicField name="*_ti" type="tint"    indexed="true"  stored="true"/>
+   <dynamicField name="*_tl" type="tlong"   indexed="true"  stored="true"/>
+   <dynamicField name="*_tf" type="tfloat"  indexed="true"  stored="true"/>
+   <dynamicField name="*_td" type="tdouble" indexed="true"  stored="true"/>
+   <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="true"/>
 
    <dynamicField name="*_pi"  type="pint"    indexed="true"  stored="true"/>
 

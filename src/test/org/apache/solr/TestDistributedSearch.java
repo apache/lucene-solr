@@ -57,7 +57,7 @@ public class TestDistributedSearch extends TestCase {
 
   String id="id";
   String t1="a_t";
-  String i1="a_i";
+  String i1="a_si";
   String tlong = "tlong";
   String oddField="oddField_s";
   String missingField="missing_but_valid_field_t";

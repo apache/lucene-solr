@@ -777,7 +777,7 @@ public class SolrPluginUtils {
         DisjunctionMaxQuery q = new DisjunctionMaxQuery(a.tie);
 
         /* we might not get any valid queries from delegation,
-         * in which we should return null
+         * in which case we should return null
          */
         boolean ok = false;
                 
@@ -795,7 +795,11 @@ public class SolrPluginUtils {
         return ok ? q : null;
 
       } else {
-        return super.getFieldQuery(field, queryText);
+        try {
+          return super.getFieldQuery(field, queryText);
+        } catch (Exception e) {
+          return null;
+        }
       }
     }
         

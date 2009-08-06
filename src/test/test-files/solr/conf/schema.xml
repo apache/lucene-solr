@@ -42,10 +42,20 @@
          These are provided more for backward compatability, allowing one
          to create a schema that matches an existing lucene index.
     -->
-    <fieldType name="integer" class="solr.IntField"/>
-    <fieldType name="long" class="solr.LongField"/>
-    <fieldtype name="float" class="solr.FloatField"/>
-    <fieldType name="double" class="solr.DoubleField"/>
+    <fieldType name="pint" class="solr.IntField"/>
+    <fieldType name="plong" class="solr.LongField"/>
+    <fieldtype name="pfloat" class="solr.FloatField"/>
+    <fieldType name="pdouble" class="solr.DoubleField"/>
+
+    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="double" class="solr.TrieDoubleField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>  
+
+    <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tlong" class="solr.TrieLongField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
+    <fieldType name="tdouble" class="solr.TrieDoubleField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
 
     <!-- numeric field types that manipulate the value into
        a string value that isn't human readable in it's internal form,
@@ -110,6 +120,9 @@
          seconds part (.999) is optional.
       -->
     <fieldtype name="date" class="solr.DateField" sortMissingLast="true"/>
+    <fieldtype name="tdate" class="solr.TrieDateField" sortMissingLast="true" precisionStep="6"/>
+    <fieldtype name="pdate" class="solr.DateField" sortMissingLast="true"/>
+
 
     <!-- solr.TextField allows the specification of custom
          text analyzers specified as a tokenizer and a list
@@ -343,12 +356,11 @@
 
   <fieldType name="uuid" class="solr.UUIDField" />
   
-  <fieldType name="tlong" class="solr.TrieField" type="long" omitNorms="true" positionIncrementGap="0" indexed="true" stored="false" />
  </types>
 
 
  <fields>
-   <field name="id" type="integer" indexed="true" stored="true" multiValued="false" required="false"/>
+   <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
    <field name="signatureField" type="string" indexed="true" stored="false"/>
    <field name="uuid" type="uuid" stored="true" />
    <field name="name" type="nametext" indexed="true" stored="true"/>
@@ -373,8 +385,8 @@
    <field name="bind" type="boolean" indexed="true" stored="false"/>
    <field name="bsto" type="boolean" indexed="false" stored="true"/>
    <field name="bindsto" type="boolean" indexed="true" stored="true"/>
-   <field name="isto" type="integer" indexed="false" stored="true"/>
-   <field name="iind" type="integer" indexed="true" stored="false"/>
+   <field name="isto" type="int" indexed="false" stored="true"/>
+   <field name="iind" type="int" indexed="true" stored="false"/>
    <field name="ssto" type="string" indexed="false" stored="true"/>
    <field name="sind" type="string" indexed="true" stored="false"/>
    <field name="sindsto" type="string" indexed="true" stored="true"/>
@@ -429,7 +441,7 @@
    
    <field name="timestamp" type="date" indexed="true" stored="true" default="NOW" multiValued="false"/>
    <field name="multiDefault" type="string" indexed="true" stored="true" default="muLti-Default" multiValued="true"/>
-   <field name="intDefault" type="sint" indexed="true" stored="true" default="42" multiValued="false"/>
+   <field name="intDefault" type="int" indexed="true" stored="true" default="42" multiValued="false"/>
    
 
    <field name="tlong" type="tlong" indexed="true" stored="true" />
@@ -442,16 +454,28 @@
         Longer patterns will be matched first.  if equal size patterns
         both match, the first appearing in the schema will be used.
    -->
-   <dynamicField name="*_i"  type="sint"    indexed="true"  stored="true"/>
+   <dynamicField name="*_i"  type="int"    indexed="true"  stored="true"/>
    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
    <dynamicField name="*_s1"  type="string"  indexed="true"  stored="true" multiValued="false"/>
-   <dynamicField name="*_l"  type="slong"   indexed="true"  stored="true"/>
+   <dynamicField name="*_l"  type="long"   indexed="true"  stored="true"/>
    <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>
    <dynamicField name="*_b"  type="boolean" indexed="true"  stored="true"/>
-   <dynamicField name="*_f"  type="sfloat"  indexed="true"  stored="true"/>
-   <dynamicField name="*_d"  type="sdouble" indexed="true"  stored="true"/>
+   <dynamicField name="*_f"  type="float"  indexed="true"  stored="true"/>
+   <dynamicField name="*_d"  type="double" indexed="true"  stored="true"/>
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
    <dynamicField name="*_bcd" type="bcdstr" indexed="true"  stored="true"/>
+
+   <dynamicField name="*_si"  type="sint"  indexed="true"  stored="true"/>
+   <dynamicField name="*_sl"  type="slong"  indexed="true"  stored="true"/>
+   <dynamicField name="*_sf"  type="sfloat"  indexed="true"  stored="true"/>
+   <dynamicField name="*_sd"  type="sdouble"  indexed="true"  stored="true"/>
+
+   <dynamicField name="*_pi"  type="pint"    indexed="true"  stored="true"/>
+   <dynamicField name="*_pf"  type="pfloat"  indexed="true"  stored="true"/>
+   <dynamicField name="*_pl"  type="plong"   indexed="true"  stored="true"/>
+   <dynamicField name="*_pd"  type="pdouble" indexed="true"  stored="true"/>
+   <dynamicField name="*_pdt"  type="pdate" indexed="true"  stored="true"/>
+  
 
    <dynamicField name="*_sI" type="string"  indexed="true"  stored="false"/>
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
@@ -467,7 +491,7 @@
   
    <!-- for testing to ensure that longer patterns are matched first -->
    <dynamicField name="*aa"  type="string"  indexed="true" stored="true"/>
-   <dynamicField name="*aaa" type="integer" indexed="false" stored="true"/>
+   <dynamicField name="*aaa" type="pint" indexed="false" stored="true"/>
 
    <!-- ignored becuase not stored or indexed -->
    <dynamicField name="*_ignored" type="text" indexed="false" stored="false"/>

@@ -218,16 +218,24 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
 
         Set<String> termsToMatch = new HashSet<String>();
         if (request.getQuery() != null && request.isShowMatch()) {
-          List<Token> tokens = analyzeValue(request.getQuery(), fieldType.getQueryAnalyzer());
-          for (Token token : tokens) {
-            termsToMatch.add(token.term());
+          try {
+            List<Token> tokens = analyzeValue(request.getQuery(), fieldType.getQueryAnalyzer());
+            for (Token token : tokens) {
+              termsToMatch.add(token.term());
+            }
+          } catch (Exception e) {
+            // ignore analysis exceptions since we are applying arbitrary text to all fields
           }
         }
 
         if (request.getQuery() != null) {
-          AnalysisContext analysisContext = new AnalysisContext(fieldType, fieldType.getQueryAnalyzer(), Collections.EMPTY_SET);
-          NamedList<List<NamedList>> tokens = analyzeValue(request.getQuery(), analysisContext);
-          fieldTokens.add("query", tokens);
+          try {
+            AnalysisContext analysisContext = new AnalysisContext(fieldType, fieldType.getQueryAnalyzer(), Collections.EMPTY_SET);
+            NamedList<List<NamedList>> tokens = analyzeValue(request.getQuery(), analysisContext);
+            fieldTokens.add("query", tokens);
+          } catch (Exception e) {
+            // ignore analysis exceptions since we are applying arbitrary text to all fields
+          }
         }
 
         Analyzer analyzer = fieldType.getAnalyzer();

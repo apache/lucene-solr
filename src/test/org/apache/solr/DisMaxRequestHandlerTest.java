@@ -146,7 +146,7 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
     
     assertQ("explicit ALTQ",
             req( "qt", "dismax",
-                 "q.alt", "id:blahbalh",
+                 "q.alt", "id:9999",
                  "fq", "id:666",
                  "facet", "false" )
             ,"//*[@numFound='0']"
