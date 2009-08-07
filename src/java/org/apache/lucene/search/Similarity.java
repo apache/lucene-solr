@@ -290,6 +290,8 @@ public abstract class Similarity implements Serializable {
   /** The Similarity implementation used by default. */
   private static Similarity defaultImpl = new DefaultSimilarity();
 
+  public static final int NO_DOC_ID_PROVIDED = -1;
+
   /** Set the default Similarity implementation used by indexing and search
    * code.
    *
@@ -529,6 +531,8 @@ public abstract class Similarity implements Serializable {
   public abstract float coord(int overlap, int maxOverlap);
 
 
+
+
   /**
    * Calculate a scoring factor based on the data in the payload.  Overriding implementations
    * are responsible for interpreting what is in the payload.  Lucene makes no assumptions about
@@ -540,11 +544,35 @@ public abstract class Similarity implements Serializable {
    * @param payload The payload byte array to be scored
    * @param offset The offset into the payload array
    * @param length The length in the array
-   * @return An implementation dependent float to be used as a scoring factor 
+   * @return An implementation dependent float to be used as a scoring factor
+   *
+   * @deprecated See {@link #scorePayload(int, String, byte[], int, int)}
    */
   public float scorePayload(String fieldName, byte [] payload, int offset, int length)
   {
     //Do nothing
+    return scorePayload(NO_DOC_ID_PROVIDED, fieldName, payload, offset, length);
+  }
+
+  /**
+   * Calculate a scoring factor based on the data in the payload.  Overriding implementations
+   * are responsible for interpreting what is in the payload.  Lucene makes no assumptions about
+   * what is in the byte array.
+   * <p>
+   * The default implementation returns 1.
+   *
+   * @param docId The docId currently being scored.  If this value is {@link #NO_DOC_ID_PROVIDED}, then it should be assumed that the PayloadQuery implementation does not provide document information
+   * @param fieldName The fieldName of the term this payload belongs to
+   * @param payload The payload byte array to be scored
+   * @param offset The offset into the payload array
+   * @param length The length in the array
+   * @return An implementation dependent float to be used as a scoring factor
+   *
+   */
+  public float scorePayload(int docId, String fieldName, byte [] payload, int offset, int length)
+  {
+    //Do nothing
     return 1;
   }
+
 }

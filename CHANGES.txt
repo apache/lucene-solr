@@ -664,7 +664,11 @@ New features
     disable loading them with a new constructor switch.  (Mark Miller)
 
 34. LUCENE-1341: Added BoostingNearQuery to enable SpanNearQuery functionality
-  with payloads (Peter Keegan, Grant Ingersoll)    
+  with payloads (Peter Keegan, Grant Ingersoll)
+
+35. LUCENE-1790: Added BoostingFunctionTermQuery to enable scoring of payloads
+  based on the maximum payload seen for a document.
+  Slight refactoring of Similarity and other payload queries (Grant Ingersoll)    
    
 Optimizations
 

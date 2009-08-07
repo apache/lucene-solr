@@ -1,11 +1,11 @@
 package org.apache.lucene.search.payloads;
-
 /**
- * Copyright 2004 The Apache Software Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -16,40 +16,46 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.Reader;
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.LowerCaseTokenizer;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Payload;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.English;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.DefaultSimilarity;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.search.spans.TermSpans;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.LowerCaseTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.index.Payload;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.English;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 
-public class TestBoostingTermQuery extends LuceneTestCase {
+import java.io.Reader;
+import java.io.IOException;
+
+
+/**
+ *
+ *
+ **/
+public class BoostingFunctionTermQueryTest extends LuceneTestCase {
   private IndexSearcher searcher;
   private BoostingSimilarity similarity = new BoostingSimilarity();
   private byte[] payloadField = new byte[]{1};
   private byte[] payloadMultiField1 = new byte[]{2};
   private byte[] payloadMultiField2 = new byte[]{4};
+  protected RAMDirectory directory;
 
-  public TestBoostingTermQuery(String s) {
+  public BoostingFunctionTermQueryTest(String s) {
     super(s);
   }
 
@@ -97,7 +103,7 @@ public class TestBoostingTermQuery extends LuceneTestCase {
 
   protected void setUp() throws Exception {
     super.setUp();
-    RAMDirectory directory = new RAMDirectory();
+    directory = new RAMDirectory();
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
     IndexWriter writer
             = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
@@ -115,12 +121,13 @@ public class TestBoostingTermQuery extends LuceneTestCase {
     writer.optimize();
     writer.close();
 
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
     searcher.setSimilarity(similarity);
   }
 
   public void test() throws IOException {
-    BoostingTermQuery query = new BoostingTermQuery(new Term("field", "seventy"));
+    BoostingFunctionTermQuery query = new BoostingFunctionTermQuery(new Term("field", "seventy"),
+            new MaxPayloadFunction());
     TopDocs hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);
@@ -146,7 +153,8 @@ public class TestBoostingTermQuery extends LuceneTestCase {
   }
 
   public void testMultipleMatchesPerDoc() throws Exception {
-    BoostingTermQuery query = new BoostingTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"));
+    BoostingFunctionTermQuery query = new BoostingFunctionTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
+            new MaxPayloadFunction());
     TopDocs hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);
@@ -155,15 +163,15 @@ public class TestBoostingTermQuery extends LuceneTestCase {
     //all the other similarity factors to be 1
 
     //System.out.println("Hash: " + seventyHash + " Twice Hash: " + 2*seventyHash);
-    assertTrue(hits.getMaxScore() + " does not equal: " + 3, hits.getMaxScore() == 3);
-    //there should be exactly 10 items that score a 3, all the rest should score a 2
+    assertTrue(hits.getMaxScore() + " does not equal: " + 4.0, hits.getMaxScore() == 4.0);
+    //there should be exactly 10 items that score a 4, all the rest should score a 2
     //The 10 items are: 70 + i*100 where i in [0-9]
     int numTens = 0;
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       ScoreDoc doc = hits.scoreDocs[i];
       if (doc.doc % 10 == 0) {
         numTens++;
-        assertTrue(doc.score + " does not equal: " + 3, doc.score == 3);
+        assertTrue(doc.score + " does not equal: " + 4.0, doc.score == 4.0);
       } else {
         assertTrue(doc.score + " does not equal: " + 2, doc.score == 2);
       }
@@ -182,8 +190,50 @@ public class TestBoostingTermQuery extends LuceneTestCase {
     assertTrue(count + " does not equal: " + 200, count == 200);
   }
 
+  //Set includeSpanScore to false, in which case just the payload score comes through.
+  public void testIgnoreSpanScorer() throws Exception {
+    BoostingFunctionTermQuery query = new BoostingFunctionTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
+            new MaxPayloadFunction(), false);
+
+    IndexSearcher theSearcher = new IndexSearcher(directory, true);
+    theSearcher.setSimilarity(new FullSimilarity());
+    TopDocs hits = searcher.search(query, null, 100);
+    assertTrue("hits is null and it shouldn't be", hits != null);
+    assertTrue("hits Size: " + hits.totalHits + " is not: " + 100, hits.totalHits == 100);
+
+    //they should all have the exact same score, because they all contain seventy once, and we set
+    //all the other similarity factors to be 1
+
+    //System.out.println("Hash: " + seventyHash + " Twice Hash: " + 2*seventyHash);
+    assertTrue(hits.getMaxScore() + " does not equal: " + 4.0, hits.getMaxScore() == 4.0);
+    //there should be exactly 10 items that score a 4, all the rest should score a 2
+    //The 10 items are: 70 + i*100 where i in [0-9]
+    int numTens = 0;
+    for (int i = 0; i < hits.scoreDocs.length; i++) {
+      ScoreDoc doc = hits.scoreDocs[i];
+      if (doc.doc % 10 == 0) {
+        numTens++;
+        assertTrue(doc.score + " does not equal: " + 4.0, doc.score == 4.0);
+      } else {
+        assertTrue(doc.score + " does not equal: " + 2, doc.score == 2);
+      }
+    }
+    assertTrue(numTens + " does not equal: " + 10, numTens == 10);
+    CheckHits.checkExplanations(query, "field", searcher, true);
+    Spans spans = query.getSpans(searcher.getIndexReader());
+    assertTrue("spans is null and it shouldn't be", spans != null);
+    assertTrue("spans is not an instanceof " + TermSpans.class, spans instanceof TermSpans);
+    //should be two matches per document
+    int count = 0;
+    //100 hits times 2 matches per hit, we should have 200 in count
+    while (spans.next()) {
+      count++;
+    }
+  }
+
   public void testNoMatch() throws Exception {
-    BoostingTermQuery query = new BoostingTermQuery(new Term(PayloadHelper.FIELD, "junk"));
+    BoostingFunctionTermQuery query = new BoostingFunctionTermQuery(new Term(PayloadHelper.FIELD, "junk"),
+            new MaxPayloadFunction());
     TopDocs hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("hits Size: " + hits.totalHits + " is not: " + 0, hits.totalHits == 0);
@@ -191,8 +241,10 @@ public class TestBoostingTermQuery extends LuceneTestCase {
   }
 
   public void testNoPayload() throws Exception {
-    BoostingTermQuery q1 = new BoostingTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "zero"));
-    BoostingTermQuery q2 = new BoostingTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "foo"));
+    BoostingFunctionTermQuery q1 = new BoostingFunctionTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "zero"),
+            new MaxPayloadFunction());
+    BoostingFunctionTermQuery q2 = new BoostingFunctionTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "foo"),
+            new MaxPayloadFunction());
     BooleanClause c1 = new BooleanClause(q1, BooleanClause.Occur.MUST);
     BooleanClause c2 = new BooleanClause(q2, BooleanClause.Occur.MUST_NOT);
     BooleanQuery query = new BooleanQuery();
@@ -242,4 +294,12 @@ public class TestBoostingTermQuery extends LuceneTestCase {
       return freq == 0 ? 0 : 1;
     }
   }
+
+  static class FullSimilarity extends DefaultSimilarity{
+    public float scorePayload(int docId, String fieldName, byte[] payload, int offset, int length) {
+      //we know it is size 4 here, so ignore the offset/length
+      return payload[0];
+    }
+  }
+
 }

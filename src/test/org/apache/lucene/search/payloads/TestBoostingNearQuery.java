@@ -184,7 +184,7 @@ public class TestBoostingNearQuery extends LuceneTestCase {
 	// must be static for weight serialization tests 
 	static class BoostingSimilarity extends DefaultSimilarity {
 
-		public float scorePayload(String fieldName, byte[] payload, int offset, int length) {
+		public float scorePayload(int docId, String fieldName, byte[] payload, int offset, int length) {
 			return payload[0];
 		}
 

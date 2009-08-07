@@ -39,104 +39,29 @@ import java.io.IOException;
  * 
  * @see org.apache.lucene.search.Similarity#scorePayload(String, byte[], int, int)
  */
-public class BoostingTermQuery extends SpanTermQuery{
+public class BoostingTermQuery extends BoostingFunctionTermQuery implements PayloadQuery{
 
   public BoostingTermQuery(Term term) {
-    super(term);
+    this(term, true);
+  }
+
+  public BoostingTermQuery(Term term, boolean includeSpanScore) {
+    super(term, new AveragePayloadFunction(), includeSpanScore);
   }
 
   public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
     return new BoostingTermWeight(this, searcher);
   }
 
-  protected class BoostingTermWeight extends SpanWeight {
+  protected class BoostingTermWeight extends BoostingFunctionTermWeight {
 
     public BoostingTermWeight(BoostingTermQuery query, Searcher searcher) throws IOException {
       super(query, searcher);
     }
 
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      return new BoostingSpanScorer((TermSpans) query.getSpans(reader), this,
+      return new BoostingFunctionSpanScorer((TermSpans) query.getSpans(reader), this,
           similarity, reader.norms(query.getField()));
-    }
-
-    protected class BoostingSpanScorer extends SpanScorer {
-
-      //TODO: is this the best way to allocate this?
-      byte[] payload = new byte[256];
-      private TermPositions positions;
-      protected float payloadScore;
-      private int payloadsSeen;
-
-      public BoostingSpanScorer(TermSpans spans, QueryWeight weight,
-                                Similarity similarity, byte[] norms) throws IOException {
-        super(spans, weight, similarity, norms);
-        positions = spans.getPositions();
-
-      }
-
-      protected boolean setFreqCurrentDoc() throws IOException {
-        if (!more) {
-          return false;
-        }
-        doc = spans.doc();
-        freq = 0.0f;
-        payloadScore = 0;
-        payloadsSeen = 0;
-        Similarity similarity1 = getSimilarity();
-        while (more && doc == spans.doc()) {
-          int matchLength = spans.end() - spans.start();
-
-          freq += similarity1.sloppyFreq(matchLength);
-          processPayload(similarity1);
-
-          more = spans.next();//this moves positions to the next match in this document
-        }
-        return more || (freq != 0);
-      }
-
-
-      protected void processPayload(Similarity similarity) throws IOException {
-        if (positions.isPayloadAvailable()) {
-          payload = positions.getPayload(payload, 0);
-          payloadScore += similarity.scorePayload(term.field(), payload, 0, positions.getPayloadLength());
-          payloadsSeen++;
-
-        } else {
-          //zero out the payload?
-        }
-
-      }
-
-      public float score() throws IOException {
-
-        return super.score() * (payloadsSeen > 0 ? (payloadScore / payloadsSeen) : 1);
-      }
-
-
-      public Explanation explain(final int doc) throws IOException {
-        ComplexExplanation result = new ComplexExplanation();
-        Explanation nonPayloadExpl = super.explain(doc);
-        result.addDetail(nonPayloadExpl);
-        //QUESTION: Is there a wau to avoid this skipTo call?  We need to know whether to load the payload or not
-        
-        Explanation payloadBoost = new Explanation();
-        result.addDetail(payloadBoost);
-/*
-        if (skipTo(doc) == true) {
-          processPayload();
-        }
-*/
-
-        float avgPayloadScore =  (payloadsSeen > 0 ? (payloadScore / payloadsSeen) : 1); 
-        payloadBoost.setValue(avgPayloadScore);
-        //GSI: I suppose we could toString the payload, but I don't think that would be a good idea 
-        payloadBoost.setDescription("scorePayload(...)");
-        result.setValue(nonPayloadExpl.getValue() * avgPayloadScore);
-        result.setDescription("btq, product of:");
-        result.setMatch(nonPayloadExpl.getValue()==0 ? Boolean.FALSE : Boolean.TRUE); // LUCENE-1303
-        return result;
-      }
     }
 
   }
