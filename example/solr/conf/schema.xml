@@ -309,11 +309,13 @@
       <analyzer>
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
         <!--
-         Attributes:
-         delimiter - a one character delimiter - will throw an exception if the delim is more than one char.  Default is | (pipe)
-         encoder - Values: float -> org.apache.lucene.analysis.payloads.FloatEncoder, integer -> o.a.l.a.p.IntegerEncoder
-              identity -> o.a.l.a.p.IdentityEncoder, Fully Qualified class name implementing PayloadEncoder
-              Encoder must have a no arg constructor.
+         Attributes for DelimitedPayloadTokenFilterFactory:
+         "delimiter" - a one character delimiter. Default is | (pipe)
+	 "encoder" - how to encode the following value into a playload
+	    float -> org.apache.lucene.analysis.payloads.FloatEncoder,
+	    integer -> o.a.l.a.p.IntegerEncoder
+	    identity -> o.a.l.a.p.IdentityEncoder
+            Fully Qualified class name implementing PayloadEncoder, Encoder must have a no arg constructor.
          -->
         <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float"/>
       </analyzer>
