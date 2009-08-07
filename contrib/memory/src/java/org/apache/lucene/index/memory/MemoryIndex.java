@@ -323,24 +323,6 @@ public class MemoryIndex implements Serializable {
    * @see Field#setBoost(float)
    */
   public void addField(String fieldName, TokenStream stream, float boost) {
-    /*
-     * Note that this method signature avoids having a user call new
-     * o.a.l.d.Field(...) which would be much too expensive due to the
-     * String.intern() usage of that class.
-     * 
-     * More often than not, String.intern() leads to serious performance
-     * degradations rather than improvements! If you're curious why, check
-     * out the JDK's native code, see how it oscillates multiple times back
-     * and forth between Java code and native code on each intern() call,
-     * only to end up using a plain vanilla java.util.HashMap on the Java
-     * heap for it's interned strings! String.equals() has a small cost
-     * compared to String.intern(), trust me. Application level interning
-     * (e.g. a HashMap per Directory/Index) typically leads to better
-     * solutions than frequent hidden low-level calls to String.intern().
-     * 
-     * Perhaps with some luck, Lucene's Field.java (and Term.java) and
-     * cousins could be fixed to not use String.intern(). Sigh :-(
-     */
     try {
       if (fieldName == null)
         throw new IllegalArgumentException("fieldName must not be null");

@@ -22,6 +22,7 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -137,7 +138,7 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
    */
   public int addStopWords(IndexReader reader, String fieldName, int maxDocFreq) throws IOException {
     HashSet stopWords = new HashSet();
-    String internedFieldName = fieldName.intern();
+    String internedFieldName = StringHelper.intern(fieldName);
     TermEnum te = reader.terms(new Term(fieldName));
     Term term = te.term();
     while (term != null) {
