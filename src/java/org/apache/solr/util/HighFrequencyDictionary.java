@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.spell.Dictionary;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * HighFrequencyDictionary: terms taken from the given field
@@ -45,7 +46,7 @@ public class HighFrequencyDictionary implements Dictionary {
 
   public HighFrequencyDictionary(IndexReader reader, String field, float thresh) {
     this.reader = reader;
-    this.field = field.intern();
+    this.field = StringHelper.intern(field);
     this.thresh = thresh;
   }
 
@@ -108,7 +109,7 @@ public class HighFrequencyDictionary implements Dictionary {
         String currentField = actualTerm.field();
 
         // if the next word doesn't have the same field return false
-        if (currentField != field) {
+        if (currentField != field) {   // intern'd comparison
           actualTerm = null;
           return false;
         }

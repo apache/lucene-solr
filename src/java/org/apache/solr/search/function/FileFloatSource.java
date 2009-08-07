@@ -20,6 +20,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.StringHelper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.FieldType;
@@ -206,7 +207,7 @@ public class FileFloatSource extends ValueSource {
 
     BufferedReader r = new BufferedReader(new InputStreamReader(is));
 
-    String idName = ffs.keyField.getName().intern();
+    String idName = StringHelper.intern(ffs.keyField.getName());
     FieldType idType = ffs.keyField.getType();
     boolean sorted=true;   // assume sorted until we discover it's not
 

@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -62,7 +63,7 @@ public class TermsComponent extends SearchComponent {
         String prefix = params.get(TermsParams.TERMS_PREFIX_STR);
         boolean raw = params.getBool(TermsParams.TERMS_RAW, false);
         for (int j = 0; j < fields.length; j++) {
-          String field = fields[j].intern();
+          String field = StringHelper.intern(fields[j]);
           FieldType ft = raw ? null : rb.req.getSchema().getFieldTypeNoEx(field);
           if (ft==null) ft = new StrField();
 
