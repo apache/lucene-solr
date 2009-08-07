@@ -26,7 +26,7 @@ import org.apache.lucene.queryParser.core.nodes.OrQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.parser.SyntaxParser;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorPipeline;
-import org.apache.lucene.queryParser.original.parser.OriginalSyntaxParser;
+import org.apache.lucene.queryParser.standard.parser.StandardSyntaxParser;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 
@@ -36,7 +36,7 @@ import org.apache.lucene.search.spans.SpanTermQuery;
  * 
  * It tests queries likes "term", "field:term" "term1 term2" "term1 OR term2",
  * which are all already supported by the current syntax parser (
- * {@link OriginalSyntaxParser}).<br/>
+ * {@link StandardSyntaxParser}).<br/>
  * <br/>
  * 
  * The goals is to create a new query parser that supports only the pair
@@ -56,7 +56,7 @@ import org.apache.lucene.search.spans.SpanTermQuery;
  * <br/>
  * 
  * The parsing phase, as already mentioned will be performed by the current
- * query parser: {@link OriginalSyntaxParser}.<br/>
+ * query parser: {@link StandardSyntaxParser}.<br/>
  * <br/>
  * 
  * The processing phase will be performed by a processor pipeline which is
@@ -89,7 +89,7 @@ import org.apache.lucene.search.spans.SpanTermQuery;
  * @see SpansValidatorQueryNodeProcessor
  * @see SpanOrQueryNodeBuilder
  * @see SpanTermQueryNodeBuilder
- * @see OriginalSyntaxParser
+ * @see StandardSyntaxParser
  * @see UniqueFieldQueryNodeProcessor
  * @see UniqueFieldAttribute
  * 
@@ -111,7 +111,7 @@ public class TestSpanQueryParserSimpleSample extends TestCase {
   }
 
   public void testBasicDemo() throws Exception {
-    SyntaxParser queryParser = new OriginalSyntaxParser();
+    SyntaxParser queryParser = new StandardSyntaxParser();
 
     // convert the CharSequence into a QueryNode tree
     QueryNode queryTree = queryParser.parse("body:text", null);

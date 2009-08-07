@@ -29,20 +29,20 @@ The package <tt>org.apache.lucene.queryParser.config</tt> contains query configu
 abstract class that all config handlers should extend.
 </p>
 <p>
-See {@link org.apache.lucene.queryParser.original.config.OriginalQueryConfigHandler} for a reference
+See {@link org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler} for a reference
 implementation.
 </p>
 <p>
 {@link org.apache.lucene.queryParser.core.config.FieldConfig} and {@link org.apache.lucene.queryParser.core.config.QueryConfigHandler}
  should use {@link org.apache.lucene.util.Attribute} to store all attributes
-required by the config implementation. See <tt>org.apache.lucene.queryParser.original.config.*Attribute</tt>
+required by the config implementation. See <tt>org.apache.lucene.queryParser.standard.config.*Attribute</tt>
 for reference implementation.
 </p>
 <p>
 The {@link org.apache.lucene.queryParser.core.config.QueryConfigHandler}, {@link org.apache.lucene.queryParser.core.config.FieldConfig},
  and {@link org.apache.lucene.util.Attribute}s are used in the processors to access config
 information in a flexible and independent way.
-See {@link org.apache.lucene.queryParser.original.processors.ParametricRangeQueryNodeProcessor} for a 
+See {@link org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNodeProcessor} for a 
 reference implementation.
 </p>
 </body>

@@ -23,7 +23,7 @@ import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.builders.QueryTreeBuilder;
 import org.apache.lucene.queryParser.core.nodes.BooleanQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
-import org.apache.lucene.queryParser.original.builders.OriginalQueryBuilder;
+import org.apache.lucene.queryParser.standard.builders.StandardQueryBuilder;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 
@@ -33,7 +33,7 @@ import org.apache.lucene.search.spans.SpanQuery;
  * 
  * It assumes that the {@link BooleanQueryNode} instance has at least one child.
  */
-public class SpanOrQueryNodeBuilder implements OriginalQueryBuilder {
+public class SpanOrQueryNodeBuilder implements StandardQueryBuilder {
 
   public SpanOrQuery build(QueryNode node) throws QueryNodeException {
 

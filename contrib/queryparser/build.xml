@@ -19,13 +19,22 @@
 
 <project name="queryparser" default="default">
 
-	<description>
-	Flexible Query Parser
-	</description>
+  <description>
+    Flexible Query Parser
+  </description>
 
-	<property name="javac.source" value="1.5" />
-	<property name="javac.target" value="1.5" />
-		
-	<import file="../contrib-build.xml"/>
+  <property name="javac.source" value="1.5" />
+  <property name="javac.target" value="1.5" />
+  
+  <import file="../contrib-build.xml"/>
  
+  <!--
+    NOTE: see the README.javacc for details on how to fully regenerate the parser
+  -->
+  <target name="javacc" depends="init,javacc-check" if="javacc.present">
+    <invoke-javacc target="src/java/org/apache/lucene/queryParser/standard/parser/StandardSyntaxParser.jj"
+                   outputDir="src/java/org/apache/lucene/queryParser/standard/parser"
+    />
+  </target>
+
 </project>

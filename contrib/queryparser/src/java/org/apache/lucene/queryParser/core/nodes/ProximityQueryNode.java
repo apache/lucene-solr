@@ -29,7 +29,7 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  * specific distance conditions. (a b c) WITHIN [SENTENCE|PARAGRAPH|NUMBER]
  * [INORDER] ("a" "b" "c") WITHIN [SENTENCE|PARAGRAPH|NUMBER] [INORDER]
  * 
- * TODO: Add this to the future original Lucene parser/processor/builder
+ * TODO: Add this to the future standard Lucene parser/processor/builder
  */
 public class ProximityQueryNode extends BooleanQueryNode {
 

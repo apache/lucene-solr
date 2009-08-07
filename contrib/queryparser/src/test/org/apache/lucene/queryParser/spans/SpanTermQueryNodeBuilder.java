@@ -21,14 +21,14 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
-import org.apache.lucene.queryParser.original.builders.OriginalQueryBuilder;
+import org.apache.lucene.queryParser.standard.builders.StandardQueryBuilder;
 import org.apache.lucene.search.spans.SpanTermQuery;
 
 /**
  * This builder creates {@link SpanTermQuery}s from a {@link FieldQueryNode}
  * object.
  */
-public class SpanTermQueryNodeBuilder implements OriginalQueryBuilder {
+public class SpanTermQueryNodeBuilder implements StandardQueryBuilder {
 
   public SpanTermQuery build(QueryNode node) throws QueryNodeException {
     FieldQueryNode fieldQueryNode = (FieldQueryNode) node;

@@ -31,8 +31,8 @@ that represents a query node is {@link org.apache.lucene.queryParser.core.nodes.
 <p>
 {@link org.apache.lucene.queryParser.core.nodes.QueryNode}s are used by the text parser to create a syntax tree.
 These nodes are designed to be used by UI or other text parsers.
-The default Lucene text parser is {@link org.apache.lucene.queryParser.original.parser.OriginalSyntaxParser},
-it implements original syntax.
+The default Lucene text parser is {@link org.apache.lucene.queryParser.standard.parser.StandardSyntaxParser},
+it implements Lucene's standard syntax.
 </p>
 <p>
 {@link org.apache.lucene.queryParser.core.nodes.QueryNode} interface should be implemented by all query nodes, 
@@ -45,7 +45,7 @@ with all the nodes.
 </p>
 <p>
 A query node tree can also generate a query string that can be parsed back by the original text parser,
-at this point only the original lucene syntax is supported.
+at this point only the standard lucene syntax is supported.
 </p>
 <p>
 Grouping nodes:

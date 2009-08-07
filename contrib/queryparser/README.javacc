@@ -1,0 +1,62 @@
+NOTE: often, if you are making a small change to the .jj file, you can
+simply run "ant javacc" and skip the steps below.  JavaCC will print
+warnings like this:
+
+   Warning: ParseException.java: File is obsolete.  Please rename or delete this file so that a new one can be generated for you.
+
+which you should ignore (ie, simply keep the ParseException.java class
+that's already present).
+
+If, instead, you'd like to fully rebuild the StandardQueryParser,
+here's how:
+
+  * Delete these files:
+
+    StandardQueryParser.java
+    StandardQueryParserConstants.java
+    StandardQueryParserTokenManager.java
+    TokenMgrError.java
+    JavaCharStream.java
+    Token.java
+
+  * Run "ant javacc". That will generate the all the classes
+
+  * To avoid lots of warnings in the generated code:
+
+    add @SupressWarnings("all"), immediately preceding the class declaration to:
+
+       QueryParserTokenManager.java
+       TokenMgrError.java
+       JavaCharStream.java
+       Token.java
+       JavaCharStream.java
+
+  * Remove all imports from TokenMgrError.java
+
+  * Fix the ParseException class:
+
+    - Change it to extend from QueryNodeParseException:
+
+       "public class ParseException extends QueryNodeParseException".
+
+    - Recreate the all the constructors like this:
+
+      public ParseException(Token currentTokenVal,
+        int[][] expectedTokenSequencesVal, String[] tokenImageVal) {
+        super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, initialise(
+          currentTokenVal, expectedTokenSequencesVal, tokenImageVal)));
+        this.currentToken = currentTokenVal;
+        this.expectedTokenSequences = expectedTokenSequencesVal;
+        this.tokenImage = tokenImageVal;
+      }
+
+      public ParseException(Message message) {
+        super(message);
+      }
+
+      public ParseException() {
+        super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, "Error"));
+      }
+
+
+    - Fix all imports

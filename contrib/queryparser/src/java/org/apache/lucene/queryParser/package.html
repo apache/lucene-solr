@@ -35,7 +35,7 @@ Features:
 		    and build a processor pipeline, to implement the features you need</li>
         <li>Config Interfaces - Allow the consumer of the Query Parser to implement
             a diff Config Handler Objects to suite their needs.</li>
-        <li>Original Builders - convert QueryNode's into several lucene 
+        <li>Standard Builders - convert QueryNode's into several lucene 
             representations. Supported conversion is using a 2.4 compatible logic</li>
         <li>QueryNode tree's can be converted to a lucene 2.4 syntax string, using toQueryString</li>                          
     </ol>
@@ -99,21 +99,21 @@ messages, which is an important feature of a query parser.
 This design allows to develop different query syntaxes very quickly.
 </p>
 <p>
-A original lucene-compatible syntax is implemented using this new query parser
-API and is located under org.apache.lucene.queryParser.original.
+The standard (default) Lucene query parser is located under
+org.apache.lucene.queryParser.standard.
 <p>
 To make it simpler to use the new query parser 
-the class {@link org.apache.lucene.queryParser.original.OriginalQueryParserHelper} may be helpful,
+the class {@link org.apache.lucene.queryParser.standard.StandardQueryParser} may be helpful,
 specially for people that do not want to extend the Query Parser.
 It uses the default Lucene query processors, text parser and builders, so
 you don't need to worry about dealing with those.
 
-{@link org.apache.lucene.queryParser.original.OriginalQueryParserHelper} usage:
+{@link org.apache.lucene.queryParser.standard.StandardQueryParser} usage:
 <ul>
-OriginalQueryParserHelper qpHelper = new OriginalQueryParserHelper();
+StandardQueryParser qpHelper = new StandardQueryParser();
 
 <br/><br/>
-OriginalQueryConfigHandler config =  qpHelper.getQueryConfigHandler();
+StandardQueryConfigHandler config =  qpHelper.getQueryConfigHandler();
 <br/><br/>
 config.setAllowLeadingWildcard(true);
 <br/><br/>
@@ -122,7 +122,7 @@ config.setAnalyzer(new WhitespaceAnalyzer());
 Query query = qpHelper.parse("apache AND lucene", "defaultField");
 </ul>
 To make it easy for people who are using current Lucene's query parser to switch to
-the new one, there is a {@link org.apache.lucene.queryParser.original.QueryParserWrapper} under org.apache.lucene.queryParser.original
+the new one, there is a {@link org.apache.lucene.queryParser.standard.QueryParserWrapper} under org.apache.lucene.queryParser.standard
 that keeps the old query parser interface, but uses the new query parser infrastructure.
 </p>
 </p>

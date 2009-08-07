@@ -25,7 +25,7 @@ import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.messages.QueryParserMessages;
 import org.apache.lucene.queryParser.core.nodes.FieldableNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
-import org.apache.lucene.queryParser.original.parser.EscapeQuerySyntaxImpl;
+import org.apache.lucene.queryParser.standard.parser.EscapeQuerySyntaxImpl;
 
 /**
  * This class should be used when there is a builder for each type of node.
