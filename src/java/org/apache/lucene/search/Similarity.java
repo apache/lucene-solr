@@ -548,10 +548,11 @@ public abstract class Similarity implements Serializable {
    *
    * @deprecated See {@link #scorePayload(int, String, byte[], int, int)}
    */
+  //TODO: When removing this, set the default value below to return 1.
   public float scorePayload(String fieldName, byte [] payload, int offset, int length)
   {
     //Do nothing
-    return scorePayload(NO_DOC_ID_PROVIDED, fieldName, payload, offset, length);
+    return 1;
   }
 
   /**
@@ -571,8 +572,8 @@ public abstract class Similarity implements Serializable {
    */
   public float scorePayload(int docId, String fieldName, byte [] payload, int offset, int length)
   {
-    //Do nothing
-    return 1;
+    //TODO: When removing the deprecated scorePayload above, set this to return 1
+    return scorePayload(fieldName, payload, offset, length);
   }
 
 }
