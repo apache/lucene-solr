@@ -119,8 +119,8 @@
     <!-- format for date is 1995-12-31T23:59:59.999Z and only the fractional
          seconds part (.999) is optional.
       -->
-    <fieldtype name="date" class="solr.DateField" sortMissingLast="true"/>
-    <fieldtype name="tdate" class="solr.TrieDateField" sortMissingLast="true" precisionStep="6"/>
+    <fieldtype name="date" class="solr.TrieDateField" precisionStep="0"/>
+    <fieldtype name="tdate" class="solr.TrieDateField" precisionStep="6"/>
     <fieldtype name="pdate" class="solr.DateField" sortMissingLast="true"/>
 
 
@@ -464,6 +464,13 @@
    <dynamicField name="*_d"  type="double" indexed="true"  stored="true"/>
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
    <dynamicField name="*_bcd" type="bcdstr" indexed="true"  stored="true"/>
+
+      <!-- some trie-coded dynamic fields for faster range queries -->
+   <dynamicField name="*_ti" type="tint"    indexed="true"  stored="true"/>
+   <dynamicField name="*_tl" type="tlong"   indexed="true"  stored="true"/>
+   <dynamicField name="*_tf" type="tfloat"  indexed="true"  stored="true"/>
+   <dynamicField name="*_td" type="tdouble" indexed="true"  stored="true"/>
+   <dynamicField name="*_tdt" type="tdate"  indexed="true"  stored="true"/>
 
    <dynamicField name="*_si"  type="sint"  indexed="true"  stored="true"/>
    <dynamicField name="*_sl"  type="slong"  indexed="true"  stored="true"/>

@@ -28,8 +28,10 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.schema.TrieDateField;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 import junit.framework.TestCase;
@@ -43,7 +45,7 @@ import junit.framework.TestCase;
  * @since solr 1.3
  */
 public class TestDistributedSearch extends TestCase {
-  Random r = new Random(0);
+  static Random r = new Random(0);
   File testDir;
   
   SolrServer controlClient;
@@ -58,10 +60,21 @@ public class TestDistributedSearch extends TestCase {
   String id="id";
   String t1="a_t";
   String i1="a_si";
-  String tlong = "tlong";
+  String nint = "n_i";
+  String tint = "n_ti";
+  String nfloat = "n_f";
+  String tfloat = "n_tf";
+  String ndouble = "n_d";
+  String tdouble = "n_td";
+  String nlong = "n_l";
+  String tlong = "n_tl";
+  String ndate = "n_dt";
+  String tdate = "n_tdt";
+  
   String oddField="oddField_s";
   String missingField="missing_but_valid_field_t";
   String invalidField="invalid_field_not_in_schema";
+
 
 
   @Override public void setUp() throws Exception
@@ -131,18 +144,36 @@ public class TestDistributedSearch extends TestCase {
     }
   }
 
-
-  void index(Object... fields) throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
+  void addFields(SolrInputDocument doc, Object... fields) {
     for (int i=0; i<fields.length; i+=2) {
       doc.addField((String)(fields[i]), fields[i+1]);
-    }
+    }   
+  }
+
+  // add random fields to the documet before indexing
+  void indexr(Object ... fields) throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    addFields(doc, fields);
+    addFields(doc, "rnd_b", true);
+    addFields(doc, getRandFields(fieldNames, randVals));
+    indexDoc(doc);
+  }
+  
+  void index(Object... fields) throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    addFields(doc, fields);
+    indexDoc(doc);
+  }
+
+  void indexDoc(SolrInputDocument doc) throws IOException, SolrServerException {
     controlClient.add(doc);
 
     int which = (doc.getField(id).toString().hashCode() &0x7fffffff) % clients.size();
     SolrServer client = clients.get(which);
     client.add(doc);
   }
+
+
 
   void index_specific(int serverNumber, Object... fields) throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
@@ -464,36 +495,116 @@ public class TestDistributedSearch extends TestCase {
     }
   }
 
-  public void doTest() throws Exception {
-    del("*:*");
-    index(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
-            ,"foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
-    index(id,2, i1, 50 , tlong, 50,t1,"to come to the aid of their country.");
-    index(id,3, i1, 2, tlong, 2,t1,"how now brown cow");
-    index(id,4, i1, -100 ,tlong, 101,t1,"the quick fox jumped over the lazy dog");
-    index(id,5, i1, 500, tlong, 500 ,t1,"the quick fox jumped way over the lazy dog");
-    index(id,6, i1, -600, tlong, 600 ,t1,"humpty dumpy sat on a wall");
-    index(id,7, i1, 123, tlong, 123 ,t1,"humpty dumpy had a great fall");
-    index(id,8, i1, 876, tlong, 876,t1,"all the kings horses and all the kings men");
-    index(id,9, i1, 7, tlong, 7,t1,"couldn't put humpty together again");
-    index(id,10, i1, 4321, tlong, 4321,t1,"this too shall pass");
-    index(id,11, i1, -987, tlong, 987,t1,"An eye for eye only ends up making the whole world blind.");
-    index(id,12, i1, 379, tlong, 379,t1,"Great works are performed, not by strength, but by perseverance.");
-    index(id,13, i1, 232, tlong, 232,t1,"no eggs on wall, lesson learned", oddField, "odd man out");
 
-    index(id, 14, "SubjectTerms_mfacet", new String[]  {"mathematical models", "mathematical analysis"});
-    index(id, 15, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
-    index(id, 16, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
+
+  public static abstract class RandVal {
+    public static Random r = new Random();
+    public static Set uniqueValues = new HashSet();
+    public abstract Object val();
+    public Object uval() {
+      for(;;) {
+        Object v = val();
+        if (uniqueValues.add(v)) return v;
+      }
+    }
+  }
+
+  public static RandVal rint = new RandVal() {
+    public Object val() {
+      return r.nextInt();
+    }
+  };
+
+  public static RandVal rlong = new RandVal() {
+    public Object val() {
+      return r.nextLong();
+    }
+  };
+
+  public static RandVal rfloat = new RandVal() {
+    public Object val() {
+      return r.nextFloat();
+    }
+  };
+
+  public static RandVal rdouble = new RandVal() {
+    public Object val() {
+      return r.nextDouble();
+    }
+  };
+
+  public static class RandDate extends RandVal {
+    public static TrieDateField df = new TrieDateField();
+
+    public Object val() {
+      long v = r.nextLong();
+        Date d = new Date(v);
+        return df.toExternal(d);
+      }
+  }
+
+  public static RandVal rdate = new RandDate();
+
+  public static String[] fieldNames = new String[]     {"n_ti", "n_f", "n_tf", "n_d", "n_td", "n_l", "n_tl", "n_dt", "n_tdt"};
+  public static RandVal[] randVals = new RandVal[] {rint,   rfloat,rfloat, rdouble,rdouble,rlong,rlong,  rdate,  rdate};
+
+  public static Object[] getRandFields(String[] fields, RandVal[] randVals) {
+    Object[] o = new Object[fields.length*2];
+    for (int i=0; i<fields.length; i++) {
+     o[i*2] = fields[i];
+     o[i*2+1] = randVals[i].uval();
+    }
+    return o;
+  }
+
+  public void doTest() throws Exception {
+    RandVal.uniqueValues = new HashSet();   // reset unique random values
+
+    del("*:*");
+    indexr(id,1, i1, 100, tlong, 100,t1,"now is the time for all good men"
+            ,"foo_f", 1.414f, "foo_b", "true", "foo_d", 1.414d);
+    indexr(id,2, i1, 50 , tlong, 50,t1,"to come to the aid of their country."
+    );
+    indexr(id,3, i1, 2, tlong, 2,t1,"how now brown cow"
+    );
+    indexr(id,4, i1, -100 ,tlong, 101,t1,"the quick fox jumped over the lazy dog"
+    );
+    indexr(id,5, i1, 500, tlong, 500 ,t1,"the quick fox jumped way over the lazy dog"
+    );
+    indexr(id,6, i1, -600, tlong, 600 ,t1,"humpty dumpy sat on a wall");
+    indexr(id,7, i1, 123, tlong, 123 ,t1,"humpty dumpy had a great fall");
+    indexr(id,8, i1, 876, tlong, 876,t1,"all the kings horses and all the kings men");
+    indexr(id,9, i1, 7, tlong, 7,t1,"couldn't put humpty together again");
+    indexr(id,10, i1, 4321, tlong, 4321,t1,"this too shall pass");
+    indexr(id,11, i1, -987, tlong, 987,t1,"An eye for eye only ends up making the whole world blind.");
+    indexr(id,12, i1, 379, tlong, 379,t1,"Great works are performed, not by strength, but by perseverance.");
+    indexr(id,13, i1, 232, tlong, 232,t1,"no eggs on wall, lesson learned", oddField, "odd man out");
+
+    indexr(id, 14, "SubjectTerms_mfacet", new String[]  {"mathematical models", "mathematical analysis"});
+    indexr(id, 15, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
+    indexr(id, 16, "SubjectTerms_mfacet", new String[]  {"test 1", "test 2", "test3"});
     String[] vals = new String[100];
     for (int i=0; i<100; i++) {
       vals[i] = "test " + i;
     }
-    index(id, 17, "SubjectTerms_mfacet", vals);
+    indexr(id, 17, "SubjectTerms_mfacet", vals);
+
+    for (int i=100; i<150; i++) {
+      indexr(id, i);      
+    }
+
     commit();
 
     handle.clear();
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
+
+    // random value sort
+    for (String f : fieldNames) {
+      query("q","*:*", "sort",f+" desc");
+      query("q","*:*", "sort",f+" asc");
+    }
+
 
     // these queries should be exactly ordered and scores should exactly match
     query("q","*:*", "sort",i1+" desc");
