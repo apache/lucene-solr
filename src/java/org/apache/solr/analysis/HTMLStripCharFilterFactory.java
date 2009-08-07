@@ -1,3 +1,6 @@
+package org.apache.solr.analysis;
+
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,20 +18,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+import org.apache.lucene.analysis.CharStream;
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
+public class HTMLStripCharFilterFactory extends BaseCharFilterFactory {
 
-import java.io.Reader;
-
-/**
- * @version $Id$
- * @deprecated Use {@link HTMLStripCharFilterFactory} and {@link StandardTokenizerFactory}
- */
-@Deprecated
-public class HTMLStripStandardTokenizerFactory extends BaseTokenizerFactory {
-  public TokenStream create(Reader input) {
-    return new StandardTokenizer(new HTMLStripReader(input));
+  public HTMLStripCharFilter create(CharStream input) {
+    return new HTMLStripCharFilter(input);
   }
+
 }

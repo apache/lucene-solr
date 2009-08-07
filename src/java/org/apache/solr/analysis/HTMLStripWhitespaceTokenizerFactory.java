@@ -24,7 +24,9 @@ import java.io.Reader;
 
 /**
  * @version $Id$
+ * @deprecated Use {@link HTMLStripCharFilterFactory} and {@link WhitespaceTokenizerFactory}
  */
+@Deprecated
 public class HTMLStripWhitespaceTokenizerFactory extends BaseTokenizerFactory {
   public TokenStream create(Reader input) {
     return new WhitespaceTokenizer(new HTMLStripReader(input));

@@ -1,11 +1,12 @@
 package org.apache.solr.analysis;
 
 /**
- * Copyright 2004 The Apache Software Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -16,22 +17,23 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.apache.lucene.analysis.CharReader;
+
 import junit.framework.TestCase;
 
-import java.io.StringReader;
-import java.io.IOException;
-import java.io.FileReader;
-import java.io.File;
-import java.io.Reader;
-import java.io.BufferedReader;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Collections;
-
-public class HTMLStripReaderTest extends TestCase {
+public class HTMLStripCharFilterTest extends TestCase {
 
 
-  public HTMLStripReaderTest(String s) {
+  public HTMLStripCharFilterTest(String s) {
     super(s);
   }
 
@@ -50,7 +52,7 @@ public class HTMLStripReaderTest extends TestCase {
     String gold = "                 this is some text       here is a                link     and " +
             "another                                     link    . " +
             "This is an entity: &     plus a <   .  Here is an &.                      ";
-    HTMLStripReader reader = new HTMLStripReader(new StringReader(html));
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new StringReader(html)));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
     char [] goldArray = gold.toCharArray();
@@ -68,7 +70,7 @@ public class HTMLStripReaderTest extends TestCase {
   //Some sanity checks, but not a full-fledged check
   public void testHTML() throws Exception {
 
-    HTMLStripReader reader = new HTMLStripReader(new FileReader(new File("htmlStripReaderTest.html")));
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new FileReader(new File("htmlStripReaderTest.html"))));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
     while ((ch = reader.read()) != -1){
@@ -88,7 +90,7 @@ public class HTMLStripReaderTest extends TestCase {
     String gold = "\u0393      ";
     Set<String> set = new HashSet<String>();
     set.add("reserved");
-    Reader reader = new HTMLStripReader(new StringReader(test), set);
+    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
     StringBuilder builder = new StringBuilder();
     int ch = 0;
     while ((ch = reader.read()) != -1){
@@ -105,7 +107,7 @@ public class HTMLStripReaderTest extends TestCase {
     String gold = "       <   foo>    =     \u0393       bar \u0393     ";
     Set<String> set = new HashSet<String>();
     set.add("reserved");
-    Reader reader = new HTMLStripReader(new StringReader(test), set);
+    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
     StringBuilder builder = new StringBuilder();
     int ch = 0;
     while ((ch = reader.read()) != -1){
@@ -122,7 +124,7 @@ public class HTMLStripReaderTest extends TestCase {
     String gold = "       <   junk/>           !     @     and ’      ";
     Set<String> set = new HashSet<String>();
     set.add("reserved");
-    Reader reader = new HTMLStripReader(new StringReader(test), set);
+    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
     StringBuilder builder = new StringBuilder();
     int ch = 0;
     while ((ch = reader.read()) != -1){
@@ -138,7 +140,7 @@ public class HTMLStripReaderTest extends TestCase {
     String test = "aaa bbb <reserved ccc=\"ddddd\"> eeee </reserved> ffff <reserved ggg=\"hhhh\"/> <other/>";
     Set<String> set = new HashSet<String>();
     set.add("reserved");
-    Reader reader = new HTMLStripReader(new StringReader(test), set);
+    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
     StringBuilder builder = new StringBuilder();
     int ch = 0;
     while ((ch = reader.read()) != -1){
@@ -195,7 +197,7 @@ public class HTMLStripReaderTest extends TestCase {
             "<ttt>[aaaa://aaaaa.aaaaaaaa.aaa/aaaaaaa/aaaaaa/ aaaaaaa aaaaaa] aaaaaaaa aaaaaaaaaaaa aa aaaaaaaaaa, aaaaa aaaaaaaaa aaa [[aa aaaaaaa]] [[aaaa]]; aaaaaaaaaaa aaaaaaaa aaa [[aaa aa]] [[aaaa]]</ttt>\n" +
             "\n" +
             "[[aaaaa aaaaaaaaaa]] aa ''[[aaa aaaaaaaaaaaa aa aaaaaa]]'' (aaaa) aaaa aaa aaaa [[zzzzzzz]] aa aaaaaaaa";
-    Reader reader = new HTMLStripReader(new StringReader(test));
+    Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
     Reader noStrip = new StringReader(test);
     int ch = 0;
     int ch2 = 0;
@@ -210,27 +212,27 @@ public class HTMLStripReaderTest extends TestCase {
   }
 
   public void testBufferOverflow() throws Exception {
-    StringBuilder testBuilder = new StringBuilder(HTMLStripReader.DEFAULT_READ_AHEAD + 50);
+    StringBuilder testBuilder = new StringBuilder(HTMLStripCharFilter.DEFAULT_READ_AHEAD + 50);
     testBuilder.append("ah<?> ");
-    appendChars(testBuilder, HTMLStripReader.DEFAULT_READ_AHEAD + 500);
+    appendChars(testBuilder, HTMLStripCharFilter.DEFAULT_READ_AHEAD + 500);
     processBuffer(testBuilder.toString(), "Failed on pseudo proc. instr.");//processing instructions
 
     testBuilder.setLength(0);
     testBuilder.append("<!--");//comments
-    appendChars(testBuilder, 3*HTMLStripReader.DEFAULT_READ_AHEAD + 500);//comments have two lookaheads
+    appendChars(testBuilder, 3*HTMLStripCharFilter.DEFAULT_READ_AHEAD + 500);//comments have two lookaheads
 
     testBuilder.append("-->foo");
     processBuffer(testBuilder.toString(), "Failed w/ comment");
 
     testBuilder.setLength(0);
     testBuilder.append("<?");
-    appendChars(testBuilder, HTMLStripReader.DEFAULT_READ_AHEAD + 500);
+    appendChars(testBuilder, HTMLStripCharFilter.DEFAULT_READ_AHEAD + 500);
     testBuilder.append("?>");
     processBuffer(testBuilder.toString(), "Failed with proc. instr.");
     
     testBuilder.setLength(0);
     testBuilder.append("<b ");
-    appendChars(testBuilder, HTMLStripReader.DEFAULT_READ_AHEAD + 500);
+    appendChars(testBuilder, HTMLStripCharFilter.DEFAULT_READ_AHEAD + 500);
     testBuilder.append("/>");
     processBuffer(testBuilder.toString(), "Failed on tag");
 
@@ -239,14 +241,14 @@ public class HTMLStripReaderTest extends TestCase {
   private void appendChars(StringBuilder testBuilder, int numChars) {
     int i1 = numChars / 2;
     for (int i = 0; i < i1; i++){
-      testBuilder.append('a').append(' ');//tack on enough to go beyond the mark readahead limit, since <?> makes HTMLStripReader think it is a processing instruction
+      testBuilder.append('a').append(' ');//tack on enough to go beyond the mark readahead limit, since <?> makes HTMLStripCharFilter think it is a processing instruction
     }
   }  
 
 
   private void processBuffer(String test, String assertMsg) throws IOException {
     System.out.println("-------------------processBuffer----------");
-    Reader reader = new HTMLStripReader(new BufferedReader(new StringReader(test)));//force the use of BufferedReader
+    Reader reader = new HTMLStripCharFilter(CharReader.get(new BufferedReader(new StringReader(test))));//force the use of BufferedReader
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {
@@ -263,7 +265,7 @@ public class HTMLStripReaderTest extends TestCase {
 
     String test = "<!--- three dashes, still a valid comment ---> ";
     String gold = "                                               ";
-    Reader reader = new HTMLStripReader(new BufferedReader(new StringReader(test)));//force the use of BufferedReader
+    Reader reader = new HTMLStripCharFilter(CharReader.get(new BufferedReader(new StringReader(test))));//force the use of BufferedReader
     int ch = 0;
     StringBuilder builder = new StringBuilder();
     try {

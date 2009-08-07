@@ -258,6 +258,10 @@ New Features
   RequestHandler or SearchComponent to know when a newSearcher or firstSearcher event happened.  QuerySenderListender is the only implementation
   in Solr that implements this, but outside implementations may wish to.  See the AbstractSolrEventListener for a helper method. (gsingers)
 
+67. SOLR-1343: Added HTMLStripCharFilter and marked HTMLStripReader, HTMLStripWhitespaceTokenizerFactory and
+    HTMLStripStandardTokenizerFactory deprecated. To strip HTML tags, HTMLStripCharFilter can be used
+    with an arbitrary Tokenizer. (koji)
+
 
 Optimizations
 ----------------------

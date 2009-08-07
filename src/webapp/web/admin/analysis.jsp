@@ -174,7 +174,6 @@
 
 <%!
   private static void doAnalyzer(JspWriter out, SchemaField field, String val, boolean queryAnalyser, boolean verbose, Set<Tok> match) throws Exception {
-    CharStream reader = CharReader.get(new StringReader(val));
 
     FieldType ft = field.getType();
      Analyzer analyzer = queryAnalyser ?
@@ -186,18 +185,18 @@
        TokenFilterFactory[] filtfacs = tchain.getTokenFilterFactories();
 
        if( cfiltfacs != null ){
+         String source = val;
          for(CharFilterFactory cfiltfac : cfiltfacs ){
+           CharStream reader = CharReader.get(new StringReader(source));
            reader = cfiltfac.create(reader);
            if(verbose){
              writeHeader(out, cfiltfac.getClass(), cfiltfac.getArgs());
-             writeCharStream(out, reader);
+             source = writeCharStream(out, reader);
            }
          }
        }
 
-       // StringReader should support reset()
-       reader.reset();
-       TokenStream tstream = tfac.create(reader);
+       TokenStream tstream = tfac.create(tchain.charStream(new StringReader(val)));
        List<Token> tokens = getTokens(tstream);
        if (verbose) {
          writeHeader(out, tfac.getClass(), tfac.getArgs());
@@ -223,7 +222,7 @@
        }
 
      } else {
-       TokenStream tstream = analyzer.tokenStream(field.getName(),reader);
+       TokenStream tstream = analyzer.tokenStream(field.getName(),new StringReader(val));
        List<Token> tokens = getTokens(tstream);
        if (verbose) {
          writeHeader(out, analyzer.getClass(), new HashMap<String,String>());
@@ -468,7 +467,7 @@
     out.println("</table>");
   }
 
-  static void writeCharStream(JspWriter out, CharStream input) throws IOException {
+  static String writeCharStream(JspWriter out, CharStream input) throws IOException {
     out.println("<table width=\"auto\" class=\"analysis\" border=\"1\">");
     out.println("<tr>");
 
@@ -476,8 +475,6 @@
     XML.escapeCharData("text",out);
     out.println("</th>");
 
-    // StringReader should support reset()
-    input.reset();
     final int BUFFER_SIZE = 1024;
     char[] buf = new char[BUFFER_SIZE];
     int len = 0;
@@ -492,6 +489,7 @@
     
     out.println("</tr>");
     out.println("</table>");
+    return sb.toString();
   }
 
 %>
