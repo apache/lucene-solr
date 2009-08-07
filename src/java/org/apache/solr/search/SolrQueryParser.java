@@ -144,7 +144,7 @@ public class SolrQueryParser extends QueryParser {
     // (sortable numeric types don't do prefixes, but can do range queries)
     Term t = new Term(field, termStr);
     PrefixQuery prefixQuery = new PrefixQuery(t);
-    prefixQuery.setConstantScoreRewrite(true);
+    prefixQuery.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
     return prefixQuery;
   }
 
@@ -153,7 +153,7 @@ public class SolrQueryParser extends QueryParser {
     if (q instanceof WildcardQuery) {
       // use a constant score query to avoid overflowing clauses
       WildcardQuery wildcardQuery = new WildcardQuery(((WildcardQuery)q).getTerm());
-      wildcardQuery.setConstantScoreRewrite(true);
+      wildcardQuery.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
       return  wildcardQuery; 
     }
     return q;

@@ -33,6 +33,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
 import java.text.DateFormat;
 import java.util.Date;
 
@@ -71,7 +72,10 @@ public class SolrIndexWriter extends IndexWriter {
       if (config.maxMergeDocs != -1) setMaxMergeDocs(config.maxMergeDocs);
       if (config.maxFieldLength != -1) setMaxFieldLength(config.maxFieldLength);
       if (config.mergePolicyClassName != null && SolrIndexConfig.DEFAULT_MERGE_POLICY_CLASSNAME.equals(config.mergePolicyClassName) == false) {
-        MergePolicy policy = (MergePolicy) schema.getResourceLoader().newInstance(config.mergePolicyClassName);
+        MergePolicy policy = null;
+
+        policy = (MergePolicy) schema.getResourceLoader().newInstance(config.mergePolicyClassName, new String[]{}, new Class[]{IndexWriter.class}, new Object[] { this });
+
         setMergePolicy(policy);///hmm, is this really the best way to get a newInstance?
       }
       if (config.mergeFactor != -1 && getMergePolicy() instanceof LogMergePolicy) {

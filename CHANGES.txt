@@ -575,6 +575,8 @@ Other Changes
 
 43. SOLR-1261: Lucene trunk renamed RangeQuery & Co to TermRangeQuery (Uwe Schindler via shalin)
 
+44. Upgraded to Lucene 2.9-dev r801856 (Mark Miller)
+
 Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)

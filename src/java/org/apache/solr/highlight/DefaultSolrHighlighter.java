@@ -133,19 +133,21 @@ public class DefaultSolrHighlighter extends SolrHighlighter
    * @param request The SolrQueryRequest
    * @throws IOException 
    */
-  private SpanScorer getSpanQueryScorer(Query query, String fieldName, CachingTokenFilter tokenStream, SolrQueryRequest request) throws IOException {
+  private QueryScorer getSpanQueryScorer(Query query, String fieldName, TokenStream tokenStream, SolrQueryRequest request) throws IOException {
     boolean reqFieldMatch = request.getParams().getFieldBool(fieldName, HighlightParams.FIELD_MATCH, false);
     Boolean highlightMultiTerm = request.getParams().getBool(HighlightParams.HIGHLIGHT_MULTI_TERM);
     if(highlightMultiTerm == null) {
       highlightMultiTerm = false;
     }
-
+    QueryScorer scorer;
     if (reqFieldMatch) {
-      return new SpanScorer(query, fieldName, tokenStream, highlightMultiTerm);
+      scorer = new QueryScorer(query, fieldName);
     }
     else {
-      return new SpanScorer(query, null, tokenStream, highlightMultiTerm);
+      scorer = new QueryScorer(query, null);
     }
+    scorer.setExpandMultiTermQuery(highlightMultiTerm);
+    return scorer;
   }
 
   /**
@@ -154,13 +156,13 @@ public class DefaultSolrHighlighter extends SolrHighlighter
    * @param fieldName The name of the field
    * @param request The SolrQueryRequest
    */
-  protected QueryScorer getQueryScorer(Query query, String fieldName, SolrQueryRequest request) {
+  protected QueryTermScorer getQueryScorer(Query query, String fieldName, SolrQueryRequest request) {
      boolean reqFieldMatch = request.getParams().getFieldBool(fieldName, HighlightParams.FIELD_MATCH, false);
      if (reqFieldMatch) {
-        return new QueryScorer(query, request.getSearcher().getReader(), fieldName);
+        return new QueryTermScorer(query, request.getSearcher().getReader(), fieldName);
      }
      else {
-        return new QueryScorer(query);
+        return new QueryTermScorer(query);
      }
   }
   

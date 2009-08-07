@@ -477,7 +477,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
         values[slot] = docVal(doc);
       }
 
-      public void setNextReader(IndexReader reader, int docBase, int numSlotsFull) throws IOException {
+      public void setNextReader(IndexReader reader, int docBase) throws IOException {
         idIndex = FieldCache.DEFAULT.getStringIndex(reader, fieldname);
       }
 

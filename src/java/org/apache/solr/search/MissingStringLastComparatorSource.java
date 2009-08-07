@@ -177,7 +177,7 @@ class MissingLastOrdComparator extends FieldComparator {
       readerGen[slot] = currentReaderGen;
     }
 
-    public void setNextReader(IndexReader reader, int docBase,  int numSlotsFull) throws IOException {
+    public void setNextReader(IndexReader reader, int docBase) throws IOException {
       FieldCache.StringIndex currentReaderValues = FieldCache.DEFAULT.getStringIndex(reader, field);
       currentReaderGen++;
       order = currentReaderValues.order;

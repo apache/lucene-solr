@@ -21,7 +21,9 @@ import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.search.highlight.Fragmenter;
 import org.apache.lucene.search.highlight.NullFragmenter;
 import org.apache.solr.common.params.DefaultSolrParams;
@@ -146,6 +148,9 @@ class LuceneRegexFragmenter implements Fragmenter
   protected int targetOffset;
   protected int[] hotspots;
 
+  private PositionIncrementAttribute posIncAtt;
+  private OffsetAttribute offsetAtt;
+
   // ** other
   // note: could dynamically change size of sentences extracted to match
   // target frag size
@@ -193,10 +198,12 @@ class LuceneRegexFragmenter implements Fragmenter
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.TextFragmenter#start(java.lang.String)
    */
-  public void start(String originalText) {
+  public void start(String originalText, TokenStream tokenStream) {
     currentNumFrags = 1;
     currentOffset = 0;
     addHotSpots(originalText);
+    posIncAtt = (PositionIncrementAttribute) tokenStream.getAttribute(PositionIncrementAttribute.class);
+    offsetAtt = (OffsetAttribute) tokenStream.getAttribute(OffsetAttribute.class);
   }
 
   ////////////////////////////////////
@@ -231,23 +238,24 @@ class LuceneRegexFragmenter implements Fragmenter
   /* (non-Javadoc)
    * @see org.apache.lucene.search.highlight.TextFragmenter#isNewFragment(org.apache.lucene.analysis.Token)
    */
-  public boolean isNewFragment(Token token)
+  public boolean isNewFragment()
   {
     boolean isNewFrag = false;
     int minFragLen = (int)((1.0f - slop)*targetFragChars);
-
+    int endOffset = offsetAtt.endOffset();
+    
     // ** determin isNewFrag
-    if(token.getPositionIncrement() > incrementGapThreshold) {
+    if(posIncAtt.getPositionIncrement() > incrementGapThreshold) {
       // large position gaps always imply new fragments
       isNewFrag = true;
 
-    } else if(token.endOffset() - currentOffset < minFragLen) {
+    } else if(endOffset - currentOffset < minFragLen) {
       // we're not in our range of flexibility
       isNewFrag = false;
 
     } else if(targetOffset > 0) {
       // we've already decided on a target
-      isNewFrag = token.endOffset() > targetOffset;
+      isNewFrag = endOffset > targetOffset;
 
     } else {
       // we might be able to do something
@@ -256,7 +264,7 @@ class LuceneRegexFragmenter implements Fragmenter
       int hotIndex;
 
       // look for a close hotspot
-      hotIndex = Arrays.binarySearch(hotspots, token.endOffset());
+      hotIndex = Arrays.binarySearch(hotspots, endOffset);
       if(hotIndex < 0) hotIndex = -hotIndex;
       if(hotIndex >= hotspots.length) {
         // no more hotspots in this input stream
@@ -276,13 +284,13 @@ class LuceneRegexFragmenter implements Fragmenter
         targetOffset = goal <= maxOffset ? goal : currentOffset + targetFragChars;
       }
 
-      isNewFrag = token.endOffset() > targetOffset;
+      isNewFrag = endOffset > targetOffset;
     }      
       
     // ** operate on isNewFrag
     if(isNewFrag) {
         currentNumFrags++;
-        currentOffset = token.endOffset();
+        currentOffset = endOffset;
         targetOffset = -1;
     }
     return isNewFrag;

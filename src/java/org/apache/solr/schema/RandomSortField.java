@@ -130,7 +130,7 @@ public class RandomSortField extends FieldType {
           values[slot] = hash(doc+seed);
         }
 
-        public void setNextReader(IndexReader reader, int docBase, int numSlotsFull) throws IOException {
+        public void setNextReader(IndexReader reader, int docBase) throws IOException {
           seed = getSeed(fieldname, reader);
         }
 

@@ -225,8 +225,8 @@ public class QueryComponent extends SearchComponent
           }
 
           if (comparator == null) {
-            comparator = sortField.getComparator(1,0,sortField.getReverse());
-            comparator.setNextReader(subReader, offset, 0);
+            comparator = sortField.getComparator(1,0);
+            comparator.setNextReader(subReader, offset);
             if (comparators != null)
               comparators[idx] = comparator;
           }
