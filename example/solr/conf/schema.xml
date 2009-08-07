@@ -284,7 +284,7 @@
         <!-- The PatternReplaceFilter gives you the flexibility to use
              Java Regular expression to replace any sequence of characters
              matching a pattern with an arbitrary replacement string, 
-             which may include back references to portions of the orriginal
+             which may include back references to portions of the original
              string matched by the pattern.
              
              See the Java Regular Expression documentation for more
@@ -309,7 +309,9 @@
       <analyzer>
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
         <!--
-         Attributes for DelimitedPayloadTokenFilterFactory:
+        The DelimitedPayloadTokenFilter can put payloads on tokens... for example,
+        a token of "foo|1.4"  would be indexed as "foo" with a payload of 1.4f
+        Attributes of the DelimitedPayloadTokenFilterFactory : 
          "delimiter" - a one character delimiter. Default is | (pipe)
 	 "encoder" - how to encode the following value into a playload
 	    float -> org.apache.lucene.analysis.payloads.FloatEncoder,
