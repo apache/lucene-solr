@@ -219,7 +219,8 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
       public void putAll(Map<? extends String, ? extends Collection<Object>> t) {throw new UnsupportedOperationException();}
       public Collection<Collection<Object>> values() {throw new UnsupportedOperationException();}
       public Collection<Object> put(String key, Collection<Object> value) {throw new UnsupportedOperationException();}
-      public Collection<Object> remove(Object key) {throw new UnsupportedOperationException();}      
+      public Collection<Object> remove(Object key) {throw new UnsupportedOperationException();}
+      public String toString() {return _fields.toString();}
     };
   }
 
@@ -247,6 +248,7 @@ public class SolrDocument implements Map<String,Object>, Iterable<Map.Entry<Stri
       public Collection<Object> values() {throw new UnsupportedOperationException();}
       public Collection<Object> put(String key, Object value) {throw new UnsupportedOperationException();}
       public Collection<Object> remove(Object key) {throw new UnsupportedOperationException();}      
+      public String toString() {return _fields.toString();}
    };
   }
 
