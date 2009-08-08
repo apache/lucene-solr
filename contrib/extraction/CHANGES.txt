@@ -34,3 +34,5 @@ $Id:$
     See http://www.lucidimagination.com/search/document/d6f1899a85b2a45c/vote_apache_tika_0_4_release_candidate_2#d6f1899a85b2a45c
     for discussion on language detection.
     See http://www.apache.org/dist/lucene/tika/CHANGES-0.4.txt. (gsingers)
+
+6. SOLR-1274: Added text serialization output for extractOnly (Peter Wolanin, gsingers)    

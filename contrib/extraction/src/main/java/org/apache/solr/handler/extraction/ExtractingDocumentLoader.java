@@ -38,7 +38,9 @@ import org.apache.tika.sax.xpath.MatchingContentHandler;
 import org.apache.tika.sax.xpath.XPathParser;
 import org.apache.tika.exception.TikaException;
 import org.apache.xml.serialize.OutputFormat;
+import org.apache.xml.serialize.BaseMarkupSerializer;
 import org.apache.xml.serialize.XMLSerializer;
+import org.apache.xml.serialize.TextSerializer;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
@@ -52,7 +54,14 @@ import java.io.StringWriter;
  *
  **/
 public class ExtractingDocumentLoader extends ContentStreamLoader {
-
+  /**
+   * Extract Only supported format
+   */
+  public static final String TEXT_FORMAT = "text";
+  /**
+   * Extract Only supported format.  Default
+   */
+  public static final String XML_FORMAT = "xml";
   /**
    * XHTML XPath parser.
    */
@@ -152,10 +161,17 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         ContentHandler parsingHandler = handler;
 
         StringWriter writer = null;
-        XMLSerializer serializer = null;
+        BaseMarkupSerializer serializer = null;
         if (extractOnly == true) {
+          String extractFormat = params.get(ExtractingParams.EXTRACT_FORMAT, "xml");
           writer = new StringWriter();
-          serializer = new XMLSerializer(writer, new OutputFormat("XML", "UTF-8", true));
+          if (extractFormat.equals(TEXT_FORMAT)) {
+            serializer = new TextSerializer();
+            serializer.setOutputCharStream(writer);
+            serializer.setOutputFormat(new OutputFormat("Text", "UTF-8", true));
+          } else {
+            serializer = new XMLSerializer(writer, new OutputFormat("XML", "UTF-8", true));
+          }
           if (xpathExpr != null) {
             Matcher matcher =
                     PARSER.parse(xpathExpr);

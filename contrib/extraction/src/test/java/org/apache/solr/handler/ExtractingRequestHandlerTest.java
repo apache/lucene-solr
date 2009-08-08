@@ -25,6 +25,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.extraction.ExtractingParams;
 import org.apache.solr.handler.extraction.ExtractingRequestHandler;
+import org.apache.solr.handler.extraction.ExtractingDocumentLoader;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -243,6 +244,24 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
     assertTrue("nl is null and it shouldn't be", nl != null);
     Object title = nl.get("title");
     assertTrue("title is null and it shouldn't be", title != null);
+    assertTrue(extraction.indexOf("<?xml") != -1);
+
+    rsp = loadLocal("solr-word.pdf", ExtractingParams.EXTRACT_ONLY, "true",
+            ExtractingParams.EXTRACT_FORMAT, ExtractingDocumentLoader.TEXT_FORMAT);
+    assertTrue("rsp is null and it shouldn't be", rsp != null);
+    list = rsp.getValues();
+
+    extraction = (String) list.get("solr-word.pdf");
+    assertTrue("extraction is null and it shouldn't be", extraction != null);
+    assertTrue(extraction + " does not contain " + "solr-word", extraction.indexOf("solr-word") != -1);
+    assertTrue(extraction.indexOf("<?xml") == -1);
+
+    nl = (NamedList) list.get("solr-word.pdf_metadata");
+    assertTrue("nl is null and it shouldn't be", nl != null);
+    title = nl.get("title");
+    assertTrue("title is null and it shouldn't be", title != null);
+
+
 
   }
 

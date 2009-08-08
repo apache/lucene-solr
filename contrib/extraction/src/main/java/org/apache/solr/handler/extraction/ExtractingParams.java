@@ -82,6 +82,11 @@ public interface ExtractingParams {
   public static final String EXTRACT_ONLY = "extractOnly";
 
   /**
+   * Content output format if extractOnly is true. Default is "xml", alternative is "text".
+   */
+  public static final String EXTRACT_FORMAT = "extractFormat";
+
+  /**
    * Capture attributes separately according to the name of the element, instead of just adding them to the string buffer
    */
   public static final String CAPTURE_ATTRIBUTES = "captureAttr";
