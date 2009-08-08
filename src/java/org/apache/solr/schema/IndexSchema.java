@@ -251,6 +251,7 @@ public final class IndexSchema {
    * &lt;solrQueryParser&gt; configuration for this IndexSchema.
    *
    * @param defaultField if non-null overrides the schema default
+   * @deprecated
    */
   public SolrQueryParser getSolrQueryParser(String defaultField) {
     SolrQueryParser qp = new SolrQueryParser(this,defaultField);
@@ -262,9 +263,7 @@ public final class IndexSchema {
   
   /**
    * Name of the default search field specified in the schema file
-   * @deprecated use getSolrQueryParser().getField()
    */
-  @Deprecated
   public String getDefaultSearchFieldName() {
     return defaultSearchFieldName;
   }

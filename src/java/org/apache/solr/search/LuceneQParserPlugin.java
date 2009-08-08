@@ -61,7 +61,7 @@ class LuceneQParser extends QParser {
 
     String defaultField = getParam(CommonParams.DF);
     if (defaultField==null) {
-      defaultField = getReq().getSchema().getSolrQueryParser(null).getField();
+      defaultField = getReq().getSchema().getDefaultSearchFieldName();
     }
     lparser = new SolrQueryParser(this, defaultField);
 

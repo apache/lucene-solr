@@ -523,6 +523,7 @@ public class SolrPluginUtils {
    * NOTE: intra-function whitespace is not allowed.
    * </p>
    * @see #parseFieldBoosts
+   * @deprecated
    */
   public static List<Query> parseFuncs(IndexSchema s, String in)
     throws ParseException {
@@ -731,7 +732,11 @@ public class SolrPluginUtils {
      * DisjunctionMaxQuery and the tiebreaker to use.
      */
     protected Map<String,Alias> aliases = new HashMap<String,Alias>(3);
-        
+    public DisjunctionMaxQueryParser(QParser qp, String defaultField) {
+      super(qp,defaultField);
+      // don't trust that our parent class won't ever change it's default
+      setDefaultOperator(QueryParser.Operator.OR);
+    }
     public DisjunctionMaxQueryParser(IndexSchema s, String defaultField) {
       super(s,defaultField);
       // don't trust that our parent class won't ever change it's default

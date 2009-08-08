@@ -143,7 +143,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
       useDefaultSearchField = false;
     }
     if (useDefaultSearchField)  {
-      analysisRequest.addFieldName(req.getSchema().getSolrQueryParser(null).getField());
+      analysisRequest.addFieldName(req.getSchema().getDefaultSearchFieldName());
     }
     analysisRequest.setQuery(solrParams.get(AnalysisParams.QUERY, solrParams.get(CommonParams.Q)));
     analysisRequest.setFieldValue(solrParams.get(AnalysisParams.FIELD_VALUE));

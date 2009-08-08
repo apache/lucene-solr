@@ -64,7 +64,7 @@ public class SolrQueryParser extends QueryParser {
    * 
    * @param schema Used for default search field name if defaultField is null and field information is used for analysis
    * @param defaultField default field used for unspecified search terms.  if null, the schema default field is used
-   * @see IndexSchema#getSolrQueryParser(String defaultField)
+   * @see IndexSchema#getDefaultSearchFieldName()
    */
   public SolrQueryParser(IndexSchema schema, String defaultField) {
     super(defaultField == null ? schema.getDefaultSearchFieldName() : defaultField, schema.getQueryAnalyzer());

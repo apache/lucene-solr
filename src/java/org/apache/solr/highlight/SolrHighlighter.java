@@ -73,7 +73,7 @@ public abstract class SolrHighlighter
     if(emptyArray(fields)) {
       // use default search field if highlight fieldlist not specified.
       if (emptyArray(defaultFields)) {
-        String defaultSearchField = request.getSchema().getSolrQueryParser(null).getField();
+        String defaultSearchField = request.getSchema().getDefaultSearchFieldName();
         fields = null == defaultSearchField ? new String[]{} : new String[]{defaultSearchField};
       }
       else {

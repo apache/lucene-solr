@@ -133,7 +133,7 @@ public class SolrPluginUtilsTest extends AbstractSolrTestCase {
     assertTrue(t+" sanity test isn't TermQuery: " + out.getClass(),
                out instanceof TermQuery);
     assertEquals(t+" sanity test is wrong field",
-                 h.getCore().getSchema().getSolrQueryParser(null).getField(),
+                 h.getCore().getSchema().getDefaultSearchFieldName(),
                  ((TermQuery)out).getTerm().field());
 
     t = "subject:XXXXXXXX";

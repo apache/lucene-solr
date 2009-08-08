@@ -207,7 +207,7 @@ public class DisMaxQParser extends QParser {
   protected SolrPluginUtils.DisjunctionMaxQueryParser getParser(Map<String, Float> fields, String paramName,
                                                                 SolrParams solrParams, float tiebreaker) {
     int slop = solrParams.getInt(paramName, 0);
-    SolrPluginUtils.DisjunctionMaxQueryParser parser = new SolrPluginUtils.DisjunctionMaxQueryParser(req.getSchema(),
+    SolrPluginUtils.DisjunctionMaxQueryParser parser = new SolrPluginUtils.DisjunctionMaxQueryParser(this,
             IMPOSSIBLE_FIELD_NAME);
     parser.addAlias(IMPOSSIBLE_FIELD_NAME, tiebreaker, fields);
     parser.setPhraseSlop(slop);

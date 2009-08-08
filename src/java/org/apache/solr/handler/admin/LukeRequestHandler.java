@@ -371,7 +371,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     finfo.add("fields", fields);
     finfo.add("dynamicFields", dynamicFields);
     finfo.add("uniqueKeyField", uniqueField.getName());
-    finfo.add("defaultSearchField", schema.getSolrQueryParser(null).getField());
+    finfo.add("defaultSearchField", schema.getDefaultSearchFieldName());
     finfo.add("types", types);
     return finfo;
   }
