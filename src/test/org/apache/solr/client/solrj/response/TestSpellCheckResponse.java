@@ -41,6 +41,8 @@ public class TestSpellCheckResponse extends SolrExampleTestBase {
   int port = 0;
   static final String context = "/example";
 
+  static String field = "name";
+
   public void setUp() throws Exception {
     super.setUp();
 
@@ -53,13 +55,13 @@ public class TestSpellCheckResponse extends SolrExampleTestBase {
 
   public void testSpellCheckResponse() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
-    doc.setField("id", "AAA");
-    doc.setField("name", "Samsung");
+    doc.setField("id", "111");
+    doc.setField(field, "Samsung");
     server.add(doc);
     server.commit(true, true);
 
     SolrQuery query = new SolrQuery("*:*");
-    query.set(CommonParams.QT, "/spellCheckCompRH");
+    query.set(CommonParams.QT, "/spell");
     query.set("spellcheck", true);
     query.set(SpellingParams.SPELLCHECK_Q, "samsang");
     query.set(SpellingParams.SPELLCHECK_BUILD, true);
@@ -70,13 +72,13 @@ public class TestSpellCheckResponse extends SolrExampleTestBase {
 
   public void testSpellCheckResponse_Extended() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
-    doc.setField("id", "AAA");
-    doc.setField("name", "Samsung");
+    doc.setField("id", "111");
+    doc.setField(field, "Samsung");
     server.add(doc);
     server.commit(true, true);
 
     SolrQuery query = new SolrQuery("*:*");
-    query.set(CommonParams.QT, "/spellCheckCompRH");
+    query.set(CommonParams.QT, "/spell");
     query.set("spellcheck", true);
     query.set(SpellingParams.SPELLCHECK_Q, "samsang");
     query.set(SpellingParams.SPELLCHECK_BUILD, true);

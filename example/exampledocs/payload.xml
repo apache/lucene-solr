@@ -26,7 +26,7 @@
   <field name="price">185</field>
   <field name="popularity">5</field>
   <field name="inStock">true</field>
-  <field name="catPay">electronics|6.0 memory|3.0</field>
+  <field name="payloads">electronics|6.0 memory|3.0</field>
 </doc>
 
 <doc>
@@ -38,7 +38,7 @@
   <field name="price">74.99</field>
   <field name="popularity">7</field>
   <field name="inStock">true</field>
-  <field name="catPay">electronics|4.0 memory|2.0</field>
+  <field name="payloads">electronics|4.0 memory|2.0</field>
 </doc>
 
 <doc>
@@ -51,7 +51,7 @@
   <!-- note: price is missing on this one -->
   <field name="popularity">5</field>
   <field name="inStock">true</field>
-  <field name="catPay">electronics|0.9 memory|0.1</field>
+  <field name="payloads">electronics|0.9 memory|0.1</field>
 </doc>
 </add>
 

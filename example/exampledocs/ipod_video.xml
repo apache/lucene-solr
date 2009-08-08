@@ -32,4 +32,5 @@
   <field name="price">399.00</field>
   <field name="popularity">10</field>
   <field name="inStock">true</field>
+  <field name="timestamp">2005-10-12T08:00:00Z</field>
 </doc></add>
