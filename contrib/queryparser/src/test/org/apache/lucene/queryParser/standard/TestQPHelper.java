@@ -41,11 +41,13 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.messages.MessageImpl;
 import org.apache.lucene.queryParser.core.QueryNodeException;
@@ -55,12 +57,12 @@ import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.nodes.WildcardQueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorPipeline;
-import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
@@ -70,6 +72,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -1142,6 +1145,54 @@ public class TestQPHelper extends LuceneTestCase {
   public void tearDown() throws Exception {
     super.tearDown();
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
+  }
+
+  private class CannedTokenStream extends TokenStream {
+    private int upto = 0;
+    public boolean incrementToken() {
+      if (upto == 4) {
+        return false;
+      }
+      PositionIncrementAttribute posIncr = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+      TermAttribute term = (TermAttribute) addAttribute(TermAttribute.class);
+      if (upto == 0) {
+        posIncr.setPositionIncrement(1);
+        term.setTermBuffer("a");
+      } else if (upto == 1) {
+        posIncr.setPositionIncrement(1);
+        term.setTermBuffer("b");
+      } else if (upto == 2) {
+        posIncr.setPositionIncrement(0);
+        term.setTermBuffer("c");
+      } else {
+        posIncr.setPositionIncrement(0);
+        term.setTermBuffer("d");
+      }
+      upto++;
+      return true;
+    }
+  }
+
+  private class CannedAnalyzer extends Analyzer {
+    public TokenStream tokenStream(String ignored, Reader alsoIgnored) {
+      return new CannedTokenStream();
+    }
+  }
+
+  public void testMultiPhraseQuery() throws Exception {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new CannedAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new Field("field", "", Field.Store.NO, Field.Index.ANALYZED));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    IndexSearcher s = new IndexSearcher(r);
+    
+    Query q = new StandardQueryParser(new CannedAnalyzer()).parse("\"a\"", "field");
+    assertTrue(q instanceof MultiPhraseQuery);
+    assertEquals(1, s.search(q, 10).totalHits);
+    r.close();
+    w.close();
   }
 
 }

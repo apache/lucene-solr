@@ -218,6 +218,7 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
           List<FieldQueryNode> multiTerms = new ArrayList<FieldQueryNode>();
           int position = -1;
           int i = 0;
+          int termGroupCount = 0;
           for (; i < numTokens; i++) {
             String term = null;
             int positionIncrement = 1;
@@ -239,14 +240,17 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
 
                 if (this.positionIncrementsEnabled) {
                   termNode.setPositionIncrement(position);
-
                 } else {
-                  termNode.setPositionIncrement(i);
+                  termNode.setPositionIncrement(termGroupCount);
                 }
 
                 mpq.add(termNode);
 
               }
+
+              // Only increment once for each "group" of
+              // terms that were in the same position:
+              termGroupCount++;
 
               multiTerms.clear();
 
@@ -263,7 +267,7 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
               termNode.setPositionIncrement(position);
 
             } else {
-              termNode.setPositionIncrement(i);
+              termNode.setPositionIncrement(termGroupCount);
             }
 
             mpq.add(termNode);
