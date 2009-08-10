@@ -18,6 +18,7 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.IOException;
+import java.util.IdentityHashMap;
 
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -75,33 +76,52 @@ public abstract class TokenStream extends AttributeSource {
     = new TokenWrapperAttributeFactory(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY);
   
   /** @deprecated Remove this when old API is removed! */
-  private static final Class[] METHOD_NO_PARAMS = new Class[0];
-
-  /** @deprecated Remove this when old API is removed! */
-  private static final Class[] METHOD_TOKEN_PARAM = new Class[]{Token.class};
-  
-  /** @deprecated Remove this when old API is removed! */
   private final TokenWrapper tokenWrapper;
   
   /** @deprecated Remove this when old API is removed! */
   private static boolean onlyUseNewAPI = false;
 
   /** @deprecated Remove this when old API is removed! */
-  private final boolean
-    hasIncrementToken = isMethodOverridden("incrementToken", METHOD_NO_PARAMS),
-    hasReusableNext = onlyUseNewAPI ? false : isMethodOverridden("next", METHOD_TOKEN_PARAM),
-    hasNext = onlyUseNewAPI ? false : isMethodOverridden("next", METHOD_NO_PARAMS);
+  private final MethodSupport supportedMethods = getSupportedMethods(this.getClass());
+
+  /** @deprecated Remove this when old API is removed! */
+  private static final class MethodSupport {
+    final boolean hasIncrementToken, hasReusableNext, hasNext;
+
+    MethodSupport(Class clazz) {
+      hasIncrementToken = isMethodOverridden(clazz, "incrementToken", METHOD_NO_PARAMS);
+      hasReusableNext = isMethodOverridden(clazz, "next", METHOD_TOKEN_PARAM);
+      hasNext = isMethodOverridden(clazz, "next", METHOD_NO_PARAMS);
+    }
+    
+    private static boolean isMethodOverridden(Class clazz, String name, Class[] params) {
+      try {
+        return clazz.getMethod(name, params).getDeclaringClass() != TokenStream.class;
+      } catch (NoSuchMethodException e) {
+        // should not happen
+        throw new RuntimeException(e);
+      }
+    }
+    
+    private static final Class[] METHOD_NO_PARAMS = new Class[0];
+    private static final Class[] METHOD_TOKEN_PARAM = new Class[]{Token.class};
+  }
+      
+  /** @deprecated Remove this when old API is removed! */
+  private static final IdentityHashMap/*<Class<? extends TokenStream>,MethodSupport>*/ knownMethodSupport = new IdentityHashMap();
   
   /** @deprecated Remove this when old API is removed! */
-  private boolean isMethodOverridden(String name, Class[] params) {
-    try {
-      return this.getClass().getMethod(name, params).getDeclaringClass() != TokenStream.class;
-    } catch (NoSuchMethodException e) {
-      // should not happen
-      throw new RuntimeException(e);
+  private static MethodSupport getSupportedMethods(Class clazz) {
+    MethodSupport supportedMethods;
+    synchronized(knownMethodSupport) {
+      supportedMethods = (MethodSupport) knownMethodSupport.get(clazz);
+      if (supportedMethods == null) {
+        knownMethodSupport.put(clazz, supportedMethods = new MethodSupport(clazz));
+      }
     }
+    return supportedMethods;
   }
-  
+
   /** @deprecated Remove this when old API is removed! */
   private static final class TokenWrapperAttributeFactory extends AttributeFactory {
     private final AttributeFactory delegate;
@@ -193,12 +213,12 @@ public abstract class TokenStream extends AttributeSource {
 
   /** @deprecated Remove this when old API is removed! */
   private void check() {
-    if (onlyUseNewAPI && !hasIncrementToken) {
+    if (onlyUseNewAPI && !supportedMethods.hasIncrementToken) {
       throw new UnsupportedOperationException(getClass().getName()+" does not implement incrementToken() which is needed for onlyUseNewAPI.");
     }
 
     // a TokenStream subclass must at least implement one of the methods!
-    if (!(hasIncrementToken || hasNext || hasReusableNext)) {
+    if (!(supportedMethods.hasIncrementToken || supportedMethods.hasNext || supportedMethods.hasReusableNext)) {
       throw new UnsupportedOperationException(getClass().getName()+" does not implement any of incrementToken(), next(Token), next().");
     }
   }
@@ -257,10 +277,10 @@ public abstract class TokenStream extends AttributeSource {
     assert !onlyUseNewAPI && tokenWrapper != null;
     
     final Token token;
-    if (hasReusableNext) {
+    if (supportedMethods.hasReusableNext) {
       token = next(tokenWrapper.delegate);
     } else {
-      assert hasNext;
+      assert supportedMethods.hasNext;
       token = next();
     }
     if (token == null) return false;
@@ -321,11 +341,11 @@ public abstract class TokenStream extends AttributeSource {
     if (onlyUseNewAPI)
       throw new UnsupportedOperationException("This TokenStream only supports the new Attributes API.");
     
-    if (hasIncrementToken) {
+    if (supportedMethods.hasIncrementToken) {
       tokenWrapper.delegate = reusableToken;
       return incrementToken() ? tokenWrapper.delegate : null;
     } else {
-      assert hasNext;
+      assert supportedMethods.hasNext;
       final Token token = next();
       if (token == null) return null;
       tokenWrapper.delegate = token;
@@ -344,10 +364,10 @@ public abstract class TokenStream extends AttributeSource {
     if (onlyUseNewAPI)
       throw new UnsupportedOperationException("This TokenStream only supports the new Attributes API.");
     
-    if (hasIncrementToken) {
+    if (supportedMethods.hasIncrementToken) {
       return incrementToken() ? ((Token) tokenWrapper.delegate.clone()) : null;
     } else {
-      assert hasReusableNext;
+      assert supportedMethods.hasReusableNext;
       final Token token = next(tokenWrapper.delegate);
       if (token == null) return null;
       tokenWrapper.delegate = token;

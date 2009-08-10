@@ -44,13 +44,13 @@ public class KeywordTokenizer extends Tokenizer {
     this.done = false;
     termAtt = (TermAttribute) addAttribute(TermAttribute.class);
     offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    termAtt.resizeTermBuffer(bufferSize);
   }
   
   public final boolean incrementToken() throws IOException {
     if (!done) {
       done = true;
       int upto = 0;
-      termAtt.clear();
       char[] buffer = termAtt.termBuffer();
       while (true) {
         final int length = input.read(buffer, upto, buffer.length-upto);

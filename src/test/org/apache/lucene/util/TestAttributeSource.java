@@ -104,6 +104,12 @@ public class TestAttributeSource extends LuceneTestCase {
     termAtt.setTermBuffer("TestTerm");
     typeAtt.setType("TestType");    
     assertEquals("Attributes should appear in original order", "("+termAtt.toString()+","+typeAtt.toString()+")", src.toString());
+    Iterator it = src.getAttributeImplsIterator();
+    assertTrue("Iterator should have 2 attributes left", it.hasNext());
+    assertSame("First AttributeImpl from iterator should be termAtt", termAtt, it.next());
+    assertTrue("Iterator should have 1 attributes left", it.hasNext());
+    assertSame("Second AttributeImpl from iterator should be typeAtt", typeAtt, it.next());
+    assertFalse("Iterator should have 0 attributes left", it.hasNext());
 
     src = new AttributeSource();
     src.addAttributeImpl(new Token());
@@ -111,7 +117,7 @@ public class TestAttributeSource extends LuceneTestCase {
     termAtt = (TermAttribute) src.addAttribute(TermAttribute.class);
     assertTrue("TermAttribute should be implemented by Token", termAtt instanceof Token);
     // get the Token attribute and check, that it is the only one
-    final Iterator it = src.getAttributeImplsIterator();
+    it = src.getAttributeImplsIterator();
     Token tok = (Token) it.next();
     assertFalse("There should be only one attribute implementation instance", it.hasNext());
     

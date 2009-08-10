@@ -158,7 +158,6 @@ public class StandardTokenizer extends Tokenizer {
       }
 
       if (scanner.yylength() <= maxTokenLength) {
-        termAtt.clear();
         posIncrAtt.setPositionIncrement(posIncr);
         scanner.getText(termAtt);
         final int start = scanner.yychar();

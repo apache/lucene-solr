@@ -17,8 +17,9 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.util.Iterator;
 import java.util.Collections;
+import java.util.NoSuchElementException;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.IdentityHashMap;
 import java.util.LinkedList;
@@ -137,7 +138,33 @@ public class AttributeSource {
    * if one instance implements more than one Attribute interface.
    */
   public Iterator/*<AttributeImpl>*/ getAttributeImplsIterator() {
-    return Collections.unmodifiableCollection(attributeImpls.values()).iterator();
+    if (hasAttributes()) {
+      if (currentState == null) {
+        computeCurrentState();
+      }
+      final State initState = currentState;
+      return new Iterator() {
+        private State state = initState;
+      
+        public void remove() {
+          throw new UnsupportedOperationException();
+        }
+        
+        public Object next() {
+          if (state == null)
+            throw new NoSuchElementException();
+          final AttributeImpl att = state.attribute;
+          state = state.next;
+          return att;
+        }
+        
+        public boolean hasNext() {
+          return state != null;
+        }
+      };
+    } else {
+      return Collections.EMPTY_SET.iterator();
+    }
   }
   
   /** a cache that stores all interfaces for known implementation classes for performance (slow reflection) */
@@ -226,17 +253,6 @@ public class AttributeSource {
   }
   
   /**
-   * Resets all Attributes in this AttributeSource by calling
-   * {@link AttributeImpl#clear()} on each Attribute implementation.
-   */
-  public void clearAttributes() {
-    Iterator it = getAttributeImplsIterator();
-    while (it.hasNext()) {
-      ((AttributeImpl) it.next()).clear();
-    }
-  }
-  
-  /**
    * This class holds the state of an AttributeSource.
    * @see #captureState
    * @see #restoreState
@@ -262,13 +278,28 @@ public class AttributeSource {
   private void computeCurrentState() {
     currentState = new State();
     State c = currentState;
-    Iterator it = getAttributeImplsIterator();
+    Iterator it = attributeImpls.values().iterator();
     c.attribute = (AttributeImpl) it.next();
     while (it.hasNext()) {
       c.next = new State();
       c = c.next;
       c.attribute = (AttributeImpl) it.next();
     }        
+  }
+  
+  /**
+   * Resets all Attributes in this AttributeSource by calling
+   * {@link AttributeImpl#clear()} on each Attribute implementation.
+   */
+  public void clearAttributes() {
+    if (hasAttributes()) {
+      if (currentState == null) {
+        computeCurrentState();
+      }
+      for (State state = currentState; state != null; state = state.next) {
+        state.attribute.clear();
+      }
+    }
   }
   
   /**
@@ -316,9 +347,11 @@ public class AttributeSource {
   public int hashCode() {
     int code = 0;
     if (hasAttributes()) {
-      Iterator it = getAttributeImplsIterator();
-      while (it.hasNext()) {
-        code = code * 31 + it.next().hashCode();
+      if (currentState == null) {
+        computeCurrentState();
+      }
+      for (State state = currentState; state != null; state = state.next) {
+        code = code * 31 + state.attribute.hashCode();
       }
     }
     
@@ -343,14 +376,20 @@ public class AttributeSource {
         }
   
         // it is only equal if all attribute impls are the same in the same order
-        Iterator thisIt = this.getAttributeImplsIterator();
-        Iterator otherIt = other.getAttributeImplsIterator();
-        while (thisIt.hasNext() && otherIt.hasNext()) {
-          AttributeImpl thisAtt = (AttributeImpl) thisIt.next();
-          AttributeImpl otherAtt = (AttributeImpl) otherIt.next();
-          if (otherAtt.getClass() != thisAtt.getClass() || !otherAtt.equals(thisAtt)) {
+        if (this.currentState == null) {
+          this.computeCurrentState();
+        }
+        State thisState = this.currentState;
+        if (other.currentState == null) {
+          other.computeCurrentState();
+        }
+        State otherState = other.currentState;
+        while (thisState != null && otherState != null) {
+          if (otherState.attribute.getClass() != thisState.attribute.getClass() || !otherState.attribute.equals(thisState.attribute)) {
             return false;
           }
+          thisState = thisState.next;
+          otherState = otherState.next;
         }
         return true;
       } else {
@@ -365,13 +404,12 @@ public class AttributeSource {
     sb.append('(');
     
     if (hasAttributes()) {
-      Iterator it = getAttributeImplsIterator();
-      if (it.hasNext()) {
-        sb.append(it.next().toString());
+      if (currentState == null) {
+        computeCurrentState();
       }
-      while (it.hasNext()) {
-        sb.append(',');
-        sb.append(it.next().toString());
+      for (State state = currentState; state != null; state = state.next) {
+        if (state != currentState) sb.append(',');
+        sb.append(state.attribute.toString());
       }
     }
     sb.append(')');
@@ -387,10 +425,13 @@ public class AttributeSource {
     AttributeSource clone = new AttributeSource(this.factory);
     
     // first clone the impls
-    Iterator/*<AttributeImpl>*/ implIt = getAttributeImplsIterator();
-    while (implIt.hasNext()) {
-      AttributeImpl impl = (AttributeImpl) implIt.next();
-      clone.attributeImpls.put(impl.getClass(), impl.clone());
+    if (hasAttributes()) {
+      if (currentState == null) {
+        computeCurrentState();
+      }
+      for (State state = currentState; state != null; state = state.next) {
+        clone.attributeImpls.put(state.attribute.getClass(), state.attribute.clone());
+      }
     }
     
     // now the interfaces

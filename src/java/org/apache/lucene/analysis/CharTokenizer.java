@@ -53,9 +53,9 @@ public abstract class CharTokenizer extends Tokenizer {
   }
 
   public final boolean incrementToken() throws IOException {
-    clearAttributes();
     int length = 0;
     int start = bufferIndex;
+    termAtt.clear();
     char[] buffer = termAtt.termBuffer();
     while (true) {
 
