@@ -142,6 +142,7 @@ New features
 
 15. LUCENE-1406: Added Arabic analyzer.  (Robert Muir via Grant Ingersoll)
 
+16. LUCENE-1628: Added Persian analyzer.  (Robert Muir)
 
 Optimizations
 
