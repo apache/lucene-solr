@@ -33,11 +33,7 @@ public class AllowLeadingWildcardAttributeImpl extends AttributeImpl
 
   private static final long serialVersionUID = -2804763012723049527L;
 
-  private boolean allowLeadingWildcard = true;
-
-  public AllowLeadingWildcardAttributeImpl() {
-	  allowLeadingWildcard = true; // default in 2.4
-  }
+  private boolean allowLeadingWildcard = false;  // default in 2.9
 
   public void setAllowLeadingWildcard(boolean allowLeadingWildcard) {
     this.allowLeadingWildcard = allowLeadingWildcard;

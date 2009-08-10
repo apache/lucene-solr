@@ -230,6 +230,12 @@ public class TestQueryParserWrapper extends LuceneTestCase {
     return getParser(a).parse(query);
   }
 
+  public Query getQueryAllowLeadingWildcard(String query, Analyzer a) throws Exception {
+    QueryParserWrapper parser = getParser(a);
+    parser.setAllowLeadingWildcard(true);
+    return parser.parse(query);
+  }
+
   public void assertQueryEquals(String query, Analyzer a, String result)
       throws Exception {
     Query q = getQuery(query, a);
@@ -240,6 +246,15 @@ public class TestQueryParserWrapper extends LuceneTestCase {
     }
   }
 
+  public void assertQueryEqualsAllowLeadingWildcard(String query, Analyzer a, String result)
+      throws Exception {
+    Query q = getQueryAllowLeadingWildcard(query, a);
+    String s = q.toString("field");
+    if (!s.equals(result)) {
+      fail("Query /" + query + "/ yielded /" + s + "/, expecting /" + result
+          + "/");
+    }
+  }
   public void assertQueryEquals(QueryParserWrapper qp, String field,
       String query, String result) throws Exception {
     Query q = qp.parse(query);
@@ -311,7 +326,7 @@ public class TestQueryParserWrapper extends LuceneTestCase {
     // used google to translate the word "term" to japanese -> ??
     assertQueryEquals("term\u3000term\u3000term", null,
         "term\u0020term\u0020term");
-    assertQueryEquals("??\u3000??\u3000??", null, "??\u0020??\u0020??");
+    assertQueryEqualsAllowLeadingWildcard("??\u3000??\u3000??", null, "??\u0020??\u0020??");
   }
 
   public void testSimple() throws Exception {

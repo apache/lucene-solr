@@ -222,9 +222,25 @@ public class TestQPHelper extends LuceneTestCase {
     return getParser(a).parse(query, "field");
   }
 
+  public Query getQueryAllowLeadingWildcard(String query, Analyzer a) throws Exception {
+    StandardQueryParser parser = getParser(a);
+    parser.setAllowLeadingWildcard(true);
+    return parser.parse(query, "field");
+  }
+
   public void assertQueryEquals(String query, Analyzer a, String result)
       throws Exception {
     Query q = getQuery(query, a);
+    String s = q.toString("field");
+    if (!s.equals(result)) {
+      fail("Query /" + query + "/ yielded /" + s + "/, expecting /" + result
+          + "/");
+    }
+  }
+
+  public void assertQueryEqualsAllowLeadingWildcard(String query, Analyzer a, String result)
+      throws Exception {
+    Query q = getQueryAllowLeadingWildcard(query, a);
     String s = q.toString("field");
     if (!s.equals(result)) {
       fail("Query /" + query + "/ yielded /" + s + "/, expecting /" + result
@@ -306,7 +322,7 @@ public class TestQPHelper extends LuceneTestCase {
     // used google to translate the word "term" to japanese -> ??
     assertQueryEquals("term\u3000term\u3000term", null,
         "term\u0020term\u0020term");
-    assertQueryEquals("??\u3000??\u3000??", null, "??\u0020??\u0020??");
+    assertQueryEqualsAllowLeadingWildcard("??\u3000??\u3000??", null, "??\u0020??\u0020??");
   }
 
   public void testSimple() throws Exception {
@@ -910,6 +926,7 @@ public class TestQPHelper extends LuceneTestCase {
     assertQueryNodeException("field:term:with:colon some more terms");
     assertQueryNodeException("(sub query)^5.0^2.0 plus more");
     assertQueryNodeException("secret AND illegal) AND access:confidential");
+    assertQueryNodeException("*leadingWildcard"); // disallowed by default
   }
 
   public void testCustomQueryParserWildcard() {
