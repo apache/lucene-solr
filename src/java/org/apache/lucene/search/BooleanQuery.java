@@ -172,8 +172,18 @@ public class BooleanQuery extends Query {
   /** Returns the list of clauses in this query. */
   public List clauses() { return clauses; }
 
-  private class BooleanWeight extends QueryWeight {
+  /**
+   * Expert: the Weight for BooleanQuery, used to
+   * normalize, score and explain these queries.
+   *
+   * <p>NOTE: this API and implementation is subject to
+   * change suddenly in the next release.</p>
+   */
+  protected class BooleanWeight extends QueryWeight {
+    /** The Similarity implementation. */
     protected Similarity similarity;
+
+    /** The Weights for our subqueries, in 1-1 correspondence with clauses */
     protected ArrayList weights;
 
     public BooleanWeight(Searcher searcher)

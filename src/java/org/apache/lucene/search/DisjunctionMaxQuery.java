@@ -85,11 +85,19 @@ public class DisjunctionMaxQuery extends Query {
     return disjuncts.iterator();
   }
 
-  /* The Weight for DisjunctionMaxQuery's, used to normalize, score and explain these queries */
-  private class DisjunctionMaxWeight extends QueryWeight {
+  /**
+   * Expert: the Weight for DisjunctionMaxQuery, used to
+   * normalize, score and explain these queries.
+   *
+   * <p>NOTE: this API and implementation is subject to
+   * change suddenly in the next release.</p>
+   */
+  protected class DisjunctionMaxWeight extends QueryWeight {
+    /** The Similarity implementation. */
+    protected Similarity similarity;
 
-    private Similarity similarity;   // The similarity which we are associated.
-    private ArrayList weights = new ArrayList();  // The Weight's for our subqueries, in 1-1 correspondence with disjuncts
+    /** The Weights for our subqueries, in 1-1 correspondence with disjuncts */
+    protected ArrayList weights = new ArrayList();
 
     /* Construct the Weight for this Query searched by searcher.  Recursively construct subquery weights. */
     public DisjunctionMaxWeight(Searcher searcher) throws IOException {
