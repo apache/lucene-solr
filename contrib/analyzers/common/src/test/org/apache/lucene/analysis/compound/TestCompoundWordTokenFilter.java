@@ -49,7 +49,7 @@ public class TestCompoundWordTokenFilter extends TestCase {
       // too slow:
       //"http://superb-east.dl.sourceforge.net/sourceforge/offo/offo-hyphenation.zip"};
 
-  private byte[] patternsFileContent;
+  private static byte[] patternsFileContent;
 
   protected void setUp() throws Exception {
     super.setUp();
