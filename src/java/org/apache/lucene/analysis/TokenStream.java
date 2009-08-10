@@ -40,8 +40,8 @@ import org.apache.lucene.util.AttributeSource;
   <li>{@link TokenFilter}, a TokenStream
   whose input is another TokenStream.
   </ul>
-  A new TokenStream API is introduced with Lucene 2.9. Since
-  2.9 Token is deprecated and the preferred way to store
+  A new TokenStream API is introduced with Lucene 2.9. While Token still 
+  exists in 2.9 as a convenience class, the preferred way to store
   the information of a token is to use {@link AttributeImpl}s.
   <p>
   For that reason TokenStream extends {@link AttributeSource}
