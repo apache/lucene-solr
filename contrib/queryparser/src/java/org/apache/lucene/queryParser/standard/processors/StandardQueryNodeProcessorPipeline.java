@@ -64,6 +64,7 @@ public class StandardQueryNodeProcessorPipeline extends
     addProcessor(new BooleanSingleChildOptimizationQueryNodeProcessor());
     addProcessor(new DefaultPhraseSlopQueryNodeProcessor());
     addProcessor(new BoostQueryNodeProcessor());
+    addProcessor(new MultiTermRewriteDefaultProcessor());
 
   }
 

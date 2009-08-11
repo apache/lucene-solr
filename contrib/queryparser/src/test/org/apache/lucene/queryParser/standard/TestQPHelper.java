@@ -320,6 +320,21 @@ public class TestQPHelper extends LuceneTestCase {
     }
   }
 
+  public void testConstantScoreAutoRewrite() throws Exception {
+    StandardQueryParser qp = new StandardQueryParser(new WhitespaceAnalyzer());
+    Query q = qp.parse("foo*bar", "field");
+    assertTrue(q instanceof WildcardQuery);
+    assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((MultiTermQuery) q).getRewriteMethod());
+
+    q = qp.parse("foo*", "field");
+    assertTrue(q instanceof PrefixQuery);
+    assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((MultiTermQuery) q).getRewriteMethod());
+
+    q = qp.parse("[a TO z]", "field");
+    assertTrue(q instanceof TermRangeQuery);
+    assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((MultiTermQuery) q).getRewriteMethod());
+  }
+
   public void testCJK() throws Exception {
     // Test Ideographic Space - As wide as a CJK character cell (fullwidth)
     // used google to translate the word "term" to japanese -> ??

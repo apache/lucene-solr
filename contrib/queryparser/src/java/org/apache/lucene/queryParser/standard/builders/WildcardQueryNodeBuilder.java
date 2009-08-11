@@ -36,9 +36,10 @@ public class WildcardQueryNodeBuilder implements StandardQueryBuilder {
   public WildcardQuery build(QueryNode queryNode) throws QueryNodeException {
     WildcardQueryNode wildcardNode = (WildcardQueryNode) queryNode;
 
-    return new WildcardQuery(new Term(wildcardNode.getFieldAsString(),
-        wildcardNode.getTextAsString()));
-
+    WildcardQuery q = new WildcardQuery(new Term(wildcardNode.getFieldAsString(),
+                                                 wildcardNode.getTextAsString()));
+    q.setRewriteMethod(wildcardNode.getMultiTermRewriteMethod());
+    return q;
   }
 
 }

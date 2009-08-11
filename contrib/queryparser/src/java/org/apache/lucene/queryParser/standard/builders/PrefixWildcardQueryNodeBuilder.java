@@ -36,9 +36,10 @@ public class PrefixWildcardQueryNodeBuilder implements StandardQueryBuilder {
   public PrefixQuery build(QueryNode queryNode) throws QueryNodeException {
     PrefixWildcardQueryNode wildcardNode = (PrefixWildcardQueryNode) queryNode;
 
-    return new PrefixQuery(new Term(wildcardNode.getFieldAsString(),
-        wildcardNode.getTextAsString()));
-
+    PrefixQuery q = new PrefixQuery(new Term(wildcardNode.getFieldAsString(),
+                                             wildcardNode.getTextAsString()));
+    q.setRewriteMethod(wildcardNode.getMultiTermRewriteMethod());
+    return q;
   }
 
 }

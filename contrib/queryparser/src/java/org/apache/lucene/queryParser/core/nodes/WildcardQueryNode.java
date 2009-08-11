@@ -18,6 +18,7 @@ package org.apache.lucene.queryParser.core.nodes;
  */
 
 import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
+import org.apache.lucene.search.MultiTermQuery;
 
 /**
  * A {@link WildcardQueryNode} represents wildcard query This does not apply to
@@ -25,6 +26,7 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
  */
 public class WildcardQueryNode extends FieldQueryNode {
   private static final long serialVersionUID = 0L;
+  private MultiTermQuery.RewriteMethod multiTermRewriteMethod;
 
   /**
    * @param field
@@ -59,5 +61,16 @@ public class WildcardQueryNode extends FieldQueryNode {
     // nothing to do here
 
     return clone;
+  }
+
+  /**
+   * @return the rewrite method
+   */
+  public MultiTermQuery.RewriteMethod getMultiTermRewriteMethod() {
+    return multiTermRewriteMethod;
+  }
+
+  public void setMultiTermRewriteMethod(MultiTermQuery.RewriteMethod method) {
+    multiTermRewriteMethod = method;
   }
 }
