@@ -38,6 +38,8 @@ import java.io.IOException;
  * Payload scores are averaged across term occurrences in the document.  
  * 
  * @see org.apache.lucene.search.Similarity#scorePayload(String, byte[], int, int)
+ *
+ * @deprecated See {@link org.apache.lucene.search.payloads.BoostingFunctionTermQuery}
  */
 public class BoostingTermQuery extends BoostingFunctionTermQuery implements PayloadQuery{
 
