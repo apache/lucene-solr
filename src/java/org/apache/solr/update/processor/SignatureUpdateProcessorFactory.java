@@ -33,6 +33,7 @@ import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.core.SolrResourceLoader;
 
 public class SignatureUpdateProcessorFactory extends
     UpdateRequestProcessorFactory {
@@ -100,11 +101,13 @@ public class SignatureUpdateProcessorFactory extends
   }
 
   class SignatureUpdateProcessor extends UpdateRequestProcessor {
+    private final SolrQueryRequest req;
 
     public SignatureUpdateProcessor(SolrQueryRequest req,
         SolrQueryResponse rsp, SignatureUpdateProcessorFactory factory,
         UpdateRequestProcessor next) {
       super(next);
+      this.req = req;
     }
 
     @Override
@@ -118,7 +121,7 @@ public class SignatureUpdateProcessorFactory extends
           Collections.sort(sigFields);
         }
 
-        Signature sig = (Signature) loadClass(signatureClass);
+        Signature sig = (Signature) req.getCore().getResourceLoader().newInstance(signatureClass); 
         sig.init(params);
 
         for (String field : sigFields) {
@@ -166,29 +169,5 @@ public class SignatureUpdateProcessorFactory extends
     this.enabled = enabled;
   }
 
-  /**
-   * Utility method to dynamically load classes
-   */
-  public static Object loadClass(final String clazz) {
-    Object loadedClass = null;
-    Class handlerClass = null;
 
-    try {
-      handlerClass = Class.forName(clazz);
-    } catch (final NoClassDefFoundError e) {
-      throw new RuntimeException("Cannot find class : " + clazz, e);
-    } catch (final ClassNotFoundException e) {
-      throw new RuntimeException("Cannot find class : " + clazz, e);
-    }
-
-    try {
-      loadedClass = handlerClass.newInstance();
-    } catch (final InstantiationException e) {
-      throw new RuntimeException("Cannot create instance of : " + clazz, e);
-    } catch (final IllegalAccessException e) {
-      throw new RuntimeException("Cannot create instance of : " + clazz, e);
-    }
-
-    return loadedClass;
-  }
 }
