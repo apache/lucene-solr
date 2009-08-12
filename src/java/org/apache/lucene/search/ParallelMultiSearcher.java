@@ -52,7 +52,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
    * Searchable, waits for each search to complete and merge
    * the results back together.
    */
-  public TopDocs search(QueryWeight weight, Filter filter, int nDocs)
+  public TopDocs search(Weight weight, Filter filter, int nDocs)
     throws IOException {
     HitQueue hq = new HitQueue(nDocs, false);
     int totalHits = 0;
@@ -97,7 +97,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
    * Searchable, waits for each search to complete and merges
    * the results back together.
    */
-  public TopFieldDocs search(QueryWeight weight, Filter filter, int nDocs, Sort sort)
+  public TopFieldDocs search(Weight weight, Filter filter, int nDocs, Sort sort)
     throws IOException {
     // don't specify the fields - we'll wait to do this until we get results
     FieldDocSortedHitQueue hq = new FieldDocSortedHitQueue (null, nDocs);
@@ -153,7 +153,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
   * 
   * @todo parallelize this one too
   */
-  public void search(QueryWeight weight, Filter filter, final Collector collector)
+  public void search(Weight weight, Filter filter, final Collector collector)
    throws IOException {
    for (int i = 0; i < searchables.length; i++) {
 
@@ -194,7 +194,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
 class MultiSearcherThread extends Thread {
 
   private Searchable searchable;
-  private QueryWeight weight;
+  private Weight weight;
   private Filter filter;
   private int nDocs;
   private TopDocs docs;
@@ -204,7 +204,7 @@ class MultiSearcherThread extends Thread {
   private IOException ioe;
   private Sort sort;
 
-  public MultiSearcherThread(Searchable searchable, QueryWeight weight, Filter filter,
+  public MultiSearcherThread(Searchable searchable, Weight weight, Filter filter,
       int nDocs, HitQueue hq, int i, int[] starts, String name) {
     super(name);
     this.searchable = searchable;
@@ -216,7 +216,7 @@ class MultiSearcherThread extends Thread {
     this.starts = starts;
   }
 
-  public MultiSearcherThread(Searchable searchable, QueryWeight weight,
+  public MultiSearcherThread(Searchable searchable, Weight weight,
       Filter filter, int nDocs, FieldDocSortedHitQueue hq, Sort sort, int i,
       int[] starts, String name) {
     super(name);

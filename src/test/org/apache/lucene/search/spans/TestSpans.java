@@ -409,7 +409,7 @@ public class TestSpans extends LuceneTestCase {
       }
     };
 
-    Scorer spanScorer = snq.weight(searcher).scorer(searcher.getIndexReader());
+    Scorer spanScorer = snq.weight(searcher).scorer(searcher.getIndexReader(), true, false);
 
     assertTrue("first doc", spanScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("first doc number", spanScorer.docID(), 11);

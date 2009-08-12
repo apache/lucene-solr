@@ -32,7 +32,7 @@ import org.apache.lucene.index.TermPositions;
  * means a match. 
  */
 abstract class PhraseScorer extends Scorer {
-  private QueryWeight weight;
+  private Weight weight;
   protected byte[] norms;
   protected float value;
 
@@ -43,7 +43,7 @@ abstract class PhraseScorer extends Scorer {
 
   private float freq; //prhase frequency in current doc as computed by phraseFreq().
 
-  PhraseScorer(QueryWeight weight, TermPositions[] tps, int[] offsets,
+  PhraseScorer(Weight weight, TermPositions[] tps, int[] offsets,
       Similarity similarity, byte[] norms) {
     super(similarity);
     this.norms = norms;

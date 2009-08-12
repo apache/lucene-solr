@@ -58,7 +58,7 @@ public interface Searchable {
    * @param filter if non-null, used to permit documents to be collected.
    * @param results to receive hits
    * @throws BooleanQuery.TooManyClauses
-   * @deprecated use {@link #search(QueryWeight, Filter, Collector)} instead.
+   * @deprecated use {@link #search(Weight, Filter, Collector)} instead.
    */
   void search(Weight weight, Filter filter, HitCollector results)
   throws IOException;
@@ -82,32 +82,8 @@ public interface Searchable {
    * @param collector
    *          to receive hits
    * @throws BooleanQuery.TooManyClauses
-   * 
-   * @deprecated use {@link #search(QueryWeight, Filter, Collector)} instead.
    */
   void search(Weight weight, Filter filter, Collector collector) throws IOException;
-
-  /**
-   * Lower-level search API.
-   * 
-   * <p>
-   * {@link Collector#collect(int)} is called for every document. <br>
-   * Collector-based access to remote indexes is discouraged.
-   * 
-   * <p>
-   * Applications should only use this if they need <i>all</i> of the matching
-   * documents. The high-level search API ({@link Searcher#search(Query)}) is
-   * usually more efficient, as it skips non-high-scoring hits.
-   * 
-   * @param weight
-   *          to match documents
-   * @param filter
-   *          if non-null, used to permit documents to be collected.
-   * @param collector
-   *          to receive hits
-   * @throws BooleanQuery.TooManyClauses
-   */
-  void search(QueryWeight weight, Filter filter, Collector collector) throws IOException;
 
   /** Frees resources associated with this Searcher.
    * Be careful not to call this method while you are still using objects
@@ -141,20 +117,9 @@ public interface Searchable {
    * <p>Applications should usually call {@link Searcher#search(Query)} or
    * {@link Searcher#search(Query,Filter)} instead.
    * @throws BooleanQuery.TooManyClauses
-   * @deprecated use {@link #search(QueryWeight, Filter, int)} instead.
+   * @deprecated use {@link #search(Weight, Filter, int)} instead.
    */
   TopDocs search(Weight weight, Filter filter, int n) throws IOException;
-  
-  /** Expert: Low-level search implementation.  Finds the top <code>n</code>
-   * hits for <code>query</code>, applying <code>filter</code> if non-null.
-   *
-   * <p>Called by {@link Hits}.
-   *
-   * <p>Applications should usually call {@link Searcher#search(Query)} or
-   * {@link Searcher#search(Query,Filter)} instead.
-   * @throws BooleanQuery.TooManyClauses
-   */
-  TopDocs search(QueryWeight weight, Filter filter, int n) throws IOException;
 
   /** Expert: Returns the stored fields of document <code>i</code>.
    * Called by {@link HitCollector} implementations.
@@ -202,22 +167,9 @@ public interface Searchable {
    * entire index.
    * <p>Applications should call {@link Searcher#explain(Query, int)}.
    * @throws BooleanQuery.TooManyClauses
-   * @deprecated use {@link #explain(QueryWeight, int)} instead.
+   * @deprecated use {@link #explain(Weight, int)} instead.
    */
   Explanation explain(Weight weight, int doc) throws IOException;
-  
-  /** Expert: low-level implementation method
-   * Returns an Explanation that describes how <code>doc</code> scored against
-   * <code>weight</code>.
-   *
-   * <p>This is intended to be used in developing Similarity implementations,
-   * and, for good performance, should not be displayed with every hit.
-   * Computing an explanation is as expensive as executing the query over the
-   * entire index.
-   * <p>Applications should call {@link Searcher#explain(Query, int)}.
-   * @throws BooleanQuery.TooManyClauses
-   */
-  Explanation explain(QueryWeight weight, int doc) throws IOException;
 
   /** Expert: Low-level search implementation with arbitrary sorting.  Finds
    * the top <code>n</code> hits for <code>query</code>, applying
@@ -228,22 +180,8 @@ public interface Searchable {
    * Searcher#search(Query,Filter,Sort)} instead.
    * 
    * @throws BooleanQuery.TooManyClauses
-   * @deprecated use {@link #search(QueryWeight, Filter, int, Sort)} instead.
    */
   TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort)
-  throws IOException;
-  
-  /** Expert: Low-level search implementation with arbitrary sorting.  Finds
-   * the top <code>n</code> hits for <code>query</code>, applying
-   * <code>filter</code> if non-null, and sorting the hits by the criteria in
-   * <code>sort</code>.
-   *
-   * <p>Applications should usually call {@link
-   * Searcher#search(Query,Filter,Sort)} instead.
-   * 
-   * @throws BooleanQuery.TooManyClauses
-   */
-  TopFieldDocs search(QueryWeight weight, Filter filter, int n, Sort sort)
   throws IOException;
 
 }

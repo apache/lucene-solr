@@ -22,6 +22,7 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.ReaderUtil;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -94,19 +95,19 @@ public class MultiSearcher extends Searcher {
         throw new UnsupportedOperationException();
     }
 
-    public Explanation explain(QueryWeight weight,int doc) {
+    public Explanation explain(Weight weight,int doc) {
       throw new UnsupportedOperationException();
     }
 
-    public void search(QueryWeight weight, Filter filter, Collector results) {
+    public void search(Weight weight, Filter filter, Collector results) {
       throw new UnsupportedOperationException();
     }
     
-    public TopDocs search(QueryWeight weight,Filter filter,int n) {
+    public TopDocs search(Weight weight,Filter filter,int n) {
       throw new UnsupportedOperationException();
     }
 
-    public TopFieldDocs search(QueryWeight weight,Filter filter,int n,Sort sort) {
+    public TopFieldDocs search(Weight weight,Filter filter,int n,Sort sort) {
       throw new UnsupportedOperationException();
     }
   }
@@ -164,25 +165,7 @@ public class MultiSearcher extends Searcher {
   /** Returns index of the searcher for document <code>n</code> in the array
    * used to construct this searcher. */
   public int subSearcher(int n) {                 // find searcher for doc n:
-    // replace w/ call to Arrays.binarySearch in Java 1.2
-    int lo = 0;					  // search starts array
-    int hi = searchables.length - 1;		  // for first element less
-						  // than n, return its index
-    while (hi >= lo) {
-      int mid = (lo + hi) >>> 1;
-      int midValue = starts[mid];
-      if (n < midValue)
-	hi = mid - 1;
-      else if (n > midValue)
-	lo = mid + 1;
-      else {                                      // found a match
-        while (mid+1 < searchables.length && starts[mid+1] == midValue) {
-          mid++;                                  // scan to last match
-        }
-	return mid;
-      }
-    }
-    return hi;
+    return ReaderUtil.subIndex(n, starts);
   }
 
   /** Returns the document number of document <code>n</code> within its
@@ -195,7 +178,7 @@ public class MultiSearcher extends Searcher {
     return maxDoc;
   }
 
-  public TopDocs search(QueryWeight weight, Filter filter, int nDocs)
+  public TopDocs search(Weight weight, Filter filter, int nDocs)
       throws IOException {
 
     HitQueue hq = new HitQueue(nDocs, false);
@@ -222,7 +205,7 @@ public class MultiSearcher extends Searcher {
     return new TopDocs(totalHits, scoreDocs, maxScore);
   }
 
-  public TopFieldDocs search (QueryWeight weight, Filter filter, int n, Sort sort)
+  public TopFieldDocs search (Weight weight, Filter filter, int n, Sort sort)
   throws IOException {
     FieldDocSortedHitQueue hq = null;
     int totalHits = 0;
@@ -264,7 +247,7 @@ public class MultiSearcher extends Searcher {
   }
 
   // inherit javadoc
-  public void search(QueryWeight weight, Filter filter, final Collector collector)
+  public void search(Weight weight, Filter filter, final Collector collector)
   throws IOException {
     for (int i = 0; i < searchables.length; i++) {
       
@@ -297,7 +280,7 @@ public class MultiSearcher extends Searcher {
     return queries[0].combine(queries);
   }
 
-  public Explanation explain(QueryWeight weight, int doc) throws IOException {
+  public Explanation explain(Weight weight, int doc) throws IOException {
     int i = subSearcher(doc);			  // find searcher index
     return searchables[i].explain(weight, doc - starts[i]); // dispatch to searcher
   }
@@ -317,7 +300,7 @@ public class MultiSearcher extends Searcher {
    *
    * @return rewritten queries
    */
-  protected QueryWeight createQueryWeight(Query original) throws IOException {
+  protected Weight createWeight(Query original) throws IOException {
     // step 1
     Query rewrittenQuery = rewrite(original);
 
@@ -345,7 +328,7 @@ public class MultiSearcher extends Searcher {
     int numDocs = maxDoc();
     CachedDfSource cacheSim = new CachedDfSource(dfMap, numDocs, getSimilarity());
 
-    return rewrittenQuery.queryWeight(cacheSim);
+    return rewrittenQuery.weight(cacheSim);
   }
 
 }

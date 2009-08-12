@@ -106,7 +106,7 @@ public class PhraseQuery extends Query {
       return result;
   }
 
-  private class PhraseWeight extends QueryWeight {
+  private class PhraseWeight extends Weight {
     private Similarity similarity;
     private float value;
     private float idf;
@@ -158,7 +158,7 @@ public class PhraseQuery extends Query {
 
     }
 
-    public Explanation explain(IndexReader reader, int doc)
+    public Explanation explain(Searcher searcher, IndexReader reader, int doc)
       throws IOException {
 
       Explanation result = new Explanation();
@@ -241,12 +241,12 @@ public class PhraseQuery extends Query {
     }
   }
 
-  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(Searcher searcher) throws IOException {
     if (terms.size() == 1) {			  // optimize one-term case
       Term term = (Term)terms.get(0);
       Query termQuery = new TermQuery(term);
       termQuery.setBoost(getBoost());
-      return termQuery.createQueryWeight(searcher);
+      return termQuery.createWeight(searcher);
     }
     return new PhraseWeight(searcher);
   }

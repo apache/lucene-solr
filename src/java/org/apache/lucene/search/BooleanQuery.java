@@ -179,11 +179,9 @@ public class BooleanQuery extends Query {
    * <p>NOTE: this API and implementation is subject to
    * change suddenly in the next release.</p>
    */
-  protected class BooleanWeight extends QueryWeight {
+  protected class BooleanWeight extends Weight {
     /** The Similarity implementation. */
     protected Similarity similarity;
-
-    /** The Weights for our subqueries, in 1-1 correspondence with clauses */
     protected ArrayList weights;
 
     public BooleanWeight(Searcher searcher)
@@ -192,7 +190,7 @@ public class BooleanQuery extends Query {
       weights = new ArrayList(clauses.size());
       for (int i = 0 ; i < clauses.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.get(i);
-        weights.add(c.getQuery().createQueryWeight(searcher));
+        weights.add(c.getQuery().createWeight(searcher));
       }
     }
 
@@ -203,7 +201,7 @@ public class BooleanQuery extends Query {
       float sum = 0.0f;
       for (int i = 0 ; i < weights.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.get(i);
-        QueryWeight w = (QueryWeight)weights.get(i);
+        Weight w = (Weight)weights.get(i);
         // call sumOfSquaredWeights for all clauses in case of side effects
         float s = w.sumOfSquaredWeights();         // sum sub weights
         if (!c.isProhibited())
@@ -220,13 +218,13 @@ public class BooleanQuery extends Query {
     public void normalize(float norm) {
       norm *= getBoost();                         // incorporate boost
       for (Iterator iter = weights.iterator(); iter.hasNext();) {
-        QueryWeight w = (QueryWeight) iter.next();
+        Weight w = (Weight) iter.next();
         // normalize all clauses, (even if prohibited in case of side affects)
         w.normalize(norm);
       }
     }
 
-    public Explanation explain(IndexReader reader, int doc)
+    public Explanation explain(Searcher searcher, IndexReader reader, int doc)
       throws IOException {
       final int minShouldMatch =
         BooleanQuery.this.getMinimumNumberShouldMatch();
@@ -238,12 +236,12 @@ public class BooleanQuery extends Query {
       boolean fail = false;
       int shouldMatchCount = 0;
       for (Iterator wIter = weights.iterator(), cIter = clauses.iterator(); wIter.hasNext();) {
-        QueryWeight w = (QueryWeight) wIter.next();
+        Weight w = (Weight) wIter.next();
         BooleanClause c = (BooleanClause) cIter.next();
         if (w.scorer(reader, true, true) == null) {
           continue;
         }
-        Explanation e = w.explain(reader, doc);
+        Explanation e = w.explain(searcher, reader, doc);
         if (!c.isProhibited()) maxCoord++;
         if (e.isMatch()) {
           if (!c.isProhibited()) {
@@ -303,7 +301,7 @@ public class BooleanQuery extends Query {
       List prohibited = new ArrayList();
       List optional = new ArrayList();
       for (Iterator wIter = weights.iterator(), cIter = clauses.iterator(); wIter.hasNext();) {
-        QueryWeight w = (QueryWeight) wIter.next();
+        Weight w = (Weight) wIter.next();
         BooleanClause c = (BooleanClause) cIter.next();
         Scorer subScorer = w.scorer(reader, true, false);
         if (subScorer == null) {
@@ -364,7 +362,7 @@ public class BooleanQuery extends Query {
    * Whether hit docs may be collected out of docid order.
    * 
    * @deprecated this will not be needed anymore, as
-   *             {@link QueryWeight#scoresDocsOutOfOrder()} is used.
+   *             {@link Weight#scoresDocsOutOfOrder()} is used.
    */
   private static boolean allowDocsOutOfOrder = true;
 
@@ -391,7 +389,7 @@ public class BooleanQuery extends Query {
    * </p>
    * 
    * @deprecated this is not needed anymore, as
-   *             {@link QueryWeight#scoresDocsOutOfOrder()} is used.
+   *             {@link Weight#scoresDocsOutOfOrder()} is used.
    */
   public static void setAllowDocsOutOfOrder(boolean allow) {
     allowDocsOutOfOrder = allow;
@@ -402,7 +400,7 @@ public class BooleanQuery extends Query {
    * 
    * @see #setAllowDocsOutOfOrder(boolean)
    * @deprecated this is not needed anymore, as
-   *             {@link QueryWeight#scoresDocsOutOfOrder()} is used.
+   *             {@link Weight#scoresDocsOutOfOrder()} is used.
    */
   public static boolean getAllowDocsOutOfOrder() {
     return allowDocsOutOfOrder;
@@ -422,7 +420,7 @@ public class BooleanQuery extends Query {
 	return getAllowDocsOutOfOrder();
   }
 
-  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(Searcher searcher) throws IOException {
     return new BooleanWeight(searcher);
   }
 

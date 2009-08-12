@@ -53,16 +53,15 @@ Changes in backwards compatibility policy
     which was unlikely done, because there is no possibility to change
     Lucene's FieldCache implementation.  (Grant Ingersoll, Uwe Schindler)
     
- 3. LUCENE-1630: Deprecate Weight in favor of QueryWeight: added
-    matching methods to Searcher to take QueryWeight and deprecated
-    those taking Weight.  If you have a Weight implementation, you can
-    turn it into a QueryWeight with QueryWeightWrapper (will be
-    removed in 3.0). All of the Weight-based methods were implemented
-    by calling the QueryWeight variants by wrapping the given Weight.
+ 3. LUCENE-1630, LUCENE-1771: Weight, previously an interface, is now an abstract 
+    class. Some of the method signatures have changed, but it should be fairly
+    easy to see what adjustments must be made to existing code to sync up
+    with the new API. You can find more detail in the API Changes section.
+    
     Going forward Searchable will be kept for convenience only and may
     be changed between minor releases without any deprecation
-    process. It is not recommended to implement it, but rather extend
-    Searcher.  (Shai Erera via Mike McCandless)
+    process. It is not recommended that you implement it, but rather extend
+    Searcher.  (Shai Erera, Chris Hostetter, Mark Miller via Mike McCandless)
 
  4. LUCENE-1422, LUCENE-1693: The new TokenStream API (see below) using
     Attributes has some backwards breaks in rare cases.
@@ -296,23 +295,22 @@ API Changes
     NumericRangeQuery and its new indexing format for numeric or
     date values.  (Uwe Schindler)
     
-24. LUCENE-1630: Deprecate Weight in favor of QueryWeight, which adds
+24. LUCENE-1630, LUCENE-1771: Weight is now an abstract class, andd adds
     a scorer(IndexReader, boolean /* scoreDocsInOrder */, boolean /*
-    topScorer */) method instead of scorer(IndexReader) (now
-    deprecated). The new method is used by IndexSearcher to mate
-    between Collector and Scorer orderness of doc IDs. Some Scorers
-    (like BooleanScorer) are much more efficient if out-of-order
-    documents scoring is allowed by a Collector.  Collector must now
-    implement acceptsDocsOutOfOrder. If you write a Collector which
-    does not care about doc ID orderness, it is recommended that you
-    return true.  QueryWeight has the scoresDocsOutOfOrder method,
-    which by default returns false.  If you create a QueryWeight which
-    will score documents out of order if that's requested, you should
-    override that method to return true.  Also deprecated
-    BooleanQuery's setAllowDocsOutOfOrder and getAllowDocsOutOfOrder
-    as they are not needed anymore. BooleanQuery will now score docs
-    out of order when used with a Collector that can accept docs out
-    of order. (Shai Erera via Mike McCandless)
+    topScorer */) method instead of scorer(IndexReader). IndexSearcher uses 
+    this method to obtain a scorer matching the capabilities of the Collector 
+    wrt orderness of docIDs. Some Scorers (like BooleanScorer) are much more
+    efficient if out-of-order documents scoring is allowed by a Collector.  
+    Collector must now implement acceptsDocsOutOfOrder. If you write a 
+    Collector which does not care about doc ID orderness, it is recommended 
+    that you return true.  Weight has a scoresDocsOutOfOrder method, which by 
+    default returns false.  If you create a Weight which will score documents 
+    out of order if requested, you should override that method to return true. 
+    BooleanQuery's setAllowDocsOutOfOrder and getAllowDocsOutOfOrder have been 
+    deprecated as they are not needed anymore. BooleanQuery will now score docs 
+    out of order when used with a Collector that can accept docs out of order.
+    Finally, Weight#explain now also takes a Searcher.
+    (Shai Erera, Chris Hostetter, Mark Miller via Mike McCandless)
  	
 25. LUCENE-1466: Changed Tokenizer.input to be a CharStream; added
     CharFilter and MappingCharFilter, which allows chaining & mapping

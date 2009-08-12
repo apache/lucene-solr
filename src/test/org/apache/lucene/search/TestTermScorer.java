@@ -69,7 +69,7 @@ public class TestTermScorer extends LuceneTestCase
         Term allTerm = new Term(FIELD, "all");
         TermQuery termQuery = new TermQuery(allTerm);
 
-        QueryWeight weight = termQuery.queryWeight(indexSearcher);
+        Weight weight = termQuery.weight(indexSearcher);
 
         TermScorer ts = new TermScorer(weight,
                                        indexReader.termDocs(allTerm), indexSearcher.getSimilarity(),
@@ -131,7 +131,7 @@ public class TestTermScorer extends LuceneTestCase
         Term allTerm = new Term(FIELD, "all");
         TermQuery termQuery = new TermQuery(allTerm);
 
-        QueryWeight weight = termQuery.queryWeight(indexSearcher);
+        Weight weight = termQuery.weight(indexSearcher);
 
         TermScorer ts = new TermScorer(weight,
                                        indexReader.termDocs(allTerm), indexSearcher.getSimilarity(),
@@ -148,7 +148,7 @@ public class TestTermScorer extends LuceneTestCase
         Term allTerm = new Term(FIELD, "all");
         TermQuery termQuery = new TermQuery(allTerm);
 
-        QueryWeight weight = termQuery.queryWeight(indexSearcher);
+        Weight weight = termQuery.weight(indexSearcher);
 
         TermScorer ts = new TermScorer(weight,
                                        indexReader.termDocs(allTerm), indexSearcher.getSimilarity(),
@@ -163,7 +163,7 @@ public class TestTermScorer extends LuceneTestCase
         Term allTerm = new Term(FIELD, "all");
         TermQuery termQuery = new TermQuery(allTerm);
 
-        QueryWeight weight = termQuery.queryWeight(indexSearcher);
+        Weight weight = termQuery.weight(indexSearcher);
 
         TermScorer ts = new TermScorer(weight,
                                        indexReader.termDocs(allTerm), indexSearcher.getSimilarity(),
@@ -181,7 +181,7 @@ public class TestTermScorer extends LuceneTestCase
 
         Term dogsTerm = new Term(FIELD, "dogs");
         termQuery = new TermQuery(dogsTerm);
-        weight = termQuery.queryWeight(indexSearcher);
+        weight = termQuery.weight(indexSearcher);
 
         ts = new TermScorer(weight, indexReader.termDocs(dogsTerm), indexSearcher.getSimilarity(),
                                        indexReader.norms(FIELD));

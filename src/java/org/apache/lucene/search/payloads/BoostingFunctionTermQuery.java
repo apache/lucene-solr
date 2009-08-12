@@ -21,7 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.QueryWeight;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.ComplexExplanation;
@@ -54,7 +54,7 @@ public class BoostingFunctionTermQuery extends SpanTermQuery  implements Payload
 
   
 
-  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(Searcher searcher) throws IOException {
     return new BoostingFunctionTermWeight(this, searcher);
   }
 
@@ -76,7 +76,7 @@ public class BoostingFunctionTermQuery extends SpanTermQuery  implements Payload
       protected float payloadScore;
       protected int payloadsSeen;
 
-      public BoostingFunctionSpanScorer(TermSpans spans, QueryWeight weight, Similarity similarity,
+      public BoostingFunctionSpanScorer(TermSpans spans, Weight weight, Similarity similarity,
                                    byte[] norms) throws IOException {
         super(spans, weight, similarity, norms);
         positions = spans.getPositions();

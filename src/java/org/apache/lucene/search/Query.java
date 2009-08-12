@@ -86,45 +86,17 @@ public abstract class Query implements java.io.Serializable, Cloneable {
    * 
    * <p>
    * Only implemented by primitive queries, which re-write to themselves.
-   * @deprecated use {@link #createQueryWeight(Searcher)} instead.
    */
   protected Weight createWeight(Searcher searcher) throws IOException {
     throw new UnsupportedOperationException();
   }
 
   /**
-   * Expert: Constructs an appropriate {@link QueryWeight} implementation for
-   * this query.
-   * <p>
-   * Only implemented by primitive queries, which re-write to themselves.
-   * <p>
-   * <b>NOTE:</b> in 3.0 this method will throw
-   * {@link UnsupportedOperationException}. It is implemented now by calling
-   * {@link #createWeight(Searcher)} for backwards compatibility, for
-   * {@link Query} implementations that did not override it yet (but did
-   * override {@link #createWeight(Searcher)}).
-   */
-  // TODO (3.0): change to throw UnsupportedOperationException.
-  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
-    return new QueryWeightWrapper(createWeight(searcher));
-  }
-
-  /**
    * Expert: Constructs and initializes a Weight for a top-level query.
-   * 
-   * @deprecated use {@link #queryWeight(Searcher)} instead.
    */
   public Weight weight(Searcher searcher) throws IOException {
-    return queryWeight(searcher);
-  }
-
-  /**
-   * Expert: Constructs and initializes a {@link QueryWeight} for a top-level
-   * query.
-   */
-  public QueryWeight queryWeight(Searcher searcher) throws IOException {
     Query query = searcher.rewrite(this);
-    QueryWeight weight = query.createQueryWeight(searcher);
+    Weight weight = query.createWeight(searcher);
     float sum = weight.sumOfSquaredWeights();
     float norm = getSimilarity(searcher).queryNorm(sum);
     weight.normalize(norm);

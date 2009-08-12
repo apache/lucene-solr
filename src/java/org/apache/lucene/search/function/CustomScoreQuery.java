@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWeight;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Similarity;
@@ -271,18 +271,18 @@ public class CustomScoreQuery extends Query {
 
   //=========================== W E I G H T ============================
   
-  private class CustomWeight extends QueryWeight {
+  private class CustomWeight extends Weight {
     Similarity similarity;
-    QueryWeight subQueryWeight;
-    QueryWeight[] valSrcWeights;
+    Weight subQueryWeight;
+    Weight[] valSrcWeights;
     boolean qStrict;
 
     public CustomWeight(Searcher searcher) throws IOException {
       this.similarity = getSimilarity(searcher);
-      this.subQueryWeight = subQuery.queryWeight(searcher);
-      this.valSrcWeights = new QueryWeight[valSrcQueries.length];
+      this.subQueryWeight = subQuery.weight(searcher);
+      this.valSrcWeights = new Weight[valSrcQueries.length];
       for(int i = 0; i < valSrcQueries.length; i++) {
-        this.valSrcWeights[i] = valSrcQueries[i].createQueryWeight(searcher);
+        this.valSrcWeights[i] = valSrcQueries[i].createWeight(searcher);
       }
       this.qStrict = strict;
     }
@@ -336,16 +336,39 @@ public class CustomScoreQuery extends Query {
       }
       Scorer[] valSrcScorers = new Scorer[valSrcWeights.length];
       for(int i = 0; i < valSrcScorers.length; i++) {
-         valSrcScorers[i] = valSrcWeights[i].scorer(reader, true, false);
+         valSrcScorers[i] = valSrcWeights[i].scorer(reader, true, topScorer);
       }
       return new CustomScorer(similarity, reader, this, subQueryScorer, valSrcScorers);
     }
 
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
-      Scorer scorer = scorer(reader, true, false);
-      return scorer == null ? new Explanation(0.0f, "no matching docs") : scorer.explain(doc);
+    public Explanation explain(Searcher searcher, IndexReader reader, int doc) throws IOException {
+      Explanation explain = doExplain(searcher, reader, doc);
+      return explain == null ? new Explanation(0.0f, "no matching docs") : doExplain(searcher, reader, doc);
     }
     
+    private Explanation doExplain(Searcher searcher, IndexReader reader, int doc) throws IOException {
+      Scorer[] valSrcScorers = new Scorer[valSrcWeights.length];
+      for(int i = 0; i < valSrcScorers.length; i++) {
+         valSrcScorers[i] = valSrcWeights[i].scorer(reader, true, false);
+      }
+      Explanation subQueryExpl = subQueryWeight.explain(searcher, reader, doc);
+      if (!subQueryExpl.isMatch()) {
+        return subQueryExpl;
+      }
+      // match
+      Explanation[] valSrcExpls = new Explanation[valSrcScorers.length];
+      for(int i = 0; i < valSrcScorers.length; i++) {
+        valSrcExpls[i] = valSrcScorers[i].explain(doc);
+      }
+      Explanation customExp = customExplain(doc,subQueryExpl,valSrcExpls);
+      float sc = getValue() * customExp.getValue();
+      Explanation res = new ComplexExplanation(
+        true, sc, CustomScoreQuery.this.toString() + ", product of:");
+      res.addDetail(customExp);
+      res.addDetail(new Explanation(getValue(), "queryBoost")); // actually using the q boost as q weight (== weight value)
+      return res;
+    }
+
     public boolean scoresDocsOutOfOrder() {
       return false;
     }
@@ -425,9 +448,10 @@ public class CustomScoreQuery extends Query {
       return doc;
     }
     
+    // TODO: remove in 3.0
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#explain(int) */
     public Explanation explain(int doc) throws IOException {
-      Explanation subQueryExpl = weight.subQueryWeight.explain(reader,doc);
+      Explanation subQueryExpl = weight.subQueryWeight.explain(null, reader,doc); // nocommit: needs resolution
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }
@@ -446,7 +470,7 @@ public class CustomScoreQuery extends Query {
     }
   }
 
-  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(Searcher searcher) throws IOException {
     return new CustomWeight(searcher);
   }
 

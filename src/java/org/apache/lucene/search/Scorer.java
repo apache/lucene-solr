@@ -127,7 +127,7 @@ public abstract class Scorer extends DocIdSetIterator {
    * @param doc The document number for the explanation.
    *
    * @deprecated Please use {@link IndexSearcher#explain}
-   * or {@link QueryWeight#explain} instead.
+   * or {@link Weight#explain} instead.
    */
   public abstract Explanation explain(int doc) throws IOException;
 

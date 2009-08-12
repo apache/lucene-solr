@@ -58,10 +58,10 @@ extends Query {
    * Returns a Weight that applies the filter to the enclosed query's Weight.
    * This is accomplished by overriding the Scorer returned by the Weight.
    */
-  public QueryWeight createQueryWeight(final Searcher searcher) throws IOException {
-    final QueryWeight weight = query.createQueryWeight (searcher);
+  public Weight createWeight(final Searcher searcher) throws IOException {
+    final Weight weight = query.createWeight (searcher);
     final Similarity similarity = query.getSimilarity(searcher);
-    return new QueryWeight() {
+    return new Weight() {
       private float value;
         
       // pass these methods through to enclosed query's weight
@@ -73,8 +73,8 @@ extends Query {
         weight.normalize(v);
         value = weight.getValue() * getBoost();
       }
-      public Explanation explain (IndexReader ir, int i) throws IOException {
-        Explanation inner = weight.explain (ir, i);
+      public Explanation explain (Searcher searcher, IndexReader ir, int i) throws IOException {
+        Explanation inner = weight.explain (searcher, ir, i);
         if (getBoost()!=1) {
           Explanation preBoost = inner;
           inner = new Explanation(inner.getValue()*getBoost(),"product of:");

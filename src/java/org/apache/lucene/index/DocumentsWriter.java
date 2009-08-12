@@ -32,9 +32,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWeight;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.ArrayUtil;
@@ -1005,7 +1005,7 @@ final class DocumentsWriter {
       Entry entry = (Entry) iter.next();
       Query query = (Query) entry.getKey();
       int limit = ((Integer) entry.getValue()).intValue();
-      QueryWeight weight = query.queryWeight(searcher);
+      Weight weight = query.weight(searcher);
       Scorer scorer = weight.scorer(reader, true, false);
       if (scorer != null) {
         while(true)  {

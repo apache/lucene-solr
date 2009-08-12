@@ -29,7 +29,7 @@ import java.util.Set;
 /**
  * Expert-only.  Public for use by other weight implementations
  */
-public class SpanWeight extends QueryWeight {
+public class SpanWeight extends Weight {
   protected Similarity similarity;
   protected float value;
   protected float idf;
@@ -68,7 +68,7 @@ public class SpanWeight extends QueryWeight {
         .norms(query.getField()));
   }
 
-  public Explanation explain(IndexReader reader, int doc)
+  public Explanation explain(Searcher searcher, IndexReader reader, int doc)
     throws IOException {
 
     ComplexExplanation result = new ComplexExplanation();

@@ -23,7 +23,7 @@ import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWeight;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.ToStringUtils;
@@ -103,8 +103,8 @@ public class FieldMaskingSpanQuery extends SpanQuery {
     maskedQuery.extractTerms(terms);
   }  
 
-  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
-    return maskedQuery.createQueryWeight(searcher);
+  public Weight createWeight(Searcher searcher) throws IOException {
+    return maskedQuery.createWeight(searcher);
   }
 
   public Similarity getSimilarity(Searcher searcher) {

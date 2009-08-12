@@ -26,7 +26,7 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.QueryWeight;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -158,7 +158,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
    */
   public void testSpanNearScorerSkipTo1() throws Exception {
     SpanNearQuery q = makeQuery();
-    QueryWeight w = q.queryWeight(searcher);
+    Weight w = q.weight(searcher);
     Scorer s = w.scorer(searcher.getIndexReader(), true, false);
     assertEquals(1, s.advance(1));
   }
@@ -168,7 +168,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
    */
   public void testSpanNearScorerExplain() throws Exception {
     SpanNearQuery q = makeQuery();
-    QueryWeight w = q.queryWeight(searcher);
+    Weight w = q.weight(searcher);
     Scorer s = w.scorer(searcher.getIndexReader(), true, false);
     Explanation e = s.explain(1);
     assertTrue("Scorer explanation value for doc#1 isn't positive: "

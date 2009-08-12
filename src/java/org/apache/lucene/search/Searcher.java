@@ -89,7 +89,7 @@ public abstract class Searcher implements Searchable {
    */
   public TopFieldDocs search(Query query, Filter filter, int n,
                              Sort sort) throws IOException {
-    return search(createQueryWeight(query), filter, n, sort);
+    return search(createWeight(query), filter, n, sort);
   }
 
   /** Lower-level search API.
@@ -109,7 +109,7 @@ public abstract class Searcher implements Searchable {
    */
   public void search(Query query, HitCollector results)
     throws IOException {
-    search(createQueryWeight(query), null, new HitCollectorWrapper(results));
+    search(createWeight(query), null, new HitCollectorWrapper(results));
   }
 
   /** Lower-level search API.
@@ -127,7 +127,7 @@ public abstract class Searcher implements Searchable {
   */
  public void search(Query query, Collector results)
    throws IOException {
-   search(createQueryWeight(query), null, results);
+   search(createWeight(query), null, results);
  }
 
   /** Lower-level search API.
@@ -149,7 +149,7 @@ public abstract class Searcher implements Searchable {
    */
   public void search(Query query, Filter filter, HitCollector results)
     throws IOException {
-    search(createQueryWeight(query), filter, new HitCollectorWrapper(results));
+    search(createWeight(query), filter, new HitCollectorWrapper(results));
   }
   
   /** Lower-level search API.
@@ -170,7 +170,7 @@ public abstract class Searcher implements Searchable {
    */
   public void search(Query query, Filter filter, Collector results)
   throws IOException {
-    search(createQueryWeight(query), filter, results);
+    search(createWeight(query), filter, results);
   }
 
   /** Finds the top <code>n</code>
@@ -180,7 +180,7 @@ public abstract class Searcher implements Searchable {
    */
   public TopDocs search(Query query, Filter filter, int n)
     throws IOException {
-    return search(createQueryWeight(query), filter, n);
+    return search(createWeight(query), filter, n);
   }
 
   /** Finds the top <code>n</code>
@@ -202,7 +202,7 @@ public abstract class Searcher implements Searchable {
    * entire index.
    */
   public Explanation explain(Query query, int doc) throws IOException {
-    return explain(createQueryWeight(query), doc);
+    return explain(createWeight(query), doc);
   }
 
   /** The Similarity implementation used by this searcher. */
@@ -215,7 +215,7 @@ public abstract class Searcher implements Searchable {
   public void setSimilarity(Similarity similarity) {
     this.similarity = similarity;
   }
-  
+
   /** Expert: Return the Similarity implementation used by this Searcher.
    *
    * <p>This defaults to the current value of {@link Similarity#getDefault()}.
@@ -226,15 +226,10 @@ public abstract class Searcher implements Searchable {
 
   /**
    * creates a weight for <code>query</code>
-   * 
-   * @deprecated use {@link #createQueryWeight(Query)} instead.
+   * @return new weight
    */
   protected Weight createWeight(Query query) throws IOException {
-      return createQueryWeight(query);
-  }
-  
-  protected QueryWeight createQueryWeight(Query query) throws IOException {
-    return query.queryWeight(this);
+    return query.weight(this);
   }
 
   // inherit javadoc
@@ -253,33 +248,16 @@ public abstract class Searcher implements Searchable {
    * @deprecated use {@link #search(Weight, Filter, Collector)} instead.
    */
   public void search(Weight weight, Filter filter, HitCollector results) throws IOException {
-    search(new QueryWeightWrapper(weight), filter, new HitCollectorWrapper(results));
+    search(weight, filter, new HitCollectorWrapper(results));
   }
-  /** @deprecated delete in 3.0. */
-  public void search(Weight weight, Filter filter, Collector collector)
-      throws IOException {
-    search(new QueryWeightWrapper(weight), filter, collector);
-  }
-  abstract public void search(QueryWeight weight, Filter filter, Collector results) throws IOException;
+  abstract public void search(Weight weight, Filter filter, Collector results) throws IOException;
   abstract public void close() throws IOException;
   abstract public int docFreq(Term term) throws IOException;
   abstract public int maxDoc() throws IOException;
-  /** @deprecated use {@link #search(QueryWeight, Filter, int)} instead. */
-  public TopDocs search(Weight weight, Filter filter, int n) throws IOException {
-    return search(new QueryWeightWrapper(weight), filter, n);
-  }
-  abstract public TopDocs search(QueryWeight weight, Filter filter, int n) throws IOException;
+  abstract public TopDocs search(Weight weight, Filter filter, int n) throws IOException;
   abstract public Document doc(int i) throws CorruptIndexException, IOException;
   abstract public Query rewrite(Query query) throws IOException;
-  /** @deprecated use {@link #explain(QueryWeight, int)} instead. */
-  public Explanation explain(Weight weight, int doc) throws IOException {
-    return explain(new QueryWeightWrapper(weight), doc);
-  }
-  abstract public Explanation explain(QueryWeight weight, int doc) throws IOException;
-  /** @deprecated use {@link #search(QueryWeight, Filter, int, Sort)} instead. */
-  public TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort) throws IOException {
-    return search(new QueryWeightWrapper(weight), filter, n, sort);
-  }
-  abstract public TopFieldDocs search(QueryWeight weight, Filter filter, int n, Sort sort) throws IOException;
+  abstract public Explanation explain(Weight weight, int doc) throws IOException;
+  abstract public TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort) throws IOException;
   /* End patch for GCJ bug #15411. */
 }

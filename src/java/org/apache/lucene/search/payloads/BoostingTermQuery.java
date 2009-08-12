@@ -1,15 +1,13 @@
 package org.apache.lucene.search.payloads;
 
+import java.io.IOException;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermPositions;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.spans.SpanScorer;
-import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.search.spans.SpanWeight;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.spans.TermSpans;
-
-import java.io.IOException;
 
 /**
  * Copyright 2004 The Apache Software Foundation
@@ -51,7 +49,7 @@ public class BoostingTermQuery extends BoostingFunctionTermQuery implements Payl
     super(term, new AveragePayloadFunction(), includeSpanScore);
   }
 
-  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(Searcher searcher) throws IOException {
     return new BoostingTermWeight(this, searcher);
   }
 

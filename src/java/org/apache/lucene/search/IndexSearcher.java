@@ -27,6 +27,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ReaderUtil;
 
 /** Implements search over a single IndexReader.
  *
@@ -121,15 +122,7 @@ public class IndexSearcher extends Searcher {
   }
 
   protected void gatherSubReaders(List allSubReaders, IndexReader r) {
-    IndexReader[] subReaders = r.getSequentialSubReaders();
-    if (subReaders == null) {
-      // Add the reader itself, and do not recurse
-      allSubReaders.add(r);
-    } else {
-      for (int i = 0; i < subReaders.length; i++) {
-        gatherSubReaders(allSubReaders, subReaders[i]);
-      }
-    }
+    ReaderUtil.gatherSubReaders(allSubReaders, r);
   }
 
   /** Return the {@link IndexReader} this searches. */
@@ -169,7 +162,7 @@ public class IndexSearcher extends Searcher {
   }
 
   // inherit javadoc
-  public TopDocs search(QueryWeight weight, Filter filter, final int nDocs) throws IOException {
+  public TopDocs search(Weight weight, Filter filter, final int nDocs) throws IOException {
 
     if (nDocs <= 0) {
       throw new IllegalArgumentException("nDocs must be > 0");
@@ -180,22 +173,22 @@ public class IndexSearcher extends Searcher {
     return collector.topDocs();
   }
 
-  public TopFieldDocs search(QueryWeight weight, Filter filter,
+  public TopFieldDocs search(Weight weight, Filter filter,
       final int nDocs, Sort sort) throws IOException {
     return search(weight, filter, nDocs, sort, true);
   }
 
   /**
-   * Just like {@link #search(QueryWeight, Filter, int, Sort)}, but you choose
+   * Just like {@link #search(Weight, Filter, int, Sort)}, but you choose
    * whether or not the fields in the returned {@link FieldDoc} instances should
    * be set by specifying fillFields.<br>
    * <b>NOTE:</b> currently, this method tracks document scores and sets them in
    * the returned {@link FieldDoc}, however in 3.0 it will move to not track
    * document scores. If document scores tracking is still needed, you can use
-   * {@link #search(QueryWeight, Filter, Collector)} and pass in a
+   * {@link #search(Weight, Filter, Collector)} and pass in a
    * {@link TopFieldCollector} instance.
    */
-  public TopFieldDocs search(QueryWeight weight, Filter filter, final int nDocs,
+  public TopFieldDocs search(Weight weight, Filter filter, final int nDocs,
                              Sort sort, boolean fillFields)
       throws IOException {
     
@@ -242,7 +235,7 @@ public class IndexSearcher extends Searcher {
     return (TopFieldDocs) collector.topDocs();
   }
 
-  public void search(QueryWeight weight, Filter filter, Collector collector)
+  public void search(Weight weight, Filter filter, Collector collector)
       throws IOException {
     
     if (filter == null) {
@@ -261,7 +254,7 @@ public class IndexSearcher extends Searcher {
     }
   }
 
-  private void searchWithFilter(IndexReader reader, QueryWeight weight,
+  private void searchWithFilter(IndexReader reader, Weight weight,
       final Filter filter, final Collector collector) throws IOException {
 
     assert filter != null;
@@ -316,8 +309,11 @@ public class IndexSearcher extends Searcher {
     return query;
   }
 
-  public Explanation explain(QueryWeight weight, int doc) throws IOException {
-    return weight.explain(reader, doc);
+  public Explanation explain(Weight weight, int doc) throws IOException {
+    int n = ReaderUtil.subIndex(doc, docStarts);
+    int deBasedDoc = doc - docStarts[n];
+    
+    return weight.explain(this, subReaders[n], deBasedDoc);
   }
 
   private boolean fieldSortDoTrackScores;

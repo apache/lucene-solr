@@ -22,7 +22,6 @@ import java.util.Collection;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryWeight;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Weight;
 
@@ -40,13 +39,8 @@ public abstract class SpanQuery extends Query {
    * @see Query#extractTerms(Set)
    */
   public abstract Collection getTerms();
-
-  /** @deprecated delete in 3.0. */
-  protected Weight createWeight(Searcher searcher) throws IOException {
-    return createQueryWeight(searcher);
-  }
   
-  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(Searcher searcher) throws IOException {
     return new SpanWeight(this, searcher);
   }
 

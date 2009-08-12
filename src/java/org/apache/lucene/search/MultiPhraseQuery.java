@@ -123,7 +123,7 @@ public class MultiPhraseQuery extends Query {
   }
 
 
-  private class MultiPhraseWeight extends QueryWeight {
+  private class MultiPhraseWeight extends Weight {
     private Similarity similarity;
     private float value;
     private float idf;
@@ -186,7 +186,7 @@ public class MultiPhraseQuery extends Query {
                                       slop, reader.norms(field));
     }
 
-    public Explanation explain(IndexReader reader, int doc)
+    public Explanation explain(Searcher searcher, IndexReader reader, int doc)
       throws IOException {
       ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
@@ -265,7 +265,7 @@ public class MultiPhraseQuery extends Query {
     }
   }
 
-  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(Searcher searcher) throws IOException {
     return new MultiPhraseWeight(searcher);
   }
 

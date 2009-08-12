@@ -18,7 +18,6 @@ package org.apache.lucene.search.payloads;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.QueryWeight;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Similarity;
@@ -63,7 +62,7 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
   }
 
 
-  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(Searcher searcher) throws IOException {
     return new BoostingSpanWeight(this, searcher);
   }
 

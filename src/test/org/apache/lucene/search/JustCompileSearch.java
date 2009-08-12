@@ -40,7 +40,7 @@ final class JustCompileSearch {
 
   static final class JustCompileSearcher extends Searcher {
 
-    protected QueryWeight createQueryWeight(Query query) throws IOException {
+    protected Weight createWeight(Query query) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
@@ -94,7 +94,7 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    public Explanation explain(QueryWeight weight, int doc) throws IOException {
+    public Explanation explain(Weight weight, int doc) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -106,17 +106,17 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    public void search(QueryWeight weight, Filter filter, Collector results)
+    public void search(Weight weight, Filter filter, Collector results)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    public TopDocs search(QueryWeight weight, Filter filter, int n)
+    public TopDocs search(Weight weight, Filter filter, int n)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    public TopFieldDocs search(QueryWeight weight, Filter filter, int n, Sort sort)
+    public TopFieldDocs search(Weight weight, Filter filter, int n, Sort sort)
         throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -296,7 +296,7 @@ final class JustCompileSearch {
 
   static final class JustCompilePhraseScorer extends PhraseScorer {
 
-    JustCompilePhraseScorer(QueryWeight weight, TermPositions[] tps, int[] offsets,
+    JustCompilePhraseScorer(Weight weight, TermPositions[] tps, int[] offsets,
         Similarity similarity, byte[] norms) {
       super(weight, tps, offsets, similarity, norms);
     }
@@ -423,9 +423,9 @@ final class JustCompileSearch {
 
   }
 
-  static final class JustCompileWeight extends QueryWeight {
+  static final class JustCompileWeight extends Weight {
 
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
+    public Explanation explain(Searcher searcher, IndexReader reader, int doc) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

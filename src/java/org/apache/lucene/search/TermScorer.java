@@ -27,7 +27,7 @@ final class TermScorer extends Scorer {
   
   private static final float[] SIM_NORM_DECODER = Similarity.getNormDecoder();
   
-  private QueryWeight weight;
+  private Weight weight;
   private TermDocs termDocs;
   private byte[] norms;
   private float weightValue;
@@ -53,30 +53,8 @@ final class TermScorer extends Scorer {
    *          computations.
    * @param norms
    *          The field norms of the document fields for the <code>Term</code>.
-   * 
-   * @deprecated use delete in 3.0, kept around for TestTermScorer in tag which
-   *             creates TermScorer directly, and cannot pass in a QueryWeight
-   *             object.
    */
   TermScorer(Weight weight, TermDocs td, Similarity similarity, byte[] norms) {
-    this(new QueryWeightWrapper(weight), td, similarity, norms);
-  }
-
-  /**
-   * Construct a <code>TermScorer</code>.
-   * 
-   * @param weight
-   *          The weight of the <code>Term</code> in the query.
-   * @param td
-   *          An iterator over the documents matching the <code>Term</code>.
-   * @param similarity
-   *          The </code>Similarity</code> implementation to be used for score
-   *          computations.
-   * @param norms
-   *          The field norms of the document fields for the <code>Term</code>.
-   */
-  TermScorer(QueryWeight weight, TermDocs td, Similarity similarity,
-             byte[] norms) {
     super(similarity);
     this.weight = weight;
     this.termDocs = td;

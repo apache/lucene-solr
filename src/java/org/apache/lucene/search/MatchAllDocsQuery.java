@@ -49,7 +49,7 @@ public class MatchAllDocsQuery extends Query {
     final byte[] norms;
     private int doc = -1;
     
-    MatchAllScorer(IndexReader reader, Similarity similarity, QueryWeight w,
+    MatchAllScorer(IndexReader reader, Similarity similarity, Weight w,
         byte[] norms) throws IOException {
       super(similarity);
       this.termDocs = reader.termDocs(null);
@@ -93,7 +93,7 @@ public class MatchAllDocsQuery extends Query {
     }
   }
 
-  private class MatchAllDocsWeight extends QueryWeight {
+  private class MatchAllDocsWeight extends Weight {
     private Similarity similarity;
     private float queryWeight;
     private float queryNorm;
@@ -129,7 +129,7 @@ public class MatchAllDocsQuery extends Query {
           normsField != null ? reader.norms(normsField) : null);
     }
 
-    public Explanation explain(IndexReader reader, int doc) {
+    public Explanation explain(Searcher searcher, IndexReader reader, int doc) {
       // explain query weight
       Explanation queryExpl = new ComplexExplanation
         (true, getValue(), "MatchAllDocsQuery, product of:");
@@ -142,7 +142,7 @@ public class MatchAllDocsQuery extends Query {
     }
   }
 
-  public QueryWeight createQueryWeight(Searcher searcher) {
+  public Weight createWeight(Searcher searcher) {
     return new MatchAllDocsWeight(searcher);
   }
 

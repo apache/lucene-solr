@@ -105,7 +105,7 @@ public class QueryUtils {
    * @throws IOException if serialization check fail. 
    */
   private static void checkSerialization(Query q, Searcher s) throws IOException {
-    QueryWeight w = q.queryWeight(s);
+    Weight w = q.weight(s);
     try {
       ByteArrayOutputStream bos = new ByteArrayOutputStream();
       ObjectOutputStream oos = new ObjectOutputStream(bos);
@@ -150,7 +150,7 @@ public class QueryUtils {
       //System.out.print("Order:");for (int i = 0; i < order.length; i++) System.out.print(order[i]==skip_op ? " skip()":" next()"); System.out.println();
       final int opidx[] = {0};
 
-      final QueryWeight w = q.queryWeight(s);
+      final Weight w = q.weight(s);
       final Scorer scorer = w.scorer(s.getIndexReader(), true, false);
       if (scorer == null) {
         continue;
@@ -234,7 +234,7 @@ public class QueryUtils {
         float score = scorer.score();
         try {
           for (int i=lastDoc[0]+1; i<=doc; i++) {
-            QueryWeight w = q.queryWeight(s);
+            Weight w = q.weight(s);
             Scorer scorer = w.scorer(s.getIndexReader(), true, false);
             Assert.assertTrue("query collected "+doc+" but skipTo("+i+") says no more docs!",scorer.advance(i) != DocIdSetIterator.NO_MORE_DOCS);
             Assert.assertEquals("query collected "+doc+" but skipTo("+i+") got to "+scorer.docID(),doc,scorer.docID());
@@ -254,7 +254,7 @@ public class QueryUtils {
         return false;
       }
     });
-    QueryWeight w = q.queryWeight(s);
+    Weight w = q.weight(s);
     Scorer scorer = w.scorer(s.getIndexReader(), true, false);
     if (scorer != null) {
       boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;

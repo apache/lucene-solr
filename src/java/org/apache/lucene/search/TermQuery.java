@@ -31,7 +31,7 @@ import org.apache.lucene.util.ToStringUtils;
 public class TermQuery extends Query {
   private Term term;
 
-  private class TermWeight extends QueryWeight {
+  private class TermWeight extends Weight {
     private Similarity similarity;
     private float value;
     private float idf;
@@ -69,15 +69,19 @@ public class TermQuery extends Query {
       return new TermScorer(this, termDocs, similarity, reader.norms(term.field()));
     }
 
-    public Explanation explain(IndexReader reader, int doc)
+    public Explanation explain(Searcher searcher, IndexReader reader, int doc)
       throws IOException {
 
       ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
 
-      Explanation idfExpl =
-        new Explanation(idf, "idf(docFreq=" + reader.docFreq(term) +
-            ", numDocs=" + reader.numDocs() + ")");
+      Explanation expl;
+      if(searcher == null) {
+        expl = new Explanation(idf, "idf(" + idf + ")");
+      } else {
+        expl = new Explanation(idf, "idf(docFreq=" + searcher.docFreq(term) +
+            ", maxDocs=" + searcher.maxDoc() + ")");
+      }
 
       // explain query weight
       Explanation queryExpl = new Explanation();
@@ -86,13 +90,13 @@ public class TermQuery extends Query {
       Explanation boostExpl = new Explanation(getBoost(), "boost");
       if (getBoost() != 1.0f)
         queryExpl.addDetail(boostExpl);
-      queryExpl.addDetail(idfExpl);
+      queryExpl.addDetail(expl);
 
       Explanation queryNormExpl = new Explanation(queryNorm,"queryNorm");
       queryExpl.addDetail(queryNormExpl);
 
       queryExpl.setValue(boostExpl.getValue() *
-                         idfExpl.getValue() *
+                         expl.getValue() *
                          queryNormExpl.getValue());
 
       result.addDetail(queryExpl);
@@ -105,7 +109,7 @@ public class TermQuery extends Query {
 
       Explanation tfExpl = scorer(reader, true, false).explain(doc);
       fieldExpl.addDetail(tfExpl);
-      fieldExpl.addDetail(idfExpl);
+      fieldExpl.addDetail(expl);
 
       Explanation fieldNormExpl = new Explanation();
       byte[] fieldNorms = reader.norms(field);
@@ -117,7 +121,7 @@ public class TermQuery extends Query {
       
       fieldExpl.setMatch(Boolean.valueOf(tfExpl.isMatch()));
       fieldExpl.setValue(tfExpl.getValue() *
-                         idfExpl.getValue() *
+                         expl.getValue() *
                          fieldNormExpl.getValue());
 
       result.addDetail(fieldExpl);
@@ -141,7 +145,7 @@ public class TermQuery extends Query {
   /** Returns the term of this query. */
   public Term getTerm() { return term; }
 
-  public QueryWeight createQueryWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(Searcher searcher) throws IOException {
     return new TermWeight(searcher);
   }
 
