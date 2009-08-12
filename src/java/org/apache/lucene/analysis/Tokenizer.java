@@ -17,6 +17,8 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.AttributeSource;
+
 import java.io.Reader;
 import java.io.IOException;
 
@@ -65,7 +67,12 @@ public abstract class Tokenizer extends TokenStream {
     super(factory);
     this.input = input;
   }
-  
+
+  /** Construct a token stream processing the given input using the given AttributeSource. */
+  protected Tokenizer(AttributeSource source) {
+    super(source);
+  }
+
   /** By default, closes the input Reader. */
   public void close() throws IOException {
     input.close();
