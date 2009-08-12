@@ -295,7 +295,7 @@ API Changes
     NumericRangeQuery and its new indexing format for numeric or
     date values.  (Uwe Schindler)
     
-24. LUCENE-1630, LUCENE-1771: Weight is now an abstract class, andd adds
+24. LUCENE-1630, LUCENE-1771: Weight is now an abstract class, and adds
     a scorer(IndexReader, boolean /* scoreDocsInOrder */, boolean /*
     topScorer */) method instead of scorer(IndexReader). IndexSearcher uses 
     this method to obtain a scorer matching the capabilities of the Collector 
