@@ -727,6 +727,8 @@ Optimizations
     strings, the StringHelper.intern() interface was added with a
     default implementation that uses a lockless cache.
     (Earwin Burrfoot, yonik)
+
+13. LUCENE-1800: QueryParser should use reusable TokenStreams. (yonik)
     
 
 Documentation
