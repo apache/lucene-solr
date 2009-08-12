@@ -35,8 +35,8 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
     super(in);
   }
 
-  /** Collects only characters which satisfy
-   * {@link Character#isLetter(char)}.*/
+  /** Converts char to lower case
+   * {@link Character#toLowerCase(char)}.*/
   protected char normalize(char c) {
     return Character.toLowerCase(c);
   }
