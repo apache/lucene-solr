@@ -95,8 +95,9 @@ class StandardRequestTest < Test::Unit::TestCase
   end
 
   def test_basic_sort
-    request = Solr::Request::Standard.new(:query => 'query', :sort => [{:title => :descending}])
-    assert_equal 'query;title desc', request.to_hash[:q]
+    request = Solr::Request::Standard.new(:query => 'query', :sort => [{:title => :descending}, {:date => :ascending}])
+    assert_equal 'query', request.to_hash[:q]
+    assert_equal 'title desc,date asc', request.to_hash[:sort]
   end
   
   def test_highlighting
