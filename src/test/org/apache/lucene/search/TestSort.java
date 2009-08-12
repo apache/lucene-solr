@@ -320,16 +320,26 @@ public class TestSort extends LuceneTestCase implements Serializable {
 
   }
   
-  // test sorts where the type of field is specified and a custom field parser is used, that
-  // uses a simple char encoding. The sorted string contains a character beginning from 'A' that
-  // is mapped to a numeric value using some "funny" algorithm to be different for each data type.
+  /** 
+   * test sorts where the type of field is specified and a custom field parser 
+   * is used, that uses a simple char encoding. The sorted string contains a 
+   * character beginning from 'A' that is mapped to a numeric value using some 
+   * "funny" algorithm to be different for each data type.
+   */
   public void testCustomFieldParserSort() throws Exception {
+    // since tests explicilty uses different parsers on the same fieldname
+    // we explicitly check/purge the FieldCache between each assertMatch
+    FieldCache fc = FieldCache.DEFAULT;
+
+
     sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.IntParser(){
       public final int parseInt(final String val) {
         return (val.charAt(0)-'A') * 123456;
       }
     }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
+    assertSaneFieldCaches(getName() + " IntParser");
+    fc.purgeAllCaches();
 
     sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.FloatParser(){
       public final float parseFloat(final String val) {
@@ -337,6 +347,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
       }
     }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
+    assertSaneFieldCaches(getName() + " FloatParser");
+    fc.purgeAllCaches();
 
     sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.LongParser(){
       public final long parseLong(final String val) {
@@ -344,6 +356,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
       }
     }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
+    assertSaneFieldCaches(getName() + " LongParser");
+    fc.purgeAllCaches();
 
     sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.DoubleParser(){
       public final double parseDouble(final String val) {
@@ -351,6 +365,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
       }
     }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
+    assertSaneFieldCaches(getName() + " DoubleParser");
+    fc.purgeAllCaches();
 
     sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.ByteParser(){
       public final byte parseByte(final String val) {
@@ -358,6 +374,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
       }
     }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
+    assertSaneFieldCaches(getName() + " ByteParser");
+    fc.purgeAllCaches();
 
     sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.ShortParser(){
       public final short parseShort(final String val) {
@@ -365,6 +383,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
       }
     }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
+    assertSaneFieldCaches(getName() + " ShortParser");
+    fc.purgeAllCaches();
   }
 
   // test sorts when there's nothing in the index
@@ -930,12 +950,6 @@ public class TestSort extends LuceneTestCase implements Serializable {
     sort.setSort("string", true);
     assertMatches(multi, queryA, sort, "CBEFGHIAJD");
 
-    sort.setSort(new SortField[] { new SortField ("string", Locale.US) });
-    assertMatches(multi, queryA, sort, "DJAIHGFEBC");
-
-    sort.setSort(new SortField[] { new SortField ("string", Locale.US, true) });
-    assertMatches(multi, queryA, sort, "CBEFGHIAJD");
-
     sort.setSort(new String[] {"int","float"});
     assertMatches(multi, queryA, sort, "IDHFGJEABC");
 
@@ -956,6 +970,25 @@ public class TestSort extends LuceneTestCase implements Serializable {
 
     sort.setSort("string", true);
     assertMatches(multi, queryF, sort, "IJZ");
+
+    // up to this point, all of the searches should have "sane" 
+    // FieldCache behavior, and should have reused hte cache in several cases
+    assertSaneFieldCaches(getName() + " various");
+    // next we'll check Locale based (String[]) for 'string', so purge first
+    FieldCache.DEFAULT.purgeAllCaches();
+
+    sort.setSort(new SortField[] { new SortField ("string", Locale.US) });
+    assertMatches(multi, queryA, sort, "DJAIHGFEBC");
+
+    sort.setSort(new SortField[] { new SortField ("string", Locale.US, true) });
+    assertMatches(multi, queryA, sort, "CBEFGHIAJD");
+
+    sort.setSort(new SortField[] { new SortField ("string", Locale.UK) });
+    assertMatches(multi, queryA, sort, "DJAIHGFEBC");
+
+    assertSaneFieldCaches(getName() + " Locale.US + Locale.UK");
+    FieldCache.DEFAULT.purgeAllCaches();
+
   }
 
   // make sure the documents returned by the search match the expected list

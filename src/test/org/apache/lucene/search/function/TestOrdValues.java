@@ -18,6 +18,7 @@ package org.apache.lucene.search.function;
  */
 
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
@@ -150,11 +151,16 @@ public class TestOrdValues extends FunctionTestSetup {
       ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
       try {
         assertEquals("All docs should be matched!",N_DOCS,h.length);
-        if (i==0) {
-          innerArray = q.valSrc.getValues(s.getIndexReader()).getInnerArray();
-        } else {
-          log(i+".  compare: "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
-          assertSame("field values should be cached and reused!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
+        IndexReader[] readers = s.getIndexReader().getSequentialSubReaders();
+
+        for(int j = 0; j < readers.length; j++) {
+          IndexReader reader = readers[j];
+          if (i==0) {
+            innerArray = q.valSrc.getValues(reader).getInnerArray();
+          } else {
+            log(i+".  compare: "+innerArray+" to "+q.valSrc.getValues(reader).getInnerArray());
+            assertSame("field values should be cached and reused!", innerArray, q.valSrc.getValues(reader).getInnerArray());
+          }
         }
       } catch (UnsupportedOperationException e) {
         if (!warned) {
@@ -179,13 +185,22 @@ public class TestOrdValues extends FunctionTestSetup {
     q = new ValueSourceQuery(vs);
     h = s.search(q, null, 1000).scoreDocs;
     assertEquals("All docs should be matched!",N_DOCS,h.length);
-    try {
-      log("compare (should differ): "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
-      assertNotSame("different values shuold be loaded for a different field!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
-    } catch (UnsupportedOperationException e) {
-      if (!warned) {
-        System.err.println("WARNING: "+testName()+" cannot fully test values of "+q);
-        warned = true;
+    IndexReader[] readers = s.getIndexReader().getSequentialSubReaders();
+
+    for (int j = 0; j < readers.length; j++) {
+      IndexReader reader = readers[j];
+      try {
+        log("compare (should differ): " + innerArray + " to "
+            + q.valSrc.getValues(reader).getInnerArray());
+        assertNotSame(
+            "different values shuold be loaded for a different field!",
+            innerArray, q.valSrc.getValues(reader).getInnerArray());
+      } catch (UnsupportedOperationException e) {
+        if (!warned) {
+          System.err.println("WARNING: " + testName()
+              + " cannot fully test values of " + q);
+          warned = true;
+        }
       }
     }
 
@@ -199,13 +214,22 @@ public class TestOrdValues extends FunctionTestSetup {
     q = new ValueSourceQuery(vs);
     h = s.search(q, null, 1000).scoreDocs;
     assertEquals("All docs should be matched!",N_DOCS,h.length);
-    try {
-      log("compare (should differ): "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
-      assertNotSame("cached field values should not be reused if reader as changed!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
-    } catch (UnsupportedOperationException e) {
-      if (!warned) {
-        System.err.println("WARNING: "+testName()+" cannot fully test values of "+q);
-        warned = true;
+    readers = s.getIndexReader().getSequentialSubReaders();
+
+    for (int j = 0; j < readers.length; j++) {
+      IndexReader reader = readers[j];
+      try {
+        log("compare (should differ): " + innerArray + " to "
+            + q.valSrc.getValues(reader).getInnerArray());
+        assertNotSame(
+            "cached field values should not be reused if reader as changed!",
+            innerArray, q.valSrc.getValues(reader).getInnerArray());
+      } catch (UnsupportedOperationException e) {
+        if (!warned) {
+          System.err.println("WARNING: " + testName()
+              + " cannot fully test values of " + q);
+          warned = true;
+        }
       }
     }
   }

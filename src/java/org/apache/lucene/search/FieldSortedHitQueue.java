@@ -180,7 +180,7 @@ extends PriorityQueue {
    *  caches comparators instead of term values. */
   static final FieldCacheImpl.Cache Comparators = new FieldCacheImpl.Cache() {
 
-    protected Object createValue(IndexReader reader, Object entryKey)
+    protected Object createValue(IndexReader reader, FieldCacheImpl.Entry entryKey)
         throws IOException {
       FieldCacheImpl.Entry entry = (FieldCacheImpl.Entry) entryKey;
       String fieldname = entry.field;

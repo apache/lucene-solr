@@ -667,7 +667,17 @@ New features
 
 35. LUCENE-1790: Added BoostingFunctionTermQuery to enable scoring of payloads
   based on the maximum payload seen for a document.
-  Slight refactoring of Similarity and other payload queries (Grant Ingersoll)    
+  Slight refactoring of Similarity and other payload queries (Grant Ingersoll)
+
+36. LUCENE-1749: Addition of FieldCacheSanityChecker utility, and
+    hooks to use it in all existing Lucene Tests.  This class can
+    be used by any application to inspect the FieldCache and provide
+    diagnostic information about the possibility of inconsistent
+    FieldCache usage.  Namely: FieldCache entries for the same field
+    with different datatypes or parsers; and FieldCache entries for
+    the same field in both a reader, and one of it's (descendant) sub
+    readers. 
+    (Chris Hostetter, Mark Miller)
    
 Optimizations
 

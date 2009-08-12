@@ -26,6 +26,9 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.FieldCacheSanityChecker;
+import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
+import org.apache.lucene.util.FieldCacheSanityChecker.InsanityType;
 
 import java.util.Random;
 import java.util.Arrays;
@@ -107,9 +110,13 @@ public class TestStressSort extends LuceneTestCase {
     doc.add(doubleField);
     doc2.add(doubleField);
 
+    // we use two diff string fields so our FieldCache usage
+    // is less suspicious to cache inspection
     final Field stringField = new Field("string", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     doc.add(stringField);
-    // doc2 doesn't have stringField, so we get nulls
+    final Field stringFieldIdx = new Field("stringIdx", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    doc.add(stringFieldIdx);
+    // doc2 doesn't have stringField or stringFieldIdx, so we get nulls
 
     for(int i=0;i<NUM_DOCS;i++) {
       id.setValue(""+i);
@@ -151,7 +158,9 @@ public class TestStressSort extends LuceneTestCase {
       if (i % 197 == 0) {
         writer.addDocument(doc2);
       } else {
-        stringField.setValue(randomString(nextInt(20)));
+        String r = randomString(nextInt(20));
+        stringField.setValue(r);
+        stringFieldIdx.setValue(r);
         writer.addDocument(doc);
       }
     }
@@ -219,7 +228,7 @@ public class TestStressSort extends LuceneTestCase {
       sort.setSort(new SortField[] {new SortField("string", SortField.STRING_VAL, reverse)});
 
       sorts[sortCount++] = sort = new Sort();
-      sort.setSort(new SortField[] {new SortField("string", SortField.STRING, reverse)});
+      sort.setSort(new SortField[] {new SortField("stringIdx", SortField.STRING, reverse)});
 
       //sorts[sortCount++] = sort = new Sort();
       //sort.setSort(new SortField[] {new SortField("string", SortField.STRING_ORD, reverse)});
@@ -308,6 +317,35 @@ public class TestStressSort extends LuceneTestCase {
         }
       }
     }
+
+    // we explicitly test the old sort method and
+    // compare with the new, so we expect to see SUBREADER
+    // sanity checks fail.
+    Insanity[] insanity = FieldCacheSanityChecker.checkSanity
+      (FieldCache.DEFAULT);
+    try {
+      int ignored = 0;
+      for (int i = 0; i < insanity.length; i++) {
+        if (insanity[i].getType() == InsanityType.SUBREADER) {
+          insanity[i] = new Insanity(InsanityType.EXPECTED,
+                                     insanity[i].getMsg(), 
+                                     insanity[i].getCacheEntries());
+          ignored++;
+        }
+      }
+      assertEquals("Not all insane field cache usage was expected",
+                   ignored, insanity.length);
+
+      insanity = null;
+    } finally {
+      // report this in the event of any exception/failure
+      // if no failure, then insanity will be null
+      if (null != insanity) {
+        dumpArray(getTestLabel() + ": Insane FieldCache usage(s)", insanity, System.err);
+      }
+    }
+    // we've already checked FieldCache, purge so tearDown doesn't complain
+    purgeFieldCache(FieldCache.DEFAULT); // so
 
     close();
   }

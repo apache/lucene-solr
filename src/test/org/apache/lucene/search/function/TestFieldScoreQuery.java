@@ -20,6 +20,7 @@ package org.apache.lucene.search.function;
 import java.util.HashMap;
 
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
@@ -170,19 +171,29 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
       FieldScoreQuery q = new FieldScoreQuery(field,tp);
       ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
       assertEquals("All docs should be matched!",N_DOCS,h.length);
-      try {
-        if (i==0) {
-          innerArray = q.valSrc.getValues(s.getIndexReader()).getInnerArray();
-          log(i+".  compare: "+innerArray.getClass()+" to "+expectedArrayTypes.get(tp).getClass());
-          assertEquals("field values should be cached in the correct array type!", innerArray.getClass(),expectedArrayTypes.get(tp).getClass());
-        } else {
-          log(i+".  compare: "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
-          assertSame("field values should be cached and reused!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
-        }
-      } catch (UnsupportedOperationException e) {
-        if (!warned) {
-          System.err.println("WARNING: "+testName()+" cannot fully test values of "+q);
-          warned = true;
+      IndexReader[] readers = s.getIndexReader().getSequentialSubReaders();
+      for (int j = 0; j < readers.length; j++) {
+        IndexReader reader = readers[j];
+        try {
+          if (i == 0) {
+            innerArray = q.valSrc.getValues(reader).getInnerArray();
+            log(i + ".  compare: " + innerArray.getClass() + " to "
+                + expectedArrayTypes.get(tp).getClass());
+            assertEquals(
+                "field values should be cached in the correct array type!",
+                innerArray.getClass(), expectedArrayTypes.get(tp).getClass());
+          } else {
+            log(i + ".  compare: " + innerArray + " to "
+                + q.valSrc.getValues(reader).getInnerArray());
+            assertSame("field values should be cached and reused!", innerArray,
+                q.valSrc.getValues(reader).getInnerArray());
+          }
+        } catch (UnsupportedOperationException e) {
+          if (!warned) {
+            System.err.println("WARNING: " + testName()
+                + " cannot fully test values of " + q);
+            warned = true;
+          }
         }
       }
     }
@@ -192,13 +203,21 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     FieldScoreQuery q = new FieldScoreQuery(field,tp);
     ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
     assertEquals("All docs should be matched!",N_DOCS,h.length);
-    try {
-      log("compare: "+innerArray+" to "+q.valSrc.getValues(s.getIndexReader()).getInnerArray());
-      assertNotSame("cached field values should not be reused if reader as changed!", innerArray, q.valSrc.getValues(s.getIndexReader()).getInnerArray());
-    } catch (UnsupportedOperationException e) {
-      if (!warned) {
-        System.err.println("WARNING: "+testName()+" cannot fully test values of "+q);
-        warned = true;
+    IndexReader[] readers = s.getIndexReader().getSequentialSubReaders();
+    for (int j = 0; j < readers.length; j++) {
+      IndexReader reader = readers[j];
+      try {
+        log("compare: " + innerArray + " to "
+            + q.valSrc.getValues(reader).getInnerArray());
+        assertNotSame(
+            "cached field values should not be reused if reader as changed!",
+            innerArray, q.valSrc.getValues(reader).getInnerArray());
+      } catch (UnsupportedOperationException e) {
+        if (!warned) {
+          System.err.println("WARNING: " + testName()
+              + " cannot fully test values of " + q);
+          warned = true;
+        }
       }
     }
   }

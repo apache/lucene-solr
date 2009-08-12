@@ -17,17 +17,21 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.WeakHashMap;
+
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.util.StringHelper;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.WeakHashMap;
 
 /**
  * Expert: The default cache implementation, storing all values in memory.
@@ -41,6 +45,116 @@ import java.util.WeakHashMap;
  // TODO: change interface to FieldCache in 3.0 when removed
 class FieldCacheImpl implements ExtendedFieldCache {
 	
+  private Map caches;
+  FieldCacheImpl() {
+    init();
+  }
+  private synchronized void init() {
+    caches = new HashMap(7);
+    caches.put(Byte.TYPE, new ByteCache(this));
+    caches.put(Short.TYPE, new ShortCache(this));
+    caches.put(Integer.TYPE, new IntCache(this));
+    caches.put(Float.TYPE, new FloatCache(this));
+    caches.put(Long.TYPE, new LongCache(this));
+    caches.put(Double.TYPE, new DoubleCache(this));
+    caches.put(String.class, new StringCache(this));
+    caches.put(StringIndex.class, new StringIndexCache(this));
+    caches.put(Comparable.class, new CustomCache(this));
+    caches.put(Object.class, new AutoCache(this));
+  }
+
+  public void purgeAllCaches() {
+    init();
+  }
+  
+  public CacheEntry[] getCacheEntries() {
+    List result = new ArrayList(17);
+    Iterator outerKeys = caches.keySet().iterator();
+    while (outerKeys.hasNext()) {
+      Class cacheType = (Class)outerKeys.next();
+      Cache cache = (Cache)caches.get(cacheType);
+      Iterator innerKeys = cache.readerCache.keySet().iterator();
+      while (innerKeys.hasNext()) {
+        // we've now materialized a hard ref
+        Object readerKey = innerKeys.next();
+        // innerKeys was backed by WeakHashMap, sanity check
+        // that it wasn't GCed before we made hard ref
+        if (null != readerKey && cache.readerCache.containsKey(readerKey)) {
+          Map innerCache = ((Map)cache.readerCache.get(readerKey));
+          Iterator keys = innerCache.keySet().iterator();
+          while (keys.hasNext()) {
+            Entry entry = (Entry) keys.next();
+            result.add(new CacheEntryImpl(readerKey, entry.field,
+                                          cacheType, entry.type,
+                                          entry.custom, entry.locale,
+                                          innerCache.get(entry)));
+          }
+        }
+      }
+    }
+    return (CacheEntry[]) result.toArray(new CacheEntry[result.size()]);
+  }
+  
+  private static final class CacheEntryImpl extends CacheEntry {
+    /** 
+     * @deprecated Only needed because of Entry (ab)use by 
+     *             FieldSortedHitQueue, remove when FieldSortedHitQueue 
+     *             is removed
+     */
+    private final int sortFieldType;
+    /** 
+     * @deprecated Only needed because of Entry (ab)use by 
+     *             FieldSortedHitQueue, remove when FieldSortedHitQueue 
+     *             is removed
+     */
+    private final Locale locale;
+
+    private final Object readerKey;
+    private final String fieldName;
+    private final Class cacheType;
+    private final Object custom;
+    private final Object value;
+    CacheEntryImpl(Object readerKey, String fieldName,
+                   Class cacheType, int sortFieldType,
+                   Object custom, Locale locale, 
+                   Object value) {
+        this.readerKey = readerKey;
+        this.fieldName = fieldName;
+        this.cacheType = cacheType;
+        this.sortFieldType = sortFieldType;
+        this.custom = custom;
+        this.locale = locale;
+        this.value = value;
+
+        // :HACK: for testing.
+//         if (null != locale || SortField.CUSTOM != sortFieldType) {
+//           throw new RuntimeException("Locale/sortFieldType: " + this);
+//         }
+
+    }
+    public Object getReaderKey() { return readerKey; }
+    public String getFieldName() { return fieldName; }
+    public Class getCacheType() { return cacheType; }
+    public Object getCustom() { return custom; }
+    public Object getValue() { return value; }
+    /** 
+     * Adds warning to super.toString if Local or sortFieldType were specified
+     * @deprecated Only needed because of Entry (ab)use by 
+     *             FieldSortedHitQueue, remove when FieldSortedHitQueue 
+     *             is removed
+     */
+    public String toString() {
+      String r = super.toString();
+      if (null != locale) {
+        r = r + "...!!!Locale:" + locale + "???";
+      }
+      if (SortField.CUSTOM != sortFieldType) {
+        r = r + "...!!!SortType:" + sortFieldType + "???";
+      }
+      return r;
+    }
+  }
+
   /**
    * Hack: When thrown from a Parser (NUMERIC_UTILS_* ones), this stops
    * processing terms and returns the current FieldCache
@@ -51,16 +165,25 @@ class FieldCacheImpl implements ExtendedFieldCache {
 
   /** Expert: Internal cache. */
   abstract static class Cache {
-    private final Map readerCache = new WeakHashMap();
+    Cache() {
+      this.wrapper = null;
+    }
+
+    Cache(FieldCache wrapper) {
+      this.wrapper = wrapper;
+    }
+
+    final FieldCache wrapper;
+
+    final Map readerCache = new WeakHashMap();
     
-    protected abstract Object createValue(IndexReader reader, Object key)
+    protected abstract Object createValue(IndexReader reader, Entry key)
         throws IOException;
 
-    public Object get(IndexReader reader, Object key) throws IOException {
+    public Object get(IndexReader reader, Entry key) throws IOException {
       Map innerCache;
       Object value;
       final Object readerKey = reader.getFieldCacheKey();
-
       synchronized (readerCache) {
         innerCache = (Map) readerCache.get(readerKey);
         if (innerCache == null) {
@@ -91,18 +214,25 @@ class FieldCacheImpl implements ExtendedFieldCache {
     }
   }
 
-  static final class CreationPlaceholder {
-    Object value;
-  }
-
   /** Expert: Every composite-key in the internal cache is of this type. */
   static class Entry {
     final String field;        // which Fieldable
+    /** 
+     * @deprecated Only (ab)used by FieldSortedHitQueue, 
+     *             remove when FieldSortedHitQueue is removed
+     */
     final int type;            // which SortField type
     final Object custom;       // which custom comparator or parser
+    /** 
+     * @deprecated Only (ab)used by FieldSortedHitQueue, 
+     *             remove when FieldSortedHitQueue is removed
+     */
     final Locale locale;       // the locale we're sorting (if string)
 
-    /** Creates one of these objects. */
+    /** 
+     * @deprecated Only (ab)used by FieldSortedHitQueue, 
+     *             remove when FieldSortedHitQueue is removed
+     */
     Entry (String field, int type, Locale locale) {
       this.field = StringHelper.intern(field);
       this.type = type;
@@ -118,7 +248,10 @@ class FieldCacheImpl implements ExtendedFieldCache {
       this.locale = null;
     }
 
-    /** Creates one of these objects for a custom type with parser, needed by FieldSortedHitQueue. */
+    /** 
+     * @deprecated Only (ab)used by FieldSortedHitQueue, 
+     *             remove when FieldSortedHitQueue is removed
+     */
     Entry (String field, int type, Parser parser) {
       this.field = StringHelper.intern(field);
       this.type = type;
@@ -157,18 +290,20 @@ class FieldCacheImpl implements ExtendedFieldCache {
   // inherit javadocs
   public byte[] getBytes(IndexReader reader, String field, ByteParser parser)
       throws IOException {
-    return (byte[]) bytesCache.get(reader, new Entry(field, parser));
+    return (byte[]) ((Cache)caches.get(Byte.TYPE)).get(reader, new Entry(field, parser));
   }
 
-  Cache bytesCache = new Cache() {
-
-    protected Object createValue(IndexReader reader, Object entryKey)
+  static final class ByteCache extends Cache {
+    ByteCache(FieldCache wrapper) {
+      super(wrapper);
+    }
+    protected Object createValue(IndexReader reader, Entry entryKey)
         throws IOException {
       Entry entry = (Entry) entryKey;
       String field = entry.field;
       ByteParser parser = (ByteParser) entry.custom;
       if (parser == null) {
-        return getBytes(reader, field, FieldCache.DEFAULT_BYTE_PARSER);
+        return wrapper.getBytes(reader, field, FieldCache.DEFAULT_BYTE_PARSER);
       }
       final byte[] retArray = new byte[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
@@ -200,18 +335,21 @@ class FieldCacheImpl implements ExtendedFieldCache {
   // inherit javadocs
   public short[] getShorts(IndexReader reader, String field, ShortParser parser)
       throws IOException {
-    return (short[]) shortsCache.get(reader, new Entry(field, parser));
+    return (short[]) ((Cache)caches.get(Short.TYPE)).get(reader, new Entry(field, parser));
   }
 
-  Cache shortsCache = new Cache() {
+  static final class ShortCache extends Cache {
+    ShortCache(FieldCache wrapper) {
+      super(wrapper);
+    }
 
-    protected Object createValue(IndexReader reader, Object entryKey)
+    protected Object createValue(IndexReader reader, Entry entryKey)
         throws IOException {
       Entry entry = (Entry) entryKey;
       String field = entry.field;
       ShortParser parser = (ShortParser) entry.custom;
       if (parser == null) {
-        return getShorts(reader, field, FieldCache.DEFAULT_SHORT_PARSER);
+        return wrapper.getShorts(reader, field, FieldCache.DEFAULT_SHORT_PARSER);
       }
       final short[] retArray = new short[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
@@ -243,21 +381,24 @@ class FieldCacheImpl implements ExtendedFieldCache {
   // inherit javadocs
   public int[] getInts(IndexReader reader, String field, IntParser parser)
       throws IOException {
-    return (int[]) intsCache.get(reader, new Entry(field, parser));
+    return (int[]) ((Cache)caches.get(Integer.TYPE)).get(reader, new Entry(field, parser));
   }
 
-  Cache intsCache = new Cache() {
+  static final class IntCache extends Cache {
+    IntCache(FieldCache wrapper) {
+      super(wrapper);
+    }
 
-    protected Object createValue(IndexReader reader, Object entryKey)
+    protected Object createValue(IndexReader reader, Entry entryKey)
         throws IOException {
       Entry entry = (Entry) entryKey;
       String field = entry.field;
       IntParser parser = (IntParser) entry.custom;
       if (parser == null) {
         try {
-          return getInts(reader, field, DEFAULT_INT_PARSER);
+          return wrapper.getInts(reader, field, DEFAULT_INT_PARSER);
         } catch (NumberFormatException ne) {
-          return getInts(reader, field, NUMERIC_UTILS_INT_PARSER);      
+          return wrapper.getInts(reader, field, NUMERIC_UTILS_INT_PARSER);      
         }
       }
       int[] retArray = null;
@@ -295,24 +436,28 @@ class FieldCacheImpl implements ExtendedFieldCache {
 
   // inherit javadocs
   public float[] getFloats(IndexReader reader, String field, FloatParser parser)
-      throws IOException {
-    return (float[]) floatsCache.get(reader, new Entry(field, parser));
+    throws IOException {
+
+    return (float[]) ((Cache)caches.get(Float.TYPE)).get(reader, new Entry(field, parser));
   }
 
-  Cache floatsCache = new Cache() {
+  static final class FloatCache extends Cache {
+    FloatCache(FieldCache wrapper) {
+      super(wrapper);
+    }
 
-    protected Object createValue(IndexReader reader, Object entryKey)
+    protected Object createValue(IndexReader reader, Entry entryKey)
         throws IOException {
       Entry entry = (Entry) entryKey;
       String field = entry.field;
       FloatParser parser = (FloatParser) entry.custom;
       if (parser == null) {
         try {
-          return getFloats(reader, field, DEFAULT_FLOAT_PARSER);
+          return wrapper.getFloats(reader, field, DEFAULT_FLOAT_PARSER);
         } catch (NumberFormatException ne) {
-          return getFloats(reader, field, NUMERIC_UTILS_FLOAT_PARSER);      
+          return wrapper.getFloats(reader, field, NUMERIC_UTILS_FLOAT_PARSER);      
         }
-      }
+    }
       float[] retArray = null;
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field));
@@ -347,27 +492,30 @@ class FieldCacheImpl implements ExtendedFieldCache {
   // inherit javadocs
   public long[] getLongs(IndexReader reader, String field, FieldCache.LongParser parser)
       throws IOException {
-    return (long[]) longsCache.get(reader, new Entry(field, parser));
+    return (long[]) ((Cache)caches.get(Long.TYPE)).get(reader, new Entry(field, parser));
   }
 
   /** @deprecated Will be removed in 3.0, this is for binary compatibility only */
   public long[] getLongs(IndexReader reader, String field, ExtendedFieldCache.LongParser parser)
       throws IOException {
-    return (long[]) longsCache.get(reader, new Entry(field, parser));
+    return (long[]) ((Cache)caches.get(Long.TYPE)).get(reader, new Entry(field, parser));
   }
 
-  Cache longsCache = new Cache() {
+  static final class LongCache extends Cache {
+    LongCache(FieldCache wrapper) {
+      super(wrapper);
+    }
 
-    protected Object createValue(IndexReader reader, Object entryKey)
+    protected Object createValue(IndexReader reader, Entry entryKey)
         throws IOException {
       Entry entry = (Entry) entryKey;
       String field = entry.field;
       FieldCache.LongParser parser = (FieldCache.LongParser) entry.custom;
       if (parser == null) {
         try {
-          return getLongs(reader, field, DEFAULT_LONG_PARSER);
+          return wrapper.getLongs(reader, field, DEFAULT_LONG_PARSER);
         } catch (NumberFormatException ne) {
-          return getLongs(reader, field, NUMERIC_UTILS_LONG_PARSER);      
+          return wrapper.getLongs(reader, field, NUMERIC_UTILS_LONG_PARSER);      
         }
       }
       long[] retArray = null;
@@ -405,27 +553,30 @@ class FieldCacheImpl implements ExtendedFieldCache {
   // inherit javadocs
   public double[] getDoubles(IndexReader reader, String field, FieldCache.DoubleParser parser)
       throws IOException {
-    return (double[]) doublesCache.get(reader, new Entry(field, parser));
+    return (double[]) ((Cache)caches.get(Double.TYPE)).get(reader, new Entry(field, parser));
   }
 
   /** @deprecated Will be removed in 3.0, this is for binary compatibility only */
   public double[] getDoubles(IndexReader reader, String field, ExtendedFieldCache.DoubleParser parser)
       throws IOException {
-    return (double[]) doublesCache.get(reader, new Entry(field, parser));
+    return (double[]) ((Cache)caches.get(Double.TYPE)).get(reader, new Entry(field, parser));
   }
 
-  Cache doublesCache = new Cache() {
+  static final class DoubleCache extends Cache {
+    DoubleCache(FieldCache wrapper) {
+      super(wrapper);
+    }
 
-    protected Object createValue(IndexReader reader, Object entryKey)
+    protected Object createValue(IndexReader reader, Entry entryKey)
         throws IOException {
       Entry entry = (Entry) entryKey;
       String field = entry.field;
       FieldCache.DoubleParser parser = (FieldCache.DoubleParser) entry.custom;
       if (parser == null) {
         try {
-          return getDoubles(reader, field, DEFAULT_DOUBLE_PARSER);
+          return wrapper.getDoubles(reader, field, DEFAULT_DOUBLE_PARSER);
         } catch (NumberFormatException ne) {
-          return getDoubles(reader, field, NUMERIC_UTILS_DOUBLE_PARSER);      
+          return wrapper.getDoubles(reader, field, NUMERIC_UTILS_DOUBLE_PARSER);      
         }
       }
       double[] retArray = null;
@@ -457,14 +608,17 @@ class FieldCacheImpl implements ExtendedFieldCache {
   // inherit javadocs
   public String[] getStrings(IndexReader reader, String field)
       throws IOException {
-    return (String[]) stringsCache.get(reader, field);
+    return (String[]) ((Cache)caches.get(String.class)).get(reader, new Entry(field, (Parser)null));
   }
 
-  Cache stringsCache = new Cache() {
+  static final class StringCache extends Cache {
+    StringCache(FieldCache wrapper) {
+      super(wrapper);
+    }
 
-    protected Object createValue(IndexReader reader, Object fieldKey)
+    protected Object createValue(IndexReader reader, Entry entryKey)
         throws IOException {
-      String field = StringHelper.intern((String) fieldKey);
+      String field = StringHelper.intern((String) entryKey.field);
       final String[] retArray = new String[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field));
@@ -489,14 +643,17 @@ class FieldCacheImpl implements ExtendedFieldCache {
   // inherit javadocs
   public StringIndex getStringIndex(IndexReader reader, String field)
       throws IOException {
-    return (StringIndex) stringsIndexCache.get(reader, field);
+    return (StringIndex) ((Cache)caches.get(StringIndex.class)).get(reader, new Entry(field, (Parser)null));
   }
 
-  Cache stringsIndexCache = new Cache() {
+  static final class StringIndexCache extends Cache {
+    StringIndexCache(FieldCache wrapper) {
+      super(wrapper);
+    }
 
-    protected Object createValue(IndexReader reader, Object fieldKey)
+    protected Object createValue(IndexReader reader, Entry entryKey)
         throws IOException {
-      String field = StringHelper.intern((String) fieldKey);
+      String field = StringHelper.intern((String) entryKey.field);
       final int[] retArray = new int[reader.maxDoc()];
       String[] mterms = new String[reader.maxDoc()+1];
       TermDocs termDocs = reader.termDocs();
@@ -563,7 +720,7 @@ class FieldCacheImpl implements ExtendedFieldCache {
 
 	// inherit javadocs
   public Object getAuto(IndexReader reader, String field) throws IOException {
-    return autoCache.get(reader, field);
+    return ((Cache)caches.get(Object.class)).get(reader, new Entry(field, (Parser)null));
   }
 
   /**
@@ -571,11 +728,14 @@ class FieldCacheImpl implements ExtendedFieldCache {
    *  Especially, guessing does <b>not</b> work with the new
    *  {@link NumericField} type.
    */
-  Cache autoCache = new Cache() {
+  static final class AutoCache extends Cache {
+    AutoCache(FieldCache wrapper) {
+      super(wrapper);
+    }
 
-    protected Object createValue(IndexReader reader, Object fieldKey)
+    protected Object createValue(IndexReader reader, Entry entryKey)
         throws IOException {
-      String field = StringHelper.intern((String) fieldKey);
+      String field = StringHelper.intern((String) entryKey.field);
       TermEnum enumerator = reader.terms (new Term (field));
       try {
         Term term = enumerator.term();
@@ -588,17 +748,17 @@ class FieldCacheImpl implements ExtendedFieldCache {
 
           try {
             Integer.parseInt (termtext);
-            ret = getInts (reader, field);
+            ret = wrapper.getInts (reader, field);
           } catch (NumberFormatException nfe1) {
             try {
               Long.parseLong(termtext);
-              ret = getLongs (reader, field);
+              ret = wrapper.getLongs (reader, field);
             } catch (NumberFormatException nfe2) {
               try {
                 Float.parseFloat (termtext);
-                ret = getFloats (reader, field);
+                ret = wrapper.getFloats (reader, field);
               } catch (NumberFormatException nfe3) {
-                ret = getStringIndex (reader, field);
+                ret = wrapper.getStringIndex (reader, field);
               }
             }
           }          
@@ -615,13 +775,16 @@ class FieldCacheImpl implements ExtendedFieldCache {
   /** @deprecated */
   public Comparable[] getCustom(IndexReader reader, String field,
       SortComparator comparator) throws IOException {
-    return (Comparable[]) customCache.get(reader, new Entry(field, comparator));
+    return (Comparable[]) ((Cache)caches.get(Comparable.class)).get(reader, new Entry(field, comparator));
   }
 
   /** @deprecated */
-  Cache customCache = new Cache() {
+  static final class CustomCache extends Cache {
+    CustomCache(FieldCache wrapper) {
+      super(wrapper);
+    }
 
-    protected Object createValue(IndexReader reader, Object entryKey)
+    protected Object createValue(IndexReader reader, Entry entryKey)
         throws IOException {
       Entry entry = (Entry) entryKey;
       String field = entry.field;

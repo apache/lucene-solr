@@ -19,11 +19,14 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.document.NumericField; // for javadocs
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
 
 import java.io.IOException;
 import java.io.Serializable;
+
+import java.text.DecimalFormat;
 
 /**
  * Expert: Maintains caches of term values.
@@ -32,8 +35,13 @@ import java.io.Serializable;
  *
  * @since   lucene 1.4
  * @version $Id$
+ * @see org.apache.lucene.util.FieldCacheSanityChecker
  */
 public interface FieldCache {
+
+  public static final class CreationPlaceholder {
+    Object value;
+  }
 
   /** Indicator for StringIndex values in the cache. */
   // NOTE: the value assigned to this constant must not be
@@ -146,6 +154,9 @@ public interface FieldCache {
     protected Object readResolve() {
       return DEFAULT_BYTE_PARSER;
     }
+    public String toString() { 
+      return FieldCache.class.getName()+".DEFAULT_BYTE_PARSER"; 
+    }
   };
 
   /** The default parser for short values, which are encoded by {@link Short#toString(short)} */
@@ -155,6 +166,9 @@ public interface FieldCache {
     }
     protected Object readResolve() {
       return DEFAULT_SHORT_PARSER;
+    }
+    public String toString() { 
+      return FieldCache.class.getName()+".DEFAULT_SHORT_PARSER"; 
     }
   };
 
@@ -166,6 +180,9 @@ public interface FieldCache {
     protected Object readResolve() {
       return DEFAULT_INT_PARSER;
     }
+    public String toString() { 
+      return FieldCache.class.getName()+".DEFAULT_INT_PARSER"; 
+    }
   };
 
   /** The default parser for float values, which are encoded by {@link Float#toString(float)} */
@@ -175,6 +192,9 @@ public interface FieldCache {
     }
     protected Object readResolve() {
       return DEFAULT_FLOAT_PARSER;
+    }
+    public String toString() { 
+      return FieldCache.class.getName()+".DEFAULT_FLOAT_PARSER"; 
     }
   };
 
@@ -186,6 +206,9 @@ public interface FieldCache {
     protected Object readResolve() {
       return DEFAULT_LONG_PARSER;
     }
+    public String toString() { 
+      return FieldCache.class.getName()+".DEFAULT_LONG_PARSER"; 
+    }
   };
 
   /** The default parser for double values, which are encoded by {@link Double#toString(double)} */
@@ -195,6 +218,9 @@ public interface FieldCache {
     }
     protected Object readResolve() {
       return DEFAULT_DOUBLE_PARSER;
+    }
+    public String toString() { 
+      return FieldCache.class.getName()+".DEFAULT_DOUBLE_PARSER"; 
     }
   };
 
@@ -212,6 +238,9 @@ public interface FieldCache {
     protected Object readResolve() {
       return NUMERIC_UTILS_INT_PARSER;
     }
+    public String toString() { 
+      return FieldCache.class.getName()+".NUMERIC_UTILS_INT_PARSER"; 
+    }
   };
 
   /**
@@ -227,6 +256,9 @@ public interface FieldCache {
     }
     protected Object readResolve() {
       return NUMERIC_UTILS_FLOAT_PARSER;
+    }
+    public String toString() { 
+      return FieldCache.class.getName()+".NUMERIC_UTILS_FLOAT_PARSER"; 
     }
   };
 
@@ -244,6 +276,9 @@ public interface FieldCache {
     protected Object readResolve() {
       return NUMERIC_UTILS_LONG_PARSER;
     }
+    public String toString() { 
+      return FieldCache.class.getName()+".NUMERIC_UTILS_LONG_PARSER"; 
+    }
   };
 
   /**
@@ -259,6 +294,9 @@ public interface FieldCache {
     }
     protected Object readResolve() {
       return NUMERIC_UTILS_DOUBLE_PARSER;
+    }
+    public String toString() { 
+      return FieldCache.class.getName()+".NUMERIC_UTILS_DOUBLE_PARSER"; 
     }
   };
   
@@ -477,5 +515,105 @@ public interface FieldCache {
    */
   public Comparable[] getCustom (IndexReader reader, String field, SortComparator comparator)
   throws IOException;
+
+  /**
+   * EXPERT: A unique Identifier/Description for each item in the FieldCache. 
+   * Can be useful for logging/debugging.
+   * <p>
+   * <b>EXPERIMENTAL API:</b> This API is considered extremely advanced 
+   * and experimental.  It may be removed or altered w/o warning in future 
+   * releases 
+   * of Lucene.
+   * </p>
+   */
+  public static abstract class CacheEntry {
+    public abstract Object getReaderKey();
+    public abstract String getFieldName();
+    public abstract Class getCacheType();
+    public abstract Object getCustom();
+    public abstract Object getValue();
+    private String size = null;
+    protected final void setEstimatedSize(String size) {
+      this.size = size;
+    }
+    /** 
+     * @see #estimateSize(RamUsageEstimator)
+     */
+    public void estimateSize() {
+      estimateSize(new RamUsageEstimator(false)); // doesn't check for interned
+    }
+    /** 
+     * Computes (and stores) the estimated size of the cache Value 
+     * @see #getEstimatedSize
+     */
+    public void estimateSize(RamUsageEstimator ramCalc) {
+      long size = ramCalc.estimateRamUsage(getValue());
+      setEstimatedSize(RamUsageEstimator.humanReadableUnits
+                       (size, new DecimalFormat("0.#")));
+                        
+    }
+    /**
+     * The most recently estimated size of the value, null unless 
+     * estimateSize has been called.
+     */
+    public final String getEstimatedSize() {
+      return size;
+    }
+    
+    
+    public String toString() {
+      StringBuffer b = new StringBuffer();
+      b.append("'").append(getReaderKey()).append("'=>");
+      b.append("'").append(getFieldName()).append("',");
+      b.append(getCacheType()).append(",").append(getCustom());
+      b.append("=>").append(getValue().getClass().getName()).append("#");
+      b.append(System.identityHashCode(getValue()));
+      
+      String s = getEstimatedSize();
+      if(null != s) {
+        b.append(" (size =~ ").append(s).append(')');
+      }
+
+      return b.toString();
+    }
   
+  }
+
+  /**
+   * EXPERT: Generates an array of CacheEntry objects representing all items 
+   * currently in the FieldCache.
+   * <p>
+   * NOTE: These CacheEntry objects maintain a strong refrence to the 
+   * Cached Values.  Maintaining refrences to a CacheEntry the IndexReader 
+   * associated with it has garbage collected will prevent the Value itself
+   * from being garbage collected when the Cache drops the WeakRefrence.
+   * </p>
+   * <p>
+   * <b>EXPERIMENTAL API:</b> This API is considered extremely advanced 
+   * and experimental.  It may be removed or altered w/o warning in future 
+   * releases 
+   * of Lucene.
+   * </p>
+   */
+  public abstract CacheEntry[] getCacheEntries();
+
+  /**
+   * <p>
+   * EXPERT: Instructs the FieldCache to forcibly expunge all entries 
+   * from the underlying caches.  This is intended only to be used for 
+   * test methods as a way to ensure a known base state of the Cache 
+   * (with out needing to rely on GC to free WeakReferences).  
+   * It should not be relied on for "Cache maintenance" in general 
+   * application code.
+   * </p>
+   * <p>
+   * <b>EXPERIMENTAL API:</b> This API is considered extremely advanced 
+   * and experimental.  It may be removed or altered w/o warning in future 
+   * releases 
+   * of Lucene.
+   * </p>
+   */
+  public abstract void purgeAllCaches();
+
+
 }

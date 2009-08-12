@@ -17,21 +17,36 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.index.ConcurrentMergeScheduler;
-import junit.framework.TestCase;
+import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Random;
 
-/** Base class for all Lucene unit tests.  Currently the
- *  only added functionality over JUnit's TestCase is
- *  asserting that no unhandled exceptions occurred in
- *  threads launched by ConcurrentMergeScheduler.  If you
- *  override either <code>setUp()</code> or
- *  <code>tearDown()</code> in your unit test, make sure you
- *  call <code>super.setUp()</code> and
- *  <code>super.tearDown()</code>.
- */
+import junit.framework.TestCase;
 
+import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.FieldCache.CacheEntry;
+import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
+
+/** 
+ * Base class for all Lucene unit tests.  
+ * <p>
+ * Currently the
+ * only added functionality over JUnit's TestCase is
+ * asserting that no unhandled exceptions occurred in
+ * threads launched by ConcurrentMergeScheduler and asserting sane
+ * FieldCache usage athe moment of tearDown.
+ * </p>
+ * <p>
+ * If you
+ * override either <code>setUp()</code> or
+ * <code>tearDown()</code> in your unit test, make sure you
+ * call <code>super.setUp()</code> and
+ * <code>super.tearDown()</code>
+ * </p>
+ * @see #assertSaneFieldCaches
+ */
 public abstract class LuceneTestCase extends TestCase {
 
   public LuceneTestCase() {
@@ -46,13 +61,112 @@ public abstract class LuceneTestCase extends TestCase {
     ConcurrentMergeScheduler.setTestMode();
   }
 
+  /**
+   * Forcible purges all cache entries from the FieldCache.
+   * <p>
+   * This method will be called by tearDown to clean up FieldCache.DEFAULT.
+   * If a (poorly written) test has some expectation that the FieldCache
+   * will persist across test methods (ie: a static IndexReader) this 
+   * method can be overridden to do nothing.
+   * </p>
+   * @see FieldCache#purgeAllCaches()
+   */
+  protected void purgeFieldCache(final FieldCache fc) {
+    fc.purgeAllCaches();
+  }
+
+  protected String getTestLabel() {
+    return getClass().getName() + "." + getName();
+  }
+
   protected void tearDown() throws Exception {
-    if (ConcurrentMergeScheduler.anyUnhandledExceptions()) {
-      // Clear the failure so that we don't just keep
-      // failing subsequent test cases
-      ConcurrentMergeScheduler.clearUnhandledExceptions();
-      fail("ConcurrentMergeScheduler hit unhandled exceptions");
+    try {
+      // this isn't as useful as calling directly from the scope where the 
+      // index readers are used, because they could be gc'ed just before
+      // tearDown is called.
+      // But it's better then nothing.
+      assertSaneFieldCaches(getTestLabel());
+      
+      if (ConcurrentMergeScheduler.anyUnhandledExceptions()) {
+        // Clear the failure so that we don't just keep
+        // failing subsequent test cases
+        ConcurrentMergeScheduler.clearUnhandledExceptions();
+        fail("ConcurrentMergeScheduler hit unhandled exceptions");
+      }
+    } finally {
+      purgeFieldCache(FieldCache.DEFAULT);
     }
+  }
+
+  /** 
+   * Asserts that FieldCacheSanityChecker does not detect any 
+   * problems with FieldCache.DEFAULT.
+   * <p>
+   * If any problems are found, they are logged to System.err 
+   * (allong with the msg) when the Assertion is thrown.
+   * </p>
+   * <p>
+   * This method is called by tearDown after every test method, 
+   * however IndexReaders scoped inside test methods may be garbage 
+   * collected prior to this method being called, causing errors to 
+   * be overlooked. Tests are encouraged to keep their IndexReaders 
+   * scoped at the class level, or to explicitly call this method 
+   * directly in the same scope as the IndexReader.
+   * </p>
+   * @see FieldCacheSanityChecker
+   */
+  protected void assertSaneFieldCaches(final String msg) {
+    final CacheEntry[] entries = FieldCache.DEFAULT.getCacheEntries();
+    Insanity[] insanity = null;
+    try {
+      try {
+        insanity = FieldCacheSanityChecker.checkSanity(entries);
+      } catch (RuntimeException e) {
+        dumpArray(msg+ ": FieldCache", entries, System.err);
+        throw e;
+      }
+
+      assertEquals(msg + ": Insane FieldCache usage(s) found", 
+                   0, insanity.length);
+      insanity = null;
+    } finally {
+
+      // report this in the event of any exception/failure
+      // if no failure, then insanity will be null anyway
+      if (null != insanity) {
+        dumpArray(msg + ": Insane FieldCache usage(s)", insanity, System.err);
+      }
+
+    }
+  }
+
+  /**
+   * Convinience method for logging an iterator.
+   * @param label String logged before/after the items in the iterator
+   * @param iter Each next() is toString()ed and logged on it's own line. If iter is null this is logged differnetly then an empty iterator.
+   * @param stream Stream to log messages to.
+   */
+  public static void dumpIterator(String label, Iterator iter, 
+                                  PrintStream stream) {
+    stream.println("*** BEGIN "+label+" ***");
+    if (null == iter) {
+      stream.println(" ... NULL ...");
+    } else {
+      while (iter.hasNext()) {
+        stream.println(iter.next().toString());
+      }
+    }
+    stream.println("*** END "+label+" ***");
+  }
+
+  /** 
+   * Convinience method for logging an array.  Wraps the array in an iterator and delegates
+   * @see dumpIterator(String,Iterator,PrintStream)
+   */
+  public static void dumpArray(String label, Object[] objs, 
+                               PrintStream stream) {
+    Iterator iter = (null == objs) ? null : Arrays.asList(objs).iterator();
+    dumpIterator(label, iter, stream);
   }
   
   /**

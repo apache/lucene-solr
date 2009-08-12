@@ -146,74 +146,89 @@ public class QueryUtils {
         {skip_op, skip_op, skip_op, next_op, next_op},
     };
     for (int k = 0; k < orders.length; k++) {
-      final int order[] = orders[k];
-      //System.out.print("Order:");for (int i = 0; i < order.length; i++) System.out.print(order[i]==skip_op ? " skip()":" next()"); System.out.println();
-      final int opidx[] = {0};
+      IndexReader[] readers = s.getIndexReader().getSequentialSubReaders();
 
-      final Weight w = q.weight(s);
-      final Scorer scorer = w.scorer(s.getIndexReader(), true, false);
-      if (scorer == null) {
-        continue;
-      }
+      for (int x = 0; x < readers.length; x++) {
+        IndexReader reader = readers[x];
 
-      // FUTURE: ensure scorer.doc()==-1
+        final int order[] = orders[k];
+        // System.out.print("Order:");for (int i = 0; i < order.length; i++)
+        // System.out.print(order[i]==skip_op ? " skip()":" next()");
+        // System.out.println();
+        final int opidx[] = { 0 };
 
-      final int[] sdoc = new int[] {-1};
-      final float maxDiff = 1e-5f;
-      s.search(q,new Collector() {
-        private int base = 0;
-        private Scorer sc;
-        public void setScorer(Scorer scorer) throws IOException {
-          this.sc = scorer;
+        final Weight w = q.weight(s);
+        final Scorer scorer = w.scorer(reader, true, false);
+        if (scorer == null) {
+          continue;
         }
-        public void collect(int doc) throws IOException {
-          doc = doc + base;
-          float score = sc.score();
-          try {
-            int op = order[(opidx[0]++)%order.length];
-            //System.out.println(op==skip_op ? "skip("+(sdoc[0]+1)+")":"next()");
-            boolean more = op == skip_op ? scorer.advance(sdoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS
-                : scorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
-            sdoc[0] = scorer.docID();
-            float scorerScore = scorer.score();
-            float scorerScore2 = scorer.score();
-            float scoreDiff = Math.abs(score-scorerScore);
-            float scorerDiff = Math.abs(scorerScore2-scorerScore);
-            if (!more || doc != sdoc[0] || scoreDiff>maxDiff || scorerDiff>maxDiff) {
-              StringBuffer sbord = new StringBuffer();
-              for (int i = 0; i < order.length; i++) 
-                sbord.append(order[i]==skip_op ? " skip()":" next()");
-              throw new RuntimeException("ERROR matching docs:"
-                  +"\n\t"+(doc!=sdoc[0]?"--> ":"")+"doc="+sdoc[0]
-                  +"\n\t"+(!more?"--> ":"")+"tscorer.more=" + more 
-                  +"\n\t"+(scoreDiff>maxDiff?"--> ":"")+"scorerScore="+scorerScore+" scoreDiff="+scoreDiff + " maxDiff="+maxDiff
-                  +"\n\t"+(scorerDiff>maxDiff?"--> ":"")+"scorerScore2="+scorerScore2+" scorerDiff="+scorerDiff
-                  +"\n\thitCollector.doc=" + doc + " score="+score
-                  +"\n\t Scorer=" + scorer
-                  +"\n\t Query=" + q + "  "+q.getClass().getName()
-                  +"\n\t Searcher=" + s
-                  +"\n\t Order=" + sbord
-                  +"\n\t Op=" + (op==skip_op ? " skip()":" next()")
-              );
-            }
-          } catch (IOException e) {
-            throw new RuntimeException(e);
+
+        // FUTURE: ensure scorer.doc()==-1
+
+        final int[] sdoc = new int[] { -1 };
+        final float maxDiff = 1e-5f;
+        s.search(q, new Collector() {
+          private int base = 0;
+          private Scorer sc;
+
+          public void setScorer(Scorer scorer) throws IOException {
+            this.sc = scorer;
           }
-        }
-        public void setNextReader(IndexReader reader, int docBase) {
-          base = docBase;
-        }
-        public boolean acceptsDocsOutOfOrder() {
-          return true;
-        }
-      });
-      
-      // make sure next call to scorer is false.
-      int op = order[(opidx[0]++)%order.length];
-      //System.out.println(op==skip_op ? "last: skip()":"last: next()");
-      boolean more = (op == skip_op ? scorer.advance(sdoc[0] + 1) : scorer
-          .nextDoc()) != DocIdSetIterator.NO_MORE_DOCS;
-      Assert.assertFalse(more);
+
+          public void collect(int doc) throws IOException {
+            doc = doc + base;
+            float score = sc.score();
+            try {
+              int op = order[(opidx[0]++) % order.length];
+              // System.out.println(op==skip_op ?
+              // "skip("+(sdoc[0]+1)+")":"next()");
+              boolean more = op == skip_op ? scorer.advance(sdoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS
+                  : scorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
+              sdoc[0] = scorer.docID();
+              float scorerScore = scorer.score();
+              float scorerScore2 = scorer.score();
+              float scoreDiff = Math.abs(score - scorerScore);
+              float scorerDiff = Math.abs(scorerScore2 - scorerScore);
+              if (!more || doc != sdoc[0] || scoreDiff > maxDiff
+                  || scorerDiff > maxDiff) {
+                StringBuffer sbord = new StringBuffer();
+                for (int i = 0; i < order.length; i++)
+                  sbord.append(order[i] == skip_op ? " skip()" : " next()");
+                throw new RuntimeException("ERROR matching docs:" + "\n\t"
+                    + (doc != sdoc[0] ? "--> " : "") + "doc=" + sdoc[0]
+                    + "\n\t" + (!more ? "--> " : "") + "tscorer.more=" + more
+                    + "\n\t" + (scoreDiff > maxDiff ? "--> " : "")
+                    + "scorerScore=" + scorerScore + " scoreDiff=" + scoreDiff
+                    + " maxDiff=" + maxDiff + "\n\t"
+                    + (scorerDiff > maxDiff ? "--> " : "") + "scorerScore2="
+                    + scorerScore2 + " scorerDiff=" + scorerDiff
+                    + "\n\thitCollector.doc=" + doc + " score=" + score
+                    + "\n\t Scorer=" + scorer + "\n\t Query=" + q + "  "
+                    + q.getClass().getName() + "\n\t Searcher=" + s
+                    + "\n\t Order=" + sbord + "\n\t Op="
+                    + (op == skip_op ? " skip()" : " next()"));
+              }
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          }
+
+          public void setNextReader(IndexReader reader, int docBase) {
+            base = docBase;
+          }
+
+          public boolean acceptsDocsOutOfOrder() {
+            return true;
+          }
+        });
+
+        // make sure next call to scorer is false.
+        int op = order[(opidx[0]++) % order.length];
+        // System.out.println(op==skip_op ? "last: skip()":"last: next()");
+        boolean more = (op == skip_op ? scorer.advance(sdoc[0] + 1) : scorer
+            .nextDoc()) != DocIdSetIterator.NO_MORE_DOCS;
+        Assert.assertFalse(more);
+      }
     }
   }
     
@@ -223,19 +238,19 @@ public class QueryUtils {
     final float maxDiff = 1e-5f;
     final int lastDoc[] = {-1};
     s.search(q,new Collector() {
-      private int base = 0;
       private Scorer scorer;
+      private IndexReader reader;
       public void setScorer(Scorer scorer) throws IOException {
         this.scorer = scorer;
       }
       public void collect(int doc) throws IOException {
         //System.out.println("doc="+doc);
-        doc = doc + base;
         float score = scorer.score();
         try {
+          
           for (int i=lastDoc[0]+1; i<=doc; i++) {
             Weight w = q.weight(s);
-            Scorer scorer = w.scorer(s.getIndexReader(), true, false);
+            Scorer scorer = w.scorer(reader, true, false);
             Assert.assertTrue("query collected "+doc+" but skipTo("+i+") says no more docs!",scorer.advance(i) != DocIdSetIterator.NO_MORE_DOCS);
             Assert.assertEquals("query collected "+doc+" but skipTo("+i+") got to "+scorer.docID(),doc,scorer.docID());
             float skipToScore = scorer.score();
@@ -248,18 +263,27 @@ public class QueryUtils {
         }
       }
       public void setNextReader(IndexReader reader, int docBase) {
-        base = docBase;
+        this.reader = reader;
+        lastDoc[0] = -1;
       }
       public boolean acceptsDocsOutOfOrder() {
         return false;
       }
     });
-    Weight w = q.weight(s);
-    Scorer scorer = w.scorer(s.getIndexReader(), true, false);
-    if (scorer != null) {
-      boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
-      if (more) 
-        Assert.assertFalse("query's last doc was "+lastDoc[0]+" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
+    
+    IndexReader[] readers = s.getIndexReader().getSequentialSubReaders();
+    for(int i = 0; i < readers.length; i++) {
+      IndexReader reader = readers[i];
+      Weight w = q.weight(s);
+      Scorer scorer = w.scorer(reader, true, false);
+      
+      if (scorer != null) {
+        boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
+  
+        if (more && lastDoc[0] != -1) 
+          Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
+      }
     }
+
   }
 }

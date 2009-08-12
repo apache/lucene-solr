@@ -244,11 +244,18 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
     assertMatches (multi, queryX, sort, "CAIEG");
     sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource(), true));
     assertMatches (multi, queryY, sort, "HJDBF");
+
+    assertSaneFieldCaches(getName() + " ComparatorSource");
+    FieldCache.DEFAULT.purgeAllCaches();
+
     SortComparator custom = SampleComparable.getComparator();
     sort.setSort (new SortField ("custom", custom));
     assertMatches (multi, queryX, sort, "CAIEG");
     sort.setSort (new SortField ("custom", custom, true));
     assertMatches (multi, queryY, sort, "HJDBF");
+
+    assertSaneFieldCaches(getName() + " Comparator");
+    FieldCache.DEFAULT.purgeAllCaches();
   }
 
   // test that the relevancy scores are the same even if
@@ -343,12 +350,6 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
     sort.setSort("string", true);
     assertMatches(multi, queryA, sort, "CBEFGHIAJD");
 
-    sort.setSort(new SortField[] { new SortField ("string", Locale.US) });
-    assertMatches(multi, queryA, sort, "DJAIHGFEBC");
-
-    sort.setSort(new SortField[] { new SortField ("string", Locale.US, true) });
-    assertMatches(multi, queryA, sort, "CBEFGHIAJD");
-
     sort.setSort(new String[] {"int","float"});
     assertMatches(multi, queryA, sort, "IDHFGJEABC");
 
@@ -369,6 +370,21 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
 
     sort.setSort("string", true);
     assertMatches(multi, queryF, sort, "IJZ");
+
+    // up to this point, all of the searches should have "sane" 
+    // FieldCache behavior, and should have reused hte cache in several cases
+    assertSaneFieldCaches(getName() + " Basics");
+    // next we'll check an alternate Locale for string, so purge first
+    FieldCache.DEFAULT.purgeAllCaches();
+
+    sort.setSort(new SortField[] { new SortField ("string", Locale.US) });
+    assertMatches(multi, queryA, sort, "DJAIHGFEBC");
+
+    sort.setSort(new SortField[] { new SortField ("string", Locale.US, true)});
+    assertMatches(multi, queryA, sort, "CBEFGHIAJD");
+
+    assertSaneFieldCaches(getName() + " Locale.US");
+    FieldCache.DEFAULT.purgeAllCaches();
   }
 
   // make sure the documents returned by the search match the expected list
