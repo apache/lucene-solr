@@ -27,7 +27,7 @@ import java.util.Collection;
  * Expert:
  * Public for extension only
  */
-public class TermSpans implements Spans {
+public class TermSpans extends Spans {
   protected TermPositions positions;
   protected Term term;
   protected int doc;

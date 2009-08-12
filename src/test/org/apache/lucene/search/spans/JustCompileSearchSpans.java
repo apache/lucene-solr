@@ -35,7 +35,7 @@ final class JustCompileSearchSpans {
 
   private static final String UNSUPPORTED_MSG = "unsupported: used for back-compat testing only !";
 
-  static final class JustCompileSpans implements Spans {
+  static final class JustCompileSpans extends Spans {
 
     public int doc() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
@@ -88,7 +88,7 @@ final class JustCompileSearchSpans {
     
   }
 
-  static final class JustCompilePayloadSpans implements Spans {
+  static final class JustCompilePayloadSpans extends Spans {
 
     public Collection getPayload() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);

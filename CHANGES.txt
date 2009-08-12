@@ -88,7 +88,9 @@ Changes in backwards compatibility policy
     compat break and caused custom SpanQuery implementations to fail at runtime
     in a variety of ways. This issue attempts to remedy things by causing
     a compile time break on custom SpanQuery implementations and removing 
-    the PayloadSpans class, with its functionality now moved to Spans.
+    the PayloadSpans class, with its functionality now moved to Spans. To
+    help in alleviating future back compat pain, Spans has been changed from
+    an interface to an abstract class.
     (Hugh Cayless, Mark Miller)
  
 Changes in runtime behavior
@@ -374,7 +376,9 @@ API Changes
     compat break and caused custom SpanQuery implementations to fail at runtime
     in a variety of ways. This issue attempts to remedy things by causing
     a compile time break on custom SpanQuery implementations and removing 
-    the PayloadSpans class, with its functionality now moved to Spans.
+    the PayloadSpans class, with its functionality now moved to Spans. To
+    help in alleviating future back compat pain, Spans has been changed from
+    an interface to an abstract class.
     (Hugh Cayless, Mark Miller)
 
 Bug fixes

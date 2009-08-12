@@ -31,7 +31,7 @@ import java.util.HashSet;
  * Expert:
  * Only public for subclassing.  Most implementations should not need this class
  */
-public class NearSpansUnordered implements Spans {
+public class NearSpansUnordered extends Spans {
   private SpanNearQuery query;
 
   private List ordered = new ArrayList();         // spans in query order
@@ -67,7 +67,7 @@ public class NearSpansUnordered implements Spans {
 
 
   /** Wraps a Spans, and can be used to form a linked list. */
-  private class SpansCell implements Spans {
+  private class SpansCell extends Spans {
     private Spans spans;
     private SpansCell next;
     private int length = -1;

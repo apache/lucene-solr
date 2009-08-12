@@ -51,7 +51,7 @@ import java.util.Set;
  * Expert:
  * Only public for subclassing.  Most implementations should not need this class
  */
-public class NearSpansOrdered implements Spans {
+public class NearSpansOrdered extends Spans {
   private final int allowedSlop;
   private boolean firstTime = true;
   private boolean more = false;

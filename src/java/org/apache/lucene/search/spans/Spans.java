@@ -24,9 +24,9 @@ import java.util.Collection;
  * Each span represents a range of term positions within a document.  Matches
  * are enumerated in order, by increasing document number, within that by
  * increasing start position and finally by increasing end position. */
-public interface Spans {
+public abstract class Spans {
   /** Move to the next match, returning true iff any such exists. */
-  boolean next() throws IOException;
+  public abstract boolean next() throws IOException;
 
   /** Skips to the first match beyond the current, whose document number is
    * greater than or equal to <i>target</i>. <p>Returns true iff there is such
@@ -41,16 +41,16 @@ public interface Spans {
    * </pre>
    * Most implementations are considerably more efficient than that.
    */
-  boolean skipTo(int target) throws IOException;
+  public abstract boolean skipTo(int target) throws IOException;
 
   /** Returns the document number of the current match.  Initially invalid. */
-  int doc();
+  public abstract int doc();
 
   /** Returns the start position of the current match.  Initially invalid. */
-  int start();
+  public abstract int start();
 
   /** Returns the end position of the current match.  Initially invalid. */
-  int end();
+  public abstract int end();
   
   /**
    * Returns the payload data for the current span.
@@ -75,22 +75,16 @@ public interface Spans {
    * @throws java.io.IOException
     */
   // TODO: Remove warning after API has been finalized
-  Collection/*<byte[]>*/ getPayload() throws IOException;
+  public abstract Collection/*<byte[]>*/ getPayload() throws IOException;
 
   /**
    * Checks if a payload can be loaded at this position.
    * <p/>
    * Payloads can only be loaded once per call to
    * {@link #next()}.
-   * <p/>
-   * <p><font color="#FF0000">
-   * WARNING: The status of the <b>Payloads</b> feature is experimental.
-   * The APIs introduced here might change in the future and will not be
-   * supported anymore in such a case.</font>
    *
    * @return true if there is a payload available at this position that can be loaded
    */
-  // TODO: Remove warning after API has been finalized
-  public boolean isPayloadAvailable();
+  public abstract boolean isPayloadAvailable();
 
 }
