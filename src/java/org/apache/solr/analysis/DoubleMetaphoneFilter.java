@@ -23,68 +23,89 @@ import org.apache.commons.codec.language.DoubleMetaphone;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 public class DoubleMetaphoneFilter extends TokenFilter {
 
   private static final String TOKEN_TYPE = "DoubleMetaphone";
   
-  private final LinkedList<Token> remainingTokens = new LinkedList<Token>();
+  private final LinkedList<State> remainingTokens = new LinkedList<State>();
   private final DoubleMetaphone encoder = new DoubleMetaphone();
   private final boolean inject;
-  
+  private final TermAttribute termAtt;
+  private final PositionIncrementAttribute posAtt;
+
   protected DoubleMetaphoneFilter(TokenStream input, int maxCodeLength, boolean inject) {
     super(input);
     this.encoder.setMaxCodeLen(maxCodeLength);
     this.inject = inject;
+    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    this.posAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
   }
 
   @Override
-  public final Token next(Token in) throws IOException {
-    if (!remainingTokens.isEmpty()) {
-      return remainingTokens.removeFirst();
-    }
+  public boolean incrementToken() throws IOException {
+    for(;;) {
 
-    Token t = input.next(in);
-    if (t != null && t.termLength() > 0) {
-      if (inject) {
-        remainingTokens.addLast(t);
+      if (!remainingTokens.isEmpty()) {
+        clearAttributes(); restoreState(remainingTokens.removeFirst());
+        return true;
       }
 
-      boolean isPhonetic = false;
-      String v = new String(t.termBuffer(), 0, t.termLength());
-      String primaryPhoneticValue = encoder.doubleMetaphone(v);
-      if (primaryPhoneticValue.length() > 0) {
-        Token token = (Token) t.clone();
-        if( inject ) {
-          token.setPositionIncrement( 0 );
-        }
-        token.setType( TOKEN_TYPE );
-        token.setTermBuffer(primaryPhoneticValue);
-        remainingTokens.addLast(token);
-        isPhonetic = true;
-      }
+      if (!input.incrementToken()) return false;
 
-      String alternatePhoneticValue = encoder.doubleMetaphone(v, true);
-      if (alternatePhoneticValue.length() > 0
-          && !primaryPhoneticValue.equals(alternatePhoneticValue)) {
-        Token token = (Token) t.clone();
-        token.setPositionIncrement( 0 );
-        token.setType( TOKEN_TYPE );
-        token.setTermBuffer(alternatePhoneticValue);
-        remainingTokens.addLast(token);
-        isPhonetic = true;
-      }
+      int len = termAtt.termLength();
+      if (len==0) return true; // pass through zero length terms
       
-      // If we did not add something, then go to the next one...
-      if( !isPhonetic ) {
-        t = next(in);
-        if( t != null ) {
-          t.setPositionIncrement( t.getPositionIncrement()+1 ); 
+      int firstAlternativeIncrement = inject ? 0 : posAtt.getPositionIncrement();
+
+      String v = new String(termAtt.termBuffer(), 0, len);
+      String primaryPhoneticValue = encoder.doubleMetaphone(v);
+      String alternatePhoneticValue = encoder.doubleMetaphone(v, true);
+
+      // a flag to lazily save state if needed... this avoids a save/restore when only
+      // one token will be generated.
+      boolean saveState=inject;
+
+      if (primaryPhoneticValue!=null && primaryPhoneticValue.length() > 0 && !primaryPhoneticValue.equals(v)) {
+        if (saveState) {
+          remainingTokens.addLast(captureState());
         }
-        return t;
+        posAtt.setPositionIncrement( firstAlternativeIncrement );
+        firstAlternativeIncrement = 0;
+        termAtt.setTermBuffer(primaryPhoneticValue);
+        saveState = true;
+      }
+
+      if (alternatePhoneticValue!=null && alternatePhoneticValue.length() > 0
+              && !alternatePhoneticValue.equals(primaryPhoneticValue)
+              && !primaryPhoneticValue.equals(v)) {
+        if (saveState) {
+          remainingTokens.addLast(captureState());
+          saveState = false;
+        }
+        posAtt.setPositionIncrement( firstAlternativeIncrement );
+        termAtt.setTermBuffer(alternatePhoneticValue);
+        saveState = true;
+      }
+
+      // Just one token to return, so no need to capture/restore
+      // any state, simply return it.
+      if (remainingTokens.isEmpty()) {
+        return true;
+      }
+
+      if (saveState) {
+        remainingTokens.addLast(captureState());
       }
     }
+  }
 
-    return remainingTokens.isEmpty() ? null : remainingTokens.removeFirst();
+  @Override
+  public void reset() throws IOException {
+    input.reset();
+    remainingTokens.clear();
   }
 }
