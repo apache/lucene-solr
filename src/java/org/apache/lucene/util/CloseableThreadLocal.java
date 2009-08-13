@@ -62,11 +62,7 @@ public class CloseableThreadLocal {
       } else
         return null;
     } else {
-      Object v = weakRef.get();
-      // This can never be null, because we hold a hard
-      // reference to the underlying object:
-      assert v != null;
-      return v;
+      return weakRef.get();
     }
   }
 

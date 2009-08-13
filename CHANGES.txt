@@ -470,6 +470,10 @@ Bug fixes
     of the instances are correct.  
     (Mike McCandless, Mark Miller, Michael Busch)
 
+22. LUCENE-1805: CloseableThreadLocal did not allow a null Object in get(), 
+    although it does allow it in set(Object). Fix get() to not assert the object
+    is not null. (Shai Erera via Mike McCandless)
+
 New features
 
  1. LUCENE-1411: Added expert API to open an IndexWriter on a prior
