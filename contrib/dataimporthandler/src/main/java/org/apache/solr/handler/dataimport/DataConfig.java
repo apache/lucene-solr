@@ -22,6 +22,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.apache.solr.schema.SchemaField;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -42,6 +44,8 @@ import java.util.*;
  * @since solr 1.3
  */
 public class DataConfig {
+  static final Logger LOG = LoggerFactory.getLogger(DataConfig.class);
+
   public Document document;
 
   public List<Map<String, String >> functions = new ArrayList<Map<String ,String>>();
@@ -115,7 +119,8 @@ public class DataConfig {
     public Entity(Element element) {
       name = getStringAttribute(element, NAME, null);
       if(name == null){
-        throw new DataImportHandlerException(SEVERE, "Entity must have name '" );
+        LOG.warn("Entity does not have a name");
+        name= ""+System.nanoTime();
       }
       if(name.indexOf(".") != -1){
         throw new DataImportHandlerException(SEVERE, "Entity name must not have period (.): '" + name);
