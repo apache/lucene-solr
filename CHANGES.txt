@@ -463,6 +463,10 @@ Bug Fixes
 55. SOLR-1342: CapitalizationFilterFactory uses incorrect term length calculations.
     (Robert Muir via Mark Miller)
 
+56. SOLR-1359: DoubleMetaphoneFilter didn't index original tokens if there was no
+    alternative, and could incorrectly skip or reorder tokens.  (yonik)
+
+57. SOLR-1360: Prevent PhoneticFilter from producing duplicate tokens. (yonik)
 
 Other Changes
 ----------------------

@@ -71,17 +71,26 @@ public class TestPhoneticFilter extends BaseTokenTestCase {
     ArrayList<Token> output = new ArrayList<Token>();
     for( String s : input ) {
       stream.add( new Token( s, 0, s.length() ) );
+
+      // phonetic token is added first in the current impl
+      output.add( new Token( enc.encode(s).toString(), 0, s.length() ) );
+
+      // add the original if applicable
       if( inject ) {
         output.add( new Token( s, 0, s.length() ) );
       }
-      output.add( new Token( enc.encode(s).toString(), 0, s.length() ) );
     }
-    
+
+    // System.out.println("###stream="+stream);
+    // System.out.println("###output="+output);
+
     PhoneticFilter filter = new PhoneticFilter( 
         new IterTokenStream(stream.iterator()), enc, "text", inject );
     
     for( Token t : output ) {
       Token got = filter.next(t);
+      // System.out.println("##### got="+got);
+
       assertEquals( new String(t.termBuffer(), 0, t.termLength()), new String(got.termBuffer(), 0, got.termLength()));
     }
     assertNull( filter.next() );  // no more tokens
