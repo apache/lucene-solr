@@ -686,6 +686,14 @@ New features
     the same field in both a reader, and one of it's (descendant) sub
     readers. 
     (Chris Hostetter, Mark Miller)
+
+36. LUCENE-1789: Added utility class
+    oal.search.function.MultiValueSource to ease the transition to
+    segment based searching for any apps that directly call
+    oal.search.function.* APIs.  This class wraps any other
+    ValueSource, but takes care when composite (multi-segment) are
+    passed to not double RAM usage in the FieldCache.  (Chris
+    Hostetter, Mark Miller, Mike McCandless)
    
 Optimizations
 

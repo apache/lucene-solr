@@ -37,6 +37,15 @@ import java.io.IOException;
  * @see org.apache.lucene.search.function.FieldCacheSource for requirements 
  * on the field.
  *
+ * <p><b>NOTE</b>: with the switch in 2.9 to segment-based
+ * searching, if {@link #getValues} is invoked with a
+ * composite (multi-segment) reader, this can easily cause
+ * double RAM usage for the values in the FieldCache.  It's
+ * best to switch your application to pass only atomic
+ * (single segment) readers to this API.  Alternatively, for
+ * a short-term fix, you could wrap your ValueSource using
+ * {@link MultiValueSource}, which costs more CPU per lookup
+ * but will not consume double the FieldCache RAM.</p>
  */
 public class FloatFieldSource extends FieldCacheSource {
   private FieldCache.FloatParser parser;
