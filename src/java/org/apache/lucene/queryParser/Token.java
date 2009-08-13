@@ -4,10 +4,6 @@ package org.apache.lucene.queryParser;
 
 /**
  * Describes the input token stream.
- * 
- * @deprecated use the equivalent class defined in the new <tt>queryparser</tt> project, 
- * 				currently located in contrib: org.apache.lucene.queryParser.original.parser.Token
- * 
  */
 
 public class Token {

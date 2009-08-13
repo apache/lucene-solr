@@ -15,8 +15,6 @@ package org.apache.lucene.queryParser;
  * column number and the String that constitutes a token and are not used
  * by the lexer. Hence their implementation won't affect the generated lexer's
  * operation.
- *
- * @deprecated this class will be removed in Lucene 3.0, when the {@link QueryParser} is removed
  */
 
 public interface CharStream {

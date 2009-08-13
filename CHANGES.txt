@@ -367,12 +367,7 @@ API Changes
 34. LUCENE-1460: Changed TokenStreams/TokenFilters in contrib to
     use the new TokenStream API. (Robert Muir, Michael Busch)
 
-35. LUCENE-1567: Deprecated Queryparser, which will be replaced by a
-    new QueryParser framework in Lucene 3.0, that is currently located
-    in contrib. (see New Features 35.) 
-    (Luis Alves and Adriano Campos via Michael Busch)
-    
-36. LUCENE-1748: LUCENE-1001 introduced PayloadSpans, but this was a back
+35. LUCENE-1748: LUCENE-1001 introduced PayloadSpans, but this was a back
     compat break and caused custom SpanQuery implementations to fail at runtime
     in a variety of ways. This issue attempts to remedy things by causing
     a compile time break on custom SpanQuery implementations and removing 
@@ -657,23 +652,16 @@ New features
     multiple fields with the same name are added to a document.
     (Mike McCandless, Mark Miller, Michael Busch)
  
-32. LUCENE-1567: Added a new QueryParser framework to contrib, that 
-    allows implementing a new query syntax in a flexible and efficient 
-    way. This new QueryParser will be moved to Lucene's core in release
-    3.0 and will then replace the current core QueryParser, which
-    has been deprecated with this patch.
-    (Luis Alves and Adriano Campos via Michael Busch)
-    
-33. LUCENE-1776: Add an option to not collect payloads for an ordered
+32. LUCENE-1776: Add an option to not collect payloads for an ordered
     SpanNearQuery. Payloads were not lazily loaded in this case as
     the javadocs implied. If you have payloads and want to use an ordered
     SpanNearQuery that does not need to use the payloads, you can
     disable loading them with a new constructor switch.  (Mark Miller)
 
-34. LUCENE-1341: Added BoostingNearQuery to enable SpanNearQuery functionality
+33. LUCENE-1341: Added BoostingNearQuery to enable SpanNearQuery functionality
   with payloads (Peter Keegan, Grant Ingersoll)
 
-35. LUCENE-1790: Added BoostingFunctionTermQuery to enable scoring of payloads
+34. LUCENE-1790: Added BoostingFunctionTermQuery to enable scoring of payloads
   based on the maximum payload seen for a document.
   Slight refactoring of Similarity and other payload queries (Grant Ingersoll)
 

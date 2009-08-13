@@ -25,9 +25,6 @@ import java.io.*;
  * this does not do line-number counting, but instead keeps track of the
  * character position of the token in the input, as required by Lucene's {@link
  * org.apache.lucene.analysis.Token} API. 
- *   
- * @deprecated this class will be removed in Lucene 3.0, when the {@link QueryParser} is removed
- * 
  * */
 public final class FastCharStream implements CharStream {
   char[] buffer = null;

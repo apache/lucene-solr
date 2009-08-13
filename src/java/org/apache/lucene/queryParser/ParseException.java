@@ -10,9 +10,6 @@ package org.apache.lucene.queryParser;
  *
  * You can modify this class to customize your error reporting
  * mechanisms so long as you retain the public fields.
- * 
- * @deprecated use the equivalent class defined in the new <tt>queryparser</tt> project, 
- * 				currently located in contrib: org.apache.lucene.queryParser.original.parser.ParseException
  */
 public class ParseException extends Exception {
 

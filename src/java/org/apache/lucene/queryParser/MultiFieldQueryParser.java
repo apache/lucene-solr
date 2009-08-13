@@ -31,9 +31,6 @@ import org.apache.lucene.search.Query;
 /**
  * A QueryParser which constructs queries to search multiple fields.
  *
- * @deprecated use the equivalent class defined in the new <tt>queryparser</tt> project, 
- * 				currently located in contrib: org.apache.lucene.queryParser.original.OriginalQueryParserHelper
- *
  * @version $Revision$
  */
 public class MultiFieldQueryParser extends QueryParser

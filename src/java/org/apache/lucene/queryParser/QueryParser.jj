@@ -121,10 +121,10 @@ import org.apache.lucene.util.Parameter;
  * </p>
  *
  * <p>Note that QueryParser is <em>not</em> thread-safe.</p> 
- *
- * @deprecated use the equivalent class defined in the new <tt>queryparser</tt> project, 
- * 				currently located in contrib: org.apache.lucene.queryParser.original.LuceneQueryParserHelper
- *
+ * 
+ * <p><b>NOTE</b>: there is a new QueryParser in contrib, which matches
+ * the same syntax as this class, but is more modular,
+ * enabling substantial customization to how a query is created.
  */
 public class QueryParser {
 

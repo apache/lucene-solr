@@ -96,10 +96,11 @@ import org.apache.lucene.util.Parameter;
  * use a different method for date conversion.
  * </p>
  *
- * <p>Note that QueryParser is <em>not</em> thread-safe.</p>
+ * <p>Note that QueryParser is <em>not</em> thread-safe.</p> 
  * 
- * @deprecated use the equivalent class defined in the new <tt>queryparser</tt> project, 
- * 				currently located in contrib: org.apache.lucene.queryParser.original.OriginalQueryParserHelper
+ * <p><b>NOTE</b>: there is a new QueryParser in contrib, which matches
+ * the same syntax as this class, but is more modular,
+ * enabling substantial customization to how a query is created.
  */
 public class QueryParser implements QueryParserConstants {
 
@@ -1590,6 +1591,16 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
+  private boolean jj_3_1() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_2()) {
+    jj_scanpos = xsp;
+    if (jj_3R_3()) return true;
+    }
+    return false;
+  }
+
   private boolean jj_3R_3() {
     if (jj_scan_token(STAR)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -1599,16 +1610,6 @@ public class QueryParser implements QueryParserConstants {
   private boolean jj_3R_2() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
-    return false;
-  }
-
-  private boolean jj_3_1() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_2()) {
-    jj_scanpos = xsp;
-    if (jj_3R_3()) return true;
-    }
     return false;
   }
 
