@@ -122,7 +122,12 @@ public class SolrInputDocument implements Map<String,SolrInputField>, Iterable<S
   }
 
   /**
-   * Remove all fields and boosts from the document
+   * Adds a field with the given name, value and boost.  If a field with the name already exists, then it is updated to
+   * the new value and boost.
+   *
+   * @param name Name of the field to add
+   * @param value Value of the field
+   * @param boost Boost value for the field
    */
   public void addField(String name, Object value, float boost ) 
   {
