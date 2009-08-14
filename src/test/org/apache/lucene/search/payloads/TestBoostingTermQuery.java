@@ -206,14 +206,14 @@ public class TestBoostingTermQuery extends LuceneTestCase {
     CheckHits.checkHitCollector(query, PayloadHelper.NO_PAYLOAD_FIELD, searcher, results);
   }
 
-  // must be static for weight serialization tests 
+  // must be static for weight serialization tests
   static class BoostingSimilarity extends DefaultSimilarity {
-
     // TODO: Remove warning after API has been finalized
-    public float scorePayload(int docId, String fieldName, byte[] payload, int offset, int length) {
+    public float scorePayload(int docId, String fieldName, int start, int end, byte[] payload, int offset, int length) {
       //we know it is size 4 here, so ignore the offset/length
       return payload[0];
     }
+
 
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload

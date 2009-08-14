@@ -1,4 +1,6 @@
 package org.apache.lucene.search.payloads;
+
+import org.apache.lucene.index.Term;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,7 +27,7 @@ package org.apache.lucene.search.payloads;
  **/
 public class AveragePayloadFunction extends PayloadFunction{
 
-  public float currentScore(int docId, String field, int numPayloadsSeen, float currentScore, float currentPayloadScore) {
+  public float currentScore(int docId, String field, int start, int end, int numPayloadsSeen, float currentScore, float currentPayloadScore) {
     return currentPayloadScore + currentScore;
   }
 

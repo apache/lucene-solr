@@ -262,7 +262,7 @@ public class BoostingFunctionTermQueryTest extends LuceneTestCase {
   static class BoostingSimilarity extends DefaultSimilarity {
 
     // TODO: Remove warning after API has been finalized
-    public float scorePayload(int docId, String fieldName, byte[] payload, int offset, int length) {
+    public float scorePayload(int docId, String fieldName, int start, int end, byte[] payload, int offset, int length) {
       //we know it is size 4 here, so ignore the offset/length
       return payload[0];
     }

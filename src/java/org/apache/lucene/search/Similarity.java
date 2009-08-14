@@ -546,7 +546,7 @@ public abstract class Similarity implements Serializable {
    * @param length The length in the array
    * @return An implementation dependent float to be used as a scoring factor
    *
-   * @deprecated See {@link #scorePayload(int, String, byte[], int, int)}
+   * @deprecated See {@link #scorePayload(int, String, int, int, byte[], int, int)}
    */
   //TODO: When removing this, set the default value below to return 1.
   public float scorePayload(String fieldName, byte [] payload, int offset, int length)
@@ -564,13 +564,15 @@ public abstract class Similarity implements Serializable {
    *
    * @param docId The docId currently being scored.  If this value is {@link #NO_DOC_ID_PROVIDED}, then it should be assumed that the PayloadQuery implementation does not provide document information
    * @param fieldName The fieldName of the term this payload belongs to
+   * @param start The start position of the payload
+   * @param end The end position of the payload
    * @param payload The payload byte array to be scored
    * @param offset The offset into the payload array
    * @param length The length in the array
    * @return An implementation dependent float to be used as a scoring factor
    *
    */
-  public float scorePayload(int docId, String fieldName, byte [] payload, int offset, int length)
+  public float scorePayload(int docId, String fieldName, int start, int end, byte [] payload, int offset, int length)
   {
     //TODO: When removing the deprecated scorePayload above, set this to return 1
     return scorePayload(fieldName, payload, offset, length);

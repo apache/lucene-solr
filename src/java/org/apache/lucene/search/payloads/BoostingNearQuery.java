@@ -102,12 +102,12 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
       for (int i = 0; i < subSpans.length; i++) {
         if (subSpans[i] instanceof NearSpansOrdered) {
           if (((NearSpansOrdered) subSpans[i]).isPayloadAvailable()) {
-            processPayloads(((NearSpansOrdered) subSpans[i]).getPayload());
+            processPayloads(((NearSpansOrdered) subSpans[i]).getPayload(), subSpans[i].start(), subSpans[i].end());
           }
           getPayloads(((NearSpansOrdered) subSpans[i]).getSubSpans());
         } else if (subSpans[i] instanceof NearSpansUnordered) {
           if (((NearSpansUnordered) subSpans[i]).isPayloadAvailable()) {
-            processPayloads(((NearSpansUnordered) subSpans[i]).getPayload());
+            processPayloads(((NearSpansUnordered) subSpans[i]).getPayload(), subSpans[i].start(), subSpans[i].end());
           }
           getPayloads(((NearSpansUnordered) subSpans[i]).getSubSpans());
         }
@@ -115,15 +115,19 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
     }
 
     /**
-     * By default, sums the payloads, but can be overridden to do other things.
+     * By default, uses the {@link PayloadFunction} to score the payloads, but can be overridden to do other things.
      *
      * @param payLoads The payloads
+     * @param start The start position of the span being scored
+     * @param end The end position of the span being scored
+     *
+     * @see {@link org.apache.lucene.search.spans.Spans}
      */
-    protected void processPayloads(Collection payLoads) {
+    protected void processPayloads(Collection payLoads, int start, int end) {
       for (Iterator iterator = payLoads.iterator(); iterator.hasNext();) {
         byte[] thePayload = (byte[]) iterator.next();
-        payloadScore = function.currentScore(doc, fieldName, payloadsSeen, payloadScore,
-                similarity.scorePayload(doc, fieldName, thePayload, 0, thePayload.length));
+        payloadScore = function.currentScore(doc, fieldName, start, end, payloadsSeen, payloadScore,
+                similarity.scorePayload(doc, fieldName, spans.start(), spans.end(), thePayload, 0, thePayload.length));
         ++payloadsSeen;
       }
     }

@@ -16,6 +16,8 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.Term;
+
 import java.io.Serializable;
 
 
@@ -37,13 +39,17 @@ public abstract class PayloadFunction implements Serializable {
   /**
    * Calculate the score up to this point for this doc and field
    * @param docId The current doc
-   * @param field The current field
+   * @param field The field
+   * @param start The start position of the matching Span
+   * @param end The end position of the matching Span
    * @param numPayloadsSeen The number of payloads seen so far
    * @param currentScore The current score so far
    * @param currentPayloadScore The score for the current payload
-   * @return The new current score
+   * @return The new current Score
+   *
+   * @see org.apache.lucene.search.spans.Spans
    */
-  public abstract float currentScore(int docId, String field, int numPayloadsSeen, float currentScore, float currentPayloadScore);
+  public abstract float currentScore(int docId, String field, int start, int end, int numPayloadsSeen, float currentScore, float currentPayloadScore);
 
   /**
    * Calculate the final score for all the payloads seen so far for this doc/field

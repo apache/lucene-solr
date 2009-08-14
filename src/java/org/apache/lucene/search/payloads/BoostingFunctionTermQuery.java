@@ -106,8 +106,8 @@ public class BoostingFunctionTermQuery extends SpanTermQuery  implements Payload
       protected void processPayload(Similarity similarity) throws IOException {
         if (positions.isPayloadAvailable()) {
           payload = positions.getPayload(payload, 0);
-          payloadScore = function.currentScore(doc, term.field(), payloadsSeen, payloadScore,
-                  similarity.scorePayload(doc, term.field(), payload, 0, positions.getPayloadLength()));
+          payloadScore = function.currentScore(doc, term.field(), spans.start(), spans.end(), payloadsSeen, payloadScore,
+                  similarity.scorePayload(doc, term.field(), spans.start(), spans.end(), payload, 0, positions.getPayloadLength()));
           payloadsSeen++;
 
         } else {
