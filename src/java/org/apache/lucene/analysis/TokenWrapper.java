@@ -122,6 +122,7 @@ final class TokenWrapper extends AttributeImpl
   }
   
   // PayloadAttribute
+  
   public Payload getPayload() {
     return delegate.getPayload();
   }
@@ -130,13 +131,11 @@ final class TokenWrapper extends AttributeImpl
     delegate.setPayload(payload);
   }
   
-  // TokenAttribute
-  
+  // AttributeImpl
+
   public void clear() {
     delegate.clear();
   }
-
-  // AttributeImpl
 
   public String toString() {
     return delegate.toString();

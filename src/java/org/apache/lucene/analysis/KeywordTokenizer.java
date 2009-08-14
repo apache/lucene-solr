@@ -49,6 +49,7 @@ public class KeywordTokenizer extends Tokenizer {
   
   public final boolean incrementToken() throws IOException {
     if (!done) {
+      clearAttributes();
       done = true;
       int upto = 0;
       char[] buffer = termAtt.termBuffer();

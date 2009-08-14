@@ -72,6 +72,7 @@ public class NGramTokenizer extends Tokenizer {
 
   /** Returns the next token in the stream, or null at EOS. */
   public final boolean incrementToken() throws IOException {
+    clearAttributes();
     if (!started) {
       started = true;
       gramSize = minGram;

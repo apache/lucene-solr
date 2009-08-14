@@ -343,7 +343,7 @@ public class PatternAnalyzer extends Analyzer {
 
     public final boolean incrementToken() {
       if (matcher == null) return false;
-      
+      clearAttributes();
       while (true) { // loop takes care of leading and trailing boundary cases
         int start = pos;
         int end;
@@ -401,6 +401,7 @@ public class PatternAnalyzer extends Analyzer {
     }
 
     public boolean incrementToken() {
+      clearAttributes();
       // cache loop instance vars (performance)
       String s = str;
       int len = s.length();

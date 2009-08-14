@@ -117,7 +117,7 @@ import org.apache.lucene.util.AttributeImpl;
   </ul>
   A few things to note:
   <ul>
-  <li>clear() initializes most of the fields to default values, but not startOffset, endOffset and type.</li>
+  <li>clear() initializes all of the fields to default values. This was changed in contrast to Lucene 2.4, but should affect no one.</li>
   <li>Because <code>TokenStreams</code> can be chained, one cannot assume that the <code>Token's</code> current type is correct.</li>
   <li>The startOffset and endOffset represent the start and offset in the source text. So be careful in adjusting them.</li>
   <li>When caching a reusable token, clone it. When injecting a cached token into a stream that can be reset, clone it again.</li>
@@ -622,9 +622,9 @@ public class Token extends AttributeImpl
     return sb.toString();
   }
 
-  /** Resets the term text, payload, flags, and positionIncrement to default.
-   * Other fields such as startOffset, endOffset and the token type are
-   * not reset since they are normally overwritten by the tokenizer. */
+  /** Resets the term text, payload, flags, and positionIncrement,
+   * startOffset, endOffset and token type to default.
+   */
   public void clear() {
     payload = null;
     // Leave termBuffer to allow re-use
@@ -632,8 +632,8 @@ public class Token extends AttributeImpl
     termText = null;
     positionIncrement = 1;
     flags = 0;
-    // startOffset = endOffset = 0;
-    // type = DEFAULT_TYPE;
+    startOffset = endOffset = 0;
+    type = DEFAULT_TYPE;
   }
 
   public Object clone() {
@@ -715,6 +715,8 @@ public class Token extends AttributeImpl
     payload = null;
     positionIncrement = 1;
     flags = 0;
+    startOffset = endOffset = 0;
+    type = DEFAULT_TYPE;
   }
 
   /** Shorthand for calling {@link #clear},

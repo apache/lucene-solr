@@ -184,6 +184,7 @@ public class WikipediaTokenizer extends Tokenizer {
       restoreState(state);
       return true;
     }
+    clearAttributes();
     int tokenType = scanner.getNextToken();
 
     if (tokenType == WikipediaTokenizerImpl.YYEOF) {

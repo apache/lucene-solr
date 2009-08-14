@@ -123,6 +123,7 @@ public final class CJKTokenizer extends Tokenizer {
      *
      */
     public boolean incrementToken() throws IOException {
+        clearAttributes();
         /** how many character(s) has been stored in buffer */
 
         while(true) { // loop until we find a non-empty token

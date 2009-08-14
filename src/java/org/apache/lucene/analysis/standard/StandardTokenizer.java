@@ -148,6 +148,7 @@ public class StandardTokenizer extends Tokenizer {
    * @see org.apache.lucene.analysis.TokenStream#next()
    */
   public final boolean incrementToken() throws IOException {
+    clearAttributes();
     int posIncr = 1;
 
     while(true) {

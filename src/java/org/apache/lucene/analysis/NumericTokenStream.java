@@ -184,6 +184,7 @@ public final class NumericTokenStream extends TokenStream {
     if (shift >= valSize)
       return false;
 
+    clearAttributes();
     final char[] buffer;
     switch (valSize) {
       case 64:

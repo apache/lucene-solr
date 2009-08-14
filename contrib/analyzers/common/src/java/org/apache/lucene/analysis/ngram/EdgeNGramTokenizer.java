@@ -123,6 +123,7 @@ public class EdgeNGramTokenizer extends Tokenizer {
 
   /** Returns the next token in the stream, or null at EOS. */
   public final boolean incrementToken() throws IOException {
+    clearAttributes();
     // if we are just starting, read the whole input
     if (!started) {
       started = true;

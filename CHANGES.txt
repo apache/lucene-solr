@@ -171,6 +171,13 @@ Changes in runtime behavior
     reusableTokenStream.  This is now fixed, such that if
     reusableTokenStream is invoked on such a subclass, that method
     will forcefully fallback to tokenStream.  (Mike McCandless)
+    
+12. LUCENE-1801: Token.clear() and Token.clearNoTermBuffer() now also clear
+    startOffset, endOffset and type. This should normally affect no
+    Tokenizer chains, as Tokenizers normally always set these three values.
+    This change was made to be conform to the new AttributeImpl.clear() and
+    AttributeSource.clearAttributes() to work identical for Token as one for all
+    AttributeImpl and the 6 separate AttributeImpls. (Uwe Schindler, Michael Busch)
 
 API Changes
 
@@ -468,6 +475,10 @@ Bug fixes
 22. LUCENE-1805: CloseableThreadLocal did not allow a null Object in get(), 
     although it does allow it in set(Object). Fix get() to not assert the object
     is not null. (Shai Erera via Mike McCandless)
+    
+23. LUCENE-1801: Changed all Tokenizers or TokenStreams in core/contrib)
+    that are the source of Tokens to always call
+    AttributeSource.clearAttributes() first. (Uwe Schindler)
 
 New features
 

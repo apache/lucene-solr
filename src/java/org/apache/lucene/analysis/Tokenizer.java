@@ -26,12 +26,16 @@ import java.io.IOException;
   <p>
   This is an abstract class.
   <p>
-  NOTE: To use the old API subclasses must override {@link #next(Token)}.
-  It's also OK to instead override {@link #next()} but that
-  method is slower compared to {@link #next(Token)}.
+  NOTE: subclasses must override 
+  {@link #incrementToken()} if the new TokenStream API is used
+  and {@link #next(Token)} or {@link #next()} if the old
+  TokenStream API is used.
   <p>
-  NOTE: subclasses overriding {@link #next(Token)} must  
-  call {@link Token#clear()}.
+  NOTE: Subclasses overriding {@link #incrementToken()} must
+  call {@link AttributeSource#clearAttributes()} before
+  setting attributes.
+  Subclasses overriding {@link #next(Token)} must call
+  {@link Token#clear()} before setting Token attributes. 
  */
 
 public abstract class Tokenizer extends TokenStream {
@@ -85,6 +89,9 @@ public abstract class Tokenizer extends TokenStream {
     this.input = CharReader.get(input);
   }
 
+  /** Expert: Reset the tokenizer to a new CharStream.  Typically, an
+   *  analyzer (in its reusableTokenStream method) will use
+   *  this to re-use a previously created tokenizer. */
   public void reset(CharStream input) throws IOException {
     this.input = input;
   }

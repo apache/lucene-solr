@@ -54,6 +54,7 @@ public final class SentenceTokenizer extends Tokenizer {
   }
 
   public boolean incrementToken() throws IOException {
+    clearAttributes();
     buffer.setLength(0);
     int ci;
     char ch, pch;

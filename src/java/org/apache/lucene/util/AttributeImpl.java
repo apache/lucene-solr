@@ -30,8 +30,9 @@ import java.lang.reflect.Modifier;
  */
 public abstract class AttributeImpl implements Cloneable, Serializable {  
   /**
-   * Clears the values in this Attribute and resets it to its 
-   * default value.
+   * Clears the values in this AttributeImpl and resets it to its 
+   * default value. If this implementation implements more than one Attribute interface
+   * it clears all.
    */
   public abstract void clear();
   

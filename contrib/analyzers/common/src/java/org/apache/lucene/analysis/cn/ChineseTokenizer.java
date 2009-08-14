@@ -96,6 +96,7 @@ public final class ChineseTokenizer extends Tokenizer {
     }
 
     public boolean incrementToken() throws IOException {
+        clearAttributes();
 
         length = 0;
         start = offset;

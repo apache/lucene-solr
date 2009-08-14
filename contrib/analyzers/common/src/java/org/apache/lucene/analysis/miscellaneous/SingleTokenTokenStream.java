@@ -64,6 +64,7 @@ public class SingleTokenTokenStream extends TokenStream {
     
     Token clone = (Token) singleToken.clone();
     
+    clearAttributes();
     termAtt.setTermBuffer(clone.termBuffer(), 0, clone.termLength());
     offsetAtt.setOffset(clone.startOffset(), clone.endOffset());
     flagsAtt.setFlags(clone.getFlags());
