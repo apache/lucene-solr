@@ -98,7 +98,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             , "//long[@name='count'][.='3']"
             , "//long[@name='missing'][.='1']"
             , "//double[@name='sumOfSquares'][.='2100.0']"
-            , "//double[@name='mean'][.='--23.333333333333332']"
+            , "//double[@name='mean'][.='-23.333333333333332']"
             , "//double[@name='stddev'][.='15.275252316519467']"
     );
   }
