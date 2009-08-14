@@ -97,7 +97,7 @@ public class DoubleMetaphoneFilterTest extends TestCase {
         new String[] { "12345", "#$%@#^%&" });
     TokenStream filter = new DoubleMetaphoneFilter(stream, 8, false);
 
-    assertNull(filter.next(new Token()));
+    assertEquals("12345", filter.next(new Token()).term());
     
     // should have something after the stream
     stream = new IterTokenStream(
