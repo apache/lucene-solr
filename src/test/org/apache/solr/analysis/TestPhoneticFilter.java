@@ -86,12 +86,12 @@ public class TestPhoneticFilter extends BaseTokenTestCase {
 
     PhoneticFilter filter = new PhoneticFilter( 
         new IterTokenStream(stream.iterator()), enc, "text", inject );
-    
-    for( Token t : output ) {
-      Token got = filter.next(t);
-      // System.out.println("##### got="+got);
 
-      assertEquals( new String(t.termBuffer(), 0, t.termLength()), new String(got.termBuffer(), 0, got.termLength()));
+    Token got = new Token();
+    for( Token t : output ) {
+      got = filter.next(got);
+      // System.out.println("##### expect=" + t + " got="+got);
+      assertEquals( t.term(), got.term());
     }
     assertNull( filter.next() );  // no more tokens
   }
