@@ -54,9 +54,27 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
    * defined to use a different analyzer will use the one provided here.
    */
   public PerFieldAnalyzerWrapper(Analyzer defaultAnalyzer) {
+    this(defaultAnalyzer, null);
+  }
+  
+  /**
+   * Constructs with default analyzer and a map of analyzers to use for 
+   * specific fields.
+   *
+   * @param defaultAnalyzer Any fields not specifically
+   * defined to use a different analyzer will use the one provided here.
+   * @param fieldAnalyzers a Map (String field name to the Analyzer) to be 
+   * used for those fields 
+   */
+  public PerFieldAnalyzerWrapper(Analyzer defaultAnalyzer, 
+      Map /*<String, Analyzer>*/ fieldAnalyzers) {
     this.defaultAnalyzer = defaultAnalyzer;
+    if (fieldAnalyzers != null) {
+      analyzerMap.putAll(fieldAnalyzers);
+    }
     setOverridesTokenStreamMethod(PerFieldAnalyzerWrapper.class);
   }
+  
 
   /**
    * Defines an analyzer to use for the specified field.
