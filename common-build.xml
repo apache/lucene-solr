@@ -53,6 +53,9 @@
     <pathelement location="${junit-location.jar}"/>
   </path>
 
+  <!-- default arguments to pass to JVM executing tests -->
+  <property name="args" value=""/>
+
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
   <property name="javac.source" value="1.4"/>
@@ -388,6 +391,8 @@
 	      <assertions>
 	        <enable package="org.apache.lucene"/>
 	      </assertions>
+	      
+	      <jvmarg line="${args}"/>
 	
 	      <!-- allow tests to control debug prints -->
 	      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
