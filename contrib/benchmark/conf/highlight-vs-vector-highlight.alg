@@ -35,7 +35,10 @@ content.source=org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource
 docs.file=temp/enwiki-20070527-pages-articles.xml
 
 query.maker=org.apache.lucene.benchmark.byTask.feeds.EnwikiQueryMaker
-#query.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker
+enwikiQueryMaker.disableSpanQueries=true
+
+max.field.length=2147483647
+highlighter.maxDocCharsToAnalyze=2147483647
 
 # task at this depth or less would print when they start
 task.max.depth.log=2

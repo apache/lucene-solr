@@ -127,7 +127,8 @@ public class EnwikiQueryMaker extends AbstractQueryMaker implements
 
     List queryList = new ArrayList(20);
     queryList.addAll(Arrays.asList(STANDARD_QUERIES));
-    queryList.addAll(Arrays.asList(getPrebuiltQueries(DocMaker.BODY_FIELD)));
+    if(!config.get("enwikiQueryMaker.disableSpanQueries", false))
+      queryList.addAll(Arrays.asList(getPrebuiltQueries(DocMaker.BODY_FIELD)));
     return createQueries(queryList, anlzr);
   }
 

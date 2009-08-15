@@ -67,6 +67,7 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
   protected int maxFrags = 2;
   protected Set paramFields = Collections.EMPTY_SET;
   protected Highlighter highlighter;
+  protected int maxDocCharsToAnalyze;
 
   public SearchTravRetHighlightTask(PerfRunData runData) {
     super(runData);
@@ -79,6 +80,7 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
     if (data.getConfig().get("doc.stored", false) == false){
       throw new Exception("doc.stored must be set to true");
     }
+    maxDocCharsToAnalyze = data.getConfig().get("highlighter.maxDocCharsToAnalyze", Highlighter.DEFAULT_MAX_CHARS_TO_ANALYZE);
   }
 
   public boolean withRetrieve() {
@@ -91,6 +93,7 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
   
   protected BenchmarkHighlighter getBenchmarkHighlighter(Query q){
     highlighter = new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(q));
+    highlighter.setMaxDocCharsToAnalyze(maxDocCharsToAnalyze);
     return new BenchmarkHighlighter(){
       public int doHighlight(IndexReader reader, int doc, String field,
           Document document, Analyzer analyzer, String text) throws Exception {
