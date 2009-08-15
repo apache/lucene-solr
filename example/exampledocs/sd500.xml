@@ -30,4 +30,5 @@
   <field name="price">329.95</field>
   <field name="popularity">7</field>
   <field name="inStock">true</field>
+  <field name="timestamp">NOW</field>
 </doc></add>

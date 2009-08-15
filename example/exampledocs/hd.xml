@@ -27,6 +27,7 @@
   <field name="price">92</field>
   <field name="popularity">6</field>
   <field name="inStock">true</field>
+  <field name="timestamp">NOW</field>
 </doc>
 
 <doc>
@@ -41,6 +42,7 @@
   <field name="price">350</field>
   <field name="popularity">6</field>
   <field name="inStock">true</field>
+  <field name="timestamp">NOW</field>
 </doc>
 </add>
 
