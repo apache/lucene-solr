@@ -433,11 +433,10 @@ public class WeightedSpanTermExtractor {
   static private class PositionCheckingMap extends HashMap {
 
     public void putAll(Map m) {
-      Iterator it = m.keySet().iterator();
+      Iterator it = m.entrySet().iterator();
       while (it.hasNext()) {
-        Object key = it.next();
-        Object val = m.get(key);
-        this.put(key, val);
+        Map.Entry entry = (java.util.Map.Entry) it.next();
+        this.put(entry.getKey(), entry.getValue());
       }
     }
 
