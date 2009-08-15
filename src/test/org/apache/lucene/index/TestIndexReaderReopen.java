@@ -702,7 +702,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
           modifier.close();
         } else if (i % 3 == 1) {
           IndexReader modifier = IndexReader.open(dir);
-          modifier.deleteDocument(i);
+          modifier.deleteDocument(i % modifier.maxDoc());
           modifier.close();
         } else {
           IndexWriter modifier = new IndexWriter(dir, new StandardAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
