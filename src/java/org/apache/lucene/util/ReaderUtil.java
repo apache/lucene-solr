@@ -45,9 +45,9 @@ public class ReaderUtil {
   /**
    * Returns sub IndexReader that contains the given document id.
    *    
-   * @param doc
-   * @param reader
-   * @return
+   * @param doc id of document
+   * @param reader parent reader
+   * @return sub reader of parent which contains the specified doc id
    */
   public static IndexReader subReader(int doc, IndexReader reader) {
     List subReadersList = new ArrayList();
@@ -66,9 +66,9 @@ public class ReaderUtil {
   /**
    * Returns sub-reader subIndex from reader.
    * 
-   * @param reader
-   * @param subIndex
-   * @return
+   * @param reader parent reader
+   * @param subIndex index of desired sub reader
+   * @return the subreader at subINdex
    */
   public static IndexReader subReader(IndexReader reader, int subIndex) {
     List subReadersList = new ArrayList();

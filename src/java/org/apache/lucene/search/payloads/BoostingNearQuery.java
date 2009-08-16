@@ -121,7 +121,7 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
      * @param start The start position of the span being scored
      * @param end The end position of the span being scored
      *
-     * @see {@link org.apache.lucene.search.spans.Spans}
+     * @see Spans
      */
     protected void processPayloads(Collection payLoads, int start, int end) {
       for (Iterator iterator = payLoads.iterator(); iterator.hasNext();) {

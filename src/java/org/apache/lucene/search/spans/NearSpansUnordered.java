@@ -220,7 +220,7 @@ public class NearSpansUnordered extends Spans {
   // TODO: Remove warning after API has been finalized
   /**
    * WARNING: The List is not necessarily in order of the the positions
-   * @return
+   * @return Collection of <code>byte[]</code> payloads
    * @throws IOException
    */
   public Collection/*<byte[]>*/ getPayload() throws IOException {

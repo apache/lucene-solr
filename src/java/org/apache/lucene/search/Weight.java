@@ -41,7 +41,7 @@ import org.apache.lucene.index.IndexReader;
  * query.
  * <li>The query normalization factor is passed to {@link #normalize(float)}. At
  * this point the weighting is complete.
- * <li>A <code>Scorer</code> is constructed by {@link #scorer(IndexReader)}.
+ * <li>A <code>Scorer</code> is constructed by {@link #scorer(IndexReader,boolean,boolean)}.
  * </ol>
  * 
  * @since 2.9
@@ -51,8 +51,8 @@ public abstract class Weight implements Serializable {
   /**
    * An explanation of the score computation for the named document.
    * 
-   * Until 3.0, null may be passed in situations where the {@Searcher} is not
-   * available, so impls must only use {@Searcher} to generate optional 
+   * Until 3.0, null may be passed in situations where the Searcher is not
+   * available, so impls must only use Searcher to generate optional 
    * explain info.
    * 
    * @param searcher over the index or null
