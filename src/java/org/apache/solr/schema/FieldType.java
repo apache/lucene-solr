@@ -23,6 +23,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
@@ -286,54 +288,37 @@ public abstract class FieldType extends FieldProperties {
     return toInternal(val);
   }
 
-  /*********
-  // default analyzer for non-text fields.
-  // Only reads 80 bytes, but that should be plenty for a single value.
-  public Analyzer getAnalyzer() {
-    if (analyzer != null) return analyzer;
-
-    // the default analyzer...
-    return new Analyzer() {
-      public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new Tokenizer(reader) {
-          final char[] cbuf = new char[80];
-          public Token next() throws IOException {
-            int n = input.read(cbuf,0,80);
-            if (n<=0) return null;
-            String s = toInternal(new String(cbuf,0,n));
-            return new Token(s,0,n);
-          };
-        };
-      }
-    };
-  }
-  **********/
-
-
   /**
    * Default analyzer for types that only produce 1 verbatim token...
    * A maximum size of chars to be read must be specified
    */
-  protected final class DefaultAnalyzer extends SolrAnalyzer {
+  protected class DefaultAnalyzer extends SolrAnalyzer {
     final int maxChars;
 
     DefaultAnalyzer(int maxChars) {
       this.maxChars=maxChars;
     }
 
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new Tokenizer(reader) {
-        char[] cbuf = new char[maxChars];
-        public Token next() throws IOException {
+    public TokenStreamInfo getStream(String fieldName, Reader reader) {
+      Tokenizer ts = new Tokenizer(reader) {
+        final char[] cbuf = new char[maxChars];
+        final TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+        final OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+        @Override
+        public boolean incrementToken() throws IOException {
+          clearAttributes();
           int n = input.read(cbuf,0,maxChars);
-          if (n<=0) return null;
-          String s = toInternal(new String(cbuf,0,n));  // virtual func on parent
-          return new Token(s,0,n);
-        };
+          if (n<=0) return false;
+          String s = toInternal(new String(cbuf,0,n));
+          termAtt.setTermBuffer(s);
+          offsetAtt.setOffset(0,n);
+          return true;
+        }       
       };
+
+      return new TokenStreamInfo(ts, ts);
     }
   }
-
 
   /**
    * Analyzer set by schema for text types to use when indexing fields

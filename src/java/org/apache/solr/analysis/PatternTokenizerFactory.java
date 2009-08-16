@@ -20,6 +20,10 @@ package org.apache.solr.analysis;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrConfig;
 
@@ -111,6 +115,31 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
         
       final Iterator<Token> iter = tokens.iterator();
       return new TokenStream() {
+        @Override
+        public boolean incrementToken() throws IOException {
+          return super.incrementToken();
+        }
+
+        @Override
+        public void end() throws IOException {
+          super.end();
+        }
+
+        @Override
+        public Token next(Token reusableToken) throws IOException {
+          return super.next(reusableToken);
+        }
+
+        @Override
+        public void reset() throws IOException {
+          super.reset();
+        }
+
+        @Override
+        public void close() throws IOException {
+          super.close();
+        }
+
         @Override
         public Token next() throws IOException {
           if( iter.hasNext() ) {

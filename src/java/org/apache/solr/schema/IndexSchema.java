@@ -360,6 +360,11 @@ public final class IndexSchema {
     }
 
     @Override
+    public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
+      return getAnalyzer(fieldName).reusableTokenStream(fieldName,reader);
+    }
+
+    @Override
     public int getPositionIncrementGap(String fieldName) {
       return getAnalyzer(fieldName).getPositionIncrementGap(fieldName);
     }

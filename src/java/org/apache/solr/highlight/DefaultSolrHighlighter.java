@@ -286,7 +286,9 @@ public class DefaultSolrHighlighter extends SolrHighlighter
             }
             catch (IllegalArgumentException e) {
               // fall back to anaylzer
-              tstream = new TokenOrderingFilter(schema.getAnalyzer().tokenStream(fieldName, new StringReader(docTexts[j])), 10);
+              TokenStream ts = schema.getAnalyzer().reusableTokenStream(fieldName, new StringReader(docTexts[j]));
+              ts.reset();
+              tstream = new TokenOrderingFilter(ts, 10);
             }
              
             Highlighter highlighter;

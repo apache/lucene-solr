@@ -54,7 +54,8 @@ public class PhoneticFilter extends TokenFilter
   @Override
   public boolean incrementToken() throws IOException {
     if( save != null ) {
-      clearAttributes(); restoreState(save);
+      // clearAttributes();  // not currently necessary
+      restoreState(save);
       save = null;
       return true;
     }

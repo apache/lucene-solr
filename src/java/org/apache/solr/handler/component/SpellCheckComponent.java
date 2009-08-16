@@ -160,7 +160,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
   private Collection<Token> getTokens(String q, Analyzer analyzer) throws IOException {
     Collection<Token> result = new ArrayList<Token>();
     Token token = null;
-    TokenStream ts = analyzer.tokenStream("", new StringReader(q));
+    TokenStream ts = analyzer.reusableTokenStream("", new StringReader(q));
+    ts.reset();
     while ((token = ts.next()) != null){
       result.add(token);
     }

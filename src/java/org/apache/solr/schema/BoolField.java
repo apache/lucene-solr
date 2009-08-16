@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.request.XMLWriter;
 import org.apache.solr.request.TextResponseWriter;
@@ -48,28 +49,43 @@ public class BoolField extends FieldType {
   }
 
   // avoid instantiating every time...
-  protected final static Token TRUE_TOKEN = new Token("T",0,1);
-  protected final static Token FALSE_TOKEN = new Token("F",0,1);
+  protected final static char[] TRUE_TOKEN = {'T'};
+  protected final static char[] FALSE_TOKEN = {'F'};
 
   ////////////////////////////////////////////////////////////////////////
   // TODO: look into creating my own queryParser that can more efficiently
   // handle single valued non-text fields (int,bool,etc) if needed.
 
-
   protected final static Analyzer boolAnalyzer = new SolrAnalyzer() {
-      public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new Tokenizer(reader) {
-          boolean done=false;
-          public Token next() throws IOException {
-            if (done) return null;
-            done=true;
-            int ch = input.read();
-            if (ch==-1) return null;
-            return (ch=='t' || ch=='T' || ch=='1') ? TRUE_TOKEN : FALSE_TOKEN;
-          }
-        };
-      }
-    };
+    public TokenStreamInfo getStream(String fieldName, Reader reader) {
+      Tokenizer tokenizer = new Tokenizer(reader) {
+        final TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+        boolean done = false;
+
+        @Override
+        public void reset(Reader input) throws IOException {
+          done = false;
+          super.reset(input);
+        }
+
+        @Override
+        public boolean incrementToken() throws IOException {
+          clearAttributes();
+          if (done) return false;
+          done = true;
+          int ch = input.read();
+          if (ch==-1) return false;
+          termAtt.setTermBuffer(
+                  ((ch=='t' || ch=='T' || ch=='1') ? TRUE_TOKEN : FALSE_TOKEN)
+                  ,0,1);
+          return true;
+        }
+      };
+
+      return new TokenStreamInfo(tokenizer, tokenizer);
+    }
+  };
+
 
   public Analyzer getAnalyzer() {
     return boolAnalyzer;

@@ -17,10 +17,8 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -190,52 +188,53 @@ public class CapitalizationFilterFactory extends BaseTokenFilterFactory {
  * This is package protected since it is not useful without the Factory
  */
 class CapitalizationFilter extends TokenFilter {
-  protected final CapitalizationFilterFactory factory;
+  private final CapitalizationFilterFactory factory;
+  private final TermAttribute termAtt;
 
   public CapitalizationFilter(TokenStream in, final CapitalizationFilterFactory factory) {
     super(in);
     this.factory = factory;
+    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
   @Override
-  public Token next(Token token) throws IOException {
-    Token t = input.next(token);
-    if (t != null) {
+  public boolean incrementToken() throws IOException {
+    if (!input.incrementToken()) return false;
 
-      char[] termBuffer = t.termBuffer();
-      int termBufferLength = t.termLength();
-      char[] backup = null;
-      if (factory.maxWordCount < CapitalizationFilterFactory.DEFAULT_MAX_WORD_COUNT) {
-        //make a backup in case we exceed the word count
-        System.arraycopy(termBuffer, 0, backup, 0, termBufferLength);
-      }
-      if (termBufferLength < factory.maxTokenLength) {
-        int wordCount = 0;
+    char[] termBuffer = termAtt.termBuffer();
+    int termBufferLength = termAtt.termLength();
+    char[] backup = null;
+    if (factory.maxWordCount < CapitalizationFilterFactory.DEFAULT_MAX_WORD_COUNT) {
+      //make a backup in case we exceed the word count
+      System.arraycopy(termBuffer, 0, backup, 0, termBufferLength);
+    }
+    if (termBufferLength < factory.maxTokenLength) {
+      int wordCount = 0;
 
-        int lastWordStart = 0;
-        for (int i = 0; i < termBufferLength; i++) {
-          char c = termBuffer[i];
-          if (c <= ' ' || c == '.') {
-            int len = i - lastWordStart;
-            if (len > 0) {
-              factory.processWord(termBuffer, lastWordStart, len, wordCount++);
-              lastWordStart = i + 1;
-              i++;
-            }
+      int lastWordStart = 0;
+      for (int i = 0; i < termBufferLength; i++) {
+        char c = termBuffer[i];
+        if (c <= ' ' || c == '.') {
+          int len = i - lastWordStart;
+          if (len > 0) {
+            factory.processWord(termBuffer, lastWordStart, len, wordCount++);
+            lastWordStart = i + 1;
+            i++;
           }
         }
+      }
 
-        // process the last word
-        if (lastWordStart < termBufferLength) {
-          factory.processWord(termBuffer, lastWordStart, termBufferLength - lastWordStart, wordCount++);
-        }
+      // process the last word
+      if (lastWordStart < termBufferLength) {
+        factory.processWord(termBuffer, lastWordStart, termBufferLength - lastWordStart, wordCount++);
+      }
 
-        if (wordCount > factory.maxWordCount) {
-          t.setTermBuffer(backup, 0, termBufferLength);
-        }
+      if (wordCount > factory.maxWordCount) {
+        termAtt.setTermBuffer(backup, 0, termBufferLength);
       }
     }
-    return t;
+
+    return true;
   }
 
 }

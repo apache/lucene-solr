@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
+import org.tartarus.snowball.SnowballProgram;
 
 import java.io.IOException;
 import java.io.File;
@@ -75,50 +76,9 @@ public class EnglishPorterFilterFactory extends BaseTokenFilterFactory implement
  * English Porter2 filter that doesn't use reflection to
  * adapt lucene to the snowball stemmer code.
  */
-class EnglishPorterFilter extends TokenFilter {
-  private final CharArraySet protWords;
-  private org.tartarus.snowball.ext.EnglishStemmer stemmer;
-
+@Deprecated
+class EnglishPorterFilter extends SnowballPorterFilter {
   public EnglishPorterFilter(TokenStream source, CharArraySet protWords) {
-    super(source);
-    this.protWords = protWords;
-    stemmer = new org.tartarus.snowball.ext.EnglishStemmer();
-  }
-
-
-  /**
-   * the original code from lucene sandbox
-   * public final Token next() throws IOException {
-   * Token token = input.next();
-   * if (token == null)
-   * return null;
-   * stemmer.setCurrent(token.termText());
-   * try {
-   * stemMethod.invoke(stemmer, EMPTY_ARGS);
-   * } catch (Exception e) {
-   * throw new RuntimeException(e.toString());
-   * }
-   * return new Token(stemmer.getCurrent(),
-   * token.startOffset(), token.endOffset(), token.type());
-   * }
-   */
-
-  @Override
-  public Token next(Token token) throws IOException {
-    Token result = input.next(token);
-    if (result != null) {
-      char[] termBuffer = result.termBuffer();
-      int len = result.termLength();
-      // if protected, don't stem.  use this to avoid stemming collisions.
-      if (protWords != null && protWords.contains(termBuffer, 0, len)) {
-        return result;
-      }
-      stemmer.setCurrent(new String(termBuffer, 0, len));//ugh, wish the Stemmer took a char array
-      stemmer.stem();
-      String newstr = stemmer.getCurrent();
-      result.setTermBuffer(newstr.toCharArray(), 0, newstr.length());
-    }
-    return result;
+    super(source, new org.tartarus.snowball.ext.EnglishStemmer(), protWords);
   }
 }
-

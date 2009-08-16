@@ -205,4 +205,9 @@ public class SynonymFilter extends TokenFilter {
     return result;
   }
 
+  @Override
+  public void reset() throws IOException {
+    input.reset();
+    replacement = null;
+  }
 }

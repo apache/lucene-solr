@@ -20,6 +20,8 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
 import java.io.IOException;
 
@@ -31,20 +33,24 @@ import java.io.IOException;
 public final class TrimFilter extends TokenFilter {
 
   final boolean updateOffsets;
+  private final TermAttribute termAtt;
+  private final OffsetAttribute offsetAtt;
+
 
   public TrimFilter(TokenStream in, boolean updateOffsets) {
     super(in);
     this.updateOffsets = updateOffsets;
+
+    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
   }
 
   @Override
-  public final Token next(Token in) throws IOException {
-    Token t = input.next(in);
-    if (null == t || null == t.termBuffer() || t.termLength() == 0){
-      return t;
-    }
-    char[] termBuffer = t.termBuffer();
-    int len = t.termLength();
+  public boolean incrementToken() throws IOException {
+    if (!input.incrementToken()) return false;
+
+    char[] termBuffer = termAtt.termBuffer();
+    int len = termAtt.termLength();
     int start = 0;
     int end = 0;
     int endOff = 0;
@@ -59,24 +65,17 @@ public final class TrimFilter extends TokenFilter {
     }
     if (start > 0 || end < len) {
       if (start < end) {
-        t.setTermBuffer(t.termBuffer(), start, (end - start));
+        termAtt.setTermBuffer(termBuffer, start, (end - start));
       } else {
-        t.setTermLength(0);
+        termAtt.setTermLength(0);
       }
       if (updateOffsets) {
-        t.setStartOffset(t.startOffset() + start);
-        if (start < end) {
-          t.setEndOffset(t.endOffset() - endOff);
-        } //else if end is less than, start, then the term length is 0, so, no need to bother w/ the end offset
+        int newStart = offsetAtt.startOffset()+start;
+        int newEnd = offsetAtt.endOffset() - (start<end ? endOff:0);
+        offsetAtt.setOffset(newStart, newEnd);
       }
-      /*t = new Token( t.termText().substring( start, end ),
-     t.startOffset()+start,
-     t.endOffset()-endOff,
-     t.type() );*/
-
-
     }
 
-    return t;
+    return true;
   }
 }

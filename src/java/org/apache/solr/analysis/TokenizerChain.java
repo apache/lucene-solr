@@ -20,8 +20,10 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.CharReader;
+import org.apache.lucene.analysis.Tokenizer;
 
 import java.io.Reader;
+import java.io.IOException;
 
 /**
  * @version $Id$
@@ -50,23 +52,14 @@ public class TokenizerChain extends SolrAnalyzer {
   public TokenizerFactory getTokenizerFactory() { return tokenizer; }
   public TokenFilterFactory[] getTokenFilterFactories() { return filters; }
 
-  public Reader charStream(Reader reader){
-    if( charFilters != null && charFilters.length > 0 ){
-      CharStream cs = CharReader.get( reader );
-      for (int i=0; i<charFilters.length; i++) {
-        cs = charFilters[i].create(cs);
-      }
-      reader = cs;
-    }
-    return reader;
-  }
-
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream ts = tokenizer.create(charStream(reader));
+  @Override
+  public TokenStreamInfo getStream(String fieldName, Reader reader) {
+    Tokenizer tk = (Tokenizer)tokenizer.create(charStream(reader));
+    TokenStream ts = tk;
     for (int i=0; i<filters.length; i++) {
       ts = filters[i].create(ts);
     }
-    return ts;
+    return new TokenStreamInfo(tk,ts);
   }
 
   public String toString() {

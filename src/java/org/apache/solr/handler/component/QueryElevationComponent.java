@@ -294,7 +294,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       return query;
     }
     StringBuilder norm = new StringBuilder();
-    TokenStream tokens = analyzer.tokenStream( null, new StringReader( query ) );
+    TokenStream tokens = analyzer.reusableTokenStream( "", new StringReader( query ) );
+    tokens.reset();
+    
     Token token = tokens.next();
     while( token != null ) {
       norm.append( new String(token.termBuffer(), 0, token.termLength()) );

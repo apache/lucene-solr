@@ -20,9 +20,12 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.Set;
 import java.io.IOException;
 import java.nio.CharBuffer;
 
@@ -40,10 +43,10 @@ import java.nio.CharBuffer;
  * @see Pattern
  */
 public final class PatternReplaceFilter extends TokenFilter {
-  Pattern p;
-  String replacement;
-  boolean all = true;
-
+  private final Pattern p;
+  private final String replacement;
+  private final boolean all;
+  private final TermAttribute termAtt;
   /**
    * Constructs an instance to replace either the first, or all occurances
    *
@@ -63,21 +66,23 @@ public final class PatternReplaceFilter extends TokenFilter {
     this.p=p;
     this.replacement = (null == replacement) ? "" : replacement;
     this.all=all;
+    this.termAtt = (TermAttribute)addAttribute(TermAttribute.class);
   }
-  
-  public final Token next(Token in) throws IOException {
-    Token t = input.next(in);
-    if (t == null)
-      return null;
-    CharSequence text = CharBuffer.wrap(t.termBuffer(), 0, t.termLength());
+
+  @Override
+  public boolean incrementToken() throws IOException {
+    if (!input.incrementToken()) return false;
+    
+    CharSequence text = CharBuffer.wrap(termAtt.termBuffer(), 0, termAtt.termLength());
     Matcher m = p.matcher(text);
+
     if (all) {
-      t.setTermText(m.replaceAll(replacement));
+      termAtt.setTermBuffer(m.replaceAll(replacement));
     } else {
-      t.setTermText(m.replaceFirst(replacement));
+      termAtt.setTermBuffer(m.replaceFirst(replacement));
     }
 
-    return t;
+    return true;
   }
 
 }

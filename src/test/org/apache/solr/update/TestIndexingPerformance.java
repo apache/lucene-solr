@@ -22,8 +22,10 @@ import org.apache.lucene.document.Field;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.common.util.StrUtils;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /** Bypass the normal Solr pipeline and just text indexing performance
  * starting at the update handler.  The same document is indexed repeatedly.
@@ -39,6 +41,12 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
     int iter=1000;
     String iterS = System.getProperty("iter");
     if (iterS != null) iter=Integer.parseInt(iterS);
+    boolean includeDoc = Boolean.parseBoolean(System.getProperty("includeDoc","true")); // include the time to create the document
+    String doc = System.getProperty("doc");
+    if (doc != null) {
+      StrUtils.splitSmart(doc,",",true);
+    }
+
 
     SolrQueryRequest req = lrf.makeRequest();
     IndexSchema schema = req.getSchema();
@@ -53,23 +61,43 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
             ,"text","just how fast is this text indexing?"
     };
 
-    Document ldoc = new Document();
-    for (int i=0; i<fields.length; i+=2) {
-      String field = fields[i];
-      String val = fields[i+1];
-      Field f = schema.getField(field).createField(val, 1.0f);
-      ldoc.add(f);
-    }
+
+  /***
+    String[] fields = {
+            "a_i","1"
+            ,"b_i","2"
+            ,"c_i","3"
+            ,"d_i","4"
+            ,"e_i","5"
+            ,"f_i","6"
+            ,"g_i","7"
+            ,"h_i","8"
+            ,"i_i","9"
+            ,"j_i","0"
+            ,"k_i","0"
+    };
+   ***/
+
+    long start = System.currentTimeMillis();
 
     AddUpdateCommand add = new AddUpdateCommand();
     add.allowDups = true;
-    add.doc = ldoc;
 
-    long start = System.currentTimeMillis();
+
     for (int i=0; i<iter; i++) {
+      if (includeDoc || add.doc==null) {
+        add.doc = new Document();
+        for (int j=0; j<fields.length; j+=2) {
+          String field = fields[j];
+          String val = fields[j+1];
+          Field f = schema.getField(field).createField(val, 1.0f);
+          add.doc.add(f);
+        }
+      }
       updateHandler.addDoc(add);      
     }
     long end = System.currentTimeMillis();
+    System.out.println("includeDoc="+includeDoc+" doc="+ Arrays.toString(fields));
     System.out.println("iter="+iter +" time=" + (end-start) + " throughput=" + ((long)iter*1000)/(end-start));
 
     //discard all the changes

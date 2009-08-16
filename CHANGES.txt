@@ -320,6 +320,9 @@ Optimizations
 15. SOLR-1150: Load Documents for Highlighting one at a time rather than 
     all at once to avoid OOM with many large Documents. (Siddharth Gargate via Mark Miller)
 
+16. SOLR-1353: Implement and use reusable token streams for analysis. (yonik)
+
+
 Bug Fixes
 ----------------------
  1. SOLR-774: Fixed logging level display (Sean Timm via Otis Gospodnetic)

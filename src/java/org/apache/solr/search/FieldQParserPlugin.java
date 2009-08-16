@@ -24,6 +24,7 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TextField;
@@ -65,7 +66,13 @@ public class FieldQParserPlugin extends QParserPlugin {
         // Use the analyzer to get all the tokens, and then build a TermQuery,
         // PhraseQuery, or nothing based on the term count
 
-        TokenStream source = analyzer.tokenStream(field, new StringReader(queryText));
+        TokenStream source = null;
+        try {
+          source = analyzer.reusableTokenStream(field, new StringReader(queryText));
+          source.reset();
+        } catch (IOException e) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);  
+        }
         ArrayList<Token> lst = new ArrayList<Token>();
         Token t;
         int positionCount = 0;

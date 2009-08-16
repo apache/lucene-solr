@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.util.StrUtils;
@@ -97,50 +98,35 @@ public class SnowballPorterFilterFactory extends BaseTokenFilterFactory implemen
   }
 }
 
+
 class SnowballPorterFilter extends TokenFilter {
   private final CharArraySet protWords;
-  private SnowballProgram stemmer;
+  private final SnowballProgram stemmer;
+  private final TermAttribute termAtt;
 
   public SnowballPorterFilter(TokenStream source, SnowballProgram stemmer, CharArraySet protWords) {
     super(source);
     this.protWords = protWords;
     this.stemmer = stemmer;
+    this.termAtt = (TermAttribute)addAttribute(TermAttribute.class);
   }
-
-
-  /**
-   * the original code from lucene sandbox
-   * public final Token next() throws IOException {
-   * Token token = input.next();
-   * if (token == null)
-   * return null;
-   * stemmer.setCurrent(token.termText());
-   * try {
-   * stemMethod.invoke(stemmer, EMPTY_ARGS);
-   * } catch (Exception e) {
-   * throw new RuntimeException(e.toString());
-   * }
-   * return new Token(stemmer.getCurrent(),
-   * token.startOffset(), token.endOffset(), token.type());
-   * }
-   */
 
   @Override
-  public Token next(Token token) throws IOException {
-    Token result = input.next(token);
-    if (result != null) {
-      char[] termBuffer = result.termBuffer();
-      int len = result.termLength();
-      // if protected, don't stem.  use this to avoid stemming collisions.
-      if (protWords != null && protWords.contains(termBuffer, 0, len)) {
-        return result;
-      }
-      stemmer.setCurrent(new String(termBuffer, 0, len));//ugh, wish the Stemmer took a char array
-      stemmer.stem();
-      String newstr = stemmer.getCurrent();
-      result.setTermBuffer(newstr.toCharArray(), 0, newstr.length());
+  public boolean incrementToken() throws IOException {
+    if (!input.incrementToken()) return false;
+    
+    char[] termBuffer = termAtt.termBuffer();
+    int len = termAtt.termLength();
+    // if protected, don't stem.  use this to avoid stemming collisions.
+    if (protWords != null && protWords.contains(termBuffer, 0, len)) {
+      return true;
     }
-    return result;
+
+    stemmer.setCurrent(new String(termBuffer, 0, len));//ugh, wish the Stemmer took a char array
+    stemmer.stem();
+    String newstr = stemmer.getCurrent();
+    termAtt.setTermBuffer(newstr.toCharArray(), 0, newstr.length());
+
+    return true;
   }
 }
-

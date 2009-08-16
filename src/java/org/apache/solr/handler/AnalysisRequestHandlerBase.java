@@ -24,6 +24,7 @@ import org.apache.solr.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
@@ -68,7 +69,14 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     Analyzer analyzer = context.getAnalyzer();
 
     if (!TokenizerChain.class.isInstance(analyzer)) {
-      TokenStream tokenStream = analyzer.tokenStream(context.getFieldName(), new StringReader(value));
+
+      TokenStream tokenStream = null;
+      try {
+        tokenStream = analyzer.reusableTokenStream(context.getFieldName(), new StringReader(value));
+        tokenStream.reset();
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      }
       NamedList<List<NamedList>> namedList = new SimpleOrderedMap<List<NamedList>>();
       namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(analyzeTokenStream(tokenStream), context));
       return namedList;

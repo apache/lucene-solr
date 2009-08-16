@@ -657,6 +657,12 @@ final class WordDelimiterFilter extends TokenFilter {
     }
   }
 
+  @Override
+  public void reset() throws IOException {
+    input.reset();
+    queuePos=0;
+    queue.clear();    
+  }
 
   // questions:
   // negative numbers?  -42 indexed as just 42?

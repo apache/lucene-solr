@@ -50,7 +50,8 @@ public class DoubleMetaphoneFilter extends TokenFilter {
     for(;;) {
 
       if (!remainingTokens.isEmpty()) {
-        clearAttributes(); restoreState(remainingTokens.removeFirst());
+        // clearAttributes();  // not currently necessary
+        restoreState(remainingTokens.removeFirst());
         return true;
       }
 
