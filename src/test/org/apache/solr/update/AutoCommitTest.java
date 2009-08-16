@@ -41,7 +41,7 @@ import org.apache.solr.util.AbstractSolrTestCase;
  * longer for a new searcher to be registered. 
  */
 class CommitListener implements SolrEventListener {
-  public boolean triggered = false;
+  public volatile boolean triggered = false;
   public void init(NamedList args) {}
   public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {}
   public void postCommit() {
@@ -134,7 +134,9 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     SolrCore core = h.getCore();
     DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
     DirectUpdateHandler2.CommitTracker tracker = updater.tracker;
-    tracker.timeUpperBound = 500;
+    // too low of a number can cause a slow host to commit before the test code checks that it
+    // isn't there... causing a failure at "shouldn't find any"
+    tracker.timeUpperBound = 1000;
     tracker.docsUpperBound = -1;
     updater.commitCallbacks.add(trigger);
     
