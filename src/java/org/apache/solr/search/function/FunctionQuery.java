@@ -54,7 +54,7 @@ public class FunctionQuery extends Query {
 
   public void extractTerms(Set terms) {}
 
-  protected class FunctionWeight implements Weight {
+  protected class FunctionWeight extends Weight {
     protected Searcher searcher;
     protected float queryNorm;
     protected float queryWeight;
@@ -62,6 +62,7 @@ public class FunctionQuery extends Query {
     public FunctionWeight(Searcher searcher) {
       this.searcher = searcher;
     }
+
 
     public Query getQuery() {
       return FunctionQuery.this;
@@ -81,17 +82,17 @@ public class FunctionQuery extends Query {
       queryWeight *= this.queryNorm;
     }
 
-    public Scorer scorer(IndexReader reader) throws IOException {
+    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       return new AllScorer(getSimilarity(searcher), reader, this);
     }
 
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
+    public Explanation explain(Searcher searcher, IndexReader reader, int doc) throws IOException {
       SolrIndexReader topReader = (SolrIndexReader)reader;
       SolrIndexReader[] subReaders = topReader.getLeafReaders();
       int[] offsets = topReader.getLeafOffsets();
       int readerPos = SolrIndexReader.readerIndex(doc, offsets);
       int readerBase = offsets[readerPos];
-      return scorer(subReaders[readerPos]).explain(doc-readerBase);
+      return scorer(subReaders[readerPos], true, true).explain(doc-readerBase);
     }
   }
 

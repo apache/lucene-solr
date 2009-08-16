@@ -56,7 +56,7 @@ public class BoostedQuery extends Query {
     return new BoostedQuery.BoostedWeight(searcher);
   }
 
-  private class BoostedWeight implements Weight {
+  private class BoostedWeight extends Weight {
     Searcher searcher;
     Weight qWeight;
 
@@ -84,19 +84,19 @@ public class BoostedQuery extends Query {
       qWeight.normalize(norm);
     }
 
-    public Scorer scorer(IndexReader reader) throws IOException {
-      Scorer subQueryScorer = qWeight.scorer(reader);
-      return new BoostedQuery.CustomScorer(getSimilarity(searcher), reader, this, subQueryScorer, boostVal);
+    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
+      Scorer subQueryScorer = qWeight.scorer(reader, true, false);
+      return new BoostedQuery.CustomScorer(getSimilarity(searcher), searcher, reader, this, subQueryScorer, boostVal);
     }
 
-    public Explanation explain(IndexReader reader, int doc) throws IOException {
+    public Explanation explain(Searcher searcher, IndexReader reader, int doc) throws IOException {
       SolrIndexReader topReader = (SolrIndexReader)reader;
       SolrIndexReader[] subReaders = topReader.getLeafReaders();
       int[] offsets = topReader.getLeafOffsets();
       int readerPos = SolrIndexReader.readerIndex(doc, offsets);
       int readerBase = offsets[readerPos];
 
-      Explanation subQueryExpl = qWeight.explain(reader,doc);
+      Explanation subQueryExpl = qWeight.explain(searcher,reader,doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }
@@ -118,14 +118,16 @@ public class BoostedQuery extends Query {
     private final Scorer scorer;
     private final DocValues vals;
     private final IndexReader reader;
+    private final Searcher searcher;
 
-    private CustomScorer(Similarity similarity, IndexReader reader, BoostedQuery.BoostedWeight w,
+    private CustomScorer(Similarity similarity, Searcher searcher, IndexReader reader, BoostedQuery.BoostedWeight w,
         Scorer scorer, ValueSource vs) throws IOException {
       super(similarity);
       this.weight = w;
       this.qWeight = w.getValue();
       this.scorer = scorer;
       this.reader = reader;
+      this.searcher = searcher; // for explain
       this.vals = vs.getValues(reader);
     }
 
@@ -155,7 +157,7 @@ public class BoostedQuery extends Query {
     }
 
     public Explanation explain(int doc) throws IOException {
-      Explanation subQueryExpl = weight.qWeight.explain(reader,doc);
+      Explanation subQueryExpl = weight.qWeight.explain(searcher,reader,doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }
