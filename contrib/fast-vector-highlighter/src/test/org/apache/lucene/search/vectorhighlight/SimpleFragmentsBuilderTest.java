@@ -17,6 +17,15 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.Query;
 
 public class SimpleFragmentsBuilderTest extends AbstractTestCase {
@@ -95,5 +104,27 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
     assertEquals( "ssing <b>speed</b>, the", sfb.createFragment( reader, 0, F, ffl ) );
+  }
+  
+  public void testUnstoredField() throws Exception {
+    makeUnstoredIndex();
+
+    FieldQuery fq = new FieldQuery( tq( "aaa" ), true, true );
+    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
+    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
+    SimpleFragListBuilder sflb = new SimpleFragListBuilder();
+    FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
+    SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
+    assertNull( sfb.createFragment( reader, 0, F, ffl ) );
+  }
+  
+  protected void makeUnstoredIndex() throws Exception {
+    IndexWriter writer = new IndexWriter( dir, analyzerW, true, MaxFieldLength.LIMITED );
+    Document doc = new Document();
+    doc.add( new Field( F, "aaa", Store.NO, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
+    writer.addDocument( doc );
+    writer.close();
+
+    reader = IndexReader.open( dir );
   }
 }

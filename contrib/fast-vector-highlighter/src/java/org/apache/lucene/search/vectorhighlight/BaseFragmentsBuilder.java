@@ -73,6 +73,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     
     List<String> fragments = new ArrayList<String>( maxNumFragments );
     String[] values = getFieldValues( reader, docId, fieldName );
+    if( values.length == 0 ) return null;
     StringBuilder buffer = new StringBuilder();
     int[] nextValueIndex = { 0 };
     for( int n = 0; n < maxNumFragments && n < fragInfos.size(); n++ ){
@@ -84,7 +85,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
   
   protected String[] getFieldValues( IndexReader reader, int docId, String fieldName) throws IOException {
     Document doc = reader.document( docId, new MapFieldSelector( new String[]{ fieldName } ) );
-    return doc.getValues( fieldName );
+    return doc.getValues( fieldName ); // according to Document class javadoc, this never returns null
   }
 
   protected String makeFragment( StringBuilder buffer, int[] index, String[] values, WeightedFragInfo fragInfo ){
