@@ -108,4 +108,16 @@ public class EdgeNGramTokenizerTest extends TestCase {
     assertEquals("(cde,2,5)", termAtt.toString());
     assertFalse(tokenizer.incrementToken());
   }
+  
+  public void testReset() throws Exception {
+    EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.FRONT, 1, 3);
+    TermAttribute termAtt = (TermAttribute) tokenizer.addAttribute(TermAttribute.class);
+    assertTrue(tokenizer.incrementToken());
+    assertEquals("(a,0,1)", termAtt.toString());
+    assertTrue(tokenizer.incrementToken());
+    assertEquals("(ab,0,2)", termAtt.toString());
+    tokenizer.reset(new StringReader("abcde"));
+    assertTrue(tokenizer.incrementToken());
+    assertEquals("(a,0,1)", termAtt.toString());
+  }
 }

@@ -278,5 +278,17 @@ public final class CJKTokenizer extends Tokenizer {
       // set final offset
       final int finalOffset = offset;
       this.offsetAtt.setOffset(finalOffset, finalOffset);
-    }    
+    }
+    
+    public void reset() throws IOException {
+      super.reset();
+      offset = bufferIndex = dataLen = 0;
+      preIsTokened = false;
+      tokenType = WORD_TYPE;
+    }
+    
+    public void reset(Reader reader) throws IOException {
+      super.reset(reader);
+      reset();
+    }
 }

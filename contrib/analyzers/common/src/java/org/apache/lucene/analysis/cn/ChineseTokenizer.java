@@ -146,5 +146,15 @@ public final class ChineseTokenizer extends Tokenizer {
       // set final offset
       final int finalOffset = offset;
       this.offsetAtt.setOffset(finalOffset, finalOffset);
-    }    
+    }
+
+    public void reset() throws IOException {
+      super.reset();
+      offset = bufferIndex = dataLen = 0;
+    }
+    
+    public void reset(Reader input) throws IOException {
+      super.reset(input);
+      reset();
+    }
 }

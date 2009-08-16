@@ -150,6 +150,9 @@ Optimizations
      better performance, in ICUCollationKeyFilter.  (Robert Muir via
      Mike McCandless)
 
+  2. LUCENE-1794: Implement TokenStream reuse for contrib Analyzers, 
+     and implement reset() for TokenStreams to support reuse.  (Robert Muir)
+
 Documentation
 
  (None)

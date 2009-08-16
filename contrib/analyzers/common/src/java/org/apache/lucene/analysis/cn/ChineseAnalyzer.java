@@ -17,9 +17,11 @@ package org.apache.lucene.analysis.cn;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 
 /**
  * Title: ChineseAnalyzer
@@ -46,5 +48,32 @@ public class ChineseAnalyzer extends Analyzer {
         TokenStream result = new ChineseTokenizer(reader);
         result = new ChineseFilter(result);
         return result;
+    }
+    
+    private class SavedStreams {
+      Tokenizer source;
+      TokenStream result;
+    };
+
+    /**
+    * Returns a (possibly reused) TokenStream which tokenizes all the text in the
+    * provided Reader.
+    * 
+    * @return A TokenStream build from a ChineseTokenizer filtered with
+    *         ChineseFilter.
+    */
+    public final TokenStream reusableTokenStream(String fieldName, Reader reader)
+      throws IOException {
+      /* tokenStream() is final, no back compat issue */
+      SavedStreams streams = (SavedStreams) getPreviousTokenStream();
+      if (streams == null) {
+        streams = new SavedStreams();
+        streams.source = new ChineseTokenizer(reader);
+        streams.result = new ChineseFilter(streams.source);
+        setPreviousTokenStream(streams);
+      } else {
+        streams.source.reset(reader);
+      }
+      return streams.result;
     }
 }

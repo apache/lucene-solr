@@ -22,10 +22,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.StringReader;
 
 import junit.framework.TestCase;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
@@ -64,6 +68,26 @@ public class TestGermanStemFilter extends TestCase {
        fail();
     }
   }
+  
+  public void testReusableTokenStream() throws Exception {
+    Analyzer a = new GermanAnalyzer();
+    checkReuse(a, "Tisch", "tisch");
+    checkReuse(a, "Tische", "tisch");
+    checkReuse(a, "Tischen", "tisch");
+  }
+  
+  /**
+   * subclass that acts just like whitespace analyzer for testing
+   */
+  private class GermanSubclassAnalyzer extends GermanAnalyzer {
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new WhitespaceTokenizer(reader);
+    }
+  }
+  
+  public void testLUCENE1678BWComp() throws Exception {
+    checkReuse(new GermanSubclassAnalyzer(), "Tischen", "Tischen");
+  }
 
   private void check(final String input, final String expected) throws IOException {
     StandardTokenizer tokenStream = new StandardTokenizer(new StringReader(input));
@@ -73,5 +97,12 @@ public class TestGermanStemFilter extends TestCase {
     assertEquals(expected, termAtt.term());
     filter.close();
   }
-
+  
+  private void checkReuse(Analyzer a, String input, String expected) throws IOException {
+    TokenStream stream = a.reusableTokenStream("dummy", new StringReader(input));
+    TermAttribute text = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    assertTrue(stream.incrementToken());
+    assertEquals(expected, text.term());
+    assertFalse(stream.incrementToken());
+  }
 }

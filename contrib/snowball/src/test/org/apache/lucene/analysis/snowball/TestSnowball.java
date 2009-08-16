@@ -17,11 +17,13 @@ package org.apache.lucene.analysis.snowball;
  * limitations under the License.
  */
 
+import java.io.Reader;
 import java.io.StringReader;
 
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
@@ -45,6 +47,18 @@ public class TestSnowball extends TestCase {
     assertFalse(ts.incrementToken());
     ts.close();
   }
+  
+  public void assertAnalyzesToReuse(Analyzer a,
+                               String input,
+                               String[] output) throws Exception {
+    TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
+    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
+    for (int i = 0; i < output.length; i++) {
+      assertTrue(ts.incrementToken());
+      assertEquals(output[i], termAtt.term());
+    }
+    assertFalse(ts.incrementToken());
+  }
 
   public void testEnglish() throws Exception {
     Analyzer a = new SnowballAnalyzer("English");
@@ -52,7 +66,33 @@ public class TestSnowball extends TestCase {
         new String[]{"he", "abhor", "accent"});
   }
 
-
+  public void testReusableTokenStream() throws Exception {
+    Analyzer a = new SnowballAnalyzer("English");
+    assertAnalyzesToReuse(a, "he abhorred accents",
+        new String[]{"he", "abhor", "accent"});
+    assertAnalyzesToReuse(a, "she abhorred him",
+        new String[]{"she", "abhor", "him"});
+  }
+  
+  /**
+   * subclass that acts just like whitespace analyzer for testing
+   */
+  private class SnowballSubclassAnalyzer extends SnowballAnalyzer {
+    public SnowballSubclassAnalyzer(String name) {
+      super(name);
+    }
+    
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new WhitespaceTokenizer(reader);
+    }
+  }
+  
+  public void testLUCENE1678BWComp() throws Exception {
+    Analyzer a = new SnowballSubclassAnalyzer("English");
+    assertAnalyzesToReuse(a, "he abhorred accents",
+        new String[]{"he", "abhorred", "accents"});
+  }
+  
   public void testFilterTokens() throws Exception {
     SnowballFilter filter = new SnowballFilter(new TestTokenStream(), "English");
     TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);

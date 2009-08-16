@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -125,8 +126,9 @@ public final class BrazilianAnalyzer extends Analyzer {
 	/**
 	 * Creates a TokenStream which tokenizes all the text in the provided Reader.
 	 *
-	 * @return  A TokenStream build from a StandardTokenizer filtered with
-	 * 			StandardFilter, StopFilter, GermanStemFilter and LowerCaseFilter.
+	 * @return  A TokenStream built from a StandardTokenizer filtered with
+	 * 			LowerCaseFilter, StandardFilter, StopFilter, and 
+	 *          BrazilianStemFilter.
 	 */
 	public final TokenStream tokenStream(String fieldName, Reader reader) {
 		TokenStream result = new StandardTokenizer( reader );
@@ -136,5 +138,35 @@ public final class BrazilianAnalyzer extends Analyzer {
 		result = new BrazilianStemFilter( result, excltable );
 		return result;
 	}
+	
+    private class SavedStreams {
+      Tokenizer source;
+      TokenStream result;
+    };
+    
+    /**
+     * Returns a (possibly reused) TokenStream which tokenizes all the text 
+     * in the provided Reader.
+     *
+     * @return  A TokenStream built from a StandardTokenizer filtered with
+     *          LowerCaseFilter, StandardFilter, StopFilter, and 
+     *          BrazilianStemFilter.
+     */
+    public TokenStream reusableTokenStream(String fieldName, Reader reader)
+      throws IOException {
+      SavedStreams streams = (SavedStreams) getPreviousTokenStream();
+      if (streams == null) {
+        streams = new SavedStreams();
+        streams.source = new StandardTokenizer(reader);
+        streams.result = new LowerCaseFilter(streams.source);
+        streams.result = new StandardFilter(streams.result);
+        streams.result = new StopFilter(streams.result, stoptable);
+        streams.result = new BrazilianStemFilter(streams.result, excltable);
+        setPreviousTokenStream(streams);
+      } else {
+        streams.source.reset(reader);
+      }
+      return streams.result;
+    }
 }
 

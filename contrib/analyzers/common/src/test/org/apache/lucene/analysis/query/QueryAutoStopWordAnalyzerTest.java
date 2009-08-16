@@ -18,7 +18,9 @@ package org.apache.lucene.analysis.query;
 
 import junit.framework.TestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -32,6 +34,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
+import java.io.Reader;
 
 public class QueryAutoStopWordAnalyzerTest extends TestCase {
   String variedFieldValues[] = {"the", "quick", "brown", "fox", "jumped", "over", "the", "lazy", "boring", "dog"};
@@ -139,6 +142,24 @@ public class QueryAutoStopWordAnalyzerTest extends TestCase {
     assertTrue("Filter should not prevent stopwords in one field being used in another ", h.length() > 0);
 
   }
-
-
+  
+  /**
+   * subclass that acts just like whitespace analyzer for testing
+   */
+  private class QueryAutoStopWordSubclassAnalyzer extends QueryAutoStopWordAnalyzer {
+    public QueryAutoStopWordSubclassAnalyzer() {
+      super(new WhitespaceAnalyzer());
+    }
+    
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new WhitespaceTokenizer(reader);
+    }    
+  }
+  
+  public void testLUCENE1678BWComp() throws Exception {
+    QueryAutoStopWordAnalyzer a = new QueryAutoStopWordSubclassAnalyzer();
+    a.addStopWords(reader, "repetitiveField", 10);
+    Hits h = search(a, "repetitiveField:boring");
+    assertFalse(h.length() == 0);
+  }
 }

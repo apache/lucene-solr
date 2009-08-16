@@ -17,12 +17,16 @@ package org.apache.lucene.analysis.shingle;
  * limitations under the License.
  */
 
+import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.LetterTokenizer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
@@ -199,5 +203,91 @@ public class ShingleAnalyzerWrapperTest extends TestCase {
     Hits hits = searcher.search(q);
     int[] ranks = new int[] { 1, 2, 0 };
     compareRanks(hits, ranks);
+  }
+  
+  public void testReusableTokenStream() throws Exception {
+    Analyzer a = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(), 2);
+    assertAnalyzesToReuse(a, "please divide into shingles",
+        new String[] { "please", "please divide", "divide", "divide into", "into", "into shingles", "shingles" },
+        new int[] { 0, 0, 7, 7, 14, 14, 19 },
+        new int[] { 6, 13, 13, 18, 18, 27, 27 },
+        new int[] { 1, 0, 1, 0, 1, 0, 1 });
+    assertAnalyzesToReuse(a, "divide me up again",
+        new String[] { "divide", "divide me", "me", "me up", "up", "up again", "again" },
+        new int[] { 0, 0, 7, 7, 10, 10, 13 },
+        new int[] { 6, 9, 9, 12, 12, 18, 18 },
+        new int[] { 1, 0, 1, 0, 1, 0, 1 });
+  }
+  
+  /**
+   * subclass that acts just like whitespace analyzer for testing
+   */
+  private class ShingleWrapperSubclassAnalyzer extends ShingleAnalyzerWrapper {
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new WhitespaceTokenizer(reader);
+    }  
+  };
+  
+  public void testLUCENE1678BWComp() throws Exception {
+    Analyzer a = new ShingleWrapperSubclassAnalyzer();
+    assertAnalyzesToReuse(a, "this is a test",
+        new String[] { "this", "is", "a", "test" },
+        new int[] { 0, 5, 8, 10 },
+        new int[] { 4, 7, 9, 14 },
+        new int[] { 1, 1, 1, 1 });
+  }
+  
+  /*
+   * analyzer that does not support reuse
+   * it is LetterTokenizer on odd invocations, WhitespaceTokenizer on even.
+   */
+  private class NonreusableAnalyzer extends Analyzer {
+    int invocationCount = 0;
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      if (++invocationCount % 2 == 0)
+        return new WhitespaceTokenizer(reader);
+      else
+        return new LetterTokenizer(reader);
+    }
+  }
+  
+  public void testWrappedAnalyzerDoesNotReuse() throws Exception {
+    Analyzer a = new ShingleAnalyzerWrapper(new NonreusableAnalyzer());
+    assertAnalyzesToReuse(a, "please divide into shingles.",
+        new String[] { "please", "please divide", "divide", "divide into", "into", "into shingles", "shingles" },
+        new int[] { 0, 0, 7, 7, 14, 14, 19 },
+        new int[] { 6, 13, 13, 18, 18, 27, 27 },
+        new int[] { 1, 0, 1, 0, 1, 0, 1 });
+    assertAnalyzesToReuse(a, "please divide into shingles.",
+        new String[] { "please", "please divide", "divide", "divide into", "into", "into shingles.", "shingles." },
+        new int[] { 0, 0, 7, 7, 14, 14, 19 },
+        new int[] { 6, 13, 13, 18, 18, 28, 28 },
+        new int[] { 1, 0, 1, 0, 1, 0, 1 });
+    assertAnalyzesToReuse(a, "please divide into shingles.",
+        new String[] { "please", "please divide", "divide", "divide into", "into", "into shingles", "shingles" },
+        new int[] { 0, 0, 7, 7, 14, 14, 19 },
+        new int[] { 6, 13, 13, 18, 18, 27, 27 },
+        new int[] { 1, 0, 1, 0, 1, 0, 1 });
+  }
+  
+  private void assertAnalyzesToReuse(Analyzer a, String input, String[] output,
+      int[] startOffsets, int[] endOffsets, int[] posIncr) throws Exception {
+    TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
+    TermAttribute termAtt = (TermAttribute) ts
+        .getAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) ts
+        .getAttribute(OffsetAttribute.class);
+    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) ts
+        .getAttribute(PositionIncrementAttribute.class);
+
+    for (int i = 0; i < output.length; i++) {
+      assertTrue(ts.incrementToken());
+      assertEquals(output[i], termAtt.term());
+      assertEquals(startOffsets[i], offsetAtt.startOffset());
+      assertEquals(endOffsets[i], offsetAtt.endOffset());
+      assertEquals(posIncr[i], posIncAtt.getPositionIncrement());
+    }
+
+    assertFalse(ts.incrementToken());
   }
 }

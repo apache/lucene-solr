@@ -20,7 +20,9 @@ package org.apache.lucene.analysis.cjk;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.util.Set;
 
@@ -83,5 +85,31 @@ public class CJKAnalyzer extends Analyzer {
    */
   public final TokenStream tokenStream(String fieldName, Reader reader) {
     return new StopFilter(new CJKTokenizer(reader), stopTable);
+  }
+  
+  private class SavedStreams {
+    Tokenizer source;
+    TokenStream result;
+  };
+  
+  /**
+   * get (possibly reused) token stream from input
+   *
+   * @param fieldName lucene field name
+   * @param reader    input reader
+   * @return TokenStream
+   */
+  public final TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
+    /* tokenStream() is final, no back compat issue */
+    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
+    if (streams == null) {
+      streams = new SavedStreams();
+      streams.source = new CJKTokenizer(reader);
+      streams.result = new StopFilter(streams.source, stopTable);
+      setPreviousTokenStream(streams);
+    } else {
+      streams.source.reset(reader);
+    }
+    return streams.result;
   }
 }

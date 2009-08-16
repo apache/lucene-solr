@@ -117,6 +117,14 @@ public class TestBrazilianStemmer extends TestCase {
 	 check("quinzena", "quinzen");
 	 check("quiosque", "quiosqu");
   }
+  
+  public void testReusableTokenStream() throws Exception {
+    Analyzer a = new BrazilianAnalyzer();
+    checkReuse(a, "boa", "boa");
+    checkReuse(a, "boainain", "boainain");
+    checkReuse(a, "boas", "boas");
+    checkReuse(a, "bôas", "boas"); // removes diacritic: different from snowball portugese
+  }
  
 
   private void check(final String input, final String expected) throws IOException {
@@ -127,6 +135,14 @@ public class TestBrazilianStemmer extends TestCase {
     assertEquals(expected, text.term());
     assertFalse(stream.incrementToken());
     stream.close();
+  }
+  
+  private void checkReuse(Analyzer analyzer, final String input, final String expected) throws IOException {
+    TokenStream stream = analyzer.reusableTokenStream("dummy", new StringReader(input));
+    TermAttribute text = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    assertTrue(stream.incrementToken());
+    assertEquals(expected, text.term());
+    assertFalse(stream.incrementToken());
   }
 
 }

@@ -18,10 +18,13 @@ package org.apache.lucene.analysis.shingle;
  */
 
 import java.io.IOException;
+import java.io.StringReader;
 
 import junit.framework.TestCase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
@@ -180,6 +183,20 @@ public class ShingleFilterTest extends TestCase {
   public void testTriGramFilter() throws IOException {
     this.shingleFilterTest(3, TEST_TOKEN, TRI_GRAM_TOKENS,
                            TRI_GRAM_POSITION_INCREMENTS, TRI_GRAM_TYPES);
+  }
+  
+  public void testReset() throws Exception {
+    Tokenizer wsTokenizer = new WhitespaceTokenizer(new StringReader("please divide this sentence"));
+    TokenStream filter = new ShingleFilter(wsTokenizer, 2);
+    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
+    assertTrue(filter.incrementToken());
+    assertEquals("(please,0,6)", termAtt.toString());
+    assertTrue(filter.incrementToken());
+    assertEquals("(please divide,0,13,type=shingle,posIncr=0)", termAtt.toString());
+    wsTokenizer.reset(new StringReader("please divide this sentence"));
+    filter.reset();
+    assertTrue(filter.incrementToken());
+    assertEquals("(please,0,6)", termAtt.toString());
   }
   
   protected void shingleFilterTest(int maxSize, Token[] tokensToShingle, Token[] tokensToCompare,

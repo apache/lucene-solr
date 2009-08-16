@@ -56,6 +56,7 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
    */
   public QueryAutoStopWordAnalyzer(Analyzer delegate) {
     this.delegate = delegate;
+    setOverridesTokenStreamMethod(QueryAutoStopWordAnalyzer.class);
   }
 
   /**
@@ -154,16 +155,96 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
       term = te.term();
     }
     stopWordsPerField.put(fieldName, stopWords);
+    
+    /* if the stopwords for a field are changed,
+     * then saved streams for that field are erased.
+     */
+    Map streamMap = (Map) getPreviousTokenStream();
+    if (streamMap != null)
+      streamMap.remove(fieldName);
+    
     return stopWords.size();
   }
 
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = delegate.tokenStream(fieldName, reader);
+    TokenStream result;
+    try {
+      result = delegate.reusableTokenStream(fieldName, reader);
+    } catch (IOException e) {
+      result = delegate.tokenStream(fieldName, reader);
+    }
     HashSet stopWords = (HashSet) stopWordsPerField.get(fieldName);
     if (stopWords != null) {
       result = new StopFilter(result, stopWords);
     }
     return result;
+  }
+  
+  private class SavedStreams {
+    /* the underlying stream */
+    TokenStream wrapped;
+
+    /*
+     * when there are no stopwords for the field, refers to wrapped.
+     * if there stopwords, it is a StopFilter around wrapped.
+     */
+    TokenStream withStopFilter;
+  };
+  
+  public TokenStream reusableTokenStream(String fieldName, Reader reader)
+      throws IOException {
+    if (overridesTokenStreamMethod) {
+      // LUCENE-1678: force fallback to tokenStream() if we
+      // have been subclassed and that subclass overrides
+      // tokenStream but not reusableTokenStream
+      return tokenStream(fieldName, reader);
+    }
+
+    /* map of SavedStreams for each field */
+    Map streamMap = (Map) getPreviousTokenStream();
+    if (streamMap == null) {
+      streamMap = new HashMap();
+      setPreviousTokenStream(streamMap);
+    }
+
+    SavedStreams streams = (SavedStreams) streamMap.get(fieldName);
+    if (streams == null) {
+      /* an entry for this field does not exist, create one */
+      streams = new SavedStreams();
+      streamMap.put(fieldName, streams);
+      streams.wrapped = delegate.reusableTokenStream(fieldName, reader);
+
+      /* if there are any stopwords for the field, save the stopfilter */
+      HashSet stopWords = (HashSet) stopWordsPerField.get(fieldName);
+      if (stopWords != null)
+        streams.withStopFilter = new StopFilter(streams.wrapped, stopWords);
+      else
+        streams.withStopFilter = streams.wrapped;
+
+    } else {
+      /*
+       * an entry for this field exists, verify the wrapped stream has not
+       * changed. if it has not, reuse it, otherwise wrap the new stream.
+       */
+      TokenStream result = delegate.reusableTokenStream(fieldName, reader);
+      if (result == streams.wrapped) {
+        /* the wrapped analyzer reused the stream */
+        streams.withStopFilter.reset();
+      } else {
+        /*
+         * the wrapped analyzer did not. if there are any stopwords for the
+         * field, create a new StopFilter around the new stream
+         */
+        streams.wrapped = result;
+        HashSet stopWords = (HashSet) stopWordsPerField.get(fieldName);
+        if (stopWords != null)
+          streams.withStopFilter = new StopFilter(streams.wrapped, stopWords);
+        else
+          streams.withStopFilter = streams.wrapped;
+      }
+    }
+
+    return streams.withStopFilter;
   }
 
   /**

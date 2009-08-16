@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.nl;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
@@ -78,6 +79,7 @@ public class DutchAnalyzer extends Analyzer {
    * 
    */
   public DutchAnalyzer() {
+    setOverridesTokenStreamMethod(DutchAnalyzer.class);
     stoptable = StopFilter.makeStopSet(DUTCH_STOP_WORDS);
     stemdict.put("fiets", "fiets"); //otherwise fiet
     stemdict.put("bromfiets", "bromfiets"); //otherwise bromfiet
@@ -91,6 +93,7 @@ public class DutchAnalyzer extends Analyzer {
    * @param stopwords
    */
   public DutchAnalyzer(String[] stopwords) {
+    setOverridesTokenStreamMethod(DutchAnalyzer.class);
     stoptable = StopFilter.makeStopSet(stopwords);
   }
 
@@ -100,6 +103,7 @@ public class DutchAnalyzer extends Analyzer {
    * @param stopwords
    */
   public DutchAnalyzer(HashSet stopwords) {
+    setOverridesTokenStreamMethod(DutchAnalyzer.class);
     stoptable = stopwords;
   }
 
@@ -109,6 +113,7 @@ public class DutchAnalyzer extends Analyzer {
    * @param stopwords
    */
   public DutchAnalyzer(File stopwords) {
+    setOverridesTokenStreamMethod(DutchAnalyzer.class);
     try {
       stoptable = org.apache.lucene.analysis.WordlistLoader.getWordSet(stopwords);
     } catch (IOException e) {
@@ -162,7 +167,7 @@ public class DutchAnalyzer extends Analyzer {
   /**
    * Creates a TokenStream which tokenizes all the text in the provided TextReader.
    *
-   * @return A TokenStream build from a StandardTokenizer filtered with StandardFilter,
+   * @return A TokenStream built from a StandardTokenizer filtered with StandardFilter,
    * StopFilter, DutchStemFilter
    */
   public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -171,5 +176,40 @@ public class DutchAnalyzer extends Analyzer {
     result = new StopFilter(result, stoptable);
     result = new DutchStemFilter(result, excltable, stemdict);
     return result;
+  }
+  
+  private class SavedStreams {
+    Tokenizer source;
+    TokenStream result;
+  };
+  
+  /**
+   * Returns a (possibly reused) TokenStream which tokenizes all the text 
+   * in the provided Reader.
+   *
+   * @return A TokenStream built from a StandardTokenizer filtered with
+   *         StandardFilter, StopFilter, DutchStemFilter
+   */
+  public TokenStream reusableTokenStream(String fieldName, Reader reader)
+      throws IOException {
+    if (overridesTokenStreamMethod) {
+      // LUCENE-1678: force fallback to tokenStream() if we
+      // have been subclassed and that subclass overrides
+      // tokenStream but not reusableTokenStream
+      return tokenStream(fieldName, reader);
+    }
+    
+    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
+    if (streams == null) {
+      streams = new SavedStreams();
+      streams.source = new StandardTokenizer(reader);
+      streams.result = new StandardFilter(streams.source);
+      streams.result = new StopFilter(streams.result, stoptable);
+      streams.result = new DutchStemFilter(streams.result, excltable);
+      setPreviousTokenStream(streams);
+    } else {
+      streams.source.reset(reader);
+    }
+    return streams.result;
   }
 }

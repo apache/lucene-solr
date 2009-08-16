@@ -141,5 +141,12 @@ public class SynonymTokenFilter extends TokenFilter {
       arr[i + r] = tmp;
     }   
   }
-  
+
+  public void reset() throws IOException {
+    super.reset();
+    stack = null;
+    index = 0;
+    current = null;
+    todo = 0;
+  }
 }

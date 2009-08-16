@@ -22,7 +22,10 @@ import java.io.StringReader;
 
 import junit.framework.TestCase;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 
 public class TestChineseTokenizer extends TestCase
@@ -41,5 +44,33 @@ public class TestChineseTokenizer extends TestCase
           correctStartOffset++;
           correctEndOffset++;
         }
+    }
+    
+    public void testReusableTokenStream() throws Exception
+    {
+      Analyzer a = new ChineseAnalyzer();
+      assertAnalyzesToReuse(a, "中华人民共和国", 
+        new String[] { "中", "华", "人", "民", "共", "和", "国" },
+        new int[] { 0, 1, 2, 3, 4, 5, 6 },
+        new int[] { 1, 2, 3, 4, 5, 6, 7 });
+      assertAnalyzesToReuse(a, "北京市", 
+        new String[] { "北", "京", "市" },
+        new int[] { 0, 1, 2 },
+        new int[] { 1, 2, 3 });
+    }
+    
+    private void assertAnalyzesToReuse(Analyzer a, String input, String[] output,
+      int startOffsets[], int endOffsets[])
+      throws Exception {
+      TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
+      TermAttribute termAtt = (TermAttribute) ts
+        .getAttribute(TermAttribute.class);
+
+      for (int i = 0; i < output.length; i++) {
+        assertTrue(ts.incrementToken());
+        assertEquals(output[i], termAtt.term());
+      }
+
+      assertFalse(ts.incrementToken());
     }
 }

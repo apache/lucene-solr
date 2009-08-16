@@ -18,12 +18,14 @@ package org.apache.lucene.analysis.nl;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
@@ -116,6 +118,31 @@ public class TestDutchStemmer extends TestCase {
 	 check("ophoping", "ophop");
 	 check("ophouden", "ophoud");
   }
+  
+  public void testReusableTokenStream() throws Exception {
+    Analyzer a = new DutchAnalyzer(); 
+    checkReuse(a, "lichaamsziek", "lichaamsziek");
+    checkReuse(a, "lichamelijk", "licham");
+    checkReuse(a, "lichamelijke", "licham");
+    checkReuse(a, "lichamelijkheden", "licham");
+  }
+  
+  /**
+   * subclass that acts just like whitespace analyzer for testing
+   */
+  private class DutchSubclassAnalyzer extends DutchAnalyzer {
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new WhitespaceTokenizer(reader);
+    }
+  }
+  
+  public void testLUCENE1678BWComp() throws Exception {
+    Analyzer a = new DutchSubclassAnalyzer();
+    checkReuse(a, "lichaamsziek", "lichaamsziek");
+    checkReuse(a, "lichamelijk", "lichamelijk");
+    checkReuse(a, "lichamelijke", "lichamelijke");
+    checkReuse(a, "lichamelijkheden", "lichamelijkheden");
+  }
  
 
   private void check(final String input, final String expected) throws IOException {
@@ -126,6 +153,17 @@ public class TestDutchStemmer extends TestCase {
     assertEquals(expected, text.term());
     assertFalse(stream.incrementToken());
     stream.close();
+  }
+  
+  private void checkReuse(Analyzer a, final String input, final String expected)
+      throws IOException {
+    TokenStream stream = a
+        .reusableTokenStream("dummy", new StringReader(input));
+    TermAttribute text = (TermAttribute) stream
+        .getAttribute(TermAttribute.class);
+    assertTrue(stream.incrementToken());
+    assertEquals(expected, text.term());
+    assertFalse(stream.incrementToken());
   }
 
 }

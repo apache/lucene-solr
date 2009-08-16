@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -79,6 +80,7 @@ public class GermanAnalyzer extends Analyzer {
    */
   public GermanAnalyzer() {
     stopSet = StopFilter.makeStopSet(GERMAN_STOP_WORDS);
+    setOverridesTokenStreamMethod(GermanAnalyzer.class);
   }
 
   /**
@@ -86,6 +88,7 @@ public class GermanAnalyzer extends Analyzer {
    */
   public GermanAnalyzer(String[] stopwords) {
     stopSet = StopFilter.makeStopSet(stopwords);
+    setOverridesTokenStreamMethod(GermanAnalyzer.class);
   }
 
   /**
@@ -93,6 +96,7 @@ public class GermanAnalyzer extends Analyzer {
    */
   public GermanAnalyzer(Map stopwords) {
     stopSet = new HashSet(stopwords.keySet());
+    setOverridesTokenStreamMethod(GermanAnalyzer.class);
   }
 
   /**
@@ -100,6 +104,7 @@ public class GermanAnalyzer extends Analyzer {
    */
   public GermanAnalyzer(File stopwords) throws IOException {
     stopSet = WordlistLoader.getWordSet(stopwords);
+    setOverridesTokenStreamMethod(GermanAnalyzer.class);
   }
 
   /**
@@ -126,7 +131,7 @@ public class GermanAnalyzer extends Analyzer {
   /**
    * Creates a TokenStream which tokenizes all the text in the provided Reader.
    *
-   * @return A TokenStream build from a StandardTokenizer filtered with
+   * @return A TokenStream built from a StandardTokenizer filtered with
    *         StandardFilter, LowerCaseFilter, StopFilter, GermanStemFilter
    */
   public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -136,5 +141,40 @@ public class GermanAnalyzer extends Analyzer {
     result = new StopFilter(result, stopSet);
     result = new GermanStemFilter(result, exclusionSet);
     return result;
+  }
+  
+  private class SavedStreams {
+    Tokenizer source;
+    TokenStream result;
+  };
+  
+  /**
+   * Returns a (possibly reused) TokenStream which tokenizes all the text 
+   * in the provided Reader.
+   *
+   * @return A TokenStream built from a StandardTokenizer filtered with
+   *         StandardFilter, LowerCaseFilter, StopFilter, GermanStemFilter
+   */
+  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
+    if (overridesTokenStreamMethod) {
+      // LUCENE-1678: force fallback to tokenStream() if we
+      // have been subclassed and that subclass overrides
+      // tokenStream but not reusableTokenStream
+      return tokenStream(fieldName, reader);
+    }
+    
+    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
+    if (streams == null) {
+      streams = new SavedStreams();
+      streams.source = new StandardTokenizer(reader);
+      streams.result = new StandardFilter(streams.source);
+      streams.result = new LowerCaseFilter(streams.result);
+      streams.result = new StopFilter(streams.result, stopSet);
+      streams.result = new GermanStemFilter(streams.result, exclusionSet);
+      setPreviousTokenStream(streams);
+    } else {
+      streams.source.reset(reader);
+    }
+    return streams.result;
   }
 }

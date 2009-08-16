@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.shingle;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -36,6 +37,7 @@ public class ShingleAnalyzerWrapper extends Analyzer {
   public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer) {
     super();
     this.defaultAnalyzer = defaultAnalyzer;
+    setOverridesTokenStreamMethod(ShingleAnalyzerWrapper.class);
   }
 
   public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer, int maxShingleSize) {
@@ -49,6 +51,7 @@ public class ShingleAnalyzerWrapper extends Analyzer {
   public ShingleAnalyzerWrapper() {
     super();
     this.defaultAnalyzer = new StandardAnalyzer();
+    setOverridesTokenStreamMethod(ShingleAnalyzerWrapper.class);
   }
 
   public ShingleAnalyzerWrapper(int nGramSize) {
@@ -90,10 +93,50 @@ public class ShingleAnalyzerWrapper extends Analyzer {
   }
 
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    ShingleFilter filter = new ShingleFilter(defaultAnalyzer.tokenStream(
-        fieldName, reader));
+    TokenStream wrapped;
+    try {
+      wrapped = defaultAnalyzer.reusableTokenStream(fieldName, reader);
+    } catch (IOException e) {
+      wrapped = defaultAnalyzer.tokenStream(fieldName, reader);
+    }
+    ShingleFilter filter = new ShingleFilter(wrapped);
     filter.setMaxShingleSize(maxShingleSize);
     filter.setOutputUnigrams(outputUnigrams);
     return filter;
+  }
+  
+  private class SavedStreams {
+    TokenStream wrapped;
+    ShingleFilter shingle;
+  };
+  
+  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
+    if (overridesTokenStreamMethod) {
+      // LUCENE-1678: force fallback to tokenStream() if we
+      // have been subclassed and that subclass overrides
+      // tokenStream but not reusableTokenStream
+      return tokenStream(fieldName, reader);
+    }
+    
+    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
+    if (streams == null) {
+      streams = new SavedStreams();
+      streams.wrapped = defaultAnalyzer.reusableTokenStream(fieldName, reader);
+      streams.shingle = new ShingleFilter(streams.wrapped);
+      setPreviousTokenStream(streams);
+    } else {
+      TokenStream result = defaultAnalyzer.reusableTokenStream(fieldName, reader);
+      if (result == streams.wrapped) {
+        /* the wrapped analyzer reused the stream */
+        streams.shingle.reset(); 
+      } else {
+        /* the wrapped analyzer did not, create a new shingle around the new one */
+        streams.wrapped = result;
+        streams.shingle = new ShingleFilter(streams.wrapped);
+      }
+    }
+    streams.shingle.setMaxShingleSize(maxShingleSize);
+    streams.shingle.setOutputUnigrams(outputUnigrams);
+    return streams.shingle;
   }
 }

@@ -108,4 +108,18 @@ public class NGramTokenFilterTest extends TestCase {
         
       checkStream(filter, exp);
     }
+    
+    public void testReset() throws Exception {
+      WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(new StringReader("abcde"));
+      NGramTokenFilter filter = new NGramTokenFilter(tokenizer, 1, 3);
+      TermAttribute termAtt = (TermAttribute) filter.addAttribute(TermAttribute.class);
+      assertTrue(filter.incrementToken());
+      assertEquals("(a,0,1)", termAtt.toString());
+      assertTrue(filter.incrementToken());
+      assertEquals("(b,1,2)", termAtt.toString());
+      tokenizer.reset(new StringReader("abcde"));
+      filter.reset();
+      assertTrue(filter.incrementToken());
+      assertEquals("(a,0,1)", termAtt.toString());
+    }
 }

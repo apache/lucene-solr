@@ -161,4 +161,9 @@ public class EdgeNGramTokenFilter extends TokenFilter {
   public final Token next() throws java.io.IOException {
     return super.next();
   }
+
+  public void reset() throws IOException {
+    super.reset();
+    curTermBuffer = null;
+  }
 }

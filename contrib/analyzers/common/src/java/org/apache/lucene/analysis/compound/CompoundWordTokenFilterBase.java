@@ -215,4 +215,9 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   }
   
   protected abstract void decomposeInternal(final Token token);
+
+  public void reset() throws IOException {
+    super.reset();
+    tokens.clear();
+  }
 }

@@ -336,4 +336,14 @@ public class ShingleFilter extends TokenFilter {
   public final Token next() throws java.io.IOException {
     return super.next();
   }
+
+  public void reset() throws IOException {
+    super.reset();
+    nextToken = null;
+    shingleBufferPosition = 0;
+    shingleBuf.clear();
+    numFillerTokensToInsert = 0;
+    currentToken = null;
+    hasCurrentToken = false;
+  }
 }

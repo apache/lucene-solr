@@ -99,4 +99,16 @@ public class NGramTokenizerTest extends TestCase {
         NGramTokenizer tokenizer = new NGramTokenizer(input, 6, 7);
         assertFalse(tokenizer.incrementToken());
     }
+    
+    public void testReset() throws Exception {
+      NGramTokenizer tokenizer = new NGramTokenizer(input, 1, 3);
+      TermAttribute termAtt = (TermAttribute) tokenizer.getAttribute(TermAttribute.class);
+      assertTrue(tokenizer.incrementToken());
+      assertEquals("(a,0,1)", termAtt.toString());
+      assertTrue(tokenizer.incrementToken());
+      assertEquals("(b,1,2)", termAtt.toString());
+      tokenizer.reset(new StringReader("abcde"));
+      assertTrue(tokenizer.incrementToken());
+      assertEquals("(a,0,1)", termAtt.toString());
+    }
 }

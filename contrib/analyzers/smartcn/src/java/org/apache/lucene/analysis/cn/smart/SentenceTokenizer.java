@@ -102,4 +102,13 @@ public final class SentenceTokenizer extends Tokenizer {
     }
   }
 
+  public void reset() throws IOException {
+    super.reset();
+    tokenStart = tokenEnd = 0;
+  }
+
+  public void reset(Reader input) throws IOException {
+    super.reset(input);
+    reset();
+  }
 }

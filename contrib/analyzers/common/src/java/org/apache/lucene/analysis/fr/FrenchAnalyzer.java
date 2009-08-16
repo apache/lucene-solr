@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -128,7 +129,7 @@ public final class FrenchAnalyzer extends Analyzer {
   /**
    * Creates a TokenStream which tokenizes all the text in the provided Reader.
    *
-   * @return A TokenStream build from a StandardTokenizer filtered with
+   * @return A TokenStream built from a StandardTokenizer filtered with
    *         StandardFilter, StopFilter, FrenchStemFilter and LowerCaseFilter
    */
   public final TokenStream tokenStream(String fieldName, Reader reader) {
@@ -143,6 +144,36 @@ public final class FrenchAnalyzer extends Analyzer {
     // Convert to lowercase after stemming!
     result = new LowerCaseFilter(result);
     return result;
+  }
+  
+  private class SavedStreams {
+    Tokenizer source;
+    TokenStream result;
+  };
+  
+  /**
+   * Returns a (possibly reused) TokenStream which tokenizes all the text 
+   * in the provided Reader.
+   *
+   * @return A TokenStream built from a StandardTokenizer filtered with
+   *         StandardFilter, StopFilter, FrenchStemFilter and LowerCaseFilter
+   */
+  public TokenStream reusableTokenStream(String fieldName, Reader reader)
+      throws IOException {
+    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
+    if (streams == null) {
+      streams = new SavedStreams();
+      streams.source = new StandardTokenizer(reader);
+      streams.result = new StandardFilter(streams.source);
+      streams.result = new StopFilter(streams.result, stoptable);
+      streams.result = new FrenchStemFilter(streams.result, excltable);
+      // Convert to lowercase after stemming!
+      streams.result = new LowerCaseFilter(streams.result);
+      setPreviousTokenStream(streams);
+    } else {
+      streams.source.reset(reader);
+    }
+    return streams.result;
   }
 }
 

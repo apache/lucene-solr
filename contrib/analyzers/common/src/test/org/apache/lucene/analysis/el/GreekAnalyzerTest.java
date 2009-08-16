@@ -49,6 +49,16 @@ public class GreekAnalyzerTest extends TestCase {
 		assertFalse(ts.incrementToken());
 		ts.close();
 	}
+	
+	private void assertAnalyzesToReuse(Analyzer a, String input, String[] output) throws Exception {
+	    TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
+	    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
+	    for (int i=0; i<output.length; i++) {
+	        assertTrue(ts.incrementToken());
+	        assertEquals(termAtt.term(), output[i]);
+	    }
+	    assertFalse(ts.incrementToken());
+	}
 
 	/**
 	 * Test the analysis of various greek strings.
@@ -70,5 +80,20 @@ public class GreekAnalyzerTest extends TestCase {
 		assertAnalyzesTo(a, "\u03a0\u03a1\u039f\u03ab\u03a0\u039f\u0398\u0395\u03a3\u0395\u0399\u03a3  \u0386\u03c8\u03bf\u03b3\u03bf\u03c2, \u03bf \u03bc\u03b5\u03c3\u03c4\u03cc\u03c2 \u03ba\u03b1\u03b9 \u03bf\u03b9 \u03ac\u03bb\u03bb\u03bf\u03b9",
 				new String[] { "\u03c0\u03c1\u03bf\u03c5\u03c0\u03bf\u03b8\u03b5\u03c3\u03b5\u03b9\u03c3", "\u03b1\u03c8\u03bf\u03b3\u03bf\u03c3", "\u03bc\u03b5\u03c3\u03c4\u03bf\u03c3", "\u03b1\u03bb\u03bb\u03bf\u03b9" });
 	}
-
+	
+	public void testReusableTokenStream() throws Exception {
+	    Analyzer a = new GreekAnalyzer();
+	    // Verify the correct analysis of capitals and small accented letters
+	    assertAnalyzesToReuse(a, "\u039c\u03af\u03b1 \u03b5\u03be\u03b1\u03b9\u03c1\u03b5\u03c4\u03b9\u03ba\u03ac \u03ba\u03b1\u03bb\u03ae \u03ba\u03b1\u03b9 \u03c0\u03bb\u03bf\u03cd\u03c3\u03b9\u03b1 \u03c3\u03b5\u03b9\u03c1\u03ac \u03c7\u03b1\u03c1\u03b1\u03ba\u03c4\u03ae\u03c1\u03c9\u03bd \u03c4\u03b7\u03c2 \u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ae\u03c2 \u03b3\u03bb\u03ce\u03c3\u03c3\u03b1\u03c2",
+	            new String[] { "\u03bc\u03b9\u03b1", "\u03b5\u03be\u03b1\u03b9\u03c1\u03b5\u03c4\u03b9\u03ba\u03b1", "\u03ba\u03b1\u03bb\u03b7", "\u03c0\u03bb\u03bf\u03c5\u03c3\u03b9\u03b1", "\u03c3\u03b5\u03b9\u03c1\u03b1", "\u03c7\u03b1\u03c1\u03b1\u03ba\u03c4\u03b7\u03c1\u03c9\u03bd",
+	            "\u03b5\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03b7\u03c3", "\u03b3\u03bb\u03c9\u03c3\u03c3\u03b1\u03c3" });
+	    // Verify the correct analysis of small letters with diaeresis and the elimination
+	    // of punctuation marks
+	    assertAnalyzesToReuse(a, "\u03a0\u03c1\u03bf\u03ca\u03cc\u03bd\u03c4\u03b1 (\u03ba\u03b1\u03b9)     [\u03c0\u03bf\u03bb\u03bb\u03b1\u03c0\u03bb\u03ad\u03c2] -   \u0391\u039d\u0391\u0393\u039a\u0395\u03a3",
+	            new String[] { "\u03c0\u03c1\u03bf\u03b9\u03bf\u03bd\u03c4\u03b1", "\u03c0\u03bf\u03bb\u03bb\u03b1\u03c0\u03bb\u03b5\u03c3", "\u03b1\u03bd\u03b1\u03b3\u03ba\u03b5\u03c3" });
+	    // Verify the correct analysis of capital accented letters and capitalletters with diaeresis,
+	    // as well as the elimination of stop words
+	    assertAnalyzesToReuse(a, "\u03a0\u03a1\u039f\u03ab\u03a0\u039f\u0398\u0395\u03a3\u0395\u0399\u03a3  \u0386\u03c8\u03bf\u03b3\u03bf\u03c2, \u03bf \u03bc\u03b5\u03c3\u03c4\u03cc\u03c2 \u03ba\u03b1\u03b9 \u03bf\u03b9 \u03ac\u03bb\u03bb\u03bf\u03b9",
+	            new String[] { "\u03c0\u03c1\u03bf\u03c5\u03c0\u03bf\u03b8\u03b5\u03c3\u03b5\u03b9\u03c3", "\u03b1\u03c8\u03bf\u03b3\u03bf\u03c3", "\u03bc\u03b5\u03c3\u03c4\u03bf\u03c3", "\u03b1\u03bb\u03bb\u03bf\u03b9" });
+	}
 }

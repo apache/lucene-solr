@@ -20,8 +20,10 @@ package org.apache.lucene.analysis.el;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.util.HashSet;
 import java.util.Map;
@@ -209,7 +211,7 @@ public final class GreekAnalyzer extends Analyzer
     /**
      * Creates a TokenStream which tokenizes all the text in the provided Reader.
      *
-     * @return  A TokenStream build from a StandardTokenizer filtered with
+     * @return  A TokenStream built from a StandardTokenizer filtered with
      *                  GreekLowerCaseFilter and StopFilter
      */
     public TokenStream tokenStream(String fieldName, Reader reader)
@@ -218,5 +220,32 @@ public final class GreekAnalyzer extends Analyzer
         result = new GreekLowerCaseFilter(result, charset);
         result = new StopFilter(result, stopSet);
         return result;
+    }
+    
+    private class SavedStreams {
+      Tokenizer source;
+      TokenStream result;
+    };
+    
+    /**
+     * Returns a (possibly reused) TokenStream which tokenizes all the text 
+     * in the provided Reader.
+     *
+     * @return  A TokenStream built from a StandardTokenizer filtered with
+     *                  GreekLowerCaseFilter and StopFilter
+     */
+    public TokenStream reusableTokenStream(String fieldName, Reader reader) 
+      throws IOException {
+      SavedStreams streams = (SavedStreams) getPreviousTokenStream();
+      if (streams == null) {
+        streams = new SavedStreams();
+        streams.source = new StandardTokenizer(reader);
+        streams.result = new GreekLowerCaseFilter(streams.source, charset);
+        streams.result = new StopFilter(streams.result, stopSet);
+        setPreviousTokenStream(streams);
+      } else {
+        streams.source.reset(reader);
+      }
+      return streams.result;
     }
 }

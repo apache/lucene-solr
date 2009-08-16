@@ -26,6 +26,7 @@ import java.io.StringReader;
 
 import junit.framework.TestCase;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
@@ -187,5 +188,22 @@ public class TestRussianAnalyzer extends TestCase
             fail("unexpected IOException");
         }
     }
+    
+    public void testReusableTokenStream() throws Exception {
+      Analyzer a = new RussianAnalyzer();
+      assertAnalyzesToReuse(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
+          new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представлен" });
+      assertAnalyzesToReuse(a, "Но знание это хранилось в тайне",
+          new String[] { "знан", "хран", "тайн" });
+    }
 
+    private void assertAnalyzesToReuse(Analyzer a, String input, String[] output) throws Exception {
+      TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
+      TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
+      for (int i=0; i<output.length; i++) {
+          assertTrue(ts.incrementToken());
+          assertEquals(termAtt.term(), output[i]);
+      }
+      assertFalse(ts.incrementToken());
+    }
 }

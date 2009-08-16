@@ -81,4 +81,9 @@ public final class WordTokenFilter extends TokenFilter {
     typeAtt.setType("word");
     return true;
   }
+
+  public void reset() throws IOException {
+    super.reset();
+    tokenIter = null;
+  }
 }

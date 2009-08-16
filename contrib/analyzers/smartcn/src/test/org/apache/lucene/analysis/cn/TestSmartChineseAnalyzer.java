@@ -108,6 +108,33 @@ public class TestSmartChineseAnalyzer extends TestCase {
         new int[] { 1, 3, 4, 6, 7, 9 });
   }
   
+  public void testReusableTokenStream() throws Exception {
+    Analyzer a = new SmartChineseAnalyzer();
+    assertAnalyzesToReuse(a, "我购买 Tests 了道具和服装", 
+        new String[] { "我", "购买", "test", "了", "道具", "和", "服装"},
+        new int[] { 0, 1, 4, 10, 11, 13, 14 },
+        new int[] { 1, 3, 9, 11, 13, 14, 16 });
+    assertAnalyzesToReuse(a, "我购买了道具和服装。",
+        new String[] { "我", "购买", "了", "道具", "和", "服装" },
+        new int[] { 0, 1, 3, 4, 6, 7 },
+        new int[] { 1, 3, 4, 6, 7, 9 });
+  }
+  
+  public void assertAnalyzesToReuse(Analyzer a, String input, String[] output,
+      int startOffsets[], int endOffsets[]) throws Exception {
+
+    TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
+    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) ts.getAttribute(OffsetAttribute.class);
+    for (int i = 0; i < output.length; i++) {
+      assertTrue(ts.incrementToken());
+      assertEquals(termAtt.term(), output[i]);
+      assertEquals(offsetAtt.startOffset(), startOffsets[i]);
+      assertEquals(offsetAtt.endOffset(), endOffsets[i]);
+    }
+    assertFalse(ts.incrementToken());
+  }
+  
   public void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[])
   throws Exception {
 

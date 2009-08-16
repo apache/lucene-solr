@@ -36,6 +36,12 @@ public class TestCzechAnalyzer extends TestCase {
   public void testStopWord() throws Exception {
     assertAnalyzesTo(new CzechAnalyzer(), "Pokud mluvime o volnem", new String[] { "mluvime", "volnem" });
   }
+  
+  public void testReusableTokenStream() throws Exception {
+    Analyzer analyzer = new CzechAnalyzer();
+    assertAnalyzesToReuse(analyzer, "Pokud mluvime o volnem", new String[] { "mluvime", "volnem" });
+    assertAnalyzesToReuse(analyzer, "Česká Republika", new String[] { "česká", "republika" });
+  }
 
   private void assertAnalyzesTo(Analyzer a, String input, String[] output) throws Exception {
     TokenStream ts = a.tokenStream("dummy", new StringReader(input));
@@ -46,5 +52,15 @@ public class TestCzechAnalyzer extends TestCase {
     }
     assertFalse(ts.incrementToken());
     ts.close();
+  }
+  
+  private void assertAnalyzesToReuse(Analyzer a, String input, String[] output) throws Exception {
+    TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
+    TermAttribute text = (TermAttribute) ts.getAttribute(TermAttribute.class);
+    for (int i=0; i<output.length; i++) {
+      assertTrue(ts.incrementToken());
+      assertEquals(text.term(), output[i]);
+    }
+    assertFalse(ts.incrementToken());
   }
 }

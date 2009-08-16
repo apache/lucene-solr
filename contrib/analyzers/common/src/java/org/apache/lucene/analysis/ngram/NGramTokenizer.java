@@ -115,4 +115,15 @@ public class NGramTokenizer extends Tokenizer {
   public final Token next() throws java.io.IOException {
     return super.next();
   }
+  
+  public void reset(Reader input) throws IOException {
+    super.reset(input);
+    reset();
+  }
+
+  public void reset() throws IOException {
+    super.reset();
+    started = false;
+    pos = 0;
+  }
 }

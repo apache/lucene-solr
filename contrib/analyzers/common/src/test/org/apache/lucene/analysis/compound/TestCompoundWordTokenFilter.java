@@ -34,6 +34,7 @@ import java.util.zip.ZipInputStream;
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -150,6 +151,38 @@ public class TestCompoundWordTokenFilter extends TestCase {
         "fiolsfodral", "fodral", "makare", "gesäll" }, new int[] { 0, 0, 3, 8,
         14, 20 }, new int[] { 26, 3, 14, 14, 20, 26 }, new int[] { 1, 0, 0, 0,
         0, 0 });
+  }
+  
+  public void testReset() throws Exception {
+    String[] dict = { "Rind", "Fleisch", "Draht", "Schere", "Gesetz",
+        "Aufgabe", "Überwachung" };
+
+    Reader reader = getHyphenationReader("de_DR.xml");
+    if (reader == null) {
+      // we gracefully die if we have no reader
+      return;
+    }
+
+    HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter
+        .getHyphenationTree(reader);
+
+    Tokenizer wsTokenizer = new WhitespaceTokenizer(new StringReader(
+        "Rindfleischüberwachungsgesetz"));
+    HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(
+        wsTokenizer, hyphenator, dict,
+        CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
+        CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
+        CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
+    
+    TermAttribute termAtt = (TermAttribute) tf.getAttribute(TermAttribute.class);
+    assertTrue(tf.incrementToken());
+    assertEquals("Rindfleischüberwachungsgesetz", termAtt.term());
+    assertTrue(tf.incrementToken());
+    assertEquals("Rind", termAtt.term());
+    wsTokenizer.reset(new StringReader("Rindfleischüberwachungsgesetz"));
+    tf.reset();
+    assertTrue(tf.incrementToken());
+    assertEquals("Rindfleischüberwachungsgesetz", termAtt.term());
   }
 
   private void assertFiltersTo(TokenFilter tf, String[] s, int[] startOffset,

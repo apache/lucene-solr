@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.snowball;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.standard.*;
 
+import java.io.IOException;
 import java.io.Reader;
 import java.util.Set;
 
@@ -37,6 +38,7 @@ public class SnowballAnalyzer extends Analyzer {
   /** Builds the named analyzer with no stop words. */
   public SnowballAnalyzer(String name) {
     this.name = name;
+    setOverridesTokenStreamMethod(SnowballAnalyzer.class);
   }
 
   /** Builds the named analyzer with the given stop words. */
@@ -46,7 +48,8 @@ public class SnowballAnalyzer extends Analyzer {
   }
 
   /** Constructs a {@link StandardTokenizer} filtered by a {@link
-      StandardFilter}, a {@link LowerCaseFilter} and a {@link StopFilter}. */
+      StandardFilter}, a {@link LowerCaseFilter}, a {@link StopFilter},
+      and a {@link SnowballFilter} */
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(reader);
     result = new StandardFilter(result);
@@ -55,5 +58,38 @@ public class SnowballAnalyzer extends Analyzer {
       result = new StopFilter(result, stopSet);
     result = new SnowballFilter(result, name);
     return result;
+  }
+  
+  private class SavedStreams {
+    Tokenizer source;
+    TokenStream result;
+  };
+  
+  /** Returns a (possibly reused) {@link StandardTokenizer} filtered by a 
+   * {@link StandardFilter}, a {@link LowerCaseFilter}, 
+   * a {@link StopFilter}, and a {@link SnowballFilter} */
+  public TokenStream reusableTokenStream(String fieldName, Reader reader)
+      throws IOException {
+    if (overridesTokenStreamMethod) {
+      // LUCENE-1678: force fallback to tokenStream() if we
+      // have been subclassed and that subclass overrides
+      // tokenStream but not reusableTokenStream
+      return tokenStream(fieldName, reader);
+    }
+    
+    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
+    if (streams == null) {
+      streams = new SavedStreams();
+      streams.source = new StandardTokenizer(reader);
+      streams.result = new StandardFilter(streams.source);
+      streams.result = new LowerCaseFilter(streams.result);
+      if (stopSet != null)
+        streams.result = new StopFilter(streams.result, stopSet);
+      streams.result = new SnowballFilter(streams.result, name);
+      setPreviousTokenStream(streams);
+    } else {
+      streams.source.reset(reader);
+    }
+    return streams.result;
   }
 }

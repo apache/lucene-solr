@@ -17,12 +17,14 @@ package org.apache.lucene.analysis.th;
  * limitations under the License.
  */
 
+import java.io.Reader;
 import java.io.StringReader;
 
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
@@ -91,6 +93,23 @@ public class TestThaiAnalyzer extends TestCase {
 		ts.close();
 	}
 	
+	public void assertAnalyzesToReuse(Analyzer a, String input, String[] output)
+      throws Exception {
+
+      TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
+      TermAttribute termAtt = (TermAttribute) ts
+        .getAttribute(TermAttribute.class);
+      OffsetAttribute offsetAtt = (OffsetAttribute) ts
+        .getAttribute(OffsetAttribute.class);
+      TypeAttribute typeAtt = (TypeAttribute) ts
+        .getAttribute(TypeAttribute.class);
+      for (int i = 0; i < output.length; i++) {
+        assertTrue(ts.incrementToken());
+        assertEquals(termAtt.term(), output[i]);
+      }
+      assertFalse(ts.incrementToken());
+    }
+	
 	public void assertAnalyzesTo(Analyzer a, String input, String[] output) throws Exception {
 		assertAnalyzesTo(a, input, output, null, null, null);
 	}
@@ -123,5 +142,34 @@ public class TestThaiAnalyzer extends TestCase {
 			analyzer,
 			"ประโยคว่า The quick brown fox jumped over the lazy dogs",
 			new String[] { "ประโยค", "ว่า", "quick", "brown", "fox", "jumped", "over", "lazy", "dogs" });
+	}
+	
+	public void testReusableTokenStream() throws Exception {
+	  ThaiAnalyzer analyzer = new ThaiAnalyzer();
+	  assertAnalyzesToReuse(analyzer, "", new String[] {});
+
+      assertAnalyzesToReuse(
+          analyzer,
+          "การที่ได้ต้องแสดงว่างานดี",
+          new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี"});
+
+      assertAnalyzesToReuse(
+          analyzer,
+          "บริษัทชื่อ XY&Z - คุยกับ xyz@demo.com",
+          new String[] { "บริษัท", "ชื่อ", "xy&z", "คุย", "กับ", "xyz@demo.com" });
+	}
+	
+	/**
+	 * subclass that acts just like whitespace analyzer for testing
+	 */
+	private class ThaiSubclassAnalyzer extends ThaiAnalyzer {
+	  public TokenStream tokenStream(String fieldName, Reader reader) {
+	    return new WhitespaceTokenizer(reader);
+	  }
+	}
+	
+	public void testLUCENE1678BWComp() throws Exception {
+	  ThaiSubclassAnalyzer a = new ThaiSubclassAnalyzer();
+	  assertAnalyzesToReuse(a, "การที่ได้ต้องแสดงว่างานดี", new String[] { "การที่ได้ต้องแสดงว่างานดี" });
 	}
 }

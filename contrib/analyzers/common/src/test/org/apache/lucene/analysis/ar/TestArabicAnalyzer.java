@@ -57,6 +57,15 @@ public class TestArabicAnalyzer extends TestCase {
     assertAnalyzesTo(a, "ما ملكت أيمانكم", new String[] { "ملكت", "ايمانكم"});
     assertAnalyzesTo(a, "الذين ملكت أيمانكم", new String[] { "ملكت", "ايمانكم" }); // stopwords
   }
+  
+  /**
+   * Simple tests to show things are getting reset correctly, etc.
+   */
+  public void testReusableTokenStream() throws Exception {
+    ArabicAnalyzer a = new ArabicAnalyzer();
+    assertAnalyzesToReuse(a, "كبير", new String[] { "كبير" });
+    assertAnalyzesToReuse(a, "كبيرة", new String[] { "كبير" }); // feminine marker
+  }
 
   /**
    * Non-arabic text gets treated in a similar way as SimpleAnalyzer.
@@ -80,5 +89,18 @@ public class TestArabicAnalyzer extends TestCase {
     assertFalse(ts.incrementToken());
     ts.close();
   }
+  
+  private void assertAnalyzesToReuse(Analyzer a, String input, String[] output)
+      throws Exception {
+    TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
+    TermAttribute termAtt = (TermAttribute) ts
+        .getAttribute(TermAttribute.class);
 
+    for (int i = 0; i < output.length; i++) {
+      assertTrue(ts.incrementToken());
+      assertEquals(output[i], termAtt.term());
+    }
+
+    assertFalse(ts.incrementToken());
+  }
 }

@@ -84,6 +84,19 @@ public class TestFrenchAnalyzer extends TestCase {
 		assertFalse(ts.incrementToken());
 		ts.close();
 	}
+	
+   public void assertAnalyzesToReuse(Analyzer a, String input, String[] output)
+       throws Exception {
+
+       TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
+
+       TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
+       for (int i = 0; i < output.length; i++) {
+           assertTrue(ts.incrementToken());
+           assertEquals(termAtt.term(), output[i]);
+       }
+       assertFalse(ts.incrementToken());
+   }
 
 	public void testAnalyzer() throws Exception {
 		FrenchAnalyzer fa = new FrenchAnalyzer();
@@ -185,6 +198,27 @@ public class TestFrenchAnalyzer extends TestCase {
 			"33Bis 1940-1945 1940:1945 (---i+++)*",
 			new String[] { "33bis", "1940-1945", "1940", "1945", "i" });
 
+	}
+	
+	public void testReusableTokenStream() throws Exception {
+	  FrenchAnalyzer fa = new FrenchAnalyzer();
+	  // stopwords
+      assertAnalyzesToReuse(
+          fa,
+          "le la chien les aux chat du des à cheval",
+          new String[] { "chien", "chat", "cheval" });
+
+      // some nouns and adjectives
+      assertAnalyzesToReuse(
+          fa,
+          "lances chismes habitable chiste éléments captifs",
+          new String[] {
+              "lanc",
+              "chism",
+              "habit",
+              "chist",
+              "élément",
+              "captif" });
 	}
 
 }

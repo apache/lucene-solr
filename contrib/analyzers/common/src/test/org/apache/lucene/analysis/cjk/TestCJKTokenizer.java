@@ -22,6 +22,8 @@ import java.io.StringReader;
 
 import junit.framework.TestCase;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
@@ -58,6 +60,21 @@ public class TestCJKTokenizer extends TestCase{
       assertEquals(typeAtt.type(), out_tokens[i].type);
     }
     assertFalse(tokenizer.incrementToken());
+  }
+  
+  public void checkCJKTokenReusable(final Analyzer a, final String str, final TestToken[] out_tokens) throws IOException {
+    TokenStream ts = a.reusableTokenStream("dummy", new StringReader(str));
+    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) ts.getAttribute(OffsetAttribute.class);
+    TypeAttribute typeAtt = (TypeAttribute) ts.getAttribute(TypeAttribute.class);
+    for (int i = 0; i < out_tokens.length; i++) {
+      assertTrue(ts.incrementToken());
+      assertEquals(termAtt.term(), out_tokens[i].termText);
+      assertEquals(offsetAtt.startOffset(), out_tokens[i].start);
+      assertEquals(offsetAtt.endOffset(), out_tokens[i].end);
+      assertEquals(typeAtt.type(), out_tokens[i].type);
+    }
+    assertFalse(ts.incrementToken());
   }
   
   public void testJa1() throws IOException {
@@ -150,5 +167,39 @@ public class TestCJKTokenizer extends TestCase{
       newToken("\u4e00", 0, 1, CJKTokenizer.DOUBLE_TOKEN_TYPE), 
     };
     checkCJKToken(str, out_tokens);
+  }
+  
+  public void testReusableTokenStream() throws Exception {
+    Analyzer analyzer = new CJKAnalyzer();
+    String str = "\u3042\u3044\u3046\u3048\u304aabc\u304b\u304d\u304f\u3051\u3053";
+    
+    TestToken[] out_tokens = { 
+      newToken("\u3042\u3044", 0, 2, CJKTokenizer.DOUBLE_TOKEN_TYPE), 
+      newToken("\u3044\u3046", 1, 3, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+      newToken("\u3046\u3048", 2, 4, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+      newToken("\u3048\u304a", 3, 5, CJKTokenizer.DOUBLE_TOKEN_TYPE), 
+      newToken("abc", 5, 8, CJKTokenizer.SINGLE_TOKEN_TYPE), 
+      newToken("\u304b\u304d", 8, 10, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+      newToken("\u304d\u304f", 9, 11, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+      newToken("\u304f\u3051", 10,12, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+      newToken("\u3051\u3053", 11,13, CJKTokenizer.DOUBLE_TOKEN_TYPE)
+    };
+    checkCJKTokenReusable(analyzer, str, out_tokens);
+    
+    str = "\u3042\u3044\u3046\u3048\u304aab\u3093c\u304b\u304d\u304f\u3051 \u3053";
+    TestToken[] out_tokens2 = { 
+      newToken("\u3042\u3044", 0, 2, CJKTokenizer.DOUBLE_TOKEN_TYPE), 
+      newToken("\u3044\u3046", 1, 3, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+      newToken("\u3046\u3048", 2, 4, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+      newToken("\u3048\u304a", 3, 5, CJKTokenizer.DOUBLE_TOKEN_TYPE), 
+      newToken("ab", 5, 7, CJKTokenizer.SINGLE_TOKEN_TYPE), 
+      newToken("\u3093", 7, 8, CJKTokenizer.DOUBLE_TOKEN_TYPE), 
+      newToken("c", 8, 9, CJKTokenizer.SINGLE_TOKEN_TYPE), 
+      newToken("\u304b\u304d", 9, 11, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+      newToken("\u304d\u304f", 10, 12, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+      newToken("\u304f\u3051", 11,13, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+      newToken("\u3053", 14,15, CJKTokenizer.DOUBLE_TOKEN_TYPE)
+    };
+    checkCJKTokenReusable(analyzer, str, out_tokens2);
   }
 }

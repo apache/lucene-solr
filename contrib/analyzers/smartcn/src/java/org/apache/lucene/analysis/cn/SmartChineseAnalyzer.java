@@ -151,6 +151,7 @@ public class SmartChineseAnalyzer extends Analyzer {
       }
     } else {
       streams.tokenStream.reset(reader);
+      streams.filteredTokenStream.reset(); // reset WordTokenFilter's state
     }
 
     return streams.filteredTokenStream;

@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 
 /**
@@ -109,7 +110,7 @@ public final class ArabicAnalyzer extends Analyzer {
   /**
    * Creates a TokenStream which tokenizes all the text in the provided Reader.
    *
-   * @return  A TokenStream build from an ArabicTokenizer filtered with
+   * @return  A TokenStream built from an ArabicTokenizer filtered with
    * 			StopFilter, LowerCaseFilter, ArabicNormalizationFilter and ArabicStemFilter.
    */
   public final TokenStream tokenStream(String fieldName, Reader reader) {
@@ -120,6 +121,36 @@ public final class ArabicAnalyzer extends Analyzer {
     result = new ArabicStemFilter( result );
 
     return result;
+  }
+  
+  private class SavedStreams {
+    Tokenizer source;
+    TokenStream result;
+  };
+  
+  /**
+   * Returns a (possibly reused) TokenStream which tokenizes all the text 
+   * in the provided Reader.
+   *
+   * @return  A TokenStream built from an ArabicTokenizer filtered with
+   *            StopFilter, LowerCaseFilter, ArabicNormalizationFilter and 
+   *            ArabicStemFilter.
+   */
+  public TokenStream reusableTokenStream(String fieldName, Reader reader)
+      throws IOException {
+    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
+    if (streams == null) {
+      streams = new SavedStreams();
+      streams.source = new ArabicLetterTokenizer(reader);
+      streams.result = new StopFilter(streams.source, stoptable);
+      streams.result = new LowerCaseFilter(streams.result);
+      streams.result = new ArabicNormalizationFilter(streams.result);
+      streams.result = new ArabicStemFilter(streams.result);
+      setPreviousTokenStream(streams);
+    } else {
+      streams.source.reset(reader);
+    }
+    return streams.result;
   }
 }
 
