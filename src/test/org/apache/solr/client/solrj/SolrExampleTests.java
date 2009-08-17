@@ -219,13 +219,13 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     doc3.addField( "price", 10 );
     UpdateRequest up = new UpdateRequest();
     up.add( doc3 );
-    up.setCommitWithin( 100 );
+    up.setCommitWithin( 500 );  // a smaller commitWithin caused failures on the following assert
     up.process( server );
     
     rsp = server.query( new SolrQuery( "*:*") );
     Assert.assertEquals( 0, rsp.getResults().getNumFound() );
     
-    Thread.sleep( 500 ); // wait 1/2 seconds...
+    Thread.sleep( 1000 ); // wait 1 sec
 
     // now check that it comes out...
     rsp = server.query( new SolrQuery( "id:id3") );
