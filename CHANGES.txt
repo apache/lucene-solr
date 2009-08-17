@@ -61,7 +61,8 @@ Changes in backwards compatibility policy
     Going forward Searchable will be kept for convenience only and may
     be changed between minor releases without any deprecation
     process. It is not recommended that you implement it, but rather extend
-    Searcher.  (Shai Erera, Chris Hostetter, Mark Miller via Mike McCandless)
+    Searcher.  
+    (Shai Erera, Chris Hostetter, Martin Ruckli, Mark Miller via Mike McCandless)
 
  4. LUCENE-1422, LUCENE-1693: The new TokenStream API (see below) using
     Attributes has some backwards breaks in rare cases.
@@ -320,7 +321,7 @@ API Changes
     out of order when used with a Collector that can accept docs out of order.
     Finally, Weight#explain now also takes a the top-level searcher, sub-reader 
     and sub-docID.
-    (Shai Erera, Chris Hostetter, Mark Miller via Mike McCandless)
+    (Shai Erera, Chris Hostetter, Martin Ruckli, Mark Miller via Mike McCandless)
  	
 25. LUCENE-1466: Changed Tokenizer.input to be a CharStream; added
     CharFilter and MappingCharFilter, which allows chaining & mapping
