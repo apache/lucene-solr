@@ -42,6 +42,7 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
     String iterS = System.getProperty("iter");
     if (iterS != null) iter=Integer.parseInt(iterS);
     boolean includeDoc = Boolean.parseBoolean(System.getProperty("includeDoc","true")); // include the time to create the document
+    boolean overwrite = Boolean.parseBoolean(System.getProperty("overwrite","false"));
     String doc = System.getProperty("doc");
     if (doc != null) {
       StrUtils.splitSmart(doc,",",true);
@@ -81,12 +82,17 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
     long start = System.currentTimeMillis();
 
     AddUpdateCommand add = new AddUpdateCommand();
-    add.allowDups = true;
+    add.allowDups = !overwrite;
+    add.overwriteCommitted = overwrite;
+    add.overwritePending = overwrite;
 
+    Field idField=null;
 
     for (int i=0; i<iter; i++) {
       if (includeDoc || add.doc==null) {
         add.doc = new Document();
+        idField = new Field("id","", Field.Store.YES, Field.Index.NOT_ANALYZED);
+        add.doc.add(idField);
         for (int j=0; j<fields.length; j+=2) {
           String field = fields[j];
           String val = fields[j+1];
@@ -94,7 +100,8 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
           add.doc.add(f);
         }
       }
-      updateHandler.addDoc(add);      
+      idField.setValue(Integer.toString(i));
+      updateHandler.addDoc(add);
     }
     long end = System.currentTimeMillis();
     System.out.println("includeDoc="+includeDoc+" doc="+ Arrays.toString(fields));
