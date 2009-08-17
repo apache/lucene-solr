@@ -93,6 +93,13 @@ Changes in backwards compatibility policy
     help in alleviating future back compat pain, Spans has been changed from
     an interface to an abstract class.
     (Hugh Cayless, Mark Miller)
+    
+ 7. LUCENE-1808: Query.createWeight has been changed from protected to
+    public. This will be a back compat break if you have overridden this
+    method - but you are likely already affected by the LUCENE-1693 (make Weight 
+    abstract rather than an interface) back compat break if you have overridden 
+    Query.creatWeight, so we have taken the opportunity to make this change.
+    (Tim Smith, Shai Erera via Mark Miller)
  
 Changes in runtime behavior
 
@@ -383,6 +390,9 @@ API Changes
     help in alleviating future back compat pain, Spans has been changed from
     an interface to an abstract class.
     (Hugh Cayless, Mark Miller)
+    
+36. LUCENE-1808: Query.createWeight has been changed from protected to
+    public. (Tim Smith, Shai Erera via Mark Miller)
 
 Bug fixes
 
