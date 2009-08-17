@@ -42,7 +42,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
      * <br> - score gets lower as distance gets higher.
      * <br>Example: for query "a b"~2, a document "x a b a y" can be scored twice: 
      * once for "a b" (distance=0), and once for "b a" (distance=2).
-     * <br>Pssibly not all valid combinations are encountered, because for efficiency  
+     * <br>Possibly not all valid combinations are encountered, because for efficiency  
      * we always propagate the least PhrasePosition. This allows to base on 
      * PriorityQueue and move forward faster. 
      * As result, for example, document "a b c b a"
