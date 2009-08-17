@@ -1,6 +1,5 @@
 package org.apache.lucene.search.payloads;
 
-import org.apache.lucene.index.Term;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,12 +24,29 @@ import org.apache.lucene.index.Term;
  * Is thread safe and completely reusable.
  *
  **/
-public class MaxPayloadFunction extends PayloadFunction{
+public class MaxPayloadFunction extends PayloadFunction {
   public float currentScore(int docId, String field, int start, int end, int numPayloadsSeen, float currentScore, float currentPayloadScore) {
     return Math.max(currentPayloadScore, currentScore);
   }
 
   public float docScore(int docId, String field, int numPayloadsSeen, float payloadScore) {
     return numPayloadsSeen > 0 ? payloadScore : 1;
+  }
+  
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + this.getClass().hashCode();
+    return result;
+  }
+
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    return true;
   }
 }

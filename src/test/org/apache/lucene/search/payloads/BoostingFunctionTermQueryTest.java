@@ -19,12 +19,14 @@ package org.apache.lucene.search.payloads;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.English;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.search.spans.TermSpans;
 import org.apache.lucene.analysis.Analyzer;
@@ -150,6 +152,21 @@ public class BoostingFunctionTermQueryTest extends LuceneTestCase {
       assertTrue("scores are not equal and they should be", score == hits.score(i));
     }*/
 
+  }
+  
+  public void testQuery() {
+    BoostingFunctionTermQuery boostingFuncTermQuery = new BoostingFunctionTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
+        new MaxPayloadFunction());
+    QueryUtils.check(boostingFuncTermQuery);
+    
+    SpanTermQuery spanTermQuery = new SpanTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"));
+
+    assertTrue(boostingFuncTermQuery.equals(spanTermQuery) == spanTermQuery.equals(boostingFuncTermQuery));
+    
+    BoostingFunctionTermQuery boostingFuncTermQuery2 = new BoostingFunctionTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
+        new AveragePayloadFunction());
+    
+    QueryUtils.checkUnequal(boostingFuncTermQuery, boostingFuncTermQuery2);
   }
 
   public void testMultipleMatchesPerDoc() throws Exception {

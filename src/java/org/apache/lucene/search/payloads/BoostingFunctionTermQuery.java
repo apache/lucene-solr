@@ -170,11 +170,31 @@ public class BoostingFunctionTermQuery extends SpanTermQuery  implements Payload
     }
   }
 
-  public boolean equals(Object o) {
-    if (!(o instanceof BoostingFunctionTermQuery))
-      return false;
-    BoostingFunctionTermQuery other = (BoostingFunctionTermQuery) o;
-    return (this.getBoost() == other.getBoost())
-            && this.term.equals(other.term)  && this.function.equals(other.function);
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + ((function == null) ? 0 : function.hashCode());
+    result = prime * result + (includeSpanScore ? 1231 : 1237);
+    return result;
   }
+
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (!super.equals(obj))
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    BoostingFunctionTermQuery other = (BoostingFunctionTermQuery) obj;
+    if (function == null) {
+      if (other.function != null)
+        return false;
+    } else if (!function.equals(other.function))
+      return false;
+    if (includeSpanScore != other.includeSpanScore)
+      return false;
+    return true;
+  }
+
+
 }

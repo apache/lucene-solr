@@ -61,18 +61,27 @@ public class SpanTermQuery extends SpanQuery {
     return buffer.toString();
   }
 
-  /** Returns true iff <code>o</code> is equal to this. */
-  public boolean equals(Object o) {
-    if (!(o instanceof SpanTermQuery))
-      return false;
-    SpanTermQuery other = (SpanTermQuery)o;
-    return (this.getBoost() == other.getBoost())
-      && this.term.equals(other.term);
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + ((term == null) ? 0 : term.hashCode());
+    return result;
   }
 
-  /** Returns a hash code value for this object.*/
-  public int hashCode() {
-    return Float.floatToIntBits(getBoost()) ^ term.hashCode() ^ 0xD23FE494;
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (!super.equals(obj))
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    SpanTermQuery other = (SpanTermQuery) obj;
+    if (term == null) {
+      if (other.term != null)
+        return false;
+    } else if (!term.equals(other.term))
+      return false;
+    return true;
   }
 
   public Spans getSpans(final IndexReader reader) throws IOException {
