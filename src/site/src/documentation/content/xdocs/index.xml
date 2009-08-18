@@ -39,6 +39,60 @@
 
     <section id="news">
       <title>News</title>
+
+<section>
+ <title>18 August 2009 - Lucene at US ApacheCon</title>
+ <p>
+ <a title="ApacheCon US 2009" 
+    href="http://www.us.apachecon.com/c/acus2009/"><img
+    src="http://www.apache.org/events/current-event-125x125.png"
+    class="float-right" alt="ApacheCon Logo" /></a>
+
+<a href="http://www.us.apachecon.com/c/acus2009/">ApacheCon US</a> 
+is once again in the Bay Area and Lucene is coming along
+for the ride!  The Lucene community has planned two full days of
+talks, plus a meetup and the usual bevy of training.  With a
+well-balanced mix of first time and veteran ApacheCon speakers, the <a
+href="http://www.us.apachecon.com/c/acus2009/schedule#lucene">Lucene
+track</a> at ApacheCon US promises to have something for everyone.  
+Be sure not to miss:
+ </p>
+<p>Training:</p>
+<ul>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/437">Lucene Boot
+    Camp</a> - A two day training session, Nov. 2nd &amp; 3rd</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/375">Solr 
+    Day</a> - A one day training session, Nov. 2nd</li>
+</ul>
+<p>Thursday, Nov. 5th</p>
+<ul>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/428">Introduction 
+    to the Lucene Ecosystem</a> - Grant Ingersoll @ 9:00</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/461">Lucene 
+    Basics and New Features</a> - Michael Busch @ 10:00</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/331">Apache
+    Solr: Out of the Box</a> - Chris Hostetter @ 14:00</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/427">Introduction 
+    to Nutch</a> - Andrzej Bialecki @ 15:00</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/430">Lucene and
+    Solr Performance Tuning</a> - Mark Miller @ 16:30</li>
+</ul>
+<p>Friday, Nov. 6th</p>
+<ul>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/332">Implementing 
+    an Information Retrieval Framework for an Organizational
+    Repository</a> - Sithu D Sudarsan @ 9:00</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/333">Apache 
+    Mahout - Going from raw data to Information</a> - Isabel Drost @ 10:00</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/334">MIME 
+    Magic with Apache Tika</a> - Jukka Zitting @ 11:30</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/335">Building 
+    Intelligent Search Applications with the Lucene
+    Ecosystem</a> - Ted Dunning @ 14:00</li>
+<li><a href="http://www.us.apachecon.com/c/acus2009/sessions/462">Realtime 
+    Search</a> - Jason Rutherglen @ 15:00</li>
+</ul>
+</section>
 <section>
     <title>09 February 2009 - Lucene at ApacheCon Europe 2009 in Amsterdam</title>
     <p>
