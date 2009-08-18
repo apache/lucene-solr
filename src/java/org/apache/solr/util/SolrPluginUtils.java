@@ -887,26 +887,36 @@ public class SolrPluginUtils {
     }
   }
 
-  /**
-   * Convert a DocList to a SolrDocumentList
-   * 
-   * The optional param "ids" is populated with the lucene document id 
-   * for each SolrDocument.  
-   * 
-   * @param docs The {@link org.apache.solr.search.DocList} to convert
-   * @param searcher The {@link org.apache.solr.search.SolrIndexSearcher} to use to load the docs from the Lucene index
-   * @param fields The names of the Fields to load
-   * @param ids A map to store the ids of the docs
-   * @return The new {@link org.apache.solr.common.SolrDocumentList} containing all the loaded docs
-   * @throws java.io.IOException if there was a problem loading the docs
-   * @since solr 1.4
-   */
+
   public static SolrDocumentList docListToSolrDocumentList(
       DocList docs, 
       SolrIndexSearcher searcher, 
       Set<String> fields, 
       Map<SolrDocument, Integer> ids ) throws IOException
   {
+    return docListToSolrDocumentList(docs, searcher, fields, null, ids);
+  }
+
+  /**
+   * Convert a DocList to a SolrDocumentList
+   *
+   * The optional param "ids" is populated with the lucene document id
+   * for each SolrDocument.
+   *
+   * @param docs The {@link org.apache.solr.search.DocList} to convert
+   * @param searcher The {@link org.apache.solr.search.SolrIndexSearcher} to use to load the docs from the Lucene index
+   * @param fields The names of the Fields to load
+   * @param docModifier The {@link SolrDocumentModifier}
+   * @param ids A map to store the ids of the docs
+   * @return The new {@link org.apache.solr.common.SolrDocumentList} containing all the loaded docs
+   * @throws java.io.IOException if there was a problem loading the docs
+   * @since solr 1.4
+   */
+  public static SolrDocumentList docListToSolrDocumentList(
+      DocList docs,
+      SolrIndexSearcher searcher,
+      Set<String> fields, SolrDocumentModifier docModifier,
+      Map<SolrDocument, Integer> ids ) throws IOException{
     DocumentBuilder db = new DocumentBuilder(searcher.getSchema());
     SolrDocumentList list = new SolrDocumentList();
     list.setNumFound(docs.matches());
@@ -917,7 +927,7 @@ public class SolrPluginUtils {
 
     while (dit.hasNext()) {
       int docid = dit.nextDoc();
-      
+
       Document luceneDoc = searcher.doc(docid, fields);
       SolrDocument doc = new SolrDocument();
       db.loadStoredFields(doc, luceneDoc);
@@ -927,16 +937,21 @@ public class SolrPluginUtils {
       if (docs.hasScores()) {
         doc.addField("score", dit.score());
       } else {
-        doc.addField("score", 0.0f); 
+        doc.addField("score", 0.0f);
+      }
+
+      if (docModifier != null) {
+        docModifier.process(doc);
       }
       list.add( doc );
-      
+
       if( ids != null ) {
         ids.put( doc, new Integer(docid) );
       }
     }
     return list;
   }
+
 
   /**
    * Given a SolrQueryResponse replace the DocList if it is in the result.  

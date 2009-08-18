@@ -267,6 +267,8 @@ New Features
     HTMLStripStandardTokenizerFactory deprecated. To strip HTML tags, HTMLStripCharFilter can be used
     with an arbitrary Tokenizer. (koji)
 
+68. SOLR-1367: Added callback mechanism for converting DocList to SolrDocumentList in SolrPluginUtils (gsingers)  
+
 
 Optimizations
 ----------------------

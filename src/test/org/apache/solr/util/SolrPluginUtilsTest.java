@@ -19,6 +19,14 @@ package org.apache.solr.util;
 
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.DocList;
+import org.apache.solr.search.DocSlice;
+import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.common.util.*;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
@@ -27,12 +35,15 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Tests that the functions in SolrPluginUtils work as advertised.
@@ -41,6 +52,36 @@ public class SolrPluginUtilsTest extends AbstractSolrTestCase {
 
   public String getSchemaFile() { return "schema.xml"; }
   public String getSolrConfigFile() { return "solrconfig.xml"; }
+
+
+  public void testDocModifier() throws Exception {
+    assertU("", adoc("id", "3234", "val_t", "quick red fox"));
+    assertU("", adoc("id", "3235", "val_t", "quick green fox"));
+    assertU("", adoc("id", "3236", "val_t", "quick brown fox"));
+    commit();
+    SolrIndexSearcher srchr = h.getCore().getSearcher().get();
+    SolrIndexSearcher.QueryResult qr = new SolrIndexSearcher.QueryResult();
+    SolrIndexSearcher.QueryCommand cmd = new SolrIndexSearcher.QueryCommand();
+    cmd.setQuery(new MatchAllDocsQuery());
+    qr = srchr.search(qr, cmd);
+
+    DocList docs = qr.getDocList();
+    Set<String> fields = new HashSet<String>();
+    fields.add("val_t");
+
+    SolrDocumentModifier docMod = new SolrDocumentModifier() {
+      public void process(SolrDocument doc) {
+        doc.addField("junk", "foo");
+      }
+    };
+
+    SolrDocumentList list = SolrPluginUtils.docListToSolrDocumentList(docs, srchr, fields, docMod, null);
+    assertTrue("list Size: " + list.size() + " is not: " + docs.size(), list.size() == docs.size());
+    for (SolrDocument document : list) {
+      assertNotNull(document.get("junk"));
+    }
+
+  }
 
   public void testPartialEscape() {
 
