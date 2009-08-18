@@ -17,35 +17,30 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.search.spans.*;
-import org.apache.lucene.store.RAMDirectory;
-
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.queryParser.ParseException;
-
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.spans.SpanFirstQuery;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanNotQuery;
+import org.apache.lucene.search.spans.SpanOrQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.DocIdBitSet;
-
-import java.util.Random;
-import java.util.BitSet;
 
 /**
- * Tests primative queries (ie: that rewrite to themselves) to
+ * Tests primitive queries (ie: that rewrite to themselves) to
  * insure they match the expected set of docs, and that the score of each
  * match is equal to the value of the scores explanation.
  *
  * <p>
- * The assumption is that if all of the "primative" queries work well,
- * then anythingthat rewrites to a primative will work well also.
+ * The assumption is that if all of the "primitive" queries work well,
+ * then anything that rewrites to a primitive will work well also.
  * </p>
  *
  * @see "Subclasses for actual tests"
@@ -53,6 +48,7 @@ import java.util.BitSet;
 public class TestExplanations extends LuceneTestCase {
   protected IndexSearcher searcher;
 
+  public static final String KEY = "KEY";
   public static final String FIELD = "field";
   public static final QueryParser qp =
     new QueryParser(FIELD, new WhitespaceAnalyzer());
@@ -69,6 +65,7 @@ public class TestExplanations extends LuceneTestCase {
                                         IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
+      doc.add(new Field(KEY, ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
       doc.add(new Field(FIELD, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
@@ -117,18 +114,22 @@ public class TestExplanations extends LuceneTestCase {
     bqtest(makeQuery(queryText), expDocNrs);
   }
   
-  /** A filter that only lets the specified document numbers pass */
-  public static class ItemizedFilter extends Filter {
-    int[] docs;
-    public ItemizedFilter(int[] docs) {
-      this.docs = docs;
-    }
-    public DocIdSet getDocIdSet(IndexReader r) {
-      BitSet b = new BitSet(r.maxDoc());
-      for (int i = 0; i < docs.length; i++) {
-        b.set(docs[i]);
+  /** 
+   * Convenience subclass of FieldCacheTermsFilter
+   */
+  public static class ItemizedFilter extends FieldCacheTermsFilter {
+    private static String[] int2str(int [] terms) {
+      String [] out = new String[terms.length];
+      for (int i = 0; i < terms.length; i++) {
+        out[i] = ""+terms[i];
       }
-      return new DocIdBitSet(b);
+      return out;
+    }
+    public ItemizedFilter(String keyField, int [] keys) {
+      super(keyField, int2str(keys));
+    }
+    public ItemizedFilter(int [] keys) {
+      super(KEY, int2str(keys));
     }
   }
 

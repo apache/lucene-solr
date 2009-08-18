@@ -29,8 +29,8 @@ import org.apache.lucene.store.Directory;
 public class CheckHits {
   
   /**
-   * Some explains methods calculate their vlaues though a slightly
-   * differnet  order of operations from the acctaul scoring method ...
+   * Some explains methods calculate their values though a slightly
+   * different  order of operations from the actual scoring method ...
    * this allows for a small amount of variation
    */
   public static float EXPLAIN_SCORE_TOLERANCE_DELTA = 0.00005f;
@@ -74,7 +74,7 @@ public class CheckHits {
    * </p>
    * @param query the query to test
    * @param searcher the searcher to test the query against
-   * @param defaultFieldName used for displaing the query in assertion messages
+   * @param defaultFieldName used for displaying the query in assertion messages
    * @param results a list of documentIds that must match the query
    * @see Searcher#search(Query,HitCollector)
    * @see #checkHits
@@ -82,31 +82,58 @@ public class CheckHits {
   public static void checkHitCollector(Query query, String defaultFieldName,
                                        Searcher searcher, int[] results)
     throws IOException {
+
+    QueryUtils.check(query,searcher);
     
     Set correct = new TreeSet();
     for (int i = 0; i < results.length; i++) {
       correct.add(new Integer(results[i]));
     }
-    
     final Set actual = new TreeSet();
-    searcher.search(query, new Collector() {
-        private int base = 0;
-        public void setScorer(Scorer scorer) throws IOException {}
-        public void collect(int doc) {
-          actual.add(new Integer(doc + base));
-        }
-        public void setNextReader(IndexReader reader, int docBase) {
-          base = docBase;
-        }
-        public boolean acceptsDocsOutOfOrder() {
-          return true;
-        }
-      });
-    Assert.assertEquals(query.toString(defaultFieldName), correct, actual);
+    final Collector c = new SetCollector(actual);
 
-    QueryUtils.check(query,searcher);
+    searcher.search(query, c);
+    Assert.assertEquals("Simple: " + query.toString(defaultFieldName), 
+                        correct, actual);
+
+    for (int i = -1; i < 2; i++) {
+      actual.clear();
+      QueryUtils.wrapSearcher(searcher, i).search(query, c);
+      Assert.assertEquals("Wrap Searcher " + i + ": " +
+                          query.toString(defaultFieldName),
+                          correct, actual);
+    }
+                        
+    if ( ! ( searcher instanceof IndexSearcher ) ) return;
+
+    for (int i = -1; i < 2; i++) {
+      actual.clear();
+      QueryUtils.wrapUnderlyingReader
+        ((IndexSearcher)searcher, i).search(query, c);
+      Assert.assertEquals("Wrap Reader " + i + ": " +
+                          query.toString(defaultFieldName),
+                          correct, actual);
+    }
   }
-  
+
+  public static class SetCollector extends Collector {
+    final Set bag;
+    public SetCollector(Set bag) {
+      this.bag = bag;
+    }
+    private int base = 0;
+    public void setScorer(Scorer scorer) throws IOException {}
+    public void collect(int doc) {
+      bag.add(new Integer(doc + base));
+    }
+    public void setNextReader(IndexReader reader, int docBase) {
+      base = docBase;
+    }
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
+  }
+
   /**
    * Tests that a query matches the an expected set of documents using Hits.
    *

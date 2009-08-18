@@ -5,10 +5,19 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import junit.framework.Assert;
 
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MultiReader;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.ReaderUtil;
 
 /**
  * Copyright 2005 Apache Software Foundation
@@ -75,12 +84,20 @@ public class QueryUtils {
   }
   
   /** 
-   * various query sanity checks on a searcher, including explanation checks.
-   * @see #checkExplanations
-   * @see #checkSkipTo
+   * Various query sanity checks on a searcher, some checks are only done for
+   * instanceof IndexSearcher.
+   *
    * @see #check(Query)
+   * @see #checkFirstSkipTo
+   * @see #checkSkipTo
+   * @see #checkExplanations
+   * @see #checkSerialization
+   * @see #checkEqual
    */
   public static void check(Query q1, Searcher s) {
+    check(q1, s, true);
+  }
+  private static void check(Query q1, Searcher s, boolean wrap) {
     try {
       check(q1);
       if (s!=null) {
@@ -88,6 +105,16 @@ public class QueryUtils {
           IndexSearcher is = (IndexSearcher)s;
           checkFirstSkipTo(q1,is);
           checkSkipTo(q1,is);
+          if (wrap) {
+            check(q1, wrapUnderlyingReader(is, -1), false);
+            check(q1, wrapUnderlyingReader(is,  0), false);
+            check(q1, wrapUnderlyingReader(is, +1), false);
+          }
+        }
+        if (wrap) {
+          check(q1, wrapSearcher(s, -1), false);
+          check(q1, wrapSearcher(s,  0), false);
+          check(q1, wrapSearcher(s, +1), false);
         }
         checkExplanations(q1,s);
         checkSerialization(q1,s);
@@ -100,6 +127,104 @@ public class QueryUtils {
       throw new RuntimeException(e);
     }
   }
+
+  /**
+   * Given an IndexSearcher, returns a new IndexSearcher whose IndexReader 
+   * is a MultiReader containing the Reader of the original IndexSearcher, 
+   * as well as several "empty" IndexReaders -- some of which will have 
+   * deleted documents in them.  This new IndexSearcher should 
+   * behave exactly the same as the original IndexSearcher.
+   * @param s the searcher to wrap
+   * @param edge if negative, s will be the first sub; if 0, s will be in the middle, if positive s will be the last sub
+   */
+  public static IndexSearcher wrapUnderlyingReader(final IndexSearcher s, final int edge) 
+    throws IOException {
+
+    IndexReader r = s.getIndexReader();
+
+    // we can't put deleted docs before the nested reader, because
+    // it will throw off the docIds
+    IndexReader[] readers = new IndexReader[] {
+      edge < 0 ? r : IndexReader.open(makeEmptyIndex(0)),
+      IndexReader.open(makeEmptyIndex(0)),
+      new MultiReader(new IndexReader[] {
+        IndexReader.open(makeEmptyIndex(edge < 0 ? 4 : 0)),
+        IndexReader.open(makeEmptyIndex(0)),
+        0 == edge ? r : IndexReader.open(makeEmptyIndex(0))
+      }),
+      IndexReader.open(makeEmptyIndex(0 < edge ? 0 : 7)),
+      IndexReader.open(makeEmptyIndex(0)),
+      new MultiReader(new IndexReader[] {
+        IndexReader.open(makeEmptyIndex(0 < edge ? 0 : 5)),
+        IndexReader.open(makeEmptyIndex(0)),
+        0 < edge ? r : IndexReader.open(makeEmptyIndex(0))
+      })
+    };
+    IndexSearcher out = new IndexSearcher(new MultiReader(readers));
+    out.setSimilarity(s.getSimilarity());
+    return out;
+  }
+  /**
+   * Given a Searcher, returns a new MultiSearcher wrapping the  
+   * the original Searcher, 
+   * as well as several "empty" IndexSearchers -- some of which will have
+   * deleted documents in them.  This new MultiSearcher 
+   * should behave exactly the same as the original Searcher.
+   * @param s the Searcher to wrap
+   * @param edge if negative, s will be the first sub; if 0, s will be in hte middle, if positive s will be the last sub
+   */
+  public static MultiSearcher wrapSearcher(final Searcher s, final int edge) 
+    throws IOException {
+
+    // we can't put deleted docs before the nested reader, because
+    // it will through off the docIds
+    Searcher[] searchers = new Searcher[] {
+      edge < 0 ? s : new IndexSearcher(makeEmptyIndex(0)),
+      new MultiSearcher(new Searcher[] {
+        new IndexSearcher(makeEmptyIndex(edge < 0 ? 65 : 0)),
+        new IndexSearcher(makeEmptyIndex(0)),
+        0 == edge ? s : new IndexSearcher(makeEmptyIndex(0))
+      }),
+      new IndexSearcher(makeEmptyIndex(0 < edge ? 0 : 3)),
+      new IndexSearcher(makeEmptyIndex(0)),
+      new MultiSearcher(new Searcher[] {
+        new IndexSearcher(makeEmptyIndex(0 < edge ? 0 : 5)),
+        new IndexSearcher(makeEmptyIndex(0)),
+        0 < edge ? s : new IndexSearcher(makeEmptyIndex(0))
+      })
+    };
+    MultiSearcher out = new MultiSearcher(searchers);
+    out.setSimilarity(s.getSimilarity());
+    return out;
+  }
+
+  private static RAMDirectory makeEmptyIndex(final int numDeletedDocs) 
+    throws IOException {
+      RAMDirectory d = new RAMDirectory();
+      IndexWriter w = new IndexWriter(d, new WhitespaceAnalyzer(), true,
+                                      MaxFieldLength.LIMITED);
+      for (int i = 0; i < numDeletedDocs; i++) {
+        w.addDocument(new Document());
+      }
+      w.commit();
+      w.deleteDocuments( new MatchAllDocsQuery() );
+      w.commit();
+
+      if (0 < numDeletedDocs)
+        Assert.assertTrue("writer has no deletions", w.hasDeletions());
+
+      Assert.assertEquals("writer is missing some deleted docs", 
+                          numDeletedDocs, w.maxDoc());
+      Assert.assertEquals("writer has non-deleted docs", 
+                          0, w.numDocs());
+      w.close();
+      IndexReader r = IndexReader.open(d);
+      Assert.assertEquals("reader has wrong number of deleted docs", 
+                          numDeletedDocs, r.numDeletedDocs());
+      r.close();
+      return d;
+  }
+  
 
   /** check that the query weight is serializable. 
    * @throws IOException if serialization check fail. 
@@ -115,7 +240,7 @@ public class QueryUtils {
       ois.readObject();
       ois.close();
       
-      //skip rquals() test for now - most weights don't overide equals() and we won't add this just for the tests.
+      //skip equals() test for now - most weights don't override equals() and we won't add this just for the tests.
       //TestCase.assertEquals("writeObject(w) != w.  ("+w+")",w2,w);   
       
     } catch (Exception e) {
@@ -146,10 +271,6 @@ public class QueryUtils {
         {skip_op, skip_op, skip_op, next_op, next_op},
     };
     for (int k = 0; k < orders.length; k++) {
-      IndexReader[] readers = s.getIndexReader().getSequentialSubReaders();
-
-      for (int x = 0; x < readers.length; x++) {
-        IndexReader reader = readers[x];
 
         final int order[] = orders[k];
         // System.out.print("Order:");for (int i = 0; i < order.length; i++)
@@ -158,7 +279,7 @@ public class QueryUtils {
         final int opidx[] = { 0 };
 
         final Weight w = q.weight(s);
-        final Scorer scorer = w.scorer(reader, true, false);
+        final Scorer scorer = w.scorer(s.getIndexReader(), true, false);
         if (scorer == null) {
           continue;
         }
@@ -229,7 +350,6 @@ public class QueryUtils {
             .nextDoc()) != DocIdSetIterator.NO_MORE_DOCS;
         Assert.assertFalse(more);
       }
-    }
   }
     
   // check that first skip on just created scorers always goes to the right doc
@@ -271,7 +391,9 @@ public class QueryUtils {
       }
     });
     
-    IndexReader[] readers = s.getIndexReader().getSequentialSubReaders();
+    List readerList = new ArrayList();
+    ReaderUtil.gatherSubReaders(readerList, s.getIndexReader());
+    IndexReader[] readers = (IndexReader[]) readerList.toArray(new IndexReader[0]);
     for(int i = 0; i < readers.length; i++) {
       IndexReader reader = readers[i];
       Weight w = q.weight(s);

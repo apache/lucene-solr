@@ -783,6 +783,11 @@ Build
 
 Test Cases
 
+ 1. LUCENE-1791: Enhancements to the QueryUtils and CheckHits utility 
+    classes to wrap IndexReaders and Searchers in MultiReaders or 
+    MultiSearcher when possible to help excercise more edge cases.
+    (Chris Hostetter, Mark Miller)
+
 ======================= Release 2.4.1 2009-03-09 =======================
 
 API Changes
