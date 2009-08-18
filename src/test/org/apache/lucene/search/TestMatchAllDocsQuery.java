@@ -18,26 +18,30 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.RAMDirectory;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 /**
  * Tests MatchAllDocsQuery.
  *
  */
 public class TestMatchAllDocsQuery extends LuceneTestCase {
-
-  public void testQuery() throws IOException {
+  private Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT);
+  
+  public void testQuery() throws Exception {
 
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter iw = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
     iw.setMaxBufferedDocs(2);  // force multi-segment
     addDoc("one", iw, 1f);
     addDoc("two", iw, 20f);
@@ -93,6 +97,18 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     // delete a document:
     is.getIndexReader().deleteDocument(0);
     hits = is.search(new MatchAllDocsQuery(), null, 1000).scoreDocs;
+    assertEquals(2, hits.length);
+    
+    // test parsable toString()
+    QueryParser qp = new QueryParser("key", analyzer);
+    hits = is.search(qp.parse(new MatchAllDocsQuery().toString()), null, 1000).scoreDocs;
+    assertEquals(2, hits.length);
+
+    // test parsable toString() with non default boost
+    Query maq = new MatchAllDocsQuery();
+    maq.setBoost(2.3f);
+    Query pq = qp.parse(maq.toString());
+    hits = is.search(pq, null, 1000).scoreDocs;
     assertEquals(2, hits.length);
     
     is.close();

@@ -151,7 +151,7 @@ public class MatchAllDocsQuery extends Query {
 
   public String toString(String field) {
     StringBuffer buffer = new StringBuffer();
-    buffer.append("MatchAllDocsQuery");
+    buffer.append("*:*");
     buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }

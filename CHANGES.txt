@@ -490,6 +490,9 @@ Bug fixes
 23. LUCENE-1801: Changed all Tokenizers or TokenStreams in core/contrib)
     that are the source of Tokens to always call
     AttributeSource.clearAttributes() first. (Uwe Schindler)
+    
+24. LUCENE-1819: MatchAllDocsQuery.toString(field) should produce output
+    that is parsable by the QueryParser.  (John Wang, Mark Miller)
 
 New features
 
