@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.ngram;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter.Side;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
@@ -28,10 +27,10 @@ import java.io.Reader;
 
 /**
  * Tokenizes the input from an edge into n-grams of given size(s).
- *
- * This tokenizer create n-grams from the beginning edge or ending edge of a input token.
+ * <p>
+ * This {@link Tokenizer} create n-grams from the beginning edge or ending edge of a input token.
  * MaxGram can't be larger than 1024 because of limitation.
- *
+ * </p>
  */
 public class EdgeNGramTokenizer extends Tokenizer {
   public static final Side DEFAULT_SIDE = Side.FRONT;
@@ -82,7 +81,7 @@ public class EdgeNGramTokenizer extends Tokenizer {
   /**
    * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
    *
-   * @param input Reader holding the input to be tokenized
+   * @param input {@link Reader} holding the input to be tokenized
    * @param side the {@link Side} from which to chop off an n-gram
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
@@ -112,7 +111,7 @@ public class EdgeNGramTokenizer extends Tokenizer {
   /**
    * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
    *
-   * @param input Reader holding the input to be tokenized
+   * @param input {@link Reader} holding the input to be tokenized
    * @param sideLabel the name of the {@link Side} from which to chop off an n-gram
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate

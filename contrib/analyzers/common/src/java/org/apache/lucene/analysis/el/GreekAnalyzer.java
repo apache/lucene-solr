@@ -30,10 +30,12 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Analyzer for the Greek language. Supports an external list of stopwords (words
+ * {@link Analyzer} for the Greek language. 
+ * <p>
+ * Supports an external list of stopwords (words
  * that will not be indexed at all).
  * A default set of stopwords is used unless an alternative list is specified.
- *
+ * </p>
  */
 public final class GreekAnalyzer extends Analyzer
 {
@@ -145,14 +147,14 @@ public final class GreekAnalyzer extends Analyzer
     };
 
     /**
-     * Contains the stopwords used with the StopFilter.
+     * Contains the stopwords used with the {@link StopFilter}.
      */
     private Set stopSet = new HashSet();
 
     /**
      * Charset for Greek letters.
      * Represents encoding for 24 lowercase Greek letters.
-     * Predefined charsets can be taken from GreekCharSets class
+     * Predefined charsets can be taken from {@link GreekCharsets} class
      */
     private char[] charset;
 
@@ -209,10 +211,10 @@ public final class GreekAnalyzer extends Analyzer
     }
 
     /**
-     * Creates a TokenStream which tokenizes all the text in the provided Reader.
+     * Creates a {@link TokenStream} which tokenizes all the text in the provided {@link Reader}.
      *
-     * @return  A TokenStream built from a StandardTokenizer filtered with
-     *                  GreekLowerCaseFilter and StopFilter
+     * @return  A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
+     *                  {@link GreekLowerCaseFilter} and {@link StopFilter}
      */
     public TokenStream tokenStream(String fieldName, Reader reader)
     {
@@ -228,11 +230,11 @@ public final class GreekAnalyzer extends Analyzer
     };
     
     /**
-     * Returns a (possibly reused) TokenStream which tokenizes all the text 
-     * in the provided Reader.
+     * Returns a (possibly reused) {@link TokenStream} which tokenizes all the text 
+     * in the provided {@link Reader}.
      *
-     * @return  A TokenStream built from a StandardTokenizer filtered with
-     *                  GreekLowerCaseFilter and StopFilter
+     * @return  A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
+     *                  {@link GreekLowerCaseFilter} and {@link StopFilter}
      */
     public TokenStream reusableTokenStream(String fieldName, Reader reader) 
       throws IOException {

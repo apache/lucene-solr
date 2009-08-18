@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.fr;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
@@ -28,10 +27,12 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * A filter that stemms french words. It supports a table of words that should
+ * A {@link TokenFilter} that stems french words. 
+ * <p>
+ * It supports a table of words that should
  * not be stemmed at all. The used stemmer can be changed at runtime after the
- * filter object is created (as long as it is a FrenchStemmer).
- *
+ * filter object is created (as long as it is a {@link FrenchStemmer}).
+ * </p>
  */
 public final class FrenchStemFilter extends TokenFilter {
 
@@ -75,7 +76,7 @@ public final class FrenchStemFilter extends TokenFilter {
 	  }
 	}
 	/**
-	 * Set a alternative/custom FrenchStemmer for this filter.
+	 * Set a alternative/custom {@link FrenchStemmer} for this filter.
 	 */
 	public void setStemmer( FrenchStemmer stemmer ) {
 		if ( stemmer != null ) {

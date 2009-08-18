@@ -44,7 +44,7 @@ public class NGramTokenFilter extends TokenFilter {
 
   /**
    * Creates NGramTokenFilter with given min and max n-grams.
-   * @param input TokenStream holding the input to be tokenized
+   * @param input {@link TokenStream} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
@@ -65,7 +65,7 @@ public class NGramTokenFilter extends TokenFilter {
 
   /**
    * Creates NGramTokenFilter with default min and max n-grams.
-   * @param input TokenStream holding the input to be tokenized
+   * @param input {@link TokenStream} holding the input to be tokenized
    */
   public NGramTokenFilter(TokenStream input) {
     this(input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);

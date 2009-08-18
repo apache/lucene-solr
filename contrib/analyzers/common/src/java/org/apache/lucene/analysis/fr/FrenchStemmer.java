@@ -18,11 +18,13 @@ package org.apache.lucene.analysis.fr;
  */
 
 /**
- * A stemmer for French words. The algorithm is based on the work of
+ * A stemmer for French words. 
+ * <p>
+ * The algorithm is based on the work of
  * Dr Martin Porter on his snowball project<br>
  * refer to http://snowball.sourceforge.net/french/stemmer.html<br>
  * (French stemming algorithm) for details
- *
+ * </p>
  */
 
 public class FrenchStemmer {

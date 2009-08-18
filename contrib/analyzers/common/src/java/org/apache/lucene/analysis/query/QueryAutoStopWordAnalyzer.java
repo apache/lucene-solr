@@ -28,19 +28,19 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.*;
 
-/*
- * An analyzer used primarily at query time to wrap another analyzer and provide a layer of protection
- * which prevents very common words from being passed into queries. For very large indexes the cost
+/**
+ * An {@link Analyzer} used primarily at query time to wrap another analyzer and provide a layer of protection
+ * which prevents very common words from being passed into queries. 
+ * <p>
+ * For very large indexes the cost
  * of reading TermDocs for a very common word can be  high. This analyzer was created after experience with
  * a 38 million doc index which had a term in around 50% of docs and was causing TermQueries for 
  * this term to take 2 seconds.
- *
+ * </p>
+ * <p>
  * Use the various "addStopWords" methods in this class to automate the identification and addition of 
  * stop words found in an already existing index.
- * 
- * 
- * 
-
+ * </p>
  */
 public class QueryAutoStopWordAnalyzer extends Analyzer {
   Analyzer delegate;
@@ -50,9 +50,9 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
   public static final float defaultMaxDocFreqPercent = 0.4f;
 
   /**
-   * Initializes this analyzer with the Analyzer object that actual produces the tokens
+   * Initializes this analyzer with the Analyzer object that actually produces the tokens
    *
-   * @param delegate The choice of analyzer that is used to produce the token stream which needs filtering
+   * @param delegate The choice of {@link Analyzer} that is used to produce the token stream which needs filtering
    */
   public QueryAutoStopWordAnalyzer(Analyzer delegate) {
     this.delegate = delegate;
@@ -62,7 +62,7 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
   /**
    * Automatically adds stop words for all fields with terms exceeding the defaultMaxDocFreqPercent
    *
-   * @param reader The IndexReader class which will be consulted to identify potential stop words that
+   * @param reader The {@link IndexReader} which will be consulted to identify potential stop words that
    *               exceed the required document frequency
    * @return The number of stop words identified.
    * @throws IOException
@@ -74,7 +74,7 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
   /**
    * Automatically adds stop words for all fields with terms exceeding the maxDocFreqPercent
    *
-   * @param reader     The IndexReader class which will be consulted to identify potential stop words that
+   * @param reader     The {@link IndexReader} which will be consulted to identify potential stop words that
    *                   exceed the required document frequency
    * @param maxDocFreq The maximum number of index documents which can contain a term, after which
    *                   the term is considered to be a stop word
@@ -94,7 +94,7 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
   /**
    * Automatically adds stop words for all fields with terms exceeding the maxDocFreqPercent
    *
-   * @param reader        The IndexReader class which will be consulted to identify potential stop words that
+   * @param reader        The {@link IndexReader} which will be consulted to identify potential stop words that
    *                      exceed the required document frequency
    * @param maxPercentDocs The maximum percentage (between 0.0 and 1.0) of index documents which
    *                      contain a term, after which the word is considered to be a stop word.
@@ -114,7 +114,7 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
   /**
    * Automatically adds stop words for the given field with terms exceeding the maxPercentDocs
    *
-   * @param reader         The IndexReader class which will be consulted to identify potential stop words that
+   * @param reader         The {@link IndexReader} which will be consulted to identify potential stop words that
    *                       exceed the required document frequency
    * @param fieldName      The field for which stopwords will be added
    * @param maxPercentDocs The maximum percentage (between 0.0 and 1.0) of index documents which
@@ -129,7 +129,7 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
   /**
    * Automatically adds stop words for the given field with terms exceeding the maxPercentDocs
    *
-   * @param reader     The IndexReader class which will be consulted to identify potential stop words that
+   * @param reader     The {@link IndexReader} which will be consulted to identify potential stop words that
    *                   exceed the required document frequency
    * @param fieldName  The field for which stopwords will be added
    * @param maxDocFreq The maximum number of index documents which

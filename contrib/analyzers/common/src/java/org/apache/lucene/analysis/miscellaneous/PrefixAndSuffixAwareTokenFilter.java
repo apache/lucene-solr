@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.TokenStream;
 import java.io.IOException;
 
 /**
- * Links two PrefixAwareTokenFilter
+ * Links two {@link PrefixAwareTokenFilter}.
  * <p/>
  * <b>NOTE:</b> This filter might not behave correctly if used with custom Attributes, i.e. Attributes other than
  * the ones located in org.apache.lucene.analysis.tokenattributes. 

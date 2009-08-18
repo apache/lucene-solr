@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.ru;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
@@ -25,10 +24,12 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import java.io.IOException;
 
 /**
- * A filter that stems Russian words. The implementation was inspired by GermanStemFilter.
- * The input should be filtered by RussianLowerCaseFilter before passing it to RussianStemFilter ,
- * because RussianStemFilter only works  with lowercase part of any "russian" charset.
- *
+ * A {@link TokenFilter} that stems Russian words. 
+ * <p>
+ * The implementation was inspired by GermanStemFilter.
+ * The input should be filtered by {@link RussianLowerCaseFilter} before passing it to RussianStemFilter ,
+ * because RussianStemFilter only works with lowercase part of any "russian" charset.
+ * </p>
  *
  * @version   $Id$
  */
@@ -66,7 +67,7 @@ public final class RussianStemFilter extends TokenFilter
 
 
     /**
-     * Set a alternative/custom RussianStemmer for this filter.
+     * Set a alternative/custom {@link RussianStemmer} for this filter.
      */
     public void setStemmer(RussianStemmer stemmer)
     {

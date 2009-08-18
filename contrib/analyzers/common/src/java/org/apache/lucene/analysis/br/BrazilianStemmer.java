@@ -18,7 +18,7 @@ package org.apache.lucene.analysis.br;
  */
 
 /**
- * A stemmer for Brazilian words.
+ * A stemmer for Brazilian Portuguese words.
  */
 public class BrazilianStemmer {
 

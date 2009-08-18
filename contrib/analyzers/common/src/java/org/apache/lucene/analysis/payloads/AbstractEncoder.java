@@ -4,7 +4,7 @@ import org.apache.lucene.index.Payload;
 
 
 /**
- *
+ * Base class for payload encoders.
  *
  **/
 public abstract class AbstractEncoder implements PayloadEncoder{

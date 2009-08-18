@@ -34,7 +34,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 
 /**
- * Analyzer for Arabic. 
+ * {@link Analyzer} for Arabic. 
  * <p>
  * This analyzer implements light-stemming as specified by:
  * <i>
@@ -108,10 +108,11 @@ public final class ArabicAnalyzer extends Analyzer {
 
 
   /**
-   * Creates a TokenStream which tokenizes all the text in the provided Reader.
+   * Creates a {@link TokenStream} which tokenizes all the text in the provided {@link Reader}.
    *
-   * @return  A TokenStream built from an ArabicTokenizer filtered with
-   * 			StopFilter, LowerCaseFilter, ArabicNormalizationFilter and ArabicStemFilter.
+   * @return  A {@link TokenStream} built from an {@link ArabicLetterTokenizer} filtered with
+   * 			{@link StopFilter}, {@link LowerCaseFilter}, {@link ArabicNormalizationFilter}
+   *            and {@link ArabicStemFilter}.
    */
   public final TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new ArabicLetterTokenizer( reader );
@@ -129,12 +130,12 @@ public final class ArabicAnalyzer extends Analyzer {
   };
   
   /**
-   * Returns a (possibly reused) TokenStream which tokenizes all the text 
-   * in the provided Reader.
+   * Returns a (possibly reused) {@link TokenStream} which tokenizes all the text 
+   * in the provided {@link Reader}.
    *
-   * @return  A TokenStream built from an ArabicTokenizer filtered with
-   *            StopFilter, LowerCaseFilter, ArabicNormalizationFilter and 
-   *            ArabicStemFilter.
+   * @return  A {@link TokenStream} built from an {@link ArabicLetterTokenizer} filtered with
+   *            {@link StopFilter}, {@link LowerCaseFilter}, {@link ArabicNormalizationFilter}
+   *            and {@link ArabicStemFilter}.
    */
   public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {

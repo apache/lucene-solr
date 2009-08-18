@@ -110,7 +110,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer,
   /**
    * Read hyphenation patterns from an XML file.
    * 
-   * @param filename the filename
+   * @param f the filename
    * @throws HyphenationException In case the parsing fails
    */
   public void loadPatterns(File f) throws HyphenationException {

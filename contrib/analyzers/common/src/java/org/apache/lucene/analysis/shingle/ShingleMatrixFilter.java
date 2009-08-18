@@ -129,7 +129,7 @@ public class ShingleMatrixFilter extends TokenStream {
     /**
      * Retrieves information on how a {@link org.apache.lucene.analysis.Token} is to be inserted to a {@link org.apache.lucene.analysis.shingle.ShingleMatrixFilter.Matrix}.
      * @param token
-     * @return
+     * @return {@link ShingleMatrixFilter.TokenPositioner}
      * @throws IOException
      */
     public abstract TokenPositioner getTokenPositioner(Token token) throws IOException;
@@ -1014,7 +1014,7 @@ public class ShingleMatrixFilter extends TokenStream {
      * Returns a 32 bit float from the payload, or 1f it null.
      *
      * @param token
-     * @return
+     * @return 32 bit float
      */
     public float getWeight(Token token) {
       if (token.getPayload() == null || token.getPayload().getData() == null) {

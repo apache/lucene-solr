@@ -25,13 +25,13 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
- * Based on GermanStemFilter
+ * A {@link TokenFilter} that applies {@link BrazilianStemmer}.
  *
  */
 public final class BrazilianStemFilter extends TokenFilter {
 
   /**
-   * The actual token in the input stream.
+   * {@link BrazilianStemmer} in use by this filter.
    */
   private BrazilianStemmer stemmer = null;
   private Set exclusions = null;

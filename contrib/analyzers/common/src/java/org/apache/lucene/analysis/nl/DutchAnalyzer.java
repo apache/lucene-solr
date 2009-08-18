@@ -33,13 +33,15 @@ import java.util.Set;
 import java.util.Map;
 
 /**
- * Analyzer for Dutch language. Supports an external list of stopwords (words that
+ * {@link Analyzer} for Dutch language. 
+ * <p>
+ * Supports an external list of stopwords (words that
  * will not be indexed at all), an external list of exclusions (word that will
  * not be stemmed, but indexed) and an external list of word-stem pairs that overrule
  * the algorithm (dictionary stemming).
- * A default set of stopwords is used unless an alternative list is specified, the
+ * A default set of stopwords is used unless an alternative list is specified, but the
  * exclusion list is empty by default.
- *
+ * </p>
  */
 public class DutchAnalyzer extends Analyzer {
   /**
@@ -165,10 +167,12 @@ public class DutchAnalyzer extends Analyzer {
   }
 
   /**
-   * Creates a TokenStream which tokenizes all the text in the provided TextReader.
+   * Creates a {@link TokenStream} which tokenizes all the text in the 
+   * provided {@link Reader}.
    *
-   * @return A TokenStream built from a StandardTokenizer filtered with StandardFilter,
-   * StopFilter, DutchStemFilter
+   * @return A {@link TokenStream} built from a {@link StandardTokenizer}
+   *   filtered with {@link StandardFilter}, {@link StopFilter}, 
+   *   and {@link DutchStemFilter}
    */
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(reader);
@@ -184,11 +188,12 @@ public class DutchAnalyzer extends Analyzer {
   };
   
   /**
-   * Returns a (possibly reused) TokenStream which tokenizes all the text 
-   * in the provided Reader.
+   * Returns a (possibly reused) {@link TokenStream} which tokenizes all the 
+   * text in the provided {@link Reader}.
    *
-   * @return A TokenStream built from a StandardTokenizer filtered with
-   *         StandardFilter, StopFilter, DutchStemFilter
+   * @return A {@link TokenStream} built from a {@link StandardTokenizer}
+   *   filtered with {@link StandardFilter}, {@link StopFilter}, 
+   *   and {@link DutchStemFilter}
    */
   public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {

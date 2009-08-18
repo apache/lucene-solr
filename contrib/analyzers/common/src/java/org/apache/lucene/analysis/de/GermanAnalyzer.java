@@ -35,12 +35,14 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
- * Analyzer for German language. Supports an external list of stopwords (words that
+ * {@link Analyzer} for German language. 
+ * <p>
+ * Supports an external list of stopwords (words that
  * will not be indexed at all) and an external list of exclusions (word that will
  * not be stemmed, but indexed).
- * A default set of stopwords is used unless an alternative list is specified, the
+ * A default set of stopwords is used unless an alternative list is specified, but the
  * exclusion list is empty by default.
- *
+ * </p>
  * 
  * @version $Id$
  */
@@ -65,7 +67,7 @@ public class GermanAnalyzer extends Analyzer {
   };
 
   /**
-   * Contains the stopwords used with the StopFilter.
+   * Contains the stopwords used with the {@link StopFilter}.
    */
   private Set stopSet = new HashSet();
 
@@ -75,8 +77,8 @@ public class GermanAnalyzer extends Analyzer {
   private Set exclusionSet = new HashSet();
 
   /**
-   * Builds an analyzer with the default stop words
-   * (<code>GERMAN_STOP_WORDS</code>).
+   * Builds an analyzer with the default stop words:
+   * {@link #GERMAN_STOP_WORDS}.
    */
   public GermanAnalyzer() {
     stopSet = StopFilter.makeStopSet(GERMAN_STOP_WORDS);
@@ -115,7 +117,7 @@ public class GermanAnalyzer extends Analyzer {
   }
 
   /**
-   * Builds an exclusionlist from a Hashtable.
+   * Builds an exclusionlist from a {@link Map}
    */
   public void setStemExclusionTable(Map exclusionlist) {
     exclusionSet = new HashSet(exclusionlist.keySet());
@@ -129,10 +131,11 @@ public class GermanAnalyzer extends Analyzer {
   }
 
   /**
-   * Creates a TokenStream which tokenizes all the text in the provided Reader.
+   * Creates a {@link TokenStream} which tokenizes all the text in the provided {@link Reader}.
    *
-   * @return A TokenStream built from a StandardTokenizer filtered with
-   *         StandardFilter, LowerCaseFilter, StopFilter, GermanStemFilter
+   * @return A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
+   *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}, and
+   *         {@link GermanStemFilter}
    */
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(reader);
@@ -149,11 +152,12 @@ public class GermanAnalyzer extends Analyzer {
   };
   
   /**
-   * Returns a (possibly reused) TokenStream which tokenizes all the text 
-   * in the provided Reader.
+   * Returns a (possibly reused) {@link TokenStream} which tokenizes all the text 
+   * in the provided {@link Reader}.
    *
-   * @return A TokenStream built from a StandardTokenizer filtered with
-   *         StandardFilter, LowerCaseFilter, StopFilter, GermanStemFilter
+   * @return A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
+   *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}, and
+   *         {@link GermanStemFilter}
    */
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
     if (overridesTokenStreamMethod) {

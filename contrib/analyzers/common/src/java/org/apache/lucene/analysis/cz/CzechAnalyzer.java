@@ -31,11 +31,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Analyzer for Czech language. Supports an external list of stopwords (words that
- * will not be indexed at all).
- * A default set of stopwords is used unless an alternative list is specified, the
- * exclusion list is empty by default.
- *
+ * {@link Analyzer} for Czech language. 
+ * <p>
+ * Supports an external list of stopwords (words that
+ * will not be indexed at all). 
+ * A default set of stopwords is used unless an alternative list is specified.
+ * </p>
  */
 public final class CzechAnalyzer extends Analyzer {
 
@@ -64,7 +65,7 @@ public final class CzechAnalyzer extends Analyzer {
     };
 
 	/**
-	 * Contains the stopwords used with the StopFilter.
+	 * Contains the stopwords used with the {@link StopFilter}.
 	 */
 	private Set stoptable;
 
@@ -125,10 +126,10 @@ public final class CzechAnalyzer extends Analyzer {
     }
 
 	/**
-	 * Creates a TokenStream which tokenizes all the text in the provided Reader.
+	 * Creates a {@link TokenStream} which tokenizes all the text in the provided {@link Reader}.
 	 *
-	 * @return  A TokenStream built from a StandardTokenizer filtered with
-	 * 			StandardFilter, LowerCaseFilter, and StopFilter
+	 * @return  A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
+	 * 			{@link StandardFilter}, {@link LowerCaseFilter}, and {@link StopFilter}
 	 */
 	public final TokenStream tokenStream( String fieldName, Reader reader ) {
 		TokenStream result = new StandardTokenizer( reader );
@@ -144,11 +145,11 @@ public final class CzechAnalyzer extends Analyzer {
 	};
 	
 	/**
-     * Returns a (possibly reused) TokenStream which tokenizes all the text in 
-     * the provided Reader.
+     * Returns a (possibly reused) {@link TokenStream} which tokenizes all the text in 
+     * the provided {@link Reader}.
      *
-     * @return  A TokenStream built from a StandardTokenizer filtered with
-     *          StandardFilter, LowerCaseFilter, and StopFilter
+     * @return  A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
+     *          {@link StandardFilter}, {@link LowerCaseFilter}, and {@link StopFilter}
      */
 	public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {

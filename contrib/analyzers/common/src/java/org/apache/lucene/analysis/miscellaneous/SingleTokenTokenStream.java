@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
- * A token stream containing a single token.
+ * A {@link TokenStream} containing a single token.
  */
 public class SingleTokenTokenStream extends TokenStream {
 

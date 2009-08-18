@@ -22,16 +22,17 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.Arrays;
 import java.util.Iterator;
+import org.apache.lucene.analysis.standard.StandardTokenizer; // for javadocs
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
- * Removes elisions from a token stream. For example, "l'avion" (the plane) will be
+ * Removes elisions from a {@link TokenStream}. For example, "l'avion" (the plane) will be
  * tokenized as "avion" (plane).
  * <p>
- * Note that StandardTokenizer sees " ' " as a space, and cuts it out.
+ * Note that {@link StandardTokenizer} sees " ' " as a space, and cuts it out.
  * 
  * @see <a href="http://fr.wikipedia.org/wiki/%C3%89lision">Elision in Wikipedia</a>
  */
@@ -78,7 +79,7 @@ public class ElisionFilter extends TokenFilter {
   }
 
   /**
-   * Returns the next input Token with term() without elisioned start
+   * Increments the {@link TokenStream} with a {@link TermAttribute} without elisioned start
    */
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {

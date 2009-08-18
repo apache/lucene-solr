@@ -18,7 +18,7 @@ package org.apache.lucene.analysis.payloads;
 
 
 /**
- *
+ * Utility methods for encoding payloads.
  *
  **/
 public class PayloadHelper {
@@ -60,7 +60,7 @@ public class PayloadHelper {
    * @param offset The offset into the array.
    * @return The float that was encoded
    *
-   * @see # encodeFloat (float)
+   * @see #encodeFloat(float)
    */
   public static final float decodeFloat(byte [] bytes, int offset){
 

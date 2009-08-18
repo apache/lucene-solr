@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import java.text.BreakIterator;
 
 /**
- * TokenFilter that use java.text.BreakIterator to break each 
+ * {@link TokenFilter} that use {@link java.text.BreakIterator} to break each 
  * Token that is Thai into separate Token(s) for each Thai word.
  * @version 0.2
  */

@@ -19,13 +19,18 @@ package org.apache.lucene.analysis.ru;
 
 import java.io.Reader;
 import org.apache.lucene.analysis.CharTokenizer;
+import org.apache.lucene.analysis.Tokenizer; // for javadocs
+import org.apache.lucene.analysis.LetterTokenizer; // for javadocs
 
 /**
- * A RussianLetterTokenizer is a tokenizer that extends LetterTokenizer by additionally looking up letters
- * in a given "russian charset". The problem with LeterTokenizer is that it uses Character.isLetter() method,
+ * A RussianLetterTokenizer is a {@link Tokenizer} that extends {@link LetterTokenizer}
+ * by additionally looking up letters in a given "russian charset". 
+ * <p>
+ * The problem with 
+ * {@link LetterTokenizer} is that it uses {@link Character#isLetter(char)} method,
  * which doesn't know how to detect letters in encodings like CP1252 and KOI8
  * (well-known problems with 0xD7 and 0xF7 chars)
- *
+ * </p>
  *
  * @version $Id$
  */

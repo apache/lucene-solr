@@ -34,12 +34,14 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Analyzer for French language. Supports an external list of stopwords (words that
+ * {@link Analyzer} for French language. 
+ * <p>
+ * Supports an external list of stopwords (words that
  * will not be indexed at all) and an external list of exclusions (word that will
  * not be stemmed, but indexed).
- * A default set of stopwords is used unless an alternative list is specified, the
+ * A default set of stopwords is used unless an alternative list is specified, but the
  * exclusion list is empty by default.
- *
+ * </p>
  *
  * @version $Id$
  */
@@ -74,7 +76,7 @@ public final class FrenchAnalyzer extends Analyzer {
   };
 
   /**
-   * Contains the stopwords used with the StopFilter.
+   * Contains the stopwords used with the {@link StopFilter}.
    */
   private Set stoptable = new HashSet();
   /**
@@ -127,10 +129,12 @@ public final class FrenchAnalyzer extends Analyzer {
   }
 
   /**
-   * Creates a TokenStream which tokenizes all the text in the provided Reader.
+   * Creates a {@link TokenStream} which tokenizes all the text in the provided
+   * {@link Reader}.
    *
-   * @return A TokenStream built from a StandardTokenizer filtered with
-   *         StandardFilter, StopFilter, FrenchStemFilter and LowerCaseFilter
+   * @return A {@link TokenStream} built from a {@link StandardTokenizer} 
+   *         filtered with {@link StandardFilter}, {@link StopFilter}, 
+   *         {@link FrenchStemFilter} and {@link LowerCaseFilter}
    */
   public final TokenStream tokenStream(String fieldName, Reader reader) {
 
@@ -152,11 +156,12 @@ public final class FrenchAnalyzer extends Analyzer {
   };
   
   /**
-   * Returns a (possibly reused) TokenStream which tokenizes all the text 
-   * in the provided Reader.
+   * Returns a (possibly reused) {@link TokenStream} which tokenizes all the 
+   * text in the provided {@link Reader}.
    *
-   * @return A TokenStream built from a StandardTokenizer filtered with
-   *         StandardFilter, StopFilter, FrenchStemFilter and LowerCaseFilter
+   * @return A {@link TokenStream} built from a {@link StandardTokenizer} 
+   *         filtered with {@link StandardFilter}, {@link StopFilter}, 
+   *         {@link FrenchStemFilter} and {@link LowerCaseFilter}
    */
   public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {

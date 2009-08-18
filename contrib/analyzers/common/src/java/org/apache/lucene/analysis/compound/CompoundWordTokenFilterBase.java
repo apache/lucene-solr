@@ -118,10 +118,11 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
    * Create a set of words from an array
    * The resulting Set does case insensitive matching
    * TODO We should look for a faster dictionary lookup approach.
-   * @param dictionary
-   * @return
+   * @param dictionary 
+   * @return {@link Set} of lowercased terms 
    */
   public static final Set makeDictionary(final String[] dictionary) {
+    // is the below really case insensitive? 
     CharArraySet dict = new CharArraySet(dictionary.length, false);
     addAllLowerCase(dict, Arrays.asList(dictionary));
     return dict;

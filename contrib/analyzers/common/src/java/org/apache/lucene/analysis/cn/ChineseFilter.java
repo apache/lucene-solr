@@ -26,18 +26,19 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
- * Title: ChineseFilter
- * Description: Filter with a stop word table
- *              Rule: No digital is allowed.
- *                    English word/token should larger than 1 character.
- *                    One Chinese character as one Chinese word.
+ * A {@link TokenFilter} with a stop word table.  
+ * <ul>
+ * <li>Numeric tokens are removed.
+ * <li>English tokens must be larger than 1 character.
+ * <li>One Chinese character as one Chinese word.
+ * </ul>
  * TO DO:
- *   1. Add Chinese stop words, such as \ue400
- *   2. Dictionary based Chinese word extraction
- *   3. Intelligent Chinese word extraction
- *
- * Copyright:    Copyright (c) 2001
- * Company:
+ * <ol>
+ * <li>Add Chinese stop words, such as \ue400
+ * <li>Dictionary based Chinese word extraction
+ * <li>Intelligent Chinese word extraction
+ * </ol>
+ * 
  * @version 1.0
  *
  */

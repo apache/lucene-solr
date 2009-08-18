@@ -36,12 +36,12 @@ import org.apache.lucene.analysis.ar.ArabicLetterTokenizer;
 import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
 
 /**
- * Analyzer for Persian.
- * 
- * Analyzer uses {@link ArabicLetterTokenizer} which implies tokenizing around
- * ZWNJ in addition to space. Some persian-specific variant forms (such as farsi
+ * {@link Analyzer} for Persian.
+ * <p>
+ * This Analyzer uses {@link ArabicLetterTokenizer} which implies tokenizing around
+ * zero-width non-joiner in addition to whitespace. Some persian-specific variant forms (such as farsi
  * yeh and keheh) are standardized. "Stemming" is accomplished via stopwords.
- * 
+ * </p>
  */
 public final class PersianAnalyzer extends Analyzer {
 
@@ -107,11 +107,13 @@ public final class PersianAnalyzer extends Analyzer {
   }
 
   /**
-   * Creates a TokenStream which tokenizes all the text in the provided Reader.
+   * Creates a {@link TokenStream} which tokenizes all the text in the provided
+   * {@link Reader}.
    * 
-   * @return A TokenStream build from a ArabicLetterTokenizer filtered with
-   *         LowerCaseFilter, ArabicNormalizationFilter,
-   *         PersianNormalizationFilter and Persian Stop words
+   * @return A {@link TokenStream} built from a {@link ArabicLetterTokenizer}
+   *         filtered with {@link LowerCaseFilter}, 
+   *         {@link ArabicNormalizationFilter},
+   *         {@link PersianNormalizationFilter} and Persian Stop words
    */
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new ArabicLetterTokenizer(reader);
@@ -134,12 +136,13 @@ public final class PersianAnalyzer extends Analyzer {
   }
 
   /**
-   * Returns a (possibly reused) TokenStream which tokenizes all the text 
-   * in the provided Reader.
+   * Returns a (possibly reused) {@link TokenStream} which tokenizes all the text 
+   * in the provided {@link Reader}.
    * 
-   * @return A TokenStream build from a ArabicLetterTokenizer filtered with
-   *         LowerCaseFilter, ArabicNormalizationFilter,
-   *         PersianNormalizationFilter and Persian Stop words
+   * @return A {@link TokenStream} built from a {@link ArabicLetterTokenizer}
+   *         filtered with {@link LowerCaseFilter}, 
+   *         {@link ArabicNormalizationFilter},
+   *         {@link PersianNormalizationFilter} and Persian Stop words
    */
   public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {

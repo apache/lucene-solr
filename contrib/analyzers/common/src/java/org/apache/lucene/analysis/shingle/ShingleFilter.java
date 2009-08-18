@@ -76,7 +76,7 @@ public class ShingleFilter extends TokenFilter {
 
   /**
    * Constructs a ShingleFilter with the specified single size from the
-   * TokenStream <code>input</code>
+   * {@link TokenStream} <code>input</code>
    *
    * @param input input stream
    * @param maxShingleSize maximum shingle size produced by the filter.

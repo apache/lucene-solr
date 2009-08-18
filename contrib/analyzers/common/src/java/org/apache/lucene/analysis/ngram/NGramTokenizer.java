@@ -44,7 +44,7 @@ public class NGramTokenizer extends Tokenizer {
 
   /**
    * Creates NGramTokenizer with given min and max n-grams.
-   * @param input Reader holding the input to be tokenized
+   * @param input {@link Reader} holding the input to be tokenized
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
    */
@@ -64,7 +64,7 @@ public class NGramTokenizer extends Tokenizer {
   }
   /**
    * Creates NGramTokenizer with default min and max n-grams.
-   * @param input Reader holding the input to be tokenized
+   * @param input {@link Reader} holding the input to be tokenized
    */
   public NGramTokenizer(Reader input) {
     this(input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);

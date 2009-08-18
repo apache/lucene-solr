@@ -169,6 +169,66 @@ public class TestCJKTokenizer extends TestCase{
     checkCJKToken(str, out_tokens);
   }
   
+  /*
+   * Full-width text is normalized to half-width 
+   */
+  public void testFullWidth() throws Exception {
+    String str = "Ｔｅｓｔ １２３４";
+    TestToken[] out_tokens = { 
+        newToken("test", 0, 4, CJKTokenizer.SINGLE_TOKEN_TYPE), 
+        newToken("1234", 5, 9, CJKTokenizer.SINGLE_TOKEN_TYPE)
+    };
+    checkCJKToken(str, out_tokens);
+  }
+  
+  /*
+   * Non-english text (not just CJK) is treated the same as CJK: C1C2 C2C3 
+   */
+  public void testNonIdeographic() throws Exception {
+    String str = "\u4e00 روبرت موير";
+    TestToken[] out_tokens = {
+        newToken("\u4e00", 0, 1, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+        newToken("رو", 2, 4, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+        newToken("وب", 3, 5, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+        newToken("بر", 4, 6, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+        newToken("رت", 5, 7, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+        newToken("مو", 8, 10, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+        newToken("وي", 9, 11, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+        newToken("ير", 10, 12, CJKTokenizer.DOUBLE_TOKEN_TYPE)
+    };
+    checkCJKToken(str, out_tokens);
+  }
+  
+  /*
+   * Non-english text with nonletters (non-spacing marks,etc) is treated as C1C2 C2C3,
+   * except for words are split around non-letters.
+   */
+  public void testNonIdeographicNonLetter() throws Exception {
+    String str = "\u4e00 رُوبرت موير";
+    TestToken[] out_tokens = {
+        newToken("\u4e00", 0, 1, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+        newToken("ر", 2, 3, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+        newToken("وب", 4, 6, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+        newToken("بر", 5, 7, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+        newToken("رت", 6, 8, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+        newToken("مو", 9, 11, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+        newToken("وي", 10, 12, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+        newToken("ير", 11, 13, CJKTokenizer.DOUBLE_TOKEN_TYPE)
+    };
+    checkCJKToken(str, out_tokens);
+  }
+  
+  public void testTokenStream() throws Exception {
+    Analyzer analyzer = new CJKAnalyzer();
+    TokenStream ts = analyzer.tokenStream("dummy", new StringReader("\u4e00\u4e01\u4e02"));
+    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
+    assertTrue(ts.incrementToken());
+    assertEquals("\u4e00\u4e01", termAtt.term());
+    assertTrue(ts.incrementToken());
+    assertEquals("\u4e01\u4e02", termAtt.term());
+    assertFalse(ts.incrementToken());
+  }
+  
   public void testReusableTokenStream() throws Exception {
     Analyzer analyzer = new CJKAnalyzer();
     String str = "\u3042\u3044\u3046\u3048\u304aabc\u304b\u304d\u304f\u3051\u3053";

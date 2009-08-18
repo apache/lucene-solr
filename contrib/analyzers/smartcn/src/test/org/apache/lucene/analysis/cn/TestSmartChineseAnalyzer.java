@@ -57,7 +57,7 @@ public class TestSmartChineseAnalyzer extends TestCase {
    * This test is the same as the above, except using an ideographic space as a separator.
    * This tests to ensure the stopwords are working correctly.
    */
-  public void testChineseStopWordsDefaultTwoPhrasesIdeoSpache() throws Exception {
+  public void testChineseStopWordsDefaultTwoPhrasesIdeoSpace() throws Exception {
     Analyzer ca = new SmartChineseAnalyzer(); /* will load stopwords */
     String sentence = "我购买了道具和服装　我购买了道具和服装。";
     String result[] = { "我", "购买", "了", "道具", "和", "服装", "我", "购买", "了", "道具", "和", "服装" };
@@ -99,6 +99,52 @@ public class TestSmartChineseAnalyzer extends TestCase {
   public void testMixedLatinChinese() throws Exception {
     assertAnalyzesTo(new SmartChineseAnalyzer(true), "我购买 Tests 了道具和服装", 
         new String[] { "我", "购买", "test", "了", "道具", "和", "服装"});
+  }
+  
+  /*
+   * Numerics are parsed as their own tokens
+   */
+  public void testNumerics() throws Exception {
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "我购买 Tests 了道具和服装1234",
+      new String[] { "我", "购买", "test", "了", "道具", "和", "服装", "1234"});
+  }
+  
+  /*
+   * Full width alphas and numerics are folded to half-width
+   */
+  public void testFullWidth() throws Exception {
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "我购买 Ｔｅｓｔｓ 了道具和服装１２３４",
+        new String[] { "我", "购买", "test", "了", "道具", "和", "服装", "1234"});
+  }
+  
+  /*
+   * Presentation form delimiters are removed
+   */
+  public void testDelimiters() throws Exception {
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "我购买︱ Tests 了道具和服装", 
+        new String[] { "我", "购买", "test", "了", "道具", "和", "服装"});
+  }
+  
+  /*
+   * Text from writing systems other than Chinese and Latin are parsed as individual characters.
+   * (regardless of Unicode category)
+   */
+  public void testNonChinese() throws Exception {
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "我购买 روبرتTests 了道具和服装", 
+        new String[] { "我", "购买", "ر", "و", "ب", "ر", "ت", "test", "了", "道具", "和", "服装"});
+  }
+  
+  /*
+   * Test what the analyzer does with out-of-vocabulary words.
+   * In this case the name is Yousaf Raza Gillani.
+   * Currently it is being analyzed into single characters...
+   */
+  public void testOOV() throws Exception {
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "优素福·拉扎·吉拉尼",
+      new String[] { "优", "素", "福", "拉", "扎", "吉", "拉", "尼" });
+    
+    assertAnalyzesTo(new SmartChineseAnalyzer(true), "优素福拉扎吉拉尼",
+      new String[] { "优", "素", "福", "拉", "扎", "吉", "拉", "尼" });
   }
   
   public void testOffsets() throws Exception {

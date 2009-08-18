@@ -25,8 +25,10 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 
 /**
- * A ShingleAnalyzerWrapper wraps a ShingleFilter around another analyzer. A
- * shingle is another namefor a token based n-gram.
+ * A ShingleAnalyzerWrapper wraps a {@link ShingleFilter} around another {@link Analyzer}.
+ * <p>
+ * A shingle is another name for a token based n-gram.
+ * </p>
  */
 public class ShingleAnalyzerWrapper extends Analyzer {
 

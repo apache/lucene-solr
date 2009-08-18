@@ -27,13 +27,20 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 
 /**
- * CJKTokenizer was modified from StopTokenizer which does a decent job for
- * most European languages. It performs other token methods for double-byte
- * Characters: the token will return at each two characters with overlap match.<br>
- * Example: "java C1C2C3C4" will be segment to: "java" "C1C2" "C2C3" "C3C4" it
- * also need filter filter zero length token ""<br>
- * for Digit: digit, '+', '#' will token as letter<br>
- * for more info on Asia language(Chinese Japanese Korean) text segmentation:
+ * CJKTokenizer is designed for Chinese, Japanese, and Korean languages.
+ * <p>  
+ * The tokens returned are every two adjacent characters with overlap match.
+ * </p>
+ * <p>
+ * Example: "java C1C2C3C4" will be segmented to: "java" "C1C2" "C2C3" "C3C4".
+ * </p>
+ * Additionally, the following is applied to Latin text (such as English):
+ * <ul>
+ * <li>Text is converted to lowercase.
+ * <li>Numeric digits, '+', '#', and '_' are tokenized as letters.
+ * <li>Full-width forms are converted to half-width forms.
+ * </ul>
+ * For more info on Asian language (Chinese, Japanese, and Korean) text segmentation:
  * please search  <a
  * href="http://www.google.com/search?q=word+chinese+segment">google</a>
  *

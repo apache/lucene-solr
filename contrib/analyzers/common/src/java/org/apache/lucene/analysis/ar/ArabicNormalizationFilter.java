@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
- * A TokenFilter that applies {@link ArabicNormalizer} to normalize the orthography.
+ * A {@link TokenFilter} that applies {@link ArabicNormalizer} to normalize the orthography.
  * 
  */
 

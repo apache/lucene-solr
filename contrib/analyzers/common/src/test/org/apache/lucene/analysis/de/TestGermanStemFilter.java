@@ -90,12 +90,12 @@ public class TestGermanStemFilter extends TestCase {
   }
 
   private void check(final String input, final String expected) throws IOException {
-    StandardTokenizer tokenStream = new StandardTokenizer(new StringReader(input));
-    GermanStemFilter filter = new GermanStemFilter(tokenStream);
-    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
-    assertTrue(filter.incrementToken());
+    Analyzer a = new GermanAnalyzer();
+    TokenStream tokenStream = a.tokenStream("dummy", new StringReader(input));
+    TermAttribute termAtt = (TermAttribute) tokenStream.getAttribute(TermAttribute.class);
+    assertTrue(tokenStream.incrementToken());
     assertEquals(expected, termAtt.term());
-    filter.close();
+    tokenStream.close();
   }
   
   private void checkReuse(Analyzer a, String input, String expected) throws IOException {

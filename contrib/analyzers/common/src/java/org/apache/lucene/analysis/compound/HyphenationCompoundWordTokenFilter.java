@@ -24,16 +24,19 @@ import java.io.Reader;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter; // for javadocs
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.compound.hyphenation.Hyphenation;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.xml.sax.InputSource;
 
 /**
- * A TokenFilter that decomposes compound words found in many germanic languages
+ * A {@link TokenFilter} that decomposes compound words found in many Germanic languages.
+ * <p>
  * "Donaudampfschiff" becomes Donau, dampf, schiff so that you can find
- * "Donaudampfschiff" even when you only enter "schiff" It uses a hyphenation
+ * "Donaudampfschiff" even when you only enter "schiff". It uses a hyphenation
  * grammar and a word dictionary to achieve this.
+ * </p>
  */
 public class HyphenationCompoundWordTokenFilter extends
     CompoundWordTokenFilterBase {
@@ -41,7 +44,7 @@ public class HyphenationCompoundWordTokenFilter extends
 
   /**
    * 
-   * @param input the token stream to process
+   * @param input the {@link TokenStream} to process
    * @param hyphenator the hyphenation pattern tree to use for hyphenation
    * @param dictionary the word dictionary to match against
    * @param minWordSize only words longer than this get processed
@@ -60,7 +63,7 @@ public class HyphenationCompoundWordTokenFilter extends
 
   /**
    * 
-   * @param input the token stream to process
+   * @param input the {@link TokenStream} to process
    * @param hyphenator the hyphenation pattern tree to use for hyphenation
    * @param dictionary the word dictionary to match against
    */
@@ -72,7 +75,7 @@ public class HyphenationCompoundWordTokenFilter extends
 
   /**
    * 
-   * @param input the token stream to process
+   * @param input the {@link TokenStream} to process
    * @param hyphenator the hyphenation pattern tree to use for hyphenation
    * @param dictionary the word dictionary to match against. If this is a {@link org.apache.lucene.analysis.CharArraySet CharArraySet} it must have set ignoreCase=false and only contain
    *        lower case strings. 
@@ -85,7 +88,7 @@ public class HyphenationCompoundWordTokenFilter extends
 
   /**
    * 
-   * @param input the token stream to process
+   * @param input the {@link TokenStream} to process
    * @param hyphenator the hyphenation pattern tree to use for hyphenation
    * @param dictionary the word dictionary to match against. If this is a {@link org.apache.lucene.analysis.CharArraySet CharArraySet} it must have set ignoreCase=false and only contain
    *        lower case strings. 

@@ -336,7 +336,9 @@ public class TestShingleMatrixFilter extends TestCase {
    * @throws IOException
    */
   public void testMatrix() throws IOException {
-
+    // some other tests set this to null.
+    // set it here in case tests are run out of the usual order.
+    ShingleMatrixFilter.defaultSettingsCodec = new ShingleMatrixFilter.SimpleThreeDimensionalTokenSettingsCodec();
     Matrix matrix = new Matrix();
 
     matrix.new Column(tokenFactory("no", 1));

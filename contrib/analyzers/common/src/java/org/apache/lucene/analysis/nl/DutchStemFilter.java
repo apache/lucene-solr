@@ -28,10 +28,12 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
- * A filter that stems Dutch words. It supports a table of words that should
+ * A {@link TokenFilter} that stems Dutch words. 
+ * <p>
+ * It supports a table of words that should
  * not be stemmed at all. The stemmer used can be changed at runtime after the
- * filter object is created (as long as it is a DutchStemmer).
- *
+ * filter object is created (as long as it is a {@link DutchStemmer}).
+ * </p>
  */
 public final class DutchStemFilter extends TokenFilter {
   /**
@@ -85,7 +87,7 @@ public final class DutchStemFilter extends TokenFilter {
   }
 
   /**
-   * Set a alternative/custom DutchStemmer for this filter.
+   * Set a alternative/custom {@link DutchStemmer} for this filter.
    */
   public void setStemmer(DutchStemmer stemmer) {
     if (stemmer != null) {

@@ -21,18 +21,21 @@ package org.apache.lucene.analysis.compound;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter; // for javadocs
 import org.apache.lucene.analysis.TokenStream;
 
 /**
- * A TokenFilter that decomposes compound words found in many germanic languages
+ * A {@link TokenFilter} that decomposes compound words found in many Germanic languages.
+ * <p>
  * "Donaudampfschiff" becomes Donau, dampf, schiff so that you can find
  * "Donaudampfschiff" even when you only enter "schiff". 
  *  It uses a brute-force algorithm to achieve this.
+ * </p>
  */
 public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBase {
   /**
    * 
-   * @param input the token stream to process
+   * @param input the {@link TokenStream} to process
    * @param dictionary the word dictionary to match against
    * @param minWordSize only words longer than this get processed
    * @param minSubwordSize only subwords longer than this get to the output stream
@@ -46,7 +49,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
 
   /**
    * 
-   * @param input the token stream to process
+   * @param input the {@link TokenStream} to process
    * @param dictionary the word dictionary to match against
    */
   public DictionaryCompoundWordTokenFilter(TokenStream input, String[] dictionary) {
@@ -55,7 +58,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
 
   /**
    * 
-   * @param input the token stream to process
+   * @param input the {@link TokenStream} to process
    * @param dictionary the word dictionary to match against. If this is a {@link org.apache.lucene.analysis.CharArraySet CharArraySet} it must have set ignoreCase=false and only contain
    *        lower case strings. 
    */
@@ -65,7 +68,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
 
   /**
    * 
-   * @param input the token stream to process
+   * @param input the {@link TokenStream} to process
    * @param dictionary the word dictionary to match against. If this is a {@link org.apache.lucene.analysis.CharArraySet CharArraySet} it must have set ignoreCase=false and only contain
    *        lower case strings. 
    * @param minWordSize only words longer than this get processed

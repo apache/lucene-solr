@@ -20,11 +20,12 @@ package org.apache.lucene.analysis.nl;
 import java.util.Map;
 
 /**
- *
- * A stemmer for Dutch words. The algorithm is an implementation of
+ * A stemmer for Dutch words. 
+ * <p>
+ * The algorithm is an implementation of
  * the <a href="http://snowball.tartarus.org/algorithms/dutch/stemmer.html">dutch stemming</a>
  * algorithm in Martin Porter's snowball project.
- *
+ * </p>
  */
 
 public class DutchStemmer {

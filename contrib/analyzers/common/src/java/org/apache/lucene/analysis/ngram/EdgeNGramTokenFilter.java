@@ -27,9 +27,9 @@ import java.io.IOException;
 
 /**
  * Tokenizes the given token into n-grams of given size(s).
- *
- * This filter create n-grams from the beginning edge or ending edge of a input token.
- * 
+ * <p>
+ * This {@link TokenFilter} create n-grams from the beginning edge or ending edge of a input token.
+ * </p>
  */
 public class EdgeNGramTokenFilter extends TokenFilter {
   public static final Side DEFAULT_SIDE = Side.FRONT;
@@ -84,7 +84,7 @@ public class EdgeNGramTokenFilter extends TokenFilter {
   /**
    * Creates EdgeNGramTokenFilter that can generate n-grams in the sizes of the given range
    *
-   * @param input TokenStream holding the input to be tokenized
+   * @param input {@link TokenStream} holding the input to be tokenized
    * @param side the {@link Side} from which to chop off an n-gram
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate
@@ -114,7 +114,7 @@ public class EdgeNGramTokenFilter extends TokenFilter {
   /**
    * Creates EdgeNGramTokenFilter that can generate n-grams in the sizes of the given range
    *
-   * @param input TokenStream holding the input to be tokenized
+   * @param input {@link TokenStream} holding the input to be tokenized
    * @param sideLabel the name of the {@link Side} from which to chop off an n-gram
    * @param minGram the smallest n-gram to generate
    * @param maxGram the largest n-gram to generate

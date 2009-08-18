@@ -18,9 +18,11 @@ package org.apache.lucene.analysis.query;
 
 import junit.framework.TestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.LetterTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -35,6 +37,7 @@ import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
 
 public class QueryAutoStopWordAnalyzerTest extends TestCase {
   String variedFieldValues[] = {"the", "quick", "brown", "fox", "jumped", "over", "the", "lazy", "boring", "dog"};
@@ -161,5 +164,38 @@ public class QueryAutoStopWordAnalyzerTest extends TestCase {
     a.addStopWords(reader, "repetitiveField", 10);
     Hits h = search(a, "repetitiveField:boring");
     assertFalse(h.length() == 0);
+  }
+  
+  /*
+   * analyzer that does not support reuse
+   * it is LetterTokenizer on odd invocations, WhitespaceTokenizer on even.
+   */
+  private class NonreusableAnalyzer extends Analyzer {
+    int invocationCount = 0;
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      if (++invocationCount % 2 == 0)
+        return new WhitespaceTokenizer(reader);
+      else
+        return new LetterTokenizer(reader);
+    }
+  }
+  
+  public void testWrappingNonReusableAnalyzer() throws Exception {
+    QueryAutoStopWordAnalyzer a = new QueryAutoStopWordAnalyzer(new NonreusableAnalyzer());
+    a.addStopWords(reader, 10);
+    Hits h = search(a, "repetitiveField:boring");
+    assertTrue(h.length() == 0);
+    h = search(a, "repetitiveField:vaguelyboring");
+    assertTrue(h.length() == 0);
+  }
+  
+  public void testTokenStream() throws Exception {
+    QueryAutoStopWordAnalyzer a = new QueryAutoStopWordAnalyzer(new WhitespaceAnalyzer());
+    a.addStopWords(reader, 10);
+    TokenStream ts = a.tokenStream("repetitiveField", new StringReader("this boring"));
+    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
+    assertTrue(ts.incrementToken());
+    assertEquals("this", termAtt.term());
+    assertFalse(ts.incrementToken());
   }
 }

@@ -24,13 +24,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
 /**
- * Title: ChineseAnalyzer
- * Description:
- *   Subclass of org.apache.lucene.analysis.Analyzer
- *   build from a ChineseTokenizer, filtered with ChineseFilter.
- * Copyright:   Copyright (c) 2001
- * Company:
- * @version 1.0
+ * An {@link Analyzer} that tokenizes text with {@link ChineseTokenizer} and
+ * filters with {@link ChineseFilter}
  *
  */
 
@@ -40,9 +35,10 @@ public class ChineseAnalyzer extends Analyzer {
     }
 
     /**
-    * Creates a TokenStream which tokenizes all the text in the provided Reader.
+    * Creates a {@link TokenStream} which tokenizes all the text in the provided {@link Reader}.
     *
-    * @return  A TokenStream build from a ChineseTokenizer filtered with ChineseFilter.
+    * @return  A {@link TokenStream} built from a {@link ChineseTokenizer} 
+    *   filtered with {@link ChineseFilter}.
     */
     public final TokenStream tokenStream(String fieldName, Reader reader) {
         TokenStream result = new ChineseTokenizer(reader);
@@ -56,11 +52,11 @@ public class ChineseAnalyzer extends Analyzer {
     };
 
     /**
-    * Returns a (possibly reused) TokenStream which tokenizes all the text in the
-    * provided Reader.
+    * Returns a (possibly reused) {@link TokenStream} which tokenizes all the text in the
+    * provided {@link Reader}.
     * 
-    * @return A TokenStream build from a ChineseTokenizer filtered with
-    *         ChineseFilter.
+    * @return A {@link TokenStream} built from a {@link ChineseTokenizer} 
+    *   filtered with {@link ChineseFilter}.
     */
     public final TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {

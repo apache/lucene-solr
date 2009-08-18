@@ -118,6 +118,14 @@ public class TestBrazilianStemmer extends TestCase {
 	 check("quiosque", "quiosqu");
   }
   
+  public void testNormalization() throws Exception {
+    check("Brasil", "brasil"); // lowercase by default
+    check("Brasília", "brasil"); // remove diacritics
+    check("quimio5terápicos", "quimio5terapicos"); // contains non-letter, diacritic will still be removed
+    check("áá", "áá"); // token is too short: diacritics are not removed
+    check("ááá", "aaa"); // normally, diacritics are removed
+  }
+  
   public void testReusableTokenStream() throws Exception {
     Analyzer a = new BrazilianAnalyzer();
     checkReuse(a, "boa", "boa");
@@ -126,6 +134,11 @@ public class TestBrazilianStemmer extends TestCase {
     checkReuse(a, "bôas", "boas"); // removes diacritic: different from snowball portugese
   }
  
+  public void testStemExclusionTable() throws Exception {
+    BrazilianAnalyzer a = new BrazilianAnalyzer();
+    a.setStemExclusionTable(new String[] { "quintessência" });
+    checkReuse(a, "quintessência", "quintessência"); // excluded words will be completely unchanged.
+  }
 
   private void check(final String input, final String expected) throws IOException {
     Analyzer analyzer = new BrazilianAnalyzer(); 

@@ -109,6 +109,7 @@ public class TestSynonymTokenFilter extends TestCase {
         streams.source = new WhitespaceTokenizer(reader);
         streams.result = new LowerCaseFilter(streams.source);
         streams.result = new SynonymTokenFilter(streams.result, synonyms, maxSynonyms);
+        setPreviousTokenStream(streams);
       } else {
         streams.source.reset(reader);
         streams.result.reset(); // reset the SynonymTokenFilter

@@ -34,15 +34,17 @@ import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 /**
- * Analyzer for Brazilian language. Supports an external list of stopwords (words that
- * will not be indexed at all) and an external list of exclusions (word that will
+ * {@link Analyzer} for Brazilian Portuguese language. 
+ * <p>
+ * Supports an external list of stopwords (words that
+ * will not be indexed at all) and an external list of exclusions (words that will
  * not be stemmed, but indexed).
- *
+ * </p>
  */
 public final class BrazilianAnalyzer extends Analyzer {
 
 	/**
-	 * List of typical Brazilian stopwords.
+	 * List of typical Brazilian Portuguese stopwords.
 	 */
 	public final static String[] BRAZILIAN_STOP_WORDS = {
       "a","ainda","alem","ambas","ambos","antes",
@@ -67,7 +69,7 @@ public final class BrazilianAnalyzer extends Analyzer {
 
 
 	/**
-	 * Contains the stopwords used with the StopFilter.
+	 * Contains the stopwords used with the {@link StopFilter}.
 	 */
 	private Set stoptable = new HashSet();
 	
@@ -111,7 +113,7 @@ public final class BrazilianAnalyzer extends Analyzer {
 		excltable = StopFilter.makeStopSet( exclusionlist );
 	}
 	/**
-	 * Builds an exclusionlist from a Hashtable.
+	 * Builds an exclusionlist from a {@link Map}.
 	 */
 	public void setStemExclusionTable( Map exclusionlist ) {
 		excltable = new HashSet(exclusionlist.keySet());
@@ -124,11 +126,11 @@ public final class BrazilianAnalyzer extends Analyzer {
 	}
 
 	/**
-	 * Creates a TokenStream which tokenizes all the text in the provided Reader.
+	 * Creates a {@link TokenStream} which tokenizes all the text in the provided {@link Reader}.
 	 *
-	 * @return  A TokenStream built from a StandardTokenizer filtered with
-	 * 			LowerCaseFilter, StandardFilter, StopFilter, and 
-	 *          BrazilianStemFilter.
+	 * @return  A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
+	 * 			{@link LowerCaseFilter}, {@link StandardFilter}, {@link StopFilter}, and 
+	 *          {@link BrazilianStemFilter}.
 	 */
 	public final TokenStream tokenStream(String fieldName, Reader reader) {
 		TokenStream result = new StandardTokenizer( reader );
@@ -145,12 +147,12 @@ public final class BrazilianAnalyzer extends Analyzer {
     };
     
     /**
-     * Returns a (possibly reused) TokenStream which tokenizes all the text 
-     * in the provided Reader.
+     * Returns a (possibly reused) {@link TokenStream} which tokenizes all the text 
+     * in the provided {@link Reader}.
      *
-     * @return  A TokenStream built from a StandardTokenizer filtered with
-     *          LowerCaseFilter, StandardFilter, StopFilter, and 
-     *          BrazilianStemFilter.
+     * @return  A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
+     *          {@link LowerCaseFilter}, {@link StandardFilter}, {@link StopFilter}, and 
+     *          {@link BrazilianStemFilter}.
      */
     public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {

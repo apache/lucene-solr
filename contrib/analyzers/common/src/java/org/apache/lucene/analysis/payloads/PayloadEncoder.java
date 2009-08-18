@@ -20,7 +20,7 @@ import org.apache.lucene.index.Payload;
 
 
 /**
- * Mainly for use with the DelimitedPayloadTokenFilter, converts char buffers to Payload
+ * Mainly for use with the DelimitedPayloadTokenFilter, converts char buffers to Payload.
  * <p/>
  * NOTE: This interface is subject to change 
  *
@@ -34,7 +34,7 @@ public interface PayloadEncoder {
    * @param buffer
    * @param offset
    * @param length
-   * @return
+   * @return encoded {@link Payload}
    */
   Payload encode(char [] buffer, int offset, int length);
 }

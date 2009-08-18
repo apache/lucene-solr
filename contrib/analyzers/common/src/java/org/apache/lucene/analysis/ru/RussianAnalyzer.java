@@ -29,10 +29,12 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
 /**
- * Analyzer for Russian language. Supports an external list of stopwords (words that
+ * {@link Analyzer} for Russian language. 
+ * <p>
+ * Supports an external list of stopwords (words that
  * will not be indexed at all).
  * A default set of stopwords is used unless an alternative list is specified.
- *
+ * </p>
  *
  * @version $Id$
  */
@@ -246,10 +248,13 @@ public final class RussianAnalyzer extends Analyzer
     }
 
     /**
-     * Creates a TokenStream which tokenizes all the text in the provided Reader.
+     * Creates a {@link TokenStream} which tokenizes all the text in the 
+     * provided {@link Reader}.
      *
-     * @return  A TokenStream built from a RussianLetterTokenizer filtered with
-     *                  RussianLowerCaseFilter, StopFilter, and RussianStemFilter
+     * @return  A {@link TokenStream} built from a 
+     *   {@link RussianLetterTokenizer} filtered with 
+     *   {@link RussianLowerCaseFilter}, {@link StopFilter}, 
+     *   and {@link RussianStemFilter}
      */
     public TokenStream tokenStream(String fieldName, Reader reader)
     {
@@ -266,11 +271,13 @@ public final class RussianAnalyzer extends Analyzer
     };
     
     /**
-     * Returns a (possibly reused) TokenStream which tokenizes all the text 
-     * in the provided Reader.
+     * Returns a (possibly reused) {@link TokenStream} which tokenizes all the text 
+     * in the provided {@link Reader}.
      *
-     * @return  A TokenStream built from a RussianLetterTokenizer filtered with
-     *                  RussianLowerCaseFilter, StopFilter, and RussianStemFilter
+     * @return  A {@link TokenStream} built from a 
+     *   {@link RussianLetterTokenizer} filtered with 
+     *   {@link RussianLowerCaseFilter}, {@link StopFilter}, 
+     *   and {@link RussianStemFilter}
      */
     public TokenStream reusableTokenStream(String fieldName, Reader reader) 
       throws IOException {

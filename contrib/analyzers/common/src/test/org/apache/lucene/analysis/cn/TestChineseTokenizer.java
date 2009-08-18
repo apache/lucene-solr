@@ -18,12 +18,15 @@ package org.apache.lucene.analysis.cn;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
@@ -57,6 +60,76 @@ public class TestChineseTokenizer extends TestCase
         new String[] { "北", "京", "市" },
         new int[] { 0, 1, 2 },
         new int[] { 1, 2, 3 });
+    }
+    
+    /*
+     * Analyzer that just uses ChineseTokenizer, not ChineseFilter.
+     * convenience to show the behavior of the tokenizer
+     */
+    private class JustChineseTokenizerAnalyzer extends Analyzer {
+      public TokenStream tokenStream(String fieldName, Reader reader) {
+        return new ChineseTokenizer(reader);
+      }   
+    }
+    
+    /*
+     * Analyzer that just uses ChineseFilter, not ChineseTokenizer.
+     * convenience to show the behavior of the filter.
+     */
+    private class JustChineseFilterAnalyzer extends Analyzer {
+      public TokenStream tokenStream(String fieldName, Reader reader) {
+        return new ChineseFilter(new WhitespaceTokenizer(reader));
+      }
+    }
+    
+    /*
+     * ChineseTokenizer tokenizes numbers as one token, but they are filtered by ChineseFilter
+     */
+    public void testNumerics() throws Exception
+    { 
+      Analyzer justTokenizer = new JustChineseTokenizerAnalyzer();
+      assertAnalyzesTo(justTokenizer, "中1234", new String[] { "中", "1234" });
+          
+      // in this case the ChineseAnalyzer (which applies ChineseFilter) will remove the numeric token.
+      Analyzer a = new ChineseAnalyzer(); 
+      assertAnalyzesTo(a, "中1234", new String[] { "中" });
+    }
+    
+    /*
+     * ChineseTokenizer tokenizes english similar to SimpleAnalyzer.
+     * it will lowercase terms automatically.
+     * 
+     * ChineseFilter has an english stopword list, it also removes any single character tokens.
+     * the stopword list is case-sensitive.
+     */
+    public void testEnglish() throws Exception
+    {
+      Analyzer chinese = new ChineseAnalyzer();
+      assertAnalyzesTo(chinese, "This is a Test. b c d",
+          new String[] { "test" });
+      
+      Analyzer justTokenizer = new JustChineseTokenizerAnalyzer();
+      assertAnalyzesTo(justTokenizer, "This is a Test. b c d",
+          new String[] { "this", "is", "a", "test", "b", "c", "d" });
+      
+      Analyzer justFilter = new JustChineseFilterAnalyzer();
+      assertAnalyzesTo(justFilter, "This is a Test. b c d", 
+          new String[] { "This", "Test." });
+    }
+    
+    private void assertAnalyzesTo(Analyzer a, String input, String[] output)
+      throws Exception {
+      TokenStream ts = a.tokenStream("dummy", new StringReader(input));
+      TermAttribute termAtt = (TermAttribute) ts
+      .getAttribute(TermAttribute.class);
+
+     for (int i = 0; i < output.length; i++) {
+       assertTrue(ts.incrementToken());
+       assertEquals(output[i], termAtt.term());
+     }
+
+     assertFalse(ts.incrementToken());
+     ts.close();
     }
     
     private void assertAnalyzesToReuse(Analyzer a, String input, String[] output,

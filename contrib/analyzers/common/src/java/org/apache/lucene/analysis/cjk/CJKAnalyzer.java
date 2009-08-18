@@ -28,7 +28,8 @@ import java.util.Set;
 
 
 /**
- * Filters CJKTokenizer with StopFilter.
+ * An {@link Analyzer} that tokenizes text with {@link CJKTokenizer} and
+ * filters with {@link StopFilter}
  *
  */
 public class CJKAnalyzer extends Analyzer {
@@ -77,11 +78,12 @@ public class CJKAnalyzer extends Analyzer {
   //~ Methods ----------------------------------------------------------------
 
   /**
-   * get token stream from input
+   * Creates a {@link TokenStream} which tokenizes all the text in the provided {@link Reader}.
    *
    * @param fieldName lucene field name
-   * @param reader    input reader
-   * @return TokenStream
+   * @param reader    input {@link Reader}
+   * @return A {@link TokenStream} built from {@link CJKTokenizer}, filtered with
+   *    {@link StopFilter}
    */
   public final TokenStream tokenStream(String fieldName, Reader reader) {
     return new StopFilter(new CJKTokenizer(reader), stopTable);
@@ -93,11 +95,13 @@ public class CJKAnalyzer extends Analyzer {
   };
   
   /**
-   * get (possibly reused) token stream from input
+   * Returns a (possibly reused) {@link TokenStream} which tokenizes all the text 
+   * in the provided {@link Reader}.
    *
    * @param fieldName lucene field name
-   * @param reader    input reader
-   * @return TokenStream
+   * @param reader    Input {@link Reader}
+   * @return A {@link TokenStream} built from {@link CJKTokenizer}, filtered with
+   *    {@link StopFilter}
    */
   public final TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
     /* tokenStream() is final, no back compat issue */
