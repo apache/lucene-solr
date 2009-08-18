@@ -32,7 +32,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     TopDocs hits = searcher.search(new MatchAllDocsQuery(), qwf, 10);
     assertEquals(1, hits.totalHits);
 
-    // should not throw exception with non primitive query
+    // should not throw exception with complex primitive query
     BooleanQuery booleanQuery = new BooleanQuery();
     booleanQuery.add(termQuery, Occur.MUST);
     booleanQuery.add(new TermQuery(new Term("field", "missing")),
@@ -42,8 +42,8 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     hits = searcher.search(new MatchAllDocsQuery(), qwf, 10);
     assertEquals(1, hits.totalHits);
 
-    // should not throw exception with Query that doesn't implement
-    // Query#createWeight
+    // should not throw exception with non primitive Query (doesn't implement
+    // Query#createWeight)
     qwf = new QueryWrapperFilter(new FuzzyQuery(new Term("field", "valu")));
 
     hits = searcher.search(new MatchAllDocsQuery(), qwf, 10);
