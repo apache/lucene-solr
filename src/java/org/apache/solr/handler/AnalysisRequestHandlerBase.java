@@ -18,10 +18,14 @@
 package org.apache.solr.handler;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharReader;
+import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.solr.analysis.CharFilterFactory;
 import org.apache.solr.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.analysis.TokenizerFactory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.SolrException;
@@ -83,17 +87,29 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     }
 
     TokenizerChain tokenizerChain = (TokenizerChain) analyzer;
+    CharFilterFactory[] cfiltfacs = tokenizerChain.getCharFilterFactories();
+    TokenizerFactory tfac = tokenizerChain.getTokenizerFactory();
+    TokenFilterFactory[] filtfacs = tokenizerChain.getTokenFilterFactories();
 
     NamedList<List<NamedList>> namedList = new SimpleOrderedMap<List<NamedList>>();
 
-    TokenStream tokenStream = tokenizerChain.getTokenizerFactory().create(new StringReader(value));
+    if( cfiltfacs != null ){
+      String source = value;
+      for(CharFilterFactory cfiltfac : cfiltfacs ){
+        CharStream reader = CharReader.get(new StringReader(source));
+        reader = cfiltfac.create(reader);
+        source = writeCharStream(namedList, reader);
+      }
+    }
+
+    TokenStream tokenStream = tfac.create(tokenizerChain.charStream(new StringReader(value)));
     List<Token> tokens = analyzeTokenStream(tokenStream);
 
     namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokens, context));
 
     ListBasedTokenStream listBasedTokenStream = new ListBasedTokenStream(tokens);
 
-    for (TokenFilterFactory tokenFilterFactory : tokenizerChain.getTokenFilterFactories()) {
+    for (TokenFilterFactory tokenFilterFactory : filtfacs) {
       tokenStream = tokenFilterFactory.create(listBasedTokenStream);
       List<Token> tokenList = analyzeTokenStream(tokenStream);
       namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(tokenList, context));
@@ -187,6 +203,23 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     }
 
     return tokensNamedLists;
+  }
+  
+  private String writeCharStream(NamedList out, CharStream input ){
+    final int BUFFER_SIZE = 1024;
+    char[] buf = new char[BUFFER_SIZE];
+    int len = 0;
+    StringBuilder sb = new StringBuilder();
+    do {
+      try {
+        len = input.read( buf, 0, BUFFER_SIZE );
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      }
+      sb.append(buf, 0, len);
+    } while( len == BUFFER_SIZE );
+    out.add( input.getClass().getName(), sb.toString());
+    return sb.toString();
   }
 
 

@@ -271,6 +271,8 @@ New Features
 
 69. SOLR-1372: Enhance FieldAnalysisRequestHandler to accept field value from content stream (ehatcher)
 
+70. SOLR-1370: Show the output of CharFilters in FieldAnalysisRequestHandler (koji)
+
 
 Optimizations
 ----------------------

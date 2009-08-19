@@ -293,4 +293,30 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
 
   }
 
+  public void testCharFilterAnalysis() throws Exception {
+
+    FieldAnalysisRequest request = new FieldAnalysisRequest();
+    request.addFieldType("charfilthtmlmap");
+    request.setFieldValue("<html><body>whátëvêr</body></html>");
+    request.setShowMatch(false);
+
+    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getSchema());
+    assertTrue("result is null and it shouldn't be", result != null);
+
+    NamedList<NamedList> fieldTypes = result.get("field_types");
+    assertNotNull("field_types should never be null", fieldTypes);
+    NamedList<NamedList> textType = fieldTypes.get("charfilthtmlmap");
+    assertNotNull("expecting result for field type 'charfilthtmlmap'", textType);
+
+    NamedList indexPart = textType.get("index");
+    assertNotNull("expecting an index token analysis for field type 'charfilthtmlmap'", indexPart);
+    
+    assertEquals("            whátëvêr              ", indexPart.get("org.apache.solr.analysis.HTMLStripCharFilter"));
+    assertEquals("            whatever              ", indexPart.get("org.apache.lucene.analysis.MappingCharFilter"));
+
+    List<NamedList> tokenList = (List<NamedList>)indexPart.get("org.apache.lucene.analysis.WhitespaceTokenizer");
+    assertNotNull("Expcting WhitespaceTokenizer analysis breakdown", tokenList);
+    assertEquals(tokenList.size(), 1);
+    assertToken(tokenList.get(0), new TokenInfo("whatever", null, "word", 12, 20, 1, null, false));
+  }
 }

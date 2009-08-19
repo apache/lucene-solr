@@ -247,6 +247,13 @@
         <filter class="solr.LengthFilterFactory" min="2" max="5"/>
       </analyzer>
     </fieldtype>
+    <fieldType name="charfilthtmlmap" class="solr.TextField">
+      <analyzer>
+        <charFilter class="solr.HTMLStripCharFilterFactory"/>
+        <charFilter class="solr.MappingCharFilterFactory" mapping="mapping-ISOLatin1Accent.txt"/>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      </analyzer>
+    </fieldType>
 
     <fieldtype name="subword" class="solr.TextField" multiValued="true" positionIncrementGap="100">
       <analyzer type="index">
