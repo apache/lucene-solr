@@ -383,10 +383,9 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
     if (cmd.optimize) {
       optimizeCommands.incrementAndGet();
-    } else if (cmd.expungeDeletes) {
-      expungeDeleteCommands.incrementAndGet();
     } else {
       commitCommands.incrementAndGet();
+      if (cmd.expungeDeletes) expungeDeleteCommands.incrementAndGet();
     }
 
     Future[] waitSearcher = null;
@@ -406,6 +405,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
         openWriter();
         writer.expungeDeletes();
       }
+      
+      closeWriter();
 
       callPostCommitCallbacks();
       if (cmd.optimize) {
