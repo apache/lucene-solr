@@ -130,6 +130,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
   AtomicLong deleteByIdCommandsCumulative= new AtomicLong();
   AtomicLong deleteByQueryCommands= new AtomicLong();
   AtomicLong deleteByQueryCommandsCumulative= new AtomicLong();
+  AtomicLong expungeDeleteCommands = new AtomicLong();
   AtomicLong mergeIndexesCommands = new AtomicLong();
   AtomicLong commitCommands= new AtomicLong();
   AtomicLong optimizeCommands= new AtomicLong();
@@ -382,6 +383,8 @@ public class DirectUpdateHandler2 extends UpdateHandler {
 
     if (cmd.optimize) {
       optimizeCommands.incrementAndGet();
+    } else if (cmd.expungeDeletes) {
+      expungeDeleteCommands.incrementAndGet();
     } else {
       commitCommands.incrementAndGet();
     }
@@ -402,6 +405,10 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       }
 
       closeWriter();
+      if (!cmd.optimize && cmd.expungeDeletes) {
+        openWriter();
+        writer.expungeDeletes();
+      }
 
       callPostCommitCallbacks();
       if (cmd.optimize) {

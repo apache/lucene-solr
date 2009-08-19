@@ -153,6 +153,12 @@ public class UpdateRequest extends SolrRequest
     return this;
   }
 
+  public UpdateRequest setAction(ACTION action, boolean waitFlush, boolean waitSearcher, int maxSegments , boolean expungeDeletes) {
+    setAction(action, waitFlush, waitSearcher,maxSegments) ;
+    params.set(UpdateParams.EXPUNGE_DELETES,""+expungeDeletes);
+    return this;
+  }
+
   /**
    * @since Solr 1.4
    */

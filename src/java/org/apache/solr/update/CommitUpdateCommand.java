@@ -23,6 +23,7 @@ public class CommitUpdateCommand extends UpdateCommand {
   public boolean optimize;
   public boolean waitFlush;
   public boolean waitSearcher=true;
+  public boolean expungeDeletes = false;
 
   /**
    * During optimize, optimize down to <= this many segments.  Must be >= 1
@@ -39,6 +40,7 @@ public class CommitUpdateCommand extends UpdateCommand {
     return "commit(optimize="+optimize
             +",waitFlush="+waitFlush
             +",waitSearcher="+waitSearcher
+            +",expungeDeletes="+expungeDeletes
             +')';
   }
 }

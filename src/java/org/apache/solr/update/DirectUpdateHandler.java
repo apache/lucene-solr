@@ -241,9 +241,10 @@ public class DirectUpdateHandler extends UpdateHandler {
     synchronized (this) {
       pset.clear();
       closeSearcher();  // flush any deletes
-      if (cmd.optimize) {
+      if (cmd.optimize || cmd.expungeDeletes) {
         openWriter();  // writer needs to be open to optimize
-        writer.optimize(cmd.maxOptimizeSegments);
+        if(cmd.optimize) writer.optimize(cmd.maxOptimizeSegments);
+        if(cmd.expungeDeletes) writer.expungeDeletes(cmd.expungeDeletes);
       }
       closeWriter();
 

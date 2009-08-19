@@ -155,6 +155,8 @@ class XMLLoader extends ContentStreamLoader {
                 sawWaitSearcher = true;
               } else if (UpdateParams.MAX_OPTIMIZE_SEGMENTS.equals(attrName)) {
                 cmd.maxOptimizeSegments = Integer.parseInt(attrVal);
+              } else if (UpdateParams.EXPUNGE_DELETES.equals(attrName)) {
+                cmd.expungeDeletes = StrUtils.parseBoolean(attrVal);
               } else {
                 XmlUpdateRequestHandler.log.warn("unexpected attribute commit/@" + attrName);
               }

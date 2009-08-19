@@ -17,20 +17,32 @@
 
 package org.apache.solr.update;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermEnum;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.SolrIndexReader;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.RefCounted;
 
 /**
  * 
@@ -245,6 +257,90 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
             ,"//*[@numFound='1']"
             ,"//result/doc[1]/str[@name='id'][.='ZZZ']"
             );
+  }
+  
+  public void testExpungeDeletes() throws Exception {
+    for (int x = 0; x < 3000; x++) {
+      addSimpleDoc(x + "");
+    }
+    SolrCore core = h.getCore();
+    UpdateHandler updater = core.getUpdateHandler();
+    CommitUpdateCommand cmtCmd = new CommitUpdateCommand(false);
+    cmtCmd.waitSearcher = true;
+    updater.commit(cmtCmd);
+
+    List<String> todelete = new ArrayList<String>();
+
+    Set<String> segsdel = new HashSet<String>();
+
+    SegmentReader[] sirs = getSegmentReaders(core);
+    assertTrue(sirs.length > 6);
+    todelete.add(getNthIDTerm(2, sirs[0]));
+    segsdel.add(sirs[0].getSegmentName());
+    
+    todelete.add(getNthIDTerm(7, sirs[2]));
+    segsdel.add(sirs[2].getSegmentName());
+    
+    todelete.add(getNthIDTerm(4, sirs[5]));
+    segsdel.add(sirs[5].getSegmentName());
+    
+    for (String id : todelete) {
+      deleteSimpleDoc(id);
+    }
+    // commit the deletes
+    cmtCmd = new CommitUpdateCommand(false);
+    cmtCmd.waitSearcher = true;
+    updater.commit(cmtCmd);
+    
+    // expunge deletes
+    cmtCmd = new CommitUpdateCommand(false);
+    cmtCmd.waitSearcher = true;
+    cmtCmd.expungeDeletes = true;
+    updater.commit(cmtCmd);
+    
+    // we'll have fewer segments
+    SegmentReader[] sirs2 = getSegmentReaders(core);
+    assertTrue(sirs.length > sirs2.length);
+    // check the actual segment names
+    for (SegmentReader sr : sirs2) {
+      assertTrue(!segsdel.contains(sr.getSegmentName()));
+    }
+  }
+
+  SegmentReader[] getSegmentReaders(SolrCore core) throws IOException {
+    RefCounted<SolrIndexSearcher> ref = core.getSearcher(true, true, null);
+    SolrIndexSearcher is = ref.get();
+    SegmentReader[] segmentReaders = null;
+    try {
+      SolrIndexReader reader = is.getReader();
+      IndexReader[] subreaders = reader.getSequentialSubReaders();
+      segmentReaders = new SegmentReader[subreaders.length];
+      for (int x = 0; x < subreaders.length; x++) {
+        assert subreaders[x] instanceof SolrIndexReader;
+        SolrIndexReader sir = (SolrIndexReader) subreaders[x];
+        SegmentReader sr = (SegmentReader) sir.getWrappedReader();
+        segmentReaders[x] = sr;
+      }
+    } finally {
+      ref.decref();
+    }
+    return segmentReaders;
+  }
+
+  private String getNthIDTerm(int n, IndexReader r) throws IOException {
+    TermEnum te = r.terms(new Term("id", ""));
+    try {
+      int x = 0;
+      do {
+        if (x >= n) {
+          return te.term().text();
+        }
+        x++;
+      } while (te.next());
+    } finally {
+      te.close();
+    }
+    return null;
   }
   
   private void addSimpleDoc(String id) throws Exception {
