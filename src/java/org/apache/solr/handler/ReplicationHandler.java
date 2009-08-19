@@ -131,7 +131,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (command.equals(CMD_GET_FILE_LIST)) {
       getFileList(solrParams, rsp);
     } else if (command.equalsIgnoreCase(CMD_BACKUP)) {
-      doSnapShoot(new ModifiableSolrParams(solrParams), rsp);
+      doSnapShoot(new ModifiableSolrParams(solrParams), rsp,req);
       rsp.add(STATUS, OK_STATUS);
     } else if (command.equalsIgnoreCase(CMD_FETCH_INDEX)) {
       String masterUrl = solrParams.get(MASTER_URL);
@@ -268,9 +268,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     return snapPullLock.isLocked();
   }
 
-  private void doSnapShoot(SolrParams params, SolrQueryResponse rsp) {
+  private void doSnapShoot(SolrParams params, SolrQueryResponse rsp, SolrQueryRequest req) {
     try {
       IndexCommit indexCommit = core.getDeletionPolicy().getLatestCommit();
+      if(indexCommit == null) {
+        indexCommit = req.getSearcher().getReader().getIndexCommit();
+      }
       if (indexCommit != null)  {
         new SnapShooter(core, params.get("location")).createSnapAsync(indexCommit.getFileNames(), this);
       }
