@@ -53,7 +53,8 @@ import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.StringHelper;
 
 /**
- * Class used to extract {@link WeightedSpanTerm}s from a {@link Query} based on whether Terms from the query are contained in a supplied TokenStream.
+ * Class used to extract {@link WeightedSpanTerm}s from a {@link Query} based on whether 
+ * {@link Term}s from the {@link Query} are contained in a supplied {@link TokenStream}.
  */
 public class WeightedSpanTermExtractor {
 

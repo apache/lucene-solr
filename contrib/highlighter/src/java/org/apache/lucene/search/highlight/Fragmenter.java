@@ -28,10 +28,10 @@ public interface Fragmenter {
 
   /**
    * Initializes the Fragmenter. You can grab references to the Attributes you are
-   * interested in from tokenStream and then access the values in isNewFragment.
+   * interested in from tokenStream and then access the values in {@link #isNewFragment()}.
    * 
-   * @param originalText
-   * @param tokenStream
+   * @param originalText the original source text
+   * @param tokenStream the {@link TokenStream} to be fragmented
    */
   public void start(String originalText, TokenStream tokenStream);
 

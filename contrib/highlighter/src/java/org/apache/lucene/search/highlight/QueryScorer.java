@@ -10,13 +10,15 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.StringHelper;
 
 /**
  * {@link Scorer} implementation which scores text fragments by the number of
- * unique query terms found. This class converts appropriate Querys to
- * SpanQuerys and attempts to score only those terms that participated in
+ * unique query terms found. This class converts appropriate {@link Query}s to
+ * {@link SpanQuery}s and attempts to score only those terms that participated in
  * generating the 'hit' on the document.
  */
 public class QueryScorer implements Scorer {
@@ -36,8 +38,6 @@ public class QueryScorer implements Scorer {
 
   /**
    * @param query Query to use for highlighting
-   * 
-   * @throws IOException
    */
   public QueryScorer(Query query) {
     init(query, null, null, true);
@@ -46,7 +46,6 @@ public class QueryScorer implements Scorer {
   /**
    * @param query Query to use for highlighting
    * @param field Field to highlight - pass null to ignore fields
-   * @throws IOException
    */
   public QueryScorer(Query query, String field) {
     init(query, field, null, true);
@@ -55,19 +54,20 @@ public class QueryScorer implements Scorer {
   /**
    * @param query Query to use for highlighting
    * @param field Field to highlight - pass null to ignore fields
-   * 
-   * @param reader
-   * @throws IOException
+   * @param reader {@link IndexReader} to use for quasi tf/idf scoring
    */
   public QueryScorer(Query query, IndexReader reader, String field) {
     init(query, field, reader, true);
   }
 
+
   /**
-   * As above, but with ability to pass in an <tt>IndexReader</tt>
+   * @param query to use for highlighting
+   * @param reader {@link IndexReader} to use for quasi tf/idf scoring
+   * @param field to highlight - pass null to ignore fields
+   * @param defaultField
    */
-  public QueryScorer(Query query, IndexReader reader, String field, String defaultField)
-    throws IOException {
+  public QueryScorer(Query query, IndexReader reader, String field, String defaultField) {
     this.defaultField = StringHelper.intern(defaultField);
     init(query, field, reader, true);
   }
@@ -81,7 +81,7 @@ public class QueryScorer implements Scorer {
   }
 
   /**
-   * @param weightedTerms
+   * @param weightedTerms an array of pre-created {@link WeightedSpanTerm}s
    */
   public QueryScorer(WeightedSpanTerm[] weightedTerms) {
     this.fieldWeightedSpanTerms = new HashMap(weightedTerms.length);
@@ -112,7 +112,7 @@ public class QueryScorer implements Scorer {
   /**
    *
    * @return The highest weighted term (useful for passing to
-   *         GradientFormatter to set top end of coloring scale.
+   *         GradientFormatter to set top end of coloring scale).
    */
   public float getMaxTermWeight() {
     return maxTermWeight;
@@ -151,6 +151,9 @@ public class QueryScorer implements Scorer {
     return score;
   }
 
+  /* (non-Javadoc)
+   * @see org.apache.lucene.search.highlight.Scorer#init(org.apache.lucene.analysis.TokenStream)
+   */
   public TokenStream init(TokenStream tokenStream) throws IOException {
     position = -1;
     termAtt = (TermAttribute) tokenStream.getAttribute(TermAttribute.class);
@@ -165,10 +168,10 @@ public class QueryScorer implements Scorer {
   }
   
   /**
-   * Retrieve the WeightedSpanTerm for the specified token. Useful for passing
-   * Span information to a Fragmenter.
+   * Retrieve the {@link WeightedSpanTerm} for the specified token. Useful for passing
+   * Span information to a {@link Fragmenter}.
    *
-   * @param token
+   * @param token to get {@link WeightedSpanTerm} for
    * @return WeightedSpanTerm for token
    */
   public WeightedSpanTerm getWeightedSpanTerm(String token) {
@@ -180,7 +183,6 @@ public class QueryScorer implements Scorer {
    * @param field
    * @param tokenStream
    * @param reader
-   * @throws IOException
    */
   private void init(Query query, String field, IndexReader reader, boolean expandMultiTermQuery) {
     this.reader = reader;
@@ -218,10 +220,19 @@ public class QueryScorer implements Scorer {
     totalScore = 0;
   }
   
+  /**
+   * @return true if multi-term queries should be expanded
+   */
   public boolean isExpandMultiTermQuery() {
     return expandMultiTermQuery;
   }
 
+  /**
+   * Controls whether or not multi-term queries are expanded
+   * against a {@link MemoryIndex} {@link IndexReader}.
+   * 
+   * @param expandMultiTermQuery true if multi-term queries should be expanded
+   */
   public void setExpandMultiTermQuery(boolean expandMultiTermQuery) {
     this.expandMultiTermQuery = expandMultiTermQuery;
   }

@@ -23,11 +23,12 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.search.spans.Spans;
 
 
 /**
  * {@link Fragmenter} implementation which breaks text up into same-size
- * fragments but does not split up Spans. This is a simple sample class.
+ * fragments but does not split up {@link Spans}. This is a simple sample class.
  */
 public class SimpleSpanFragmenter implements Fragmenter {
   private static final int DEFAULT_FRAGMENT_SIZE = 100;
