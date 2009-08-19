@@ -131,6 +131,7 @@ public class DutchAnalyzer extends Analyzer {
    */
   public void setStemExclusionTable(String[] exclusionlist) {
     excltable = StopFilter.makeStopSet(exclusionlist);
+    setPreviousTokenStream(null); // force a new stemmer to be created
   }
 
   /**
@@ -138,6 +139,7 @@ public class DutchAnalyzer extends Analyzer {
    */
   public void setStemExclusionTable(HashSet exclusionlist) {
     excltable = exclusionlist;
+    setPreviousTokenStream(null); // force a new stemmer to be created
   }
 
   /**
@@ -146,6 +148,7 @@ public class DutchAnalyzer extends Analyzer {
   public void setStemExclusionTable(File exclusionlist) {
     try {
       excltable = org.apache.lucene.analysis.WordlistLoader.getWordSet(exclusionlist);
+      setPreviousTokenStream(null); // force a new stemmer to be created
     } catch (IOException e) {
       // TODO: throw IOException
       throw new RuntimeException(e);
@@ -160,6 +163,7 @@ public class DutchAnalyzer extends Analyzer {
   public void setStemDictionary(File stemdictFile) {
     try {
       stemdict = org.apache.lucene.analysis.WordlistLoader.getStemDict(stemdictFile);
+      setPreviousTokenStream(null); // force a new stemmer to be created
     } catch (IOException e) {
       // TODO: throw IOException
       throw new RuntimeException(e);
@@ -210,7 +214,7 @@ public class DutchAnalyzer extends Analyzer {
       streams.source = new StandardTokenizer(reader);
       streams.result = new StandardFilter(streams.source);
       streams.result = new StopFilter(streams.result, stoptable);
-      streams.result = new DutchStemFilter(streams.result, excltable);
+      streams.result = new DutchStemFilter(streams.result, excltable, stemdict);
       setPreviousTokenStream(streams);
     } else {
       streams.source.reset(reader);

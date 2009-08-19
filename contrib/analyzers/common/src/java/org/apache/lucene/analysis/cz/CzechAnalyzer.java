@@ -100,6 +100,7 @@ public final class CzechAnalyzer extends Analyzer {
      * @param   encoding    Encoding used (win-1250, iso-8859-2, ...), null for default system encoding
      */
     public void loadStopWords( InputStream wordfile, String encoding ) {
+        setPreviousTokenStream(null); // force a new stopfilter to be created
         if ( wordfile == null ) {
             stoptable = new HashSet();
             return;
@@ -121,7 +122,9 @@ public final class CzechAnalyzer extends Analyzer {
             }
 
         } catch ( IOException e ) {
-            stoptable = null;
+          // clear any previous table (if present)
+          // TODO: throw IOException
+          stoptable = new HashSet();
         }
     }
 

@@ -139,6 +139,17 @@ public class TestBrazilianStemmer extends TestCase {
     a.setStemExclusionTable(new String[] { "quintessência" });
     checkReuse(a, "quintessência", "quintessência"); // excluded words will be completely unchanged.
   }
+  
+  /* 
+   * Test that changes to the exclusion table are applied immediately
+   * when using reusable token streams.
+   */
+  public void testExclusionTableReuse() throws Exception {
+    BrazilianAnalyzer a = new BrazilianAnalyzer();
+    checkReuse(a, "quintessência", "quintessente");
+    a.setStemExclusionTable(new String[] { "quintessência" });
+    checkReuse(a, "quintessência", "quintessência");
+  }
 
   private void check(final String input, final String expected) throws IOException {
     Analyzer analyzer = new BrazilianAnalyzer(); 

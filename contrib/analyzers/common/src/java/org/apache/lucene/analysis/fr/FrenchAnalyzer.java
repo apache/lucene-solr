@@ -111,6 +111,7 @@ public final class FrenchAnalyzer extends Analyzer {
    */
   public void setStemExclusionTable(String[] exclusionlist) {
     excltable = StopFilter.makeStopSet(exclusionlist);
+    setPreviousTokenStream(null); // force a new stemmer to be created
   }
 
   /**
@@ -118,6 +119,7 @@ public final class FrenchAnalyzer extends Analyzer {
    */
   public void setStemExclusionTable(Map exclusionlist) {
     excltable = new HashSet(exclusionlist.keySet());
+    setPreviousTokenStream(null); // force a new stemmer to be created
   }
 
   /**
@@ -126,6 +128,7 @@ public final class FrenchAnalyzer extends Analyzer {
    */
   public void setStemExclusionTable(File exclusionlist) throws IOException {
     excltable = new HashSet(WordlistLoader.getWordSet(exclusionlist));
+    setPreviousTokenStream(null); // force a new stemmer to be created
   }
 
   /**

@@ -111,18 +111,21 @@ public final class BrazilianAnalyzer extends Analyzer {
 	 */
 	public void setStemExclusionTable( String[] exclusionlist ) {
 		excltable = StopFilter.makeStopSet( exclusionlist );
+		setPreviousTokenStream(null); // force a new stemmer to be created
 	}
 	/**
 	 * Builds an exclusionlist from a {@link Map}.
 	 */
 	public void setStemExclusionTable( Map exclusionlist ) {
 		excltable = new HashSet(exclusionlist.keySet());
+		setPreviousTokenStream(null); // force a new stemmer to be created
 	}
 	/**
 	 * Builds an exclusionlist from the words contained in the given file.
 	 */
 	public void setStemExclusionTable( File exclusionlist ) throws IOException {
 		excltable = WordlistLoader.getWordSet( exclusionlist );
+		setPreviousTokenStream(null); // force a new stemmer to be created
 	}
 
 	/**

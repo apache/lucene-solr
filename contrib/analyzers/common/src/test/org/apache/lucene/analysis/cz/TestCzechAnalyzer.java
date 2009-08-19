@@ -17,6 +17,10 @@ package org.apache.lucene.analysis.cz;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 
 import junit.framework.TestCase;
@@ -32,15 +36,53 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  *
  */
 public class TestCzechAnalyzer extends TestCase {
-
+  File dataDir = new File(System.getProperty("dataDir", "./bin"));
+  File customStopFile = new File(dataDir, "org/apache/lucene/analysis/cz/customStopWordFile.txt");
+  
   public void testStopWord() throws Exception {
     assertAnalyzesTo(new CzechAnalyzer(), "Pokud mluvime o volnem", new String[] { "mluvime", "volnem" });
   }
-  
+    
   public void testReusableTokenStream() throws Exception {
     Analyzer analyzer = new CzechAnalyzer();
     assertAnalyzesToReuse(analyzer, "Pokud mluvime o volnem", new String[] { "mluvime", "volnem" });
     assertAnalyzesToReuse(analyzer, "Česká Republika", new String[] { "česká", "republika" });
+  }
+
+  /*
+   * An input stream that always throws IOException for testing.
+   */
+  private class UnreliableInputStream extends InputStream {
+    public int read() throws IOException {
+      throw new IOException();
+    }
+  }
+  
+  /*
+   * The loadStopWords method does not throw IOException on error,
+   * instead previously it set the stoptable to null (versus empty)
+   * this would cause a NPE when it is time to create the StopFilter.
+   */
+  public void testInvalidStopWordFile() throws Exception {
+    CzechAnalyzer cz = new CzechAnalyzer();
+    cz.loadStopWords(new UnreliableInputStream(), "UTF-8");
+    assertAnalyzesTo(cz, "Pokud mluvime o volnem",
+        new String[] { "pokud", "mluvime", "o", "volnem" });
+  }
+  
+  /* 
+   * Test that changes to the stop table via loadStopWords are applied immediately
+   * when using reusable token streams.
+   */
+  public void testStopWordFileReuse() throws Exception {
+    CzechAnalyzer cz = new CzechAnalyzer();
+    assertAnalyzesToReuse(cz, "Česká Republika", 
+      new String[] { "česká", "republika" });
+    
+    InputStream stopwords = new FileInputStream(customStopFile);
+    cz.loadStopWords(stopwords, "UTF-8");
+    
+    assertAnalyzesToReuse(cz, "Česká Republika", new String[] { "česká" });
   }
 
   private void assertAnalyzesTo(Analyzer a, String input, String[] output) throws Exception {

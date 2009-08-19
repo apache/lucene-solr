@@ -221,4 +221,14 @@ public class TestFrenchAnalyzer extends TestCase {
               "captif" });
 	}
 
+	/* 
+	 * Test that changes to the exclusion table are applied immediately
+	 * when using reusable token streams.
+	 */
+	public void testExclusionTableReuse() throws Exception {
+	  FrenchAnalyzer fa = new FrenchAnalyzer();
+	  assertAnalyzesToReuse(fa, "habitable", new String[] { "habit" });
+	  fa.setStemExclusionTable(new String[] { "habitable" });
+	  assertAnalyzesToReuse(fa, "habitable", new String[] { "habitable" });
+	}
 }

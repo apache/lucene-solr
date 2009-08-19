@@ -89,6 +89,17 @@ public class TestGermanStemFilter extends TestCase {
     checkReuse(new GermanSubclassAnalyzer(), "Tischen", "Tischen");
   }
 
+  /* 
+   * Test that changes to the exclusion table are applied immediately
+   * when using reusable token streams.
+   */
+  public void testExclusionTableReuse() throws Exception {
+    GermanAnalyzer a = new GermanAnalyzer();
+    checkReuse(a, "tischen", "tisch");
+    a.setStemExclusionTable(new String[] { "tischen" });
+    checkReuse(a, "tischen", "tischen");
+  }
+  
   private void check(final String input, final String expected) throws IOException {
     Analyzer a = new GermanAnalyzer();
     TokenStream tokenStream = a.tokenStream("dummy", new StringReader(input));

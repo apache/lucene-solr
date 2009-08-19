@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.nl;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -35,6 +36,8 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * 
  */
 public class TestDutchStemmer extends TestCase {
+  File dataDir = new File(System.getProperty("dataDir", "./bin"));
+  File customDictFile = new File(dataDir, "org/apache/lucene/analysis/nl/customStemDict.txt");
   
   public void testWithSnowballExamples() throws IOException {
 	 check("lichaamsziek", "lichaamsziek");
@@ -144,7 +147,28 @@ public class TestDutchStemmer extends TestCase {
     checkReuse(a, "lichamelijkheden", "lichamelijkheden");
   }
  
-
+  /* 
+   * Test that changes to the exclusion table are applied immediately
+   * when using reusable token streams.
+   */
+  public void testExclusionTableReuse() throws Exception {
+    DutchAnalyzer a = new DutchAnalyzer();
+    checkReuse(a, "lichamelijk", "licham");
+    a.setStemExclusionTable(new String[] { "lichamelijk" });
+    checkReuse(a, "lichamelijk", "lichamelijk");
+  }
+  
+  /* 
+   * Test that changes to the dictionary stemming table are applied immediately
+   * when using reusable token streams.
+   */
+  public void testStemDictionaryReuse() throws Exception {
+    DutchAnalyzer a = new DutchAnalyzer();
+    checkReuse(a, "lichamelijk", "licham");
+    a.setStemDictionary(customDictFile);
+    checkReuse(a, "lichamelijk", "somethingentirelydifferent");
+  }
+  
   private void check(final String input, final String expected) throws IOException {
     Analyzer analyzer = new DutchAnalyzer(); 
     TokenStream stream = analyzer.tokenStream("dummy", new StringReader(input));
