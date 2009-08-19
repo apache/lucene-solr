@@ -122,7 +122,7 @@ public class QueryParserHelper {
    * @param syntaxParser
    *          the text parser that will be used to parse the query string
    * 
-   * @see #getTextParser()
+   * @see #getSyntaxParser()
    * @see SyntaxParser
    */
   public void setSyntaxParser(SyntaxParser syntaxParser) {
@@ -193,7 +193,7 @@ public class QueryParserHelper {
    * @see SyntaxParser
    * @see #setSyntaxParser(SyntaxParser)
    */
-  public SyntaxParser getTextParser() {
+  public SyntaxParser getSyntaxParser() {
     return this.syntaxParser;
   }
 
@@ -225,7 +225,7 @@ public class QueryParserHelper {
    * In this method the three phases are executed: <br/>
    * <br/>
    * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1st - the query string is parsed using the
-   * text parser returned by {@link #getTextParser()}, the result is a query
+   * text parser returned by {@link #getSyntaxParser()}, the result is a query
    * node tree <br/>
    * <br/>
    * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2nd - the query node tree is processed by the
@@ -246,7 +246,7 @@ public class QueryParserHelper {
    */
   public Object parse(String query, String defaultField)
       throws QueryNodeException {
-    QueryNode queryTree = getTextParser().parse(query, defaultField);
+    QueryNode queryTree = getSyntaxParser().parse(query, defaultField);
 
     QueryNodeProcessor processor = getQueryNodeProcessor();
 

@@ -19,14 +19,10 @@ package org.apache.lucene.queryParser.standard.parser;
  */
 
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Vector;
 
 import org.apache.lucene.messages.Message;
 import org.apache.lucene.messages.MessageImpl;
-import org.apache.lucene.queryParser.core.QueryNodeError;
-import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.QueryNodeParseException;
 import org.apache.lucene.queryParser.core.messages.QueryParserMessages;
 import org.apache.lucene.queryParser.core.nodes.AndQueryNode;
@@ -34,19 +30,14 @@ import org.apache.lucene.queryParser.core.nodes.BooleanQueryNode;
 import org.apache.lucene.queryParser.core.nodes.BoostQueryNode;
 import org.apache.lucene.queryParser.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryParser.core.nodes.FuzzyQueryNode;
-import org.apache.lucene.queryParser.core.nodes.ModifierQueryNode;
 import org.apache.lucene.queryParser.core.nodes.GroupQueryNode;
-import org.apache.lucene.queryParser.core.nodes.OpaqueQueryNode;
+import org.apache.lucene.queryParser.core.nodes.ModifierQueryNode;
 import org.apache.lucene.queryParser.core.nodes.OrQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricRangeQueryNode;
-import org.apache.lucene.queryParser.core.nodes.PrefixWildcardQueryNode;
-import org.apache.lucene.queryParser.core.nodes.SlopQueryNode;
-import org.apache.lucene.queryParser.core.nodes.ProximityQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
-import org.apache.lucene.queryParser.core.nodes.QueryNodeImpl;
 import org.apache.lucene.queryParser.core.nodes.QuotedFieldQueryNode;
-import org.apache.lucene.queryParser.core.nodes.WildcardQueryNode;
+import org.apache.lucene.queryParser.core.nodes.SlopQueryNode;
 import org.apache.lucene.queryParser.core.parser.SyntaxParser;
 
 @SuppressWarnings("all")
@@ -178,11 +169,8 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       case PLUS:
       case MINUS:
       case LPAREN:
-      case STAR:
       case QUOTED:
       case TERM:
-      case PREFIXTERM:
-      case WILDTERM:
       case RANGEIN_START:
       case RANGEEX_START:
       case NUMBER:
@@ -322,31 +310,15 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
   Token fieldToken=null, boost=null;
   boolean group = false;
     if (jj_2_1(2)) {
-      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-      case TERM:
-        fieldToken = jj_consume_token(TERM);
-        jj_consume_token(COLON);
+      fieldToken = jj_consume_token(TERM);
+      jj_consume_token(COLON);
                                field=EscapeQuerySyntaxImpl.discardEscapeChar(fieldToken.image);
-        break;
-      case STAR:
-        jj_consume_token(STAR);
-        jj_consume_token(COLON);
-                      field="*";
-        break;
-      default:
-        jj_la1[7] = jj_gen;
-        jj_consume_token(-1);
-        throw new ParseException();
-      }
     } else {
       ;
     }
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-    case STAR:
     case QUOTED:
     case TERM:
-    case PREFIXTERM:
-    case WILDTERM:
     case RANGEIN_START:
     case RANGEEX_START:
     case NUMBER:
@@ -362,13 +334,13 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         boost = jj_consume_token(NUMBER);
         break;
       default:
-        jj_la1[8] = jj_gen;
+        jj_la1[7] = jj_gen;
         ;
       }
                                                                  group=true;
       break;
     default:
-      jj_la1[9] = jj_gen;
+      jj_la1[8] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -393,40 +365,23 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
 
   final public QueryNode Term(CharSequence field) throws ParseException {
   Token term, boost=null, fuzzySlop=null, goop1, goop2;
-  boolean prefix = false;
-  boolean wildcard = false;
   boolean fuzzy = false;
   QueryNode q =null;
   ParametricQueryNode qLower, qUpper;
   float defaultMinSimilarity = 0.5f;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-    case STAR:
     case TERM:
-    case PREFIXTERM:
-    case WILDTERM:
     case NUMBER:
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case TERM:
         term = jj_consume_token(TERM);
                          q = new FieldQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
         break;
-      case STAR:
-        term = jj_consume_token(STAR);
-                           wildcard=true; q = new WildcardQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
-        break;
-      case PREFIXTERM:
-        term = jj_consume_token(PREFIXTERM);
-                                 prefix=true; q = new PrefixWildcardQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
-        break;
-      case WILDTERM:
-        term = jj_consume_token(WILDTERM);
-                               wildcard=true; q = new WildcardQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn);
-        break;
       case NUMBER:
         term = jj_consume_token(NUMBER);
         break;
       default:
-        jj_la1[10] = jj_gen;
+        jj_la1[9] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -436,7 +391,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
                                 fuzzy=true;
         break;
       default:
-        jj_la1[11] = jj_gen;
+        jj_la1[10] = jj_gen;
         ;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -449,15 +404,15 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
                                                          fuzzy=true;
           break;
         default:
-          jj_la1[12] = jj_gen;
+          jj_la1[11] = jj_gen;
           ;
         }
         break;
       default:
-        jj_la1[13] = jj_gen;
+        jj_la1[12] = jj_gen;
         ;
       }
-       if (!wildcard && !prefix && fuzzy) {
+       if (fuzzy) {
           float fms = defaultMinSimilarity;
           try {
             fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
@@ -478,7 +433,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         goop1 = jj_consume_token(RANGEIN_QUOTED);
         break;
       default:
-        jj_la1[14] = jj_gen;
+        jj_la1[13] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -487,7 +442,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         jj_consume_token(RANGEIN_TO);
         break;
       default:
-        jj_la1[15] = jj_gen;
+        jj_la1[14] = jj_gen;
         ;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -498,7 +453,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         goop2 = jj_consume_token(RANGEIN_QUOTED);
         break;
       default:
-        jj_la1[16] = jj_gen;
+        jj_la1[15] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -509,7 +464,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         boost = jj_consume_token(NUMBER);
         break;
       default:
-        jj_la1[17] = jj_gen;
+        jj_la1[16] = jj_gen;
         ;
       }
           if (goop1.kind == RANGEIN_QUOTED) {
@@ -535,7 +490,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         goop1 = jj_consume_token(RANGEEX_QUOTED);
         break;
       default:
-        jj_la1[18] = jj_gen;
+        jj_la1[17] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -544,7 +499,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         jj_consume_token(RANGEEX_TO);
         break;
       default:
-        jj_la1[19] = jj_gen;
+        jj_la1[18] = jj_gen;
         ;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -555,7 +510,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         goop2 = jj_consume_token(RANGEEX_QUOTED);
         break;
       default:
-        jj_la1[20] = jj_gen;
+        jj_la1[19] = jj_gen;
         jj_consume_token(-1);
         throw new ParseException();
       }
@@ -566,7 +521,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         boost = jj_consume_token(NUMBER);
         break;
       default:
-        jj_la1[21] = jj_gen;
+        jj_la1[20] = jj_gen;
         ;
       }
           if (goop1.kind == RANGEEX_QUOTED) {
@@ -589,7 +544,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         fuzzySlop = jj_consume_token(FUZZY_SLOP);
         break;
       default:
-        jj_la1[22] = jj_gen;
+        jj_la1[21] = jj_gen;
         ;
       }
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -598,7 +553,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
         boost = jj_consume_token(NUMBER);
         break;
       default:
-        jj_la1[23] = jj_gen;
+        jj_la1[22] = jj_gen;
         ;
       }
          int phraseSlop = 0;
@@ -616,7 +571,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
          }
       break;
     default:
-      jj_la1[24] = jj_gen;
+      jj_la1[23] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
@@ -645,25 +600,9 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     finally { jj_save(0, xla); }
   }
 
-  private boolean jj_3R_5() {
-    if (jj_scan_token(STAR)) return true;
-    if (jj_scan_token(COLON)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_4() {
+  private boolean jj_3_1() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
-    return false;
-  }
-
-  private boolean jj_3_1() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_4()) {
-    jj_scanpos = xsp;
-    if (jj_3R_5()) return true;
-    }
     return false;
   }
 
@@ -678,18 +617,13 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
   private Token jj_scanpos, jj_lastpos;
   private int jj_la;
   private int jj_gen;
-  final private int[] jj_la1 = new int[25];
+  final private int[] jj_la1 = new int[24];
   static private int[] jj_la1_0;
-  static private int[] jj_la1_1;
   static {
       jj_la1_init_0();
-      jj_la1_init_1();
    }
    private static void jj_la1_init_0() {
-      jj_la1_0 = new int[] {0x300,0x300,0x1c00,0x1c00,0x3ed3c00,0x200,0x100,0x90000,0x20000,0x3ed2000,0x2690000,0x100000,0x100000,0x20000,0x30000000,0x4000000,0x30000000,0x20000,0x0,0x40000000,0x0,0x20000,0x100000,0x20000,0x3ed0000,};
-   }
-   private static void jj_la1_init_1() {
-      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x3,0x0,0x3,0x0,0x0,0x0,0x0,};
+      jj_la1_0 = new int[] {0x300,0x300,0x1c00,0x1c00,0x763c00,0x200,0x100,0x10000,0x762000,0x440000,0x80000,0x80000,0x10000,0x6000000,0x800000,0x6000000,0x10000,0x60000000,0x8000000,0x60000000,0x10000,0x80000,0x10000,0x760000,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[1];
   private boolean jj_rescan = false;
@@ -706,7 +640,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 25; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 24; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -721,7 +655,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 25; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 24; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -732,7 +666,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 25; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 24; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -743,7 +677,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 25; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 24; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -753,7 +687,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 25; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 24; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -763,7 +697,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     token = new Token();
     jj_ntk = -1;
     jj_gen = 0;
-    for (int i = 0; i < 25; i++) jj_la1[i] = -1;
+    for (int i = 0; i < 24; i++) jj_la1[i] = -1;
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
@@ -875,24 +809,21 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
   /** Generate ParseException. */
   public ParseException generateParseException() {
     jj_expentries.clear();
-    boolean[] la1tokens = new boolean[34];
+    boolean[] la1tokens = new boolean[31];
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
     }
-    for (int i = 0; i < 25; i++) {
+    for (int i = 0; i < 24; i++) {
       if (jj_la1[i] == jj_gen) {
         for (int j = 0; j < 32; j++) {
           if ((jj_la1_0[i] & (1<<j)) != 0) {
             la1tokens[j] = true;
           }
-          if ((jj_la1_1[i] & (1<<j)) != 0) {
-            la1tokens[32+j] = true;
-          }
         }
       }
     }
-    for (int i = 0; i < 34; i++) {
+    for (int i = 0; i < 31; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;

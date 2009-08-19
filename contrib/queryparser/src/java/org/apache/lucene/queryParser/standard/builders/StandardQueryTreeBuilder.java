@@ -27,14 +27,14 @@ import org.apache.lucene.queryParser.core.nodes.GroupQueryNode;
 import org.apache.lucene.queryParser.core.nodes.MatchAllDocsQueryNode;
 import org.apache.lucene.queryParser.core.nodes.MatchNoDocsQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ModifierQueryNode;
-import org.apache.lucene.queryParser.core.nodes.PrefixWildcardQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.nodes.SlopQueryNode;
 import org.apache.lucene.queryParser.core.nodes.TokenizedPhraseQueryNode;
-import org.apache.lucene.queryParser.core.nodes.WildcardQueryNode;
-import org.apache.lucene.queryParser.standard.nodes.StandardBooleanQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.MultiPhraseQueryNode;
+import org.apache.lucene.queryParser.standard.nodes.PrefixWildcardQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.RangeQueryNode;
+import org.apache.lucene.queryParser.standard.nodes.StandardBooleanQueryNode;
+import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 import org.apache.lucene.queryParser.standard.processors.StandardQueryNodeProcessorPipeline;
 import org.apache.lucene.search.Query;
 

@@ -75,11 +75,11 @@ public class FieldQueryNode extends QueryNodeImpl implements TextableQueryNode,
 
   }
 
-  CharSequence getTermEscaped(EscapeQuerySyntax escaper) {
+  protected CharSequence getTermEscaped(EscapeQuerySyntax escaper) {
     return escaper.escape(this.text, Locale.getDefault(), Type.NORMAL);
   }
 
-  CharSequence getTermEscapeQuoted(EscapeQuerySyntax escaper) {
+  protected CharSequence getTermEscapeQuoted(EscapeQuerySyntax escaper) {
     return escaper.escape(this.text, Locale.getDefault(), Type.STRING);
   }
 

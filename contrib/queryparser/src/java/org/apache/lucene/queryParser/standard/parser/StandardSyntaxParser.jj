@@ -52,13 +52,11 @@ import org.apache.lucene.queryParser.core.nodes.OpaqueQueryNode;
 import org.apache.lucene.queryParser.core.nodes.OrQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricRangeQueryNode;
-import org.apache.lucene.queryParser.core.nodes.PrefixWildcardQueryNode;
 import org.apache.lucene.queryParser.core.nodes.SlopQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ProximityQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNodeImpl;
 import org.apache.lucene.queryParser.core.nodes.QuotedFieldQueryNode;
-import org.apache.lucene.queryParser.core.nodes.WildcardQueryNode;
 import org.apache.lucene.queryParser.core.parser.SyntaxParser;
 
 @SuppressWarnings("all")
@@ -110,7 +108,7 @@ PARSER_END(StandardSyntaxParser)
 // every character that follows a backslash is considered as an escaped character
 | <#_ESCAPED_CHAR: "\\" ~[] >
 | <#_TERM_START_CHAR: ( ~[ " ", "\t", "\n", "\r", "\u3000", "+", "-", "!", "(", ")", ":", "^",
-                           "[", "]", "\"", "{", "}", "~", "*", "?", "\\" ]
+                           "[", "]", "\"", "{", "}", "~", "\\" ]
                        | <_ESCAPED_CHAR> ) >
 | <#_TERM_CHAR: ( <_TERM_START_CHAR> | <_ESCAPED_CHAR> | "-" | "+" ) >
 | <#_WHITESPACE: ( " " | "\t" | "\n" | "\r" | "\u3000") >
@@ -130,13 +128,10 @@ PARSER_END(StandardSyntaxParser)
 | <LPAREN:    "(" >
 | <RPAREN:    ")" >
 | <COLON:     ":" >
-| <STAR:      "*" >
 | <CARAT:     "^" > : Boost
 | <QUOTED:     "\"" (<_QUOTED_CHAR>)* "\"">
 | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
 | <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
-| <PREFIXTERM:  ("*") | ( <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" ) >
-| <WILDTERM:  (<_TERM_START_CHAR> | [ "*", "?" ]) (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
 | <RANGEIN_START: "[" > : RangeIn
 | <RANGEEX_START: "{" > : RangeEx
 }
@@ -346,8 +341,7 @@ QueryNode Clause(CharSequence field) : {
   [
     LOOKAHEAD(2)
     (
-    fieldToken=<TERM> <COLON> {field=EscapeQuerySyntaxImpl.discardEscapeChar(fieldToken.image);}
-    | <STAR> <COLON> {field="*";}
+    fieldToken=<TERM> <COLON> {field=EscapeQuerySyntaxImpl.discardEscapeChar(fieldToken.image);}    
     )
   ]
 
@@ -379,8 +373,6 @@ QueryNode Clause(CharSequence field) : {
 
 QueryNode Term(CharSequence field) : {
   Token term, boost=null, fuzzySlop=null, goop1, goop2;
-  boolean prefix = false;
-  boolean wildcard = false;
   boolean fuzzy = false;
   QueryNode q =null; 
   ParametricQueryNode qLower, qUpper;
@@ -390,15 +382,12 @@ QueryNode Term(CharSequence field) : {
   (
      (
  	   term=<TERM> { q = new FieldQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn); }
-	   | term=<STAR> { wildcard=true; q = new WildcardQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn); }
-	   | term=<PREFIXTERM> { prefix=true; q = new PrefixWildcardQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn); }
-	   | term=<WILDTERM> { wildcard=true; q = new WildcardQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn); }
        | term=<NUMBER>
      )
      [ fuzzySlop=<FUZZY_SLOP> { fuzzy=true; } ]
      [ <CARAT> boost=<NUMBER> [ fuzzySlop=<FUZZY_SLOP> { fuzzy=true; } ] ]
      {
-       if (!wildcard && !prefix && fuzzy) {
+       if (fuzzy) {
        	  float fms = defaultMinSimilarity;
        	  try {
             fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();

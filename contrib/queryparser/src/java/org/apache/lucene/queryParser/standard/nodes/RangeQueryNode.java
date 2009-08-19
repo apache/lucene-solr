@@ -23,7 +23,6 @@ import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricRangeQueryNode;
 import org.apache.lucene.queryParser.standard.config.RangeCollatorAttribute;
 import org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNodeProcessor;
-import org.apache.lucene.search.MultiTermQuery;
 
 /**
  * This query node represents a range query. It also holds which collator will
@@ -39,17 +38,13 @@ public class RangeQueryNode extends ParametricRangeQueryNode {
 
   private Collator collator;
 
-  private MultiTermQuery.RewriteMethod multiTermRewriteMethod;
-
   /**
    * @param lower
    * @param upper
    */
-  public RangeQueryNode(ParametricQueryNode lower, ParametricQueryNode upper,
-      Collator collator, MultiTermQuery.RewriteMethod multiTermRewriteMethod) {
+  public RangeQueryNode(ParametricQueryNode lower, ParametricQueryNode upper, Collator collator) {
     super(lower, upper);
 
-    this.multiTermRewriteMethod = multiTermRewriteMethod;
     this.collator = collator;
 
   }
@@ -71,10 +66,4 @@ public class RangeQueryNode extends ParametricRangeQueryNode {
     return this.collator;
   }
 
-  /**
-   * @return the rewrite method
-   */
-  public MultiTermQuery.RewriteMethod getMultiTermRewriteMethod() {
-    return multiTermRewriteMethod;
-  }
 }

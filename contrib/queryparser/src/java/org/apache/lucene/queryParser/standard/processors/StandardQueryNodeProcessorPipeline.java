@@ -48,13 +48,13 @@ public class StandardQueryNodeProcessorPipeline extends
   public StandardQueryNodeProcessorPipeline(QueryConfigHandler queryConfig) {
     super(queryConfig);
 
+    addProcessor(new WildcardQueryNodeProcessor());    
     addProcessor(new MultiFieldQueryNodeProcessor());
     addProcessor(new FuzzyQueryNodeProcessor());
     addProcessor(new MatchAllDocsQueryNodeProcessor());
     addProcessor(new LowercaseExpandedTermsQueryNodeProcessor());
     addProcessor(new ParametricRangeQueryNodeProcessor());
-    addProcessor(new AllowLeadingWildcardProcessor());
-    addProcessor(new PrefixWildcardQueryNodeProcessor());
+    addProcessor(new AllowLeadingWildcardProcessor());    
     addProcessor(new AnalyzerQueryNodeProcessor());
     addProcessor(new PhraseSlopQueryNodeProcessor());
     addProcessor(new GroupQueryNodeProcessor());
@@ -63,9 +63,8 @@ public class StandardQueryNodeProcessorPipeline extends
     addProcessor(new RemoveEmptyNonLeafQueryNodeProcessor());
     addProcessor(new BooleanSingleChildOptimizationQueryNodeProcessor());
     addProcessor(new DefaultPhraseSlopQueryNodeProcessor());
-    addProcessor(new BoostQueryNodeProcessor());
-    addProcessor(new MultiTermRewriteDefaultProcessor());
-
+    addProcessor(new BoostQueryNodeProcessor());    
+    addProcessor(new MultiTermRewriteMethodProcessor());
   }
 
 }

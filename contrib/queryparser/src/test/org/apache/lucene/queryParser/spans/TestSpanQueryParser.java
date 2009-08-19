@@ -27,6 +27,7 @@ import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.parser.SyntaxParser;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorPipeline;
 import org.apache.lucene.queryParser.standard.parser.StandardSyntaxParser;
+import org.apache.lucene.queryParser.standard.processors.WildcardQueryNodeProcessor;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -115,13 +116,11 @@ public class TestSpanQueryParser extends TestCase {
     this.spansQueryTreeBuilder = new SpansQueryTreeBuilder();
 
     // set up the processor pipeline
-    this.spanProcessorPipeline
-        .setQueryConfigHandler(this.spanQueryConfigHandler);
+    this.spanProcessorPipeline.setQueryConfigHandler(this.spanQueryConfigHandler);
 
-    this.spanProcessorPipeline
-        .addProcessor(new SpansValidatorQueryNodeProcessor());
-    this.spanProcessorPipeline
-        .addProcessor(new UniqueFieldQueryNodeProcessor());
+    this.spanProcessorPipeline.addProcessor(new WildcardQueryNodeProcessor());
+    this.spanProcessorPipeline.addProcessor(new SpansValidatorQueryNodeProcessor());
+    this.spanProcessorPipeline.addProcessor(new UniqueFieldQueryNodeProcessor());
 
   }
 

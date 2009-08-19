@@ -75,6 +75,9 @@ Bug fixes
     that the regexp must match the entire string, not just a prefix.
     (Trejkaz via Mike McCandless)
 
+10. LUCENE-1792: Fix new query parser to set rewrite method for
+    multi-term queries. (Luis Alves, Mike McCandless via Michael Busch)
+
 
 New features
 

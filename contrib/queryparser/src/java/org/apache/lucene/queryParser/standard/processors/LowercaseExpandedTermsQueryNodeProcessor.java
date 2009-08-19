@@ -25,9 +25,10 @@ import org.apache.lucene.queryParser.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryParser.core.nodes.FuzzyQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
-import org.apache.lucene.queryParser.core.nodes.WildcardQueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
+import org.apache.lucene.queryParser.core.util.UnescapedCharSequence;
 import org.apache.lucene.queryParser.standard.config.LowercaseExpandedTermsAttribute;
+import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 
 /**
  * This processor verifies if the attribute
@@ -68,9 +69,8 @@ public class LowercaseExpandedTermsQueryNodeProcessor extends
     if (node instanceof WildcardQueryNode || node instanceof FuzzyQueryNode
         || node instanceof ParametricQueryNode) {
 
-      FieldQueryNode fieldNode = (FieldQueryNode) node;
-      fieldNode.setText(fieldNode.getText().toString().toLowerCase());
-
+      FieldQueryNode fieldNode = (FieldQueryNode) node;      
+      fieldNode.setText(UnescapedCharSequence.toLowerCase(fieldNode.getText()));
     }
 
     return node;

@@ -31,6 +31,9 @@ import org.apache.lucene.util.Attribute;
  * 
  */
 public interface MultiTermRewriteMethodAttribute extends Attribute {
+  
+  public static final CharSequence TAG_ID = "MultiTermRewriteMethodAttribute";
+  
   public void setMultiTermRewriteMethod(MultiTermQuery.RewriteMethod method);
 
   public MultiTermQuery.RewriteMethod getMultiTermRewriteMethod();

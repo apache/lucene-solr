@@ -35,7 +35,7 @@ public class MultiTermRewriteMethodAttributeImpl extends AttributeImpl
     implements MultiTermRewriteMethodAttribute {
 
   private static final long serialVersionUID = -2104763012723049527L;
-
+  
   private MultiTermQuery.RewriteMethod multiTermRewriteMethod = MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
 
   public MultiTermRewriteMethodAttributeImpl() {

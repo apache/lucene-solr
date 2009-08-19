@@ -48,7 +48,7 @@ public class StandardQueryConfigHandler extends QueryConfigHandler {
     addAttribute(PositionIncrementsAttribute.class);
     addAttribute(LocaleAttribute.class);
     addAttribute(DefaultPhraseSlopAttribute.class);
-    //addAttribute(DateResolutionAttribute.class);
+    addAttribute(MultiTermRewriteMethodAttribute.class);   
     
   }
 

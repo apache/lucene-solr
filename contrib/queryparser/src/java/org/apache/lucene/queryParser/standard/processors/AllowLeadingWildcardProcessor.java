@@ -24,9 +24,10 @@ import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
 import org.apache.lucene.queryParser.core.messages.QueryParserMessages;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
-import org.apache.lucene.queryParser.core.nodes.WildcardQueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
+import org.apache.lucene.queryParser.core.util.UnescapedCharSequence;
 import org.apache.lucene.queryParser.standard.config.AllowLeadingWildcardAttribute;
+import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 import org.apache.lucene.queryParser.standard.parser.EscapeQuerySyntaxImpl;
 
 /**
@@ -46,19 +47,16 @@ public class AllowLeadingWildcardProcessor extends QueryNodeProcessorImpl {
 
   public QueryNode process(QueryNode queryTree) throws QueryNodeException {
 
-    if (getQueryConfigHandler().hasAttribute(
-        AllowLeadingWildcardAttribute.class)) {
+    if (getQueryConfigHandler().hasAttribute(AllowLeadingWildcardAttribute.class)) {
 
-      if (!((AllowLeadingWildcardAttribute) getQueryConfigHandler()
-          .getAttribute(AllowLeadingWildcardAttribute.class))
-          .isAllowLeadingWildcard()) {
+      AllowLeadingWildcardAttribute alwAttr= (AllowLeadingWildcardAttribute) getQueryConfigHandler().getAttribute(AllowLeadingWildcardAttribute.class);
+      if (!alwAttr.isAllowLeadingWildcard()) {
         return super.process(queryTree);
       }
 
     }
 
     return queryTree;
-
   }
 
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
@@ -66,14 +64,19 @@ public class AllowLeadingWildcardProcessor extends QueryNodeProcessorImpl {
     if (node instanceof WildcardQueryNode) {
       WildcardQueryNode wildcardNode = (WildcardQueryNode) node;
 
-      switch (wildcardNode.getText().charAt(0)) {
-
-      case '*':
-      case '?':
-        throw new QueryNodeException(new MessageImpl(
-            QueryParserMessages.LEADING_WILDCARD_NOT_ALLOWED, node
-                .toQueryString(new EscapeQuerySyntaxImpl())));
-
+      if (wildcardNode.getText().length() > 0) {
+        
+        // Validate if the wildcard was escaped
+        if (UnescapedCharSequence.wasEscaped(wildcardNode.getText(), 0))
+          return node;
+        
+        switch (wildcardNode.getText().charAt(0)) {    
+          case '*':
+          case '?':
+            throw new QueryNodeException(new MessageImpl(
+                QueryParserMessages.LEADING_WILDCARD_NOT_ALLOWED, node
+                    .toQueryString(new EscapeQuerySyntaxImpl())));    
+        }
       }
 
     }

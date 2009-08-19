@@ -35,12 +35,10 @@ import org.apache.lucene.queryParser.core.nodes.ParametricRangeQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode.CompareOperator;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
-import org.apache.lucene.queryParser.standard.config.MultiTermRewriteMethodAttribute;
 import org.apache.lucene.queryParser.standard.config.DateResolutionAttribute;
 import org.apache.lucene.queryParser.standard.config.LocaleAttribute;
 import org.apache.lucene.queryParser.standard.config.RangeCollatorAttribute;
 import org.apache.lucene.queryParser.standard.nodes.RangeQueryNode;
-import org.apache.lucene.search.MultiTermQuery;
 
 /**
  * This processor converts {@link ParametricRangeQueryNode} objects to
@@ -84,16 +82,6 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
       Collator collator = null;
       DateTools.Resolution dateRes = null;
       boolean inclusive = false;
-
-      if (!getQueryConfigHandler().hasAttribute(
-          MultiTermRewriteMethodAttribute.class)) {
-        throw new IllegalArgumentException(
-            "MultiTermRewriteMethodAttribute should be set on the QueryConfigHandler");
-      }
-
-      MultiTermQuery.RewriteMethod rewriteMethod = ((MultiTermRewriteMethodAttribute) getQueryConfigHandler()
-          .getAttribute(MultiTermRewriteMethodAttribute.class))
-          .getMultiTermRewriteMethod();
 
       if (getQueryConfigHandler().hasAttribute(RangeCollatorAttribute.class)) {
         collator = ((RangeCollatorAttribute) getQueryConfigHandler()
@@ -164,7 +152,7 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
       lower.setText(part1);
       upper.setText(part2);
 
-      return new RangeQueryNode(lower, upper, collator, rewriteMethod);
+      return new RangeQueryNode(lower, upper, collator);
 
     }
 

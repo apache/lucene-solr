@@ -38,12 +38,12 @@ import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
 import org.apache.lucene.queryParser.core.nodes.TextableQueryNode;
 import org.apache.lucene.queryParser.core.nodes.TokenizedPhraseQueryNode;
-import org.apache.lucene.queryParser.core.nodes.WildcardQueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.standard.config.AnalyzerAttribute;
 import org.apache.lucene.queryParser.standard.config.PositionIncrementsAttribute;
-import org.apache.lucene.queryParser.standard.nodes.StandardBooleanQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.MultiPhraseQueryNode;
+import org.apache.lucene.queryParser.standard.nodes.StandardBooleanQueryNode;
+import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 
 /**
  * This processor verifies if the attribute {@link AnalyzerQueryNodeProcessor}

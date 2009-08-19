@@ -54,10 +54,10 @@ import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.messages.QueryParserMessages;
 import org.apache.lucene.queryParser.core.nodes.FuzzyQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
-import org.apache.lucene.queryParser.core.nodes.WildcardQueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorPipeline;
 import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator;
+import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -759,6 +759,8 @@ public class TestQPHelper extends LuceneTestCase {
      * "foo \\AND bar");
      */
 
+    assertQueryEquals("\\*", a, "*");
+    
     assertQueryEquals("\\a", a, "a");
 
     assertQueryEquals("a\\-b:c", a, "a-b:c");
@@ -938,13 +940,13 @@ public class TestQPHelper extends LuceneTestCase {
   }
 
   public void testException() throws Exception {
+    assertQueryNodeException("*leadingWildcard"); // disallowed by default
     assertQueryNodeException("\"some phrase");
     assertQueryNodeException("(foo bar");
     assertQueryNodeException("foo bar))");
     assertQueryNodeException("field:term:with:colon some more terms");
     assertQueryNodeException("(sub query)^5.0^2.0 plus more");
-    assertQueryNodeException("secret AND illegal) AND access:confidential");
-    assertQueryNodeException("*leadingWildcard"); // disallowed by default
+    assertQueryNodeException("secret AND illegal) AND access:confidential");    
   }
 
   public void testCustomQueryParserWildcard() {

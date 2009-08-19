@@ -85,10 +85,6 @@ public final class UnescapedCharSequence implements CharSequence {
         newLength);
   }
 
-  public boolean wasEscaped(int index) {
-    return this.wasEscaped[index];
-  }
-
   public String toString() {
     return new String(this.chars);
   }
@@ -137,5 +133,24 @@ public final class UnescapedCharSequence implements CharSequence {
       result.append(this.chars[i]);
     }
     return result.toString();
+  }
+
+  public boolean wasEscaped(int index) {
+    return this.wasEscaped[index];
+  }
+  
+  static final public boolean wasEscaped(CharSequence text, int index) {
+    if (text instanceof UnescapedCharSequence)
+      return ((UnescapedCharSequence)text).wasEscaped[index];
+    else return false;
+  }
+  
+  public static CharSequence toLowerCase(CharSequence text) {
+    if (text instanceof UnescapedCharSequence) {
+      char[] chars = text.toString().toLowerCase().toCharArray();
+      boolean[] wasEscaped = ((UnescapedCharSequence)text).wasEscaped;
+      return new UnescapedCharSequence(chars, wasEscaped, 0, chars.length);
+    } else 
+      return new UnescapedCharSequence(text.toString().toLowerCase());
   }
 }

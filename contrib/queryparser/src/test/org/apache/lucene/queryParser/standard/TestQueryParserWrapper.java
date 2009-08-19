@@ -51,9 +51,10 @@ import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.messages.QueryParserMessages;
 import org.apache.lucene.queryParser.core.nodes.FuzzyQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
-import org.apache.lucene.queryParser.core.nodes.WildcardQueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorPipeline;
+import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
+import org.apache.lucene.queryParser.standard.processors.WildcardQueryNodeProcessor;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -159,6 +160,7 @@ public class TestQueryParserWrapper extends LuceneTestCase {
 
       QueryNodeProcessorPipeline newProcessorPipeline = new QueryNodeProcessorPipeline(
           getQueryProcessor().getQueryConfigHandler());
+      newProcessorPipeline.addProcessor(new WildcardQueryNodeProcessor());
       newProcessorPipeline.addProcessor(new QPTestParserQueryNodeProcessor());
       newProcessorPipeline.addProcessor(getQueryProcessor());
 

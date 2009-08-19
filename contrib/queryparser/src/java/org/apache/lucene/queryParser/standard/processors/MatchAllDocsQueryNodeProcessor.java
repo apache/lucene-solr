@@ -20,10 +20,11 @@ package org.apache.lucene.queryParser.standard.processors;
 import java.util.List;
 
 import org.apache.lucene.queryParser.core.QueryNodeException;
+import org.apache.lucene.queryParser.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryParser.core.nodes.MatchAllDocsQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
-import org.apache.lucene.queryParser.core.nodes.WildcardQueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
+import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 import org.apache.lucene.search.MatchAllDocsQuery;
 
 /**
@@ -41,11 +42,11 @@ public class MatchAllDocsQueryNodeProcessor extends QueryNodeProcessorImpl {
 
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
-    if (node instanceof WildcardQueryNode) {
-      WildcardQueryNode wildcardNode = (WildcardQueryNode) node;
+    if (node instanceof FieldQueryNode) {
+      FieldQueryNode fqn = (FieldQueryNode) node;
 
-      if (wildcardNode.getField().toString().equals("*")
-          && wildcardNode.getText().toString().equals("*")) {
+      if (fqn.getField().toString().equals("*")
+          && fqn.getText().toString().equals("*")) {
 
         return new MatchAllDocsQueryNode();
 
