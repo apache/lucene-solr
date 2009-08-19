@@ -417,7 +417,7 @@ Bug fixes
    public APIs to throw InterruptedException.  (Jeremy Volkman vai
    Mike McCandless)
 
-4. LUCENE-1590: Fixed stored-only Field instances to not change the
+4. LUCENE-1590: Fixed stored-only Field instances do not change the
    value of omitNorms, omitTermFreqAndPositions in FieldInfo; when you
    retrieve such fields they will now have omitNorms=true and
    omitTermFreqAndPositions=false (though these values are unused).
@@ -692,11 +692,11 @@ New features
     disable loading them with a new constructor switch.  (Mark Miller)
 
 33. LUCENE-1341: Added BoostingNearQuery to enable SpanNearQuery functionality
-  with payloads (Peter Keegan, Grant Ingersoll)
+    with payloads (Peter Keegan, Grant Ingersoll)
 
 34. LUCENE-1790: Added BoostingFunctionTermQuery to enable scoring of payloads
-  based on the maximum payload seen for a document.
-  Slight refactoring of Similarity and other payload queries (Grant Ingersoll)
+    based on the maximum payload seen for a document.
+    Slight refactoring of Similarity and other payload queries (Grant Ingersoll)
 
 36. LUCENE-1749: Addition of FieldCacheSanityChecker utility, and
     hooks to use it in all existing Lucene Tests.  This class can
