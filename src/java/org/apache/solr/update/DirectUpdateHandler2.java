@@ -402,10 +402,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       if (cmd.optimize) {
         openWriter();
         writer.optimize(cmd.maxOptimizeSegments);
-      }
-
-      closeWriter();
-      if (!cmd.optimize && cmd.expungeDeletes) {
+      } else if (cmd.expungeDeletes) {
         openWriter();
         writer.expungeDeletes();
       }
