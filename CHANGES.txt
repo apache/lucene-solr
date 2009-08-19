@@ -40,14 +40,14 @@ Changes in backwards compatibility policy
     values internally in certain places, so if you have hits with such
     scores, it will cause problems. (Shai Erera via Mike McCandless)
 
- 2. LUCENE-1687: All methods and parsers from interface ExtendedFieldCache
-    were moved into FieldCache. ExtendedFieldCache was deprecated and now
-    contains only a few declarations for binary backwards compatibility and
-    will be removed in version 3.0. Users of FieldCache and ExtendedFieldCache
-    will therefore be able to plugin Lucene 2.9 without recompilation.
-    The auto cache (FieldCache.getAuto) was deprecated. Due to the merge of
-    ExtendedFieldCache and FieldCache, this method can now additionally return
-    long[] arrays in addition to int[] and float[] and StringIndex.
+ 2. LUCENE-1687: All methods and parsers from the interface ExtendedFieldCache
+    have been moved into FieldCache. ExtendedFieldCache is now deprecated and
+    contains only a few declarations for binary backwards compatibility. 
+    ExtendedFieldCache will be removed in version 3.0. Users of FieldCache and 
+    ExtendedFieldCache will be able to plug in Lucene 2.9 without recompilation.
+    The auto cache (FieldCache.getAuto) is now deprecated. Due to the merge of
+    ExtendedFieldCache and FieldCache, FieldCache can now additionally return
+    long[] and double[] arrays in addition to int[] and float[] and StringIndex.
     
     The interface changes are only notable for users implementing the interfaces,
     which was unlikely done, because there is no possibility to change
