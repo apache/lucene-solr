@@ -187,6 +187,15 @@ Changes in runtime behavior
     AttributeSource.clearAttributes() to work identical for Token as one for all
     AttributeImpl and the 6 separate AttributeImpls. (Uwe Schindler, Michael Busch)
 
+13. LUCENE-1483: When searching over multiple segments, a new Scorer is now created 
+    for each segment. The Weight is created only once for the top level Searcher. 
+    Each Scorer is passed the per-segment IndexReader. This will result in docids 
+    in the Scorer being internal to the per-segment IndexReader. If a custom Scorer 
+    implementation uses any caches/filters that rely on being based on the top level 
+    IndexReader, it will need to be updated to use caches/filters on a per segment 
+    basis. There is currently no way provided to rebase the docids in the Scorer to 
+    the top level IndexReader.  (Mark Miller, Mike McCandless)
+
 API Changes
 
 1. LUCENE-1419: Add expert API to set custom indexing chain. This API is 
