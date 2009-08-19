@@ -23,7 +23,8 @@ import java.io.IOException;
 
 /**
  * This interface is obsolete, use {@link FieldCache} instead.
- * @deprecated Will be removed in Lucene 3.0
+ * 
+ * @deprecated Use {@link FieldCache}, this will be removed in Lucene 3.0
  **/
 public interface ExtendedFieldCache extends FieldCache {
   
