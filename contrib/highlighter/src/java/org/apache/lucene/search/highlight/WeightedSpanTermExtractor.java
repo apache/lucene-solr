@@ -383,7 +383,7 @@ public class WeightedSpanTermExtractor {
    *          restricts Term's used based on field name
    * @param reader
    *          to use for scoring
-   * @return
+   * @return Map of WeightedSpanTerms with quasi tf/idf scores
    * @throws IOException
    */
   public Map getWeightedSpanTermsWithScores(Query query, TokenStream tokenStream, String fieldName,
