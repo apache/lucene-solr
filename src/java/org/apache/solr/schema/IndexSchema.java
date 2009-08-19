@@ -561,7 +561,7 @@ public final class IndexSchema {
         similarityFactory = (SimilarityFactory)obj;
         similarityFactory.init(params);
       } else {
-        // just like always, assume it's a Similarlity and get an ClassCastException - reasonable error handling
+        // just like always, assume it's a Similarlity and get a ClassCastException - reasonable error handling
         similarityFactory = new SimilarityFactory() {
           public Similarity getSimilarity() {
             return (Similarity) obj;
