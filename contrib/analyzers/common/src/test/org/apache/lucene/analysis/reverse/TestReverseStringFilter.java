@@ -42,6 +42,25 @@ public class TestReverseStringFilter extends LuceneTestCase {
     assertEquals("yad", text.term());
     assertFalse(filter.incrementToken());
   }
+  
+  public void testFilterWithMark() throws Exception {
+    TokenStream stream = new WhitespaceTokenizer(new StringReader(
+        "Do have a nice day")); // 1-4 length string
+    ReverseStringFilter filter = new ReverseStringFilter(stream, '\u0001');
+    TermAttribute text = (TermAttribute) filter
+        .getAttribute(TermAttribute.class);
+    assertTrue(filter.incrementToken());
+    assertEquals("\u0001oD", text.term());
+    assertTrue(filter.incrementToken());
+    assertEquals("\u0001evah", text.term());
+    assertTrue(filter.incrementToken());
+    assertEquals("\u0001a", text.term());
+    assertTrue(filter.incrementToken());
+    assertEquals("\u0001ecin", text.term());
+    assertTrue(filter.incrementToken());
+    assertEquals("\u0001yad", text.term());
+    assertFalse(filter.incrementToken());
+  }
 
   public void testReverseString() throws Exception {
     assertEquals( "A", ReverseStringFilter.reverse( "A" ) );

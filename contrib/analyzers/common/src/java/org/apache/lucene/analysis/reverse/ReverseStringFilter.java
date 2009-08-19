@@ -24,22 +24,82 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import java.io.IOException;
 
 /**
- * Reverse token string e.g. "country" => "yrtnuoc".
- *
+ * Reverse token string, for example "country" => "yrtnuoc".
+ * <p>
+ * If <code>marker</code> is supplied, then tokens will be also prepended by
+ * that character. For example, with a marker of &#x5C;u0001, "country" =>
+ * "&#x5C;u0001yrtnuoc". This is useful when implementing efficient leading
+ * wildcards search.
+ * </p>
+ * 
  * @version $Id$
  */
 public final class ReverseStringFilter extends TokenFilter {
 
   private TermAttribute termAtt;
-
+  private final char marker;
+  private static final char NOMARKER = '\uFFFF';
+  
+  /**
+   * Example marker character: U+0001 (START OF HEADING) 
+   */
+  public static final char START_OF_HEADING_MARKER = '\u0001';
+  
+  /**
+   * Example marker character: U+001F (INFORMATION SEPARATOR ONE)
+   */
+  public static final char INFORMATION_SEPARATOR_MARKER = '\u001F';
+  
+  /**
+   * Example marker character: U+EC00 (PRIVATE USE AREA: EC00) 
+   */
+  public static final char PUA_EC00_MARKER = '\uEC00';
+  
+  /**
+   * Example marker character: U+200F (RIGHT-TO-LEFT MARK)
+   */
+  public static final char RTL_DIRECTION_MARKER = '\u200F';
+  
+  /**
+   * Create a new ReverseStringFilter that reverses all tokens in the 
+   * supplied {@link TokenStream}.
+   * <p>
+   * The reversed tokens will not be marked. 
+   * </p>
+   * 
+   * @param in {@link TokenStream} to filter
+   */
   public ReverseStringFilter(TokenStream in) {
+    this(in, NOMARKER);
+  }
+
+  /**
+   * Create a new ReverseStringFilter that reverses and marks all tokens in the
+   * supplied {@link TokenStream}.
+   * <p>
+   * The reversed tokens will be prepended (marked) by the <code>marker</code>
+   * character.
+   * </p>
+   * 
+   * @param in {@link TokenStream} to filter
+   * @param marker A character used to mark reversed tokens
+   */
+  public ReverseStringFilter(TokenStream in, char marker) {
     super(in);
+    this.marker = marker;
     termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      reverse( termAtt.termBuffer(), termAtt.termLength() );
+      int len = termAtt.termLength();
+      if (marker != NOMARKER) {
+        len++;
+        termAtt.resizeTermBuffer(len);
+        termAtt.termBuffer()[len - 1] = marker;
+      }
+      reverse( termAtt.termBuffer(), len );
+      termAtt.setTermLength(len);
       return true;
     } else {
       return false;

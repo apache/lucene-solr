@@ -147,6 +147,9 @@ New features
 
 16. LUCENE-1628: Added Persian analyzer.  (Robert Muir)
 
+17. LUCENE-1813: Add option to ReverseStringFilter to mark reversed tokens.
+    (Andrzej Bialecki via Robert Muir)
+
 Optimizations
 
   1. LUCENE-1643: Re-use the collation key (RawCollationKey) for
