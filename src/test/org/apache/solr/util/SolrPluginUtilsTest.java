@@ -54,7 +54,7 @@ public class SolrPluginUtilsTest extends AbstractSolrTestCase {
   public String getSolrConfigFile() { return "solrconfig.xml"; }
 
 
-  public void testDocModifier() throws Exception {
+  public void testDocListConversion() throws Exception {
     assertU("", adoc("id", "3234", "val_t", "quick red fox"));
     assertU("", adoc("id", "3235", "val_t", "quick green fox"));
     assertU("", adoc("id", "3236", "val_t", "quick brown fox"));
@@ -69,16 +69,11 @@ public class SolrPluginUtilsTest extends AbstractSolrTestCase {
     Set<String> fields = new HashSet<String>();
     fields.add("val_t");
 
-    SolrDocumentModifier docMod = new SolrDocumentModifier() {
-      public void process(SolrDocument doc) {
-        doc.addField("junk", "foo");
-      }
-    };
 
-    SolrDocumentList list = SolrPluginUtils.docListToSolrDocumentList(docs, srchr, fields, docMod, null);
+    SolrDocumentList list = SolrPluginUtils.docListToSolrDocumentList(docs, srchr, fields, null);
     assertTrue("list Size: " + list.size() + " is not: " + docs.size(), list.size() == docs.size());
     for (SolrDocument document : list) {
-      assertNotNull(document.get("junk"));
+      assertNotNull(document.get("val_t"));
     }
 
   }
