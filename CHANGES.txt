@@ -64,20 +64,19 @@ Changes in backwards compatibility policy
     Searcher.  
     (Shai Erera, Chris Hostetter, Martin Ruckli, Mark Miller via Mike McCandless)
 
- 4. LUCENE-1422, LUCENE-1693: The new TokenStream API (see below) using
-    Attributes has some backwards breaks in rare cases.
-    We did our best to make the transition as easy as possible. You should
-    not have problems, if your tokenizers still implement next(Token) or
-    next(), the calls are automatically wrapped. The indexer and query parser
-    use the new API using incrementToken() calls. All core TokenStreams
-    are implemented using the new API. You can mix old and new API
-    style TokenFilters/TokenStream. Problems only occur when you have done
-    the following:
+ 4. LUCENE-1422, LUCENE-1693: The new Attribute based TokenStream API (see below)
+    has some backwards breaks in rare cases. We did our best to make the 
+    transition as easy as possible and you are not likely to run into any problems. 
+    If your tokenizers still implement next(Token) or next(), the calls are 
+    automatically wrapped. The indexer and query parser use the new API 
+    (eg use incrementToken() calls). All core TokenStreams are implemented using 
+    the new API. You can mix old and new API style TokenFilters/TokenStream. 
+    Problems only occur when you have done the following:
     You have overridden next(Token) or next() in one of the non-abstract core
-    TokenStreams/-Filters. This classes should normally be final, but some
-    of them are not. In this case next(Token)/next() would never be called.
-    To early fail with a hard compile/runtime error, the next(Token)/next()
-    methods in these TokenStreams/-Filters were made final.
+    TokenStreams/-Filters. These classes should normally be final, but some
+    of them are not. In this case, next(Token)/next() would never be called.
+    To fail early with a hard compile/runtime error, the next(Token)/next()
+    methods in these TokenStreams/-Filters were made final in this release.
     (Michael Busch, Uwe Schindler)
 
  5. LUCENE-1763: MergePolicy now requires an IndexWriter instance to
@@ -181,7 +180,7 @@ Changes in runtime behavior
     will forcefully fallback to tokenStream.  (Mike McCandless)
     
 12. LUCENE-1801: Token.clear() and Token.clearNoTermBuffer() now also clear
-    startOffset, endOffset and type. This should normally affect no
+    startOffset, endOffset and type. This is not likely to affect any
     Tokenizer chains, as Tokenizers normally always set these three values.
     This change was made to be conform to the new AttributeImpl.clear() and
     AttributeSource.clearAttributes() to work identical for Token as one for all
