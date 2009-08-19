@@ -328,22 +328,12 @@ public class WeightedSpanTermExtractor {
    *          that caused hit
    * @param tokenStream
    *          of text to be highlighted
-   * @return
+   * @return Map containing WeightedSpanTerms
    * @throws IOException
    */
-  public Map getWeightedSpanTerms(Query query, CachingTokenFilter cachingTokenFilter)
+  public Map getWeightedSpanTerms(Query query, TokenStream tokenStream)
       throws IOException {
-    this.fieldName = null;
-    this.tokenStream = cachingTokenFilter;
-
-    Map terms = new PositionCheckingMap();
-    try {
-      extract(query, terms);
-    } finally {
-      closeReaders();
-    }
-
-    return terms;
+    return getWeightedSpanTerms(query, tokenStream, null);
   }
 
   /**
@@ -357,13 +347,15 @@ public class WeightedSpanTermExtractor {
    *          of text to be highlighted
    * @param fieldName
    *          restricts Term's used based on field name
-   * @return
+   * @return Map containing WeightedSpanTerms
    * @throws IOException
    */
   public Map getWeightedSpanTerms(Query query, TokenStream tokenStream,
       String fieldName) throws IOException {
     if (fieldName != null) {
       this.fieldName = StringHelper.intern(fieldName);
+    } else {
+      this.fieldName = null;
     }
 
     Map terms = new PositionCheckingMap();
@@ -396,7 +388,11 @@ public class WeightedSpanTermExtractor {
    */
   public Map getWeightedSpanTermsWithScores(Query query, TokenStream tokenStream, String fieldName,
       IndexReader reader) throws IOException {
-    this.fieldName = fieldName;
+    if (fieldName != null) {
+      this.fieldName = StringHelper.intern(fieldName);
+    } else {
+      this.fieldName = null;
+    }
     this.tokenStream = tokenStream;
 
     Map terms = new PositionCheckingMap();
