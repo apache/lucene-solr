@@ -6,8 +6,8 @@ $Id$
 Changes in backwards compatibility policy
 
  1. LUCENE-1575: Searchable.search(Weight, Filter, int, Sort) no
-    longer computes document scores of each hit, by default.  If
-    document scores tracking is still needed, you can call
+    longer computes a document score for each hit by default.  If
+    document score tracking is still needed, you can call
     IndexSearcher.setDefaultFieldSortScoring(true, true) to enable
     both per-hit and maxScore tracking; however, this is deprecated
     and will be removed in 3.0.
@@ -29,16 +29,16 @@ Changes in backwards compatibility policy
     directly instantiate TopFieldCollector.
 
     Also, the method search(Weight, Filter, Collector) was added to
-    the Searchable interface and the Searcher abstract class, to
+    the Searchable interface and the Searcher abstract class to
     replace the deprecated HitCollector versions.  If you either
-    implement Searchable or extend Searcher, you should change you
+    implement Searchable or extend Searcher, you should change your
     code to implement this method.  If you already extend
     IndexSearcher, no further changes are needed to use Collector.
     
     Finally, the values Float.NaN, Float.NEGATIVE_INFINITY and
     Float.POSITIVE_INFINITY are not valid scores.  Lucene uses these
     values internally in certain places, so if you have hits with such
-    scores it will cause problems. (Shai Erera via Mike McCandless)
+    scores, it will cause problems. (Shai Erera via Mike McCandless)
 
  2. LUCENE-1687: All methods and parsers from interface ExtendedFieldCache
     were moved into FieldCache. ExtendedFieldCache was deprecated and now
