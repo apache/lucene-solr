@@ -269,7 +269,9 @@ New Features
 
 68. SOLR-1367: Added callback mechanism for converting DocList to SolrDocumentList in SolrPluginUtils (gsingers)
 
-68. SOLR-1275: Add expungeDeletes to DirectUpdateHandler2 (noble)
+69. SOLR-1275: Add expungeDeletes to DirectUpdateHandler2 (noble)
+
+70. SOLR-1372: Enhance FieldAnalysisRequestHandler to accept field value from content stream (ehatcher)
 
 
 Optimizations

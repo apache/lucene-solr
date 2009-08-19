@@ -24,14 +24,18 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.commons.io.IOUtils;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.io.Reader;
+import java.io.IOException;
 
 /**
  * RequestHandler that provides much the same functionality as analysis.jsp.  Provides the ability to specify multiple
@@ -146,7 +150,28 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
       analysisRequest.addFieldName(req.getSchema().getDefaultSearchFieldName());
     }
     analysisRequest.setQuery(solrParams.get(AnalysisParams.QUERY, solrParams.get(CommonParams.Q)));
-    analysisRequest.setFieldValue(solrParams.get(AnalysisParams.FIELD_VALUE));
+
+    String value = solrParams.get(AnalysisParams.FIELD_VALUE);
+
+    Iterable<ContentStream> streams = req.getContentStreams();
+    if (streams != null) {
+      // NOTE: Only the first content stream is currently processed
+      for (ContentStream stream : streams) {
+        Reader reader = null;
+        try {
+          reader = stream.getReader();
+          value = IOUtils.toString(reader);
+        } catch (IOException e) {
+          // do nothing, leave value set to the request parameter
+        }
+        finally {
+          IOUtils.closeQuietly(reader);
+        }
+        break;
+      }
+    }
+
+    analysisRequest.setFieldValue(value);
     analysisRequest.setShowMatch(solrParams.getBool(AnalysisParams.SHOW_MATCH, false));
     return analysisRequest;
   }
