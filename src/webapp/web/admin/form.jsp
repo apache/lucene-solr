@@ -37,6 +37,14 @@
 </tr>
 <tr>
   <td>
+	<strong>Filter Query</strong>
+  </td>
+  <td>
+	<textarea rows="2" cols="60" name="fq"></textarea>
+  </td>
+</tr>
+<tr>
+  <td>
 	<strong>Start Row</strong>
   </td>
   <td>

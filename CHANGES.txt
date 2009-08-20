@@ -273,6 +273,8 @@ New Features
 
 70. SOLR-1370: Show the output of CharFilters in FieldAnalysisRequestHandler (koji)
 
+71. SOLR-1373: Add Filter query to admin/form.jsp
+    (Jason Rutherglen via hossman)
 
 Optimizations
 ----------------------
