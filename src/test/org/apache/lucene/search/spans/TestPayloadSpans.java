@@ -362,7 +362,6 @@ public class TestPayloadSpans extends LuceneTestCase {
   public void testPayloadSpanUtil() throws Exception {
     RAMDirectory directory = new RAMDirectory();
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
-    String[] docs = new String[]{};
     IndexWriter writer = new IndexWriter(directory, analyzer, true);
     writer.setSimilarity(similarity);
     Document doc = new Document();

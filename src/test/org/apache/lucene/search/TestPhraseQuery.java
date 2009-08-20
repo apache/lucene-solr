@@ -558,7 +558,6 @@ public class TestPhraseQuery extends LuceneTestCase {
 
   // LUCENE-1280
   public void testEmptyPhraseQuery() throws Throwable {
-    final PhraseQuery q1 = new PhraseQuery();
     final BooleanQuery q2 = new BooleanQuery();
     q2.add(new PhraseQuery(), BooleanClause.Occur.MUST);
     q2.toString();

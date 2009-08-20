@@ -77,9 +77,6 @@ public class TestElevationComparator extends LuceneTestCase {
     TopDocs topDocs = topCollector.topDocs(0, 10);
     int nDocsReturned = topDocs.scoreDocs.length;
 
-    int[] ids = new int[nDocsReturned];
-    float[] scores = new float[nDocsReturned];
-    Document[] documents = new Document[nDocsReturned];
     assertEquals(4, nDocsReturned);
 
     // 0 & 3 were elevated
