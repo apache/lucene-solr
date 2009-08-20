@@ -26,7 +26,7 @@
   <field name="price">185</field>
   <field name="popularity">5</field>
   <field name="inStock">true</field>
-  <field name="timestamp">NOW</field>
+  <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
 </doc>
 
 <doc>
@@ -38,7 +38,7 @@
   <field name="price">74.99</field>
   <field name="popularity">7</field>
   <field name="inStock">true</field>
-  <field name="timestamp">NOW</field>
+  <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
 </doc>
 
 <doc>
@@ -48,10 +48,10 @@
   <field name="cat">electronics</field>
   <field name="cat">memory</field>
   <field name="features">CAS latency 3,	 2.7v</field>
-  <!-- note: price is missing on this one -->
-  <field name="popularity">5</field>
+  <!-- note: price & popularity is missing on this one -->
+  <field name="popularity">0</field>
   <field name="inStock">true</field>
-  <field name="timestamp">NOW</field>
+  <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
 </doc>
 
 

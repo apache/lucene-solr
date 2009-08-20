@@ -31,7 +31,7 @@
   <field name="price">479.95</field>
   <field name="popularity">7</field>
   <field name="inStock">false</field>
-  <field name="timestamp">NOW/DAY</field>
+  <field name="manufacturedate_dt">2006-02-13T15:26:37Z/DAY</field>
 </doc>
   <!-- yes, you can add more than one document at a time -->
 <doc>
@@ -49,6 +49,6 @@
   <field name="price">649.99</field>
   <field name="popularity">7</field>
   <field name="inStock">false</field>
-  <field name="timestamp">NOW/DAY</field>
+  <field name="manufacturedate_dt">2006-02-13T15:26:37Z/DAY</field>
 </doc>
 </add>
