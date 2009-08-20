@@ -24,9 +24,8 @@ package org.apache.lucene.search;
  * search thread is stopped by throwing a TimeExceeded Exception.
  * </p>
  * 
- * @deprecated this class will be removed in 3.0. Use
- *             {@link TimeLimitingCollector} instead, which extends the new
- *             {@link Collector}.
+ * @deprecated Use {@link TimeLimitingCollector} instead, which extends the new
+ *             {@link Collector}. This class will be removed in 3.0.
  */
 public class TimeLimitedCollector extends HitCollector {
   
