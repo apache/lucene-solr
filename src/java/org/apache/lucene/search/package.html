@@ -299,7 +299,7 @@ org.apache.lucene.search.Searcher#search(Query,Filter)}.
             <li>rewrite(IndexReader reader) &mdash; Rewrites queries into primitive queries. Primitive queries are:
                 <a href="TermQuery.html">TermQuery</a>,
                 <a href="BooleanQuery.html">BooleanQuery</a>, <span
-                    >OTHERS????</span></li>
+                    >and other queries that implement Query.html#createWeight(Searcher searcher)</span></li>
         </ol>
     </p>
 <h4>The Weight Interface</h4>
@@ -326,8 +326,8 @@ org.apache.lucene.search.Searcher#search(Query,Filter)}.
                     Weight#normalize(float)</a> &mdash; Determine the query normalization factor. The query normalization may
                 allow for comparing scores between queries.</li>
             <li>
-                <a href="Weight.html#scorer(IndexReader)">
-                    Weight#scorer(IndexReader)</a> &mdash; Construct a new
+                <a href="Weight.html#scorer(org.apache.lucene.index.IndexReader, boolean, boolean)">
+                    Weight#scorer(IndexReader, boolean, boolean)</a> &mdash; Construct a new
                 <a href="Scorer.html">Scorer</a>
                 for this Weight. See
                 <a href="#The Scorer Class">The Scorer Class</a>
@@ -335,8 +335,8 @@ org.apache.lucene.search.Searcher#search(Query,Filter)}.
                 Scorer is responsible for doing the actual scoring of documents given the Query.
             </li>
             <li>
-                <a href="Weight.html#explain(IndexReader, int)">
-                    Weight#explain(IndexReader, int)</a> &mdash; Provide a means for explaining why a given document was
+                <a href="Weight.html#explain(org.apache.lucene.search.Searcher, org.apache.lucene.index.IndexReader, int)">
+                    Weight#explain(Searcher, IndexReader, int)</a> &mdash; Provide a means for explaining why a given document was
                 scored
                 the way it was.</li>
         </ol>
@@ -346,33 +346,30 @@ org.apache.lucene.search.Searcher#search(Query,Filter)}.
         <a href="Scorer.html">Scorer</a>
         abstract class provides common scoring functionality for all Scorer implementations and
         is the heart of the Lucene scoring process. The Scorer defines the following abstract methods which
-        must be implemented:
+        must be implemented (some of them inherited from <a href="DocIdSetIterator.html">DocIdSetIterator</a> ):
         <ol>
             <li>
-                <a href="Scorer.html#next()">Scorer#next()</a> &mdash; Advances to the next
+                <a href="DocIdSetIterator.html#nextDoc()">DocIdSetIterator#nextDoc()</a> &mdash; Advances to the next
                 document that matches this Query, returning true if and only
                 if there is another document that matches.</li>
             <li>
-                <a href="Scorer.html#doc()">Scorer#doc()</a> &mdash; Returns the id of the
+                <a href="DocIdSetIterator.html#docID()">DocIdSetIterator#docID()</a> &mdash; Returns the id of the
                 <a href="../document/Document.html">Document</a>
                 that contains the match. It is not valid until next() has been called at least once.
             </li>
             <li>
-                <a href="Scorer.html#score()">Scorer#score()</a> &mdash; Return the score of the
+                <a href="Scorer.html#score(org.apache.lucene.search.Collector, int, int)">Scorer#score(Collector, int, int)</a> &mdash; Return the score of the
                 current document. This value can be determined in any
                 appropriate way for an application. For instance, the
                 <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/TermScorer.java?view=log">TermScorer</a>
                 returns the tf * Weight.getValue() * fieldNorm.
             </li>
             <li>
-                <a href="Scorer.html#skipTo(int)">Scorer#skipTo(int)</a> &mdash; Skip ahead in
+                <a href="DocIdSetIterator.html#advance(int)">DocIdSetIterator#advance(int)</a> &mdash; Skip ahead in
                 the document matches to the document whose id is greater than
                 or equal to the passed in value. In many instances, skipTo can be
                 implemented more efficiently than simply looping through all the matching documents until
                 the target document is identified.</li>
-            <li>
-                <a href="Scorer.html#explain(int)">Scorer#explain(int)</a> &mdash; Provides
-                details on why the score came about.</li>
         </ol>
     </p>
 <h4>Why would I want to add my own Query?</h4>
