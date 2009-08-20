@@ -17,11 +17,12 @@ package org.apache.lucene.analysis.tokenattributes;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.Attribute;
 
 /**
- * This attribute can be used to pass different flags down the tokenizer chain,
- * e. g. from one TokenFilter to another one. 
+ * This attribute can be used to pass different flags down the {@link Tokenizer} chain,
+ * eg from one TokenFilter to another one. 
  */
 public interface FlagsAttribute extends Attribute {
   /**
