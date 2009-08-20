@@ -370,7 +370,8 @@ public class LukeRequestHandler extends RequestHandlerBase
     SimpleOrderedMap<Object> finfo = new SimpleOrderedMap<Object>();
     finfo.add("fields", fields);
     finfo.add("dynamicFields", dynamicFields);
-    finfo.add("uniqueKeyField", uniqueField.getName());
+    finfo.add("uniqueKeyField", 
+              null == uniqueField ? null : uniqueField.getName());
     finfo.add("defaultSearchField", schema.getDefaultSearchFieldName());
     finfo.add("types", types);
     return finfo;

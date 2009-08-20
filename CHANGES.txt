@@ -482,6 +482,12 @@ Bug Fixes
 
 57. SOLR-1360: Prevent PhoneticFilter from producing duplicate tokens. (yonik)
 
+58. SOLR-1371: LukeRequestHandler/schema.jsp errored if schema had no 
+    uniqueKey field.  The new test for this also (hopefully) adds some
+    future proofing against similar bugs in the future.  As a side
+    effect QueryElevationComponentTest was refactored, and a bug in
+    that test was found. (hossman)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)

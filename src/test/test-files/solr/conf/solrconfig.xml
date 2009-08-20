@@ -20,6 +20,20 @@
 <!-- $Id: solrconfig.xml 382610 2006-03-03 01:43:03Z yonik $
      $Source$
      $Name$
+
+
+
+     This is a "kitchen sink" config file that tests can use.
+     When writting a new test, feel free to add *new* items (plugins,
+     config options, etc...) as long as they don't break any existing
+     tests.  if you need to test something esoteric please add a new
+     "solrconfig-your-esoteric-purpose.xml" config file.
+
+     Note in particular that this test is used by MinimalSchemaTest so 
+     Anything added to this file needs to work correctly even if there
+     is now uniqueKey or defaultSearch Field.
+
+
   -->
 
 <config>
@@ -244,6 +258,7 @@
           it's init params as "defaults" if there is no "defaults" list
           specified
      -->
+     <str name="q.alt">*:*</str>
      <float name="tie">0.01</float>
      <str name="qf">
         text^0.5 features_t^1.0 subject^1.4 title_stemmed^2.0
@@ -289,6 +304,8 @@
     <lst name="lst2"> <str name="op">log</str> <float name="val">10</float> </lst>
   </requestHandler>
 
+  <requestHandler name="/admin/" class="org.apache.solr.handler.admin.AdminHandlers" />
+
   <requestHandler name="test" class="solr.tst.TestRequestHandler" />
 
   <!-- test query parameter defaults -->
@@ -312,21 +329,6 @@
   <requestHandler name="/update"     class="solr.XmlUpdateRequestHandler"          />
   <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy">
   	<bool name="httpCaching">false</bool>
-  </requestHandler>
-
-  <!-- test elevation -->
-  <searchComponent name="elevate" class="org.apache.solr.handler.component.QueryElevationComponent" >
-    <str name="queryFieldType">string</str>
-    <str name="config-file">elevate.xml</str>
-  </searchComponent>
-
-  <requestHandler name="/elevate" class="org.apache.solr.handler.component.SearchHandler">
-    <lst name="defaults">
-      <str name="echoParams">explicit</str>
-    </lst>
-    <arr name="last-components">
-      <str>elevate</str>
-    </arr>
   </requestHandler>
 
   <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
