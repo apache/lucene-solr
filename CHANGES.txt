@@ -276,6 +276,10 @@ New Features
 71. SOLR-1373: Add Filter query to admin/form.jsp
     (Jason Rutherglen via hossman)
 
+72. SOLR-1368: Add ms() function query for getting milliseconds from dates and for 
+    high precision date subtraction, add sub() for subtracting other arguments.
+    (yonik)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

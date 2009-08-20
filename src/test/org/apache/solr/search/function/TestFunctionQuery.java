@@ -154,6 +154,8 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     singleTest(field,"sum(\0,\0)", 10, 20);
     singleTest(field,"sum(\0,\0,5)", 10, 25);
 
+    singleTest(field,"sub(\0,1)", 10, 9);
+
     singleTest(field,"product(\0,1)", 10, 10);
     singleTest(field,"product(\0,-2,-4)", 10, 80);
 
@@ -276,7 +278,7 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
   }
 
   public void testGeneral() {
-    assertU(adoc("id","1"));
+    assertU(adoc("id","1", "a_tdt","2009-08-31T12:10:10.123Z", "b_tdt","2009-08-31T12:10:10.124Z"));
     assertU(adoc("id","2"));
     assertU(commit()); // create more than one segment
     assertU(adoc("id","3"));
@@ -292,5 +294,15 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     assertQ(req("fl","*,score","q", "{!func}top(ord(id))", "fq","id:6"), "//float[@name='score']='6.0'");
     assertQ(req("fl","*,score","q", "{!func}rord(id)", "fq","id:1"),"//float[@name='score']='6.0'");
     assertQ(req("fl","*,score","q", "{!func}top(rord(id))", "fq","id:1"),"//float[@name='score']='6.0'");
+
+
+    // test that we can subtract dates to millisecond precision
+    assertQ(req("fl","*,score","q", "{!func}ms(a_tdt,b_tdt)", "fq","id:1"), "//float[@name='score']='-1.0'");
+    assertQ(req("fl","*,score","q", "{!func}ms(b_tdt,a_tdt)", "fq","id:1"), "//float[@name='score']='1.0'");
+    assertQ(req("fl","*,score","q", "{!func}ms(2009-08-31T12:10:10.125Z,2009-08-31T12:10:10.124Z)", "fq","id:1"), "//float[@name='score']='1.0'");
+    assertQ(req("fl","*,score","q", "{!func}ms(2009-08-31T12:10:10.124Z,a_tdt)", "fq","id:1"), "//float[@name='score']='1.0'");
+    assertQ(req("fl","*,score","q", "{!func}ms(2009-08-31T12:10:10.125Z,b_tdt)", "fq","id:1"), "//float[@name='score']='1.0'");
+
+    assertQ(req("fl","*,score","q", "{!func}ms(2009-08-31T12:10:10.125Z/SECOND,2009-08-31T12:10:10.124Z/SECOND)", "fq","id:1"), "//float[@name='score']='0.0'");
   }
 }

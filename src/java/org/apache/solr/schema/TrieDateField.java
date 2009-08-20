@@ -42,7 +42,7 @@ import java.io.IOException;
 
 public class TrieDateField extends DateField {
   protected int precisionStepArg = TrieField.DEFAULT_PRECISION_STEP;  // the one passed in or defaulted
-  protected int precisionStep;     // normalized
+  protected int precisionStep = precisionStepArg;     // normalized
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {

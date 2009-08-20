@@ -86,6 +86,44 @@ public class FunctionQParser extends QParser {
     consumeArgumentDelimiter();
     return value;
   }
+
+  public String parseArg() throws ParseException {
+    sp.eatws();
+    char ch = sp.peek();
+    String val = null;
+    switch (ch) {
+      case ')': return null;
+      case '$':
+        sp.pos++;
+        String param = sp.getId();
+        val = getParam(param);
+        break;
+      case '\'':
+      case '"':
+        val = sp.getQuotedString();
+        break;
+      default:
+        // read unquoted literal ended by whitespace ',' or ')'
+        // there is no escaping.
+        int valStart = sp.pos;
+        for (;;) {
+          if (sp.pos >= sp.end) {
+            throw new ParseException("Missing end to unquoted value starting at " + valStart + " str='" + sp.val +"'");
+          }
+          char c = sp.val.charAt(sp.pos);
+          if (c==')' || c==',' || Character.isWhitespace(c)) {
+            val = sp.val.substring(valStart, sp.pos);
+            break;
+          }
+          sp.pos++;
+        }
+    }
+
+    sp.eatws();
+    consumeArgumentDelimiter();
+    return val;
+  }
+
   
   /**
    * Parse a list of ValueSource.  Must be the final set of arguments

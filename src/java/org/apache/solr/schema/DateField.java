@@ -17,31 +17,26 @@
 
 package org.apache.solr.schema;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.request.XMLWriter;
-import org.apache.solr.request.TextResponseWriter;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.index.IndexReader;
-import org.apache.solr.search.function.*;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.DateUtil;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.TextResponseWriter;
+import org.apache.solr.request.XMLWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.function.*;
 import org.apache.solr.util.DateMathParser;
-  
-import java.util.Map;
+
 import java.io.IOException;
+import java.text.*;
 import java.util.Date;
-import java.util.TimeZone;
 import java.util.Locale;
-import java.text.DecimalFormatSymbols;
-import java.text.SimpleDateFormat;
-import java.text.DateFormat;
-import java.text.NumberFormat;
-import java.text.DecimalFormat;
-import java.text.ParsePosition;
-import java.text.ParseException;
-import java.text.FieldPosition;
+import java.util.Map;
+import java.util.TimeZone;
 
 // TODO: make a FlexibleDateField that can accept dates in multiple
 // formats, better for human entered dates.
@@ -261,6 +256,62 @@ public class DateField extends FieldType {
    protected Date parseDate(String s) throws ParseException {
      return fmtThreadLocal.get().parse(s);
    }
+
+  /** Parse a date string in the standard format, or any supported by DateUtil.parseDate */
+   public Date parseDateLenient(String s, SolrQueryRequest req) throws ParseException {
+     // request could define timezone in the future
+     try {
+       return fmtThreadLocal.get().parse(s);
+     } catch (Exception e) {
+       return DateUtil.parseDate(s);
+     }
+   }
+
+  /**
+   * Parses a String which may be a date
+   * followed by an optional math expression.
+   * @param now an optional fixed date to use as "NOW" in the DateMathParser
+   * @param val the string to parse
+   */
+  public Date parseMathLenient(Date now, String val, SolrQueryRequest req) {
+    String math = null;
+    final DateMathParser p = new DateMathParser(MATH_TZ, MATH_LOCALE);
+
+    if (null != now) p.setNow(now);
+
+    if (val.startsWith(NOW)) {
+      math = val.substring(NOW.length());
+    } else {
+      final int zz = val.indexOf(Z);
+      if (0 < zz) {
+        math = val.substring(zz+1);
+        try {
+          // p.setNow(toObject(val.substring(0,zz)));
+          p.setNow(parseDateLenient(val.substring(0,zz+1), req));
+        } catch (ParseException e) {
+          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+                                   "Invalid Date in Date Math String:'"
+                                   +val+'\'',e);
+        }
+      } else {
+        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+                                 "Invalid Date String:'" +val+'\'');
+      }
+    }
+
+    if (null == math || math.equals("")) {
+      return p.getNow();
+    }
+
+    try {
+      return p.parseMath(math);
+    } catch (ParseException e) {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+                               "Invalid Date Math String:'" +val+'\'',e);
+    }
+  }
+
+
   
   /**
    * Thread safe DateFormat that can <b>format</b> in the canonical
