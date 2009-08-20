@@ -253,7 +253,7 @@ public abstract class TokenStream extends AttributeSource {
   }
   
   /**
-   * Consumers (e. g. the indexer) use this method to advance the stream 
+   * Consumers (eg the indexer) use this method to advance the stream 
    * to the next token. Implementing classes must implement this method 
    * and update the appropriate {@link AttributeImpl}s with content of the 
    * next token.
@@ -290,12 +290,12 @@ public abstract class TokenStream extends AttributeSource {
   
   /**
    * This method is called by the consumer after the last token has been consumed, 
-   * i.e. after {@link #incrementToken()} returned <code>false</code> (using the new TokenStream API)
+   * ie after {@link #incrementToken()} returned <code>false</code> (using the new TokenStream API)
    * or after {@link #next(Token)} or {@link #next()} returned <code>null</code> (old TokenStream API).
    * <p/>
    * This method can be used to perform any end-of-stream operations, such as setting the final
    * offset of a stream. The final offset of a stream might differ from the offset of the last token
-   * e.g. in case one or more whitespaces followed after the last token, but a {@link WhitespaceTokenizer}
+   * eg in case one or more whitespaces followed after the last token, but a {@link WhitespaceTokenizer}
    * was used.
    * 
    * @throws IOException
