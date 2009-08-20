@@ -26,9 +26,9 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * Describe class <code>MultipleTermPositions</code> here.
+ * Allows you to iterate over the {@link TermPositions} for multiple {@link Term}s as
+ * a single {@link TermPositions}.
  *
- * @version 1.0
  */
 public class MultipleTermPositions implements TermPositions {
 
