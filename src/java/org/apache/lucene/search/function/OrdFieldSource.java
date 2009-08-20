@@ -59,7 +59,7 @@ public class OrdFieldSource extends ValueSource {
   protected String field;
 
   /** 
-   * Contructor for a certain field.
+   * Constructor for a certain field.
    * @param field field whose values order is used.  
    */
   public OrdFieldSource(String field) {
