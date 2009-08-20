@@ -77,4 +77,8 @@ public class CachingWrapperFilterHelper extends CachingWrapperFilter {
     if (!(o instanceof CachingWrapperFilterHelper)) return false;
     return this.filter.equals((CachingWrapperFilterHelper)o);
   }
+  
+  public int hashCode() {
+    return this.filter.hashCode() ^ 0x5525aacb;
+  }
 }

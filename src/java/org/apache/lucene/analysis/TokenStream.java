@@ -146,6 +146,10 @@ public abstract class TokenStream extends AttributeSource {
       }
       return false;
     }
+    
+    public int hashCode() {
+      return delegate.hashCode() ^ 0x0a45ff31;
+    }
   }
 
   /**
