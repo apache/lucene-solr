@@ -32,11 +32,16 @@ import org.apache.lucene.search.spans.SpanScorer;
 
 import java.io.IOException;
 
-
 /**
- * The score returned is based on the maximum payload score seen for the Term on the document, as opposed
- * to the average as implemented by {@link org.apache.lucene.search.payloads.BoostingTermQuery}.
- *
+ * This class is very similar to {@link org.apache.lucene.search.spans.SpanTermQuery} 
+ * except that it factors in the value of the payload located at each of the positions
+ *  where the {@link org.apache.lucene.index.Term} occurs.
+ * <p>
+ * In order to take advantage of this, you must override
+ * {@link org.apache.lucene.search.Similarity#scorePayload(String, byte[],int,int)}
+ * which returns 1 by default.
+ * <p>
+ * Payload scores are aggregated using a pluggable {@link PayloadFunction}.
  **/
 public class BoostingFunctionTermQuery extends SpanTermQuery  implements PayloadQuery{
   protected PayloadFunction function;
