@@ -22,6 +22,10 @@ import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
 
+/**
+ * Common util methods for dealing with {@link IndexReader}s.
+ *
+ */
 public class ReaderUtil {
 
   /**
