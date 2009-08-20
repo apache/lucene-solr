@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.AttributeSource;
 
 /**
