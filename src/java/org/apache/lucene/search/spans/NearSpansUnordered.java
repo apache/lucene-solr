@@ -28,6 +28,8 @@ import java.util.Set;
 import java.util.HashSet;
 
 /**
+ * Similar to {@link NearSpansOrdered}, but for the unordered case.
+ * 
  * Expert:
  * Only public for subclassing.  Most implementations should not need this class
  */
