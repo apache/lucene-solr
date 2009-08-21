@@ -93,25 +93,25 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     doc2.addField( "id", "2", 1.0f );
     doc2.addField( "inStock", true, 1.0f );
     doc2.addField( "price", 2, 1.0f );
-    doc2.addField( "timestamp", new java.util.Date(), 1.0f );
+    doc2.addField( "timestamp_dt", new java.util.Date(), 1.0f );
     docs.add(doc2);
     SolrInputDocument doc3 = new SolrInputDocument();
     doc3.addField( "id", "3", 1.0f );
     doc3.addField( "inStock", false, 1.0f );
     doc3.addField( "price", 3, 1.0f );
-    doc3.addField( "timestamp", new java.util.Date(), 1.0f );
+    doc3.addField( "timestamp_dt", new java.util.Date(), 1.0f );
     docs.add(doc3);
     SolrInputDocument doc4 = new SolrInputDocument();
     doc4.addField( "id", "4", 1.0f );
     doc4.addField( "inStock", true, 1.0f );
     doc4.addField( "price", 4, 1.0f );
-    doc4.addField( "timestamp", new java.util.Date(), 1.0f );
+    doc4.addField( "timestamp_dt", new java.util.Date(), 1.0f );
     docs.add(doc4);
     SolrInputDocument doc5 = new SolrInputDocument();
     doc5.addField( "id", "5", 1.0f );
     doc5.addField( "inStock", false, 1.0f );
     doc5.addField( "price", 5, 1.0f );
-    doc5.addField( "timestamp", new java.util.Date(), 1.0f );
+    doc5.addField( "timestamp_dt", new java.util.Date(), 1.0f );
     docs.add(doc5);
     
     upres = server.add( docs ); 
@@ -132,7 +132,7 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     query.addFacetQuery("price:[5 TO *]");
     query.addFacetField("inStock");
     query.addFacetField("price");
-    query.addFacetField("timestamp");
+    query.addFacetField("timestamp_dt");
     query.removeFilterQuery("inStock:true");
     
     response = server.query( query );
