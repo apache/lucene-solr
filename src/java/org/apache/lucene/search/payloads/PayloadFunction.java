@@ -16,8 +16,6 @@ package org.apache.lucene.search.payloads;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Term;
-
 import java.io.Serializable;
 
 
@@ -32,9 +30,6 @@ import java.io.Serializable;
  *
  **/
 public abstract class PayloadFunction implements Serializable {
-
-
-
 
   /**
    * Calculate the score up to this point for this doc and field
@@ -60,5 +55,9 @@ public abstract class PayloadFunction implements Serializable {
    * @return The final score for the payloads
    */
   public abstract float docScore(int docId, String field, int numPayloadsSeen, float payloadScore);
+  
+  public abstract int hashCode();
+  
+  public abstract boolean equals(Object o);
 
 }

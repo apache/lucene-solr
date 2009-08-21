@@ -86,7 +86,7 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
 
   public class BoostingSpanScorer extends SpanScorer {
     Spans spans;
-    Spans[] subSpans = null;
+    
     protected float payloadScore;
     private int payloadsSeen;
     Similarity similarity = getSimilarity();
@@ -160,6 +160,37 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
       result.setDescription("bnq, product of:");
       return result;
     }
+  }
+  
+  //@Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + ((fieldName == null) ? 0 : fieldName.hashCode());
+    result = prime * result + ((function == null) ? 0 : function.hashCode());
+    return result;
+  }
+
+  //@Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (!super.equals(obj))
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    BoostingNearQuery other = (BoostingNearQuery) obj;
+    if (fieldName == null) {
+      if (other.fieldName != null)
+        return false;
+    } else if (!fieldName.equals(other.fieldName))
+      return false;
+    if (function == null) {
+      if (other.function != null)
+        return false;
+    } else if (!function.equals(other.function))
+      return false;
+    return true;
   }
 
 
