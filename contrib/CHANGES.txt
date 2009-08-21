@@ -171,7 +171,9 @@ Build
    Contrib/analyzers now builds an addtional lucene-smartcn Jar file. All
    smartcn classes are not included in the lucene-analyzers JAR file.
    (Robert Muri via Simon Willanuer)
-       
+ 
+2. LUCENE-1829: Fix contrib query parser to properly create javacc files.
+   (Jan-Pascal and Luis Alves via Michael Busch)      
 
 Test Cases
 

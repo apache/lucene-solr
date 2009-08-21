@@ -568,13 +568,16 @@
       <fileset dir="src/java/org/apache/lucene/queryParser" includes="*.java">
         <containsregexp expression="Generated.*By.*JavaCC"/>
       </fileset>
+      <fileset dir="contrib/queryparser/src/java/org/apache/lucene/queryParser/standard/parser" includes="*.java">
+        <containsregexp expression="Generated.*By.*JavaCC"/>
+      </fileset>
       <fileset dir="src/demo/org/apache/lucene/demo/html" includes="*.java">
         <containsregexp expression="Generated.*By.*JavaCC"/>
       </fileset>
     </delete>
   </target>
 
-  <target name="javacc" depends="clean-javacc,javacc-QueryParser,javacc-HTMLParser"/>
+  <target name="javacc" depends="clean-javacc,javacc-QueryParser,javacc-HTMLParser,javacc-contrib-queryparser"/>
 
   <target name="javacc-QueryParser" depends="init,javacc-check" if="javacc.present">
     <invoke-javacc target="src/java/org/apache/lucene/queryParser/QueryParser.jj"
@@ -585,6 +588,13 @@
   <target name="javacc-HTMLParser" depends="init,javacc-check" if="javacc.present">
     <invoke-javacc target="src/demo/org/apache/lucene/demo/html/HTMLParser.jj"
                    outputDir="src/demo/org/apache/lucene/demo/html"
+    />
+  </target>
+	
+  <target name="javacc-contrib-queryparser" depends="init,javacc-check" if="javacc.present">
+    <ant target="javacc"
+      dir="contrib/queryparser"
+      antfile="build.xml" 
     />
   </target>
   
