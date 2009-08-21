@@ -167,7 +167,11 @@ Documentation
 
 Build
 
- (None)
+1. LUCENE-1728: Splitted contrib/analyzers into common and smartcn modules. 
+   Contrib/analyzers now builds an addtional lucene-smartcn Jar file. All
+   smartcn classes are not included in the lucene-analyzers JAR file.
+   (Robert Muri via Simon Willanuer)
+       
 
 Test Cases
 
