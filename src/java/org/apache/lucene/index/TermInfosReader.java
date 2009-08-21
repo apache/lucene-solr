@@ -246,7 +246,7 @@ final class TermInfosReader {
     if (size == 0) return null;
 
     SegmentTermEnum enumerator = getThreadResources().termEnum;
-    if (enumerator != null && enumerator.term() != null &&
+    if (enumerator.term() != null &&
         position >= enumerator.position &&
 	position < (enumerator.position + totalIndexInterval))
       return scanEnum(enumerator, position);      // can avoid seek
