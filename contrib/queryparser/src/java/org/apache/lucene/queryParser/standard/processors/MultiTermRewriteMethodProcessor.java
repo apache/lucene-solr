@@ -37,8 +37,7 @@ public class MultiTermRewriteMethodProcessor extends QueryNodeProcessorImpl {
   protected QueryNode postProcessNode(QueryNode node) {
     
     // set setMultiTermRewriteMethod for WildcardQueryNode and PrefixWildcardQueryNode
-    if (node instanceof WildcardQueryNode || node instanceof  ParametricRangeQueryNode
-        || node instanceof ParametricRangeQueryNode) {
+    if (node instanceof WildcardQueryNode || node instanceof  ParametricRangeQueryNode) {
       
       if (!getQueryConfigHandler().hasAttribute(MultiTermRewriteMethodAttribute.class)) {
         // This should not happen, this attribute is created in the StandardQueryConfigHandler
