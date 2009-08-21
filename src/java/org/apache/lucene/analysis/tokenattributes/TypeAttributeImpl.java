@@ -69,6 +69,6 @@ public class TypeAttributeImpl extends AttributeImpl implements TypeAttribute, C
   
   public void copyTo(AttributeImpl target) {
     TypeAttribute t = (TypeAttribute) target;
-    t.setType(new String(type));
+    t.setType(type);
   }
 }
