@@ -167,7 +167,6 @@ public interface Searchable {
    * entire index.
    * <p>Applications should call {@link Searcher#explain(Query, int)}.
    * @throws BooleanQuery.TooManyClauses
-   * @deprecated use {@link #explain(Weight, int)} instead.
    */
   Explanation explain(Weight weight, int doc) throws IOException;
 
