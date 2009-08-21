@@ -32,6 +32,7 @@ import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TopDocs;
@@ -120,6 +121,8 @@ public class TestBoostingNearQuery extends LuceneTestCase {
 		TopDocs hits;
 
 		query = newPhraseQuery("field", "twenty two", true);
+		QueryUtils.check(query);
+		
 		// all 10 hits should have score = 3 because adjacent terms have payloads of 2,4
 		// and all the similarity factors are set to 1
 		hits = searcher.search(query, null, 100);
