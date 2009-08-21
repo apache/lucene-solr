@@ -78,6 +78,8 @@ Bug fixes
 10. LUCENE-1792: Fix new query parser to set rewrite method for
     multi-term queries. (Luis Alves, Mike McCandless via Michael Busch)
 
+11. LUCENE-1828: Fix memory index to call TokenStream.reset() and
+    TokenStream.end(). (Tim Smith via Michael Busch)
 
 New features
 

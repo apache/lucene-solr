@@ -342,6 +342,7 @@ public class MemoryIndex implements Serializable {
       PositionIncrementAttribute posIncrAttribute = (PositionIncrementAttribute) stream.addAttribute(PositionIncrementAttribute.class);
       OffsetAttribute offsetAtt = (OffsetAttribute) stream.addAttribute(OffsetAttribute.class);
       
+      stream.reset();
       while (stream.incrementToken()) {
         String term = termAtt.term();
         if (term.length() == 0) continue; // nothing to do
@@ -363,7 +364,8 @@ public class MemoryIndex implements Serializable {
           positions.add(pos, offsetAtt.startOffset(), offsetAtt.endOffset());
         }
       }
-      
+      stream.end();
+
       // ensure infos.numTokens > 0 invariant; needed for correct operation of terms()
       if (numTokens > 0) {
         boost = boost * docBoost; // see DocumentWriter.addDocument(...)
