@@ -18,7 +18,7 @@ package org.apache.lucene.search.payloads;
  */
 
 /**
- * Calculates the miniumum payload seen
+ * Calculates the minimum payload seen
  *
  **/
 public class MinPayloadFunction extends PayloadFunction {
