@@ -28,7 +28,7 @@ import java.lang.reflect.Modifier;
  * Attributes are used to add data in a dynamic, yet type-safe way to a source
  * of usually streamed objects, e. g. a {@link org.apache.lucene.analysis.TokenStream}.
  */
-public abstract class AttributeImpl implements Cloneable, Serializable {  
+public abstract class AttributeImpl implements Cloneable, Serializable, Attribute {  
   /**
    * Clears the values in this AttributeImpl and resets it to its 
    * default value. If this implementation implements more than one Attribute interface

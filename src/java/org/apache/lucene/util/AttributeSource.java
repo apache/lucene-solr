@@ -44,6 +44,7 @@ public class AttributeSource {
   public static abstract class AttributeFactory {
     /**
      * returns an {@link AttributeImpl} for the supplied {@link Attribute} interface class.
+     * <p>Signature for Java 1.5: <code>public AttributeImpl createAttributeInstance(Class%lt;? extends Attribute&gt; attClass)</code>
      */
     public abstract AttributeImpl createAttributeInstance(Class attClass);
     
@@ -128,16 +129,18 @@ public class AttributeSource {
   
   /** Returns a new iterator that iterates the attribute classes
    * in the same order they were added in.
+   * <p>Signature for Java 1.5: <code>public Iterator&lt;Class&lt;? extends Attribute&gt;&gt; getAttributeClassesIterator()</code>
    */
-  public Iterator/*<Class<? extends Attribute>>*/ getAttributeClassesIterator() {
+  public Iterator getAttributeClassesIterator() {
     return Collections.unmodifiableSet(attributes.keySet()).iterator();
   }
   
   /** Returns a new iterator that iterates all unique Attribute implementations.
    * This iterator may contain less entries that {@link #getAttributeClassesIterator},
    * if one instance implements more than one Attribute interface.
+   * <p>Signature for Java 1.5: <code>public Iterator&lt;AttributeImpl&gt; getAttributeImplsIterator()</code>
    */
-  public Iterator/*<AttributeImpl>*/ getAttributeImplsIterator() {
+  public Iterator getAttributeImplsIterator() {
     if (hasAttributes()) {
       if (currentState == null) {
         computeCurrentState();
@@ -186,7 +189,7 @@ public class AttributeSource {
           Class[] interfaces = actClazz.getInterfaces();
           for (int i = 0; i < interfaces.length; i++) {
             final Class curInterface = interfaces[i];
-            if (Attribute.class.isAssignableFrom(curInterface)) {
+            if (curInterface != Attribute.class && Attribute.class.isAssignableFrom(curInterface)) {
               foundInterfaces.add(curInterface);
             }
           }
@@ -213,14 +216,17 @@ public class AttributeSource {
    * This method first checks if an instance of that class is 
    * already in this AttributeSource and returns it. Otherwise a
    * new instance is created, added to this AttributeSource and returned. 
+   * <p>Signature for Java 1.5: <code>public &lt;T extends Attribute&gt; T addAttribute(Class&lt;T&gt;)</code>
    */
-  public AttributeImpl addAttribute(Class attClass) {
-    AttributeImpl att = (AttributeImpl) attributes.get(attClass);
+  public Attribute addAttribute(Class attClass) {
+    final Attribute att = (Attribute) attributes.get(attClass);
     if (att == null) {
-      att = this.factory.createAttributeInstance(attClass);
-      addAttributeImpl(att);
+      final AttributeImpl attImpl = this.factory.createAttributeInstance(attClass);
+      addAttributeImpl(attImpl);
+      return attImpl;
+    } else {
+      return att;
     }
-    return att;
   }
   
   /** Returns true, iff this AttributeSource has any attributes */
@@ -231,6 +237,7 @@ public class AttributeSource {
   /**
    * The caller must pass in a Class&lt;? extends Attribute&gt; value. 
    * Returns true, iff this AttributeSource contains the passed-in Attribute.
+   * <p>Signature for Java 1.5: <code>public boolean hasAttribute(Class&lt;? extends Attribute&gt;)</code>
    */
   public boolean hasAttribute(Class attClass) {
     return this.attributes.containsKey(attClass);
@@ -239,14 +246,15 @@ public class AttributeSource {
   /**
    * The caller must pass in a Class&lt;? extends Attribute&gt; value. 
    * Returns the instance of the passed in Attribute contained in this AttributeSource
+   * <p>Signature for Java 1.5: <code>public &lt;T extends Attribute&gt; T getAttribute(Class&lt;T&gt;)</code>
    * 
    * @throws IllegalArgumentException if this AttributeSource does not contain the
    *         Attribute
    */
-  public AttributeImpl getAttribute(Class attClass) {
-    AttributeImpl att = (AttributeImpl) this.attributes.get(attClass);
+  public Attribute getAttribute(Class attClass) {
+    final Attribute att = (Attribute) this.attributes.get(attClass);
     if (att == null) {
-      throw new IllegalArgumentException("This AttributeSource does not have the attribute '" + attClass + "'.");
+      throw new IllegalArgumentException("This AttributeSource does not have the attribute '" + attClass.getName() + "'.");
     }
 
     return att;

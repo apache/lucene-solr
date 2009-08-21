@@ -196,7 +196,7 @@ public abstract class TokenStream extends AttributeSource {
         return ((TokenStream) input).tokenWrapper;
       }
       // check that all attributes are implemented by the same TokenWrapper instance
-      final AttributeImpl att = addAttribute(TermAttribute.class);
+      final Attribute att = addAttribute(TermAttribute.class);
       if (att instanceof TokenWrapper &&
         addAttribute(TypeAttribute.class) == att &&
         addAttribute(PositionIncrementAttribute.class) == att &&
