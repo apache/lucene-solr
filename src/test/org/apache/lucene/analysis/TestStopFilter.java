@@ -19,7 +19,6 @@ package org.apache.lucene.analysis;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.English;
-import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -27,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Set;
 
 
-public class TestStopFilter extends LuceneTestCase {
+public class TestStopFilter extends BaseTokenStreamTestCase {
 
   private final static boolean VERBOSE = false;
   

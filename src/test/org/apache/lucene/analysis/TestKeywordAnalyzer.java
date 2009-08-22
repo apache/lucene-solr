@@ -31,9 +31,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.LuceneTestCase;
 
-public class TestKeywordAnalyzer extends LuceneTestCase {
+public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
   private RAMDirectory directory;
   private IndexSearcher searcher;

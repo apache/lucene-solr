@@ -33,8 +33,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
@@ -198,7 +197,7 @@ the^3
 </pre>
 
 */
-public class MemoryIndexTest extends TestCase {
+public class MemoryIndexTest extends BaseTokenStreamTestCase {
   
   private Analyzer analyzer;
   private boolean fastMode = false;
@@ -214,7 +213,8 @@ public class MemoryIndexTest extends TestCase {
 
   /* all files will be open relative to this */
   public String fileDir;
-  public void setUp() {
+  protected void setUp() throws Exception {
+    super.setUp();
     fileDir = System.getProperty("lucene.common.dir", null);
   }
   

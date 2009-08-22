@@ -95,7 +95,7 @@ public class QueryTermScorer implements Scorer {
    * @see org.apache.lucene.search.highlight.Scorer#init(org.apache.lucene.analysis.TokenStream)
    */
   public TokenStream init(TokenStream tokenStream) {
-    termAtt = (TermAttribute) tokenStream.getAttribute(TermAttribute.class);
+    termAtt = (TermAttribute) tokenStream.addAttribute(TermAttribute.class);
     return null;
   }
 

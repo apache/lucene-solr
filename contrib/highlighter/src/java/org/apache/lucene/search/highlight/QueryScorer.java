@@ -156,8 +156,8 @@ public class QueryScorer implements Scorer {
    */
   public TokenStream init(TokenStream tokenStream) throws IOException {
     position = -1;
-    termAtt = (TermAttribute) tokenStream.getAttribute(TermAttribute.class);
-    posIncAtt = (PositionIncrementAttribute) tokenStream.getAttribute(PositionIncrementAttribute.class);
+    termAtt = (TermAttribute) tokenStream.addAttribute(TermAttribute.class);
+    posIncAtt = (PositionIncrementAttribute) tokenStream.addAttribute(PositionIncrementAttribute.class);
     if(!skipInitExtractor) {
       if(fieldWeightedSpanTerms != null) {
         fieldWeightedSpanTerms.clear();

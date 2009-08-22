@@ -58,12 +58,12 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 
 /**
  * Tests QueryParser.
  */
-public class TestQueryParser extends LuceneTestCase {
+public class TestQueryParser extends BaseTokenStreamTestCase {
 
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 

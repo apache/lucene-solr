@@ -249,7 +249,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   private boolean doNextCall;
 
   void start(Fieldable f) {
-    termAtt = (TermAttribute) fieldState.attributeSource.getAttribute(TermAttribute.class);
+    termAtt = (TermAttribute) fieldState.attributeSource.addAttribute(TermAttribute.class);
     consumer.start(f);
     if (nextPerField != null) {
       nextPerField.start(f);

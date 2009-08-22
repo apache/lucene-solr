@@ -33,8 +33,6 @@ import java.util.StringTokenizer;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseTokenizer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
@@ -78,6 +76,7 @@ import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -85,7 +84,7 @@ import org.w3c.dom.NodeList;
  * JUnit Test for Highlighter class.
  *
  */
-public class HighlighterTest extends TestCase implements Formatter {
+public class HighlighterTest extends BaseTokenStreamTestCase implements Formatter {
   private IndexReader reader;
   static final String FIELD_NAME = "contents";
   private Query query;
@@ -1600,10 +1599,8 @@ public class HighlighterTest extends TestCase implements Formatter {
     }
   }
 
-  /*
-   * @see TestCase#setUp()
-   */
   protected void setUp() throws Exception {
+    super.setUp();
     ramDir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(ramDir, new StandardAnalyzer(), true);
     for (int i = 0; i < texts.length; i++) {
@@ -1624,9 +1621,6 @@ public class HighlighterTest extends TestCase implements Formatter {
 
   }
 
-  /*
-   * @see TestCase#tearDown()
-   */
   protected void tearDown() throws Exception {
     super.tearDown();
   }
@@ -1692,9 +1686,9 @@ class SynonymTokenizer extends TokenStream {
   public SynonymTokenizer(TokenStream realStream, Map synonyms) {
     this.realStream = realStream;
     this.synonyms = synonyms;
-    realTermAtt = (TermAttribute) realStream.getAttribute(TermAttribute.class);
-    realPosIncrAtt = (PositionIncrementAttribute) realStream.getAttribute(PositionIncrementAttribute.class);
-    realOffsetAtt = (OffsetAttribute) realStream.getAttribute(OffsetAttribute.class);
+    realTermAtt = (TermAttribute) realStream.addAttribute(TermAttribute.class);
+    realPosIncrAtt = (PositionIncrementAttribute) realStream.addAttribute(PositionIncrementAttribute.class);
+    realOffsetAtt = (OffsetAttribute) realStream.addAttribute(OffsetAttribute.class);
 
     termAtt = (TermAttribute) addAttribute(TermAttribute.class);
     posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);

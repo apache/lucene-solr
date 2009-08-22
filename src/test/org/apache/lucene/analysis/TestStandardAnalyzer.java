@@ -5,7 +5,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.StringReader;
 
@@ -25,7 +24,7 @@ import java.io.StringReader;
  * limitations under the License.
  */
 
-public class TestStandardAnalyzer extends LuceneTestCase {
+public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
 
   private Analyzer a = new StandardAnalyzer();
 

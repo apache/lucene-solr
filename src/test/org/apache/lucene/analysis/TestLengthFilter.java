@@ -18,11 +18,10 @@ package org.apache.lucene.analysis;
  */
 
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.StringReader;
 
-public class TestLengthFilter extends LuceneTestCase {
+public class TestLengthFilter extends BaseTokenStreamTestCase {
   
   public void testFilter() throws Exception {
     TokenStream stream = new WhitespaceTokenizer(

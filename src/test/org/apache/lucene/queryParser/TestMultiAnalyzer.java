@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 
 /**
  * Test QueryParser's ability to deal with Analyzers that return more
@@ -38,7 +38,7 @@ import org.apache.lucene.util.LuceneTestCase;
  * increment &gt; 1.
  *
  */
-public class TestMultiAnalyzer extends LuceneTestCase {
+public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
 
   private static int multiToken = 0;
 

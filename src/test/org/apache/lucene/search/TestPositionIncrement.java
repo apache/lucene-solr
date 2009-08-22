@@ -40,7 +40,7 @@ import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.LowerCaseTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.index.Payload;
@@ -56,7 +56,7 @@ import org.apache.lucene.search.spans.Spans;
  *
  * @version $Revision$
  */
-public class TestPositionIncrement extends LuceneTestCase {
+public class TestPositionIncrement extends BaseTokenStreamTestCase {
 
   public void testSetPosition() throws Exception {
     Analyzer analyzer = new Analyzer() {

@@ -31,10 +31,9 @@ import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 
-import junit.framework.TestCase;
-
-public class TestSynonymTokenFilter extends TestCase {
+public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
   File dataDir = new File(System.getProperty("dataDir", "./bin"));
   File testFile = new File(dataDir, "org/apache/lucene/index/memory/testSynonyms.txt");
   

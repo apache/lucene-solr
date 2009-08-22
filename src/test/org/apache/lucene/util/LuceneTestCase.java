@@ -24,6 +24,7 @@ import java.util.Random;
 
 import junit.framework.TestCase;
 
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -58,7 +59,9 @@ public abstract class LuceneTestCase extends TestCase {
   }
 
   protected void setUp() throws Exception {
+    super.setUp();
     ConcurrentMergeScheduler.setTestMode();
+    TokenStream.setOnlyUseNewAPI(false);
   }
 
   /**
@@ -96,6 +99,7 @@ public abstract class LuceneTestCase extends TestCase {
     } finally {
       purgeFieldCache(FieldCache.DEFAULT);
     }
+    super.tearDown();
   }
 
   /** 

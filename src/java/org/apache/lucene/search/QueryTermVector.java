@@ -61,7 +61,7 @@ public class QueryTermVector implements TermFreqVector {
           boolean hasMoreTokens = false;
           
           stream.reset(); 
-          TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+          TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
 
           hasMoreTokens = stream.incrementToken();
           while (hasMoreTokens) {

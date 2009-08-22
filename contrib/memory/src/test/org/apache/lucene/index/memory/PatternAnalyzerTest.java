@@ -31,8 +31,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.LetterTokenizer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopAnalyzer;
@@ -58,8 +57,9 @@ Lucene features: CharTokenizer.MAX_WORD_LEN = 255.
 Thus the PatternAnalyzer produces correct output, whereas the WhitespaceAnalyzer 
 silently truncates text, and so the comparison results in assertEquals() don't match up. 
 
+TODO: Convert to new TokenStream API!
 */
-public class PatternAnalyzerTest extends TestCase {
+public class PatternAnalyzerTest extends LuceneTestCase {
   
   /** Runs the tests and/or benchmark */
   public static void main(String[] args) throws Throwable {

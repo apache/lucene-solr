@@ -26,9 +26,8 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.Payload;
-import org.apache.lucene.util.LuceneTestCase;
 
-public class TestAnalyzers extends LuceneTestCase {
+public class TestAnalyzers extends BaseTokenStreamTestCase {
 
    public TestAnalyzers(String name) {
       super(name);

@@ -3,7 +3,6 @@ package org.apache.lucene.analysis;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,7 +21,7 @@ import org.apache.lucene.util.LuceneTestCase;
  * limitations under the License.
  */
 
-public class TestPerFieldAnalzyerWrapper extends LuceneTestCase {
+public class TestPerFieldAnalzyerWrapper extends BaseTokenStreamTestCase {
   public void testPerField() throws Exception {
     String text = "Qwerty";
     PerFieldAnalyzerWrapper analyzer =

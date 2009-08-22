@@ -18,14 +18,13 @@ package org.apache.lucene.analysis;
  */
 
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.StringReader;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-public class TestASCIIFoldingFilter extends LuceneTestCase {
+public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
 
   // testLain1Accents() is a copy of TestLatin1AccentFilter.testU().
   public void testLatin1Accents() throws Exception {

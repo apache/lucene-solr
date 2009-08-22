@@ -22,7 +22,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.English;
-import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -32,7 +31,7 @@ import java.util.List;
 /**
  * tests for the TestTeeSinkTokenFilter
  */
-public class TestTeeSinkTokenFilter extends LuceneTestCase {
+public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
   protected StringBuffer buffer1;
   protected StringBuffer buffer2;
   protected String[] tokens1;

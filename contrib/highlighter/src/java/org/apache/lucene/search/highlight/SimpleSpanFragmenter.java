@@ -101,8 +101,8 @@ public class SimpleSpanFragmenter implements Fragmenter {
     position = -1;
     currentNumFrags = 1;
     textSize = originalText.length();
-    termAtt = (TermAttribute) tokenStream.getAttribute(TermAttribute.class);
-    posIncAtt = (PositionIncrementAttribute) tokenStream.getAttribute(PositionIncrementAttribute.class);
-    offsetAtt = (OffsetAttribute) tokenStream.getAttribute(OffsetAttribute.class);
+    termAtt = (TermAttribute) tokenStream.addAttribute(TermAttribute.class);
+    posIncAtt = (PositionIncrementAttribute) tokenStream.addAttribute(PositionIncrementAttribute.class);
+    offsetAtt = (OffsetAttribute) tokenStream.addAttribute(OffsetAttribute.class);
   }
 }

@@ -19,7 +19,6 @@ package org.apache.lucene.analysis;
 
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.StringReader;
 import java.io.IOException;
@@ -27,7 +26,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.HashSet;
 
-public class TestStopAnalyzer extends LuceneTestCase {
+public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   
   private StopAnalyzer stop = new StopAnalyzer(false);
   private Set inValidTokens = new HashSet();

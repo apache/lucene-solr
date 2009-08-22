@@ -25,6 +25,7 @@ import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
 
+/* TODO: Convert to new TokenStream API. Token instances must be removed for that to work */
 public abstract class BaseTokenTestCase extends LuceneTestCase {
   public static String tsToString(TokenStream in) throws IOException {
     StringBuffer out = new StringBuffer();

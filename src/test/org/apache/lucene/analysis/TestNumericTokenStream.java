@@ -17,12 +17,11 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
-public class TestNumericTokenStream extends LuceneTestCase {
+public class TestNumericTokenStream extends BaseTokenStreamTestCase {
 
   static final long lvalue = 4573245871874382L;
   static final int ivalue = 123456;

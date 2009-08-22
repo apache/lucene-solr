@@ -35,12 +35,12 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 
 /**
  * Tests QueryParser.
  */
-public class TestMultiFieldQueryParser extends LuceneTestCase {
+public class TestMultiFieldQueryParser extends BaseTokenStreamTestCase {
 
   /** test stop words arsing for both the non static form, and for the 
    * corresponding static form (qtxt, fields[]). */
