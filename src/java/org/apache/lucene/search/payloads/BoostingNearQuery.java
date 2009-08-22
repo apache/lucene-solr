@@ -29,6 +29,7 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -64,6 +65,70 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
 
   public Weight createWeight(Searcher searcher) throws IOException {
     return new BoostingSpanWeight(this, searcher);
+  }
+  
+  public Object clone() {
+    int sz = clauses.size();
+    SpanQuery[] newClauses = new SpanQuery[sz];
+
+    for (int i = 0; i < sz; i++) {
+      SpanQuery clause = (SpanQuery) clauses.get(i);
+      newClauses[i] = (SpanQuery) clause.clone();
+    }
+    BoostingNearQuery boostingNearQuery = new BoostingNearQuery(newClauses, slop, inOrder);
+    boostingNearQuery.setBoost(getBoost());
+    return boostingNearQuery;
+  }
+  
+  public String toString(String field) {
+    StringBuffer buffer = new StringBuffer();
+    buffer.append("boostingNear([");
+    Iterator i = clauses.iterator();
+    while (i.hasNext()) {
+      SpanQuery clause = (SpanQuery)i.next();
+      buffer.append(clause.toString(field));
+      if (i.hasNext()) {
+        buffer.append(", ");
+      }
+    }
+    buffer.append("], ");
+    buffer.append(slop);
+    buffer.append(", ");
+    buffer.append(inOrder);
+    buffer.append(")");
+    buffer.append(ToStringUtils.boost(getBoost()));
+    return buffer.toString();
+  }
+  
+  //@Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + ((fieldName == null) ? 0 : fieldName.hashCode());
+    result = prime * result + ((function == null) ? 0 : function.hashCode());
+    return result;
+  }
+
+  //@Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (!super.equals(obj))
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    BoostingNearQuery other = (BoostingNearQuery) obj;
+    if (fieldName == null) {
+      if (other.fieldName != null)
+        return false;
+    } else if (!fieldName.equals(other.fieldName))
+      return false;
+    if (function == null) {
+      if (other.function != null)
+        return false;
+    } else if (!function.equals(other.function))
+      return false;
+    return true;
   }
 
   public class BoostingSpanWeight extends SpanWeight {
@@ -162,36 +227,4 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
     }
   }
   
-  //@Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + ((fieldName == null) ? 0 : fieldName.hashCode());
-    result = prime * result + ((function == null) ? 0 : function.hashCode());
-    return result;
-  }
-
-  //@Override
-  public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (!super.equals(obj))
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
-    BoostingNearQuery other = (BoostingNearQuery) obj;
-    if (fieldName == null) {
-      if (other.fieldName != null)
-        return false;
-    } else if (!fieldName.equals(other.fieldName))
-      return false;
-    if (function == null) {
-      if (other.function != null)
-        return false;
-    } else if (!function.equals(other.function))
-      return false;
-    return true;
-  }
-
-
 }

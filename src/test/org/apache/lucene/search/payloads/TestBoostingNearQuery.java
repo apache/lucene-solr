@@ -121,6 +121,7 @@ public class TestBoostingNearQuery extends LuceneTestCase {
 		TopDocs hits;
 
 		query = newPhraseQuery("field", "twenty two", true);
+		QueryUtils.check(query);
 		
 		// all 10 hits should have score = 3 because adjacent terms have payloads of 2,4
 		// and all the similarity factors are set to 1

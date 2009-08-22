@@ -34,9 +34,9 @@ import org.apache.lucene.util.ToStringUtils;
  * maximum number of intervening unmatched positions, as well as whether
  * matches are required to be in-order. */
 public class SpanNearQuery extends SpanQuery implements Cloneable {
-  private List clauses;
-  private int slop;
-  private boolean inOrder;
+  protected List clauses;
+  protected int slop;
+  protected boolean inOrder;
 
   protected String field;
   private boolean collectPayloads;
