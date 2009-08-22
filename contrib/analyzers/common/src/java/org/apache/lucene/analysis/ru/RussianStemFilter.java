@@ -42,6 +42,9 @@ public final class RussianStemFilter extends TokenFilter
 
     private TermAttribute termAtt;
 
+    /**
+     * @deprecated Use {@link #RussianStemFilter(TokenStream)} instead.
+     */
     public RussianStemFilter(TokenStream in, char[] charset)
     {
         super(in);
@@ -49,6 +52,10 @@ public final class RussianStemFilter extends TokenFilter
         termAtt = (TermAttribute) addAttribute(TermAttribute.class);
     }
 
+    public RussianStemFilter(TokenStream in)
+    {
+    	this(in, RussianCharsets.UnicodeRussian);
+    }
     /**
      * Returns the next token in the stream, or null at EOS
      */

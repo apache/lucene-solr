@@ -24,7 +24,7 @@ package org.apache.lucene.analysis.ru;
  * One should be able to add other encoding schemes (like ISO-8859-5 or customized) by adding a new charset
  * and adding logic to toLowerCase() method for that charset.
  * </p>
- *
+ * @deprecated Support for non-Unicode encodings will be removed in Lucene 3.0
  * @version $Id$
  */
 public class RussianCharsets

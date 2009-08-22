@@ -37,13 +37,24 @@ import org.apache.lucene.analysis.LetterTokenizer; // for javadocs
 
 public class RussianLetterTokenizer extends CharTokenizer
 {
-    /** Construct a new LetterTokenizer. */
+    /** 
+     * Charset this tokenizer uses.
+     * @deprecated Support for non-Unicode encodings will be removed in Lucene 3.0
+     */
     private char[] charset;
 
+    /**
+     * @deprecated Use {@link #RussianLetterTokenizer(Reader)} instead. 
+     */
     public RussianLetterTokenizer(Reader in, char[] charset)
     {
         super(in);
         this.charset = charset;
+    }
+    
+    public RussianLetterTokenizer(Reader in)
+    {
+    	this(in, RussianCharsets.UnicodeRussian);
     }
 
     /**
@@ -52,6 +63,7 @@ public class RussianLetterTokenizer extends CharTokenizer
      */
     protected boolean isTokenChar(char c)
     {
+    	/* in the next release, this can be implemented as isLetter(c) or [0-9] */
         if (Character.isLetter(c))
             return true;
         for (int i = 0; i < charset.length; i++)

@@ -60,7 +60,7 @@ public class TestRussianAnalyzer extends TestCase
 
     public void testUnicode() throws IOException
     {
-        RussianAnalyzer ra = new RussianAnalyzer(RussianCharsets.UnicodeRussian);
+        RussianAnalyzer ra = new RussianAnalyzer();
         inWords =
             new InputStreamReader(
                 new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/testUTF8.txt")),
@@ -75,8 +75,7 @@ public class TestRussianAnalyzer extends TestCase
 
         RussianLetterTokenizer sample =
             new RussianLetterTokenizer(
-                sampleUnicode,
-                RussianCharsets.UnicodeRussian);
+                sampleUnicode);
 
         TermAttribute text = (TermAttribute) in.getAttribute(TermAttribute.class);
         TermAttribute sampleText = (TermAttribute) sample.getAttribute(TermAttribute.class);

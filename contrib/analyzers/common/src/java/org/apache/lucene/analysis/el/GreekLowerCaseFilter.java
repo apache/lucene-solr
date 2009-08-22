@@ -28,15 +28,26 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  */
 public final class GreekLowerCaseFilter extends TokenFilter
 {
+    /**
+     * @deprecated Support for non-Unicode encodings will be removed in Lucene 3.0
+     */
     char[] charset;
 
     private TermAttribute termAtt;
     
+    /**
+     * @deprecated Use {@link #GreekLowerCaseFilter(TokenStream)} instead.
+     */
     public GreekLowerCaseFilter(TokenStream in, char[] charset)
     {
         super(in);
         this.charset = charset;
         termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    }
+    
+    public GreekLowerCaseFilter(TokenStream in)
+    {
+    	this(in, GreekCharsets.UnicodeGreek);
     }
 
     public boolean incrementToken() throws IOException {

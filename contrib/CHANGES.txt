@@ -40,6 +40,10 @@ API Changes
     The SpanScorer API (now QueryScorer) has also been improved to more closely
     match the API of the previous QueryScorer implementation.  (Mark Miller)  
 
+ 5. LUCENE-1793: Deprecate the custom encoding support in the Greek and Russian
+    Analyzers. If you need to index text in these encodings, please use Java's
+    character set conversion facilities (InputStreamReader, etc) during I/O, 
+    so that Lucene can analyze this text as Unicode instead.  (Robert Muir)  
 
 Bug fixes
 

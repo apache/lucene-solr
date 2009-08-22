@@ -155,6 +155,7 @@ public final class GreekAnalyzer extends Analyzer
      * Charset for Greek letters.
      * Represents encoding for 24 lowercase Greek letters.
      * Predefined charsets can be taken from {@link GreekCharsets} class
+     * @deprecated Support for non-Unicode encodings will be removed in Lucene 3.0
      */
     private char[] charset;
 
@@ -166,15 +167,27 @@ public final class GreekAnalyzer extends Analyzer
 
     /**
      * Builds an analyzer.
+     * @deprecated Use {@link #GreekAnalyzer()} instead.
      */
     public GreekAnalyzer(char[] charset)
     {
         this.charset = charset;
         stopSet = StopFilter.makeStopSet(makeStopWords(charset));
     }
+    
+    /**
+     * Builds an analyzer with the given stop words.
+     * @param stopwords Array of stopwords to use.
+     */
+    public GreekAnalyzer(String [] stopwords)
+    {
+    	charset = GreekCharsets.UnicodeGreek;
+    	stopSet = StopFilter.makeStopSet(stopwords);
+    }
 
     /**
      * Builds an analyzer with the given stop words.
+     * @deprecated Use {@link #GreekAnalyzer(String[])} instead.
      */
     public GreekAnalyzer(char[] charset, String[] stopwords)
     {
@@ -182,8 +195,11 @@ public final class GreekAnalyzer extends Analyzer
         stopSet = StopFilter.makeStopSet(stopwords);
     }
 
-    // Takes greek stop words and translates them to a String array, using
-    // the given charset
+    /**
+     * Takes greek stop words and translates them to a String array, using
+     * the given charset.
+     * @deprecated Support for non-Unicode encodings will be removed in Lucene 3.0
+     */
     private static String[] makeStopWords(char[] charset)
     {
         String[] res = new String[GREEK_STOP_WORDS.length];
@@ -203,11 +219,21 @@ public final class GreekAnalyzer extends Analyzer
 
     /**
      * Builds an analyzer with the given stop words.
+     * @deprecated Use {@link #GreekAnalyzer(Map)} instead.
      */
     public GreekAnalyzer(char[] charset, Map stopwords)
     {
         this.charset = charset;
         stopSet = new HashSet(stopwords.keySet());
+    }
+    
+    /**
+     * Builds an analyzer with the given stop words.
+     */
+    public GreekAnalyzer(Map stopwords)
+    {
+    	charset = GreekCharsets.UnicodeGreek;
+    	stopSet = new HashSet(stopwords.keySet());
     }
 
     /**

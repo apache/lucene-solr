@@ -190,6 +190,7 @@ public final class RussianAnalyzer extends Analyzer
      * Charset for Russian letters.
      * Represents encoding for 32 lowercase Russian letters.
      * Predefined charsets can be taken from RussianCharSets class
+     * @deprecated Support for non-Unicode encodings will be removed in Lucene 3.0
      */
     private char[] charset;
 
@@ -202,6 +203,7 @@ public final class RussianAnalyzer extends Analyzer
 
     /**
      * Builds an analyzer.
+     * @deprecated Use {@link #RussianAnalyzer()} instead.
      */
     public RussianAnalyzer(char[] charset)
     {
@@ -211,15 +213,27 @@ public final class RussianAnalyzer extends Analyzer
 
     /**
      * Builds an analyzer with the given stop words.
+     * @deprecated Use {@link #RussianAnalyzer(String[])} instead.
      */
     public RussianAnalyzer(char[] charset, String[] stopwords)
     {
         this.charset = charset;
         stopSet = StopFilter.makeStopSet(stopwords);
     }
+    
+    /**
+     * Builds an analyzer with the given stop words.
+     */
+    public RussianAnalyzer(String[] stopwords)
+    {
+    	this.charset = RussianCharsets.UnicodeRussian;
+    	stopSet = StopFilter.makeStopSet(stopwords);
+    }
 
-    // Takes russian stop words and translates them to a String array, using
-    // the given charset
+    /** Takes russian stop words and translates them to a String array, using
+     * the given charset.
+     * @deprecated Support for non-Unicode encodings will be removed in Lucene 3.0
+     */
     private static String[] makeStopWords(char[] charset)
     {
         String[] res = new String[RUSSIAN_STOP_WORDS.length];
@@ -240,11 +254,22 @@ public final class RussianAnalyzer extends Analyzer
     /**
      * Builds an analyzer with the given stop words.
      * @todo create a Set version of this ctor
+     * @deprecated Use {@link #RussianAnalyzer(Map)} instead.
      */
     public RussianAnalyzer(char[] charset, Map stopwords)
     {
         this.charset = charset;
         stopSet = new HashSet(stopwords.keySet());
+    }
+    
+    /**
+     * Builds an analyzer with the given stop words.
+     * @todo create a Set version of this ctor
+     */
+    public RussianAnalyzer(Map stopwords)
+    {
+    	charset = RussianCharsets.UnicodeRussian;
+    	stopSet = new HashSet(stopwords.keySet());
     }
 
     /**

@@ -25,6 +25,9 @@ package org.apache.lucene.analysis.ru;
  */
 class RussianStemmer
 {
+    /**
+     * @deprecated Support for non-Unicode encodings will be removed in Lucene 3.0 
+     */
     private char[] charset;
 
     // positions of RV, R1 and R2 respectively
@@ -255,6 +258,7 @@ class RussianStemmer
 
     /**
      * RussianStemmer constructor comment.
+     * @deprecated Use {@link #RussianStemmer()} instead.
      */
     public RussianStemmer(char[] charset)
     {
@@ -529,6 +533,7 @@ class RussianStemmer
      * Insert the method's description here.
      * Creation date: (16/03/2002 10:58:42 PM)
      * @param newCharset char[]
+     * @deprecated Support for non-Unicode encodings will be removed in Lucene 3.0
      */
     public void setCharset(char[] newCharset)
     {
@@ -620,11 +625,22 @@ class RussianStemmer
 
     /**
      * Static method for stemming with different charsets
+     * @deprecated Use {@link #stemWord(String)} instead.
      */
     public static String stem(String theWord, char[] charset)
     {
         RussianStemmer stemmer = new RussianStemmer();
         stemmer.setCharset(charset);
+        return stemmer.stem(theWord);
+    }
+    
+    /**
+     * Static method for stemming.
+     */
+    public static String stemWord(String theWord)
+    {
+        RussianStemmer stemmer = new RussianStemmer();
+        stemmer.setCharset(RussianCharsets.UnicodeRussian);
         return stemmer.stem(theWord);
     }
 }
