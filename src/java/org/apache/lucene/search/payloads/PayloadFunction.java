@@ -20,10 +20,10 @@ import java.io.Serializable;
 
 
 /**
- * An abstract class that defines a way for Boosting*Query instances
+ * An abstract class that defines a way for Payload*Query instances
  * to transform the cumulative effects of payload scores for a document.
  *
- * @see org.apache.lucene.search.payloads.BoostingFunctionTermQuery for more information
+ * @see org.apache.lucene.search.payloads.PayloadTermQuery for more information
  *
  * <p/>
  * This class and its derivations are experimental and subject to change

@@ -1,4 +1,5 @@
 package org.apache.lucene.search.payloads;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -36,37 +37,39 @@ import java.util.Collection;
 import java.util.Iterator;
 
 /**
- * This class is very similar to {@link org.apache.lucene.search.spans.SpanNearQuery} except
- * that it factors in the value of the payloads located at each of the positions where the
+ * This class is very similar to
+ * {@link org.apache.lucene.search.spans.SpanNearQuery} except that it factors
+ * in the value of the payloads located at each of the positions where the
  * {@link org.apache.lucene.search.spans.TermSpans} occurs.
  * <p/>
- * In order to take advantage of this, you must override {@link org.apache.lucene.search.Similarity#scorePayload(String, byte[],int,int)}
+ * In order to take advantage of this, you must override
+ * {@link org.apache.lucene.search.Similarity#scorePayload(String, byte[],int,int)}
  * which returns 1 by default.
  * <p/>
  * Payload scores are aggregated using a pluggable {@link PayloadFunction}.
- *
- * @see org.apache.lucene.search.Similarity#scorePayload(String, byte[], int, int)
+ * 
+ * @see org.apache.lucene.search.Similarity#scorePayload(String, byte[], int,
+ *      int)
  */
-
-public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
+public class PayloadNearQuery extends SpanNearQuery {
   protected String fieldName;
   protected PayloadFunction function;
 
-  public BoostingNearQuery(SpanQuery[] clauses, int slop, boolean inOrder) {
+  public PayloadNearQuery(SpanQuery[] clauses, int slop, boolean inOrder) {
     this(clauses, slop, inOrder, new AveragePayloadFunction());
   }
 
-  public BoostingNearQuery(SpanQuery[] clauses, int slop, boolean inOrder, PayloadFunction function) {
+  public PayloadNearQuery(SpanQuery[] clauses, int slop, boolean inOrder,
+      PayloadFunction function) {
     super(clauses, slop, inOrder);
     fieldName = clauses[0].getField(); // all clauses must have same field
     this.function = function;
   }
 
-
   public Weight createWeight(Searcher searcher) throws IOException {
-    return new BoostingSpanWeight(this, searcher);
+    return new PayloadNearSpanWeight(this, searcher);
   }
-  
+
   public Object clone() {
     int sz = clauses.size();
     SpanQuery[] newClauses = new SpanQuery[sz];
@@ -75,17 +78,18 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
       SpanQuery clause = (SpanQuery) clauses.get(i);
       newClauses[i] = (SpanQuery) clause.clone();
     }
-    BoostingNearQuery boostingNearQuery = new BoostingNearQuery(newClauses, slop, inOrder);
+    PayloadNearQuery boostingNearQuery = new PayloadNearQuery(newClauses, slop,
+        inOrder);
     boostingNearQuery.setBoost(getBoost());
     return boostingNearQuery;
   }
-  
+
   public String toString(String field) {
     StringBuffer buffer = new StringBuffer();
-    buffer.append("boostingNear([");
+    buffer.append("payloadNear([");
     Iterator i = clauses.iterator();
     while (i.hasNext()) {
-      SpanQuery clause = (SpanQuery)i.next();
+      SpanQuery clause = (SpanQuery) i.next();
       buffer.append(clause.toString(field));
       if (i.hasNext()) {
         buffer.append(", ");
@@ -99,8 +103,8 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
     buffer.append(ToStringUtils.boost(getBoost()));
     return buffer.toString();
   }
-  
-  //@Override
+
+  // @Override
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
@@ -109,7 +113,7 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
     return result;
   }
 
-  //@Override
+  // @Override
   public boolean equals(Object obj) {
     if (this == obj)
       return true;
@@ -117,7 +121,7 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
       return false;
     if (getClass() != obj.getClass())
       return false;
-    BoostingNearQuery other = (BoostingNearQuery) obj;
+    PayloadNearQuery other = (PayloadNearQuery) obj;
     if (fieldName == null) {
       if (other.fieldName != null)
         return false;
@@ -131,33 +135,33 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
     return true;
   }
 
-  public class BoostingSpanWeight extends SpanWeight {
-    public BoostingSpanWeight(SpanQuery query, Searcher searcher) throws IOException {
+  public class PayloadNearSpanWeight extends SpanWeight {
+    public PayloadNearSpanWeight(SpanQuery query, Searcher searcher)
+        throws IOException {
       super(query, searcher);
     }
 
     public Scorer scorer(IndexReader reader) throws IOException {
-      return new BoostingSpanScorer(query.getSpans(reader), this,
-              similarity,
-              reader.norms(query.getField()));
+      return new PayloadNearSpanScorer(query.getSpans(reader), this,
+          similarity, reader.norms(query.getField()));
     }
 
-    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      return new BoostingSpanScorer(query.getSpans(reader), this,
-              similarity,
-              reader.norms(query.getField()));
+    public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder,
+        boolean topScorer) throws IOException {
+      return new PayloadNearSpanScorer(query.getSpans(reader), this,
+          similarity, reader.norms(query.getField()));
     }
   }
 
-  public class BoostingSpanScorer extends SpanScorer {
+  public class PayloadNearSpanScorer extends SpanScorer {
     Spans spans;
-    
+
     protected float payloadScore;
     private int payloadsSeen;
     Similarity similarity = getSimilarity();
 
-    protected BoostingSpanScorer(Spans spans, Weight weight, Similarity similarity, byte[] norms)
-            throws IOException {
+    protected PayloadNearSpanScorer(Spans spans, Weight weight,
+        Similarity similarity, byte[] norms) throws IOException {
       super(spans, weight, similarity, norms);
       this.spans = spans;
     }
@@ -167,12 +171,14 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
       for (int i = 0; i < subSpans.length; i++) {
         if (subSpans[i] instanceof NearSpansOrdered) {
           if (((NearSpansOrdered) subSpans[i]).isPayloadAvailable()) {
-            processPayloads(((NearSpansOrdered) subSpans[i]).getPayload(), subSpans[i].start(), subSpans[i].end());
+            processPayloads(((NearSpansOrdered) subSpans[i]).getPayload(),
+                subSpans[i].start(), subSpans[i].end());
           }
           getPayloads(((NearSpansOrdered) subSpans[i]).getSubSpans());
         } else if (subSpans[i] instanceof NearSpansUnordered) {
           if (((NearSpansUnordered) subSpans[i]).isPayloadAvailable()) {
-            processPayloads(((NearSpansUnordered) subSpans[i]).getPayload(), subSpans[i].start(), subSpans[i].end());
+            processPayloads(((NearSpansUnordered) subSpans[i]).getPayload(),
+                subSpans[i].start(), subSpans[i].end());
           }
           getPayloads(((NearSpansUnordered) subSpans[i]).getSubSpans());
         }
@@ -180,19 +186,21 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
     }
 
     /**
-     * By default, uses the {@link PayloadFunction} to score the payloads, but can be overridden to do other things.
-     *
+     * By default, uses the {@link PayloadFunction} to score the payloads, but
+     * can be overridden to do other things.
+     * 
      * @param payLoads The payloads
      * @param start The start position of the span being scored
      * @param end The end position of the span being scored
-     *
+     * 
      * @see Spans
      */
     protected void processPayloads(Collection payLoads, int start, int end) {
       for (Iterator iterator = payLoads.iterator(); iterator.hasNext();) {
         byte[] thePayload = (byte[]) iterator.next();
-        payloadScore = function.currentScore(doc, fieldName, start, end, payloadsSeen, payloadScore,
-                similarity.scorePayload(doc, fieldName, spans.start(), spans.end(), thePayload, 0, thePayload.length));
+        payloadScore = function.currentScore(doc, fieldName, start, end,
+            payloadsSeen, payloadScore, similarity.scorePayload(doc, fieldName,
+                spans.start(), spans.end(), thePayload, 0, thePayload.length));
         ++payloadsSeen;
       }
     }
@@ -209,7 +217,8 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
 
     public float score() throws IOException {
 
-      return super.score() * function.docScore(doc, fieldName, payloadsSeen, payloadScore);
+      return super.score()
+          * function.docScore(doc, fieldName, payloadsSeen, payloadScore);
     }
 
     public Explanation explain(int doc) throws IOException {
@@ -218,7 +227,8 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
       result.addDetail(nonPayloadExpl);
       Explanation payloadBoost = new Explanation();
       result.addDetail(payloadBoost);
-      float avgPayloadScore = (payloadsSeen > 0 ? (payloadScore / payloadsSeen) : 1);
+      float avgPayloadScore = (payloadsSeen > 0 ? (payloadScore / payloadsSeen)
+          : 1);
       payloadBoost.setValue(avgPayloadScore);
       payloadBoost.setDescription("scorePayload(...)");
       result.setValue(nonPayloadExpl.getValue() * avgPayloadScore);
@@ -226,5 +236,5 @@ public class BoostingNearQuery extends SpanNearQuery implements PayloadQuery {
       return result;
     }
   }
-  
+
 }

@@ -37,9 +37,9 @@ import org.apache.lucene.search.spans.TermSpans;
  * 
  * @see org.apache.lucene.search.Similarity#scorePayload(String, byte[], int, int)
  *
- * @deprecated See {@link org.apache.lucene.search.payloads.BoostingFunctionTermQuery}
+ * @deprecated See {@link org.apache.lucene.search.payloads.PayloadTermQuery}
  */
-public class BoostingTermQuery extends BoostingFunctionTermQuery implements PayloadQuery{
+public class BoostingTermQuery extends PayloadTermQuery {
 
   public BoostingTermQuery(Term term) {
     this(term, true);
@@ -53,14 +53,14 @@ public class BoostingTermQuery extends BoostingFunctionTermQuery implements Payl
     return new BoostingTermWeight(this, searcher);
   }
 
-  protected class BoostingTermWeight extends BoostingFunctionTermWeight {
+  protected class BoostingTermWeight extends PayloadTermWeight {
 
     public BoostingTermWeight(BoostingTermQuery query, Searcher searcher) throws IOException {
       super(query, searcher);
     }
 
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      return new BoostingFunctionSpanScorer((TermSpans) query.getSpans(reader), this,
+      return new PayloadTermSpanScorer((TermSpans) query.getSpans(reader), this,
           similarity, reader.norms(query.getField()));
     }
 

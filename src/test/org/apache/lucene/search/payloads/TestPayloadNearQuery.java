@@ -42,13 +42,13 @@ import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 
 
-public class TestBoostingNearQuery extends LuceneTestCase {
+public class TestPayloadNearQuery extends LuceneTestCase {
 	private IndexSearcher searcher;
 	private BoostingSimilarity similarity = new BoostingSimilarity();
 	private byte[] payload2 = new byte[]{2};
 	private byte[] payload4 = new byte[]{4};
 
-	public TestBoostingNearQuery(String s) {
+	public TestPayloadNearQuery(String s) {
 		super(s);
 	}
 
@@ -86,14 +86,14 @@ public class TestBoostingNearQuery extends LuceneTestCase {
     }
   }
   
-	private BoostingNearQuery newPhraseQuery (String fieldName, String phrase, boolean inOrder) {
+	private PayloadNearQuery newPhraseQuery (String fieldName, String phrase, boolean inOrder) {
 		int n;
 		String[] words = phrase.split("[\\s]+");
 		SpanQuery clauses[] = new SpanQuery[words.length];
 		for (int i=0;i<clauses.length;i++) {
-			clauses[i] = new BoostingTermQuery(new Term(fieldName, words[i]));  
+			clauses[i] = new PayloadTermQuery(new Term(fieldName, words[i]), new AveragePayloadFunction());  
 		} 
-		return new BoostingNearQuery(clauses, 0, inOrder);
+		return new PayloadNearQuery(clauses, 0, inOrder);
 	}
 
 	protected void setUp() throws Exception {
@@ -117,7 +117,7 @@ public class TestBoostingNearQuery extends LuceneTestCase {
 	}
 
 	public void test() throws IOException {
-		BoostingNearQuery query;
+		PayloadNearQuery query;
 		TopDocs hits;
 
 		query = newPhraseQuery("field", "twenty two", true);
@@ -149,7 +149,7 @@ public class TestBoostingNearQuery extends LuceneTestCase {
 	}
 
 	public void testLongerSpan() throws IOException {
-		BoostingNearQuery query;
+		PayloadNearQuery query;
 		TopDocs hits;
 		query = newPhraseQuery("field", "nine hundred ninety nine", true);
 		hits = searcher.search(query, null, 100);
@@ -163,7 +163,7 @@ public class TestBoostingNearQuery extends LuceneTestCase {
 	}
 
 	public void testComplexNested() throws IOException {
-		BoostingNearQuery query;
+		PayloadNearQuery query;
 		TopDocs hits;
 
 		// combine ordered and unordered spans with some nesting to make sure all payloads are counted
@@ -172,8 +172,8 @@ public class TestBoostingNearQuery extends LuceneTestCase {
 		SpanQuery q2 = newPhraseQuery("field", "ninety nine", true);
 		SpanQuery q3 = newPhraseQuery("field", "nine ninety", false);
 		SpanQuery q4 = newPhraseQuery("field", "hundred nine", false);
-		SpanQuery[]clauses = new SpanQuery[] {new BoostingNearQuery(new SpanQuery[] {q1,q2}, 0, true), new BoostingNearQuery(new SpanQuery[] {q3,q4}, 0, false)};
-		query = new BoostingNearQuery(clauses, 0, false);
+		SpanQuery[]clauses = new SpanQuery[] {new PayloadNearQuery(new SpanQuery[] {q1,q2}, 0, true), new PayloadNearQuery(new SpanQuery[] {q3,q4}, 0, false)};
+		query = new PayloadNearQuery(clauses, 0, false);
 		hits = searcher.search(query, null, 100);
 		assertTrue("hits is null and it shouldn't be", hits != null);
 		// should be only 1 hit - doc 999

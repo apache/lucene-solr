@@ -49,7 +49,7 @@ import java.io.IOException;
  *
  *
  **/
-public class BoostingFunctionTermQueryTest extends LuceneTestCase {
+public class TestPayloadTermQuery extends LuceneTestCase {
   private IndexSearcher searcher;
   private BoostingSimilarity similarity = new BoostingSimilarity();
   private byte[] payloadField = new byte[]{1};
@@ -57,7 +57,7 @@ public class BoostingFunctionTermQueryTest extends LuceneTestCase {
   private byte[] payloadMultiField2 = new byte[]{4};
   protected RAMDirectory directory;
 
-  public BoostingFunctionTermQueryTest(String s) {
+  public TestPayloadTermQuery(String s) {
     super(s);
   }
 
@@ -128,7 +128,7 @@ public class BoostingFunctionTermQueryTest extends LuceneTestCase {
   }
 
   public void test() throws IOException {
-    BoostingFunctionTermQuery query = new BoostingFunctionTermQuery(new Term("field", "seventy"),
+    PayloadTermQuery query = new PayloadTermQuery(new Term("field", "seventy"),
             new MaxPayloadFunction());
     TopDocs hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
@@ -155,7 +155,7 @@ public class BoostingFunctionTermQueryTest extends LuceneTestCase {
   }
   
   public void testQuery() {
-    BoostingFunctionTermQuery boostingFuncTermQuery = new BoostingFunctionTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
+    PayloadTermQuery boostingFuncTermQuery = new PayloadTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
         new MaxPayloadFunction());
     QueryUtils.check(boostingFuncTermQuery);
     
@@ -163,14 +163,14 @@ public class BoostingFunctionTermQueryTest extends LuceneTestCase {
 
     assertTrue(boostingFuncTermQuery.equals(spanTermQuery) == spanTermQuery.equals(boostingFuncTermQuery));
     
-    BoostingFunctionTermQuery boostingFuncTermQuery2 = new BoostingFunctionTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
+    PayloadTermQuery boostingFuncTermQuery2 = new PayloadTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
         new AveragePayloadFunction());
     
     QueryUtils.checkUnequal(boostingFuncTermQuery, boostingFuncTermQuery2);
   }
 
   public void testMultipleMatchesPerDoc() throws Exception {
-    BoostingFunctionTermQuery query = new BoostingFunctionTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
+    PayloadTermQuery query = new PayloadTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
             new MaxPayloadFunction());
     TopDocs hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
@@ -209,7 +209,7 @@ public class BoostingFunctionTermQueryTest extends LuceneTestCase {
 
   //Set includeSpanScore to false, in which case just the payload score comes through.
   public void testIgnoreSpanScorer() throws Exception {
-    BoostingFunctionTermQuery query = new BoostingFunctionTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
+    PayloadTermQuery query = new PayloadTermQuery(new Term(PayloadHelper.MULTI_FIELD, "seventy"),
             new MaxPayloadFunction(), false);
 
     IndexSearcher theSearcher = new IndexSearcher(directory, true);
@@ -249,7 +249,7 @@ public class BoostingFunctionTermQueryTest extends LuceneTestCase {
   }
 
   public void testNoMatch() throws Exception {
-    BoostingFunctionTermQuery query = new BoostingFunctionTermQuery(new Term(PayloadHelper.FIELD, "junk"),
+    PayloadTermQuery query = new PayloadTermQuery(new Term(PayloadHelper.FIELD, "junk"),
             new MaxPayloadFunction());
     TopDocs hits = searcher.search(query, null, 100);
     assertTrue("hits is null and it shouldn't be", hits != null);
@@ -258,9 +258,9 @@ public class BoostingFunctionTermQueryTest extends LuceneTestCase {
   }
 
   public void testNoPayload() throws Exception {
-    BoostingFunctionTermQuery q1 = new BoostingFunctionTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "zero"),
+    PayloadTermQuery q1 = new PayloadTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "zero"),
             new MaxPayloadFunction());
-    BoostingFunctionTermQuery q2 = new BoostingFunctionTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "foo"),
+    PayloadTermQuery q2 = new PayloadTermQuery(new Term(PayloadHelper.NO_PAYLOAD_FIELD, "foo"),
             new MaxPayloadFunction());
     BooleanClause c1 = new BooleanClause(q1, BooleanClause.Occur.MUST);
     BooleanClause c2 = new BooleanClause(q2, BooleanClause.Occur.MUST_NOT);

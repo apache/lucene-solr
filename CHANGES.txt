@@ -691,12 +691,12 @@ New features
     SpanNearQuery that does not need to use the payloads, you can
     disable loading them with a new constructor switch.  (Mark Miller)
 
-33. LUCENE-1341: Added BoostingNearQuery to enable SpanNearQuery functionality
+33. LUCENE-1341: Added PayloadNearQuery to enable SpanNearQuery functionality
     with payloads (Peter Keegan, Grant Ingersoll, Mark Miller)
 
-34. LUCENE-1790: Added BoostingFunctionTermQuery to enable scoring of payloads
+34. LUCENE-1790: Added PayloadTermQuery to enable scoring of payloads
     based on the maximum payload seen for a document.
-    Slight refactoring of Similarity and other payload queries (Grant Ingersoll)
+    Slight refactoring of Similarity and other payload queries (Grant Ingersoll, Mark Miller)
 
 36. LUCENE-1749: Addition of FieldCacheSanityChecker utility, and
     hooks to use it in all existing Lucene Tests.  This class can
