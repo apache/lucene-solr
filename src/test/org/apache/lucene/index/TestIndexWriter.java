@@ -29,21 +29,23 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.HashSet;
 import java.util.Random;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.SimpleAnalyzer;
-import org.apache.lucene.analysis.SinkTokenizer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.TeeSinkTokenFilter;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
@@ -62,7 +64,6 @@ import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 
@@ -70,8 +71,16 @@ import org.apache.lucene.util._TestUtil;
  *
  * @version $Id$
  */
-public class TestIndexWriter extends LuceneTestCase
-{
+public class TestIndexWriter extends BaseTokenStreamTestCase {
+    public TestIndexWriter(String name) {
+      super(name, new HashSet(Arrays.asList(new String[]{
+        "testExceptionFromTokenStream", "testDocumentsWriterExceptions", "testNegativePositions",
+        "testEndOffsetPositionWithCachingTokenFilter", "testEndOffsetPositionWithTeeSinkTokenFilter",
+        "testEndOffsetPositionStandard", "testEndOffsetPositionStandardEmptyField",
+        "testEndOffsetPositionStandardEmptyField2"
+      })));
+    }
+
     public void testDocCount() throws IOException
     {
         Directory dir = new RAMDirectory();
@@ -3530,16 +3539,22 @@ public class TestIndexWriter extends LuceneTestCase
 
   // LUCENE-1255
   public void testNegativePositions() throws Throwable {
-    SinkTokenizer tokens = new SinkTokenizer();
-    Token t = new Token();
-    t.setTermBuffer("a");
-    t.setPositionIncrement(0);
-    tokens.add(t);
-    t.setTermBuffer("b");
-    t.setPositionIncrement(1);
-    tokens.add(t);
-    t.setTermBuffer("c");
-    tokens.add(t);
+    final TokenStream tokens = new TokenStream() {
+      final TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      final PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+      
+      final Iterator tokens = Arrays.asList(new String[]{"a","b","c"}).iterator();
+      boolean first = true;
+      
+      public boolean incrementToken() {
+        if (!tokens.hasNext()) return false;
+        clearAttributes();
+        termAtt.setTermBuffer((String) tokens.next());
+        posIncrAtt.setPositionIncrement(first ? 0 : 1);
+        first = false;
+        return true;
+      }
+    };
 
     MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);

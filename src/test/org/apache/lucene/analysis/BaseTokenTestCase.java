@@ -19,35 +19,25 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
-/* TODO: Convert to new TokenStream API. Token instances must be removed for that to work */
-public abstract class BaseTokenTestCase extends LuceneTestCase {
+public abstract class BaseTokenTestCase extends BaseTokenStreamTestCase {
+
   public static String tsToString(TokenStream in) throws IOException {
-    StringBuffer out = new StringBuffer();
-    Token t = in.next();
-    if (null != t)
-      out.append(new String(t.termBuffer(), 0, t.termLength()));
-    
-    for (t = in.next(); null != t; t = in.next()) {
-      out.append(" ").append(new String(t.termBuffer(), 0, t.termLength()));
+    final TermAttribute termAtt = (TermAttribute) in.addAttribute(TermAttribute.class);
+    final StringBuffer out = new StringBuffer();
+    in.reset();
+    while (in.incrementToken()) {
+      if (out.length()>0) out.append(' ');
+      out.append(termAtt.term());
     }
     in.close();
     return out.toString();
   }
-/*
-  public List<String> tok2str(Iterable<Token> tokLst) {
-    ArrayList<String> lst = new ArrayList<String>();
-    for ( Token t : tokLst ) {
-      lst.add( new String(t.termBuffer(), 0, t.termLength()));
-    }
-    return lst;
-  }
-*/
 
   public void assertTokEqual(List/*<Token>*/ a, List/*<Token>*/ b) {
     assertTokEq(a,b,false);
@@ -64,7 +54,7 @@ public abstract class BaseTokenTestCase extends LuceneTestCase {
     for (Iterator iter = a.iterator(); iter.hasNext();) {
       Token tok = (Token)iter.next();
       pos += tok.getPositionIncrement();
-      if (!tokAt(b, new String(tok.termBuffer(), 0, tok.termLength()), pos
+      if (!tokAt(b, tok.term(), pos
               , checkOff ? tok.startOffset() : -1
               , checkOff ? tok.endOffset() : -1
               )) 
@@ -79,7 +69,7 @@ public abstract class BaseTokenTestCase extends LuceneTestCase {
     for (Iterator iter = lst.iterator(); iter.hasNext();) {
       Token tok = (Token)iter.next();
       pos += tok.getPositionIncrement();
-      if (pos==tokPos && new String(tok.termBuffer(), 0, tok.termLength()).equals(val)
+      if (pos==tokPos && tok.term().equals(val)
           && (startOff==-1 || tok.startOffset()==startOff)
           && (endOff  ==-1 || tok.endOffset()  ==endOff  )
            )
@@ -146,41 +136,22 @@ public abstract class BaseTokenTestCase extends LuceneTestCase {
 
   static List/*<Token>*/ getTokens(TokenStream tstream) throws IOException {
     List/*<Token>*/ tokens = new ArrayList/*<Token>*/();
-    while (true) {
-      Token t = tstream.next();
-      if (t==null) break;
+    tstream.reset();
+    while (tstream.incrementToken()) {
+      final Token t = new Token();
+      for (Iterator it = tstream.getAttributeImplsIterator(); it.hasNext();) {
+        final AttributeImpl att = (AttributeImpl) it.next();
+        try {
+          att.copyTo(t);
+        } catch (ClassCastException ce) {
+          // ignore Attributes unsupported by Token
+        }
+      }
       tokens.add(t);
     }
+    tstream.close();
+    
     return tokens;
   }
-/*
-  public static class IterTokenStream extends TokenStream {
-    Iterator<Token> toks;
-    public IterTokenStream(Token... toks) {
-      this.toks = Arrays.asList(toks).iterator();
-    }
-    public IterTokenStream(Iterable<Token> toks) {
-      this.toks = toks.iterator();
-    }
-    public IterTokenStream(Iterator<Token> toks) {
-      this.toks = toks;
-    }
-    public IterTokenStream(String ... text) {
-      int off = 0;
-      ArrayList<Token> t = new ArrayList<Token>( text.length );
-      for( String txt : text ) {
-        t.add( new Token( txt, off, off+txt.length() ) );
-        off += txt.length() + 2;
-      }
-      this.toks = t.iterator();
-    }
-    @Override
-    public Token next() {
-      if (toks.hasNext()) {
-        return toks.next();
-      }
-      return null;
-    }
-  }
-*/
+
 }

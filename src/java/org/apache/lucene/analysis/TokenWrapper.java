@@ -157,6 +157,10 @@ final class TokenWrapper extends AttributeImpl
   }
 
   public void copyTo(AttributeImpl target) {
-    ((TokenWrapper) target).delegate = (Token) this.delegate.clone();
+    if (target instanceof TokenWrapper) {
+      ((TokenWrapper) target).delegate = (Token) this.delegate.clone();
+    } else {
+      this.delegate.copyTo(target);
+    }
   }
 }

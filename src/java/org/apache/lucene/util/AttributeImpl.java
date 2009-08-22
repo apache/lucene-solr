@@ -101,8 +101,8 @@ public abstract class AttributeImpl implements Cloneable, Serializable, Attribut
   
   /**
    * Copies the values from this Attribute into the passed-in
-   * target attribute. The type of the target must match the type
-   * of this attribute. 
+   * target attribute. The target implementation must support all the
+   * Attributes this implementation supports.
    */
   public abstract void copyTo(AttributeImpl target);
     

@@ -859,11 +859,20 @@ public class Token extends AttributeImpl
   }
 
   public void copyTo(AttributeImpl target) {
-    Token to = (Token) target;
-    to.reinit(this);
-    // reinit shares the payload, so clone it:
-    if (payload !=null) {
-      to.payload = (Payload) payload.clone();
+    if (target instanceof Token) {
+      final Token to = (Token) target;
+      to.reinit(this);
+      // reinit shares the payload, so clone it:
+      if (payload !=null) {
+        to.payload = (Payload) payload.clone();
+      }
+    } else {
+      ((TermAttribute) target).setTermBuffer(termBuffer, 0, termLength);
+      ((OffsetAttribute) target).setOffset(startOffset, endOffset);
+      ((PositionIncrementAttribute) target).setPositionIncrement(positionIncrement);
+      ((PayloadAttribute) target).setPayload((payload == null) ? null : (Payload) payload.clone());
+      ((FlagsAttribute) target).setFlags(flags);
+      ((TypeAttribute) target).setType(type);
     }
   }
 }
