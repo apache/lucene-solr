@@ -345,7 +345,8 @@ org.apache.lucene.search.Searcher#search(Query,Filter)}.
     <p>The
         <a href="Scorer.html">Scorer</a>
         abstract class provides common scoring functionality for all Scorer implementations and
-        is the heart of the Lucene scoring process. The Scorer defines the following abstract methods which
+        is the heart of the Lucene scoring process. The Scorer defines the following abstract (they are not
+        yet abstract, but will be in Lucene 3.0 and should be considered as such now) methods which
         must be implemented (some of them inherited from <a href="DocIdSetIterator.html">DocIdSetIterator</a> ):
         <ol>
             <li>
@@ -358,7 +359,11 @@ org.apache.lucene.search.Searcher#search(Query,Filter)}.
                 that contains the match. It is not valid until next() has been called at least once.
             </li>
             <li>
-                <a href="Scorer.html#score(org.apache.lucene.search.Collector, int, int)">Scorer#score(Collector, int, int)</a> &mdash; Return the score of the
+                <a href="Scorer.html#score(org.apache.lucene.search.Collector)">Scorer#score(Collector)</a> &mdash;
+                Scores and collects all matching documents using the given Collector.
+            </li>
+            <li>
+                <a href="Scorer.html#score()">Scorer#score()</a> &mdash; Return the score of the
                 current document. This value can be determined in any
                 appropriate way for an application. For instance, the
                 <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/TermScorer.java?view=log">TermScorer</a>
@@ -367,7 +372,7 @@ org.apache.lucene.search.Searcher#search(Query,Filter)}.
             <li>
                 <a href="DocIdSetIterator.html#advance(int)">DocIdSetIterator#advance(int)</a> &mdash; Skip ahead in
                 the document matches to the document whose id is greater than
-                or equal to the passed in value. In many instances, skipTo can be
+                or equal to the passed in value. In many instances, advance can be
                 implemented more efficiently than simply looping through all the matching documents until
                 the target document is identified.</li>
         </ol>
@@ -379,8 +384,6 @@ org.apache.lucene.search.Searcher#search(Query,Filter)}.
         task that you want to do. You might be doing some cutting edge research or you need more information
         back
         out of Lucene (similar to Doug adding SpanQuery functionality).</p>
-<h4>Examples</h4>
-    <p >FILL IN HERE</p>
 
 </body>
 </html>
