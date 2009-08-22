@@ -23,9 +23,8 @@ import java.io.IOException;
  * Expert: Common scoring functionality for different types of queries.
  *
  * <p>
- * A <code>Scorer</code> either iterates over documents matching a
- * query in increasing order of doc Id, or provides an explanation of
- * the score for a query for a given document.
+ * A <code>Scorer</code> iterates over documents matching a
+ * query in increasing order of doc Id.
  * </p>
  * <p>
  * Document scores are computed using a given <code>Similarity</code>
@@ -129,6 +128,8 @@ public abstract class Scorer extends DocIdSetIterator {
    * @deprecated Please use {@link IndexSearcher#explain}
    * or {@link Weight#explain} instead.
    */
-  public abstract Explanation explain(int doc) throws IOException;
+  public Explanation explain(int doc) throws IOException {
+    throw new UnsupportedOperationException();
+  }
 
 }
