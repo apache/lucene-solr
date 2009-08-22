@@ -417,23 +417,6 @@ class WordDictionary extends AbstractDictionary {
   /**
    * 在字典库中查找单词对应的char数组为charArray的字符串。返回该单词在单词序列中的位置
    * 
-   * @param charArray 查找单词对应的char数组
-   * @return 单词在单词数组中的位置，如果没找到则返回-1
-   */
-  private int findInTable(char[] charArray) {
-    if (charArray == null || charArray.length == 0)
-      return -1;
-    short index = getWordItemTableIndex(charArray[0]);
-    if (index == -1)
-      return -1;
-
-    return findInTable(index, charArray);
-
-  }
-
-  /**
-   * 在字典库中查找单词对应的char数组为charArray的字符串。返回该单词在单词序列中的位置
-   * 
    * @param knownHashIndex 已知单词第一个字符charArray[0]在hash表中的位置，如果未计算，可以用函数int
    *        findInTable(char[] charArray) 代替
    * @param charArray 查找单词对应的char数组
@@ -461,16 +444,6 @@ class WordDictionary extends AbstractDictionary {
       mid = (start + end) / 2;
     }
     return -1;
-  }
-
-  /**
-   * Returns true if the input word appears in the dictionary
-   * 
-   * @param charArray input word
-   * @return true if the word exists
-   */
-  public boolean isExist(char[] charArray) {
-    return findInTable(charArray) != -1;
   }
 
   /**

@@ -111,15 +111,6 @@ class SegGraph {
   }
 
   /**
-   * Get the number of startOffsets.
-   *
-   * @return number of startOffsets in the mapping
-   */
-  public int getStartCount() {
-    return tokenListTable.size();
-  }
-
-  /**
    * Return a {@link List} of all tokens in the map, ordered by startOffset.
    * 
    * @return {@link List} of all tokens in the map.

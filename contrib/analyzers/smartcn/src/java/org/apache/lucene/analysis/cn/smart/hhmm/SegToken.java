@@ -56,19 +56,6 @@ public class SegToken {
   public int index;
 
   /**
-   * Create a new SegToken from a {@link String}
-   * 
-   * @param word String containing text
-   * @param start start offset into word
-   * @param end end offset of word
-   * @param wordType {@link WordType} of the text
-   * @param weight word frequency
-   */
-  public SegToken(String word, int start, int end, int wordType, int weight) {
-    this(word.toCharArray(), start, end, wordType, weight);
-  }
-
-  /**
    * Create a new SegToken from a character array.
    * 
    * @param idArray character array containing text
