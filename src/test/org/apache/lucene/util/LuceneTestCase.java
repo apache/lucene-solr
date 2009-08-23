@@ -199,10 +199,11 @@ public abstract class LuceneTestCase extends TestCase {
     return new Random(seed);
   }
   
-  protected void runTest() throws Throwable {
+  // @Override
+  public void runBare() throws Throwable {
     try {
       seed = null;
-      super.runTest();
+      super.runBare();
     } catch (Throwable e) {
       if (seed != null) {
         System.out.println("NOTE: random seed of testcase '" + getName() + "' was: " + seed);
