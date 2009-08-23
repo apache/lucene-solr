@@ -211,6 +211,7 @@ public class TermAttributeImpl extends AttributeImpl implements TermAttribute, C
   }
   
   public void copyTo(AttributeImpl target) {
+    initTermBuffer();
     TermAttribute t = (TermAttribute) target;
     t.setTermBuffer(termBuffer, 0, termLength);
   }
