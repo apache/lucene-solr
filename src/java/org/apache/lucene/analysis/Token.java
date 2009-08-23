@@ -867,6 +867,7 @@ public class Token extends AttributeImpl
         to.payload = (Payload) payload.clone();
       }
     } else {
+      initTermBuffer();
       ((TermAttribute) target).setTermBuffer(termBuffer, 0, termLength);
       ((OffsetAttribute) target).setOffset(startOffset, endOffset);
       ((PositionIncrementAttribute) target).setPositionIncrement(positionIncrement);
