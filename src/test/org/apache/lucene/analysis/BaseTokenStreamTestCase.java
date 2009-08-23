@@ -59,13 +59,19 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
 
   // @Override
+  protected void tearDown() throws Exception {
+    TokenStream.setOnlyUseNewAPI(false);
+    super.tearDown();
+  }
+
+  // @Override
   public void runBare() throws Throwable {
     // Do the test with onlyUseNewAPI=false (default)
     try {
       onlyUseNewAPI = false;
       super.runBare();
     } catch (Throwable e) {
-      System.out.println("Test failure of "+getName()+" occurred with onlyUseNewAPI=false");
+      System.out.println("Test failure of '"+getName()+"' occurred with onlyUseNewAPI=false");
       throw e;
     }
 
@@ -75,7 +81,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         onlyUseNewAPI = true;
         super.runBare();
       } catch (Throwable e) {
-        System.out.println("Test failure of "+getName()+" occurred with onlyUseNewAPI=true");
+        System.out.println("Test failure of '"+getName()+"' occurred with onlyUseNewAPI=true");
         throw e;
       }
     }
