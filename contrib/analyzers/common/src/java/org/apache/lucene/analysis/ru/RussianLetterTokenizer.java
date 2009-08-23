@@ -58,16 +58,16 @@ public class RussianLetterTokenizer extends CharTokenizer
     	this(in, RussianCharsets.UnicodeRussian);
     }
 
-    public RussianLetterTokenizer(AttributeSource source, Reader in, char[] charset)
+    public RussianLetterTokenizer(AttributeSource source, Reader in)
     {
         super(source, in);
-        this.charset = charset;
+        this.charset = RussianCharsets.UnicodeRussian;
     }
 
-    public RussianLetterTokenizer(AttributeFactory factory, Reader in, char[] charset)
+    public RussianLetterTokenizer(AttributeFactory factory, Reader in)
     {
         super(factory, in);
-        this.charset = charset;
+        this.charset = RussianCharsets.UnicodeRussian;
     }
     
     /**
