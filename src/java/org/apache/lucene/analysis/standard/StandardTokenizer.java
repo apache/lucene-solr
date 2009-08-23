@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeSource;
 
 /** A grammar-based tokenizer constructed with JFlex
  *
@@ -126,15 +127,38 @@ public class StandardTokenizer extends Tokenizer {
    * See http://issues.apache.org/jira/browse/LUCENE-1068
    */
   public StandardTokenizer(Reader input, boolean replaceInvalidAcronym) {
-    this.replaceInvalidAcronym = replaceInvalidAcronym;
-    setInput(input);
+    super();
     this.scanner = new StandardTokenizerImpl(input);
+    init(input, replaceInvalidAcronym);
+  }
+
+  /**
+   * Creates a new StandardTokenizer with a given {@link AttributeSource}. 
+   */
+  public StandardTokenizer(AttributeSource source, Reader input, boolean replaceInvalidAcronym) {
+    super(source);
+    this.scanner = new StandardTokenizerImpl(input);
+    init(input, replaceInvalidAcronym);
+  }
+
+  /**
+   * Creates a new StandardTokenizer with a given {@link AttributeFactory}. 
+   */
+  public StandardTokenizer(AttributeFactory factory, Reader input, boolean replaceInvalidAcronym) {
+    super(factory);
+    this.scanner = new StandardTokenizerImpl(input);
+    init(input, replaceInvalidAcronym);
+  }
+
+  private void init(Reader input, boolean replaceInvalidAcronym) {
+    this.replaceInvalidAcronym = replaceInvalidAcronym;
+    setInput(input);    
     termAtt = (TermAttribute) addAttribute(TermAttribute.class);
     offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
     posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
     typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
   }
-
+  
   // this tokenizer generates three attributes:
   // offset, positionIncrement and type
   private TermAttribute termAtt;

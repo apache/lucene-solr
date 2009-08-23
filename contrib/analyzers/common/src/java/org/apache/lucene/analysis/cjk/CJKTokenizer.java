@@ -24,6 +24,8 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 
 /**
@@ -111,11 +113,25 @@ public final class CJKTokenizer extends Tokenizer {
      */
     public CJKTokenizer(Reader in) {
       super(in);
+      init();
+    }
+
+    public CJKTokenizer(AttributeSource source, Reader in) {
+      super(source, in);
+      init();
+    }
+
+    public CJKTokenizer(AttributeFactory factory, Reader in) {
+      super(factory, in);
+      init();
+    }
+    
+    private void init() {
       termAtt = (TermAttribute) addAttribute(TermAttribute.class);
       offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
       typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
     }
-
+    
     //~ Methods ----------------------------------------------------------------
 
     /**

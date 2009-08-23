@@ -22,6 +22,8 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 /** An abstract base class for simple, character-oriented tokenizers.*/
 public abstract class CharTokenizer extends Tokenizer {
@@ -31,6 +33,18 @@ public abstract class CharTokenizer extends Tokenizer {
     termAtt = (TermAttribute) addAttribute(TermAttribute.class);
   }
 
+  public CharTokenizer(AttributeSource source, Reader input) {
+    super(source, input);
+    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+  }
+
+  public CharTokenizer(AttributeFactory factory, Reader input) {
+    super(factory, input);
+    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+  }
+  
   private int offset = 0, bufferIndex = 0, dataLen = 0;
   private static final int MAX_WORD_LEN = 255;
   private static final int IO_BUFFER_SIZE = 4096;

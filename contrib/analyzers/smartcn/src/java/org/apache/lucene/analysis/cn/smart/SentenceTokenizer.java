@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeSource;
 
 /**
  * Tokenizes input text into sentences.
@@ -48,11 +49,25 @@ public final class SentenceTokenizer extends Tokenizer {
 
   public SentenceTokenizer(Reader reader) {
     super(reader);
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    init();
   }
 
+  public SentenceTokenizer(AttributeSource source, Reader reader) {
+    super(source, reader);
+    init();
+  }
+
+  public SentenceTokenizer(AttributeFactory factory, Reader reader) {
+    super(factory, reader);
+    init();
+  }
+  
+  private void init() {
+    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);    
+  }
+  
   public boolean incrementToken() throws IOException {
     clearAttributes();
     buffer.setLength(0);

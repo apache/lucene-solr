@@ -19,6 +19,9 @@ package org.apache.lucene.analysis;
 
 import java.io.Reader;
 
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
+
 /** A LetterTokenizer is a tokenizer that divides text at non-letters.  That's
   to say, it defines tokens as maximal strings of adjacent letters, as defined
   by java.lang.Character.isLetter() predicate.
@@ -30,6 +33,16 @@ public class LetterTokenizer extends CharTokenizer {
   /** Construct a new LetterTokenizer. */
   public LetterTokenizer(Reader in) {
     super(in);
+  }
+  
+  /** Construct a new LetterTokenizer using a given {@link AttributeSource}. */
+  public LetterTokenizer(AttributeSource source, Reader in) {
+    super(source, in);
+  }
+  
+  /** Construct a new LetterTokenizer using a given {@link AttributeFactory}. */
+  public LetterTokenizer(AttributeFactory factory, Reader in) {
+    super(factory, in);
   }
 
   /** Collects only characters which satisfy

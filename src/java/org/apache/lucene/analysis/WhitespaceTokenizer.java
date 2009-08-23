@@ -19,15 +19,28 @@ package org.apache.lucene.analysis;
 
 import java.io.Reader;
 
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
+
 /** A WhitespaceTokenizer is a tokenizer that divides text at whitespace.
  * Adjacent sequences of non-Whitespace characters form tokens. */
 
 public class WhitespaceTokenizer extends CharTokenizer {
-  /** Construct a new WhitespaceTokenizer. */
+  /** Construct a new WhitespaceTokenizer using a given {@link AttributeSource}. */
   public WhitespaceTokenizer(Reader in) {
     super(in);
   }
 
+  /** Construct a new WhitespaceTokenizer using a given {@link AttributeSource}. */
+  public WhitespaceTokenizer(AttributeSource source, Reader in) {
+    super(source, in);
+  }
+
+  /** Construct a new WhitespaceTokenizer using a given {@link AttributeFactory}. */
+  public WhitespaceTokenizer(AttributeFactory factory, Reader in) {
+    super(factory, in);
+  }
+  
   /** Collects only characters which do not satisfy
    * {@link Character#isWhitespace(char)}.*/
   protected boolean isTokenChar(char c) {

@@ -22,6 +22,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.util.AttributeSource;
 
 /**
  * Emits the entire input as a single token.
@@ -41,10 +42,24 @@ public class KeywordTokenizer extends Tokenizer {
 
   public KeywordTokenizer(Reader input, int bufferSize) {
     super(input);
+    init(bufferSize);
+  }
+
+  public KeywordTokenizer(AttributeSource source, Reader input, int bufferSize) {
+    super(source, input);
+    init(bufferSize);
+  }
+
+  public KeywordTokenizer(AttributeFactory factory, Reader input, int bufferSize) {
+    super(factory, input);
+    init(bufferSize);
+  }
+  
+  private void init(int bufferSize) {
     this.done = false;
     termAtt = (TermAttribute) addAttribute(TermAttribute.class);
     offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    termAtt.resizeTermBuffer(bufferSize);
+    termAtt.resizeTermBuffer(bufferSize);    
   }
   
   public final boolean incrementToken() throws IOException {

@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.ar;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.LetterTokenizer;
+import org.apache.lucene.util.AttributeSource;
 
 /**
  * The problem with the standard Letter tokenizer is that it fails on diacritics.
@@ -32,6 +33,14 @@ public class ArabicLetterTokenizer extends LetterTokenizer {
     super(in);
   }
 
+  public ArabicLetterTokenizer(AttributeSource source, Reader in) {
+    super(source, in);
+  }
+
+  public ArabicLetterTokenizer(AttributeFactory factory, Reader in) {
+    super(factory, in);
+  }
+  
   /** 
    * Allows for Letter category or NonspacingMark category
    * @see org.apache.lucene.analysis.LetterTokenizer#isTokenChar(char)

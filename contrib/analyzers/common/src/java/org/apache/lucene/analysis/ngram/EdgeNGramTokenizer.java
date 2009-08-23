@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.util.AttributeSource;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -88,7 +89,76 @@ public class EdgeNGramTokenizer extends Tokenizer {
    */
   public EdgeNGramTokenizer(Reader input, Side side, int minGram, int maxGram) {
     super(input);
+    init(side, minGram, maxGram);
+  }
 
+  /**
+   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
+   *
+   * @param source {@link AttributeSource} to use
+   * @param input {@link Reader} holding the input to be tokenized
+   * @param side the {@link Side} from which to chop off an n-gram
+   * @param minGram the smallest n-gram to generate
+   * @param maxGram the largest n-gram to generate
+   */
+  public EdgeNGramTokenizer(AttributeSource source, Reader input, Side side, int minGram, int maxGram) {
+    super(source, input);
+    init(side, minGram, maxGram);
+  }
+
+  /**
+   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
+   * 
+   * @param factory {@link AttributeFactory} to use
+   * @param input {@link Reader} holding the input to be tokenized
+   * @param side the {@link Side} from which to chop off an n-gram
+   * @param minGram the smallest n-gram to generate
+   * @param maxGram the largest n-gram to generate
+   */
+  public EdgeNGramTokenizer(AttributeFactory factory, Reader input, Side side, int minGram, int maxGram) {
+    super(factory, input);
+    init(side, minGram, maxGram);
+  }
+  
+  /**
+   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
+   *
+   * @param input {@link Reader} holding the input to be tokenized
+   * @param sideLabel the name of the {@link Side} from which to chop off an n-gram
+   * @param minGram the smallest n-gram to generate
+   * @param maxGram the largest n-gram to generate
+   */
+  public EdgeNGramTokenizer(Reader input, String sideLabel, int minGram, int maxGram) {
+    this(input, Side.getSide(sideLabel), minGram, maxGram);
+  }
+
+  /**
+   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
+   *
+   * @param source {@link AttributeSource} to use
+   * @param input {@link Reader} holding the input to be tokenized
+   * @param sideLabel the name of the {@link Side} from which to chop off an n-gram
+   * @param minGram the smallest n-gram to generate
+   * @param maxGram the largest n-gram to generate
+   */
+  public EdgeNGramTokenizer(AttributeSource source, Reader input, String sideLabel, int minGram, int maxGram) {
+    this(source, input, Side.getSide(sideLabel), minGram, maxGram);
+  }
+
+  /**
+   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
+   * 
+   * @param factory {@link AttributeFactory} to use
+   * @param input {@link Reader} holding the input to be tokenized
+   * @param sideLabel the name of the {@link Side} from which to chop off an n-gram
+   * @param minGram the smallest n-gram to generate
+   * @param maxGram the largest n-gram to generate
+   */
+  public EdgeNGramTokenizer(AttributeFactory factory, Reader input, String sideLabel, int minGram, int maxGram) {
+    this(factory, input, Side.getSide(sideLabel), minGram, maxGram);
+  }
+  
+  private void init(Side side, int minGram, int maxGram) {
     if (side == null) {
       throw new IllegalArgumentException("sideLabel must be either front or back");
     }
@@ -107,17 +177,7 @@ public class EdgeNGramTokenizer extends Tokenizer {
     
     this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
     this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-  }
-  /**
-   * Creates EdgeNGramTokenizer that can generate n-grams in the sizes of the given range
-   *
-   * @param input {@link Reader} holding the input to be tokenized
-   * @param sideLabel the name of the {@link Side} from which to chop off an n-gram
-   * @param minGram the smallest n-gram to generate
-   * @param maxGram the largest n-gram to generate
-   */
-  public EdgeNGramTokenizer(Reader input, String sideLabel, int minGram, int maxGram) {
-    this(input, Side.getSide(sideLabel), minGram, maxGram);
+
   }
 
   /** Returns the next token in the stream, or null at EOS. */

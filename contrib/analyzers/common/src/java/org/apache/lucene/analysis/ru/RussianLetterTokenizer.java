@@ -21,6 +21,7 @@ import java.io.Reader;
 import org.apache.lucene.analysis.CharTokenizer;
 import org.apache.lucene.analysis.Tokenizer; // for javadocs
 import org.apache.lucene.analysis.LetterTokenizer; // for javadocs
+import org.apache.lucene.util.AttributeSource;
 
 /**
  * A RussianLetterTokenizer is a {@link Tokenizer} that extends {@link LetterTokenizer}
@@ -57,6 +58,18 @@ public class RussianLetterTokenizer extends CharTokenizer
     	this(in, RussianCharsets.UnicodeRussian);
     }
 
+    public RussianLetterTokenizer(AttributeSource source, Reader in, char[] charset)
+    {
+        super(source, in);
+        this.charset = charset;
+    }
+
+    public RussianLetterTokenizer(AttributeFactory factory, Reader in, char[] charset)
+    {
+        super(factory, in);
+        this.charset = charset;
+    }
+    
     /**
      * Collects only characters which satisfy
      * {@link Character#isLetter(char)}.

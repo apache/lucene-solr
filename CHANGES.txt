@@ -402,6 +402,10 @@ API Changes
 36. LUCENE-1808: Query.createWeight has been changed from protected to
     public. (Tim Smith, Shai Erera via Mark Miller)
 
+37. LUCENE-1826: Add constructors that take AttributeSource and
+    AttributeFactory to all Tokenizer implementations.
+    (Michael Busch)
+
 Bug fixes
 
 1. LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()

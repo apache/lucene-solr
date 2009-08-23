@@ -77,6 +77,18 @@ public abstract class Tokenizer extends TokenStream {
     super(source);
   }
 
+  /** Construct a token stream processing the given input using the given AttributeSource. */
+  protected Tokenizer(AttributeSource source, Reader input) {
+    super(source);
+    this.input = CharReader.get(input);
+  }
+  
+  /** Construct a token stream processing the given input using the given AttributeSource. */
+  protected Tokenizer(AttributeSource source, CharStream input) {
+    super(source);
+    this.input = input;
+  }
+  
   /** By default, closes the input Reader. */
   public void close() throws IOException {
     input.close();

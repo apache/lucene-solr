@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.util.AttributeSource;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -50,6 +51,42 @@ public class NGramTokenizer extends Tokenizer {
    */
   public NGramTokenizer(Reader input, int minGram, int maxGram) {
     super(input);
+    init(minGram, maxGram);
+  }
+
+  /**
+   * Creates NGramTokenizer with given min and max n-grams.
+   * @param source {@link AttributeSource} to use
+   * @param input {@link Reader} holding the input to be tokenized
+   * @param minGram the smallest n-gram to generate
+   * @param maxGram the largest n-gram to generate
+   */
+  public NGramTokenizer(AttributeSource source, Reader input, int minGram, int maxGram) {
+    super(source, input);
+    init(minGram, maxGram);
+  }
+
+  /**
+   * Creates NGramTokenizer with given min and max n-grams.
+   * @param factory {@link AttributeFactory} to use
+   * @param input {@link Reader} holding the input to be tokenized
+   * @param minGram the smallest n-gram to generate
+   * @param maxGram the largest n-gram to generate
+   */
+  public NGramTokenizer(AttributeFactory factory, Reader input, int minGram, int maxGram) {
+    super(factory, input);
+    init(minGram, maxGram);
+  }
+
+  /**
+   * Creates NGramTokenizer with default min and max n-grams.
+   * @param input {@link Reader} holding the input to be tokenized
+   */
+  public NGramTokenizer(Reader input) {
+    this(input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
+  }
+  
+  private void init(int minGram, int maxGram) {
     if (minGram < 1) {
       throw new IllegalArgumentException("minGram must be greater than zero");
     }
@@ -60,14 +97,7 @@ public class NGramTokenizer extends Tokenizer {
     this.maxGram = maxGram;
     
     this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-  }
-  /**
-   * Creates NGramTokenizer with default min and max n-grams.
-   * @param input {@link Reader} holding the input to be tokenized
-   */
-  public NGramTokenizer(Reader input) {
-    this(input, DEFAULT_MIN_NGRAM_SIZE, DEFAULT_MAX_NGRAM_SIZE);
+    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);    
   }
 
   /** Returns the next token in the stream, or null at EOS. */

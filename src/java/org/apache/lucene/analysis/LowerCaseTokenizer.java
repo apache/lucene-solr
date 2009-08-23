@@ -19,6 +19,9 @@ package org.apache.lucene.analysis;
 
 import java.io.Reader;
 
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
+
 /**
  * LowerCaseTokenizer performs the function of LetterTokenizer
  * and LowerCaseFilter together.  It divides text at non-letters and converts
@@ -35,6 +38,16 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
     super(in);
   }
 
+  /** Construct a new LowerCaseTokenizer using a given {@link AttributeSource}. */
+  public LowerCaseTokenizer(AttributeSource source, Reader in) {
+    super(source, in);
+  }
+
+  /** Construct a new LowerCaseTokenizer using a given {@link AttributeFactory}. */
+  public LowerCaseTokenizer(AttributeFactory factory, Reader in) {
+    super(factory, in);
+  }
+  
   /** Converts char to lower case
    * {@link Character#toLowerCase(char)}.*/
   protected char normalize(char c) {

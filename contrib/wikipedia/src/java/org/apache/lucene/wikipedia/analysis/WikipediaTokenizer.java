@@ -151,14 +151,46 @@ public class WikipediaTokenizer extends Tokenizer {
    */
   public WikipediaTokenizer(Reader input, int tokenOutput, Set untokenizedTypes) {
     super(input);
-    this.tokenOutput = tokenOutput;
     this.scanner = new WikipediaTokenizerImpl(input);
+    init(tokenOutput, untokenizedTypes);
+  }
+
+  /**
+   * Createa a new instance of the {@link org.apache.lucene.wikipedia.analysis.WikipediaTokenizer}.  Attaches the
+   * <conde>input</code> to a the newly created JFlex scanner. Uses the given {@link AttributeFactory}.
+   *
+   * @param input The input
+   * @param tokenOutput One of {@link #TOKENS_ONLY}, {@link #UNTOKENIZED_ONLY}, {@link #BOTH}
+   * @param untokenizedTypes
+   */
+  public WikipediaTokenizer(AttributeFactory factory, Reader input, int tokenOutput, Set untokenizedTypes) {
+    super(factory, input);
+    this.scanner = new WikipediaTokenizerImpl(input);
+    init(tokenOutput, untokenizedTypes);
+  }
+
+  /**
+   * Createa a new instance of the {@link org.apache.lucene.wikipedia.analysis.WikipediaTokenizer}.  Attaches the
+   * <conde>input</code> to a the newly created JFlex scanner. Uses the given {@link AttributeSource}.
+   *
+   * @param input The input
+   * @param tokenOutput One of {@link #TOKENS_ONLY}, {@link #UNTOKENIZED_ONLY}, {@link #BOTH}
+   * @param untokenizedTypes
+   */
+  public WikipediaTokenizer(AttributeSource source, Reader input, int tokenOutput, Set untokenizedTypes) {
+    super(source, input);
+    this.scanner = new WikipediaTokenizerImpl(input);
+    init(tokenOutput, untokenizedTypes);
+  }
+  
+  private void init(int tokenOutput, Set untokenizedTypes) {
+    this.tokenOutput = tokenOutput;
     this.untokenizedTypes = untokenizedTypes;
     this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
     this.typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
     this.posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
     this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    this.flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
+    this.flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);    
   }
 
   /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
