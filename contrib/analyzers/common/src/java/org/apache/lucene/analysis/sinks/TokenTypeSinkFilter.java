@@ -31,15 +31,11 @@ public class TokenTypeSinkFilter extends SinkFilter {
 
   public boolean accept(AttributeSource source) {
     if (typeAtt == null) {
-      typeAtt = (TypeAttribute) source.getAttribute(TypeAttribute.class);
+      typeAtt = (TypeAttribute) source.addAttribute(TypeAttribute.class);
     }
     
     //check to see if this is a Category
-    if (typeAtt != null && typeToMatch.equals(typeAtt.type())){
-      return true;
-    }
-
-    return false;
+    return (typeToMatch.equals(typeAtt.type()));
   }
 
 }

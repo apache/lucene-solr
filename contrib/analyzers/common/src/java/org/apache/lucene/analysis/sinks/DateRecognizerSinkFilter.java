@@ -51,17 +51,15 @@ public class DateRecognizerSinkFilter extends SinkFilter {
 
   public boolean accept(AttributeSource source) {
     if (termAtt == null) {
-      termAtt = (TermAttribute) source.getAttribute(TermAttribute.class);
+      termAtt = (TermAttribute) source.addAttribute(TermAttribute.class);
     }
-    if (termAtt != null) {
-      try {
-        Date date = dateFormat.parse(termAtt.term());//We don't care about the date, just that we can parse it as a date
-        if (date != null) {
-          return true;
-        }
-      } catch (ParseException e) {
-    
+    try {
+      Date date = dateFormat.parse(termAtt.term());//We don't care about the date, just that we can parse it as a date
+      if (date != null) {
+        return true;
       }
+    } catch (ParseException e) {
+  
     }
     
     return false;
