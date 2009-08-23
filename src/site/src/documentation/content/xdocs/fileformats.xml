@@ -7,12 +7,6 @@
         </title>
     </header>
 
-    <properties>
-        <authors>
-            <person email="cutting@apache.org" name="Doug Cutting"/>
-        </authors>
-    </properties>
-
     <body>
         <section id="Index File Formats"><title>Index File Formats</title>
 
@@ -312,6 +306,94 @@
             </p>
 
         </section>
+      <section id="file-names"><title>Summary of File Extensions</title>
+        <p>The following table summarizes the names and extensions of the files in Lucene:
+          <table>
+            <tr>
+              <th>Name</th>
+              <th>Extension</th>
+              <th>Brief Description</th>
+            </tr>
+            <tr>
+              <td><a href="#Segments File">Segments File</a></td>
+              <td>segments.gen, segments_N</td>
+              <td>Stores information about segments</td>
+            </tr>
+            <tr>
+              <td><a href="#Lock File">Lock File</a></td>
+              <td>write.lock</td>
+              <td>The Write lock prevents multiple IndexWriters from writing to the same file.</td>
+            </tr>
+            <tr>
+              <td><a href="#Compound Files">Compound File</a></td>
+              <td>.cfs</td>
+              <td>An optional "virtual" file consisting of all the other index files for systems
+              that frequently run out of file handles.</td>
+            </tr>
+            <tr>
+              <td><a href="#Fields">Fields</a></td>
+              <td>.fnm</td>
+              <td>Stores information about the fields</td>
+            </tr>
+            <tr>
+              <td><a href="#field_index">Field Index</a></td>
+              <td>.fdx</td>
+              <td>Contains pointers to field data</td>
+            </tr>
+            <tr>
+              <td><a href="#field_data">Field Data</a></td>
+              <td>.fdt</td>
+              <td>The stored fields for documents</td>
+            </tr>
+            <tr>
+              <td><a href="#tis">Term Infos</a></td>
+              <td>.tis</td>
+              <td>Part of the term dictionary, stores term info</td>
+            </tr>
+            <tr>
+              <td><a href="#tii">Term Info Index</a></td>
+              <td>.tii</td>
+              <td>The index into the Term Infos file</td>
+            </tr>
+            <tr>
+              <td><a href="#Frequencies">Frequencies</a></td>
+              <td>.frq</td>
+              <td>Contains the list of docs which contain each term along with frequency</td>
+            </tr>
+            <tr>
+              <td><a href="#Positions">Positions</a></td>
+              <td>.prx</td>
+              <td>Stores position information about where a term occurs in the index</td>
+            </tr>
+            <tr>
+              <td><a href="#Normalization Factors">Norms</a></td>
+              <td>.nrm (pre 2.1: .f[0-9]*)</td>
+              <td>Encodes length and boost factors for docs and fields</td>
+            </tr>
+            <tr>
+              <td><a href="#tvx">Term Vector Index</a></td>
+              <td>.tvx</td>
+              <td>Stores offset into the document data file</td>
+            </tr>
+            <tr>
+              <td><a href="#tvd">Term Vector Documents</a></td>
+              <td>.tvd</td>
+              <td>Contains information about each document that has term vectors</td>
+            </tr>
+            <tr>
+              <td><a href="#tvf">Term Vector Fields</a></td>
+              <td>.tvf</td>
+              <td>The field level info about term vectors</td>
+            </tr>
+            <tr>
+              <td><a href="#Deleted Documents">Deleted Documents</a></td>
+              <td>.del</td>
+              <td>Info about what files are deleted</td>
+            </tr>
+          </table>
+
+        </p>
+      </section>
 
         <section id="Primitive Types"><title>Primitive Types</title>
 
@@ -1145,7 +1227,7 @@
                 </p>
 
                 <ol>
-                    <li>
+                    <li><a name="field_index"/>
                         <p>
                             The field index, or .fdx file.
                         </p>
@@ -1179,7 +1261,7 @@
                         </p>
                     </li>
                     <li>
-                        <p>
+                        <p><a name="field_data"/>
                             The field data, or .fdt file.
 
                         </p>
@@ -1251,7 +1333,7 @@
                     The term dictionary is represented as two files:
                 </p>
                 <ol>
-                    <li>
+                    <li><a name="tis"/>
                         <p>
                             The term infos, or tis file.
                         </p>
@@ -1340,7 +1422,7 @@
                         </p>
                     </li>
                     <li>
-                        <p>
+                        <p><a name="tii"/>
                             The term info index, or .tii file.
                         </p>
 
@@ -1679,7 +1761,7 @@
                   field basis. It consists of 3 files.
                 </p>
                 <ol>
-                    <li>
+                    <li><a name="tvx"/>
                         <p>The Document Index or .tvx file.</p>
                         <p>For each document, this stores the offset
                            into the document data (.tvd) and field
@@ -1694,7 +1776,7 @@
                         <p>FieldPosition --&gt; UInt64 (offset in the
                         .tvf file)</p>
                     </li>
-                    <li>
+                    <li><a name="tvd"/>
                         <p>The Document or .tvd file.</p>
                         <p>This contains, for each document, the number of fields, a list of the fields with
                             term vector info and finally a list of pointers to the field information in the .tvf
@@ -1716,7 +1798,7 @@
                         <p>The .tvd file is used to map out the fields that have term vectors stored and
                             where the field information is in the .tvf file.</p>
                     </li>
-                    <li>
+                    <li><a name="tvf"/>
                         <p>The Field or .tvf file.</p>
                         <p>This file contains, for each field that has a term vector stored, a list of
                             the terms, their frequencies and, optionally, position and offest information.</p>
