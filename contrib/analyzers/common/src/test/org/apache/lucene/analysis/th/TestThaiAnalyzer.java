@@ -76,9 +76,9 @@ public class TestThaiAnalyzer extends TestCase {
 		throws Exception {
 
 		TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-		TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
-		OffsetAttribute offsetAtt = (OffsetAttribute) ts.getAttribute(OffsetAttribute.class);
-		TypeAttribute typeAtt = (TypeAttribute) ts.getAttribute(TypeAttribute.class);
+		TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+		OffsetAttribute offsetAtt = (OffsetAttribute) ts.addAttribute(OffsetAttribute.class);
+		TypeAttribute typeAtt = (TypeAttribute) ts.addAttribute(TypeAttribute.class);
 		for (int i = 0; i < output.length; i++) {
 			assertTrue(ts.incrementToken());
 			assertEquals(termAtt.term(), output[i]);
@@ -98,11 +98,11 @@ public class TestThaiAnalyzer extends TestCase {
 
       TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
       TermAttribute termAtt = (TermAttribute) ts
-        .getAttribute(TermAttribute.class);
+        .addAttribute(TermAttribute.class);
       OffsetAttribute offsetAtt = (OffsetAttribute) ts
-        .getAttribute(OffsetAttribute.class);
+        .addAttribute(OffsetAttribute.class);
       TypeAttribute typeAtt = (TypeAttribute) ts
-        .getAttribute(TypeAttribute.class);
+        .addAttribute(TypeAttribute.class);
       for (int i = 0; i < output.length; i++) {
         assertTrue(ts.incrementToken());
         assertEquals(termAtt.term(), output[i]);
