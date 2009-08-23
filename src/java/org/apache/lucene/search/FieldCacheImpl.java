@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 import org.apache.lucene.document.NumericField;
@@ -81,13 +82,14 @@ class FieldCacheImpl implements ExtendedFieldCache {
         // that it wasn't GCed before we made hard ref
         if (null != readerKey && cache.readerCache.containsKey(readerKey)) {
           Map innerCache = ((Map)cache.readerCache.get(readerKey));
-          Iterator keys = innerCache.keySet().iterator();
-          while (keys.hasNext()) {
-            Entry entry = (Entry) keys.next();
+          Iterator entrySetIterator = innerCache.entrySet().iterator();
+          while (entrySetIterator.hasNext()) {
+            Map.Entry mapEntry = (Map.Entry) entrySetIterator.next();
+            Entry entry = (Entry) mapEntry.getKey();
             result.add(new CacheEntryImpl(readerKey, entry.field,
                                           cacheType, entry.type,
                                           entry.custom, entry.locale,
-                                          innerCache.get(entry)));
+                                          mapEntry.getValue()));
           }
         }
       }
