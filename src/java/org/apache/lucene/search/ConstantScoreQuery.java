@@ -81,7 +81,7 @@ public class ConstantScoreQuery extends Query {
       return new ConstantScorer(similarity, reader, this);
     }
 
-    public Explanation explain(Searcher searcher, IndexReader reader, int doc) throws IOException {
+    public Explanation explain(IndexReader reader, int doc) throws IOException {
       
       ConstantScorer cs = new ConstantScorer(similarity, reader, this);
       boolean exists = cs.docIdSetIterator.advance(doc) == doc;

@@ -425,7 +425,7 @@ final class JustCompileSearch {
 
   static final class JustCompileWeight extends Weight {
 
-    public Explanation explain(Searcher searcher, IndexReader reader, int doc) throws IOException {
+    public Explanation explain(IndexReader reader, int doc) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

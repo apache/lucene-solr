@@ -340,8 +340,8 @@ API Changes
     BooleanQuery's setAllowDocsOutOfOrder and getAllowDocsOutOfOrder have been 
     deprecated as they are not needed anymore. BooleanQuery will now score docs 
     out of order when used with a Collector that can accept docs out of order.
-    Finally, Weight#explain now also takes a the top-level searcher, sub-reader 
-    and sub-docID.
+    Finally, Weight#explain now takes a sub-reader and sub-docID, rather than
+    a top level reader and docID.
     (Shai Erera, Chris Hostetter, Martin Ruckli, Mark Miller via Mike McCandless)
  	
 25. LUCENE-1466: Changed Tokenizer.input to be a CharStream; added

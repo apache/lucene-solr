@@ -152,13 +152,13 @@ public class DisjunctionMaxQuery extends Query {
     }
 
     /* Explain the score we computed for doc */
-    public Explanation explain(Searcher searcher, IndexReader reader, int doc) throws IOException {
-      if (disjuncts.size() == 1) return ((Weight) weights.get(0)).explain(searcher, reader,doc);
+    public Explanation explain(IndexReader reader, int doc) throws IOException {
+      if (disjuncts.size() == 1) return ((Weight) weights.get(0)).explain(reader,doc);
       ComplexExplanation result = new ComplexExplanation();
       float max = 0.0f, sum = 0.0f;
       result.setDescription(tieBreakerMultiplier == 0.0f ? "max of:" : "max plus " + tieBreakerMultiplier + " times others of:");
       for (Iterator iter = weights.iterator(); iter.hasNext();) {
-        Explanation e = ((Weight) iter.next()).explain(searcher, reader, doc);
+        Explanation e = ((Weight) iter.next()).explain(reader, doc);
         if (e.isMatch()) {
           result.setMatch(Boolean.TRUE);
           result.addDetail(e);

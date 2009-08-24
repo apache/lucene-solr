@@ -313,7 +313,7 @@ public class IndexSearcher extends Searcher {
     int n = ReaderUtil.subIndex(doc, docStarts);
     int deBasedDoc = doc - docStarts[n];
     
-    return weight.explain(this, subReaders[n], deBasedDoc);
+    return weight.explain(subReaders[n], deBasedDoc);
   }
 
   private boolean fieldSortDoTrackScores;

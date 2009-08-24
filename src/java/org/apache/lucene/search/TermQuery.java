@@ -69,19 +69,14 @@ public class TermQuery extends Query {
       return new TermScorer(this, termDocs, similarity, reader.norms(term.field()));
     }
 
-    public Explanation explain(Searcher searcher, IndexReader reader, int doc)
+    public Explanation explain(IndexReader reader, int doc)
       throws IOException {
 
       ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
 
-      Explanation expl;
-      if(searcher == null) {
-        expl = new Explanation(idf, "idf(" + idf + ")");
-      } else {
-        expl = new Explanation(idf, "idf(docFreq=" + searcher.docFreq(term) +
-            ", maxDocs=" + searcher.maxDoc() + ")");
-      }
+      Explanation expl = new Explanation(idf, "idf(docFreq=" + reader.docFreq(term) +
+            ", maxDocs=" + reader.maxDoc() + ")");
 
       // explain query weight
       Explanation queryExpl = new Explanation();

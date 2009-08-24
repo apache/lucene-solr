@@ -341,17 +341,17 @@ public class CustomScoreQuery extends Query {
       return new CustomScorer(similarity, reader, this, subQueryScorer, valSrcScorers);
     }
 
-    public Explanation explain(Searcher searcher, IndexReader reader, int doc) throws IOException {
-      Explanation explain = doExplain(searcher, reader, doc);
-      return explain == null ? new Explanation(0.0f, "no matching docs") : doExplain(searcher, reader, doc);
+    public Explanation explain(IndexReader reader, int doc) throws IOException {
+      Explanation explain = doExplain(reader, doc);
+      return explain == null ? new Explanation(0.0f, "no matching docs") : doExplain(reader, doc);
     }
     
-    private Explanation doExplain(Searcher searcher, IndexReader reader, int doc) throws IOException {
+    private Explanation doExplain(IndexReader reader, int doc) throws IOException {
       Scorer[] valSrcScorers = new Scorer[valSrcWeights.length];
       for(int i = 0; i < valSrcScorers.length; i++) {
          valSrcScorers[i] = valSrcWeights[i].scorer(reader, true, false);
       }
-      Explanation subQueryExpl = subQueryWeight.explain(searcher, reader, doc);
+      Explanation subQueryExpl = subQueryWeight.explain(reader, doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }
@@ -451,7 +451,7 @@ public class CustomScoreQuery extends Query {
     // TODO: remove in 3.0
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#explain(int) */
     public Explanation explain(int doc) throws IOException {
-      Explanation subQueryExpl = weight.subQueryWeight.explain(null, reader,doc); // nocommit: needs resolution
+      Explanation subQueryExpl = weight.subQueryWeight.explain(reader,doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }

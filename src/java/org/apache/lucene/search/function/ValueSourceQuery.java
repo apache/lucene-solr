@@ -98,7 +98,7 @@ public class ValueSourceQuery extends Query {
     }
 
     /*(non-Javadoc) @see org.apache.lucene.search.Weight#explain(org.apache.lucene.index.IndexReader, int) */
-    public Explanation explain(Searcher searcher, IndexReader reader, int doc) throws IOException {
+    public Explanation explain(IndexReader reader, int doc) throws IOException {
       return new ValueSourceScorer(similarity, reader, this).explain(doc);
     }
   }

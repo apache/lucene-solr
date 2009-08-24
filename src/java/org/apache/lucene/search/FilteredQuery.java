@@ -73,8 +73,8 @@ extends Query {
         weight.normalize(v);
         value = weight.getValue() * getBoost();
       }
-      public Explanation explain (Searcher searcher, IndexReader ir, int i) throws IOException {
-        Explanation inner = weight.explain (searcher, ir, i);
+      public Explanation explain (IndexReader ir, int i) throws IOException {
+        Explanation inner = weight.explain (ir, i);
         if (getBoost()!=1) {
           Explanation preBoost = inner;
           inner = new Explanation(inner.getValue()*getBoost(),"product of:");

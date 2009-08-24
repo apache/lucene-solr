@@ -158,7 +158,7 @@ public class PhraseQuery extends Query {
 
     }
 
-    public Explanation explain(Searcher searcher, IndexReader reader, int doc)
+    public Explanation explain(IndexReader reader, int doc)
       throws IOException {
 
       Explanation result = new Explanation();

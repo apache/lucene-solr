@@ -186,7 +186,7 @@ public class MultiPhraseQuery extends Query {
                                       slop, reader.norms(field));
     }
 
-    public Explanation explain(Searcher searcher, IndexReader reader, int doc)
+    public Explanation explain(IndexReader reader, int doc)
       throws IOException {
       ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");

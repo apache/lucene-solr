@@ -61,7 +61,7 @@ public abstract class Weight implements Serializable {
    * @return an Explanation for the score
    * @throws IOException
    */
-  public abstract Explanation explain(Searcher searcher, IndexReader reader, int doc) throws IOException;
+  public abstract Explanation explain(IndexReader reader, int doc) throws IOException;
 
   /** The query that this concerns. */
   public abstract Query getQuery();

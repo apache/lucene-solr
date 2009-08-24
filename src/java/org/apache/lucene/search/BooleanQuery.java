@@ -224,7 +224,7 @@ public class BooleanQuery extends Query {
       }
     }
 
-    public Explanation explain(Searcher searcher, IndexReader reader, int doc)
+    public Explanation explain(IndexReader reader, int doc)
       throws IOException {
       final int minShouldMatch =
         BooleanQuery.this.getMinimumNumberShouldMatch();
@@ -241,7 +241,7 @@ public class BooleanQuery extends Query {
         if (w.scorer(reader, true, true) == null) {
           continue;
         }
-        Explanation e = w.explain(searcher, reader, doc);
+        Explanation e = w.explain(reader, doc);
         if (!c.isProhibited()) maxCoord++;
         if (e.isMatch()) {
           if (!c.isProhibited()) {

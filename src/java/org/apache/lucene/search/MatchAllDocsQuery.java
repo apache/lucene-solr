@@ -129,7 +129,7 @@ public class MatchAllDocsQuery extends Query {
           normsField != null ? reader.norms(normsField) : null);
     }
 
-    public Explanation explain(Searcher searcher, IndexReader reader, int doc) {
+    public Explanation explain(IndexReader reader, int doc) {
       // explain query weight
       Explanation queryExpl = new ComplexExplanation
         (true, getValue(), "MatchAllDocsQuery, product of:");
