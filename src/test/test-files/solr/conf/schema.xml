@@ -205,6 +205,11 @@
         <tokenizer class="solr.KeywordTokenizerFactory"/>
       </analyzer>
     </fieldtype>
+    <fieldtype name="patterntok" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.PatternTokenizerFactory" pattern=","/>
+      </analyzer>
+    </fieldtype>
     <fieldtype name="porterfilt" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
@@ -422,6 +427,7 @@
    <field name="standardtokfilt" type="standardtokfilt" indexed="true" stored="true"/>
    <field name="standardfilt" type="standardfilt" indexed="true" stored="true"/>
    <field name="lowerfilt" type="lowerfilt" indexed="true" stored="true"/>
+   <field name="patterntok" type="patterntok" indexed="true" stored="true"/>
    <field name="patternreplacefilt" type="patternreplacefilt" indexed="true" stored="true"/>
    <field name="porterfilt" type="porterfilt" indexed="true" stored="true"/>
    <field name="engporterfilt" type="engporterfilt" indexed="true" stored="true"/>

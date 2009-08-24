@@ -42,6 +42,12 @@ requests. (The simplest way to do this is by specifying it as a default param
 for your request handlers in solrconfig.xml, see the example solrconfig.xml for
 sample syntax.) 
 
+The TokenizerFactory API has changed to explicitly return a Tokenizer rather then
+a TokenStream (that may be or may not be a Tokenizer).  This change is required
+to take advantage of the Token reuse improvements in lucene 2.9.  For more 
+information, see SOLR-1377. 
+
+
 Versions of Major Components
 ----------------------------
 Apache Lucene 2.9-dev r804692
@@ -615,6 +621,10 @@ Other Changes
 
 45. SOLR1276: Added StatsComponentTest (Rafał Kuć, gsingers)
 
+46. SOLR-1377:  The TokenizerFactory API has changed to explicitly return a Tokenizer 
+    rather then a TokenStream (that may be or may not be a Tokenizer).  This change 
+    is required to take advantage of the Token reuse improvements in lucene 2.9. (ryan)  
+    
 
 Build
 ----------------------

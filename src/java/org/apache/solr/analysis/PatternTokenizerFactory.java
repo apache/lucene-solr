@@ -17,16 +17,6 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.CharStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.core.SolrConfig;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
@@ -35,6 +25,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.solr.common.SolrException;
 
 
 /**
@@ -103,41 +98,44 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
   /**
    * Split the input using configured pattern
    */
-  public TokenStream create(Reader input) {
+  public Tokenizer create(final Reader in) {
     try {
-      // Read the input into a single string
-      String str = IOUtils.toString( input );
-      
-      Matcher matcher = pattern.matcher( str );
-      List<Token> tokens = (group < 0 ) 
-        ? split( matcher, str )
-        : group( matcher, str, group );
-        
-      final Iterator<Token> iter = tokens.iterator();
-      return new TokenStream() {
-        @Override
-        public boolean incrementToken() throws IOException {
-          return super.incrementToken();
+      return new Tokenizer(in) {
+        {init();}
+
+        List<Token> tokens;
+        Iterator<Token> iter;
+
+        void init() throws IOException {
+          // Read the input into a single string
+          String str = IOUtils.toString( input );
+
+          Matcher matcher = pattern.matcher( str );
+          tokens = (group < 0 )
+                  ? split( matcher, str )
+                  : group( matcher, str, group );
+          iter = tokens.iterator();
         }
+
+//        @Override
+//        public boolean incrementToken() throws IOException {
+//          return super.incrementToken();
+//        }
 
         @Override
         public void end() throws IOException {
           super.end();
         }
 
-        @Override
-        public Token next(Token reusableToken) throws IOException {
-          return super.next(reusableToken);
-        }
+//        @Override
+//        public Token next(Token reusableToken) throws IOException {
+//          return super.next(reusableToken);
+//        }
 
         @Override
-        public void reset() throws IOException {
-          super.reset();
-        }
-
-        @Override
-        public void close() throws IOException {
-          super.close();
+        public void reset(Reader input) throws IOException {
+          super.reset(input);
+          init();
         }
 
         @Override

@@ -65,6 +65,6 @@ public interface TokenizerFactory {
   public Map<String,String> getArgs();
   
   /** Creates a TokenStream of the specified input */
-  public TokenStream create(Reader input);
+  public Tokenizer create(Reader input);
 }
 

@@ -466,6 +466,25 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     
   }
 
+
+  public void testTokenizer() {
+
+    assertU(adoc("id",  "4055",
+            "patterntok", "Hello,There"));
+    assertU(adoc("id",  "4056",
+            "patterntok", "Goodbye,Now"));
+    assertU(commit());
+
+    assertQ("make sure it split ok",
+            req("patterntok:Hello")
+            ,"*[count(//doc)=1]"
+    );
+    assertQ("make sure it split ok",
+            req("patterntok:Goodbye")
+            ,"*[count(//doc)=1]"
+    );
+  }
+
   public void testConfigDefaults() {
     assertU(adoc("id", "42",
                  "name", "Zapp Brannigan"));

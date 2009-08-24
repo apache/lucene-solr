@@ -18,9 +18,11 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 
 import java.io.Reader;
+import java.io.IOException;
 
 /**
  * @version $Id$
@@ -28,7 +30,12 @@ import java.io.Reader;
  */
 @Deprecated
 public class HTMLStripStandardTokenizerFactory extends BaseTokenizerFactory {
-  public TokenStream create(Reader input) {
-    return new StandardTokenizer(new HTMLStripReader(input));
+  public Tokenizer create(Reader input) {
+    return new StandardTokenizer(new HTMLStripReader(input)) {
+      @Override
+      public void reset(Reader reader) throws IOException {
+        super.reset(new HTMLStripReader(reader));
+      }
+    };
   }
 }

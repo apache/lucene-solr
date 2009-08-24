@@ -47,7 +47,7 @@ public class TrieTokenizerFactory extends BaseTokenizerFactory {
     this.precisionStep = precisionStep;
   }
 
-  public TokenStream create(Reader input) {
+  public Tokenizer create(Reader input) {
     return new TrieTokenizer(input, type, precisionStep, TrieTokenizer.getNumericTokenStream(precisionStep));
   }
 }
