@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.Locale;
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.util.NumericUtils; // for javadocs
 
@@ -52,13 +53,13 @@ public class DateTools {
   
   private final static TimeZone GMT = TimeZone.getTimeZone("GMT");
 
-  private static final SimpleDateFormat YEAR_FORMAT = new SimpleDateFormat("yyyy");
-  private static final SimpleDateFormat MONTH_FORMAT = new SimpleDateFormat("yyyyMM");
-  private static final SimpleDateFormat DAY_FORMAT = new SimpleDateFormat("yyyyMMdd");
-  private static final SimpleDateFormat HOUR_FORMAT = new SimpleDateFormat("yyyyMMddHH");
-  private static final SimpleDateFormat MINUTE_FORMAT = new SimpleDateFormat("yyyyMMddHHmm");
-  private static final SimpleDateFormat SECOND_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
-  private static final SimpleDateFormat MILLISECOND_FORMAT = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+  private static final SimpleDateFormat YEAR_FORMAT = new SimpleDateFormat("yyyy", Locale.US);
+  private static final SimpleDateFormat MONTH_FORMAT = new SimpleDateFormat("yyyyMM", Locale.US);
+  private static final SimpleDateFormat DAY_FORMAT = new SimpleDateFormat("yyyyMMdd", Locale.US);
+  private static final SimpleDateFormat HOUR_FORMAT = new SimpleDateFormat("yyyyMMddHH", Locale.US);
+  private static final SimpleDateFormat MINUTE_FORMAT = new SimpleDateFormat("yyyyMMddHHmm", Locale.US);
+  private static final SimpleDateFormat SECOND_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss", Locale.US);
+  private static final SimpleDateFormat MILLISECOND_FORMAT = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.US);
   static {
     // times need to be normalized so the value doesn't depend on the 
     // location the index is created/used:

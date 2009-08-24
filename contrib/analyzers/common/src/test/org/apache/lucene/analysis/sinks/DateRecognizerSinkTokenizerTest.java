@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.sinks;
 import java.io.IOException;
 import java.io.StringReader;
 import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 import junit.framework.TestCase;
 
@@ -41,7 +42,7 @@ public class DateRecognizerSinkTokenizerTest extends TestCase {
   }
 
   public void test() throws IOException {
-    DateRecognizerSinkFilter sinkFilter = new DateRecognizerSinkFilter(new SimpleDateFormat("MM/dd/yyyy"));
+    DateRecognizerSinkFilter sinkFilter = new DateRecognizerSinkFilter(new SimpleDateFormat("MM/dd/yyyy", Locale.US));
     String test = "The quick red fox jumped over the lazy brown dogs on 7/11/2006  The dogs finally reacted on 7/12/2006";
     TeeSinkTokenFilter tee = new TeeSinkTokenFilter(new WhitespaceTokenizer(new StringReader(test)));
     SinkTokenStream sink = tee.newSinkTokenStream(sinkFilter);

@@ -195,6 +195,12 @@ Changes in runtime behavior
     basis. There is currently no way provided to rebase the docids in the Scorer to 
     the top level IndexReader.  (Mark Miller, Mike McCandless)
 
+14. LUCENE-1846: DateTools now uses the US locale to format the numbers in its
+    date/time strings instead of the default locale. For most locales there will
+    be no change in the index format, as DateFormatSymbols is using ASCII digits.
+    The usage of the US locale is important to guarantee correct ordering of
+    generated terms.  (Uwe Schindler)
+
 API Changes
 
 1. LUCENE-1419: Add expert API to set custom indexing chain. This API is 

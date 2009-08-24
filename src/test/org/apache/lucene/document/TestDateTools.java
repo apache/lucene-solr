@@ -5,6 +5,7 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -172,7 +173,7 @@ public class TestDateTools extends LuceneTestCase {
   }
 
   private String isoFormat(Date date) {
-    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS");
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss:SSS", Locale.US);
     sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
     return sdf.format(date);
   }
