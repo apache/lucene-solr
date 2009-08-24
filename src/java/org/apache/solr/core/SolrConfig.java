@@ -460,61 +460,6 @@ public class SolrConfig extends Config {
     } 
   }
 
-  public static class PluginInfo {
-    public final String startup, name, className;
-    public final boolean isDefault;
-    public final NamedList initArgs;
-    public final Map<String ,String> otherAttributes;
-
-    public PluginInfo(String startup, String name, String className,
-                      boolean isdefault, NamedList initArgs, Map<String ,String> otherAttrs) {
-      this.startup = startup;
-      this.name = name;
-      this.className = className;
-      this.isDefault = isdefault;
-      this.initArgs = initArgs;
-      otherAttributes = otherAttrs == null ? Collections.<String ,String >emptyMap(): otherAttrs;
-    }
-
-
-    public PluginInfo(Node node, String err, boolean requireName) {
-      name = DOMUtil.getAttr(node, "name", requireName ? err : null);
-      className = DOMUtil.getAttr(node, "class", err );
-      isDefault = Boolean.parseBoolean(DOMUtil.getAttr(node, "default", null));
-      startup = DOMUtil.getAttr(node, "startup",null);
-      initArgs = DOMUtil.childNodesToNamedList(node);
-      Map<String ,String> m = new HashMap<String, String>();
-      NamedNodeMap nnm = node.getAttributes();
-      for (int i = 0; i < nnm.getLength(); i++) {
-        String name= nnm.item(i).getNodeName();
-        if(knownAttrs.contains(name)) continue;
-        m.put(name, nnm.item(i).getNodeValue());
-      }
-      otherAttributes = m.isEmpty() ?
-              Collections.<String ,String >emptyMap():
-              Collections.unmodifiableMap(m);
-
-  }
-
-    @Override
-    public String toString() {
-      StringBuilder sb = new StringBuilder("{");
-      if(name != null) sb.append("name = "+name +",");
-      if(className != null) sb.append("class = "+className +",");
-      if(isDefault) sb.append("default = "+isDefault +",");
-      if(startup != null) sb.append("startup = "+startup +",");      
-      if(initArgs.size() >0) sb.append("args = "+initArgs);
-      sb.append("}");
-      return sb.toString();    
-    }
-    private static final Set<String> knownAttrs = new HashSet<String>();
-    static {
-      knownAttrs.add("name");
-      knownAttrs.add("class");
-      knownAttrs.add("startup");
-      knownAttrs.add("default");
-    }
-  }
 
   public List<PluginInfo> getReqHandlerInfo() { return reqHandlerInfo; }
 

@@ -42,6 +42,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -63,7 +64,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter
     // Load the fragmenters
     ResourceLoader loader= config.getResourceLoader();
     SolrFragmenter frag = null;
-    for (SolrConfig.PluginInfo info : config.getHighlightingFragmenterInfo()) {
+    for (PluginInfo info : config.getHighlightingFragmenterInfo()) {
       SolrFragmenter fragmenter = (SolrFragmenter) loader.newInstance(info.className);
       fragmenter.init(info.initArgs);
       if(info.isDefault) frag = fragmenter;
@@ -77,7 +78,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter
     fragmenters.put( null, frag );
     // Load the formatters
     SolrFormatter fmt = null;
-    for (SolrConfig.PluginInfo info : config.getHighlightingFormatterInfo()) {
+    for (PluginInfo info : config.getHighlightingFormatterInfo()) {
       SolrFormatter formatter = (SolrFormatter) loader.newInstance(info.className);
       formatter.init(info.initArgs);
       formatters.put(info.name, formatter);

@@ -248,7 +248,7 @@ public final class SolrCore implements SolrInfoMBean {
   }
 
    private void initDeletionPolicy() {
-     SolrConfig.PluginInfo info = solrConfig.getDeletionPolicyInfo();
+     PluginInfo info = solrConfig.getDeletionPolicyInfo();
      IndexDeletionPolicy delPolicy = null;
      if(info != null){
        delPolicy = createInstance(info.className,IndexDeletionPolicy.class,"Deletion Policy for SOLR");
@@ -261,9 +261,9 @@ public final class SolrCore implements SolrInfoMBean {
      solrDelPolicy = new IndexDeletionPolicyWrapper(delPolicy);
    }
 
-  private List<SolrEventListener> parseListener(List<SolrConfig.PluginInfo> path) {
+  private List<SolrEventListener> parseListener(List<PluginInfo> path) {
     List<SolrEventListener> lst = new ArrayList<SolrEventListener>();
-    for (SolrConfig.PluginInfo info : path) {
+    for (PluginInfo info : path) {
       SolrEventListener listener = createEventListener(info.className);
       listener.init(info.initArgs);
       lst.add(listener);
@@ -328,7 +328,7 @@ public final class SolrCore implements SolrInfoMBean {
 
    private void initDirectoryFactory() {
     DirectoryFactory dirFactory;
-    SolrConfig.PluginInfo info = solrConfig.getDirectoryfactoryInfo();
+    PluginInfo info = solrConfig.getDirectoryfactoryInfo();
     if (info != null) {
       dirFactory = (DirectoryFactory) getResourceLoader().newInstance(info.className);
       dirFactory.init(info.initArgs);
@@ -341,7 +341,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   private void initIndexReaderFactory() {
     IndexReaderFactory indexReaderFactory;
-    SolrConfig.PluginInfo info = solrConfig.getIndexReaderFactoryInfo();
+    PluginInfo info = solrConfig.getIndexReaderFactoryInfo();
     if (info != null) {
       indexReaderFactory = (IndexReaderFactory) resourceLoader.newInstance(info.className);
       indexReaderFactory.init(info.initArgs);
@@ -590,19 +590,19 @@ public final class SolrCore implements SolrInfoMBean {
    private Map<String,UpdateRequestProcessorChain> loadUpdateProcessorChains() {
     final Map<String, UpdateRequestProcessorChain> map = new HashMap<String, UpdateRequestProcessorChain>();
     UpdateRequestProcessorChain def = null;
-    Map<String, List<SolrConfig.PluginInfo>> infos = solrConfig.getUpdateProcessorChainInfo();
+    Map<String, List<PluginInfo>> infos = solrConfig.getUpdateProcessorChainInfo();
     if (!infos.isEmpty()) {
       boolean defaultProcessed = false;
-      List<SolrConfig.PluginInfo> defProcessorChainInfo = infos.get(null);// this is the default one
-      for (Map.Entry<String, List<SolrConfig.PluginInfo>> e : solrConfig.getUpdateProcessorChainInfo().entrySet()) {
-        List<SolrConfig.PluginInfo> processorsInfo = e.getValue();
+      List<PluginInfo> defProcessorChainInfo = infos.get(null);// this is the default one
+      for (Map.Entry<String, List<PluginInfo>> e : solrConfig.getUpdateProcessorChainInfo().entrySet()) {
+        List<PluginInfo> processorsInfo = e.getValue();
         if (processorsInfo == defProcessorChainInfo && defaultProcessed) {
           map.put(e.getKey(), def);
           continue;
         }
         UpdateRequestProcessorFactory[] chain = new UpdateRequestProcessorFactory[processorsInfo.size()];
         for (int i = 0; i < processorsInfo.size(); i++) {
-          SolrConfig.PluginInfo info = processorsInfo.get(i);
+          PluginInfo info = processorsInfo.get(i);
           chain[i] = createInstance(info.className, UpdateRequestProcessorFactory.class, null);
           chain[i].init(info.initArgs);
         }
@@ -1465,9 +1465,9 @@ public final class SolrCore implements SolrInfoMBean {
     }
   }
 
-  public <T> T initPlugins(List<SolrConfig.PluginInfo> pluginInfos , Map<String ,T> registry, Class<T> type){
+  public <T> T initPlugins(List<PluginInfo> pluginInfos , Map<String ,T> registry, Class<T> type){
     T def = null;
-    for (SolrConfig.PluginInfo info : pluginInfos) {
+    for (PluginInfo info : pluginInfos) {
       T o = createInstance(info.className,type, type.getSimpleName());
       if (o instanceof NamedListInitializedPlugin) {
         ((NamedListInitializedPlugin) o).init(info.initArgs);
