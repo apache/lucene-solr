@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
- * Removes words that are too long and too short from the stream.
+ * Removes words that are too long or too short from the stream.
  *
  *
  * @version $Id$
