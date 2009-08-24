@@ -26,6 +26,9 @@ import org.apache.lucene.util.PriorityQueue;
 /**
  * A {@link Collector} that sorts by {@link SortField} using
  * {@link FieldComparator}s.
+ * <p/>
+ * See the {@link #create(org.apache.lucene.search.Sort, int, boolean, boolean, boolean, boolean)} method
+ * for instantiating a TopFieldCollector.
  * 
  * <p><b>NOTE:</b> This API is experimental and might change in
  * incompatible ways in the next release.</p>
