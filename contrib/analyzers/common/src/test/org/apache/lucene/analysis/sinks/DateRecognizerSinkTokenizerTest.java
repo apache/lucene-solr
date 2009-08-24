@@ -21,24 +21,16 @@ import java.io.StringReader;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TeeSinkTokenFilter;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.TeeSinkTokenFilter.SinkTokenStream;
 
-public class DateRecognizerSinkTokenizerTest extends TestCase {
+public class DateRecognizerSinkTokenizerTest extends BaseTokenStreamTestCase {
 
 
   public DateRecognizerSinkTokenizerTest(String s) {
     super(s);
-  }
-
-  protected void setUp() {
-  }
-
-  protected void tearDown() {
-
   }
 
   public void test() throws IOException {

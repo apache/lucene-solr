@@ -33,19 +33,6 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
       super(name);
    }
 
-  public void assertAnalyzesTo(Analyzer a, 
-                               String input, 
-                               String[] output) throws Exception {
-    TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
-    for (int i=0; i<output.length; i++) {
-      assertTrue(ts.incrementToken());
-      assertEquals(termAtt.term(), output[i]);
-    }
-    assertFalse(ts.incrementToken());
-    ts.close();
-  }
-
   public void testSimple() throws Exception {
     Analyzer a = new SimpleAnalyzer();
     assertAnalyzesTo(a, "foo bar FOO BAR", 

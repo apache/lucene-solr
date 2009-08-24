@@ -20,15 +20,14 @@ package org.apache.lucene.analysis.ar;
 import java.io.IOException;
 import java.io.StringReader;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Test the Arabic Normalization Filter
  *
  */
-public class TestArabicNormalizationFilter extends TestCase {
+public class TestArabicNormalizationFilter extends BaseTokenStreamTestCase {
 
   public void testAlifMadda() throws IOException {
     check("آجن", "اجن");
@@ -89,11 +88,7 @@ public class TestArabicNormalizationFilter extends TestCase {
   private void check(final String input, final String expected) throws IOException {
     ArabicLetterTokenizer tokenStream = new ArabicLetterTokenizer(new StringReader(input));
     ArabicNormalizationFilter filter = new ArabicNormalizationFilter(tokenStream);
-    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
-    
-    assertTrue(filter.incrementToken());
-    assertEquals(expected, termAtt.term());
-    filter.close();
+    assertTokenStreamContents(filter, new String[]{expected});
   }
 
 }

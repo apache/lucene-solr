@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -38,21 +39,12 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
  *
  *
  **/
-public class WikipediaTokenizerTest extends TestCase {
+public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
   protected static final String LINK_PHRASES = "click [[link here again]] click [http://lucene.apache.org here again] [[Category:a b c d]]";
-
 
   public WikipediaTokenizerTest(String s) {
     super(s);
   }
-
-  protected void setUp() {
-  }
-
-  protected void tearDown() {
-
-  }
-
 
   public void testHandwritten() throws Exception {
     //make sure all tokens are in only one type

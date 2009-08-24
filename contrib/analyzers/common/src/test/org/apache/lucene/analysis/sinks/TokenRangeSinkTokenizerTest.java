@@ -19,24 +19,16 @@ package org.apache.lucene.analysis.sinks;
 import java.io.IOException;
 import java.io.StringReader;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TeeSinkTokenFilter;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.TeeSinkTokenFilter.SinkTokenStream;
 
-public class TokenRangeSinkTokenizerTest extends TestCase {
+public class TokenRangeSinkTokenizerTest extends BaseTokenStreamTestCase {
 
 
   public TokenRangeSinkTokenizerTest(String s) {
     super(s);
-  }
-
-  protected void setUp() {
-  }
-
-  protected void tearDown() {
-
   }
 
   public void test() throws IOException {

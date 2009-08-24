@@ -16,49 +16,16 @@ package org.apache.lucene.analysis.el;
  * limitations under the License.
  */
 
-import java.io.StringReader;
-
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 
 /**
  * A unit test class for verifying the correct operation of the GreekAnalyzer.
  *
  */
-public class GreekAnalyzerTest extends TestCase {
-
-	/**
-	 * A helper method copied from org.apache.lucene.analysis.TestAnalyzers.
-	 *
-	 * @param a			the Analyzer to test
-	 * @param input		an input String to analyze
-	 * @param output	a String[] with the results of the analysis
-	 * @throws Exception in case an error occurs
-	 */
-	private void assertAnalyzesTo(Analyzer a, String input, String[] output) throws Exception {
-		TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-		TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
-		for (int i=0; i<output.length; i++) {
-			assertTrue(ts.incrementToken());
-			assertEquals(termAtt.term(), output[i]);
-		}
-		assertFalse(ts.incrementToken());
-		ts.close();
-	}
-	
-	private void assertAnalyzesToReuse(Analyzer a, String input, String[] output) throws Exception {
-	    TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
-	    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
-	    for (int i=0; i<output.length; i++) {
-	        assertTrue(ts.incrementToken());
-	        assertEquals(termAtt.term(), output[i]);
-	    }
-	    assertFalse(ts.incrementToken());
-	}
+public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
 
 	/**
 	 * Test the analysis of various greek strings.

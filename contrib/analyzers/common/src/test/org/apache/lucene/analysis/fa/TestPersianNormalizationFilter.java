@@ -20,16 +20,14 @@ package org.apache.lucene.analysis.fa;
 import java.io.IOException;
 import java.io.StringReader;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.ar.ArabicLetterTokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Test the Arabic Normalization Filter
  * 
  */
-public class TestPersianNormalizationFilter extends TestCase {
+public class TestPersianNormalizationFilter extends BaseTokenStreamTestCase {
 
   public void testFarsiYeh() throws IOException {
     check("های", "هاي");
@@ -55,17 +53,12 @@ public class TestPersianNormalizationFilter extends TestCase {
     check("زادہ", "زاده");
   }
 
-  private void check(final String input, final String expected)
-      throws IOException {
+  private void check(final String input, final String expected) throws IOException {
     ArabicLetterTokenizer tokenStream = new ArabicLetterTokenizer(
         new StringReader(input));
     PersianNormalizationFilter filter = new PersianNormalizationFilter(
         tokenStream);
-    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
-    assertTrue(filter.incrementToken());
-    assertEquals(expected, termAtt.term());
-    assertFalse(filter.incrementToken());
-    filter.close();
+    assertTokenStreamContents(filter, new String[]{expected});
   }
 
 }

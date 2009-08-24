@@ -28,9 +28,6 @@ import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 
 public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
@@ -117,44 +114,4 @@ public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
     }
   }
   
-  public void assertAnalyzesTo(Analyzer a, String input, String[] output,
-      int startOffsets[], int endOffsets[], int posIncs[]) throws Exception {
-
-    TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-    TermAttribute termAtt = (TermAttribute) ts
-        .getAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) ts
-        .getAttribute(OffsetAttribute.class);
-    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) ts
-        .getAttribute(PositionIncrementAttribute.class);
-    for (int i = 0; i < output.length; i++) {
-      assertTrue(ts.incrementToken());
-      assertEquals(termAtt.term(), output[i]);
-      assertEquals(offsetAtt.startOffset(), startOffsets[i]);
-      assertEquals(offsetAtt.endOffset(), endOffsets[i]);
-      assertEquals(posIncAtt.getPositionIncrement(), posIncs[i]);
-    }
-    assertFalse(ts.incrementToken());
-    ts.close();
-  }
-
-  public void assertAnalyzesToReuse(Analyzer a, String input, String[] output,
-      int startOffsets[], int endOffsets[], int posIncs[]) throws Exception {
-
-    TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
-    TermAttribute termAtt = (TermAttribute) ts
-        .getAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) ts
-        .getAttribute(OffsetAttribute.class);
-    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) ts
-        .getAttribute(PositionIncrementAttribute.class);
-    for (int i = 0; i < output.length; i++) {
-      assertTrue(ts.incrementToken());
-      assertEquals(termAtt.term(), output[i]);
-      assertEquals(offsetAtt.startOffset(), startOffsets[i]);
-      assertEquals(offsetAtt.endOffset(), endOffsets[i]);
-      assertEquals(posIncAtt.getPositionIncrement(), posIncs[i]);
-    }
-    assertFalse(ts.incrementToken());
-  }
 }

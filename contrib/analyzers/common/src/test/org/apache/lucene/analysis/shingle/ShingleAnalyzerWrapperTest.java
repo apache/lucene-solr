@@ -20,15 +20,14 @@ package org.apache.lucene.analysis.shingle;
 import java.io.Reader;
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LetterTokenizer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -44,18 +43,12 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
-import junit.framework.TestCase;
-
 /**
  * A test class for ShingleAnalyzerWrapper as regards queries and scoring.
  */
-public class ShingleAnalyzerWrapperTest extends TestCase {
+public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
   public IndexSearcher searcher;
-
-  public static void main(String[] args) {
-    junit.textui.TestRunner.run(ShingleAnalyzerWrapperTest.class);
-  }
 
   /**
    * Set up a new index in RAM with three test phrases and the supplied Analyzer.
@@ -233,8 +226,7 @@ public class ShingleAnalyzerWrapperTest extends TestCase {
     assertAnalyzesToReuse(a, "this is a test",
         new String[] { "this", "is", "a", "test" },
         new int[] { 0, 5, 8, 10 },
-        new int[] { 4, 7, 9, 14 },
-        new int[] { 1, 1, 1, 1 });
+        new int[] { 4, 7, 9, 14 });
   }
   
   /*
@@ -268,26 +260,5 @@ public class ShingleAnalyzerWrapperTest extends TestCase {
         new int[] { 0, 0, 7, 7, 14, 14, 19 },
         new int[] { 6, 13, 13, 18, 18, 27, 27 },
         new int[] { 1, 0, 1, 0, 1, 0, 1 });
-  }
-  
-  private void assertAnalyzesToReuse(Analyzer a, String input, String[] output,
-      int[] startOffsets, int[] endOffsets, int[] posIncr) throws Exception {
-    TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
-    TermAttribute termAtt = (TermAttribute) ts
-        .getAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) ts
-        .getAttribute(OffsetAttribute.class);
-    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) ts
-        .getAttribute(PositionIncrementAttribute.class);
-
-    for (int i = 0; i < output.length; i++) {
-      assertTrue(ts.incrementToken());
-      assertEquals(output[i], termAtt.term());
-      assertEquals(startOffsets[i], offsetAtt.startOffset());
-      assertEquals(endOffsets[i], offsetAtt.endOffset());
-      assertEquals(posIncr[i], posIncAtt.getPositionIncrement());
-    }
-
-    assertFalse(ts.incrementToken());
   }
 }

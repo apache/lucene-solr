@@ -148,10 +148,15 @@ public class TestTermAttributeImpl extends LuceneTestCase {
   
   public void testCopyTo() throws Exception {
     TermAttributeImpl t = new TermAttributeImpl();
+    TermAttributeImpl copy = (TermAttributeImpl) TestSimpleAttributeImpls.assertCopyIsEqual(t);
+    assertEquals("", t.term());
+    assertEquals("", copy.term());
+
+    t = new TermAttributeImpl();
     char[] content = "hello".toCharArray();
     t.setTermBuffer(content, 0, 5);
     char[] buf = t.termBuffer();
-    TermAttributeImpl copy = (TermAttributeImpl) TestSimpleAttributeImpls.assertCopyIsEqual(t);
+    copy = (TermAttributeImpl) TestSimpleAttributeImpls.assertCopyIsEqual(t);
     assertEquals(t.term(), copy.term());
     assertNotSame(buf, copy.termBuffer());
   }

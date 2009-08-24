@@ -19,19 +19,18 @@ package org.apache.lucene.analysis.ngram;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 
 import java.io.StringReader;
-
-import junit.framework.TestCase;
 
 /**
  * Tests {@link EdgeNGramTokenFilter} for correctness.
  */
-public class EdgeNGramTokenFilterTest extends TestCase {
+public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   private TokenStream input;
 
-  public void setUp() {
+  public void setUp() throws Exception {
+    super.setUp();
     input = new WhitespaceTokenizer(new StringReader("abcde"));
   }
 
@@ -67,71 +66,40 @@ public class EdgeNGramTokenFilterTest extends TestCase {
 
   public void testFrontUnigram() throws Exception {
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 1, 1);
-    TermAttribute termAtt = (TermAttribute) tokenizer.addAttribute(TermAttribute.class);
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(a,0,1)", termAtt.toString());
-    assertFalse(tokenizer.incrementToken());
+    assertTokenStreamContents(tokenizer, new String[]{"a"}, new int[]{0}, new int[]{1});
   }
 
   public void testBackUnigram() throws Exception {
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.BACK, 1, 1);
-    TermAttribute termAtt = (TermAttribute) tokenizer.addAttribute(TermAttribute.class);
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(e,4,5)", termAtt.toString());
-    assertFalse(tokenizer.incrementToken());
+    assertTokenStreamContents(tokenizer, new String[]{"e"}, new int[]{4}, new int[]{5});
   }
 
   public void testOversizedNgrams() throws Exception {
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 6, 6);
-    assertFalse(tokenizer.incrementToken());
+    assertTokenStreamContents(tokenizer, new String[0], new int[0], new int[0]);
   }
 
   public void testFrontRangeOfNgrams() throws Exception {
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 1, 3);
-    TermAttribute termAtt = (TermAttribute) tokenizer.addAttribute(TermAttribute.class);
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(a,0,1)", termAtt.toString());
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(ab,0,2)", termAtt.toString());
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(abc,0,3)", termAtt.toString());
-    assertFalse(tokenizer.incrementToken());
+    assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3});
   }
 
   public void testBackRangeOfNgrams() throws Exception {
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.BACK, 1, 3);
-    TermAttribute termAtt = (TermAttribute) tokenizer.addAttribute(TermAttribute.class);
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(e,4,5)", termAtt.toString());
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(de,3,5)", termAtt.toString());
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(cde,2,5)", termAtt.toString());
-    assertFalse(tokenizer.incrementToken());
+    assertTokenStreamContents(tokenizer, new String[]{"e","de","cde"}, new int[]{4,3,2}, new int[]{5,5,5});
   }
   
   public void testSmallTokenInStream() throws Exception {
     input = new WhitespaceTokenizer(new StringReader("abc de fgh"));
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 3, 3);
-    TermAttribute termAtt = (TermAttribute) tokenizer.addAttribute(TermAttribute.class);
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(abc,0,3)", termAtt.toString());
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(fgh,0,3)", termAtt.toString());
-    assertFalse(tokenizer.incrementToken());
+    assertTokenStreamContents(tokenizer, new String[]{"abc","fgh"}, new int[]{0,0}, new int[]{3,3});
   }
   
   public void testReset() throws Exception {
     WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(new StringReader("abcde"));
     EdgeNGramTokenFilter filter = new EdgeNGramTokenFilter(tokenizer, EdgeNGramTokenFilter.Side.FRONT, 1, 3);
-    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
-    assertTrue(filter.incrementToken());
-    assertEquals("(a,0,1)", termAtt.toString());
-    assertTrue(filter.incrementToken());
-    assertEquals("(ab,0,2)", termAtt.toString());
+    assertTokenStreamContents(filter, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3});
     tokenizer.reset(new StringReader("abcde"));
-    filter.reset();
-    assertTrue(filter.incrementToken());
-    assertEquals("(a,0,1)", termAtt.toString());
+    assertTokenStreamContents(filter, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3});
   }
 }

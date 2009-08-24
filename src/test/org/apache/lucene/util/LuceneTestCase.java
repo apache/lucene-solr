@@ -50,6 +50,8 @@ import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
  */
 public abstract class LuceneTestCase extends TestCase {
 
+  private boolean savedAPISetting = false;
+
   public LuceneTestCase() {
     super();
   }
@@ -61,6 +63,8 @@ public abstract class LuceneTestCase extends TestCase {
   protected void setUp() throws Exception {
     super.setUp();
     ConcurrentMergeScheduler.setTestMode();
+    
+    savedAPISetting = TokenStream.getOnlyUseNewAPI();
     TokenStream.setOnlyUseNewAPI(false);
   }
 
@@ -99,6 +103,8 @@ public abstract class LuceneTestCase extends TestCase {
     } finally {
       purgeFieldCache(FieldCache.DEFAULT);
     }
+    
+    TokenStream.setOnlyUseNewAPI(savedAPISetting);
     super.tearDown();
   }
 

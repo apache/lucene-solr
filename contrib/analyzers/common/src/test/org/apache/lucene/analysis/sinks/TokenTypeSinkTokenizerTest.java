@@ -19,8 +19,7 @@ package org.apache.lucene.analysis.sinks;
 import java.io.IOException;
 import java.io.StringReader;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TeeSinkTokenFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -29,18 +28,11 @@ import org.apache.lucene.analysis.TeeSinkTokenFilter.SinkTokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
-public class TokenTypeSinkTokenizerTest extends TestCase {
+public class TokenTypeSinkTokenizerTest extends BaseTokenStreamTestCase {
 
 
   public TokenTypeSinkTokenizerTest(String s) {
     super(s);
-  }
-
-  protected void setUp() {
-  }
-
-  protected void tearDown() {
-
   }
 
   public void test() throws IOException {

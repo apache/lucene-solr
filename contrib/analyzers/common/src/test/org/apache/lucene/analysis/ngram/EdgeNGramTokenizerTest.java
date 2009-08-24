@@ -20,17 +20,16 @@ package org.apache.lucene.analysis.ngram;
 
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-
-import junit.framework.TestCase;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 
 /**
  * Tests {@link EdgeNGramTokenizer} for correctness.
  */
-public class EdgeNGramTokenizerTest extends TestCase {
+public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
   private StringReader input;
 
-  public void setUp() {
+  public void setUp() throws Exception {
+    super.setUp();
     input = new StringReader("abcde");
   }
 
@@ -66,58 +65,33 @@ public class EdgeNGramTokenizerTest extends TestCase {
 
   public void testFrontUnigram() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.FRONT, 1, 1);
-    TermAttribute termAtt = (TermAttribute) tokenizer.addAttribute(TermAttribute.class);
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(a,0,1)", termAtt.toString());
-    assertFalse(tokenizer.incrementToken());
+    assertTokenStreamContents(tokenizer, new String[]{"a"}, new int[]{0}, new int[]{1});
   }
 
   public void testBackUnigram() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.BACK, 1, 1);
-    TermAttribute termAtt = (TermAttribute) tokenizer.addAttribute(TermAttribute.class);
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(e,4,5)", termAtt.toString());
-    assertFalse(tokenizer.incrementToken());
+    assertTokenStreamContents(tokenizer, new String[]{"e"}, new int[]{4}, new int[]{5});
   }
 
   public void testOversizedNgrams() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.FRONT, 6, 6);
-    assertFalse(tokenizer.incrementToken());
+    assertTokenStreamContents(tokenizer, new String[0], new int[0], new int[0]);
   }
 
   public void testFrontRangeOfNgrams() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.FRONT, 1, 3);
-    TermAttribute termAtt = (TermAttribute) tokenizer.addAttribute(TermAttribute.class);
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(a,0,1)", termAtt.toString());
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(ab,0,2)", termAtt.toString());
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(abc,0,3)", termAtt.toString());
-    assertFalse(tokenizer.incrementToken());
+    assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3});
   }
 
   public void testBackRangeOfNgrams() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.BACK, 1, 3);
-    TermAttribute termAtt = (TermAttribute) tokenizer.addAttribute(TermAttribute.class);
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(e,4,5)", termAtt.toString());
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(de,3,5)", termAtt.toString());
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(cde,2,5)", termAtt.toString());
-    assertFalse(tokenizer.incrementToken());
+    assertTokenStreamContents(tokenizer, new String[]{"e","de","cde"}, new int[]{4,3,2}, new int[]{5,5,5});
   }
   
   public void testReset() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.FRONT, 1, 3);
-    TermAttribute termAtt = (TermAttribute) tokenizer.addAttribute(TermAttribute.class);
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(a,0,1)", termAtt.toString());
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(ab,0,2)", termAtt.toString());
+    assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3});
     tokenizer.reset(new StringReader("abcde"));
-    assertTrue(tokenizer.incrementToken());
-    assertEquals("(a,0,1)", termAtt.toString());
+    assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3});
   }
 }

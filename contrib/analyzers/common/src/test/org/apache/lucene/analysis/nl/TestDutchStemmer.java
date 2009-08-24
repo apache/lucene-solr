@@ -18,16 +18,12 @@ package org.apache.lucene.analysis.nl;
  */
 
 import java.io.File;
-import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Test the Dutch Stem Filter, which only modifies the term text.
@@ -35,11 +31,11 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * The code states that it uses the snowball algorithm, but tests reveal some differences.
  * 
  */
-public class TestDutchStemmer extends TestCase {
+public class TestDutchStemmer extends BaseTokenStreamTestCase {
   File dataDir = new File(System.getProperty("dataDir", "./bin"));
   File customDictFile = new File(dataDir, "org/apache/lucene/analysis/nl/customStemDict.txt");
   
-  public void testWithSnowballExamples() throws IOException {
+  public void testWithSnowballExamples() throws Exception {
 	 check("lichaamsziek", "lichaamsziek");
 	 check("lichamelijk", "licham");
 	 check("lichamelijke", "licham");
@@ -124,10 +120,10 @@ public class TestDutchStemmer extends TestCase {
   
   public void testReusableTokenStream() throws Exception {
     Analyzer a = new DutchAnalyzer(); 
-    checkReuse(a, "lichaamsziek", "lichaamsziek");
-    checkReuse(a, "lichamelijk", "licham");
-    checkReuse(a, "lichamelijke", "licham");
-    checkReuse(a, "lichamelijkheden", "licham");
+    checkOneTermReuse(a, "lichaamsziek", "lichaamsziek");
+    checkOneTermReuse(a, "lichamelijk", "licham");
+    checkOneTermReuse(a, "lichamelijke", "licham");
+    checkOneTermReuse(a, "lichamelijkheden", "licham");
   }
   
   /**
@@ -141,10 +137,10 @@ public class TestDutchStemmer extends TestCase {
   
   public void testLUCENE1678BWComp() throws Exception {
     Analyzer a = new DutchSubclassAnalyzer();
-    checkReuse(a, "lichaamsziek", "lichaamsziek");
-    checkReuse(a, "lichamelijk", "lichamelijk");
-    checkReuse(a, "lichamelijke", "lichamelijke");
-    checkReuse(a, "lichamelijkheden", "lichamelijkheden");
+    checkOneTermReuse(a, "lichaamsziek", "lichaamsziek");
+    checkOneTermReuse(a, "lichamelijk", "lichamelijk");
+    checkOneTermReuse(a, "lichamelijke", "lichamelijke");
+    checkOneTermReuse(a, "lichamelijkheden", "lichamelijkheden");
   }
  
   /* 
@@ -153,9 +149,9 @@ public class TestDutchStemmer extends TestCase {
    */
   public void testExclusionTableReuse() throws Exception {
     DutchAnalyzer a = new DutchAnalyzer();
-    checkReuse(a, "lichamelijk", "licham");
+    checkOneTermReuse(a, "lichamelijk", "licham");
     a.setStemExclusionTable(new String[] { "lichamelijk" });
-    checkReuse(a, "lichamelijk", "lichamelijk");
+    checkOneTermReuse(a, "lichamelijk", "lichamelijk");
   }
   
   /* 
@@ -164,30 +160,13 @@ public class TestDutchStemmer extends TestCase {
    */
   public void testStemDictionaryReuse() throws Exception {
     DutchAnalyzer a = new DutchAnalyzer();
-    checkReuse(a, "lichamelijk", "licham");
+    checkOneTermReuse(a, "lichamelijk", "licham");
     a.setStemDictionary(customDictFile);
-    checkReuse(a, "lichamelijk", "somethingentirelydifferent");
+    checkOneTermReuse(a, "lichamelijk", "somethingentirelydifferent");
   }
   
-  private void check(final String input, final String expected) throws IOException {
-    Analyzer analyzer = new DutchAnalyzer(); 
-    TokenStream stream = analyzer.tokenStream("dummy", new StringReader(input));
-    TermAttribute text = (TermAttribute) stream.getAttribute(TermAttribute.class);
-    assertTrue(stream.incrementToken());
-    assertEquals(expected, text.term());
-    assertFalse(stream.incrementToken());
-    stream.close();
+  private void check(final String input, final String expected) throws Exception {
+    checkOneTerm(new DutchAnalyzer(), input, expected); 
   }
   
-  private void checkReuse(Analyzer a, final String input, final String expected)
-      throws IOException {
-    TokenStream stream = a
-        .reusableTokenStream("dummy", new StringReader(input));
-    TermAttribute text = (TermAttribute) stream
-        .getAttribute(TermAttribute.class);
-    assertTrue(stream.incrementToken());
-    assertEquals(expected, text.term());
-    assertFalse(stream.incrementToken());
-  }
-
 }

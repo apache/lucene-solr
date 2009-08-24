@@ -185,11 +185,16 @@ public class TestToken extends LuceneTestCase {
   }
   
   public void testCopyTo() throws Exception {
-    Token t = new Token(0, 5);
+    Token t = new Token();
+    Token copy = (Token) TestSimpleAttributeImpls.assertCopyIsEqual(t);
+    assertEquals("", t.term());
+    assertEquals("", copy.term());
+
+    t = new Token(0, 5);
     char[] content = "hello".toCharArray();
     t.setTermBuffer(content, 0, 5);
     char[] buf = t.termBuffer();
-    Token copy = (Token) TestSimpleAttributeImpls.assertCopyIsEqual(t);
+    copy = (Token) TestSimpleAttributeImpls.assertCopyIsEqual(t);
     assertEquals(t.term(), copy.term());
     assertNotSame(buf, copy.termBuffer());
 

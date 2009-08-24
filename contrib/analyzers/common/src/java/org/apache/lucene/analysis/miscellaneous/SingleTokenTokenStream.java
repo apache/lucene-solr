@@ -19,14 +19,10 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 
+import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
  * A {@link TokenStream} containing a single token.
@@ -34,45 +30,37 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 public class SingleTokenTokenStream extends TokenStream {
 
   private boolean exhausted = false;
+  
   // The token needs to be immutable, so work with clones!
   private Token singleToken;
+  private final AttributeImpl tokenAtt;
 
-  private TermAttribute termAtt;
-  private OffsetAttribute offsetAtt;
-  private FlagsAttribute flagsAtt;
-  private PositionIncrementAttribute posIncAtt;
-  private TypeAttribute typeAtt;
-  private PayloadAttribute payloadAtt;
+  private static final AttributeFactory TOKEN_ATTRIBUTE_FACTORY = new AttributeFactory() {
+    public AttributeImpl createAttributeInstance(Class attClass) {
+      return attClass.isAssignableFrom(Token.class)
+        ? new Token() : DEFAULT_ATTRIBUTE_FACTORY.createAttributeInstance(attClass);
+    }
+  };
 
   public SingleTokenTokenStream(Token token) {
+    super(TOKEN_ATTRIBUTE_FACTORY);
+    
     assert token != null;
     this.singleToken = (Token) token.clone();
-     
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
-    posIncAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
-    payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+    
+    tokenAtt = (AttributeImpl) addAttribute(TermAttribute.class);
+    assert (tokenAtt instanceof Token || tokenAtt.getClass().getName().equals("org.apache.lucene.analysis.TokenWrapper"));
   }
-
 
   public final boolean incrementToken() throws IOException {
     if (exhausted) {
       return false;
+    } else {
+      clearAttributes();
+      singleToken.copyTo(tokenAtt);
+      exhausted = true;
+      return true;
     }
-    
-    Token clone = (Token) singleToken.clone();
-    
-    clearAttributes();
-    termAtt.setTermBuffer(clone.termBuffer(), 0, clone.termLength());
-    offsetAtt.setOffset(clone.startOffset(), clone.endOffset());
-    flagsAtt.setFlags(clone.getFlags());
-    typeAtt.setType(clone.type());
-    posIncAtt.setPositionIncrement(clone.getPositionIncrement());
-    payloadAtt.setPayload(clone.getPayload());
-    exhausted = true;
-    return true;
   }
   
   /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should

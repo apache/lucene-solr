@@ -17,15 +17,14 @@ package org.apache.lucene.analysis.ru;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.util.LuceneTestCase;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 
-public class TestRussianStem extends TestCase
+public class TestRussianStem extends LuceneTestCase
 {
     private ArrayList words = new ArrayList();
     private ArrayList stems = new ArrayList();

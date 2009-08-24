@@ -20,18 +20,14 @@ package org.apache.lucene.analysis.de;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.StringReader;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Test the German stemmer. The stemming algorithm is known to work less 
@@ -39,34 +35,29 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * also check some of the cases where the algorithm is wrong.
  *
  */
-public class TestGermanStemFilter extends TestCase {
+public class TestGermanStemFilter extends BaseTokenStreamTestCase {
 
-  public void testStemming() {
-    try {
-      // read test cases from external file:
-      File dataDir = new File(System.getProperty("dataDir", "./bin"));
-      File testFile = new File(dataDir, "org/apache/lucene/analysis/de/data.txt");
-      FileInputStream fis = new FileInputStream(testFile);
-      InputStreamReader isr = new InputStreamReader(fis, "iso-8859-1");
-      BufferedReader breader = new BufferedReader(isr);
-      while(true) {
-        String line = breader.readLine();
-        if (line == null)
-          break;
-        line = line.trim();
-        if (line.startsWith("#") || line.equals(""))
-          continue;    // ignore comments and empty lines
-        String[] parts = line.split(";");
-        //System.out.println(parts[0] + " -- " + parts[1]);
-        check(parts[0], parts[1]);
-      }
-      breader.close();
-      isr.close();
-      fis.close();
-    } catch (IOException e) {
-       e.printStackTrace();
-       fail();
+  public void testStemming() throws Exception {
+    // read test cases from external file:
+    File dataDir = new File(System.getProperty("dataDir", "./bin"));
+    File testFile = new File(dataDir, "org/apache/lucene/analysis/de/data.txt");
+    FileInputStream fis = new FileInputStream(testFile);
+    InputStreamReader isr = new InputStreamReader(fis, "iso-8859-1");
+    BufferedReader breader = new BufferedReader(isr);
+    while(true) {
+      String line = breader.readLine();
+      if (line == null)
+        break;
+      line = line.trim();
+      if (line.startsWith("#") || line.equals(""))
+        continue;    // ignore comments and empty lines
+      String[] parts = line.split(";");
+      //System.out.println(parts[0] + " -- " + parts[1]);
+      check(parts[0], parts[1]);
     }
+    breader.close();
+    isr.close();
+    fis.close();
   }
   
   public void testReusableTokenStream() throws Exception {
@@ -100,20 +91,11 @@ public class TestGermanStemFilter extends TestCase {
     checkReuse(a, "tischen", "tischen");
   }
   
-  private void check(final String input, final String expected) throws IOException {
-    Analyzer a = new GermanAnalyzer();
-    TokenStream tokenStream = a.tokenStream("dummy", new StringReader(input));
-    TermAttribute termAtt = (TermAttribute) tokenStream.getAttribute(TermAttribute.class);
-    assertTrue(tokenStream.incrementToken());
-    assertEquals(expected, termAtt.term());
-    tokenStream.close();
+  private void check(final String input, final String expected) throws Exception {
+    checkOneTerm(new GermanAnalyzer(), input, expected);
   }
   
-  private void checkReuse(Analyzer a, String input, String expected) throws IOException {
-    TokenStream stream = a.reusableTokenStream("dummy", new StringReader(input));
-    TermAttribute text = (TermAttribute) stream.getAttribute(TermAttribute.class);
-    assertTrue(stream.incrementToken());
-    assertEquals(expected, text.term());
-    assertFalse(stream.incrementToken());
+  private void checkReuse(Analyzer a, String input, String expected) throws Exception {
+    checkOneTermReuse(a, input, expected);
   }
 }

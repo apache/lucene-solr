@@ -16,7 +16,7 @@ package org.apache.lucene.analysis.payloads;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
@@ -27,20 +27,12 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import java.io.IOException;
 import java.io.StringReader;
 
-public class TypeAsPayloadTokenFilterTest extends TestCase {
+public class TypeAsPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
 
   public TypeAsPayloadTokenFilterTest(String s) {
     super(s);
   }
-
-  protected void setUp() {
-  }
-
-  protected void tearDown() {
-
-  }
-
 
   public void test() throws IOException {
     String test = "The quick red fox jumped over the lazy brown dogs";

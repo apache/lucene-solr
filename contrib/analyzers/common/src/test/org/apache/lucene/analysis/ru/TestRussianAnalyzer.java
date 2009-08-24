@@ -24,8 +24,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
@@ -37,7 +36,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * @version   $Id$
  */
 
-public class TestRussianAnalyzer extends TestCase
+public class TestRussianAnalyzer extends BaseTokenStreamTestCase
 {
     private InputStreamReader inWords;
 
@@ -55,6 +54,7 @@ public class TestRussianAnalyzer extends TestCase
 
     protected void setUp() throws Exception
     {
+      super.setUp();
       dataDir = new File(System.getProperty("dataDir", "./bin"));
     }
 
@@ -194,15 +194,5 @@ public class TestRussianAnalyzer extends TestCase
           new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представлен" });
       assertAnalyzesToReuse(a, "Но знание это хранилось в тайне",
           new String[] { "знан", "хран", "тайн" });
-    }
-
-    private void assertAnalyzesToReuse(Analyzer a, String input, String[] output) throws Exception {
-      TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
-      TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
-      for (int i=0; i<output.length; i++) {
-          assertTrue(ts.incrementToken());
-          assertEquals(termAtt.term(), output[i]);
-      }
-      assertFalse(ts.incrementToken());
     }
 }

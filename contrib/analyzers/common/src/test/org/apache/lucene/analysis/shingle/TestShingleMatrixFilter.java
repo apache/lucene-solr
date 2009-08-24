@@ -21,9 +21,10 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.HashSet;
+import java.util.Arrays;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
@@ -33,15 +34,16 @@ import org.apache.lucene.analysis.miscellaneous.SingleTokenTokenStream;
 import org.apache.lucene.analysis.payloads.PayloadHelper;
 import org.apache.lucene.analysis.shingle.ShingleMatrixFilter.Matrix;
 import org.apache.lucene.analysis.shingle.ShingleMatrixFilter.Matrix.Column;
-import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.analysis.tokenattributes.*;
 
-public class TestShingleMatrixFilter extends TestCase {
+public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
+  public TestShingleMatrixFilter(String name) {
+    // use this ctor, because SingleTokenTokenStream only uses next(Token), so exclude it
+    super(name, new HashSet(Arrays.asList(new String[]{
+      "testBehavingAsShingleFilter", "testMatrix"
+    })));
+  }
 
   public void testBehavingAsShingleFilter() throws IOException {
 

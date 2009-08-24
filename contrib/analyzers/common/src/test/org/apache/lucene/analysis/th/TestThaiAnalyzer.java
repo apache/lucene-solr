@@ -18,16 +18,11 @@ package org.apache.lucene.analysis.th;
  */
 
 import java.io.Reader;
-import java.io.StringReader;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
  * Test case for ThaiAnalyzer, modified from TestFrenchAnalyzer
@@ -35,7 +30,7 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
  * @version   0.1
  */
 
-public class TestThaiAnalyzer extends TestCase {
+public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	
 	/* 
 	 * testcase for offsets
@@ -71,56 +66,6 @@ public class TestThaiAnalyzer extends TestCase {
 				new String[] { "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<NUM>" });
 	}
 	*/
-	
-	public void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[])
-		throws Exception {
-
-		TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-		TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
-		OffsetAttribute offsetAtt = (OffsetAttribute) ts.addAttribute(OffsetAttribute.class);
-		TypeAttribute typeAtt = (TypeAttribute) ts.addAttribute(TypeAttribute.class);
-		for (int i = 0; i < output.length; i++) {
-			assertTrue(ts.incrementToken());
-			assertEquals(termAtt.term(), output[i]);
-			if (startOffsets != null)
-				assertEquals(offsetAtt.startOffset(), startOffsets[i]);
-			if (endOffsets != null)
-				assertEquals(offsetAtt.endOffset(), endOffsets[i]);
-			if (types != null)
-				assertEquals(typeAtt.type(), types[i]);
-		}
-		assertFalse(ts.incrementToken());
-		ts.close();
-	}
-	
-	public void assertAnalyzesToReuse(Analyzer a, String input, String[] output)
-      throws Exception {
-
-      TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
-      TermAttribute termAtt = (TermAttribute) ts
-        .addAttribute(TermAttribute.class);
-      OffsetAttribute offsetAtt = (OffsetAttribute) ts
-        .addAttribute(OffsetAttribute.class);
-      TypeAttribute typeAtt = (TypeAttribute) ts
-        .addAttribute(TypeAttribute.class);
-      for (int i = 0; i < output.length; i++) {
-        assertTrue(ts.incrementToken());
-        assertEquals(termAtt.term(), output[i]);
-      }
-      assertFalse(ts.incrementToken());
-    }
-	
-	public void assertAnalyzesTo(Analyzer a, String input, String[] output) throws Exception {
-		assertAnalyzesTo(a, input, output, null, null, null);
-	}
-	
-	public void assertAnalyzesTo(Analyzer a, String input, String[] output, String[] types) throws Exception {
-		assertAnalyzesTo(a, input, output, null, null, types);
-	}
-	
-	public void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[]) throws Exception {
-		assertAnalyzesTo(a, input, output, startOffsets, endOffsets, null);
-	}
 
 	public void testAnalyzer() throws Exception {
 		ThaiAnalyzer analyzer = new ThaiAnalyzer();

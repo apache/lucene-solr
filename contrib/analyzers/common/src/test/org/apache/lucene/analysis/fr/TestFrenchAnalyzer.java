@@ -56,11 +56,9 @@ package org.apache.lucene.analysis.fr;
 
 import java.io.StringReader;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Test case for FrenchAnalyzer.
@@ -68,35 +66,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * @version   $version$
  */
 
-public class TestFrenchAnalyzer extends TestCase {
-
-	// Method copied from TestAnalyzers, maybe should be refactored
-	public void assertAnalyzesTo(Analyzer a, String input, String[] output)
-		throws Exception {
-
-		TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-
-		TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
-		for (int i = 0; i < output.length; i++) {
-			assertTrue(ts.incrementToken());
-			assertEquals(termAtt.term(), output[i]);
-		}
-		assertFalse(ts.incrementToken());
-		ts.close();
-	}
-	
-   public void assertAnalyzesToReuse(Analyzer a, String input, String[] output)
-       throws Exception {
-
-       TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
-
-       TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
-       for (int i = 0; i < output.length; i++) {
-           assertTrue(ts.incrementToken());
-           assertEquals(termAtt.term(), output[i]);
-       }
-       assertFalse(ts.incrementToken());
-   }
+public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
 
 	public void testAnalyzer() throws Exception {
 		FrenchAnalyzer fa = new FrenchAnalyzer();

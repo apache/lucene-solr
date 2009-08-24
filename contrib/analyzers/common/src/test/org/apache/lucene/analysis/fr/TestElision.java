@@ -24,8 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -34,9 +33,9 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 /**
  * 
  */
-public class TestElision extends TestCase {
+public class TestElision extends BaseTokenStreamTestCase {
 
-  public void testElision() {
+  public void testElision() throws Exception {
     String test = "Plop, juste pour voir l'embrouille avec O'brian. M'enfin.";
     Tokenizer tokenizer = new StandardTokenizer(new StringReader(test));
     Set articles = new HashSet();
@@ -49,15 +48,11 @@ public class TestElision extends TestCase {
     assertEquals("enfin", tas.get(7));
   }
 
-  private List filtre(TokenFilter filter) {
+  private List filtre(TokenFilter filter) throws IOException {
     List tas = new ArrayList();
-    try {
-      TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
-      while (filter.incrementToken()) {
-        tas.add(termAtt.term());
-      }
-    } catch (IOException e) {
-      e.printStackTrace();
+    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
+    while (filter.incrementToken()) {
+      tas.add(termAtt.term());
     }
     return tas;
   }

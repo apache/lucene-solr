@@ -17,11 +17,7 @@ package org.apache.lucene.analysis.br;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.io.StringReader;
-
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
@@ -32,9 +28,9 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * It is very similar to the snowball portuguese algorithm but not exactly the same.
  *
  */
-public class TestBrazilianStemmer extends TestCase {
+public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
   
-  public void testWithSnowballExamples() throws IOException {
+  public void testWithSnowballExamples() throws Exception {
 	 check("boa", "boa");
 	 check("boainain", "boainain");
 	 check("boas", "boas");
@@ -150,23 +146,13 @@ public class TestBrazilianStemmer extends TestCase {
     a.setStemExclusionTable(new String[] { "quintessência" });
     checkReuse(a, "quintessência", "quintessência");
   }
-
-  private void check(final String input, final String expected) throws IOException {
-    Analyzer analyzer = new BrazilianAnalyzer(); 
-    TokenStream stream = analyzer.tokenStream("dummy", new StringReader(input));
-    TermAttribute text = (TermAttribute) stream.getAttribute(TermAttribute.class);
-    assertTrue(stream.incrementToken());
-    assertEquals(expected, text.term());
-    assertFalse(stream.incrementToken());
-    stream.close();
+  
+  private void check(final String input, final String expected) throws Exception {
+    checkOneTerm(new BrazilianAnalyzer(), input, expected);
   }
   
-  private void checkReuse(Analyzer analyzer, final String input, final String expected) throws IOException {
-    TokenStream stream = analyzer.reusableTokenStream("dummy", new StringReader(input));
-    TermAttribute text = (TermAttribute) stream.getAttribute(TermAttribute.class);
-    assertTrue(stream.incrementToken());
-    assertEquals(expected, text.term());
-    assertFalse(stream.incrementToken());
+  private void checkReuse(Analyzer a, String input, String expected) throws Exception {
+    checkOneTermReuse(a, input, expected);
   }
 
 }

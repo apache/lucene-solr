@@ -20,8 +20,7 @@ package org.apache.lucene.analysis.snowball;
 import java.io.Reader;
 import java.io.StringReader;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.index.Payload;
@@ -33,32 +32,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
-public class TestSnowball extends TestCase {
-
-  public void assertAnalyzesTo(Analyzer a,
-                               String input,
-                               String[] output) throws Exception {
-    TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
-    for (int i = 0; i < output.length; i++) {
-      assertTrue(ts.incrementToken());
-      assertEquals(output[i], termAtt.term());
-    }
-    assertFalse(ts.incrementToken());
-    ts.close();
-  }
-  
-  public void assertAnalyzesToReuse(Analyzer a,
-                               String input,
-                               String[] output) throws Exception {
-    TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
-    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
-    for (int i = 0; i < output.length; i++) {
-      assertTrue(ts.incrementToken());
-      assertEquals(output[i], termAtt.term());
-    }
-    assertFalse(ts.incrementToken());
-  }
+public class TestSnowball extends BaseTokenStreamTestCase {
 
   public void testEnglish() throws Exception {
     Analyzer a = new SnowballAnalyzer("English");

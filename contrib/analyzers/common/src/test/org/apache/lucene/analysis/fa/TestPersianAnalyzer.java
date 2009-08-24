@@ -19,17 +19,15 @@ package org.apache.lucene.analysis.fa;
 
 import java.io.StringReader;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Test the Persian Analyzer
  * 
  */
-public class TestPersianAnalyzer extends TestCase {
+public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
 
   /**
    * This test fails with NPE when the stopwords file is missing in classpath
@@ -214,35 +212,6 @@ public class TestPersianAnalyzer extends TestCase {
     Analyzer a = new PersianAnalyzer();
     assertAnalyzesToReuse(a, "خورده مي شده بوده باشد", new String[] { "خورده" });
     assertAnalyzesToReuse(a, "برگ‌ها", new String[] { "برگ" });
-  }
-
-  private void assertAnalyzesTo(Analyzer a, String input, String[] output)
-      throws Exception {
-	TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-	TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
-
-	for (int i = 0; i < output.length; i++) {
-		assertTrue(ts.incrementToken());
-		assertEquals(output[i], termAtt.term());
-	}
-	
-	assertFalse(ts.incrementToken());
-    ts.close();
-  }
-  
-  private void assertAnalyzesToReuse(Analyzer a, String input, String[] output)
-      throws Exception {
-    TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
-    TermAttribute termAtt = (TermAttribute) ts
-        .getAttribute(TermAttribute.class);
-
-    for (int i = 0; i < output.length; i++) {
-      assertTrue(ts.incrementToken());
-      assertEquals(output[i], termAtt.term());
-    }
-
-    assertFalse(ts.incrementToken());
-    ts.close();
   }
 
 }

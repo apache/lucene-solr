@@ -16,7 +16,7 @@ package org.apache.lucene.analysis.query;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LetterTokenizer;
 import org.apache.lucene.analysis.TokenStream;
@@ -39,7 +39,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
-public class QueryAutoStopWordAnalyzerTest extends TestCase {
+public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   String variedFieldValues[] = {"the", "quick", "brown", "fox", "jumped", "over", "the", "lazy", "boring", "dog"};
   String repetitiveFieldValues[] = {"boring", "boring", "vaguelyboring"};
   RAMDirectory dir;
@@ -67,8 +67,8 @@ public class QueryAutoStopWordAnalyzerTest extends TestCase {
   }
 
   protected void tearDown() throws Exception {
-    super.tearDown();
     reader.close();
+    super.tearDown();
   }
 
   //Helper method to query

@@ -18,7 +18,10 @@ package org.apache.lucene.analysis;
  */
 
 import java.util.Set;
+import java.io.StringReader;
+import java.io.IOException;
  
+import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** 
@@ -59,12 +62,6 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
 
   // @Override
-  protected void tearDown() throws Exception {
-    TokenStream.setOnlyUseNewAPI(false);
-    super.tearDown();
-  }
-
-  // @Override
   public void runBare() throws Throwable {
     // Do the test with onlyUseNewAPI=false (default)
     try {
@@ -86,5 +83,127 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       }
     }
   }
+  
+  // some helpers to test Analyzers and TokenStreams:
+  
+  public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
+    assertNotNull(output);
+    assertTrue("has TermAttribute", ts.hasAttribute(TermAttribute.class));
+    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
+    
+    OffsetAttribute offsetAtt = null;
+    if (startOffsets != null || endOffsets != null) {
+      assertTrue("has OffsetAttribute", ts.hasAttribute(OffsetAttribute.class));
+      offsetAtt = (OffsetAttribute) ts.getAttribute(OffsetAttribute.class);
+    }
+    
+    TypeAttribute typeAtt = null;
+    if (types != null) {
+      assertTrue("has TypeAttribute", ts.hasAttribute(TypeAttribute.class));
+      typeAtt = (TypeAttribute) ts.getAttribute(TypeAttribute.class);
+    }
+    
+    PositionIncrementAttribute posIncrAtt = null;
+    if (posIncrements != null) {
+      assertTrue("has PositionIncrementAttribute", ts.hasAttribute(PositionIncrementAttribute.class));
+      posIncrAtt = (PositionIncrementAttribute) ts.getAttribute(PositionIncrementAttribute.class);
+    }
+    
+    ts.reset();
+    for (int i = 0; i < output.length; i++) {
+      assertTrue("token "+i+" exists", ts.incrementToken());
+      assertEquals("term "+i, output[i], termAtt.term());
+      if (startOffsets != null)
+        assertEquals("startOffset "+i, startOffsets[i], offsetAtt.startOffset());
+      if (endOffsets != null)
+        assertEquals("endOffset "+i, endOffsets[i], offsetAtt.endOffset());
+      if (types != null)
+        assertEquals("type "+i, types[i], typeAtt.type());
+      if (posIncrements != null)
+        assertEquals("posIncrement "+i, posIncrements[i], posIncrAtt.getPositionIncrement());
+    }
+    assertFalse("end of stream", ts.incrementToken());
+    ts.close();
+  }
+  
+  public static void assertTokenStreamContents(TokenStream ts, String[] output) throws IOException {
+    assertTokenStreamContents(ts, output, null, null, null, null);
+  }
+  
+  public static void assertTokenStreamContents(TokenStream ts, String[] output, String[] types) throws IOException {
+    assertTokenStreamContents(ts, output, null, null, types, null);
+  }
+  
+  public static void assertTokenStreamContents(TokenStream ts, String[] output, int[] posIncrements) throws IOException {
+    assertTokenStreamContents(ts, output, null, null, null, posIncrements);
+  }
+  
+  public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[]) throws IOException {
+    assertTokenStreamContents(ts, output, startOffsets, endOffsets, null, null);
+  }
+  
+  public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], int[] posIncrements) throws IOException {
+    assertTokenStreamContents(ts, output, startOffsets, endOffsets, null, posIncrements);
+  }
 
+  
+  public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
+    assertTokenStreamContents(a.tokenStream("dummy", new StringReader(input)), output, startOffsets, endOffsets, types, posIncrements);
+  }
+  
+  public static void assertAnalyzesTo(Analyzer a, String input, String[] output) throws IOException {
+    assertAnalyzesTo(a, input, output, null, null, null, null);
+  }
+  
+  public static void assertAnalyzesTo(Analyzer a, String input, String[] output, String[] types) throws IOException {
+    assertAnalyzesTo(a, input, output, null, null, types, null);
+  }
+  
+  public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int[] posIncrements) throws IOException {
+    assertAnalyzesTo(a, input, output, null, null, null, posIncrements);
+  }
+  
+  public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[]) throws IOException {
+    assertAnalyzesTo(a, input, output, startOffsets, endOffsets, null, null);
+  }
+  
+  public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], int[] posIncrements) throws IOException {
+    assertAnalyzesTo(a, input, output, startOffsets, endOffsets, null, posIncrements);
+  }
+  
+
+  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
+    assertTokenStreamContents(a.reusableTokenStream("dummy", new StringReader(input)), output, startOffsets, endOffsets, types, posIncrements);
+  }
+  
+  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output) throws IOException {
+    assertAnalyzesToReuse(a, input, output, null, null, null, null);
+  }
+  
+  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, String[] types) throws IOException {
+    assertAnalyzesToReuse(a, input, output, null, null, types, null);
+  }
+  
+  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, int[] posIncrements) throws IOException {
+    assertAnalyzesToReuse(a, input, output, null, null, null, posIncrements);
+  }
+  
+  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[]) throws IOException {
+    assertAnalyzesToReuse(a, input, output, startOffsets, endOffsets, null, null);
+  }
+  
+  public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], int[] posIncrements) throws IOException {
+    assertAnalyzesToReuse(a, input, output, startOffsets, endOffsets, null, posIncrements);
+  }
+
+  // simple utility method for testing stemmers
+  
+  public static void checkOneTerm(Analyzer a, final String input, final String expected) throws IOException {
+    assertAnalyzesTo(a, input, new String[]{expected});
+  }
+  
+  public static void checkOneTermReuse(Analyzer a, final String input, final String expected) throws IOException {
+    assertAnalyzesToReuse(a, input, new String[]{expected});
+  }
+  
 }

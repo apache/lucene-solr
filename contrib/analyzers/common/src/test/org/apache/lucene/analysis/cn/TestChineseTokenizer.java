@@ -21,17 +21,15 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 
-public class TestChineseTokenizer extends TestCase
+public class TestChineseTokenizer extends BaseTokenStreamTestCase
 {
     public void testOtherLetterOffset() throws IOException
     {
@@ -116,34 +114,5 @@ public class TestChineseTokenizer extends TestCase
       assertAnalyzesTo(justFilter, "This is a Test. b c d", 
           new String[] { "This", "Test." });
     }
-    
-    private void assertAnalyzesTo(Analyzer a, String input, String[] output)
-      throws Exception {
-      TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-      TermAttribute termAtt = (TermAttribute) ts
-      .getAttribute(TermAttribute.class);
 
-     for (int i = 0; i < output.length; i++) {
-       assertTrue(ts.incrementToken());
-       assertEquals(output[i], termAtt.term());
-     }
-
-     assertFalse(ts.incrementToken());
-     ts.close();
-    }
-    
-    private void assertAnalyzesToReuse(Analyzer a, String input, String[] output,
-      int startOffsets[], int endOffsets[])
-      throws Exception {
-      TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
-      TermAttribute termAtt = (TermAttribute) ts
-        .getAttribute(TermAttribute.class);
-
-      for (int i = 0; i < output.length; i++) {
-        assertTrue(ts.incrementToken());
-        assertEquals(output[i], termAtt.term());
-      }
-
-      assertFalse(ts.incrementToken());
-    }
 }

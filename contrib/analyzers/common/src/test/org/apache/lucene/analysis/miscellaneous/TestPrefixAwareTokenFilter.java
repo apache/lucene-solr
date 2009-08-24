@@ -17,7 +17,7 @@ package org.apache.lucene.analysis.miscellaneous;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import java.io.IOException;
 import java.io.StringReader;
 
-public class TestPrefixAwareTokenFilter extends TestCase {
+public class TestPrefixAwareTokenFilter extends BaseTokenStreamTestCase {
 
   public void test() throws IOException {
 

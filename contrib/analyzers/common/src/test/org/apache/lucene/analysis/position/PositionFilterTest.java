@@ -19,13 +19,12 @@ package org.apache.lucene.analysis.position;
 
 import java.io.IOException;
 
-import junit.framework.TestCase;
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
-public class PositionFilterTest extends TestCase {
+public class PositionFilterTest extends BaseTokenStreamTestCase {
 
   public class TestTokenStream extends TokenStream {
 
@@ -40,6 +39,7 @@ public class PositionFilterTest extends TestCase {
     }
 
     public final boolean incrementToken() throws IOException {
+      clearAttributes();
       if (index < testToken.length) {
         termAtt.setTermBuffer(testToken[index++]);
         return true;
@@ -52,9 +52,6 @@ public class PositionFilterTest extends TestCase {
     }
   }
 
-  public static void main(String[] args) {
-    junit.textui.TestRunner.run(PositionFilterTest.class);
-  }
   public static final String[] TEST_TOKEN = new String[]{
     "please",
     "divide",
@@ -105,65 +102,39 @@ public class PositionFilterTest extends TestCase {
     "word"
   };
 
-  public void testFilter() throws IOException {
+  public void testFilter() throws Exception {
 
-    filterTest(new PositionFilter(new TestTokenStream(TEST_TOKEN)),
+    assertTokenStreamContents(new PositionFilter(new TestTokenStream(TEST_TOKEN)),
                TEST_TOKEN,
                TEST_TOKEN_POSITION_INCREMENTS);
   }
 
-  public void testNonZeroPositionIncrement() throws IOException {
+  public void testNonZeroPositionIncrement() throws Exception {
     
-    filterTest(new PositionFilter(new TestTokenStream(TEST_TOKEN), 5),
+    assertTokenStreamContents(new PositionFilter(new TestTokenStream(TEST_TOKEN), 5),
                TEST_TOKEN,
                TEST_TOKEN_NON_ZERO_POSITION_INCREMENTS);
   }
   
-  public void testReset() throws IOException {
+  public void testReset() throws Exception {
 
     PositionFilter filter = new PositionFilter(new TestTokenStream(TEST_TOKEN));
-    filterTest(filter, TEST_TOKEN, TEST_TOKEN_POSITION_INCREMENTS);
+    assertTokenStreamContents(filter, TEST_TOKEN, TEST_TOKEN_POSITION_INCREMENTS);
     filter.reset();
     // Make sure that the reset filter provides correct position increments
-    filterTest(filter, TEST_TOKEN, TEST_TOKEN_POSITION_INCREMENTS);
+    assertTokenStreamContents(filter, TEST_TOKEN, TEST_TOKEN_POSITION_INCREMENTS);
   }
   
   /** Tests ShingleFilter up to six shingles against six terms.
    *  Tests PositionFilter setting all but the first positionIncrement to zero.
    * @throws java.io.IOException @see Token#next(Token)
    */
-  public void test6GramFilterNoPositions() throws IOException {
+  public void test6GramFilterNoPositions() throws Exception {
 
     ShingleFilter filter = new ShingleFilter(new TestTokenStream(TEST_TOKEN), 6);
-    filterTest(new PositionFilter(filter),
+    assertTokenStreamContents(new PositionFilter(filter),
                SIX_GRAM_NO_POSITIONS_TOKENS,
                SIX_GRAM_NO_POSITIONS_INCREMENTS);
   }
 
-  protected TokenStream filterTest(final TokenStream filter,
-                                   final String[] tokensToCompare,
-                                   final int[] positionIncrements)
-      throws IOException {
-
-    int i = 0;
-    final Token reusableToken = new Token();
-
-    for (Token nextToken = filter.next(reusableToken)
-        ; i < tokensToCompare.length
-        ; nextToken = filter.next(reusableToken)) {
-
-      if (null != nextToken) {
-        final String termText = nextToken.term();
-        final String goldText = tokensToCompare[i];
-
-        assertEquals("Wrong termText", goldText, termText);
-        assertEquals("Wrong positionIncrement for token \"" + termText + "\"",
-                     positionIncrements[i], nextToken.getPositionIncrement());
-      }else{
-        assertNull(tokensToCompare[i]);
-      }
-      i++;
-    }
-    return filter;
-  }
 }

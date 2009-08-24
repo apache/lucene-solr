@@ -31,8 +31,7 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
@@ -41,7 +40,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
-public class TestCompoundWordTokenFilter extends TestCase {
+public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   private static String[] locations = {
       "http://dfn.dl.sourceforge.net/sourceforge/offo/offo-hyphenation.zip",
       "http://surfnet.dl.sourceforge.net/sourceforge/offo/offo-hyphenation.zip",
@@ -76,7 +75,7 @@ public class TestCompoundWordTokenFilter extends TestCase {
         dict, CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
-    assertFiltersTo(tf, new String[] { "Rindfleischüberwachungsgesetz", "Rind",
+    assertTokenStreamContents(tf, new String[] { "Rindfleischüberwachungsgesetz", "Rind",
         "fleisch", "überwachung", "gesetz", "Drahtschere", "Draht", "schere",
         "abba" }, new int[] { 0, 0, 4, 11, 23, 30, 30, 35, 42 }, new int[] {
         29, 4, 11, 22, 29, 41, 35, 41, 46 }, new int[] { 1, 0, 0, 0, 0, 1, 0,
@@ -101,7 +100,7 @@ public class TestCompoundWordTokenFilter extends TestCase {
             "Rindfleischüberwachungsgesetz")), hyphenator, dict,
         CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE, 40, true);
-    assertFiltersTo(tf, new String[] { "Rindfleischüberwachungsgesetz",
+    assertTokenStreamContents(tf, new String[] { "Rindfleischüberwachungsgesetz",
         "Rindfleisch", "fleisch", "überwachungsgesetz", "gesetz" }, new int[] {
         0, 0, 4, 11, 23 }, new int[] { 29, 11, 11, 29, 29 }, new int[] { 1, 0,
         0, 0, 0 });
@@ -118,7 +117,7 @@ public class TestCompoundWordTokenFilter extends TestCase {
                 "Bildörr Bilmotor Biltak Slagborr Hammarborr Pelarborr Glasögonfodral Basfiolsfodral Basfiolsfodralmakaregesäll Skomakare Vindrutetorkare Vindrutetorkarblad abba")),
         dict);
 
-    assertFiltersTo(tf, new String[] { "Bildörr", "Bil", "dörr", "Bilmotor",
+    assertTokenStreamContents(tf, new String[] { "Bildörr", "Bil", "dörr", "Bilmotor",
         "Bil", "motor", "Biltak", "Bil", "tak", "Slagborr", "Slag", "borr",
         "Hammarborr", "Hammar", "borr", "Pelarborr", "Pelar", "borr",
         "Glasögonfodral", "Glas", "ögon", "fodral", "Basfiolsfodral", "Bas",
@@ -147,7 +146,7 @@ public class TestCompoundWordTokenFilter extends TestCase {
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, true);
 
-    assertFiltersTo(tf, new String[] { "Basfiolsfodralmakaregesäll", "Bas",
+    assertTokenStreamContents(tf, new String[] { "Basfiolsfodralmakaregesäll", "Bas",
         "fiolsfodral", "fodral", "makare", "gesäll" }, new int[] { 0, 0, 3, 8,
         14, 20 }, new int[] { 26, 3, 14, 14, 20, 26 }, new int[] { 1, 0, 0, 0,
         0, 0 });
@@ -183,22 +182,6 @@ public class TestCompoundWordTokenFilter extends TestCase {
     tf.reset();
     assertTrue(tf.incrementToken());
     assertEquals("Rindfleischüberwachungsgesetz", termAtt.term());
-  }
-
-  private void assertFiltersTo(TokenFilter tf, String[] s, int[] startOffset,
-      int[] endOffset, int[] posIncr) throws Exception {
-    TermAttribute termAtt = (TermAttribute) tf.getAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) tf.getAttribute(OffsetAttribute.class);
-    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) tf.getAttribute(PositionIncrementAttribute.class);
-    
-    for (int i = 0; i < s.length; ++i) {
-      assertTrue(tf.incrementToken());
-      assertEquals(s[i], termAtt.term());
-      assertEquals(startOffset[i], offsetAtt.startOffset());
-      assertEquals(endOffset[i], offsetAtt.endOffset());
-      assertEquals(posIncr[i], posIncAtt.getPositionIncrement());
-    }
-    assertFalse(tf.incrementToken());
   }
 
   private void getHyphenationPatternFileContents() {

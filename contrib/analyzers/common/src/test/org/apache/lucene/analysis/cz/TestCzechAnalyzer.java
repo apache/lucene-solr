@@ -21,13 +21,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Test the CzechAnalyzer
@@ -35,7 +32,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * CzechAnalyzer is like a StandardAnalyzer with a custom stopword list.
  *
  */
-public class TestCzechAnalyzer extends TestCase {
+public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
   File dataDir = new File(System.getProperty("dataDir", "./bin"));
   File customStopFile = new File(dataDir, "org/apache/lucene/analysis/cz/customStopWordFile.txt");
   
@@ -85,24 +82,4 @@ public class TestCzechAnalyzer extends TestCase {
     assertAnalyzesToReuse(cz, "Česká Republika", new String[] { "česká" });
   }
 
-  private void assertAnalyzesTo(Analyzer a, String input, String[] output) throws Exception {
-    TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-    TermAttribute text = (TermAttribute) ts.getAttribute(TermAttribute.class);
-    for (int i=0; i<output.length; i++) {
-      assertTrue(ts.incrementToken());
-      assertEquals(text.term(), output[i]);
-    }
-    assertFalse(ts.incrementToken());
-    ts.close();
-  }
-  
-  private void assertAnalyzesToReuse(Analyzer a, String input, String[] output) throws Exception {
-    TokenStream ts = a.reusableTokenStream("dummy", new StringReader(input));
-    TermAttribute text = (TermAttribute) ts.getAttribute(TermAttribute.class);
-    for (int i=0; i<output.length; i++) {
-      assertTrue(ts.incrementToken());
-      assertEquals(text.term(), output[i]);
-    }
-    assertFalse(ts.incrementToken());
-  }
 }

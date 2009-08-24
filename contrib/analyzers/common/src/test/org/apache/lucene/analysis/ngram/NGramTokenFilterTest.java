@@ -19,20 +19,19 @@ package org.apache.lucene.analysis.ngram;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 
 import java.io.IOException;
 import java.io.StringReader;
 
-import junit.framework.TestCase;
-
 /**
  * Tests {@link NGramTokenFilter} for correctness.
  */
-public class NGramTokenFilterTest extends TestCase {
+public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
     private TokenStream input;
     
-    public void setUp() {
+    public void setUp() throws Exception {
+        super.setUp();
         input = new WhitespaceTokenizer(new StringReader("abcde"));
     }
 
@@ -56,70 +55,41 @@ public class NGramTokenFilterTest extends TestCase {
         assertTrue(gotException);
     }
 
-    private void checkStream(TokenStream stream, String[] exp) throws IOException {
-      TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
-      for (int i = 0; i < exp.length; i++) {
-        assertTrue(stream.incrementToken());
-        assertEquals(exp[i], termAtt.toString());
-      }
-      assertFalse(stream.incrementToken());
-    }
-    
     public void testUnigrams() throws Exception {
       NGramTokenFilter filter = new NGramTokenFilter(input, 1, 1);
-      String[] exp = new String[] {
-        "(a,0,1)", "(b,1,2)", "(c,2,3)", "(d,3,4)", "(e,4,5)"
-      };
-      
-      checkStream(filter, exp);
+      assertTokenStreamContents(filter, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5});
     }
 
     public void testBigrams() throws Exception {
       NGramTokenFilter filter = new NGramTokenFilter(input, 2, 2);
-      String[] exp = new String[] {
-          "(ab,0,2)", "(bc,1,3)", "(cd,2,4)", "(de,3,5)"
-        };
-        
-      checkStream(filter, exp);
+      assertTokenStreamContents(filter, new String[]{"ab","bc","cd","de"}, new int[]{0,1,2,3}, new int[]{2,3,4,5});
     }
 
     public void testNgrams() throws Exception {
       NGramTokenFilter filter = new NGramTokenFilter(input, 1, 3);
-      String[] exp = new String[] {
-          "(a,0,1)", "(b,1,2)", "(c,2,3)", "(d,3,4)", "(e,4,5)",
-          "(ab,0,2)", "(bc,1,3)", "(cd,2,4)", "(de,3,5)",
-          "(abc,0,3)", "(bcd,1,4)", "(cde,2,5)"
-      };
-        
-      checkStream(filter, exp);
+      assertTokenStreamContents(filter,
+        new String[]{"a","b","c","d","e", "ab","bc","cd","de", "abc","bcd","cde"}, 
+        new int[]{0,1,2,3,4, 0,1,2,3, 0,1,2},
+        new int[]{1,2,3,4,5, 2,3,4,5, 3,4,5}
+      );
     }
 
     public void testOversizedNgrams() throws Exception {
       NGramTokenFilter filter = new NGramTokenFilter(input, 6, 7);
-      assertFalse(filter.incrementToken());
+      assertTokenStreamContents(filter, new String[0], new int[0], new int[0]);
     }
     
     public void testSmallTokenInStream() throws Exception {
       input = new WhitespaceTokenizer(new StringReader("abc de fgh"));
       NGramTokenFilter filter = new NGramTokenFilter(input, 3, 3);
-      String[] exp = new String[] {
-          "(abc,0,3)", "(fgh,0,3)"
-        };
-        
-      checkStream(filter, exp);
+      assertTokenStreamContents(filter, new String[]{"abc","fgh"}, new int[]{0,0}, new int[]{3,3});
     }
     
     public void testReset() throws Exception {
       WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(new StringReader("abcde"));
-      NGramTokenFilter filter = new NGramTokenFilter(tokenizer, 1, 3);
-      TermAttribute termAtt = (TermAttribute) filter.addAttribute(TermAttribute.class);
-      assertTrue(filter.incrementToken());
-      assertEquals("(a,0,1)", termAtt.toString());
-      assertTrue(filter.incrementToken());
-      assertEquals("(b,1,2)", termAtt.toString());
+      NGramTokenFilter filter = new NGramTokenFilter(tokenizer, 1, 1);
+      assertTokenStreamContents(filter, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5});
       tokenizer.reset(new StringReader("abcde"));
-      filter.reset();
-      assertTrue(filter.incrementToken());
-      assertEquals("(a,0,1)", termAtt.toString());
+      assertTokenStreamContents(filter, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5});
     }
 }

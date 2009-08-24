@@ -866,6 +866,9 @@ public class Token extends AttributeImpl
       if (payload !=null) {
         to.payload = (Payload) payload.clone();
       }
+    // remove the following optimization in 3.0 when old TokenStream API removed:
+    } else if (target instanceof TokenWrapper) {
+      ((TokenWrapper) target).delegate = (Token) this.clone();
     } else {
       initTermBuffer();
       ((TermAttribute) target).setTermBuffer(termBuffer, 0, termLength);
