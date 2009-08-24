@@ -241,7 +241,9 @@ public class SolrConfig extends Config {
       }
     }
 
-    return Collections.unmodifiableMap(chains);
+    return chains.isEmpty() ?
+            Collections.<String, List<PluginInfo>>emptyMap():
+            Collections.unmodifiableMap(chains);
   }
   private PluginInfo loadSinglePlugin(String tag){
      NodeList nodes = (NodeList) evaluate(tag, XPathConstants.NODESET);
@@ -257,7 +259,9 @@ public class SolrConfig extends Config {
      for (int i=0; i<nodes.getLength(); i++) {
        result.add(new PluginInfo(nodes.item(i) ,"[solrconfig.xml] "+tag,requireName));
      }
-    return Collections.unmodifiableList(result) ;
+    return result.isEmpty() ?
+            Collections.<PluginInfo>emptyList() :
+            Collections.unmodifiableList(result) ;
   }
 
   /* The set of materialized parameters: */
