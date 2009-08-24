@@ -211,8 +211,12 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     p.freq = 1;
 
     if (doVectorOffsets) {
-      int startOffset = fieldState.offset + offsetAttribute.startOffset();;
-      int endOffset = fieldState.offset + offsetAttribute.endOffset();
+      int startOffset = fieldState.offset;
+      int endOffset = fieldState.offset;
+      if (offsetAttribute != null) {
+        startOffset += offsetAttribute.startOffset();
+        endOffset += offsetAttribute.endOffset();
+      }
       
       termsHashPerField.writeVInt(1, startOffset);
       termsHashPerField.writeVInt(1, endOffset - startOffset);
