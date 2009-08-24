@@ -26,7 +26,7 @@ import java.util.*;
 import java.nio.ByteBuffer;
 
 /**
- * The class is designed to optimaly serialize/deserialize a NamedList. As we know there are only a limited type of
+ * The class is designed to optimaly serialize/deserialize any supported types in Solr response. As we know there are only a limited type of
  * items this class can do it with very minimal amount of payload and code. There are 15 known types and if there is an
  * object in the object tree which does not fall into these types, It must be converted to one of these. Implement an
  * ObjectResolver and pass it over It is expected that this class is used on both end of the pipes. The class has one
