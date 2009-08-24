@@ -280,6 +280,8 @@ New Features
     high precision date subtraction, add sub() for subtracting other arguments.
     (yonik)
 
+73. SOLR-1156: Sort TermsComponent results by frequency (Matt Weber via yonik)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

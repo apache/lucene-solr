@@ -62,6 +62,13 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertU(adoc("id", "15", "standardfilt", "d"));
     assertU(adoc("id", "16", "standardfilt", "d"));
 
+    assertU(adoc("id", "17", "standardfilt", "snake"));
+    assertU(adoc("id", "18", "standardfilt", "spider"));
+    assertU(adoc("id", "19", "standardfilt", "shark"));
+    assertU(adoc("id", "20", "standardfilt", "snake"));
+    assertU(adoc("id", "21", "standardfilt", "snake"));
+    assertU(adoc("id", "22", "standardfilt", "shark"));
+    
     assertU("commit", commit());
   }
 
@@ -203,6 +210,72 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertTrue("value is null and it shouldn't be", value != null);
   }
 
+  public void testSortCount() throws Exception {
+    SolrCore core = h.getCore();
+    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
+    assertTrue("tc is null and it shouldn't be", tc != null);
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(TermsParams.TERMS, "true");
+    params.add(TermsParams.TERMS_FIELD, "standardfilt");
+    params.add(TermsParams.TERMS_LOWER,  "s");
+    params.add(TermsParams.TERMS_LOWER_INCLUSIVE, "false");
+    params.add(TermsParams.TERMS_PREFIX_STR, "s");
+    params.add(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_COUNT);
+    
+    SolrRequestHandler handler;
+    SolrQueryResponse rsp;
+    NamedList values;
+    NamedList terms;
+    handler = core.getRequestHandler("/terms");
+    assertTrue("handler is null and it shouldn't be", handler != null);
+    rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
+    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    values = rsp.getValues();
+    terms = (NamedList) ((NamedList) values.get("terms")).get("standardfilt");
+    assertTrue("terms Size: " + terms.size() + " is not: " + 3, terms.size() == 3);
+    assertTrue("Item 0 name is not 'snake'", terms.getName(0).equals("snake"));
+    assertTrue("Item 0 frequency is not '3'", (Integer) terms.getVal(0) == 3);
+    assertTrue("Item 1 name is not 'shark'", terms.getName(1).equals("shark"));
+    assertTrue("Item 1 frequency is not '2'", (Integer) terms.getVal(1) == 2);
+    assertTrue("Item 2 name is not 'spider'", terms.getName(2).equals("spider"));
+    assertTrue("Item 2 frequency is not '1'", (Integer) terms.getVal(2) == 1);    
+  }
+
+  public void testSortIndex() throws Exception {
+    SolrCore core = h.getCore();
+    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
+    assertTrue("tc is null and it shouldn't be", tc != null);
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(TermsParams.TERMS, "true");
+    params.add(TermsParams.TERMS_FIELD, "standardfilt");
+    params.add(TermsParams.TERMS_LOWER,  "s");
+    params.add(TermsParams.TERMS_LOWER_INCLUSIVE, "false");
+    params.add(TermsParams.TERMS_PREFIX_STR, "s");
+    params.add(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_INDEX);
+    
+    SolrRequestHandler handler;
+    SolrQueryResponse rsp;
+    NamedList values;
+    NamedList terms;
+    handler = core.getRequestHandler("/terms");
+    assertTrue("handler is null and it shouldn't be", handler != null);
+    rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
+    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    values = rsp.getValues();
+    terms = (NamedList) ((NamedList) values.get("terms")).get("standardfilt");
+    assertTrue("terms Size: " + terms.size() + " is not: " + 3, terms.size() == 3);
+    assertTrue("Item 0 name is not 'shark' it is " + terms.getName(0), terms.getName(0).equals("shark"));
+    assertTrue("Item 0 frequency is not '2'", (Integer) terms.getVal(0) == 2);
+    assertTrue("Item 1 name is not 'snake', it is " + terms.getName(1), terms.getName(1).equals("snake"));
+    assertTrue("Item 1 frequency is not '3'", (Integer) terms.getVal(1) == 3);
+    assertTrue("Item 2 name is not 'spider', it is " + terms.getName(2), terms.getName(2).equals("spider"));
+    assertTrue("Item 2 frequency is not '1'", (Integer) terms.getVal(2) == 1);    
+  }
+  
   public void testPastUpper() throws Exception {
     SolrCore core = h.getCore();
     TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
@@ -412,7 +485,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
     values = rsp.getValues();
     terms = (NamedList) ((NamedList) values.get("terms")).get("standardfilt");
-    assertTrue("terms Size: " + terms.size() + " is not: " + 1, terms.size() == 1);
+    assertTrue("terms Size: " + terms.size() + " is not: " + 3, terms.size() == 3);
     Integer d = (Integer) terms.get("d");
     assertTrue(d + " does not equal: " + 3, d == 3);
 

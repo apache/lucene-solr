@@ -82,5 +82,13 @@ public interface TermsParams {
    * For instance, the index form of numeric numbers is not human readable.  The default is false.
    */
   public static final String TERMS_RAW = TERMS_PREFIX + "raw";
+
+  /**
+   * Optional.  If sorting by frequency is enabled.  Defaults to sorting by count.
+   */
+  public static final String TERMS_SORT = TERMS_PREFIX + "sort";
+  
+  public static final String TERMS_SORT_COUNT = "count";
+  public static final String TERMS_SORT_INDEX = "index";
 }
 

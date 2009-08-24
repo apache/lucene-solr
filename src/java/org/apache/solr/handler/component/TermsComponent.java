@@ -26,6 +26,8 @@ import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.StrField;
+import org.apache.solr.request.SimpleFacets.CountPair;
+import org.apache.solr.util.BoundedTreeSet;
 
 import java.io.IOException;
 
@@ -55,6 +57,8 @@ public class TermsComponent extends SearchComponent {
         String upperStr = params.get(TermsParams.TERMS_UPPER);
         boolean upperIncl = params.getBool(TermsParams.TERMS_UPPER_INCLUSIVE, false);
         boolean lowerIncl = params.getBool(TermsParams.TERMS_LOWER_INCLUSIVE, true);
+        boolean sort = !TermsParams.TERMS_SORT_INDEX.equals(
+                          params.get(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_COUNT));
         int freqmin = params.getInt(TermsParams.TERMS_MINCOUNT, 1); // initialize freqmin
         int freqmax = params.getInt(TermsParams.TERMS_MAXCOUNT, UNLIMITED_MAX_COUNT); // initialize freqmax
         if (freqmax<0) {
@@ -77,6 +81,7 @@ public class TermsComponent extends SearchComponent {
           
           TermEnum termEnum = rb.req.getSearcher().getReader().terms(lowerTerm); //this will be positioned ready to go
           int i = 0;
+          BoundedTreeSet<CountPair<String, Integer>> queue = (sort ? new BoundedTreeSet<CountPair<String, Integer>>(limit) : null); 
           NamedList fieldTerms = new NamedList();
           terms.add(field, fieldTerms);
           Term lowerTestTerm = termEnum.term();
@@ -87,7 +92,7 @@ public class TermsComponent extends SearchComponent {
             termEnum.next();
           }
 
-          while (i<limit) {
+          while (i<limit || sort) {
 
             Term theTerm = termEnum.term();
 
@@ -111,14 +116,29 @@ public class TermsComponent extends SearchComponent {
             if (docFreq >= freqmin && docFreq <= freqmax) {
               // add the term to the list
               String label = raw ? indexedText : ft.indexedToReadable(indexedText);
-              fieldTerms.add(label, docFreq);
-              i++;
+              if (sort) {
+                queue.add(new CountPair<String, Integer>(label, docFreq));
+              } else {
+                fieldTerms.add(label, docFreq);
+                i++;
+              }
             }
 
             termEnum.next();
           }
 
           termEnum.close();
+          
+          if (sort) {
+            for (CountPair<String, Integer> item : queue) {
+              if (i < limit) {
+                fieldTerms.add(item.key, item.val);
+                i++;
+              } else {
+                break;
+              }
+            }
+          }
         }
       } else {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No terms.fl parameter specified");
