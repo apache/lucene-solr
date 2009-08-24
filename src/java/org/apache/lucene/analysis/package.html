@@ -33,15 +33,14 @@ application using Lucene to use an appropriate <i>Parser</i> to convert the orig
 <p>
 <h2>Tokenization</h2>
 <p>
-Plain text passed to Lucene for indexing goes through a process generally called tokenization &ndash; namely breaking of the 
-input text into small indexing elements &ndash; tokens.
-The way input text is broken into tokens very 
-much dictates further capabilities of search upon that text. 
+Plain text passed to Lucene for indexing goes through a process generally called tokenization. Tokenization is the process
+of breaking input text into small indexing elements &ndash; tokens.
+The way input text is broken into tokens heavily influences how people will then be able to search for that text. 
 For instance, sentences beginnings and endings can be identified to provide for more accurate phrase 
 and proximity searches (though sentence identification is not provided by Lucene).
 <p>
-In some cases simply breaking the input text into tokens is not enough &ndash; a deeper <i>Analysis</i> is needed,
-providing for several functions, including (but not limited to):
+In some cases simply breaking the input text into tokens is not enough &ndash; a deeper <i>Analysis</i> may be needed.
+There are many post tokenization steps that can be done, including (but not limited to):
 <ul>
   <li><a href="http://en.wikipedia.org/wiki/Stemming">Stemming</a> &ndash; 
       Replacing of words by their stems. 
@@ -76,7 +75,7 @@ providing for several functions, including (but not limited to):
     for modifying tokenss that have been created by the Tokenizer.  Common modifications performed by a
     TokenFilter are: deletion, stemming, synonym injection, and down casing.  Not all Analyzers require TokenFilters</li>
   </ul>
-  <b>Since Lucene 2.9 the TokenStream API was changed. Please see section "New TokenStream API" below for details.</b>
+  <b>Since Lucene 2.9 the TokenStream API has changed. Please see section "New TokenStream API" below for details.</b>
 </p>
 <h2>Hints, Tips and Traps</h2>
 <p>
