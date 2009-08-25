@@ -21,10 +21,10 @@ import java.io.IOException;
 import java.util.LinkedList;
 
 /**
- * {@link CharFilter} that applies the mappings contained in
- * a {@link NormalizeCharMap} to the character stream.
- *
- * @version $Id$
+ * Simplistic {@link CharFilter} that applies the mappings
+ * contained in a {@link NormalizeCharMap} to the character
+ * stream, and correcting the resulting changes to the
+ * offsets.
  */
 public class MappingCharFilter extends BaseCharFilter {
 

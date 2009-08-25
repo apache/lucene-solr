@@ -23,7 +23,6 @@ import java.util.Map;
 /**
  * Holds a map of String input to String output, to be used
  * with {@link MappingCharFilter}.
- * @version $Id$
  */
 public class NormalizeCharMap {
 
@@ -32,6 +31,14 @@ public class NormalizeCharMap {
   String normStr;
   int diff;
 
+  /** Records a replacement to be applied to the inputs
+   *  stream.  Whenever <code>singleMatch</code> occurs in
+   *  the input, it will be replaced with
+   *  <code>replacement</code>.
+   *
+   * @param singleMatch input String to be replaced
+   * @param replacement output String
+   */
   public void add(String singleMatch, String replacement) {
     NormalizeCharMap currMap = this;
     for(int i = 0; i < singleMatch.length(); i++) {

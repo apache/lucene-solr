@@ -21,15 +21,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Base utility class for implementing a {@link
- * CharFilter}.  You record mappings by calling {@link
- * #addOffCorrectMap}, and then invoke the correct method.
- * This class is not particularly efficient, eg a new class
- * instance is created for every call to {@link
- * #addOffCorrectMap}, which is appended to a private list.
- * When retrieving a mapping, that list is linearly
- * checked.
- * @version $Id$
+ * Base utility class for implementing a {@link CharFilter}.
+ * You subclass this, and then record mappings by calling
+ * {@link #addOffCorrectMap}, and then invoke the correct
+ * method to correct an offset.
+ *
+ * <p><b>NOTE</b>: This class is not particularly efficient.
+ * For example, a new class instance is created for every
+ * call to {@link #addOffCorrectMap}, which is then appended
+ * to a private list.
  */
 public abstract class BaseCharFilter extends CharFilter {
 
@@ -41,8 +41,10 @@ public abstract class BaseCharFilter extends CharFilter {
   }
 
   /** Retrieve the corrected offset.  Note that this method
-   *  is slow if you correct positions far before the most
-   *  recently added position. */
+   *  is slow, if you correct positions far before the most
+   *  recently added position, as it's a simple linear
+   *  searhc backwards through all offset corrections added
+   *  by {@link #addOffCorrectMap}. */
   protected int correct(int currentOff) {
     if (pcmList == null || pcmList.isEmpty()) {
       return currentOff;
