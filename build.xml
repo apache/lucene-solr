@@ -422,7 +422,7 @@
 
     <delete file="${build.dir}/lucene-${version}.tar"/>
     <delete file="${dist.dir}/lucene-${version}.tar.gz"/>
-    <tar tarfile="${build.dir}/lucene-${version}.tar">
+    <tar tarfile="${build.dir}/lucene-${version}.tar" longfile="gnu">
       <tarfileset prefix="lucene-${version}" dir=".">
         <patternset refid="binary.root.dist.patterns"/>
       </tarfileset>
@@ -488,7 +488,7 @@
 
     <delete file="${build.dir}/lucene-${version}-src.tar"/>
     <delete file="${dist.dir}/lucene-${version}-src.tar.gz"/>
-    <tar tarfile="${build.dir}/lucene-${version}-src.tar">
+    <tar tarfile="${build.dir}/lucene-${version}-src.tar" longfile="gnu">
       <tarfileset prefix="lucene-${version}" dir=".">
         <patternset refid="src.dist.patterns"/>
       </tarfileset>

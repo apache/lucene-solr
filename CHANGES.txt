@@ -821,6 +821,9 @@ Build
  4. LUCENE-1851: Change 'javacc' and 'clean-javacc' targets to build
     and clean contrib/surround files. (Luis Alves via Michael Busch)
 
+ 5. LUCENE-1854: tar task should use longfile="gnu" to avoid false file
+    name length warnings.  (Mark Miller)
+
 Test Cases
 
  1. LUCENE-1791: Enhancements to the QueryUtils and CheckHits utility 
