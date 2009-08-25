@@ -142,7 +142,7 @@ public class StandardTokenizer extends Tokenizer {
   }
 
   /**
-   * Creates a new StandardTokenizer with a given {@link AttributeFactory}. 
+   * Creates a new StandardTokenizer with a given {@link AttributeSource.AttributeFactory} 
    */
   public StandardTokenizer(AttributeFactory factory, Reader input, boolean replaceInvalidAcronym) {
     super(factory);

@@ -40,7 +40,7 @@ public class LetterTokenizer extends CharTokenizer {
     super(source, in);
   }
   
-  /** Construct a new LetterTokenizer using a given {@link AttributeFactory}. */
+  /** Construct a new LetterTokenizer using a given {@link AttributeSource.AttributeFactory}. */
   public LetterTokenizer(AttributeFactory factory, Reader in) {
     super(factory, in);
   }

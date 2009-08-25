@@ -36,7 +36,7 @@ public class WhitespaceTokenizer extends CharTokenizer {
     super(source, in);
   }
 
-  /** Construct a new WhitespaceTokenizer using a given {@link AttributeFactory}. */
+  /** Construct a new WhitespaceTokenizer using a given {@link AttributeSource.AttributeFactory}. */
   public WhitespaceTokenizer(AttributeFactory factory, Reader in) {
     super(factory, in);
   }

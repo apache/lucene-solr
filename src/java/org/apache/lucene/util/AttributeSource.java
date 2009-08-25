@@ -93,7 +93,7 @@ public class AttributeSource {
   private AttributeFactory factory;
   
   /**
-   * An AttributeSource using the default attribute factory {@link AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY}.
+   * An AttributeSource using the default attribute factory {@link AttributeSource.AttributeFactory#DEFAULT_ATTRIBUTE_FACTORY}.
    */
   public AttributeSource() {
     this(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY);

@@ -43,7 +43,7 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
     super(source, in);
   }
 
-  /** Construct a new LowerCaseTokenizer using a given {@link AttributeFactory}. */
+  /** Construct a new LowerCaseTokenizer using a given {@link AttributeSource.AttributeFactory}. */
   public LowerCaseTokenizer(AttributeFactory factory, Reader in) {
     super(factory, in);
   }
