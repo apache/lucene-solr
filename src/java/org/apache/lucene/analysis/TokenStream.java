@@ -26,48 +26,62 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
 
-/** A TokenStream enumerates the sequence of tokens, either from
-  fields of a document or from query text.
-  <p>
-  This is an abstract class.  Concrete subclasses are:
-  <ul>
-  <li>{@link Tokenizer}, a TokenStream
-  whose input is a Reader; and
-  <li>{@link TokenFilter}, a TokenStream
-  whose input is another TokenStream.
-  </ul>
-  A new TokenStream API is introduced with Lucene 2.9. While Token still 
-  exists in 2.9 as a convenience class, the preferred way to store
-  the information of a token is to use {@link AttributeImpl}s.
-  <p>
-  For that reason TokenStream extends {@link AttributeSource}
-  now. Note that only one instance per {@link AttributeImpl} is
-  created and reused for every token. This approach reduces
-  object creations and allows local caching of references to
-  the {@link AttributeImpl}s. See {@link #incrementToken()} for further details.
-  <p>
-  <b>The workflow of the new TokenStream API is as follows:</b>
-  <ol>
-    <li>Instantiation of TokenStream/TokenFilters which add/get attributes
-        to/from the {@link AttributeSource}. 
-    <li>The consumer calls {@link TokenStream#reset()}.
-    <li>the consumer retrieves attributes from the
-        stream and stores local references to all attributes it wants to access
-    <li>The consumer calls {@link #incrementToken()} until it returns false and
-        consumes the attributes after each call.    
-  </ol>
-  To make sure that filters and consumers know which attributes are available
-  the attributes must be added during instantiation. Filters and 
-  consumers are not required to check for availability of attributes in {@link #incrementToken()}.
-  <p>
-  Sometimes it is desirable to capture a current state of a
-  TokenStream, e. g. for buffering purposes (see {@link CachingTokenFilter},
-  {@link TeeSinkTokenFilter}). For this usecase
-  {@link AttributeSource#captureState} and {@link AttributeSource#restoreState} can be used.  
+/**
+ * A {@link TokenStream} enumerates the sequence of tokens, either from
+ * {@link Field}s of a {@link Document} or from query text.
+ * <p>
+ * This is an abstract class. Concrete subclasses are:
+ * <ul>
+ * <li>{@link Tokenizer}, a {@link TokenStream} whose input is a Reader; and
+ * <li>{@link TokenFilter}, a {@link TokenStream} whose input is another
+ * {@link TokenStream}.
+ * </ul>
+ * A new {@link TokenStream} API has been introduced with Lucene 2.9. This API
+ * has moved from being {@link Token} based to {@link Attribute} based. While
+ * {@link Token} still exists in 2.9 as a convenience class, the preferred way
+ * to store the information of a {@link Token} is to use {@link AttributeImpl}s.
+ * <p>
+ * {@link TokenStream} now extends {@link AttributeSource}, which provides
+ * access to all of the token {@link Attribute}s for the {@link TokenStream}.
+ * Note that only one instance per {@link AttributeImpl} is created and reused
+ * for every token. This approach reduces object creation and allows local
+ * caching of references to the {@link AttributeImpl}s. See
+ * {@link #incrementToken()} for further details.
+ * <p>
+ * <b>The workflow of the new {@link TokenStream} API is as follows:</b>
+ * <ol>
+ * <li>Instantiation of {@link TokenStream}/{@link TokenFilter}s which add/get
+ * attributes to/from the {@link AttributeSource}.
+ * <li>The consumer calls {@link TokenStream#reset()}.
+ * <li>the consumer retrieves attributes from the stream and stores local
+ * references to all attributes it wants to access
+ * <li>The consumer calls {@link #incrementToken()} until it returns false and
+ * consumes the attributes after each call.
+ * <li>The consumer calls {@link #end()} so that any end-of-stream operations
+ * can be performed.
+ * <li>The consumer calls {@link #close()} to release any resource when finished
+ * using the {@link TokenStream}
+ * </ol>
+ * To make sure that filters and consumers know which attributes are available,
+ * the attributes must be added during instantiation. Filters and consumers are
+ * not required to check for availability of attributes in
+ * {@link #incrementToken()}.
+ * <p>
+ * You can find some example code for the new API in the analysis package level
+ * Javadoc.
+ * <p>
+ * Sometimes it is desirable to capture a current state of a {@link TokenStream}
+ * , e. g. for buffering purposes (see {@link CachingTokenFilter},
+ * {@link TeeSinkTokenFilter}). For this usecase
+ * {@link AttributeSource#captureState} and {@link AttributeSource#restoreState}
+ * can be used.
  */
 public abstract class TokenStream extends AttributeSource {
 
@@ -228,54 +242,67 @@ public abstract class TokenStream extends AttributeSource {
   }
   
   /**
-   * For extra performance you can globally enable the new {@link #incrementToken}
-   * API using {@link Attribute}s. There will be a small, but in most cases neglectible performance 
-   * increase by enabling this, but it only works if <b>all</b> TokenStreams and -Filters
-   * use the new API and implement {@link #incrementToken}. This setting can only be enabled
+   * For extra performance you can globally enable the new
+   * {@link #incrementToken} API using {@link Attribute}s. There will be a
+   * small, but in most cases negligible performance increase by enabling this,
+   * but it only works if <b>all</b> {@link TokenStream}s use the new API and
+   * implement {@link #incrementToken}. This setting can only be enabled
    * globally.
-   * <P>This setting only affects TokenStreams instantiated after this call. All TokenStreams
-   * already created use the other setting.
-   * <P>All core analyzers are compatible with this setting, if you have own
-   * TokenStreams/-Filters, that are also compatible, enable this.
-   * <P>When enabled, tokenization may throw {@link UnsupportedOperationException}s,
-   * if the whole tokenizer chain is not compatible.
-   * <P>The default is <code>false</code>, so there is the fallback to the old API available.
-   * @deprecated This setting will be <code>true</code> per default in Lucene 3.0,
-   * when {@link #incrementToken} is abstract and must be always implemented.
+   * <P>
+   * This setting only affects {@link TokenStream}s instantiated after this
+   * call. All {@link TokenStream}s already created use the other setting.
+   * <P>
+   * All core {@link Analyzer}s are compatible with this setting, if you have
+   * your own {@link TokenStream}s that are also compatible, you should enable
+   * this.
+   * <P>
+   * When enabled, tokenization may throw {@link UnsupportedOperationException}
+   * s, if the whole tokenizer chain is not compatible eg one of the
+   * {@link TokenStream}s does not implement the new {@link TokenStream} API.
+   * <P>
+   * The default is <code>false</code>, so there is the fallback to the old API
+   * available.
+   * 
+   * @deprecated This setting will no longer be needed in Lucene 3.0 as the old
+   *             API will be removed.
    */
   public static void setOnlyUseNewAPI(boolean onlyUseNewAPI) {
     TokenStream.onlyUseNewAPI = onlyUseNewAPI;
   }
   
-  /** Returns if only the new API is used.
+  /**
+   * Returns if only the new API is used.
+   * 
    * @see #setOnlyUseNewAPI
-   * @deprecated This setting will be <code>true</code> per default in Lucene 3.0,
-   * when {@link #incrementToken} is abstract and must be always implemented.
+   * @deprecated This setting will no longer be needed in Lucene 3.0 as
+   *             the old API will be removed.
    */
   public static boolean getOnlyUseNewAPI() {
     return onlyUseNewAPI;
   }
   
   /**
-   * Consumers (eg the indexer) use this method to advance the stream 
-   * to the next token. Implementing classes must implement this method 
-   * and update the appropriate {@link AttributeImpl}s with content of the 
-   * next token.
+   * Consumers (ie {@link IndexWriter}) use this method to advance the stream to
+   * the next token. Implementing classes must implement this method and update
+   * the appropriate {@link AttributeImpl}s with the attributes of the next
+   * token.
    * <p>
    * This method is called for every token of a document, so an efficient
-   * implementation is crucial for good performance. To avoid calls to 
-   * {@link #addAttribute(Class)} and {@link #getAttribute(Class)} and
-   * downcasts, references to all {@link AttributeImpl}s that this stream uses 
-   * should be retrieved during instantiation.   
+   * implementation is crucial for good performance. To avoid calls to
+   * {@link #addAttribute(Class)} and {@link #getAttribute(Class)} or downcasts,
+   * references to all {@link AttributeImpl}s that this stream uses should be
+   * retrieved during instantiation.
    * <p>
-   * To make sure that filters and consumers know which attributes are available
-   * the attributes must be added during instantiation. Filters and 
-   * consumers are not required to check for availability of attributes in {@link #incrementToken()}.
+   * To ensure that filters and consumers know which attributes are available,
+   * the attributes must be added during instantiation. Filters and consumers
+   * are not required to check for availability of attributes in
+   * {@link #incrementToken()}.
    * 
    * @return false for end of stream; true otherwise
-   *
-   * <p>
-   * <b>Note that this method will be defined abstract in Lucene 3.0.</b>
+   * 
+   *         <p>
+   *         <b>Note that this method will be defined abstract in Lucene
+   *         3.0.</b>
    */
   public boolean incrementToken() throws IOException {
     assert !onlyUseNewAPI && tokenWrapper != null;
@@ -293,14 +320,15 @@ public abstract class TokenStream extends AttributeSource {
   }
   
   /**
-   * This method is called by the consumer after the last token has been consumed, 
-   * ie after {@link #incrementToken()} returned <code>false</code> (using the new TokenStream API)
-   * or after {@link #next(Token)} or {@link #next()} returned <code>null</code> (old TokenStream API).
+   * This method is called by the consumer after the last token has been
+   * consumed, eg after {@link #incrementToken()} returned <code>false</code>
+   * (using the new {@link TokenStream} API) or after {@link #next(Token)} or
+   * {@link #next()} returned <code>null</code> (old {@link TokenStream} API).
    * <p/>
-   * This method can be used to perform any end-of-stream operations, such as setting the final
-   * offset of a stream. The final offset of a stream might differ from the offset of the last token
-   * eg in case one or more whitespaces followed after the last token, but a {@link WhitespaceTokenizer}
-   * was used.
+   * This method can be used to perform any end-of-stream operations, such as
+   * setting the final offset of a stream. The final offset of a stream might
+   * differ from the offset of the last token eg in case one or more whitespaces
+   * followed after the last token, but a {@link WhitespaceTokenizer} was used.
    * 
    * @throws IOException
    */
@@ -308,36 +336,35 @@ public abstract class TokenStream extends AttributeSource {
     // do nothing by default
   }
 
-  /** Returns the next token in the stream, or null at EOS.
-   *  When possible, the input Token should be used as the
-   *  returned Token (this gives fastest tokenization
-   *  performance), but this is not required and a new Token
-   *  may be returned. Callers may re-use a single Token
-   *  instance for successive calls to this method.
-   *  <p>
-   *  This implicitly defines a "contract" between 
-   *  consumers (callers of this method) and 
-   *  producers (implementations of this method 
-   *  that are the source for tokens):
-   *  <ul>
-   *   <li>A consumer must fully consume the previously 
-   *       returned Token before calling this method again.</li>
-   *   <li>A producer must call {@link Token#clear()}
-   *       before setting the fields in it & returning it</li>
-   *  </ul>
-   *  Also, the producer must make no assumptions about a
-   *  Token after it has been returned: the caller may
-   *  arbitrarily change it.  If the producer needs to hold
-   *  onto the token for subsequent calls, it must clone()
-   *  it before storing it.
-   *  Note that a {@link TokenFilter} is considered a consumer.
-   *  @param reusableToken a Token that may or may not be used to
-   *  return; this parameter should never be null (the callee
-   *  is not required to check for null before using it, but it is a
-   *  good idea to assert that it is not null.)
-   *  @return next token in the stream or null if end-of-stream was hit
-   *  @deprecated The new {@link #incrementToken()} and {@link AttributeSource}
-   *  APIs should be used instead.
+  /**
+   * Returns the next token in the stream, or null at EOS. When possible, the
+   * input Token should be used as the returned Token (this gives fastest
+   * tokenization performance), but this is not required and a new Token may be
+   * returned. Callers may re-use a single Token instance for successive calls
+   * to this method.
+   * <p>
+   * This implicitly defines a "contract" between consumers (callers of this
+   * method) and producers (implementations of this method that are the source
+   * for tokens):
+   * <ul>
+   * <li>A consumer must fully consume the previously returned {@link Token}
+   * before calling this method again.</li>
+   * <li>A producer must call {@link Token#clear()} before setting the fields in
+   * it and returning it</li>
+   * </ul>
+   * Also, the producer must make no assumptions about a {@link Token} after it
+   * has been returned: the caller may arbitrarily change it. If the producer
+   * needs to hold onto the {@link Token} for subsequent calls, it must clone()
+   * it before storing it. Note that a {@link TokenFilter} is considered a
+   * consumer.
+   * 
+   * @param reusableToken a {@link Token} that may or may not be used to return;
+   *        this parameter should never be null (the callee is not required to
+   *        check for null before using it, but it is a good idea to assert that
+   *        it is not null.)
+   * @return next {@link Token} in the stream or null if end-of-stream was hit
+   * @deprecated The new {@link #incrementToken()} and {@link AttributeSource}
+   *             APIs should be used instead.
    */
   public Token next(final Token reusableToken) throws IOException {
     assert reusableToken != null;
@@ -357,12 +384,13 @@ public abstract class TokenStream extends AttributeSource {
     }
   }
 
-  /** Returns the next token in the stream, or null at EOS.
-   * @deprecated The returned Token is a "full private copy" (not
-   * re-used across calls to next()) but will be slower
-   * than calling {@link #next(Token)} or using the new
-   * {@link #incrementToken()} method with the new
-   * {@link AttributeSource} API.
+  /**
+   * Returns the next {@link Token} in the stream, or null at EOS.
+   * 
+   * @deprecated The returned Token is a "full private copy" (not re-used across
+   *             calls to {@link #next()}) but will be slower than calling
+   *             {@link #next(Token)} or using the new {@link #incrementToken()}
+   *             method with the new {@link AttributeSource} API.
    */
   public Token next() throws IOException {
     if (onlyUseNewAPI)
@@ -379,17 +407,15 @@ public abstract class TokenStream extends AttributeSource {
     }
   }
 
-  /** Resets this stream to the beginning. This is an
-   *  optional operation, so subclasses may or may not
-   *  implement this method. Reset() is not needed for
-   *  the standard indexing process. However, if the Tokens 
-   *  of a TokenStream are intended to be consumed more than 
-   *  once, it is necessary to implement reset().  Note that
-   *  if your TokenStream caches tokens and feeds them back
-   *  again after a reset, it is imperative that you
-   *  clone the tokens when you store them away (on the
-   *  first pass) as well as when you return them (on future
-   *  passes after reset()).
+  /**
+   * Resets this stream to the beginning. This is an optional operation, so
+   * subclasses may or may not implement this method. {@link #reset()} is not needed for
+   * the standard indexing process. However, if the tokens of a
+   * {@link TokenStream} are intended to be consumed more than once, it is
+   * necessary to implement {@link #reset()}. Note that if your TokenStream
+   * caches tokens and feeds them back again after a reset, it is imperative
+   * that you clone the tokens when you store them away (on the first pass) as
+   * well as when you return them (on future passes after {@link #reset()}).
    */
   public void reset() throws IOException {}
   
