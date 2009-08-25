@@ -198,6 +198,19 @@ public class TestFilteredQuery extends LuceneTestCase {
     assertEquals(0, hits.length);
     QueryUtils.check(query,searcher);    
   }
+
+  // Make sure BooleanQuery, which does out-of-order
+  // scoring, inside FilteredQuery, works
+  public void testBoolean2() throws Exception {
+    BooleanQuery bq = new BooleanQuery();
+    Query query = new FilteredQuery(bq,
+        new SingleDocTestFilter(0));
+    bq.add(new TermQuery(new Term("field", "one")), BooleanClause.Occur.SHOULD);
+    bq.add(new TermQuery(new Term("field", "two")), BooleanClause.Occur.SHOULD);
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
+    assertEquals(1, hits.length);
+    QueryUtils.check(query,searcher);    
+  }
 }
 
 

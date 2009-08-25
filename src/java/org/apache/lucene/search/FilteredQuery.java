@@ -103,7 +103,7 @@ extends Query {
       // return a filtering scorer
       public Scorer scorer(IndexReader indexReader, boolean scoreDocsInOrder, boolean topScorer)
           throws IOException {
-        final Scorer scorer = weight.scorer(indexReader, scoreDocsInOrder, false);
+        final Scorer scorer = weight.scorer(indexReader, true, false);
         if (scorer == null) {
           return null;
         }
