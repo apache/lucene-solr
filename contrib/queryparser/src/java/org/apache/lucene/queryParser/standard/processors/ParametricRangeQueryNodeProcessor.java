@@ -116,8 +116,7 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
       String part2 = upper.getTextAsString();
 
       try {
-        DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, Locale
-            .getDefault());
+        DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, locale);
         df.setLenient(true);
         Date d1 = df.parse(part1);
         Date d2 = df.parse(part2);

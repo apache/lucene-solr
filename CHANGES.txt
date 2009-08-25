@@ -512,6 +512,10 @@ Bug fixes
 24. LUCENE-1819: MatchAllDocsQuery.toString(field) should produce output
     that is parsable by the QueryParser.  (John Wang, Mark Miller)
 
+25. LUCENE-1836: Fix localization bug in the new query parser and add 
+    new LocalizedTestCase as base class for localization junit tests.
+    (Robert Muir, Uwe Schindler via Michael Busch)
+
 New features
 
  1. LUCENE-1411: Added expert API to open an IndexWriter on a prior
