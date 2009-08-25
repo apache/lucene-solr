@@ -20,7 +20,6 @@ package org.apache.lucene.analysis;
 import java.io.Reader;
 
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 /**
  * LowerCaseTokenizer performs the function of LetterTokenizer
@@ -43,7 +42,7 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
     super(source, in);
   }
 
-  /** Construct a new LowerCaseTokenizer using a given {@link AttributeSource.AttributeFactory}. */
+  /** Construct a new LowerCaseTokenizer using a given {@link org.apache.lucene.util.AttributeSource.AttributeFactory}. */
   public LowerCaseTokenizer(AttributeFactory factory, Reader in) {
     super(factory, in);
   }

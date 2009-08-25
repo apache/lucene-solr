@@ -619,10 +619,10 @@ public interface FieldCache {
   /**
    * If non-null, FieldCacheImpl will warn whenever
    * entries are created that are not sane according to
-   * {@link FieldCacheSanityChecker}.
+   * {@link org.apache.lucene.util.FieldCacheSanityChecker}.
    */
   public void setInfoStream(PrintStream stream);
 
-  /** @see setInfoStream */
+  /** counterpart of {@link #setInfoStream(PrintStream)} */
   public PrintStream getInfoStream();
 }

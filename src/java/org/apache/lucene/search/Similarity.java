@@ -543,7 +543,7 @@ public abstract class Similarity implements Serializable {
    *
    * @param terms the terms in the phrase
    * @param searcher the document collection being searched
-   * @return  
+   * @return idf score factor
    * @deprecated see {@link #idfExplain(Collection, Searcher)}
    */
   public float idf(Collection terms, Searcher searcher) throws IOException {
