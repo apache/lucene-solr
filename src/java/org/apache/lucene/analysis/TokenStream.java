@@ -305,7 +305,7 @@ public abstract class TokenStream extends AttributeSource {
    *         3.0.</b>
    */
   public boolean incrementToken() throws IOException {
-    assert !onlyUseNewAPI && tokenWrapper != null;
+    assert tokenWrapper != null;
     
     final Token token;
     if (supportedMethods.hasReusableNext) {
@@ -369,7 +369,7 @@ public abstract class TokenStream extends AttributeSource {
   public Token next(final Token reusableToken) throws IOException {
     assert reusableToken != null;
     
-    if (onlyUseNewAPI)
+    if (tokenWrapper == null)
       throw new UnsupportedOperationException("This TokenStream only supports the new Attributes API.");
     
     if (supportedMethods.hasIncrementToken) {
@@ -393,7 +393,7 @@ public abstract class TokenStream extends AttributeSource {
    *             method with the new {@link AttributeSource} API.
    */
   public Token next() throws IOException {
-    if (onlyUseNewAPI)
+    if (tokenWrapper == null)
       throw new UnsupportedOperationException("This TokenStream only supports the new Attributes API.");
     
     if (supportedMethods.hasIncrementToken) {
