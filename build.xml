@@ -384,9 +384,12 @@
         </filterset>
      </copy>
   </target>
-
-  <target name="nightly" depends="test, package-tgz, changes-to-html">
+	
+  <target name="set-nightly-property">
+    <property name="nightly" value="true"/>
   </target>
+	
+  <target name="nightly" depends="set-nightly-property, test, package-tgz, changes-to-html"/>
 
   <!-- ================================================================== -->
   <!-- Packages the distribution with zip                                 -->
