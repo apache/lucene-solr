@@ -4,9 +4,11 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.TimeZone;
 import java.util.Locale;
 
+import org.apache.lucene.util.LocalizedTestCase;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -26,7 +28,7 @@ import org.apache.lucene.util.LuceneTestCase;
  * limitations under the License.
  */
 
-public class TestDateTools extends LuceneTestCase {
+public class TestDateTools extends LocalizedTestCase {
 
   public void testStringToDate() throws ParseException {
     
@@ -57,7 +59,7 @@ public class TestDateTools extends LuceneTestCase {
   
   public void testStringtoTime() throws ParseException {
     long time = DateTools.stringToTime("197001010000");
-    Calendar cal = Calendar.getInstance();
+    Calendar cal = new GregorianCalendar();
     cal.set(1970, 0, 1,    // year=1970, month=january, day=1
         0, 0, 0);          // hour, minute, second
     cal.set(Calendar.MILLISECOND, 0);
@@ -71,7 +73,7 @@ public class TestDateTools extends LuceneTestCase {
   }
   
   public void testDateAndTimetoString() throws ParseException {
-    Calendar cal = Calendar.getInstance();
+    Calendar cal = new GregorianCalendar();
     cal.setTimeZone(TimeZone.getTimeZone("GMT"));
     cal.set(2004, 1, 3,   // year=2004, month=february(!), day=3
         22, 8, 56);       // hour, minute, second
@@ -135,7 +137,7 @@ public class TestDateTools extends LuceneTestCase {
   }
   
   public void testRound() {
-    Calendar cal = Calendar.getInstance();
+    Calendar cal = new GregorianCalendar();
     cal.setTimeZone(TimeZone.getTimeZone("GMT"));
     cal.set(2004, 1, 3,   // year=2004, month=february(!), day=3
         22, 8, 56);       // hour, minute, second

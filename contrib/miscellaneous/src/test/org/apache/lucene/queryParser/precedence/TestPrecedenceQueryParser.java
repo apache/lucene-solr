@@ -17,11 +17,9 @@ package org.apache.lucene.queryParser.precedence;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseTokenizer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -37,13 +35,23 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.LocalizedTestCase;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.text.DateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.HashSet;
 
-public class TestPrecedenceQueryParser extends TestCase {
+public class TestPrecedenceQueryParser extends LocalizedTestCase {
+  
+  public TestPrecedenceQueryParser(String name) {
+    super(name, new HashSet(Arrays.asList(new String[]{
+      "testDateRange", "testNumber"
+    })));
+  }
 
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
@@ -107,7 +115,8 @@ public class TestPrecedenceQueryParser extends TestCase {
 
   private int originalMaxClauses;
 
-  public void setUp() {
+  public void setUp() throws Exception {
+    super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
   }
 
@@ -360,6 +369,14 @@ public class TestPrecedenceQueryParser extends TestCase {
     assertQueryEquals("( bar blar { a TO z}) ", null, "bar blar {a TO z}");
     assertQueryEquals("gack ( bar blar { a TO z}) ", null, "gack (bar blar {a TO z})");
   }
+  
+  private String escapeDateString(String s) {
+    if (s.contains(" ")) {
+      return "\"" + s + "\"";
+    } else {
+      return s;
+    }
+  }
 
   public String getDate(String s) throws Exception {
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
@@ -368,7 +385,7 @@ public class TestPrecedenceQueryParser extends TestCase {
 
   public String getLocalizedDate(int year, int month, int day) {
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
-    Calendar calendar = Calendar.getInstance();
+    Calendar calendar = new GregorianCalendar();
     calendar.set(year, month, day);
     return df.format(calendar.getTime());
   }
@@ -376,9 +393,9 @@ public class TestPrecedenceQueryParser extends TestCase {
   public void testDateRange() throws Exception {
     String startDate = getLocalizedDate(2002, 1, 1);
     String endDate = getLocalizedDate(2002, 1, 4);
-    assertQueryEquals("[ " + startDate + " TO " + endDate + "]", null,
+    assertQueryEquals("[ " + escapeDateString(startDate) + " TO " + escapeDateString(endDate) + "]", null,
                       "[" + getDate(startDate) + " TO " + getDate(endDate) + "]");
-    assertQueryEquals("{  " + startDate + "    " + endDate + "   }", null,
+    assertQueryEquals("{  " + escapeDateString(startDate) + "    " + escapeDateString(endDate) + "   }", null,
                       "{" + getDate(startDate) + " TO " + getDate(endDate) + "}");
   }
 

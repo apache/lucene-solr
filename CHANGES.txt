@@ -813,6 +813,9 @@ Test Cases
     MultiSearcher when possible to help excercise more edge cases.
     (Chris Hostetter, Mark Miller)
 
+ 2. LUCENE-1852: Fix localization test failures. 
+    (Robert Muir via Michael Busch)
+
 ======================= Release 2.4.1 2009-03-09 =======================
 
 API Changes

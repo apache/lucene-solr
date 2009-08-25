@@ -21,8 +21,11 @@ import java.io.IOException;
 import java.io.Reader;
 import java.text.Collator;
 import java.text.DateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -68,7 +71,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LocalizedTestCase;
 
 /**
  * This test case is a copy of the core Lucene query parser test, it was adapted
@@ -76,8 +79,16 @@ import org.apache.lucene.util.LuceneTestCase;
  * 
  * Tests QueryParser.
  */
-public class TestQueryParserWrapper extends LuceneTestCase {
+public class TestQueryParserWrapper extends LocalizedTestCase {
 
+  public TestQueryParserWrapper(String name) {
+    super(name, new HashSet(Arrays.asList(new String[]{
+      "testLegacyDateRange", "testDateRange",
+      "testCJK", "testNumber", "testFarsiRangeCollating",
+      "testLocalDateFormat"
+    })));
+  }
+  
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
   public static class QPTestFilter extends TokenFilter {
@@ -618,6 +629,14 @@ public class TestQueryParserWrapper extends LuceneTestCase {
 
     is.close();
   }
+  
+  private String escapeDateString(String s) {
+    if (s.contains(" ")) {
+      return "\"" + s + "\"";
+    } else {
+      return s;
+    }
+  }
 
   /** for testing legacy DateField support */
   private String getLegacyDate(String s) throws Exception {
@@ -645,7 +664,7 @@ public class TestQueryParserWrapper extends LuceneTestCase {
   private String getLocalizedDate(int year, int month, int day,
       boolean extendLastDate) {
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
-    Calendar calendar = Calendar.getInstance();
+    Calendar calendar = new GregorianCalendar();
     calendar.set(year, month, day);
     if (extendLastDate) {
       calendar.set(Calendar.HOUR_OF_DAY, 23);
@@ -660,20 +679,20 @@ public class TestQueryParserWrapper extends LuceneTestCase {
   public void testLegacyDateRange() throws Exception {
     String startDate = getLocalizedDate(2002, 1, 1, false);
     String endDate = getLocalizedDate(2002, 1, 4, false);
-    Calendar endDateExpected = Calendar.getInstance();
+    Calendar endDateExpected = new GregorianCalendar();
     endDateExpected.set(2002, 1, 4, 23, 59, 59);
     endDateExpected.set(Calendar.MILLISECOND, 999);
-    assertQueryEquals("[ " + startDate + " TO " + endDate + "]", null, "["
+    assertQueryEquals("[ " + escapeDateString(startDate) + " TO " + escapeDateString(endDate) + "]", null, "["
         + getLegacyDate(startDate) + " TO "
         + DateField.dateToString(endDateExpected.getTime()) + "]");
-    assertQueryEquals("{  " + startDate + "    " + endDate + "   }", null, "{"
+    assertQueryEquals("{  " + escapeDateString(startDate) + "    " + escapeDateString(endDate) + "   }", null, "{"
         + getLegacyDate(startDate) + " TO " + getLegacyDate(endDate) + "}");
   }
 
   public void testDateRange() throws Exception {
     String startDate = getLocalizedDate(2002, 1, 1, false);
     String endDate = getLocalizedDate(2002, 1, 4, false);
-    Calendar endDateExpected = Calendar.getInstance();
+    Calendar endDateExpected = new GregorianCalendar();
     endDateExpected.set(2002, 1, 4, 23, 59, 59);
     endDateExpected.set(Calendar.MILLISECOND, 999);
     final String defaultField = "default";
@@ -715,10 +734,10 @@ public class TestQueryParserWrapper extends LuceneTestCase {
   public void assertDateRangeQueryEquals(QueryParserWrapper qp, String field,
       String startDate, String endDate, Date endDateInclusive,
       DateTools.Resolution resolution) throws Exception {
-    assertQueryEquals(qp, field, field + ":[" + startDate + " TO " + endDate
+    assertQueryEquals(qp, field, field + ":[" + escapeDateString(startDate) + " TO " + escapeDateString(endDate)
         + "]", "[" + getDate(startDate, resolution) + " TO "
         + getDate(endDateInclusive, resolution) + "]");
-    assertQueryEquals(qp, field, field + ":{" + startDate + " TO " + endDate
+    assertQueryEquals(qp, field, field + ":{" + escapeDateString(startDate) + " TO " + escapeDateString(endDate)
         + "}", "{" + getDate(startDate, resolution) + " TO "
         + getDate(endDate, resolution) + "}");
   }
@@ -1124,7 +1143,7 @@ public class TestQueryParserWrapper extends LuceneTestCase {
       int hour, int minute, int second, IndexWriter iw) throws IOException {
     Document d = new Document();
     d.add(new Field("f", content, Field.Store.YES, Field.Index.ANALYZED));
-    Calendar cal = Calendar.getInstance();
+    Calendar cal = Calendar.getInstance(Locale.ENGLISH);
     cal.set(year, month - 1, day, hour, minute, second);
     d.add(new Field("date", DateField.dateToString(cal.getTime()),
         Field.Store.YES, Field.Index.NOT_ANALYZED));
