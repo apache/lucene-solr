@@ -18,6 +18,7 @@ package org.apache.lucene.demo;
  */
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -29,12 +30,15 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FilterIndexReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.HitCollector;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TopScoreDocCollector;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
 
 /** Simple command-line based search demo. */
 public class SearchFiles {
@@ -109,13 +113,13 @@ public class SearchFiles {
       }
     }
     
-    IndexReader reader = IndexReader.open(index);
+    IndexReader reader = IndexReader.open(FSDirectory.open(new File(index)), true); // only searching, so read-only=true
 
     if (normsField != null)
       reader = new OneNormsReader(reader, normsField);
 
     Searcher searcher = new IndexSearcher(reader);
-    Analyzer analyzer = new StandardAnalyzer();
+    Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT);
 
     BufferedReader in = null;
     if (queries != null) {
@@ -167,11 +171,26 @@ public class SearchFiles {
    *  be processed, regardless of their relevance.
    */
   public static void doStreamingSearch(final Searcher searcher, Query query) throws IOException {
-    HitCollector streamingHitCollector = new HitCollector() {
+    Collector streamingHitCollector = new Collector() {
+      private Scorer scorer;
+      private int docBase;
       
       // simply print docId and score of every matching document
-      public void collect(int doc, float score) {
-        System.out.println("doc="+doc+" score="+score);
+      public void collect(int doc) throws IOException {
+        System.out.println("doc=" + doc + docBase + " score=" + scorer.score());
+      }
+
+      public boolean acceptsDocsOutOfOrder() {
+        return true;
+      }
+
+      public void setNextReader(IndexReader reader, int docBase)
+          throws IOException {
+        this.docBase = docBase;
+      }
+
+      public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer;
       }
       
     };

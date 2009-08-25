@@ -40,7 +40,7 @@ public class DeleteFiles {
     }
     try {
       Directory directory = FSDirectory.open(new File("index"));
-      IndexReader reader = IndexReader.open(directory);
+      IndexReader reader = IndexReader.open(directory, false); // we don't want read-only because we are about to delete
 
       Term term = new Term("path", args[0]);
       int deleted = reader.deleteDocuments(term);

@@ -23,6 +23,9 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
+
 import java.io.File;
 import java.util.Date;
 import java.util.Arrays;
@@ -68,7 +71,7 @@ public class IndexHTML {
         deleting = true;
         indexDocs(root, index, create);
       }
-      writer = new IndexWriter(index, new StandardAnalyzer(), create, 
+      writer = new IndexWriter(FSDirectory.open(new File(index)), new StandardAnalyzer(Version.LUCENE_CURRENT), create, 
                                new IndexWriter.MaxFieldLength(1000000));
       indexDocs(root, index, create);		  // add new docs
 
@@ -97,7 +100,7 @@ public class IndexHTML {
        throws Exception {
     if (!create) {				  // incrementally update
 
-      reader = IndexReader.open(index);		  // open existing index
+      reader = IndexReader.open(FSDirectory.open(new File(index)), false);		  // open existing index
       uidIter = reader.terms(new Term("uid", "")); // init uid iterator
 
       indexDocs(file);
