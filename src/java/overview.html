@@ -82,16 +82,17 @@ to check if the results are what we expect):</p>
 defines an abstract <a href="org/apache/lucene/analysis/Analyzer.html">Analyzer</a>
 API for converting text from a <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/io/Reader.html">java.io.Reader</a>
 into a <a href="org/apache/lucene/analysis/TokenStream.html">TokenStream</a>,
-an enumeration of <a href="org/apache/lucene/analysis/Token.html">Token</a>s.&nbsp;
-A TokenStream is composed by applying <a href="org/apache/lucene/analysis/TokenFilter.html">TokenFilter</a>s
+an enumeration of token <a href="org/apache/lucene/util/Attribute.html">Attribute</a>s.&nbsp;
+A TokenStream can be composed by applying <a href="org/apache/lucene/analysis/TokenFilter.html">TokenFilter</a>s
 to the output of a <a href="org/apache/lucene/analysis/Tokenizer.html">Tokenizer</a>.&nbsp;
-A few simple implemenations are provided, including <a href="org/apache/lucene/analysis/StopAnalyzer.html">StopAnalyzer</a>
+Tokenizers and TokenFilters are strung together and applied with an <a href="org/apache/lucene/analysis/Analyzer.html">Analyzer</a>.&nbsp;
+A handful of Analyzer implementations are provided, including <a href="org/apache/lucene/analysis/StopAnalyzer.html">StopAnalyzer</a>
 and the grammar-based <a href="org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a>.</li>
 
 <li>
 <b><a href="org/apache/lucene/document/package-summary.html">org.apache.lucene.document</a></b>
 provides a simple <a href="org/apache/lucene/document/Document.html">Document</a>
-class.&nbsp; A document is simply a set of named <a href="org/apache/lucene/document/Field.html">Field</a>s,
+class.&nbsp; A Document is simply a set of named <a href="org/apache/lucene/document/Field.html">Field</a>s,
 whose values may be strings or instances of <a href="http://java.sun.com/products/jdk/1.2/docs/api/java/io/Reader.html">java.io.Reader</a>.</li>
 
 <li>
@@ -102,7 +103,7 @@ which accesses the data in the index.</li>
 
 <li>
 <b><a href="org/apache/lucene/search/package-summary.html">org.apache.lucene.search</a></b>
-provides data structures to represent queries (<a href="org/apache/lucene/search/TermQuery.html">TermQuery</a>
+provides data structures to represent queries (ie <a href="org/apache/lucene/search/TermQuery.html">TermQuery</a>
 for individual words, <a href="org/apache/lucene/search/PhraseQuery.html">PhraseQuery</a>
 for phrases, and <a href="org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a>
 for boolean combinations of queries) and the abstract <a href="org/apache/lucene/search/Searcher.html">Searcher</a>
@@ -118,15 +119,15 @@ uses <a href="http://javacc.dev.java.net">JavaCC</a> to implement a
 <li>
 <b><a href="org/apache/lucene/store/package-summary.html">org.apache.lucene.store</a></b>
 defines an abstract class for storing persistent data, the <a href="org/apache/lucene/store/Directory.html">Directory</a>,
-a collection of named files written by an <a href="org/apache/lucene/store/IndexOutput.html">IndexOutput</a>
+which is a collection of named files written by an <a href="org/apache/lucene/store/IndexOutput.html">IndexOutput</a>
 and read by an <a href="org/apache/lucene/store/IndexInput.html">IndexInput</a>.&nbsp;
-Two implementations are provided, <a href="org/apache/lucene/store/FSDirectory.html">FSDirectory</a>,
+Multiple implementations are provided, including <a href="org/apache/lucene/store/FSDirectory.html">FSDirectory</a>,
 which uses a file system directory to store files, and <a href="org/apache/lucene/store/RAMDirectory.html">RAMDirectory</a>
 which implements files as memory-resident data structures.</li>
 
 <li>
 <b><a href="org/apache/lucene/util/package-summary.html">org.apache.lucene.util</a></b>
-contains a few handy data structures, e.g., <a href="org/apache/lucene/util/BitVector.html">BitVector</a>
+contains a few handy data structures and util classes, ie <a href="org/apache/lucene/util/BitVector.html">BitVector</a>
 and <a href="org/apache/lucene/util/PriorityQueue.html">PriorityQueue</a>.</li>
 </ul>
 To use Lucene, an application should:
