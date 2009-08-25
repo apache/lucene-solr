@@ -552,12 +552,16 @@
            outputfile="${build.dir}/docs/grammars/QueryParser.html"
            javacchome="${javacc.home}"
     />
-    <jjdoc target="src/java/org/apache/lucene/analysis/standard/StandardTokenizer.jj"
-           outputfile="${build.dir}/docs/grammars/StandardTokenizer.html"
-           javacchome="${javacc.home}"
-    />
     <jjdoc target="src/demo/org/apache/lucene/demo/html/HTMLParser.jj"
            outputfile="${build.dir}/docs/grammars/HTMLParser.html"
+           javacchome="${javacc.home}"
+    />
+    <jjdoc target="contrib/surround/src/java/org/apache/lucene/queryParser/surround/parser/QueryParser.jj"
+           outputfile="${build.dir}/docs/grammars/Surround_QueryParser.html"
+           javacchome="${javacc.home}"
+    />
+    <jjdoc target="contrib/queryparser/src/java/org/apache/lucene/queryParser/standard/parser/StandardSyntaxParser.jj"
+           outputfile="${build.dir}/docs/grammars/StandardSyntaxParser.html"
            javacchome="${javacc.home}"
     />
   </target>
@@ -571,6 +575,9 @@
       <fileset dir="src/java/org/apache/lucene/queryParser" includes="*.java">
         <containsregexp expression="Generated.*By.*JavaCC"/>
       </fileset>
+      <fileset dir="contrib/surround/src/java/org/apache/lucene/queryParser/surround/parser" includes="*.java">
+        <containsregexp expression="Generated.*By.*JavaCC"/>
+      </fileset>
       <fileset dir="contrib/queryparser/src/java/org/apache/lucene/queryParser/standard/parser" includes="*.java">
         <containsregexp expression="Generated.*By.*JavaCC"/>
       </fileset>
@@ -580,13 +587,13 @@
     </delete>
   </target>
 
-  <target name="javacc" depends="clean-javacc,javacc-QueryParser,javacc-HTMLParser,javacc-contrib-queryparser"/>
+  <target name="javacc" depends="clean-javacc,javacc-QueryParser,javacc-HTMLParser,javacc-contrib-queryparser, javacc-contrib-surround"/>
 
   <target name="javacc-QueryParser" depends="init,javacc-check" if="javacc.present">
     <invoke-javacc target="src/java/org/apache/lucene/queryParser/QueryParser.jj"
                    outputDir="src/java/org/apache/lucene/queryParser"
     />
-  </target>
+  </target>	
   
   <target name="javacc-HTMLParser" depends="init,javacc-check" if="javacc.present">
     <invoke-javacc target="src/demo/org/apache/lucene/demo/html/HTMLParser.jj"
@@ -597,6 +604,13 @@
   <target name="javacc-contrib-queryparser" depends="init,javacc-check" if="javacc.present">
     <ant target="javacc"
       dir="contrib/queryparser"
+      antfile="build.xml" 
+    />
+  </target>
+	
+  <target name="javacc-contrib-surround" depends="init,javacc-check" if="javacc.present">
+    <ant target="javacc"
+      dir="contrib/surround"
       antfile="build.xml" 
     />
   </target>

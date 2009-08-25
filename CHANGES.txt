@@ -818,6 +818,9 @@ Build
  3. LUCENE-1529: Properly test "drop-in" replacement of jar with 
     backwards-compatibility tests. (Mike McCandless, Michael Busch)
 
+ 4. LUCENE-1851: Change 'javacc' and 'clean-javacc' targets to build
+    and clean contrib/surround files. (Luis Alves via Michael Busch)
+
 Test Cases
 
  1. LUCENE-1791: Enhancements to the QueryUtils and CheckHits utility 

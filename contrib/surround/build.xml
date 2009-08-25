@@ -25,9 +25,9 @@
 
   <import file="../contrib-build.xml"/>
 
-  <target name="javacc">
+  <target name="javacc" depends="init,javacc-check" if="javacc.present">
     <invoke-javacc target="src/java/org/apache/lucene/queryParser/surround/parser/QueryParser.jj"
-                   outputDir="${build.dir}/gen/org/apache/lucene/queryParser/surround/parser"
+                   outputDir="src/java/org/apache/lucene/queryParser/surround/parser"
     />
   </target>
 </project>
