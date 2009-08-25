@@ -187,13 +187,17 @@ Changes in runtime behavior
     AttributeImpl and the 6 separate AttributeImpls. (Uwe Schindler, Michael Busch)
 
 13. LUCENE-1483: When searching over multiple segments, a new Scorer is now created 
-    for each segment. The Weight is created only once for the top level Searcher. 
-    Each Scorer is passed the per-segment IndexReader. This will result in docids 
-    in the Scorer being internal to the per-segment IndexReader. If a custom Scorer 
-    implementation uses any caches/filters that rely on being based on the top level 
-    IndexReader, it will need to be updated to use caches/filters on a per segment 
-    basis. There is currently no way provided to rebase the docids in the Scorer to 
-    the top level IndexReader.  (Mark Miller, Mike McCandless)
+    for each segment. Searching has been telescoped out a level and IndexSearcher now
+    operates much like MultiSearcher does. The Weight is created only once for the top 
+    level Searcher, but each Scorer is passed a per-segment IndexReader. This will 
+    result in doc ids in the Scorer being internal to the per-segment IndexReader. It 
+    has always been outside of the API to count on a given IndexReader to contain every 
+    doc id in the index - and if you have been ignoring MultiSearcher in your custom code 
+    and counting on this fact, you will find your code no longer works correctly. If a 
+    custom Scorer implementation uses any caches/filters that rely on being based on the 
+    top level IndexReader, it will need to be updated to correctly use contextless 
+    caches/filters eg you can't count on the IndexReader to contain any given doc id or 
+    all of the doc ids. (Mark Miller, Mike McCandless)
 
 14. LUCENE-1846: DateTools now uses the US locale to format the numbers in its
     date/time strings instead of the default locale. For most locales there will
