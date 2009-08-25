@@ -368,7 +368,7 @@ document.write("Last Published: " + document.lastModified);
 <div class="section">
 <p>
                 This document defines the index file formats used
-                in Lucene version 2.1. If you are using a different
+                in Lucene version 2.9. If you are using a different
                 version of Lucene, please consult the copy of
                 <span class="codefrag">docs/fileformats.html</span>
                 that was distributed
@@ -382,7 +382,7 @@ document.write("Last Published: " + document.lastModified);
                 languages</a>.  If these versions are to remain compatible with Apache
                 Lucene, then a language-independent definition of the Lucene index
                 format is required.  This document thus attempts to provide a
-                complete and independent definition of the Apache Lucene 2.1 file
+                complete and independent definition of the Apache Lucene 2.9 file
                 formats.
             </p>
 <p>
@@ -786,7 +786,7 @@ document.write("Last Published: " + document.lastModified);
 <tr>
               
 <td><a href="#Normalization Factors">Norms</a></td>
-              <td>.nrm (pre 2.1: .f[0-9]*)</td>
+              <td>.nrm</td>
               <td>Encodes length and boost factors for docs and fields</td>
             
 </tr>
@@ -1492,37 +1492,7 @@ document.write("Last Published: " + document.lastModified);
                 </p>
 <p>
                     
-<b>Pre-2.1:</b>
-                    Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize&gt;
-                    <sup>SegCount</sup>
-                
-</p>
-<p>
-                    
-<b>2.1 and above:</b>
-                    Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, HasSingleNormFile, NumField,
-                    NormGen<sup>NumField</sup>,
-                    IsCompoundFile&gt;<sup>SegCount</sup>
-                
-</p>
-<p>
-                    
-<b>2.3:</b>
-                    Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, DocStoreOffset, [DocStoreSegment, DocStoreIsCompoundFile], HasSingleNormFile, NumField,
-                    NormGen<sup>NumField</sup>,
-                    IsCompoundFile&gt;<sup>SegCount</sup>
-                
-</p>
-<p>
-                    
-<b>2.4 and above:</b>
-                    Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, DocStoreOffset, [DocStoreSegment, DocStoreIsCompoundFile], HasSingleNormFile, NumField,
-                    NormGen<sup>NumField</sup>,
-                    IsCompoundFile, DeletionCount, HasProx&gt;<sup>SegCount</sup>, Checksum
-                </p>
-<p>
-                    
-<b>2.9 and above:</b>
+<b>2.9</b>
                     Segments --&gt; Format, Version, NameCounter, SegCount, &lt;SegName, SegSize, DelGen, DocStoreOffset, [DocStoreSegment, DocStoreIsCompoundFile], HasSingleNormFile, NumField,
                     NormGen<sup>NumField</sup>,
                     IsCompoundFile, DeletionCount, HasProx, Diagnostics&gt;<sup>SegCount</sup>, CommitUserData, Checksum
@@ -1548,7 +1518,7 @@ document.write("Last Published: " + document.lastModified);
 		    CommitUserData --&gt; Map&lt;String,String&gt;
                 </p>
 <p>
-                    Format is -1 as of Lucene 1.4, -3 (SegmentInfos.FORMAT_SINGLE_NORM_FILE) as of Lucene 2.1 and 2.2, -4 (SegmentInfos.FORMAT_SHARED_DOC_STORE) as of Lucene 2.3, -7 (SegmentInfos.FORMAT_HAS_PROX) as of Lucene 2.4, and -9 (SegmentInfos.FORMAT_DIAGNOSTICS) as of Lucene 2.9.
+                    Format is -9 (SegmentInfos.FORMAT_DIAGNOSTICS).
                 </p>
 <p>
                     Version counts how often the index has been
@@ -1648,7 +1618,7 @@ document.write("Last Published: " + document.lastModified);
 		    Lucene version, OS, Java version, why the segment
 		    was created (merge, flush, addIndexes), etc.
                 </p>
-<a name="N105EB"></a><a name="Lock File"></a>
+<a name="N105BE"></a><a name="Lock File"></a>
 <h3 class="boxed">Lock File</h3>
 <p>
                     The write lock, which is stored in the index
@@ -1662,20 +1632,14 @@ document.write("Last Published: " + document.lastModified);
                     documents).  This lock file ensures that only one
                     writer is modifying the index at a time.
                 </p>
-<p>
-                    Note that prior to version 2.1, Lucene also used a
-                    commit lock. This was removed in 2.1.
-                </p>
-<a name="N105F7"></a><a name="Deletable File"></a>
+<a name="N105C7"></a><a name="Deletable File"></a>
 <h3 class="boxed">Deletable File</h3>
 <p>
-                    Prior to Lucene 2.1 there was a file "deletable"
-                    that contained details about files that need to be
-                    deleted. As of 2.1, a writer dynamically computes
+                    A writer dynamically computes
                     the files that are deletable, instead, so no file
                     is written.
                 </p>
-<a name="N10600"></a><a name="Compound Files"></a>
+<a name="N105D0"></a><a name="Compound Files"></a>
 <h3 class="boxed">Compound Files</h3>
 <p>Starting with Lucene 1.4 the compound file format became default. This
                     is simply a container for all files described in the next section
@@ -1702,14 +1666,14 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10628"></a><a name="Per-Segment Files"></a>
+<a name="N105F8"></a><a name="Per-Segment Files"></a>
 <h2 class="boxed">Per-Segment Files</h2>
 <div class="section">
 <p>
                 The remaining files are all per-segment, and are
                 thus defined by suffix.
             </p>
-<a name="N10630"></a><a name="Fields"></a>
+<a name="N10600"></a><a name="Fields"></a>
 <h3 class="boxed">Fields</h3>
 <p>
                     
@@ -1754,12 +1718,6 @@ document.write("Last Published: " + document.lastModified);
                             bit is one for fields that have term vectors stored, and zero for fields
                             without term vectors.
                         </li>
-                        
-<p>
-                            
-<b>Lucene &gt;= 1.9:</b>
-                        
-</p>
                         
 <li>If the third lowest-order bit is set (0x04), term positions are stored with the term vectors.</li>
                         
@@ -1872,31 +1830,6 @@ document.write("Last Published: " + document.lastModified);
 <p>FieldNum --&gt;
                             VInt
                         </p>
-
-                        
-<p>
-                            
-<b>Lucene &lt;= 1.4:</b>
-                        
-</p>
-                        
-<p>Bits --&gt;
-                            Byte
-                        </p>
-                        
-<p>Value --&gt;
-                            String
-                        </p>
-                        
-<p>Only the low-order bit of Bits is used. It is one for
-                            tokenized fields, and zero for non-tokenized fields.
-                        </p>
-                        
-<p>
-                            
-<b>Lucene &gt;= 1.9:</b>
-                        
-</p>
                         
 <p>Bits --&gt;
                             Byte
@@ -1933,7 +1866,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N106F2"></a><a name="Term Dictionary"></a>
+<a name="N106A7"></a><a name="Term Dictionary"></a>
 <h3 class="boxed">Term Dictionary</h3>
 <p>
                     The term dictionary is represented as two files:
@@ -2006,7 +1939,7 @@ document.write("Last Published: " + document.lastModified);
                         </p>
                         
 <p>TIVersion names the version of the format
-                            of this file and is -2 in Lucene 1.4.
+                            of this file and is equal to TermInfosWriter.FORMAT_CURRENT.
                         </p>
                         
 <p>Term
@@ -2125,7 +2058,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N10776"></a><a name="Frequencies"></a>
+<a name="N1072B"></a><a name="Frequencies"></a>
 <h3 class="boxed">Frequencies</h3>
 <p>
                     The .frq file contains the lists of documents
@@ -2241,7 +2174,7 @@ document.write("Last Published: " + document.lastModified);
                     <sup>nd</sup>
                     starts.
                 </p>
-<p>Lucene 2.2 introduces the notion of skip levels. Each term can have multiple skip levels.
+<p>Each term can have multiple skip levels.
                    The amount of skip levels for a term is NumSkipLevels = Min(MaxSkipLevels, floor(log(DocFreq/log(SkipInterval)))).
                    The number of SkipData entries for a skip level is DocFreq/(SkipInterval^(Level + 1)), whereas the lowest skip
                    level is Level=0. <br>
@@ -2253,7 +2186,7 @@ document.write("Last Published: " + document.lastModified);
                    entry in level-1. In the example has entry 15 on level 1 a pointer to entry 15 on level 0 and entry 31 on level 1 a pointer
                    to entry 31 on level 0.                   
                 </p>
-<a name="N107FE"></a><a name="Positions"></a>
+<a name="N107B3"></a><a name="Positions"></a>
 <h3 class="boxed">Positions</h3>
 <p>
                     The .prx file contains the lists of positions that
@@ -2323,25 +2256,9 @@ document.write("Last Published: " + document.lastModified);
                     Payload. If PayloadLength is not stored, then this Payload has the same
                     length as the Payload at the previous position.
                 </p>
-<a name="N1083A"></a><a name="Normalization Factors"></a>
+<a name="N107EF"></a><a name="Normalization Factors"></a>
 <h3 class="boxed">Normalization Factors</h3>
-<p>
-                    
-<b>Pre-2.1:</b>
-                    There's a norm file for each indexed field with a byte for
-                    each document. The .f[0-9]* file contains,
-                    for each document, a byte that encodes a value that is multiplied
-                    into the score for hits on that field:
-                </p>
-<p>Norms
-                    (.f[0-9]*) --&gt; &lt;Byte&gt;
-                    <sup>SegSize</sup>
-                
-</p>
-<p>
-                    
-<b>2.1 and above:</b>
-                    There's a single .nrm file containing all norms:
+<p>There's a single .nrm file containing all norms:
                 </p>
 <p>AllNorms
                     (.nrm) --&gt; NormsHeader,&lt;Norms&gt;
@@ -2417,17 +2334,9 @@ document.write("Last Published: " + document.lastModified);
 					When field <em>N</em> is modified, a separate norm file <em>.sN</em> 
 					is created, to maintain the norm values for that field.
                 </p>
-<p>
-                    
-<b>Pre-2.1:</b>
-                    Separate norm files are created only for compound segments.
+<p>Separate norm files are created (when adequate) for both compound and non compound segments.
                 </p>
-<p>
-                    
-<b>2.1 and above:</b>
-                    Separate norm files are created (when adequate) for both compound and non compound segments.
-                </p>
-<a name="N108A3"></a><a name="Term Vectors"></a>
+<a name="N10840"></a><a name="Term Vectors"></a>
 <h3 class="boxed">Term Vectors</h3>
 <p>
 		  Term Vector support is an optional on a field by
@@ -2450,7 +2359,7 @@ document.write("Last Published: " + document.lastModified);
                         
 </p>
                         
-<p>TVXVersion --&gt; Int (3 (TermVectorsReader.FORMAT_VERSION2) for Lucene 2.4)</p>
+<p>TVXVersion --&gt; Int (TermVectorsReader.CURRENT)</p>
                         
 <p>DocumentPosition --&gt; UInt64 (offset in
                         the .tvd file)</p>
@@ -2475,7 +2384,7 @@ document.write("Last Published: " + document.lastModified);
                         
 </p>
                         
-<p>TVDVersion --&gt; Int (3 (TermVectorsReader.FORMAT_VERSION2) for Lucene 2.4)</p>
+<p>TVDVersion --&gt; Int (TermVectorsReader.FORMAT_CURRENT)</p>
                         
 <p>NumFields --&gt; VInt</p>
                         
@@ -2511,7 +2420,7 @@ document.write("Last Published: " + document.lastModified);
                         
 </p>
                         
-<p>TVFVersion --&gt; Int (3 (TermVectorsReader.FORMAT_VERSION2) for Lucene 2.4)</p>
+<p>TVFVersion --&gt; Int (TermVectorsReader.FORMAT_CURRENT)</p>
                         
 <p>NumTerms --&gt; VInt</p>
                         
@@ -2563,7 +2472,7 @@ document.write("Last Published: " + document.lastModified);
 </li>
                 
 </ol>
-<a name="N1093F"></a><a name="Deleted Documents"></a>
+<a name="N108DC"></a><a name="Deleted Documents"></a>
 <h3 class="boxed">Deleted Documents</h3>
 <p>The .del file is
                     optional, and only exists when a segment contains deletions.
@@ -2571,14 +2480,6 @@ document.write("Last Published: " + document.lastModified);
 <p>Although per-segment, this file is maintained exterior to compound segment files.
                 </p>
 <p>
-                
-<b>Pre-2.1:</b>
-                Deletions
-                    (.del) --&gt; ByteCount,BitCount,Bits
-                </p>
-<p>
-				
-<b>2.1 and above:</b>
                 Deletions
                     (.del) --&gt; [Format],ByteCount,BitCount, Bits | DGaps (depending on Format)
                 </p>
@@ -2635,7 +2536,7 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10982"></a><a name="Limitations"></a>
+<a name="N10916"></a><a name="Limitations"></a>
 <h2 class="boxed">Limitations</h2>
 <div class="section">
 <p>
