@@ -18,21 +18,22 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import java.util.WeakHashMap;
 
-import org.apache.lucene.document.NumericField;
+import org.apache.lucene.document.NumericField; // javadoc
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.FieldCacheSanityChecker;
 
 /**
  * Expert: The default cache implementation, storing all values in memory.
@@ -208,11 +209,38 @@ class FieldCacheImpl implements ExtendedFieldCache {
             synchronized (readerCache) {
               innerCache.put(key, progress.value);
             }
+
+            // Only check if key.custom (the parser) is
+            // non-null; else, we check twice for a single
+            // call to FieldCache.getXXX
+            if (key.custom != null && wrapper != null) {
+              final PrintStream infoStream = wrapper.getInfoStream();
+              if (infoStream != null) {
+                printNewInsanity(infoStream, progress.value);
+              }
+            }
           }
           return progress.value;
         }
       }
       return value;
+    }
+
+    private void printNewInsanity(PrintStream infoStream, Object value) {
+      final FieldCacheSanityChecker.Insanity[] insanities = FieldCacheSanityChecker.checkSanity(wrapper);
+      for(int i=0;i<insanities.length;i++) {
+        final FieldCacheSanityChecker.Insanity insanity = insanities[i];
+        final CacheEntry[] entries = insanity.getCacheEntries();
+        for(int j=0;j<entries.length;j++) {
+          if (entries[j].getValue() == value) {
+            // OK this insanity involves our entry
+            infoStream.println("WARNING: new FieldCache insanity created\nDetails: " + insanity.toString());
+            infoStream.println("\nStack:\n");
+            new Throwable().printStackTrace(infoStream);
+            break;
+          }
+        }
+      }
     }
   }
 
@@ -811,6 +839,15 @@ class FieldCacheImpl implements ExtendedFieldCache {
       return retArray;
     }
   };
-  
+
+  private volatile PrintStream infoStream;
+
+  public void setInfoStream(PrintStream stream) {
+    infoStream = stream;
+  }
+
+  public PrintStream getInfoStream() {
+    return infoStream;
+  }
 }
 

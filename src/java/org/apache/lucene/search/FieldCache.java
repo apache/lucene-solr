@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.PrintStream;
 
 import java.text.DecimalFormat;
 
@@ -615,5 +616,13 @@ public interface FieldCache {
    */
   public abstract void purgeAllCaches();
 
+  /**
+   * If non-null, FieldCacheImpl will warn whenever
+   * entries are created that are not sane according to
+   * {@link FieldCacheSanityChecker}.
+   */
+  public void setInfoStream(PrintStream stream);
 
+  /** @see setInfoStream */
+  public PrintStream getInfoStream();
 }

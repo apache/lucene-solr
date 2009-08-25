@@ -729,6 +729,11 @@ New features
     ValueSource, but takes care when composite (multi-segment) are
     passed to not double RAM usage in the FieldCache.  (Chris
     Hostetter, Mark Miller, Mike McCandless)
+
+37. LUCENE-1798: Added FieldCache.set/getInfoStream, which uses
+    FieldCacheSanityChecker to detect when a new cache entry has
+    caused additional insanity, printing the details at the time that
+    it happens.  (Chris Hostetter, Mike McCandless)
    
 Optimizations
 

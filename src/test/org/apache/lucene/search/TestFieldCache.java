@@ -25,6 +25,8 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 public class TestFieldCache extends LuceneTestCase {
   protected IndexReader reader;
@@ -58,6 +60,18 @@ public class TestFieldCache extends LuceneTestCase {
     reader = IndexReader.open(directory);
   }
 
+  public void testInfoStream() throws Exception {
+    try {
+      FieldCache cache = FieldCache.DEFAULT;
+      ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+      cache.setInfoStream(new PrintStream(bos));
+      double [] doubles = cache.getDoubles(reader, "theDouble");
+      float [] floats = cache.getFloats(reader, "theDouble");
+      assertTrue(bos.toString().indexOf("WARNING") != -1);
+    } finally {
+      FieldCache.DEFAULT.purgeAllCaches();
+    }
+  }
 
   public void test() throws IOException {
     FieldCache cache = FieldCache.DEFAULT;
