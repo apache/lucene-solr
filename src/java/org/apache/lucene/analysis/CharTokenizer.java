@@ -23,7 +23,6 @@ import java.io.Reader;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 /** An abstract base class for simple, character-oriented tokenizers.*/
 public abstract class CharTokenizer extends Tokenizer {
