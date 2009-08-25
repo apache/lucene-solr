@@ -2,9 +2,6 @@
   <link message="/opt/forrest/forrest-0.8/main/webapp/. (Is a directory)" uri="skin/images/current.gif">
     <referrer uri="skin/screen.css"/>
   </link>
-  <link message="/home/hossman/lucene/solr/src/site/src/documentation/content/xdocs/images.instruction_arrow.png (No such file or directory)" uri="images/instruction_arrow.png">
-    <referrer uri="skin/screen.css"/>
-  </link>
   <link message="/opt/forrest/forrest-0.8/main/webapp/. (Is a directory)" uri="skin/images/chapter.gif">
     <referrer uri="skin/screen.css"/>
   </link>
