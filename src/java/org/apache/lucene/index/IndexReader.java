@@ -214,8 +214,9 @@ public abstract class IndexReader implements Cloneable {
    *  path.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @deprecated This method will be removed in the 3.0 release.
-   * Use {@link #open(Directory, boolean)} instead
+   * @deprecated Use {@link #open(Directory, boolean)} instead. 
+   *             This method will be removed in the 3.0 release.
+   * 
    * @param path the path to the index directory */
   public static IndexReader open(String path) throws CorruptIndexException, IOException {
     return open(path, false);
@@ -231,8 +232,9 @@ public abstract class IndexReader implements Cloneable {
    * @param path the path to the index directory
    * @param readOnly true if this should be a readOnly
    * reader
-   * @deprecated This method will be removed in the 3.0 release.
-   * Use {@link #open(Directory, boolean)} instead
+   * @deprecated Use {@link #open(Directory, boolean)} instead.
+   *             This method will be removed in the 3.0 release.
+   * 
    */
   public static IndexReader open(String path, boolean readOnly) throws CorruptIndexException, IOException {
     final Directory dir = FSDirectory.getDirectory(path);
@@ -251,8 +253,9 @@ public abstract class IndexReader implements Cloneable {
    * @param path the path to the index directory
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @deprecated This method will be removed in the 3.0 release.
-   * Use {@link #open(Directory, boolean)} instead
+   * @deprecated Use {@link #open(Directory, boolean)} instead.
+   *             This method will be removed in the 3.0 release.
+   * 
    */
   public static IndexReader open(File path) throws CorruptIndexException, IOException {
     return open(path, false);
@@ -268,8 +271,9 @@ public abstract class IndexReader implements Cloneable {
    * @param path the path to the index directory
    * @param readOnly true if this should be a readOnly
    * reader
-   * @deprecated This method will be removed in the 3.0 release.
-   * Use {@link #open(Directory, boolean)} instead
+   * @deprecated Use {@link #open(Directory, boolean)} instead.
+   *             This method will be removed in the 3.0 release.
+   * 
    */
   public static IndexReader open(File path, boolean readOnly) throws CorruptIndexException, IOException {
     final Directory dir = FSDirectory.getDirectory(path);
@@ -288,8 +292,9 @@ public abstract class IndexReader implements Cloneable {
    * @param directory the index directory
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @deprecated This method will be removed in the 3.0 release.
-   * Use {@link #open(Directory, boolean)} instead
+   * @deprecated Use {@link #open(Directory, boolean)} instead
+   *             This method will be removed in the 3.0 release.
+   * 
    */
   public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
     return open(directory, null, null, false, DEFAULT_TERMS_INDEX_DIVISOR);
@@ -313,8 +318,9 @@ public abstract class IndexReader implements Cloneable {
    * {@link IndexCommit}.
    * @param commit the commit point to open
    * @throws CorruptIndexException if the index is corrupt
-   * @deprecated This method will be removed in the 3.0 release.
-   * Use {@link #open(IndexCommit, boolean)} instead
+   * @deprecated Use {@link #open(IndexCommit, boolean)} instead.
+   *             This method will be removed in the 3.0 release.
+   * 
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit) throws CorruptIndexException, IOException {
@@ -341,8 +347,9 @@ public abstract class IndexReader implements Cloneable {
    * @param deletionPolicy a custom deletion policy (only used
    *  if you use this reader to perform deletes or to set
    *  norms); see {@link IndexWriter} for details.
-   * @deprecated This method will be removed in the 3.0 release.
-   * Use {@link #open(Directory, IndexDeletionPolicy, boolean)} instead
+   * @deprecated Use {@link #open(Directory, IndexDeletionPolicy, boolean)} instead.
+   *             This method will be removed in the 3.0 release.
+   * 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
@@ -405,8 +412,9 @@ public abstract class IndexReader implements Cloneable {
    * @param deletionPolicy a custom deletion policy (only used
    *  if you use this reader to perform deletes or to set
    *  norms); see {@link IndexWriter} for details.
-   * @deprecated This method will be removed in the 3.0 release.
-   * Use {@link #open(IndexCommit, IndexDeletionPolicy, boolean)} instead
+   * @deprecated Use {@link #open(IndexCommit, IndexDeletionPolicy, boolean)} instead.
+   *             This method will be removed in the 3.0 release.
+   * 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
@@ -591,8 +599,8 @@ public abstract class IndexReader implements Cloneable {
    * {@link #isCurrent()} instead. 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @deprecated This method will be removed in the 3.0 release.
-   * Use {@link #lastModified(Directory)} instead
+   * @deprecated Use {@link #lastModified(Directory)} instead.
+   *             This method will be removed in the 3.0 release.
    */
   public static long lastModified(String directory) throws CorruptIndexException, IOException {
     return lastModified(new File(directory));
@@ -604,8 +612,9 @@ public abstract class IndexReader implements Cloneable {
    * {@link #isCurrent()} instead. 
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @deprecated This method will be removed in the 3.0 release.
-   * Use {@link #lastModified(Directory)} instead
+   * @deprecated Use {@link #lastModified(Directory)} instead.
+   *             This method will be removed in the 3.0 release.
+   * 
    */
   public static long lastModified(File fileDirectory) throws CorruptIndexException, IOException {
     Directory dir = FSDirectory.getDirectory(fileDirectory); // use new static method here
@@ -640,8 +649,8 @@ public abstract class IndexReader implements Cloneable {
    * @return version number.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @deprecated This method will be removed in the 3.0 release.
-   * Use {@link #getCurrentVersion(Directory)} instead
+   * @deprecated Use {@link #getCurrentVersion(Directory)} instead.
+   *             This method will be removed in the 3.0 release.
    */
   public static long getCurrentVersion(String directory) throws CorruptIndexException, IOException {
     return getCurrentVersion(new File(directory));
@@ -656,8 +665,8 @@ public abstract class IndexReader implements Cloneable {
    * @return version number.
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @deprecated This method will be removed in the 3.0 release.
-   * Use {@link #getCurrentVersion(Directory)} instead
+   * @deprecated Use {@link #getCurrentVersion(Directory)} instead.
+   *             This method will be removed in the 3.0 release.
    */
   public static long getCurrentVersion(File directory) throws CorruptIndexException, IOException {
     Directory dir = FSDirectory.getDirectory(directory);
@@ -844,8 +853,9 @@ public abstract class IndexReader implements Cloneable {
    * <code>false</code> is returned.
    * @param  directory the directory to check for an index
    * @return <code>true</code> if an index exists; <code>false</code> otherwise
-   * @deprecated This method will be removed in the 3.0 release.
-   * Use {@link #indexExists(Directory)} instead
+   * @deprecated Use {@link #indexExists(Directory)} instead
+   *             This method will be removed in the 3.0 release.
+   * 
    */
   public static boolean indexExists(String directory) {
     return indexExists(new File(directory));
@@ -856,8 +866,9 @@ public abstract class IndexReader implements Cloneable {
    * If the directory does not exist or if there is no index in it.
    * @param  directory the directory to check for an index
    * @return <code>true</code> if an index exists; <code>false</code> otherwise
-   * @deprecated This method will be removed in the 3.0 release.
-   * Use {@link #indexExists(Directory)} instead
+   * @deprecated Use {@link #indexExists(Directory)} instead.
+   *             This method will be removed in the 3.0 release.
+   * 
    */
 
   public static boolean indexExists(File directory) {
@@ -1282,8 +1293,9 @@ public abstract class IndexReader implements Cloneable {
    * currently locked.
    * @param directory the directory to check for a lock
    * @throws IOException if there is a low-level IO error
-   * @deprecated This method will be removed in the 3.0 release.
-   * Please use {@link IndexWriter#isLocked(Directory)} instead
+   * @deprecated Please use {@link IndexWriter#isLocked(Directory)} instead.
+   *             This method will be removed in the 3.0 release.
+   * 
    */
   public static boolean isLocked(Directory directory) throws IOException {
     return
@@ -1295,8 +1307,9 @@ public abstract class IndexReader implements Cloneable {
    * currently locked.
    * @param directory the directory to check for a lock
    * @throws IOException if there is a low-level IO error
-   * @deprecated This method will be removed in the 3.0 release.
-   * Use {@link #isLocked(Directory)} instead
+   * @deprecated Use {@link #isLocked(Directory)} instead.
+   *             This method will be removed in the 3.0 release.
+   * 
    */
   public static boolean isLocked(String directory) throws IOException {
     Directory dir = FSDirectory.getDirectory(directory);
@@ -1313,8 +1326,9 @@ public abstract class IndexReader implements Cloneable {
    * Caution: this should only be used by failure recovery code,
    * when it is known that no other process nor thread is in fact
    * currently accessing this index.
-   * @deprecated This method will be removed in the 3.0 release.
-   * Please use {@link IndexWriter#unlock(Directory)} instead
+   * @deprecated Please use {@link IndexWriter#unlock(Directory)} instead.
+   *             This method will be removed in the 3.0 release.
+   * 
    */
   public static void unlock(Directory directory) throws IOException {
     directory.makeLock(IndexWriter.WRITE_LOCK_NAME).release();
