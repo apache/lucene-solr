@@ -281,7 +281,7 @@ public class TestSqlEntityProcessorDelta extends AbstractDataImportHandlerTest {
 
   private static String dataConfig_delta = "<dataConfig>\n"
     + "       <document>\n"
-    + "               <entity name=\"x\" pk=\"id\" transformer=\"TemplateTransformer\""
+    + "               <entity name=\"x\" transformer=\"TemplateTransformer\""
     + "				query=\"" + FULLIMPORT_QUERY + "\""
     + "				deletedPkQuery=\"" + DELETED_PK_QUERY + "\""
     + " 				deltaImportQuery=\"select * from x where id='${dataimporter.delta.id}'\""

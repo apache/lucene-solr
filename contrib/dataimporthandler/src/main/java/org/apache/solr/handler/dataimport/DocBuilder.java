@@ -273,12 +273,7 @@ public class DocBuilder {
     Iterator<Map<String, Object>> iter = deletedKeys.iterator();
     while (iter.hasNext()) {
       Map<String, Object> map = iter.next();
-      Object key = null;
-      if(root.pkMappingFromSchema != null){
-        key = map.get(root.pkMappingFromSchema);
-      } else if(root.pk != null){
-          key = map.get(root.pk);
-     } 
+      Object key = map.get(root.getPk()); 
       if(key == null) {
         LOG.warn("no key was available for deleteted pk query");
         continue;
@@ -623,7 +618,7 @@ public class DocBuilder {
 
       //Check to see if this delete is in the current delta set
       for (Map<String, Object> modifiedRow : deltaSet) {
-        if (modifiedRow.get(entity.pk).equals(row.get(entity.pk))) {
+        if (modifiedRow.get(entity.getPk()).equals(row.get(entity.getPk()))) {
           deltaRemoveSet.add(modifiedRow);
         }
       }

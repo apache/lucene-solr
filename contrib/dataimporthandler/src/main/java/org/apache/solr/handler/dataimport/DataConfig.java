@@ -173,6 +173,10 @@ public class DataConfig {
         dataSrc.close();
         dataSrc = null;
     }
+
+    public String getPk(){
+      return pk == null ? pkMappingFromSchema : pk;
+    }
   }
 
   public static class Script {
