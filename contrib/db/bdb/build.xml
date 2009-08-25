@@ -33,10 +33,22 @@
   <target name="get-db-jar" unless="db.jar.exists">
     <mkdir dir="lib" />
     <get src="http://downloads.osafoundation.org/db/db-${db.version}.jar"
-         dest="lib/db-${db.version}.jar" />
+  	         dest="lib/db-${db.version}.jar" ignoreerrors="true"/>
   </target>
 
-  <target name="sanity-load-lib" depends="compile-test">
+  <target name="compile-core" depends="check-and-get-db-jar, warn-no-lib" if="execute-build">
+	<antcall target="common.compile-core"/>
+  </target>	
+ 
+  <target name="jar-core" depends="check-and-get-db-jar, warn-no-lib" if="execute-build">
+	<antcall target="common.jar-core"/>
+  </target>
+
+  <target name="compile-test" depends="check-and-get-db-jar, warn-no-lib" if="execute-build">
+	<antcall target="contrib-build.compile-test"/>
+  </target>	
+
+  <target name="sanity-load-lib" depends="compile-test" >
     <java classname="org.apache.lucene.store.db.SanityLoadLibrary"
           classpathref="junit.classpath"
           fork="true"
@@ -44,7 +56,7 @@
           logError="false"
           outputproperty="sanity-load-lib-error"
     />
-    <condition property="no-bdb-lib" value="true">
+    <condition property="sanity-check-failed" value="true">
       <and>
        <isset property="sanity-load-lib-error"/>
        <not>
@@ -54,15 +66,39 @@
     </condition>
   </target>
 
-  <target name="warn-no-lib" if="no-bdb-lib">
+  <target name="warn-sanity-failed" if="sanity-check-failed">
     <echo>Unit Tests Skipped: Could not sanity check Native Library</echo>
   </target>
-  <target name="test" depends="sanity-load-lib,warn-no-lib"
-                      unless="no-bdb-lib">
+	
+  <target name="warn-no-lib" unless="execute-build">
+	<echo>Build Skipped: Could not download db-${db.version}.jar</echo>
+  </target>
+
+  <target name="test" depends="sanity-load-lib, warn-sanity-failed"
+                      unless="sanity-check-failed">
     <antcall target="common.test" inheritAll="true" inheritRefs="true" />
   </target>
 
-  <target name="check-and-get-db-jar" depends="get-db-jar" />
-  <target name="init" depends="contrib-build.init,check-and-get-db-jar" />
 
+  <!-- Note: this has been introduced as the download from downloads.osafoundation.org
+       fails frequently as the host is not available. To prevent nightly build failure
+       this check prevents the bdb module from being build or test to be run if the 
+       "nightly" property is set and the jar can not be downloaded.
+   -->  
+  <target name="check-and-get-db-jar" depends="get-db-jar" >
+  	<condition property="execute-build">
+  	  <or>
+  	    <available classname="com.sleepycat.db.internal.Db">
+  	      <classpath refid="db.jar" />
+  	    </available>
+  	  	<isset property="db.jar.exists"/>
+  	  	<!-- always succeed if the nightly property is not set -->
+  	  	<not>
+  	  	  <isset property="nightly"/>
+  	  	</not>
+  	  </or>
+  	</condition>
+  </target>
+	
+  <target name="init" depends="contrib-build.init, check-and-get-db-jar" />
 </project>
