@@ -831,6 +831,7 @@ Test Cases
     The new base class also tests tokenization with the TokenStream.next()
     backwards layer enabled (using Token/TokenWrapper as attribute
     implementation) and disabled (default for Lucene 3.0)
+    (Uwe Schindler, Robert Muir)
     
  4. LUCENE-1836: Added a new LocalizedTestCase as base class for localization
     junit tests.  (Robert Muir, Uwe Schindler via Michael Busch)
