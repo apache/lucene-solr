@@ -72,10 +72,10 @@ There are many post tokenization steps that can be done, including (but not limi
     up incoming text into tokens. In most cases, an Analyzer will use a Tokenizer as the first step in
     the analysis process.</li>
     <li>{@link org.apache.lucene.analysis.TokenFilter} &ndash; A TokenFilter is also a {@link org.apache.lucene.analysis.TokenStream} and is responsible
-    for modifying tokenss that have been created by the Tokenizer.  Common modifications performed by a
+    for modifying tokens that have been created by the Tokenizer.  Common modifications performed by a
     TokenFilter are: deletion, stemming, synonym injection, and down casing.  Not all Analyzers require TokenFilters</li>
   </ul>
-  <b>Since Lucene 2.9 the TokenStream API has changed. Please see section "New TokenStream API" below for details.</b>
+  <b>Lucene 2.9 introduces a new TokenStream API. Please see the section "New TokenStream API" below for more details.</b>
 </p>
 <h2>Hints, Tips and Traps</h2>
 <p>
@@ -358,6 +358,9 @@ public class MyAnalyzer extends Analyzer {
     while (stream.incrementToken()) {
       System.out.println(termAtt.term());
     }
+    
+    stream.end()
+    stream.close();
   }
 }
 </pre>
