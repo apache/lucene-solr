@@ -327,7 +327,11 @@ All methods in AttributeSource are idempotent, which means calling them multiple
 result. This is especially important to know for addAttribute(). The method takes the <b>type</b> (<code>Class</code>)
 of an Attribute as an argument and returns an <b>instance</b>. If an Attribute of the same type was previously added, then
 the already existing instance is returned, otherwise a new instance is created and returned. Therefore TokenStreams/-Filters
-can safely call addAttribute() with the same Attribute type multiple times.
+can safely call addAttribute() with the same Attribute type multiple times. Even consumers of TokenStreams should
+normally call addAttribute() instead of getAttribute(), because it would not fail if the TokenStream does not have this
+Attribute (getAttribute() would throw an IllegalArgumentException, if the Attribute is missing). More advanced code
+could simply check with hasAttribute(), if a TokenStream has it, and may conditionally leave out processing for
+extra performance.
 </li></ol>
 <h3>Example</h3>
 In this example we will create a WhiteSpaceTokenizer and use a LengthFilter to suppress all words that only
@@ -352,7 +356,9 @@ public class MyAnalyzer extends Analyzer {
     TokenStream stream = analyzer.tokenStream("field", new StringReader(text));
     
     // get the TermAttribute from the TokenStream
-    TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
+
+    stream.reset();
     
     // print all tokens until stream is exhausted
     while (stream.incrementToken()) {
@@ -573,15 +579,20 @@ to make use of the new PartOfSpeechAttribute and print it out:
     TokenStream stream = analyzer.tokenStream("field", new StringReader(text));
     
     // get the TermAttribute from the TokenStream
-    TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
     
     // get the PartOfSpeechAttribute from the TokenStream
-    PartOfSpeechAttribute posAtt = (PartOfSpeechAttribute) stream.getAttribute(PartOfSpeechAttribute.class);
+    PartOfSpeechAttribute posAtt = (PartOfSpeechAttribute) stream.addAttribute(PartOfSpeechAttribute.class);
     
+    stream.reset();
+
     // print all tokens until stream is exhausted
     while (stream.incrementToken()) {
       System.out.println(termAtt.term() + ": " + posAtt.getPartOfSpeech());
     }
+    
+    stream.end();
+    stream.close();
   }
 </pre>
 The change that was made is to get the PartOfSpeechAttribute from the TokenStream and print out its contents in
