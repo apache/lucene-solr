@@ -32,6 +32,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 
 /**
@@ -44,12 +45,12 @@ public class TestDemo extends LuceneTestCase {
 
   public void testDemo() throws IOException, ParseException {
 
-    Analyzer analyzer = new StandardAnalyzer();
+    Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT);
 
     // Store the index in memory:
     Directory directory = new RAMDirectory();
     // To store an index on disk, use this instead:
-    //Directory directory = FSDirectory.open(new File("/tmp/testindex"));
+    //Directory directory = FSDirectory.open("/tmp/testindex");
     IndexWriter iwriter = new IndexWriter(directory, analyzer, true,
                                           new IndexWriter.MaxFieldLength(25000));
     Document doc = new Document();
@@ -58,11 +59,9 @@ public class TestDemo extends LuceneTestCase {
         Field.Index.ANALYZED));
     iwriter.addDocument(doc);
     iwriter.close();
-
-    _TestUtil.checkIndex(directory);
     
     // Now search the index:
-    IndexSearcher isearcher = new IndexSearcher(directory);
+    IndexSearcher isearcher = new IndexSearcher(directory, true); // read-only=true
     // Parse a simple query that searches for "text":
     QueryParser parser = new QueryParser("fieldname", analyzer);
     Query query = parser.parse("text");
