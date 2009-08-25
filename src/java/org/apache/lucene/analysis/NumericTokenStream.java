@@ -17,6 +17,7 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.document.NumericField; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
@@ -110,12 +111,37 @@ public final class NumericTokenStream extends TokenStream {
    * before using set a value using the various set<em>???</em>Value() methods.
    */
   public NumericTokenStream(final int precisionStep) {
+    super();
     this.precisionStep = precisionStep;
     if (precisionStep < 1)
       throw new IllegalArgumentException("precisionStep must be >=1");
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
-    posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+  }
+
+  /**
+   * Expert: Creates a token stream for numeric values with the specified
+   * <code>precisionStep</code> using the given {@link AttributeSource}.
+   * The stream is not yet initialized,
+   * before using set a value using the various set<em>???</em>Value() methods.
+   */
+  public NumericTokenStream(AttributeSource source, final int precisionStep) {
+    super(source);
+    this.precisionStep = precisionStep;
+    if (precisionStep < 1)
+      throw new IllegalArgumentException("precisionStep must be >=1");
+  }
+
+  /**
+   * Expert: Creates a token stream for numeric values with the specified
+   * <code>precisionStep</code> using the given
+   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
+   * The stream is not yet initialized,
+   * before using set a value using the various set<em>???</em>Value() methods.
+   */
+  public NumericTokenStream(AttributeFactory factory, final int precisionStep) {
+    super(factory);
+    this.precisionStep = precisionStep;
+    if (precisionStep < 1)
+      throw new IllegalArgumentException("precisionStep must be >=1");
   }
 
   /**
@@ -216,9 +242,9 @@ public final class NumericTokenStream extends TokenStream {
   }
 
   // members
-  private final TermAttribute termAtt;
-  private final TypeAttribute typeAtt;
-  private final PositionIncrementAttribute posIncrAtt;
+  private final TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+  private final TypeAttribute typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
   
   private int shift = 0, valSize = 0; // valSize==0 means not initialized
   private final int precisionStep;
