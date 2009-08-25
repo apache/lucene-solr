@@ -823,6 +823,17 @@ Test Cases
 
  2. LUCENE-1852: Fix localization test failures. 
     (Robert Muir via Michael Busch)
+    
+ 3. LUCENE-1843: Refactored all tests that use assertAnalyzesTo() & others
+    in core and contrib to use a new BaseTokenStreamTestCase
+    base class. Also rewrote some tests to use this general analysis assert
+    functions instead of own ones (e.g. TestMappingCharFilter).
+    The new base class also tests tokenization with the TokenStream.next()
+    backwards layer enabled (using Token/TokenWrapper as attribute
+    implementation) and disabled (default for Lucene 3.0)
+    
+ 4. LUCENE-1836: Added a new LocalizedTestCase as base class for localization
+    junit tests.  (Robert Muir, Uwe Schindler via Michael Busch)
 
 ======================= Release 2.4.1 2009-03-09 =======================
 
