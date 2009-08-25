@@ -74,7 +74,7 @@ which will be used to configure the chosen Forrest skin.
   <project-name>Solr</project-name>
   <project-description>Solr Description</project-description>
   <project-url>http://lucene.apache.org/solr/</project-url>
-  <project-logo>images/solr_FC.jpg</project-logo>
+  <project-logo>images/solr.jpg</project-logo>
   <!-- Alternative static image:
   <project-logo>images/project-logo.gif</project-logo> -->
 
