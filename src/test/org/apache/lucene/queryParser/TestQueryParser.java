@@ -506,7 +506,7 @@ public class TestQueryParser extends LocalizedTestCase {
   }
   
   private String escapeDateString(String s) {
-    if (s.contains(" ")) {
+    if (s.indexOf(" ") > -1) {
       return "\"" + s + "\"";
     } else {
       return s;
