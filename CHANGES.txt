@@ -411,6 +411,10 @@ API Changes
 37. LUCENE-1826: Add constructors that take AttributeSource and
     AttributeFactory to all Tokenizer implementations.
     (Michael Busch)
+    
+38. LUCENE-1847: Similarity#idf for both a Term and Term Collection have
+    been deprecated. New versions that return an IDFExplanation have been
+    added.  (Yasoja Seneviratne, Mike McCandless, Mark Miller)
 
 Bug fixes
 
@@ -515,6 +519,10 @@ Bug fixes
 25. LUCENE-1836: Fix localization bug in the new query parser and add 
     new LocalizedTestCase as base class for localization junit tests.
     (Robert Muir, Uwe Schindler via Michael Busch)
+
+26. LUCENE-1847: PhraseQuery/TermQuery/SpanQuery use IndexReader specific stats 
+    in their Weight#explain methods - these stats should be corpus wide.
+    (Yasoja Seneviratne, Mike McCandless, Mark Miller)
 
 New features
 
@@ -729,11 +737,6 @@ New features
     ValueSource, but takes care when composite (multi-segment) are
     passed to not double RAM usage in the FieldCache.  (Chris
     Hostetter, Mark Miller, Mike McCandless)
-
-37. LUCENE-1798: Added FieldCache.set/getInfoStream, which uses
-    FieldCacheSanityChecker to detect when a new cache entry has
-    caused additional insanity, printing the details at the time that
-    it happens.  (Chris Hostetter, Mike McCandless)
    
 Optimizations
 

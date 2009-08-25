@@ -23,6 +23,7 @@ import java.util.Set;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing a term.
@@ -37,11 +38,13 @@ public class TermQuery extends Query {
     private float idf;
     private float queryNorm;
     private float queryWeight;
+    private IDFExplanation idfExp;
 
     public TermWeight(Searcher searcher)
       throws IOException {
       this.similarity = getSimilarity(searcher);
-      idf = similarity.idf(term, searcher); // compute idf
+      idfExp = similarity.idfExplain(term, searcher);
+      idf = idfExp.getIdf();
     }
 
     public String toString() { return "weight(" + TermQuery.this + ")"; }
@@ -75,8 +78,7 @@ public class TermQuery extends Query {
       ComplexExplanation result = new ComplexExplanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
 
-      Explanation expl = new Explanation(idf, "idf(docFreq=" + reader.docFreq(term) +
-            ", maxDocs=" + reader.maxDoc() + ")");
+      Explanation expl = new Explanation(idf, idfExp.explain());
 
       // explain query weight
       Explanation queryExpl = new Explanation();

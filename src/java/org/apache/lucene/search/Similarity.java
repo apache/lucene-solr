@@ -17,13 +17,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.SmallFloat;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 
 /** Expert: Scoring API.
@@ -287,8 +290,6 @@ import java.util.Iterator;
  * @see Searcher#setSimilarity(Similarity)
  */
 public abstract class Similarity implements Serializable {
-  /** The Similarity implementation used by default. */
-  private static Similarity defaultImpl = new DefaultSimilarity();
 
   public static final int NO_DOC_ID_PROVIDED = -1;
 
@@ -478,10 +479,62 @@ public abstract class Similarity implements Serializable {
    * @param term the term in question
    * @param searcher the document collection being searched
    * @return a score factor for the term
+   * @deprecated see {@link #idfExplain(Term, Searcher)}
    */
   public float idf(Term term, Searcher searcher) throws IOException {
     return idf(searcher.docFreq(term), searcher.maxDoc());
   }
+  
+  /**
+   * Computes a score factor for a simple term and returns an explanation
+   * for that score factor.
+   * 
+   * <p>
+   * The default implementation uses:
+   * 
+   * <pre>
+   * idf(searcher.docFreq(term), searcher.maxDoc());
+   * </pre>
+   * 
+   * Note that {@link Searcher#maxDoc()} is used instead of
+   * {@link org.apache.lucene.index.IndexReader#numDocs()} because it is
+   * proportional to {@link Searcher#docFreq(Term)} , i.e., when one is
+   * inaccurate, so is the other, and in the same direction.
+   * 
+   * @param term the term in question
+   * @param searcher the document collection being searched
+   * @return an IDFExplain object that includes both an idf score factor 
+             and an explanation for the term.
+   * @throws IOException
+   */
+  public IDFExplanation idfExplain(final Term term, final Searcher searcher) throws IOException {
+    if(supportedMethods.overridesTermIDF) {
+      final float idf = idf(term, searcher);
+      return new IDFExplanation() {
+        //@Override
+        public float getIdf() {
+          return idf;
+        }
+        //@Override
+        public String explain() {
+          return "Inexplicable";
+        }
+      };
+    }
+    final int df = searcher.docFreq(term);
+    final int max = searcher.maxDoc();
+    final float idf = idf(df, max);
+    return new IDFExplanation() {
+        //@Override
+        public String explain() {
+          return "idf(docFreq=" + df +
+          ", maxDocs=" + max + ")";
+        }
+        //@Override
+        public float getIdf() {
+          return idf;
+        }};
+   }
 
   /** Computes a score factor for a phrase.
    *
@@ -490,7 +543,8 @@ public abstract class Similarity implements Serializable {
    *
    * @param terms the terms in the phrase
    * @param searcher the document collection being searched
-   * @return a score factor for the phrase
+   * @return  
+   * @deprecated see {@link #idfExplain(Collection, Searcher)}
    */
   public float idf(Collection terms, Searcher searcher) throws IOException {
     float idf = 0.0f;
@@ -499,6 +553,60 @@ public abstract class Similarity implements Serializable {
       idf += idf((Term)i.next(), searcher);
     }
     return idf;
+  }
+  
+  /**
+   * Computes a score factor for a phrase.
+   * 
+   * <p>
+   * The default implementation sums the idf factor for
+   * each term in the phrase.
+   * 
+   * @param terms the terms in the phrase
+   * @param searcher the document collection being searched
+   * @return an IDFExplain object that includes both an idf 
+   *         score factor for the phrase and an explanation 
+   *         for each term.
+   * @throws IOException
+   */
+  public IDFExplanation idfExplain(Collection terms, Searcher searcher) throws IOException {
+    if(supportedMethods.overridesCollectionIDF) {
+      final float idf = idf(terms, searcher);
+      return new IDFExplanation() {
+        //@Override
+        public float getIdf() {
+          return idf;
+        }
+        //@Override
+        public String explain() {
+          return "Inexplicable";
+        }
+      };
+    }
+    final int max = searcher.maxDoc();
+    float idf = 0.0f;
+    final StringBuffer exp = new StringBuffer();
+    Iterator i = terms.iterator();
+    while (i.hasNext()) {
+      Term term = (Term)i.next();
+      final int df = searcher.docFreq(term);
+      idf += idf(df, max);
+      exp.append(" ");
+      exp.append(term.text());
+      exp.append("=");
+      exp.append(df);
+    }
+    final float fIdf = idf;
+    return new IDFExplanation() {
+      //@Override
+      public float getIdf() {
+        return fIdf;
+      }
+      //@Override
+      public String explain() {
+        return exp.toString();
+      }
+    };
   }
 
   /** Computes a score factor based on a term's document frequency (the number
@@ -577,5 +685,52 @@ public abstract class Similarity implements Serializable {
     //TODO: When removing the deprecated scorePayload above, set this to return 1
     return scorePayload(fieldName, payload, offset, length);
   }
+  
+  /** @deprecated Remove this when old API is removed! */
+  private final MethodSupport supportedMethods = getSupportedMethods(this.getClass());
+  
+    /** @deprecated Remove this when old API is removed! */
+  private static final class MethodSupport implements Serializable {
+    final boolean overridesCollectionIDF, overridesTermIDF;
+
+    MethodSupport(Class clazz) {
+      overridesCollectionIDF = isMethodOverridden(clazz, "idf", C_IDF_METHOD_PARAMS);
+      overridesTermIDF = isMethodOverridden(clazz, "idf", T_IDF_METHOD_PARAMS);
+    }
+    
+    private static boolean isMethodOverridden(Class clazz, String name, Class[] params) {
+      try {
+        return clazz.getMethod(name, params).getDeclaringClass() != Similarity.class;
+      } catch (NoSuchMethodException e) {
+        // should not happen
+        throw new RuntimeException(e);
+      }
+    }
+    /** @deprecated Remove this when old API is removed! */
+    private static final Class[] T_IDF_METHOD_PARAMS = new Class[]{Term.class, Searcher.class};
+    
+    /** @deprecated Remove this when old API is removed! */
+    private static final Class[] C_IDF_METHOD_PARAMS = new Class[]{Collection.class, Searcher.class};
+  }
+  
+  /** @deprecated Remove this when old API is removed! */
+  private static final IdentityHashMap/*<Class<? extends Similarity>,MethodSupport>*/ knownMethodSupport = new IdentityHashMap();
+  
+  /** @deprecated Remove this when old API is removed! */
+  private static MethodSupport getSupportedMethods(Class clazz) {
+    MethodSupport supportedMethods;
+    synchronized(knownMethodSupport) {
+      supportedMethods = (MethodSupport) knownMethodSupport.get(clazz);
+      if (supportedMethods == null) {
+        knownMethodSupport.put(clazz, supportedMethods = new MethodSupport(clazz));
+      }
+    }
+    return supportedMethods;
+  }
+  
+  /** The Similarity implementation used by default. 
+   *  TODO: move back to top when old API is removed! 
+   **/
+  private static Similarity defaultImpl = new DefaultSimilarity();
 
 }

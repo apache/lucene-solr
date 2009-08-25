@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing a particular sequence of terms.
@@ -112,12 +113,14 @@ public class PhraseQuery extends Query {
     private float idf;
     private float queryNorm;
     private float queryWeight;
+    private IDFExplanation idfExp;
 
     public PhraseWeight(Searcher searcher)
       throws IOException {
       this.similarity = getSimilarity(searcher);
 
-      idf = similarity.idf(terms, searcher);
+      idfExp = similarity.idfExplain(terms, searcher);
+      idf = idfExp.getIdf();
     }
 
     public String toString() { return "weight(" + PhraseQuery.this + ")"; }
@@ -167,24 +170,20 @@ public class PhraseQuery extends Query {
       StringBuffer docFreqs = new StringBuffer();
       StringBuffer query = new StringBuffer();
       query.append('\"');
+      docFreqs.append(idfExp.explain());
       for (int i = 0; i < terms.size(); i++) {
         if (i != 0) {
-          docFreqs.append(" ");
           query.append(" ");
         }
 
         Term term = (Term)terms.get(i);
-
-        docFreqs.append(term.text());
-        docFreqs.append("=");
-        docFreqs.append(reader.docFreq(term));
 
         query.append(term.text());
       }
       query.append('\"');
 
       Explanation idfExpl =
-        new Explanation(idf, "idf(" + field + ": " + docFreqs + ")");
+        new Explanation(idf, "idf(" + field + ":" + docFreqs + ")");
 
       // explain query weight
       Explanation queryExpl = new Explanation();

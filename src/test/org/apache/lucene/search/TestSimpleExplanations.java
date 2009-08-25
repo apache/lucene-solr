@@ -17,6 +17,19 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockRAMDirectory;
+
+
 /**
  * TestExplanations subclass focusing on basic query types
  */
@@ -290,5 +303,68 @@ public class TestSimpleExplanations extends TestExplanations {
     
   }
   
+  
+  public void testTermQueryMultiSearcherExplain() throws Exception {
+    // creating two directories for indices
+    Directory indexStoreA = new MockRAMDirectory();
+    Directory indexStoreB = new MockRAMDirectory();
+
+    Document lDoc = new Document();
+    lDoc.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
+    Document lDoc2 = new Document();
+    lDoc2.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
+    Document lDoc3 = new Document();
+    lDoc3.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
+
+    IndexWriter writerA = new IndexWriter(indexStoreA, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+
+    writerA.addDocument(lDoc);
+    writerA.addDocument(lDoc2);
+    writerA.optimize();
+    writerA.close();
+
+    writerB.addDocument(lDoc3);
+    writerB.close();
+
+    QueryParser parser = new QueryParser("fulltext", new StandardAnalyzer());
+    Query query = parser.parse("handle:1");
+
+    Searcher[] searchers = new Searcher[2];
+    searchers[0] = new IndexSearcher(indexStoreB);
+    searchers[1] = new IndexSearcher(indexStoreA);
+    Searcher mSearcher = new MultiSearcher(searchers);
+    ScoreDoc[] hits = mSearcher.search(query, null, 1000).scoreDocs;
+
+    assertEquals(3, hits.length);
+
+    Explanation explain = mSearcher.explain(query, hits[0].doc);
+    String exp = explain.toString(0);
+    assertTrue(exp, exp.indexOf("maxDocs=3") > -1);
+    assertTrue(exp, exp.indexOf("docFreq=3") > -1);
+    
+    query = parser.parse("handle:\"1 2\"");
+    hits = mSearcher.search(query, null, 1000).scoreDocs;
+
+    assertEquals(3, hits.length);
+
+    explain = mSearcher.explain(query, hits[0].doc);
+    exp = explain.toString(0);
+    assertTrue(exp, exp.indexOf("1=3") > -1);
+    assertTrue(exp, exp.indexOf("2=3") > -1);
+    
+    query = new SpanNearQuery(new SpanQuery[] {
+        new SpanTermQuery(new Term("handle", "1")),
+        new SpanTermQuery(new Term("handle", "2")) }, 0, true);
+    hits = mSearcher.search(query, null, 1000).scoreDocs;
+
+    assertEquals(3, hits.length);
+
+    explain = mSearcher.explain(query, hits[0].doc);
+    exp = explain.toString(0);
+    assertTrue(exp, exp.indexOf("1=3") > -1);
+    assertTrue(exp, exp.indexOf("2=3") > -1);
+    mSearcher.close();
+  }
   
 }

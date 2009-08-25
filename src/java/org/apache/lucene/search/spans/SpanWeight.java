@@ -18,12 +18,11 @@ package org.apache.lucene.search.spans;
  */
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.Explanation.IDFExplanation;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -38,6 +37,7 @@ public class SpanWeight extends Weight {
 
   protected Set terms;
   protected SpanQuery query;
+  private IDFExplanation idfExp;
 
   public SpanWeight(SpanQuery query, Searcher searcher)
     throws IOException {
@@ -45,8 +45,8 @@ public class SpanWeight extends Weight {
     this.query = query;
     terms=new HashSet();
     query.extractTerms(terms);
-
-    idf = this.query.getSimilarity(searcher).idf(terms, searcher);
+    idfExp = similarity.idfExplain(terms, searcher);
+    idf = idfExp.getIdf();
   }
 
   public Query getQuery() { return query; }
@@ -75,21 +75,8 @@ public class SpanWeight extends Weight {
     result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
     String field = ((SpanQuery)getQuery()).getField();
 
-    StringBuffer docFreqs = new StringBuffer();
-    Iterator i = terms.iterator();
-    while (i.hasNext()) {
-      Term term = (Term)i.next();
-      docFreqs.append(term.text());
-      docFreqs.append("=");
-      docFreqs.append(reader.docFreq(term));
-
-      if (i.hasNext()) {
-        docFreqs.append(" ");
-      }
-    }
-
     Explanation idfExpl =
-      new Explanation(idf, "idf(" + field + ": " + docFreqs + ")");
+      new Explanation(idf, "idf(" + field + ": " + idfExp.explain() + ")");
 
     // explain query weight
     Explanation queryExpl = new Explanation();
