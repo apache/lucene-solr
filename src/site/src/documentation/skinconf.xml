@@ -437,6 +437,15 @@ which will be used to configure the chosen Forrest skin.
       <width>88</width>
       <height>31</height>
     </credit>
+
+    <credit box-location="alt2">
+      <name>Book: Solr 1.4 Enterprise Search Server</name>
+      <url>http://www.packtpub.com/solr-1-4-enterprise-search-server?utm_source=http%3A%2F%2Flucene.apache.org%2Fsolr%2F&amp;utm_medium=spons&amp;utm_content=pod&amp;utm_campaign=mdb_000275</url>
+      <image>images/solr-book-image.jpg</image>
+      <width>150</width>
+      <height>185</height>
+    </credit>
+
     <!-- A credit with @role="pdf" will be used to compose a footer
      for each page in the PDF, using either "name" or "url" or both.
     -->

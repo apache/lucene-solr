@@ -41,6 +41,22 @@
       <title>News</title>
 
 <section>
+   <title>20 August 2009 - Solr's first book is published!</title>
+   <p>
+   <a title="PACKT:Solr 1.4 Enterprise Search Server" 
+href="http://www.packtpub.com/solr-1-4-enterprise-search-server?utm_source=http%3A%2F%2Flucene.apache.org%2Fsolr%2F&amp;utm_medium=spons&amp;utm_content=pod&amp;utm_campaign=mdb_000275"><img src="images/solr-book-image.jpg" class="float-right" alt="Solr book cover" /></a>
+   David Smiley and Eric Pugh are proud to introduce the first book on Solr, <strong><a
+href="http://www.packtpub.com/solr-1-4-enterprise-search-server?utm_source=http%3A%2F%2Flucene.apache.org%2Fsolr%2F&amp;utm_medium=spons&amp;utm_content=pod&amp;utm_campaign=mdb_000275">"Solr 1.4 Enterprise Search Server"</a></strong> from Packt Publishing.
+   </p>
+   <p>This book is a comprehensive reference guide for nearly every feature Solr has to offer. It serves the reader right from initiation to development to deployment. It also comes with complete running examples to demonstrate its use and show how to integrate it with other languages and frameworks.
+   </p><p>To keep this interesting and realistic, it uses a large open source set of metadata about artists, releases, and tracks courtesy of the MusicBrainz.org project. Using this data as a testing ground for Solr, you will learn how to import this data in various ways from CSV to XML to database access. You will then learn how to search this data in a myriad of ways, including Solr's rich query syntax, &quot;boosting&quot; match scores based on record data and other means, about searching across multiple fields with different boosts, getting facets on the results, auto-complete user queries, spell-correcting searches, highlighting queried text in search results, and so on.
+   </p><p>After this thorough tour, you'll see working examples of integrating a variety of technologies with Solr such as Java, JavaScript, Drupal, Ruby, PHP, and Python.
+   </p><p>Finally, this book covers various deployment considerations to include indexing strategies and performance-oriented configuration that will enable you to scale Solr to meet the needs of a high-volume site.
+   </p>
+</section>
+
+
+<section>
  <title>18 August 2009 - Lucene at US ApacheCon</title>
  <p>
  <a title="ApacheCon US 2009" 
