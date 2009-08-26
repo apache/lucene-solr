@@ -20,11 +20,11 @@ package org.apache.lucene.search;
 import java.rmi.Remote;
 
 /**
- * Marker interface to enable subclasses of {@link Searchable} to be used via
+ * Marker interface to enable subclasses of {@link org.apache.lucene.search.Searchable} to be used via
  * Java RMI. Classes implementing this interface can be used as a RMI -
  * "remote object".
  * <p>
- * {@link RMIRemoteSearchable} extends {@link Searchable} and can transparently
+ * {@link RMIRemoteSearchable} extends {@link org.apache.lucene.search.Searchable} and can transparently
  * be used as a such.
  * <p>
  * Example usage:

@@ -23,12 +23,12 @@ import java.util.BitSet;
 import org.apache.lucene.index.IndexReader;
 
 /**
- * Provides caching of {@link Filter}s themselves on the remote end of an RMI connection.
+ * Provides caching of {@link org.apache.lucene.search.Filter}s themselves on the remote end of an RMI connection.
  * The cache is keyed on Filter's hashCode(), so if it sees the same filter twice
  * it will reuse the original version.
  * <p/>
  * NOTE: This does NOT cache the Filter bits, but rather the Filter itself.
- * Thus, this works hand-in-hand with {@link CachingWrapperFilter} to keep both
+ * Thus, this works hand-in-hand with {@link org.apache.lucene.search.CachingWrapperFilter} to keep both
  * file Filter cache and the Filter bits on the remote end, close to the searcher.
  * <p/>
  * Usage:
@@ -47,7 +47,7 @@ public class RemoteCachingWrapperFilter extends Filter {
   }
 
   /**
-   * Uses the {@link FilterManager} to keep the cache for a filter on the 
+   * Uses the {@link org.apache.lucene.search.FilterManager} to keep the cache for a filter on the 
    * searcher side of a remote connection.
    * @param reader the index reader for the Filter
    * @return the bitset
@@ -59,7 +59,7 @@ public class RemoteCachingWrapperFilter extends Filter {
   }
   
   /**
-   * Uses the {@link FilterManager} to keep the cache for a filter on the 
+   * Uses the {@link org.apache.lucene.search.FilterManager} to keep the cache for a filter on the 
    * searcher side of a remote connection.
    * @param reader the index reader for the Filter
    * @return the DocIdSet
