@@ -44,7 +44,7 @@ public interface HTMLParser {
   /**
    * Parse the inputText and return DocData. 
    * @param inputText the html text to parse.
-   * @see {@link #parse(String, Date, Reader, DateFormat)}
+   * @see #parse(DocData, String, Date, Reader, DateFormat)
    */
   public DocData parse(DocData docData, String name, Date date, StringBuffer inputText, DateFormat dateFormat) throws IOException, InterruptedException;
 
