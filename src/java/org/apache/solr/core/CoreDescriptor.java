@@ -30,6 +30,7 @@ public class CoreDescriptor {
   protected String instanceDir;
   protected String dataDir;
   protected String configName;
+  protected String propertiesName;
   protected String schemaName;
   private final CoreContainer coreContainer;
   private Properties coreProperties;
@@ -81,6 +82,14 @@ public class CoreDescriptor {
   /**@return the default data directory. */
   public String getDefaultDataDir() {
     return "data" + File.separator;
+  }
+
+  public String getPropertiesName() {
+    return propertiesName;
+  }
+
+  public void setPropertiesName(String propertiesName) {
+    this.propertiesName = propertiesName;
   }
 
   public String getDataDir() {

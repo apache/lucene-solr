@@ -288,6 +288,8 @@ New Features
 
 73. SOLR-1156: Sort TermsComponent results by frequency (Matt Weber via yonik)
 
+74. SOLR-1384 : load core properties from a properties file (noble) 
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

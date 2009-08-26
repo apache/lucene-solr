@@ -24,6 +24,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.io.InputStream;
 import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,6 +46,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.FileUtils;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.commons.io.IOUtils;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
@@ -81,7 +83,7 @@ public class CoreContainer
   public Properties getContainerProperties() {
     return containerProperties;
   }
-  
+
   // Helper class to initialize the CoreContainer
   public static class Initializer {
     protected String solrConfigFilename = null;
@@ -124,8 +126,11 @@ public class CoreContainer
         solrConfigFilename = cores.getConfigFile().getName();
       } else {
         // perform compatibility init
-        cores = new CoreContainer(new SolrResourceLoader(solrHome));
-        SolrConfig cfg = solrConfigFilename == null ? new SolrConfig() : new SolrConfig(solrConfigFilename);
+        SolrResourceLoader resourceLoader = new SolrResourceLoader(solrHome, null, getCoreProps(solrHome, null,null));
+        cores = new CoreContainer(resourceLoader);
+        SolrConfig cfg = solrConfigFilename == null ?
+                new SolrConfig(resourceLoader, SolrConfig.DEFAULT_CONF_FILE,null) :
+                new SolrConfig(resourceLoader, solrConfigFilename,null);
         CoreDescriptor dcore = new CoreDescriptor(cores, "", ".");
         SolrCore singlecore = new SolrCore(null, null, cfg, null, dcore);
         abortOnConfigurationError = cfg.getBool(
@@ -136,6 +141,28 @@ public class CoreContainer
       }
       return cores;
     }
+  }
+
+  private static Properties getCoreProps(String instanceDir, String file, Properties defaults) {
+    if(file == null) file = "conf"+File.separator+ "solrcore.properties";
+    File corePropsFile = new File(file);
+    if(!corePropsFile.isAbsolute()){
+      corePropsFile = new File(instanceDir, file);
+    }
+    Properties p = defaults;
+    if (corePropsFile.exists() && corePropsFile.isFile()) {
+      p = new Properties(defaults);
+      InputStream is = null;
+      try {
+        is = new FileInputStream(corePropsFile);
+        p.load(is);
+      } catch (IOException e) {
+        log.warn("Error loading properties ",e);
+      } finally{
+        IOUtils.closeQuietly(is);        
+      }
+    }
+    return p;
   }
 
   /**
@@ -230,6 +257,10 @@ public class CoreContainer
           opt = DOMUtil.getAttr(node, "schema", null);
           if (opt != null) {
             p.setSchemaName(opt);
+          }
+          opt = DOMUtil.getAttr(node, "properties", null);
+          if (opt != null) {
+            p.setPropertiesName(opt);
           }
           opt = DOMUtil.getAttr(node, CoreAdminParams.DATA_DIR, null);
           if (opt != null) {
@@ -364,7 +395,7 @@ public class CoreContainer
     String instanceDir = idir.getPath();
     
     // Initialize the solr config
-    SolrResourceLoader solrLoader = new SolrResourceLoader(instanceDir, libLoader, dcore.getCoreProperties());
+    SolrResourceLoader solrLoader = new SolrResourceLoader(instanceDir, libLoader, getCoreProps(instanceDir, dcore.getPropertiesName(),dcore.getCoreProperties()));
     SolrConfig config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
     IndexSchema schema = null;
     if(indexSchemaCache != null){
@@ -715,6 +746,10 @@ public class CoreContainer
     opt = dcore.getSchemaName();
     if (opt != null && !opt.equals(dcore.getDefaultSchemaName())) {
       writeAttribute(w,"schema",opt);
+    }
+    opt = dcore.getPropertiesName();
+    if (opt != null) {
+      writeAttribute(w,"properties",opt);
     }
     opt = dcore.dataDir;
     if (opt != null) writeAttribute(w,"dataDir",opt);
