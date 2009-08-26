@@ -151,7 +151,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
   * @param filter if non-null, a bitset used to eliminate some documents
   * @param collector to receive hits
   * 
-  * @todo parallelize this one too
+  * TODO: parallelize this one too
   */
   public void search(Weight weight, Filter filter, final Collector collector)
    throws IOException {

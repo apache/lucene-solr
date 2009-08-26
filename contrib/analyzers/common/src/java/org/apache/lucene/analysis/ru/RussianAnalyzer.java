@@ -253,7 +253,7 @@ public final class RussianAnalyzer extends Analyzer
 
     /**
      * Builds an analyzer with the given stop words.
-     * @todo create a Set version of this ctor
+     * TODO: create a Set version of this ctor
      * @deprecated Use {@link #RussianAnalyzer(Map)} instead.
      */
     public RussianAnalyzer(char[] charset, Map stopwords)
@@ -264,7 +264,7 @@ public final class RussianAnalyzer extends Analyzer
     
     /**
      * Builds an analyzer with the given stop words.
-     * @todo create a Set version of this ctor
+     * TODO: create a Set version of this ctor
      */
     public RussianAnalyzer(Map stopwords)
     {

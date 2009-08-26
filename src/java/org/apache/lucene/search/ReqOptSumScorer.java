@@ -92,7 +92,7 @@ class ReqOptSumScorer extends Scorer {
   }
 
   /** Explain the score of a document.
-   * @todo Also show the total score.
+   * TODO: Also show the total score.
    * See BooleanScorer.explain() on how to do this.
    */
   public Explanation explain(int doc) throws IOException {

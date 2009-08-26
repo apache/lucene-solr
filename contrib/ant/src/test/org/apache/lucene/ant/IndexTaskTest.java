@@ -83,7 +83,7 @@ public class IndexTaskTest extends TestCase {
 
     /**
      *  The teardown method for JUnit
-     * @todo remove indexDir?
+     * TODO: remove indexDir?
      */
     public void tearDown() throws IOException {
         searcher.close();

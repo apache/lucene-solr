@@ -162,7 +162,7 @@ public class IndexTask extends Task {
   /**
    * Sets the analyzer based on the builtin Lucene analyzer types.
    *
-   * @todo Enforce analyzer and analyzerClassName to be mutually exclusive
+   * TODO: Enforce analyzer and analyzerClassName to be mutually exclusive
    */
   public void setAnalyzer(AnalyzerType type) {
     analyzerClassName = type.getClassname();
@@ -244,7 +244,7 @@ public class IndexTask extends Task {
    * Index the fileset.
    *
    *@exception  IOException if Lucene I/O exception
-   *@todo refactor!!!!!
+   *TODO: refactor!!!!!
    */
   private void indexDocs() throws IOException {
     Date start = new Date();

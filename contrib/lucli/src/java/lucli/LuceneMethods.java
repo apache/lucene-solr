@@ -187,7 +187,7 @@ class LuceneMethods {
   }
 
   /**
-   * @todo Allow user to specify what field(s) to display
+   * TODO: Allow user to specify what field(s) to display
    */
   private void printHit(Document doc) {
     for (int ii = 0; ii < fieldsArray.length; ii++) {
@@ -234,7 +234,7 @@ class LuceneMethods {
   }
 
   /**
-   * @todo Allow user to specify analyzer
+   * TODO: Allow user to specify analyzer
    */
   private Hits initSearch(String queryString) throws IOException, ParseException {
 
