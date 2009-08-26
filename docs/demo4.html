@@ -345,7 +345,7 @@ the jars included in the <span class="codefrag">WEB-INF/lib</span> directory in 
 </p>
 <p>
 You'll notice that this file includes the same header and footer as <span class="codefrag">index.jsp</span>.  From
-there it constructs an <span class="codefrag">IndexSearcher</span> with the
+there it constructs an <a href="api/core/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a> with the
 <span class="codefrag">indexLocation</span> that was specified in <span class="codefrag">configuration.jsp</span>.  If there is an
 error of any kind in opening the index, it is displayed to the user and the boolean flag
 <span class="codefrag">error</span> is set to tell the rest of the sections of the jsp not to continue.
@@ -358,42 +358,42 @@ default value.  If the criteria isn't provided then a servlet error is thrown (i
 this is the result of url tampering or some form of browser malfunction).
 </p>
 <p>
-The jsp moves on to construct a <span class="codefrag">StandardAnalyzer</span> to
-analyze the search text.  This matches the analyzer used during indexing (<span class="codefrag">IndexHTML</span>), which is generally
-recommended.  This is passed to the <span class="codefrag">QueryParser</span> along with the
-criteria to construct a <span class="codefrag">Query</span>
+The jsp moves on to construct a <a href="api/core/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a> to
+analyze the search text.  This matches the analyzer used during indexing (<a href="api/demo/org/apache/lucene/demo/IndexHTML.html">IndexHTML</a>), which is generally
+recommended.  This is passed to the <a href="api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a> along with the
+criteria to construct a <a href="api/core/org/apache/lucene/search/Query.html">Query</a>
 object.  You'll also notice the string literal <span class="codefrag">"contents"</span> included.  This specifies
 that the search should cover the <span class="codefrag">contents</span> field and not the <span class="codefrag">title</span>,
 <span class="codefrag">url</span> or some other field in the indexed documents.  If there is any error in
-constructing a <span class="codefrag">Query</span> object an
+constructing a <a href="api/org/apache/lucene/search/Query.html">Query</a> object an
 error is displayed to the user.
 </p>
 <p>
-In the next section of the jsp the <span class="codefrag">IndexSearcher</span> is asked to search
+In the next section of the jsp the <a href="api/core/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a> is asked to search
 given the query object.  The results are returned in a collection called <span class="codefrag">hits</span>.  If the
 length property of the <span class="codefrag">hits</span> collection is 0 (meaning there were no results) then an
 error is displayed to the user and the error flag is set.
 </p>
 <p>
 Finally the jsp iterates through the <span class="codefrag">hits</span> collection, taking the current page into
-account, and displays properties of the <span class="codefrag">Document</span> objects we talked about in
+account, and displays properties of the <a href="api/core/org/apache/lucene/document/Document.html">Document</a> objects we talked about in
 the first walkthrough.  These objects contain "known" fields specific to their indexer (in this case
-<span class="codefrag">IndexHTML</span> constructs a document
+<a href="api/demo/org/apache/lucene/demo/IndexHTML.html">IndexHTML</a> constructs a document
 with "url", "title" and "contents").
 </p>
 <p>
-Please note that in a real deployment of Lucene, it's best to instantiate <span class="codefrag">IndexSearcher</span> and <span class="codefrag">QueryParser</span> once, and then
+Please note that in a real deployment of Lucene, it's best to instantiate <a href="api/core/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a> and <a href="api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a> once, and then
 share them across search requests, instead of re-instantiating per search request.
 </p>
 </div>
 
 
-<a name="N100CE"></a><a name="More sources (developers)"></a>
+<a name="N100C3"></a><a name="More sources (developers)"></a>
 <h2 class="boxed">More sources (developers)</h2>
 <div class="section">
 <p>
 There are additional sources used by the web app that were not specifically covered by either
-walkthrough.  For example the HTML parser, the <span class="codefrag">IndexHTML</span> class and <span class="codefrag">HTMLDocument</span> class.  These are very
+walkthrough.  For example the HTML parser, the <a href="api/demo/org/apache/lucene/demo/IndexHTML.html">IndexHTML</a> class and <a href="api/demo/org/apache/lucene/demo/HTMLDocument.html">HTMLDocument</a> class.  These are very
 similar to the classes covered in the first example, with properties specific to parsing and
 indexing HTML.  This is beyond our scope; however, by now you should feel like you're "getting
 started" with Lucene.
@@ -401,7 +401,7 @@ started" with Lucene.
 </div>
 
 
-<a name="N100E1"></a><a name="Where to go from here? (everyone!)"></a>
+<a name="N100D4"></a><a name="Where to go from here? (everyone!)"></a>
 <h2 class="boxed">Where to go from here? (everyone!)</h2>
 <div class="section">
 <p>
@@ -423,7 +423,7 @@ Users' or Developers' <a href="http://lucene.apache.org/java/docs/mailinglists.h
 </div>
 
 
-<a name="N100F1"></a><a name="When to contact the Author"></a>
+<a name="N100E4"></a><a name="When to contact the Author"></a>
 <h2 class="boxed">When to contact the Author</h2>
 <div class="section">
 <p>

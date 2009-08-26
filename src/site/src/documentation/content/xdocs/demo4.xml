@@ -62,8 +62,8 @@ the jars included in the <code>WEB-INF/lib</code> directory in the <code>lucenew
 </p>
 <p>
 You'll notice that this file includes the same header and footer as <code>index.jsp</code>.  From
-there it constructs an <code><a
-href="api/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a></code> with the
+there it constructs an <a
+href="api/core/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a> with the
 <code>indexLocation</code> that was specified in <code>configuration.jsp</code>.  If there is an
 error of any kind in opening the index, it is displayed to the user and the boolean flag
 <code>error</code> is set to tell the rest of the sections of the jsp not to continue.
@@ -76,38 +76,38 @@ default value.  If the criteria isn't provided then a servlet error is thrown (i
 this is the result of url tampering or some form of browser malfunction).
 </p>
 <p>
-The jsp moves on to construct a <code><a
-href="api/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a></code> to
-analyze the search text.  This matches the analyzer used during indexing (<code><a
-href="api/org/apache/lucene/demo/IndexHTML.html">IndexHTML</a></code>), which is generally
-recommended.  This is passed to the <code><a
-href="api/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a></code> along with the
-criteria to construct a <code><a href="api/org/apache/lucene/search/Query.html">Query</a></code>
+The jsp moves on to construct a <a
+href="api/core/org/apache/lucene/analysis/standard/StandardAnalyzer.html">StandardAnalyzer</a> to
+analyze the search text.  This matches the analyzer used during indexing (<a
+href="api/demo/org/apache/lucene/demo/IndexHTML.html">IndexHTML</a>), which is generally
+recommended.  This is passed to the <a
+href="api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a> along with the
+criteria to construct a <a href="api/core/org/apache/lucene/search/Query.html">Query</a>
 object.  You'll also notice the string literal <code>"contents"</code> included.  This specifies
 that the search should cover the <code>contents</code> field and not the <code>title</code>,
 <code>url</code> or some other field in the indexed documents.  If there is any error in
-constructing a <code><a href="api/org/apache/lucene/search/Query.html">Query</a></code> object an
+constructing a <a href="api/org/apache/lucene/search/Query.html">Query</a> object an
 error is displayed to the user.
 </p>
 <p>
-In the next section of the jsp the <code><a
-href="api/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a></code> is asked to search
+In the next section of the jsp the <a
+href="api/core/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a> is asked to search
 given the query object.  The results are returned in a collection called <code>hits</code>.  If the
 length property of the <code>hits</code> collection is 0 (meaning there were no results) then an
 error is displayed to the user and the error flag is set.
 </p>
 <p>
 Finally the jsp iterates through the <code>hits</code> collection, taking the current page into
-account, and displays properties of the <code><a
-href="api/org/apache/lucene/document/Document.html">Document</a></code> objects we talked about in
+account, and displays properties of the <a
+href="api/core/org/apache/lucene/document/Document.html">Document</a> objects we talked about in
 the first walkthrough.  These objects contain "known" fields specific to their indexer (in this case
-<code><a href="api/org/apache/lucene/demo/IndexHTML.html">IndexHTML</a></code> constructs a document
+<a href="api/demo/org/apache/lucene/demo/IndexHTML.html">IndexHTML</a> constructs a document
 with "url", "title" and "contents").
 </p>
 <p>
-Please note that in a real deployment of Lucene, it's best to instantiate <code><a
-href="api/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a></code> and <code><a
-href="api/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a></code> once, and then
+Please note that in a real deployment of Lucene, it's best to instantiate <a
+href="api/core/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a> and <a
+href="api/core/org/apache/lucene/queryParser/QueryParser.html">QueryParser</a> once, and then
 share them across search requests, instead of re-instantiating per search request.
 </p>
 </section>
@@ -115,9 +115,9 @@ share them across search requests, instead of re-instantiating per search reques
 <section id="More sources (developers)"><title>More sources (developers)</title>
 <p>
 There are additional sources used by the web app that were not specifically covered by either
-walkthrough.  For example the HTML parser, the <code><a
-href="api/org/apache/lucene/demo/IndexHTML.html">IndexHTML</a></code> class and <code><a
-href="api/org/apache/lucene/demo/HTMLDocument.html">HTMLDocument</a></code> class.  These are very
+walkthrough.  For example the HTML parser, the <a
+href="api/demo/org/apache/lucene/demo/IndexHTML.html">IndexHTML</a> class and <a
+href="api/demo/org/apache/lucene/demo/HTMLDocument.html">HTMLDocument</a> class.  These are very
 similar to the classes covered in the first example, with properties specific to parsing and
 indexing HTML.  This is beyond our scope; however, by now you should feel like you're "getting
 started" with Lucene.
