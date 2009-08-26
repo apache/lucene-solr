@@ -124,14 +124,14 @@ public class FastVectorHighlighter {
   /**
    * return whether phraseHighlight or not.
    * 
-   * @return
+   * @return whether phraseHighlight or not
    */
   public boolean isPhraseHighlight(){ return phraseHighlight; }
 
   /**
    * return whether fieldMatch or not.
    * 
-   * @return
+   * @return whether fieldMatch or not
    */
   public boolean isFieldMatch(){ return fieldMatch; }
 }

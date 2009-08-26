@@ -257,7 +257,7 @@ public class FieldQuery {
    * 
    * @param fieldName
    * @param term
-   * @return
+   * @return QueryPhraseMap
    */
   public QueryPhraseMap getFieldTermMap( String fieldName, String term ){
     QueryPhraseMap rootMap = getRootMap( fieldName );
@@ -268,7 +268,7 @@ public class FieldQuery {
    * 
    * @param fieldName
    * @param phraseCandidate
-   * @return
+   * @return QueryPhraseMap
    */
   public QueryPhraseMap searchPhrase( String fieldName, final List<TermInfo> phraseCandidate ){
     QueryPhraseMap root = getRootMap( fieldName );
