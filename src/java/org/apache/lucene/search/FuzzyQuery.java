@@ -24,8 +24,13 @@ import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 
-/** Implements the fuzzy search query. The similiarity measurement
+/** Implements the fuzzy search query. The similarity measurement
  * is based on the Levenshtein (edit distance) algorithm.
+ * 
+ * Warning: this query is not very scalable with its default prefix
+ * length of 0 - in this case, *every* term will be enumerated and
+ * cause an edit score calculation.
+ * 
  */
 public class FuzzyQuery extends MultiTermQuery {
   
