@@ -22,12 +22,12 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 
 /**
- * Wrapper for ({@link HitCollector}) implementations, which
- * simply re-bases the incoming docID before calling {@link
- * HitCollector#collect}.
- * @deprecated this class will be removed when {@link
- * HitCollector} is removed.  Please migrate custom
- * HitCollectors to the new {@link Collector} class.
+ * Wrapper for ({@link HitCollector}) implementations, which simply re-bases the
+ * incoming docID before calling {@link HitCollector#collect}.
+ * 
+ * @deprecated Please migrate custom HitCollectors to the new {@link Collector}
+ *             class. This class will be removed when {@link HitCollector} is
+ *             removed.
  */
 public class HitCollectorWrapper extends Collector {
   private HitCollector collector;

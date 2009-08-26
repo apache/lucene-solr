@@ -39,8 +39,8 @@ import org.apache.lucene.index.CorruptIndexException;
  * is thrown when accessing hit <code>n</code> &ge; current_{@link #length()} 
  * (but <code>n</code> &lt; {@link #length()}_at_start). 
  * 
- * @deprecated Hits will be removed in Lucene 3.0. <p>
- * Instead e. g. {@link TopScoreDocCollector} and {@link TopDocs} can be used:<br>
+ * @deprecated
+ * see {@link TopScoreDocCollector} and {@link TopDocs} :<br>
  * <pre>
  *   TopScoreDocCollector collector = new TopScoreDocCollector(hitsPerPage);
  *   searcher.search(query, collector);

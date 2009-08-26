@@ -25,7 +25,7 @@ import java.util.NoSuchElementException;
  * {@link Hits#iterator()} returns an instance of this class.  Calls to {@link #next()}
  * return a {@link Hit} instance.
  *
- * @deprecated Hits will be removed in Lucene 3.0. Use {@link TopScoreDocCollector} and {@link TopDocs} instead.
+ * @deprecated Use {@link TopScoreDocCollector} and {@link TopDocs} instead. Hits will be removed in Lucene 3.0.
  */
 public class HitIterator implements Iterator {
   private Hits hits;
