@@ -260,7 +260,7 @@
       	title="${Name} ${version} core API">
         <sources>
           <packageset dir="src/java"/>
-          <link href="../"/>
+          <link href=""/>
         </sources>
       </invoke-javadoc>
      <jarify basedir="${javadoc.dir}/core" destfile="${build.dir}/${final.name}-javadoc.jar"/>
@@ -275,7 +275,7 @@
       	title="${Name} ${version} demo API">
         <sources>
           <packageset dir="src/demo"/>
-          <link href="../"/>
+          <link href=""/>
         </sources>
       </invoke-javadoc>
       <jarify basedir="${javadoc.dir}/demo" destfile="${build.dir}/${demo.name}-javadoc.jar"/>

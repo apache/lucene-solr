@@ -96,7 +96,7 @@
          destdir="${javadoc.dir}/contrib-${name}"
        	title="${Name} ${version} contrib-${name} API">
          <sources>
-           <link href="../"/>
+           <link href=""/>
            <packageset dir="src/java"/>
         </sources>
       </invoke-javadoc>
