@@ -184,7 +184,7 @@ PARSER_END(QueryParser)
 }
 
 <DEFAULT> SKIP : {
-  <<_WHITESPACE>>
+  < <_WHITESPACE>>
 }
 
 /* Operator tokens (in increasing order of precedence): */
