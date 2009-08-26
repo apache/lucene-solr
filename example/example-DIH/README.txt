@@ -16,13 +16,7 @@
 Solr DataImportHandler example configuration
 --------------------------------------------
 
-To run this example configuration, unzip the hsqldb.zip to the current directory.
-
-> gunzip hsqldb.zip
-
-Download the hsqldb jar from http://hsqldb.org/ and place it in solr/db/lib directory.
-
-Change to the parent folder. Start solr by executing the following command 
+Change to the parent (example) directory. Start solr by executing the following command 
 
 > cd ..
 > java -Dsolr.solr.home="./example-DIH/solr/" -jar start.jar
