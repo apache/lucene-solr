@@ -78,7 +78,6 @@ See http://forrest.apache.org/docs/linking.html for more info
 		    <javadoc-contrib-xml-query-parser label="XML Query Parser" href="ext:javadocs-contrib-xml-query-parser"/>			
 		 </javadoc-contrib>
 	  </javadoc>
-      <benchmarks label="Benchmarks" href="benchmarks.html"/>
       <contributions label="Contributions" href="contributions.html"/>
       <faq         label="FAQ"              href="ext:faq" />
       <file-formats label="File Formats" href="fileformats.html"/>
