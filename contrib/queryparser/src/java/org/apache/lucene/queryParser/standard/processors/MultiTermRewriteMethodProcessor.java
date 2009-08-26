@@ -28,7 +28,7 @@ import org.apache.lucene.search.MultiTermQuery;
 
 /**
  * This processor instates the default {@link
- * MultiTermQuery.RewriteMethod}, {@link
+ * org.apache.lucene.search.MultiTermQuery.RewriteMethod}, {@link
  * MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}, for
  * multi-term query nodes.
  */
