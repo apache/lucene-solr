@@ -209,7 +209,6 @@
    <exclude pattern="**/"/>
    <exclude pattern="**apidocs**"/>
    <exclude pattern="api/**"/>
-   <exclude pattern="**benchmarktemplate.xml"/>
 
 <!--
   This is a workaround for FOR-284 "link rewriting broken when
