@@ -642,6 +642,9 @@ Build
  3. SOLR-1054:Fix dist-src target for DataImportHandler (Ryuuichi Kumai via shalin)
 
  4. SOLR-1219: Added proxy.setup target (koji)
+
+ 5. SOLR-1386: In build.xml, use longfile="gnu" in tar task to avoid warnings about long file names
+    (Mark Miller via shalin)
  
 
 Documentation

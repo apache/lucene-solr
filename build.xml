@@ -607,7 +607,7 @@
     <delete file="${dist}/${fullnamever}.tgz" failonerror="false" />
     <delete file="${dist}/${fullnamever}.zip" failonerror="false" />
 
-    <tar destfile="${dist}/${fullnamever}.tgz" compression="gzip">
+    <tar destfile="${dist}/${fullnamever}.tgz" compression="gzip" longfile="gnu">
       <tarfileset dir="."
         prefix="${fullnamever}"
         includes="LICENSE.txt NOTICE.txt *.txt *.xml lib/** src/** example/** client/** contrib/"
@@ -714,10 +714,10 @@
 
   <target name="prepare-release" depends="clean, svn-up, build-site, package, sign-artifacts" description="Prototype helper for Committers.  Assumes gpg is in the path">
 
-    <tar destfile="${dist}/solr-maven.tar">
+    <tar destfile="${dist}/solr-maven.tar" longfile="gnu">
 		  <tarfileset dir="${dist}/maven" prefix="maven"/>
     </tar>
-	<tar destfile="${dist}/solr.tar">
+	<tar destfile="${dist}/solr.tar" longfile="gnu">
 		<tarfileset dir="${dist}" includes="${fullnamever}.* solr-maven.tar" excludes="${fullnamever}.war"/>
 	</tar>
   </target>
