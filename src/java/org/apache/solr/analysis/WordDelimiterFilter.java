@@ -384,12 +384,14 @@ final class WordDelimiterFilter extends TokenFilter {
       int start=0;
       if (len ==0) continue;
 
+      int posInc = t.getPositionIncrement();
+      origPosIncrement += posInc;
+
       //skip protected tokens
       if (protWords != null && protWords.contains(termBuffer, 0, len)) {
+        t.setPositionIncrement(origPosIncrement);
         return t;
       }
-
-      origPosIncrement += t.getPositionIncrement();
 
       // Avoid calling charType more than once for each char (basically
       // avoid any backtracking).
@@ -482,6 +484,7 @@ final class WordDelimiterFilter extends TokenFilter {
             if (start==0) {
               // the subword is the whole original token, so
               // return it unchanged.
+              t.setPositionIncrement(origPosIncrement);
               return t;
             }
 
@@ -492,6 +495,7 @@ final class WordDelimiterFilter extends TokenFilter {
               // of the original token
               t.setTermBuffer(termBuffer, start, len-start);
               t.setStartOffset(t.startOffset() + start);
+              t.setPositionIncrement(origPosIncrement);              
               return t;
             }
 
@@ -524,6 +528,9 @@ final class WordDelimiterFilter extends TokenFilter {
         if (preserveOriginal != 0) {
           return t;
         }
+
+        // if this token had a "normal" gap of 1, remove it.
+        if (posInc==1) origPosIncrement-=1;
         continue;
       }
 

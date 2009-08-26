@@ -509,6 +509,11 @@ Bug Fixes
     already been closed/destroyed; if it hasn't a, SEVERE error is
     logged first.  (noble, hossman)
 
+60. SOLR-1362: WordDelimiterFilter had inconsistent behavior when setting
+    the position increment of tokens following a token consisting of all
+    delimiters, and could additionally lose big position increments.
+    (Robert Muir, yonik
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
