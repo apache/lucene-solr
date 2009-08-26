@@ -42,7 +42,7 @@ public class IndexHTML {
   /** Indexer for HTML files.*/
   public static void main(String[] argv) {
     try {
-      String index = "index";
+      File index = new File("index");
       boolean create = false;
       File root = null;
 
@@ -55,7 +55,7 @@ public class IndexHTML {
 
       for (int i = 0; i < argv.length; i++) {
         if (argv[i].equals("-index")) {		  // parse -index option
-          index = argv[++i];
+          index = new File(argv[++i]);
         } else if (argv[i].equals("-create")) {	  // parse -create option
           create = true;
         } else if (i != argv.length-1) {
@@ -64,6 +64,12 @@ public class IndexHTML {
         } else
           root = new File(argv[i]);
       }
+      
+      if(root == null) {
+        System.err.println("Specify directory to index");
+        System.err.println("Usage: " + usage);
+        return;
+      }
 
       Date start = new Date();
 
@@ -71,7 +77,7 @@ public class IndexHTML {
         deleting = true;
         indexDocs(root, index, create);
       }
-      writer = new IndexWriter(FSDirectory.open(new File(index)), new StandardAnalyzer(Version.LUCENE_CURRENT), create, 
+      writer = new IndexWriter(FSDirectory.open(index), new StandardAnalyzer(Version.LUCENE_CURRENT), create, 
                                new IndexWriter.MaxFieldLength(1000000));
       indexDocs(root, index, create);		  // add new docs
 
@@ -85,8 +91,7 @@ public class IndexHTML {
       System.out.println(" total milliseconds");
 
     } catch (Exception e) {
-      System.out.println(" caught a " + e.getClass() +
-          "\n with message: " + e.getMessage());
+      e.printStackTrace();
     }
   }
 
@@ -96,11 +101,11 @@ public class IndexHTML {
   /* documents, to be indexed.
    */
 
-  private static void indexDocs(File file, String index, boolean create)
+  private static void indexDocs(File file, File index, boolean create)
        throws Exception {
     if (!create) {				  // incrementally update
 
-      reader = IndexReader.open(FSDirectory.open(new File(index)), false);		  // open existing index
+      reader = IndexReader.open(FSDirectory.open(index), false);		  // open existing index
       uidIter = reader.terms(new Term("uid", "")); // init uid iterator
 
       indexDocs(file);
