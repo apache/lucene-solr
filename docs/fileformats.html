@@ -477,7 +477,7 @@ document.write("Last Published: " + document.lastModified);
                     tokenized, but sometimes it is useful for certain identifier fields
                     to be indexed literally.
                 </p>
-<p>See the <a href="http://lucene.apache.org/java/docs/api/org/apache/lucene/document/Field.html">Field</a> java docs for more information on Fields.</p>
+<p>See the <a href="api/core/org/apache/lucene/document/Field.html">Field</a> java docs for more information on Fields.</p>
 <a name="N10074"></a><a name="Segments"></a>
 <h3 class="boxed">Segments</h3>
 <p>
@@ -638,7 +638,7 @@ document.write("Last Published: " + document.lastModified);
 <p>Term Vectors. For each field in each document, the term vector
                         (sometimes called document vector) may be stored. A term vector consists
                         of term text and term frequency. To add Term Vectors to your index see the
-                        <a href="http://lucene.apache.org/java/docs/api/org/apache/lucene/document/Field.html">Field</a>
+                        <a href="api/core/org/apache/lucene/document/Field.html">Field</a>
                         constructors
                     </p>
                 
@@ -1463,7 +1463,7 @@ document.write("Last Published: " + document.lastModified);
                     segments_N files are present it's because they
                     temporarily cannot be deleted, or, a writer is in
                     the process of committing, or a custom
-                    <a href="http://lucene.apache.org/java/docs/api/org/apache/lucene/index/IndexDeletionPolicy.html">IndexDeletionPolicy</a>
+                    <a href="api/core/org/apache/lucene/index/IndexDeletionPolicy.html">IndexDeletionPolicy</a>
 		    is in use). This file lists each
                     segment by name, has details about the separate
                     norms and deletion files, and also contains the
