@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A FieldSelector based on a Map of field names to FieldSelectorResults
+ * A {@link FieldSelector} based on a Map of field names to {@link FieldSelectorResult}s
  *
  */
 public class MapFieldSelector implements FieldSelector {
@@ -30,7 +30,7 @@ public class MapFieldSelector implements FieldSelector {
     Map fieldSelections;
     
     /** Create a a MapFieldSelector
-     * @param fieldSelections maps from field names (String) to FieldSelectorResults
+     * @param fieldSelections maps from field names (String) to {@link FieldSelectorResult}s
      */
     public MapFieldSelector(Map fieldSelections) {
         this.fieldSelections = fieldSelections;
