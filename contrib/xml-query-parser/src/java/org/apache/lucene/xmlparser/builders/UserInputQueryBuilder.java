@@ -84,7 +84,7 @@ public class UserInputQueryBuilder implements QueryBuilder {
 	 * Method to create a QueryParser - designed to be overridden
 	 * @param fieldName
 	 * @param analyzer
-	 * @return
+	 * @return QueryParser
 	 */
 	protected QueryParser createQueryParser(String fieldName, Analyzer analyzer)
 	{
