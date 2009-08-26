@@ -27,7 +27,7 @@ import java.io.File;
  *  files are handled, other extensions ignored.
  *
  *@since      October 28, 2001
- *@todo Implement dynamic document type lookup
+ *TODO: Implement dynamic document type lookup
  */
 public class FileExtensionDocumentHandler
         implements DocumentHandler {

@@ -25,7 +25,7 @@ import org.apache.lucene.util.ScorerDocQueue;
 
 /** A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>.
  * This Scorer implements {@link Scorer#skipTo(int)} and uses skipTo() on the given Scorers. 
- * @todo Implement score(HitCollector, int).
+ * TODO: Implement score(HitCollector, int).
  */
 class DisjunctionSumScorer extends Scorer {
   /** The number of subscorers. */ 
