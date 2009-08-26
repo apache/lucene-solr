@@ -34,10 +34,10 @@
                 <a href="http://wiki.apache.org/lucene-java/InformationRetrieval">Lucene Wiki IR references</a>.
             </p>
             <p>The rest of this document will cover <a href="#Scoring">Scoring</a> basics and how to change your
-                <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a>.  Next it will cover ways you can
+                <a href="api/core/org/apache/lucene/search/Similarity.html">Similarity</a>.  Next it will cover ways you can
                 customize the Lucene internals in <a href="#Changing your Scoring -- Expert Level">Changing your Scoring
                 -- Expert Level</a> which gives details on implementing your own
-                <a href="api/org/apache/lucene/search/Query.html">Query</a> class and related functionality.  Finally, we
+                <a href="api/core/org/apache/lucene/search/Query.html">Query</a> class and related functionality.  Finally, we
                 will finish up with some reference material in the <a href="#Appendix">Appendix</a>.
             </p>
         </section>
@@ -48,20 +48,20 @@
                 and the Lucene
                 <a href="fileformats.html">file formats</a>
                 before continuing on with this section.)  It is also assumed that readers know how to use the
-                <a href="api/org/apache/lucene/search/Searcher.html#explain(Query query, int doc)">Searcher.explain(Query query, int doc)</a> functionality,
+                <a href="api/core/org/apache/lucene/search/Searcher.html#explain(Query query, int doc)">Searcher.explain(Query query, int doc)</a> functionality,
                 which can go a long way in informing why a score is returned.
             </p>
             <section id="Fields and Documents"><title>Fields and Documents</title>
                 <p>In Lucene, the objects we are scoring are
-                    <a href="api/org/apache/lucene/document/Document.html">Documents</a>.  A Document is a collection
+                    <a href="api/core/org/apache/lucene/document/Document.html">Documents</a>.  A Document is a collection
                 of
-                    <a href="api/org/apache/lucene/document/Field.html">Fields</a>.  Each Field has semantics about how
+                    <a href="api/core/org/apache/lucene/document/Field.html">Fields</a>.  Each Field has semantics about how
                 it is created and stored (i.e. tokenized, untokenized, raw data, compressed, etc.)  It is important to
                     note that Lucene scoring works on Fields and then combines the results to return Documents.  This is
                     important because two Documents with the exact same content, but one having the content in two Fields
                     and the other in one Field will return different scores for the same query due to length normalization
                     (assumming the
-                    <a href="api/org/apache/lucene/search/DefaultSimilarity.html">DefaultSimilarity</a>
+                    <a href="api/core/org/apache/lucene/search/DefaultSimilarity.html">DefaultSimilarity</a>
                     on the Fields).
                 </p>
             </section>
@@ -70,17 +70,17 @@
                   <ul>
                     <li><b>Document level boosting</b>
                     - while indexing - by calling
-                    <a href="api/org/apache/lucene/document/Document.html#setBoost(float)">document.setBoost()</a>
+                    <a href="api/core/org/apache/lucene/document/Document.html#setBoost(float)">document.setBoost()</a>
                     before a document is added to the index.
                     </li>
                     <li><b>Document's Field level boosting</b>
                     - while indexing - by calling
-                    <a href="api/org/apache/lucene/document/Fieldable.html#setBoost(float)">field.setBoost()</a>
+                    <a href="api/core/org/apache/lucene/document/Fieldable.html#setBoost(float)">field.setBoost()</a>
                     before adding a field to the document (and before adding the document to the index).
                     </li>
                     <li><b>Query level boosting</b>
                      - during search, by setting a boost on a query clause, calling
-                     <a href="api/org/apache/lucene/search/Query.html#setBoost(float)">Query.setBoost()</a>.
+                     <a href="api/core/org/apache/lucene/search/Query.html#setBoost(float)">Query.setBoost()</a>.
                     </li>
                   </ul>
                 </p>
@@ -99,68 +99,68 @@
                 <p>This composition of 1-byte representation of norms
                 (that is, indexing time multiplication of field boosts &amp; doc boost &amp; field-length-norm)
                 is nicely described in
-                <a href="api/org/apache/lucene/document/Fieldable.html#setBoost(float)">Fieldable.setBoost()</a>.
+                <a href="api/core/org/apache/lucene/document/Fieldable.html#setBoost(float)">Fieldable.setBoost()</a>.
                 </p>
                 <p>Encoding and decoding of the resulted float norm in a single byte are done by the
                 static methods of the class Similarity:
-                <a href="api/org/apache/lucene/search/Similarity.html#encodeNorm(float)">encodeNorm()</a> and
-                <a href="api/org/apache/lucene/search/Similarity.html#decodeNorm(byte)">decodeNorm()</a>.
+                <a href="api/core/org/apache/lucene/search/Similarity.html#encodeNorm(float)">encodeNorm()</a> and
+                <a href="api/core/org/apache/lucene/search/Similarity.html#decodeNorm(byte)">decodeNorm()</a>.
                 Due to loss of precision, it is not guaranteed that decode(encode(x)) = x,
                 e.g. decode(encode(0.89)) = 0.75.
                 At scoring (search) time, this norm is brought into the score of document
                 as <b>norm(t, d)</b>, as shown by the formula in
-                <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a>.
+                <a href="api/core/org/apache/lucene/search/Similarity.html">Similarity</a>.
                 </p>
             </section>
             <section id="Understanding the Scoring Formula"><title>Understanding the Scoring Formula</title>
 
                 <p>
                 This scoring formula is described in the
-                    <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a> class.  Please take the time to study this formula, as it contains much of the information about how the
+                    <a href="api/core/org/apache/lucene/search/Similarity.html">Similarity</a> class.  Please take the time to study this formula, as it contains much of the information about how the
                     basics of Lucene scoring work, especially the
-                    <a href="api/org/apache/lucene/search/TermQuery.html">TermQuery</a>.
+                    <a href="api/core/org/apache/lucene/search/TermQuery.html">TermQuery</a>.
                 </p>
             </section>
             <section id="The Big Picture"><title>The Big Picture</title>
                 <p>OK, so the tf-idf formula and the
-                    <a href="api/org/apache/lucene/search/Similarity.html">Similarity</a>
+                    <a href="api/core/org/apache/lucene/search/Similarity.html">Similarity</a>
                     is great for understanding the basics of Lucene scoring, but what really drives Lucene scoring are
                     the use and interactions between the
-                    <a href="api/org/apache/lucene/search/Query.html">Query</a> classes, as created by each application in
+                    <a href="api/core/org/apache/lucene/search/Query.html">Query</a> classes, as created by each application in
                     response to a user's information need.
                 </p>
-                <p>In this regard, Lucene offers a wide variety of <a href="api/org/apache/lucene/search/Query.html">Query</a> implementations, most of which are in the
-                    <a href="api/org/apache/lucene/search/package-summary.html">org.apache.lucene.search</a> package.
+                <p>In this regard, Lucene offers a wide variety of <a href="api/core/org/apache/lucene/search/Query.html">Query</a> implementations, most of which are in the
+                    <a href="api/core/org/apache/lucene/search/package-summary.html">org.apache.lucene.search</a> package.
                     These implementations can be combined in a wide variety of ways to provide complex querying
                     capabilities along with
                     information about where matches took place in the document collection. The <a href="#Query Classes">Query</a>
                     section below
                     highlights some of the more important Query classes.  For information on the other ones, see the
-                    <a href="api/org/apache/lucene/search/package-summary.html">package summary</a>.  For details on implementing
+                    <a href="api/core/org/apache/lucene/search/package-summary.html">package summary</a>.  For details on implementing
                     your own Query class, see <a href="#Changing your Scoring -- Expert Level">Changing your Scoring --
                     Expert Level</a> below.
                 </p>
                 <p>Once a Query has been created and submitted to the
-                    <a href="api/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a>, the scoring process
+                    <a href="api/core/org/apache/lucene/search/IndexSearcher.html">IndexSearcher</a>, the scoring process
                 begins.  (See the <a
                 href="#Appendix">Appendix</a> Algorithm section for more notes on the process.)  After some infrastructure setup,
-                control finally passes to the <a href="api/org/apache/lucene/search/Weight.html">Weight</a> implementation and its
-                    <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a> instance.  In the case of any type of
-                    <a href="api/org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a>, scoring is handled by the
+                control finally passes to the <a href="api/core/org/apache/lucene/search/Weight.html">Weight</a> implementation and its
+                    <a href="api/core/org/apache/lucene/search/Scorer.html">Scorer</a> instance.  In the case of any type of
+                    <a href="api/core/org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a>, scoring is handled by the
                     <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/BooleanQuery.java?view=log">BooleanWeight2</a> (link goes to ViewVC BooleanQuery java code which contains the BooleanWeight2 inner class),
-                    unless the static
-                    <a href="api/org/apache/lucene/search/BooleanQuery.html#setUseScorer14(boolean)">
-                        BooleanQuery#setUseScorer14(boolean)</a> method is set to true,
+                    unless 
+                    <a href="api/core/org/apache/lucene/search/Weight.html#scoresDocsOutOfOrder()">
+                        Weight#scoresDocsOutOfOrder()</a> method is set to true,
                 in which case the
                     <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/BooleanQuery.java?view=log">BooleanWeight</a>
                     (link goes to ViewVC BooleanQuery java code, which contains the BooleanWeight inner class) from the 1.4 version of Lucene is used by default.
                     See <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/CHANGES.txt">CHANGES.txt</a> under release 1.9 RC1 for more information on choosing which Scorer to use.
                 </p>
-                <p>
+                <p>ry#setUseScorer14(boolean)
                     Assuming the use of the BooleanWeight2, a
                     BooleanScorer2 is created by bringing together
                     all of the
-                    <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a>s from the sub-clauses of the BooleanQuery.
+                    <a href="api/core/org/apache/lucene/search/Scorer.html">Scorer</a>s from the sub-clauses of the BooleanQuery.
                     When the BooleanScorer2 is asked to score it delegates its work to an internal Scorer based on the type
                     of clauses in the Query.  This internal Scorer essentially loops over the sub scorers and sums the scores
                     provided by each scorer while factoring in the coord() score.
@@ -169,20 +169,20 @@
             </section>
             <section id="Query Classes"><title>Query Classes</title>
                 <p>For information on the Query Classes, refer to the
-                    <a href="api/org/apache/lucene/search/package-summary.html#query">search package javadocs</a>
+                    <a href="api/core/org/apache/lucene/search/package-summary.html#query">search package javadocs</a>
                 </p>
             </section>
             <section id="Changing Similarity"><title>Changing Similarity</title>
                 <p>One of the ways of changing the scoring characteristics of Lucene is to change the similarity factors.  For information on
                 how to do this, see the
-                    <a href="api/org/apache/lucene/search/package-summary.html#changingSimilarity">search package javadocs</a></p>
+                    <a href="api/core/org/apache/lucene/search/package-summary.html#changingSimilarity">search package javadocs</a></p>
             </section>
 
         </section>
         <section id="Changing your Scoring -- Expert Level"><title>Changing your Scoring -- Expert Level</title>
             <p>At a much deeper level, one can affect scoring by implementing their own Query classes (and related scoring classes.)  To learn more
                 about how to do this, refer to the
-                <a href="api/org/apache/lucene/search/package-summary.html#scoring">search package javadocs</a>
+                <a href="api/core/org/apache/lucene/search/package-summary.html#scoring">search package javadocs</a>
             </p>
         </section>
 
@@ -200,29 +200,29 @@
                 <p>This section is mostly notes on stepping through the Scoring process and serves as
                     fertilizer for the earlier sections.</p>
                 <p>In the typical search application, a
-                    <a href="api/org/apache/lucene/search/Query.html">Query</a>
+                    <a href="api/core/org/apache/lucene/search/Query.html">Query</a>
                     is passed to the
                     <a
-                            href="api/org/apache/lucene/search/Searcher.html">Searcher</a>
+                            href="api/core/org/apache/lucene/search/Searcher.html">Searcher</a>
                     , beginning the scoring process.
                 </p>
                 <p>Once inside the Searcher, a
-                    <a href="api/org/apache/lucene/search/HitCollector.html">HitCollector</a>
+                    <a href="api/core/org/apache/lucene/search/Collector.html">Collector</a>
                     is used for the scoring and sorting of the search results.
                     These important objects are involved in a search:
                     <ol>
                         <li>The
-                            <a href="api/org/apache/lucene/search/Weight.html">Weight</a>
+                            <a href="api/core/org/apache/lucene/search/Weight.html">Weight</a>
                             object of the Query. The Weight object is an internal representation of the Query that
                             allows the Query to be reused by the Searcher.
                         </li>
                         <li>The Searcher that initiated the call.</li>
                         <li>A
-                            <a href="api/org/apache/lucene/search/Filter.html">Filter</a>
+                            <a href="api/core/org/apache/lucene/search/Filter.html">Filter</a>
                             for limiting the result set. Note, the Filter may be null.
                         </li>
                         <li>A
-                            <a href="api/org/apache/lucene/search/Sort.html">Sort</a>
+                            <a href="api/core/org/apache/lucene/search/Sort.html">Sort</a>
                             object for specifying how to sort the results if the standard score based sort method is not
                             desired.
                         </li>
@@ -230,45 +230,45 @@
                 </p>
                 <p> Assuming we are not sorting (since sorting doesn't
                     effect the raw Lucene score),
-                    we call one of the search method of the Searcher, passing in the
-                    <a href="api/org/apache/lucene/search/Weight.html">Weight</a>
+                    we call one of the search methods of the Searcher, passing in the
+                    <a href="api/core/org/apache/lucene/search/Weight.html">Weight</a>
                     object created by Searcher.createWeight(Query),
-                    <a href="api/org/apache/lucene/search/Filter.html">Filter</a>
+                    <a href="api/core/org/apache/lucene/search/Filter.html">Filter</a>
                     and the number of results we want. This method
                     returns a
-                    <a href="api/org/apache/lucene/search/TopDocs.html">TopDocs</a>
+                    <a href="api/core/org/apache/lucene/search/TopDocs.html">TopDocs</a>
                     object, which is an internal collection of search results.
                     The Searcher creates a
-                    <a href="api/org/apache/lucene/search/TopDocCollector.html">TopDocCollector</a>
+                    <a href="api/core/org/apache/lucene/search/TopScoreDocCollector.html">TopScoreDocCollector</a>
                     and passes it along with the Weight, Filter to another expert search method (for more on the
-                    <a href="api/org/apache/lucene/search/HitCollector.html">HitCollector</a>
+                    <a href="api/core/org/apache/lucene/search/Collector.html">Collector</a>
                     mechanism, see
-                    <a href="api/org/apache/lucene/search/Searcher.html">Searcher</a>
+                    <a href="api/core/org/apache/lucene/search/Searcher.html">Searcher</a>
                     .) The TopDocCollector uses a
-                    <a href="api/org/apache/lucene/util/PriorityQueue.html">PriorityQueue</a>
+                    <a href="api/core/org/apache/lucene/util/PriorityQueue.html">PriorityQueue</a>
                     to collect the top results for the search.
                 </p>
                 <p>If a Filter is being used, some initial setup is done to determine which docs to include. Otherwise,
                     we ask the Weight for
                     a
-                    <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a>
+                    <a href="api/core/org/apache/lucene/search/Scorer.html">Scorer</a>
                     for the
-                    <a href="api/org/apache/lucene/index/IndexReader.html">IndexReader</a>
+                    <a href="api/core/org/apache/lucene/index/IndexReader.html">IndexReader</a>
                     of the current searcher and we proceed by
                     calling the score method on the
-                    <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a>
+                    <a href="api/core/org/apache/lucene/search/Scorer.html">Scorer</a>
                     .
                 </p>
-                <p>At last, we are actually going to score some documents. The score method takes in the HitCollector
-                    (most likely the TopDocCollector) and does its business.
+                <p>At last, we are actually going to score some documents. The score method takes in the Collector
+                    (most likely the TopScoreDocCollector or TopFieldCollector) and does its business.
                     Of course, here is where things get involved. The
-                    <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a>
+                    <a href="api/core/org/apache/lucene/search/Scorer.html">Scorer</a>
                     that is returned by the
-                    <a href="api/org/apache/lucene/search/Weight.html">Weight</a>
+                    <a href="api/core/org/apache/lucene/search/Weight.html">Weight</a>
                     object depends on what type of Query was submitted. In most real world applications with multiple
                     query terms,
                     the
-                    <a href="api/org/apache/lucene/search/Scorer.html">Scorer</a>
+                    <a href="api/core/org/apache/lucene/search/Scorer.html">Scorer</a>
                     is going to be a
                     <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/BooleanScorer2.java?view=log">BooleanScorer2</a>
                     (see the section on customizing your scoring for info on changing this.)

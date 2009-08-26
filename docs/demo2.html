@@ -203,9 +203,6 @@ document.write("Last Published: " + document.lastModified);
 </div>
 </div>
 <div class="menuitem">
-<a href="benchmarks.html">Benchmarks</a>
-</div>
-<div class="menuitem">
 <a href="contributions.html">Contributions</a>
 </div>
 <div class="menuitem">
@@ -327,11 +324,11 @@ instance of <span class="codefrag">org.apache.lucene.analysis.Analyzer</span>.
 The particular <span class="codefrag">Analyzer</span> we
 are using, <span class="codefrag">StandardAnalyzer</span>, is
 little more than a standard Java Tokenizer, converting all strings to lowercase and filtering out
-useless words and characters from the index.  By useless words and characters I mean common language
-words such as articles (a, an, the, etc.) and other strings that would be useless for searching
+stop words and characters from the index.  By stop words and characters I mean common language
+words such as articles (a, an, the, etc.) and other strings that may have less value for searching
 (e.g. <b>'s</b>) .  It should be noted that there are different rules for every language, and you
 should use the proper analyzer for each.  Lucene currently provides Analyzers for a number of
-different languages (see the <span class="codefrag">*Analyzer.java</span> sources under <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/analyzers/src/java/org/apache/lucene/analysis/">contrib/analyzers/src/java/org/apache/lucene/analysis</a>).
+different languages (see the <span class="codefrag">*Analyzer.java</span> sources under <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/analyzers/common/src/java/org/apache/lucene/analysis/">contrib/analyzers/src/java/org/apache/lucene/analysis</a>).
 </p>
 <p>
 Looking further down in the file, you should see the <span class="codefrag">indexDocs()</span> code.  This recursive
