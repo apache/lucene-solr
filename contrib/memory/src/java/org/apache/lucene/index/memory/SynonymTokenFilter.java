@@ -104,8 +104,6 @@ public class SynonymTokenFilter extends TokenFilter {
    *            a synonym for the current token's term
    * @param current
    *            the current token from the underlying child stream
-   * @param reusableToken
-   *            the token to reuse
    * @return a new token, or null to indicate that the given synonym should be
    *         ignored
    */

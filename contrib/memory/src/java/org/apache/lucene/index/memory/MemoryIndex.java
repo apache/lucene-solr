@@ -60,7 +60,7 @@ import org.apache.lucene.search.Similarity;
  * fuzzy fulltext search in realtime streaming applications such as Nux XQuery based XML 
  * message queues, publish-subscribe systems for Blogs/newsfeeds, text chat, data acquisition and 
  * distribution systems, application level routers, firewalls, classifiers, etc. 
- * Rather than targetting fulltext search of infrequent queries over huge persistent 
+ * Rather than targeting fulltext search of infrequent queries over huge persistent 
  * data archives (historic search), this class targets fulltext search of huge 
  * numbers of queries over comparatively small transient realtime data (prospective 
  * search). 
@@ -320,7 +320,7 @@ public class MemoryIndex implements Serializable {
    *            the token stream to retrieve tokens from.
    * @param boost
    *            the boost factor for hits for this field
-   * @see Field#setBoost(float)
+   * @see org.apache.lucene.document.Field#setBoost(float)
    */
   public void addField(String fieldName, TokenStream stream, float boost) {
     try {
@@ -405,7 +405,7 @@ public class MemoryIndex implements Serializable {
    * @return the relevance score of the matchmaking; A number in the range
    *         [0.0 .. 1.0], with 0.0 indicating no match. The higher the number
    *         the better the match.
-   * @see org.apache.lucene.queryParser.QueryParser#parse(String)
+   *
    */
   public float search(Query query) {
     if (query == null) 
