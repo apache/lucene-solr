@@ -51,6 +51,7 @@ public class TestFastLRUCache extends TestCase {
     scNew.init(l, o, cr);
     scNew.warm(null, sc);
     scNew.setState(SolrCache.State.LIVE);
+    sc.close();
     scNew.put(103, "103");
     assertEquals("90", scNew.get(90));
     assertEquals(null, scNew.get(50));
@@ -63,6 +64,7 @@ public class TestFastLRUCache extends TestCase {
     assertEquals(5L, nl.get("cumulative_lookups"));
     assertEquals(2L, nl.get("cumulative_hits"));
     assertEquals(102L, nl.get("cumulative_inserts"));
+    scNew.close();
   }
 
   public void testOldestItems() {
@@ -79,6 +81,7 @@ public class TestFastLRUCache extends TestCase {
     assertNotNull(m.get(5));
     assertNotNull(m.get(4));
     assertNotNull(m.get(2));
+    cache.destroy();
   }
 
   void doPerfTest(int iter, int cacheSize, int maxKey) {
@@ -102,6 +105,7 @@ public class TestFastLRUCache extends TestCase {
         else if (sz > maxSize) maxSize=sz;
       }
     }
+    cache.destroy();
 
     long end = System.currentTimeMillis();
     System.out.println("time=" + (end-start) + ", minSize="+minSize+",maxSize="+maxSize);

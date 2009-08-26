@@ -373,16 +373,23 @@ public class JdbcDataSource extends
 
   protected void finalize() throws Throwable {
     try {
-      conn.close();
+      if(!isClosed){
+        LOG.error("JdbcDataSource was not closed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
+        close();
+      }
     } finally {
       super.finalize();
     }
   }
 
+  private boolean isClosed = false;
   public void close() {
     try {
       conn.close();
     } catch (Exception e) {
+      LOG.error("Ignoring Error when closing connection", e);
+    } finally{
+      isClosed = true;
     }
 
   }

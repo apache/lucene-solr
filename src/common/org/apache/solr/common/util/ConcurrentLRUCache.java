@@ -17,6 +17,8 @@ package org.apache.solr.common.util;
  */
 
 import org.apache.lucene.util.PriorityQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -40,6 +42,7 @@ import java.lang.ref.WeakReference;
  * @since solr 1.4
  */
 public class ConcurrentLRUCache<K,V> {
+  private static Logger log = LoggerFactory.getLogger(ConcurrentLRUCache.class);
 
   private final ConcurrentHashMap<Object, CacheEntry> map;
   private final int upperWaterMark, lowerWaterMark;
@@ -490,10 +493,14 @@ public class ConcurrentLRUCache<K,V> {
     }
   }
 
-
+ private boolean isDestroyed =  false;
   public void destroy() {
-    if(cleanupThread != null){
-      cleanupThread.stopThread();
+    try {
+      if(cleanupThread != null){
+        cleanupThread.stopThread();
+      }
+    } finally {
+      isDestroyed = true;
     }
   }
 
@@ -583,8 +590,11 @@ public class ConcurrentLRUCache<K,V> {
 
   protected void finalize() throws Throwable {
     try {
-      destroy();
-    } finally { 
+      if(!isDestroyed){
+        log.error("ConcurrentLRUCache was not destroyed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
+        destroy();
+      }
+    } finally {
       super.finalize();
     }
   }

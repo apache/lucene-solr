@@ -502,6 +502,11 @@ Bug Fixes
     effect QueryElevationComponentTest was refactored, and a bug in
     that test was found. (hossman)
 
+59. SOLR-914: General finalize() improvements.  No finalizer delegates
+    to the respective close/destroy method w/o first checking if it's
+    already been closed/destroyed; if it hasn't a, SEVERE error is
+    logged first.  (noble, hossman)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)

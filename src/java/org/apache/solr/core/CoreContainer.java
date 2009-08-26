@@ -271,24 +271,31 @@ public class CoreContainer
     }
     return properties;
   }
-
+  private boolean isShutDown = false;
   /**
    * Stops all cores.
    */
   public void shutdown() {
     synchronized(cores) {
-      for(SolrCore core : cores.values()) {
-        core.close();
+      try {
+        for(SolrCore core : cores.values()) {
+          core.close();
+        }
+        cores.clear();
+      } finally {
+        isShutDown = true;
       }
-      cores.clear();
     }
   }
   
   @Override
   protected void finalize() throws Throwable {
-    try { 
-      shutdown();
-    } finally { 
+    try {
+      if(!isShutDown){
+        log.error("CoreContainer was not shutdown prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
+        shutdown();
+      }
+    } finally {
       super.finalize();
     }
   }

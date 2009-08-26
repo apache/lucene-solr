@@ -213,19 +213,26 @@ public class SolrIndexWriter extends IndexWriter {
    * }
    * ****
    */
-
+  private boolean isClosed = false;
   public void close() throws IOException {
     log.debug("Closing Writer " + name);
-    super.close();
-    if(infoStream != null) {
-      infoStream.close();
+    try {
+      super.close();
+      if(infoStream != null) {
+        infoStream.close();
+      }
+    } finally {
+      isClosed = true;
     }
   }
 
   @Override
   protected void finalize() throws Throwable {
     try {
-      super.close();
+      if(!isClosed){
+        log.error("SolrIndexWriter was not closed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
+        close();
+      }
     } finally { 
       super.finalize();
     }
