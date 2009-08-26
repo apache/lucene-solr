@@ -17,14 +17,7 @@ package org.apache.lucene.benchmark.byTask.feeds;
  * limitations under the License.
  */
 
-import java.util.Random;
-
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
 
 /**
  * A DocMaker reading one line at a time as a Document from a single file. This
@@ -34,7 +27,8 @@ import org.apache.lucene.document.Field.TermVector;
  * The expected format of each line is (arguments are separated by &lt;TAB&gt;):
  * <i>title, date, body</i>. If a line is read in a different format, a
  * {@link RuntimeException} will be thrown. In general, you should use this doc
- * maker with files that were created with {@link WriteLineDocTask}.<br>
+ * maker with files that were created with 
+ * {@link org.apache.lucene.benchmark.byTask.tasks.WriteLineDocTask}.<br>
  * <br>
  * Config properties:
  * <ul>

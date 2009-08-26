@@ -20,7 +20,7 @@ import java.io.IOException;
  */
 
 /**
- * Creates the same document each time {@link #getNextDocData()} is called.
+ * Creates the same document each time {@link #getNextDocData(DocData)} is called.
  */
 public class SingleDocSource extends ContentSource {
   

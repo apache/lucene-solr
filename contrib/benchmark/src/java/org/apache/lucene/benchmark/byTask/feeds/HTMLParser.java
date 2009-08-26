@@ -23,7 +23,7 @@ import java.text.DateFormat;
 import java.util.Date;
 
 /**
- * HTML Parsing Interfacew for test purposes
+ * HTML Parsing Interface for test purposes
  */
 public interface HTMLParser {
 
@@ -44,7 +44,7 @@ public interface HTMLParser {
   /**
    * Parse the inputText and return DocData. 
    * @param inputText the html text to parse.
-   * @see #parse(String, Date, Reader, DateFormat)
+   * @see {@link #parse(String, Date, Reader, DateFormat)}
    */
   public DocData parse(DocData docData, String name, Date date, StringBuffer inputText, DateFormat dateFormat) throws IOException, InterruptedException;
 

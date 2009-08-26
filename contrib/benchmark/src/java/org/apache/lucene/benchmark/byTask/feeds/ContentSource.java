@@ -34,7 +34,7 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 /**
  * Represents content from a specified source, such as TREC, Reuters etc. A
  * {@link ContentSource} is responsible for creating {@link DocData} objects for
- * its documents to be consumed by {@link ToDeleteDocMaker}. It also keeps track
+ * its documents to be consumed by {@link DocMaker}. It also keeps track
  * of various statistics, such as how many documents were generated, size in
  * bytes etc.
  * <p>
