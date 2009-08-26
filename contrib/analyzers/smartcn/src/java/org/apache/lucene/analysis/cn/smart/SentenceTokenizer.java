@@ -31,6 +31,11 @@ import org.apache.lucene.util.AttributeSource;
  * <p>
  * The output tokens can then be broken into words with {@link WordTokenFilter}
  * </p>
+ * <p><font color="#FF0000">
+ * WARNING: The status of the analyzers/smartcn <b>analysis.cn</b> package is experimental. 
+ * The APIs introduced here might change in the future and will not be 
+ * supported anymore in such a case.</font>
+ * </p>
  */
 public final class SentenceTokenizer extends Tokenizer {
 

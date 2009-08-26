@@ -36,6 +36,11 @@ import org.apache.lucene.analysis.cn.smart.Utility;
 /**
  * SmartChineseAnalyzer Word Dictionary
  *
+ * <p><font color="#FF0000">
+ * WARNING: The status of the analyzers/smartcn <b>analysis.cn</b> package is experimental. 
+ * The APIs introduced here might change in the future and will not be 
+ * supported anymore in such a case.</font>
+ * </p>
  */
 class WordDictionary extends AbstractDictionary {
 

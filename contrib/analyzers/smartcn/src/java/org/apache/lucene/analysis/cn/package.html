@@ -3,8 +3,17 @@
 <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
 </head>
 <body>
+<div>
 Analyzer for Simplified Chinese, which indexes words.
-<p>
+</div>
+<div>
+<font color="#FF0000">
+WARNING: The status of the analyzers/smartcn <b>analysis.cn</b> package is experimental. The APIs
+introduced here might change in the future and will not be supported anymore
+in such a case.
+</font>
+</div>
+<div>
 Three analyzers are provided for Chinese, each of which treats Chinese text in a different way.
 <ul>
 	<li>ChineseAnalyzer (in the analyzers/cn package): Index unigrams (individual Chinese characters) as a token.
@@ -18,7 +27,7 @@ Example phrase： "我是中国人"
 	<li>CJKAnalyzer: 我是－是中－中国－国人</li>
 	<li>SmartChineseAnalyzer: 我－是－中国－人</li>
 </ol>
-</p>
+</div>
 
 </body>
 </html>

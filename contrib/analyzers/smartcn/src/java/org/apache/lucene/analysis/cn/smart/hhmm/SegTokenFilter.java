@@ -25,6 +25,11 @@ import org.apache.lucene.analysis.cn.smart.WordType;
  * Filters a {@link SegToken} by converting full-width latin to half-width, then lowercasing latin.
  * Additionally, all punctuation is converted into {@link Utility#COMMON_DELIMITER}
  * </p>
+ * <p><font color="#FF0000">
+ * WARNING: The status of the analyzers/smartcn <b>analysis.cn</b> package is experimental. 
+ * The APIs introduced here might change in the future and will not be 
+ * supported anymore in such a case.</font>
+ * </p>
  */
 public class SegTokenFilter {
 
