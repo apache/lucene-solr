@@ -21,7 +21,7 @@ import java.io.Reader;
 
 /**
  * CharStream adds <a
- * href="#correctOffset(int)">correctOffset</a>
+ * href="CharStream.html#correctOffset(int)">correctOffset</a>
  * functionality over Reader.  All Tokenizers accept a
  * CharStream as input, which enables arbitrary character
  * based filtering before tokenization.  The {@link
