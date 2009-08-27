@@ -180,9 +180,11 @@ public class SnapPuller {
     return getNamedListResponse(post);
   }
 
-  NamedList getCommandResponse(String cmd) throws IOException {
+  NamedList getCommandResponse(NamedList<String> commands) throws IOException {
     PostMethod post = new PostMethod(masterUrl);
-    post.addParameter(COMMAND, cmd);
+    for (Map.Entry<String, String> c : commands) {
+      post.addParameter(c.getKey(),c.getValue());
+    } 
     post.addParameter("wt", "javabin");
     return getNamedListResponse(post);
   }

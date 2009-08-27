@@ -171,7 +171,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (command.equals(CMD_SHOW_COMMITS)) {
       rsp.add(CMD_SHOW_COMMITS, getCommits());
     } else if (command.equals(CMD_DETAILS)) {
-      rsp.add(CMD_DETAILS, getReplicationDetails());
+      rsp.add(CMD_DETAILS, getReplicationDetails(solrParams.getBool("slave",true)));
       RequestHandlerUtils.addExperimentalFormatWarning(rsp);
     } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
       replicationEnabled.set(true);
@@ -523,8 +523,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   /**
    * Used for showing statistics and progress information.
+   * @param showSlaveDetails
    */
-  NamedList<Object> getReplicationDetails() {
+  private NamedList<Object> getReplicationDetails(boolean showSlaveDetails) {
     String timeLastReplicated = "", confFilesReplicated = "", confFilesReplicatedTime = "", timesIndexReplicated = "", timesConfigReplicated = "";
     NamedList<Object> details = new SimpleOrderedMap<Object>();
     NamedList<Object> master = new SimpleOrderedMap<Object>();
@@ -563,7 +564,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     SnapPuller snapPuller = tempSnapPuller;
-    if (snapPuller != null) {
+    if (showSlaveDetails && snapPuller != null) {
       try {
         Properties props = new Properties();
         File f = new File(core.getDataDir(), SnapPuller.REPLICATION_PROPERTIES);
@@ -586,10 +587,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         IOUtils.closeQuietly(inFile);
       }
       try {
-        NamedList nl = snapPuller.getCommandResponse(CMD_DETAILS);
+        NamedList<String> command = new NamedList<String>();
+        command.add(COMMAND,CMD_DETAILS);
+        command.add("slave","false");
+        NamedList nl = snapPuller.getCommandResponse(command);
         slave.add("masterDetails", nl.get(CMD_DETAILS));
-      } catch (IOException e) {
+      } catch (Exception e) {
         LOG.warn("Exception while invoking a 'details' method on master ", e);
+        slave.add(ERR_STATUS,"invalid_master");
       }
       slave.add(MASTER_URL, snapPuller.getMasterUrl());
       if (snapPuller.getPollInterval() != null) {
@@ -706,7 +711,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
     if(isMaster)
       details.add("master", master);
-    if(isSlave)
+    if(isSlave && showSlaveDetails)
       details.add("slave", slave);
     NamedList snapshotStats = snapShootDetails;
     if (snapshotStats != null)
@@ -730,12 +735,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     registerFileStreamResponseWriter();
     registerCloseHook();
     NamedList slave = (NamedList) initArgs.get("slave");
-    if (slave != null) {
+    boolean enableSlave = slave != null && (null == slave.get("enable") || "true".equals(slave.get("enable")));
+    if (enableSlave) {
       tempSnapPuller = snapPuller = new SnapPuller(slave, this, core);
       isSlave = true;
     }
     NamedList master = (NamedList) initArgs.get("master");
-    if (master != null) {
+    boolean enableMaster = master != null && (null == master.get("enable") || "true".equals(master.get("enable")));
+    if (enableMaster) {
       includeConfFiles = (String) master.get(CONF_FILES);
       if (includeConfFiles != null && includeConfFiles.trim().length() > 0) {
         List<String> files = Arrays.asList(includeConfFiles.split(","));
