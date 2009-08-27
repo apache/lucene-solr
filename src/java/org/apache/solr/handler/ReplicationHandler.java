@@ -109,13 +109,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     }
     // This command does not give the current index version of the master
     // It gives the current 'replicateable' index version
-    if(CMD_ENABLE_REPL.equalsIgnoreCase(command)){
-      replicationEnabled.set(true);
-      rsp.add(STATUS, OK_STATUS);
-    } else if(CMD_DISABLE_REPL.equalsIgnoreCase(command)){
-      replicationEnabled.set(false);
-      rsp.add(STATUS, OK_STATUS);
-    } else if (command.equals(CMD_INDEX_VERSION)) {
+   if (command.equals(CMD_INDEX_VERSION)) {
       IndexCommit commitPoint = indexCommitPoint;  // make a copy so it won't change
       if (commitPoint != null && replicationEnabled.get()) {
         rsp.add(CMD_INDEX_VERSION, commitPoint.getVersion());
@@ -179,7 +173,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     } else if (command.equals(CMD_DETAILS)) {
       rsp.add(CMD_DETAILS, getReplicationDetails());
       RequestHandlerUtils.addExperimentalFormatWarning(rsp);
-    }
+    } else if (CMD_ENABLE_REPL.equalsIgnoreCase(command)) {
+      replicationEnabled.set(true);
+      rsp.add(STATUS, OK_STATUS);
+   } else if (CMD_DISABLE_REPL.equalsIgnoreCase(command)) {
+     replicationEnabled.set(false);
+     rsp.add(STATUS, OK_STATUS);
+   }
   }
 
   private List<NamedList> getCommits() {
