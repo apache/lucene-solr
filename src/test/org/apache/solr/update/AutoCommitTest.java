@@ -31,34 +31,49 @@ import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.RefCounted;
 
-
-/** Catch commit notifications
- *
- * It is tricky to be correctly notified when commits occur: Solr's post-commit
- * hook is called after commit has completed but before the search is opened.  The
- * best that can be done is wait for a post commit hook, and then wait for a little
- * longer for a new searcher to be registered. 
- */
 class CommitListener implements SolrEventListener {
   public volatile boolean triggered = false;
+  public volatile SolrIndexSearcher currentSearcher;
+  public SolrCore core;
+
+  public CommitListener(SolrCore core) {
+    this.core = core;
+  }
+
   public void init(NamedList args) {}
-  public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {}
+
+  public void newSearcher(SolrIndexSearcher newSearcher, SolrIndexSearcher currentSearcher) {
+    this.currentSearcher = currentSearcher;
+    triggered = true;
+  }
   public void postCommit() {
     triggered = true;
   }
+  public void reset() {
+    triggered=false;
+  }
+
   public boolean waitForCommit(int timeout) {
-    triggered = false;
+    //triggered = false;
+    
     for (int towait=timeout; towait > 0; towait -= 250) {
       try {
         if (triggered) {
-          Thread.sleep( 500 );
+          RefCounted<SolrIndexSearcher> holder = core.getSearcher();
+          SolrIndexSearcher s = holder.get();
+          holder.decref();
+          // since there could be two commits in a row, don't test for a specific new searcher
+          // just test that the old one has been replaced.
+          if (s != currentSearcher) return true;
+          Thread.sleep(250);
           break;
         }
         Thread.sleep( 250 );
       } catch (InterruptedException e) {}
     }
-    return triggered;
+    return false;
   }
 }
 
@@ -66,7 +81,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
 
   public String getSchemaFile() { return "schema.xml"; }
   public String getSolrConfigFile() { return "solrconfig.xml"; }
-  
+
   /**
    * Take a string and make it an iterable ContentStream
    * 
@@ -85,13 +100,14 @@ public class AutoCommitTest extends AbstractSolrTestCase {
      Temporarily disabled. -Mike Klaas */
   public void XXXtestMaxDocs() throws Exception {
 
-    CommitListener trigger = new CommitListener();
     SolrCore core = h.getCore();
+    CommitListener trigger = new CommitListener(core);
+
     DirectUpdateHandler2 updater = (DirectUpdateHandler2)core.getUpdateHandler();
     DirectUpdateHandler2.CommitTracker tracker = updater.tracker;
     tracker.timeUpperBound = 100000;
     tracker.docsUpperBound = 14;
-    updater.commitCallbacks.add(trigger);
+    // updater.commitCallbacks.add(trigger);
     
     XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
     handler.init( null );
@@ -130,15 +146,16 @@ public class AutoCommitTest extends AbstractSolrTestCase {
   }
 
   public void testMaxTime() throws Exception {
-    CommitListener trigger = new CommitListener();
     SolrCore core = h.getCore();
+    CommitListener trigger = new CommitListener(core);    
+    core.registerNewSearcherListener(trigger);
     DirectUpdateHandler2 updater = (DirectUpdateHandler2) core.getUpdateHandler();
     DirectUpdateHandler2.CommitTracker tracker = updater.tracker;
     // too low of a number can cause a slow host to commit before the test code checks that it
     // isn't there... causing a failure at "shouldn't find any"
     tracker.timeUpperBound = 1000;
     tracker.docsUpperBound = -1;
-    updater.commitCallbacks.add(trigger);
+    // updater.commitCallbacks.add(trigger);
     
     XmlUpdateRequestHandler handler = new XmlUpdateRequestHandler();
     handler.init( null );
@@ -150,13 +167,15 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     SolrQueryRequestBase req = new SolrQueryRequestBase( core, params ) {};
     req.setContentStreams( toContentStreams(
       adoc("id", "529", "field_t", "what's inside?", "subject", "info"), null ) );
+    trigger.reset();
     handler.handleRequest( req, rsp );
 
     // Check it it is in the index
     assertQ("shouldn't find any", req("id:529") ,"//result[@numFound=0]" );
 
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForCommit(20000));
+    assertTrue(trigger.waitForCommit(30000));
+    trigger.reset();
     req.setContentStreams( toContentStreams(
       adoc("id", "530", "field_t", "what's inside?", "subject", "info"), null ) );
     handler.handleRequest( req, rsp );
@@ -170,7 +189,8 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertU( delI("529") );
     assertQ("deleted, but should still be there", req("id:529") ,"//result[@numFound=1]" );
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForCommit(20000));
+    assertTrue(trigger.waitForCommit(30000));
+    trigger.reset();
     req.setContentStreams( toContentStreams(
       adoc("id", "550", "field_t", "what's inside?", "subject", "info"), null ) );
     handler.handleRequest( req, rsp );
@@ -187,7 +207,9 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("should not be there yet", req("id:500") ,"//result[@numFound=0]" );
     
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForCommit(20000));
+    assertTrue(trigger.waitForCommit(30000));
+    trigger.reset();
+    
     req.setContentStreams( toContentStreams(
       adoc("id", "531", "field_t", "what's inside?", "subject", "info"), null ) );
     handler.handleRequest( req, rsp );
