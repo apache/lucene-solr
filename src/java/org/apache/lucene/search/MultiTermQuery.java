@@ -60,7 +60,7 @@ import org.apache.lucene.queryParser.QueryParser; // for javadoc
 public abstract class MultiTermQuery extends Query {
   /* @deprecated move to sub class */
   protected Term term;
-  protected RewriteMethod rewriteMethod = SCORING_BOOLEAN_QUERY_REWRITE;
+  protected RewriteMethod rewriteMethod = CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
   transient int numberOfTerms = 0;
 
   /** Abstract class that defines how the query is rewritten. */

@@ -205,6 +205,12 @@ Changes in runtime behavior
     The usage of the US locale is important to guarantee correct ordering of
     generated terms.  (Uwe Schindler)
 
+15. LUCENE-1860: MultiTermQuery now defaults to
+    CONSTANT_SCORE_AUTO_REWRITE_DEFAULT rewrite method (previously it
+    was SCORING_BOOLEAN_QUERY_REWRITE).  This means that PrefixQuery
+    and WildcardQuery will now produce constant score for all matching
+    docs, equal to the boost of the query.  (Mike McCandless)
+
 API Changes
 
 1. LUCENE-1419: Add expert API to set custom indexing chain. This API is 

@@ -53,7 +53,22 @@ public class TestBooleanPrefixQuery extends LuceneTestCase {
     super(name);
   }
 
-  public void testMethod() {
+  private int getCount(IndexReader r, Query q) throws Exception {
+    if (q instanceof BooleanQuery) {
+      return ((BooleanQuery) q).getClauses().length;
+    } else if (q instanceof ConstantScoreQuery) {
+      DocIdSetIterator iter = ((ConstantScoreQuery) q).getFilter().getDocIdSet(r).iterator();
+      int count = 0;
+      while(iter.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+        count++;
+      }
+      return count;
+    } else {
+      throw new RuntimeException("unepxected query " + q);
+    }
+  }
+
+  public void testMethod() throws Exception {
     RAMDirectory directory = new RAMDirectory();
 
     String[] categories = new String[]{"food",
@@ -63,6 +78,7 @@ public class TestBooleanPrefixQuery extends LuceneTestCase {
 
     Query rw1 = null;
     Query rw2 = null;
+    IndexReader reader = null;
     try {
       IndexWriter writer = new IndexWriter(directory, new
                                            WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
@@ -73,9 +89,8 @@ public class TestBooleanPrefixQuery extends LuceneTestCase {
       }
       writer.close();
       
-      IndexReader reader = IndexReader.open(directory);
+      reader = IndexReader.open(directory);
       PrefixQuery query = new PrefixQuery(new Term("category", "foo"));
-      
       rw1 = query.rewrite(reader);
       
       BooleanQuery bq = new BooleanQuery();
@@ -86,20 +101,7 @@ public class TestBooleanPrefixQuery extends LuceneTestCase {
       fail(e.getMessage());
     }
 
-    BooleanQuery bq1 = null;
-    if (rw1 instanceof BooleanQuery) {
-      bq1 = (BooleanQuery) rw1;
-    }
-
-    BooleanQuery bq2 = null;
-    if (rw2 instanceof BooleanQuery) {
-        bq2 = (BooleanQuery) rw2;
-    } else {
-      fail("Rewrite");
-    }
-
-    assertEquals("Number of Clauses Mismatch", bq1.getClauses().length,
-                 bq2.getClauses().length);
+    assertEquals("Number of Clauses Mismatch", getCount(reader, rw1), getCount(reader, rw2));
   }
 }
 

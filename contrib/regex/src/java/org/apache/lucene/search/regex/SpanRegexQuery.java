@@ -50,8 +50,7 @@ public class SpanRegexQuery extends SpanQuery implements RegexQueryCapable {
   public Query rewrite(IndexReader reader) throws IOException {
     RegexQuery orig = new RegexQuery(term);
     orig.setRegexImplementation(regexImpl);
-
-    // RegexQuery (via MultiTermQuery).rewrite always returns a BooleanQuery
+    orig.setRewriteMethod(RegexQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     BooleanQuery bq = (BooleanQuery) orig.rewrite(reader);
 
     BooleanClause[] clauses = bq.getClauses();

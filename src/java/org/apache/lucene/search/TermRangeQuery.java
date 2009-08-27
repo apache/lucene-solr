@@ -109,7 +109,6 @@ public class TermRangeQuery extends MultiTermQuery {
     this.includeLower = includeLower;
     this.includeUpper = includeUpper;
     this.collator = collator;
-    rewriteMethod = CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
   }
 
   /** Returns the field name for this query */
