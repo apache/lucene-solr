@@ -207,14 +207,14 @@ public abstract class FieldValueHitQueue extends PriorityQueue {
   protected abstract boolean lessThan (final Object a, final Object b);
 
   /**
-   * Given a FieldDoc object, stores the values used to sort the given document.
+   * Given a queue Entry, creates a corresponding FieldDoc
+   * that contains the values used to sort the given document.
    * These values are not the raw values out of the index, but the internal
    * representation of them. This is so the given search hit can be collated by
    * a MultiSearcher with other search hits.
    * 
-   * @param doc
-   *          The FieldDoc to store sort values into.
-   * @return The same FieldDoc passed in.
+   * @param entry The Entry used to create a FieldDoc
+   * @return The newly created FieldDoc
    * @see Searchable#search(Weight,Filter,int,Sort)
    */
   FieldDoc fillFields(final Entry entry) {
