@@ -27,28 +27,9 @@ import java.util.Properties;
  * <p>
  * SmartChineseAnalyzer has a built-in dictionary and stopword list out-of-box.
  * </p>
- * <p>
- * In special circumstances a user may wish to configure SmartChineseAnalyzer with a custom data directory location.
- * </p>
- * AnalyzerProfile is used to determine the location of the data directory containing bigramdict.dct and coredict.dct.
- * The following order is used to determine the location of the data directory:
- * 
- * <ol>
- * <li>System property： -Danalysis.data.dir=/path/to/analysis-data</li>
- * <li>Relative path: analysis-data</li>
- * <li>Relative path: lib/analysis-data</li>
- * <li>Property file: analysis.data.dir property from relative path analysis.properties</li>
- * <li>Property file: analysis.data.dir property from relative path lib/analysis.properties</li>
- * </ol>
- * 
- * Example property file：
- * 
- * <pre>
- * analysis.data.dir=D:/path/to/analysis-data/
- * </pre>
  * <p><font color="#FF0000">
  * WARNING: The status of the analyzers/smartcn <b>analysis.cn</b> package is experimental. 
- * The APIs introduced here might change in the future and will not be 
+ * The APIs and file formats introduced here might change in the future and will not be 
  * supported anymore in such a case.</font>
  * </p>
  * 

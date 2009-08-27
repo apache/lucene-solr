@@ -36,7 +36,7 @@ import org.apache.lucene.analysis.cn.smart.AnalyzerProfile;
  * SmartChineseAnalyzer Bigram dictionary.
  * <p><font color="#FF0000">
  * WARNING: The status of the analyzers/smartcn <b>analysis.cn</b> package is experimental. 
- * The APIs introduced here might change in the future and will not be 
+ * The APIs and file formats introduced here might change in the future and will not be 
  * supported anymore in such a case.</font>
  * </p>
  */
