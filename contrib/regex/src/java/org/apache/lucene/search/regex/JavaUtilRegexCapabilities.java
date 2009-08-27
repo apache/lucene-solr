@@ -60,7 +60,7 @@ public class JavaUtilRegexCapabilities implements RegexCapabilities {
    * another option to modify the behavior. Useful in cases where the regular expression text
    * cannot be modified, or if doing so is undesired.
    * 
-   * @flags The flags that are ORed together.
+   * @param flags The flags that are ORed together.
    */
   public JavaUtilRegexCapabilities(int flags) {
     this.flags = flags;
