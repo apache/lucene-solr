@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.lucene.analysis.cn.smart.CharType;
 import org.apache.lucene.analysis.cn.smart.Utility;
 import org.apache.lucene.analysis.cn.smart.WordType;
+import org.apache.lucene.analysis.cn.smart.hhmm.PathNode;//javadoc @link
 
 /**
  * Finds the optimal segmentation of a sentence into Chinese words
