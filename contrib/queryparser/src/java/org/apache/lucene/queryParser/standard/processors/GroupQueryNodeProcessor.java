@@ -106,8 +106,6 @@ public class GroupQueryNodeProcessor implements QueryNodeProcessor {
   }
 
   /**
-   * @param node
-   * @return
    */
   private QueryNode applyModifier(QueryNode node, QueryNode parent) {
 

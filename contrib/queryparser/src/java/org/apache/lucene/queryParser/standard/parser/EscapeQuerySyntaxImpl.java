@@ -98,7 +98,7 @@ public class EscapeQuerySyntaxImpl implements EscapeQuerySyntax {
   /**
    * replace with ignore case
    * 
-   * @param stringOrig
+   * @param string
    *          string to get replaced
    * @param sequence1
    *          the old character sequence in lowercase
@@ -164,7 +164,7 @@ public class EscapeQuerySyntaxImpl implements EscapeQuerySyntax {
   /**
    * escape all tokens that are part of the parser syntax on a given string
    * 
-   * @param string
+   * @param str
    *          string to get replaced
    * @param locale
    *          locale to be used when performing string compares

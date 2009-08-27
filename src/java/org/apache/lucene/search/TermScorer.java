@@ -74,7 +74,7 @@ final class TermScorer extends Scorer {
     score(c, Integer.MAX_VALUE, nextDoc());
   }
 
-  /** @deprecated use {@link #score(Collector, int)} instead. */
+  /** @deprecated use {@link #score(Collector, int, int)} instead. */
   protected boolean score(HitCollector c, int end) throws IOException {
     return score(new HitCollectorWrapper(c), end, doc);
   }

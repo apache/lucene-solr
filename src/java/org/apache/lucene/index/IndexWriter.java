@@ -649,7 +649,6 @@ public class IndexWriter {
      * @see #release(SegmentReader)
      * @param info
      * @param doOpenStores
-     * @return 
      * @throws IOException
      */
     public synchronized SegmentReader get(SegmentInfo info, boolean doOpenStores) throws IOException {
@@ -664,7 +663,6 @@ public class IndexWriter {
      * @param doOpenStores
      * @param readBufferSize
      * @param termsIndexDivisor
-     * @return
      * @throws IOException
      */
     public synchronized SegmentReader get(SegmentInfo info, boolean doOpenStores, int readBufferSize, int termsIndexDivisor) throws IOException {

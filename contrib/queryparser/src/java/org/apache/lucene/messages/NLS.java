@@ -124,7 +124,6 @@ public class NLS {
   }
 
   /**
-   * @param bundleName
    * @param clazz
    */
   private static void load(Class<Object> clazz) {

@@ -179,10 +179,6 @@ public class QueryScorer implements Scorer {
   }
 
   /**
-   * @param query
-   * @param field
-   * @param tokenStream
-   * @param reader
    */
   private void init(Query query, String field, IndexReader reader, boolean expandMultiTermQuery) {
     this.reader = reader;

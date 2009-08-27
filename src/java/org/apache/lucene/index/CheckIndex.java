@@ -99,9 +99,11 @@ public class CheckIndex {
     /** Directory index is in. */
     public Directory dir;
 
-    /** SegmentInfos instance containing only segments that
-     *  had no problems (this is used with the {@link
-     *  CheckIndex#fix} method to repair the index. */
+    /** 
+     * SegmentInfos instance containing only segments that
+     * had no problems (this is used with the {@link CheckIndex#fixIndex} 
+     * method to repair the index. 
+     */
     SegmentInfos newSegments;
 
     /** How many documents will be lost to bad segments. */

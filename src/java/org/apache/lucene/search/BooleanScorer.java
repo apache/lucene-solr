@@ -280,7 +280,7 @@ final class BooleanScorer extends Scorer {
     return false;
   }
 
-  /** @deprecated use {@link #score(Collector, int)} instead. */
+  /** @deprecated use {@link #score(Collector, int, int)} instead. */
   protected boolean score(HitCollector hc, int max) throws IOException {
     return score(new HitCollectorWrapper(hc), max, docID());
   }
