@@ -30,13 +30,22 @@
         It runs in a Java servlet container such as <a href="http://tomcat.apache.org">Tomcat</a>.
       </p>
       <p>
-        See the complete <a href="features.html">feature list</a> for more details, then check out the <a href="tutorial.html">tutorial</a>.
+        See the complete <a href="features.html">feature list</a> for more details.
       </p>
       <p>
         For more information about Solr, please see the <a href="http://wiki.apache.org/solr">Solr wiki</a>.
       </p>
     </section>
-
+    <section id="getstarted">
+      <title>Get Started</title>
+      <ul>
+        <li>Download Solr <a href="ext:releases">here</a></li>
+        <li>Check out the <a href="tutorial.html">tutorial</a></li>
+        <li>Read the <a href="http://wiki.apache.org/solr">Solr wiki</a> to learn more</li>
+        <li>Join the <a href="mailing_lists.html">community</a></li>
+        <li><a href="http://wiki.apache.org/solr/HowToContribute">Give Back</a>! (Optional, but encouraged!)</li>
+      </ul>
+    </section>
     <section id="news">
       <title>News</title>
 
