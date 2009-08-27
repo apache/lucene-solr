@@ -176,7 +176,7 @@ public class HHMMSegmenter {
   /**
    * Get the character types for every character in a sentence.
    * 
-   * @see Utility.charType(char)
+   * @see Utility#charType(char)
    * @param sentence input sentence
    * @return array of character types corresponding to character positions in the sentence
    */
