@@ -514,6 +514,9 @@ Bug Fixes
     delimiters, and could additionally lose big position increments.
     (Robert Muir, yonik
 
+61. SOLR-1091: Jetty's use of CESU-8 for code points outside the BMP
+    resulted in invalid output from the serialized PHP writer. (yonik)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)

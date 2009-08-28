@@ -23,6 +23,7 @@ import java.util.*;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
@@ -36,13 +37,14 @@ import org.apache.solr.search.SolrIndexSearcher;
 
 public class PHPSerializedResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_PHP_UTF8="text/x-php-serialized;charset=UTF-8";
+  static boolean modifiedUTF8 = System.getProperty("jetty.home") != null;
 
   public void init(NamedList n) {
     /* NOOP */
   }
   
  public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    PHPSerializedWriter w = new PHPSerializedWriter(writer, req, rsp);
+    PHPSerializedWriter w = new PHPSerializedWriter(writer, req, rsp, modifiedUTF8);
     try {
       w.writeResponse();
     } finally {
@@ -56,8 +58,13 @@ public class PHPSerializedResponseWriter implements QueryResponseWriter {
 }
 
 class PHPSerializedWriter extends JSONWriter {
-  public PHPSerializedWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
+  final private boolean modifiedUTF8;
+  final UnicodeUtil.UTF8Result utf8;
+
+  public PHPSerializedWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp, boolean modifiedUTF8) {
     super(writer, req, rsp);
+    this.modifiedUTF8 = modifiedUTF8;
+    this.utf8 = modifiedUTF8 ? null : new UnicodeUtil.UTF8Result();
     // never indent serialized PHP data
     doIndent = false;
   }
@@ -273,6 +280,28 @@ class PHPSerializedWriter extends JSONWriter {
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
     // serialized PHP strings don't need to be escaped at all, however the 
     // string size reported needs be the number of bytes rather than chars.
-    writer.write("s:"+val.getBytes("UTF8").length+":\""+val+"\";");
+    int nBytes;
+    if (modifiedUTF8) {
+      nBytes = 0;
+      for (int i=0; i<val.length(); i++) {
+        char ch = val.charAt(i);
+        if (ch<='\u007f') {
+          nBytes += 1;
+        } else if (ch<='\u07ff') {
+          nBytes += 2;
+        } else {
+          nBytes += 3;
+        }
+      }
+    } else {
+      UnicodeUtil.UTF16toUTF8(val, 0, val.length(), utf8);
+      nBytes = utf8.length;
+    }
+
+    writer.write("s:");
+    writer.write(Integer.toString(nBytes));
+    writer.write(":\"");
+    writer.write(val);
+    writer.write("\";");
   }
 }
