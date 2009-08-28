@@ -91,8 +91,10 @@ final class StoredFieldsWriter {
       state.docWriter.removeOpenFile(state.docStoreSegmentName + "." + IndexFileNames.FIELDS_EXTENSION);
       state.docWriter.removeOpenFile(state.docStoreSegmentName + "." + IndexFileNames.FIELDS_INDEX_EXTENSION);
 
-      if (4+((long) state.numDocsInStore)*8 != state.directory.fileLength(state.docStoreSegmentName + "." + IndexFileNames.FIELDS_INDEX_EXTENSION))
-        throw new RuntimeException("after flush: fdx size mismatch: " + state.numDocsInStore + " docs vs " + state.directory.fileLength(state.docStoreSegmentName + "." + IndexFileNames.FIELDS_INDEX_EXTENSION) + " length in bytes of " + state.docStoreSegmentName + "." + IndexFileNames.FIELDS_INDEX_EXTENSION);
+      final String fileName = state.docStoreSegmentName + "." + IndexFileNames.FIELDS_INDEX_EXTENSION;
+
+      if (4+((long) state.numDocsInStore)*8 != state.directory.fileLength(fileName))
+        throw new RuntimeException("after flush: fdx size mismatch: " + state.numDocsInStore + " docs vs " + state.directory.fileLength(fileName) + " length in bytes of " + fileName + " file exists?=" + state.directory.fileExists(fileName));
     }
   }
 

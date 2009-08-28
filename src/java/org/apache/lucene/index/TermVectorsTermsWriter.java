@@ -90,8 +90,9 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       tvd.close();
       tvx = null;
       assert state.docStoreSegmentName != null;
-      if (4+((long) state.numDocsInStore)*16 != state.directory.fileLength(state.docStoreSegmentName + "." + IndexFileNames.VECTORS_INDEX_EXTENSION))
-        throw new RuntimeException("after flush: tvx size mismatch: " + state.numDocsInStore + " docs vs " + state.directory.fileLength(state.docStoreSegmentName + "." + IndexFileNames.VECTORS_INDEX_EXTENSION) + " length in bytes of " + state.docStoreSegmentName + "." + IndexFileNames.VECTORS_INDEX_EXTENSION);
+      final String fileName = state.docStoreSegmentName + "." + IndexFileNames.VECTORS_INDEX_EXTENSION;
+      if (4+((long) state.numDocsInStore)*16 != state.directory.fileLength(fileName))
+        throw new RuntimeException("after flush: tvx size mismatch: " + state.numDocsInStore + " docs vs " + state.directory.fileLength(fileName) + " length in bytes of " + fileName + " file exists?=" + state.directory.fileExists(fileName));
 
       state.flushedFiles.add(state.docStoreSegmentName + "." + IndexFileNames.VECTORS_INDEX_EXTENSION);
       state.flushedFiles.add(state.docStoreSegmentName + "." + IndexFileNames.VECTORS_FIELDS_EXTENSION);
