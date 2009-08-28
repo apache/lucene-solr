@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
@@ -52,6 +53,7 @@ public class QueryScorer implements Scorer {
   private String field;
   private IndexReader reader;
   private boolean skipInitExtractor;
+  private boolean wrapToCaching = true;
 
   /**
    * @param query Query to use for highlighting
@@ -209,6 +211,7 @@ public class QueryScorer implements Scorer {
         : new WeightedSpanTermExtractor(defaultField);
 
     qse.setExpandMultiTermQuery(expandMultiTermQuery);
+    qse.setWrapIfNotCachingTokenFilter(wrapToCaching);
     if (reader == null) {
       this.fieldWeightedSpanTerms = qse.getWeightedSpanTerms(query,
           tokenStream, field);
@@ -248,5 +251,18 @@ public class QueryScorer implements Scorer {
    */
   public void setExpandMultiTermQuery(boolean expandMultiTermQuery) {
     this.expandMultiTermQuery = expandMultiTermQuery;
+  }
+  
+  /**
+   * By default, {@link TokenStream}s that are not of the type
+   * {@link CachingTokenFilter} are wrapped in a {@link CachingTokenFilter} to
+   * ensure an efficient reset - if you are already using a different caching
+   * {@link TokenStream} impl and you don't want it to be wrapped, set this to
+   * false.
+   * 
+   * @param wrap
+   */
+  public void setWrapIfNotCachingTokenFilter(boolean wrap) {
+    this.wrapToCaching = wrap;
   }
 }

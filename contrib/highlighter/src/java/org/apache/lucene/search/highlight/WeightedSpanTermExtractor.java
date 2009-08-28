@@ -64,6 +64,7 @@ public class WeightedSpanTermExtractor {
   private String defaultField;
   private boolean expandMultiTermQuery;
   private boolean cachedTokenStream;
+  private boolean wrapToCaching = true;
 
   public WeightedSpanTermExtractor() {
   }
@@ -303,7 +304,7 @@ public class WeightedSpanTermExtractor {
   }
 
   private IndexReader getReaderForField(String field) throws IOException {
-    if(!cachedTokenStream && !(tokenStream instanceof CachingTokenFilter)) {
+    if(wrapToCaching && !cachedTokenStream && !(tokenStream instanceof CachingTokenFilter)) {
       tokenStream = new CachingTokenFilter(tokenStream);
       cachedTokenStream = true;
     }
@@ -487,5 +488,18 @@ public class WeightedSpanTermExtractor {
   
   public TokenStream getTokenStream() {
     return tokenStream;
+  }
+  
+  /**
+   * By default, {@link TokenStream}s that are not of the type
+   * {@link CachingTokenFilter} are wrapped in a {@link CachingTokenFilter} to
+   * ensure an efficient reset - if you are already using a different caching
+   * {@link TokenStream} impl and you don't want it to be wrapped, set this to
+   * false.
+   * 
+   * @param wrap
+   */
+  public void setWrapIfNotCachingTokenFilter(boolean wrap) {
+    this.wrapToCaching = wrap;
   }
 }
