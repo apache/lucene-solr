@@ -151,7 +151,7 @@
   </target>
 
   <!-- TODO: maybe make JavaCC checking specific to only the projects
-             that use it (Lucene core and contrib/miscellaneous
+             that use it (Lucene core and contrib/misc
   -->
   <target name="javacc-uptodate-check">
     <uptodate property="javacc.files.uptodate">
