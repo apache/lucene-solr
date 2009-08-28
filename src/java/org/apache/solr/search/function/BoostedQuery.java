@@ -52,7 +52,7 @@ public class BoostedQuery extends Query {
     q.extractTerms(terms);
   }
 
-  protected Weight createWeight(Searcher searcher) throws IOException {
+  public Weight createWeight(Searcher searcher) throws IOException {
     return new BoostedQuery.BoostedWeight(searcher);
   }
 
@@ -73,30 +73,34 @@ public class BoostedQuery extends Query {
       return getBoost();
     }
 
+    @Override
     public float sumOfSquaredWeights() throws IOException {
       float sum = qWeight.sumOfSquaredWeights();
       sum *= getBoost() * getBoost();
       return sum ;
     }
 
+    @Override
     public void normalize(float norm) {
       norm *= getBoost();
       qWeight.normalize(norm);
     }
 
+    @Override
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       Scorer subQueryScorer = qWeight.scorer(reader, true, false);
       return new BoostedQuery.CustomScorer(getSimilarity(searcher), searcher, reader, this, subQueryScorer, boostVal);
     }
 
-    public Explanation explain(Searcher searcher, IndexReader reader, int doc) throws IOException {
+    @Override
+    public Explanation explain(IndexReader reader, int doc) throws IOException {
       SolrIndexReader topReader = (SolrIndexReader)reader;
       SolrIndexReader[] subReaders = topReader.getLeafReaders();
       int[] offsets = topReader.getLeafOffsets();
       int readerPos = SolrIndexReader.readerIndex(doc, offsets);
       int readerBase = offsets[readerPos];
 
-      Explanation subQueryExpl = qWeight.explain(searcher,reader,doc);
+      Explanation subQueryExpl = qWeight.explain(reader,doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }
@@ -157,7 +161,7 @@ public class BoostedQuery extends Query {
     }
 
     public Explanation explain(int doc) throws IOException {
-      Explanation subQueryExpl = weight.qWeight.explain(searcher,reader,doc);
+      Explanation subQueryExpl = weight.qWeight.explain(reader,doc);
       if (!subQueryExpl.isMatch()) {
         return subQueryExpl;
       }

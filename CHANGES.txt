@@ -50,7 +50,7 @@ information, see SOLR-1377.
 
 Versions of Major Components
 ----------------------------
-Apache Lucene 2.9-dev r804692
+Apache Lucene 2.9.0-rc2
 Apache Tika 0.4
 
 Detailed Change List

@@ -63,7 +63,6 @@ public class FunctionQuery extends Query {
       this.searcher = searcher;
     }
 
-
     public Query getQuery() {
       return FunctionQuery.this;
     }
@@ -72,21 +71,25 @@ public class FunctionQuery extends Query {
       return queryWeight;
     }
 
+    @Override
     public float sumOfSquaredWeights() throws IOException {
       queryWeight = getBoost();
       return queryWeight * queryWeight;
     }
 
+    @Override
     public void normalize(float norm) {
       this.queryNorm = norm;
       queryWeight *= this.queryNorm;
     }
 
+    @Override
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       return new AllScorer(getSimilarity(searcher), reader, this);
     }
 
-    public Explanation explain(Searcher searcher, IndexReader reader, int doc) throws IOException {
+    @Override
+    public Explanation explain(IndexReader reader, int doc) throws IOException {
       SolrIndexReader topReader = (SolrIndexReader)reader;
       SolrIndexReader[] subReaders = topReader.getLeafReaders();
       int[] offsets = topReader.getLeafOffsets();
@@ -194,7 +197,7 @@ public class FunctionQuery extends Query {
   }
 
 
-  protected Weight createWeight(Searcher searcher) {
+  public Weight createWeight(Searcher searcher) {
     return new FunctionQuery.FunctionWeight(searcher);
   }
 
