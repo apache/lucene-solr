@@ -126,8 +126,10 @@ public class XPathEntityProcessor extends EntityProcessorBase {
           if ("true".equals(field.get("flatten"))) {
             flags = XPathRecordReader.FLATTEN;
           }
+          String xpath = field.get(XPATH);
+          xpath = resolver.replaceTokens(xpath);
           xpathReader.addField(field.get(DataImporter.COLUMN),
-                  field.get(XPATH),
+                  xpath,
                   Boolean.parseBoolean(field.get(DataImporter.MULTI_VALUED)),
                   flags);
         }
