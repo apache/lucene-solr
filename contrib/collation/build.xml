@@ -39,7 +39,7 @@
 
   <target name="compile-misc">
     <subant target="compile">
-       <fileset dir="${common.dir}/contrib/miscellaneous" includes="build.xml"/>
+       <fileset dir="${common.dir}/contrib/misc" includes="build.xml"/>
     </subant>
   </target>
 

@@ -41,7 +41,7 @@
 
   <target name="build-misc" unless="memory.jar.present">
     <echo>Misc building dependency ${misc.jar}</echo>
-    <ant antfile="../miscellaneous/build.xml" target="default" inheritall="false" dir="../miscellaneous" />
+    <ant antfile="../misc/build.xml" target="default" inheritall="false" dir="../misc" />
   </target>
   
 </project>
