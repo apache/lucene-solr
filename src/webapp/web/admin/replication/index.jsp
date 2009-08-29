@@ -50,7 +50,6 @@ if (detailsMap != null)
 </tr>
 <%
     if (nl != null) {         
-      Object replicatableMasterVer = null, replicatableMasterGen = null;
       nl = (NamedList) nl.get("master");
       if(nl != null){      
   %>
