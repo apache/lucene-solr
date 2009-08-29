@@ -67,12 +67,7 @@ final SolrRequestHandler rh = all.values().iterator().next();
 
 NamedList namedlist = executeCommand("details",core,rh);
 NamedList detailsMap = (NamedList)namedlist.get("details");
-if(detailsMap != null)
-if("true".equals((String)detailsMap.get("isSlave"))){
 %>
-	<meta http-equiv="refresh" content="10"/>
-<%}%>
-
 </head>
 
 <body>
