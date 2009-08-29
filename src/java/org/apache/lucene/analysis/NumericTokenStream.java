@@ -29,59 +29,57 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 /**
- * <b>Expert:</b> This class provides a {@link TokenStream} for indexing numeric values
- * that can be used by {@link NumericRangeQuery}/{@link NumericRangeFilter}.
- * For more information, how to use this class and its configuration properties
- * (<a href="../search/NumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>)
- * read the docs of {@link NumericRangeQuery}.
+ * <b>Expert:</b> This class provides a {@link TokenStream}
+ * for indexing numeric values that can be used by {@link
+ * NumericRangeQuery} or {@link NumericRangeFilter}.
  *
- * <p><b>For easy usage during indexing, there is a {@link NumericField}, that uses the optimal
- * indexing settings (no norms, no term freqs). {@link NumericField} is a wrapper around this
- * expert token stream.</b>
+ * <p>Note that for simple usage, {@link NumericField} is
+ * recommended.  {@link NumericField} disables norms and
+ * term freqs, as they are not usually needed during
+ * searching.  If you need to change these settings, you
+ * should use this class.
  *
- * <p>This stream is not intended to be used in analyzers, its more for iterating the
- * different precisions during indexing a specific numeric value.
- * A numeric value is indexed as multiple string encoded terms, each reduced
- * by zeroing bits from the right. Each value is also prefixed (in the first char) by the
- * <code>shift</code> value (number of bits removed) used during encoding.
- * The number of bits removed from the right for each trie entry is called
- * <code>precisionStep</code> in this API.
+ * <p>See {@link NumericField} for capabilities of fields
+ * indexed numerically.</p>
  *
- * <p>The usage pattern is (it is recommened to switch off norms and term frequencies
- * for numeric fields; it does not make sense to have them):
+ * <p>Here's an example usage, for an int field:
+ *
  * <pre>
- *  Field field = new Field(name, new NumericTokenStream(precisionStep).set<em>???</em>Value(value));
- *  field.setOmitNorms(true);
- *  field.setOmitTermFreqAndPositions(true);
- *  document.add(field);
+ *   Field field = new Field(name, new NumericTokenStream(precisionStep).setIntValue(value));
+ *   field.setOmitNorms(true);
+ *   field.setOmitTermFreqAndPositions(true);
+ *   document.add(field);
  * </pre>
+ *
  * <p>For optimal performance, re-use the TokenStream and Field instance
  * for more than one document:
+ *
  * <pre>
- *  <em>// init</em>
- *  NumericTokenStream stream = new NumericTokenStream(precisionStep);
- *  Field field = new Field(name, stream);
- *  field.setOmitNorms(true);
- *  field.setOmitTermFreqAndPositions(true);
- *  Document document = new Document();
- *  document.add(field);
- *  <em>// use this code to index many documents:</em>
- *  stream.set<em>???</em>Value(value1)
- *  writer.addDocument(document);
- *  stream.set<em>???</em>Value(value2)
- *  writer.addDocument(document);
- *  ...
+ *   NumericTokenStream stream = new NumericTokenStream(precisionStep);
+ *   Field field = new Field(name, stream);
+ *   field.setOmitNorms(true);
+ *   field.setOmitTermFreqAndPositions(true);
+ *   Document document = new Document();
+ *   document.add(field);
+ *   for(all documents) {
+ *     stream.setIntValue(value)
+ *     writer.addDocument(document);
+ *   }
  * </pre>
  *
- * <p><em>Please note:</em> Token streams are read, when the document is added to index.
- * If you index more than one numeric field, use a separate instance for each.
+ * <p>This stream is not intended to be used in analyzers;
+ * it's more for iterating the different precisions during
+ * indexing a specific numeric value.</p>
+
+ * <p><b>NOTE</b>: as TokenStreams are only consumed once
+ * the Document is added to the index, if you index more
+ * than one numeric field, use a separate NumericTokenStream
+ * instance for each.</p>
  *
- * <p>Values indexed by this stream can be loaded into the {@link FieldCache}
- * and can be sorted (use {@link SortField}{@code .TYPE} to specify the correct
- * type; {@link SortField#AUTO} does not work with this type of field).
- * Values solely used for sorting can be indexed using a <code>precisionStep</code>
- * of {@link Integer#MAX_VALUE} (at least &ge;64), because this step only produces
- * one value token with highest precision.
+ * <p>See {@link NumericRangeQuery} for more details on the
+ * <a
+ * href="../search/NumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
+ * parameter as well as how numeric fields work under the hood.</p>
  *
  * <p><font color="red"><b>NOTE:</b> This API is experimental and
  * might change in incompatible ways in the next release.</font>

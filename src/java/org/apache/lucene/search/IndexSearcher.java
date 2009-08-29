@@ -31,11 +31,12 @@ import org.apache.lucene.util.ReaderUtil;
 
 /** Implements search over a single IndexReader.
  *
- * <p>Applications usually need only call the inherited {@link #search(Query)}
- * or {@link #search(Query,Filter)} methods. For performance reasons it is 
+ * <p>Applications usually need only call the inherited
+ * {@link #search(Query,int)}
+ * or {@link #search(Query,Filter,int)} methods. For performance reasons it is 
  * recommended to open only one IndexSearcher and use it for all of your searches.
  * 
- * <p>Note that you can only access Hits from an IndexSearcher as long as it is
+ * <p>Note that you can only access the deprecated {@link Hits} from an IndexSearcher as long as it is
  * not yet closed, otherwise an IOException will be thrown. 
  *
  * <a name="thread-safety"></a><p><b>NOTE</b>: {@link

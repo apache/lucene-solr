@@ -22,25 +22,29 @@ import org.apache.lucene.document.NumericField; // for javadocs
 import org.apache.lucene.util.NumericUtils; // for javadocs
 
 /**
- * Implementation of a {@link Filter} that implements <em>trie-based</em> range filtering
- * for numeric values. For more information about the algorithm look into the docs of
- * {@link NumericRangeQuery}.
+ * A {@link Filter} that only accepts numeric values within
+ * a specified range. To use this, you must first index the
+ * numeric values using {@link NumericField} (expert: {@link
+ * NumericTokenStream}).
  *
- * <p>This filter depends on a specific structure of terms in the index that can only be created
- * by indexing using {@link NumericField} (expert: {@link NumericTokenStream}).
+ * <p>You create a new NumericRangeFilter with the static
+ * factory methods, eg:
  *
- * <p><b>Please note:</b> This class has no constructor, you can create filters depending on the data type
- * by using the static factories {@linkplain #newLongRange NumericRangeFilter.newLongRange()},
- * {@linkplain #newIntRange NumericRangeFilter.newIntRange()}, {@linkplain #newDoubleRange NumericRangeFilter.newDoubleRange()},
- * and {@linkplain #newFloatRange NumericRangeFilter.newFloatRange()}, e.g.:
  * <pre>
- * Filter f = NumericRangeFilter.newFloatRange(field, <a href="NumericRangeQuery.html#precisionStepDesc">precisionStep</a>,
+ * Filter f = NumericRangeFilter.newFloatRange("weight",
  *                                             new Float(0.3f), new Float(0.10f),
  *                                             true, true);
  * </pre>
  *
+ * accepts all documents whose float valued "weight" field
+ * ranges from 0.3 to 0.10, inclusive.
+ *
  * <p><font color="red"><b>NOTE:</b> This API is experimental and
- * might change in incompatible ways in the next release.</font>
+ * might change in incompatible ways in the next
+ * release.</font>
+ *
+ * See {@link NumericRangeQuery} for details on how Lucene
+ * indexes and searches numeric valued fields.
  *
  * @since 2.9
  **/

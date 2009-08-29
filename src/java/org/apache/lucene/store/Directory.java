@@ -45,7 +45,9 @@ public abstract class Directory {
    * this Directory instance). */
   protected LockFactory lockFactory;
 
-  /** @deprecated For some Directory implementations ({@link
+  /** List the files in the directory.
+   * 
+   *  @deprecated For some Directory implementations ({@link
    *  FSDirectory}, and its subclasses), this method
    *  silently filters its results to include only index
    *  files.  Please use {@link #listAll} instead, which

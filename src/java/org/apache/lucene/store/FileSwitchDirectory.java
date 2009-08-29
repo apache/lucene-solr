@@ -23,11 +23,17 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Files with the specified extensions are placed in the
+ * Expert: A Directory instance that switches files betweeen
+ * two other Directory instances.
+
+ * <p>Files with the specified extensions are placed in the
  * primary directory; others are placed in the secondary
  * directory.  The provided Set must not change once passed
  * to this class, and must allow multiple threads to call
- * contains at once.
+ * contains at once.</p>
+ *
+ * <p><b>NOTE</b>: this API is new and experimental and is
+ * subject to suddenly change in the next release.
  */
 
 public class FileSwitchDirectory extends Directory {
@@ -43,11 +49,13 @@ public class FileSwitchDirectory extends Directory {
     this.doClose = doClose;
     this.lockFactory = primaryDir.getLockFactory();
   }
-  
+
+  /** Return the primary directory */
   public Directory getPrimaryDir() {
     return primaryDir;
   }
   
+  /** Return the secondary directory */
   public Directory getSecondaryDir() {
     return secondaryDir;
   }
@@ -76,6 +84,7 @@ public class FileSwitchDirectory extends Directory {
     return listAll();
   }
 
+  /** Utility method to return a file's extension. */
   public static String getExtension(String name) {
     int i = name.lastIndexOf('.');
     if (i == -1) {

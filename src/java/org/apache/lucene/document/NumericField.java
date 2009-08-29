@@ -28,58 +28,108 @@ import org.apache.lucene.search.SortField; // javadocs
 import org.apache.lucene.search.FieldCache; // javadocs
 
 /**
- * This class provides a {@link Field} for indexing numeric values
- * that can be used by {@link NumericRangeQuery}/{@link NumericRangeFilter}.
- * For more information, how to use this class and its configuration properties
- * (<a href="../search/NumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>)
- * read the docs of {@link NumericRangeQuery}.
- *
- * <p>A numeric value is indexed as multiple string encoded terms, each reduced
- * by zeroing bits from the right. Each value is also prefixed (in the first char) by the
- * <code>shift</code> value (number of bits removed) used during encoding.
- * The number of bits removed from the right for each trie entry is called
- * <code>precisionStep</code> in this API.
- *
- * <p>The usage pattern is:
+ * <p>This class provides a {@link Field} that enables indexing
+ * of numeric values for efficient range filtering and
+ * sorting.  Here's an example usage, adding an int value:
  * <pre>
- *  document.add(
- *   new NumericField(name, precisionStep, Field.Store.XXX, true).set<em>???</em>Value(value)
- *  );
+ *   document.add(new NumericField(name).setIntValue(value));
  * </pre>
- * <p>For optimal performance, re-use the NumericField and {@link Document} instance
- * for more than one document:
+ *
+ * For optimal performance, re-use the
+ * NumericField and {@link Document} instance for more than
+ * one document:
+ *
  * <pre>
  *  <em>// init</em>
- *  NumericField field = new NumericField(name, precisionStep, Field.Store.XXX, true);
+ *  NumericField field = new NumericField(name);
  *  Document document = new Document();
  *  document.add(field);
- *  <em>// use this code to index many documents:</em>
- *  field.set<em>???</em>Value(value1)
- *  writer.addDocument(document);
- *  field.set<em>???</em>Value(value2)
- *  writer.addDocument(document);
- *  ...
+ *
+ *  for(all documents) {
+ *    ...
+ *    field.setIntValue(value)
+ *    writer.addDocument(document);
+ *    ...
+ *  }
  * </pre>
  *
- * <p>More advanced users can instead use {@link NumericTokenStream} directly, when
- * indexing numbers. This class is a wrapper around this token stream type for easier,
- * more intuitive usage.
+ * <p>The java native types int, long, float and double are
+ * directly supported.  However, any value that can be
+ * converted into these native types can also be indexed.
+ * For example, date/time values represented by a
+ * <code>java.util.Date</code> can be translated into a long
+ * value using the <code>getTime</code> method.  If you
+ * don't need millisecond precision, you can quantize the
+ * value, either by dividing the result of
+ * <code>getTime</code> or using the separate getters (for
+ * year, month, etc.) to construct an int or long value.</p>
  *
- * <p><b>Please note:</b> This class is only used during indexing. You can also create
- * numeric stored fields with it, but when retrieving the stored field value
- * from a {@link Document} instance after search, you will get a conventional
- * {@link Fieldable} instance where the numeric values are returned as {@link String}s
- * (according to <code>toString(value)</code> of the used data type).
+ * <p>To perform range querying or filtering against a
+ * NumericField, use {@link NumericRangeQuery} or {@link
+ * NumericRangeFilter}.  To sort according to a
+ * NumericField, use the normal numeric sort types, eg
+ * {@link SortField#INT} (note that {@link SortField#AUTO}
+ * will not work with these fields).  NumericField values
+ * can also be loaded directly from {@link FieldCache}.</p>
  *
- * <p>Values indexed by this field can be loaded into the {@link FieldCache}
- * and can be sorted (use {@link SortField}{@code .TYPE} to specify the correct
- * type; {@link SortField#AUTO} does not work with this type of field).
- * Values solely used for sorting can be indexed using a <code>precisionStep</code>
- * of {@link Integer#MAX_VALUE} (at least &ge;64), because this step only produces
- * one value token with highest precision.
+ * <p>By default, a NumericField's value is not stored but
+ * is indexed for range filtering and sorting.  You can use
+ * the {@link #NumericField(String,Field.Store,boolean)}
+ * constructor if you need to change these defaults.</p>
  *
- * <p><font color="red"><b>NOTE:</b> This API is experimental and
- * might change in incompatible ways in the next release.</font>
+ * <p>You may add the same field name as a NumericField to
+ * the same document more than once.  Range querying and
+ * filtering will be the logical OR of all values, however
+ * sort behavior is not defined.  If you need to sort, you
+ * should separately index a single-valued NumericField.</p>
+ *
+ * <p>A NumericField will consume somewhat more disk space
+ * in the index than an ordindary single-valued field.
+ * However, for a typical index that includes substantial
+ * textual content per document, this increase will likely
+ * be in the noise. </p>
+ *
+ * <p>Within lucene, each numeric value is indexed as a
+ * <em>trie</em> structure, where each term is logically
+ * assigned to larger and larger pre-defined brackets.  The
+ * step size between each successive bracket is called the
+ * <code>precisionStep</code>, measured in bits.  Smaller
+ * <code>precisionStep</code> values result in larger number
+ * of brackets, which consumes more disk space in the index
+ * but may result in faster range search performance.  The
+ * default value, 4, was selected for a reasonable tradeoff
+ * of disk space consumption versus performance.  You can
+ * use the expert constructor {@link
+ * #NumericField(String,int,Field.Store,boolean)} if you'd
+ * like to change the value.  Note that you must also
+ * specify a congruent value when creating {@link
+ * NumericRangeQuery} or {@link NumericRangeFilter}.
+ *
+ * <p>If you only need to sort by numeric value, and never
+ * run range querying/filtering, you can index using a
+ * <code>precisionStep</code> of {@link Integer#MAX_VALUE}.
+ * This will minimize disk space consumed. </p>
+ *
+ * <p>More advanced users can instead use {@link
+ * NumericTokenStream} directly, when indexing numbers. This
+ * class is a wrapper around this token stream type for
+ * easier, more intuitive usage.</p>
+ *
+ * <p>For more information on the internals of numeric trie
+ * indexing, including the <a
+ * href="../search/NumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
+ * configuration, see {@link NumericRangeQuery}.
+ *
+ * <p><b>NOTE:</b> This class is only used during
+ * indexing. When retrieving the stored field value from a
+ * {@link Document} instance after search, you will get a
+ * conventional {@link Fieldable} instance where the numeric
+ * values are returned as {@link String}s (according to
+ * <code>toString(value)</code> of the used data type).
+ *
+ * <p><font color="red"><b>NOTE:</b> This API is
+ * experimental and might change in incompatible ways in the
+ * next release.</font>
  *
  * @since 2.9
  */

@@ -29,34 +29,58 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 
 /**
- * Implementation of a {@link Query} that implements <em>trie-based</em> range querying
- * for numeric values.
+ * <p>A {@link Query} that matches numeric values within a
+ * specified range.  To use this, you must first index the
+ * numeric values using {@link NumericField} (expert: {@link
+ * NumericTokenStream}).  If your terms are instead textual,
+ * you should use {@link TermRangeQuery}.  {@link
+ * NumericRangeFilter} is the filter equivalent of this
+ * query.</p>
  *
- * <h3>Usage</h3>
- * <h4>Indexing</h4>
- * Before numeric values can be queried, they must be indexed in a special way. You can do this
- * by adding numeric fields to the index by specifying a {@link NumericField} (expert: {@link NumericTokenStream}).
- * An important setting is the <a href="#precisionStepDesc"><code>precisionStep</code></a>, which specifies,
- * how many different precisions per numeric value are indexed to speed up range queries.
- * Lower values create more terms but speed up search, higher values create less terms, but
- * slow down search. Suitable values are between <b>1</b> and <b>8</b>. A good starting point to test is <b>4</b>,
- * which is the default value for all <code>Numeric*</code> classes. For a discussion about ideal
- * values, see below. Indexing code examples can be found in {@link NumericField}.
+ * <p>You create a new NumericRangeQuery with the static
+ * factory methods, eg:
  *
- * <h4>Searching</h4>
- * <p>This class has no constructor, you can create queries depending on the data type
- * by using the static factories {@linkplain #newLongRange NumericRangeQuery.newLongRange()},
- * {@linkplain #newIntRange NumericRangeQuery.newIntRange()}, {@linkplain #newDoubleRange NumericRangeQuery.newDoubleRange()},
- * and {@linkplain #newFloatRange NumericRangeQuery.newFloatRange()}, e.g.:
  * <pre>
- * Query q = NumericRangeQuery.newFloatRange(field, <a href="#precisionStepDesc">precisionStep</a>,
+ * Query q = NumericRangeQuery.newFloatRange("weight",
  *                                           new Float(0.3f), new Float(0.10f),
  *                                           true, true);
  * </pre>
- * The used <a href="#precisionStepDesc"><code>precisionStep</code></a> must be compatible
- * to the one used during indexing (see below). The default is also <b>4</b>.
  *
- * <h3>How it works</h3>
+ * matches all documents whose float valued "weight" field
+ * ranges from 0.3 to 0.10, inclusive.
+ *
+ * <p>The performance of NumericRangeQuery is much better
+ * than the corresponding {@link TermRangeQuery} because the
+ * number of terms that must be searched is usually far
+ * fewer, thanks to trie indexing, described below.</p>
+ *
+ * <p>You can optionally specify a <a
+ * href="#precisionStepDesc"><code>precisionStep</code></a>
+ * when creating this query.  This is necessary if you've
+ * changed this configuration from its default (4) during
+ * indexing.  Lower values consume more disk space but speed
+ * up searching.  Suitable values are between <b>1</b> and
+ * <b>8</b>. A good starting point to test is <b>4</b>,
+ * which is the default value for all <code>Numeric*</code>
+ * classes.  See <a href="#precisionStepDesc">below</a> for
+ * details.
+ *
+ * <p>This query defaults to {@linkplain
+ * MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT} for
+ * 32 bit (int/float) ranges with precisionStep &le;8 and 64
+ * bit (long/double) ranges with precisionStep &le;6.
+ * Otherwise it uses {@linkplain
+ * MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE} as the
+ * number of terms is likely to be high.  With precision
+ * steps of &le;4, this query can be run with one of the
+ * BooleanQuery rewrite methods without changing
+ * BooleanQuery's default max clause count.
+ *
+ * <p><font color="red"><b>NOTE:</b> This API is experimental and
+ * might change in incompatible ways in the next release.</font>
+ *
+ *
+ * <br><br><h3>How it works</h3>
  *
  * <p>See the publication about <a target="_blank" href="http://www.panfmp.org">panFMP</a>,
  * where this algorithm was described (referred to as <code>TrieRangeQuery</code>):
@@ -118,29 +142,12 @@ import org.apache.lucene.index.Term;
  *  Sorting is also possible with range query optimized fields using one of the above <code>precisionSteps</code>.
  * </ul>
  *
- * <p>This dramatically improves the performance of Apache Lucene with range queries, which
- * are no longer dependent on the index size and the number of distinct values because there is
- * an upper limit unrelated to either of these properties.</p>
- *
  * <p>Comparisions of the different types of RangeQueries on an index with about 500,000 docs showed
  * that {@link TermRangeQuery} in boolean rewrite mode (with raised {@link BooleanQuery} clause count)
  * took about 30-40 secs to complete, {@link TermRangeQuery} in constant score filter rewrite mode took 5 secs
  * and executing this class took &lt;100ms to complete (on an Opteron64 machine, Java 1.5, 8 bit
  * precision step). This query type was developed for a geographic portal, where the performance for
  * e.g. bounding boxes or exact date/time stamps is important.</p>
- *
- * <p>The query defaults to {@linkplain MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}
- * for 32 bit (int/float) ranges with precisionStep &le;8 and
- * 64 bit (long/double) ranges with precisionStep &le;6.
- * Otherwise it uses {@linkplain
- * MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE} as the
- * number of terms is likely to be high.
- * With precision steps of &le;4, this query can be run with
- * one of the BooleanQuery rewrite methods without changing
- * BooleanQuery's default max clause count.
- *
- * <p><font color="red"><b>NOTE:</b> This API is experimental and
- * might change in incompatible ways in the next release.</font>
  *
  * @since 2.9
  **/

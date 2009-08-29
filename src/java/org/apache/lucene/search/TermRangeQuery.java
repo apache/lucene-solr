@@ -24,11 +24,12 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
- * A Query that matches documents within an exclusive range of terms.
+ * A Query that matches documents within an range of terms.
  *
  * <p>This query matches the documents looking for terms that fall into the
- * supplied range according to {@link String#compareTo(String)}. It is not intended
- * for numerical ranges, use {@link NumericRangeQuery} instead.
+ * supplied range according to {@link
+ * String#compareTo(String)}, unless a <code>Collator</code> is provided. It is not intended
+ * for numerical ranges; use {@link NumericRangeQuery} instead.
  *
  * <p>This query uses the {@link
  * MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}
