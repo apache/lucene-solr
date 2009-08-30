@@ -512,7 +512,7 @@ Bug Fixes
 60. SOLR-1362: WordDelimiterFilter had inconsistent behavior when setting
     the position increment of tokens following a token consisting of all
     delimiters, and could additionally lose big position increments.
-    (Robert Muir, yonik
+    (Robert Muir, yonik)
 
 61. SOLR-1091: Jetty's use of CESU-8 for code points outside the BMP
     resulted in invalid output from the serialized PHP writer. (yonik)
