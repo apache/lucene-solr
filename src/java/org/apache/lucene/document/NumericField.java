@@ -32,15 +32,14 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * of numeric values for efficient range filtering and
  * sorting.  Here's an example usage, adding an int value:
  * <pre>
- *   document.add(new NumericField(name).setIntValue(value));
+ *  document.add(new NumericField(name).setIntValue(value));
  * </pre>
  *
  * For optimal performance, re-use the
- * NumericField and {@link Document} instance for more than
+ * <code>NumericField</code> and {@link Document} instance for more than
  * one document:
  *
  * <pre>
- *  <em>// init</em>
  *  NumericField field = new NumericField(name);
  *  Document document = new Document();
  *  document.add(field);
@@ -53,46 +52,50 @@ import org.apache.lucene.search.FieldCache; // javadocs
  *  }
  * </pre>
  *
- * <p>The java native types int, long, float and double are
+ * <p>The java native types <code>int</code>, <code>long</code>,
+ * <code>float</code> and <code>double</code> are
  * directly supported.  However, any value that can be
  * converted into these native types can also be indexed.
  * For example, date/time values represented by a
- * <code>java.util.Date</code> can be translated into a long
- * value using the <code>getTime</code> method.  If you
+ * {@link java.util.Date} can be translated into a long
+ * value using the {@link java.util.Date#getTime} method.  If you
  * don't need millisecond precision, you can quantize the
  * value, either by dividing the result of
- * <code>getTime</code> or using the separate getters (for
- * year, month, etc.) to construct an int or long value.</p>
+ * {@link java.util.Date#getTime} or using the separate getters
+ * (for year, month, etc.) to construct an <code>int</code> or
+ * <code>long</code> value.</p>
  *
  * <p>To perform range querying or filtering against a
- * NumericField, use {@link NumericRangeQuery} or {@link
+ * <code>NumericField</code>, use {@link NumericRangeQuery} or {@link
  * NumericRangeFilter}.  To sort according to a
- * NumericField, use the normal numeric sort types, eg
+ * <code>NumericField</code>, use the normal numeric sort types, eg
  * {@link SortField#INT} (note that {@link SortField#AUTO}
- * will not work with these fields).  NumericField values
+ * will not work with these fields).  <code>NumericField</code> values
  * can also be loaded directly from {@link FieldCache}.</p>
  *
- * <p>By default, a NumericField's value is not stored but
+ * <p>By default, a <code>NumericField</code>'s value is not stored but
  * is indexed for range filtering and sorting.  You can use
  * the {@link #NumericField(String,Field.Store,boolean)}
  * constructor if you need to change these defaults.</p>
  *
- * <p>You may add the same field name as a NumericField to
+ * <p>You may add the same field name as a <code>NumericField</code> to
  * the same document more than once.  Range querying and
- * filtering will be the logical OR of all values, however
- * sort behavior is not defined.  If you need to sort, you
- * should separately index a single-valued NumericField.</p>
+ * filtering will be the logical OR of all values; so a range query
+ * will hit all documents that have at least one value in
+ * the range. However sort behavior is not defined.  If you need to sort,
+ * you should separately index a single-valued <code>NumericField</code>.</p>
  *
- * <p>A NumericField will consume somewhat more disk space
+ * <p>A <code>NumericField</code> will consume somewhat more disk space
  * in the index than an ordindary single-valued field.
  * However, for a typical index that includes substantial
  * textual content per document, this increase will likely
  * be in the noise. </p>
  *
- * <p>Within lucene, each numeric value is indexed as a
+ * <p>Within Lucene, each numeric value is indexed as a
  * <em>trie</em> structure, where each term is logically
- * assigned to larger and larger pre-defined brackets.  The
- * step size between each successive bracket is called the
+ * assigned to larger and larger pre-defined brackets (which
+ * are simply lower-precision representations of the value).
+ * The step size between each successive bracket is called the
  * <code>precisionStep</code>, measured in bits.  Smaller
  * <code>precisionStep</code> values result in larger number
  * of brackets, which consumes more disk space in the index
@@ -105,6 +108,12 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * specify a congruent value when creating {@link
  * NumericRangeQuery} or {@link NumericRangeFilter}.
  *
+ * <p>For more information on the internals of numeric trie
+ * indexing, including the <a
+ * href="../search/NumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
+ * configuration, see {@link NumericRangeQuery}. The format of
+ * indexed values is described in {@link NumericUtils}.
+ *
  * <p>If you only need to sort by numeric value, and never
  * run range querying/filtering, you can index using a
  * <code>precisionStep</code> of {@link Integer#MAX_VALUE}.
@@ -114,11 +123,6 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * NumericTokenStream} directly, when indexing numbers. This
  * class is a wrapper around this token stream type for
  * easier, more intuitive usage.</p>
- *
- * <p>For more information on the internals of numeric trie
- * indexing, including the <a
- * href="../search/NumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
- * configuration, see {@link NumericRangeQuery}.
  *
  * <p><b>NOTE:</b> This class is only used during
  * indexing. When retrieving the stored field value from a

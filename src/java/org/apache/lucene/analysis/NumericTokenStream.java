@@ -42,38 +42,39 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  * <p>See {@link NumericField} for capabilities of fields
  * indexed numerically.</p>
  *
- * <p>Here's an example usage, for an int field:
+ * <p>Here's an example usage, for an <code>int</code> field:
  *
  * <pre>
- *   Field field = new Field(name, new NumericTokenStream(precisionStep).setIntValue(value));
- *   field.setOmitNorms(true);
- *   field.setOmitTermFreqAndPositions(true);
- *   document.add(field);
+ *  Field field = new Field(name, new NumericTokenStream(precisionStep).setIntValue(value));
+ *  field.setOmitNorms(true);
+ *  field.setOmitTermFreqAndPositions(true);
+ *  document.add(field);
  * </pre>
  *
  * <p>For optimal performance, re-use the TokenStream and Field instance
  * for more than one document:
  *
  * <pre>
- *   NumericTokenStream stream = new NumericTokenStream(precisionStep);
- *   Field field = new Field(name, stream);
- *   field.setOmitNorms(true);
- *   field.setOmitTermFreqAndPositions(true);
- *   Document document = new Document();
- *   document.add(field);
- *   for(all documents) {
- *     stream.setIntValue(value)
- *     writer.addDocument(document);
- *   }
+ *  NumericTokenStream stream = new NumericTokenStream(precisionStep);
+ *  Field field = new Field(name, stream);
+ *  field.setOmitNorms(true);
+ *  field.setOmitTermFreqAndPositions(true);
+ *  Document document = new Document();
+ *  document.add(field);
+ *
+ *  for(all documents) {
+ *    stream.setIntValue(value)
+ *    writer.addDocument(document);
+ *  }
  * </pre>
  *
  * <p>This stream is not intended to be used in analyzers;
  * it's more for iterating the different precisions during
  * indexing a specific numeric value.</p>
 
- * <p><b>NOTE</b>: as TokenStreams are only consumed once
- * the Document is added to the index, if you index more
- * than one numeric field, use a separate NumericTokenStream
+ * <p><b>NOTE</b>: as token streams are only consumed once
+ * the document is added to the index, if you index more
+ * than one numeric field, use a separate <code>NumericTokenStream</code>
  * instance for each.</p>
  *
  * <p>See {@link NumericRangeQuery} for more details on the

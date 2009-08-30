@@ -38,13 +38,12 @@ import org.apache.lucene.util.NumericUtils; // for javadocs
  *
  * accepts all documents whose float valued "weight" field
  * ranges from 0.3 to 0.10, inclusive.
+ * See {@link NumericRangeQuery} for details on how Lucene
+ * indexes and searches numeric valued fields.
  *
  * <p><font color="red"><b>NOTE:</b> This API is experimental and
  * might change in incompatible ways in the next
  * release.</font>
- *
- * See {@link NumericRangeQuery} for details on how Lucene
- * indexes and searches numeric valued fields.
  *
  * @since 2.9
  **/

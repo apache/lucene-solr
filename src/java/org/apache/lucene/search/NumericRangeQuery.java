@@ -79,8 +79,7 @@ import org.apache.lucene.index.Term;
  * <p><font color="red"><b>NOTE:</b> This API is experimental and
  * might change in incompatible ways in the next release.</font>
  *
- *
- * <br><br><h3>How it works</h3>
+ * <br><h3>How it works</h3>
  *
  * <p>See the publication about <a target="_blank" href="http://www.panfmp.org">panFMP</a>,
  * where this algorithm was described (referred to as <code>TrieRangeQuery</code>):
