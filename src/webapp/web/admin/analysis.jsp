@@ -149,7 +149,8 @@
     if (qval!="" && highlight) {
       Reader reader = new StringReader(qval);
       Analyzer analyzer =  field.getType().getQueryAnalyzer();
-      TokenStream tstream = analyzer.tokenStream(field.getName(),reader);
+      TokenStream tstream = analyzer.reusableTokenStream(field.getName(),reader);
+      tstream.reset();
       List<Token> tokens = getTokens(tstream);
       matches = new HashSet<Tok>();
       for (Token t : tokens) { matches.add( new Tok(t,0)); }
@@ -222,7 +223,8 @@
        }
 
      } else {
-       TokenStream tstream = analyzer.tokenStream(field.getName(),new StringReader(val));
+       TokenStream tstream = analyzer.reusableTokenStream(field.getName(),new StringReader(val));
+       tstream.reset();
        List<Token> tokens = getTokens(tstream);
        if (verbose) {
          writeHeader(out, analyzer.getClass(), new HashMap<String,String>());
