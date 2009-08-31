@@ -35,6 +35,9 @@ License: Common Development and Distribution License (CDDL) v1.0 (https://glassf
 This product includes the JavaBeans Activation Framework (JAF) 1.1 jar: http://java.sun.com/products/javabeans/jaf/index.jsp
 License: Common Development and Distribution License (CDDL) v1.0 (https://glassfish.dev.java.net/public/CDDLv1.0.html)
 
+This product includes the HSQL Database (HSQLDB) 1.8.0.10 jar: http://hsqldb.org/
+License: http://hsqldb.org/web/hsqlLicense.html
+
 
 =========================================================================
 ==  Apache Lucene Notice                                               ==
