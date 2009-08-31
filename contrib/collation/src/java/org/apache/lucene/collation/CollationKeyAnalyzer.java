@@ -78,7 +78,7 @@ import java.io.IOException;
 public class CollationKeyAnalyzer extends Analyzer {
   private Collator collator;
 
-  CollationKeyAnalyzer(Collator collator) {
+  public CollationKeyAnalyzer(Collator collator) {
     this.collator = collator;
   }
 

@@ -72,7 +72,7 @@ import java.io.IOException;
 public class ICUCollationKeyAnalyzer extends Analyzer {
   private Collator collator;
 
-  ICUCollationKeyAnalyzer(Collator collator) {
+  public ICUCollationKeyAnalyzer(Collator collator) {
     this.collator = collator;
   }
 
