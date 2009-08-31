@@ -28,7 +28,6 @@ import org.apache.commons.io.IOUtils;
 import java.io.*;
 import java.util.Properties;
 
-import junit.framework.TestCase;
 
 /**
  * <p> Test for Loading core properties from a properties file </p>
@@ -36,15 +35,13 @@ import junit.framework.TestCase;
  * @version $Id$
  * @since solr 1.4
  */
-public class TestSolrCoreProperties extends AbstractSolrTestCase  {
+public class TestSolrCoreProperties extends AbstractSolrTestCase {
   private static final String CONF_DIR = "." + File.separator + "solr" + File.separator + "conf" + File.separator;
   JettySolrRunner solrJetty;
   SolrServer client;
 
   @Override
   public void setUp() throws Exception {
-//    System.setProperty("foo.foo1", "f1");
-//    System.setProperty("foo.foo2", "f2");
     setUpMe();
     System.setProperty("solr.solr.home", getHomeDir());
     System.setProperty("solr.data.dir", getDataDir());
@@ -60,7 +57,7 @@ public class TestSolrCoreProperties extends AbstractSolrTestCase  {
   @Override
   public void tearDown() throws Exception {
     solrJetty.stop();
-      AbstractSolrTestCase.recurseDelete(homeDir);
+    AbstractSolrTestCase.recurseDelete(homeDir);
   }
 
   public void testSimple() throws SolrServerException {
@@ -71,69 +68,67 @@ public class TestSolrCoreProperties extends AbstractSolrTestCase  {
   }
 
 
+  File homeDir;
+  File confDir;
 
-    File homeDir;
-    File confDir;
-
-    /**
-     * if masterPort is null, this instance is a master -- otherwise this instance is a slave, and assumes the master is
-     * on localhost at the specified port.
-     */
-
-
-    public String getHomeDir() {
-      return homeDir.toString();
-    }
-
-    @Override
-    public String getSchemaFile() {
-      return CONF_DIR + "schema-replication1.xml";
-    }
-
-    public String getConfDir() {
-      return confDir.toString();
-    }
-
-    public String getDataDir() {
-      return dataDir.toString();
-    }
-
-    @Override
-    public String getSolrConfigFile() {
-      return CONF_DIR + "solrconfig-solcoreproperties.xml";
-    }
-
-    public void setUpMe() throws Exception {
-
-      String home = System.getProperty("java.io.tmpdir")
-              + File.separator
-              + getClass().getName() + "-" + System.currentTimeMillis();
+  /**
+   * if masterPort is null, this instance is a master -- otherwise this instance is a slave, and assumes the master is
+   * on localhost at the specified port.
+   */
 
 
-      homeDir = new File(home);
-      dataDir = new File(home, "data");
-      confDir = new File(home, "conf");
+  public String getHomeDir() {
+    return homeDir.toString();
+  }
+
+  @Override
+  public String getSchemaFile() {
+    return CONF_DIR + "schema-replication1.xml";
+  }
+
+  public String getConfDir() {
+    return confDir.toString();
+  }
+
+  public String getDataDir() {
+    return dataDir.toString();
+  }
+
+  @Override
+  public String getSolrConfigFile() {
+    return CONF_DIR + "solrconfig-solcoreproperties.xml";
+  }
+
+  public void setUpMe() throws Exception {
+
+    String home = System.getProperty("java.io.tmpdir")
+            + File.separator
+            + getClass().getName() + "-" + System.currentTimeMillis();
 
 
-      homeDir.mkdirs();
-      dataDir.mkdirs();
-      confDir.mkdirs();
+    homeDir = new File(home);
+    dataDir = new File(home, "data");
+    confDir = new File(home, "conf");
 
-      File f = new File(confDir, "solrconfig.xml");
-      copyFile(new File(getSolrConfigFile()), f);
 
-      f = new File(confDir, "schema.xml");
-      copyFile(new File(getSchemaFile()), f);
-      Properties p = new Properties();
-      p.setProperty("foo.foo1","f1");
-      p.setProperty("foo.foo2","f2");
-      FileOutputStream fos = new FileOutputStream(confDir + File.separator + "solrcore.properties");
-      p.store(fos,null);
-      fos.close();
-      IOUtils.closeQuietly(fos);
+    homeDir.mkdirs();
+    dataDir.mkdirs();
+    confDir.mkdirs();
 
-    }
+    File f = new File(confDir, "solrconfig.xml");
+    copyFile(new File(getSolrConfigFile()), f);
 
+    f = new File(confDir, "schema.xml");
+    copyFile(new File(getSchemaFile()), f);
+    Properties p = new Properties();
+    p.setProperty("foo.foo1", "f1");
+    p.setProperty("foo.foo2", "f2");
+    FileOutputStream fos = new FileOutputStream(confDir + File.separator + "solrcore.properties");
+    p.store(fos, null);
+    fos.close();
+    IOUtils.closeQuietly(fos);
+
+  }
 
 
   private void copyFile(File src, File dst) throws IOException {
