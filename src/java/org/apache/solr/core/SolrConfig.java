@@ -231,7 +231,8 @@ public class SolrConfig extends Config {
           }
           ArrayList<PluginInfo> result = new ArrayList<PluginInfo>();
           for (int j=0; j<nl.getLength(); j++) {
-            result.add(new PluginInfo(nl.item(j) ,"[solrconfig.xml] processor",false));
+            PluginInfo pluginInfo = new PluginInfo(nl.item(j), "[solrconfig.xml] processor", false);
+            if(pluginInfo.isEnabled()) result.add(pluginInfo);
           }
           chains.put(name,result);
           if(isDefault || nodes.getLength() == 1) chains.put(null,result);
@@ -248,7 +249,8 @@ public class SolrConfig extends Config {
   private PluginInfo loadSinglePlugin(String tag){
      NodeList nodes = (NodeList) evaluate(tag, XPathConstants.NODESET);
      for (int i=0; i<nodes.getLength(); i++) {
-       return new PluginInfo(nodes.item(i) ,"[solrconfig.xml] "+tag,false);
+       PluginInfo pluginInfo = new PluginInfo(nodes.item(i), "[solrconfig.xml] " + tag, false);
+       return pluginInfo.isEnabled() ? pluginInfo : null;
      }
     return null;
   }
@@ -257,7 +259,8 @@ public class SolrConfig extends Config {
     ArrayList<PluginInfo> result = new ArrayList<PluginInfo>();
     NodeList nodes = (NodeList) evaluate(tag, XPathConstants.NODESET);
      for (int i=0; i<nodes.getLength(); i++) {
-       result.add(new PluginInfo(nodes.item(i) ,"[solrconfig.xml] "+tag,requireName));
+       PluginInfo pluginInfo = new PluginInfo(nodes.item(i), "[solrconfig.xml] " + tag, requireName);
+       if(pluginInfo.isEnabled()) result.add(pluginInfo);
      }
     return result.isEmpty() ?
             Collections.<PluginInfo>emptyList() :

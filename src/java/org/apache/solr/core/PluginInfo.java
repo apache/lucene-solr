@@ -74,4 +74,9 @@ public class PluginInfo {
     return sb.toString();
   }
 
+  public boolean isEnabled(){
+    String enable = attributes.get("enable");
+    return enable == null || Boolean.parseBoolean(enable); 
+  }
+
 }
