@@ -63,9 +63,9 @@ public class AttributeSource {
         try {
           return (AttributeImpl) getClassForInterface(attClass).newInstance();
         } catch (InstantiationException e) {
-          throw new IllegalArgumentException("Could not instantiate class " + attClass);
+          throw new IllegalArgumentException("Could not instantiate class " + attClass.getName());
         } catch (IllegalAccessException e) {
-          throw new IllegalArgumentException("Could not instantiate class " + attClass);      
+          throw new IllegalArgumentException("Could not instantiate class " + attClass.getName());
         }
       }
       
