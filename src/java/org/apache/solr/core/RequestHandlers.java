@@ -147,7 +147,7 @@ final class RequestHandlers {
             throw new Exception( "Unknown startup value: '"+info.startup+"' for: "+info.className );
           }
         } else {
-          requestHandler = (SolrRequestHandler) config.getResourceLoader().newInstance(info.className);
+          requestHandler = core.createRequestHandler(info.className);
         }
         handlers.put(info,requestHandler);
         requestHandler.init(info.initArgs);
