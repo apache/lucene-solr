@@ -27,7 +27,7 @@ import java.io.UnsupportedEncodingException;
  * Contains methods for dealing with GB2312 encoding.
  * </p>
  * <p><font color="#FF0000">
- * WARNING: The status of the analyzers/smartcn <b>analysis.cn</b> package is experimental. 
+ * WARNING: The status of the analyzers/smartcn <b>analysis.cn.smart</b> package is experimental. 
  * The APIs and file formats introduced here might change in the future and will not be 
  * supported anymore in such a case.</font>
  * </p>

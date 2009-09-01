@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis.cn;
+package org.apache.lucene.analysis.cn.smart;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;

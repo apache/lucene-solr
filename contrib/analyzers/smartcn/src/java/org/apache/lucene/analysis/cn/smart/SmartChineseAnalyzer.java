@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis.cn;
+package org.apache.lucene.analysis.cn.smart;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,7 +51,7 @@ import org.apache.lucene.analysis.cn.smart.WordTokenFilter;
  * Thanks to ICTCLAS for their hard work, and for contributing the data under the Apache 2 License!
  * </p>
  * <p><font color="#FF0000">
- * WARNING: The status of the analyzers/smartcn <b>analysis.cn</b> package is experimental. 
+ * WARNING: The status of the analyzers/smartcn <b>analysis.cn.smart</b> package is experimental. 
  * The APIs and file formats introduced here might change in the future and will not be 
  * supported anymore in such a case.</font>
  * </p>
