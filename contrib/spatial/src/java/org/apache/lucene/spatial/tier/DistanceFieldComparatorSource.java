@@ -23,7 +23,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
-import org.apache.lucene.search.SortField;
 
 public class DistanceFieldComparatorSource extends FieldComparatorSource {
 

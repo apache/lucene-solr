@@ -24,7 +24,6 @@ import java.util.Map;
  * Provide a high level access point to distances
  * Used by DistanceSortSource and DistanceQuery
  *  
- * @author pjaol
  *
  */
 public class DistanceHandler {

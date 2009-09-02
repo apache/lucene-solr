@@ -29,9 +29,6 @@ public class DistanceQueryBuilder {
 
   private static final long serialVersionUID = 1L;
   
-  public BoundaryBoxFilter latFilter;
-  public BoundaryBoxFilter lngFilter;
-  
   private final double lat;
   private final double lng;
   private final double miles;
