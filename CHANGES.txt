@@ -340,7 +340,7 @@ API Changes
     a scorer(IndexReader, boolean /* scoreDocsInOrder */, boolean /*
     topScorer */) method instead of scorer(IndexReader). IndexSearcher uses 
     this method to obtain a scorer matching the capabilities of the Collector 
-    wrt orderness of docIDs. Some Scorers (like BooleanScorer) are much more
+    wrt orderedness of docIDs. Some Scorers (like BooleanScorer) are much more
     efficient if out-of-order documents scoring is allowed by a Collector.  
     Collector must now implement acceptsDocsOutOfOrder. If you write a 
     Collector which does not care about doc ID orderness, it is recommended 
@@ -438,7 +438,7 @@ Bug fixes
 3. LUCENE-1573: Do not ignore InterruptedException (caused by
    Thread.interrupt()) nor enter deadlock/spin loop. Now, an interrupt
    will cause a RuntimeException to be thrown.  In 3.0 we will change
-   public APIs to throw InterruptedException.  (Jeremy Volkman vai
+   public APIs to throw InterruptedException.  (Jeremy Volkman via
    Mike McCandless)
 
 4. LUCENE-1590: Fixed stored-only Field instances do not change the
@@ -561,7 +561,7 @@ New features
 
  4. LUCENE-1424: Moved constant score query rewrite capability into
     MultiTermQuery, allowing TermRangeQuery, PrefixQuery and WildcardQuery
-    to switch betwen constant-score rewriting or BooleanQuery
+    to switch between constant-score rewriting or BooleanQuery
     expansion rewriting via a new setRewriteMethod method.
     Deprecated ConstantScoreRangeQuery (Mark Miller via Mike
     McCandless)
@@ -697,7 +697,7 @@ New features
     All standard parsers now also implement Serializable and enforce
     their singleton status.  (Uwe Schindler, Mike McCandless)
     
-29. LUCENE-1741: User configureable maximum chunk size in MMapDirectory.
+29. LUCENE-1741: User configurable maximum chunk size in MMapDirectory.
     On 32 bit platforms, the address space can be very fragmented, so
     one big ByteBuffer for the whole file may not fit into address space.
     (Eks Dev via Uwe Schindler)
@@ -834,7 +834,7 @@ Test Cases
 
  1. LUCENE-1791: Enhancements to the QueryUtils and CheckHits utility 
     classes to wrap IndexReaders and Searchers in MultiReaders or 
-    MultiSearcher when possible to help excercise more edge cases.
+    MultiSearcher when possible to help exercise more edge cases.
     (Chris Hostetter, Mark Miller)
 
  2. LUCENE-1852: Fix localization test failures. 

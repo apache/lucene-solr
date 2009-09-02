@@ -19,7 +19,7 @@ Changes in runtime behavior
 API Changes
 
  1. LUCENE-1695: Update the Highlighter to use the new TokenStream API. This issue breaks backwards
-    compatibility with some public classes. If you have implemented custom Fregmenters or Scorers, 
+    compatibility with some public classes. If you have implemented custom Fragmenters or Scorers, 
     you will need to adjust them to work with the new TokenStream API. Rather than getting passed a 
     Token at a time, you will be given a TokenStream to init your impl with - store the Attributes 
     you are interested in locally and access them on each call to the method that used to pass a new 
@@ -35,7 +35,7 @@ API Changes
     for Highlighting. The SpanScorer implementation has replaced QueryScorer
     and the old term highlighting QueryScorer has been renamed to 
     QueryTermScorer. Multi-term queries are also now expanded by default. If
-    you were previously rewritting the query for multi-term query highlighting,
+    you were previously rewriting the query for multi-term query highlighting,
     you should no longer do that (unless you switch to using QueryTermScorer).
     The SpanScorer API (now QueryScorer) has also been improved to more closely
     match the API of the previous QueryScorer implementation.  (Mark Miller)  
@@ -90,8 +90,8 @@ New features
  1. LUCENE-1531: Added support for BoostingTermQuery to XML query parser. (Karl Wettin)
 
  2. LUCENE-1435: Added contrib/collation, a CollationKeyFilter
-    allowing you to convert tokens into CollationKeys encoded usign
-    IndexableBinaryStringTools.  This allows for faster RangQuery when
+    allowing you to convert tokens into CollationKeys encoded using
+    IndexableBinaryStringTools.  This allows for faster RangeQuery when
     a field needs to use a custom Collator.  (Steven Rowe via Mike
     McCandless)
 
@@ -171,10 +171,10 @@ Documentation
 
 Build
 
-1. LUCENE-1728: Splitted contrib/analyzers into common and smartcn modules. 
-   Contrib/analyzers now builds an addtional lucene-smartcn Jar file. All
+1. LUCENE-1728: Split contrib/analyzers into common and smartcn modules. 
+   Contrib/analyzers now builds an additional lucene-smartcn Jar file. All
    smartcn classes are not included in the lucene-analyzers JAR file.
-   (Robert Muri via Simon Willanuer)
+   (Robert Muir via Simon Willnauer)
  
 2. LUCENE-1829: Fix contrib query parser to properly create javacc files.
    (Jan-Pascal and Luis Alves via Michael Busch)      
