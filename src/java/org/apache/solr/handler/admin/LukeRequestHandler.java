@@ -531,7 +531,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     public NamedList<Integer> toNamedList()
     {
       NamedList<Integer> nl = new NamedList<Integer>();
-      for( int bucket = 2; bucket <= maxBucket; bucket *= 2 ) {
+      for( int bucket = 1; bucket <= maxBucket; bucket *= 2 ) {
         Integer val = hist.get( bucket );
         if( val == null ) {
           val = 0;

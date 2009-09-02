@@ -519,6 +519,10 @@ Bug Fixes
 61. SOLR-1091: Jetty's use of CESU-8 for code points outside the BMP
     resulted in invalid output from the serialized PHP writer. (yonik)
 
+62. SOLR-1103: LukeRequestHandler (and schema.jsp) have been fixed to 
+    include the "1" (ie: 2**0) bucket in the term histogram data. 
+    (hossman)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
