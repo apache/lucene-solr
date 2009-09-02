@@ -274,7 +274,7 @@ public class TestCartesian extends TestCase{
       // As the radius filter has performed the distance calculations
       // already, pass in the filter to reuse the results.
       // 
-      DistanceSortSource dsort = new DistanceSortSource(dq.distanceFilter);
+      DistanceFieldComparatorSource dsort = new DistanceFieldComparatorSource(dq.distanceFilter);
       Sort sort = new Sort(new SortField("foo", dsort));
 	    
       // Perform the search, using the term query, the serial chain filter, and the
