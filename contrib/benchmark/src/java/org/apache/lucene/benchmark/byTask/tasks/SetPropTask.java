@@ -21,7 +21,7 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 
 /**
  * Set a performance test configuration property.
- * A property may have a single value, or a sequence of values, seprated by ":". 
+ * A property may have a single value, or a sequence of values, separated by ":". 
  * If a sequence of values is specified, each time a new round starts, 
  * the next (cyclic) value is taken.  
  * <br>Other side effects: none.

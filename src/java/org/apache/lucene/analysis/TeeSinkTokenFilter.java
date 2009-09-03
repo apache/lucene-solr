@@ -119,7 +119,7 @@ public final class TeeSinkTokenFilter extends TokenFilter {
   
   /**
    * <code>TeeSinkTokenFilter</code> passes all tokens to the added sinks
-   * when itsself is consumed. To be sure, that all tokens from the input
+   * when itself is consumed. To be sure, that all tokens from the input
    * stream are passed to the sinks, you can call this methods.
    * This instance is exhausted after this, but all sinks are instant available.
    */

@@ -28,7 +28,7 @@ package org.apache.lucene.search.function;
  *  <li>The field used here is indexed, and has exactly 
  *      one token in every scored document.</li> 
  *  <li>Best if this field is un_tokenized.</li>
- *  <li>That token is parsable to the selected type.</li>
+ *  <li>That token is parseable to the selected type.</li>
  * </ul>
  * <p>  
  * Combining this query in a FunctionQuery allows much freedom in affecting document scores.
@@ -36,7 +36,7 @@ package org.apache.lucene.search.function;
  * default Lucene scoring is superior in quality to scoring modified as explained here.
  * However, in some cases, and certainly for research experiments, this capability may turn useful.
  * <p>
- * When contructing this query, select the appropriate type. That type should match the data stored in the
+ * When constructing this query, select the appropriate type. That type should match the data stored in the
  * field. So in fact the "right" type should be selected before indexing. Type selection
  * has effect on the RAM usage: 
  * <ul>

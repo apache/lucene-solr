@@ -29,7 +29,7 @@ extends SegmentTermDocs implements TermPositions {
   
   // the current payload length
   private int payloadLength;
-  // indicates whether the payload of the currend position has
+  // indicates whether the payload of the current position has
   // been read from the proxStream yet
   private boolean needToLoadPayload;
   
@@ -63,7 +63,7 @@ extends SegmentTermDocs implements TermPositions {
     if (currentFieldOmitTermFreqAndPositions)
       // This field does not store term freq, positions, payloads
       return 0;
-    // perform lazy skips if neccessary
+    // perform lazy skips if necessary
     lazySkip();
     proxCount--;
     return position += readDeltaPosition();
@@ -133,7 +133,7 @@ extends SegmentTermDocs implements TermPositions {
     needToLoadPayload = false;
   }
 
-  // It is not always neccessary to move the prox pointer
+  // It is not always necessary to move the prox pointer
   // to a new document after the freq pointer has been moved.
   // Consider for example a phrase query with two terms:
   // the freq pointer for term 1 has to move to document x

@@ -86,7 +86,7 @@ public class StandardAnalyzer extends Analyzer {
    *
    * @param replaceInvalidAcronym Set to true to have new
    * instances of StandardTokenizer replace mischaracterized
-   * acronyms by default.  Set to false to preseve the
+   * acronyms by default.  Set to false to preserve the
    * previous (before 2.4) buggy behavior.  Alternatively,
    * set the system property
    * org.apache.lucene.analysis.standard.StandardAnalyzer.replaceInvalidAcronym

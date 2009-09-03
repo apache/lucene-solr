@@ -106,7 +106,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
     // allocate new children list
     allocate();
 
-    // add new childs and set parent
+    // add new children and set parent
     for (QueryNode child : children) {
       add(child);
     }

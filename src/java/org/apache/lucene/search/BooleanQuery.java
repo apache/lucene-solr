@@ -129,7 +129,7 @@ public class BooleanQuery extends Query {
 
   /**
    * Gets the minimum number of the optional BooleanClauses
-   * which must be satisifed.
+   * which must be satisfied.
    */
   public int getMinimumNumberShouldMatch() {
     return minNrShouldMatch;

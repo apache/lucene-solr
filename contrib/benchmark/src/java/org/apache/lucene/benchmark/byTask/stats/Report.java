@@ -42,7 +42,7 @@ public class Report {
   }
 
   /**
-   * Returns number of lines in the reoprt.
+   * Returns number of lines in the report.
    */
   public int getSize() {
     return size;

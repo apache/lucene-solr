@@ -584,8 +584,8 @@ public interface FieldCache {
    * EXPERT: Generates an array of CacheEntry objects representing all items 
    * currently in the FieldCache.
    * <p>
-   * NOTE: These CacheEntry objects maintain a strong refrence to the 
-   * Cached Values.  Maintaining refrences to a CacheEntry the IndexReader 
+   * NOTE: These CacheEntry objects maintain a strong reference to the 
+   * Cached Values.  Maintaining references to a CacheEntry the IndexReader 
    * associated with it has garbage collected will prevent the Value itself
    * from being garbage collected when the Cache drops the WeakRefrence.
    * </p>

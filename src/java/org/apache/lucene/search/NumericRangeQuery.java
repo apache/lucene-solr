@@ -108,7 +108,7 @@ import org.apache.lucene.index.Term;
  * <code>7*255*2 + 255 = 3825</code> distinct terms (when there is a term for every distinct value of an
  * 8-byte-number in the index and the range covers almost all of them; a maximum of 255 distinct values is used
  * because it would always be possible to reduce the full 256 values to one term with degraded precision).
- * In practise, we have seen up to 300 terms in most cases (index with 500,000 metadata records
+ * In practice, we have seen up to 300 terms in most cases (index with 500,000 metadata records
  * and a uniform value distribution).</p>
  *
  * <a name="precisionStepDesc"><h3>Precision Step</h3>
@@ -141,7 +141,7 @@ import org.apache.lucene.index.Term;
  *  Sorting is also possible with range query optimized fields using one of the above <code>precisionSteps</code>.
  * </ul>
  *
- * <p>Comparisions of the different types of RangeQueries on an index with about 500,000 docs showed
+ * <p>Comparisons of the different types of RangeQueries on an index with about 500,000 docs showed
  * that {@link TermRangeQuery} in boolean rewrite mode (with raised {@link BooleanQuery} clause count)
  * took about 30-40 secs to complete, {@link TermRangeQuery} in constant score filter rewrite mode took 5 secs
  * and executing this class took &lt;100ms to complete (on an Opteron64 machine, Java 1.5, 8 bit

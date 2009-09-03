@@ -43,7 +43,7 @@ import java.nio.ByteBuffer;
  * on the CharBuffers and ByteBuffers it uses, so only wrapped arrays may be
  * used.  This class interprets the arrayOffset() and limit() values returned by
  * its input buffers as beginning and end+1 positions on the wrapped array,
- * resprectively; similarly, on the output buffer, arrayOffset() is the first
+ * respectively; similarly, on the output buffer, arrayOffset() is the first
  * position written to, and limit() is set to one past the final output array
  * position.
  */

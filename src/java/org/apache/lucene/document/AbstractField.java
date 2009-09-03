@@ -204,7 +204,7 @@ public abstract class AbstractField implements Fieldable {
 
   /**
    * True iff terms are stored as term vector together with their offsets 
-   * (start and end positon in source text).
+   * (start and end position in source text).
    */
   public boolean isStoreOffsetWithTermVector(){
     return storeOffsetWithTermVector;

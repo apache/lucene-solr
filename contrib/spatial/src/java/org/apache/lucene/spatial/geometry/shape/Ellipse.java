@@ -109,7 +109,7 @@ public class Ellipse implements Geometry2D {
     if (pt1 == null)
       pt1 = new Point2D();
 
-    // Solution is found by paramterizing the line segment and
+    // Solution is found by parameterizing the line segment and
     // substituting those values into the ellipse equation.
     // Results in a quadratic equation.
     double x1 = center.x();

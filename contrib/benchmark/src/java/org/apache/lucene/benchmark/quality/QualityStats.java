@@ -215,7 +215,7 @@ public class QualityStats {
       }
     }
     assert m>0 : "Fishy: no \"good\" queries!";
-    // take average: times go by all queries, other meassures go by "good" queries noly.
+    // take average: times go by all queries, other measures go by "good" queries only.
     avg.searchTime /= stats.length;
     avg.docNamesExtractTime /= stats.length;
     avg.numGoodPoints /= m;

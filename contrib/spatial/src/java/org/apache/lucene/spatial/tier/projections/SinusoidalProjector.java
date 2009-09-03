@@ -19,7 +19,7 @@ package org.apache.lucene.spatial.tier.projections;
 
 /**
  * Based on Sinusoidal Projections
- * Project a latitude / longitude on a 2D cartisian map
+ * Project a latitude / longitude on a 2D cartesian map
  *
  * <p><font color="red"><b>NOTE:</b> This API is still in
  * flux and might change in incompatible ways in the next

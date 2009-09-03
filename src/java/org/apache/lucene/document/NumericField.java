@@ -86,7 +86,7 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * you should separately index a single-valued <code>NumericField</code>.</p>
  *
  * <p>A <code>NumericField</code> will consume somewhat more disk space
- * in the index than an ordindary single-valued field.
+ * in the index than an ordinary single-valued field.
  * However, for a typical index that includes substantial
  * textual content per document, this increase will likely
  * be in the noise. </p>
@@ -146,7 +146,7 @@ public final class NumericField extends AbstractField {
    * {@link NumericUtils#PRECISION_STEP_DEFAULT} (4). The instance is not yet initialized with
    * a numeric value, before indexing a document containing this field,
    * set a value using the various set<em>???</em>Value() methods.
-   * This constrcutor creates an indexed, but not stored field.
+   * This constructor creates an indexed, but not stored field.
    * @param name the field name
    */
   public NumericField(String name) {
@@ -172,7 +172,7 @@ public final class NumericField extends AbstractField {
    * <code>precisionStep</code>. The instance is not yet initialized with
    * a numeric value, before indexing a document containing this field,
    * set a value using the various set<em>???</em>Value() methods.
-   * This constrcutor creates an indexed, but not stored field.
+   * This constructor creates an indexed, but not stored field.
    * @param name the field name
    * @param precisionStep the used <a href="../search/NumericRangeQuery.html#precisionStepDesc">precision step</a>
    */
@@ -217,7 +217,7 @@ public final class NumericField extends AbstractField {
     return null;
   }
     
-  /** Returns the numeric value as a string (how it is stored, when {@link Field.Store#YES} is choosen). */
+  /** Returns the numeric value as a string (how it is stored, when {@link Field.Store#YES} is chosen). */
   public String stringValue()   {
     return (fieldsData == null) ? null : fieldsData.toString();
   }

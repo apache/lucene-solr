@@ -72,7 +72,7 @@ public class ReaderUtil {
    * 
    * @param reader parent reader
    * @param subIndex index of desired sub reader
-   * @return the subreader at subINdex
+   * @return the subreader at subIndex
    */
   public static IndexReader subReader(IndexReader reader, int subIndex) {
     List subReadersList = new ArrayList();

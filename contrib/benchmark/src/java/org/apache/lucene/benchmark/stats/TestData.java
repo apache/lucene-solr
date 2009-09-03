@@ -177,7 +177,7 @@ public class TestData
                     }
                     dc.count++;
                     //dc.total += td.getRate();
-                    dc.total += (td.count>0 && td.elapsed<=0 ? 1 : td.elapsed); // assume atleast 1ms for any countable op
+                    dc.total += (td.count>0 && td.elapsed<=0 ? 1 : td.elapsed); // assume at least 1ms for any countable op
                     dc.recordCount += td.count;
                 }
             }
@@ -204,7 +204,7 @@ public class TestData
             }
             ldc.Dcount += dc.count;
             ldc.DrecordCount += dc.recordCount;
-            ldc.Dtotal += (dc.count>0 && dc.total<=0 ? 1 : dc.total); // assume atleast 1ms for any countable op 
+            ldc.Dtotal += (dc.count>0 && dc.total<=0 ? 1 : dc.total); // assume at least 1ms for any countable op 
         }
         it = mapMem.keySet().iterator();
         while (it.hasNext())
@@ -281,20 +281,20 @@ public class TestData
       numFormat[1].setMinimumFractionDigits(1);
     }
 
-    // padd number from left
+    // pad number from left
     // numFracDigits must be 0 or 1.
     static String format(int numFracDigits, float f, String col) {
       String res = padd + numFormat[numFracDigits].format(f);
       return res.substring(res.length() - col.length());
     }
 
-    // padd number from left
+    // pad number from left
     static String format(int n, String col) {
       String res = padd + n;
       return res.substring(res.length() - col.length());
     }
 
-    // padd string from right
+    // pad string from right
     static String format(String s, String col) {
       return (s + padd).substring(0,col.length());
     }
@@ -350,7 +350,7 @@ public class TestData
     /**
      * Similar to {@link #getAll(java.io.File[], org.apache.lucene.analysis.Analyzer[])} but only uses
      * maxBufferedDocs of 10 and 100 and same for mergeFactor, thus reducing the number of permutations significantly.
-     * It also only uses compund file and optimize is always true.
+     * It also only uses compound file and optimize is always true.
      *
      * @param sources
      * @param analyzers

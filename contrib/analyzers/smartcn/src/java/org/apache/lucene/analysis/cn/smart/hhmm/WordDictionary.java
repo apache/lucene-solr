@@ -184,7 +184,7 @@ class WordDictionary extends AbstractDictionary {
   /**
    * Load the datafile into this WordDictionary
    * 
-   * @param dctFilePath path to word dictionary (coredict.mem)
+   * @param dctFilePath path to word dictionary (coredict.dct)
    * @return number of words read
    * @throws FileNotFoundException
    * @throws IOException

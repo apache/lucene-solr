@@ -22,9 +22,11 @@ import org.apache.lucene.analysis.LetterTokenizer;
 import org.apache.lucene.util.AttributeSource;
 
 /**
+ * Tokenizer that breaks text into runs of letters and diacritics.
+ * <p>
  * The problem with the standard Letter tokenizer is that it fails on diacritics.
  * Handling similar to this is necessary for Indic Scripts, Hebrew, Thaana, etc.
- * 
+ * </p>
  *
  */
 public class ArabicLetterTokenizer extends LetterTokenizer {

@@ -26,7 +26,7 @@ import org.apache.lucene.search.FieldCache;
  * Expert: A base class for ValueSource implementations that retrieve values for
  * a single field from the {@link org.apache.lucene.search.FieldCache FieldCache}.
  * <p>
- * Fields used herein nust be indexed (doesn't matter if these fields are stored or not).
+ * Fields used herein must be indexed (doesn't matter if these fields are stored or not).
  * <p> 
  * It is assumed that each such indexed field is untokenized, or at least has a single token in a document.
  * For documents with multiple tokens of the same field, behavior is undefined (It is likely that current 

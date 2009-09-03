@@ -125,7 +125,7 @@ public abstract class DocIdSetIterator {
    * 
    * Some implementations are considerably more efficient than that.
    * <p>
-   * <b>NOTE:</b> certain implemenations may return a different value (each
+   * <b>NOTE:</b> certain implementations may return a different value (each
    * time) if called several times in a row with the same target.
    * <p>
    * <b>NOTE:</b> this method may be called with {@value #NO_MORE_DOCS} for

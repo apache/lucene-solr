@@ -28,7 +28,7 @@ import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 
 /**
- * Sample performance test written programatically - no algorithm file is needed here.
+ * Sample performance test written programmatically - no algorithm file is needed here.
  */
 public class Sample {
 
@@ -43,7 +43,7 @@ public class Sample {
     PerfRunData runData = new PerfRunData(conf);
     
     // 1. top sequence
-    TaskSequence top = new TaskSequence(runData,null,null,false); // top level, not parralel
+    TaskSequence top = new TaskSequence(runData,null,null,false); // top level, not parallel
     
     // 2. task to create the index
     CreateIndexTask create = new CreateIndexTask(runData);

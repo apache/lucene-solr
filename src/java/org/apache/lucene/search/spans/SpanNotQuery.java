@@ -136,7 +136,7 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
         public int start() { return includeSpans.start(); }
         public int end() { return includeSpans.end(); }
 
-      // TODO: Remove warning after API has been finalizedb
+      // TODO: Remove warning after API has been finalized
       public Collection/*<byte[]>*/ getPayload() throws IOException {
         ArrayList result = null;
         if (includeSpans.isPayloadAvailable()) {

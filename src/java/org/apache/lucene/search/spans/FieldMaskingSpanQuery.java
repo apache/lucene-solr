@@ -88,7 +88,7 @@ public class FieldMaskingSpanQuery extends SpanQuery {
   }
 
   // :NOTE: getBoost and setBoost are not proxied to the maskedQuery
-  // ...this is done to be more consistent with thigns like SpanFirstQuery
+  // ...this is done to be more consistent with things like SpanFirstQuery
   
   public Spans getSpans(IndexReader reader) throws IOException {
     return maskedQuery.getSpans(reader);

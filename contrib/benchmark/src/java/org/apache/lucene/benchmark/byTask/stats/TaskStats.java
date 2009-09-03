@@ -171,7 +171,7 @@ public class TaskStats implements Cloneable {
     maxUsedMem += stat2.getMaxUsedMem();
     count += stat2.getCount();
     if (round != stat2.round) {
-      round = -1; // no meaning if agregating tasks of different ruond. 
+      round = -1; // no meaning if aggregating tasks of different round. 
     }
   }
 

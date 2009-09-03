@@ -108,7 +108,7 @@ public abstract class LatLng {
    * @param ll2
    *            Second lat,lng position to calculate distance to.
    * @param lUnits
-   *            Units to calculate distace, defaults to miles
+   *            Units to calculate distance, defaults to miles
    * 
    * @return Returns the distance in meters or miles.
    */
@@ -123,7 +123,7 @@ public abstract class LatLng {
     if (lat1 == lat2 && lng1 == lng2)
       return 0.0;
 
-    // Get the m_dLongitude diffeernce. Don't need to worry about
+    // Get the m_dLongitude difference. Don't need to worry about
     // crossing 180 since cos(x) = cos(-x)
     double dLon = lng2 - lng1;
 

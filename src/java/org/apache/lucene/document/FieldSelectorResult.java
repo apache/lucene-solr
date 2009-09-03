@@ -25,7 +25,7 @@ import java.io.Serializable;
 public final class FieldSelectorResult implements Serializable {
 
     /**
-     * Load this {@link Field} every time the {@link Document} is loaded, reading in the data as it is encounterd.
+     * Load this {@link Field} every time the {@link Document} is loaded, reading in the data as it is encountered.
      *  {@link Document#getField(String)} and {@link Document#getFieldable(String)} should not return null.
      *<p/>
      * {@link Document#add(Fieldable)} should be called by the Reader.

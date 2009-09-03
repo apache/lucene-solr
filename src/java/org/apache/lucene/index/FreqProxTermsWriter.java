@@ -61,7 +61,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
   void abort() {}
 
 
-  // TODO: would be nice to factor out morme of this, eg the
+  // TODO: would be nice to factor out more of this, eg the
   // FreqProxFieldMergeState, and code to visit all Fields
   // under the same FieldInfo together, up into TermsHash*.
   // Other writers would presumably share alot of this...

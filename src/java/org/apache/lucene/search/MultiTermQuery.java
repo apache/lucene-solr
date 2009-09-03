@@ -356,7 +356,7 @@ public abstract class MultiTermQuery extends Query {
    * with {@link #clearTotalNumberOfTerms}.
    * <p>On optimized indexes / no MultiReaders, you get the correct number of
    * unique terms for the whole index. Use this number to compare different queries.
-   * For non-optimized indexes this number can also be achived in
+   * For non-optimized indexes this number can also be achieved in
    * non-constant-score mode. In constant-score mode you get the total number of
    * terms seeked for all segments / sub-readers.
    * @see #clearTotalNumberOfTerms

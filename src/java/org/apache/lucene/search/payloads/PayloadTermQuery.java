@@ -139,7 +139,7 @@ public class PayloadTermQuery extends SpanTermQuery {
       /**
        * Returns the SpanScorer score only.
        * <p/>
-       * Should not be overriden without good cause!
+       * Should not be overridden without good cause!
        * 
        * @return the score for just the Span part w/o the payload
        * @throws IOException

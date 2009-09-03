@@ -54,7 +54,7 @@ public class JavaUtilRegexCapabilities implements RegexCapabilities {
    * Constructor that allows for the modification of the flags that
    * the java.util.regex.Pattern will use to compile the regular expression.
    * This gives the user the ability to fine-tune how the regular expression 
-   * to match the functionlity that they need. 
+   * to match the functionality that they need. 
    * The {@link java.util.regex.Pattern Pattern} class supports specifying 
    * these fields via the regular expression text itself, but this gives the caller
    * another option to modify the behavior. Useful in cases where the regular expression text

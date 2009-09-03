@@ -24,6 +24,10 @@ import org.xml.sax.InputSource;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * 
+ */
 public class DOMUtils
 {
     public static Element getChildByTagOrFail(Element e, String name)	throws ParserException

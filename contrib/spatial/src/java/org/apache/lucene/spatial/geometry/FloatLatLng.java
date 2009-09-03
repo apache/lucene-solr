@@ -28,7 +28,7 @@ public class FloatLatLng extends LatLng {
   private boolean normalized;
   
   public FloatLatLng(double lat, double lng) {
-    if (lat>90.0 || lat<-90.0) throw new IllegalArgumentException("Illegal lattitude value " + lat);
+    if (lat>90.0 || lat<-90.0) throw new IllegalArgumentException("Illegal latitude value " + lat);
     this.lat=lat;
     this.lng=lng;
   }

@@ -150,7 +150,7 @@ public class HyphenationCompoundWordTokenFilter extends
   }
 
   protected void decomposeInternal(final Token token) {
-    // get the hpyphenation points
+    // get the hyphenation points
     Hyphenation hyphens = hyphenator.hyphenate(token.termBuffer(), 0, token
         .termLength(), 1, 1);
     // No hyphen points found -> exit

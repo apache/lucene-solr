@@ -33,7 +33,7 @@ public class SimpleSloppyPhraseQueryMaker extends SimpleQueryMaker {
    * @see org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker#prepareQueries()
    */
   protected Query[] prepareQueries() throws Exception {
-    // exatract some 100 words from doc text to an array
+    // extract some 100 words from doc text to an array
     String words[];
     ArrayList w = new ArrayList();
     StringTokenizer st = new StringTokenizer(SingleDocSource.DOC_TEXT);
@@ -60,7 +60,7 @@ public class SimpleSloppyPhraseQueryMaker extends SimpleQueryMaker {
             }
           }
           queries.add(q);
-          // reveresed
+          // reversed
           remainedSlop = slop;
           q = new PhraseQuery();
           q.setSlop(slop+2*qlen);

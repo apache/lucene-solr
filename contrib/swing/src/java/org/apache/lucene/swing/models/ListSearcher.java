@@ -118,7 +118,7 @@ public class ListSearcher extends AbstractListModel {
                 //for each row make a new document
                 Document document = new Document();
                 //add the row number of this row in the decorated list model
-                //this will allow us to retrive the results later
+                //this will allow us to retrieve the results later
                 //and map this list model's row to a row in the decorated
                 //list model
                 document.add(new Field(ROW_NUMBER, "" + row, Field.Store.YES, Field.Index.ANALYZED));
@@ -187,7 +187,7 @@ public class ListSearcher extends AbstractListModel {
             //iterate through the hits
             //get the row number stored at the index
             //that number is the row number of the decorated
-            //tabble model row that we are mapping to
+            //table model row that we are mapping to
             for (int t=0; t<hits.length(); t++){
                 Document document = hits.doc(t);
                 Fieldable field = document.getField(ROW_NUMBER);

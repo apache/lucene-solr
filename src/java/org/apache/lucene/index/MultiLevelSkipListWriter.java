@@ -40,7 +40,7 @@ import org.apache.lucene.store.RAMOutputStream;
  * Therefore the number of entries on level i is: floor(df / ((skipInterval ^ (i + 1))).
  * 
  * Each skip entry on a level i>0 contains a pointer to the corresponding skip entry in list i-1.
- * This guarantess a logarithmic amount of skips to find the target document.
+ * This guarantees a logarithmic amount of skips to find the target document.
  * 
  * While this class takes care of writing the different skip levels,
  * subclasses must define the actual format of the skip data.
@@ -89,7 +89,7 @@ abstract class MultiLevelSkipListWriter {
   /**
    * Subclasses must implement the actual skip data encoding in this method.
    *  
-   * @param level the level skip data shall be writting for
+   * @param level the level skip data shall be writing for
    * @param skipBuffer the skip buffer to write to
    */
   protected abstract void writeSkipData(int level, IndexOutput skipBuffer) throws IOException;

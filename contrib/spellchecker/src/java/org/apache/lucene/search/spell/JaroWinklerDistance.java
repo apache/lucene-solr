@@ -103,7 +103,7 @@ public class JaroWinklerDistance implements StringDistance {
 
   /**
    * Returns the current value of the threshold used for adding the Winkler bonus.
-   * The deafult value is 0.7.
+   * The default value is 0.7.
    * @return the current value of the threshold
    */
   public float getThreshold() {

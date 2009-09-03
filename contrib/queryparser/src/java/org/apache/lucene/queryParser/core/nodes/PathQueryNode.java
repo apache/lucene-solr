@@ -25,17 +25,19 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
 import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax.Type;
 
 /**
- * A {@link PathQueryNode} is used for to store queries like
- * /company/USA/California /product/shoes/brown QueryText are objects that
+ * A {@link PathQueryNode} is used to store queries like
+ * /company/USA/California /product/shoes/brown. QueryText are objects that
  * contain the text, begin position and end position in the query.
- * 
+ * <p>
  * Example how the text parser creates these objects:
- * 
- * List values = ArrayList(); values.add(new PathQueryNode.QueryText("company",
- * 1, 7)); values.add(new PathQueryNode.QueryText("USA", 9, 12)); values.add(new
- * PathQueryNode.QueryText("California", 14, 23)); QueryNode q = new
- * PathQueryNode(values);
- * 
+ * </p>
+ * <pre>
+ * List values = ArrayList(); 
+ * values.add(new PathQueryNode.QueryText("company", 1, 7)); 
+ * values.add(new PathQueryNode.QueryText("USA", 9, 12)); 
+ * values.add(new PathQueryNode.QueryText("California", 14, 23)); 
+ * QueryNode q = new PathQueryNode(values);
+ * </pre>
  */
 public class PathQueryNode extends QueryNodeImpl {
 

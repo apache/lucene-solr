@@ -40,9 +40,9 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 
 /**
- * QueryParser which permits complex phrase query syntax e.g. "(john jon
- * jonathan~) peters*"
- * 
+ * QueryParser which permits complex phrase query syntax eg "(john jon
+ * jonathan~) peters*".
+ * <p>
  * Performs potentially multiple passes over Query text to parse any nested
  * logic in PhraseQueries. - First pass takes any PhraseQuery content between
  * quotes and stores for subsequent pass. All other query content is parsed as
@@ -50,13 +50,14 @@ import org.apache.lucene.search.spans.SpanTermQuery;
  * embedded clauses are referring to the same field and therefore can be
  * rewritten as Span queries. All PhraseQuery clauses are expressed as
  * ComplexPhraseQuery objects
- * 
+ * </p>
+ * <p>
  * This could arguably be done in one pass using a new QueryParser but here I am
  * working within the constraints of the existing parser as a base class. This
  * currently simply feeds all phrase content through an analyzer to select
  * phrase terms - any "special" syntax such as * ~ * etc are not given special
  * status
- * 
+ * </p>
  * 
  */
 public class ComplexPhraseQueryParser extends QueryParser {

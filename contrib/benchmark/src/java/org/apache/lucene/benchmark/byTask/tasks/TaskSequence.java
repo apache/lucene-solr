@@ -251,7 +251,7 @@ public class TaskSequence extends PerfTask {
     }
   }
 
-  // run threadsm with rate
+  // run threads with rate
   private void startlThreadsWithRate(Thread[] t) throws InterruptedException {
     long delayStep = (perMin ? 60000 : 1000) /rate;
     long nextStartTime = System.currentTimeMillis();
@@ -261,7 +261,7 @@ public class TaskSequence extends PerfTask {
         //System.out.println("thread wait: "+waitMore+" for rate: "+ratePerMin+" (delayStep="+delayStep+")");
         Thread.sleep(waitMore);
       }
-      nextStartTime += delayStep; // this aims at avarage rate of starting threads. 
+      nextStartTime += delayStep; // this aims at average rate of starting threads. 
       t[i].start();
     }
   }
@@ -346,7 +346,7 @@ public class TaskSequence extends PerfTask {
   }
 
   public String getName() {
-    return seqName; // overide to include more info 
+    return seqName; // override to include more info 
   }
 
   /**

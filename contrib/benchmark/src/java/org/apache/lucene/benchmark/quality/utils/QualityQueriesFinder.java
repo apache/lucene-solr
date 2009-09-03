@@ -36,7 +36,7 @@ public class QualityQueriesFinder {
   private Directory dir;
   
   /**
-   * Constrctor over a directory containing the index.
+   * Constructor over a directory containing the index.
    * @param dir directory containing the index we search for the quality test. 
    */
   private QualityQueriesFinder(Directory dir) {

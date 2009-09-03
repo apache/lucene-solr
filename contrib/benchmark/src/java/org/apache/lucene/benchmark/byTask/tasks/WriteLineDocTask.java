@@ -35,9 +35,9 @@ import org.apache.lucene.document.Field;
 /**
  * A task which writes documents, one line per document. Each line is in the
  * following format: title &lt;TAB&gt; date &lt;TAB&gt; body. The output of this
- * taske can be consumed by
+ * task can be consumed by
  * {@link org.apache.lucene.benchmark.byTask.feeds.LineDocMaker} and is intended
- * to save the IO overhead of opening a file per doument to be indexed.<br>
+ * to save the IO overhead of opening a file per document to be indexed.<br>
  * Supports the following parameters:
  * <ul>
  * <li>line.file.out - the name of the file to write the output to. That
@@ -47,7 +47,7 @@ import org.apache.lucene.document.Field;
  * false).
  * </ul>
  * <b>NOTE:</b> this class is not thread-safe and if used by multiple threads the
- * output is unspecified (as all will write to the same ouput file in a
+ * output is unspecified (as all will write to the same output file in a
  * non-synchronized way).
  */
 public class WriteLineDocTask extends PerfTask {

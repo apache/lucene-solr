@@ -43,7 +43,7 @@ import java.util.ArrayList;
  * a TableModel and provides sorting functionality. The benefit
  * of this architecture is that you can decorate any TableModel
  * implementation with this searching table model -- making it
- * easy to add searching functionaliy to existing JTables -- or
+ * easy to add searching functionality to existing JTables -- or
  * making new search capable table lucene.
  *
  * <p>This decorator works by holding a reference to a decorated ot inner
@@ -169,7 +169,7 @@ public class TableSearcher extends AbstractTableModel {
                 //for each row make a new document
                 Document document = new Document();
                 //add the row number of this row in the decorated table model
-                //this will allow us to retrive the results later
+                //this will allow us to retrieve the results later
                 //and map this table model's row to a row in the decorated
                 //table model
                 document.add(new Field(ROW_NUMBER, "" + row, Field.Store.YES, Field.Index.ANALYZED));
@@ -268,7 +268,7 @@ public class TableSearcher extends AbstractTableModel {
             //iterate through the hits
             //get the row number stored at the index
             //that number is the row number of the decorated
-            //tabble model row that we are mapping to
+            //table model row that we are mapping to
             for (int t=0; t<hits.length(); t++){
                 Document document = hits.doc(t);
                 Fieldable field = document.getField(ROW_NUMBER);

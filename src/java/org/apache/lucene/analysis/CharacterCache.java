@@ -36,7 +36,7 @@ class CharacterCache {
    * 
    * @param c
    *          a char value
-   * @return a Charater representation of the given char value.
+   * @return a Character representation of the given char value.
    */
   public static Character valueOf(char c) {
     if (c < cache.length) {

@@ -97,7 +97,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
     
   /**
    * Sets the default function variables used by lengthNorm when no field
-   * specifc variables have been set.
+   * specific variables have been set.
    *
    * @see #lengthNorm
    */
@@ -233,7 +233,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    * </code>
    *
    * <p>
-   * This code is provided as a convincience for subclasses that want
+   * This code is provided as a convenience for subclasses that want
    * to use a hyperbolic tf function.
    * </p>
    *

@@ -402,7 +402,7 @@ public abstract class FieldComparator {
 
   /** Sorts by descending relevance.  NOTE: if you are
    *  sorting only by descending relevance and then
-   *  secondarily by ascending docID, peformance is faster
+   *  secondarily by ascending docID, performance is faster
    *  using {@link TopScoreDocCollector} directly (which {@link
    *  IndexSearcher#search} uses when no {@link Sort} is
    *  specified). */

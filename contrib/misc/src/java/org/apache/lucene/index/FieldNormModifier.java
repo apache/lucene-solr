@@ -81,11 +81,11 @@ public class FieldNormModifier {
   private Similarity sim;
   
   /**
-   * Constructor for code that wishes to use this class programatically
+   * Constructor for code that wishes to use this class programmatically
    * If Similarity is null, kill the field norms.
    *
    * @param d the Directory to modify
-   * @param s the Similiary to use (can be null)
+   * @param s the Similarity to use (can be null)
    */
   public FieldNormModifier(Directory d, Similarity s) {
     dir = d;

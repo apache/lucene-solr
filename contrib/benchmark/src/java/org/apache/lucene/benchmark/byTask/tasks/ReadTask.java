@@ -250,7 +250,7 @@ public abstract class ReadTask extends PerfTask {
   }
 
   /**
-   * @return the maxiumum number of highlighter fragments
+   * @return the maximum number of highlighter fragments
    * @deprecated Please define getBenchmarkHighlighter instead
    */
   final int maxNumFragments(){

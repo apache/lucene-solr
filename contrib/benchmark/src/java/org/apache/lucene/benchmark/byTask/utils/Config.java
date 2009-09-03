@@ -32,7 +32,7 @@ import java.util.StringTokenizer;
 /**
  * Perf run configuration properties.
  * <p>
- * Numeric peroperty containing ":", e.g. "10:100:5" is interpreted 
+ * Numeric property containing ":", e.g. "10:100:5" is interpreted 
  * as array of numeric values. It is extracted once, on first use, and 
  * maintain a round number to return the appropriate value.
  * <p>
@@ -99,7 +99,7 @@ public class Config {
   }
 
   /**
-   * Create config without algorithm - usefull for a programmatic perf test.
+   * Create config without algorithm - useful for a programmatic perf test.
    * @param props - configuration properties.
    * @throws IOException
    */
@@ -135,7 +135,7 @@ public class Config {
    * Set a property.
    * Note: once a multiple values property is set, it can no longer be modified.
    * @param name name of property.
-   * @param value either single or multiple propery value (multple values are separated by ":")
+   * @param value either single or multiple property value (multiple values are separated by ":")
    * @throws Exception 
    */
   public void set (String name, String value) throws Exception {
@@ -208,7 +208,7 @@ public class Config {
   /**
    * Return a boolean property.
    * If the property contain ":", e.g. "true.true.false", it is interpreted 
-   * as array of boleans. It is extracted once, on first call
+   * as array of booleans. It is extracted once, on first call
    * to get() it, and a by-round-value is returned. 
    * @param name name of property
    * @param dflt default value

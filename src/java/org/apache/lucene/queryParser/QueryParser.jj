@@ -783,7 +783,7 @@ public class QueryParser {
       DateTools.Resolution resolution = getDateResolution(field);
       if (resolution == null) {
         // no default or field specific date resolution has been set,
-        // use deprecated DateField to maintain compatibilty with
+        // use deprecated DateField to maintain compatibility with
         // pre-1.9 Lucene versions.
         part1 = DateField.dateToString(d1);
         part2 = DateField.dateToString(d2);

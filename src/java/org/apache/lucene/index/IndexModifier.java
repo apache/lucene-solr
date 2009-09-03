@@ -450,7 +450,7 @@ public class IndexModifier {
    * running out of memory.<p/>
    * Note that this effectively truncates large documents, excluding from the
    * index terms that occur further in the document.  If you know your source
-   * documents are large, be sure to set this value high enough to accomodate
+   * documents are large, be sure to set this value high enough to accommodate
    * the expected size.  If you set it to Integer.MAX_VALUE, then the only limit
    * is your memory, but you should anticipate an OutOfMemoryError.<p/>
    * By default, no more than 10,000 terms will be indexed for a field.

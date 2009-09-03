@@ -29,7 +29,9 @@ import org.w3c.dom.NodeList;
  * limitations under the License.
  */
 
-
+/**
+ * 
+ */
 public class BooleanQueryBuilder implements QueryBuilder {
 	
 	private QueryBuilder factory;

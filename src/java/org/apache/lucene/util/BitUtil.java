@@ -17,7 +17,7 @@
 
 package org.apache.lucene.util; // from org.apache.solr.util rev 555343
 
-/**  A variety of high efficiencly bit twiddling routines.
+/**  A variety of high efficiency bit twiddling routines.
  *
  * @version $Id$
  */

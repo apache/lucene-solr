@@ -51,10 +51,10 @@ import org.apache.lucene.index.Payload;
  * be used to replace phrase queries, especially them with 0 slop.
  *
  * <p>Without a spacer character
- * it can be used to handle composition and decomposion of words
+ * it can be used to handle composition and decomposition of words
  * such as searching for "multi dimensional" instead of "multidimensional".
  * It is a rather common human problem at query time
- * in several languages, notebly the northern Germanic branch.
+ * in several languages, notably the northern Germanic branch.
  *
  * <p>Shingles are amongst many things also known to solve problems
  * in spell checking, language detection and document clustering.
@@ -108,7 +108,7 @@ import org.apache.lucene.index.Payload;
  * so it never created the same shingle more than once in the first place.
  *
  * <p>The filter also has basic support for calculating weights for the shingles
- * based on the weights of the tokens from the input stream, output shingle size, et c.
+ * based on the weights of the tokens from the input stream, output shingle size, etc.
  * See {@link #calculateShingleWeight(org.apache.lucene.analysis.Token, java.util.List, int, java.util.List, java.util.List)}.
  * <p/>
  * <b>NOTE:</b> This filter might not behave correctly if used with custom Attributes, i.e. Attributes other than
@@ -253,7 +253,7 @@ public class ShingleMatrixFilter extends TokenStream {
    * @see #ignoringSinglePrefixOrSuffixShingleByDefault
    * @see #defaultSettingsCodec
    *
-   * @param input stream from wich to construct the matrix
+   * @param input stream from which to construct the matrix
    * @param minimumShingleSize minimum number of tokens in any shingle.
    * @param maximumShingleSize maximum number of tokens in any shingle.
    */
@@ -268,7 +268,7 @@ public class ShingleMatrixFilter extends TokenStream {
    * @see #ignoringSinglePrefixOrSuffixShingleByDefault
    * @see #defaultSettingsCodec
    *
-   * @param input stream from wich to construct the matrix
+   * @param input stream from which to construct the matrix
    * @param minimumShingleSize minimum number of tokens in any shingle.
    * @param maximumShingleSize maximum number of tokens in any shingle.
    * @param spacerCharacter character to use between texts of the token parts in a shingle. null for none.
@@ -282,7 +282,7 @@ public class ShingleMatrixFilter extends TokenStream {
    *
    * @see #defaultSettingsCodec
    *
-   * @param input stream from wich to construct the matrix
+   * @param input stream from which to construct the matrix
    * @param minimumShingleSize minimum number of tokens in any shingle.
    * @param maximumShingleSize maximum number of tokens in any shingle.
    * @param spacerCharacter character to use between texts of the token parts in a shingle. null for none.
@@ -296,7 +296,7 @@ public class ShingleMatrixFilter extends TokenStream {
   /**
    * Creates a shingle filter with ad hoc parameter settings.
    *
-   * @param input stream from wich to construct the matrix
+   * @param input stream from which to construct the matrix
    * @param minimumShingleSize minimum number of tokens in any shingle.
    * @param maximumShingleSize maximum number of tokens in any shingle.
    * @param spacerCharacter character to use between texts of the token parts in a shingle. null for none.
@@ -408,8 +408,8 @@ public class ShingleMatrixFilter extends TokenStream {
   private static final Token request_next_token = new Token();
 
   /**
-   * This method exists in order to avoid reursive calls to the method
-   * as the complexity of a fairlt small matrix then easily would require
+   * This method exists in order to avoid recursive calls to the method
+   * as the complexity of a fairly small matrix then easily would require
    * a gigabyte sized stack per thread.
    *
    * @param reusableToken
@@ -490,7 +490,7 @@ public class ShingleMatrixFilter extends TokenStream {
             // don't really care, we just read it.
           }
 
-          // get rith of resources
+          // get rid of resources
 
           // delete the first column in the matrix
           Matrix.Column deletedColumn = (Matrix.Column) matrix.columns.remove(0);

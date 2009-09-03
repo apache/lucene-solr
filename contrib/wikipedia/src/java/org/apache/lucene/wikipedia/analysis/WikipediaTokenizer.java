@@ -142,8 +142,8 @@ public class WikipediaTokenizer extends Tokenizer {
   }
 
   /**
-   * Createa a new instance of the {@link org.apache.lucene.wikipedia.analysis.WikipediaTokenizer}.  Attaches the
-   * <conde>input</code> to a the newly created JFlex scanner.
+   * Creates a new instance of the {@link org.apache.lucene.wikipedia.analysis.WikipediaTokenizer}.  Attaches the
+   * <code>input</code> to a the newly created JFlex scanner.
    *
    * @param input The input
    * @param tokenOutput One of {@link #TOKENS_ONLY}, {@link #UNTOKENIZED_ONLY}, {@link #BOTH}
@@ -156,8 +156,8 @@ public class WikipediaTokenizer extends Tokenizer {
   }
 
   /**
-   * Createa a new instance of the {@link org.apache.lucene.wikipedia.analysis.WikipediaTokenizer}.  Attaches the
-   * <conde>input</code> to a the newly created JFlex scanner. Uses the given {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
+   * Creates a new instance of the {@link org.apache.lucene.wikipedia.analysis.WikipediaTokenizer}.  Attaches the
+   * <code>input</code> to a the newly created JFlex scanner. Uses the given {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
    *
    * @param input The input
    * @param tokenOutput One of {@link #TOKENS_ONLY}, {@link #UNTOKENIZED_ONLY}, {@link #BOTH}
@@ -170,8 +170,8 @@ public class WikipediaTokenizer extends Tokenizer {
   }
 
   /**
-   * Createa a new instance of the {@link org.apache.lucene.wikipedia.analysis.WikipediaTokenizer}.  Attaches the
-   * <conde>input</code> to a the newly created JFlex scanner. Uses the given {@link AttributeSource}.
+   * Creates a new instance of the {@link org.apache.lucene.wikipedia.analysis.WikipediaTokenizer}.  Attaches the
+   * <code>input</code> to a the newly created JFlex scanner. Uses the given {@link AttributeSource}.
    *
    * @param input The input
    * @param tokenOutput One of {@link #TOKENS_ONLY}, {@link #UNTOKENIZED_ONLY}, {@link #BOTH}

@@ -24,6 +24,10 @@ import org.w3c.dom.Node;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * 
+ */
 public class SpanOrBuilder extends SpanBuilderBase
 {
     

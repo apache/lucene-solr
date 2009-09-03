@@ -63,7 +63,7 @@ public final class SimilarityQueries
 	 *
 	 * <p>
 	 * The philosophy behind this method is "two documents are similar if they share lots of words".
-	 * Note that behind the scenes, Lucenes scoring algorithm will tend to give two documents a higher similarity score if the share more uncommon words.
+	 * Note that behind the scenes, Lucene's scoring algorithm will tend to give two documents a higher similarity score if the share more uncommon words.
 	 *
 	 * <P>
 	 * This method is fail-safe in that if a long 'body' is passed in and

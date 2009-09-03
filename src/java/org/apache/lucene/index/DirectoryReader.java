@@ -173,7 +173,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     initialize(readers);
   }
 
-  /** This contructor is only used for {@link #reopen()} */
+  /** This constructor is only used for {@link #reopen()} */
   DirectoryReader(Directory directory, SegmentInfos infos, SegmentReader[] oldReaders, int[] oldStarts,
                   Map oldNormsCache, boolean readOnly, boolean doClone, int termInfosIndexDivisor) throws IOException {
     this.directory = directory;

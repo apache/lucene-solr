@@ -28,8 +28,8 @@ import org.apache.lucene.benchmark.byTask.utils.Format;
 /**
  * An abstract task to be tested for performance. <br>
  * Every performance task extends this class, and provides its own
- * {@link #doLogic()} method, which performss the actual task. <br>
- * Tasks performing some work that should be measured for the task, can overide
+ * {@link #doLogic()} method, which performs the actual task. <br>
+ * Tasks performing some work that should be measured for the task, can override
  * {@link #setup()} and/or {@link #tearDown()} and place that work there. <br>
  * Relevant properties: <code>task.max.depth.log</code>.<br>
  * Also supports the following logging attributes:
@@ -40,7 +40,7 @@ import org.apache.lucene.benchmark.byTask.utils.Format;
  * <li>log.step.[class Task Name] - specifies the same as 'log.step', only for a
  * particular task name. For example, log.step.AddDoc will be applied only for
  * {@link AddDocTask}, but not for {@link DeleteDocTask}. It's a way to control
- * per task logging settings. If you want to ommit logging for any other task,
+ * per task logging settings. If you want to omit logging for any other task,
  * include log.step=-1. The syntax is "log.step." together with the Task's
  * 'short' name (i.e., without the 'Task' part).
  * </ul>
@@ -118,8 +118,8 @@ public abstract class PerfTask implements Cloneable {
   }
   
   protected Object clone() throws CloneNotSupportedException {
-    // tasks having non primitive data structures should overide this.
-    // otherwise parallel running of a task sequence might not run crrectly. 
+    // tasks having non primitive data structures should override this.
+    // otherwise parallel running of a task sequence might not run correctly. 
     return super.clone();
   }
 
@@ -152,7 +152,7 @@ public abstract class PerfTask implements Cloneable {
   }
 
   /**
-   * Perform the task once (ignoring repetions specification)
+   * Perform the task once (ignoring repetitions specification)
    * Return number of work items done by this task.
    * For indexing that can be number of docs added.
    * For warming that can be number of scanned items, etc.
@@ -230,7 +230,7 @@ public abstract class PerfTask implements Cloneable {
   }
   
   /**
-   * Tasks that should never log at start can overide this.  
+   * Tasks that should never log at start can override this.  
    * @return true if this task should never log when it start.
    */
   protected boolean shouldNeverLogAtStart () {
@@ -238,7 +238,7 @@ public abstract class PerfTask implements Cloneable {
   }
   
   /**
-   * Tasks that should not record statistics can overide this.  
+   * Tasks that should not record statistics can override this.  
    * @return true if this task should never record its statistics.
    */
   protected boolean shouldNotRecordStats () {
@@ -274,7 +274,7 @@ public abstract class PerfTask implements Cloneable {
   }
 
   /**
-   * Sub classes that supports parameters must overide this method to return true.
+   * Sub classes that supports parameters must override this method to return true.
    * @return true iff this task supports command line params.
    */
   public boolean supportsParams () {

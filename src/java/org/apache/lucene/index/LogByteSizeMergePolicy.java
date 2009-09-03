@@ -54,7 +54,7 @@ public class LogByteSizeMergePolicy extends LogMergePolicy {
     maxMergeSize = (long) (mb*1024*1024);
   }
 
-  /** Returns the largest segment (meaured by total byte
+  /** Returns the largest segment (measured by total byte
    *  size of the segment's files, in MB) that may be merged
    *  with other segments.
    *  @see #setMaxMergeMB */

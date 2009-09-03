@@ -113,7 +113,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
     final IndexOutput tvf = perThread.doc.tvf;
 
-    // This is called once, after inverting all occurences
+    // This is called once, after inverting all occurrences
     // of a given field in the doc.  At this point we flush
     // our hash into the DocWriter.
 

@@ -36,7 +36,7 @@ public class BrazilianStemmer {
 	}
 
 	/**
-	 * Stemms the given term to an unique <tt>discriminator</tt>.
+	 * Stems the given term to an unique <tt>discriminator</tt>.
 	 *
 	 * @param term  The term that should be stemmed.
 	 * @return      Discriminator for <tt>term</tt>
@@ -115,7 +115,7 @@ public class BrazilianStemmer {
 	/**
 	 * Gets R1
    *
-   * R1 - is the region after the first non-vowel follwing a vowel,
+   * R1 - is the region after the first non-vowel following a vowel,
    *      or is the null region at the end of the word if there is
    *      no such non-vowel.
    *
@@ -159,13 +159,13 @@ public class BrazilianStemmer {
 	/**
 	 * Gets RV
    *
-   * RV - IF the second letter is a consoant, RV is the region after
+   * RV - IF the second letter is a consonant, RV is the region after
    *      the next following vowel,
    *
    *      OR if the first two letters are vowels, RV is the region
-   *      after the next consoant,
+   *      after the next consonant,
    *
-   *      AND otherwise (consoant-vowel case) RV is the region after
+   *      AND otherwise (consonant-vowel case) RV is the region after
    *      the third letter.
    *
    *      BUT RV is the end of the word if this positions cannot be
@@ -184,7 +184,7 @@ public class BrazilianStemmer {
 
     i = value.length()-1 ;
 
-    // RV - IF the second letter is a consoant, RV is the region after
+    // RV - IF the second letter is a consonant, RV is the region after
     //      the next following vowel,
     if ((i > 0) && !isVowel(value.charAt(1))) {
       // find 1st vowel
@@ -201,7 +201,7 @@ public class BrazilianStemmer {
 
 
     // RV - OR if the first two letters are vowels, RV is the region
-    //      after the next consoant,
+    //      after the next consonant,
     if ((i > 1) &&
         isVowel(value.charAt(0)) &&
         isVowel(value.charAt(1))) {
@@ -217,7 +217,7 @@ public class BrazilianStemmer {
       }
     }
 
-    // RV - AND otherwise (consoant-vowel case) RV is the region after
+    // RV - AND otherwise (consonant-vowel case) RV is the region after
     //      the third letter.
     if (i > 2) {
       return value.substring(3) ;
@@ -394,7 +394,7 @@ public class BrazilianStemmer {
 
 
 	/**
-	 * Standart suffix removal.
+	 * Standard suffix removal.
    * Search for the longest among the following suffixes, and perform
    * the following actions:
    *
@@ -403,12 +403,12 @@ public class BrazilianStemmer {
 	private boolean step1() {
     if (CT == null) return false ;
 
-    // suffix lenght = 7
+    // suffix length = 7
     if (suffix(CT,"uciones") && suffix(R2,"uciones")) {
         CT = replaceSuffix(CT,"uciones","u") ; return true;
     }
 
-    // suffix lenght = 6
+    // suffix length = 6
     if (CT.length() >= 6) {
       if (suffix(CT,"imentos") && suffix(R2,"imentos")) {
           CT = removeSuffix(CT,"imentos") ; return true;
@@ -436,7 +436,7 @@ public class BrazilianStemmer {
       }
     }
 
-    // suffix lenght = 5
+    // suffix length = 5
     if (CT.length() >= 5) {
       if (suffix(CT,"acoes") && suffix(R2,"acoes")) {
           CT = removeSuffix(CT,"acoes") ; return true;
@@ -473,7 +473,7 @@ public class BrazilianStemmer {
       }
     }
 
-    // suffix lenght = 4
+    // suffix length = 4
     if (CT.length() >= 4) {
       if (suffix(CT,"acao") && suffix(R2,"acao")) {
           CT = removeSuffix(CT,"acao") ; return true;
@@ -521,7 +521,7 @@ public class BrazilianStemmer {
       }
     }
 
-    // suffix lenght = 3
+    // suffix length = 3
     if (CT.length() >= 3) {
       if (suffix(CT,"eza") && suffix(R2,"eza")) {
           CT = removeSuffix(CT,"eza") ; return true ;
@@ -589,7 +589,7 @@ public class BrazilianStemmer {
       }
     }
 
-    // suffix lenght = 6
+    // suffix length = 6
     if (RV.length() >= 6) {
       if (suffix(RV,"iremos")) {
         CT = removeSuffix(CT,"iremos") ; return true;
@@ -633,7 +633,7 @@ public class BrazilianStemmer {
     }
 
 
-    // suffix lenght = 5
+    // suffix length = 5
     if (RV.length() >= 5) {
       if (suffix(RV,"irmos")) {
         CT = removeSuffix(CT,"irmos") ; return true;
@@ -718,7 +718,7 @@ public class BrazilianStemmer {
       }
     }
 
-    // suffix lenght = 4
+    // suffix length = 4
     if (RV.length() >= 4) {
       if (suffix(RV,"aria")) {
         CT = removeSuffix(CT,"aria") ; return true;
@@ -845,7 +845,7 @@ public class BrazilianStemmer {
       }
     }
 
-    // suffix lenght = 3
+    // suffix length = 3
     if (RV.length() >= 3) {
       if (suffix(RV,"ada")) {
         CT = removeSuffix(CT,"ada") ; return true;
@@ -888,7 +888,7 @@ public class BrazilianStemmer {
       }
     }
 
-    // suffix lenght = 2
+    // suffix length = 2
     if (RV.length() >= 2) {
       if (suffix(RV,"ia")) {
         CT = removeSuffix(CT,"ia") ; return true;

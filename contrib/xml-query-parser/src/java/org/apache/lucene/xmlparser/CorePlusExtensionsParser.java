@@ -24,12 +24,16 @@ import org.apache.lucene.xmlparser.builders.TermsFilterBuilder;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+/**
+ * 
+ */
 public class CorePlusExtensionsParser extends CoreParser
 {
 
 	/**
 	 * Construct an XML parser that uses a single instance QueryParser for handling 
-	 * UserQuery tags - all parse operations are synchronised on this parser
+	 * UserQuery tags - all parse operations are synchronized on this parser
 	 * @param analyzer
 	 * @param parser A QueryParser which will be synchronized on during parse calls.
 	 */

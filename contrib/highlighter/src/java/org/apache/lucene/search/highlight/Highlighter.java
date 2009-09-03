@@ -93,7 +93,7 @@ public class Highlighter
 	 *
 	 * @param tokenStream   a stream of tokens identified in the text parameter, including offset information.
 	 * This is typically produced by an analyzer re-parsing a document's
-	 * text. Some work may be done on retrieving TokenStreams more efficently
+	 * text. Some work may be done on retrieving TokenStreams more efficiently
 	 * by adding support for storing original text position data in the Lucene
 	 * index but this support is not currently available (as of Lucene 1.4 rc2).
 	 * @param text text to highlight terms in

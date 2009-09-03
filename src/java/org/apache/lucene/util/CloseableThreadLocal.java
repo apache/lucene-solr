@@ -33,7 +33,7 @@ import java.lang.ref.WeakReference;
  *  While not technically a memory leak, because eventually
  *  the memory will be reclaimed, it can take a long time
  *  and you can easily hit OutOfMemoryError because from the
- *  GC's standpoint the stale entries are not reclaimaible.
+ *  GC's standpoint the stale entries are not reclaimable.
  * 
  *  This class works around that, by only enrolling
  *  WeakReference values into the ThreadLocal, and

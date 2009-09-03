@@ -57,7 +57,7 @@ final class TermInfosWriter {
   int indexInterval = 128;
 
   /** Expert: The fraction of {@link TermDocs} entries stored in skip tables,
-   * used to accellerate {@link TermDocs#skipTo(int)}.  Larger values result in
+   * used to accelerate {@link TermDocs#skipTo(int)}.  Larger values result in
    * smaller indexes, greater acceleration, but fewer accelerable cases, while
    * smaller values result in bigger indexes, less acceleration and more
    * accelerable cases. More detailed experiments would be useful here. */

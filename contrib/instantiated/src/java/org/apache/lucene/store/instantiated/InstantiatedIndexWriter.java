@@ -281,7 +281,7 @@ public class InstantiatedIndexWriter {
             }
           }
 
-          // create association term document infomation
+          // create association term document information
           //
           // [Term]-- {0..*} | {0..* ordered} --(field)[Document]
           //
@@ -302,7 +302,7 @@ public class InstantiatedIndexWriter {
 
           InstantiatedTermDocumentInformation info = new InstantiatedTermDocumentInformation(term, document, /*eTermText_TermDocInfoFactory.getValue().termFrequency,*/ positions, payloads);
 
-          // todo optimize, this should be chached and updated to array in batches rather than appending the array once for every position!
+          // todo optimize, this should be cached and updated to array in batches rather than appending the array once for every position!
           InstantiatedTermDocumentInformation[] associatedDocuments;
           if (term.getAssociatedDocuments() != null) {
             associatedDocuments = new InstantiatedTermDocumentInformation[term.getAssociatedDocuments().length + 1];
@@ -363,7 +363,7 @@ public class InstantiatedIndexWriter {
 
     // order document informations in dirty terms
     for (InstantiatedTerm term : dirtyTerms) {
-      // todo optimize, i belive this is useless, that the natural order is document number?
+      // todo optimize, i believe this is useless, that the natural order is document number?
       Arrays.sort(term.getAssociatedDocuments(), InstantiatedTermDocumentInformation.documentNumberComparator);
 
 //      // update association class reference for speedy skipTo()

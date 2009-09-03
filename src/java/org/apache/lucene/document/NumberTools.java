@@ -77,7 +77,7 @@ public class NumberTools {
     public static String longToString(long l) {
 
         if (l == Long.MIN_VALUE) {
-            // special case, because long is not symetric around zero
+            // special case, because long is not symmetric around zero
             return MIN_STRING_VALUE;
         }
 

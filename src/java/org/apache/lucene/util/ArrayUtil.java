@@ -17,6 +17,9 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+/**
+ * Methods for manipulating arrays.
+ */
 public final class ArrayUtil {
   /*
      Begin Apache Harmony code

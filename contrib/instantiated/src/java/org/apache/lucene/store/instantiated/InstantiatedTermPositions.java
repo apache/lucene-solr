@@ -62,7 +62,7 @@ public class InstantiatedTermPositions
   public int nextPosition() {
     currentTermPositionIndex++;
     // if you get an array out of index exception here,
-    // it might be due to currentDocumentInformation.getIndexFromTerm not beeing set!!
+    // it might be due to currentDocumentInformation.getIndexFromTerm not being set!!
     return currentDocumentInformation.getTermPositions()[currentTermPositionIndex];
   }
 

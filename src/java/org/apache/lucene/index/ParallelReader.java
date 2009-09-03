@@ -78,7 +78,7 @@ public class ParallelReader extends IndexReader {
   }
 
  /** Add an IndexReader whose stored fields will not be returned.  This can
-  * accellerate search when stored fields are only needed from a subset of
+  * accelerate search when stored fields are only needed from a subset of
   * the IndexReaders.
   *
   * @throws IllegalArgumentException if not all indexes contain the same number

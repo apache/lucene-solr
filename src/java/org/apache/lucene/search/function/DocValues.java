@@ -86,7 +86,7 @@ public abstract class DocValues {
   }
   
   /**
-   * Return a string representation of a doc value, as reuired for Explanations.
+   * Return a string representation of a doc value, as required for Explanations.
    */
   public abstract String toString(int doc);
   

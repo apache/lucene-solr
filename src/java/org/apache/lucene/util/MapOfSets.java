@@ -24,7 +24,7 @@ import java.util.HashSet;
 import java.util.Map;
 
 /**
- * Helper class for keeping Listss of Objects associated with keys. <b>WARNING: THIS CLASS IS NOT THREAD SAFE</b>
+ * Helper class for keeping Lists of Objects associated with keys. <b>WARNING: THIS CLASS IS NOT THREAD SAFE</b>
  */
 public class MapOfSets {
 

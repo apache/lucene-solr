@@ -77,7 +77,7 @@ public class TimeData {
 
   /** Get rate of processing, defined as number of processed records per second. */
   public double getRate() {
-    double rps = (double) count * 1000.0 / (double) (elapsed>0 ? elapsed : 1); // assume atleast 1ms for any countable op
+    double rps = (double) count * 1000.0 / (double) (elapsed>0 ? elapsed : 1); // assume at least 1ms for any countable op
     return rps;
   }
 
@@ -88,7 +88,7 @@ public class TimeData {
 
   public String toString() { return toString(true); }
   /**
-   * Return a tab-seprated string containing this data.
+   * Return a tab-separated string containing this data.
    * @param withMem if true, append also memory information
    * @return The String
    */

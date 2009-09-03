@@ -399,7 +399,7 @@ public class IndexWriter {
    * feature, please report back on your findings so we can
    * learn, improve and iterate.</p>
    *
-   * <p>The resulting reader suppports {@link
+   * <p>The resulting reader supports {@link
    * IndexReader#reopen}, but that call will simply forward
    * back to this method (though this may change in the
    * future).</p>
@@ -440,7 +440,7 @@ public class IndexWriter {
   /** Expert: like {@link #getReader}, except you can
    *  specify which termInfosIndexDivisor should be used for
    *  any newly opened readers.
-   * @param termInfosIndexDivisor Subsambles which indexed
+   * @param termInfosIndexDivisor Subsamples which indexed
    *  terms are loaded into RAM. This has the same effect as {@link
    *  IndexWriter#setTermIndexInterval} except that setting
    *  must be done at indexing time while this setting can be
@@ -481,8 +481,8 @@ public class IndexWriter {
 
     private final Map readerMap = new HashMap();
 
-    /** Forcefully clear changes for the specifed segments,
-     *  and remove from the pool.   This is called on succesful merge. */
+    /** Forcefully clear changes for the specified segments,
+     *  and remove from the pool.   This is called on successful merge. */
     synchronized void clear(SegmentInfos infos) throws IOException {
       if (infos == null) {
         Iterator iter = readerMap.entrySet().iterator();
@@ -2371,7 +2371,7 @@ public class IndexWriter {
    * running out of memory.<p/>
    * Note that this effectively truncates large documents, excluding from the
    * index terms that occur further in the document.  If you know your source
-   * documents are large, be sure to set this value high enough to accomodate
+   * documents are large, be sure to set this value high enough to accommodate
    * the expected size.  If you set it to Integer.MAX_VALUE, then the only limit
    * is your memory, but you should anticipate an OutOfMemoryError.<p/>
    * By default, no more than 10,000 terms will be indexed for a field.
@@ -5328,7 +5328,7 @@ public class IndexWriter {
     // against thread timing hazards where notifyAll()
     // falls to be called, we wait for at most 1 second
     // and then return so caller can check if wait
-    // conditions are satisified:
+    // conditions are satisfied:
     try {
       wait(1000);
     } catch (InterruptedException ie) {

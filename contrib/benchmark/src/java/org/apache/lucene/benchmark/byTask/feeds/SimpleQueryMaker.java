@@ -36,9 +36,9 @@ public class SimpleQueryMaker extends AbstractQueryMaker implements QueryMaker {
 
   /**
    * Prepare the queries for this test.
-   * Extending classes can overide this method for preparing different queries. 
+   * Extending classes can override this method for preparing different queries. 
    * @return prepared queries.
-   * @throws Exception if canot prepare the queries.
+   * @throws Exception if cannot prepare the queries.
    */
   protected Query[] prepareQueries() throws Exception {
     // analyzer (default is standard analyzer)

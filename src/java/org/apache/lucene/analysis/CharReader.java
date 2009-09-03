@@ -23,7 +23,7 @@ import java.io.Reader;
 /**
  * CharReader is a Reader wrapper. It reads chars from
  * Reader and outputs {@link CharStream}, defining an
- * identify fucntion {@link #correctOffset} method that
+ * identify function {@link #correctOffset} method that
  * simply returns the provided offset.
  */
 public final class CharReader extends CharStream {

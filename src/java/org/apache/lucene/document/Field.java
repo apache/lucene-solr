@@ -46,7 +46,7 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      * useful for long documents and for binary valued fields.
      * @deprecated Please use {@link CompressionTools} instead.
      * For string fields that were previously indexed and stored using compression,
-     * the new way to achive this is: First add the field indexed-only (no store)
+     * the new way to achieve this is: First add the field indexed-only (no store)
      * and additionally using the same field name as a binary, stored field
      * with {@link CompressionTools#compressString}.
      */
@@ -132,7 +132,7 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     public static final TermVector NO = new TermVector("NO");
     
     /** Store the term vectors of each document. A term vector is a list
-     * of the document's terms and their number of occurences in that document. */
+     * of the document's terms and their number of occurrences in that document. */
     public static final TermVector YES = new TermVector("YES");
     
     /**

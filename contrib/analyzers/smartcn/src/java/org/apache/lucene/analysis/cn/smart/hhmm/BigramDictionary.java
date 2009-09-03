@@ -147,7 +147,7 @@ class BigramDictionary extends AbstractDictionary {
   /**
    * Load the datafile into this BigramDictionary
    * 
-   * @param dctFilePath path to the Bigramdictionary (bigramdict.mem)
+   * @param dctFilePath path to the Bigramdictionary (bigramdict.dct)
    * @throws FileNotFoundException
    * @throws IOException
    * @throws UnsupportedEncodingException

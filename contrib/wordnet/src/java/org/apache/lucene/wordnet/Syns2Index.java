@@ -230,7 +230,7 @@ public class Syns2Index
     /**
      * Forms a Lucene index based on the 2 maps.
      *
-     * @param indexDir the direcotry where the index should be created
+     * @param indexDir the directory where the index should be created
      * @param word2Nums
      * @param num2Words
      */

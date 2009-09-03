@@ -64,7 +64,7 @@ public class QueryParser {
   final char quote = '\"';
   final char fieldOperator = ':';
   final char comma = ','; /* prefix list separator */
-  final char carat = '^'; /* weight oparator */
+  final char carat = '^'; /* weight operator */
  
   static public SrndQuery parse(String query) throws ParseException {
     QueryParser parser = new QueryParser();

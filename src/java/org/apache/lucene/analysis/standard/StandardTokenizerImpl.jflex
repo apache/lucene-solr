@@ -86,7 +86,7 @@ THAI       = [\u0E00-\u0E59]
 ALPHANUM   = ({LETTER}|{THAI}|[:digit:])+
 
 // internal apostrophes: O'Reilly, you're, O'Reilly's
-// use a post-filter to remove possesives
+// use a post-filter to remove possessives
 APOSTROPHE =  {ALPHA} ("'" {ALPHA})+
 
 // acronyms: U.S.A., I.B.M., etc.

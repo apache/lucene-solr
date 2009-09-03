@@ -27,8 +27,8 @@ import java.util.TreeSet;
 /**
  * Filter caching singleton.  It can be used 
  * to save filters locally for reuse.
- * This class makes it possble to cache Filters even when using RMI, as it
- * keeps the cache on the seaercher side of the RMI connection.
+ * This class makes it possible to cache Filters even when using RMI, as it
+ * keeps the cache on the searcher side of the RMI connection.
  * 
  * Also could be used as a persistent storage for any filter as long as the
  * filter provides a proper hashCode(), as that is used as the key in the cache.
@@ -42,7 +42,7 @@ public class FilterManager {
   
   /** The default maximum number of Filters in the cache */
   protected static final int  DEFAULT_CACHE_CLEAN_SIZE = 100;
-  /** The default frequency of cache clenup */
+  /** The default frequency of cache cleanup */
   protected static final long DEFAULT_CACHE_SLEEP_TIME = 1000 * 60 * 10;
 
   /** The cache itself */
@@ -71,7 +71,7 @@ public class FilterManager {
 
     filterCleaner   = new FilterCleaner();
     Thread fcThread = new Thread(filterCleaner);
-    // setto be a Daemon so it doesn't have to be stopped
+    // set to be a Daemon so it doesn't have to be stopped
     fcThread.setDaemon(true);
     fcThread.start();
   }
@@ -86,7 +86,7 @@ public class FilterManager {
 
   /**
    * Sets the cache cleaning frequency in milliseconds.
-   * @param cleanSleepTime cleaning frequency in millioseconds
+   * @param cleanSleepTime cleaning frequency in milliseconds
    */
   public void setCleanThreadSleepTime(long cleanSleepTime) {
     this.cleanSleepTime  = cleanSleepTime;

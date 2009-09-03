@@ -84,7 +84,7 @@ public class DateTools {
    * @param resolution the desired resolution, see
    *  {@link #round(Date, DateTools.Resolution)}
    * @return a string in format <code>yyyyMMddHHmmssSSS</code> or shorter,
-   *  depeding on <code>resolution</code>; using GMT as timezone 
+   *  depending on <code>resolution</code>; using GMT as timezone 
    */
   public static synchronized String dateToString(Date date, Resolution resolution) {
     return timeToString(date.getTime(), resolution);
@@ -97,7 +97,7 @@ public class DateTools {
    * @param resolution the desired resolution, see
    *  {@link #round(long, DateTools.Resolution)}
    * @return a string in format <code>yyyyMMddHHmmssSSS</code> or shorter,
-   *  depeding on <code>resolution</code>; using GMT as timezone
+   *  depending on <code>resolution</code>; using GMT as timezone
    */
   public static synchronized String timeToString(long time, Resolution resolution) {
     calInstance.setTimeInMillis(round(time, resolution));

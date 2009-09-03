@@ -410,10 +410,10 @@ final public class UnicodeUtil {
           if (nextCH >= UNI_SUR_LOW_START && nextCH <= UNI_SUR_LOW_END) {
             // Valid surrogate pair
           } else
-            // Unmatched hight surrogate
+            // Unmatched high surrogate
             return false;
         } else
-          // Unmatched hight surrogate
+          // Unmatched high surrogate
           return false;
       } else if (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_END)
         // Unmatched low surrogate

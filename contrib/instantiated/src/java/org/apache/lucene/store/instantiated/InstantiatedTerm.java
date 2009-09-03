@@ -74,10 +74,10 @@ public class InstantiatedTerm
   private InstantiatedTermDocumentInformation[] associatedDocuments;
 
   /**
-   * Meta data per document in wich this term is occuring.
+   * Meta data per document in which this term is occurring.
    * Ordered by document number.
    *
-   * @return Meta data per document in wich this term is occuring.
+   * @return Meta data per document in which this term is occurring.
    */
   public InstantiatedTermDocumentInformation[] getAssociatedDocuments() {
     return associatedDocuments;
@@ -85,10 +85,10 @@ public class InstantiatedTerm
 
 
   /**
-   * Meta data per document in wich this term is occuring.
+   * Meta data per document in which this term is occurring.
    * Ordered by document number.
    *
-   * @param associatedDocuments meta data per document in wich this term is occuring, ordered by document number
+   * @param associatedDocuments meta data per document in which this term is occurring, ordered by document number
    */
   void setAssociatedDocuments(InstantiatedTermDocumentInformation[] associatedDocuments) {
     this.associatedDocuments = associatedDocuments;
@@ -182,7 +182,7 @@ public class InstantiatedTerm
       // A typical binarySearch algorithm uses pivot = (min + max) / 2.
       // The pivot we use here tries to be smarter and to choose a pivot close to the expectable location of the key.
       // This reduces dramatically the number of steps needed to get to the key.
-      // However, it does not work well with a logaritmic distribution of values, for instance.
+      // However, it does not work well with a logarithmic distribution of values, for instance.
       // When the key is not found quickly the smart way, we switch to the standard pivot.
       if (nPreviousSteps > 2) {
         pivot = (min + max) >> 1;
@@ -214,7 +214,7 @@ public class InstantiatedTerm
 
 
   /**
-   * Navigates to the view of this occurances of this term in a specific document. 
+   * Navigates to the view of this occurrences of this term in a specific document. 
    *
    * This method is only used by InstantiatedIndex(IndexReader) and
    * should not be optimized for less CPU at the cost of more RAM.

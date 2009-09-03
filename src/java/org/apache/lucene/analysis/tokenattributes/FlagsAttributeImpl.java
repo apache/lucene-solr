@@ -23,7 +23,7 @@ import org.apache.lucene.util.AttributeImpl;
 
 /**
  * This attribute can be used to pass different flags down the tokenizer chain,
- * e. g. from one TokenFilter to another one. 
+ * eg from one TokenFilter to another one. 
  */
 public class FlagsAttributeImpl extends AttributeImpl implements FlagsAttribute, Cloneable, Serializable {
   private int flags = 0;

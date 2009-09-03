@@ -24,7 +24,7 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 /**
  * Reset all index and input data and call gc, erase index and dir, does NOT clear statistics.
  * <br>This contains ResetInputs.
- * <br>Other side effects: writers/readers nulified, deleted, closed.
+ * <br>Other side effects: writers/readers nullified, deleted, closed.
  * Index is erased.
  * Directory is erased.
  */

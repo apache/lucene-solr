@@ -23,7 +23,7 @@ import org.apache.lucene.queryParser.core.parser.EscapeQuerySyntax;
 
 /**
  * A {@link TokenizedPhraseQueryNode} represents a node created by a code that
- * tokenizes/lemmatizes/analizes.
+ * tokenizes/lemmatizes/analyzes.
  */
 public class TokenizedPhraseQueryNode extends QueryNodeImpl implements
     FieldableNode {

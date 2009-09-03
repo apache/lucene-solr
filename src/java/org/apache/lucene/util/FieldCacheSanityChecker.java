@@ -154,7 +154,7 @@ public final class FieldCacheSanityChecker {
    * Internal helper method used by check that iterates over 
    * valMismatchKeys and generates a Collection of Insanity 
    * instances accordingly.  The MapOfSets are used to populate 
-   * the Insantiy objects. 
+   * the Insanity objects. 
    * @see InsanityType#VALUEMISMATCH
    */
   private Collection checkValueMismatch(MapOfSets valIdToItems,
@@ -195,7 +195,7 @@ public final class FieldCacheSanityChecker {
    * Internal helper method used by check that iterates over 
    * the keys of readerFieldToValIds and generates a Collection 
    * of Insanity instances whenever two (or more) ReaderField instances are 
-   * found that have an ancestery relationships.  
+   * found that have an ancestry relationships.  
    *
    * @see InsanityType#SUBREADER
    */
@@ -327,7 +327,7 @@ public final class FieldCacheSanityChecker {
 
   /**
    * Simple container for a collection of related CacheEntry objects that 
-   * in conjunction with eachother represent some "insane" usage of the 
+   * in conjunction with each other represent some "insane" usage of the 
    * FieldCache.
    */
   public final static class Insanity {
@@ -384,7 +384,7 @@ public final class FieldCacheSanityChecker {
   }
 
   /**
-   * An Enumaration of the differnet types of "insane" behavior that 
+   * An Enumeration of the different types of "insane" behavior that 
    * may be detected in a FieldCache.
    *
    * @see InsanityType#SUBREADER

@@ -27,7 +27,7 @@ public class ComplexExplanation extends Explanation {
   }
 
   public ComplexExplanation(boolean match, float value, String description) {
-    // NOTE: use of "boolean" instead of "Boolean" in params is concious
+    // NOTE: use of "boolean" instead of "Boolean" in params is conscious
     // choice to encourage clients to be specific.
     super(value, description);
     this.match = Boolean.valueOf(match);

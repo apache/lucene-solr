@@ -386,7 +386,7 @@ public abstract class IndexReader implements Cloneable {
    *  if you use this reader to perform deletes or to set
    *  norms); see {@link IndexWriter} for details.
    * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
-   * @param termInfosIndexDivisor Subsambles which indexed
+   * @param termInfosIndexDivisor Subsamples which indexed
    *  terms are loaded into RAM. This has the same effect as {@link
    *  IndexWriter#setTermIndexInterval} except that setting
    *  must be done at indexing time while this setting can be
@@ -455,7 +455,7 @@ public abstract class IndexReader implements Cloneable {
    *  if you use this reader to perform deletes or to set
    *  norms); see {@link IndexWriter} for details.
    * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
-   * @param termInfosIndexDivisor Subsambles which indexed
+   * @param termInfosIndexDivisor Subsamples which indexed
    *  terms are loaded into RAM. This has the same effect as {@link
    *  IndexWriter#setTermIndexInterval} except that setting
    *  must be done at indexing time while this setting can be
@@ -1393,7 +1393,7 @@ public abstract class IndexReader implements Cloneable {
 
           FileOutputStream f = new FileOutputStream(files[i]);
 
-          // read and write with a small buffer, which is more effectiv than reading byte by byte
+          // read and write with a small buffer, which is more effective than reading byte by byte
           byte[] buffer = new byte[1024];
           int chunk = buffer.length;
           while(len > 0) {

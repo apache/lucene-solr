@@ -23,6 +23,9 @@ import org.w3c.dom.Element;
  * limitations under the License.
  */
 
+/**
+ * 
+ */
 public class BoostingQueryBuilder implements QueryBuilder
 {
 	

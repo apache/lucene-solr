@@ -190,7 +190,7 @@ public abstract class IndexInput implements Cloneable {
   }
   
 
-  /** Closes the stream to futher operations. */
+  /** Closes the stream to further operations. */
   public abstract void close() throws IOException;
 
   /** Returns the current position in this file, where the next read will

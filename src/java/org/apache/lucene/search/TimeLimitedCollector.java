@@ -53,7 +53,7 @@ public class TimeLimitedCollector extends HitCollector {
     // * use of volatile keyword ensures that it does not reside in
     //   a register, but in main memory (so that changes are visible to
     //   other threads).
-    // * visibility of changes does not need to be instantanous, we can
+    // * visibility of changes does not need to be instantaneous, we can
     //   afford losing a tick or two.
     //
     // See section 17 of the Java Language Specification for details.

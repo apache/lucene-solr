@@ -87,7 +87,7 @@ import java.util.ArrayList;
  *
  * This class has lots of options to try to make it efficient and flexible.
  * See the body of {@link #main main()} below in the source for real code, or
- * if you want pseudo code, the simpliest possible usage is as follows. The bold
+ * if you want pseudo code, the simplest possible usage is as follows. The bold
  * fragment is specific to this class.
  *
  * <code><pre>
@@ -109,7 +109,7 @@ import java.util.ArrayList;
  * <ol>
  * <li> do your normal, Lucene setup for searching,
  * <li> create a MoreLikeThis,
- * <li> get the text of the doc you want to find similaries to
+ * <li> get the text of the doc you want to find similarities to
  * <li> then call one of the like() calls to generate a similarity query
  * <li> call the searcher to find the similar docs
  * </ol>
@@ -139,7 +139,7 @@ import java.util.ArrayList;
  * Some bugfixing, some refactoring, some optimisation.
  *  - bugfix: retrieveTerms(int docNum) was not working for indexes without a termvector -added missing code
  *  - bugfix: No significant terms being created for fields with a termvector - because 
- *            was only counting one occurence per term/field pair in calculations(ie not including frequency info from TermVector) 
+ *            was only counting one occurrence per term/field pair in calculations(ie not including frequency info from TermVector) 
  *  - refactor: moved common code into isNoiseWord()
  *  - optimise: when no termvector support available - used maxNumTermsParsed to limit amount of tokenization
  * </pre>
@@ -230,7 +230,7 @@ public final class MoreLikeThis {
     private Analyzer analyzer = DEFAULT_ANALYZER;
 
     /**
-     * Ignore words less freqent that this.
+     * Ignore words less frequent that this.
      */
     private int minTermFreq = DEFAULT_MIN_TERM_FREQ;
 

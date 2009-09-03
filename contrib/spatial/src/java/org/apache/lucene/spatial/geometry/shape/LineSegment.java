@@ -41,7 +41,7 @@ public class LineSegment {
 
   /**
    * Finds the distance of a specified point from the line segment and the
-   * closest point on the segement to the specified point.
+   * closest point on the segment to the specified point.
    * 
    * @param P
    *            Test point.

@@ -23,7 +23,7 @@ import org.apache.lucene.index.TermPositions;
 
 /** Expert: Scoring functionality for phrase queries.
  * <br>A document is considered matching if it contains the phrase-query terms  
- * at "valid" positons. What "valid positions" are
+ * at "valid" positions. What "valid positions" are
  * depends on the type of the phrase query: for an exact phrase query terms are required 
  * to appear in adjacent locations, while for a sloppy phrase query some distance between 
  * the terms is allowed. The abstract method {@link #phraseFreq()} of extending classes
@@ -41,7 +41,7 @@ abstract class PhraseScorer extends Scorer {
   protected PhraseQueue pq;
   protected PhrasePositions first, last;
 
-  private float freq; //prhase frequency in current doc as computed by phraseFreq().
+  private float freq; //phrase frequency in current doc as computed by phraseFreq().
 
   PhraseScorer(Weight weight, TermPositions[] tps, int[] offsets,
       Similarity similarity, byte[] norms) {

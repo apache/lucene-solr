@@ -31,7 +31,7 @@ import org.apache.lucene.search.NumericRangeFilter; // for javadocs
  * the lowest possible precision in the trie, while the boundaries are matched
  * more exactly. This reduces the number of terms dramatically.
  *
- * <p>This class generates terms to achive this: First the numerical integer values need to
+ * <p>This class generates terms to achieve this: First the numerical integer values need to
  * be converted to strings. For that integer values (32 bit or 64 bit) are made unsigned
  * and the bits are converted to ASCII chars with each 7 bit. The resulting string is
  * sortable like the original integer value. Each value is also prefixed

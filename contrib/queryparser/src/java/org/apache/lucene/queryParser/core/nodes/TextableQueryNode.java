@@ -17,6 +17,9 @@ package org.apache.lucene.queryParser.core.nodes;
  * the License.
  */
 
+/**
+ * 
+ */
 public interface TextableQueryNode {
 
   CharSequence getText();

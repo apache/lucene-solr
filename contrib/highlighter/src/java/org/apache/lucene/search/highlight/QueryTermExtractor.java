@@ -54,7 +54,7 @@ public final class QueryTermExtractor
 	 *
 	 * @param query      Query to extract term texts from
 	 * @param reader used to compute IDF which can be used to a) score selected fragments better 
-	 * b) use graded highlights eg chaning intensity of font color
+	 * b) use graded highlights eg changing intensity of font color
 	 * @param fieldName the field on which Inverse Document Frequency (IDF) calculations are based
 	 * @return an array of the terms used in a query, plus their weights.
 	 */

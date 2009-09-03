@@ -29,7 +29,7 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
   private RE regexp;
   
   // Define the flags that are possible. Redefine them here
-  // to avoid exposign the RE class to the caller.
+  // to avoid exposing the RE class to the caller.
   
   private int flags = RE.MATCH_NORMAL;
 
@@ -44,7 +44,7 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
   public static final int FLAG_MATCH_CASEINDEPENDENT = RE.MATCH_CASEINDEPENDENT;
  
   /**
-   * Contructs a RegexCapabilities with the default MATCH_NORMAL match style.
+   * Constructs a RegexCapabilities with the default MATCH_NORMAL match style.
    */
   public JakartaRegexpCapabilities() {}
   

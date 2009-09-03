@@ -105,7 +105,7 @@ public class ValueSourceQuery extends Query {
 
   /**
    * A scorer that (simply) matches all documents, and scores each document with 
-   * the value of the value soure in effect. As an example, if the value source 
+   * the value of the value source in effect. As an example, if the value source 
    * is a (cached) field source, then value of that field in that document will 
    * be used. (assuming field is indexed for this doc, with a single token.)   
    */

@@ -23,7 +23,7 @@ import java.util.Comparator;
 
 /**
  * There is one instance of this class per indexed term in a document
- * and it contains the meta data about each occurance of a term in a docment.
+ * and it contains the meta data about each occurrence of a term in a document.
  *
  * It is the inner glue of the inverted index.
  *

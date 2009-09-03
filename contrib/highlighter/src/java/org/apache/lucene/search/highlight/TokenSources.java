@@ -130,7 +130,7 @@ public class TokenSources
      * 	   stemmer/lowercaser/stopword combo)
      *  2) The  number of other fields (Lucene reads ALL fields off the disk 
      *     when accessing just one document field - can cost dear!)
-     *  3) Use of compression on field storage - could be faster cos of compression (less disk IO)
+     *  3) Use of compression on field storage - could be faster due to compression (less disk IO)
      *     or slower (more CPU burn) depending on the content.
      *
      * @param tpv

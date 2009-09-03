@@ -231,7 +231,7 @@ class NativeFSLock extends Lock {
       try {
         f = new RandomAccessFile(path, "rw");
       } catch (IOException e) {
-        // On Windows, we can get intermittant "Access
+        // On Windows, we can get intermittent "Access
         // Denied" here.  So, we treat this as failure to
         // acquire the lock, but, store the reason in case
         // there is in fact a real error case.
@@ -246,7 +246,7 @@ class NativeFSLock extends Lock {
             lock = channel.tryLock();
           } catch (IOException e) {
             // At least on OS X, we will sometimes get an
-            // intermittant "Permission Denied" IOException,
+            // intermittent "Permission Denied" IOException,
             // which seems to simply mean "you failed to get
             // the lock".  But other IOExceptions could be
             // "permanent" (eg, locking is not supported via

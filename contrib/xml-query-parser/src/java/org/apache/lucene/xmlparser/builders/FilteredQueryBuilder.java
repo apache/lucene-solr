@@ -29,6 +29,9 @@ import org.w3c.dom.Element;
  * limitations under the License.
  */
 
+/**
+ * 
+ */
 public class FilteredQueryBuilder implements QueryBuilder {
 	
 	private FilterBuilder filterFactory;

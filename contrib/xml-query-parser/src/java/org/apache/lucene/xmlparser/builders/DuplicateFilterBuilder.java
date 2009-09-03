@@ -32,6 +32,9 @@ import org.w3c.dom.NodeList;
  * limitations under the License.
  */
 
+/**
+ * 
+ */
 public class DuplicateFilterBuilder implements FilterBuilder {
 	
 

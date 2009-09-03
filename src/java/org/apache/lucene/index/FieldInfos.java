@@ -137,7 +137,7 @@ final class FieldInfos {
    * 
    * @param names The names of the fields
    * @param storeTermVectors Whether the fields store term vectors or not
-   * @param storePositionWithTermVector treu if positions should be stored.
+   * @param storePositionWithTermVector true if positions should be stored.
    * @param storeOffsetWithTermVector true if offsets should be stored
    */
   synchronized public void addIndexed(Collection names, boolean storeTermVectors, boolean storePositionWithTermVector, 

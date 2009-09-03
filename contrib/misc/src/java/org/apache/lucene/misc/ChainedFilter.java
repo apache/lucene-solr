@@ -85,7 +85,7 @@ public class ChainedFilter extends Filter
     /**
      * Ctor.
      * @param chain The chain of filters
-     * @param logic Logicial operation to apply to ALL filters
+     * @param logic Logical operation to apply to ALL filters
      */
     public ChainedFilter(Filter[] chain, int logic)
     {

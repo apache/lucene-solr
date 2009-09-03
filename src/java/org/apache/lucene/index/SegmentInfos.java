@@ -85,7 +85,7 @@ public final class SegmentInfos extends Vector {
   public static final int FORMAT_USER_DATA = -8;
 
   /** This format adds optional per-segment String
-   *  dianostics storage, and switches userData to Map */
+   *  diagnostics storage, and switches userData to Map */
   public static final int FORMAT_DIAGNOSTICS = -9;
 
   /* This must always point to the most recent file format. */
@@ -756,7 +756,7 @@ public final class SegmentInfos extends Vector {
   }
 
   /**
-   * Returns a new SegmentInfos containg the SegmentInfo
+   * Returns a new SegmentInfos containing the SegmentInfo
    * instances in the specified range first (inclusive) to
    * last (exclusive), so total number of segments returned
    * is last-first.

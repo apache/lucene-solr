@@ -38,7 +38,7 @@ public class ScoreOrderFragmentsBuilder extends BaseFragmentsBuilder {
   /**
    * a constructor.
    * 
-   * @param preTags aray of pre-tags for markup terms.
+   * @param preTags array of pre-tags for markup terms.
    * @param postTags array of post-tags for markup terms.
    */
   public ScoreOrderFragmentsBuilder( String[] preTags, String[] postTags ){

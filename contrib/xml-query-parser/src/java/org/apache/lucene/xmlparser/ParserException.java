@@ -19,6 +19,9 @@ package org.apache.lucene.xmlparser;
  * limitations under the License.
  */
 
+/**
+ * 
+ */
 public class ParserException extends Exception {
 
 	/**

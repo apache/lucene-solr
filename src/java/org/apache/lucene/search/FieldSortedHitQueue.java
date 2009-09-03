@@ -233,7 +233,7 @@ extends PriorityQueue {
    /**
    * Returns a comparator for sorting hits according to a field containing bytes.
    * @param reader  Index to use.
-   * @param fieldname  Fieldable containg integer values.
+   * @param fieldname  Fieldable containing integer values.
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
@@ -264,7 +264,7 @@ extends PriorityQueue {
   /**
    * Returns a comparator for sorting hits according to a field containing shorts.
    * @param reader  Index to use.
-   * @param fieldname  Fieldable containg integer values.
+   * @param fieldname  Fieldable containing integer values.
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
@@ -295,7 +295,7 @@ extends PriorityQueue {
   /**
    * Returns a comparator for sorting hits according to a field containing integers.
    * @param reader  Index to use.
-   * @param fieldname  Fieldable containg integer values.
+   * @param fieldname  Fieldable containing integer values.
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
@@ -326,7 +326,7 @@ extends PriorityQueue {
   /**
    * Returns a comparator for sorting hits according to a field containing integers.
    * @param reader  Index to use.
-   * @param fieldname  Fieldable containg integer values.
+   * @param fieldname  Fieldable containing integer values.
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
@@ -358,7 +358,7 @@ extends PriorityQueue {
   /**
    * Returns a comparator for sorting hits according to a field containing floats.
    * @param reader  Index to use.
-   * @param fieldname  Fieldable containg float values.
+   * @param fieldname  Fieldable containing float values.
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
@@ -389,7 +389,7 @@ extends PriorityQueue {
   /**
    * Returns a comparator for sorting hits according to a field containing doubles.
    * @param reader  Index to use.
-   * @param fieldname  Fieldable containg float values.
+   * @param fieldname  Fieldable containing float values.
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
@@ -420,7 +420,7 @@ extends PriorityQueue {
   /**
    * Returns a comparator for sorting hits according to a field containing strings.
    * @param reader  Index to use.
-   * @param fieldname  Fieldable containg string values.
+   * @param fieldname  Fieldable containing string values.
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
@@ -451,7 +451,7 @@ extends PriorityQueue {
   /**
    * Returns a comparator for sorting hits according to a field containing strings.
    * @param reader  Index to use.
-   * @param fieldname  Fieldable containg string values.
+   * @param fieldname  Fieldable containing string values.
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */
@@ -492,7 +492,7 @@ extends PriorityQueue {
    * floats or strings.  Once the type is determined, one of the other static methods
    * in this class is called to get the comparator.
    * @param reader  Index to use.
-   * @param fieldname  Fieldable containg values.
+   * @param fieldname  Fieldable containing values.
    * @return  Comparator for sorting hits.
    * @throws IOException If an error occurs reading the index.
    */

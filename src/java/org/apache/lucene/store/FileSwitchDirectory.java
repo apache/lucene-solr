@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Expert: A Directory instance that switches files betweeen
+ * Expert: A Directory instance that switches files between
  * two other Directory instances.
 
  * <p>Files with the specified extensions are placed in the

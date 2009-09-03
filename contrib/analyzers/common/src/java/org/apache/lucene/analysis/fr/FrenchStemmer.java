@@ -79,7 +79,7 @@ public class FrenchStemmer {
 
 
     /**
-     * Stemms the given term to a unique <tt>discriminator</tt>.
+     * Stems the given term to a unique <tt>discriminator</tt>.
      *
      * @param term  java.langString The term that should be stemmed
      * @return java.lang.String  Discriminator for <tt>term</tt>
@@ -148,7 +148,7 @@ public class FrenchStemmer {
 	}
 
 	/**
-	 * First step of the Porter Algorithmn<br>
+	 * First step of the Porter Algorithm<br>
 	 * refer to http://snowball.sourceforge.net/french/stemmer.html for an explanation
 	 */
 	private void step1( ) {
@@ -202,7 +202,7 @@ public class FrenchStemmer {
 	}
 
 	/**
-	 * Second step (A) of the Porter Algorithmn<br>
+	 * Second step (A) of the Porter Algorithm<br>
 	 * Will be performed if nothing changed from the first step
 	 * or changed were done in the amment, emment, ments or ment suffixes<br>
 	 * refer to http://snowball.sourceforge.net/french/stemmer.html for an explanation
@@ -219,7 +219,7 @@ public class FrenchStemmer {
 	}
 
 	/**
-	 * Second step (B) of the Porter Algorithmn<br>
+	 * Second step (B) of the Porter Algorithm<br>
 	 * Will be performed if step 2 A was performed unsuccessfully<br>
 	 * refer to http://snowball.sourceforge.net/french/stemmer.html for an explanation
 	 */
@@ -238,7 +238,7 @@ public class FrenchStemmer {
 	}
 
 	/**
-	 * Third step of the Porter Algorithmn<br>
+	 * Third step of the Porter Algorithm<br>
 	 * refer to http://snowball.sourceforge.net/french/stemmer.html for an explanation
 	 */
 	private void step3() {
@@ -259,7 +259,7 @@ public class FrenchStemmer {
 	}
 
 	/**
-	 * Fourth step of the Porter Algorithmn<br>
+	 * Fourth step of the Porter Algorithm<br>
 	 * refer to http://snowball.sourceforge.net/french/stemmer.html for an explanation
 	 */
 	private void step4() {
@@ -286,7 +286,7 @@ public class FrenchStemmer {
 	}
 
 	/**
-	 * Fifth step of the Porter Algorithmn<br>
+	 * Fifth step of the Porter Algorithm<br>
 	 * refer to http://snowball.sourceforge.net/french/stemmer.html for an explanation
 	 */
 	private void step5() {
@@ -301,7 +301,7 @@ public class FrenchStemmer {
 	}
 
 	/**
-	 * Sixth (and last!) step of the Porter Algorithmn<br>
+	 * Sixth (and last!) step of the Porter Algorithm<br>
 	 * refer to http://snowball.sourceforge.net/french/stemmer.html for an explanation
 	 */
 	private void step6() {

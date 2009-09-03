@@ -76,7 +76,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     // Counts how many other reader share the core objects
     // (freqStream, proxStream, tis, etc.) of this reader;
     // when coreRef drops to 0, these core objects may be
-    // closed.  A given insance of SegmentReader may be
+    // closed.  A given instance of SegmentReader may be
     // closed, even those it shares core objects with other
     // SegmentReaders:
     private final Ref ref = new Ref();
@@ -802,7 +802,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
       success = true;
     } finally {
       if (!success) {
-        // An exception occured during reopen, we have to decRef the norms
+        // An exception occurred during reopen, we have to decRef the norms
         // that we incRef'ed already and close singleNormsStream and FieldsReader
         clone.decRef();
       }

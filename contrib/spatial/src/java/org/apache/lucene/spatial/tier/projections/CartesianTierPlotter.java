@@ -79,7 +79,7 @@ public class CartesianTierPlotter {
   
   /**
    * TierBoxId is latitude box id + longitude box id
-   * where latitude box id, and longitude box id are transposded in to position
+   * where latitude box id, and longitude box id are transposed in to position
    * coordinates.
    * 
    * @param latitude

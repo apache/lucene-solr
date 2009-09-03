@@ -31,6 +31,9 @@ import org.w3c.dom.NodeList;
  * limitations under the License.
  */
 
+/**
+ * 
+ */
 public class BooleanFilterBuilder implements FilterBuilder {
 	
 	private FilterBuilder factory;

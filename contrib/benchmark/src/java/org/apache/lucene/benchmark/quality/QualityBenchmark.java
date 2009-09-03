@@ -63,7 +63,7 @@ public class QualityBenchmark {
    * @param qqs quality queries to run.
    * @param qqParser parser for turning QualityQueries into Lucene Queries. 
    * @param searcher index to be searched.
-   * @param docNameField name of field containg the document name.
+   * @param docNameField name of field containing the document name.
    *        This allows to extract the doc name for search results,
    *        and is important for judging the results.  
    */
@@ -114,7 +114,7 @@ public class QualityBenchmark {
   private QualityStats analyzeQueryResults(QualityQuery qq, Query q, TopDocs td, Judge judge, PrintWriter logger, long searchTime) throws IOException {
     QualityStats stts = new QualityStats(judge.maxRecall(qq),searchTime);
     ScoreDoc sd[] = td.scoreDocs;
-    long t1 = System.currentTimeMillis(); // extraction of first doc name we meassure also construction of doc name extractor, just in case.
+    long t1 = System.currentTimeMillis(); // extraction of first doc name we measure also construction of doc name extractor, just in case.
     DocNameExtractor xt = new DocNameExtractor(docNameField);
     for (int i=0; i<sd.length; i++) {
       String docName = xt.docName(searcher,sd[i].doc);

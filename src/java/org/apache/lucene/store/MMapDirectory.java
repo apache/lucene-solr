@@ -44,7 +44,7 @@ import org.apache.lucene.util.Constants;
  * guaranteed to fit within the address space.
  * On 32 bit platforms also consult {@link #setMaxChunkSize}
  * if you have problems with mmap failing because of fragmented
- * address space. If you get an OutOfMemoryException, it is recommened
+ * address space. If you get an OutOfMemoryException, it is recommended
  * to reduce the chunk size, until it works.
  *
  * <p>Due to <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=4724038">
@@ -101,7 +101,7 @@ public class MMapDirectory extends FSDirectory {
   private int maxBBuf = Constants.JRE_IS_64BIT ? Integer.MAX_VALUE : (256*1024*1024);
   
   /**
-   * <code>true</code>, if this platform supports unmapping mmaped files.
+   * <code>true</code>, if this platform supports unmapping mmapped files.
    */
   public static final boolean UNMAP_SUPPORTED;
   static {
@@ -124,7 +124,7 @@ public class MMapDirectory extends FSDirectory {
    * It forcefully unmaps the buffer on close by using
    * an undocumented internal cleanup functionality.
    * <p><b>NOTE:</b> Enabling this is completely unsupported
-   * by Java and may lead to JVM crashs if <code>IndexInput</code>
+   * by Java and may lead to JVM crashes if <code>IndexInput</code>
    * is closed while another thread is still accessing it (SIGSEGV).
    * @throws IllegalArgumentException if {@link #UNMAP_SUPPORTED}
    * is <code>false</code> and the workaround cannot be enabled.
@@ -181,7 +181,7 @@ public class MMapDirectory extends FSDirectory {
    * bit slower (as the correct chunk must be resolved on each seek)
    * but the chance is higher that mmap does not fail. On 64 bit
    * Java platforms, this parameter should always be {@link Integer#MAX_VALUE},
-   * as the adress space is big enough.
+   * as the address space is big enough.
    */
   public void setMaxChunkSize(final int maxBBuf) {
     if (maxBBuf<=0)

@@ -41,7 +41,7 @@ public class DutchStemmer {
 
   //TODO convert to internal
   /*
-   * Stemms the given term to an unique <tt>discriminator</tt>.
+   * Stems the given term to an unique <tt>discriminator</tt>.
    *
    * @param term The term that should be stemmed.
    * @return Discriminator for <tt>term</tt>

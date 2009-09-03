@@ -42,7 +42,7 @@ import org.apache.lucene.index.IndexWriter;
  *
  * <ul>
  *
- *  <li> {@link SimpleFSDirectory} is a straighforward
+ *  <li> {@link SimpleFSDirectory} is a straightforward
  *       implementation using java.io.RandomAccessFile.
  *       However, it has poor concurrent performance
  *       (multiple threads will bottleneck) as it

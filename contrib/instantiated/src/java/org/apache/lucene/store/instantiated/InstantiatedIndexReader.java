@@ -224,8 +224,8 @@ public class InstantiatedIndexReader extends IndexReader {
    * over a {@link org.apache.lucene.store.Directory}.
    * I.e., if you need to touch the document, clone it first!
    * <p>
-   * This can also be seen as a feature for live canges of stored values,
-   * but be carful! Adding a field with an name unknown to the index
+   * This can also be seen as a feature for live changes of stored values,
+   * but be careful! Adding a field with an name unknown to the index
    * or to a field with previously no stored values will make
    * {@link org.apache.lucene.store.instantiated.InstantiatedIndexReader#getFieldNames(org.apache.lucene.index.IndexReader.FieldOption)}
    * out of sync, causing problems for instance when merging the
@@ -259,8 +259,8 @@ public class InstantiatedIndexReader extends IndexReader {
    * over a {@link org.apache.lucene.store.Directory}.
    * I.e., if you need to touch the document, clone it first!
    * <p>
-   * This can also be seen as a feature for live canges of stored values,
-   * but be carful! Adding a field with an name unknown to the index
+   * This can also be seen as a feature for live changes of stored values,
+   * but be careful! Adding a field with an name unknown to the index
    * or to a field with previously no stored values will make
    * {@link org.apache.lucene.store.instantiated.InstantiatedIndexReader#getFieldNames(org.apache.lucene.index.IndexReader.FieldOption)}
    * out of sync, causing problems for instance when merging the

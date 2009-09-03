@@ -23,7 +23,7 @@ import java.io.Serializable;
  */
 
 /**
- * Essetially a Map<FieldName, {@link org.apache.lucene.store.instantiated.FieldSetting}> 
+ * Essentially a Map<FieldName, {@link org.apache.lucene.store.instantiated.FieldSetting}> 
  */
 class FieldSettings implements Serializable {
 

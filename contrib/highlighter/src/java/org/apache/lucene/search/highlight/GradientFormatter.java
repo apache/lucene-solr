@@ -42,7 +42,7 @@ public class GradientFormatter implements Formatter
      * 
      * @param maxScore
      *            The score (and above) displayed as maxColor (See QueryScorer.getMaxWeight 
-     * 			  which can be used to callibrate scoring scale)
+     * 			  which can be used to calibrate scoring scale)
      * @param minForegroundColor
      *            The hex color used for representing IDF scores of zero eg
      *            #FFFFFF (white) or null if no foreground color required
@@ -194,7 +194,7 @@ public class GradientFormatter implements Formatter
      * input is nonnegative unless there is a preceding minus sign. This method
      * reads the input as twos complement instead, so if the input is 8 bytes
      * long, it will correctly restore a negative int produced by
-     * Integer.toHexString() but not neccesarily one produced by
+     * Integer.toHexString() but not necessarily one produced by
      * Integer.toString(x,16) since that method will produce a string like '-FF'
      * for negative integer values.
      * 

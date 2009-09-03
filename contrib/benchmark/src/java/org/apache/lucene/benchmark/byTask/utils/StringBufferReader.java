@@ -37,7 +37,7 @@ import java.io.Reader;
  * <pre>
  * StringBuffer sb = new StringBuffer("some text");
  * Reader reader = new StringBufferReader(sb);
- * ... read from reader - dont close it ! ...
+ * ... read from reader - don't close it ! ...
  * sb.setLength(0);
  * sb.append("some new text");
  * reader.reset();
