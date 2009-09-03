@@ -23,6 +23,11 @@ import java.util.HashMap;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.tier.DistanceHandler.Precision;
 
+/**
+ * <p><font color="red"><b>NOTE:</b> This API is still in
+ * flux and might change in incompatible ways in the next
+ * release.</font>
+ */
 public abstract class DistanceFilter extends Filter {
 
   final protected Filter startingFilter;

@@ -21,6 +21,10 @@ package org.apache.lucene.spatial.geometry;
  * Represents lat/lngs as fixed point numbers translated so that all
  * world coordinates are in the first quadrant.  The same fixed point
  * scale as is used for FixedLatLng is employed.
+ *
+ * <p><font color="red"><b>NOTE:</b> This API is still in
+ * flux and might change in incompatible ways in the next
+ * release.</font>
  */
 public class CartesianPoint {
   private int x;

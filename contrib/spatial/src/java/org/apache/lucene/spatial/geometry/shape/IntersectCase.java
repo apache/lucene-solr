@@ -17,6 +17,12 @@
 
 package org.apache.lucene.spatial.geometry.shape;
 
+/**
+ *
+ * <p><font color="red"><b>NOTE:</b> This API is still in
+ * flux and might change in incompatible ways in the next
+ * release.</font>
+ */
 public enum IntersectCase {
   WITHIN,
   CONTAINS,

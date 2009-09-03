@@ -17,6 +17,11 @@
  
 package org.apache.lucene.spatial.tier.projections;
 
+/**
+ * <p><font color="red"><b>NOTE:</b> This API is still in
+ * flux and might change in incompatible ways in the next
+ * release.</font>
+ */
 public interface IProjector {
   public String coordsAsString(double latitude, double longitude);
   public double[] coords(double latitude, double longitude);

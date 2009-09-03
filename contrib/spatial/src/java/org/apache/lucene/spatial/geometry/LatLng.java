@@ -23,7 +23,10 @@ package org.apache.lucene.spatial.geometry;
  * point based coordinates. Instances are immutable.
  * 
  * @see FloatLatLng
- * 
+ *
+ * <p><font color="red"><b>NOTE:</b> This API is still in
+ * flux and might change in incompatible ways in the next
+ * release.</font>
  */
 public abstract class LatLng {
 

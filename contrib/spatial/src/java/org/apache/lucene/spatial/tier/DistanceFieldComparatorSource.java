@@ -24,6 +24,11 @@ import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 
+/**
+ * <p><font color="red"><b>NOTE:</b> This API is still in
+ * flux and might change in incompatible ways in the next
+ * release.</font>
+ */
 public class DistanceFieldComparatorSource extends FieldComparatorSource {
 
 	private static final long serialVersionUID = 1L;

@@ -24,7 +24,11 @@ import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.spatial.geohash.GeoHashDistanceFilter;
 import org.apache.lucene.misc.ChainedFilter;
 
-
+/**
+ * <p><font color="red"><b>NOTE:</b> This API is still in
+ * flux and might change in incompatible ways in the next
+ * release.</font>
+ */
 public class DistanceQueryBuilder {
 
   private static final long serialVersionUID = 1L;

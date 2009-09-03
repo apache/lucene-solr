@@ -23,7 +23,11 @@ import org.apache.lucene.spatial.geometry.LatLng;
 import org.apache.lucene.spatial.geometry.shape.LLRect;
 import org.apache.lucene.spatial.geometry.shape.Rectangle;
 
-
+/**
+ * <p><font color="red"><b>NOTE:</b> This API is still in
+ * flux and might change in incompatible ways in the next
+ * release.</font>
+ */
 public class DistanceUtils {
 
   static DistanceUtils instance = new DistanceUtils();
