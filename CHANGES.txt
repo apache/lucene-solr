@@ -812,6 +812,23 @@ Optimizations
 
 Documentation
 
+ 1. LUCENE-1872: NumericField javadoc improvements
+    (Michael McCandless, Uwe Schindler)
+ 
+ 2. LUCENE-1875: Make TokenStream.end javadoc less confusing.
+    (Uwe Schindler)
+
+ 3. LUCENE-1862: Rectified duplicate package level javadocs for
+    o.a.l.queryParser and o.a.l.analysis.cn.
+    (Chris Hostetter)
+
+ 4. LUCENE-1886: Improved hyperlinking in key Analysis javadocs
+    (Bernd Fondermann via Chris Hostetter)
+
+ 5. LUCENE-1884: massive javadoc and comment cleanup, primarily dealing with
+    typos.
+    (Robert Muir via Chris Hostetter)
+
 Build
 
  1. LUCENE-1440: Add new targets to build.xml that allow downloading

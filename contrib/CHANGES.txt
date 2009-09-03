@@ -167,7 +167,9 @@ Optimizations
 
 Documentation
 
- (None)
+  1. LUCENE-1876: added missing package level documentation for numerous
+     contrib packages.
+     (Steven Rowe & Robert Muir)
 
 Build
 
