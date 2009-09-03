@@ -381,26 +381,30 @@ public class TestLockFactory extends LuceneTestCase {
       assertTrue("failed to obtain 2nd lock after first one was freed", l2.obtain());
       l2.release();
 
-      // Make sure we can obtain first one again:
+      // Make sure we can obtain first one again, test isLocked():
       assertTrue("failed to obtain lock", l.obtain());
+      assertTrue(l.isLocked());
+      assertTrue(l2.isLocked());
       l.release();
+      assertFalse(l.isLocked());
+      assertFalse(l2.isLocked());
     }
 
-    // Verify: NativeFSLockFactory assigns different lock
-    // prefixes to different directories:
+    // Verify: NativeFSLockFactory assigns null as lockPrefix if the lockDir is inside directory
     public void testNativeFSLockFactoryPrefix() throws IOException {
 
-      // Make sure we get identical instances:
       File fdir1 = _TestUtil.getTempDir("TestLockFactory.8");
+      File fdir2 = _TestUtil.getTempDir("TestLockFactory.8.Lockdir");
       Directory dir1 = FSDirectory.open(fdir1, new NativeFSLockFactory(fdir1));
-      File fdir2 = _TestUtil.getTempDir("TestLockFactory.9");
-      Directory dir2 = FSDirectory.open(fdir2, new NativeFSLockFactory(fdir2));
+      // same directory, but locks are stored somewhere else. The prefix of the lock factory should != null
+      Directory dir2 = FSDirectory.open(fdir1, new NativeFSLockFactory(fdir2));
 
       String prefix1 = dir1.getLockFactory().getLockPrefix();
+      assertNull("Lock prefix for lockDir same as directory should be null", prefix1);
+      
       String prefix2 = dir2.getLockFactory().getLockPrefix();
+      assertNotNull("Lock prefix for lockDir outside of directory should be not null", prefix2);
 
-      assertTrue("Native Lock Factories are incorrectly shared: dir1 and dir2 have same lock prefix '" + prefix1 + "'; they should be different",
-                 !prefix1.equals(prefix2));
       _TestUtil.rmDir(fdir1);
       _TestUtil.rmDir(fdir2);
     }

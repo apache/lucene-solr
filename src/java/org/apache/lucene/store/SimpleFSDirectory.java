@@ -32,14 +32,15 @@ public class SimpleFSDirectory extends FSDirectory {
   /** Create a new SimpleFSDirectory for the named location.
    *
    * @param path the path of the directory
-   * @param lockFactory the lock factory to use, or null for the default.
+   * @param lockFactory the lock factory to use, or null for the default
+   * ({@link NativeFSLockFactory});
    * @throws IOException
    */
   public SimpleFSDirectory(File path, LockFactory lockFactory) throws IOException {
     super(path, lockFactory);
   }
   
-  /** Create a new SimpleFSDirectory for the named location and the default lock factory.
+  /** Create a new SimpleFSDirectory for the named location and {@link NativeFSLockFactory}.
    *
    * @param path the path of the directory
    * @throws IOException

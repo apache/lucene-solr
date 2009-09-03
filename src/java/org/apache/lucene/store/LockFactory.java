@@ -35,7 +35,7 @@ import java.io.IOException;
 
 public abstract class LockFactory {
 
-  protected String lockPrefix = "";
+  protected String lockPrefix = null;
 
   /**
    * Set the prefix in use for all locks created in this

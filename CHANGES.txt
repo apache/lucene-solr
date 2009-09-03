@@ -425,6 +425,16 @@ API Changes
 38. LUCENE-1847: Similarity#idf for both a Term and Term Collection have
     been deprecated. New versions that return an IDFExplanation have been
     added.  (Yasoja Seneviratne, Mike McCandless, Mark Miller)
+    
+39. LUCENE-1877: Made NativeFSLockFactory the default for
+    the new FSDirectory API (open(), FSDirectory subclass ctors).
+    All FSDirectory system properties were deprecated and all lock
+    implementations use no lock prefix if the locks are stored inside
+    the index directory. Because the deprecated String/File ctors of
+    IndexWriter and IndexReader (LUCENE-1672) and FSDirectory.getDirectory()
+    still use the old SimpleFSLockFactory and the new API
+    NativeFSLockFactory, we strongly recommend not to mix deprecated
+    and new API. (Uwe Schindler, Mike McCandless)
 
 Bug fixes
 
@@ -533,6 +543,11 @@ Bug fixes
 26. LUCENE-1847: PhraseQuery/TermQuery/SpanQuery use IndexReader specific stats 
     in their Weight#explain methods - these stats should be corpus wide.
     (Yasoja Seneviratne, Mike McCandless, Mark Miller)
+
+27. LUCENE-1885: Fix the bug that NativeFSLock.isLocked() did not work,
+    if the lock was obtained by another NativeFSLock(Factory) instance.
+    Because of this IndexReader.isLocked() and IndexWriter.isLocked() did
+    not work correctly.  (Uwe Schindler)
 
 New features
 

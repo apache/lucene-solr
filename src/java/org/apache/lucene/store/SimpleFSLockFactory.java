@@ -22,8 +22,7 @@ import java.io.IOException;
 
 /**
  * <p>Implements {@link LockFactory} using {@link
- * File#createNewFile()}.  This is the default LockFactory
- * for {@link FSDirectory}.</p>
+ * File#createNewFile()}.</p>
  *
  * <p><b>NOTE:</b> the <a target="_top"
  * href="http://java.sun.com/j2se/1.4.2/docs/api/java/io/File.html#createNewFile()">javadocs
@@ -52,24 +51,16 @@ import java.io.IOException;
  * @see LockFactory
  */
 
-public class SimpleFSLockFactory extends LockFactory {
-
-  /**
-   * Directory specified by <code>org.apache.lucene.lockDir</code>
-   * system property.  If that is not set, then <code>java.io.tmpdir</code>
-   * system property is used.
-   */
-
-  private File lockDir;
+public class SimpleFSLockFactory extends FSLockFactory {
 
   /**
    * Create a SimpleFSLockFactory instance, with null (unset)
-   * lock directory.  This is package-private and is only
-   * used by FSDirectory when creating this LockFactory via
-   * the System property
-   * org.apache.lucene.store.FSDirectoryLockFactoryClass.
+   * lock directory. When you pass this factory to a {@link FSDirectory}
+   * subclass, the lock directory is automatically set to the
+   * directory itsself. Be sure to create one instance for each directory
+   * your create!
    */
-  SimpleFSLockFactory() throws IOException {
+  public SimpleFSLockFactory() throws IOException {
     this((File) null);
   }
 
@@ -88,16 +79,6 @@ public class SimpleFSLockFactory extends LockFactory {
   public SimpleFSLockFactory(String lockDirName) throws IOException {
     lockDir = new File(lockDirName);
     setLockDir(lockDir);
-  }
-
-  /**
-   * Set the lock directory.  This is package-private and is
-   * only used externally by FSDirectory when creating this
-   * LockFactory via the System property
-   * org.apache.lucene.store.FSDirectoryLockFactoryClass.
-   */
-  void setLockDir(File lockDir) throws IOException {
-    this.lockDir = lockDir;
   }
 
   public Lock makeLock(String lockName) {

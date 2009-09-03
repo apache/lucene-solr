@@ -55,45 +55,50 @@ import java.util.Random;
  * @see LockFactory
  */
 
-public class NativeFSLockFactory extends LockFactory {
+public class NativeFSLockFactory extends FSLockFactory {
 
-  /**
-   * Directory specified by <code>org.apache.lucene.lockDir</code>
-   * system property.  If that is not set, then <code>java.io.tmpdir</code>
-   * system property is used.
-   */
-
-  private File lockDir;
+  private volatile boolean tested = false;
 
   // Simple test to verify locking system is "working".  On
   // NFS, if it's misconfigured, you can hit long (35
   // second) timeouts which cause Lock.obtain to take far
   // too long (it assumes the obtain() call takes zero
-  // time).  Since it's a configuration problem, we test up
-  // front once on creating the LockFactory:
-  private void acquireTestLock() throws IOException {
+  // time). 
+  private synchronized void acquireTestLock() {
+    if (tested) return;
+    tested = true;
+    
+    // Ensure that lockDir exists and is a directory.
+    if (!lockDir.exists()) {
+      if (!lockDir.mkdirs())
+        throw new RuntimeException("Cannot create directory: " +
+                              lockDir.getAbsolutePath());
+    } else if (!lockDir.isDirectory()) {
+      throw new RuntimeException("Found regular file where directory expected: " + 
+                            lockDir.getAbsolutePath());
+    }
+
     String randomLockName = "lucene-" + Long.toString(new Random().nextInt(), Character.MAX_RADIX) + "-test.lock";
     
     Lock l = makeLock(randomLockName);
     try {
       l.obtain();
+      l.release();
     } catch (IOException e) {
-      IOException e2 = new IOException("Failed to acquire random test lock; please verify filesystem for lock directory '" + lockDir + "' supports locking");
+      RuntimeException e2 = new RuntimeException("Failed to acquire random test lock; please verify filesystem for lock directory '" + lockDir + "' supports locking");
       e2.initCause(e);
       throw e2;
-    }
-
-    l.release();
+    }    
   }
 
   /**
    * Create a NativeFSLockFactory instance, with null (unset)
-   * lock directory.  This is package-private and is only
-   * used by FSDirectory when creating this LockFactory via
-   * the System property
-   * org.apache.lucene.store.FSDirectoryLockFactoryClass.
+   * lock directory. When you pass this factory to a {@link FSDirectory}
+   * subclass, the lock directory is automatically set to the
+   * directory itsself. Be sure to create one instance for each directory
+   * your create!
    */
-  NativeFSLockFactory() throws IOException {
+  public NativeFSLockFactory() throws IOException {
     this((File) null);
   }
 
@@ -117,32 +122,10 @@ public class NativeFSLockFactory extends LockFactory {
     setLockDir(lockDir);
   }
 
-  /**
-   * Set the lock directory.  This is package-private and is
-   * only used externally by FSDirectory when creating this
-   * LockFactory via the System property
-   * org.apache.lucene.store.FSDirectoryLockFactoryClass.
-   */
-  void setLockDir(File lockDir) throws IOException {
-    this.lockDir = lockDir;
-    if (lockDir != null) {
-      // Ensure that lockDir exists and is a directory.
-      if (!lockDir.exists()) {
-        if (!lockDir.mkdirs())
-          throw new IOException("Cannot create directory: " +
-                                lockDir.getAbsolutePath());
-      } else if (!lockDir.isDirectory()) {
-        throw new IOException("Found regular file where directory expected: " + 
-                              lockDir.getAbsolutePath());
-      }
-
-      acquireTestLock();
-    }
-  }
-
   public synchronized Lock makeLock(String lockName) {
+    acquireTestLock();
     if (lockPrefix != null)
-      lockName = lockPrefix + "-n-" + lockName;
+      lockName = lockPrefix + "-" + lockName;
     return new NativeFSLock(lockDir, lockName);
   }
 
@@ -153,7 +136,7 @@ public class NativeFSLockFactory extends LockFactory {
     // really want to see the files go away:
     if (lockDir.exists()) {
       if (lockPrefix != null) {
-        lockName = lockPrefix + "-n-" + lockName;
+        lockName = lockPrefix + "-" + lockName;
       }
       File lockFile = new File(lockDir, lockName);
       if (lockFile.exists() && !lockFile.delete()) {
@@ -188,9 +171,13 @@ class NativeFSLock extends Lock {
     path = new File(lockDir, lockFileName);
   }
 
+  private synchronized boolean lockExists() {
+    return lock != null;
+  }
+
   public synchronized boolean obtain() throws IOException {
 
-    if (isLocked()) {
+    if (lockExists()) {
       // Our instance is already locked:
       return false;
     }
@@ -276,7 +263,7 @@ class NativeFSLock extends Lock {
       }
 
     } finally {
-      if (markedHeld && !isLocked()) {
+      if (markedHeld && !lockExists()) {
         synchronized(LOCK_HELD) {
           if (LOCK_HELD.contains(canonicalPath)) {
             LOCK_HELD.remove(canonicalPath);
@@ -284,11 +271,11 @@ class NativeFSLock extends Lock {
         }
       }
     }
-    return isLocked();
+    return lockExists();
   }
 
   public synchronized void release() throws IOException {
-    if (isLocked()) {
+    if (lockExists()) {
       try {
         lock.release();
       } finally {
@@ -313,7 +300,22 @@ class NativeFSLock extends Lock {
   }
 
   public synchronized boolean isLocked() {
-    return lock != null;
+    // The test for is isLocked is not directly possible with native file locks:
+    
+    // First a shortcut, if a lock reference in this instance is available
+    if (lockExists()) return true;
+    
+    // Look if lock file is present; if not, there can definitely be no lock!
+    if (!path.exists()) return false;
+    
+    // Try to obtain and release (if was locked) the lock
+    try {
+      boolean obtained = obtain();
+      if (obtained) release();
+      return !obtained;
+    } catch (IOException ioe) {
+      return false;
+    }    
   }
 
   public String toString() {

@@ -95,12 +95,20 @@ import org.apache.lucene.index.IndexWriter;
  * desired implementation directly.
  *
  * <p>The locking implementation is by default {@link
- * SimpleFSLockFactory}, but can be changed either by
- * passing in a custom {@link LockFactory} instance, or
- * specifying the LockFactory class by setting
+ * NativeFSLockFactory}, but can be changed by
+ * passing in a custom {@link LockFactory} instance.
+ * The deprecated <code>getDirectory</code> methods default to use
+ * {@link SimpleFSLockFactory} for backwards compatibility.
+ * The system properties 
  * <code>org.apache.lucene.store.FSDirectoryLockFactoryClass</code>
- * Java system property, or by calling {@link
- * #setLockFactory} after creating the Directory.
+ * and <code>org.apache.lucene.FSDirectory.class</code>
+ * are deprecated and only used by the deprecated
+ * <code>getDirectory</code> methods. The system property
+ * <code>org.apache.lucene.lockDir</code> is ignored completely,
+ * If you really want to store locks
+ * elsewhere, you can create your own {@link
+ * SimpleFSLockFactory} (or {@link NativeFSLockFactory},
+ * etc.) passing in your preferred lock directory.
  *
  * <p><em>In 3.0 this class will become abstract.</em>
  *
@@ -129,6 +137,11 @@ public class FSDirectory extends Directory {
    * Set whether Lucene's use of lock files is disabled. By default, 
    * lock files are enabled. They should only be disabled if the index
    * is on a read-only medium like a CD-ROM.
+   * @deprecated Use a {@link #open(File, LockFactory)} or a constructor
+   * that takes a {@link LockFactory} and supply
+   * {@link NoLockFactory#getNoLockFactory}. This setting does not work
+   * with {@link #open(File)} only the deprecated <code>getDirectory</code>
+   * respect this setting.   
    */
   public static void setDisableLocks(boolean doDisableLocks) {
     FSDirectory.disableLocks = doDisableLocks;
@@ -138,6 +151,8 @@ public class FSDirectory extends Directory {
    * Returns whether Lucene's use of lock files is disabled.
    * @return true if locks are disabled, false if locks are enabled.
    * @see #setDisableLocks
+   * @deprecated Use a constructor that takes a {@link LockFactory} and
+   * supply {@link NoLockFactory#getNoLockFactory}.
   */
   public static boolean getDisableLocks() {
     return FSDirectory.disableLocks;
@@ -150,12 +165,12 @@ public class FSDirectory extends Directory {
    * @deprecated As of 2.1, <code>LOCK_DIR</code> is unused
    * because the write.lock is now stored by default in the
    * index directory.  If you really want to store locks
-   * elsewhere you can create your own {@link
+   * elsewhere, you can create your own {@link
    * SimpleFSLockFactory} (or {@link NativeFSLockFactory},
    * etc.) passing in your preferred lock directory.  Then,
    * pass this <code>LockFactory</code> instance to one of
-   * the <code>getDirectory</code> methods that take a
-   * <code>lockFactory</code> (for example, {@link #getDirectory(String, LockFactory)}).
+   * the <code>open</code> methods that take a
+   * <code>lockFactory</code> (for example, {@link #open(File, LockFactory)}).
    */
   public static final String LOCK_DIR = System.getProperty("org.apache.lucene.lockDir",
                                                            System.getProperty("java.io.tmpdir"));
@@ -358,17 +373,23 @@ public class FSDirectory extends Directory {
 
   /** Create a new FSDirectory for the named location (ctor for subclasses).
    * @param path the path of the directory
-   * @param lockFactory the lock factory to use, or null for the default.
+   * @param lockFactory the lock factory to use, or null for the default
+   * ({@link NativeFSLockFactory});
    * @throws IOException
    */
   protected FSDirectory(File path, LockFactory lockFactory) throws IOException {
     path = getCanonicalPath(path);
+    // new ctors use always NativeFSLockFactory as default:
+    if (lockFactory == null) {
+      lockFactory = new NativeFSLockFactory();
+    }
     init(path, lockFactory);
     refCount = 1;
   }
 
   /** Creates an FSDirectory instance, trying to pick the
    *  best implementation given the current environment.
+   *  The directory returned uses the {@link NativeFSLockFactory}.
    *
    *  <p>Currently this returns {@link NIOFSDirectory}
    *  on non-Windows JREs and {@link SimpleFSDirectory}
@@ -419,8 +440,6 @@ public class FSDirectory extends Directory {
     if (directory.exists() && !directory.isDirectory())
       throw new NoSuchDirectoryException("file '" + directory + "' exists but is not a directory");
 
-    boolean doClearLockID = false;
-
     if (lockFactory == null) {
 
       if (disableLocks) {
@@ -447,27 +466,28 @@ public class FSDirectory extends Directory {
           } catch (ClassCastException e) {
             throw new IOException("unable to cast LockClass " + lockClassName + " instance to a LockFactory");
           }
-
-          if (lockFactory instanceof NativeFSLockFactory) {
-            ((NativeFSLockFactory) lockFactory).setLockDir(path);
-          } else if (lockFactory instanceof SimpleFSLockFactory) {
-            ((SimpleFSLockFactory) lockFactory).setLockDir(path);
-          }
         } else {
           // Our default lock is SimpleFSLockFactory;
           // default lockDir is our index directory:
-          lockFactory = new SimpleFSLockFactory(path);
-          doClearLockID = true;
+          lockFactory = new SimpleFSLockFactory();
         }
       }
     }
 
     setLockFactory(lockFactory);
-
-    if (doClearLockID) {
-      // Clear the prefix because write.lock will be
-      // stored in our directory:
-      lockFactory.setLockPrefix(null);
+    
+    // for filesystem based LockFactory, delete the lockPrefix, if the locks are placed
+    // in index dir. If no index dir is given, set ourselves
+    if (lockFactory instanceof FSLockFactory) {
+      final FSLockFactory lf = (FSLockFactory) lockFactory;
+      final File dir = lf.getLockDir();
+      // if the lock factory has no lockDir set, use the this directory as lockDir
+      if (dir == null) {
+        lf.setLockDir(this.directory);
+        lf.setLockPrefix(null);
+      } else if (dir.getCanonicalPath().equals(this.directory.getCanonicalPath())) {
+        lf.setLockPrefix(null);
+      }
     }
   }
 
