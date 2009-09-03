@@ -153,9 +153,7 @@ public class SolrIndexWriter extends IndexWriter {
     init(name, schema, null);
   }
 
-  /**
-   *
-   */
+  @Deprecated
   public SolrIndexWriter(String name, String path, DirectoryFactory dirFactory, boolean create, IndexSchema schema, SolrIndexConfig config) throws IOException {
     super(getDirectory(path, dirFactory, null), config.luceneAutoCommit, schema.getAnalyzer(), create);
     init(name, schema, config);

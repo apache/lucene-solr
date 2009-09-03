@@ -385,7 +385,7 @@ public final class SolrCore implements SolrInfoMBean {
         log.warn(logid+"Solr index directory '" + dirFile + "' doesn't exist."
                 + " Creating new index...");
 
-        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", getIndexDir(), getDirectoryFactory(), true, schema, solrConfig.mainIndexConfig);
+        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", getIndexDir(), getDirectoryFactory(), true, schema, solrConfig.mainIndexConfig, solrDelPolicy);
         writer.close();
       }
 
