@@ -101,12 +101,15 @@ public abstract class EntityProcessor {
    * added by Transformers in this method.
    *
    * @param r The transformed row
+   * @since solr 1.4
    */
   public void postTransform(Map<String, Object> r) {
   }
 
   /**
    * Invoked when the Entity processor is detroyed. towards the end of import.
+   *
+   * @since solr 1.4
    */
   public void close() {
     //no-op
