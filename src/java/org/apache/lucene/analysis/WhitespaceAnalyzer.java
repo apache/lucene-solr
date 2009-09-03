@@ -20,7 +20,7 @@ package org.apache.lucene.analysis;
 import java.io.Reader;
 import java.io.IOException;
 
-/** An Analyzer that uses WhitespaceTokenizer. */
+/** An Analyzer that uses {@link WhitespaceTokenizer}. */
 
 public final class WhitespaceAnalyzer extends Analyzer {
   public TokenStream tokenStream(String fieldName, Reader reader) {

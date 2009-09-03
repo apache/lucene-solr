@@ -20,7 +20,8 @@ package org.apache.lucene.analysis;
 import java.io.Reader;
 import java.io.IOException;
 
-/** An Analyzer that filters LetterTokenizer with LowerCaseFilter. */
+/** An {@link Analyzer} that filters {@link LetterTokenizer} 
+ *  with {@link LowerCaseFilter} */
 
 public final class SimpleAnalyzer extends Analyzer {
   public TokenStream tokenStream(String fieldName, Reader reader) {

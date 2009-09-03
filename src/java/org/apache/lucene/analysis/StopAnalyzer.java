@@ -23,7 +23,7 @@ import java.io.Reader;
 import java.util.Arrays;
 import java.util.Set;
 
-/** Filters LetterTokenizer with LowerCaseFilter and StopFilter. */
+/** Filters {@link LetterTokenizer} with {@link LowerCaseFilter} and {@link StopFilter}. */
 
 public final class StopAnalyzer extends Analyzer {
   private final Set/*<String>*/ stopWords;

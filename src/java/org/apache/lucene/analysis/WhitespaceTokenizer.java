@@ -25,7 +25,7 @@ import org.apache.lucene.util.AttributeSource;
  * Adjacent sequences of non-Whitespace characters form tokens. */
 
 public class WhitespaceTokenizer extends CharTokenizer {
-  /** Construct a new WhitespaceTokenizer using a given {@link AttributeSource}. */
+  /** Construct a new WhitespaceTokenizer. */
   public WhitespaceTokenizer(Reader in) {
     super(in);
   }
