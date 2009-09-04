@@ -328,7 +328,7 @@ public final class SolrCore implements SolrInfoMBean {
 
    private void initDirectoryFactory() {
     DirectoryFactory dirFactory;
-    PluginInfo info = solrConfig.getDirectoryfactoryInfo();
+    PluginInfo info = solrConfig.getDirectoryFactoryInfo();
     if (info != null) {
       dirFactory = (DirectoryFactory) getResourceLoader().newInstance(info.className);
       dirFactory.init(info.initArgs);

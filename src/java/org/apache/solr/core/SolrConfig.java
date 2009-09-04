@@ -478,7 +478,7 @@ public class SolrConfig extends Config {
 
   public List<PluginInfo> getNewSearcherListenerInfo() { return newSearcherListenerInfo; }
 
-  public PluginInfo getDirectoryfactoryInfo() { return directoryfactoryInfo; }
+  public PluginInfo getDirectoryFactoryInfo() { return directoryfactoryInfo; }
 
   public PluginInfo getDeletionPolicyInfo() { return deletionPolicyInfo; }
 
