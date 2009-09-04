@@ -247,13 +247,9 @@ public class SolrConfig extends Config {
             Collections.<String, List<PluginInfo>>emptyMap():
             Collections.unmodifiableMap(chains);
   }
-  private PluginInfo loadSinglePlugin(String tag){
-     NodeList nodes = (NodeList) evaluate(tag, XPathConstants.NODESET);
-     for (int i=0; i<nodes.getLength(); i++) {
-       PluginInfo pluginInfo = new PluginInfo(nodes.item(i), "[solrconfig.xml] " + tag, false);
-       return pluginInfo.isEnabled() ? pluginInfo : null;
-     }
-    return null;
+  private PluginInfo loadSinglePlugin(String tag) {
+    List<PluginInfo> l = loadPluginInfo(tag, false);
+    return l.isEmpty() ? null : l.get(0);
   }
 
   private List<PluginInfo> loadPluginInfo(String tag, boolean requireName) {
