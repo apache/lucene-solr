@@ -293,15 +293,9 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           }
         }
      }
-      String xpath = "queryConverter";
-      SolrConfig solrConfig = core.getSolrConfig();
-      NodeList nodes = (NodeList) solrConfig.evaluate(xpath, XPathConstants.NODESET);
 
       Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>();
-      NamedListPluginLoader<QueryConverter> loader =
-              new NamedListPluginLoader<QueryConverter>("[solrconfig.xml] " + xpath, queryConverters);
-
-      loader.load(solrConfig.getResourceLoader(), nodes);
+      core.initPlugins(core.getSolrConfig().getQueryConverterInfo(), queryConverters,QueryConverter.class);
 
       //ensure that there is at least one query converter defined
       if (queryConverters.size() == 0) {

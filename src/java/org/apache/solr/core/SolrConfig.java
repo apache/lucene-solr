@@ -207,6 +207,7 @@ public class SolrConfig extends Config {
     valueSourceParserInfo = loadPluginInfo("valueSourceParser",true);
     queryParserInfo = loadPluginInfo("queryParser",true);
     searchComponentInfo = loadPluginInfo("searchComponent",true);
+    queryConverterInfo = loadPluginInfo("queryConverter",true);
     directoryfactoryInfo = loadSinglePlugin("directoryFactory");
     deletionPolicyInfo = loadSinglePlugin("mainIndex/deletionPolicy");
     indexReaderFactoryInfo = loadSinglePlugin("indexReaderFactory");
@@ -303,6 +304,7 @@ public class SolrConfig extends Config {
   protected PluginInfo deletionPolicyInfo;
   protected PluginInfo indexReaderFactoryInfo;
   protected List<PluginInfo> newSearcherListenerInfo;
+  private List<PluginInfo> queryConverterInfo;  
   protected PluginInfo directoryfactoryInfo;
   protected Map<String ,List<PluginInfo>> updateProcessorChainInfo ;
   protected UpdateHandlerInfo updateHandlerInfo ;
@@ -483,6 +485,8 @@ public class SolrConfig extends Config {
   public PluginInfo getDeletionPolicyInfo() { return deletionPolicyInfo; }
 
   public Map<String, List<PluginInfo>> getUpdateProcessorChainInfo() { return updateProcessorChainInfo; }
+
+  public List<PluginInfo> getQueryConverterInfo() { return queryConverterInfo; }
 
   public UpdateHandlerInfo getUpdateHandlerInfo() { return updateHandlerInfo; }
 
