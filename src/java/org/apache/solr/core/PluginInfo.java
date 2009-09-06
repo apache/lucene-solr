@@ -45,10 +45,10 @@ public class PluginInfo {
   }
 
 
-  public PluginInfo(Node node, String err, boolean requireName) {
+  public PluginInfo(Node node, String err, boolean requireName, boolean requireClass) {
     type = node.getNodeName();
     name = DOMUtil.getAttr(node, "name", requireName ? err : null);
-    className = DOMUtil.getAttr(node, "class", err);
+    className = DOMUtil.getAttr(node, "class", requireClass ? err : null);
     isDefault = Boolean.parseBoolean(DOMUtil.getAttr(node, "default", null));
     startup = DOMUtil.getAttr(node, "startup", null);
     initArgs = DOMUtil.childNodesToNamedList(node);

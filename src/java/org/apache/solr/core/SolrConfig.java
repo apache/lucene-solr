@@ -190,8 +190,8 @@ public class SolrConfig extends Config {
 
   protected void loadHighLightingPlugins() {
     highLghtingClass =  get("highlighting/@class",null);
-    highlightingFragmenterInfo = loadPluginInfo("highlighting/fragmenter",true);
-    highlightingFormatterInfo = loadPluginInfo("highlighting/formatter",true);
+    highlightingFragmenterInfo = loadPluginInfo("highlighting/fragmenter",true,true);
+    highlightingFormatterInfo = loadPluginInfo("highlighting/formatter",true, true);
   }
 
   protected UpdateHandlerInfo loadUpdatehandlerInfo() {
@@ -202,17 +202,17 @@ public class SolrConfig extends Config {
   }
 
   protected void loadPluginInfo() {
-    reqHandlerInfo = loadPluginInfo("requestHandler",true);
-    respWriterInfo = loadPluginInfo("queryResponseWriter",true);
-    valueSourceParserInfo = loadPluginInfo("valueSourceParser",true);
-    queryParserInfo = loadPluginInfo("queryParser",true);
-    searchComponentInfo = loadPluginInfo("searchComponent",true);
-    queryConverterInfo = loadPluginInfo("queryConverter",true);
+    reqHandlerInfo = loadPluginInfo("requestHandler",true, true);
+    respWriterInfo = loadPluginInfo("queryResponseWriter",true, true);
+    valueSourceParserInfo = loadPluginInfo("valueSourceParser",true, true);
+    queryParserInfo = loadPluginInfo("queryParser",true, true);
+    searchComponentInfo = loadPluginInfo("searchComponent",true, true);
+    queryConverterInfo = loadPluginInfo("queryConverter",true, true);
     directoryfactoryInfo = loadSinglePlugin("directoryFactory");
     deletionPolicyInfo = loadSinglePlugin("mainIndex/deletionPolicy");
     indexReaderFactoryInfo = loadSinglePlugin("indexReaderFactory");
-    firstSearcherListenerInfo = loadPluginInfo("//listener[@event='firstSearcher']",false);
-    newSearcherListenerInfo = loadPluginInfo("//listener[@event='newSearcher']",false);
+    firstSearcherListenerInfo = loadPluginInfo("//listener[@event='firstSearcher']",false, true);
+    newSearcherListenerInfo = loadPluginInfo("//listener[@event='newSearcher']",false, true);
   }
 
   protected Map<String, List<PluginInfo>> loadUpdateProcessorInfo() {
@@ -232,7 +232,7 @@ public class SolrConfig extends Config {
           }
           ArrayList<PluginInfo> result = new ArrayList<PluginInfo>();
           for (int j=0; j<nl.getLength(); j++) {
-            PluginInfo pluginInfo = new PluginInfo(nl.item(j), "[solrconfig.xml] processor", false);
+            PluginInfo pluginInfo = new PluginInfo(nl.item(j), "[solrconfig.xml] processor", false, true);
             if(pluginInfo.isEnabled()) result.add(pluginInfo);
           }
           chains.put(name,result);
@@ -248,15 +248,15 @@ public class SolrConfig extends Config {
             Collections.unmodifiableMap(chains);
   }
   private PluginInfo loadSinglePlugin(String tag) {
-    List<PluginInfo> l = loadPluginInfo(tag, false);
+    List<PluginInfo> l = loadPluginInfo(tag, false, true);
     return l.isEmpty() ? null : l.get(0);
   }
 
-  private List<PluginInfo> loadPluginInfo(String tag, boolean requireName) {
+  private List<PluginInfo> loadPluginInfo(String tag, boolean requireName, boolean requireClass) {
     ArrayList<PluginInfo> result = new ArrayList<PluginInfo>();
     NodeList nodes = (NodeList) evaluate(tag, XPathConstants.NODESET);
      for (int i=0; i<nodes.getLength(); i++) {
-       PluginInfo pluginInfo = new PluginInfo(nodes.item(i), "[solrconfig.xml] " + tag, requireName);
+       PluginInfo pluginInfo = new PluginInfo(nodes.item(i), "[solrconfig.xml] " + tag, requireName, requireClass);
        if(pluginInfo.isEnabled()) result.add(pluginInfo);
      }
     return result.isEmpty() ?
@@ -300,7 +300,8 @@ public class SolrConfig extends Config {
   protected PluginInfo deletionPolicyInfo;
   protected PluginInfo indexReaderFactoryInfo;
   protected List<PluginInfo> newSearcherListenerInfo;
-  private List<PluginInfo> queryConverterInfo;  
+  protected List<PluginInfo> queryConverterInfo;
+
   protected PluginInfo directoryfactoryInfo;
   protected Map<String ,List<PluginInfo>> updateProcessorChainInfo ;
   protected UpdateHandlerInfo updateHandlerInfo ;
