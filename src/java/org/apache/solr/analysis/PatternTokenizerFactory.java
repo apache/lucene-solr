@@ -27,6 +27,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.solr.common.SolrException;
@@ -112,8 +113,8 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
 
           Matcher matcher = pattern.matcher( str );
           tokens = (group < 0 )
-                  ? split( matcher, str )
-                  : group( matcher, str, group );
+                  ? split( matcher, str, input )
+                  : group( matcher, str, group, input );
           iter = tokens.iterator();
         }
 
@@ -151,12 +152,19 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, ex );
     }
   }
+
+  /**
+   * @deprecated
+   */
+  public static List<Token> split( Matcher matcher, String input ){
+    return split(matcher,input,null);
+  }
   
   /**
    * This behaves just like String.split( ), but returns a list of Tokens
    * rather then an array of strings
    */
-  public static List<Token> split( Matcher matcher, String input )
+  public static List<Token> split( Matcher matcher, String input, CharStream stream )
   {
     int index = 0;
     int lastNonEmptySize = Integer.MAX_VALUE;
@@ -165,7 +173,7 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
     // Add segments before each match found
     while(matcher.find()) {
       String match = input.subSequence(index, matcher.start()).toString();
-      matchList.add( new Token( match, index, matcher.start()) );
+      matchList.add( newToken( stream, match, index, matcher.start()) );
       index = matcher.end();
       if( match.length() > 0 ) {
         lastNonEmptySize = matchList.size();
@@ -174,11 +182,11 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
 
     // If no match is found, return the full string
     if (index == 0) {
-      matchList.add( new Token( input, 0, input.length()) );
+      matchList.add( newToken( stream, input, 0, input.length()) );
     }
     else { 
       String match = input.subSequence(index, input.length()).toString();
-      matchList.add( new Token( match, index, input.length()) );
+      matchList.add( newToken( stream, match, index, input.length()) );
       if( match.length() > 0 ) {
         lastNonEmptySize = matchList.size();
       }
@@ -193,18 +201,34 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
   
 
   /**
+   * @deprecated
+   */
+  public static List<Token> group( Matcher matcher, String input, int group ){
+    return group(matcher, input, group, null);
+  }
+  
+  /**
    * Create tokens from the matches in a matcher 
    */
-  public static List<Token> group( Matcher matcher, String input, int group )
+  public static List<Token> group( Matcher matcher, String input, int group, CharStream stream )
   {
     ArrayList<Token> matchList = new ArrayList<Token>();
     while(matcher.find()) {
-      Token t = new Token( 
+      Token t = newToken( stream,
         matcher.group(group), 
         matcher.start(group), 
         matcher.end(group) );
       matchList.add( t );
     }
     return matchList;
+  }
+  
+  private static Token newToken( CharStream stream, String text, int start, int end ){
+    Token token = null;
+    if( stream != null )
+      token = new Token( text, stream.correctOffset( start ), stream.correctOffset( end ) );
+    else
+      token = new Token( text, start, end );
+    return token;
   }
 }

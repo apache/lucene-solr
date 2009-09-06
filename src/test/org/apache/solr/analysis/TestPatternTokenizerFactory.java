@@ -18,15 +18,19 @@
 package org.apache.solr.analysis;
 
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.analysis.CharReader;
+import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.MappingCharFilter;
+import org.apache.lucene.analysis.NormalizeCharMap;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 
-public class TestPatternTokenizerFactory extends AnalysisTestCase 
+public class TestPatternTokenizerFactory extends BaseTokenTestCase 
 {
 	public void testSplitting() throws Exception 
   {
@@ -70,4 +74,27 @@ public class TestPatternTokenizerFactory extends AnalysisTestCase
       }
     } 
 	}
+	
+  public void testOffsetCorrection() throws Exception {
+    final String INPUT = "G&uuml;nther G&uuml;nther is here";
+
+    // create MappingCharFilter
+    MappingCharFilterFactory cfFactory = new MappingCharFilterFactory();
+    List<String> mappingRules = new ArrayList<String>();
+    mappingRules.add( "\"&uuml;\" => \"ü\"" );
+    NormalizeCharMap normMap = new NormalizeCharMap();
+    cfFactory.parseRules( mappingRules, normMap );
+    CharStream charStream = new MappingCharFilter( normMap, CharReader.get( new StringReader( INPUT ) ) );
+
+    // create PatternTokenizer
+    Map<String,String> args = new HashMap<String, String>();
+    args.put( PatternTokenizerFactory.PATTERN, "[,;/\\s]+" );
+    PatternTokenizerFactory tokFactory = new PatternTokenizerFactory();
+    tokFactory.init( args );
+    TokenStream stream = tokFactory.create( charStream );
+
+    List<Token> result = getTokens( stream );
+    List<Token> expect = tokens( "Günther,1,0,12 Günther,1,13,25 is,1,26,28 here,1,29,33" );
+    assertTokEqualOff( expect, result );
+  }
 }

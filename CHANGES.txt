@@ -523,6 +523,9 @@ Bug Fixes
     include the "1" (ie: 2**0) bucket in the term histogram data. 
     (hossman)
 
+63. SOLR-1398: Add offset corrections in PatternTokenizerFactory.
+    (Anders Melchiorsen, koji)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
