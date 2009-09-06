@@ -126,12 +126,14 @@ public class CoreContainer
         solrConfigFilename = cores.getConfigFile().getName();
       } else {
         // perform compatibility init
-        SolrResourceLoader resourceLoader = new SolrResourceLoader(solrHome, null, getCoreProps(solrHome, null,null));
-        cores = new CoreContainer(resourceLoader);
+        cores = new CoreContainer(solrHome);
+        CoreDescriptor dcore = new CoreDescriptor(cores, "", ".");
+        dcore.setCoreProperties(null);
+        SolrResourceLoader resourceLoader = new SolrResourceLoader(solrHome, null, getCoreProps(solrHome, null,dcore.getCoreProperties()));
+        cores.loader = resourceLoader;
         SolrConfig cfg = solrConfigFilename == null ?
                 new SolrConfig(resourceLoader, SolrConfig.DEFAULT_CONF_FILE,null) :
                 new SolrConfig(resourceLoader, solrConfigFilename,null);
-        CoreDescriptor dcore = new CoreDescriptor(cores, "", ".");
         SolrCore singlecore = new SolrCore(null, null, cfg, null, dcore);
         abortOnConfigurationError = cfg.getBool(
                 "abortOnConfigurationError", abortOnConfigurationError);
@@ -186,6 +188,10 @@ public class CoreContainer
   public CoreContainer(SolrResourceLoader loader) {
     this.loader = loader;
     this.solrHome = loader.getInstanceDir();
+  }
+
+  public CoreContainer(String solrHome) {
+    this.solrHome = solrHome;
   }
 
   //-------------------------------------------------------------------

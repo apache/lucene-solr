@@ -292,6 +292,8 @@ New Features
 
 75. SOLR-1385 : Add an 'enable' attribute to all plugins  (noble)
 
+76. SOLR-SOLR-1414 : implicit core properties are not set for single core  (noble)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the
