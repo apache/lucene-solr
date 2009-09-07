@@ -22,10 +22,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * <p>
@@ -63,6 +60,76 @@ public class TestFileListEntityProcessor {
     }
     Assert.assertEquals(2, fList.size());
   }
+  
+  @Test
+  public void testBiggerSmallerFiles() throws IOException {
+    long time = System.currentTimeMillis();
+    File tmpdir = new File("." + time);
+    tmpdir.mkdir();
+    tmpdir.deleteOnExit();
+    long minLength = Long.MAX_VALUE;
+    String smallestFile = "";
+    byte[] content = "abcdefgij".getBytes("UTF-8");
+    createFile(tmpdir, "a.xml", content, false);
+    if (minLength > content.length) {
+      minLength = content.length;
+      smallestFile = "a.xml";
+    }
+    content = "abcdefgij".getBytes("UTF-8");
+    createFile(tmpdir, "b.xml", content, false);
+    if (minLength > content.length) {
+      minLength = content.length;
+      smallestFile = "b.xml";
+    }
+    content = "abc".getBytes("UTF-8");
+    createFile(tmpdir, "c.props", content, false);
+    if (minLength > content.length) {
+      minLength = content.length;
+      smallestFile = "c.props";
+    }
+    Map attrs = AbstractDataImportHandlerTest.createMap(
+            FileListEntityProcessor.FILE_NAME, ".*",
+            FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
+            FileListEntityProcessor.BIGGER_THAN, String.valueOf(minLength));
+    List<String> fList = getFiles(null, attrs);
+    Assert.assertEquals(2, fList.size());
+    Set<String> l = new HashSet<String>();
+    l.add(new File(tmpdir, "a.xml").getAbsolutePath());
+    l.add(new File(tmpdir, "b.xml").getAbsolutePath());
+    Assert.assertEquals(l, new HashSet<String>(fList));
+    attrs = AbstractDataImportHandlerTest.createMap(
+            FileListEntityProcessor.FILE_NAME, ".*",
+            FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
+            FileListEntityProcessor.SMALLER_THAN, String.valueOf(minLength+1));
+    fList = getFiles(null, attrs);
+    l.clear();
+    l.add(new File(tmpdir, smallestFile).getAbsolutePath());
+    Assert.assertEquals(l, new HashSet<String>(fList));
+    attrs = AbstractDataImportHandlerTest.createMap(
+            FileListEntityProcessor.FILE_NAME, ".*",
+            FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
+            FileListEntityProcessor.SMALLER_THAN, "${a.x}");
+    VariableResolverImpl resolver = new VariableResolverImpl();
+    resolver.addNamespace("a", AbstractDataImportHandlerTest.createMap("x", "4"));
+    fList = getFiles(resolver, attrs);
+    Assert.assertEquals(l, new HashSet<String>(fList));
+  }
+
+  @SuppressWarnings("unchecked")
+  private List<String> getFiles(VariableResolverImpl resolver, Map attrs) {
+    Context c = AbstractDataImportHandlerTest.getContext(null,
+            resolver, null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
+    FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
+    fileListEntityProcessor.init(c);
+    List<String> fList = new ArrayList<String>();
+    while (true) {
+      Map<String, Object> f = fileListEntityProcessor.nextRow();
+      if (f == null)
+        break;
+      fList.add((String) f.get(FileListEntityProcessor.ABSOLUTE_FILE));
+    }
+    return fList;
+  }
 
   @Test
   public void testNTOT() throws IOException {
@@ -77,34 +144,13 @@ public class TestFileListEntityProcessor {
             FileListEntityProcessor.FILE_NAME, "xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.OLDER_THAN, "'NOW'");
-    Context c = AbstractDataImportHandlerTest.getContext(null,
-            new VariableResolverImpl(), null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
-    FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
-    fileListEntityProcessor.init(c);
-    List<String> fList = new ArrayList<String>();
-    while (true) {
-      Map<String, Object> f = fileListEntityProcessor.nextRow();
-      if (f == null)
-        break;
-      fList.add((String) f.get(FileListEntityProcessor.ABSOLUTE_FILE));
-    }
-    System.out.println("List of files when given OLDER_THAN -- " + fList);
+    List<String> fList = getFiles(null, attrs);
     Assert.assertEquals(2, fList.size());
     attrs = AbstractDataImportHandlerTest.createMap(
             FileListEntityProcessor.FILE_NAME, ".xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.NEWER_THAN, "'NOW-2HOURS'");
-    c = AbstractDataImportHandlerTest.getContext(null,
-            new VariableResolverImpl(), null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
-    fileListEntityProcessor.init(c);
-    fList.clear();
-    while (true) {
-      Map<String, Object> f = fileListEntityProcessor.nextRow();
-      if (f == null)
-        break;
-      fList.add((String) f.get(FileListEntityProcessor.ABSOLUTE_FILE));
-    }
-    System.out.println("List of files when given NEWER_THAN -- " + fList);
+    fList = getFiles(null, attrs);
     Assert.assertEquals(2, fList.size());
   }
 
@@ -124,20 +170,7 @@ public class TestFileListEntityProcessor {
             FileListEntityProcessor.FILE_NAME, "^.*\\.xml$",
             FileListEntityProcessor.BASE_DIR, childdir.getAbsolutePath(),
             FileListEntityProcessor.RECURSIVE, "true");
-    Context c = AbstractDataImportHandlerTest.getContext(null,
-            new VariableResolverImpl(), null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
-    FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
-    fileListEntityProcessor.init(c);
-    List<String> fList = new ArrayList<String>();
-    while (true) {
-      // Add the documents to the index. NextRow() should only
-      // find two filesnames that match the pattern in fileName
-      Map<String, Object> f = fileListEntityProcessor.nextRow();
-      if (f == null)
-        break;
-      fList.add((String) f.get(FileListEntityProcessor.ABSOLUTE_FILE));
-    }
-    System.out.println("List of files indexed -- " + fList);
+    List<String> fList = getFiles(null, attrs);
     Assert.assertEquals(2, fList.size());
   }
 
@@ -148,10 +181,8 @@ public class TestFileListEntityProcessor {
     FileOutputStream f = new FileOutputStream(file);
     f.write(content);
     f.close();
-    // System.out.println("before "+file.lastModified());
     if (changeModifiedTime)
       file.setLastModified(System.currentTimeMillis() - 3600000);
-    // System.out.println("after "+file.lastModified());
     return file;
   }
 }

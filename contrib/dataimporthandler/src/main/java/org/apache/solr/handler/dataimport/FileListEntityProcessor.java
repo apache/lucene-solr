@@ -54,13 +54,54 @@ import java.util.regex.Pattern;
  * @since solr 1.3
  */
 public class FileListEntityProcessor extends EntityProcessorBase {
-  private String fileName, baseDir, excludes;
+  /**
+   * A regex pattern to identify files given in data-config.xml after resolving any variables 
+   */
+  protected String fileName;
 
-  private Date newerThan, olderThan;
+  /**
+   * The baseDir given in data-config.xml after resolving any variables
+   */
+  protected String baseDir;
 
-  private long biggerThan = -1, smallerThan = -1;
+  /**
+   * A Regex pattern of excluded file names as given in data-config.xml after resolving any variables
+   */
+  protected String excludes;
 
-  private boolean recursive = false;
+  /**
+   * The newerThan given in data-config as a {@link java.util.Date}
+   * <p>
+   * <b>Note: </b> This variable is resolved just-in-time in the {@link #nextRow()} method.
+   * </p>
+   */
+  protected Date newerThan;
+
+  /**
+   * The newerThan given in data-config as a {@link java.util.Date}
+   */
+  protected Date olderThan;
+
+  /**
+   * The biggerThan given in data-config as a long value
+   * <p>
+   * <b>Note: </b> This variable is resolved just-in-time in the {@link #nextRow()} method.
+   * </p>
+   */
+  protected long biggerThan = -1;
+
+  /**
+   * The smallerThan given in data-config as a long value
+   * <p>
+   * <b>Note: </b> This variable is resolved just-in-time in the {@link #nextRow()} method.
+   * </p>
+   */
+  protected long smallerThan = -1;
+
+  /**
+   * The recursive given in data-config. Default value is false.
+   */
+  protected boolean recursive = false;
 
   private Pattern fileNamePattern, excludesPattern;
 
@@ -91,13 +132,23 @@ public class FileListEntityProcessor extends EntityProcessorBase {
     }
   }
 
+  /**
+   * Get the Date object corresponding to the given string.
+   *
+   * @param dateStr the date string. It can be a DateMath string or it may have a evaluator function
+   * @return a Date instance corresponding to the input string
+   */
   private Date getDate(String dateStr) {
     if (dateStr == null)
       return null;
 
     Matcher m = PLACE_HOLDER_PATTERN.matcher(dateStr);
     if (m.find()) {
-      return (Date) resolver.resolve(dateStr);
+      Object o = resolver.resolve(m.group(1));
+      if (o instanceof Date)  return (Date)o;
+      dateStr = (String) o;
+    } else  {
+      dateStr = resolver.replaceTokens(dateStr);
     }
     m = EvaluatorBag.IN_SINGLE_QUOTES.matcher(dateStr);
     if (m.find()) {
@@ -118,9 +169,34 @@ public class FileListEntityProcessor extends EntityProcessorBase {
     }
   }
 
+  /**
+   * Get the Long value for the given string after resolving any evaluator or variable.
+   *
+   * @param sizeStr the size as a string
+   * @return the Long value corresponding to the given string
+   */
+  private Long getSize(String sizeStr)  {
+    if (sizeStr == null)
+      return null;
+
+    Matcher m = PLACE_HOLDER_PATTERN.matcher(sizeStr);
+    if (m.find()) {
+      Object o = resolver.resolve(m.group(1));
+      if (o instanceof Number) {
+        Number number = (Number) o;
+        return number.longValue();
+      }
+      sizeStr = (String) o;
+    } else  {
+      sizeStr = resolver.replaceTokens(sizeStr);
+    }
+
+    return Long.parseLong(sizeStr);
+  }
+
   public Map<String, Object> nextRow() {
     if (rowIterator != null)
-      return getAndApplyTrans();
+      return getNext();
     List<Map<String, Object>> fileDetails = new ArrayList<Map<String, Object>>();
     File dir = new File(baseDir);
 
@@ -128,17 +204,16 @@ public class FileListEntityProcessor extends EntityProcessorBase {
     newerThan = getDate(dateStr);
     dateStr = context.getEntityAttribute(OLDER_THAN);
     olderThan = getDate(dateStr);
+    String biggerThanStr = context.getEntityAttribute(BIGGER_THAN);
+    if (biggerThanStr != null)
+      biggerThan = getSize(biggerThanStr);
+    String smallerThanStr = context.getEntityAttribute(SMALLER_THAN);
+    if (smallerThanStr != null)
+      smallerThan = getSize(smallerThanStr);
 
     getFolderFiles(dir, fileDetails);
     rowIterator = fileDetails.iterator();
-    return getAndApplyTrans();
-  }
-
-  private Map<String, Object> getAndApplyTrans() {    
-    while (true) {
-      Map<String, Object> r = getNext();
-      return r;
-    }
+    return getNext();
   }
 
   private void getFolderFiles(File dir, final List<Map<String, Object>> fileDetails) {
@@ -186,7 +261,7 @@ public class FileListEntityProcessor extends EntityProcessorBase {
   }
 
   public static final Pattern PLACE_HOLDER_PATTERN = Pattern
-          .compile("\\$\\{.*?\\}");
+          .compile("\\$\\{(.*?)\\}");
 
   public static final String DIR = "fileDir";
 

@@ -155,6 +155,8 @@ New Features
 
 37.SOLR-1348: Support binary field type in convertType logic in JdbcDataSource (shalin)
 
+38.SOLR-1406: Make FileDataSource and FileListEntityProcessor to be more extensible (Luke Forehand, shalin)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used

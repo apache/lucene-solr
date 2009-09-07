@@ -44,9 +44,15 @@ import org.slf4j.LoggerFactory;
 public class FileDataSource extends DataSource<Reader> {
   public static final String BASE_PATH = "basePath";
 
-  private String basePath;
+  /**
+   * The basePath for this data source
+   */
+  protected String basePath;
 
-  private String encoding = null;
+  /**
+   * The encoding using which the given file should be read
+   */
+  protected String encoding = null;
 
   private static final Logger LOG = LoggerFactory.getLogger(FileDataSource.class);
 
@@ -95,7 +101,16 @@ public class FileDataSource extends DataSource<Reader> {
     }
   }
 
-  private InputStreamReader openStream(File file) throws FileNotFoundException,
+  /**
+   * Open a {@link java.io.Reader} for the given file name
+   *
+   * @param file a {@link java.io.File} instance
+   * @return a Reader on the given file
+   * @throws FileNotFoundException if the File does not exist
+   * @throws UnsupportedEncodingException if the encoding is unsupported
+   * @since solr 1.4
+   */
+  protected Reader openStream(File file) throws FileNotFoundException,
           UnsupportedEncodingException {
     if (encoding == null) {
       return new InputStreamReader(new FileInputStream(file));
