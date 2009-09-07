@@ -64,7 +64,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter
     // Load the fragmenters
     ResourceLoader loader= config.getResourceLoader();
     SolrFragmenter frag = null;
-    for (PluginInfo info : config.getHighlightingFragmenterInfo()) {
+    for (PluginInfo info : config.getPluginInfos(SolrFragmenter.class.getName())) {
       SolrFragmenter fragmenter = (SolrFragmenter) loader.newInstance(info.className);
       fragmenter.init(info.initArgs);
       if(info.isDefault) frag = fragmenter;
@@ -78,7 +78,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter
     fragmenters.put( null, frag );
     // Load the formatters
     SolrFormatter fmt = null;
-    for (PluginInfo info : config.getHighlightingFormatterInfo()) {
+    for (PluginInfo info : config.getPluginInfos(SolrFormatter.class.getName())) {
       SolrFormatter formatter = (SolrFormatter) loader.newInstance(info.className);
       formatter.init(info.initArgs);
       formatters.put(info.name, formatter);

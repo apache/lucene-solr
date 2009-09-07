@@ -30,8 +30,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.xpath.XPathConstants;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
@@ -43,7 +41,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.SolrResourceLoader;
@@ -51,9 +48,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.*;
-import org.apache.solr.util.plugin.NamedListPluginLoader;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.w3c.dom.NodeList;
 
 /**
  * A SearchComponent implementation which provides support for spell checking
@@ -295,7 +290,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
      }
 
       Map<String, QueryConverter> queryConverters = new HashMap<String, QueryConverter>();
-      core.initPlugins(core.getSolrConfig().getQueryConverterInfo(), queryConverters,QueryConverter.class);
+      core.initPlugins(queryConverters,QueryConverter.class);
 
       //ensure that there is at least one query converter defined
       if (queryConverters.size() == 0) {

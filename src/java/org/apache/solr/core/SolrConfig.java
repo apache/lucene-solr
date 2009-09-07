@@ -21,20 +21,28 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.PingRequestHandler;
+import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.QueryResponseWriter;
 
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.FastLRUCache;
+import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.update.SolrIndexConfig;
+import org.apache.solr.spelling.QueryConverter;
+import org.apache.solr.highlight.SolrFormatter;
+import org.apache.solr.highlight.SolrFragmenter;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.index.IndexDeletionPolicy;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.w3c.dom.NamedNodeMap;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -173,7 +181,16 @@ public class SolrConfig extends Config {
     }
      maxWarmingSearchers = getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
 
-     loadPluginInfo();
+     loadPluginInfo(SolrRequestHandler.class,"requestHandler",true, true);
+     loadPluginInfo(QParserPlugin.class,"queryParser",true, true);
+     loadPluginInfo(QueryResponseWriter.class,"queryResponseWriter",true, true);
+     loadPluginInfo(ValueSourceParser.class,"valueSourceParser",true, true);
+     loadPluginInfo(SearchComponent.class,"searchComponent",true, true);
+     loadPluginInfo(QueryConverter.class,"queryConverter",true, true);
+     loadPluginInfo(SolrEventListener.class, "//listener",false, true);
+     loadPluginInfo(DirectoryFactory.class,"directoryFactory",false, true);
+     loadPluginInfo(IndexDeletionPolicy.class,"mainIndex/deletionPolicy",false, true);
+     loadPluginInfo(IndexReaderFactory.class,"indexReaderFactory",false, true);
      updateProcessorChainInfo = loadUpdateProcessorInfo();
      updateHandlerInfo = loadUpdatehandlerInfo();
      loadHighLightingPlugins();
@@ -190,8 +207,8 @@ public class SolrConfig extends Config {
 
   protected void loadHighLightingPlugins() {
     highLghtingClass =  get("highlighting/@class",null);
-    highlightingFragmenterInfo = loadPluginInfo("highlighting/fragmenter",true,true);
-    highlightingFormatterInfo = loadPluginInfo("highlighting/formatter",true, true);
+    loadPluginInfo(SolrFormatter.class,"highlighting/formatter",true, true);
+    loadPluginInfo(SolrFragmenter.class,"highlighting/fragmenter",true, true);
   }
 
   protected UpdateHandlerInfo loadUpdatehandlerInfo() {
@@ -199,20 +216,6 @@ public class SolrConfig extends Config {
             getInt("updateHandler/autoCommit/maxDocs",-1),
             getInt("updateHandler/autoCommit/maxTime",-1),
             getInt("updateHandler/commitIntervalLowerBound",-1));
-  }
-
-  protected void loadPluginInfo() {
-    reqHandlerInfo = loadPluginInfo("requestHandler",true, true);
-    respWriterInfo = loadPluginInfo("queryResponseWriter",true, true);
-    valueSourceParserInfo = loadPluginInfo("valueSourceParser",true, true);
-    queryParserInfo = loadPluginInfo("queryParser",true, true);
-    searchComponentInfo = loadPluginInfo("searchComponent",true, true);
-    queryConverterInfo = loadPluginInfo("queryConverter",true, true);
-    directoryfactoryInfo = loadSinglePlugin("directoryFactory");
-    deletionPolicyInfo = loadSinglePlugin("mainIndex/deletionPolicy");
-    indexReaderFactoryInfo = loadSinglePlugin("indexReaderFactory");
-    firstSearcherListenerInfo = loadPluginInfo("//listener[@event='firstSearcher']",false, true);
-    newSearcherListenerInfo = loadPluginInfo("//listener[@event='newSearcher']",false, true);
   }
 
   protected Map<String, List<PluginInfo>> loadUpdateProcessorInfo() {
@@ -247,21 +250,15 @@ public class SolrConfig extends Config {
             Collections.<String, List<PluginInfo>>emptyMap():
             Collections.unmodifiableMap(chains);
   }
-  private PluginInfo loadSinglePlugin(String tag) {
-    List<PluginInfo> l = loadPluginInfo(tag, false, true);
-    return l.isEmpty() ? null : l.get(0);
-  }
 
-  private List<PluginInfo> loadPluginInfo(String tag, boolean requireName, boolean requireClass) {
+  private void loadPluginInfo(Class clazz, String tag, boolean requireName, boolean requireClass) {
     ArrayList<PluginInfo> result = new ArrayList<PluginInfo>();
     NodeList nodes = (NodeList) evaluate(tag, XPathConstants.NODESET);
      for (int i=0; i<nodes.getLength(); i++) {
        PluginInfo pluginInfo = new PluginInfo(nodes.item(i), "[solrconfig.xml] " + tag, requireName, requireClass);
        if(pluginInfo.isEnabled()) result.add(pluginInfo);
      }
-    return result.isEmpty() ?
-            Collections.<PluginInfo>emptyList() :
-            Collections.unmodifiableList(result) ;
+    if(!result.isEmpty()) pluginStore.put(clazz.getName(),result);
   }
 
   /* The set of materialized parameters: */
@@ -289,23 +286,15 @@ public class SolrConfig extends Config {
   public final SolrIndexConfig defaultIndexConfig;
   public final SolrIndexConfig mainIndexConfig;
 
-  protected List<PluginInfo> reqHandlerInfo;
-  protected List<PluginInfo> queryParserInfo;
-  protected List<PluginInfo> respWriterInfo;
-  protected List<PluginInfo> valueSourceParserInfo;
-  protected List<PluginInfo> searchComponentInfo;
-  protected List<PluginInfo> highlightingFragmenterInfo;
-  protected List<PluginInfo> highlightingFormatterInfo;
-  protected List<PluginInfo> firstSearcherListenerInfo;
-  protected PluginInfo deletionPolicyInfo;
-  protected PluginInfo indexReaderFactoryInfo;
-  protected List<PluginInfo> newSearcherListenerInfo;
-  protected List<PluginInfo> queryConverterInfo;
+//  protected PluginInfo deletionPolicyInfo;
+//  protected PluginInfo indexReaderFactoryInfo;
 
-  protected PluginInfo directoryfactoryInfo;
+//  protected PluginInfo directoryfactoryInfo;
   protected Map<String ,List<PluginInfo>> updateProcessorChainInfo ;
   protected UpdateHandlerInfo updateHandlerInfo ;
   protected String highLghtingClass;
+
+  private Map<String, List<PluginInfo>> pluginStore = new LinkedHashMap<String, List<PluginInfo>>();
 
   public final int maxWarmingSearchers;
   public final boolean unlockOnStartup;
@@ -462,36 +451,27 @@ public class SolrConfig extends Config {
     } 
   }
 
-
-  public List<PluginInfo> getReqHandlerInfo() { return reqHandlerInfo; }
-
-  public List<PluginInfo> getQueryParserInfo() { return queryParserInfo; }
-
-  public List<PluginInfo> getRespWriterInfo() { return respWriterInfo; }
-
-  public List<PluginInfo> getValueSourceParserInfo() { return valueSourceParserInfo; }
-
-  public List<PluginInfo> getSearchComponentInfo() { return searchComponentInfo; }
-
-  public List<PluginInfo> getFirstSearcherListenerInfo() { return firstSearcherListenerInfo; }
-
-  public List<PluginInfo> getNewSearcherListenerInfo() { return newSearcherListenerInfo; }
-
-  public PluginInfo getDirectoryFactoryInfo() { return directoryfactoryInfo; }
-
-  public PluginInfo getDeletionPolicyInfo() { return deletionPolicyInfo; }
-
   public Map<String, List<PluginInfo>> getUpdateProcessorChainInfo() { return updateProcessorChainInfo; }
-
-  public List<PluginInfo> getQueryConverterInfo() { return queryConverterInfo; }
 
   public UpdateHandlerInfo getUpdateHandlerInfo() { return updateHandlerInfo; }
 
-  public PluginInfo getIndexReaderFactoryInfo() { return indexReaderFactoryInfo; }
-
-  public List<PluginInfo> getHighlightingFormatterInfo() { return highlightingFormatterInfo; }
-
-  public List<PluginInfo> getHighlightingFragmenterInfo() { return highlightingFragmenterInfo; }
-
   public String getDataDir() { return dataDir; }
+
+  /**SolrConfig keeps a repository of plugins by the type. The known interfaces are the types.
+   * @param type The key is FQN of the plugin class there are a few  known types : SolrFormatter, SolrFragmenter
+   * SolrRequestHandler,QParserPlugin, QueryResponseWriter,ValueSourceParser,
+   * SearchComponent, QueryConverter, SolrEventListener, DirectoryFactory,
+   * IndexDeletionPolicy, IndexReaderFactory
+   * @return
+   */
+  public List<PluginInfo> getPluginInfos(String  type){
+    List<PluginInfo> result = pluginStore.get(type);
+    return result == null ?
+            (List<PluginInfo>) Collections.EMPTY_LIST:
+            result; 
+  }
+  public PluginInfo getPluginInfo(String  type){
+    List<PluginInfo> result = pluginStore.get(type);
+    return result == null || result.isEmpty() ? null: result.get(0);
+  }
 }

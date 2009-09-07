@@ -248,7 +248,7 @@ public final class SolrCore implements SolrInfoMBean {
   }
 
    private void initDeletionPolicy() {
-     PluginInfo info = solrConfig.getDeletionPolicyInfo();
+     PluginInfo info = solrConfig.getPluginInfo(IndexDeletionPolicy.class.getName());
      IndexDeletionPolicy delPolicy = null;
      if(info != null){
        delPolicy = createInstance(info.className,IndexDeletionPolicy.class,"Deletion Policy for SOLR");
@@ -261,24 +261,26 @@ public final class SolrCore implements SolrInfoMBean {
      solrDelPolicy = new IndexDeletionPolicyWrapper(delPolicy);
    }
 
-  private List<SolrEventListener> parseListener(List<PluginInfo> path) {
-    List<SolrEventListener> lst = new ArrayList<SolrEventListener>();
-    for (PluginInfo info : path) {
+  private void initListeners() {
+    List<PluginInfo> l = solrConfig.getPluginInfos(SolrEventListener.class.getName());
+    firstSearcherListeners = new ArrayList<SolrEventListener>();
+    newSearcherListeners = new ArrayList<SolrEventListener>();
+    for (PluginInfo info : l) {
       SolrEventListener listener = createEventListener(info.className);
       listener.init(info.initArgs);
-      lst.add(listener);
+      String event = info.attributes.get("event");
+      if("firstSearcher".equals(event) ){
+        firstSearcherListeners.add(listener);
+      } else if("newSearcher".equals(event) ){
+        newSearcherListeners.add(listener);
+      }
       log.info(logid + "Added SolrEventListener: " + listener);
     }
-    return lst;
   }
 
   List<SolrEventListener> firstSearcherListeners;
   List<SolrEventListener> newSearcherListeners;
-  private void parseListeners() {
-    firstSearcherListeners = parseListener(solrConfig.getFirstSearcherListenerInfo());
-    newSearcherListeners = parseListener(solrConfig.getNewSearcherListenerInfo());
-  }
-  
+
   /**
    * NOTE: this function is not thread safe.  However, it is safe to call within the
    * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
@@ -328,7 +330,7 @@ public final class SolrCore implements SolrInfoMBean {
 
    private void initDirectoryFactory() {
     DirectoryFactory dirFactory;
-    PluginInfo info = solrConfig.getDirectoryFactoryInfo();
+    PluginInfo info = solrConfig.getPluginInfo(DirectoryFactory.class.getName());
     if (info != null) {
       dirFactory = (DirectoryFactory) getResourceLoader().newInstance(info.className);
       dirFactory.init(info.initArgs);
@@ -341,7 +343,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   private void initIndexReaderFactory() {
     IndexReaderFactory indexReaderFactory;
-    PluginInfo info = solrConfig.getIndexReaderFactoryInfo();
+    PluginInfo info = solrConfig.getPluginInfo(IndexReaderFactory.class.getName());
     if (info != null) {
       indexReaderFactory = (IndexReaderFactory) resourceLoader.newInstance(info.className);
       indexReaderFactory.init(info.initArgs);
@@ -521,7 +523,7 @@ public final class SolrCore implements SolrInfoMBean {
 
     booleanQueryMaxClauseCount();
   
-    parseListeners();
+    initListeners();
 
     initDeletionPolicy();
 
@@ -817,7 +819,7 @@ public final class SolrCore implements SolrInfoMBean {
   private Map<String, SearchComponent> loadSearchComponents()
   {
     Map<String, SearchComponent> components = new HashMap<String, SearchComponent>();
-    initPlugins(solrConfig.getSearchComponentInfo(),components,SearchComponent.class);    
+    initPlugins(components,SearchComponent.class);
     addIfNotPresent(components,QueryComponent.COMPONENT_NAME,QueryComponent.class);
     addIfNotPresent(components,FacetComponent.COMPONENT_NAME,FacetComponent.class);
     addIfNotPresent(components,MoreLikeThisComponent.COMPONENT_NAME,MoreLikeThisComponent.class);
@@ -1388,7 +1390,7 @@ public final class SolrCore implements SolrInfoMBean {
   /** Configure the query response writers. There will always be a default writer; additional
    * writers may also be configured. */
   private void initWriters() {
-    defaultResponseWriter = initPlugins(solrConfig.getRespWriterInfo(), responseWriters, QueryResponseWriter.class);
+    defaultResponseWriter = initPlugins(responseWriters, QueryResponseWriter.class);
     for (Map.Entry<String, QueryResponseWriter> entry : DEFAULT_RESPONSE_WRITERS.entrySet()) {
       if(responseWriters.get(entry.getKey()) == null) responseWriters.put(entry.getKey(), entry.getValue());
     }
@@ -1422,7 +1424,7 @@ public final class SolrCore implements SolrInfoMBean {
 
   /** Configure the query parsers. */
   private void initQParsers() {
-    initPlugins(solrConfig.getQueryParserInfo(),qParserPlugins,QParserPlugin.class);
+    initPlugins(qParserPlugins,QParserPlugin.class);
     // default parsers
     for (int i=0; i<QParserPlugin.standardPlugins.length; i+=2) {
      try {
@@ -1449,7 +1451,7 @@ public final class SolrCore implements SolrInfoMBean {
   
   /** Configure the ValueSource (function) plugins */
   private void initValueSourceParsers() {
-    initPlugins(solrConfig.getValueSourceParserInfo(),valueSourceParsers,ValueSourceParser.class);
+    initPlugins(valueSourceParsers,ValueSourceParser.class);
     // default value source parsers
     for (Map.Entry<String, ValueSourceParser> entry : ValueSourceParser.standardValueSourceParsers.entrySet()) {
       try {
@@ -1465,9 +1467,9 @@ public final class SolrCore implements SolrInfoMBean {
     }
   }
 
-  public <T> T initPlugins(List<PluginInfo> pluginInfos , Map<String ,T> registry, Class<T> type){
+  public <T> T initPlugins(Map<String ,T> registry, Class<T> type){
     T def = null;
-    for (PluginInfo info : pluginInfos) {
+    for (PluginInfo info : solrConfig.getPluginInfos(type.getName())) {
       T o = createInstance(info.className,type, type.getSimpleName());
       if (o instanceof NamedListInitializedPlugin) {
         ((NamedListInitializedPlugin) o).init(info.initArgs);
