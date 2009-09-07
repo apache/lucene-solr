@@ -22,6 +22,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.common.util.ContentStream;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -88,7 +90,7 @@ public class DataImporter {
 
   DataImporter(String dataConfig, SolrCore core, Map<String, Properties> ds, Map<String, Object> session) {
     if (dataConfig == null)
-      throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
+      throw new DataImportHandlerException(SEVERE,
               "Configuration not found");
     this.core = core;
     this.schema = core.getSchema();
@@ -173,13 +175,13 @@ public class DataImporter {
       config = new DataConfig();
       NodeList elems = document.getElementsByTagName("dataConfig");
       if(elems == null || elems.getLength() == 0) {
-        throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "the root node '<dataConfig>' is missing");
+        throw new DataImportHandlerException(SEVERE, "the root node '<dataConfig>' is missing");
       }
       config.readFromXml((Element) elems.item(0));
       LOG.info("Data Configuration loaded successfully");
     } catch (Exception e) {
       SolrConfig.severeErrors.add(e);
-      throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
+      throw new DataImportHandlerException(SEVERE,
               "Exception occurred while initializing context", e);
     }
   }
@@ -275,8 +277,8 @@ public class DataImporter {
       p = dataSourceProps.get(null);// for default data source
     if (p == null)
       p = config.dataSources.get(null);
-    if (p == null)
-      throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
+    if (p == null)  
+      throw new DataImportHandlerException(SEVERE,
               "No dataSource :" + name + " available for entity :"
                       + key.name);
     String impl = p.getProperty(TYPE);
@@ -287,8 +289,7 @@ public class DataImporter {
       try {
         dataSrc = (DataSource) DocBuilder.loadClass(impl, getCore()).newInstance();
       } catch (Exception e) {
-        throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
-                "Invalid type for data source: " + impl, e);
+        wrapAndThrow(SEVERE, e, "Invalid type for data source: " + impl);
       }
     }
     try {
@@ -304,8 +305,7 @@ public class DataImporter {
       }
       dataSrc.init(ctx, copyProps);
     } catch (Exception e) {
-      throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
-              "Failed to initialize DataSource: " + key.dataSource, e);
+      wrapAndThrow(SEVERE, e, "Failed to initialize DataSource: " + key.dataSource);
     }
     return dataSrc;
   }

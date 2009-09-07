@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.apache.solr.common.SolrException;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 import org.slf4j.Logger;
@@ -64,7 +63,7 @@ public class JdbcDataSource extends
 
     String bsz = initProps.getProperty("batchSize");
     if (bsz != null) {
-      bsz = (String) context.getVariableResolver().replaceTokens(bsz);
+      bsz = context.getVariableResolver().replaceTokens(bsz);
       try {
         batchSize = Integer.parseInt(bsz);
         if (batchSize == -1)
@@ -112,11 +111,11 @@ public class JdbcDataSource extends
       try {
         DocBuilder.loadClass(driver, context.getSolrCore());
       } catch (ClassNotFoundException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not load driver: " + driver, e);
+        wrapAndThrow(SEVERE, e, "Could not load driver: " + driver);
       }
     } else {
       if(jndiName == null){
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Driver must be specified");
+        throw new DataImportHandlerException(SEVERE, "One of driver or jndiName must be specified in the data source");
       }
     }
 
@@ -249,8 +248,7 @@ public class JdbcDataSource extends
                 + (System.currentTimeMillis() - start));
         colNames = readFieldNames(resultSet.getMetaData());
       } catch (Exception e) {
-        throw new DataImportHandlerException(SEVERE,
-                "Unable to execute query: " + query, e);
+        wrapAndThrow(SEVERE, e, "Unable to execute query: " + query);
       }
       if (resultSet == null) {
         rSetIterator = new ArrayList<Map<String, Object>>().iterator();
@@ -318,9 +316,7 @@ public class JdbcDataSource extends
           }
         } catch (SQLException e) {
           logError("Error reading data ", e);
-          throw new DataImportHandlerException(
-                  DataImportHandlerException.SEVERE,
-                  "Error reading data from database", e);
+          wrapAndThrow(SEVERE, e, "Error reading data from database");
         }
       }
       return result;
@@ -337,7 +333,6 @@ public class JdbcDataSource extends
           return false;
         }
       } catch (SQLException e) {
-        logError("Error reading data ", e);
         close();
         wrapAndThrow(SEVERE,e);
         return false;
@@ -350,7 +345,6 @@ public class JdbcDataSource extends
           resultSet.close();
         if (stmt != null)
           stmt.close();
-
       } catch (Exception e) {
         logError("Exception while closing result set", e);
       } finally {
@@ -365,7 +359,7 @@ public class JdbcDataSource extends
     if (currTime - connLastUsed > CONN_TIME_OUT) {
       synchronized (this) {
         Connection tmpConn = factory.call();
-        close();
+        closeConnection();
         connLastUsed = System.currentTimeMillis();
         return conn = tmpConn;
       }
@@ -388,15 +382,23 @@ public class JdbcDataSource extends
   }
 
   private boolean isClosed = false;
+
   public void close() {
     try {
-      conn.close();
-    } catch (Exception e) {
-      LOG.error("Ignoring Error when closing connection", e);
-    } finally{
+      closeConnection();
+    } finally {
       isClosed = true;
     }
+  }
 
+  private void closeConnection()  {
+    try {
+      if (conn != null) {
+        conn.close();
+      }
+    } catch (Exception e) {
+      LOG.error("Ignoring Error when closing connection", e);
+    }
   }
 
   private static final long CONN_TIME_OUT = 10 * 1000; // 10 seconds
