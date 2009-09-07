@@ -59,16 +59,6 @@ public class LLRect {
   }
   
   @Override
-  public boolean equals(Object otherObj) {
-    if (!(otherObj instanceof LLRect)) return false;
-    return equals((LLRect)otherObj);
-  }
-  
-  public boolean equals(LLRect other) {
-    return getLowerLeft().equals(other.getLowerLeft()) && getUpperRight().equals(other.getUpperRight());
-  }
-  
-  @Override
   public String toString() {
     return "{" + ll + ", " + ur + "}";
   }
@@ -103,4 +93,37 @@ public class LLRect {
   public Rectangle toRectangle() {
     return new Rectangle(ll.getLng(), ll.getLat(), ur.getLng(), ur.getLat());
   }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((ll == null) ? 0 : ll.hashCode());
+    result = prime * result + ((ur == null) ? 0 : ur.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    LLRect other = (LLRect) obj;
+    if (ll == null) {
+      if (other.ll != null)
+        return false;
+    } else if (!ll.equals(other.ll))
+      return false;
+    if (ur == null) {
+      if (other.ur != null)
+        return false;
+    } else if (!ur.equals(other.ur))
+      return false;
+    return true;
+  }
+  
+  
 }

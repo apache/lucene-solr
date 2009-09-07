@@ -39,12 +39,6 @@ public class FloatLatLng extends LatLng {
   }
   
   @Override
-  public boolean equals(LatLng other) {
-    return lat==other.getLat() && lng==other.getLng();
-  }
-
-  
-  @Override
   public LatLng copy() {
     return new FloatLatLng(this);
   }
@@ -116,6 +110,34 @@ public class FloatLatLng extends LatLng {
     return new FloatLatLng(
         (lat+other.getLat())/2.0,
         (lng+other.getLng())/2.0);
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    long temp;
+    temp = Double.doubleToLongBits(lat);
+    int result = prime  + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(lng);
+    result = prime * result + (int) (temp ^ (temp >>> 32));
+    result = prime * result + (normalized ? 1231 : 1237);
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (getClass() != obj.getClass())
+      return false;
+    FloatLatLng other = (FloatLatLng) obj;
+    if (Double.doubleToLongBits(lat) != Double.doubleToLongBits(other.lat))
+      return false;
+    if (Double.doubleToLongBits(lng) != Double.doubleToLongBits(other.lng))
+      return false;
+    if (normalized != other.normalized)
+      return false;
+    return true;
   }
 
 }

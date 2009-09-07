@@ -50,11 +50,6 @@ public class FixedLatLng extends LatLng {
     this.lng=lng;
   }
   
-  @Override
-  public boolean equals(LatLng other) {
-    return lat==other.getFixedLat() && lng==other.getFixedLng();
-  }
-  
   public static double fixedToDouble(int fixed) {
     return (fixed)/SCALE_FACTOR;
   }
@@ -137,4 +132,29 @@ public class FixedLatLng extends LatLng {
         (lng+other.getFixedLng())/2);
   }
 
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = prime + lat;
+    result = prime * result + lng;
+    result = prime * result + (normalized ? 1231 : 1237);
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (getClass() != obj.getClass())
+      return false;
+    FixedLatLng other = (FixedLatLng) obj;
+    if (lat != other.lat)
+      return false;
+    if (lng != other.lng)
+      return false;
+    if (normalized != other.normalized)
+      return false;
+    return true;
+  }
+  
 }

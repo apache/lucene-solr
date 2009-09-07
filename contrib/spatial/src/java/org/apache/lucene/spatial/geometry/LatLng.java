@@ -50,14 +50,6 @@ public abstract class LatLng {
 
   public abstract FloatLatLng toFloat();
   
-  public abstract boolean equals(LatLng other);
-
-  @Override
-  public boolean equals(Object other) {
-    if (!(other instanceof LatLng)) return false;
-    return equals((LatLng)other);
-  }
-  
   /**
    * Convert the lat/lng into the cartesian coordinate plane such that all
    * world coordinates are represented in the first quadrant.
@@ -159,4 +151,8 @@ public abstract class LatLng {
    * @param other
    */
   public abstract LatLng calculateMidpoint(LatLng other);
+  
+  public abstract int hashCode();
+
+  public abstract boolean equals(Object obj);
 }

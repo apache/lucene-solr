@@ -52,16 +52,6 @@ public class Rectangle implements Geometry2D {
     this.ptMax=new Point2D(Math.max(x1, x2), Math.max(y1, y2));
   }
   
-  public boolean equals(Rectangle other) {
-    return other.ptMin.equals(ptMin) && other.ptMax.equals(ptMax);
-  }
-  
-  @Override
-  public boolean equals(Object other) {
-    if (!(other instanceof Rectangle)) return false;
-    return equals((Rectangle)other);
-  }
-  
   public double area() {
     return (ptMax.getX() - ptMin.getX()) * (ptMax.getY() - ptMin.getY());
   }
@@ -102,6 +92,37 @@ public class Rectangle implements Geometry2D {
 
   public Point2D getMinPoint() {
     return ptMin;
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((ptMax == null) ? 0 : ptMax.hashCode());
+    result = prime * result + ((ptMin == null) ? 0 : ptMin.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (getClass() != obj.getClass())
+      return false;
+    Rectangle other = (Rectangle) obj;
+    if (ptMax == null) {
+      if (other.ptMax != null)
+        return false;
+    } else if (!ptMax.equals(other.ptMax))
+      return false;
+    if (ptMin == null) {
+      if (other.ptMin != null)
+        return false;
+    } else if (!ptMin.equals(other.ptMin))
+      return false;
+    return true;
   }
 
 }
