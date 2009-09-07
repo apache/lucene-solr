@@ -6,8 +6,8 @@
 <meta name="Forrest-version" content="0.8">
 <meta name="Forrest-skin-name" content="lucene">
 <title>
-	Apache Lucene - Lucene Sandbox
-		</title>
+	        Apache Lucene - Lucene Contrib
+		  </title>
 <link type="text/css" href="../skin/basic.css" rel="stylesheet">
 <link media="screen" type="text/css" href="../skin/screen.css" rel="stylesheet">
 <link media="print" type="text/css" href="../skin/print.css" rel="stylesheet">
@@ -215,7 +215,7 @@ document.write("Last Published: " + document.lastModified);
 <a href="../gettingstarted.html">Getting Started</a>
 </div>
 <div class="menupage">
-<div class="menupagetitle">Lucene Sandbox</div>
+<div class="menupagetitle">Lucene Contrib</div>
 </div>
 <div class="menuitem">
 <a href="../queryparsersyntax.html">Query Syntax</a>
@@ -250,206 +250,243 @@ document.write("Last Published: " + document.lastModified);
         PDF</a>
 </div>
 <h1>
-	Apache Lucene - Lucene Sandbox
-		</h1>
+	        Apache Lucene - Lucene Contrib
+		  </h1>
 <div id="minitoc-area">
 <ul class="minitoc">
 <li>
-<a href="#Lucene Sandbox">Lucene Sandbox</a>
+<a href="#Contrib">Lucene Contrib</a>
 <ul class="minitoc">
 <li>
-<a href="#Snowball Stemmers for Lucene">Snowball Stemmers for Lucene</a>
+<a href="#analyzers">analyzers</a>
 </li>
 <li>
-<a href="#Analyzers, Tokenizers, Filters">Analyzers, Tokenizers, Filters</a>
+<a href="#ant">ant</a>
 </li>
 <li>
-<a href="#Ant">Ant</a>
+<a href="#benchmark">benchmark</a>
 </li>
 <li>
-<a href="#WordNet/Synonyms">WordNet/Synonyms</a>
+<a href="#collation">collation</a>
 </li>
 <li>
-<a href="#Lucli - Lucene Command-line Interface">Lucli - Lucene Command-line Interface</a>
+<a href="#db">db</a>
 </li>
 <li>
-<a href="#Term Highlighter">Term Highlighter</a>
+<a href="#highlighter">highlighter</a>
 </li>
 <li>
-<a href="#Fast Vector Highlighter">Fast Vector Highlighter</a>
+<a href="#fast-vector-highlighter">fast-vector-highlighter</a>
 </li>
 <li>
-<a href="#Javascript Query Constructor">Javascript Query Constructor</a>
+<a href="#instantiated">instantiated</a>
 </li>
 <li>
-<a href="#Javascript Query Validator">Javascript Query Validator</a>
+<a href="#lucli">lucli</a>
 </li>
 <li>
-<a href="#High Frequency Terms">High Frequency Terms</a>
+<a href="#memory">memory</a>
 </li>
 <li>
-<a href="#InstantiatedIndex">InstantiatedIndex</a>
+<a href="#misc">misc</a>
+</li>
+<li>
+<a href="#queryparser">queryparser</a>
+</li>
+<li>
+<a href="#regex">regex</a>
+</li>
+<li>
+<a href="#remote">remote</a>
+</li>
+<li>
+<a href="#snowball">snowball</a>
+</li>
+<li>
+<a href="#spatial">spatial</a>
+</li>
+<li>
+<a href="#spellchecker">spellchecker</a>
+</li>
+<li>
+<a href="#surround">surround</a>
+</li>
+<li>
+<a href="#swing">swing</a>
+</li>
+<li>
+<a href="#wikipedia">wikipedia</a>
+</li>
+<li>
+<a href="#wordnet">wordnet</a>
+</li>
+<li>
+<a href="#xml-query-parser">xml-query-parser</a>
 </li>
 </ul>
 </li>
 </ul>
 </div>
 
-        
-<a name="N10012"></a><a name="Lucene Sandbox"></a>
-<h2 class="boxed">Lucene Sandbox</h2>
+      
+<a name="N1000C"></a><a name="Contrib"></a>
+<h2 class="boxed">Lucene Contrib</h2>
 <div class="section">
 <p>
-                Lucene project also contains a workspace, Lucene Sandbox, that is open to all Lucene committers, as well
-                as a few other developers.  The purpose of the Sandbox is to host various third party contributions,
-                and to serve as a place to try out new ideas and prepare them for inclusion into the core Lucene
-                distribution.<br>
-                Users are free to experiment with the components developed in the Sandbox, but Sandbox components will
-                not necessarily be maintained, particularly in their current state.
-            </p>
+	          The Lucene Java project also contains a workspace, Lucene Contrib
+	          (formerly known as the Lucene Sandbox), that is open both to all Lucene 
+	          Java core committers and to developers whose commit rights are 
+	          restricted to the Contrib workspace; these developers are referred to 
+	          as "Contrib committers".  The Lucene Contrib workspace hosts the 
+	          following types of packages:
+	        </p>
+<ul>
+	          
+<li>Various third party contributions.</li>
+	          
+<li>
+	            Contributions with third party dependencies - the Lucene Java core
+	            distribution has no external runtime dependencies.
+	          </li>
+	          
+<li>
+	            New ideas that are intended for eventual inclusion into the Lucene 
+	            Java core.
+	          </li>
+	         
+</ul>
 <p>
-                You can access the Lucene Sandbox repository at
-                <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/">http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/</a>.
-            </p>
-<a name="N10023"></a><a name="Snowball Stemmers for Lucene"></a>
-<h3 class="boxed">Snowball Stemmers for Lucene</h3>
-<p>
-                    This project provides pre-compiled versions of the Snowball stemmers
-                    for Lucene.
-                </p>
-<p>
-                    
-<a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/snowball">The
-                        repository for the Snowball contribution.</a>
-                
-</p>
-<p>
-                    
-<a href="http://snowball.tartarus.org/">Background information on Snowball</a>,
-                    which is a language for stemmers developed by Martin Porter.
-                </p>
-<a name="N1003A"></a><a name="Analyzers, Tokenizers, Filters"></a>
-<h3 class="boxed">Analyzers, Tokenizers, Filters</h3>
-<p>
-                  Contributed Analyzers, Tokenizers, and Filters for various languages.
-                </p>
-<p>
-                    
-<a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/analyzers/">The
-                        repository for the Analyzers contribution.</a>
-                
-</p>
-<a name="N1004A"></a><a name="Ant"></a>
-<h3 class="boxed">Ant</h3>
-<p>
-                    The Ant project is a useful Ant task that creates a Lucene index out of an Ant fileset.  It also
-                    contains an example HTML parser that uses JTidy.
-                </p>
-<p>
-                    
-<a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/ant/">The
-                        repository for the Ant contribution.</a>
-                
-</p>
-<a name="N1005A"></a><a name="WordNet/Synonyms"></a>
-<h3 class="boxed">WordNet/Synonyms</h3>
-<p>
-                    The Lucene WordNet code consists of a single class which parses a prolog file
-                    from the WordNet site that contains a list of English words and synonyms.
-                    The class builds a Lucene index from the synonyms file.  Your querying code could
-                    hit this index to build up a set of synonyms for the terms in the
-                    search query.
-                </p>
-<p>
-                    More information on the <a href="http://www.tropo.com/techno/java/lucene/wordnet.html">Lucene WordNet package</a>.
-                    <a href="http://wordnet.princeton.edu/">WordNet</a> is an online database of English language words that contains
-                    synonyms, definitions, and various relationships between synonym sets.
-                </p>
-<p>
-                    
-<a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/wordnet/">The
-                        repository for the WordNet module.</a>
-                
-</p>
-<a name="N10075"></a><a name="Lucli - Lucene Command-line Interface"></a>
-<h3 class="boxed">Lucli - Lucene Command-line Interface</h3>
-<p>
-                  The Lucli application allows index manipulation from the
-                    command-line.
-                </p>
-<p>
-                    
-<a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/lucli/">The
-                        repository for the Lucli contribution.</a>
-                
-</p>
-<a name="N10085"></a><a name="Term Highlighter"></a>
-<h3 class="boxed">Term Highlighter</h3>
-<p>
-                  A small set of classes for highlighting matching terms in
-                    search results.
-                </p>
-<a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/highlighter/">The
-                        repository for the Highlighter contribution.</a><a name="N10092"></a><a name="Fast Vector Highlighter"></a>
-<h3 class="boxed">Fast Vector Highlighter</h3>
-<p>
-                  An alternative set of classes for highlighting matching terms in search results.
-                </p>
-<a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/fast-vector-highlighter/">The
-                        repository for the Fast Vector Highlighter contribution.</a><a name="N1009F"></a><a name="Javascript Query Constructor"></a>
-<h3 class="boxed">Javascript Query Constructor</h3>
-<p>
-                    Javascript library to support client-side query-building. Provides support for a user interface similar to
-                    <a href="http://www.google.com.sg/advanced_search">Google's Advanced Search</a>.
-                </p>
-<p>
-
-                    
-<a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/javascript/queryConstructor/">The
-                        repository for the Javascript Query Constructor files.</a>
-                
-</p>
-<a name="N100B3"></a><a name="Javascript Query Validator"></a>
-<h3 class="boxed">Javascript Query Validator</h3>
-<p>
-                    Javascript library to support client-side query validation. Lucene doesn't like malformed queries and tends to
-                    throw ParseException, which are often difficult to interpret and pass on to the user. This library hopes to
-                    alleviate that problem.
-                </p>
-<p>
-
-                    
-<a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/javascript/queryValidator/">The
-                        repository for the Javascript Query Validator files.</a>
-                
-</p>
-<a name="N100C3"></a><a name="High Frequency Terms"></a>
-<h3 class="boxed">High Frequency Terms</h3>
-<p>
-                    The miscellaneous package is for classes that don't fit anywhere else. The only class in it right now determines
-                    what terms occur the most inside a Lucene index.  This could be useful for analyzing which terms may need to go
-                    into a custom stop word list for better search results.
-                </p>
-<p>
-
-                    
-<a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/miscellaneous/">The
-                        repository for miscellaneous classes.</a>
-                
-</p>
-<a name="N100D3"></a><a name="InstantiatedIndex"></a>
-<h3 class="boxed">InstantiatedIndex</h3>
-<p>
-                   RAM-based index that enables much faster searching than RAMDirectory.
+	          Users are free to experiment with the components developed in the
+	          Contrib workspace, but Contrib packages will not necessarily be
+	          maintained, particularly in their current state. The Lucene Java core 
+	          backwards compatibility commitments (see
+	          <a href="http://wiki.apache.org/lucene-java/BackwardsCompatibility">http://wiki.apache.org/lucene-java/BackwardsCompatibility</a>)
+	          do not necessarily extend to the packages in the Contrib workspace.
+	          See the README.txt file for each Contrib package for details.  If the
+	          README.txt file does not address its backwards compatibility
+	          commitments, users should assume it does not make any compatibility
+	          commitments.
 	        </p>
 <p>
-                    
-<a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/instantiated/">The
-                        repository for instantiated index.</a>
-                
+  			  See <a href="http://lucene.apache.org/java/2_9_0/changes/Contrib-Changes.html">Contrib CHANGES</a> for changes included in the current release.
+			</p>
+<p>
+                You can access the current trunk Contrib repository at
+                <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/">http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/</a>.
+            </p>
+<a name="N10035"></a><a name="analyzers"></a>
+<h3 class="boxed">analyzers</h3>
+<p>Contributed Analyzers, Tokenizers, and Filters for various uses and languages.</p>
+<p>See <a href="../api/contrib-analyzers/index.html">analyzers javadoc</a>
+</p>
+<a name="N10044"></a><a name="ant"></a>
+<h3 class="boxed">ant</h3>
+<p>Ant task to create Lucene indexes.</p>
+<p>See <a href="../api/contrib-ant/index.html">ant javadoc</a>
+</p>
+<a name="N10053"></a><a name="benchmark"></a>
+<h3 class="boxed">benchmark</h3>
+<p>The benchmark contribution contains tools for benchmarking Lucene using standard, freely available corpora.</p>
+<p>See <a href="../api/contrib-benchmark/index.html">benchmark javadoc</a>
+</p>
+<a name="N10062"></a><a name="collation"></a>
+<h3 class="boxed">collation</h3>
+<p>CollationKeyFilter/Analyzer and ICUCollationKeyFilter/Analyzer - can be used as an efficient replacement for Locale 
+                sorting and Locale range queries as well as Locale-specific normalization </p>
+<p>See <a href="../api/contrib-collation/index.html">collation javadoc</a>
+</p>
+<a name="N10071"></a><a name="db"></a>
+<h3 class="boxed">db</h3>
+<p>Provides integration with Berkley DB.</p>
+<p>See <a href="../api/contrib-db/index.html">db javadoc</a>
+</p>
+<a name="N10080"></a><a name="highlighter"></a>
+<h3 class="boxed">highlighter</h3>
+<p>A set of classes for highlighting matching terms in search results.</p>
+<p>See <a href="../api/contrib-highlighter/index.html">highlighter javadoc</a>
+</p>
+<a name="N1008F"></a><a name="fast-vector-highlighter"></a>
+<h3 class="boxed">fast-vector-highlighter</h3>
+<p>An alternative set of classes for highlighting matching terms in search results that relies on stored term vectors.
+                This highlighter can be much faster than the standard highlighter, especially on large fields.</p>
+<p>See <a href="../api/contrib-fast-vector-highlighter/index.html">fast-vector-highlighter javadoc</a>
+</p>
+<a name="N1009E"></a><a name="instantiated"></a>
+<h3 class="boxed">instantiated</h3>
+<p>RAM-based index that enables much faster searching than RAMDirectory in certain situations.</p>
+<p>See <a href="../api/contrib-instantiated/index.html">instantiated javadoc</a>
+</p>
+<a name="N100AD"></a><a name="lucli"></a>
+<h3 class="boxed">lucli</h3>
+<p>An application that allows Lucene index manipulation from the command-line.</p>
+<p>See <a href="../api/contrib-lucli/index.html">lucli javadoc</a>
+</p>
+<a name="N100BC"></a><a name="memory"></a>
+<h3 class="boxed">memory</h3>
+<p>High-performance single-document main memory index.</p>
+<p>See <a href="../api/contrib-memory/index.html">memory javadoc</a>
+</p>
+<a name="N100CB"></a><a name="misc"></a>
+<h3 class="boxed">misc</h3>
+<p>A variety of miscellaneous files, including QueryParsers, and other alternate Lucene class implementations and tools.</p>
+<p>See <a href="../api/contrib-misc/index.html">misc javadoc</a>
+</p>
+<a name="N100DA"></a><a name="queryparser"></a>
+<h3 class="boxed">queryparser</h3>
+<p>A new Lucene query parser implementation, which matches the syntax of the core QueryParser but offers a more modular architecture to enable customization.</p>
+<p>See <a href="../api/contrib-queryparser/index.html">queryparser javadoc</a>
+</p>
+<a name="N100E9"></a><a name="regex"></a>
+<h3 class="boxed">regex</h3>
+<p>Queries with additional regex matching capabilities.</p>
+<p>See <a href="../api/contrib-regex/index.html">regex javadoc</a>
+</p>
+<a name="N100F8"></a><a name="remote"></a>
+<h3 class="boxed">remote</h3>
+<p>Classes to help use Lucene with RMI.</p>
+<p>See <a href="../api/contrib-remote/index.html">remote javadoc</a>
+</p>
+<a name="N10107"></a><a name="snowball"></a>
+<h3 class="boxed">snowball</h3>
+<p>Pre-compiled versions of the Snowball stemmers for Lucene.</p>
+<p>See <a href="../api/contrib-snowball/index.html">snowball javadoc</a>
+</p>
+<a name="N10116"></a><a name="spatial"></a>
+<h3 class="boxed">spatial</h3>
+<p>Classes to help with efficient distance based sorting.</p>
+<p>See <a href="../api/contrib-spatial/index.html">spatial javadoc</a>
+</p>
+<a name="N10125"></a><a name="spellchecker"></a>
+<h3 class="boxed">spellchecker</h3>
+<p>Provides tools for spellchecking and suggestions with Lucene.</p>
+<p>See <a href="../api/contrib-spellchecker/index.html">spellchecker javadoc</a>
+</p>
+<a name="N10134"></a><a name="surround"></a>
+<h3 class="boxed">surround</h3>
+<p>A QueryParser that supports the Span family of queries as well as pre and infix notation.</p>
+<p>See <a href="../api/contrib-surround/index.html">surround javadoc</a>
+</p>
+<a name="N10143"></a><a name="swing"></a>
+<h3 class="boxed">swing</h3>
+<p>Swing components designed to integrate with Lucene.</p>
+<p>See <a href="../api/contrib-swing/index.html">swing javadoc</a>
+</p>
+<a name="N10152"></a><a name="wikipedia"></a>
+<h3 class="boxed">wikipedia</h3>
+<p>Tools for working with wikipedia content.</p>
+<p>See <a href="../api/contrib-wikipedia/index.html">wikipedia javadoc</a>
+</p>
+<a name="N10161"></a><a name="wordnet"></a>
+<h3 class="boxed">wordnet</h3>
+<p>Tools to help utilize wordnet synonyms with Lucene</p>
+<p>See <a href="../api/contrib-wordnet/index.html">wordnet javadoc</a>
+</p>
+<a name="N10170"></a><a name="xml-query-parser"></a>
+<h3 class="boxed">xml-query-parser</h3>
+<p>A QueryParser that can read queries written in an XML format.</p>
+<p>See <a href="../api/contrib-wordnet/index.html">xml-query-parser javadoc</a>
 </p>
 </div>
-
     
 </div>
 <!--+

@@ -82,7 +82,7 @@ See http://forrest.apache.org/docs/linking.html for more info
       <faq         label="FAQ"              href="ext:faq" />
       <file-formats label="File Formats" href="fileformats.html"/>
       <tutorial label="Getting Started" href="gettingstarted.html"/>
-      <lucene-sandbox label="Lucene Sandbox" href="lucene-sandbox/index.html"/>
+      <lucene-contrib label="Lucene Contrib" href="lucene-contrib/index.html"/>
       <query-syntax label="Query Syntax" href="queryparsersyntax.html"/>
       <scoring label="Scoring" href="scoring.html"/>
       <wiki        label="Wiki"             href="ext:wiki" />

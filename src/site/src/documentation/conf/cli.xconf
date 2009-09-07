@@ -209,6 +209,8 @@
    <exclude pattern="**/"/>
    <exclude pattern="**apidocs**"/>
    <exclude pattern="api/**"/>
+   <exclude pattern="**/api/contrib**"/>
+   <exclude pattern="**Contrib-Changes.html"/>
 
 <!--
   This is a workaround for FOR-284 "link rewriting broken when

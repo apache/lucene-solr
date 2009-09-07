@@ -711,6 +711,9 @@
     <exec executable="perl" input="CHANGES.txt" output="${changes.target.dir}/Changes.html" failonerror="true">
       <arg value="${changes.src.dir}/changes2html.pl"/>
     </exec>
+    <exec executable="perl" input="contrib/CHANGES.txt" output="${changes.target.dir}/Contrib-Changes.html" failonerror="true">
+      <arg value="${changes.src.dir}/changes2html.pl"/>
+    </exec>
     <copy todir="${changes.target.dir}">
       <fileset dir="${changes.src.dir}" includes="*.css"/>
     </copy>

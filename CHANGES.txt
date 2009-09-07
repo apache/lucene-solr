@@ -1292,6 +1292,9 @@ Documentation
 
   3. LUCENE-1349: Fieldable can now be changed without breaking backward compatibility rules (within reason.  See the note at
   the top of this file and also on Fieldable.java).  (Grant Ingersoll)
+  
+  4. LUCENE-1873: Update documentation to reflect current Contrib area status.
+     (Steven Rowe, Mark Miller)
 
 Build
 
