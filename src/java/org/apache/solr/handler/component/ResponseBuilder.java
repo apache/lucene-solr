@@ -94,6 +94,8 @@ public class ResponseBuilder
 
   //The address of the Shard
   public String[] shards;
+  public int shards_rows = -1;
+  public int shards_start = -1;
   public List<ShardRequest> outgoing;  // requests to be sent
   public List<ShardRequest> finished;  // requests that have received responses from all shards
 

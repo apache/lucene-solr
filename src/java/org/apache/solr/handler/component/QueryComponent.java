@@ -114,6 +114,14 @@ public class QueryComponent extends SearchComponent
       List<String> lst = StrUtils.splitSmart(shards, ",", true);
       rb.shards = lst.toArray(new String[lst.size()]);
     }
+    String shards_rows = params.get(ShardParams.SHARDS_ROWS);
+    if(shards_rows != null) {
+      rb.shards_rows = Integer.parseInt(shards_rows);
+    }
+    String shards_start = params.get(ShardParams.SHARDS_START);
+    if(shards_start != null) {
+      rb.shards_start = Integer.parseInt(shards_start);
+    }
   }
 
   /**
@@ -330,14 +338,22 @@ public class QueryComponent extends SearchComponent
 
     // set the start (offset) to 0 for each shard request so we can properly merge
     // results from the start.
-    sreq.params.set(CommonParams.START, "0");
-
+    if(rb.shards_start > -1) {
+      // if the client set shards.start set this explicitly
+      sreq.params.set(CommonParams.START,rb.shards_start);
+    } else {
+      sreq.params.set(CommonParams.START, "0");
+    }
     // TODO: should we even use the SortSpec?  That's obtained from the QParser, and
     // perhaps we shouldn't attempt to parse the query at this level?
     // Alternate Idea: instead of specifying all these things at the upper level,
     // we could just specify that this is a shard request.
-    sreq.params.set(CommonParams.ROWS, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());
-
+    if(rb.shards_rows > -1) {
+      // if the client set shards.rows set this explicity
+      sreq.params.set(CommonParams.ROWS,rb.shards_rows);
+    } else {
+      sreq.params.set(CommonParams.ROWS, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());
+    }
 
     // in this first phase, request only the unique key field
     // and any fields needed for merging.

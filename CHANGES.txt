@@ -292,7 +292,11 @@ New Features
 
 75. SOLR-1385 : Add an 'enable' attribute to all plugins  (noble)
 
-76. SOLR-SOLR-1414 : implicit core properties are not set for single core  (noble)
+76. SOLR-1414 : implicit core properties are not set for single core  (noble)
+
+77. SOLR-659 : Adds shards.start and shards.rows to distributed search
+    to allow more efficient bulk queries (those that retrieve many or all
+    documents).  (Brian Whitman via yonik)
 
 Optimizations
 ----------------------

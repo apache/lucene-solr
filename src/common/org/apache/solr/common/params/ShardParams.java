@@ -24,6 +24,10 @@ public interface ShardParams {
   /** the shards to use (distributed configuration) */
   public static final String SHARDS = "shards";
   
+  /** per-shard start and rows */
+  public static final String SHARDS_ROWS = "shards.rows";
+  public static final String SHARDS_START = "shards.start";
+  
   /** IDs of the shard documents */
   public static final String IDS = "ids";
   
