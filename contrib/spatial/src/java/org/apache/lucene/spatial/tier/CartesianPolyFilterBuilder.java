@@ -19,6 +19,7 @@ package org.apache.lucene.spatial.tier;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.lucene.search.Filter;
@@ -90,8 +91,9 @@ public class CartesianPolyFilterBuilder {
     int scale = (int)Math.log10(tierVert);
     endY = new BigDecimal(endY).setScale(scale, RoundingMode.HALF_EVEN).doubleValue();
     startY = new BigDecimal(startY).setScale(scale, RoundingMode.HALF_EVEN).doubleValue();
-    log.fine("scale "+scale+" startX "+ startX + " endX "+endX +" startY "+ startY + " endY "+ endY +" tierVert "+ tierVert);
-    
+    if(log.isLoggable(Level.FINE)) {
+      log.fine("scale "+scale+" startX "+ startX + " endX "+endX +" startY "+ startY + " endY "+ endY +" tierVert "+ tierVert);
+    }
     double xInc = 1.0d / tierVert;
     xInc = new BigDecimal(xInc).setScale(scale, RoundingMode.HALF_EVEN).doubleValue();
     

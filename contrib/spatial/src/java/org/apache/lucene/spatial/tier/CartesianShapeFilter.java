@@ -18,6 +18,7 @@ package org.apache.lucene.spatial.tier;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.lucene.index.IndexReader;
@@ -73,7 +74,9 @@ public class CartesianShapeFilter extends Filter {
     }
     
     long end = System.currentTimeMillis();
-    log.fine("BoundaryBox Time Taken: "+ (end - start) + " found: "+bits.cardinality()+" candidates");
+    if(log.isLoggable(Level.FINE)) {
+      log.fine("BoundaryBox Time Taken: "+ (end - start) + " found: "+bits.cardinality()+" candidates");
+    }
     return bits;
   }
 }
