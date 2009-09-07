@@ -73,7 +73,6 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
     ts = new ShingleMatrixFilter(tls, 1, 2, new Character(' '), false, new ShingleMatrixFilter.OneDimensionalNonWeightedTokenSettingsCodec());
 
-    Token reusableToken = new Token();
 
     assertNext(ts, "please", 0, 6);
     assertNext(ts, "please divide", 0, 13);
@@ -119,7 +118,6 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
     ts = new ShingleMatrixFilter(tls, 2, 2, new Character('_'), false, new ShingleMatrixFilter.TwoDimensionalNonWeightedSynonymTokenSettingsCodec());
 
-    final Token reusableToken = new Token();
     assertNext(ts, "hello_world");
     assertNext(ts, "greetings_world");
     assertNext(ts, "hello_earth");
@@ -371,7 +369,6 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 //      token.clear();
 //    }
 
-    final Token reusableToken = new Token();
     assertNext(ts, "no_surprise", 1, 1.4142135f, 0, 0);
     assertNext(ts, "no_surprise_to", 1, 1.7320508f, 0, 0);
     assertNext(ts, "no_surprise_to_see", 1, 2.0f, 0, 0);
