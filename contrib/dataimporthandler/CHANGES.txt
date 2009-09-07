@@ -150,7 +150,10 @@ New Features
               
 35.SOLR-1235: disallow period (.) in entity names (noble)
 
-36.SOLR-1234: Multiple DIH does not work because all of them write to dataimport.properties. Use the handler name as the properties file name (noble)
+36.SOLR-1234: Multiple DIH does not work because all of them write to dataimport.properties.
+              Use the handler name as the properties file name (noble)
+
+37.SOLR-1348: Support binary field type in convertType logic in JdbcDataSource (shalin)
 
 Optimizations
 ----------------------

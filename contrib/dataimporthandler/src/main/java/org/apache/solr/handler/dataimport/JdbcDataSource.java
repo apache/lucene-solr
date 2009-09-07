@@ -89,6 +89,8 @@ public class JdbcDataSource extends
         fieldNameVsType.put(n, Types.DATE);
       else if ("boolean".equals(t))
         fieldNameVsType.put(n, Types.BOOLEAN);
+      else if ("binary".equals(t))
+        fieldNameVsType.put(n, Types.BLOB);
       else
         fieldNameVsType.put(n, Types.VARCHAR);
     }
@@ -306,6 +308,9 @@ public class JdbcDataSource extends
               break;
             case Types.BOOLEAN:
               result.put(colName, resultSet.getBoolean(colName));
+              break;
+            case Types.BLOB:
+              result.put(colName, resultSet.getBytes(colName));
               break;
             default:
               result.put(colName, resultSet.getString(colName));
