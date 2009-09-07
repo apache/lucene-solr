@@ -187,15 +187,6 @@
         </section>
 
         <section id="Appendix"><title>Appendix</title>
-            <section id="Class Diagrams"><title>Class Diagrams</title>
-                <p>
-                    <a href="http://wiki.apache.org/lucene-java/KarlWettin?action=AttachFile&amp;do=view&amp;target=search_uml_1.jpg">
-                        Karl Wettin's UML on the Wiki</a>
-                </p>
-            </section>
-            <section id="Sequence Diagrams"><title>Sequence Diagrams</title>
-                <p >FILL IN HERE. Volunteers?</p>
-            </section>
             <section id="Algorithm"><title>Algorithm</title>
                 <p>This section is mostly notes on stepping through the Scoring process and serves as
                     fertilizer for the earlier sections.</p>
