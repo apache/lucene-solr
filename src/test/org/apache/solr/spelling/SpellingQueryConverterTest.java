@@ -17,29 +17,24 @@
 
 package org.apache.solr.spelling;
 
-import java.util.Collection;
-
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.AbstractSolrTestCase;
+import static org.junit.Assert.assertTrue;
+import org.junit.Test;
+
+import java.util.Collection;
 
 
 /**
+ * Test for SpellingQueryConverter
  *
+ * @version $Id$
  * @since solr 1.3
- **/
-public class SpellingQueryConverterTest extends AbstractSolrTestCase {
+ */
+public class SpellingQueryConverterTest {
 
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
-
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
-  }
-
-
+  @Test
   public void test() throws Exception {
     SpellingQueryConverter converter = new SpellingQueryConverter();
     converter.init(new NamedList());
@@ -48,6 +43,4 @@ public class SpellingQueryConverterTest extends AbstractSolrTestCase {
     assertTrue("tokens is null and it shouldn't be", tokens != null);
     assertTrue("tokens Size: " + tokens.size() + " is not: " + 1, tokens.size() == 1);
   }
-
-
 }
