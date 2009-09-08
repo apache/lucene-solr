@@ -51,6 +51,11 @@ public final class TrimFilter extends TokenFilter {
 
     char[] termBuffer = termAtt.termBuffer();
     int len = termAtt.termLength();
+    //TODO: Is this the right behavior or should we return false?  Currently, "  ", returns true, so I think this should
+    //also return true
+    if (len == 0){
+      return true;
+    }
     int start = 0;
     int end = 0;
     int endOff = 0;
