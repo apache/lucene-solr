@@ -532,7 +532,8 @@ Bug Fixes
 63. SOLR-1398: Add offset corrections in PatternTokenizerFactory.
     (Anders Melchiorsen, koji)
 
-64. SOLR-1400: Properly handle zero-length tokens in TrimFilter (Peter Wolanin, gsingers)
+64. SOLR-1400: Properly handle zero-length tokens in TrimFilter.  This
+    was not a bug in any released version. (Peter Wolanin, gsingers) 
 
 Other Changes
 ----------------------
