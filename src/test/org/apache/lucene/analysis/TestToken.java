@@ -150,6 +150,21 @@ public class TestToken extends LuceneTestCase {
     assertEquals("(hi there,0,5)", t.toString());
   }
 
+  public void testTermBufferEquals() throws Exception {
+    Token t1a = new Token();
+    char[] content1a = "hello".toCharArray();
+    t1a.setTermBuffer(content1a, 0, 5);
+    Token t1b = new Token();
+    char[] content1b = "hello".toCharArray();
+    t1b.setTermBuffer(content1b, 0, 5);
+    Token t2 = new Token();
+    char[] content2 = "hello2".toCharArray();
+    t2.setTermBuffer(content2, 0, 6);
+    assertTrue(t1a.equals(t1b));
+    assertFalse(t1a.equals(t2));
+    assertFalse(t2.equals(t1b));
+  }
+  
   public void testMixedStringArray() throws Exception {
     Token t = new Token("hello", 0, 5);
     assertEquals(t.termText(), "hello");
