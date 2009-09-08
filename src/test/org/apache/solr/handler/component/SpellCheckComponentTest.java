@@ -18,10 +18,7 @@
 package org.apache.solr.handler.component;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -86,26 +83,19 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
     NamedList values = rsp.getValues();
     String cmdExec = (String) values.get("command");
-    assertTrue("command is null and it shouldn't be", cmdExec != null);
-    assertTrue(cmdExec + " is not equal to " + "build",
-            cmdExec.equals("build") == true);
+    assertEquals("build",cmdExec);
     NamedList spellCheck = (NamedList) values.get("spellcheck");
-    assertTrue("spellCheck is null and it shouldn't be", spellCheck != null);
     NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-    assertTrue("suggestions is null and it shouldn't be", suggestions != null);
     NamedList blue = (NamedList) suggestions.get("bluo");
-    assertTrue(blue.get("numFound") + " is not equal to " + "5", blue
-            .get("numFound").toString().equals("5") == true);
+    assertEquals(5,blue.get("numFound"));
     Collection<String> theSuggestion = (Collection<String>) blue.get("suggestion");
-    assertTrue("theSuggestion is null and it shouldn't be: " + blue,
-            theSuggestion != null);
-    assertTrue("theSuggestion Size: " + theSuggestion.size() + " is not: " + 5,
-            theSuggestion.size() == 5);
+    assertEquals(5,theSuggestion.size());
     //we know there are at least 5, but now only get 3
+
     params.remove(SpellCheckComponent.SPELLCHECK_COUNT);
     params.remove(SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS);
     params.remove(SpellCheckComponent.SPELLCHECK_BUILD);
-    params.add(SpellCheckComponent.SPELLCHECK_COUNT, String.valueOf(3));
+    params.add(SpellCheckComponent.SPELLCHECK_COUNT, "3");
     params.add(SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, String.valueOf(true));
     params.add(SpellCheckComponent.SPELLCHECK_BUILD, "false");
     rsp = new SolrQueryResponse();
@@ -113,36 +103,17 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
     values = rsp.getValues();
 
     spellCheck = (NamedList) values.get("spellcheck");
-    assertTrue("spellCheck is null and it shouldn't be", spellCheck != null);
     suggestions = (NamedList) spellCheck.get("suggestions");
-    assertTrue("suggestions is null and it shouldn't be", suggestions != null);
     blue = (NamedList) suggestions.get("bluo");
-    assertTrue(blue.get("numFound") + " is not equal to " + "3", blue
-            .get("numFound").toString().equals("3") == true);
-    SimpleOrderedMap theSuggestions;
-    int idx = blue.indexOf("suggestion", 0);
-    theSuggestions = (SimpleOrderedMap) blue.get("suggestion", idx);
-    assertTrue("theSuggestion is null and it shouldn't be: " + blue,
-            theSuggestions != null);
-    assertTrue("theSuggestions Size: " + theSuggestions.size() + " is not: " + 2,
-            theSuggestions.size() == 2);//the word and the frequency
+    assertEquals(3, blue.get("numFound"));
 
-    idx = blue.indexOf("suggestion", idx + 1);
-    theSuggestions = (SimpleOrderedMap) blue.get("suggestion", idx);
-    assertTrue("theSuggestion is null and it shouldn't be: " + blue,
-            theSuggestions != null);
-    assertTrue("theSuggestions Size: " + theSuggestions.size() + " is not: " + 2,
-            theSuggestions.size() == 2);//the word and the frequency
+    List<SimpleOrderedMap> theSuggestions = (List<SimpleOrderedMap>)blue.get("suggestion");
+    assertEquals(3, theSuggestions.size());
 
-    idx = blue.indexOf("suggestion", idx + 1);
-    theSuggestions = (SimpleOrderedMap) blue.get("suggestion", idx);
-    assertTrue("theSuggestion is null and it shouldn't be: " + blue,
-            theSuggestions != null);
-    assertTrue("theSuggestions Size: " + theSuggestions.size() + " is not: " + 2,
-            theSuggestions.size() == 2);//the word and the frequency
-
-    idx = blue.indexOf("suggestion", idx + 1);
-    assertTrue(idx + " does not equal: " + -1, idx == -1);
+    for (SimpleOrderedMap sug : theSuggestions) {
+      assertNotNull(sug.get("word"));
+      assertNotNull(sug.get("freq"));      
+    }
   }
 
   public void test() throws Exception {
@@ -169,19 +140,12 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
     NamedList suggestions = (NamedList) spellCheck.get("suggestions");
     assertTrue("suggestions is null and it shouldn't be", suggestions != null);
     NamedList document = (NamedList) suggestions.get("documemt");
-    assertTrue(document.get("numFound") + " is not equal to " + "1", document
-            .get("numFound").toString().equals("1") == true);
-    assertTrue(document.get("startOffset") + " is not equal to " + "0", document
-            .get("startOffset").toString().equals("0") == true);
-    assertTrue(document.get("endOffset") + " is not equal to " + "documemt".length(), document
-            .get("endOffset").toString().equals(String.valueOf("documemt".length())) == true);
+    assertEquals(1, document.get("numFound"));
+    assertEquals(0, document.get("startOffset"));
+    assertEquals(document.get("endOffset"), "documemt".length());
     Collection<String> theSuggestion = (Collection<String>) document.get("suggestion");
-    assertTrue("theSuggestion is null and it shouldn't be: " + document,
-            theSuggestion != null);
-    assertTrue("theSuggestion Size: " + theSuggestion.size() + " is not: " + 1,
-            theSuggestion.size() == 1);
-    assertTrue(theSuggestion.iterator().next() + " is not equal to " + "document", theSuggestion.iterator().next().equals("document") == true);
-
+    assertEquals(1, theSuggestion.size());
+    assertEquals("document", theSuggestion.iterator().next());
   }
 
 
@@ -203,12 +167,9 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
     NamedList values = rsp.getValues();
     NamedList spellCheck = (NamedList) values.get("spellcheck");
-    assertTrue("spellCheck is null and it shouldn't be", spellCheck != null);
     NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-    assertTrue("suggestions is null and it shouldn't be", suggestions != null);
     String collation = (String) suggestions.get("collation");
-    assertTrue("collation is null and it shouldn't be", collation != null);
-    assertTrue(collation + " is not equal to " + "document", collation.equals("document") == true);
+    assertEquals("document", collation);
     params.remove(CommonParams.Q);
     params.add(CommonParams.Q, "documemt lowerfilt:broen^4");
     handler = core.getRequestHandler("spellCheckCompRH");
@@ -217,12 +178,9 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
     values = rsp.getValues();
     spellCheck = (NamedList) values.get("spellcheck");
-    assertTrue("spellCheck is null and it shouldn't be", spellCheck != null);
     suggestions = (NamedList) spellCheck.get("suggestions");
-    assertTrue("suggestions is null and it shouldn't be", suggestions != null);
     collation = (String) suggestions.get("collation");
-    assertTrue("collation is null and it shouldn't be", collation != null);
-    assertTrue(collation + " is not equal to " + "document lowerfilt:brown^4", collation.equals("document lowerfilt:brown^4") == true);
+    assertEquals("document lowerfilt:brown^4", collation);
 
     params.remove(CommonParams.Q);
     params.add(CommonParams.Q, "documemtsss broens");
@@ -232,15 +190,9 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
     values = rsp.getValues();
     spellCheck = (NamedList) values.get("spellcheck");
-    assertTrue("spellCheck is null and it shouldn't be", spellCheck != null);
     suggestions = (NamedList) spellCheck.get("suggestions");
-    assertTrue("suggestions is null and it shouldn't be", suggestions != null);
     collation = (String) suggestions.get("collation");
-    assertTrue("collation is null and it shouldn't be", collation != null);
-    System.out.println("Collation: " + collation);
-    assertTrue(collation + " is not equal to " + "document brown", collation.equals("document brown") == true);
-
-
+    assertEquals("document brown",collation);
   }
 
   public void testCorrectSpelling() throws Exception {

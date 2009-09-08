@@ -201,17 +201,30 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         suggestionList.add("numFound", theSuggestions.size());
         suggestionList.add("startOffset", inputToken.startOffset());
         suggestionList.add("endOffset", inputToken.endOffset());
+
+        // Logical structure of normal (non-extended) results:
+        // "suggestion":["alt1","alt2"]
+        //
+        // Logical structure of the extended results:
+        // "suggestion":[
+        //     {"word":"alt1","freq":7},
+        //     {"word":"alt2","freq":4}
+        // ]
         if (extendedResults && hasFreqInfo) {
           suggestionList.add("origFreq", spellingResult.getTokenFrequency(inputToken));
+
+          ArrayList<SimpleOrderedMap> sugs = new ArrayList<SimpleOrderedMap>();
+          suggestionList.add("suggestion", sugs);
           for (Map.Entry<String, Integer> suggEntry : theSuggestions.entrySet()) {
-            SimpleOrderedMap<Object> suggestionItem = new SimpleOrderedMap<Object>();
-            suggestionItem.add("frequency", suggEntry.getValue());
-            suggestionItem.add("word", suggEntry.getKey());
-            suggestionList.add("suggestion", suggestionItem);
+            SimpleOrderedMap sugEntry = new SimpleOrderedMap();
+            sugEntry.add("word",suggEntry.getKey());
+            sugEntry.add("freq",suggEntry.getValue());
+            sugs.add(sugEntry);
           }
         } else {
           suggestionList.add("suggestion", theSuggestions.keySet());
         }
+
         if (collate == true ){//set aside the best suggestion for this token
           best.put(inputToken, theSuggestions.keySet().iterator().next());
         }

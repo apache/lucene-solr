@@ -47,6 +47,9 @@ a TokenStream (that may be or may not be a Tokenizer).  This change is required
 to take advantage of the Token reuse improvements in lucene 2.9.  For more 
 information, see SOLR-1377. 
 
+If spellcheck.extendedResults=true, the response format for suggestions
+has changed, see SOLR-1071.
+
 
 Versions of Major Components
 ----------------------------
@@ -534,6 +537,11 @@ Bug Fixes
 
 64. SOLR-1400: Properly handle zero-length tokens in TrimFilter.  This
     was not a bug in any released version. (Peter Wolanin, gsingers) 
+
+65. SOLR-1071: spellcheck.extendedResults returns an invalid JSON response
+    when count > 1.  To fix, the extendedResults format was changed.
+    (Uri Boness, yonik)
+
 
 Other Changes
 ----------------------

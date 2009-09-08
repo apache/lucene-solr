@@ -27,6 +27,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
 
+import java.util.List;
+
 /**
  * Test for SpellCheckComponent's response in Solrj
  *
@@ -67,7 +69,7 @@ public class TestSpellCheckResponse extends SolrExampleTestBase {
     query.set(SpellingParams.SPELLCHECK_BUILD, true);
     QueryRequest request = new QueryRequest(query);
     SpellCheckResponse response = request.process(server).getSpellCheckResponse();
-    Assert.assertEquals("Incorrect spelling results", "samsung", response.getFirstSuggestion("samsang"));
+    Assert.assertEquals("samsung", response.getFirstSuggestion("samsang"));
   }
 
   public void testSpellCheckResponse_Extended() throws Exception {
@@ -85,7 +87,25 @@ public class TestSpellCheckResponse extends SolrExampleTestBase {
     query.set(SpellingParams.SPELLCHECK_EXTENDED_RESULTS, true);
     QueryRequest request = new QueryRequest(query);
     SpellCheckResponse response = request.process(server).getSpellCheckResponse();
-    Assert.assertEquals("Incorrect spelling results", "samsung", response.getFirstSuggestion("samsang"));
+    assertEquals("samsung", response.getFirstSuggestion("samsang"));
+
+    SpellCheckResponse.Suggestion sug = response.getSuggestion("samsang");
+    List<SpellCheckResponse.Suggestion> sugs = response.getSuggestions();
+
+    assertEquals(sug.getAlternatives().size(), sug.getAlternativeFrequencies().size());
+    assertEquals(sugs.get(0).getAlternatives().size(), sugs.get(0).getAlternativeFrequencies().size());
+
+    assertEquals("samsung", sug.getAlternatives().get(0));
+    assertEquals("samsung", sugs.get(0).getAlternatives().get(0));
+
+    // basic test if fields were filled in
+    assertTrue(sug.getEndOffset()>0);
+    assertTrue(sug.getToken().length() > 0);
+    assertTrue(sug.getNumFound() > 0);
+    // assertTrue(sug.getOriginalFrequency() > 0);
+
+    // Hmmm... the API for SpellCheckResponse could be nicer:
+    response.getSuggestions().get(0).getAlternatives().get(0);
   }
 
   protected SolrServer getSolrServer() {

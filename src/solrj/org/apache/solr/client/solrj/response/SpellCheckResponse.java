@@ -17,7 +17,6 @@ package org.apache.solr.client.solrj.response;
  */
 
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -74,10 +73,8 @@ public class SpellCheckResponse {
 
   public String getFirstSuggestion(String token) {
     Suggestion s = suggestionMap.get(token);
-    if (s != null) {
-      return s.getSuggestions().isEmpty() ? null : s.getSuggestions().get(0);
-    }
-    return null;
+    if (s==null || s.getAlternatives().isEmpty()) return null;
+    return s.getAlternatives().get(0);
   }
 
   public String getCollatedResult() {
@@ -90,8 +87,8 @@ public class SpellCheckResponse {
     private int startOffset;
     private int endOffset;
     private int originalFrequency;
-    private List<String> suggestions = new ArrayList<String>();
-    private List<Integer> suggestionFrequencies = new ArrayList<Integer>();
+    private List<String> alternatives = new ArrayList<String>();
+    private List<Integer> alternativeFrequencies;
 
     public Suggestion(String token, NamedList<Object> suggestion) {
       this.token = token;
@@ -107,14 +104,16 @@ public class SpellCheckResponse {
         } else if ("origFreq".equals(n)) {
           originalFrequency = (Integer) suggestion.getVal(i);
         } else if ("suggestion".equals(n)) {
-          Object o = suggestion.getVal(i);
-          if (o instanceof List) {
-            List<String> list = (List<String>) o;
-            suggestions.addAll(list);
-          } else if (o instanceof SimpleOrderedMap) {
-            SimpleOrderedMap map = (SimpleOrderedMap) o;
-            suggestions.add((String) map.get("word"));
-            suggestionFrequencies.add((Integer) map.get("frequency"));
+          List list = (List)suggestion.getVal(i);
+          if (list.size() > 0 && list.get(0) instanceof NamedList) {
+            // extended results detected
+            alternativeFrequencies = new ArrayList<Integer>();
+            for (NamedList nl : (List<NamedList>)list) {
+              alternatives.add((String)nl.get("word"));
+              alternativeFrequencies.add((Integer)nl.get("freq"));
+            }
+          } else {
+            alternatives.addAll(list);
           }
         }
       }
@@ -140,12 +139,27 @@ public class SpellCheckResponse {
       return originalFrequency;
     }
 
-    public List<String> getSuggestions() {
-      return suggestions;
+    /** The list of alternatives */
+    public List<String> getAlternatives() {
+      return alternatives;
     }
 
-    public List<Integer> getSuggestionFrequencies() {
-      return suggestionFrequencies;
+    /** The frequencies of the alternatives in the corpus, or null if this information was not returned */
+    public List<Integer> getAlternativeFrequencies() {
+      return alternativeFrequencies;
     }
+
+    @Deprecated
+    /** @see #getAlternatives */
+    public List<String> getSuggestions() {
+      return alternatives;
+    }
+
+    @Deprecated
+    /** @see #getAlternativeFrequencies */
+    public List<Integer> getSuggestionFrequencies() {
+      return alternativeFrequencies;
+    }
+
   }
 }
