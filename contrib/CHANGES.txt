@@ -4,12 +4,12 @@ Lucene contrib change Log
 
 Changes in runtime behavior
 
- 1. LUCENE-1505: Local lucene now uses org.apache.lucene.util.NumericUtils for all
+ * LUCENE-1505: Local lucene now uses org.apache.lucene.util.NumericUtils for all
     number conversion.  You'll need to fully re-index any previously created indexes.
     This isn't a break in back-compatibility because local Lucene has not yet
     been released.  (Mike McCandless)
  
- 2. LUCENE-1758: ArabicAnalyzer now uses the light10 algorithm, has a refined
+ * LUCENE-1758: ArabicAnalyzer now uses the light10 algorithm, has a refined
     default stopword list, and lowercases non-Arabic text.  
     You'll need to fully re-index any previously created indexes. This isn't a 
     break in back-compatibility because ArabicAnalyzer has not yet been 
@@ -18,20 +18,20 @@ Changes in runtime behavior
 
 API Changes
 
- 1. LUCENE-1695: Update the Highlighter to use the new TokenStream API. This issue breaks backwards
+ * LUCENE-1695: Update the Highlighter to use the new TokenStream API. This issue breaks backwards
     compatibility with some public classes. If you have implemented custom Fragmenters or Scorers, 
     you will need to adjust them to work with the new TokenStream API. Rather than getting passed a 
     Token at a time, you will be given a TokenStream to init your impl with - store the Attributes 
     you are interested in locally and access them on each call to the method that used to pass a new 
     Token. Look at the included updated impls for examples.  (Mark Miller)
 
- 2. LUCENE-1460: Change contrib TokenStreams/Filters to use the new
+ * LUCENE-1460: Change contrib TokenStreams/Filters to use the new
     TokenStream API. (Robert Muir, Michael Busch)
 
- 3. LUCENE-1775: Change remaining TokenFilters (shingle, prefix-suffix) to
+ * LUCENE-1775: Change remaining TokenFilters (shingle, prefix-suffix) to
     use the new TokenStream API. (Robert Muir, Michael Busch)
     
- 4. LUCENE-1685: The position aware SpanScorer has become the default scorer
+ * LUCENE-1685: The position aware SpanScorer has become the default scorer
     for Highlighting. The SpanScorer implementation has replaced QueryScorer
     and the old term highlighting QueryScorer has been renamed to 
     QueryTermScorer. Multi-term queries are also now expanded by default. If
@@ -40,92 +40,92 @@ API Changes
     The SpanScorer API (now QueryScorer) has also been improved to more closely
     match the API of the previous QueryScorer implementation.  (Mark Miller)  
 
- 5. LUCENE-1793: Deprecate the custom encoding support in the Greek and Russian
+ * LUCENE-1793: Deprecate the custom encoding support in the Greek and Russian
     Analyzers. If you need to index text in these encodings, please use Java's
     character set conversion facilities (InputStreamReader, etc) during I/O, 
     so that Lucene can analyze this text as Unicode instead.  (Robert Muir)  
 
 Bug fixes
 
- 1. LUCENE-1423: InstantiatedTermEnum#skipTo(Term) throws ArrayIndexOutOfBounds on empty index.
+ * LUCENE-1423: InstantiatedTermEnum#skipTo(Term) throws ArrayIndexOutOfBounds on empty index.
     (Karl Wettin) 
 
- 2. LUCENE-1462: InstantiatedIndexWriter did not reset pre analyzed TokenStreams the
+ * LUCENE-1462: InstantiatedIndexWriter did not reset pre analyzed TokenStreams the
     same way IndexWriter does. Parts of InstantiatedIndex was not Serializable.
     (Karl Wettin)
 
- 3. LUCENE-1510: InstantiatedIndexReader#norms methods throws NullPointerException on empty index.
+ * LUCENE-1510: InstantiatedIndexReader#norms methods throws NullPointerException on empty index.
     (Karl Wettin, Robert Newson)
 
- 4. LUCENE-1514: ShingleMatrixFilter#next(Token) easily throws a StackOverflowException
+ * LUCENE-1514: ShingleMatrixFilter#next(Token) easily throws a StackOverflowException
     due to recursive invocation. (Karl Wettin)
 
- 5. LUCENE-1548: Fix distance normalization in LevenshteinDistance to
+ * LUCENE-1548: Fix distance normalization in LevenshteinDistance to
     not produce negative distances (Thomas Morton via Mike McCandless)
 
- 6. LUCENE-1490: Fix latin1 conversion of HALFWIDTH_AND_FULLWIDTH_FORMS
+ * LUCENE-1490: Fix latin1 conversion of HALFWIDTH_AND_FULLWIDTH_FORMS
     characters to only apply to the correct subset (Daniel Cheng via
     Mike McCandless)
 
- 7. LUCENE-1576: Fix BrazilianAnalyzer to downcase tokens after
+ * LUCENE-1576: Fix BrazilianAnalyzer to downcase tokens after
     StandardTokenizer so that stop words with mixed case are filtered
     out.  (Rafael Cunha de Almeida, Douglas Campos via Mike McCandless)
 
- 8. LUCENE-1491: EdgeNGramTokenFilter no longer stops on tokens shorter than minimum n-gram size.
+ * LUCENE-1491: EdgeNGramTokenFilter no longer stops on tokens shorter than minimum n-gram size.
     (Todd Teak via Otis Gospodnetic)
 
- 9. LUCENE-1683: Fixed JavaUtilRegexCapabilities (an impl used by
+ * LUCENE-1683: Fixed JavaUtilRegexCapabilities (an impl used by
     RegexQuery) to use Matcher.matches() not Matcher.lookingAt() so
     that the regexp must match the entire string, not just a prefix.
     (Trejkaz via Mike McCandless)
 
-10. LUCENE-1792: Fix new query parser to set rewrite method for
+ * LUCENE-1792: Fix new query parser to set rewrite method for
     multi-term queries. (Luis Alves, Mike McCandless via Michael Busch)
 
-11. LUCENE-1828: Fix memory index to call TokenStream.reset() and
+ * LUCENE-1828: Fix memory index to call TokenStream.reset() and
     TokenStream.end(). (Tim Smith via Michael Busch)
 
 New features
 
- 1. LUCENE-1531: Added support for BoostingTermQuery to XML query parser. (Karl Wettin)
+ * LUCENE-1531: Added support for BoostingTermQuery to XML query parser. (Karl Wettin)
 
- 2. LUCENE-1435: Added contrib/collation, a CollationKeyFilter
+ * LUCENE-1435: Added contrib/collation, a CollationKeyFilter
     allowing you to convert tokens into CollationKeys encoded using
     IndexableBinaryStringTools.  This allows for faster RangeQuery when
     a field needs to use a custom Collator.  (Steven Rowe via Mike
     McCandless)
 
- 3. LUCENE-1591: EnWikiDocMaker, LineDocMaker, WriteLineDoc can now
+ * LUCENE-1591: EnWikiDocMaker, LineDocMaker, WriteLineDoc can now
     read/write bz2 using Apache commons compress library.  This means
     you can download the .bz2 export from http://wikipedia.org and
     immediately index it.  (Shai Erera via Mike McCandless)
 
- 4. LUCENE-1629: Add SmartChineseAnalyzer to contrib/analyzers.  It
+ * LUCENE-1629: Add SmartChineseAnalyzer to contrib/analyzers.  It
     improves on CJKAnalyzer and ChineseAnalyzer by handling Chinese
     sentences properly.  SmartChineseAnalyzer uses a Hidden Markov
     Model to tokenize Chinese words in a more intelligent way.
     (Xiaoping Gao via Mike McCandless)
 
- 5. LUCENE-1676: Added DelimitedPayloadTokenFilter class for automatically adding payloads "in-stream" (Grant Ingersoll)    
+ * LUCENE-1676: Added DelimitedPayloadTokenFilter class for automatically adding payloads "in-stream" (Grant Ingersoll)    
  
- 6. LUCENE-1578: Support for loading unoptimized readers to the
+ * LUCENE-1578: Support for loading unoptimized readers to the
     constructor of InstantiatedIndex. (Karl Wettin)
 
- 7. LUCENE-1704: Allow specifying the Tidy configuration file when
+ * LUCENE-1704: Allow specifying the Tidy configuration file when
     parsing HTML docs with contrib/ant.  (Keith Sprochi via Mike
     McCandless)
 
- 8. LUCENE-1522: Added contrib/fast-vector-highlighter, a new alternative
+ * LUCENE-1522: Added contrib/fast-vector-highlighter, a new alternative
     highlighter.  (Koji Sekiguchi via Mike McCandless)
 
- 9. LUCENE-1740: Added "analyzer" command to Lucli, enabling changing
+ * LUCENE-1740: Added "analyzer" command to Lucli, enabling changing
     the analyzer from the default StandardAnalyzer.  (Bernd Fondermann
     via Mike McCandless)
 
-10. LUCENE-1272: Add get/setBoost to MoreLikeThis. (Jonathan
+ * LUCENE-1272: Add get/setBoost to MoreLikeThis. (Jonathan
     Leibiusky via Mike McCandless)
  
-11. LUCENE-1745: Added constructors to JakartaRegexpCapabilities and
+ * LUCENE-1745: Added constructors to JakartaRegexpCapabilities and
     JavaUtilRegexCapabilities as well as static flags to support
     configuring a RegexCapabilities implementation with the
     implementation-specific modifier flags. Allows for callers to
@@ -133,57 +133,56 @@ New features
     and fine tune how regular expressions are compiled and
     matched. (Marc Zampetti zampettim@aim.com via Mike McCandless)
  
-12. LUCENE-1567: Added a new QueryParser framework, that allows 
+ * LUCENE-1567: Added a new QueryParser framework, that allows 
     implementing a new query syntax in a flexible and efficient way.
     This new QueryParser will be moved to Lucene's core in release
     3.0 and will then replace the current core QueryParser, which
     has been deprecated with this patch.
     (Luis Alves and Adriano Campos via Michael Busch)
     
-13. LUCENE-1486: Added ComplexPhraseQueryParser, an extension of QueryParser 
+ * LUCENE-1486: Added ComplexPhraseQueryParser, an extension of QueryParser 
     that allows a subset of the Lucene query language to be embedded in
     PhraseQuerys. Wildcard, Range, and Fuzzy queries, as well as limited 
     boolean logic, can be used within quote operators with this parser, ie: 
     "(jo* -john) smyth~". (Mark Harwood via Mark Miller)
     
-14. Added web-based demo of functionality in contrib's XML Query Parser
+ * Added web-based demo of functionality in contrib's XML Query Parser
     packaged as War file (Mark Harwood)
 
-15. LUCENE-1406: Added Arabic analyzer.  (Robert Muir via Grant Ingersoll)
+ * LUCENE-1406: Added Arabic analyzer.  (Robert Muir via Grant Ingersoll)
 
-16. LUCENE-1628: Added Persian analyzer.  (Robert Muir)
+ * LUCENE-1628: Added Persian analyzer.  (Robert Muir)
 
-17. LUCENE-1813: Add option to ReverseStringFilter to mark reversed tokens.
+ * LUCENE-1813: Add option to ReverseStringFilter to mark reversed tokens.
     (Andrzej Bialecki via Robert Muir)
 
 Optimizations
 
-  1. LUCENE-1643: Re-use the collation key (RawCollationKey) for
+ * LUCENE-1643: Re-use the collation key (RawCollationKey) for
      better performance, in ICUCollationKeyFilter.  (Robert Muir via
      Mike McCandless)
 
-  2. LUCENE-1794: Implement TokenStream reuse for contrib Analyzers, 
+ * LUCENE-1794: Implement TokenStream reuse for contrib Analyzers, 
      and implement reset() for TokenStreams to support reuse.  (Robert Muir)
 
 Documentation
 
-  1. LUCENE-1876: added missing package level documentation for numerous
+ * LUCENE-1876: added missing package level documentation for numerous
      contrib packages.
      (Steven Rowe & Robert Muir)
 
 Build
 
-1. LUCENE-1728: Split contrib/analyzers into common and smartcn modules. 
+ * LUCENE-1728: Split contrib/analyzers into common and smartcn modules. 
    Contrib/analyzers now builds an additional lucene-smartcn Jar file. All
    smartcn classes are not included in the lucene-analyzers JAR file.
    (Robert Muir via Simon Willnauer)
  
-2. LUCENE-1829: Fix contrib query parser to properly create javacc files.
+ * LUCENE-1829: Fix contrib query parser to properly create javacc files.
    (Jan-Pascal and Luis Alves via Michael Busch)      
 
 Test Cases
 
- (None)
 
 ======================= Release 2.4.0 2008-10-06 =======================
 

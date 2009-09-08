@@ -148,13 +148,13 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
     # List item boundary is another bullet or a blank line
     my $line;
     my $item = $_;
-    $item =~ s/^(\s*$type\s*)//;           # Trim the leading bullet
+    $item =~ s/^(\s*\Q$type\E\s*)//;           # Trim the leading bullet
     my $leading_ws_width = length($1);
     $item =~ s/\s+$//;                     # Trim trailing whitespace
     $item .= "\n";
 
     while ($line_num < $#lines
-           and ($line = $lines[++$line_num]) !~ /^\s*(?:$type|\Z)/) {
+           and ($line = $lines[++$line_num]) !~ /^(?:\S|\s*\Q$type\E)/) {
       $line =~ s/^\s{$leading_ws_width}//; # Trim leading whitespace
       $line =~ s/\s+$//;                   # Trim trailing whitespace
       $item .= "$line\n";
@@ -387,7 +387,7 @@ for my $rel (@releases) {
       $item =~ s:<(?!/?code>):&lt;:gi;        #   but leave <code> tags intact
       $item =~ s:(?<!code)>:&gt;:gi;          #   and add <pre> tags so that
       $item =~ s:<code>:<code><pre>:gi;       #   whitespace is preserved in the
-      $item =~ s:</code>:</pre></code>:gi;    #   output.
+      $item =~ s:\s*</code>:</pre></code>:gi; #   output.
 
       # Put attributions on their own lines.
       # Check for trailing parenthesized attribution with no following period.
@@ -510,7 +510,7 @@ sub get_list_type {
 
   if ($first_list_item_line =~ /^\s{0,2}\d+\.\s+\S+/) {
     $type = 'numbered';
-  } elsif ($first_list_item_line =~ /^\s*([-.])\s+\S+/) {
+  } elsif ($first_list_item_line =~ /^\s*([-.*])\s+\S+/) {
     $type = $1;
   }
   return $type;
