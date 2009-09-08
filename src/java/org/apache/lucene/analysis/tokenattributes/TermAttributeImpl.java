@@ -194,6 +194,8 @@ public class TermAttributeImpl extends AttributeImpl implements TermAttribute, C
       TermAttributeImpl o = ((TermAttributeImpl) other);
       o.initTermBuffer();
       
+      if (termLength != o.termLength)
+        return false;
       for(int i=0;i<termLength;i++) {
         if (termBuffer[i] != o.termBuffer[i]) {
           return false;
