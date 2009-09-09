@@ -375,7 +375,7 @@
   <!-- ================================================================== -->
   <!--                                                                    -->
   <!-- ================================================================== -->
-  <target name="package" depends="jar-core, javadocs, war-demo, build-contrib, init-dist">
+  <target name="package" depends="jar-core, javadocs, war-demo, build-contrib, init-dist, changes-to-html">
      <copy file="${build.demo.template}" tofile="${build.dir}/build-demo.xml">
         <filterset begintoken="@PLACEHOLDER_" endtoken="@"> 
 	  <filter token="version" value="${version}"/>
@@ -385,7 +385,7 @@
      </copy>
   </target>
 
-  <target name="nightly" depends="test, package-tgz, changes-to-html">
+  <target name="nightly" depends="test, package-tgz">
   </target>
 
   <!-- ================================================================== -->

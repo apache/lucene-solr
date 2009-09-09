@@ -43,6 +43,10 @@ See http://forrest.apache.org/docs/linking.html for more info
     <!-- keep in submenu items alpha order -->
   <docs label="Documentation">
       <overview label="Overview" href="index.html"/>
+      <changes label="Changes">
+        <changes-core label="Core" href="ext:changes-core" />
+        <changes-contrib label="Contrib" href="ext:changes-contrib" />
+      </changes>
       <javadoc label="Javadocs">
          <javadoc-all label="All" href="ext:javadocs-all"/>
 		 <javadoc-core label="Core" href="ext:javadocs-core"/>
@@ -97,6 +101,8 @@ See http://forrest.apache.org/docs/linking.html for more info
   -->
 
   <external-refs>
+    <changes-core href="changes/Changes.html" />
+    <changes-contrib href="changes/Contrib-Changes.html" />
     <javadocs-all href="api/all/index.html"/>
 	<javadocs-core href="api/core/index.html"/>
 	<javadocs-demo href="api/demo/index.html"/>

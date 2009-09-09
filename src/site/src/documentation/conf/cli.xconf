@@ -210,8 +210,8 @@
    <exclude pattern="**apidocs**"/>
    <exclude pattern="api/**"/>
    <exclude pattern="**/api/contrib**"/>
-   <exclude pattern="**Contrib-Changes.html"/>
-
+   <exclude pattern="**changes/Contrib-Changes.html"/>
+   <exclude pattern="**changes/Changes.html"/>
 <!--
   This is a workaround for FOR-284 "link rewriting broken when
   linking to xml source views which contain site: links".
