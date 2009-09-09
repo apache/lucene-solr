@@ -300,6 +300,10 @@
                  <!-- solr and lucene both have one? ? ? ? -->
                  <regexp pattern="LengthFilter"/> 
               </linecontainsregexp>
+              <linecontainsregexp negate="true">
+                 <!-- solr provides it's own SnowballPorterFilter variant -->
+                 <regexp pattern="SnowballFilter"/> 
+              </linecontainsregexp>
            </inputfilterchain>
         </redirector>
       <arg line="${stub.src.dirs}"/>
