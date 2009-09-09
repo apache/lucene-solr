@@ -77,8 +77,7 @@ public class SimpleFSLockFactory extends FSLockFactory {
    * @param lockDirName where lock files should be created.
    */
   public SimpleFSLockFactory(String lockDirName) throws IOException {
-    lockDir = new File(lockDirName);
-    setLockDir(lockDir);
+    setLockDir(new File(lockDirName));
   }
 
   public Lock makeLock(String lockName) {

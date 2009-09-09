@@ -259,6 +259,11 @@ public class TestLockFactory extends LuceneTestCase {
         // Cleanup
         _TestUtil.rmDir(indexDirName);
     }
+    
+    public void testSimpleFSLockFactory() throws IOException {
+      // test string file instantiation
+      new SimpleFSLockFactory("test");
+    }
 
     // Verify: setDisableLocks works
     public void testDisableLocks() throws IOException {
