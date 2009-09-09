@@ -88,7 +88,6 @@ public class ShingleFilter extends TokenFilter {
     this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
     this.posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
     this.typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
-    
   }
 
   /**
@@ -174,11 +173,15 @@ public class ShingleFilter extends TokenFilter {
       
       nextToken = (AttributeSource.State) shingleBuf.getFirst();
       
-      if (shingleBufferPosition == 0 && (! shingleBuf.isEmpty()) && outputUnigrams) {
-        restoreState(nextToken);
-        posIncrAtt.setPositionIncrement(1);
+      if (outputUnigrams) {
+        if (shingleBufferPosition == 0) {
+          restoreState(nextToken);
+          posIncrAtt.setPositionIncrement(1);
+          shingleBufferPosition++;
+          return true;
+        }
+      } else {
         shingleBufferPosition++;
-        return true;
       }
   
       if (shingleBufferPosition < shingleBuf.size()) {
@@ -277,7 +280,7 @@ public class ShingleFilter extends TokenFilter {
         shingleBuf.add(captureState());
         if (shingleBuf.size() > maxShingleSize)
         {
-          shingleBuf.remove(0);
+          shingleBuf.removeFirst();
         }
         addedToken = true;
       } else {
@@ -294,7 +297,7 @@ public class ShingleFilter extends TokenFilter {
      * the end of the input stream and have to discard the least recent token.
      */
     if (! addedToken) {
-      shingleBuf.remove(0);
+      shingleBuf.removeFirst();
     }
     
     if (shingleBuf.isEmpty()) {

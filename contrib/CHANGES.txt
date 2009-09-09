@@ -28,8 +28,10 @@ API Changes
  * LUCENE-1460: Change contrib TokenStreams/Filters to use the new
     TokenStream API. (Robert Muir, Michael Busch)
 
- * LUCENE-1775: Change remaining TokenFilters (shingle, prefix-suffix) to
-    use the new TokenStream API. (Robert Muir, Michael Busch)
+ * LUCENE-1775, LUCENE-1903: Change remaining TokenFilters (shingle, prefix-suffix)
+    to use the new TokenStream API. ShingleFilter is much more efficient now,
+    it clones much less often and computes the tokens mostly on the fly now.
+    Also added more tests. (Robert Muir, Michael Busch)
     
  * LUCENE-1685: The position aware SpanScorer has become the default scorer
     for Highlighting. The SpanScorer implementation has replaced QueryScorer

@@ -115,6 +115,60 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1
   };
 
+  public static final Token[] BI_GRAM_TOKENS_WITHOUT_UNIGRAMS = new Token[] {
+    createToken("please divide", 0, 13),
+    createToken("divide this", 7, 18),
+    createToken("this sentence", 14, 27),
+    createToken("sentence into", 19, 32),
+    createToken("into shingles", 28, 39),
+  };
+
+  public static final int[] BI_GRAM_POSITION_INCREMENTS_WITHOUT_UNIGRAMS = new int[] {
+    1, 1, 1, 1, 1
+  };
+
+  public static final String[] BI_GRAM_TYPES_WITHOUT_UNIGRAMS = new String[] {
+    "shingle", "shingle", "shingle", "shingle", "shingle"
+  };
+
+  public static final Token[] BI_GRAM_TOKENS_WITH_HOLES_WITHOUT_UNIGRAMS = new Token[] {
+    createToken("please divide", 0, 13),
+    createToken("divide _", 7, 19),
+    createToken("_ sentence", 19, 27),
+    createToken("sentence _", 19, 33),
+    createToken("_ shingles", 33, 39),
+  };
+
+  public static final int[] BI_GRAM_POSITION_INCREMENTS_WITH_HOLES_WITHOUT_UNIGRAMS = new int[] {
+    1, 1, 1, 1, 1, 1
+  };
+
+
+  public static final Token[] TEST_SINGLE_TOKEN = new Token[] {
+    createToken("please", 0, 6)
+  };
+
+  public static final Token[] SINGLE_TOKEN = new Token[] {
+    createToken("please", 0, 6)
+  };
+
+  public static final int[] SINGLE_TOKEN_INCREMENTS = new int[] {
+    1
+  };
+
+  public static final String[] SINGLE_TOKEN_TYPES = new String[] {
+    "word"
+  };
+
+  public static final Token[] EMPTY_TOKEN_ARRAY = new Token[] {
+  };
+
+  public static final int[] EMPTY_TOKEN_INCREMENTS_ARRAY = new int[] {
+  };
+
+  public static final String[] EMPTY_TOKEN_TYPES_ARRAY = new String[] {
+  };
+
   public static final Token[] TRI_GRAM_TOKENS = new Token[] {
     createToken("please", 0, 6),
     createToken("please divide", 0, 13),
@@ -165,18 +219,59 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
    */
   public void testBiGramFilter() throws IOException {
     this.shingleFilterTest(2, TEST_TOKEN, BI_GRAM_TOKENS,
-                           BI_GRAM_POSITION_INCREMENTS, BI_GRAM_TYPES);
+                           BI_GRAM_POSITION_INCREMENTS, BI_GRAM_TYPES,
+                           true);
   }
 
   public void testBiGramFilterWithHoles() throws IOException {
     this.shingleFilterTest(2, testTokenWithHoles, BI_GRAM_TOKENS_WITH_HOLES,
-                           BI_GRAM_POSITION_INCREMENTS, BI_GRAM_TYPES);
+                           BI_GRAM_POSITION_INCREMENTS, BI_GRAM_TYPES,
+                           true);
+  }
+
+  public void testBiGramFilterWithoutUnigrams() throws IOException {
+    this.shingleFilterTest(2, TEST_TOKEN, BI_GRAM_TOKENS_WITHOUT_UNIGRAMS,
+                           BI_GRAM_POSITION_INCREMENTS_WITHOUT_UNIGRAMS, BI_GRAM_TYPES_WITHOUT_UNIGRAMS,
+                           false);
+  }
+
+  public void testBiGramFilterWithHolesWithoutUnigrams() throws IOException {
+    this.shingleFilterTest(2, testTokenWithHoles, BI_GRAM_TOKENS_WITH_HOLES_WITHOUT_UNIGRAMS,
+                           BI_GRAM_POSITION_INCREMENTS_WITH_HOLES_WITHOUT_UNIGRAMS, BI_GRAM_TYPES_WITHOUT_UNIGRAMS,
+                           false);
+  }
+
+  public void testBiGramFilterWithSingleToken() throws IOException {
+    this.shingleFilterTest(2, TEST_SINGLE_TOKEN, SINGLE_TOKEN,
+                           SINGLE_TOKEN_INCREMENTS, SINGLE_TOKEN_TYPES,
+                           true);
+  }
+
+  public void testBiGramFilterWithSingleTokenWithoutUnigrams() throws IOException {
+    this.shingleFilterTest(2, TEST_SINGLE_TOKEN, EMPTY_TOKEN_ARRAY,
+                           EMPTY_TOKEN_INCREMENTS_ARRAY, EMPTY_TOKEN_TYPES_ARRAY,
+                           false);
+  }
+
+  public void testBiGramFilterWithEmptyTokenStream() throws IOException {
+    this.shingleFilterTest(2, EMPTY_TOKEN_ARRAY, EMPTY_TOKEN_ARRAY,
+                           EMPTY_TOKEN_INCREMENTS_ARRAY, EMPTY_TOKEN_TYPES_ARRAY,
+                           true);
+  }
+
+  public void testBiGramFilterWithEmptyTokenStreamWithoutUnigrams() throws IOException {
+    this.shingleFilterTest(2, EMPTY_TOKEN_ARRAY, EMPTY_TOKEN_ARRAY,
+                           EMPTY_TOKEN_INCREMENTS_ARRAY, EMPTY_TOKEN_TYPES_ARRAY,
+                           false);
   }
 
   public void testTriGramFilter() throws IOException {
     this.shingleFilterTest(3, TEST_TOKEN, TRI_GRAM_TOKENS,
-                           TRI_GRAM_POSITION_INCREMENTS, TRI_GRAM_TYPES);
+                           TRI_GRAM_POSITION_INCREMENTS, TRI_GRAM_TYPES,
+                           true);
   }
+
+
   
   public void testReset() throws Exception {
     Tokenizer wsTokenizer = new WhitespaceTokenizer(new StringReader("please divide this sentence"));
@@ -197,10 +292,13 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
   }
   
   protected void shingleFilterTest(int maxSize, Token[] tokensToShingle, Token[] tokensToCompare,
-                                   int[] positionIncrements, String[] types)
+                                   int[] positionIncrements, String[] types,
+                                   boolean outputUnigrams)
     throws IOException {
 
-    TokenStream filter = new ShingleFilter(new TestTokenStream(tokensToShingle), maxSize);
+    ShingleFilter filter = new ShingleFilter(new TestTokenStream(tokensToShingle), maxSize);
+    filter.setOutputUnigrams(outputUnigrams);
+
     TermAttribute termAtt = (TermAttribute) filter.addAttribute(TermAttribute.class);
     OffsetAttribute offsetAtt = (OffsetAttribute) filter.addAttribute(OffsetAttribute.class);
     PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) filter.addAttribute(PositionIncrementAttribute.class);
@@ -208,6 +306,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
 
     int i = 0;
     while (filter.incrementToken()) {
+      assertTrue("ShingleFilter outputted more tokens than expected", i < tokensToCompare.length);
       String termText = termAtt.term();
       String goldText = tokensToCompare[i].term();
       assertEquals("Wrong termText", goldText, termText);
@@ -220,6 +319,8 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
       assertEquals("Wrong type for token \"" + termText + "\"", types[i], typeAtt.type());
       i++;
     }
+    assertEquals("ShingleFilter outputted wrong # of tokens. (# output = " + i + "; # expected =" + tokensToCompare.length + ")",
+                 tokensToCompare.length, i);
   }
 
   private static Token createToken(String term, int start, int offset)
