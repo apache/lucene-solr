@@ -545,8 +545,12 @@ Bug fixes
     not work correctly.  (Uwe Schindler)
 
  * LUCENE-1899: Fix O(N^2) CPU cost when setting docIDs in order in an
-   OpenBitSet, due to an inefficiency in how the underlying storage is
-   reallocated.  (Nadav Har'El via Mike McCandless)
+    OpenBitSet, due to an inefficiency in how the underlying storage is
+    reallocated.  (Nadav Har'El via Mike McCandless)
+   
+ * LUCENE-1901: Fix the bug that TermAttributeImpl.equals() does not check
+    termLength.  (Daniel Shane, Doron Cohen via Uwe Schindler)
+
 
 New features
 
