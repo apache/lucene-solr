@@ -851,6 +851,9 @@ Documentation
  * LUCENE-1898: Switch changes to use bullets rather than numbers and 
     update changes-to-html script to handle the new format. 
     (Steven Rowe, Mark Miller)
+    
+ * LUCENE-1900: Improve Searchable Javadoc.
+    (Nadav Har'El, Doron Cohen, Marvin Humphrey, Mark Miller)
 
 Build
 

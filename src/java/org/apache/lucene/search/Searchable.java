@@ -92,7 +92,7 @@ public interface Searchable {
   void close() throws IOException;
 
   /** Expert: Returns the number of documents containing <code>term</code>.
-   * Called by search code to compute term weights.
+   * 
    * @see org.apache.lucene.index.IndexReader#docFreq(Term)
    */
   int docFreq(Term term) throws IOException;
@@ -104,15 +104,13 @@ public interface Searchable {
   int[] docFreqs(Term[] terms) throws IOException;
 
   /** Expert: Returns one greater than the largest possible document number.
-   * Called by search code to compute term weights.
+   * 
    * @see org.apache.lucene.index.IndexReader#maxDoc()
    */
   int maxDoc() throws IOException;
 
   /** Expert: Low-level search implementation.  Finds the top <code>n</code>
    * hits for <code>query</code>, applying <code>filter</code> if non-null.
-   *
-   * <p>Called by {@link Hits}.
    *
    * <p>Applications should usually call {@link Searcher#search(Query)} or
    * {@link Searcher#search(Query,Filter)} instead.
@@ -121,8 +119,9 @@ public interface Searchable {
    */
   TopDocs search(Weight weight, Filter filter, int n) throws IOException;
 
-  /** Expert: Returns the stored fields of document <code>i</code>.
-   * Called by {@link HitCollector} implementations.
+  /**
+   * Returns the stored fields of document <code>i</code>.
+   * 
    * @see org.apache.lucene.index.IndexReader#document(int)
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
