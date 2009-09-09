@@ -549,7 +549,8 @@ Bug fixes
     reallocated.  (Nadav Har'El via Mike McCandless)
    
  * LUCENE-1901: Fix the bug that TermAttributeImpl.equals() does not check
-    termLength.  (Daniel Shane, Doron Cohen via Uwe Schindler)
+    termLength (this bug never appeared in a release).  
+    (Daniel Shane, Doron Cohen via Uwe Schindler)
 
 
 New features
