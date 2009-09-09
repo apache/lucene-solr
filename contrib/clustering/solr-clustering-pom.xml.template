@@ -38,7 +38,7 @@
   <dependencies>
     <dependency>
       <groupId>org.apache.solr</groupId>
-      <artifactId>solr-common</artifactId>
+      <artifactId>solr-solrj</artifactId>
       <version>@maven_version@</version>
     </dependency>
     <dependency>
