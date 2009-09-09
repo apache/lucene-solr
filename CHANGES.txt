@@ -553,6 +553,9 @@ Bug fixes
    OpenBitSet, due to an inefficiency in how the underlying storage is
    reallocated.  (Nadav Har'El via Mike McCandless)
 
+ * LUCENE-1901: Fix the bug that TermAttributeImpl.equals() does not check
+   termLength.  (Daniel Shane, Doron Cohen via Uwe Schindler)
+
 New features
 
  * LUCENE-1411: Added expert API to open an IndexWriter on a prior
