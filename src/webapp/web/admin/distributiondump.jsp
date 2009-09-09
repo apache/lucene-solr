@@ -147,8 +147,10 @@
 
 
 <br clear="all">
-<h2>Distribution Info</h2>
-<h3><%= mode %> Server</h3>
+<h2>Distribution Info: <%= mode %> Server</h2>
+<br clear="all" />
+(<a href="http://wiki.apache.org/solr/CollectionDistribution">What Is This Page?</a>)
+<br clear="all" />
 <table>
 <%= buffer %>
 </table>

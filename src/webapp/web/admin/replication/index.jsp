@@ -21,7 +21,9 @@
 <%-- do a verbatim include so we can use the local vars --%>
 <%@include file="header.jsp"%>
 
-<br clear="all">
+<br clear="all" />
+(<a href="http://wiki.apache.org/solr/SolrReplication">What Is This Page?</a>)
+<br clear="all" />
 <table>
 
 <%
