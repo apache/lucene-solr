@@ -23,7 +23,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.ru.RussianLetterTokenizer;
 
 public class RussianLetterTokenizerFactory extends BaseTokenizerFactory {
-  
+  @Deprecated
   private char[] charset;
   
   @Override

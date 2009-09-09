@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ru.RussianLowerCaseFilter;
 
 public class RussianLowerCaseFilterFactory extends BaseTokenFilterFactory {
-  
+  @Deprecated
   private char[] charset;
   
   @Override

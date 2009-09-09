@@ -50,6 +50,14 @@ information, see SOLR-1377.
 If spellcheck.extendedResults=true, the response format for suggestions
 has changed, see SOLR-1071.
 
+Use of the "charset" option when configuring the following Analysis
+Factories has been deprecated and will cause a warning to be logged.
+In future versions of Solr attempting to use this option will cause an
+error.  See SOLR-1410 for more information.
+ * GreekLowerCaseFilterFactory
+ * RussianStemFilterFactory
+ * RussianLowerCaseFilterFactory
+ * RussianLetterTokenizerFactory
 
 Versions of Major Components
 ----------------------------
@@ -660,12 +668,17 @@ Other Changes
 
 44. Upgraded to Lucene 2.9-dev r801856 (Mark Miller)
 
-45. SOLR1276: Added StatsComponentTest (Rafa≈Ç Kuƒá, gsingers)
+45. SOLR1276: Added StatsComponentTest (RafaÅ≈Ç KuÅƒá, gsingers)
 
 46. SOLR-1377:  The TokenizerFactory API has changed to explicitly return a Tokenizer 
     rather then a TokenStream (that may be or may not be a Tokenizer).  This change 
     is required to take advantage of the Token reuse improvements in lucene 2.9. (ryan)  
     
+47. SOLR-1410: Log a warning if the deprecated charset option is used
+    on GreekLowerCaseFilterFactory, RussianStemFilterFactory,
+    RussianLowerCaseFilterFactory or RussianLetterTokenizerFactory.
+    (Robert Muir via hossman)
+
 
 Build
 ----------------------
@@ -683,7 +696,7 @@ Build
 
 Documentation
 ----------------------
- 1. SOLR-789: The javadoc of RandomSortField is not readable (Nicolas Lalev√©e via koji)
+ 1. SOLR-789: The javadoc of RandomSortField is not readable (Nicolas LalevÅ√Å©e via koji)
 
  2. SOLR-962: Note about null handling in ModifiableSolrParams.add javadoc
     (Kay Kay via hossman)
@@ -1122,7 +1135,7 @@ Bug Fixes
  9. SOLR-294: Logging of elapsed time broken on Solaris because the date command
     there does not support the %s output format.  (bill)
 
-10. SOLR-136: Snappuller - "date -d" and locales don't mix.  (J√ºrgen Hermann via    bill)
+10. SOLR-136: Snappuller - "date -d" and locales don't mix.  (JÅ√Åºrgen Hermann via    bill)
 
 11. SOLR-333: Changed distributiondump.jsp to use Solr HOME instead of CWD to set path.
  
