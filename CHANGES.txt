@@ -248,11 +248,6 @@ API Changes
    newly added NoSuchDirectoryException if the directory does not
    exist.  (Marcel Reutegger, Mike McCandless)
 
- * LUCENE-1483: Added new MultiReaderHitCollector which enables faster
-   hit collection by notifying the collector for each sub-reader
-   that's visited.  All core collectors now use this API.  (Mark
-   Miller, Mike McCandless)
-
  * LUCENE-1546: Add IndexReader.flush(Map commitUserData), allowing
    you to record an opaque commitUserData (maps String -> String) into
    the commit written by IndexReader.  This matches IndexWriter's
@@ -269,13 +264,13 @@ API Changes
     to denote issues when offsets in TokenStream tokens exceed the length of the
     provided text.  (Mark Harwood)
     
- * LUCENE-1575: HitCollector is now deprecated in favor of a new
-    Collector abstract class. For easy migration, people can use
+ * LUCENE-1575, LUCENE-1483: HitCollector is now deprecated in favor of 
+    a new Collector abstract class. For easy migration, people can use
     HitCollectorWrapper which translates (wraps) HitCollector into
     Collector. Note that this class is also deprecated and will be
     removed when HitCollector is removed.  Also TimeLimitedCollector
     is deprecated in favor of the new TimeLimitingCollector which
-    extends Collector.  (Shai Erera via Mike McCandless)
+    extends Collector.  (Shai Erera, Mark Miller, Mike McCandless)
 
  * LUCENE-1592: The method TermsEnum.skipTo() was deprecated, because
     it is used nowhere in core/contrib and there is only a very ineffective
@@ -552,9 +547,6 @@ Bug fixes
  * LUCENE-1899: Fix O(N^2) CPU cost when setting docIDs in order in an
    OpenBitSet, due to an inefficiency in how the underlying storage is
    reallocated.  (Nadav Har'El via Mike McCandless)
-
- * LUCENE-1901: Fix the bug that TermAttributeImpl.equals() does not check
-   termLength.  (Daniel Shane, Doron Cohen via Uwe Schindler)
 
 New features
 
