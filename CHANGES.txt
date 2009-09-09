@@ -234,7 +234,8 @@ API Changes
    and also to define custom Attributes. The new API has the same performance
    as the old next(Token) approach.
    For conformance with this new API Tee-/SinkTokenizer was deprecated
-   and replaced by a new TeeSinkTokenFilter. (Michael Busch, Uwe Schindler)
+   and replaced by a new TeeSinkTokenFilter. (Michael Busch, Uwe Schindler;
+   additional contributions and bug fixes by Daniel Shane, Doron Cohen)
 
  * LUCENE-1467: Add nextDoc() and next(int) methods to OpenBitSetIterator.
    These methods can be used to avoid additional calls to doc(). 
@@ -547,11 +548,6 @@ Bug fixes
  * LUCENE-1899: Fix O(N^2) CPU cost when setting docIDs in order in an
     OpenBitSet, due to an inefficiency in how the underlying storage is
     reallocated.  (Nadav Har'El via Mike McCandless)
-   
- * LUCENE-1901: Fix the bug that TermAttributeImpl.equals() does not check
-    termLength (this bug never appeared in a release).  
-    (Daniel Shane, Doron Cohen via Uwe Schindler)
-
 
 New features
 
