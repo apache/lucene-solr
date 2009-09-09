@@ -483,7 +483,6 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
    */
   public void flip(long startIndex, long endIndex) {
     if (endIndex <= startIndex) return;
-    int oldlen = wlen;
     int startWord = (int)(startIndex>>6);
 
     // since endIndex is one past the end, this is index of the last
@@ -742,9 +741,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
    */
   public void ensureCapacityWords(int numWords) {
     if (bits.length < numWords) {
-      long[] newBits = new long[numWords];
-      System.arraycopy(bits,0,newBits,0,wlen);
-      bits = newBits;
+      bits = ArrayUtil.grow(bits, numWords);
     }
   }
 

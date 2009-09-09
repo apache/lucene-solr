@@ -549,6 +549,10 @@ Bug fixes
     Because of this IndexReader.isLocked() and IndexWriter.isLocked() did
     not work correctly.  (Uwe Schindler)
 
+ * LUCENE-1899: Fix O(N^2) CPU cost when setting docIDs in order in an
+   OpenBitSet, due to an inefficiency in how the underlying storage is
+   reallocated.  (Nadav Har'El via Mike McCandless)
+
 New features
 
  * LUCENE-1411: Added expert API to open an IndexWriter on a prior
