@@ -104,8 +104,6 @@ public class SnapPuller {
   private static HttpClient client;
   // HttpClient for this instance if connectionTimeout or readTimeout has been specified
   private final HttpClient myHttpClient;
-  private static final String HTTP_BASIC_AUTH_USER = "httpBasicAuthUser";
-  private static final String HTTP_BASIC_AUTH_PASSWORD = "httpBasicAuthPassword";
 
   private static synchronized HttpClient createHttpClient(String connTimeout, String readTimeout) {
     if (connTimeout == null && readTimeout == null && client != null)  return client;
@@ -184,7 +182,7 @@ public class SnapPuller {
     PostMethod post = new PostMethod(masterUrl);
     for (Map.Entry<String, String> c : commands) {
       post.addParameter(c.getKey(),c.getValue());
-    } 
+    }
     post.addParameter("wt", "javabin");
     return getNamedListResponse(post);
   }
@@ -227,12 +225,12 @@ public class SnapPuller {
    * downloaded. It also downloads the conf files (if they are modified).
    *
    * @param core the SolrCore
-   *
    * @return true on success, false if slave is already in sync
-   *
    * @throws IOException if an exception occurs
    */
   @SuppressWarnings("unchecked")
+  boolean successfulInstall = false;
+
   boolean fetchLatestIndex(SolrCore core) throws IOException {
     replicationStartTime = System.currentTimeMillis();
     try {
@@ -241,7 +239,7 @@ public class SnapPuller {
       try {
         response = getLatestVersion();
       } catch (Exception e) {
-        LOG.error("Master at: "+masterUrl + " is not available. Index fetch failed. Exception: " + e.getMessage());
+        LOG.error("Master at: " + masterUrl + " is not available. Index fetch failed. Exception: " + e.getMessage());
         return false;
       }
       long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
@@ -281,7 +279,7 @@ public class SnapPuller {
       File tmpIndexDir = createTempindexDir(core);
       if (isIndexStale())
         isFullCopyNeeded = true;
-      boolean successfulInstall = false;
+      successfulInstall = false;
       boolean deleteTmpIdxDir = true;
       try {
         File indexDir = new File(core.getIndexDir());
@@ -297,7 +295,7 @@ public class SnapPuller {
           }
           if (successfulInstall) {
             LOG.info("Configuration files are modified, core will be reloaded");
-            logReplicationTimeAndConfFiles(modifiedConfFiles);//write to a file time of replication and conf files.
+            logReplicationTimeAndConfFiles(modifiedConfFiles, successfulInstall);//write to a file time of replication and conf files.
             reloadCore();
           }
         } else {
@@ -309,7 +307,7 @@ public class SnapPuller {
             successfulInstall = copyIndexFiles(tmpIndexDir, indexDir);
           }
           if (successfulInstall) {
-            logReplicationTimeAndConfFiles(modifiedConfFiles);
+            logReplicationTimeAndConfFiles(modifiedConfFiles, successfulInstall);
             doCommit();
           }
         }
@@ -326,6 +324,9 @@ public class SnapPuller {
       }
       return successfulInstall;
     } finally {
+      if (!successfulInstall) {
+        logReplicationTimeAndConfFiles(null, successfulInstall);
+      }
       filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = null;
       replicationStartTime = 0;
       fileFetcher = null;
@@ -357,45 +358,98 @@ public class SnapPuller {
    * Helper method to record the last replication's details so that we can show them on the statistics page across
    * restarts.
    */
-  private void logReplicationTimeAndConfFiles(Collection<Map<String, Object>> modifiedConfFiles) {
+  private void logReplicationTimeAndConfFiles(Collection<Map<String, Object>> modifiedConfFiles, boolean successfulInstall) {
     FileOutputStream outFile = null;
-    FileInputStream inFile = null;
     List<String> confFiles = new ArrayList<String>();
     if (modifiedConfFiles != null && !modifiedConfFiles.isEmpty())
       for (Map<String, Object> map1 : modifiedConfFiles)
         confFiles.add((String) map1.get(NAME));
 
-    Properties props = new Properties();
+    Properties props = replicationHandler.loadReplicationProperties();
     long replicationTime = System.currentTimeMillis();
+    long replicationTimeTaken = (replicationTime - getReplicationStartTime()) / 1000;
     try {
-      File f = new File(solrCore.getDataDir(), REPLICATION_PROPERTIES);
       int indexCount = 1, confFilesCount = 1;
-      if (f.exists()) {
-        inFile = new FileInputStream(f);
-        props.load(inFile);
+      if (props.containsKey(TIMES_INDEX_REPLICATED)) {
+        indexCount = Integer.valueOf(props.getProperty(TIMES_INDEX_REPLICATED)) + 1;
       }
-      if (props.containsKey("timesIndexReplicated")) {
-        indexCount = Integer.valueOf(props.getProperty("timesIndexReplicated")) + 1;
-      }
-      props.setProperty("timesIndexReplicated", String.valueOf(indexCount));
-      props.setProperty("indexReplicatedAt", String.valueOf(replicationTime));
+      StringBuffer sb = readToStringBuffer(replicationTime, props.getProperty(INDEX_REPLICATED_AT_LIST));
+      props.setProperty(INDEX_REPLICATED_AT_LIST, sb.toString());
+      props.setProperty(INDEX_REPLICATED_AT, String.valueOf(replicationTime));
+      props.setProperty(PREVIOUS_CYCLE_TIME_TAKEN, String.valueOf(replicationTimeTaken));
+      props.setProperty(TIMES_INDEX_REPLICATED, String.valueOf(indexCount));
       if (modifiedConfFiles != null && !modifiedConfFiles.isEmpty()) {
-        props.setProperty("confFilesReplicated", confFiles.toString());
-        props.setProperty("confFilesReplicatedAt", String.valueOf(replicationTime));
-        if (props.containsKey("timesConfigReplicated")) {
-          confFilesCount = Integer.valueOf(props.getProperty("timesConfigReplicated")) + 1;
+        props.setProperty(CONF_FILES_REPLICATED, confFiles.toString());
+        props.setProperty(CONF_FILES_REPLICATED_AT, String.valueOf(replicationTime));
+        if (props.containsKey(TIMES_CONFIG_REPLICATED)) {
+          confFilesCount = Integer.valueOf(props.getProperty(TIMES_CONFIG_REPLICATED)) + 1;
         }
-        props.setProperty("timesConfigReplicated", String.valueOf(confFilesCount));
+        props.setProperty(TIMES_CONFIG_REPLICATED, String.valueOf(confFilesCount));
       }
+
+      props.setProperty(LAST_CYCLE_BYTES_DOWNLOADED, String.valueOf(getTotalBytesDownloaded(this)));
+      if (!successfulInstall) {
+        int numFailures = 1;
+        if (props.containsKey(TIMES_FAILED)) {
+          numFailures = Integer.valueOf(props.getProperty(TIMES_FAILED)) + 1;
+        }
+        props.setProperty(TIMES_FAILED, String.valueOf(numFailures));
+        props.setProperty(REPLICATION_FAILED_AT, String.valueOf(replicationTime));
+        sb = readToStringBuffer(replicationTime, props.getProperty(REPLICATION_FAILED_AT_LIST));
+        props.setProperty(REPLICATION_FAILED_AT_LIST, sb.toString());
+      }
+      File f = new File(solrCore.getDataDir(), REPLICATION_PROPERTIES);
       outFile = new FileOutputStream(f);
       props.store(outFile, "Replication details");
+      outFile.close();
     } catch (Exception e) {
       LOG.warn("Exception while updating statistics", e);
     }
     finally {
-      IOUtils.closeQuietly(inFile);
       IOUtils.closeQuietly(outFile);
     }
+  }
+
+  static long getTotalBytesDownloaded(SnapPuller snappuller) {
+    long bytesDownloaded = 0;
+    //get size from list of files to download
+    for (Map<String, Object> file : snappuller.getFilesDownloaded()) {
+      bytesDownloaded += (Long) file.get(SIZE);
+    }
+
+    //get size from list of conf files to download
+    for (Map<String, Object> file : snappuller.getConfFilesDownloaded()) {
+      bytesDownloaded += (Long) file.get(SIZE);
+    }
+
+    //get size from current file being downloaded
+    Map<String, Object> currentFile = snappuller.getCurrentFile();
+    if (currentFile != null) {
+      if (currentFile.containsKey("bytesDownloaded")) {
+        bytesDownloaded += (Long) currentFile.get("bytesDownloaded");
+      }
+    }
+    return bytesDownloaded;
+  }
+
+  private StringBuffer readToStringBuffer(long replicationTime, String str) {
+    StringBuffer sb = new StringBuffer();
+    List<String> l = new ArrayList<String>();
+    if (str != null && str.length() != 0) {
+      String[] ss = str.split(",");
+      for (int i = 0; i < ss.length; i++) {
+        l.add(ss[i]);
+      }
+    }
+    sb.append(replicationTime);
+    if (!l.isEmpty()) {
+      for (int i = 0; i < l.size() || i < 9; i++) {
+        if (i == l.size() || i == 9) break;
+        String s = l.get(i);
+        sb.append(",").append(s);
+      }
+    }
+    return sb;
   }
 
   private void doCommit() throws IOException {
@@ -1092,6 +1146,32 @@ public class SnapPuller {
   private static final Pattern INTERVAL_PATTERN = Pattern.compile("(\\d*?):(\\d*?):(\\d*)");
 
   private static final String HTTP_CONN_TIMEOUT = "httpConnTimeout";
-  
+
   private static final String HTTP_READ_TIMEOUT = "httpReadTimeout";
+
+  private static final String HTTP_BASIC_AUTH_USER = "httpBasicAuthUser";
+
+  private static final String HTTP_BASIC_AUTH_PASSWORD = "httpBasicAuthPassword";
+
+  static final String INDEX_REPLICATED_AT = "indexReplicatedAt";
+
+  static final String TIMES_INDEX_REPLICATED = "timesIndexReplicated";
+
+  static final String CONF_FILES_REPLICATED = "confFilesReplicated";
+
+  static final String CONF_FILES_REPLICATED_AT = "confFilesReplicatedAt";
+
+  static final String TIMES_CONFIG_REPLICATED = "timesConfigReplicated";
+
+  static final String LAST_CYCLE_BYTES_DOWNLOADED = "lastCycleBytesDownloaded";
+
+  static final String TIMES_FAILED = "timesFailed";
+
+  static final String REPLICATION_FAILED_AT = "replicationFailedAt";
+
+  static final String PREVIOUS_CYCLE_TIME_TAKEN = "previousCycleTimeInSeconds";
+
+  static final String INDEX_REPLICATED_AT_LIST = "indexReplicatedAtList";
+
+  static final String REPLICATION_FAILED_AT_LIST = "replicationFailedAtList";
 }

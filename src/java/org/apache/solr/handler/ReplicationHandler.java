@@ -191,7 +191,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         NamedList nl = new NamedList();
         nl.add("indexVersion", c.getVersion());
         nl.add(GENERATION, c.getGeneration());
-        nl.add(CMD_GET_FILE_LIST, c.getFileNames().toString());
+        nl.add(CMD_GET_FILE_LIST, c.getFileNames());
         l.add(nl);
       } catch (IOException e) {
         LOG.warn("Exception while reading files for commit " + c, e);
@@ -502,20 +502,28 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
         list.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
         list.add("isReplicating", String.valueOf(isReplicating()));
+        long elapsed = getTimeElapsed(snapPuller);
+        long val = SnapPuller.getTotalBytesDownloaded(snapPuller);
+        if (elapsed > 0) {
+          list.add("timeElapsed", elapsed);
+          list.add("bytesDownloaded", val);
+          list.add("downloadSpeed", val / elapsed);
+        }
+        Properties props = loadReplicationProperties();
+        addVal(list, SnapPuller.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
+        addVal(list, SnapPuller.INDEX_REPLICATED_AT, props, Date.class);
+        addVal(list, SnapPuller.CONF_FILES_REPLICATED_AT, props, Date.class);
+        addVal(list, SnapPuller.REPLICATION_FAILED_AT, props, Date.class);
+        addVal(list, SnapPuller.TIMES_FAILED, props, Integer.class);
+        addVal(list, SnapPuller.TIMES_INDEX_REPLICATED, props, Integer.class);
+        addVal(list, SnapPuller.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
+        addVal(list, SnapPuller.TIMES_CONFIG_REPLICATED, props, Integer.class);
+        addVal(list, SnapPuller.CONF_FILES_REPLICATED, props, String.class);
       }
       if (isMaster) {
-        if (includeConfFiles != null)
-          list.add("confFilesToReplicate", includeConfFiles);
-        String replicateAfterString="";
-        if (replicateOnCommit)
-          replicateAfterString += "commit, ";
-        if (replicateOnOptimize)
-          replicateAfterString += "optimize, ";
-        if(replicateOnStart)
-          replicateAfterString += "startup, ";
-        if(replicateAfterString.lastIndexOf(',') > -1)
-          replicateAfterString = replicateAfterString.substring(0, replicateAfterString.lastIndexOf(','));
-        list.add(REPLICATE_AFTER, replicateAfterString);
+        if (includeConfFiles != null) list.add("confFilesToReplicate", includeConfFiles);
+        list.add(REPLICATE_AFTER, getReplicateAfterStrings());
+        list.add("replicationEnabled", String.valueOf(replicationEnabled.get()));
       }
     }
     return list;
@@ -523,14 +531,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   /**
    * Used for showing statistics and progress information.
+   *
    * @param showSlaveDetails
    */
   private NamedList<Object> getReplicationDetails(boolean showSlaveDetails) {
-    String timeLastReplicated = "", confFilesReplicated = "", confFilesReplicatedTime = "", timesIndexReplicated = "", timesConfigReplicated = "";
     NamedList<Object> details = new SimpleOrderedMap<Object>();
     NamedList<Object> master = new SimpleOrderedMap<Object>();
     NamedList<Object> slave = new SimpleOrderedMap<Object>();
-    FileInputStream inFile = null;
 
     details.add("indexSize", readableSize(getIndexSize()));
     details.add("indexPath", core.getIndexDir());
@@ -544,18 +551,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     IndexCommit commit = indexCommitPoint;  // make a copy so it won't change
 
     if (isMaster) {
-      if (includeConfFiles != null)
-        master.add(CONF_FILES, includeConfFiles);
-      String replicateAfterString="";
-      if (replicateOnCommit)
-        replicateAfterString += "commit, ";
-      if (replicateOnOptimize)
-        replicateAfterString += "optimize, ";
-      if(replicateOnStart)
-        replicateAfterString += "startup, ";
-      if(replicateAfterString.lastIndexOf(',') > -1)
-        replicateAfterString = replicateAfterString.substring(0, replicateAfterString.lastIndexOf(','));
-      master.add(REPLICATE_AFTER, replicateAfterString);
+      if (includeConfFiles != null) master.add(CONF_FILES, includeConfFiles);
+      master.add(REPLICATE_AFTER, getReplicateAfterStrings());
+      master.add("replicationEnabled", String.valueOf(replicationEnabled.get()));
     }
 
     if (isMaster && commit != null) {
@@ -565,161 +563,189 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     SnapPuller snapPuller = tempSnapPuller;
     if (showSlaveDetails && snapPuller != null) {
-      try {
-        Properties props = new Properties();
-        File f = new File(core.getDataDir(), SnapPuller.REPLICATION_PROPERTIES);
-        if (f.exists()) {
-          inFile = new FileInputStream(f);
-          props.load(inFile);
-          timeLastReplicated = props.getProperty("indexReplicatedAt");
-          if (props.containsKey("timesIndexReplicated"))
-            timesIndexReplicated = props.getProperty("timesIndexReplicated");
-          if (props.containsKey("confFilesReplicated"))
-            confFilesReplicated = props.getProperty("confFilesReplicated");
-          if (props.containsKey("confFilesReplicatedAt"))
-            confFilesReplicatedTime = props.getProperty("confFilesReplicatedAt");
-          if (props.containsKey("timesConfigReplicated"))
-            timesConfigReplicated = props.getProperty("timesConfigReplicated");
-        }
-      } catch (Exception e) {
-        LOG.warn("Exception while reading " + SnapPuller.REPLICATION_PROPERTIES);
-      } finally {
-        IOUtils.closeQuietly(inFile);
-      }
+      Properties props = loadReplicationProperties();
       try {
         NamedList<String> command = new NamedList<String>();
-        command.add(COMMAND,CMD_DETAILS);
-        command.add("slave","false");
+        command.add(COMMAND, CMD_DETAILS);
+        command.add("slave", "false");
         NamedList nl = snapPuller.getCommandResponse(command);
         slave.add("masterDetails", nl.get(CMD_DETAILS));
       } catch (Exception e) {
-        LOG.warn("Exception while invoking a 'details' method on master ", e);
-        slave.add(ERR_STATUS,"invalid_master");
+        LOG.warn("Exception while invoking 'details' method for replication on master ", e);
+        slave.add(ERR_STATUS, "invalid_master");
       }
       slave.add(MASTER_URL, snapPuller.getMasterUrl());
       if (snapPuller.getPollInterval() != null) {
         slave.add(SnapPuller.POLL_INTERVAL, snapPuller.getPollInterval());
       }
       if (snapPuller.getNextScheduledExecTime() != null && !isPollingDisabled()) {
-        Date d = new Date(snapPuller.getNextScheduledExecTime());
-        slave.add("nextExecutionAt", d.toString());
+        slave.add(NEXT_EXECUTION_AT, new Date(snapPuller.getNextScheduledExecTime()).toString());
       } else if (isPollingDisabled()) {
-        slave.add("nextExecutionAt", "Polling disabled");
-      } else
-        slave.add("nextExecutionAt", "");
-
-      if (timeLastReplicated != null && timeLastReplicated.length() > 0) {
-        Date d = new Date(Long.valueOf(timeLastReplicated));
-        slave.add("indexReplicatedAt", d.toString());
-      } else {
-        slave.add("indexReplicatedAt", "");
+        slave.add(NEXT_EXECUTION_AT, "Polling disabled");
       }
-      slave.add("timesIndexReplicated", timesIndexReplicated);
-      slave.add("confFilesReplicated", confFilesReplicated);
-      slave.add("timesConfigReplicated", timesConfigReplicated);
-      if (confFilesReplicatedTime != null && confFilesReplicatedTime.length() > 0) {
-        Date d = new Date(Long.valueOf(confFilesReplicatedTime));
-        slave.add("confFilesReplicatedAt", d.toString());
-      } else {
-        slave.add("confFilesReplicatedAt", confFilesReplicatedTime);
-      }
+      addVal(slave, SnapPuller.INDEX_REPLICATED_AT, props, Date.class);
+      addVal(slave, SnapPuller.INDEX_REPLICATED_AT_LIST, props, List.class);
+      addVal(slave, SnapPuller.REPLICATION_FAILED_AT_LIST, props, List.class);
+      addVal(slave, SnapPuller.TIMES_INDEX_REPLICATED, props, Integer.class);
+      addVal(slave, SnapPuller.CONF_FILES_REPLICATED, props, Integer.class);
+      addVal(slave, SnapPuller.TIMES_CONFIG_REPLICATED, props, Integer.class);
+      addVal(slave, SnapPuller.CONF_FILES_REPLICATED_AT, props, Integer.class);
+      addVal(slave, SnapPuller.LAST_CYCLE_BYTES_DOWNLOADED, props, Long.class);
+      addVal(slave, SnapPuller.TIMES_FAILED, props, Integer.class);
+      addVal(slave, SnapPuller.REPLICATION_FAILED_AT, props, Date.class);
+      addVal(slave, SnapPuller.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
 
-      try {
-        long bytesToDownload = 0;
-        List<String> filesToDownload = new ArrayList<String>();
-        if (snapPuller.getFilesToDownload() != null) {
+
+      boolean isReplicating = isReplicating();
+      slave.add("isReplicating", String.valueOf(isReplicating));
+      if (isReplicating) {
+        try {
+          long bytesToDownload = 0;
+          List<String> filesToDownload = new ArrayList<String>();
           for (Map<String, Object> file : snapPuller.getFilesToDownload()) {
             filesToDownload.add((String) file.get(NAME));
             bytesToDownload += (Long) file.get(SIZE);
           }
-        }
 
-        //get list of conf files to download
-        for (Map<String, Object> file : snapPuller.getConfFilesToDownload()) {
-          filesToDownload.add((String) file.get(NAME));
-          bytesToDownload += (Long) file.get(SIZE);
-        }
-
-        slave.add("filesToDownload", filesToDownload.toString());
-        slave.add("numFilesToDownload", String.valueOf(filesToDownload.size()));
-        slave.add("bytesToDownload", readableSize(bytesToDownload));
-
-        long bytesDownloaded = 0;
-        List<String> filesDownloaded = new ArrayList<String>();
-        for (Map<String, Object> file : snapPuller.getFilesDownloaded()) {
-          filesDownloaded.add((String) file.get(NAME));
-          bytesDownloaded += (Long) file.get(SIZE);
-        }
-
-        //get list of conf files downloaded
-        for (Map<String, Object> file : snapPuller.getConfFilesDownloaded()) {
-          filesDownloaded.add((String) file.get(NAME));
-          bytesDownloaded += (Long) file.get(SIZE);
-        }
-
-        slave.add("filesDownloaded", filesDownloaded.toString());
-        slave.add("numFilesDownloaded", String.valueOf(filesDownloaded.size()));
-
-        Map<String, Object> currentFile = snapPuller.getCurrentFile();
-        String currFile = null;
-        long currFileSize = 0, currFileSizeDownloaded = 0;
-        float percentDownloaded = 0;
-        if (currentFile != null) {
-          currFile = (String) currentFile.get(NAME);
-          currFileSize = (Long) currentFile.get(SIZE);
-          if (currentFile.containsKey("bytesDownloaded")) {
-            currFileSizeDownloaded = (Long) currentFile.get("bytesDownloaded");
-            bytesDownloaded += currFileSizeDownloaded;
-            if (currFileSize > 0)
-              percentDownloaded = (currFileSizeDownloaded * 100) / currFileSize;
+          //get list of conf files to download
+          for (Map<String, Object> file : snapPuller.getConfFilesToDownload()) {
+            filesToDownload.add((String) file.get(NAME));
+            bytesToDownload += (Long) file.get(SIZE);
           }
-        }
 
-        long timeElapsed = 0, estimatedTimeRemaining = 0;
-        Date replicationStartTime = null;
-        if (snapPuller.getReplicationStartTime() > 0) {
-          replicationStartTime = new Date(snapPuller.getReplicationStartTime());
-          timeElapsed = (System.currentTimeMillis() - snapPuller.getReplicationStartTime()) / 1000;
-        }
-        if (replicationStartTime != null) {
-          slave.add("replicationStartTime", replicationStartTime.toString());
-        }
-        slave.add("timeElapsed", String.valueOf(timeElapsed) + "s");
+          slave.add("filesToDownload", filesToDownload);
+          slave.add("numFilesToDownload", String.valueOf(filesToDownload.size()));
+          slave.add("bytesToDownload", readableSize(bytesToDownload));
 
-        if (bytesDownloaded > 0)
-          estimatedTimeRemaining = ((bytesToDownload - bytesDownloaded) * timeElapsed) / bytesDownloaded;
-        float totalPercent = 0;
-        long downloadSpeed = 0;
-        if (bytesToDownload > 0)
-          totalPercent = (bytesDownloaded * 100) / bytesToDownload;
-        if (timeElapsed > 0)
-          downloadSpeed = (bytesDownloaded / timeElapsed);
-        if (currFile != null)
-          slave.add("currentFile", currFile);
-        slave.add("currentFileSize", readableSize(currFileSize));
-        slave.add("currentFileSizeDownloaded", readableSize(currFileSizeDownloaded));
-        slave.add("currentFileSizePercent", String.valueOf(percentDownloaded));
-        slave.add("bytesDownloaded", readableSize(bytesDownloaded));
-        slave.add("totalPercent", String.valueOf(totalPercent));
-        slave.add("timeRemaining", String.valueOf(estimatedTimeRemaining) + "s");
-        slave.add("downloadSpeed", readableSize(downloadSpeed));
-        slave.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
-        slave.add("isReplicating", String.valueOf(isReplicating()));
-      } catch (Exception e) {
-        LOG.error("Exception while writing details: ", e);
+          long bytesDownloaded = 0;
+          List<String> filesDownloaded = new ArrayList<String>();
+          for (Map<String, Object> file : snapPuller.getFilesDownloaded()) {
+            filesDownloaded.add((String) file.get(NAME));
+            bytesDownloaded += (Long) file.get(SIZE);
+          }
+
+          //get list of conf files downloaded
+          for (Map<String, Object> file : snapPuller.getConfFilesDownloaded()) {
+            filesDownloaded.add((String) file.get(NAME));
+            bytesDownloaded += (Long) file.get(SIZE);
+          }
+
+          Map<String, Object> currentFile = snapPuller.getCurrentFile();
+          String currFile = null;
+          long currFileSize = 0, currFileSizeDownloaded = 0;
+          float percentDownloaded = 0;
+          if (currentFile != null) {
+            currFile = (String) currentFile.get(NAME);
+            currFileSize = (Long) currentFile.get(SIZE);
+            if (currentFile.containsKey("bytesDownloaded")) {
+              currFileSizeDownloaded = (Long) currentFile.get("bytesDownloaded");
+              bytesDownloaded += currFileSizeDownloaded;
+              if (currFileSize > 0)
+                percentDownloaded = (currFileSizeDownloaded * 100) / currFileSize;
+            }
+          }
+          slave.add("filesDownloaded", filesDownloaded);
+          slave.add("numFilesDownloaded", String.valueOf(filesDownloaded.size()));
+
+          long estimatedTimeRemaining = 0;
+
+          if (snapPuller.getReplicationStartTime() > 0) {
+            slave.add("replicationStartTime", new Date(snapPuller.getReplicationStartTime()).toString());
+          }
+          long elapsed = getTimeElapsed(snapPuller);
+          slave.add("timeElapsed", String.valueOf(elapsed) + "s");
+
+          if (bytesDownloaded > 0)
+            estimatedTimeRemaining = ((bytesToDownload - bytesDownloaded) * elapsed) / bytesDownloaded;
+          float totalPercent = 0;
+          long downloadSpeed = 0;
+          if (bytesToDownload > 0)
+            totalPercent = (bytesDownloaded * 100) / bytesToDownload;
+          if (elapsed > 0)
+            downloadSpeed = (bytesDownloaded / elapsed);
+          if (currFile != null)
+            slave.add("currentFile", currFile);
+          slave.add("currentFileSize", readableSize(currFileSize));
+          slave.add("currentFileSizeDownloaded", readableSize(currFileSizeDownloaded));
+          slave.add("currentFileSizePercent", String.valueOf(percentDownloaded));
+          slave.add("bytesDownloaded", readableSize(bytesDownloaded));
+          slave.add("totalPercent", String.valueOf(totalPercent));
+          slave.add("timeRemaining", String.valueOf(estimatedTimeRemaining) + "s");
+          slave.add("downloadSpeed", readableSize(downloadSpeed));
+          slave.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
+        } catch (Exception e) {
+          LOG.error("Exception while writing replication details: ", e);
+        }
       }
+      if (isMaster)
+        details.add("master", master);
+      if (isSlave && showSlaveDetails)
+        details.add("slave", slave);
+      NamedList snapshotStats = snapShootDetails;
+      if (snapshotStats != null)
+        details.add(CMD_BACKUP, snapshotStats);
     }
-    if(isMaster)
-      details.add("master", master);
-    if(isSlave && showSlaveDetails)
-      details.add("slave", slave);
-    NamedList snapshotStats = snapShootDetails;
-    if (snapshotStats != null)
-      details.add(CMD_BACKUP, snapshotStats);
     return details;
   }
 
-  void refreshCommitpoint(){
+  private void addVal(NamedList nl, String key, Properties props, Class clzz) {
+    String s = props.getProperty(key);
+    if (s == null || s.trim().length() == 0) return;
+    if (clzz == Date.class) {
+      try {
+        Long l = Long.parseLong(s);
+        nl.add(key, new Date(l).toString());
+      } catch (NumberFormatException e) {/*no op*/ }
+    } else if (clzz == List.class) {
+      String ss[] = s.split(",");
+      List<String> l = new ArrayList<String>();
+      for (int i = 0; i < ss.length; i++) {
+        l.add(new Date(Long.valueOf(ss[i])).toString());
+      }
+      nl.add(key, l);
+    } else {
+      nl.add(key, s);
+    }
+
+  }
+
+  private List<String> getReplicateAfterStrings() {
+    List<String> replicateAfter = new ArrayList<String>();
+    if (replicateOnCommit)
+      replicateAfter.add("commit");
+    if (replicateOnOptimize)
+      replicateAfter.add("optimize");
+    if (replicateOnStart)
+      replicateAfter.add("startup");
+    return replicateAfter;
+  }
+
+  private long getTimeElapsed(SnapPuller snapPuller) {
+    long timeElapsed = 0;
+    if (snapPuller.getReplicationStartTime() > 0)
+      timeElapsed = (System.currentTimeMillis() - snapPuller.getReplicationStartTime()) / 1000;
+    return timeElapsed;
+  }
+
+  Properties loadReplicationProperties() {
+    FileInputStream inFile = null;
+    Properties props = new Properties();
+    try {
+      File f = new File(core.getDataDir(), SnapPuller.REPLICATION_PROPERTIES);
+      if (f.exists()) {
+        inFile = new FileInputStream(f);
+        props.load(inFile);
+      }
+    } catch (Exception e) {
+      LOG.warn("Exception while reading " + SnapPuller.REPLICATION_PROPERTIES);
+    } finally {
+      IOUtils.closeQuietly(inFile);
+    }
+    return props;
+  }
+
+
+  void refreshCommitpoint() {
     IndexCommit commitPoint = core.getDeletionPolicy().getLatestCommit();
     if(replicateOnCommit && !commitPoint.isOptimized()){
       indexCommitPoint = commitPoint;
@@ -778,8 +804,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             LOG.warn("The update handler being used is not an instance or sub-class of DirectUpdateHandler2. " +
                     "Replicate on Startup cannot work.");
           }
-          if(s.get().getReader().getIndexCommit() != null)
-            if(s.get().getReader().getIndexCommit().getGeneration() != 1L)
+          if (s.get().getReader().getIndexCommit() != null)
+            if (s.get().getReader().getIndexCommit().getGeneration() != 1L)
               indexCommitPoint = s.get().getReader().getIndexCommit();
         } catch (IOException e) {
           LOG.warn("Unable to get IndexCommit on startup", e);
@@ -1045,5 +1071,5 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   public static final String OK_STATUS = "OK";
 
-
+  public static final String NEXT_EXECUTION_AT = "nextExecutionAt";
 }
