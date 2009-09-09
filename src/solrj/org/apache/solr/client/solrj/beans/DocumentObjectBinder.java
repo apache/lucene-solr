@@ -313,7 +313,6 @@ public class DocumentObjectBinder {
     <T> void inject(T obj, SolrDocument sdoc) {
       Object val = getFieldValue(sdoc);
       if(val == null) {
-        System.out.println("val null for "+ name);
         return;
       }
       if(isArray && !isContainedInMap){
