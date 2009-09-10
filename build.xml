@@ -337,7 +337,7 @@
           <!-- Packages" group after the ones listed here, then those -->
           <!-- packages are not being matched by any of these rules   -->
   
-          <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.standard*"/>
+          <group title="Core" packages="org.apache.*:org.apache.lucene.analysis:org.apache.lucene.analysis.standard*:org.apache.lucene.analysis.tokenattributes*"/>
   
           <group title="Demo" packages="org.apache.lucene.demo*"/>
   
