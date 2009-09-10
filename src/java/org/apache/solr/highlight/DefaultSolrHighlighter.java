@@ -281,17 +281,22 @@ public class DefaultSolrHighlighter extends SolrHighlighter
             // create TokenStream
             try {
               // attempt term vectors
-              if( tots == null )
-                tots = new TermOffsetsTokenStream( TokenSources.getTokenStream(searcher.getReader(), docId, fieldName) );
-              tstream = tots.getMultiValuedTokenStream( docTexts[j].length() );
+              if( tots == null ) {
+                TokenStream tvStream = TokenSources.getTokenStream(searcher.getReader(), docId, fieldName);
+                if (tvStream != null) {
+                  tots = new TermOffsetsTokenStream(tvStream);
+                  tstream = tots.getMultiValuedTokenStream( docTexts[j].length() );
+                } else {
+                  // fall back to analyzer
+                  tstream = createAnalyzerTStream(schema, fieldName, docTexts[j]);
+                }
+              }
             }
             catch (IllegalArgumentException e) {
-              // fall back to anaylzer
-              TokenStream ts = schema.getAnalyzer().reusableTokenStream(fieldName, new StringReader(docTexts[j]));
-              ts.reset();
-              tstream = new TokenOrderingFilter(ts, 10);
+              // fall back to analyzer
+              tstream = createAnalyzerTStream(schema, fieldName, docTexts[j]);
             }
-             
+                         
             Highlighter highlighter;
             if (Boolean.valueOf(req.getParams().get(HighlightParams.USE_PHRASE_HIGHLIGHTER))) {
               // wrap CachingTokenFilter around TokenStream for reuse
@@ -379,6 +384,15 @@ public class DefaultSolrHighlighter extends SolrHighlighter
         fragments.add(printId == null ? null : printId, docSummaries);
      }
      return fragments;
+  }
+
+  private TokenStream createAnalyzerTStream(IndexSchema schema, String fieldName, String docText) throws IOException {
+
+    TokenStream tstream;
+    TokenStream ts = schema.getAnalyzer().reusableTokenStream(fieldName, new StringReader(docText));
+    ts.reset();
+    tstream = new TokenOrderingFilter(ts, 10);
+    return tstream;
   }
 }
 

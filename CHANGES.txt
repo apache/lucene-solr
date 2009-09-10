@@ -551,6 +551,8 @@ Bug Fixes
     (Uri Boness, yonik)
 
 
+66. SOLR-1381: Fixed improper handling of fields that have only term positions and not term offsets during Highlighting (Thorsten Fischer, gsingers) 
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
@@ -668,7 +670,7 @@ Other Changes
 
 44. Upgraded to Lucene 2.9-dev r801856 (Mark Miller)
 
-45. SOLR1276: Added StatsComponentTest (RafaÅ‚ KuÄ‡, gsingers)
+45. SOLR1276: Added StatsComponentTest (Rafaï¿½Å‚ Kuï¿½Ä‡, gsingers)
 
 46. SOLR-1377:  The TokenizerFactory API has changed to explicitly return a Tokenizer 
     rather then a TokenStream (that may be or may not be a Tokenizer).  This change 
@@ -696,7 +698,7 @@ Build
 
 Documentation
 ----------------------
- 1. SOLR-789: The javadoc of RandomSortField is not readable (Nicolas LalevÃ©e via koji)
+ 1. SOLR-789: The javadoc of RandomSortField is not readable (Nicolas Lalevï¿½Ãï¿½e via koji)
 
  2. SOLR-962: Note about null handling in ModifiableSolrParams.add javadoc
     (Kay Kay via hossman)
@@ -1135,7 +1137,7 @@ Bug Fixes
  9. SOLR-294: Logging of elapsed time broken on Solaris because the date command
     there does not support the %s output format.  (bill)
 
-10. SOLR-136: Snappuller - "date -d" and locales don't mix.  (JÃ¼rgen Hermann via    bill)
+10. SOLR-136: Snappuller - "date -d" and locales don't mix.  (Jï¿½Ãï¿½rgen Hermann via    bill)
 
 11. SOLR-333: Changed distributiondump.jsp to use Solr HOME instead of CWD to set path.
  
