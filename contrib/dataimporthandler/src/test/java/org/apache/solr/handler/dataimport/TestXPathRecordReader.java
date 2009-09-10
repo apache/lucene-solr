@@ -299,5 +299,17 @@ public class TestXPathRecordReader {
     Assert.assertEquals("This is the body of my text", m.get("text").toString()
             .trim());
   }
-
+  @Test
+  public void sameForEachAndXpath(){
+    String xml="<root>\n" +
+            "   <cat>\n" +
+            "     <name>hello</name>\n" +
+            "   </cat>\n" +
+            "   <item name=\"item name\"/>\n" +
+            "</root>";
+    XPathRecordReader rr = new XPathRecordReader("/root/cat/name");
+    rr.addField("catName", "/root/cat/name",false);
+    List<Map<String, Object>> l = rr.getAllRecords(new StringReader(xml));
+    Assert.assertEquals("hello",l.get(0).get("catName"));
+  }
 }
