@@ -175,9 +175,9 @@ public class QueryTreeBuilder implements QueryBuilder {
     if (builder == null) {
 
       throw new QueryNodeException(new MessageImpl(
-          QueryParserMessages.LUCENE_QUERY_CONVERSION_ERROR, node
+          QueryParserMessages.LUCENE_QUERY_CONVERSION_ERROR, new Object[]{node
               .toQueryString(new EscapeQuerySyntaxImpl()), node.getClass()
-              .getName()));
+              .getName()}));
 
     }
 

@@ -47,8 +47,8 @@ public class ParseException extends QueryNodeParseException {
    */
   public ParseException(Token currentTokenVal,
       int[][] expectedTokenSequencesVal, String[] tokenImageVal) {
-    super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, initialise(
-        currentTokenVal, expectedTokenSequencesVal, tokenImageVal)));
+    super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, new Object[]{initialise(
+        currentTokenVal, expectedTokenSequencesVal, tokenImageVal)}));
     this.currentToken = currentTokenVal;
     this.expectedTokenSequences = expectedTokenSequencesVal;
     this.tokenImage = tokenImageVal;
@@ -59,7 +59,7 @@ public class ParseException extends QueryNodeParseException {
   }
 
   public ParseException() {
-    super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, "Error"));
+    super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, new Object[]{"Error"}));
   }
 
   /**

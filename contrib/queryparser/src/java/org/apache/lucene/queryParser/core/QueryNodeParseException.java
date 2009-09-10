@@ -58,7 +58,7 @@ public class QueryNodeParseException extends QueryNodeException {
   public void setQuery(CharSequence query) {
     this.query = query;
     this.message = new MessageImpl(
-        QueryParserMessages.INVALID_SYNTAX_CANNOT_PARSE, query, "");
+        QueryParserMessages.INVALID_SYNTAX_CANNOT_PARSE, new Object[] {query, ""});
   }
 
   public CharSequence getQuery() {

@@ -74,8 +74,8 @@ public class AllowLeadingWildcardProcessor extends QueryNodeProcessorImpl {
           case '*':
           case '?':
             throw new QueryNodeException(new MessageImpl(
-                QueryParserMessages.LEADING_WILDCARD_NOT_ALLOWED, node
-                    .toQueryString(new EscapeQuerySyntaxImpl())));    
+                QueryParserMessages.LEADING_WILDCARD_NOT_ALLOWED, new Object[]{node
+                    .toQueryString(new EscapeQuerySyntaxImpl())}));    
         }
       }
 

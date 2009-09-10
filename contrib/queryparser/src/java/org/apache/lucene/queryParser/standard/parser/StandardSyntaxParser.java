@@ -68,7 +68,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
             throw tme;
       }
       catch (Error tme) {
-          Message message = new MessageImpl(QueryParserMessages.INVALID_SYNTAX_CANNOT_PARSE, query, tme.getMessage());
+          Message message = new MessageImpl(QueryParserMessages.INVALID_SYNTAX_CANNOT_PARSE, new Object[]{query, tme.getMessage()});
           QueryNodeParseException e = new QueryNodeParseException(tme);
             e.setQuery(query);
             e.setNonLocalizedMessage(message);

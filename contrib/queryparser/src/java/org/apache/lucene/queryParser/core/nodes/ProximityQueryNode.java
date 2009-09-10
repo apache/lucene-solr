@@ -109,8 +109,8 @@ public class ProximityQueryNode extends BooleanQueryNode {
     if (type == Type.NUMBER) {
       if (distance <= 0) {
         throw new QueryNodeError(new MessageImpl(
-            QueryParserMessages.PARAMETER_VALUE_NOT_SUPPORTED, "distance",
-            distance));
+            QueryParserMessages.PARAMETER_VALUE_NOT_SUPPORTED, new Object[]{"distance",
+            distance}));
 
       } else {
         this.distance = distance;

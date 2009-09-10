@@ -26,13 +26,13 @@ import junit.framework.TestCase;
 public class TestNLS extends TestCase {
   public void testMessageLoading() {
     Message invalidSyntax = new MessageImpl(
-        MessagesTestBundle.Q0001E_INVALID_SYNTAX, "XXX");
+        MessagesTestBundle.Q0001E_INVALID_SYNTAX, new Object[]{"XXX"});
     assertEquals("Syntax Error: XXX", invalidSyntax.getLocalizedMessage());
   }
 
   public void testMessageLoading_ja() {
     Message invalidSyntax = new MessageImpl(
-        MessagesTestBundle.Q0001E_INVALID_SYNTAX, "XXX");
+        MessagesTestBundle.Q0001E_INVALID_SYNTAX, new Object[]{"XXX"});
     assertEquals("構文エラー: XXX", invalidSyntax
         .getLocalizedMessage(Locale.JAPANESE));
   }
@@ -43,7 +43,7 @@ public class TestNLS extends TestCase {
     assertEquals("Truncated unicode escape sequence.", message);
 
     message = NLS.getLocalizedMessage(MessagesTestBundle.Q0001E_INVALID_SYNTAX,
-        "XXX");
+        new Object[]{"XXX"});
     assertEquals("Syntax Error: XXX", message);
   }
 
@@ -54,7 +54,7 @@ public class TestNLS extends TestCase {
     assertEquals("切り捨てられたユニコード・エスケープ・シーケンス。", message);
 
     message = NLS.getLocalizedMessage(MessagesTestBundle.Q0001E_INVALID_SYNTAX,
-        Locale.JAPANESE, "XXX");
+        Locale.JAPANESE, new Object[]{"XXX"});
     assertEquals("構文エラー: XXX", message);
   }
 
@@ -66,7 +66,7 @@ public class TestNLS extends TestCase {
     assertEquals("Truncated unicode escape sequence.", message);
 
     message = NLS.getLocalizedMessage(MessagesTestBundle.Q0001E_INVALID_SYNTAX,
-        locale, "XXX");
+        locale, new Object[]{"XXX"});
     assertEquals("Syntax Error: XXX", message);
   }
 

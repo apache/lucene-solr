@@ -67,9 +67,9 @@ public class BooleanQueryNodeBuilder implements StandardQueryBuilder {
           } catch (TooManyClauses ex) {
 
             throw new QueryNodeException(new MessageImpl(
-                QueryParserMessages.TOO_MANY_BOOLEAN_CLAUSES, BooleanQuery
+                QueryParserMessages.TOO_MANY_BOOLEAN_CLAUSES, new Object[]{BooleanQuery
                     .getMaxClauseCount(), queryNode
-                    .toQueryString(new EscapeQuerySyntaxImpl())), ex);
+                    .toQueryString(new EscapeQuerySyntaxImpl())}), ex);
 
           }
 
