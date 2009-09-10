@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -31,6 +32,8 @@ import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.FacetField;
@@ -38,6 +41,7 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.XML;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.FacetParams;
 
 /**
@@ -239,8 +243,41 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     
     Assert.assertEquals( 1, rsp.getResults().getNumFound() );
   }
-  
-  
+
+
+  public void testContentStreamRequest() throws Exception {
+    SolrServer server = getSolrServer();
+    server.deleteByQuery( "*:*" );// delete everything!
+    server.commit();
+    QueryResponse rsp = server.query( new SolrQuery( "*:*") );
+    Assert.assertEquals( 0, rsp.getResults().getNumFound() );
+
+    ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update/csv");
+    up.addFile(new File("books.csv"));
+    up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+    NamedList<Object> result = server.request(up);
+    assertNotNull("Couldn't upload books.csv", result);
+    rsp = server.query( new SolrQuery( "*:*") );
+    Assert.assertEquals( 10, rsp.getResults().getNumFound() );
+
+    server.deleteByQuery( "*:*" );// delete everything!
+    server.commit();
+    rsp = server.query( new SolrQuery( "*:*") );
+    Assert.assertEquals( 0, rsp.getResults().getNumFound() );
+
+    up = new ContentStreamUpdateRequest("/update/extract");
+    up.addFile(new File("mailing_lists.pdf"));
+    up.setParam("literal.id", "mailing_lists.pdf");
+    up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+    result = server.request(up);
+    assertNotNull("Couldn't upload mailing_lists.pdf", result);
+    rsp = server.query( new SolrQuery( "*:*") );
+    Assert.assertEquals( 1, rsp.getResults().getNumFound() );
+
+
+  }
+
+
   protected void assertNumFound( String query, int num ) throws SolrServerException, IOException
   {
     QueryResponse rsp = getSolrServer().query( new SolrQuery( query ) );

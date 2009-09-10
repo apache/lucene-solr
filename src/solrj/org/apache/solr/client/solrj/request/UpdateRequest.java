@@ -41,8 +41,12 @@ import org.apache.solr.common.util.XML;
  * @version $Id$
  * @since solr 1.3
  */
-public class UpdateRequest extends SolrRequest
-{
+public class UpdateRequest extends AbstractUpdateRequest {
+  /**
+   * Kept for back compatibility.
+   *
+   * @deprecated Use {@link AbstractUpdateRequest.ACTION} instead
+   */
   public enum ACTION {
     COMMIT,
     OPTIMIZE
@@ -53,9 +57,6 @@ public class UpdateRequest extends SolrRequest
   private List<String> deleteById = null;
   private List<String> deleteQuery = null;
 
-  private ModifiableSolrParams params;
-  private int commitWithin = -1;
-  
   public UpdateRequest()
   {
     super( METHOD.POST, "/update" );
@@ -132,11 +133,18 @@ public class UpdateRequest extends SolrRequest
     return this;
   }
 
-  /** Sets appropriate parameters for the given ACTION */
+  /** Sets appropriate parameters for the given ACTION
+   *
+   * @deprecated Use {@link org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION} instead
+   * */
   public UpdateRequest setAction(ACTION action, boolean waitFlush, boolean waitSearcher ) {
     return setAction(action, waitFlush, waitSearcher, 1);
   }
 
+  /**
+   *
+   * @deprecated Use {@link org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION} instead
+   */
   public UpdateRequest setAction(ACTION action, boolean waitFlush, boolean waitSearcher, int maxSegments ) {
     if (params == null)
       params = new ModifiableSolrParams();
@@ -153,34 +161,17 @@ public class UpdateRequest extends SolrRequest
     return this;
   }
 
+  /**
+   *
+   *
+   * @deprecated Use {@link org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION} instead
+   */
   public UpdateRequest setAction(ACTION action, boolean waitFlush, boolean waitSearcher, int maxSegments , boolean expungeDeletes) {
     setAction(action, waitFlush, waitSearcher,maxSegments) ;
     params.set(UpdateParams.EXPUNGE_DELETES,""+expungeDeletes);
     return this;
   }
 
-  /**
-   * @since Solr 1.4
-   */
-  public UpdateRequest rollback() {
-    if (params == null)
-      params = new ModifiableSolrParams();
-
-    params.set( UpdateParams.ROLLBACK, "true" );
-    return this;
-  }
-  
-
-  public void setParam(String param, String value) {
-    if (params == null)
-      params = new ModifiableSolrParams();
-    params.set(param, value);
-  }
-
-  /** Sets the parameters for this update request, overwriting any previous */
-  public void setParams(ModifiableSolrParams params) {
-    this.params = params;
-  }
 
   public void setDocIterator(Iterator<SolrInputDocument> docIterator) {
     this.docIterator = docIterator;
@@ -261,21 +252,6 @@ public class UpdateRequest extends SolrRequest
   //--------------------------------------------------------------------------
   //--------------------------------------------------------------------------
 
-  @Override
-  public ModifiableSolrParams getParams() {
-    return params;
-  }
-  
-  @Override
-  public UpdateResponse process( SolrServer server ) throws SolrServerException, IOException
-  {
-    long startTime = System.currentTimeMillis();
-    UpdateResponse res = new UpdateResponse();
-    res.setResponse( server.request( this ) );
-    res.setElapsedTime( System.currentTimeMillis()-startTime );
-    return res;
-  }
-  
   //--------------------------------------------------------------------------
   // 
   //--------------------------------------------------------------------------
@@ -296,34 +272,4 @@ public class UpdateRequest extends SolrRequest
     return deleteQuery;
   }
 
-  public boolean isWaitFlush() {
-    return params != null && params.getBool(UpdateParams.WAIT_FLUSH, false);
-  }
-
-  public boolean isWaitSearcher() {
-    return params != null && params.getBool(UpdateParams.WAIT_SEARCHER, false);
-  }
-
-  public ACTION getAction() {
-    if (params==null) return null;
-    if (params.getBool(UpdateParams.COMMIT, false)) return ACTION.COMMIT; 
-    if (params.getBool(UpdateParams.OPTIMIZE, false)) return ACTION.OPTIMIZE;
-    return null;
-  }
-
-  public void setWaitFlush(boolean waitFlush) {
-    setParam( UpdateParams.WAIT_FLUSH, waitFlush+"" );
-  }
-
-  public void setWaitSearcher(boolean waitSearcher) {
-    setParam( UpdateParams.WAIT_SEARCHER, waitSearcher+"" );
-  }
-
-  public int getCommitWithin() {
-    return commitWithin;
-  }
-
-  public void setCommitWithin(int commitWithin) {
-    this.commitWithin = commitWithin;
-  }
 }
