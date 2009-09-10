@@ -37,7 +37,7 @@ public abstract class FSLockFactory extends LockFactory {
    * Subclasses can also use this method to set the directory
    * in the constructor.
    */
-  protected void setLockDir(File lockDir) {
+  protected final void setLockDir(File lockDir) {
     if (this.lockDir != null)
       throw new IllegalStateException("You can set the lock directory for this factory only once.");
     this.lockDir = lockDir;
