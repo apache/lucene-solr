@@ -62,7 +62,9 @@ public class FieldReaderDataSource extends DataSource<Reader> {
 
   public Reader getData(String query) {
     Object o = vr.resolve(dataField);
-    if (o == null) return null;
+    if (o == null) {
+       throw new DataImportHandlerException (SEVERE, "No field available for name : " +dataField);
+    }
     if (o instanceof String) {
       return new StringReader((String) o);
     } else if (o instanceof Clob) {
