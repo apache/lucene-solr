@@ -30,15 +30,17 @@ import java.util.Map;
  *
  */
 public class DistanceHandler {
+
+  public enum Precision {EXACT, TWOFEET, TWENTYFEET, TWOHUNDREDFEET};
   
   private Map<Integer,Double> distances;
-  public enum Precision {EXACT, TWOFEET, TWENTYFEET, TWOHUNDREDFEET};
+  private Map<String, Double> distanceLookupCache;
   private Precision precise;
   
-  public DistanceHandler (Map<Integer,Double> distances, Precision precise){
+  public DistanceHandler (Map<Integer,Double> distances, Map<String, Double> distanceLookupCache, Precision precise){
     this.distances = distances;
+    this.distanceLookupCache = distanceLookupCache;
     this.precise = precise; 
-    
   }
   
   
@@ -84,7 +86,7 @@ public class DistanceHandler {
       
       String k = new Double(xLat).toString() +","+ new Double(xLng).toString();
     
-      Double d = (distances.get(k));
+      Double d = (distanceLookupCache.get(k));
       if (d != null){
         return d.doubleValue();
       }
@@ -96,7 +98,7 @@ public class DistanceHandler {
   
   
   public static void main(String args[]){ 
-    DistanceHandler db = new DistanceHandler(new HashMap(), Precision.TWOHUNDREDFEET);
+    DistanceHandler db = new DistanceHandler(new HashMap(), new HashMap(), Precision.TWOHUNDREDFEET);
     System.out.println(DistanceHandler.getPrecision(-1234.123456789, db.getPrecision()));
   }
 }
