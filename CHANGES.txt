@@ -850,6 +850,9 @@ Documentation
     
  * LUCENE-1900: Improve Searchable Javadoc.
     (Nadav Har'El, Doron Cohen, Marvin Humphrey, Mark Miller)
+    
+ * LUCENE-1896: Improve Similarity#queryNorm javadocs.
+    (Jiri Kuhn, Mark Miller)
 
 Build
 

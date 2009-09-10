@@ -386,11 +386,14 @@ public abstract class Similarity implements Serializable {
   public abstract float lengthNorm(String fieldName, int numTokens);
 
   /** Computes the normalization value for a query given the sum of the squared
-   * weights of each of the query terms.  This value is then multipled into the
-   * weight of each query term.
+   * weights of each of the query terms.  This value is multiplied into the
+   * weight of each query term. While the classic query normalization factor is
+   * computed as 1/sqrt(sumOfSquaredWeights), other implementations might
+   * completely ignore sumOfSquaredWeights (ie return 1).
    *
-   * <p>This does not affect ranking, but rather just attempts to make scores
-   * from different queries comparable.
+   * <p>This does not affect ranking, but the default implementation does make scores
+   * from different queries more comparable than they would be by eliminating the
+   * magnitude of the Query vector as a factor in the score.
    *
    * @param sumOfSquaredWeights the sum of the squares of query term weights
    * @return a normalization factor for query weights
