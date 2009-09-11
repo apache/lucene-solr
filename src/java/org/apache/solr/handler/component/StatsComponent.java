@@ -26,6 +26,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.StatsValues;
@@ -98,19 +99,20 @@ public class StatsComponent extends SearchComponent {
 
   @Override
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
-    if (!rb.doStats || (sreq.purpose & ShardRequest.PURPOSE_GET_STATS)==0) return;
+    if (!rb.doStats || (sreq.purpose & ShardRequest.PURPOSE_GET_STATS) == 0) return;
 
     StatsInfo si = rb._statsInfo;
 
-    for (ShardResponse srsp: sreq.responses) {
-      NamedList stats = (NamedList)srsp.getSolrResponse().getResponse().get("stats");
+    for (ShardResponse srsp : sreq.responses) {
+      NamedList stats = (NamedList) srsp.getSolrResponse().getResponse().get("stats");
 
-      NamedList stats_fields = (NamedList)stats.get("stats_fields");
+      NamedList stats_fields = (NamedList) stats.get("stats_fields");
       if (stats_fields != null) {
-        for (int i=0; i<stats_fields.size(); i++) {
+        for (int i = 0; i < stats_fields.size(); i++) {
           String field = stats_fields.getName(i);
           StatsValues stv = si.statsFields.get(field);
-          stv.accumulate( (NamedList)stats_fields.get(field) );
+          NamedList shardStv = (NamedList) stats_fields.get(field);
+          stv.accumulate(shardStv);
         }
       }
     }
@@ -121,14 +123,19 @@ public class StatsComponent extends SearchComponent {
     if (!rb.doStats || rb.stage != ResponseBuilder.STAGE_GET_FIELDS) return;
     // wait until STAGE_GET_FIELDS
     // so that "result" is already stored in the response (for aesthetics)
-    
+
     StatsInfo si = rb._statsInfo;
-    
+
     NamedList stats = new SimpleOrderedMap();
     NamedList stats_fields = new SimpleOrderedMap();
-    stats.add("stats_fields",stats_fields);
-    for(String field : si.statsFields.keySet()){
-      stats_fields.add(field, si.statsFields.get(field).getStatsValues());
+    stats.add("stats_fields", stats_fields);
+    for (String field : si.statsFields.keySet()) {
+      NamedList stv = si.statsFields.get(field).getStatsValues();
+      if ((Long) stv.get("count") != 0) {
+        stats_fields.add(field, stv);
+      } else {
+        stats_fields.add(field, null);
+      }
     }
 
     rb.rsp.add("stats", stats);
@@ -207,6 +214,7 @@ class SimpleStats {
   public NamedList getStatsFields() throws IOException {
     NamedList<NamedList<Number>> res = new SimpleOrderedMap<NamedList<Number>>();
     String[] statsFs = params.getParams(StatsParams.STATS_FIELD);
+    boolean isShard = params.getBool(ShardParams.IS_SHARD, false);
     if (null != statsFs) {
       for (String f : statsFs) {
         String[] facets = params.getFieldParams(f, StatsParams.STATS_FACET);
@@ -215,17 +223,18 @@ class SimpleStats {
         }
         SchemaField sf = searcher.getSchema().getField(f);
         FieldType ft = sf.getType();
+        NamedList stv;
         if (ft.isTokenized() || sf.multiValued()) {
           //use UnInvertedField for multivalued fields
           UnInvertedField uif = UnInvertedField.getUnInvertedField(f, searcher);
-          StatsValues allstats = uif.getStats(searcher, docs, facets);
-          if (allstats != null) {
-            res.add(f, (NamedList) allstats.getStatsValues());
-          } else {
-            res.add(f, null);
-          }
+          stv = uif.getStats(searcher, docs, facets).getStatsValues();
         } else {
-          res.add(f, getFieldCacheStats(f, facets));
+          stv = getFieldCacheStats(f, facets);
+        }
+        if (isShard == true || (Long) stv.get("count") > 0) {
+          res.add(f, stv);
+        } else {
+          res.add(f, null);
         }
       }
     }
@@ -243,8 +252,8 @@ class SimpleStats {
       throw new RuntimeException( "failed to open field cache for: "+fieldName, e );
     }
     FieldFacetStats all = new FieldFacetStats( "all", si, ft, 0 );
-    if ( all.nTerms <= 0 || docs.size() <= 0 ) return null;
     StatsValues allstats = new StatsValues();
+    if ( all.nTerms <= 0 || docs.size() <= 0 ) return allstats.getStatsValues();
 
     // don't worry about faceting if the no documents match...
     int i=0;

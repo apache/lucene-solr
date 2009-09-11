@@ -682,6 +682,8 @@ public class TestDistributedSearch extends TestCase {
     // test field that is valid in schema and missing in some shards
     query("q","*:*", "rows",100, "facet","true", "facet.field",oddField, "facet.mincount",2);
 
+    query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", i1);
+
     try {
       // test error produced for field that is invalid for schema
       query("q","*:*", "rows",100, "facet","true", "facet.field",invalidField, "facet.mincount",2);

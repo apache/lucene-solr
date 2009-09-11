@@ -770,17 +770,13 @@ public class UnInvertedField {
         allstats.addMissing(c);
       }
     }
-    if (allstats.getCount() > 0) {
-      if (finfo.length > 0) {
-        allstats.facets = new HashMap<String, Map<String, StatsValues>>();
-        for (FieldFacetStats f : finfo) {
-          allstats.facets.put(f.name, f.facetStatsValues);
-        }
+    if (finfo.length > 0) {
+      allstats.facets = new HashMap<String, Map<String, StatsValues>>();
+      for (FieldFacetStats f : finfo) {
+        allstats.facets.put(f.name, f.facetStatsValues);
       }
-      return allstats;
-    } else {
-      return null;
     }
+    return allstats;
 
   }
 
