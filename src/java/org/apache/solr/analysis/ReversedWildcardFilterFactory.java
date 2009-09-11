@@ -68,7 +68,7 @@ public class ReversedWildcardFilterFactory extends BaseTokenFilterFactory {
     maxFractionAsterisk = getFloat("maxFractionAsterisk", 0.0f);
   }
 
-  @Override
+
   public TokenStream create(TokenStream input) {
     return new ReversedWildcardFilter(input, withOriginal, markerChar);
   }
