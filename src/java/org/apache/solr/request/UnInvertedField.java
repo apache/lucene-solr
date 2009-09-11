@@ -17,6 +17,7 @@
 
 package org.apache.solr.request;
 
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
@@ -26,10 +27,12 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.SimpleFacets;
+
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.*;
 import org.apache.solr.util.BoundedTreeSet;
+import org.apache.solr.handler.component.StatsValues;
+import org.apache.solr.handler.component.FieldFacetStats;
 import org.apache.lucene.util.OpenBitSet;
 
 import java.io.IOException;
@@ -38,7 +41,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.WeakHashMap;
+
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -593,9 +596,6 @@ public class UnInvertedField {
 
         for (; i<endTerm; i++) {
           int c = doNegative ? maxTermCounts[i] - counts[i] : counts[i];
-          if (c==0) {
-
-          }
           if (c<mincount || --off>=0) continue;
           if (--lim<0) break;
 
@@ -615,6 +615,176 @@ public class UnInvertedField {
 
     return res;
   }
+
+  /**
+   * Collect statistics about the UninvertedField.  Code is very similar to {@link #getCounts(org.apache.solr.search.SolrIndexSearcher, org.apache.solr.search.DocSet, int, int, Integer, boolean, String, String)}
+   * It can be used to calculate stats on multivalued fields.
+   * <p/>
+   * This method is mainly used by the {@link org.apache.solr.handler.component.StatsComponent}.
+   *
+   * @param searcher The Searcher to use to gather the statistics
+   * @param baseDocs The {@link org.apache.solr.search.DocSet} to gather the stats on
+   * @param facet One or more fields to facet on.
+   * @return The {@link org.apache.solr.handler.component.StatsValues} collected
+   * @throws IOException
+   */
+  public StatsValues getStats(SolrIndexSearcher searcher, DocSet baseDocs, String[] facet) throws IOException {
+    //this function is ripped off nearly wholesale from the getCounts function to use
+    //for multiValued fields within the StatsComponent.  may be useful to find common
+    //functionality between the two and refactor code somewhat
+    use.incrementAndGet();
+
+    FieldType ft = searcher.getSchema().getFieldType(field);
+    StatsValues allstats = new StatsValues();
+
+    int i = 0;
+    final FieldFacetStats[] finfo = new FieldFacetStats[facet.length];
+    //Initialize facetstats, if facets have been passed in
+    FieldCache.StringIndex si;
+    for (String f : facet) {
+      ft = searcher.getSchema().getFieldType(f);
+      try {
+        si = FieldCache.DEFAULT.getStringIndex(searcher.getReader(), f);
+      }
+      catch (IOException e) {
+        throw new RuntimeException("failed to open field cache for: " + f, e);
+      }
+      finfo[i++] = new FieldFacetStats(f, si, ft, numTermsInField);
+    }
+
+
+    DocSet docs = baseDocs;
+    int baseSize = docs.size();
+    int maxDoc = searcher.maxDoc();
+
+    if (baseSize > 0) {
+
+      final int[] index = this.index;
+      final int[] counts = new int[numTermsInField];
+
+      NumberedTermEnum te = ti.getEnumerator(searcher.getReader());
+
+
+      boolean doNegative = false;
+      if (finfo.length == 0) {
+        //if we're collecting statistics with a facet field, can't do inverted counting
+        doNegative = baseSize > maxDoc >> 1 && termInstances > 0
+                && docs instanceof BitDocSet;
+      }
+
+      if (doNegative) {
+        OpenBitSet bs = (OpenBitSet) ((BitDocSet) docs).getBits().clone();
+        bs.flip(0, maxDoc);
+        // TODO: when iterator across negative elements is available, use that
+        // instead of creating a new bitset and inverting.
+        docs = new BitDocSet(bs, maxDoc - baseSize);
+        // simply negating will mean that we have deleted docs in the set.
+        // that should be OK, as their entries in our table should be empty.
+      }
+
+      // For the biggest terms, do straight set intersections
+      for (TopTerm tt : bigTerms.values()) {
+        // TODO: counts could be deferred if sorted==false
+        if (tt.termNum >= 0 && tt.termNum < numTermsInField) {
+          if (finfo.length == 0) {
+            counts[tt.termNum] = searcher.numDocs(new TermQuery(tt.term), docs);
+          } else {
+            //COULD BE VERY SLOW
+            //if we're collecting stats for facet fields, we need to iterate on all matching documents
+            DocSet bigTermDocSet = searcher.getDocSet(new TermQuery(tt.term)).intersection(docs);
+            DocIterator iter = bigTermDocSet.iterator();
+            while (iter.hasNext()) {
+              int doc = iter.nextDoc();
+              counts[tt.termNum]++;
+              for (FieldFacetStats f : finfo) {
+                f.facetTermNum(doc, tt.termNum);
+              }
+            }
+          }
+        }
+      }
+
+
+      if (termInstances > 0) {
+        DocIterator iter = docs.iterator();
+        while (iter.hasNext()) {
+          int doc = iter.nextDoc();
+          int code = index[doc];
+
+          if ((code & 0xff) == 1) {
+            int pos = code >>> 8;
+            int whichArray = (doc >>> 16) & 0xff;
+            byte[] arr = tnums[whichArray];
+            int tnum = 0;
+            for (; ;) {
+              int delta = 0;
+              for (; ;) {
+                byte b = arr[pos++];
+                delta = (delta << 7) | (b & 0x7f);
+                if ((b & 0x80) == 0) break;
+              }
+              if (delta == 0) break;
+              tnum += delta - TNUM_OFFSET;
+              counts[tnum]++;
+              for (FieldFacetStats f : finfo) {
+                f.facetTermNum(doc, tnum);
+              }
+            }
+          } else {
+            int tnum = 0;
+            int delta = 0;
+            for (; ;) {
+              delta = (delta << 7) | (code & 0x7f);
+              if ((code & 0x80) == 0) {
+                if (delta == 0) break;
+                tnum += delta - TNUM_OFFSET;
+                counts[tnum]++;
+                for (FieldFacetStats f : finfo) {
+                  f.facetTermNum(doc, tnum);
+                }
+                delta = 0;
+              }
+              code >>>= 8;
+            }
+          }
+        }
+      }
+
+      // add results in index order
+
+      for (i = 0; i < numTermsInField; i++) {
+        int c = doNegative ? maxTermCounts[i] - counts[i] : counts[i];
+        if (c == 0) {
+          continue;
+        }
+        Double value = Double.parseDouble(ft.indexedToReadable(getTermText(te, i)));
+        allstats.accumulate(value, c);
+        //as we've parsed the termnum into a value, lets also accumulate fieldfacet statistics
+        for (FieldFacetStats f : finfo) {
+          f.accumulateTermNum(i, value);
+        }
+      }
+      te.close();
+      int c = SimpleFacets.getFieldMissingCount(searcher, baseDocs, field);
+      if (c > 0) {
+        allstats.addMissing(c);
+      }
+    }
+    if (allstats.getCount() > 0) {
+      if (finfo.length > 0) {
+        allstats.facets = new HashMap<String, Map<String, StatsValues>>();
+        for (FieldFacetStats f : finfo) {
+          allstats.facets.put(f.name, f.facetStatsValues);
+        }
+      }
+      return allstats;
+    } else {
+      return null;
+    }
+
+  }
+
+
 
 
   String getTermText(NumberedTermEnum te, int termNum) throws IOException {

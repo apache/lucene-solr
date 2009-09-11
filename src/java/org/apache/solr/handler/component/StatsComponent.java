@@ -28,11 +28,16 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.handler.component.StatsValues;
+import org.apache.solr.handler.component.FieldFacetStats;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.request.UnInvertedField;
+import org.apache.solr.core.SolrCore;
 
 /**
  * Stats component calculates simple statistics on numeric field values
@@ -173,166 +178,6 @@ class StatsInfo {
   }
 }
 
-class StatsValues {
-  private static final String FACETS = "facets";
-  double min;
-  double max;
-  double sum;
-  double sumOfSquares;
-  long count;
-  long missing;
-  
-  // facetField   facetValue
-  Map<String, Map<String,StatsValues>> facets;
-  
-  public StatsValues() {
-    reset();
-  }
-
-  public void accumulate(NamedList stv){
-    min = Math.min(min, (Double)stv.get("min"));
-    max = Math.max(max, (Double)stv.get("max"));
-    sum += (Double)stv.get("sum");
-    count += (Long)stv.get("count");
-    missing += (Long)stv.get("missing");
-    sumOfSquares += (Double)stv.get("sumOfSquares");
-    
-    NamedList f = (NamedList)stv.get( FACETS );
-    if( f != null ) {
-      if( facets == null ) {
-        facets = new HashMap<String, Map<String,StatsValues>>();
-      }
-      
-      for( int i=0; i< f.size(); i++ ) {
-        String field = f.getName(i);
-        NamedList vals = (NamedList)f.getVal( i );
-        Map<String,StatsValues> addTo = facets.get( field );
-        if( addTo == null ) {
-          addTo = new HashMap<String,StatsValues>();
-          facets.put( field, addTo );
-        }
-        for( int j=0; j< vals.size(); j++ ) {
-          String val = f.getName(i);
-          StatsValues vvals = addTo.get( val );
-          if( vvals == null ) {
-            vvals = new StatsValues();
-            addTo.put( val, vvals );
-          }
-          vvals.accumulate( (NamedList)f.getVal( i ) );
-        }
-      }
-    }
-  }
-
-  public void accumulate(double v){
-    sumOfSquares += (v*v); // for std deviation
-    min = Math.min(min, v);
-    max = Math.max(max, v);
-    sum += v;
-    count++;
-  }
-  
-  public double getAverage(){
-    return sum / count;
-  }
-  
-  public double getStandardDeviation()
-  {
-    if( count <= 1.0D ) 
-      return 0.0D;
-    
-    return Math.sqrt( ( ( count * sumOfSquares ) - ( sum * sum ) )
-                      / ( count * ( count - 1.0D ) ) );  
-  }
-  
-  public void reset(){
-    min = Double.MAX_VALUE;
-    max = Double.NEGATIVE_INFINITY;
-    sum = count = missing = 0;
-    sumOfSquares = 0;
-    facets = null;
-  }
-  
-  public NamedList<?> getStatsValues(){
-    NamedList<Object> res = new SimpleOrderedMap<Object>();
-    res.add("min", min);
-    res.add("max", max);
-    res.add("sum", sum);
-    res.add("count", count);
-    res.add("missing", missing);
-    res.add("sumOfSquares", sumOfSquares );
-    res.add("mean", getAverage());
-    res.add( "stddev", getStandardDeviation() );
-    
-    // add the facet stats
-    if( facets != null && facets.size() > 0 ) {
-      NamedList<NamedList<?>> nl = new SimpleOrderedMap<NamedList<?>>();
-      for( Map.Entry<String, Map<String,StatsValues>> entry : facets.entrySet() ) {
-        NamedList<NamedList<?>> nl2 = new SimpleOrderedMap<NamedList<?>>();
-        nl.add( entry.getKey(), nl2 );
-        for( Map.Entry<String, StatsValues> e2 : entry.getValue().entrySet() ) {
-          nl2.add( e2.getKey(), e2.getValue().getStatsValues() );
-        }
-      }
-      res.add( FACETS, nl );
-    }
-    return res;
-  }
-}
-
-class FieldFacetStats {
-  final String name;
-  final FieldCache.StringIndex si;
-  final FieldType ft;
-
-  final String[] terms;
-  final int[] termNum;
-  
-  final int startTermIndex;
-  final int endTermIndex;
-  final int nTerms;
-  
-  final Map<String,StatsValues> facetStatsValues;
-  
-  FieldFacetStats( String name, FieldCache.StringIndex si, FieldType ft )
-  {
-    this.name = name;
-    this.si = si;
-    this.ft = ft;
-    
-    terms = si.lookup;
-    termNum = si.order;
-    startTermIndex = 1;
-    endTermIndex = terms.length;
-    nTerms = endTermIndex - startTermIndex;
-    
-    facetStatsValues = new HashMap<String, StatsValues>();
-  }
-  
-  String getTermText( int docID )
-  {
-    return terms[termNum[docID]];
-  }
-  
-  public boolean facet( int docID, Double v )
-  {
-    if( v == null ) return false;
-    
-    int term = termNum[docID];
-    int arrIdx = term-startTermIndex;
-    if (arrIdx>=0 && arrIdx<nTerms) {
-      String key = ft.indexedToReadable( terms[term] );
-      StatsValues stats = facetStatsValues.get( key );
-      if( stats == null ) {
-        stats = new StatsValues();
-        facetStatsValues.put(key, stats);
-      }
-      stats.accumulate( v );
-      return true;
-    }
-    return false;
-  }
-}
 
 class SimpleStats {
 
@@ -353,22 +198,35 @@ class SimpleStats {
     this.params = params;
   }
 
-  public NamedList<Object> getStatsCounts() {
+  public NamedList<Object> getStatsCounts() throws IOException {
     NamedList<Object> res = new SimpleOrderedMap<Object>();
     res.add("stats_fields", getStatsFields());
     return res;
   }
 
-  public NamedList getStatsFields() {
+  public NamedList getStatsFields() throws IOException {
     NamedList<NamedList<Number>> res = new SimpleOrderedMap<NamedList<Number>>();
     String[] statsFs = params.getParams(StatsParams.STATS_FIELD);
     if (null != statsFs) {
       for (String f : statsFs) {
-        String[] facets = params.getFieldParams( f, StatsParams.STATS_FACET );
-        if( facets == null ) {
+        String[] facets = params.getFieldParams(f, StatsParams.STATS_FACET);
+        if (facets == null) {
           facets = new String[0]; // make sure it is something...
         }
-        res.add(f, getFieldCacheStats(f, facets));
+        SchemaField sf = searcher.getSchema().getField(f);
+        FieldType ft = sf.getType();
+        if (ft.isTokenized() || sf.multiValued()) {
+          //use UnInvertedField for multivalued fields
+          UnInvertedField uif = UnInvertedField.getUnInvertedField(f, searcher);
+          StatsValues allstats = uif.getStats(searcher, docs, facets);
+          if (allstats != null) {
+            res.add(f, (NamedList) allstats.getStatsValues());
+          } else {
+            res.add(f, null);
+          }
+        } else {
+          res.add(f, getFieldCacheStats(f, facets));
+        }
       }
     }
     return res;
@@ -376,10 +234,6 @@ class SimpleStats {
   
   public NamedList getFieldCacheStats(String fieldName, String[] facet ) {
     FieldType ft = searcher.getSchema().getFieldType(fieldName);
-    if( ft.isTokenized() || ft.isMultiValued() ) {
-      throw new SolrException( ErrorCode.BAD_REQUEST, 
-          "Stats are valid for single valued numeric values.  not: "+fieldName + "["+ft+"]" );
-    }
 
     FieldCache.StringIndex si = null;
     try {
@@ -388,7 +242,7 @@ class SimpleStats {
     catch (IOException e) {
       throw new RuntimeException( "failed to open field cache for: "+fieldName, e );
     }
-    FieldFacetStats all = new FieldFacetStats( "all", si, ft );
+    FieldFacetStats all = new FieldFacetStats( "all", si, ft, 0 );
     if ( all.nTerms <= 0 || docs.size() <= 0 ) return null;
     StatsValues allstats = new StatsValues();
 
@@ -397,17 +251,13 @@ class SimpleStats {
     final FieldFacetStats[] finfo = new FieldFacetStats[facet.length];
     for( String f : facet ) {
       ft = searcher.getSchema().getFieldType(f);
-      if( ft.isTokenized() || ft.isMultiValued() ) {
-        throw new SolrException( ErrorCode.BAD_REQUEST, 
-            "Stats can only facet on single valued fields, not: "+f + "["+ft+"]" );
-      }
       try {
         si = FieldCache.DEFAULT.getStringIndex(searcher.getReader(), f);
       } 
       catch (IOException e) {
         throw new RuntimeException( "failed to open field cache for: "+f, e );
       }
-      finfo[i++] = new FieldFacetStats( f, si, ft );
+      finfo[i++] = new FieldFacetStats( f, si, ft, 0 );
     }
     
     
@@ -438,4 +288,6 @@ class SimpleStats {
     }
     return allstats.getStatsValues();
   }
+
+
 }

@@ -98,6 +98,8 @@ New Features
  7. SOLR-680: Add StatsComponent. This gets simple statistics on matched numeric fields,
     including: min, max, mean, median, stddev.  (koji, ryan)
 
+    7.1 SOLR-1380: Added support for multi-valued fields (Harish Agarwal via gsingers)
+
  8. SOLR-561: Added Replication implemented in Java as a request handler. Supports index replication
     as well as configuration replication and exposes detailed statistics and progress information
     on the Admin page. Works on all platforms. (Noble Paul, yonik, Akshay Ukey, shalin)
