@@ -309,6 +309,8 @@ New Features
     to allow more efficient bulk queries (those that retrieve many or all
     documents).  (Brian Whitman via yonik)
 
+78. SOLR-1321: Add better support for efficient wildcard handling (Andrzej Bialecki, Robert Muir, gsingers)    
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the
