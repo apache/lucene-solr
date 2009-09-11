@@ -52,16 +52,17 @@ public class FieldReaderDataSource extends DataSource<Reader> {
   protected VariableResolver vr;
   protected String dataField;
   private String encoding;
+  private EntityProcessorWrapper entityProcessor;
 
   public void init(Context context, Properties initProps) {
-    vr = context.getVariableResolver();
     dataField = context.getEntityAttribute("dataField");
     encoding = context.getEntityAttribute("encoding");
+    entityProcessor = (EntityProcessorWrapper) context.getEntityProcessor();
     /*no op*/
   }
 
   public Reader getData(String query) {
-    Object o = vr.resolve(dataField);
+    Object o = entityProcessor.getVariableResolver().resolve(dataField);
     if (o == null) {
        throw new DataImportHandlerException (SEVERE, "No field available for name : " +dataField);
     }

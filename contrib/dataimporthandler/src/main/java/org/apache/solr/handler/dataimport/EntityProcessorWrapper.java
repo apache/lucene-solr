@@ -271,6 +271,14 @@ public class EntityProcessorWrapper extends EntityProcessor {
     contextCopy = null;
   }
 
+  public VariableResolverImpl getVariableResolver() {
+    return resolver;
+  }
+
+  public Context getContext() {
+    return context;
+  }
+
   @Override
   public void close() {
     delegate.close();
