@@ -358,8 +358,13 @@
   <target name="test"
         description="Runs the core unit tests."
         depends="test-core, test-contrib" />
+
+  <target name="solr-cell-example" depends="compile">
+    <ant antfile="contrib/extraction/build.xml" inheritall="false" target="example" />
+  </target>
   
-  <target name="junit" depends="compileTests">
+  <target name="junit" depends="compileTests,solr-cell-example">
+    
     <!-- no description so it doesn't show up in -projecthelp -->  
     <mkdir dir="${junit.output.dir}"/>
 
