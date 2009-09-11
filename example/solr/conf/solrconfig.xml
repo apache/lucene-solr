@@ -821,7 +821,15 @@
   <!-- An example dedup update processor that creates the "id" field on the fly
        based on the hash code of some other fields.  This example has overwriteDupes
        set to false since we are using the id field as the signatureField and Solr
-       will maintain uniqueness based on that anyway. -->
+       will maintain uniqueness based on that anyway. 
+       
+       You have to link the chain to an update handler above to use it ie:
+         <requestHandler name="/update "class="solr.XmlUpdateRequestHandler">
+           <lst name="defaults">
+             <str name="update.processor">dedupe</str>
+           </lst>
+         </requestHandler>  
+  -->
   <!--
   <updateRequestProcessorChain name="dedupe">
     <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">
