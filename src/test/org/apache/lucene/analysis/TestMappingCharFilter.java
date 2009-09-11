@@ -41,7 +41,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
   }
 
   public void testReaderReset() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "x" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, new StringReader( "x" ) );
     char[] buf = new char[10];
     int len = cs.read(buf, 0, 10);
     assertEquals( 1, len );
@@ -57,55 +57,55 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
   }
 
   public void testNothingChange() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "x" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, new StringReader( "x" ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
     assertTokenStreamContents(ts, new String[]{"x"}, new int[]{0}, new int[]{1});
   }
 
   public void test1to1() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "h" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, new StringReader( "h" ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
     assertTokenStreamContents(ts, new String[]{"i"}, new int[]{0}, new int[]{1});
   }
 
   public void test1to2() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "j" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, new StringReader( "j" ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
     assertTokenStreamContents(ts, new String[]{"jj"}, new int[]{0}, new int[]{1});
   }
 
   public void test1to3() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "k" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, new StringReader( "k" ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
     assertTokenStreamContents(ts, new String[]{"kkk"}, new int[]{0}, new int[]{1});
   }
 
   public void test2to4() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "ll" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, new StringReader( "ll" ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
     assertTokenStreamContents(ts, new String[]{"llll"}, new int[]{0}, new int[]{2});
   }
 
   public void test2to1() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "aa" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, new StringReader( "aa" ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
     assertTokenStreamContents(ts, new String[]{"a"}, new int[]{0}, new int[]{2});
   }
 
   public void test3to1() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "bbb" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, new StringReader( "bbb" ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
     assertTokenStreamContents(ts, new String[]{"b"}, new int[]{0}, new int[]{3});
   }
 
   public void test4to2() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "cccc" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, new StringReader( "cccc" ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
     assertTokenStreamContents(ts, new String[]{"cc"}, new int[]{0}, new int[]{4});
   }
 
   public void test5to0() throws Exception {
-    CharStream cs = new MappingCharFilter( normMap, CharReader.get( new StringReader( "empty" ) ) );
+    CharStream cs = new MappingCharFilter( normMap, new StringReader( "empty" ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
     assertTokenStreamContents(ts, new String[0]);
   }

@@ -17,7 +17,6 @@
 
 package org.apache.lucene.wikipedia.analysis;
 
-import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
@@ -126,10 +125,6 @@ public class WikipediaTokenizer extends Tokenizer {
   private PositionIncrementAttribute posIncrAtt;
   private TermAttribute termAtt;
   private FlagsAttribute flagsAtt;
-
-  void setInput(Reader reader) {
-    this.input = CharReader.get(reader);
-  }
 
   /**
    * Creates a new instance of the {@link WikipediaTokenizer}. Attaches the
@@ -267,7 +262,7 @@ public class WikipediaTokenizer extends Tokenizer {
     //trim the buffer
     String s = buffer.toString().trim();
     termAtt.setTermBuffer(s.toCharArray(), 0, s.length());
-    offsetAtt.setOffset(input.correctOffset(theStart), input.correctOffset(theStart + s.length()));
+    offsetAtt.setOffset(correctOffset(theStart), correctOffset(theStart + s.length()));
     flagsAtt.setFlags(UNTOKENIZED_TOKEN_FLAG);
     //The way the loop is written, we will have proceeded to the next token.  We need to pushback the scanner to lastPos
     if (tmpTokType != WikipediaTokenizerImpl.YYEOF){
@@ -305,7 +300,7 @@ public class WikipediaTokenizer extends Tokenizer {
     //trim the buffer
     String s = buffer.toString().trim();
     termAtt.setTermBuffer(s.toCharArray(), 0, s.length());
-    offsetAtt.setOffset(input.correctOffset(theStart), input.correctOffset(theStart + s.length()));
+    offsetAtt.setOffset(correctOffset(theStart), correctOffset(theStart + s.length()));
     flagsAtt.setFlags(UNTOKENIZED_TOKEN_FLAG);
     //The way the loop is written, we will have proceeded to the next token.  We need to pushback the scanner to lastPos
     if (tmpTokType != WikipediaTokenizerImpl.YYEOF){
@@ -318,7 +313,7 @@ public class WikipediaTokenizer extends Tokenizer {
   private void setupToken() {
     scanner.getText(termAtt);
     final int start = scanner.yychar();
-    offsetAtt.setOffset(input.correctOffset(start), input.correctOffset(start + termAtt.termLength()));
+    offsetAtt.setOffset(correctOffset(start), correctOffset(start + termAtt.termLength()));
   }
 
   /*
@@ -332,7 +327,7 @@ public class WikipediaTokenizer extends Tokenizer {
   }
 
   public void reset(Reader reader) throws IOException {
-    setInput(reader);
+    super.reset(reader);
     reset();
   }
 

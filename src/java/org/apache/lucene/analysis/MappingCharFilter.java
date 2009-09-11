@@ -18,6 +18,7 @@
 package org.apache.lucene.analysis;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.util.LinkedList;
 
 /**
@@ -35,8 +36,15 @@ public class MappingCharFilter extends BaseCharFilter {
   private int charPointer;
   private int nextCharCounter;
 
+  /** Default constructor that takes a {@link CharStream}. */
   public MappingCharFilter(NormalizeCharMap normMap, CharStream in) {
     super(in);
+    this.normMap = normMap;
+  }
+
+  /** Easy-use constructor that takes a {@link Reader}. */
+  public MappingCharFilter(NormalizeCharMap normMap, Reader in) {
+    super(CharReader.get(in));
     this.normMap = normMap;
   }
 

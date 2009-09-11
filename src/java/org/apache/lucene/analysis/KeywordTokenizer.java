@@ -76,8 +76,8 @@ public class KeywordTokenizer extends Tokenizer {
           buffer = termAtt.resizeTermBuffer(1+buffer.length);
       }
       termAtt.setTermLength(upto);
-      finalOffset = input.correctOffset(upto);
-      offsetAtt.setOffset(input.correctOffset(0), finalOffset);
+      finalOffset = correctOffset(upto);
+      offsetAtt.setOffset(correctOffset(0), finalOffset);
       return true;
     }
     return false;

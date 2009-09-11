@@ -116,7 +116,7 @@ public final class SentenceTokenizer extends Tokenizer {
       return false;
     else {
       termAtt.setTermBuffer(buffer.toString());
-      offsetAtt.setOffset(input.correctOffset(tokenStart), input.correctOffset(tokenEnd));
+      offsetAtt.setOffset(correctOffset(tokenStart), correctOffset(tokenEnd));
       typeAtt.setType("sentence");
       return true;
     }

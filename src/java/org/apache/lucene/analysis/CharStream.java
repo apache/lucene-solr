@@ -20,12 +20,11 @@ package org.apache.lucene.analysis;
 import java.io.Reader;
 
 /**
- * CharStream adds <a
- * href="CharStream.html#correctOffset(int)">correctOffset</a>
- * functionality over Reader.  All Tokenizers accept a
- * CharStream as input, which enables arbitrary character
- * based filtering before tokenization.  The {@link
- * #correctOffset} method fixed offsets to account for
+ * CharStream adds {@link #correctOffset}
+ * functionality over {@link Reader}.  All Tokenizers accept a
+ * CharStream instead of {@link Reader} as input, which enables
+ * arbitrary character based filtering before tokenization. 
+ * The {@link #correctOffset} method fixed offsets to account for
  * removal or insertion of characters, so that the offsets
  * reported in the tokens match the character offsets of the
  * original Reader.

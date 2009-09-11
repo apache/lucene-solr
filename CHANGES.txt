@@ -350,10 +350,12 @@ API Changes
     a top level reader and docID.
     (Shai Erera, Chris Hostetter, Martin Ruckli, Mark Miller via Mike McCandless)
  	
- * LUCENE-1466: Changed Tokenizer.input to be a CharStream; added
-    CharFilter and MappingCharFilter, which allows chaining & mapping
-    of characters before tokenizers run.  (Koji Sekiguchi via Mike
-    McCandless)
+ * LUCENE-1466, LUCENE-1906: Added CharFilter and MappingCharFilter, which allows
+    chaining & mapping of characters before tokenizers run. CharStream (subclass of
+    Reader) is the base class for custom java.io.Reader's, that support offset
+    correction. Tokenizers got an additional method correctOffset() that is passed
+    down to the underlying CharStream if input is a subclass of CharStream/-Filter.
+    (Koji Sekiguchi via Mike McCandless, Uwe Schindler)
 
  * LUCENE-1703: Add IndexWriter.waitForMerges.  (Tim Smith via Mike
     McCandless)

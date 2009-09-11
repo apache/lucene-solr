@@ -285,7 +285,7 @@ public final class CJKTokenizer extends Tokenizer {
       
         if (length > 0) {
           termAtt.setTermBuffer(buffer, 0, length);
-          offsetAtt.setOffset(input.correctOffset(start), input.correctOffset(start+length));
+          offsetAtt.setOffset(correctOffset(start), correctOffset(start+length));
           typeAtt.setType(TOKEN_TYPE_NAMES[tokenType]);
           return true;
         } else if (dataLen == -1) {

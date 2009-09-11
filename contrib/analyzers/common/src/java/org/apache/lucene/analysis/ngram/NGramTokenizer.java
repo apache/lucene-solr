@@ -124,7 +124,7 @@ public class NGramTokenizer extends Tokenizer {
     int oldPos = pos;
     pos++;
     termAtt.setTermBuffer(inStr, oldPos, gramSize);
-    offsetAtt.setOffset(input.correctOffset(oldPos), input.correctOffset(oldPos+gramSize));
+    offsetAtt.setOffset(correctOffset(oldPos), correctOffset(oldPos+gramSize));
     return true;
   }
   

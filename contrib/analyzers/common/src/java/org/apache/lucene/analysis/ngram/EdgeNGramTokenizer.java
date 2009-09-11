@@ -207,7 +207,7 @@ public class EdgeNGramTokenizer extends Tokenizer {
     int start = side == Side.FRONT ? 0 : inLen - gramSize;
     int end = start + gramSize;
     termAtt.setTermBuffer(inStr, start, gramSize);
-    offsetAtt.setOffset(input.correctOffset(start), input.correctOffset(end));
+    offsetAtt.setOffset(correctOffset(start), correctOffset(end));
     gramSize++;
     return true;
   }

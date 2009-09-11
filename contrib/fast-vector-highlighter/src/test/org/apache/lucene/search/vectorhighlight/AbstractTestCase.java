@@ -202,7 +202,7 @@ public abstract class AbstractTestCase extends TestCase {
         return false;
       
       termAtt.setTermBuffer(snippet, startTerm, lenTerm);
-      offsetAtt.setOffset(startOffset, startOffset + lenTerm);
+      offsetAtt.setOffset(correctOffset(startOffset), correctOffset(startOffset + lenTerm));
       return true;
     }
 

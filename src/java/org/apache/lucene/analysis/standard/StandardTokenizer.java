@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.standard;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -92,10 +91,6 @@ public class StandardTokenizer extends Tokenizer {
    */
   private boolean replaceInvalidAcronym;
     
-  void setInput(Reader reader) {
-    input = CharReader.get(reader);
-  }
-
   private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
 
   /** Set the max allowed token length.  Any token longer
@@ -152,7 +147,7 @@ public class StandardTokenizer extends Tokenizer {
 
   private void init(Reader input, boolean replaceInvalidAcronym) {
     this.replaceInvalidAcronym = replaceInvalidAcronym;
-    setInput(input);    
+    this.input = input;    
     termAtt = (TermAttribute) addAttribute(TermAttribute.class);
     offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
     posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
@@ -186,7 +181,7 @@ public class StandardTokenizer extends Tokenizer {
         posIncrAtt.setPositionIncrement(posIncr);
         scanner.getText(termAtt);
         final int start = scanner.yychar();
-        offsetAtt.setOffset(input.correctOffset(start), input.correctOffset(start+termAtt.termLength()));
+        offsetAtt.setOffset(correctOffset(start), correctOffset(start+termAtt.termLength()));
         // This 'if' should be removed in the next release. For now, it converts
         // invalid acronyms to HOST. When removed, only the 'else' part should
         // remain.
@@ -210,7 +205,7 @@ public class StandardTokenizer extends Tokenizer {
   
   public final void end() {
     // set final offset
-    int finalOffset = input.correctOffset(scanner.yychar() + scanner.yylength());
+    int finalOffset = correctOffset(scanner.yychar() + scanner.yylength());
     offsetAtt.setOffset(finalOffset, finalOffset);
   }
 
@@ -237,7 +232,7 @@ public class StandardTokenizer extends Tokenizer {
   }
 
   public void reset(Reader reader) throws IOException {
-    setInput(reader);
+    super.reset(reader);
     reset();
   }
 

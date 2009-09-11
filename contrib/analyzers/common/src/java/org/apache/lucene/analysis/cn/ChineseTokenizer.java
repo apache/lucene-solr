@@ -104,7 +104,7 @@ public final class ChineseTokenizer extends Tokenizer {
             //System.out.println(new String(buffer, 0,
             //length));
           termAtt.setTermBuffer(buffer, 0, length);
-          offsetAtt.setOffset(input.correctOffset(start), input.correctOffset(start+length));
+          offsetAtt.setOffset(correctOffset(start), correctOffset(start+length));
           return true;
         }
         else

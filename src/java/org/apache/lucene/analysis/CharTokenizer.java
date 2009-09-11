@@ -104,13 +104,13 @@ public abstract class CharTokenizer extends Tokenizer {
     }
 
     termAtt.setTermLength(length);
-    offsetAtt.setOffset(input.correctOffset(start), input.correctOffset(start+length));
+    offsetAtt.setOffset(correctOffset(start), correctOffset(start+length));
     return true;
   }
   
   public final void end() {
     // set final offset
-    int finalOffset = input.correctOffset(offset);
+    int finalOffset = correctOffset(offset);
     offsetAtt.setOffset(finalOffset, finalOffset);
   }
 

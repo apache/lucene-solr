@@ -40,7 +40,7 @@ import java.io.IOException;
 
 public abstract class Tokenizer extends TokenStream {
   /** The text source for this Tokenizer. */
-  protected CharStream input;
+  protected Reader input;
 
   /** Construct a tokenizer with null input. */
   protected Tokenizer() {}
@@ -48,11 +48,6 @@ public abstract class Tokenizer extends TokenStream {
   /** Construct a token stream processing the given input. */
   protected Tokenizer(Reader input) {
     this.input = CharReader.get(input);
-  }
-
-  /** Construct a token stream processing the given input. */
-  protected Tokenizer(CharStream input) {
-    this.input = input;
   }
   
   /** Construct a tokenizer with null input using the given AttributeFactory. */
@@ -64,12 +59,6 @@ public abstract class Tokenizer extends TokenStream {
   protected Tokenizer(AttributeFactory factory, Reader input) {
     super(factory);
     this.input = CharReader.get(input);
-  }
-  
-  /** Construct a token stream processing the given input using the given AttributeFactory. */
-  protected Tokenizer(AttributeFactory factory, CharStream input) {
-    super(factory);
-    this.input = input;
   }
 
   /** Construct a token stream processing the given input using the given AttributeSource. */
@@ -83,28 +72,25 @@ public abstract class Tokenizer extends TokenStream {
     this.input = CharReader.get(input);
   }
   
-  /** Construct a token stream processing the given input using the given AttributeSource. */
-  protected Tokenizer(AttributeSource source, CharStream input) {
-    super(source);
-    this.input = input;
-  }
-  
   /** By default, closes the input Reader. */
   public void close() throws IOException {
     input.close();
+  }
+  
+  /** Return the corrected offset. If {@link #input} is a {@link CharStream} subclass
+   * this method calls {@link CharStream#correctOffset}, else returns <code>currentOff</code>.
+   * @param currentOff offset as seen in the output
+   * @return corrected offset based on the input
+   * @see CharStream#correctOffset
+   */
+  protected final int correctOffset(int currentOff) {
+    return (input instanceof CharStream) ? ((CharStream) input).correctOffset(currentOff) : currentOff;
   }
 
   /** Expert: Reset the tokenizer to a new reader.  Typically, an
    *  analyzer (in its reusableTokenStream method) will use
    *  this to re-use a previously created tokenizer. */
   public void reset(Reader input) throws IOException {
-    this.input = CharReader.get(input);
-  }
-
-  /** Expert: Reset the tokenizer to a new CharStream.  Typically, an
-   *  analyzer (in its reusableTokenStream method) will use
-   *  this to re-use a previously created tokenizer. */
-  public void reset(CharStream input) throws IOException {
     this.input = input;
   }
 }
