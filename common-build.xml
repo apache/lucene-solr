@@ -253,6 +253,7 @@
    </sequential>
   </macrodef>
 
+  <!-- NOTE, the pom.xml MUST be a relative path.  An absolute path may break the build on windows -->
   <macrodef name="m2-deploy" description="Builds a Maven artifact">
         <element name="artifact-attachments" optional="yes"/>
     <attribute name="pom.xml" default="${pom.xml}"/>

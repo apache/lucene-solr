@@ -747,7 +747,7 @@
 
       <!-- ========== SOLR PARENT POM ========== -->
 
-      <m2-deploy pom.xml="${src}/maven/solr-parent-pom.xml.template"/>
+      <m2-deploy pom.xml="src/maven/solr-parent-pom.xml.template"/>
 
       <!-- ========== SOLR SPECIFIC LUCENE ARTIFACTS ========== -->
 
@@ -815,7 +815,7 @@
       <!-- TODO: MORE NEEDED HERE ONCE WE FINALIZE THE LIBS FOR CARROT -->
       <!-- end clustering specific -->
 
-      <m2-deploy pom.xml="${src}/maven/solr-core-pom.xml.template"
+      <m2-deploy pom.xml="src/maven/solr-core-pom.xml.template"
                  jar.file="${dist}/apache-solr-core-${version}.jar">
 
         <artifact-attachments>
@@ -825,7 +825,7 @@
 
       </m2-deploy>
 
-      <m2-deploy pom.xml="${src}/maven/solr-solrj-pom.xml.template"
+      <m2-deploy pom.xml="src/maven/solr-solrj-pom.xml.template"
                  jar.file="${dist}/apache-solr-solrj-${version}.jar">
 
         <artifact-attachments>
