@@ -368,7 +368,7 @@ Optimizations
 16. SOLR-1353: Implement and use reusable token streams for analysis. (yonik)
 
 17. SOLR-1296: Enables setting IndexReader's termInfosIndexDivisor via a new attribute to StandardIndexReaderFactory.  Enables
-    setting termIndexInterval to IndexWriter via SolrIndexConfig. (Jason Rutherglen, gsingers)
+    setting termIndexInterval to IndexWriter via SolrIndexConfig. (Jason Rutherglen, hossman, gsingers)
 
 Bug Fixes
 ----------------------
