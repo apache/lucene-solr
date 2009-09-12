@@ -183,7 +183,7 @@ public class SimpleFacets {
 
     NamedList res = new SimpleOrderedMap();
 
-    /* Ignore SolrParams.DF - could have init param facet.query assuming
+    /* Ignore CommonParams.DF - could have init param facet.query assuming
      * the schema default with query param DF intented to only affect Q.
      * If user doesn't want schema default for facet.query, they should be
      * explicit.
