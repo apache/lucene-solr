@@ -350,7 +350,7 @@ Optimizations
 
 11. SOLR-1169: SortedIntDocSet - a new small set implementation
     that saves memory over HashDocSet, is faster to construct, 
-    is ordered for easier impelemntation of skipTo, and is faster
+    is ordered for easier implementation of skipTo, and is faster
     in the general case. (yonik)
 
 12. SOLR-1165: Use Lucene Filters and pass them down to the Lucene
@@ -367,6 +367,8 @@ Optimizations
 
 16. SOLR-1353: Implement and use reusable token streams for analysis. (yonik)
 
+17. SOLR-1296: Enables setting IndexReader's termInfosIndexDivisor via a new attribute to StandardIndexReaderFactory.  Enables
+    setting termIndexInterval to IndexWriter via SolrIndexConfig. (Jason Rutherglen, gsingers)
 
 Bug Fixes
 ----------------------

@@ -99,6 +99,10 @@
        if not specified.)
     -->
     <lockType>native</lockType>
+    <!--
+     Expert:
+    Controls how often Lucene loads terms into memory -->
+    <!--<termIndexInterval>256</termIndexInterval>-->
   </indexDefaults>
 
   <mainIndex>
@@ -122,7 +126,12 @@
     <!-- If true, IndexReaders will be reopened (often more efficient) instead
          of closed and then opened.  -->
     <reopenReaders>true</reopenReaders>
-	  
+
+    <!--
+     Expert:
+    Controls how often Lucene loads terms into memory.  Default is 128 and is likely good for most everyone. -->
+    <!--<termIndexInterval>256</termIndexInterval>-->
+
     <!--
         Custom deletion policies can specified here. The class must
         implement org.apache.lucene.index.IndexDeletionPolicy.
@@ -218,6 +227,10 @@
     Parameters as required by the implementation
   </indexReaderFactory >
   -->
+  <!-- To set the termInfosIndexDivisor, do this: -->
+  <!--<indexReaderFactory name="IndexReaderFactory" class="org.apache.solr.core.StandardIndexReaderFactory">
+    <int name="termInfosIndexDivisor">12</int>
+  </indexReaderFactory >-->
 
 
   <query>

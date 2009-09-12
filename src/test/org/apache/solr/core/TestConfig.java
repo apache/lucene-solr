@@ -17,18 +17,30 @@
 
 package org.apache.solr.core;
 
+import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.search.SolrIndexReader;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexConfig;
+import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.util.RefCounted;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.xml.xpath.XPathConstants;
+import java.io.IOException;
 
 public class TestConfig extends AbstractSolrTestCase {
 
-  public String getSchemaFile() { return "schema.xml"; }
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+  public String getSchemaFile() {
+    return "schema.xml";
+  }
+
+  //public String getSolrConfigFile() { return "solrconfig.xml"; }
+  public String getSolrConfigFile() {
+    return "solrconfig-termindex.xml";
+  }
 
   public void testJavaProperty() {
     // property values defined in build.xml
@@ -65,15 +77,44 @@ public class TestConfig extends AbstractSolrTestCase {
   }
 
   // sometime if the config referes to old things, it must be replaced with new stuff
-  public void testAutomaticDeprecationSupport()
-  {
+  public void testAutomaticDeprecationSupport() {
     // make sure the "admin/file" handler is registered
-    ShowFileRequestHandler handler = (ShowFileRequestHandler) h.getCore().getRequestHandler( "/admin/file" );
-    assertTrue( "file handler should have been automatically registered", handler!=null );
+    ShowFileRequestHandler handler = (ShowFileRequestHandler) h.getCore().getRequestHandler("/admin/file");
+    assertTrue("file handler should have been automatically registered", handler != null);
 
     //System.out.println( handler.getHiddenFiles() );
     // should not contain: <gettableFiles>solrconfig.xml scheam.xml admin-extra.html</gettableFiles>
-    assertFalse( handler.getHiddenFiles().contains( "scheam.xml".toUpperCase() ) );
-    assertTrue( handler.getHiddenFiles().contains( "PROTWORDS.TXT" ) );
+    assertFalse(handler.getHiddenFiles().contains("scheam.xml".toUpperCase()));
+    assertTrue(handler.getHiddenFiles().contains("PROTWORDS.TXT"));
   }
+
+  public void testTermIndexInterval() throws Exception {
+    class ExposeWriterHandler extends DirectUpdateHandler2 {
+      public ExposeWriterHandler() throws IOException {
+        super(h.getCore());
+      }
+
+      public IndexWriter getWriter() throws IOException {
+        forceOpenWriter();
+        return writer;
+      }
+    }
+    
+    IndexWriter writer = new ExposeWriterHandler().getWriter();
+    int interval = writer.getTermIndexInterval();
+    assertEquals(256, interval);
+  }
+
+  public void testTermIndexDivisor() throws Exception {
+    IndexReaderFactory irf = h.getCore().getIndexReaderFactory();
+    StandardIndexReaderFactory sirf = (StandardIndexReaderFactory) irf;
+    assertEquals(12, sirf.termInfosIndexDivisor);
+    RefCounted<SolrIndexSearcher> refCounted = h.getCore().getSearcher();
+    SolrIndexReader solrReader = refCounted.get().getReader();
+    assertEquals(12, solrReader.getTermInfosIndexDivisor());
+  }
+
+
 }
+
+

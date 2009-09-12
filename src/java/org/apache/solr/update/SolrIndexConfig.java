@@ -20,6 +20,7 @@ package org.apache.solr.update;
 import org.apache.solr.core.SolrConfig;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.IndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +54,7 @@ public class SolrIndexConfig {
     mergePolicyClassName = DEFAULT_MERGE_POLICY_CLASSNAME;
     mergeSchedulerClassname = DEFAULT_MERGE_SCHEDULER_CLASSNAME;
     luceneAutoCommit = false;
+    termIndexInterval = IndexWriter.DEFAULT_TERM_INDEX_INTERVAL;
   }
   
   public final boolean useCompoundFile;
@@ -69,6 +71,7 @@ public class SolrIndexConfig {
   public final String mergePolicyClassName;
   public final String mergeSchedulerClassname;
   public final boolean luceneAutoCommit;
+  public final int termIndexInterval;
   
   public String infoStreamFile = null;
 
@@ -90,6 +93,7 @@ public class SolrIndexConfig {
     mergePolicyClassName = solrConfig.get(prefix + "/mergePolicy", def.mergePolicyClassName);
     mergeSchedulerClassname = solrConfig.get(prefix + "/mergeScheduler", def.mergeSchedulerClassname);
     luceneAutoCommit = solrConfig.getBool(prefix + "/luceneAutoCommit", def.luceneAutoCommit);
+    termIndexInterval = solrConfig.getInt(prefix + "/termIndexInterval", def.termIndexInterval);
     
     boolean infoStreamEnabled = solrConfig.getBool(prefix + "/infoStream", false);
     if(infoStreamEnabled) {

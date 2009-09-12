@@ -69,6 +69,10 @@ public class SolrIndexWriter extends IndexWriter {
       if (config.ramBufferSizeMB != -1) {
         setRAMBufferSizeMB(config.ramBufferSizeMB);
       }
+      if (config.termIndexInterval != -1) {
+        setTermIndexInterval(config.termIndexInterval);
+        
+      }
       if (config.maxMergeDocs != -1) setMaxMergeDocs(config.maxMergeDocs);
       if (config.maxFieldLength != -1) setMaxFieldLength(config.maxFieldLength);
       if (config.mergePolicyClassName != null && SolrIndexConfig.DEFAULT_MERGE_POLICY_CLASSNAME.equals(config.mergePolicyClassName) == false) {

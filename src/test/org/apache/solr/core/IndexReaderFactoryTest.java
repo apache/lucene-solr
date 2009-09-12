@@ -16,25 +16,33 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.AbstractSolrTestCase;
 
-/**
- * Default IndexReaderFactory implementation. Returns a standard Lucene
- * IndexReader.
- * 
- * @see IndexReader#open(Directory)
- */
-public class StandardIndexReaderFactory extends IndexReaderFactory {
-  
-  /* (non-Javadoc)
-   * @see org.apache.solr.core.IndexReaderFactory#newReader(org.apache.lucene.store.Directory, boolean)
+import java.io.IOException;
+
+public class IndexReaderFactoryTest extends AbstractSolrTestCase {
+
+  public String getSchemaFile() {
+    return "schema.xml";
+  }
+
+  public String getSolrConfigFile() {
+    return "solrconfig-termindex.xml";
+  }
+
+  /**
+   * Simple test to ensure that alternate IndexReaderFactory is being used.
+   *
+   * @throws Exception
    */
-  public IndexReader newReader(Directory indexDir, boolean readOnly)
-      throws IOException {
-    return IndexReader.open(indexDir, null, readOnly, termInfosIndexDivisor);
+  public void testAltReaderUsed() throws Exception {
+    IndexReaderFactory readerFactory = h.getCore().getIndexReaderFactory();
+    assertNotNull("Factory is null", readerFactory);
+    assertTrue("readerFactory is not an instanceof " + AlternateIndexReaderTest.TestIndexReaderFactory.class, readerFactory instanceof StandardIndexReaderFactory);
+    assertTrue("termInfoIndexDivisor not set to 12", readerFactory.getTermInfosIndexDivisor() == 12);
+
+
   }
 }
