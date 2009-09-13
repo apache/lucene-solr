@@ -34,9 +34,12 @@ import java.util.List;
 
 
 /**
- * Basic functionality to upload a File to a Solr Cell
+ * Basic functionality to upload a File or {@link org.apache.solr.common.util.ContentStream} to a Solr Cell or some
+ * other handler that takes ContentStreams (CSV)
  * <p/>
- * See http://wiki.apache.org/solr/ExtractingRequestHandler
+ * See http://wiki.apache.org/solr/ExtractingRequestHandler<br/>
+ * See http://wiki.apache.org/solr/UpdateCSV
+ * 
  *
  **/
 public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
@@ -44,7 +47,7 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
 
   /**
    *
-   * @param url The URL for Solr Cell.
+   * @param url The URL to send the {@link org.apache.solr.common.util.ContentStream} to in Solr.
    */
   public ContentStreamUpdateRequest(String url) {
     super(METHOD.POST, url);
