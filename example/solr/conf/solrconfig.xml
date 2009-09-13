@@ -655,10 +655,19 @@
     </arr>
   </requestHandler>
 
+  <!-- Solr Cell: http://wiki.apache.org/solr/ExtractingRequestHandler -->
   <requestHandler name="/update/extract" class="org.apache.solr.handler.extraction.ExtractingRequestHandler" startup="lazy">
     <lst name="defaults">
-      <str name="uprefix">ignored_</str>
+      <!-- All the main content goes into "text"... if you need to return
+           the extracted text or do highlighting, use a stored field. -->
       <str name="map.content">text</str>
+      <str name="lowernames">true</str>
+      <str name="uprefix">ignored_</str>
+
+      <!-- capture link hrefs but ignore div attributes -->
+      <str name="captureAttr">true</str>
+      <str name="map.a">links</str>
+      <str name="map.div">ignored_</str>
     </lst>
   </requestHandler>
 
