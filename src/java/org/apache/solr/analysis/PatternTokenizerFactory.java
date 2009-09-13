@@ -164,7 +164,7 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
    * This behaves just like String.split( ), but returns a list of Tokens
    * rather then an array of strings
    */
-  public static List<Token> split( Matcher matcher, String input, CharStream stream )
+  public static List<Token> split( Matcher matcher, String input, Reader stream )
   {
     int index = 0;
     int lastNonEmptySize = Integer.MAX_VALUE;
@@ -210,7 +210,7 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
   /**
    * Create tokens from the matches in a matcher 
    */
-  public static List<Token> group( Matcher matcher, String input, int group, CharStream stream )
+  public static List<Token> group( Matcher matcher, String input, int group, Reader stream )
   {
     ArrayList<Token> matchList = new ArrayList<Token>();
     while(matcher.find()) {
@@ -223,12 +223,14 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
     return matchList;
   }
   
-  private static Token newToken( CharStream stream, String text, int start, int end ){
-    Token token = null;
-    if( stream != null )
+  private static Token newToken(Reader reader, String text, int start, int end ){
+    Token token;
+    if( reader instanceof CharStream) {
+      CharStream stream = (CharStream)reader;
       token = new Token( text, stream.correctOffset( start ), stream.correctOffset( end ) );
-    else
+    } else {
       token = new Token( text, start, end );
+    }
     return token;
   }
 }
