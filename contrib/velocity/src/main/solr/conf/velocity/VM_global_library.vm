@@ -1,10 +1,23 @@
+
+
+
+#macro(nl2ul $named_list)
+  <ul>
+  #foreach($kv in $named_list)
+    <li>$kv.key ($kv.value)
+      #nl2ul($kv.value)
+    </li>
+  #end
+  </ul>
+#end
+
 #macro(url_for_filters $filter_queries)
   /solr/itas?fq=$filter_queries
 #end
 
 #macro(url_for_home)/solr/itas#end
 
-#macro(url_for_start $start)/solr/itas?start=$start#end
+#macro(url_for_start $start)/solr/itas?start=$start&q=$!{esc.url($params.get('q'))}#end
 
 ## TODO: need to add escaping
 #macro(url_for_nested_facet $field $value)/solr/itas?fq=$field:%22$value%22#end
