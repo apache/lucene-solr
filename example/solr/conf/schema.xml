@@ -71,6 +71,8 @@
 
     <!-- boolean type: "true" or "false" -->
     <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true" omitNorms="true"/>
+    <!--Binary data type. The data should be sent/retrieved in as Bas64 encoded Strings -->
+    <fieldtype name="binary" class="solr.BinaryField"/>
 
     <!-- The optional sortMissingLast and sortMissingFirst attributes are
          currently supported on types that are sorted internally as strings.
