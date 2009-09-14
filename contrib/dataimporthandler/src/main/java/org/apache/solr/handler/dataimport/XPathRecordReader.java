@@ -31,16 +31,33 @@ import java.util.regex.Pattern;
  * A streaming xpath parser which uses StAX for XML parsing. It supports only a
  * subset of xpath syntax.
  * </p>
+ * /a/b/subject[@qualifier='fullTitle']
+ * /a/b/subject/@qualifier
+ * /a/b/c
+ *
+ * Keep in mind that the wild-card syntax  '//' is not supported
+ *
  * <p/>
  * <b>This API is experimental and may change in the future.</b>
+ * This class is thread-safe for parsing xml . But adding fields is not thread-safe. The recommended usage is
+ * to addField() in one thread and then share the instance across threads.
  *
  * @version $Id$
  * @since solr 1.3
  */
 public class XPathRecordReader {
   private Node rootNode = new Node("/", null);
+  /**Use this flag in the addField() method to fetch all the cdata under a specific tag
+   *
+   */
   public static final int FLATTEN = 1;
 
+  /**
+   * @param forEachXpath  The XPATH for which a record is emitted. At the start of this xpath tag, it starts collecting the fields and at the close
+   * of the tag ,a record is emitted and the fields collected since the tag start is included in the record. If there
+   * are fields collected in the parent tag(s) they also will be included in the record but not cleared after emitting the record.
+   * It can use the ' | ' syntax of XPATH to pass in multiple xpaths.
+   */
   public XPathRecordReader(String forEachXpath) {
     String[] splits = forEachXpath.split("\\|");
     for (String split : splits) {
@@ -58,6 +75,12 @@ public class XPathRecordReader {
     return this;
   }
 
+  /**Add a field's XPATH and its name.
+   * @param name . The name by which this field is referred in the emitted record
+   * @param xpath . The xpath  to this field
+   * @param multiValued . If this is 'true' , then the emitted record will have a List<String> as value
+   * @param flags . The only supported flag is 'FLATTEN'
+   */
   public synchronized XPathRecordReader addField(String name, String xpath, boolean multiValued, int flags) {
     if (!xpath.startsWith("/"))
       throw new RuntimeException("xpath must start with '/' : " + xpath);
@@ -83,6 +106,10 @@ public class XPathRecordReader {
     return results;
   }
 
+  /** Stream records as and when they are colected
+   * @param r The reader
+   * @param handler The callback instance
+   */
   public void streamRecords(Reader r, Handler handler) {
     try {
       XMLStreamReader parser = factory.createXMLStreamReader(r);
@@ -93,13 +120,26 @@ public class XPathRecordReader {
     }
   }
 
+  /**For each node/leaf in the tree there is one object of this class
+   */
   private class Node {
-    String name, fieldName, xpathName, forEachPath;
+    /**name of the tag/attribute*/
+    String name;
 
-    List<Node> attributes, childNodes;
-
+    /**The field name as passed in the addField() . This will be used in the record*/
+    String fieldName;
+    /**stores the xpath name such as '@attr='xyz'*/
+    String xpathName;
+    /**The xpath of the record. if this is a record node */
+    String forEachPath;
+    /**child attribute nodes */
+    List<Node> attributes;
+    /**child nodes*/
+    List<Node> childNodes;
+    /**if attribs are used in the xpath their names and values*/
     List<Map.Entry<String, String>> attribAndValues;
 
+    /**Parent node of this node */
     Node parent;
 
     boolean hasText = false, multiValued = false, isRecord = false;
@@ -117,6 +157,8 @@ public class XPathRecordReader {
       this.multiValued = multiValued;
     }
 
+    /**This is the method where all the parsing happens. For each tag/subtag this gets called recursively.
+     */
     private void parse(XMLStreamReader parser, Handler handler,
                        Map<String, Object> values, Stack<Set<String>> stack,
                        boolean recordStarted) throws IOException, XMLStreamException {
@@ -203,7 +245,8 @@ public class XPathRecordReader {
           }
         }
       } finally {
-
+        /*If a record has ended  (tag closed) then clearup all the fields found
+        in this record after this tag started */
         Set<String> cleanThis = null;
         if (isRecord || !recordStarted) {
           cleanThis = stack.pop();
@@ -218,6 +261,9 @@ public class XPathRecordReader {
       }
     }
 
+    /**if a new tag is encountered, check if it is of interest of not (if there is a matching child Node).
+     * if yes continue parsing else skip
+     */
     private void handleStartElement(XMLStreamReader parser, Set<Node> childrenFound,
                                     Handler handler, Map<String, Object> values,
                                     Stack<Set<String>> stack, boolean recordStarted)
@@ -231,6 +277,8 @@ public class XPathRecordReader {
       }
     }
 
+    /**check if the current tag is to be parsed or not. if yes return the Node object
+     */
     private Node getMatchingChild(XMLStreamReader parser) {
       if (childNodes == null)
         return null;
@@ -259,6 +307,9 @@ public class XPathRecordReader {
       return true;
     }
 
+    /**If there is no value available for a field in a subtag then add a null
+     * TODO : needs better explanation
+     */
     private void putNulls(Map<String, Object> values) {
       if (attributes != null) {
         for (Node n : attributes) {
@@ -274,6 +325,8 @@ public class XPathRecordReader {
       }
     }
 
+    /**Handle multivalued fields by adding List<String>
+     */
     @SuppressWarnings("unchecked")
     private void putText(Map<String, Object> values, String value,
                          String fieldName, boolean multiValued) {
@@ -289,6 +342,8 @@ public class XPathRecordReader {
       }
     }
 
+    /**Skip a tag w/o processing the tag or its subtags
+     */
     private void skipTag(XMLStreamReader parser) throws IOException,
             XMLStreamException {
       int type;
@@ -298,7 +353,14 @@ public class XPathRecordReader {
       }
     }
 
-    public void build(List<String> paths, String fieldName,
+    /**Build the node structure from the xpath
+     * @param paths the xpaths split by '/'
+     * @param fieldName name of the field
+     * @param multiValued . is multiValued or not
+     * @param record is this xpath a record or a field
+     * @param flags extra flags
+     */
+    private void build(List<String> paths, String fieldName,
                       boolean multiValued, boolean record, int flags) {
       String name = paths.remove(0);
       if (paths.isEmpty() && name.startsWith("@")) {
@@ -355,6 +417,8 @@ public class XPathRecordReader {
     }
   }
 
+  /**If a field has List then they have to be deep-copied for thread safety
+   */
   private Map<String, Object> getDeepCopy(Map<String, Object> values) {
     Map<String, Object> result = new HashMap<String, Object>();
     for (Map.Entry<String, Object> entry : values.entrySet()) {
@@ -397,7 +461,16 @@ public class XPathRecordReader {
     factory.setProperty(XMLInputFactory.SUPPORT_DTD , Boolean.FALSE);
   }
 
+  /**Implement this interface to stream records as and when it is found.
+   *
+   */
   public static interface Handler {
+    /**
+     * @param record The record map . The key is the field name as provided in the addField() methods. The value
+     * can be a single String (for single valued) or a List<String> (for multiValued)
+     * if an Exception is thrown from this method the parsing will be aborted
+     * @param xpath . The forEach XPATH for which this record is being emitted
+     */
     public void handle(Map<String, Object> record, String xpath);
   }
 
