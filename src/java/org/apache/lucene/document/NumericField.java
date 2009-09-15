@@ -107,6 +107,10 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * like to change the value.  Note that you must also
  * specify a congruent value when creating {@link
  * NumericRangeQuery} or {@link NumericRangeFilter}.
+ * For low cardinality fields larger precision steps are good.
+ * If the cardinality is &lt; 100, it is fair
+ * to use {@link Integer#MAX_VALUE}, which produces one
+ * term per value.
  *
  * <p>For more information on the internals of numeric trie
  * indexing, including the <a

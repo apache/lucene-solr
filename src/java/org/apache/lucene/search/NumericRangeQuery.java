@@ -133,11 +133,15 @@ import org.apache.lucene.index.Term;
  *  <li>The default for all data types is <b>4</b>, which is used, when no <code>precisionStep</code> is given.
  *  <li>Ideal value in most cases for <em>64 bit</em> data types <em>(long, double)</em> is <b>6</b> or <b>8</b>.
  *  <li>Ideal value in most cases for <em>32 bit</em> data types <em>(int, float)</em> is <b>4</b>.
+ *  <li>For low cardinality fields larger precision steps are good. If the cardinality is &lt; 100, it is
+ *  fair to use {@link Integer#MAX_VALUE} (see below).
  *  <li>Steps <b>&ge;64</b> for <em>long/double</em> and <b>&ge;32</b> for <em>int/float</em> produces one token
  *  per value in the index and querying is as slow as a conventional {@link TermRangeQuery}. But it can be used
  *  to produce fields, that are solely used for sorting (in this case simply use {@link Integer#MAX_VALUE} as
  *  <code>precisionStep</code>). Using {@link NumericField NumericFields} for sorting
  *  is ideal, because building the field cache is much faster than with text-only numbers.
+ *  These fields have one term per value and therefore also work with term enumeration for building distinct lists
+ *  (e.g. facets / preselected values to search for).
  *  Sorting is also possible with range query optimized fields using one of the above <code>precisionSteps</code>.
  * </ul>
  *
