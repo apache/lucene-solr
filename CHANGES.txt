@@ -829,6 +829,9 @@ Optimizations
 
 Documentation
 
+ * LUCENE-1908: Scoring documentation imrovements in Similarity javadocs. 
+   (Mark Miller, Shai Erera, Ted Dunning, Jiri Kuhn, Marvin Humphrey, Doron Cohen)
+    
  * LUCENE-1872: NumericField javadoc improvements
     (Michael McCandless, Uwe Schindler)
  
