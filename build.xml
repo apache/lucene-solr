@@ -68,6 +68,7 @@
           description="Cleans compiled files and other temporary artifacts.">
     <delete dir="${dest}" />
     <delete dir="${dist}" />
+    <delete dir="example/solr/lib" />
   </target>
 
   <target name="clean-dest"
