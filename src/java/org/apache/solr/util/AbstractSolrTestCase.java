@@ -207,13 +207,13 @@ public abstract class AbstractSolrTestCase extends TestCase {
    * @see TestHarness#optimize
    */
   public String optimize(String... args) {
-    return h.optimize();
+    return h.optimize(args);
   }
   /**
    * @see TestHarness#commit
    */
   public String commit(String... args) {
-    return h.commit();
+    return h.commit(args);
   }
 
   /**

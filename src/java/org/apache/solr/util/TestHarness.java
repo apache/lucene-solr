@@ -489,7 +489,7 @@ public class TestHarness {
       if (null == args || 0 == args.length) {
         XML.writeXML(r, tag, null);
       } else {
-        XML.writeXML(r, tag, null, (Object)args);
+        XML.writeXML(r, tag, null, (Object[])args);
       }
       return r.getBuffer().toString();
     } catch (IOException e) {
