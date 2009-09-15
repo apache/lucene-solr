@@ -133,4 +133,10 @@ public interface ExtractingParams {
    * to setup a dynamic field to automatically capture it
    */
   public static final String UNKNOWN_FIELD_PREFIX = "uprefix";
+
+  /**
+   * Optional.  If specified and the name of a potential field cannot be determined, the default Field specified
+   * will be used instead.
+   */
+  public static final String DEFAULT_FIELD = "defaultField";
 }

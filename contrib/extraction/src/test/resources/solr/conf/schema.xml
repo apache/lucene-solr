@@ -405,6 +405,7 @@
    <field name="extractionLiteralMV" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="extractionLiteral" type="string" indexed="true" stored="true" multiValued="false"/>
 
+   <field name="defaultExtr" type="string" indexed="true" stored="false" />
    
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.

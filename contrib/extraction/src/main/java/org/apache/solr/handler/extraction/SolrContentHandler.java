@@ -64,7 +64,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   private String contentFieldName = "content";
 
   private String unknownFieldPrefix = "";
-
+  private String defaultField = "";
 
   public SolrContentHandler(Metadata metadata, SolrParams params, IndexSchema schema) {
     this(metadata, params, schema, DateUtil.DEFAULT_DATE_FORMATS);
@@ -82,6 +82,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     this.lowerNames = params.getBool(LOWERNAMES, false);
     this.captureAttribs = params.getBool(CAPTURE_ATTRIBUTES, false);
     this.unknownFieldPrefix = params.get(UNKNOWN_FIELD_PREFIX, "");
+    this.defaultField = params.get(DEFAULT_FIELD, "");
     String[] captureFields = params.getParams(CAPTURE_ELEMENTS);
     if (captureFields != null && captureFields.length > 0) {
       fieldBuilders = new HashMap<String, StringBuilder>();
@@ -154,6 +155,9 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     SchemaField sf = schema.getFieldOrNull(name);
     if (sf==null && unknownFieldPrefix.length() > 0) {
       name = unknownFieldPrefix + name;
+      sf = schema.getFieldOrNull(name);
+    } else if (sf == null && defaultField.length() > 0 && name.equals(Metadata.RESOURCE_NAME_KEY) == false /*let the fall through below handle this*/){
+      name = defaultField;
       sf = schema.getFieldOrNull(name);
     }
 

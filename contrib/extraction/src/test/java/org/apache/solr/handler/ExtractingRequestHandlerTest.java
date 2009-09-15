@@ -134,6 +134,49 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
 
   }
 
+  public void testDefaultField() throws Exception {
+    ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
+    assertTrue("handler is null and it shouldn't be", handler != null);
+    try {
+      loadLocal("simple.html",
+      "literal.id","simple2",
+      "lowernames", "true",
+        "captureAttr", "true",
+        //"map.content_type", "abcxyz",
+        "commit", "true"  // test immediate commit
+      );
+      assertTrue(false);
+
+    } catch (SolrException e) {
+      //do nothing
+    }
+    
+
+    loadLocal("simple.html",
+      "literal.id","simple2",
+      ExtractingParams.DEFAULT_FIELD, "defaultExtr",//test that unmapped fields go to the text field when no uprefix is specified
+      "lowernames", "true",
+      "captureAttr", "true",
+      //"map.content_type", "abcxyz",
+      "commit", "true"  // test immediate commit
+    );
+    assertQ(req("id:simple2"), "//*[@numFound='1']");
+    assertQ(req("defaultExtr:http\\://www.apache.org"), "//*[@numFound='1']");
+
+    //Test when both uprefix and default are specified.
+    loadLocal("simple.html",
+      "literal.id","simple2",
+      ExtractingParams.DEFAULT_FIELD, "defaultExtr",//test that unmapped fields go to the text field when no uprefix is specified
+            ExtractingParams.UNKNOWN_FIELD_PREFIX, "t_",
+      "lowernames", "true",
+      "captureAttr", "true",
+      "map.a","t_href",
+      //"map.content_type", "abcxyz",
+      "commit", "true"  // test immediate commit
+    );
+    assertQ(req("+id:simple2 +t_href:[* TO *]"), "//*[@numFound='1']");
+  }
+
 
   public void testLiterals() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
