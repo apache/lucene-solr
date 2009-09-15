@@ -35,12 +35,16 @@ import org.apache.solr.search.SolrIndexSearcher;
  * http://www.hurring.com/scott/code/perl/serialize/
  *
  * <p>
- * If the Writer passed will result in an output of CESU-8 (UTF=8 w/o support for large code points outside of the BMP), then
- * the "CESU8" system property should be set by the user.  If the "CESU8" property is not set, a guess is made based on
- * other system properties.  Currently Solr assumes that all Jetty servlet containers use CESU-8 instead of UTF-8 (verified
- * to the current release of 6.1.20).  Jetty is detected by checking the "jetty.home" system property.
+ * In order to support PHP Serialized strings with a proper byte count, This ResponseWriter
+ * must know if the Writers passed to it will result in an output of CESU-8 (UTF-8 w/o support
+ * for large code points outside of the BMP)
+ * <p>
+ * Currently Solr assumes that all Jetty servlet containers (detected using the "jetty.home"
+ * system property) use CESU-8 instead of UTF-8 (verified to the current release of 6.1.20).
+ * <p>
+ * In installations where Solr auto-detects incorrectly, the Solr Administrator should set the
+ * "solr.phps.cesu8" system property to either "true" or "false" accordingly.
  */
-
 public class PHPSerializedResponseWriter implements QueryResponseWriter {
   static String CONTENT_TYPE_PHP_UTF8="text/x-php-serialized;charset=UTF-8";
 
@@ -48,7 +52,7 @@ public class PHPSerializedResponseWriter implements QueryResponseWriter {
   // large characters outside the BMP).
   boolean CESU8 = false;
   public void init(NamedList n) {
-    String cesu8Setting = System.getProperty("CESU8");
+    String cesu8Setting = System.getProperty("solr.phps.cesu8");
     if (cesu8Setting != null) {
       CESU8="true".equals(cesu8Setting);
     } else {
