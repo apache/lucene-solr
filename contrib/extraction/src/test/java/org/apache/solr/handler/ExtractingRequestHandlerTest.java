@@ -51,25 +51,25 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
   public void testExtraction() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
-    loadLocal("solr-word.pdf", "map.created", "extractedDate", "map.producer", "extractedProducer",
-            "map.creator", "extractedCreator", "map.Keywords", "extractedKeywords",
-            "map.Author", "extractedAuthor",
-            "map.content", "extractedContent",
+    loadLocal("solr-word.pdf", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+            "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+            "fmap.Author", "extractedAuthor",
+            "fmap.content", "extractedContent",
            "literal.id", "one",
-            "map.Last-Modified", "extractedDate"
+            "fmap.Last-Modified", "extractedDate"
     );
     assertQ(req("title:solr-word"), "//*[@numFound='0']");
     assertU(commit());
     assertQ(req("title:solr-word"), "//*[@numFound='1']");
 
 
-    loadLocal("simple.html", "map.created", "extractedDate", "map.producer", "extractedProducer",
-            "map.creator", "extractedCreator", "map.Keywords", "extractedKeywords",
-            "map.Author", "extractedAuthor",
-            "map.language", "extractedLanguage",
+    loadLocal("simple.html", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+            "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+            "fmap.Author", "extractedAuthor",
+            "fmap.language", "extractedLanguage",
             "literal.id", "two",
-            "map.content", "extractedContent",
-            "map.Last-Modified", "extractedDate"
+            "fmap.content", "extractedContent",
+            "fmap.Last-Modified", "extractedDate"
     );
     assertQ(req("title:Welcome"), "//*[@numFound='0']");
     assertU(commit());
@@ -81,8 +81,8 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
       "uprefix", "t_",
       "lowernames", "true",
       "captureAttr", "true",
-      "map.a","t_href",
-      "map.content_type", "abcxyz",  // test that lowernames is applied before mapping, and uprefix is applied after mapping
+      "fmap.a","t_href",
+      "fmap.content_type", "abcxyz",  // test that lowernames is applied before mapping, and uprefix is applied after mapping
       "commit", "true"  // test immediate commit
     );
 
@@ -99,7 +99,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
       "literal.id","simple3",
       "uprefix", "t_",
       "lowernames", "true",
-      "captureAttr", "true",  "map.a","t_href",
+      "captureAttr", "true",  "fmap.a","t_href",
       "commit", "true"
 
       ,"boost.t_href", "100.0"
@@ -119,13 +119,13 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
     assertQ(req("+id:simple4 +t_content:Solr"), "//*[@numFound='1']");
     assertQ(req("+id:simple4 +t_p:\"here is some text\""), "//*[@numFound='1']");
 
-    loadLocal("version_control.xml", "map.created", "extractedDate", "map.producer", "extractedProducer",
-            "map.creator", "extractedCreator", "map.Keywords", "extractedKeywords",
-            "map.Author", "extractedAuthor",
+    loadLocal("version_control.xml", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+            "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+            "fmap.Author", "extractedAuthor",
             "literal.id", "three",
-            "map.content", "extractedContent",
-            "map.language", "extractedLanguage",
-            "map.Last-Modified", "extractedDate"
+            "fmap.content", "extractedContent",
+            "fmap.language", "extractedLanguage",
+            "fmap.Last-Modified", "extractedDate"
     );
     assertQ(req("stream_name:version_control.xml"), "//*[@numFound='0']");
     assertU(commit());
@@ -142,7 +142,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
       "literal.id","simple2",
       "lowernames", "true",
         "captureAttr", "true",
-        //"map.content_type", "abcxyz",
+        //"fmap.content_type", "abcxyz",
         "commit", "true"  // test immediate commit
       );
       assertTrue(false);
@@ -157,7 +157,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
       ExtractingParams.DEFAULT_FIELD, "defaultExtr",//test that unmapped fields go to the text field when no uprefix is specified
       "lowernames", "true",
       "captureAttr", "true",
-      //"map.content_type", "abcxyz",
+      //"fmap.content_type", "abcxyz",
       "commit", "true"  // test immediate commit
     );
     assertQ(req("id:simple2"), "//*[@numFound='1']");
@@ -170,8 +170,8 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
             ExtractingParams.UNKNOWN_FIELD_PREFIX, "t_",
       "lowernames", "true",
       "captureAttr", "true",
-      "map.a","t_href",
-      //"map.content_type", "abcxyz",
+      "fmap.a","t_href",
+      //"fmap.content_type", "abcxyz",
       "commit", "true"  // test immediate commit
     );
     assertQ(req("+id:simple2 +t_href:[* TO *]"), "//*[@numFound='1']");
@@ -182,15 +182,15 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
     //test literal
-    loadLocal("version_control.xml", "map.created", "extractedDate", "map.producer", "extractedProducer",
-            "map.creator", "extractedCreator", "map.Keywords", "extractedKeywords",
-            "map.Author", "extractedAuthor",
-            "map.content", "extractedContent",
+    loadLocal("version_control.xml", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+            "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+            "fmap.Author", "extractedAuthor",
+            "fmap.content", "extractedContent",
             "literal.id", "one",
-            "map.language", "extractedLanguage",
+            "fmap.language", "extractedLanguage",
             "literal.extractionLiteralMV", "one",
             "literal.extractionLiteralMV", "two",
-            "map.Last-Modified", "extractedDate"
+            "fmap.Last-Modified", "extractedDate"
 
     );
     assertQ(req("stream_name:version_control.xml"), "//*[@numFound='0']");
@@ -201,15 +201,15 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
     assertQ(req("extractionLiteralMV:two"), "//*[@numFound='1']");
 
     try {
-      loadLocal("version_control.xml", "map.created", "extractedDate", "map.producer", "extractedProducer",
-              "map.creator", "extractedCreator", "map.Keywords", "extractedKeywords",
-              "map.Author", "extractedAuthor",
-              "map.content", "extractedContent",
+      loadLocal("version_control.xml", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+              "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+              "fmap.Author", "extractedAuthor",
+              "fmap.content", "extractedContent",
               "literal.id", "two",
-              "map.language", "extractedLanguage",
+              "fmap.language", "extractedLanguage",
               "literal.extractionLiteral", "one",
               "literal.extractionLiteral", "two",
-              "map.Last-Modified", "extractedDate"
+              "fmap.Last-Modified", "extractedDate"
       );
       // TODO: original author did not specify why an exception should be thrown... how to fix?
       // assertTrue("Exception should have been thrown", false);
@@ -217,14 +217,14 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
       //nothing to see here, move along
     }
 
-    loadLocal("version_control.xml", "map.created", "extractedDate", "map.producer", "extractedProducer",
-            "map.creator", "extractedCreator", "map.Keywords", "extractedKeywords",
-            "map.Author", "extractedAuthor",
-            "map.content", "extractedContent",
+    loadLocal("version_control.xml", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+            "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+            "fmap.Author", "extractedAuthor",
+            "fmap.content", "extractedContent",
             "literal.id", "three",
-            "map.language", "extractedLanguage",
+            "fmap.language", "extractedLanguage",
             "literal.extractionLiteral", "one",
-            "map.Last-Modified", "extractedDate"
+            "fmap.Last-Modified", "extractedDate"
     );
     assertU(commit());
     assertQ(req("extractionLiteral:one"), "//*[@numFound='1']");
@@ -237,12 +237,12 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
     assertTrue("handler is null and it shouldn't be", handler != null);
 
     // Load plain text specifying MIME type:
-    loadLocal("version_control.txt", "map.created", "extractedDate", "map.producer", "extractedProducer",
-            "map.creator", "extractedCreator", "map.Keywords", "extractedKeywords",
-            "map.Author", "extractedAuthor",
+    loadLocal("version_control.txt", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+            "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+            "fmap.Author", "extractedAuthor",
             "literal.id", "one",
-            "map.language", "extractedLanguage",
-            "map.content", "extractedContent",
+            "fmap.language", "extractedLanguage",
+            "fmap.content", "extractedContent",
             ExtractingParams.STREAM_TYPE, "text/plain"
     );
     assertQ(req("extractedContent:Apache"), "//*[@numFound='0']");
@@ -255,12 +255,12 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
     assertTrue("handler is null and it shouldn't be", handler != null);
 
     // Load plain text specifying filename
-    loadLocal("version_control.txt", "map.created", "extractedDate", "map.producer", "extractedProducer",
-            "map.creator", "extractedCreator", "map.Keywords", "extractedKeywords",
-            "map.Author", "extractedAuthor",
+    loadLocal("version_control.txt", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+            "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+            "fmap.Author", "extractedAuthor",
             "literal.id", "one",
-            "map.language", "extractedLanguage",
-            "map.content", "extractedContent",
+            "fmap.language", "extractedLanguage",
+            "fmap.content", "extractedContent",
             ExtractingParams.RESOURCE_NAME, "version_control.txt"
     );
     assertQ(req("extractedContent:Apache"), "//*[@numFound='0']");

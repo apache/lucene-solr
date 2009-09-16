@@ -33,21 +33,21 @@ public interface ExtractingParams {
    * The param prefix for mapping Tika metadata to Solr fields.
    * <p/>
    * To map a field, add a name like:
-   * <pre>ext.map.title=solr.title</pre>
+   * <pre>fmap.title=solr.title</pre>
    *
    * In this example, the tika "title" metadata value will be added to a Solr field named "solr.title"
    *
    *
    */
-  public static final String MAP_PREFIX = "map.";
+  public static final String MAP_PREFIX = "fmap.";
 
   /**
    * The boost value for the name of the field.  The boost can be specified by a name mapping.
    * <p/>
    * For example
    * <pre>
-   * ext.map.title=solr.title
-   * ext.boost.solr.title=2.5
+   * map.title=solr.title
+   * boost.solr.title=2.5
    * </pre>
    * will boost the solr.title field for this document by 2.5
    *
@@ -57,7 +57,7 @@ public interface ExtractingParams {
   /**
    * Pass in literal values to be added to the document, as in
    * <pre>
-   *  ext.literal.myField=Foo 
+   *  literal.myField=Foo 
    * </pre>
    *
    */
@@ -109,7 +109,7 @@ public interface ExtractingParams {
    *      Some more text
    *    &lt;/body&gt;
    * </pre>
-   * By passing in the p tag, you could capture all P tags separately from the rest of the text.
+   * By passing in the p tag, you could capture all P tags separately from the rest of the t
    * Thus, in the example, the capture of the P tag would be: "some text here.  more text"
    *
    */
