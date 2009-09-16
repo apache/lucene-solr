@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.solr.common.util.NamedList;
 import static org.junit.Assert.assertTrue;
 import org.junit.Test;
+import org.junit.Assert;
 
 import java.util.Collection;
 
@@ -42,5 +43,65 @@ public class SpellingQueryConverterTest {
     Collection<Token> tokens = converter.convert("field:foo");
     assertTrue("tokens is null and it shouldn't be", tokens != null);
     assertTrue("tokens Size: " + tokens.size() + " is not: " + 1, tokens.size() == 1);
+  }
+
+  @Test
+  public void testSpecialChars()  {
+    SpellingQueryConverter converter = new SpellingQueryConverter();
+    converter.init(new NamedList());
+    converter.setAnalyzer(new WhitespaceAnalyzer());
+    Collection<Token> tokens = converter.convert("field_with_underscore:value_with_underscore");
+    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    Assert.assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
+
+    tokens = converter.convert("field_with_digits123:value_with_digits123");
+    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    Assert.assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
+
+    tokens = converter.convert("field-with-hyphens:value-with-hyphens");
+    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    Assert.assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
+
+    // mix 'em up and add some to the value
+    tokens = converter.convert("field_with-123s:value_,.|with-hyphens");
+    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    Assert.assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
+  }
+
+  @Test
+  public void testUnicode() {
+    SpellingQueryConverter converter = new SpellingQueryConverter();
+    converter.init(new NamedList());
+    converter.setAnalyzer(new WhitespaceAnalyzer());
+    
+    // chinese text value
+    Collection<Token> tokens = converter.convert("text_field:我购买了道具和服装。");
+    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    Assert.assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
+
+    tokens = converter.convert("text_购field:我购买了道具和服装。");
+    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    Assert.assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
+
+    tokens = converter.convert("text_field:我购xyz买了道具和服装。");
+    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    Assert.assertEquals("tokens Size: " + tokens.size() + " is not 1", 1, tokens.size());
+  }
+
+  @Test
+  public void testMultipleClauses() {
+    SpellingQueryConverter converter = new SpellingQueryConverter();
+    converter.init(new NamedList());
+    converter.setAnalyzer(new WhitespaceAnalyzer());
+
+    // two field:value pairs should give two tokens
+    Collection<Token> tokens = converter.convert("买text_field:我购买了道具和服装。 field2:bar");
+    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    Assert.assertEquals("tokens Size: " + tokens.size() + " is not 2", 2, tokens.size());
+
+    // a field:value pair and a search term should give two tokens
+    tokens = converter.convert("text_field:我购买了道具和服装。 bar");
+    assertTrue("tokens is null and it shouldn't be", tokens != null);
+    Assert.assertEquals("tokens Size: " + tokens.size() + " is not 2", 2, tokens.size());
   }
 }

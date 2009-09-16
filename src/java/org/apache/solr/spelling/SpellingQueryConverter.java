@@ -37,7 +37,49 @@ import org.apache.lucene.analysis.TokenStream;
  **/
 public class SpellingQueryConverter extends QueryConverter  {
 
-  protected Pattern QUERY_REGEX = Pattern.compile("(?:(?!(\\p{L}+:|\\d+)))\\p{L}+");
+  /*
+  * The following builds up a regular expression that matches productions
+  * of the syntax for NMTOKEN as per the W3C XML Recommendation - with one
+  * important exception (see below).
+  *
+  * http://www.w3.org/TR/2008/REC-xml-20081126/ - version used as reference
+  *
+  * http://www.w3.org/TR/REC-xml/#NT-Nmtoken
+  *
+  * An NMTOKEN is a series of one or more NAMECHAR characters, which is an
+  * extension of the NAMESTARTCHAR character class.
+  *
+  * The EXCEPTION referred to above concerns the colon, which is legal in an
+  * NMTOKEN, but cannot currently be used as a valid field name within Solr,
+  * as it is used to delimit the field name from the query string.
+  */
+
+  final static String[] NAMESTARTCHAR_PARTS = {
+          "A-Z_a-z", "\\xc0-\\xd6", "\\xd8-\\xf6", "\\xf8-\\u02ff",
+          "\\u0370-\\u037d", "\\u037f-\\u1fff",
+          "\\u200c-\\u200d", "\\u2070-\\u218f",
+          "\\u2c00-\\u2fef", "\\u2001-\\ud7ff",
+          "\\uf900-\\ufdcf", "\\ufdf0-\\ufffd"
+  };
+  final static String[] ADDITIONAL_NAMECHAR_PARTS = {
+          "\\-.0-9\\xb7", "\\u0300-\\u036f", "\\u203f-\\u2040"
+  };
+  final static String SURROGATE_PAIR = "\\p{Cs}{2}";
+  final static String NMTOKEN;
+
+  static {
+    StringBuilder sb = new StringBuilder();
+    for (String part : NAMESTARTCHAR_PARTS)
+      sb.append(part);
+    for (String part : ADDITIONAL_NAMECHAR_PARTS)
+      sb.append(part);
+    NMTOKEN = "([" + sb.toString() + "]|" + SURROGATE_PAIR + ")+";
+  }
+
+  final static String PATTERN = "(?:(?!(" + NMTOKEN + ":|\\d+)))[^\\s]+";
+  // previous version: Pattern.compile("(?:(?!(\\w+:|\\d+)))\\w+");
+  protected Pattern QUERY_REGEX = Pattern.compile(PATTERN);
+
 
   /**
    * Converts the original query string to a collection of Lucene Tokens.

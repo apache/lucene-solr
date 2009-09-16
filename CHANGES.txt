@@ -254,7 +254,9 @@ New Features
 
 57. SOLR-1152: Snapshoot on ReplicationHandler should accept location as a request parameter (shalin)
 
-58. SOLR-1204: Enhance SpellingQueryConverter to handle UTF-8 instead of ASCII only (Michael Ludwig via shalin)
+58. SOLR-1204: Enhance SpellingQueryConverter to handle UTF-8 instead of ASCII only.
+    Use the NMTOKEN syntax for matching field names.
+    (Michael Ludwig, shalin)
 
 59. SOLR-1189: Support providing username and password for basic HTTP authentication in Java replication
     (Matthew Gregg, shalin)
