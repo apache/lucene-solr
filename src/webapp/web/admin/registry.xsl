@@ -66,6 +66,7 @@
         [<a href="#cache">Cache</a>]
         [<a href="#query">Query</a>]
         [<a href="#update">Update</a>]
+        [<a href="#highlighting">Highlighting</a>]
         [<a href="#other">Other</a>]
       </td>
     </tr>
@@ -248,6 +249,39 @@
           </td>
         </tr>
   </xsl:template>
+  <xsl:template match="solr/solr-info/HIGHLIGHTING">
+    <br />
+    <a name="highlighting"><h2>Highlighting</h2></a>
+    <table>
+        <tr>
+          <td align="right">
+            &#xa0;
+          </td>
+          <td>
+          </td>
+        </tr>
+    <xsl:apply-templates/>
+    </table>
+  </xsl:template>
+  <xsl:template match="solr/solr-info/HIGHLIGHTING/entry">
+      <xsl:for-each select="*">
+        <tr>
+          <td align="right">
+            <strong><xsl:value-of select="name()"/>:&#xa0;</strong>
+          </td>
+          <td>
+            <tt><xsl:value-of select="."/>&#xa0;</tt>
+          </td>
+        </tr>
+      </xsl:for-each>
+        <tr>
+          <td align="right">
+          </td>
+          <td>
+          </td>
+        </tr>
+  </xsl:template>
+
 
   <xsl:template match="solr/solr-info/OTHER">
     <br />

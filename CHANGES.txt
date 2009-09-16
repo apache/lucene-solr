@@ -557,7 +557,9 @@ Bug Fixes
     (Uri Boness, yonik)
 
 
-66. SOLR-1381: Fixed improper handling of fields that have only term positions and not term offsets during Highlighting (Thorsten Fischer, gsingers) 
+66. SOLR-1381: Fixed improper handling of fields that have only term positions and not term offsets during Highlighting (Thorsten Fischer, gsingers)
+
+67. SOLR-1427: Fixed registry.jsp issue with MBeans (gsingers) 
 
 Other Changes
 ----------------------

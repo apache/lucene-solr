@@ -574,6 +574,8 @@ public final class SolrCore implements SolrInfoMBean {
       // Finally tell anyone who wants to know
       resourceLoader.inform( resourceLoader );
       resourceLoader.inform( this );
+      //register any SolrInfoMBeans
+      resourceLoader.inform(infoRegistry);
       instance = this;   // set singleton for backwards compatibility
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -830,7 +832,11 @@ public final class SolrCore implements SolrInfoMBean {
   }
   private <T> void addIfNotPresent(Map<String ,T> registry, String name, Class<? extends  T> c){
     if(!registry.containsKey(name)){
-      registry.put(name, (T) resourceLoader.newInstance(c.getName()));
+      T searchComp = (T) resourceLoader.newInstance(c.getName());
+      registry.put(name, searchComp);
+      if (searchComp instanceof SolrInfoMBean){
+        infoRegistry.put(((SolrInfoMBean)searchComp).getName(), (SolrInfoMBean)searchComp);
+      }
     }
   }
   
