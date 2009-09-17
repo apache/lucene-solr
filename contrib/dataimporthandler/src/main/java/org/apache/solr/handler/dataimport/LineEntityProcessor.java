@@ -127,9 +127,11 @@ public class LineEntityProcessor extends EntityProcessorBase {
 
     @Override
     public void destroy() {
-        if (reader != null)
-            IOUtils.closeQuietly(reader);
-        super.destroy();
+      if (reader != null) {
+        IOUtils.closeQuietly(reader);
+      }
+      reader= null;
+      super.destroy();
     }
 
   /**
