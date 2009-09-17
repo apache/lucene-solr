@@ -194,6 +194,10 @@ public class DocBuilder {
     }
 
     statusMessages.remove(TIME_ELAPSED);
+    statusMessages.put(DataImporter.MSG.TOTAL_DOC_PROCESSED, ""+ importStatistics.docCount.get());
+    if(importStatistics.failedDocCount.get() > 0)
+      statusMessages.put(DataImporter.MSG.TOTAL_FAILED_DOCS, ""+ importStatistics.failedDocCount.get());
+
     statusMessages.put("Time taken ", getTimeElapsedSince(startTime.get()));
     LOG.info("Time taken = " + getTimeElapsedSince(startTime.get()));
   }
@@ -373,8 +377,11 @@ public class DocBuilder {
             if (!doc.isEmpty()) {
               boolean result = writer.upload(doc);
               doc = null;
-              if (result)
+              if (result){
                 importStatistics.docCount.incrementAndGet();
+              } else {
+                importStatistics.failedDocCount.incrementAndGet(); 
+              }
             }
           }
 
@@ -723,6 +730,8 @@ public class DocBuilder {
     public AtomicLong docCount = new AtomicLong();
 
     public AtomicLong deletedDocCount = new AtomicLong();
+
+    public AtomicLong failedDocCount = new AtomicLong();
 
     public AtomicLong rowsCount = new AtomicLong();
 

@@ -454,6 +454,8 @@ public class DataImporter {
 
     public static final String TOTAL_DOC_PROCESSED = "Total Documents Processed";
 
+    public static final String TOTAL_FAILED_DOCS = "Total Documents Failed";
+
     public static final String TOTAL_QUERIES_EXECUTED = "Total Requests made to DataSource";
 
     public static final String TOTAL_ROWS_EXECUTED = "Total Rows Fetched";
