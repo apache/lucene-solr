@@ -35,6 +35,7 @@ import java.util.Map;
  */
 public abstract class ValueSource implements Serializable {
 
+  @Deprecated
   public DocValues getValues(IndexReader reader) throws IOException {
     return getValues(null, reader);
   }

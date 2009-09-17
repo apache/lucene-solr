@@ -68,12 +68,3 @@ public class FunctionRangeQParserPlugin extends QParserPlugin {
   }
 
 }
-
-class FunctionConstantScoreQuery extends ConstantScoreQuery {
-  public FunctionConstantScoreQuery(Filter filter) {
-    super(filter);
-  }
-
-
-
-}

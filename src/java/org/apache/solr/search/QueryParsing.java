@@ -435,7 +435,7 @@ public class QueryParsing {
     } else if (query instanceof FuzzyQuery) {
       out.append(query.toString());
       writeBoost=false;      
-    } else if (query instanceof SolrConstantScoreQuery) {
+    } else if (query instanceof ConstantScoreQuery) {
       out.append(query.toString());
       writeBoost=false;
     } else {
