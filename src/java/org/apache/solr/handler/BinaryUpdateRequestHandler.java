@@ -111,10 +111,8 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
     for (String s : l) {
       DeleteUpdateCommand delcmd = new DeleteUpdateCommand();
       if (isId) {
-        System.out.println("delete by id : " + s);
         delcmd.id = s;
       } else {
-        System.out.println("delete by query  = " + s);
         delcmd.query = s;
       }
       delcmd.fromCommitted = true;
