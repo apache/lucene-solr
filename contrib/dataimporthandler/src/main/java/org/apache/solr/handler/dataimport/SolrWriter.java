@@ -73,9 +73,6 @@ public class SolrWriter {
       command.overwritePending = true;
       command.overwriteCommitted = true;
       processor.processAdd(command);
-    } catch (IOException e) {
-      log.error("Exception while adding: " + d, e);
-      return false;
     } catch (Exception e) {
       log.warn("Error creating document : " + d, e);
       return false;
