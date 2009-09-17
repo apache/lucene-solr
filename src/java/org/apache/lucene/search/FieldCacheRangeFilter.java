@@ -476,6 +476,11 @@ public abstract class FieldCacheRangeFilter extends Filter {
   
     /** this method checks, if a doc is a hit, should throw AIOBE, when position invalid */
     abstract boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException;
+    
+    /** this DocIdSet is cacheable, if it works solely with FieldCache and no TermDocs */
+    public boolean isCacheable() {
+      return !(mayUseTermDocs && reader.hasDeletions());
+    }
 
     public DocIdSetIterator iterator() throws IOException {
       // Synchronization needed because deleted docs BitVector
@@ -484,7 +489,7 @@ public abstract class FieldCacheRangeFilter extends Filter {
       // and the index has deletions
       final TermDocs termDocs;
       synchronized(reader) {
-        termDocs = (mayUseTermDocs && reader.hasDeletions()) ? reader.termDocs(null) : null;
+        termDocs = isCacheable() ? null : reader.termDocs(null);
       }
       if (termDocs != null) {
         // a DocIdSetIterator using TermDocs to iterate valid docIds

@@ -74,6 +74,7 @@ public class QueryWrapperFilter extends Filter {
       public DocIdSetIterator iterator() throws IOException {
         return weight.scorer(reader, true, false);
       }
+      public boolean isCacheable() { return false; }
     };
   }
 

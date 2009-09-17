@@ -116,6 +116,11 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
     return new OpenBitSetIterator(bits, wlen);
   }
 
+  /** This DocIdSet implementation is cacheable. */
+  public boolean isCacheable() {
+    return true;
+  }
+
   /** Returns the current capacity in bits (1 greater than the index of the last bit) */
   public long capacity() { return bits.length << 6; }
 

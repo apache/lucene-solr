@@ -49,6 +49,11 @@ public abstract class FilteredDocIdSet extends DocIdSet {
     _innerSet = innerSet;
   }
   
+  /** This DocIdSet implementation is cacheable if the inner set is cacheable. */
+  public boolean isCacheable() {
+    return _innerSet.isCacheable();
+  }
+
   /**
    * Validation method to determine whether a docid should be in the result set.
    * @param docid docid to be tested

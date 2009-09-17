@@ -66,8 +66,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     Query q = new TermQuery(new Term("body","body"));
 
     // test id, bounded on both ends
-        
-    result = search.search(q,FieldCacheRangeFilter.newStringRange("id",minIP,maxIP,T,T), numDocs).scoreDocs;
+    FieldCacheRangeFilter fcrf;
+    result = search.search(q,fcrf = FieldCacheRangeFilter.newStringRange("id",minIP,maxIP,T,T), numDocs).scoreDocs;
+    assertTrue(fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", numDocs, result.length);
 
     result = search.search(q,FieldCacheRangeFilter.newStringRange("id",minIP,maxIP,T,F), numDocs).scoreDocs;
@@ -212,8 +213,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     Query q = new TermQuery(new Term("body","body"));
 
     // test id, bounded on both ends
-
-    result = search.search(q,FieldCacheRangeFilter.newShortRange("id",minIdO,maxIdO,T,T), numDocs).scoreDocs;
+    FieldCacheRangeFilter fcrf;
+    result = search.search(q,fcrf=FieldCacheRangeFilter.newShortRange("id",minIdO,maxIdO,T,T), numDocs).scoreDocs;
+    assertTrue(fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", numDocs, result.length);
 
     result = search.search(q,FieldCacheRangeFilter.newShortRange("id",minIdO,maxIdO,T,F), numDocs).scoreDocs;
@@ -303,7 +305,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     // test id, bounded on both ends
         
-    result = search.search(q,FieldCacheRangeFilter.newIntRange("id",minIdO,maxIdO,T,T), numDocs).scoreDocs;
+    FieldCacheRangeFilter fcrf;
+    result = search.search(q,fcrf=FieldCacheRangeFilter.newIntRange("id",minIdO,maxIdO,T,T), numDocs).scoreDocs;
+    assertTrue(fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", numDocs, result.length);
 
     result = search.search(q,FieldCacheRangeFilter.newIntRange("id",minIdO,maxIdO,T,F), numDocs).scoreDocs;
@@ -393,7 +397,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     // test id, bounded on both ends
         
-    result = search.search(q,FieldCacheRangeFilter.newLongRange("id",minIdO,maxIdO,T,T), numDocs).scoreDocs;
+    FieldCacheRangeFilter fcrf;
+    result = search.search(q,fcrf=FieldCacheRangeFilter.newLongRange("id",minIdO,maxIdO,T,T), numDocs).scoreDocs;
+    assertTrue(fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", numDocs, result.length);
 
     result = search.search(q,FieldCacheRangeFilter.newLongRange("id",minIdO,maxIdO,T,F), numDocs).scoreDocs;
@@ -521,6 +527,51 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     assertEquals("infinity special case", 0, result.length);
     result = search.search(q,FieldCacheRangeFilter.newDoubleRange("id",null, new Double(Double.NEGATIVE_INFINITY),F,F), numDocs).scoreDocs;
     assertEquals("infinity special case", 0, result.length);
+  }
+  
+  // test using a sparse index (with deleted docs). The DocIdSet should be not cacheable, as it uses TermDocs if the range contains 0
+  public void testSparseIndex() throws IOException {
+    RAMDirectory dir = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(), T, IndexWriter.MaxFieldLength.LIMITED);
+
+    for (int d = -20; d <= 20; d++) {
+      Document doc = new Document();
+      doc.add(new Field("id",Integer.toString(d), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(new Field("body","body", Field.Store.NO, Field.Index.NOT_ANALYZED));
+      writer.addDocument(doc);
+    }
+    
+    writer.optimize();
+    writer.deleteDocuments(new Term("id","0"));
+    writer.close();
+
+    IndexReader reader = IndexReader.open(dir);
+    IndexSearcher search = new IndexSearcher(reader);
+    assertTrue(reader.hasDeletions());
+
+    ScoreDoc[] result;
+    FieldCacheRangeFilter fcrf;
+    Query q = new TermQuery(new Term("body","body"));
+
+    result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",new Byte((byte) -20),new Byte((byte) 20),T,T), 100).scoreDocs;
+    assertFalse("DocIdSet must be not cacheable", fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
+    assertEquals("find all", 40, result.length);
+
+    result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",new Byte((byte) 0),new Byte((byte) 20),T,T), 100).scoreDocs;
+    assertFalse("DocIdSet must be not cacheable", fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
+    assertEquals("find all", 20, result.length);
+
+    result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",new Byte((byte) -20),new Byte((byte) 0),T,T), 100).scoreDocs;
+    assertFalse("DocIdSet must be not cacheable", fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
+    assertEquals("find all", 20, result.length);
+
+    result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",new Byte((byte) 10),new Byte((byte) 20),T,T), 100).scoreDocs;
+    assertTrue("DocIdSet must be cacheable", fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
+    assertEquals("find all", 11, result.length);
+
+    result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",new Byte((byte) -20),new Byte((byte) -10),T,T), 100).scoreDocs;
+    assertTrue("DocIdSet must be cacheable", fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
+    assertEquals("find all", 11, result.length);
   }
   
 }

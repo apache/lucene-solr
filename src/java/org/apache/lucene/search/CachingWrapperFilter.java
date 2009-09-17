@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.DocIdBitSet;
+import org.apache.lucene.util.OpenBitSetDISI;
 import java.util.BitSet;
 import java.util.WeakHashMap;
 import java.util.Map;
@@ -75,10 +76,20 @@ public class CachingWrapperFilter extends Filter {
 
   /** Provide the DocIdSet to be cached, using the DocIdSet provided
    *  by the wrapped Filter.
-   *  This implementation returns the given DocIdSet.
+   *  <p>This implementation returns the given {@link DocIdSet}, if {@link DocIdSet#isCacheable}
+   *  returns <code>true</code>, else it copies the {@link DocIdSetIterator} into
+   *  an {@link OpenBitSetDISI}.
    */
-  protected DocIdSet docIdSetToCache(DocIdSet docIdSet, IndexReader reader) {
-    return docIdSet;
+  protected DocIdSet docIdSetToCache(DocIdSet docIdSet, IndexReader reader) throws IOException {
+    if (docIdSet.isCacheable()) {
+      return docIdSet;
+    } else {
+      final DocIdSetIterator it = docIdSet.iterator();
+      // null is allowed to be returned by iterator(),
+      // in this case we wrap with the empty set,
+      // which is cacheable.
+      return (it == null) ? DocIdSet.EMPTY_DOCIDSET : new OpenBitSetDISI(it, reader.maxDoc());
+    }
   }
   
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {

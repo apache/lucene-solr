@@ -48,6 +48,8 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     IndexSearcher searcher = new IndexSearcher(dir, true);
     TopDocs hits = searcher.search(new MatchAllDocsQuery(), qwf, 10);
     assertEquals(1, hits.totalHits);
+    hits = searcher.search(new MatchAllDocsQuery(), new CachingWrapperFilter(qwf), 10);
+    assertEquals(1, hits.totalHits);
 
     // should not throw exception with complex primitive query
     BooleanQuery booleanQuery = new BooleanQuery();
@@ -58,6 +60,8 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
 
     hits = searcher.search(new MatchAllDocsQuery(), qwf, 10);
     assertEquals(1, hits.totalHits);
+    hits = searcher.search(new MatchAllDocsQuery(), new CachingWrapperFilter(qwf), 10);
+    assertEquals(1, hits.totalHits);
 
     // should not throw exception with non primitive Query (doesn't implement
     // Query#createWeight)
@@ -65,6 +69,15 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
 
     hits = searcher.search(new MatchAllDocsQuery(), qwf, 10);
     assertEquals(1, hits.totalHits);
+    hits = searcher.search(new MatchAllDocsQuery(), new CachingWrapperFilter(qwf), 10);
+    assertEquals(1, hits.totalHits);
 
+    // test a query with no hits
+    termQuery = new TermQuery(new Term("field", "not_exist"));
+    qwf = new QueryWrapperFilter(termQuery);
+    hits = searcher.search(new MatchAllDocsQuery(), qwf, 10);
+    assertEquals(0, hits.totalHits);
+    hits = searcher.search(new MatchAllDocsQuery(), new CachingWrapperFilter(qwf), 10);
+    assertEquals(0, hits.totalHits);
   }
 }

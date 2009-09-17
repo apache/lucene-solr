@@ -434,6 +434,14 @@ API Changes
     NativeFSLockFactory, we strongly recommend not to mix deprecated
     and new API. (Uwe Schindler, Mike McCandless)
 
+ * LUCENE-1911: Added a new method isCacheable() to DocIdSet. This method
+    should return true, if the underlying implementation does not use disk
+    I/O and is fast enough to be directly cached by CachingWrapperFilter.
+    OpenBitSet, SortedVIntList, and DocIdBitSet are such candidates.
+    The default implementation of the abstract DocIdSet class returns false.
+    In this case, CachingWrapperFilter copies the DocIdSetIterator into an
+    OpenBitSet for caching.  (Uwe Schindler, Thomas Becker)
+
 Bug fixes
 
  * LUCENE-1415: MultiPhraseQuery has incorrect hashCode() and equals()

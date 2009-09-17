@@ -180,6 +180,11 @@ public class SortedVIntList extends DocIdSet {
     return bytes.length;
   }
 
+  /** This DocIdSet implementation is cacheable. */
+  public boolean isCacheable() {
+    return true;
+  }
+
   /**
    * @return    An iterator over the sorted integers.
    */

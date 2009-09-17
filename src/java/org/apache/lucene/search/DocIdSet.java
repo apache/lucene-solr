@@ -37,6 +37,10 @@ public abstract class DocIdSet {
     public DocIdSetIterator iterator() {
       return iterator;
     }
+    
+    public boolean isCacheable() {
+      return true;
+    }
   };
     
   /** Provides a {@link DocIdSetIterator} to access the set.
@@ -44,4 +48,15 @@ public abstract class DocIdSet {
    * <code>{@linkplain #EMPTY_DOCIDSET}.iterator()</code> if there
    * are no docs that match. */
   public abstract DocIdSetIterator iterator() throws IOException;
+
+  /**
+   * This method is a hint for {@link CachingWrapperFilter}, if this <code>DocIdSet</code>
+   * should be cached without copying it into a BitSet. The default is to return
+   * <code>false</code>. If you have an own <code>DocIdSet</code> implementation
+   * that does its iteration very effective and fast without doing disk I/O,
+   * override this method and return <code>true</here>.
+   */
+  public boolean isCacheable() {
+    return false;
+  }
 }

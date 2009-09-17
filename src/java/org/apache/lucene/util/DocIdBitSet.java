@@ -34,6 +34,11 @@ public class DocIdBitSet extends DocIdSet {
   public DocIdSetIterator iterator() {
     return new DocIdBitSetIterator(bitSet);
   }
+
+  /** This DocIdSet implementation is cacheable. */
+  public boolean isCacheable() {
+    return true;
+  }
   
   /**
    * Returns the underlying BitSet. 
