@@ -163,7 +163,8 @@ public class SnapPuller {
       }
     };
     executorService = Executors.newSingleThreadScheduledExecutor();
-    executorService.scheduleAtFixedRate(task, pollInterval, pollInterval, TimeUnit.MILLISECONDS);
+    long initialDelay = pollInterval - (System.currentTimeMillis() % pollInterval);
+    executorService.scheduleAtFixedRate(task, initialDelay, pollInterval, TimeUnit.MILLISECONDS);
     LOG.info("Poll Scheduled at an interval of " + pollInterval + "ms");
   }
 
