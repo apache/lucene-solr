@@ -1,6 +1,6 @@
 Lucene contrib change Log
 
-======================= Release 2.9.0 2009-09-07 =======================
+======================= Release 2.9.0 2009-09-21 =======================
 
 Changes in runtime behavior
 

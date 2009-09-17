@@ -1,7 +1,7 @@
 Lucene Change Log
 $Id$
 
-======================= Release 2.9.0 2009-09-07 =======================
+======================= Release 2.9.0 2009-09-21 =======================
 
 Changes in backwards compatibility policy
 
