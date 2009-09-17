@@ -87,6 +87,9 @@ Bug fixes
  * LUCENE-1828: Fix memory index to call TokenStream.reset() and
     TokenStream.end(). (Tim Smith via Michael Busch)
 
+ * LUCENE-1912: Fix fast-vector-highlighter issue when two or more
+   terms are concatenated (Koji Sekiguchi via Mike McCandless)
+
 New features
 
  * LUCENE-1531: Added support for BoostingTermQuery to XML query parser. (Karl Wettin)

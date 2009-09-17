@@ -76,6 +76,20 @@ public class FieldPhraseListTest extends AbstractTestCase {
     assertEquals( "baac(1.0)((2,5))", fpl.phraseList.get( 0 ).toString() );
   }
   
+  public void test2ConcatTermsIndexB() throws Exception {
+    // 01 12 23 (offsets)
+    // ab|ba|ab
+    //  0  1  2 (positions)
+    make1d1fIndexB( "abab" );
+
+    FieldQuery fq = new FieldQuery( tq( "ab" ), true, true );
+    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
+    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
+    assertEquals( 2, fpl.phraseList.size() );
+    assertEquals( "ab(1.0)((0,2))", fpl.phraseList.get( 0 ).toString() );
+    assertEquals( "ab(1.0)((2,4))", fpl.phraseList.get( 1 ).toString() );
+  }
+  
   public void test2Terms1PhraseIndex() throws Exception {
     make1d1fIndex( "c a a b" );
 

@@ -146,10 +146,10 @@ public class FieldPhraseList {
       int eo = getEndOffset();
       int oso = other.getStartOffset();
       int oeo = other.getEndOffset();
-      if( so <= oso && oso <= eo ) return true;
-      if( so <= oeo && oeo <= eo ) return true;
-      if( oso <= so && so <= oeo ) return true;
-      if( oso <= eo && eo <= oeo ) return true;
+      if( so <= oso && oso < eo ) return true;
+      if( so < oeo && oeo <= eo ) return true;
+      if( oso <= so && so < oeo ) return true;
+      if( oso < eo && eo <= oeo ) return true;
       return false;
     }
     
