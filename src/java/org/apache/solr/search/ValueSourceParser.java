@@ -16,10 +16,7 @@
  */
 package org.apache.solr.search;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Date;
+import java.util.*;
 import java.io.IOException;
 
 import org.apache.lucene.queryParser.ParseException;
@@ -398,7 +395,7 @@ class LongConstValueSource extends ValueSource {
     return "const(" + constant + ")";
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
     return new DocValues() {
       public float floatVal(int doc) {
         return constant;

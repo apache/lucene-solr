@@ -201,6 +201,7 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
   public void testFunctions() {
     doTest("foo_pf");  // a plain float field
     doTest("foo_f");  // a sortable float field
+    doTest("foo_tf");  // a trie float field
   }
 
   public void testExternalField() {
@@ -304,5 +305,26 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     assertQ(req("fl","*,score","q", "{!func}ms(2009-08-31T12:10:10.125Z,b_tdt)", "fq","id:1"), "//float[@name='score']='1.0'");
 
     assertQ(req("fl","*,score","q", "{!func}ms(2009-08-31T12:10:10.125Z/SECOND,2009-08-31T12:10:10.124Z/SECOND)", "fq","id:1"), "//float[@name='score']='0.0'");
+
+    for (int i=100; i<112; i++) {
+      assertU(adoc("id",""+i, "text","batman"));
+    }
+    assertU(commit());
+    assertU(adoc("id","120", "text","batman superman"));   // in a segment by itself
+    assertU(commit());
+
+    // batman and superman have the same idf in single-doc segment, but very different in the complete index.
+    String q ="{!func}query($qq)";
+    String fq="id:120"; 
+    assertQ(req("fl","*,score","q", q, "qq","text:batman", "fq",fq), "//float[@name='score']<'1.0'");
+    assertQ(req("fl","*,score","q", q, "qq","text:superman", "fq",fq), "//float[@name='score']>'1.0'");
+
+    // test weighting through a function range query
+    assertQ(req("fl","*,score", "q", "{!frange l=1 u=10}query($qq)", "qq","text:superman"), "//*[@numFound='1']");
+
+    // test weighting through a complex function
+    q ="{!func}sub(div(sum(0.0,product(1,query($qq))),1),0)";
+    assertQ(req("fl","*,score","q", q, "qq","text:batman", "fq",fq), "//float[@name='score']<'1.0'");
+    assertQ(req("fl","*,score","q", q, "qq","text:superman", "fq",fq), "//float[@name='score']>'1.0'");
   }
 }

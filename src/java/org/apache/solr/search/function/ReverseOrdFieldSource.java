@@ -23,6 +23,7 @@ import org.apache.solr.search.function.ValueSource;
 import org.apache.lucene.search.FieldCache;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Obtains the ordinal of the field value from the default Lucene {@link org.apache.lucene.search.FieldCache} using getStringIndex()
@@ -51,7 +52,7 @@ public class ReverseOrdFieldSource extends ValueSource {
     return "rord("+field+')';
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final FieldCache.StringIndex sindex = FieldCache.DEFAULT.getStringIndex(reader, field);
 
     final int arr[] = sindex.order;

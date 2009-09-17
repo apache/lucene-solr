@@ -23,6 +23,8 @@ import org.apache.solr.search.SolrIndexReader;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 
 /**
@@ -58,9 +60,12 @@ public class FunctionQuery extends Query {
     protected Searcher searcher;
     protected float queryNorm;
     protected float queryWeight;
+    protected Map context;
 
-    public FunctionWeight(Searcher searcher) {
+    public FunctionWeight(Searcher searcher) throws IOException {
       this.searcher = searcher;
+      this.context = func.newContext();
+      func.createWeight(context, searcher);
     }
 
     public Query getQuery() {
@@ -115,7 +120,7 @@ public class FunctionQuery extends Query {
       this.reader = reader;
       this.maxDoc = reader.maxDoc();
       this.hasDeletions = reader.hasDeletions();
-      vals = func.getValues(reader);
+      vals = func.getValues(weight.context, reader);
     }
 
     @Override
@@ -197,7 +202,7 @@ public class FunctionQuery extends Query {
   }
 
 
-  public Weight createWeight(Searcher searcher) {
+  public Weight createWeight(Searcher searcher) throws IOException {
     return new FunctionQuery.FunctionWeight(searcher);
   }
 

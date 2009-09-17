@@ -18,8 +18,10 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Searcher;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * <code>ReciprocalFloatFunction</code> implements a reciprocal function f(x) = a/(mx+b), based on
@@ -52,8 +54,8 @@ public class ReciprocalFloatFunction extends ValueSource {
     this.b=b;
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
-    final DocValues vals = source.getValues(reader);
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+    final DocValues vals = source.getValues(context, reader);
     return new DocValues() {
       public float floatVal(int doc) {
         return a/(m*vals.floatVal(doc) + b);
@@ -76,6 +78,11 @@ public class ReciprocalFloatFunction extends ValueSource {
                 + '+' + b + ')';
       }
     };
+  }
+
+  @Override
+  public void createWeight(Map context, Searcher searcher) throws IOException {
+    source.createWeight(context, searcher);
   }
 
   public String description() {

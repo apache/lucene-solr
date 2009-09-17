@@ -20,6 +20,7 @@ import org.apache.solr.search.SolrIndexReader;
 import org.apache.lucene.index.IndexReader;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * A value source that wraps another and ensures that the top level reader
@@ -41,7 +42,7 @@ public class TopValueSource extends ValueSource {
     return "top(" + vs.description() + ')';
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
     int offset = 0;
     IndexReader topReader = reader;
     if (topReader instanceof SolrIndexReader) {
@@ -53,7 +54,7 @@ public class TopValueSource extends ValueSource {
       topReader = r;
     }
     final int off = offset;
-    final DocValues vals = vs.getValues(topReader);
+    final DocValues vals = vs.getValues(context, topReader);
     if (topReader == reader) return vals;
 
     return new DocValues() {

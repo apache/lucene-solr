@@ -18,13 +18,11 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Weight;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.*;
 import org.apache.solr.common.SolrException;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * <code>QueryValueSource</code> returns the relevance score of the query
@@ -45,8 +43,9 @@ public class QueryValueSource extends ValueSource {
     return "query(" + q + ",def=" + defVal + ")";
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
-    return new QueryDocValues(reader, q, defVal);
+  @Override
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+    return new QueryDocValues(reader, q, defVal, context==null ? null : (Weight)context.get(this));
   }
 
   public int hashCode() {
@@ -58,13 +57,18 @@ public class QueryValueSource extends ValueSource {
     QueryValueSource other = (QueryValueSource)o;
     return this.q.equals(other.q) && this.defVal==other.defVal;
   }
+
+  @Override
+  public void createWeight(Map context, Searcher searcher) throws IOException {
+    Weight w = q.weight(searcher);
+    context.put(this, w);
+  }
 }
 
 
 class QueryDocValues extends DocValues {
   final Query q;
   final IndexReader reader;
-  final IndexSearcher searcher;
   final Weight weight;
   final float defVal;
 
@@ -75,12 +79,11 @@ class QueryDocValues extends DocValues {
   // to trigger a scorer reset on first access.
   int lastDocRequested=Integer.MAX_VALUE;
 
-  public QueryDocValues(IndexReader reader, Query q, float defVal) throws IOException {
+  public QueryDocValues(IndexReader reader, Query q, float defVal, Weight w) throws IOException {
     this.reader = reader;
     this.q = q;
     this.defVal = defVal;
-    searcher = new IndexSearcher(reader);
-    weight = q.weight(searcher);
+    weight = w!=null ? w : q.weight(new IndexSearcher(reader));
   }
 
   public float floatVal(int doc) {
@@ -88,12 +91,12 @@ class QueryDocValues extends DocValues {
       if (doc < lastDocRequested) {
         // out-of-order access.... reset scorer.
         scorer = weight.scorer(reader, true, false);
-        scorerDoc = scorer.nextDoc();
+        scorerDoc = -1;
       }
       lastDocRequested = doc;
 
       if (scorerDoc < doc) {
-        scorerDoc = scorer.nextDoc();
+        scorerDoc = scorer.advance(doc);
       }
 
       if (scorerDoc > doc) {

@@ -18,9 +18,11 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Searcher;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 
 /**
  * <code>SumFloatFunction</code> returns the sum of it's components.
@@ -71,10 +73,10 @@ abstract class MultiFloatFunction extends ValueSource {
     return sb.toString();
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final DocValues[] valsArr = new DocValues[sources.length];
     for (int i=0; i<sources.length; i++) {
-      valsArr[i] = sources[i].getValues(reader);
+      valsArr[i] = sources[i].getValues(context, reader);
     }
 
     return new DocValues() {
@@ -109,6 +111,12 @@ abstract class MultiFloatFunction extends ValueSource {
         return sb.toString();
       }
     };
+  }
+
+  @Override
+  public void createWeight(Map context, Searcher searcher) throws IOException {
+    for (ValueSource source : sources)
+      source.createWeight(context, searcher);
   }
 
   public int hashCode() {

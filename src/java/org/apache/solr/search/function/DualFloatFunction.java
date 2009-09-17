@@ -18,8 +18,10 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Searcher;
 
 import java.io.IOException;
+import java.util.Map;
 
 public abstract class DualFloatFunction extends ValueSource {
   protected final ValueSource a;
@@ -41,9 +43,9 @@ public abstract class DualFloatFunction extends ValueSource {
     return name() + "(" + a.description() + "," + b.description() + ")";
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
-    final DocValues aVals =  a.getValues(reader);
-    final DocValues bVals =  b.getValues(reader);
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+    final DocValues aVals =  a.getValues(context, reader);
+    final DocValues bVals =  b.getValues(context, reader);
     return new DocValues() {
       public float floatVal(int doc) {
 	return func(doc, aVals, bVals);
@@ -64,6 +66,12 @@ public abstract class DualFloatFunction extends ValueSource {
 	return name() + '(' + aVals.toString(doc) + ',' + bVals.toString(doc) + ')';
       }
     };
+  }
+
+  @Override
+  public void createWeight(Map context, Searcher searcher) throws IOException {
+    a.createWeight(context,searcher);
+    b.createWeight(context,searcher);
   }
 
   public int hashCode() {

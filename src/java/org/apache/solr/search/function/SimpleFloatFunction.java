@@ -20,25 +20,20 @@ package org.apache.solr.search.function;
 import org.apache.lucene.index.IndexReader;
 
 import java.io.IOException;
+import java.util.Map;
 
 /** A simple float function with a single argument
  */
- public abstract class SimpleFloatFunction extends ValueSource {
-  protected final ValueSource source;
-
+ public abstract class SimpleFloatFunction extends SingleFunction {
   public SimpleFloatFunction(ValueSource source) {
-    this.source = source;
+    super(source);
   }
 
-  protected abstract String name();
   protected abstract float func(int doc, DocValues vals);
 
-  public String description() {
-    return name() + '(' + source.description() + ')';
-  }
-
-  public DocValues getValues(IndexReader reader) throws IOException {
-    final DocValues vals =  source.getValues(reader);
+  @Override
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+    final DocValues vals =  source.getValues(context, reader);
     return new DocValues() {
       public float floatVal(int doc) {
 	return func(doc, vals);
@@ -59,16 +54,5 @@ import java.io.IOException;
 	return name() + '(' + vals.toString(doc) + ')';
       }
     };
-  }
-
-  public int hashCode() {
-    return source.hashCode() + name().hashCode();
-  }
-
-  public boolean equals(Object o) {
-    if (this.getClass() != o.getClass()) return false;
-    SimpleFloatFunction other = (SimpleFloatFunction)o;
-    return this.name().equals(other.name())
-         && this.source.equals(other.source);
   }
 }

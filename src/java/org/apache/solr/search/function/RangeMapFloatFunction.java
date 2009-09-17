@@ -18,8 +18,10 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Searcher;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * <code>LinearFloatFunction</code> implements a linear function over
@@ -48,8 +50,8 @@ public class RangeMapFloatFunction extends ValueSource {
     return "map(" + source.description() + "," + min + "," + max + "," + target + ")";
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
-    final DocValues vals =  source.getValues(reader);
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+    final DocValues vals =  source.getValues(context, reader);
     return new DocValues() {
       public float floatVal(int doc) {
         float val = vals.floatVal(doc);
@@ -71,6 +73,11 @@ public class RangeMapFloatFunction extends ValueSource {
         return "map(" + vals.toString(doc) + ",min=" + min + ",max=" + max + ",target=" + target + ")";
       }
     };
+  }
+
+  @Override
+  public void createWeight(Map context, Searcher searcher) throws IOException {
+    source.createWeight(context, searcher);
   }
 
   public int hashCode() {

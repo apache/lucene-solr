@@ -23,6 +23,8 @@ import org.apache.solr.search.function.DocValues;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.IdentityHashMap;
+import java.util.Map;
 
 /**
  * Instantiates {@link org.apache.solr.search.function.DocValues} for a particular reader.
@@ -33,7 +35,16 @@ import java.io.Serializable;
  */
 public abstract class ValueSource implements Serializable {
 
-  public abstract DocValues getValues(IndexReader reader) throws IOException;
+  public DocValues getValues(IndexReader reader) throws IOException {
+    return getValues(null, reader);
+  }
+
+  /** Gets the values for this reader and the context that was previously
+   * passed to createWeight()
+   */
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+    return null;
+  }
 
   public abstract boolean equals(Object o);
 
@@ -46,6 +57,16 @@ public abstract class ValueSource implements Serializable {
     return description();
   }
 
+  /** Implementations should propagate createWeight to sub-ValueSources which can optionally store
+   * weight info in the context. The context object will be passed to getValues()
+   * where this info can be retrieved. */
+  public void createWeight(Map context, Searcher searcher) throws IOException {
+  }
+
+  /** Returns a new non-threadsafe context map. */
+  public static Map newContext() {
+    return new IdentityHashMap();
+  }
 }
 
 

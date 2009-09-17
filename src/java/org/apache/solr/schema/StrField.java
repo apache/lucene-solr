@@ -27,7 +27,6 @@ import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.StringIndexDocValues;
 import org.apache.solr.search.QParser;
-import org.apache.solr.util.NumberUtils;
 
 import java.util.Map;
 import java.io.IOException;
@@ -67,7 +66,7 @@ class StrFieldSource extends FieldCacheSource {
     return "str(" + field + ')';
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
     return new StringIndexDocValues(this, reader, field) {
       protected String toTerm(String readableValue) {
         return readableValue;

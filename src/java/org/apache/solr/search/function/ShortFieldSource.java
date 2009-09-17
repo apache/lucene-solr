@@ -20,6 +20,7 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.IndexReader;
 
 import java.io.IOException;
+import java.util.Map;
 
 
 /**
@@ -42,7 +43,7 @@ public class ShortFieldSource extends FieldCacheSource{
     return "short(" + field + ')';
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final short[] arr = (parser == null) ?
             cache.getShorts(reader, field) :
             cache.getShorts(reader, field, parser);

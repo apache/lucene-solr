@@ -24,6 +24,7 @@ import org.apache.solr.search.SolrIndexReader;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.Map;
 
 /**
  * Query that is boosted by a ValueSource
@@ -59,10 +60,13 @@ public class BoostedQuery extends Query {
   private class BoostedWeight extends Weight {
     Searcher searcher;
     Weight qWeight;
+    Map context;
 
     public BoostedWeight(Searcher searcher) throws IOException {
       this.searcher = searcher;
       this.qWeight = q.weight(searcher);
+      this.context = boostVal.newContext();
+      boostVal.createWeight(context,searcher);
     }
 
     public Query getQuery() {
@@ -105,7 +109,7 @@ public class BoostedQuery extends Query {
         return subQueryExpl;
       }
 
-      DocValues vals = boostVal.getValues(subReaders[readerPos]);
+      DocValues vals = boostVal.getValues(context, subReaders[readerPos]);
       float sc = subQueryExpl.getValue() * vals.floatVal(doc-readerBase);
       Explanation res = new ComplexExplanation(
         true, sc, BoostedQuery.this.toString() + ", product of:");
@@ -132,7 +136,7 @@ public class BoostedQuery extends Query {
       this.scorer = scorer;
       this.reader = reader;
       this.searcher = searcher; // for explain
-      this.vals = vs.getValues(reader);
+      this.vals = vs.getValues(weight.context, reader);
     }
 
     @Override

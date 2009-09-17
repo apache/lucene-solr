@@ -18,8 +18,10 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Searcher;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Scales values to be between min and max.
@@ -47,8 +49,8 @@ public class ScaleFloatFunction extends ValueSource {
     return "scale(" + source.description() + "," + min + "," + max + ")";
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
-    final DocValues vals =  source.getValues(reader);
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+    final DocValues vals =  source.getValues(context, reader);
     int maxDoc = reader.maxDoc();
 
     // this doesn't take into account deleted docs!
@@ -105,6 +107,11 @@ public class ScaleFloatFunction extends ValueSource {
                 + ")";
       }
     };
+  }
+
+  @Override
+  public void createWeight(Map context, Searcher searcher) throws IOException {
+    source.createWeight(context, searcher);
   }
 
   public int hashCode() {

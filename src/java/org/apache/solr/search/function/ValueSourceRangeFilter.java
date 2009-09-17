@@ -20,15 +20,18 @@ package org.apache.solr.search.function;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Searcher;
 import org.apache.lucene.index.IndexReader;
+import org.apache.solr.search.SolrFilter;
 
 import java.io.IOException;
+import java.util.Map;
 
 
 /**
  * RangeFilter over a ValueSource.
  */
-public class ValueSourceRangeFilter extends Filter {
+public class ValueSourceRangeFilter extends SolrFilter {
   private final ValueSource valueSource;
   private final String lowerVal;
   private final String upperVal;
@@ -47,12 +50,17 @@ public class ValueSourceRangeFilter extends Filter {
     this.includeUpper = upperVal != null && includeUpper;
   }
 
-  public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
+  public DocIdSet getDocIdSet(final Map context, final IndexReader reader) throws IOException {
      return new DocIdSet() {
        public DocIdSetIterator iterator() throws IOException {
-         return valueSource.getValues(reader).getRangeScorer(reader, lowerVal, upperVal, includeLower, includeUpper);
+         return valueSource.getValues(context, reader).getRangeScorer(reader, lowerVal, upperVal, includeLower, includeUpper);
        }
      };
+  }
+
+  @Override
+  public void createWeight(Map context, Searcher searcher) throws IOException {
+    valueSource.createWeight(context, searcher);
   }
 
   public String toString() {

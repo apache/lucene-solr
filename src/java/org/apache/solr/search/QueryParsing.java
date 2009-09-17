@@ -17,7 +17,6 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
@@ -436,7 +435,7 @@ public class QueryParsing {
     } else if (query instanceof FuzzyQuery) {
       out.append(query.toString());
       writeBoost=false;      
-    } else if (query instanceof ConstantScoreQuery) {
+    } else if (query instanceof SolrConstantScoreQuery) {
       out.append(query.toString());
       writeBoost=false;
     } else {

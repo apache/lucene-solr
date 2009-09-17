@@ -20,9 +20,9 @@ package org.apache.solr.search.function;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.ValueSource;
-import org.apache.lucene.search.FieldCache;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Obtains the ordinal of the field value from the default Lucene {@link org.apache.lucene.search.FieldCache} using getStringIndex().
@@ -51,7 +51,7 @@ public class OrdFieldSource extends ValueSource {
   }
 
 
-  public DocValues getValues(IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
     return new StringIndexDocValues(this, reader, field) {
       protected String toTerm(String readableValue) {
         return readableValue;

@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.Filter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -60,10 +61,19 @@ public class FunctionRangeQParserPlugin extends QParserPlugin {
 
         // TODO: add a score=val option to allow score to be the value
         ValueSourceRangeFilter rf = new ValueSourceRangeFilter(vs, l, u, includeLower, includeUpper);
-        ConstantScoreQuery csq = new ConstantScoreQuery(rf);
+        SolrConstantScoreQuery csq = new SolrConstantScoreQuery(rf);
         return csq;
       }
     };
   }
+
+}
+
+class FunctionConstantScoreQuery extends ConstantScoreQuery {
+  public FunctionConstantScoreQuery(Filter filter) {
+    super(filter);
+  }
+
+
 
 }

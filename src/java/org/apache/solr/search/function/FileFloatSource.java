@@ -54,7 +54,7 @@ public class FileFloatSource extends ValueSource {
     return "float(" + field + ')';
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
     int offset = 0;
     if (reader instanceof SolrIndexReader) {
       SolrIndexReader r = (SolrIndexReader)reader;

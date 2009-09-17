@@ -33,10 +33,7 @@ import org.apache.solr.util.DateMathParser;
 
 import java.io.IOException;
 import java.text.*;
-import java.util.Date;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TimeZone;
+import java.util.*;
 
 // TODO: make a FlexibleDateField that can accept dates in multiple
 // formats, better for human entered dates.
@@ -425,7 +422,7 @@ class DateFieldSource extends FieldCacheSource {
     return "date(" + field + ')';
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
     return new StringIndexDocValues(this, reader, field) {
       protected String toTerm(String readableValue) {
         // needed for frange queries to work properly

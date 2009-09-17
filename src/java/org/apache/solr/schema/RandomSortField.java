@@ -160,7 +160,7 @@ public class RandomSortField extends FieldType {
     }
 
     @Override
-    public DocValues getValues(final IndexReader reader) throws IOException {
+    public DocValues getValues(Map context, final IndexReader reader) throws IOException {
       return new DocValues() {
           private final int seed = getSeed(field, reader);
           @Override

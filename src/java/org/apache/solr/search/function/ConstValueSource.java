@@ -20,6 +20,7 @@ package org.apache.solr.search.function;
 import org.apache.lucene.index.IndexReader;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * <code>ConstValueSource</code> returns a constant for all documents
@@ -35,7 +36,7 @@ public class ConstValueSource extends ValueSource {
     return "const(" + constant + ")";
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
     return new DocValues() {
       public float floatVal(int doc) {
         return constant;

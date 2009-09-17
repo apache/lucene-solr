@@ -18,7 +18,6 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.FieldCache;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
@@ -93,7 +92,7 @@ class SortableDoubleFieldSource extends FieldCacheSource {
     return "sdouble(" + field + ')';
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final double def = defVal;
 
     return new StringIndexDocValues(this, reader, field) {

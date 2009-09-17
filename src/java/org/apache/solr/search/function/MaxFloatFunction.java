@@ -18,8 +18,10 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Searcher;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Returns the max of a ValueSource and a float
@@ -43,8 +45,8 @@ public class MaxFloatFunction extends ValueSource {
     return "max(" + source.description() + "," + fval + ")";
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
-    final DocValues vals =  source.getValues(reader);
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
+    final DocValues vals =  source.getValues(context, reader);
     return new DocValues() {
       public float floatVal(int doc) {
 	float v = vals.floatVal(doc);
@@ -66,6 +68,11 @@ public class MaxFloatFunction extends ValueSource {
 	return "max(" + vals.toString(doc) + "," + fval + ")";
       }
     };
+  }
+
+  @Override
+  public void createWeight(Map context, Searcher searcher) throws IOException {
+    source.createWeight(context, searcher);
   }
 
   public int hashCode() {

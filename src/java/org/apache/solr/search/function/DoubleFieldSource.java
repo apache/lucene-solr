@@ -21,6 +21,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Obtains float field values from the {@link org.apache.lucene.search.FieldCache}
@@ -46,7 +47,7 @@ public class DoubleFieldSource extends FieldCacheSource {
     return "double(" + field + ')';
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final double[] arr = (parser == null) ?
             ((FieldCache) cache).getDoubles(reader, field) :
             ((FieldCache) cache).getDoubles(reader, field, parser);

@@ -22,6 +22,7 @@ import org.apache.solr.search.function.DocValues;
 import org.apache.lucene.search.FieldCache;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Obtains float field values from the {@link org.apache.lucene.search.FieldCache}
@@ -47,7 +48,7 @@ public class FloatFieldSource extends FieldCacheSource {
     return "float(" + field + ')';
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final float[] arr = (parser==null) ?
             cache.getFloats(reader, field) :
             cache.getFloats(reader, field, parser);

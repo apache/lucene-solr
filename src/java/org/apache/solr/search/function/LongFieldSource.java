@@ -22,6 +22,7 @@ import org.apache.lucene.search.FieldCache;
 
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Obtains float field values from the {@link org.apache.lucene.search.FieldCache}
@@ -52,7 +53,7 @@ public class LongFieldSource extends FieldCacheSource {
     return Long.parseLong(extVal);
   }
 
-  public DocValues getValues(IndexReader reader) throws IOException {
+  public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final long[] arr = (parser == null) ?
             ((FieldCache) cache).getLongs(reader, field) :
             ((FieldCache) cache).getLongs(reader, field, parser);
