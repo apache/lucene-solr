@@ -148,6 +148,7 @@ public class FieldQuery {
    * ex6) src="a b c", dest="b"       => no overlap
    * ex7) src="a a a a", dest="a a a" => overlap;
    *                                     expandQueries={"a a a a a","a a a a a a"}
+   * ex8) src="a b c d", dest="b c"   => no overlap
    */
   private void checkOverlap( Collection<Query> expandQueries, Term[] src, Term[] dest, int slop, float boost ){
     // beginning from 1 (not 0) is safe because that the PhraseQuery has multiple terms
@@ -156,7 +157,7 @@ public class FieldQuery {
     for( int i = 1; i < src.length; i++ ){
       boolean overlap = true;
       for( int j = i; j < src.length; j++ ){
-        if( !src[j].text().equals( dest[j-i].text() ) ){
+        if( ( j - i ) < dest.length && !src[j].text().equals( dest[j-i].text() ) ){
           overlap = false;
           break;
         }

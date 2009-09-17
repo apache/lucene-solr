@@ -94,6 +94,13 @@ public class FieldQueryTest extends AbstractTestCase {
     assertCollectionQueries( fq.expand( flatQueries ),
         pqF( "a", "b", "c" ), pqF( "c", "d", "e" ), pqF( "a", "b", "c", "d", "e" ) );
 
+    // "a b c d","b c" => "a b c d","b c"
+    flatQueries = new HashSet<Query>();
+    flatQueries.add( pqF( "a", "b", "c", "d" ) );
+    flatQueries.add( pqF( "b", "c" ) );
+    assertCollectionQueries( fq.expand( flatQueries ),
+        pqF( "a", "b", "c", "d" ), pqF( "b", "c" ) );
+
     // "a b b","b c" => "a b b","b c","a b b c"
     flatQueries = new HashSet<Query>();
     flatQueries.add( pqF( "a", "b", "b" ) );
