@@ -704,6 +704,8 @@ Build
 
  5. SOLR-1386: In build.xml, use longfile="gnu" in tar task to avoid warnings about long file names
     (Mark Miller via shalin)
+
+ 6. SOLR-1441: Make it possible to run all tests in a package (shalin)
  
 
 Documentation

@@ -368,7 +368,15 @@
     
     <!-- no description so it doesn't show up in -projecthelp -->  
     <mkdir dir="${junit.output.dir}"/>
-
+    <condition property="runall">
+      <not>
+        <or>
+          <isset property="testcase"/>
+          <isset property="testpackage"/>
+          <isset property="testpackageroot"/>
+        </or>
+      </not>
+    </condition>
     <junit printsummary="on"
            haltonfailure="no"
            errorProperty="tests.failed"
@@ -379,8 +387,14 @@
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.run.classpath"/>
       <formatter type="xml"/>
-      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
+      <batchtest fork="yes" todir="${junit.output.dir}" if="runall">
         <fileset dir="src/test" includes="${junit.includes}"/>
+      </batchtest>
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testpackage">
+        <fileset dir="src/test" includes="**/${testpackage}/**/Test*.java,**/${testpackage}/**/*Test.java"/>
+      </batchtest>
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testpackageroot">
+        <fileset dir="src/test" includes="**/${testpackageroot}/Test*.java,**/${testpackageroot}/*Test.java"/>
       </batchtest>
       <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
         <fileset dir="src/test" includes="**/${testcase}.java"/>
