@@ -189,12 +189,12 @@ public class XPathRecordReader {
         // But for CDATA | CHARACTERS | SPACE it should not do so because handling of
         // CDATA itself would have consumed the next event. CDATA may throw multiple events
         // so all the events are slurped till a  START_ELEMENT is encountered.
-        boolean skipNextEvent = false;
+        boolean isNextEventFetched = false;
         int event = -1;
         while (true) {
-          if (!skipNextEvent) {
+          if (!isNextEventFetched) {
             event = parser.next();
-            skipNextEvent = false;
+            isNextEventFetched = false;
           }
           if (event == END_DOCUMENT) {
             return;
@@ -214,7 +214,7 @@ public class XPathRecordReader {
           if ((event == CDATA || event == CHARACTERS || event == SPACE)
                   && hasText) {
             valuesAddedinThisFrame.add(fieldName);
-            skipNextEvent = true;
+            isNextEventFetched = true;
             String text = parser.getText();
             event = parser.next();
 
