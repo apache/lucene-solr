@@ -54,15 +54,20 @@ public class EntityProcessorBase extends EntityProcessor {
   public void init(Context context) {
     rowIterator = null;
     this.context = context;
+    resolver = (VariableResolverImpl) context.getVariableResolver();    
     if (isFirstInit) {
-      entityName = context.getEntityAttribute("name");
-      String s = context.getEntityAttribute(ON_ERROR);
-      if (s != null) onError = s;
+      firstInit(context);
     }
-    resolver = (VariableResolverImpl) context.getVariableResolver();
     query = null;
-    isFirstInit = false;
+  }
 
+  /**first time init call. do one-time operations here
+   */
+  protected void firstInit(Context context) {
+    entityName = context.getEntityAttribute("name");
+    String s = context.getEntityAttribute(ON_ERROR);
+    if (s != null) onError = s;
+    isFirstInit = false;
   }
 
 
