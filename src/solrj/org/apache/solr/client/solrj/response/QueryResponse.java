@@ -178,8 +178,10 @@ public class QueryResponse extends SolrResponseBase
     // Parse the queries
     _facetQuery = new HashMap<String, Integer>();
     NamedList<Integer> fq = (NamedList<Integer>) info.get( "facet_queries" );
-    for( Map.Entry<String, Integer> entry : fq ) {
-      _facetQuery.put( entry.getKey(), entry.getValue() );
+    if (fq != null) {
+      for( Map.Entry<String, Integer> entry : fq ) {
+        _facetQuery.put( entry.getKey(), entry.getValue() );
+      }
     }
     
     // Parse the facet info into fields
