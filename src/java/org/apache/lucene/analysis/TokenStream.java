@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
@@ -377,10 +378,7 @@ public abstract class TokenStream extends AttributeSource {
       return incrementToken() ? tokenWrapper.delegate : null;
     } else {
       assert supportedMethods.hasNext;
-      final Token token = next();
-      if (token == null) return null;
-      tokenWrapper.delegate = token;
-      return token;
+      return next();
     }
   }
 
@@ -396,15 +394,24 @@ public abstract class TokenStream extends AttributeSource {
     if (tokenWrapper == null)
       throw new UnsupportedOperationException("This TokenStream only supports the new Attributes API.");
     
+    final Token nextToken;
     if (supportedMethods.hasIncrementToken) {
-      return incrementToken() ? ((Token) tokenWrapper.delegate.clone()) : null;
+      final Token savedDelegate = tokenWrapper.delegate;
+      tokenWrapper.delegate = new Token();
+      nextToken = incrementToken() ? tokenWrapper.delegate : null;
+      tokenWrapper.delegate = savedDelegate;
     } else {
       assert supportedMethods.hasReusableNext;
-      final Token token = next(tokenWrapper.delegate);
-      if (token == null) return null;
-      tokenWrapper.delegate = token;
-      return (Token) token.clone();
+      nextToken = next(new Token());
     }
+    
+    if (nextToken != null) {
+      Payload p = nextToken.getPayload();
+      if (p != null) {
+        nextToken.setPayload((Payload) p.clone());
+      }
+    }
+    return nextToken;
   }
 
   /**
