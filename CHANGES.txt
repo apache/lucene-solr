@@ -691,6 +691,9 @@ Other Changes
     RussianLowerCaseFilterFactory or RussianLetterTokenizerFactory.
     (Robert Muir via hossman)
 
+48. SOLR-1423: Due to LUCENE-1906, Solr's tokenizer should use Tokenizer.correctOffset() instead of CharStream.correctOffset().
+    (Uwe Schindler via koji)
+
 
 Build
 ----------------------

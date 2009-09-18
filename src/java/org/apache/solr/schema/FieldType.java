@@ -311,7 +311,7 @@ public abstract class FieldType extends FieldProperties {
           if (n<=0) return false;
           String s = toInternal(new String(cbuf,0,n));
           termAtt.setTermBuffer(s);
-          offsetAtt.setOffset(0,n);
+          offsetAtt.setOffset(correctOffset(0),correctOffset(n));
           return true;
         }       
       };

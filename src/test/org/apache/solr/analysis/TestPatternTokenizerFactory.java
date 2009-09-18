@@ -39,9 +39,9 @@ public class TestPatternTokenizerFactory extends BaseTokenTestCase
       // group  pattern        input                    output
       { "-1",   "--",          "aaa--bbb--ccc",         "aaa bbb ccc" },
       { "-1",   ":",           "aaa:bbb:ccc",           "aaa bbb ccc" },
-      { "-1",   "\\p{Space}",  "aaa   bbb \t\tccc  ",   "aaa   bbb   ccc" },
+      { "-1",   "\\p{Space}",  "aaa   bbb \t\tccc  ",   "aaa bbb ccc" },
       { "-1",   ":",           "boo:and:foo",           "boo and foo" },
-      { "-1",   "o",           "boo:and:foo",           "b  :and:f" },
+      { "-1",   "o",           "boo:and:foo",           "b :and:f" },
       { "0",    ":",           "boo:and:foo",           ": :" },
       { "0",    qpattern,      "aaa 'bbb' 'ccc'",       "'bbb' 'ccc'" },
       { "1",    qpattern,      "aaa 'bbb' 'ccc'",       "bbb ccc" }
@@ -60,10 +60,11 @@ public class TestPatternTokenizerFactory extends BaseTokenTestCase
       String out = TestHyphenatedWordsFilter.tsToString( stream );
       System.out.println( test[2] + " ==> " + out );
       
-      assertEquals("pattern: "+test[2], test[3], out );
+      assertEquals("pattern: "+test[1]+" with input: "+test[2], test[3], out );
       
       // Make sure it is the same as if we called 'split'
-      if( "-1".equals( test[0] ) ) {
+      // test disabled, as we remove empty tokens
+      /*if( "-1".equals( test[0] ) ) {
         String[] split = test[2].split( test[1] );
         stream = tokenizer.create( new StringReader( test[2] ) );
         int i=0;
@@ -71,7 +72,7 @@ public class TestPatternTokenizerFactory extends BaseTokenTestCase
         {
           assertEquals( "split: "+test[1] + " "+i, split[i++], new String(t.termBuffer(), 0, t.termLength()) );
         }
-      }
+      }*/
     } 
 	}
 	
@@ -95,6 +96,17 @@ public class TestPatternTokenizerFactory extends BaseTokenTestCase
 
     List<Token> result = getTokens( stream );
     List<Token> expect = tokens( "Günther,1,0,12 Günther,1,13,25 is,1,26,28 here,1,29,33" );
+    assertTokEqualOff( expect, result );
+    
+    charStream.reset();
+    args.put( PatternTokenizerFactory.PATTERN, "Günther" );
+    args.put( PatternTokenizerFactory.GROUP, "0" );
+    tokFactory = new PatternTokenizerFactory();
+    tokFactory.init( args );
+    stream = tokFactory.create( charStream );
+
+    result = getTokens( stream );
+    expect = tokens( "Günther,1,0,12 Günther,1,13,25" );
     assertTokEqualOff( expect, result );
   }
 }
