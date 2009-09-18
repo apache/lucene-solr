@@ -139,5 +139,11 @@ public abstract class BufferedTokenStream extends TokenStream {
     return outQueue;
   }
 
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    inQueue.clear();
+    outQueue.clear();
+  }
 
 } 

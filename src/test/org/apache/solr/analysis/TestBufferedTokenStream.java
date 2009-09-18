@@ -19,7 +19,9 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -71,5 +73,24 @@ public class TestBufferedTokenStream extends BaseTokenTestCase {
     final String actual = tsToString(ts);
     //System.out.println(actual);
     assertEquals(expected, actual);
+  }
+  
+  public void testReset() throws Exception {
+    final String input = "How now A B brown A cow B like A B thing?";
+    Tokenizer tokenizer = new WhitespaceTokenizer(new StringReader(input));
+    TokenStream ts = new AB_AAB_Stream(tokenizer);
+    TermAttribute term = (TermAttribute) ts.addAttribute(TermAttribute.class);
+    assertTrue(ts.incrementToken());
+    assertEquals("How", term.term());
+    assertTrue(ts.incrementToken());
+    assertEquals("now", term.term());
+    assertTrue(ts.incrementToken());
+    assertEquals("A", term.term());
+    // reset back to input, 
+    // if reset() does not work correctly then previous buffered tokens will remain 
+    tokenizer.reset(new StringReader(input));
+    ts.reset();
+    assertTrue(ts.incrementToken());
+    assertEquals("How", term.term());
   }
 }

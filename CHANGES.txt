@@ -367,7 +367,7 @@ Optimizations
 15. SOLR-1150: Load Documents for Highlighting one at a time rather than 
     all at once to avoid OOM with many large Documents. (Siddharth Gargate via Mark Miller)
 
-16. SOLR-1353: Implement and use reusable token streams for analysis. (yonik)
+16. SOLR-1353: Implement and use reusable token streams for analysis. (Robert Muir, yonik)
 
 17. SOLR-1296: Enables setting IndexReader's termInfosIndexDivisor via a new attribute to StandardIndexReaderFactory.  Enables
     setting termIndexInterval to IndexWriter via SolrIndexConfig. (Jason Rutherglen, hossman, gsingers)
