@@ -2684,7 +2684,7 @@ public class IndexWriter {
    * Requests an "optimize" operation on an index, priming the index
    * for the fastest available search. Traditionally this has meant
    * merging all segments into a single segment as is done in the
-   * default merge policy, but individaul merge policies may implement
+   * default merge policy, but individual merge policies may implement
    * optimize in different ways.
    *
    * <p>It is recommended that this method be called upon completion of indexing.  In
