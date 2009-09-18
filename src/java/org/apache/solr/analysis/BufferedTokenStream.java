@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.TokenFilter;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -54,14 +55,13 @@ import java.util.LinkedList;
  *
  * @version $Id$
  */
-public abstract class BufferedTokenStream extends TokenStream {
+public abstract class BufferedTokenStream extends TokenFilter {
   // in the future, might be faster if we implemented as an array based CircularQueue
   private final LinkedList<Token> inQueue = new LinkedList<Token>();
   private final LinkedList<Token> outQueue = new LinkedList<Token>();
-  private final TokenStream input;
 
   public BufferedTokenStream(TokenStream input) {
-    this.input = input;
+    super(input);
   }
 
   /**
