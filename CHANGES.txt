@@ -559,6 +559,13 @@ Bug fixes
     OpenBitSet, due to an inefficiency in how the underlying storage is
     reallocated.  (Nadav Har'El via Mike McCandless)
 
+ * LUCENE-1918: Fixed cases where a ParallelReader would
+   generate exceptions on being passed to
+   IndexWriter.addIndexes(IndexReader[]).  First case was when the
+   ParallelReader was empty.  Second case was when the ParallelReader
+   used to contain documents with TermVectors, but all such documents
+   have been deleted. (Christian Kohlschütter via Mike McCandless)
+
 New features
 
  * LUCENE-1411: Added expert API to open an IndexWriter on a prior

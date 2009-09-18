@@ -472,7 +472,12 @@ public class ParallelReader extends IndexReader {
     private TermEnum termEnum;
 
     public ParallelTermEnum() throws IOException {
-      field = (String)fieldToReader.firstKey();
+      try {
+        field = (String)fieldToReader.firstKey();
+      } catch(NoSuchElementException e) {
+        // No fields, so keep field == null, termEnum == null
+        return;
+      }
       if (field != null)
         termEnum = ((IndexReader)fieldToReader.get(field)).terms();
     }

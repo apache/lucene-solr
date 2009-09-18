@@ -156,11 +156,13 @@ final class TermVectorsWriter {
       }
 
       // 2nd pass: write field pointers to tvd
-      long lastFieldPointer = fieldPointers[0];
-      for (int i=1; i<numFields; i++) {
-        final long fieldPointer = fieldPointers[i];
-        tvd.writeVLong(fieldPointer-lastFieldPointer);
-        lastFieldPointer = fieldPointer;
+      if (numFields > 1) {
+        long lastFieldPointer = fieldPointers[0];
+        for (int i=1; i<numFields; i++) {
+          final long fieldPointer = fieldPointers[i];
+          tvd.writeVLong(fieldPointer-lastFieldPointer);
+          lastFieldPointer = fieldPointer;
+        }
       }
     } else
       tvd.writeVInt(0);
