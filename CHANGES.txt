@@ -61,7 +61,7 @@ error.  See SOLR-1410 for more information.
 
 Versions of Major Components
 ----------------------------
-Apache Lucene 2.9.0-rc4
+Apache Lucene 2.9.0-rc5
 Apache Tika 0.4
 
 Detailed Change List

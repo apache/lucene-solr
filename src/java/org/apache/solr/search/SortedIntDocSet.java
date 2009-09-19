@@ -648,6 +648,12 @@ public class SortedIntDocSet extends DocSetBase {
 
             };
           }
+
+          @Override
+          public boolean isCacheable() {
+            return true;
+          }
+
         };
       }
     };

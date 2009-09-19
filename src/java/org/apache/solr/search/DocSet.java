@@ -288,6 +288,12 @@ abstract class DocSetBase implements DocSet {
               }
             };
           }
+
+          @Override
+          public boolean isCacheable() {
+            return true;
+          }
+
         };
       }
     };
