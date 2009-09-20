@@ -18,8 +18,6 @@
 package org.apache.solr.core;
 
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.component.SpellCheckComponent;
-import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
@@ -166,24 +164,6 @@ public class SolrCoreTest extends AbstractSolrTestCase {
     service.shutdown();
     assertTrue("Running for too long...", service.awaitTermination(60, TimeUnit.SECONDS));
   }
-
-  public void testInfoRegistry() throws Exception {
-    //TEst that SolrInfoMBeans are registered, including SearchComponents
-    SolrCore core = h.getCore();
-
-    Map<String, SolrInfoMBean> infoRegistry = core.getInfoRegistry();
-    assertTrue("infoRegistry Size: " + infoRegistry.size() + " is not greater than: " + 0, infoRegistry.size() > 0);
-    //try out some that we know are in the config
-    SolrInfoMBean bean = infoRegistry.get(SpellCheckComponent.class.getName());
-    assertNotNull("bean not registered", bean);
-    //try a default one
-    bean = infoRegistry.get(QueryComponent.class.getName());
-    assertNotNull("bean not registered", bean);
-    //try a Req Handler, which are stored by name, not clas
-    bean = infoRegistry.get("standard");
-    assertNotNull("bean not registered", bean);
-  }
-
 }
 
 
