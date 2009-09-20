@@ -84,6 +84,20 @@
   <target name="init-forrest-entities">
     <!-- no description, don't advertise -->
 
+
+    <available file="lib/lucene-core-${lucene_version}.jar"
+               property="lucene-version-ok-m2deploy-wont-fail" />
+    <fail unless="lucene-version-ok-m2deploy-wont-fail">
+      lib/lucene-core-${lucene_version}.jar Missing
+
+      lib/lucene-core-${lucene_version}.jar does not exist.
+      This will cause problems with m2-deploy later, so fail fast now.
+      
+      Probably cause: lucene jars were upgraded w/o modifying the
+      'lucene_version' property in common-build.xml
+    </fail>
+
+    
     <mkdir dir="${dest}" />
   	
   	<!-- A folder containing the expanded war file -->
