@@ -221,10 +221,6 @@ API Changes
  * LUCENE-1427: DocIdSet.iterator() is now allowed to throw
    IOException.  (Paul Elschot, Mike McCandless)
 
- * LUCENE-1451: Add public constructors to FSDirectory and subclasses,
-   and deprecate FSDirectory.getDirectory().  FSDirectory instances
-   are not required to be singletons per path. (yonik)
-
  * LUCENE-1422, LUCENE-1693: New TokenStream API that uses a new class called 
    AttributeSource instead of the now deprecated Token class. All attributes
    that the Token class had have been moved into separate classes:
@@ -286,10 +282,13 @@ API Changes
  * LUCENE-1636: Make TokenFilter.input final so it's set only
     once. (Wouter Heijke, Uwe Schindler via Mike McCandless).
 
- * LUCENE-1658: Renamed FSDirectory to SimpleFSDirectory (but left an
-    FSDirectory base class).  Added an FSDirectory.open static method
-    to pick a good default FSDirectory implementation given the OS.
-    (Michael McCandless, Uwe Schindler)
+ * LUCENE-1658, LUCENE-1451: Renamed FSDirectory to SimpleFSDirectory
+    (but left an FSDirectory base class).  Added an FSDirectory.open
+    static method to pick a good default FSDirectory implementation
+    given the OS. FSDirectories should now be instantiated using
+    FSDirectory.open or with public constructors rather than
+    FSDirectory.getDirectory(), which has been deprecated.
+    (Michael McCandless, Uwe Schindler, yonik)
 
  * LUCENE-1665: Deprecate SortField.AUTO, to be removed in 3.0.
     Instead, when sorting by field, the application should explicitly
