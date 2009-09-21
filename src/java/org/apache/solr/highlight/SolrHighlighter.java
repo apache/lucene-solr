@@ -46,6 +46,7 @@ public abstract class SolrHighlighter
   // Thread safe registry
   protected final Map<String,SolrFragmenter> fragmenters =
     Collections.synchronizedMap( new HashMap<String, SolrFragmenter>() );
+  @Deprecated
   public abstract void initalize( SolrConfig config );
 
 

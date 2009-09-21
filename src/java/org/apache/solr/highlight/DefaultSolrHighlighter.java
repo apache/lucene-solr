@@ -43,52 +43,66 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 /**
  * 
  * @since solr 1.3
  */
-public class DefaultSolrHighlighter extends SolrHighlighter
+public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInfoInitialized
 {
 
-  public void initalize( SolrConfig config) {
+  private SolrCore solrCore;
+
+  public DefaultSolrHighlighter() {
+  }
+
+  public DefaultSolrHighlighter(SolrCore solrCore) {
+    this.solrCore = solrCore;
+  }
+
+  public void init(PluginInfo info) {
     formatters.clear();
     fragmenters.clear();
 
+    List<PluginInfo> fragmenterInfo = new ArrayList<PluginInfo>();
+    List<PluginInfo> formatterrInfo = new ArrayList<PluginInfo>();
     // Load the fragmenters
-    ResourceLoader loader= config.getResourceLoader();
-    SolrFragmenter frag = null;
-    for (PluginInfo info : config.getPluginInfos(SolrFragmenter.class.getName())) {
-      SolrFragmenter fragmenter = (SolrFragmenter) loader.newInstance(info.className);
-      fragmenter.init(info.initArgs);
-      if(info.isDefault()) frag = fragmenter;
-      fragmenters.put(info.name,fragmenter);
+    for (PluginInfo child : info.children) {
+      if("fragmenter".equals(child.type)) fragmenterInfo.add(child);
+      if("formatter".equals(child.type)) formatterrInfo.add(child);
     }
-
-    if( frag == null ) {
-      frag = new GapFragmenter();
-    }
-    fragmenters.put( "", frag );
-    fragmenters.put( null, frag );
+    SolrFragmenter frag = solrCore.initPlugins(fragmenterInfo, fragmenters,SolrFragmenter.class,null);
+    if (frag == null) frag = new GapFragmenter();
+    fragmenters.put("", frag);
+    fragmenters.put(null, frag);
     // Load the formatters
-    SolrFormatter fmt = null;
-    for (PluginInfo info : config.getPluginInfos(SolrFormatter.class.getName())) {
-      SolrFormatter formatter = (SolrFormatter) loader.newInstance(info.className);
-      formatter.init(info.initArgs);
-      formatters.put(info.name, formatter);
-      if(info.isDefault()) fmt = formatter;
-    }
-    if( fmt == null ) {
-      fmt = new HtmlFormatter();
-    }
-    formatters.put( "", fmt );
-    formatters.put( null, fmt );
+    SolrFormatter fmt = solrCore.initPlugins(formatterrInfo, formatters,SolrFormatter.class,null);
+    if (fmt == null) fmt = new HtmlFormatter();
+    formatters.put("", fmt);
+    formatters.put(null, fmt);
+    initialized = true;
+
+  }
+  private boolean initialized = false;
+  @Deprecated
+  public void initalize( SolrConfig config) {
+    if (initialized) return;
+    SolrFragmenter frag = new GapFragmenter();
+    fragmenters.put("", frag);
+    fragmenters.put(null, frag);
+
+    SolrFormatter fmt = new HtmlFormatter();
+    formatters.put("", fmt);
+    formatters.put(null, fmt);    
+
 
   }
 

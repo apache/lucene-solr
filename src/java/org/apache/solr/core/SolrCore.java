@@ -551,10 +551,7 @@ public final class SolrCore implements SolrInfoMBean {
     reqHandlers = new RequestHandlers(this);
     reqHandlers.initHandlersFromConfig( solrConfig );
 
-    String highLightClass = solrConfig.getHighLghtingClass();
-  
-    highlighter = createHighlighter(highLightClass == null? DefaultSolrHighlighter.class.getName() : highLightClass);
-    highlighter.initalize( solrConfig );
+    highlighter = initHighLighter();
 
     // Handle things that should eventually go away
     initDeprecatedSupport();
@@ -594,6 +591,19 @@ public final class SolrCore implements SolrInfoMBean {
     }
 
     infoRegistry.put("core", this);
+  }
+
+  private SolrHighlighter initHighLighter() {
+    SolrHighlighter highlighter = null;
+    PluginInfo pluginInfo = solrConfig.getPluginInfo(SolrHighlighter.class.getName());
+    if(pluginInfo != null){
+      highlighter = createInitInstance(pluginInfo,SolrHighlighter.class,null, DefaultSolrHighlighter.class.getName());
+      highlighter.initalize(solrConfig);
+    } else{
+      highlighter = new DefaultSolrHighlighter();
+      highlighter.initalize(solrConfig);
+    }
+    return highlighter;
   }
 
 
@@ -1457,8 +1467,12 @@ public final class SolrCore implements SolrInfoMBean {
   }
 
   public <T> T initPlugins(Map<String ,T> registry, Class<T> type, String defClassName){
+    return initPlugins(solrConfig.getPluginInfos(type.getName()), registry, type, defClassName);
+  }
+
+  public <T> T initPlugins(List<PluginInfo> pluginInfos, Map<String, T> registry, Class<T> type, String defClassName) {
     T def = null;
-    for (PluginInfo info : solrConfig.getPluginInfos(type.getName())) {
+    for (PluginInfo info : pluginInfos) {
       T o = createInitInstance(info,type, type.getSimpleName(), defClassName);
       if (o instanceof PluginInfoInitialized) {
         ((PluginInfoInitialized) o).init(info);

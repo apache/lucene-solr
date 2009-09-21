@@ -18,8 +18,6 @@
 package org.apache.solr.core;
 
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.DOMUtil;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -34,8 +32,7 @@ import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.spelling.QueryConverter;
-import org.apache.solr.highlight.SolrFormatter;
-import org.apache.solr.highlight.SolrFragmenter;
+import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.index.IndexDeletionPolicy;
 
@@ -48,8 +45,6 @@ import org.xml.sax.SAXException;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathExpressionException;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -193,23 +188,13 @@ public class SolrConfig extends Config {
      loadPluginInfo(IndexDeletionPolicy.class,"mainIndex/deletionPolicy",false, true);
      loadPluginInfo(IndexReaderFactory.class,"indexReaderFactory",false, true);
      loadPluginInfo(UpdateRequestProcessorChain.class,"updateRequestProcessorChain",false, false);
+     loadPluginInfo(SolrHighlighter.class,"highlighting",false, false);
      updateHandlerInfo = loadUpdatehandlerInfo();
-     loadHighLightingPlugins();
 
     Config.log.info("Loaded SolrConfig: " + name);
     
     // TODO -- at solr 2.0. this should go away
     config = this;
-  }
-
-  public String getHighLghtingClass() {
-    return highLghtingClass;
-  }
-
-  protected void loadHighLightingPlugins() {
-    highLghtingClass =  get("highlighting/@class",null);
-    loadPluginInfo(SolrFormatter.class,"highlighting/formatter",true, true);
-    loadPluginInfo(SolrFragmenter.class,"highlighting/fragmenter",true, true);
   }
 
   protected UpdateHandlerInfo loadUpdatehandlerInfo() {
@@ -255,7 +240,6 @@ public class SolrConfig extends Config {
   public final SolrIndexConfig mainIndexConfig;
 
   protected UpdateHandlerInfo updateHandlerInfo ;
-  protected String highLghtingClass;
 
   private Map<String, List<PluginInfo>> pluginStore = new LinkedHashMap<String, List<PluginInfo>>();
 
