@@ -41,6 +41,8 @@
     catchall "text" field, and use that for searching.
   - For maximum indexing performance, use the StreamingUpdateSolrServer
     java client.
+  - Remember to run the JVM in server mode, and use a higher logging level
+    that avoids logging every request
 -->
 
 <schema name="example" version="1.2">
