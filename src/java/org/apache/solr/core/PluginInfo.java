@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.DOMUtil;
 import org.w3c.dom.Node;
-import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
 
 import javax.xml.xpath.XPathConstants;
@@ -53,13 +52,7 @@ public class PluginInfo {
     name = DOMUtil.getAttr(node, "name", requireName ? err : null);
     className = DOMUtil.getAttr(node, "class", requireClass ? err : null);
     initArgs = DOMUtil.childNodesToNamedList(node);
-    Map<String, String> m = new HashMap<String, String>();
-    NamedNodeMap nnm = node.getAttributes();
-    for (int i = 0; i < nnm.getLength(); i++) {
-      String name = nnm.item(i).getNodeName();
-      m.put(name, nnm.item(i).getNodeValue());
-    }
-    attributes = unmodifiableMap(m);
+    attributes = unmodifiableMap(DOMUtil.toMap(node.getAttributes()));
     children = loadSubPlugins(node);
   }
 
