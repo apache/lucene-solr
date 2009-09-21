@@ -38,13 +38,13 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain( "standard" );
     
     // Make sure it got 3 items and configured the Log chain ok
-    assertEquals( 3, chained.chain.length );
-    LogUpdateProcessorFactory log = (LogUpdateProcessorFactory)chained.chain[0];
+    assertEquals( 3, chained.getFactories().length );
+    LogUpdateProcessorFactory log = (LogUpdateProcessorFactory)chained.getFactories()[0];
     assertEquals( 100, log.maxNumToLog );
     
     
     UpdateRequestProcessorChain custom = core.getUpdateProcessingChain( null );
-    CustomUpdateRequestProcessorFactory link = (CustomUpdateRequestProcessorFactory) custom.chain[0];
+    CustomUpdateRequestProcessorFactory link = (CustomUpdateRequestProcessorFactory) custom.getFactories()[0];
     
     assertEquals( custom, core.getUpdateProcessingChain( "" ) );
     assertEquals( custom, core.getUpdateProcessingChain( "custom" ) );

@@ -313,7 +313,9 @@ New Features
     to allow more efficient bulk queries (those that retrieve many or all
     documents).  (Brian Whitman via yonik)
 
-78. SOLR-1321: Add better support for efficient wildcard handling (Andrzej Bialecki, Robert Muir, gsingers)    
+78. SOLR-1321: Add better support for efficient wildcard handling (Andrzej Bialecki, Robert Muir, gsingers)
+
+79. SOLR-1326 : New interface PluginInfoInitialized for all types of plugin (noble)
 
 Optimizations
 ----------------------
@@ -1583,7 +1585,7 @@ New Features
 36. SOLR-386: Abstracted SolrHighlighter and moved existing implementation
     to DefaultSolrHighlighter.  Adjusted SolrCore and solrconfig.xml so 
     that highlighter is configurable via a class attribute.  Allows users 
-    to use their own highlighter implementation. (Tricia Williams via klaas) 
+    to use their own highlighter implementation. (Tricia Williams via klaas)
         
 Changes in runtime behavior
  1. Highlighting using DisMax will only pick up terms from the main 

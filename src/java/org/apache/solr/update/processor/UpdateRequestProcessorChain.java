@@ -19,6 +19,11 @@ package org.apache.solr.update.processor;
 
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
+
+import java.util.ArrayList;
 
 /**
  * Manages a chain of UpdateRequestProcessorFactories.
@@ -39,12 +44,32 @@ import org.apache.solr.request.SolrQueryResponse;
  * @see UpdateRequestProcessorFactory
  * @since solr 1.3
  */
-public final class UpdateRequestProcessorChain 
+public final class UpdateRequestProcessorChain implements PluginInfoInitialized
 {
-  final UpdateRequestProcessorFactory[] chain;
-  
-  public UpdateRequestProcessorChain( UpdateRequestProcessorFactory[] chain ) {
+  private UpdateRequestProcessorFactory[] chain;
+  private final SolrCore solrCore;
+
+  public UpdateRequestProcessorChain(SolrCore solrCore) {
+    this.solrCore = solrCore;
+  }
+
+  public void init(PluginInfo info) {
+    ArrayList<UpdateRequestProcessorFactory> list = new ArrayList<UpdateRequestProcessorFactory>();
+    for (PluginInfo child : info.children) {
+      if("processor".equals(child.type)){
+        UpdateRequestProcessorFactory factory = solrCore.createInitInstance(child, UpdateRequestProcessorFactory.class, null,null);
+        list.add(factory);
+      }
+    }
+    if(list.isEmpty()){
+      throw new RuntimeException( "updateRequestProcessorChain require at least one processor");
+    }
+    chain = list.toArray(new UpdateRequestProcessorFactory[list.size()]); 
+  }
+
+  public UpdateRequestProcessorChain( UpdateRequestProcessorFactory[] chain , SolrCore solrCore) {
     this.chain = chain;
+    this.solrCore =  solrCore;
   }
 
   public UpdateRequestProcessor createProcessor(SolrQueryRequest req, SolrQueryResponse rsp) 

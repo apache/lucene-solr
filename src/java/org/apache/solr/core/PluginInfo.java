@@ -20,28 +20,31 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.DOMUtil;
 import org.w3c.dom.Node;
 import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.NodeList;
 
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 import java.util.*;
+import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableMap;
 
 /**
  * An Object which represents a Plugin of any type 
  * @version $Id$
  */
 public class PluginInfo {
-  public final String startup, name, className, type;
-  public final boolean isDefault;
+  public final String name, className, type;
   public final NamedList initArgs;
   public final Map<String, String> attributes;
+  public final List<PluginInfo> children;
 
-  public PluginInfo(String type, String startup, String name, String className,
-                    boolean isdefault, NamedList initArgs, Map<String, String> otherAttrs) {
+  public PluginInfo(String type, Map<String, String> attrs ,NamedList initArgs, List<PluginInfo> children) {
     this.type = type;
-    this.startup = startup;
-    this.name = name;
-    this.className = className;
-    this.isDefault = isdefault;
+    this.name = attrs.get("name");
+    this.className = attrs.get("class");
     this.initArgs = initArgs;
-    attributes = otherAttrs == null ? Collections.<String, String>emptyMap() : otherAttrs;
+    attributes = attrs == null ? Collections.<String, String>emptyMap() : unmodifiableMap(attrs);
+    this.children = children == null ? Collections.<PluginInfo>emptyList(): unmodifiableList(children);
   }
 
 
@@ -49,8 +52,6 @@ public class PluginInfo {
     type = node.getNodeName();
     name = DOMUtil.getAttr(node, "name", requireName ? err : null);
     className = DOMUtil.getAttr(node, "class", requireClass ? err : null);
-    isDefault = Boolean.parseBoolean(DOMUtil.getAttr(node, "default", null));
-    startup = DOMUtil.getAttr(node, "startup", null);
     initArgs = DOMUtil.childNodesToNamedList(node);
     Map<String, String> m = new HashMap<String, String>();
     NamedNodeMap nnm = node.getAttributes();
@@ -58,17 +59,32 @@ public class PluginInfo {
       String name = nnm.item(i).getNodeName();
       m.put(name, nnm.item(i).getNodeValue());
     }
-    attributes = Collections.unmodifiableMap(m);
+    attributes = unmodifiableMap(m);
+    children = loadSubPlugins(node);
+  }
 
+  private List<PluginInfo> loadSubPlugins(Node node) {
+    List<PluginInfo> children = null;
+    try {
+      //if there is another sub tag with a 'class' attribute that has to be another plugin
+      NodeList nodes = (NodeList) Config.xpathFactory.newXPath().evaluate("*[@class]",node, XPathConstants.NODESET);
+      if(nodes.getLength() > 0){
+        children = new ArrayList<PluginInfo>(nodes.getLength());
+        for (int i=0; i<nodes.getLength(); i++) {
+          PluginInfo pluginInfo = new PluginInfo(nodes.item(i), null, false, false);
+          if (pluginInfo.isEnabled()) children.add(pluginInfo);
+        }
+      }
+    } catch (XPathExpressionException e) { }
+    return children == null ? Collections.<PluginInfo>emptyList(): unmodifiableList(children);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder("{");
+    if (type != null) sb.append("type = " + type + ",");
     if (name != null) sb.append("name = " + name + ",");
     if (className != null) sb.append("class = " + className + ",");
-    if (isDefault) sb.append("default = " + isDefault + ",");
-    if (startup != null) sb.append("startup = " + startup + ",");
     if (initArgs.size() > 0) sb.append("args = " + initArgs);
     sb.append("}");
     return sb.toString();
@@ -79,4 +95,7 @@ public class PluginInfo {
     return enable == null || Boolean.parseBoolean(enable); 
   }
 
+  public boolean isDefault() {
+    return Boolean.parseBoolean(attributes.get("default"));
+  }
 }

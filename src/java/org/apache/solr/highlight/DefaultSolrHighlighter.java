@@ -67,7 +67,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter
     for (PluginInfo info : config.getPluginInfos(SolrFragmenter.class.getName())) {
       SolrFragmenter fragmenter = (SolrFragmenter) loader.newInstance(info.className);
       fragmenter.init(info.initArgs);
-      if(info.isDefault) frag = fragmenter;
+      if(info.isDefault()) frag = fragmenter;
       fragmenters.put(info.name,fragmenter);
     }
 
@@ -82,7 +82,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter
       SolrFormatter formatter = (SolrFormatter) loader.newInstance(info.className);
       formatter.init(info.initArgs);
       formatters.put(info.name, formatter);
-      if(info.isDefault) fmt = formatter;
+      if(info.isDefault()) fmt = formatter;
     }
     if( fmt == null ) {
       fmt = new HtmlFormatter();

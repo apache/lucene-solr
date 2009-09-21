@@ -47,6 +47,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.commons.io.IOUtils;
 import org.xml.sax.SAXException;
 
@@ -428,6 +429,16 @@ public final class SolrCore implements SolrInfoMBean {
     }
   }
 
+  public <T extends Object> T createInitInstance(PluginInfo info,Class<T> cast, String msg, String defClassName){
+    T o = createInstance(info.className == null ? defClassName : info.className,cast, msg);
+    if (o instanceof PluginInfoInitialized) {
+      ((PluginInfoInitialized) o).init(info);
+    } else if (o instanceof NamedListInitializedPlugin) {
+      ((NamedListInitializedPlugin) o).init(info.initArgs);
+    }
+    return o;
+  }
+
   public SolrEventListener createEventListener(String className) {
     return createInstance(className, SolrEventListener.class, "Event Listener");
   }
@@ -590,40 +601,18 @@ public final class SolrCore implements SolrInfoMBean {
    * Load the request processors
    */
    private Map<String,UpdateRequestProcessorChain> loadUpdateProcessorChains() {
-    final Map<String, UpdateRequestProcessorChain> map = new HashMap<String, UpdateRequestProcessorChain>();
-    UpdateRequestProcessorChain def = null;
-    Map<String, List<PluginInfo>> infos = solrConfig.getUpdateProcessorChainInfo();
-    if (!infos.isEmpty()) {
-      boolean defaultProcessed = false;
-      List<PluginInfo> defProcessorChainInfo = infos.get(null);// this is the default one
-      for (Map.Entry<String, List<PluginInfo>> e : solrConfig.getUpdateProcessorChainInfo().entrySet()) {
-        List<PluginInfo> processorsInfo = e.getValue();
-        if (processorsInfo == defProcessorChainInfo && defaultProcessed) {
-          map.put(e.getKey(), def);
-          continue;
-        }
-        UpdateRequestProcessorFactory[] chain = new UpdateRequestProcessorFactory[processorsInfo.size()];
-        for (int i = 0; i < processorsInfo.size(); i++) {
-          PluginInfo info = processorsInfo.get(i);
-          chain[i] = createInstance(info.className, UpdateRequestProcessorFactory.class, null);
-          chain[i].init(info.initArgs);
-        }
-        UpdateRequestProcessorChain processorChain = new UpdateRequestProcessorChain(chain);
-        map.put(e.getKey(), processorChain);
-        if (e.getKey() == null || processorsInfo == defProcessorChainInfo) { //this is the default one
-          defaultProcessed = true;
-          def = processorChain;
-        }
-      }
-    }
-
+    Map<String, UpdateRequestProcessorChain> map = new HashMap<String, UpdateRequestProcessorChain>();
+    UpdateRequestProcessorChain def = initPlugins(map,UpdateRequestProcessorChain.class, UpdateRequestProcessorChain.class.getName());
+    if(def == null){
+      def = map.get(null);
+    } 
     if (def == null) {
       // construct the default chain
       UpdateRequestProcessorFactory[] factories = new UpdateRequestProcessorFactory[]{
               new RunUpdateProcessorFactory(),
               new LogUpdateProcessorFactory()
       };
-      def = new UpdateRequestProcessorChain(factories);
+      def = new UpdateRequestProcessorChain(factories, this);
     }
     map.put(null, def);
     map.put("", def);
@@ -1467,19 +1456,25 @@ public final class SolrCore implements SolrInfoMBean {
     }
   }
 
-  public <T> T initPlugins(Map<String ,T> registry, Class<T> type){
+  public <T> T initPlugins(Map<String ,T> registry, Class<T> type, String defClassName){
     T def = null;
     for (PluginInfo info : solrConfig.getPluginInfos(type.getName())) {
-      T o = createInstance(info.className,type, type.getSimpleName());
-      if (o instanceof NamedListInitializedPlugin) {
+      T o = createInitInstance(info,type, type.getSimpleName(), defClassName);
+      if (o instanceof PluginInfoInitialized) {
+        ((PluginInfoInitialized) o).init(info);
+      }else if (o instanceof NamedListInitializedPlugin) {
         ((NamedListInitializedPlugin) o).init(info.initArgs);
       }
       registry.put(info.name, o);
-      if(info.isDefault){
+      if(info.isDefault()){
         def = o;
-      } 
+      }
     }
     return def;
+  }
+
+  public <T> T initPlugins(Map<String, T> registry, Class<T> type) {
+    return initPlugins(registry, type, null);
   }
 
   public ValueSourceParser getValueSourceParser(String parserName) {

@@ -32,6 +32,7 @@ import org.apache.solr.search.FastLRUCache;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.update.SolrIndexConfig;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.spelling.QueryConverter;
 import org.apache.solr.highlight.SolrFormatter;
 import org.apache.solr.highlight.SolrFragmenter;
@@ -191,7 +192,7 @@ public class SolrConfig extends Config {
      loadPluginInfo(DirectoryFactory.class,"directoryFactory",false, true);
      loadPluginInfo(IndexDeletionPolicy.class,"mainIndex/deletionPolicy",false, true);
      loadPluginInfo(IndexReaderFactory.class,"indexReaderFactory",false, true);
-     updateProcessorChainInfo = loadUpdateProcessorInfo();
+     loadPluginInfo(UpdateRequestProcessorChain.class,"updateRequestProcessorChain",false, false);
      updateHandlerInfo = loadUpdatehandlerInfo();
      loadHighLightingPlugins();
 
@@ -216,39 +217,6 @@ public class SolrConfig extends Config {
             getInt("updateHandler/autoCommit/maxDocs",-1),
             getInt("updateHandler/autoCommit/maxTime",-1),
             getInt("updateHandler/commitIntervalLowerBound",-1));
-  }
-
-  protected Map<String, List<PluginInfo>> loadUpdateProcessorInfo() {
-    HashMap<String, List<PluginInfo>> chains = new HashMap<String, List<PluginInfo>>();
-    NodeList nodes = (NodeList) evaluate("updateRequestProcessorChain", XPathConstants.NODESET);
-    if (nodes != null) {
-      boolean requireName = nodes.getLength() > 1;
-      for (int i = 0; i < nodes.getLength(); i++) {
-        Node node = nodes.item(i);
-        String name       = DOMUtil.getAttr(node,"name", requireName ? "[solrconfig.xml] updateRequestProcessorChain":null);
-        boolean isDefault = "true".equals( DOMUtil.getAttr(node,"default", null ) );
-        XPath xpath = getXPath();
-        try {
-          NodeList nl = (NodeList) xpath.evaluate("processor",node, XPathConstants.NODESET);
-          if((nl.getLength() <1)) {
-            throw new RuntimeException( "updateRequestProcessorChain require at least one processor");
-          }
-          ArrayList<PluginInfo> result = new ArrayList<PluginInfo>();
-          for (int j=0; j<nl.getLength(); j++) {
-            PluginInfo pluginInfo = new PluginInfo(nl.item(j), "[solrconfig.xml] processor", false, true);
-            if(pluginInfo.isEnabled()) result.add(pluginInfo);
-          }
-          chains.put(name,result);
-          if(isDefault || nodes.getLength() == 1) chains.put(null,result);
-        } catch (XPathExpressionException e) {
-          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error reading processors",e,false);
-        }
-      }
-    }
-
-    return chains.isEmpty() ?
-            Collections.<String, List<PluginInfo>>emptyMap():
-            Collections.unmodifiableMap(chains);
   }
 
   private void loadPluginInfo(Class clazz, String tag, boolean requireName, boolean requireClass) {
@@ -286,11 +254,6 @@ public class SolrConfig extends Config {
   public final SolrIndexConfig defaultIndexConfig;
   public final SolrIndexConfig mainIndexConfig;
 
-//  protected PluginInfo deletionPolicyInfo;
-//  protected PluginInfo indexReaderFactoryInfo;
-
-//  protected PluginInfo directoryfactoryInfo;
-  protected Map<String ,List<PluginInfo>> updateProcessorChainInfo ;
   protected UpdateHandlerInfo updateHandlerInfo ;
   protected String highLghtingClass;
 
@@ -451,7 +414,7 @@ public class SolrConfig extends Config {
     } 
   }
 
-  public Map<String, List<PluginInfo>> getUpdateProcessorChainInfo() { return updateProcessorChainInfo; }
+//  public Map<String, List<PluginInfo>> getUpdateProcessorChainInfo() { return updateProcessorChainInfo; }
 
   public UpdateHandlerInfo getUpdateHandlerInfo() { return updateHandlerInfo; }
 

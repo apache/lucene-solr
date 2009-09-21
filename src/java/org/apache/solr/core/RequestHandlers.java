@@ -24,6 +24,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -139,23 +140,28 @@ final class RequestHandlers {
     for (PluginInfo info : config.getPluginInfos(SolrRequestHandler.class.getName())) {
       try {
         SolrRequestHandler requestHandler;
-        if( info.startup != null ) {
-          if( "lazy".equals(info.startup ) ) {
+        String startup = info.attributes.get("startup") ;
+        if( startup != null ) {
+          if( "lazy".equals(startup) ) {
             log.info("adding lazy requestHandler: " + info.className);
             requestHandler = new LazyRequestHandlerWrapper( core, info.className, info.initArgs );
           } else {
-            throw new Exception( "Unknown startup value: '"+info.startup+"' for: "+info.className );
+            throw new Exception( "Unknown startup value: '"+startup+"' for: "+info.className );
           }
         } else {
           requestHandler = core.createRequestHandler(info.className);
         }
         handlers.put(info,requestHandler);
-        requestHandler.init(info.initArgs);
+        if (requestHandler instanceof PluginInfoInitialized) {
+          ((PluginInfoInitialized) requestHandler).init(info);
+        } else{
+          requestHandler.init(info.initArgs);
+        }
         SolrRequestHandler old = register(info.name, requestHandler);
         if(old != null) {
           log.warn("Multiple requestHandler registered to the same name: " + info.name + " ignoring: " + old.getClass().getName());
         }
-        if(info.isDefault){
+        if(info.isDefault()){
           old = register("",requestHandler);
           if(old != null)
             log.warn("Multiple default requestHandler registered" + " ignoring: " + old.getClass().getName()); 
