@@ -43,7 +43,7 @@ public class PluginInfo {
     this.name = attrs.get("name");
     this.className = attrs.get("class");
     this.initArgs = initArgs;
-    attributes = attrs == null ? Collections.<String, String>emptyMap() : unmodifiableMap(attrs);
+    attributes = unmodifiableMap(attrs);
     this.children = children == null ? Collections.<PluginInfo>emptyList(): unmodifiableList(children);
   }
 
