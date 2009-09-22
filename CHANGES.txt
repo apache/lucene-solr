@@ -321,6 +321,11 @@ New Features
 
 80. SOLR-1447 : Simple property injection. <mergePolicy> & <mergeSceduler> syntaxes are deprecated ( Jason rutherglen noble)
 
+82. SOLR-908 : CommonGramsFilterFactory/CommonGramsQueryFilterFactory for
+    speeding up phrase queries containing common words by indexing
+    n-grams and using them at query time. 
+    (Tom Burton-West, Jason Rutherglen via yonik)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the
