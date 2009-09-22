@@ -51,7 +51,7 @@ public class StrField extends CompressableField {
   }
 
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    return super.getValueSource(field, parser);
+    return new StrFieldSource(field.getName());
   }
 }
 

@@ -493,6 +493,21 @@ public class SolrIndexReader extends FilterIndexReader {
   public void undeleteAll() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     in.undeleteAll();
   }
+
+  @Override
+  public Object getFieldCacheKey() {
+    return in.getFieldCacheKey();
+  }
+
+  @Override
+  public boolean getDisableFakeNorms() {
+    return in.getDisableFakeNorms();
+  }
+
+  @Override
+  public void setDisableFakeNorms(boolean disableFakeNorms) {
+    in.setDisableFakeNorms(disableFakeNorms);
+  }
 }
 
 
