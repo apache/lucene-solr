@@ -591,6 +591,14 @@ public final class SolrCore implements SolrInfoMBean {
     }
 
     infoRegistry.put("core", this);
+    
+    // register any SolrInfoMBeans SolrResourceLoader initialized
+    //
+    // this must happen after the latch is released, because a JMX server impl may
+    // choose to block on registering until properties can be fetched from an MBean,
+    // and a SolrCoreAware MBean may have properties that depend on getting a Searcher
+    // from the core.
+    resourceLoader.inform(infoRegistry);
   }
 
   private SolrHighlighter initHighLighter() {
@@ -829,7 +837,11 @@ public final class SolrCore implements SolrInfoMBean {
   }
   private <T> void addIfNotPresent(Map<String ,T> registry, String name, Class<? extends  T> c){
     if(!registry.containsKey(name)){
-      registry.put(name, (T) resourceLoader.newInstance(c.getName()));
+      T searchComp = (T) resourceLoader.newInstance(c.getName());
+      registry.put(name, searchComp);
+      if (searchComp instanceof SolrInfoMBean){
+        infoRegistry.put(((SolrInfoMBean)searchComp).getName(), (SolrInfoMBean)searchComp);
+      }
     }
   }
   

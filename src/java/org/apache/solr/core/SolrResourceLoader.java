@@ -68,6 +68,7 @@ public class SolrResourceLoader implements ResourceLoader
   private String dataDir;
   
   private final List<SolrCoreAware> waitingForCore = new ArrayList<SolrCoreAware>();
+  private final List<SolrInfoMBean> infoMBeans = new ArrayList<SolrInfoMBean>();
   private final List<ResourceLoaderAware> waitingForResources = new ArrayList<ResourceLoaderAware>();
   private static final Charset UTF_8 = Charset.forName("UTF-8");
 
@@ -345,6 +346,10 @@ public class SolrResourceLoader implements ResourceLoader
       assertAwareCompatibility( ResourceLoaderAware.class, obj );
       waitingForResources.add( (ResourceLoaderAware)obj );
     }
+    if (obj instanceof SolrInfoMBean){
+      //TODO: Assert here?
+      infoMBeans.add((SolrInfoMBean) obj);
+    }
     return obj;
   }
 
@@ -401,6 +406,10 @@ public class SolrResourceLoader implements ResourceLoader
       assertAwareCompatibility( ResourceLoaderAware.class, obj );
       waitingForResources.add( (ResourceLoaderAware)obj );
     }
+    if (obj instanceof SolrInfoMBean){
+      //TODO: Assert here?
+      infoMBeans.add((SolrInfoMBean) obj);
+    }
     return obj;
   }
 
@@ -426,6 +435,16 @@ public class SolrResourceLoader implements ResourceLoader
       aware.inform( loader );
     }
     waitingForResources.clear();
+  }
+
+  /**
+   * Register any {@link org.apache.solr.core.SolrInfoMBean}s
+   * @param infoRegistry The Info Registry
+   */
+  public void inform(Map<String, SolrInfoMBean> infoRegistry) {
+    for (SolrInfoMBean bean : infoMBeans) {
+      infoRegistry.put(bean.getName(), bean);
+    }
   }
   /**
    * Determines the solrhome from the environment.
@@ -534,5 +553,6 @@ public class SolrResourceLoader implements ResourceLoader
     }
     throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, builder.toString() );
   }
+
 
 }
