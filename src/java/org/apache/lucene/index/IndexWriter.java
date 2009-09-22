@@ -385,7 +385,7 @@ public class IndexWriter {
   private volatile boolean poolReaders;
   
   /**
-   * Expert: returns a readonly reader containing all
+   * Returns a readonly reader containing all
    * current updates.  Flush is called automatically.  This
    * provides "near real-time" searching, in that changes
    * made during an IndexWriter session can be made
@@ -395,7 +395,7 @@ public class IndexWriter {
    * guarantee on how quickly you can get a new reader after
    * making changes with IndexWriter.  You'll have to
    * experiment in your situation to determine if it's
-   * faster enough.  As this is a new and experimental
+   * fast enough.  As this is a new and experimental
    * feature, please report back on your findings so we can
    * learn, improve and iterate.</p>
    *
@@ -410,10 +410,11 @@ public class IndexWriter {
    * deletes, etc.  This means additional resources (RAM,
    * file descriptors, CPU time) will be consumed.</p>
    *
-   * <p>For lower latency on reopening a reader, you may
-   * want to call {@link #setMergedSegmentWarmer} to
+   * <p>For lower latency on reopening a reader, you should
+   * call {@link #setMergedSegmentWarmer} to
    * pre-warm a newly merged segment before it's committed
-   * to the index.</p>
+   * to the index.  This is important for minimizing
+   * index-to-search delay after a large merge.  </p>
    *
    * <p>If an addIndexes* call is running in another thread,
    * then this reader will only search those segments from
