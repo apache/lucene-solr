@@ -499,8 +499,8 @@ public class SolrPluginUtils {
    * Like <code>parseFieldBoosts(String)</code>, but parses all the strings
    * in the provided array (which may be null).
    *
-   * @param fieldLists an array of Strings eg. <code>{"fieldOne^2.3", "fieldTwo"}</code>
-   * @return Map of fieldOne =&gt; 2.3, fieldThree =&gt; -0.4
+   * @param fieldLists an array of Strings eg. <code>{"fieldOne^2.3", "fieldTwo", fieldThree^-0.4}</code>
+   * @return Map of fieldOne =&gt; 2.3, fieldTwo =&gt; null, fieldThree =&gt; -0.4
    */
   public static Map<String,Float> parseFieldBoosts(String[] fieldLists) {
     if (null == fieldLists || 0 == fieldLists.length) {
