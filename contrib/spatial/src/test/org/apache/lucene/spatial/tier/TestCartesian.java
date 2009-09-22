@@ -44,7 +44,9 @@ import org.apache.lucene.spatial.tier.projections.IProjector;
 import org.apache.lucene.spatial.tier.projections.SinusoidalProjector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-
+import org.apache.lucene.spatial.geometry.LatLng;
+import org.apache.lucene.spatial.geometry.FloatLatLng;
+import org.apache.lucene.spatial.geometry.DistanceUnits;
 
 /**
  *
@@ -138,9 +140,203 @@ public class TestCartesian extends TestCase{
     addPoint(writer,"Iota Club and Cafe",38.8890000,-77.0923000);
     addPoint(writer,"Hilton Washington Embassy Row",38.9103000,-77.0451000);
     addPoint(writer,"HorseFeathers, Bar & Grill", 39.01220000000001, -77.3942);
+    addPoint(writer,"Marshall Island Airfield",7.06, 171.2);
+    addPoint(writer,"Midway Island",25.7, -171.7);
+    addPoint(writer,"North Pole Way",55.0, 4.0);
    
     writer.commit();
     writer.close();
+  }
+
+
+  public void testDistances() throws IOException, InvalidGeoException {
+    LatLng p1 = new FloatLatLng( 7.06, 171.2 );
+    LatLng p2 = new FloatLatLng( 21.6032207, -158.0 );
+    double miles = p1.arcDistance( p2, DistanceUnits.MILES );
+    System.out.println("testDistances");
+    System.out.println("miles:" + miles);
+    assertEquals(2288.82495932794, miles); 
+    LatLng p3 = new FloatLatLng( 41.6032207, -73.087749);
+    LatLng p4 = new FloatLatLng( 55.0, 4.0 );
+    miles = p3.arcDistance( p4, DistanceUnits.MILES );
+    System.out.println("miles:" + miles);
+    assertEquals(3474.331719997617, miles); 
+  }
+
+  public void testAntiM() throws IOException, InvalidGeoException {
+    searcher = new IndexSearcher(directory);
+
+    final double miles = 2800.0;
+        // Hawaii
+        // 2300 miles to Marshall Island Airfield
+    lat = 21.6032207;
+    lng = -158.0;
+
+    System.out.println("testAntiM");
+    // create a distance query
+    final DistanceQueryBuilder dq = new DistanceQueryBuilder(lat, lng, miles,
+        latField, lngField, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true);
+
+    System.out.println(dq);
+    //create a term query to search against all documents
+    Query tq = new TermQuery(new Term("metafile", "doc"));
+
+    FieldScoreQuery fsQuery = new FieldScoreQuery("geo_distance", Type.FLOAT);
+
+    CustomScoreQuery customScore = new CustomScoreQuery(dq.getQuery(tq),fsQuery){
+
+      @Override
+      public float customScore(int doc, float subQueryScore, float valSrcScore){
+        System.out.println(doc);
+        if (dq.distanceFilter.getDistance(doc) == null)
+          return 0;
+
+        double distance = dq.distanceFilter.getDistance(doc);
+        // boost score shouldn't exceed 1
+        if (distance < 1.0d)
+          distance = 1.0d;
+        //boost by distance is invertly proportional to
+        // to distance from center point to location
+        float score = new Float((miles - distance) / miles ).floatValue();
+        return score * subQueryScore;
+      }
+    };
+    // Create a distance sort
+    // As the radius filter has performed the distance calculations
+    // already, pass in the filter to reuse the results.
+    //
+    DistanceFieldComparatorSource dsort = new DistanceFieldComparatorSource(dq.distanceFilter);
+    Sort sort = new Sort(new SortField("foo", dsort,false));
+
+    // Perform the search, using the term query, the serial chain filter, and the
+    // distance sort
+    Hits hits = searcher.search(customScore,null,sort);
+
+    int results = hits.length();
+
+    // Get a list of distances
+    Map<Integer,Double> distances = dq.distanceFilter.getDistances();
+
+    // distances calculated from filter first pass must be less than total
+    // docs, from the above test of 20 items, 12 will come from the boundary box
+    // filter, but only 5 are actually in the radius of the results.
+
+    // Note Boundary Box filtering, is not accurate enough for most systems.
+
+
+    System.out.println("Distance Filter filtered: " + distances.size());
+    System.out.println("Results: " + results);
+    System.out.println("=============================");
+    System.out.println("Distances should be 2 "+ distances.size());
+    System.out.println("Results should be 2 "+ results);
+
+    assertEquals(2, distances.size()); // fixed a store of only needed distances
+    assertEquals(2, results);
+    double lastDistance = 0;
+    for(int i =0 ; i < results; i++){
+      Document d = hits.doc(i);
+
+      String name = d.get("name");
+      double rsLat = NumericUtils.prefixCodedToDouble(d.get(latField));
+      double rsLng = NumericUtils.prefixCodedToDouble(d.get(lngField));
+      Double geo_distance = distances.get(hits.id(i));
+
+      double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
+      double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
+      System.out.println("Name: "+ name +", Distance "+ distance); //(res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
+      assertTrue(Math.abs((distance - llm)) < 1);
+      assertTrue((distance < miles ));
+      assertTrue(geo_distance >= lastDistance);
+      lastDistance = geo_distance;
+    }
+  }
+
+  public void testPoleFlipping() throws IOException, InvalidGeoException {
+    searcher = new IndexSearcher(directory);
+
+    final double miles = 3500.0;
+    lat = 41.6032207;
+    lng = -73.087749;
+
+    System.out.println("testPoleFlipping");
+
+    // create a distance query
+    final DistanceQueryBuilder dq = new DistanceQueryBuilder(lat, lng, miles,
+        latField, lngField, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true);
+
+    System.out.println(dq);
+    //create a term query to search against all documents
+    Query tq = new TermQuery(new Term("metafile", "doc"));
+
+    FieldScoreQuery fsQuery = new FieldScoreQuery("geo_distance", Type.FLOAT);
+
+    CustomScoreQuery customScore = new CustomScoreQuery(dq.getQuery(tq),fsQuery){
+
+      @Override
+      public float customScore(int doc, float subQueryScore, float valSrcScore){
+        System.out.println(doc);
+        if (dq.distanceFilter.getDistance(doc) == null)
+          return 0;
+
+        double distance = dq.distanceFilter.getDistance(doc);
+        // boost score shouldn't exceed 1
+        if (distance < 1.0d)
+          distance = 1.0d;
+        //boost by distance is invertly proportional to
+        // to distance from center point to location
+        float score = new Float((miles - distance) / miles ).floatValue();
+        return score * subQueryScore;
+      }
+    };
+    // Create a distance sort
+    // As the radius filter has performed the distance calculations
+    // already, pass in the filter to reuse the results.
+    //
+    DistanceFieldComparatorSource dsort = new DistanceFieldComparatorSource(dq.distanceFilter);
+    Sort sort = new Sort(new SortField("foo", dsort,false));
+
+    // Perform the search, using the term query, the serial chain filter, and the
+    // distance sort
+    Hits hits = searcher.search(customScore,null,sort);
+
+    int results = hits.length();
+
+    // Get a list of distances
+    Map<Integer,Double> distances = dq.distanceFilter.getDistances();
+
+    // distances calculated from filter first pass must be less than total
+    // docs, from the above test of 20 items, 12 will come from the boundary box
+    // filter, but only 5 are actually in the radius of the results.
+
+    // Note Boundary Box filtering, is not accurate enough for most systems.
+
+
+    System.out.println("Distance Filter filtered: " + distances.size());
+    System.out.println("Results: " + results);
+    System.out.println("=============================");
+    System.out.println("Distances should be 18 "+ distances.size());
+    System.out.println("Results should be 18 "+ results);
+
+    assertEquals(18, distances.size()); // fixed a store of only needed distances
+    assertEquals(18, results);
+    double lastDistance = 0;
+    for(int i =0 ; i < results; i++){
+      Document d = hits.doc(i);
+      String name = d.get("name");
+      double rsLat = NumericUtils.prefixCodedToDouble(d.get(latField));
+      double rsLng = NumericUtils.prefixCodedToDouble(d.get(lngField));
+      Double geo_distance = distances.get(hits.id(i));
+
+      double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
+      double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
+      System.out.println("Name: "+ name +", Distance "+ distance); //(res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
+      assertTrue(Math.abs((distance - llm)) < 1);
+      System.out.println("checking limit "+ distance + " < " + miles);
+      assertTrue((distance < miles ));
+      System.out.println("checking sort "+ geo_distance + " >= " + lastDistance);
+      assertTrue(geo_distance >= lastDistance);
+      lastDistance = geo_distance;
+    }
   }
   
   public void testRange() throws IOException, InvalidGeoException {
@@ -207,8 +403,8 @@ public class TestCartesian extends TestCase{
       System.out.println("Distance Filter filtered: " + distances.size());
       System.out.println("Results: " + results);
       System.out.println("=============================");
-      System.out.println("Distances should be 7 "+ distances.size());
-      System.out.println("Results should be 7 "+ results);
+      System.out.println("Distances should be 7 "+ expected[x] + ":" + distances.size());
+      System.out.println("Results should be 7 "+ expected[x] + ":" + results);
 
       assertEquals(expected[x], distances.size()); // fixed a store of only needed distances
       assertEquals(expected[x], results);
@@ -296,8 +492,8 @@ public class TestCartesian extends TestCase{
       System.out.println("Distance Filter filtered: " + distances.size());
       System.out.println("Results: " + results);
       System.out.println("=============================");
-      System.out.println("Distances should be 14 "+ distances.size());
-      System.out.println("Results should be 7 "+ results);
+      System.out.println("Distances should be 14 "+ expected[x] + ":" + distances.size());
+      System.out.println("Results should be 7 "+ expected[x] + ":" + results);
 
       assertEquals(expected[x], distances.size());
       assertEquals(expected[x], results);

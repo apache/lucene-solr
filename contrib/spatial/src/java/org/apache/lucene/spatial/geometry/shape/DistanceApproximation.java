@@ -23,6 +23,9 @@ package org.apache.lucene.spatial.geometry.shape;
  * <p><font color="red"><b>NOTE:</b> This API is still in
  * flux and might change in incompatible ways in the next
  * release.</font>
+ *
+ * @deprecated This has been replaced with more accurate
+ * math in {@link LLRect}.
  */
 public class DistanceApproximation
 {

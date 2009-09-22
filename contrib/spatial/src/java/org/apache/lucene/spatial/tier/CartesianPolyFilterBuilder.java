@@ -27,6 +27,9 @@ import org.apache.lucene.spatial.geometry.shape.Rectangle;
 import org.apache.lucene.spatial.tier.projections.CartesianTierPlotter;
 import org.apache.lucene.spatial.tier.projections.IProjector;
 import org.apache.lucene.spatial.tier.projections.SinusoidalProjector;
+import org.apache.lucene.spatial.geometry.LatLng;
+import org.apache.lucene.spatial.geometry.FloatLatLng;
+import org.apache.lucene.spatial.geometry.shape.LLRect;
 
 
 /**
@@ -57,12 +60,27 @@ public class CartesianPolyFilterBuilder {
       miles = MILES_FLOOR;
     }
     Rectangle box = DistanceUtils.getInstance().getBoundary(latitude, longitude, miles);
-    double latY = box.getMaxPoint().getY();//box.getY();
-    double latX = box.getMinPoint().getY() ; //box.getMaxY();
+    LLRect box1 = LLRect.createBox( new FloatLatLng( latitude, longitude ), miles, miles );
+    LatLng ll = box1.getLowerLeft();
+    LatLng ur = box1.getUpperRight();
+
+    double latY = ur.getLat();
+    double latX = ll.getLat();
+    double longY = ur.getLng();
+    double longX = ll.getLng();
+    double longX2 = 0.0;
+
+    if (ur.getLng() < 0.0 && ll.getLng() > 0.0) {
+	longX2 = ll.getLng();
+ 	longX = -180.0;	
+    }
+    if (ur.getLng() > 0.0 && ll.getLng() < 0.0) {
+	longX2 = ll.getLng();
+ 	longX = 0.0;	
+    }
     
-    double longY = box.getMaxPoint().getX(); ///box.getX();
-    double longX = box.getMinPoint().getX();//box.getMaxX();
-    
+    //System.err.println("getBoxShape:"+latY+"," + longY);
+    //System.err.println("getBoxShape:"+latX+"," + longX);
     CartesianTierPlotter ctp = new CartesianTierPlotter(2, projector,tierPrefix);
     int bestFit = ctp.bestFit(miles);
     
@@ -74,13 +92,37 @@ public class CartesianPolyFilterBuilder {
     // iterate from startX->endX
     //     iterate from startY -> endY
     //      shape.add(currentLat.currentLong);
-    
-   
+
+    shape = getShapeLoop(shape,ctp,latX,longX,latY,longY);
+    if (longX2 != 0.0) {
+	if (longX2 != 0.0) {
+		if (longX == 0.0) {
+			longX = longX2;
+			longY = 0.0;
+        		shape = getShapeLoop(shape,ctp,latX,longX,latY,longY);
+		} else {
+			longX = longX2;
+			longY = -180.0;
+        		shape = getShapeLoop(shape,ctp,latY,longY,latX,longX);
+		}
+	}
+        //System.err.println("getBoxShape2:"+latY+"," + longY);
+        //System.err.println("getBoxShape2:"+latX+"," + longX);
+    }
+ 
+    return shape; 
+  } 
+  
+  public Shape getShapeLoop(Shape shape, CartesianTierPlotter ctp, double latX, double longX, double latY, double longY)
+  {  
+ 
+    //System.err.println("getShapeLoop:"+latY+"," + longY);
+    //System.err.println("getShapeLoop:"+latX+"," + longX);
     double beginAt = ctp.getTierBoxId(latX, longX);
     double endAt = ctp.getTierBoxId(latY, longY);
     
     double tierVert = ctp.getTierVerticalPosDivider();
-    log.fine(" | "+ beginAt+" | "+ endAt);
+    //System.err.println(" | "+ beginAt+" | "+ endAt);
     
     double startX = beginAt - (beginAt %1);
     double startY = beginAt - startX ; //should give a whole number
@@ -97,15 +139,18 @@ public class CartesianPolyFilterBuilder {
     double xInc = 1.0d / tierVert;
     xInc = new BigDecimal(xInc).setScale(scale, RoundingMode.HALF_EVEN).doubleValue();
     
+    //System.err.println("go from startX:"+startX+" to:" + endX);
     for (; startX <= endX; startX++){
       
       double itY = startY;
+      //System.err.println("go from startY:"+startY+" to:" + endY);
       while (itY <= endY){
         //create a boxId
         // startX.startY
         double boxId = startX + itY ;
         shape.addBox(boxId);
-        //System.out.println("----"+boxId);
+        //System.err.println("----"+startX+" and "+itY);
+        //System.err.println("----"+boxId);
         itY += xInc;
         
         // java keeps 0.0001 as 1.0E-1

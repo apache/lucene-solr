@@ -90,6 +90,10 @@ Bug fixes
  * LUCENE-1912: Fix fast-vector-highlighter issue when two or more
    terms are concatenated (Koji Sekiguchi via Mike McCandless)
 
+ * LUCENE-1781: Fixed various issues with the lat/lng bounding box
+   distance filter created for radius search in contrib/spatial.
+   (Bill Bell via Mike McCandless)
+
 New features
 
  * LUCENE-1531: Added support for BoostingTermQuery to XML query parser. (Karl Wettin)
