@@ -23,7 +23,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.StandardDirectoryFactory;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.util.SolrPluginUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,20 +77,19 @@ public class SolrIndexWriter extends IndexWriter {
       }
       if (config.maxMergeDocs != -1) setMaxMergeDocs(config.maxMergeDocs);
       if (config.maxFieldLength != -1) setMaxFieldLength(config.maxFieldLength);
-      if (config.mergePolicyClassName != null && SolrIndexConfig.DEFAULT_MERGE_POLICY_CLASSNAME.equals(config.mergePolicyClassName) == false) {
-        MergePolicy policy = null;
-
-        policy = (MergePolicy) schema.getResourceLoader().newInstance(config.mergePolicyClassName, new String[]{}, new Class[]{IndexWriter.class}, new Object[] { this });
-
-        setMergePolicy(policy);///hmm, is this really the best way to get a newInstance?
+      String className = config.mergePolicyInfo == null ? SolrIndexConfig.DEFAULT_MERGE_POLICY_CLASSNAME: config.mergePolicyInfo.className;
+      MergePolicy  policy = null;
+      try {
+        policy = (MergePolicy) schema.getResourceLoader().newInstance(className, null, new Class[]{IndexWriter.class}, new Object[] { this });
+      } catch (Exception e) {
+        policy = (MergePolicy) schema.getResourceLoader().newInstance(className);
       }
-      if (config.mergeFactor != -1 && getMergePolicy() instanceof LogMergePolicy) {
-        setMergeFactor(config.mergeFactor);
-      }
-      if (config.mergeSchedulerClassname != null && SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME.equals(config.mergeSchedulerClassname) == false) {
-        MergeScheduler scheduler = (MergeScheduler) schema.getResourceLoader().newInstance(config.mergeSchedulerClassname);
-        setMergeScheduler(scheduler);
-      }
+      if(config.mergePolicyInfo != null) SolrPluginUtils.invokeSetters(policy,config.mergePolicyInfo.initArgs);
+      setMergePolicy(policy);
+      className = config.mergeSchedulerInfo == null ? SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME: config.mergeSchedulerInfo.className;
+      MergeScheduler scheduler = (MergeScheduler) schema.getResourceLoader().newInstance(className);
+      if(config.mergeSchedulerInfo != null) SolrPluginUtils.invokeSetters(scheduler,config.mergeSchedulerInfo.initArgs);
+      setMergeScheduler(scheduler);
 
       String infoStreamFile = config.infoStreamFile;
       if (infoStreamFile != null) {

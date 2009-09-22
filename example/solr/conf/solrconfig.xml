@@ -70,7 +70,7 @@
 
      Other implementations of MergePolicy must have a no-argument constructor
      -->
-    <!--<mergePolicy>org.apache.lucene.index.LogByteSizeMergePolicy</mergePolicy>-->
+    <!--<mergePolicy class="org.apache.lucene.index.LogByteSizeMergePolicy"/>-->
 
     <!--
      Expert:
@@ -79,7 +79,7 @@
      background using separate threads.  The SerialMergeScheduler (Lucene 2.2
      default) does not.
      -->
-    <!--<mergeScheduler>org.apache.lucene.index.ConcurrentMergeScheduler</mergeScheduler>-->
+    <!--<mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>-->
 
     <!--  To aid in advanced debugging, you may turn on IndexWriter debug logging.
      Uncommenting this and setting to true will set the file that the underlying

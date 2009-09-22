@@ -18,11 +18,16 @@
 package org.apache.solr.update;
 
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.PluginInfo;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 //
 // For performance reasons, we don't want to re-read
@@ -51,10 +56,10 @@ public class SolrIndexConfig {
     writeLockTimeout = -1;
     commitLockTimeout = -1;
     lockType = null;
-    mergePolicyClassName = DEFAULT_MERGE_POLICY_CLASSNAME;
-    mergeSchedulerClassname = DEFAULT_MERGE_SCHEDULER_CLASSNAME;
     luceneAutoCommit = false;
     termIndexInterval = IndexWriter.DEFAULT_TERM_INDEX_INTERVAL;
+    mergePolicyInfo = null;
+    mergeSchedulerInfo = null;
   }
   
   public final boolean useCompoundFile;
@@ -68,8 +73,8 @@ public class SolrIndexConfig {
   public final int writeLockTimeout;
   public final int commitLockTimeout;
   public final String lockType;
-  public final String mergePolicyClassName;
-  public final String mergeSchedulerClassname;
+  public final PluginInfo mergePolicyInfo;
+  public final PluginInfo mergeSchedulerInfo;
   public final boolean luceneAutoCommit;
   public final int termIndexInterval;
   
@@ -90,8 +95,30 @@ public class SolrIndexConfig {
     writeLockTimeout=solrConfig.getInt(prefix+"/writeLockTimeout", def.writeLockTimeout);
     commitLockTimeout=solrConfig.getInt(prefix+"/commitLockTimeout", def.commitLockTimeout);
     lockType=solrConfig.get(prefix+"/lockType", def.lockType);
-    mergePolicyClassName = solrConfig.get(prefix + "/mergePolicy", def.mergePolicyClassName);
-    mergeSchedulerClassname = solrConfig.get(prefix + "/mergeScheduler", def.mergeSchedulerClassname);
+
+    String str =  solrConfig.get(prefix+"/mergeScheduler/text()",null);
+    if(str != null && str.trim().length() >0){
+      //legacy handling <mergeScheduler>[classname]</mergeScheduler>
+      //remove in Solr2.0
+      log.warn("deprecated syntax : <mergeScheduler>[classname]</mergeScheduler>");
+      Map<String,String> atrs = new HashMap<String, String>();
+      atrs.put("class",str.trim());
+      mergeSchedulerInfo = new PluginInfo("mergeScheduler",atrs,null,null);
+    } else {
+      mergeSchedulerInfo = getPluginInfo(prefix + "/mergeScheduler", solrConfig);
+    }
+    str =  solrConfig.get(prefix+"/mergePolicy/text()",null);
+    if(str != null && str.trim().length() >0){
+      //legacy handling  <mergePolicy>[classname]</mergePolicy>
+      //remove in Solr2.0
+      log.warn("deprecated syntax : <mergePolicy>[classname]</mergePolicy>");
+      Map<String,String> atrs = new HashMap<String, String>();
+      atrs.put("class",str.trim());
+      mergePolicyInfo = new PluginInfo("mergePolicy",atrs,null,null);
+    } else {
+      mergePolicyInfo = getPluginInfo(prefix + "/mergePolicy", solrConfig);
+    }
+    
     luceneAutoCommit = solrConfig.getBool(prefix + "/luceneAutoCommit", def.luceneAutoCommit);
     termIndexInterval = solrConfig.getInt(prefix + "/termIndexInterval", def.termIndexInterval);
     
@@ -101,5 +128,10 @@ public class SolrIndexConfig {
       log.info("IndexWriter infoStream debug log is enabled: " + infoStreamFile);
     }
 
+  }
+
+  private PluginInfo getPluginInfo(String path, SolrConfig solrConfig){
+    List<PluginInfo> l = solrConfig.readPluginInfos(path, false, true);
+    return l.isEmpty() ? null : l.get(0);
   }
 }

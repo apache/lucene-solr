@@ -205,13 +205,18 @@ public class SolrConfig extends Config {
   }
 
   private void loadPluginInfo(Class clazz, String tag, boolean requireName, boolean requireClass) {
+    List<PluginInfo> result = readPluginInfos(tag, requireName, requireClass);
+    if(!result.isEmpty()) pluginStore.put(clazz.getName(),result);
+  }
+
+  public List<PluginInfo> readPluginInfos(String tag, boolean requireName, boolean requireClass) {
     ArrayList<PluginInfo> result = new ArrayList<PluginInfo>();
     NodeList nodes = (NodeList) evaluate(tag, XPathConstants.NODESET);
-     for (int i=0; i<nodes.getLength(); i++) {
-       PluginInfo pluginInfo = new PluginInfo(nodes.item(i), "[solrconfig.xml] " + tag, requireName, requireClass);
-       if(pluginInfo.isEnabled()) result.add(pluginInfo);
-     }
-    if(!result.isEmpty()) pluginStore.put(clazz.getName(),result);
+    for (int i=0; i<nodes.getLength(); i++) {
+      PluginInfo pluginInfo = new PluginInfo(nodes.item(i), "[solrconfig.xml] " + tag, requireName, requireClass);
+      if(pluginInfo.isEnabled()) result.add(pluginInfo);
+    }
+    return result;
   }
 
   /* The set of materialized parameters: */

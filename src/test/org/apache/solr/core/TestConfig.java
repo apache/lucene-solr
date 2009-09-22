@@ -68,9 +68,9 @@ public class TestConfig extends AbstractSolrTestCase {
   public void testLucene23Upgrades() throws Exception {
     double bufferSize = solrConfig.getDouble("indexDefaults/ramBufferSizeMB");
     assertTrue(bufferSize + " does not equal: " + 32, bufferSize == 32);
-    String mergePolicy = solrConfig.get("indexDefaults/mergePolicy");
+    String mergePolicy = solrConfig.get("indexDefaults/mergePolicy/@class");
     assertTrue(mergePolicy + " is not equal to " + SolrIndexConfig.DEFAULT_MERGE_POLICY_CLASSNAME, mergePolicy.equals(SolrIndexConfig.DEFAULT_MERGE_POLICY_CLASSNAME) == true);
-    String mergeSched = solrConfig.get("indexDefaults/mergeScheduler");
+    String mergeSched = solrConfig.get("indexDefaults/mergeScheduler/@class");
     assertTrue(mergeSched + " is not equal to " + SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME, mergeSched.equals(SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME) == true);
     boolean luceneAutoCommit = solrConfig.getBool("indexDefaults/luceneAutoCommit");
     assertTrue(luceneAutoCommit + " does not equal: " + false, luceneAutoCommit == false);

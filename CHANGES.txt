@@ -317,6 +317,8 @@ New Features
 
 79. SOLR-1326 : New interface PluginInfoInitialized for all types of plugin (noble)
 
+80. SOLR-1447 : Simple property injection. <mergePolicy> & <mergeSceduler> syntaxes are deprecated ( Jason rutherglen noble)
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

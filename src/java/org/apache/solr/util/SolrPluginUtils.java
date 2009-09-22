@@ -22,6 +22,7 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -45,7 +46,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
-    
+import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
+
 /**
  * <p>Utilities that may be of use to RequestHandlers.</p>
  *
@@ -958,6 +961,36 @@ public class SolrPluginUtils {
     else {
       log.debug("Adding SolrDocumentList response" + docs.size());
       vals.add( "response", docs );
+    }
+  }
+  
+  public static void invokeSetters(Object bean, NamedList initArgs) {
+    Class clazz = bean.getClass();
+    Method[] methods = clazz.getMethods();
+    Iterator<Map.Entry<String, Object>> iterator = initArgs.iterator();
+    while (iterator.hasNext()) {
+      Map.Entry<String, Object> entry = iterator.next();
+      String key = entry.getKey();
+      String setterName = "set" + String.valueOf(Character.toUpperCase(key.charAt(0))) + key.substring(1);
+      Method method = null;
+      try {
+        for (Method m : methods) {
+          if (m.getName().equals(setterName) && m.getParameterTypes().length == 1) { 
+            method = m;
+            break;
+          }
+        }
+        if (method == null) {
+          throw new RuntimeException("no setter corrresponding to '" + key + "' in " + clazz.getName());
+        }
+        Class pClazz = method.getParameterTypes()[0];
+        Object val = entry.getValue();
+        method.invoke(bean, val);
+      } catch (InvocationTargetException e1) {
+        throw new RuntimeException("Error invoking setter " + setterName + "on class : " + clazz.getName(), e1);
+      } catch (IllegalAccessException e1) {
+        throw new RuntimeException("Error invoking setter " + setterName + "on class : " + clazz.getName(), e1);
+      }
     }
   }
 }

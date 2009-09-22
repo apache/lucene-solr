@@ -276,7 +276,7 @@ public class SolrResourceLoader implements ResourceLoader
    * @return the loaded class. An exception is thrown if it fails
    */
   public Class findClass(String cname, String... subpackages) {
-    if (subpackages.length == 0 || subpackages == packages) {
+    if (subpackages == null || subpackages.length == 0 || subpackages == packages) {
       subpackages = packages;
       String  c = classNameCache.get(cname);
       if(c != null) {

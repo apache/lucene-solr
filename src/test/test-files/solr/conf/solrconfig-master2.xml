@@ -36,7 +36,7 @@
     <commitLockTimeout>10000</commitLockTimeout>
     <luceneAutoCommit>false</luceneAutoCommit>
 
-    <mergeScheduler>org.apache.lucene.index.ConcurrentMergeScheduler</mergeScheduler>
+    <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>
     <writeLockTimeout>1000</writeLockTimeout>
     <commitLockTimeout>10000</commitLockTimeout>
 
