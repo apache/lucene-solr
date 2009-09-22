@@ -23,7 +23,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 
-import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Manages a chain of UpdateRequestProcessorFactories.
@@ -54,13 +54,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
   }
 
   public void init(PluginInfo info) {
-    ArrayList<UpdateRequestProcessorFactory> list = new ArrayList<UpdateRequestProcessorFactory>();
-    for (PluginInfo child : info.children) {
-      if("processor".equals(child.type)){
-        UpdateRequestProcessorFactory factory = solrCore.createInitInstance(child, UpdateRequestProcessorFactory.class, null,null);
-        list.add(factory);
-      }
-    }
+    List<UpdateRequestProcessorFactory> list = solrCore.initPlugins(info.getChildren("processor"),UpdateRequestProcessorFactory.class,null);
     if(list.isEmpty()){
       throw new RuntimeException( "updateRequestProcessorChain require at least one processor");
     }

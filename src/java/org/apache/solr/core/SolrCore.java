@@ -400,7 +400,7 @@ public final class SolrCore implements SolrInfoMBean {
   /** Creates an instance by trying a constructor that accepts a SolrCore before
    *  trying the default (no arg) constructor.
    *@param className the instance class to create
-   *@cast the class or interface that the instance should extend or implement
+   *@param cast the class or interface that the instance should extend or implement
    *@param msg a message helping compose the exception error if any occurs.
    *@return the desired instance
    *@throws SolrException if the object could not be instantiated
@@ -430,6 +430,7 @@ public final class SolrCore implements SolrInfoMBean {
   }
 
   public <T extends Object> T createInitInstance(PluginInfo info,Class<T> cast, String msg, String defClassName){
+    if(info == null) return null;
     T o = createInstance(info.className == null ? defClassName : info.className,cast, msg);
     if (o instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) o).init(info);
@@ -1478,6 +1479,12 @@ public final class SolrCore implements SolrInfoMBean {
     }
   }
 
+  /**
+   * @param registry The map to which the instance should be added to. The key is the name attribute
+   * @param type the class or interface that the instance should extend or implement.
+   * @param defClassName If PluginInfo does not have a classname, use this as the classname
+   * @return The default instance . The one with (default=true)
+   */
   public <T> T initPlugins(Map<String ,T> registry, Class<T> type, String defClassName){
     return initPlugins(solrConfig.getPluginInfos(type.getName()), registry, type, defClassName);
   }
@@ -1486,11 +1493,6 @@ public final class SolrCore implements SolrInfoMBean {
     T def = null;
     for (PluginInfo info : pluginInfos) {
       T o = createInitInstance(info,type, type.getSimpleName(), defClassName);
-      if (o instanceof PluginInfoInitialized) {
-        ((PluginInfoInitialized) o).init(info);
-      }else if (o instanceof NamedListInitializedPlugin) {
-        ((NamedListInitializedPlugin) o).init(info.initArgs);
-      }
       registry.put(info.name, o);
       if(info.isDefault()){
         def = o;
@@ -1499,6 +1501,23 @@ public final class SolrCore implements SolrInfoMBean {
     return def;
   }
 
+  /**For a given List of PluginInfo return the instances as a List
+   * @param defClassName The default classname if PluginInfo#className == null
+   * @return The instances initialized
+   */
+  public <T> List<T> initPlugins(List<PluginInfo> pluginInfos, Class<T> type, String defClassName) {
+    if(pluginInfos.isEmpty()) return Collections.emptyList();
+    List<T> result = new ArrayList<T>();
+    for (PluginInfo info : pluginInfos) result.add(createInitInstance(info,type, type.getSimpleName(), defClassName));
+    return result;
+  }
+
+  /**
+   *
+   * @param registry The map to which the instance should be added to. The key is the name attribute
+   * @param type The type of the Plugin. These should be standard ones registerd by type.getName() in SolrConfig
+   * @return     The default if any
+   */
   public <T> T initPlugins(Map<String, T> registry, Class<T> type) {
     return initPlugins(registry, type, null);
   }

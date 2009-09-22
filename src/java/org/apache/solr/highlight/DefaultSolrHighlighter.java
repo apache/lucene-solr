@@ -72,25 +72,19 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     formatters.clear();
     fragmenters.clear();
 
-    List<PluginInfo> fragmenterInfo = new ArrayList<PluginInfo>();
-    List<PluginInfo> formatterrInfo = new ArrayList<PluginInfo>();
-    // Load the fragmenters
-    for (PluginInfo child : info.children) {
-      if("fragmenter".equals(child.type)) fragmenterInfo.add(child);
-      if("formatter".equals(child.type)) formatterrInfo.add(child);
-    }
-    SolrFragmenter frag = solrCore.initPlugins(fragmenterInfo, fragmenters,SolrFragmenter.class,null);
+    SolrFragmenter frag = solrCore.initPlugins(info.getChildren("fragmenter") , fragmenters,SolrFragmenter.class,null);
     if (frag == null) frag = new GapFragmenter();
     fragmenters.put("", frag);
     fragmenters.put(null, frag);
     // Load the formatters
-    SolrFormatter fmt = solrCore.initPlugins(formatterrInfo, formatters,SolrFormatter.class,null);
+    SolrFormatter fmt = solrCore.initPlugins(info.getChildren("formatter"), formatters,SolrFormatter.class,null);
     if (fmt == null) fmt = new HtmlFormatter();
     formatters.put("", fmt);
     formatters.put(null, fmt);
     initialized = true;
 
   }
+  //just for back-compat with the deprecated method
   private boolean initialized = false;
   @Deprecated
   public void initalize( SolrConfig config) {

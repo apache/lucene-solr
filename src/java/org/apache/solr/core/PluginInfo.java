@@ -92,6 +92,10 @@ public class PluginInfo {
     return Boolean.parseBoolean(attributes.get("default"));
   }
 
+  /**Filter children by type
+   * @param type The type name. must not be null
+   * @return The mathcing children
+   */
   public List<PluginInfo> getChildren(String type){
     if(children.isEmpty()) return children;
     List<PluginInfo> result = new ArrayList<PluginInfo>();
