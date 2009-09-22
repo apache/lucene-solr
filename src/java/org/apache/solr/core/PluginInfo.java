@@ -91,4 +91,11 @@ public class PluginInfo {
   public boolean isDefault() {
     return Boolean.parseBoolean(attributes.get("default"));
   }
+
+  public List<PluginInfo> getChildren(String type){
+    if(children.isEmpty()) return children;
+    List<PluginInfo> result = new ArrayList<PluginInfo>();
+    for (PluginInfo child : children) if(type.equals(child.type)) result.add(child);
+    return result;
+  }
 }
