@@ -258,6 +258,10 @@ Bug Fixes
               (Jay Hill, Noble Paul via ehatcher)
             
 29.SOLR-1323: Reset XPathEntityProcessor's $hasMore/$nextUrl when fetching next URL (noble, ehatcher)
+
+30.SOLR-1450: Jdbc connection properties such as batchSize are not applied if the driver jar is placed
+              in solr_home/lib.
+              (Steve Sun via shalin)
              
 
 Documentation

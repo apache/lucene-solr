@@ -153,6 +153,15 @@ public class JdbcDataSource extends
                       "the jndi name : '"+jndiName +"' is not a valid javax.sql.DataSource");
             }
           }
+        } catch (SQLException e) {
+          // DriverManager does not allow you to use a driver which is not loaded through
+          // the class loader of the class which is trying to make the connection.
+          // This is a workaround for cases where the user puts the driver jar in the
+          // solr.home/lib or solr.home/core/lib directories.
+          Driver d = (Driver) DocBuilder.loadClass(driver, context.getSolrCore()).newInstance();
+          c = d.connect(url, initProps);
+        }
+        if (c != null) {
           if (Boolean.parseBoolean(initProps.getProperty("readOnly"))) {
             c.setReadOnly(true);
             // Add other sane defaults
@@ -181,13 +190,6 @@ public class JdbcDataSource extends
           } else {
             c.setHoldability(ResultSet.HOLD_CURSORS_OVER_COMMIT);
           }
-        } catch (SQLException e) {
-          // DriverManager does not allow you to use a driver which is not loaded through
-          // the class loader of the class which is trying to make the connection.
-          // This is a workaround for cases where the user puts the driver jar in the
-          // solr.home/lib or solr.home/core/lib directories.
-          Driver d = (Driver) DocBuilder.loadClass(driver, context.getSolrCore()).newInstance();
-          c = d.connect(url, initProps);
         }
         LOG.info("Time taken for getConnection(): "
                 + (System.currentTimeMillis() - start));
