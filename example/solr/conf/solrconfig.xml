@@ -223,6 +223,17 @@
   
   <!-- Use the following format to specify a custom IndexReaderFactory - allows for alternate
        IndexReader implementations.
+
+       ** Experimental Feature **
+       Please note - Using a custom IndexReaderFactory may prevent certain other features
+       from working. The API to IndexReaderFactory may change without warning or may even
+       be removed from future releases if the problems cannot be resolved.
+
+       ** Features that may not work with custom IndexReaderFactory **
+       The ReplicationHandler assumes a disk-resident index. Using a custom
+       IndexReader implementation may cause incompatibility with ReplicationHandler and
+       may cause replication to not work correctly. See SOLR-1366 for details.
+
   <indexReaderFactory name="IndexReaderFactory" class="package.class">
     Parameters as required by the implementation
   </indexReaderFactory >
