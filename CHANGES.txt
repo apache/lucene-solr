@@ -319,7 +319,7 @@ New Features
 
 79. SOLR-1326 : New interface PluginInfoInitialized for all types of plugin (noble)
 
-80. SOLR-1447 : Simple property injection. <mergePolicy> & <mergeSceduler> syntaxes are deprecated ( Jason rutherglen noble)
+80. SOLR-1447 : Simple property injection. <mergePolicy> & <mergeSceduler> syntaxes are deprecated ( Jason Rutherglen noble)
 
 82. SOLR-908 : CommonGramsFilterFactory/CommonGramsQueryFilterFactory for
     speeding up phrase queries containing common words by indexing

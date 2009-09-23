@@ -965,6 +965,7 @@ public class SolrPluginUtils {
   }
   
   public static void invokeSetters(Object bean, NamedList initArgs) {
+    if (initArgs == null) return;
     Class clazz = bean.getClass();
     Method[] methods = clazz.getMethods();
     Iterator<Map.Entry<String, Object>> iterator = initArgs.iterator();
