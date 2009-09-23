@@ -286,7 +286,7 @@ public class LBHttpSolrServer extends SolrServer {
           aliveCheckExecutor = Executors.newSingleThreadScheduledExecutor();
           aliveCheckExecutor.scheduleAtFixedRate(
                   getAliveCheckRunner(new WeakReference<LBHttpSolrServer>(this)),
-                  this.interval, this.interval, TimeUnit.SECONDS);
+                  this.interval, this.interval, TimeUnit.MILLISECONDS);
         }
       }
     }
