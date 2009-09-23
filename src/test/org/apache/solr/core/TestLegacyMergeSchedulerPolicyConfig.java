@@ -8,7 +8,7 @@ import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.AbstractSolrTestCase;
 
-public class TestLegacyMergeScedulerPolicyConfig extends AbstractSolrTestCase {
+public class TestLegacyMergeSchedulerPolicyConfig extends AbstractSolrTestCase {
   public String getSchemaFile() {
     return "schema.xml";
   }
