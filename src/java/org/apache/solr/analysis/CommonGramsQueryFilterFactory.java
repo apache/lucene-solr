@@ -39,7 +39,6 @@ public class CommonGramsQueryFilterFactory extends BaseTokenFilterFactory
   public void inform(ResourceLoader loader) {
     String commonWordFiles = args.get("words");
     ignoreCase = getBoolean("ignoreCase", false);
-    enablePositionIncrements = getBoolean("enablePositionIncrements", false);
 
     if (commonWordFiles != null) {
       try {
@@ -70,12 +69,6 @@ public class CommonGramsQueryFilterFactory extends BaseTokenFilterFactory
   private CharArraySet commonWords;
 
   private boolean ignoreCase;
-
-  private boolean enablePositionIncrements;
-
-  public boolean isEnablePositionIncrements() {
-    return enablePositionIncrements;
-  }
 
   public boolean isIgnoreCase() {
     return ignoreCase;
