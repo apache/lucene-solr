@@ -1,5 +1,26 @@
 Lucene contrib change Log
 
+======================= Trunk (not yet released) =======================
+
+Changes in runtime behavior
+
+API Changes
+
+Bug fixes
+
+ * LUCENE-1781: Fixed various issues with the lat/lng bounding box
+   distance filter created for radius search in contrib/spatial.
+   (Bill Bell via Mike McCandless)
+
+New features
+
+Optimizations
+
+Documentation
+
+Build
+
+Test Cases
 ======================= Release 2.9.0 2009-09-23 =======================
 
 Changes in runtime behavior
@@ -89,10 +110,6 @@ Bug fixes
 
  * LUCENE-1912: Fix fast-vector-highlighter issue when two or more
    terms are concatenated (Koji Sekiguchi via Mike McCandless)
-
- * LUCENE-1781: Fixed various issues with the lat/lng bounding box
-   distance filter created for radius search in contrib/spatial.
-   (Bill Bell via Mike McCandless)
 
 New features
 
