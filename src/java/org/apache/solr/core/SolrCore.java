@@ -35,6 +35,7 @@ import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.*;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.SolrFieldCacheMBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.update.DirectUpdateHandler2;
@@ -526,6 +527,8 @@ public final class SolrCore implements SolrInfoMBean {
       log.info("JMX monitoring not detected for core: " + name);
       infoRegistry = new ConcurrentHashMap<String, SolrInfoMBean>();
     }
+
+    infoRegistry.put("fieldCache", new SolrFieldCacheMBean());
 
     this.schema = schema;
     this.dataDir = dataDir;

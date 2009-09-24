@@ -325,6 +325,9 @@ New Features
     speeding up phrase queries containing common words by indexing
     n-grams and using them at query time. 
     (Tom Burton-West, Jason Rutherglen via yonik)
+    
+83. SOLR-1292: Add FieldCache introspection to stats.jsp and JMX Monitoring via
+    a new SolrFieldCacheMBean.  (hossman)
 
 Optimizations
 ----------------------
