@@ -93,6 +93,9 @@ public class BoostedQuery extends Query {
     @Override
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       Scorer subQueryScorer = qWeight.scorer(reader, true, false);
+      if(subQueryScorer == null) {
+        return null;
+      }
       return new BoostedQuery.CustomScorer(getSimilarity(searcher), searcher, reader, this, subQueryScorer, boostVal);
     }
 
