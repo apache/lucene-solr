@@ -158,9 +158,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       addPartToDocument((Part) part.getContent(), row, false);
     } else {
       String disp = part.getDisposition();
-      if (disp != null && disp.equalsIgnoreCase(Part.ATTACHMENT)
-              && !processAttachment)
-        return;
+      if (!processAttachment || (disp != null && disp.equalsIgnoreCase(Part.ATTACHMENT)))        return;
       InputStream is = part.getInputStream();
       String fileName = part.getFileName();
       String content = ParseUtils.getStringContent(is, TikaConfig.getDefaultConfig(), ctype.getBaseType().toLowerCase());
