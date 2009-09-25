@@ -111,6 +111,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     
     ts.reset();
     for (int i = 0; i < output.length; i++) {
+      ts.clearAttributes(); // extra safety to enforce, that the state is not preserved
       assertTrue("token "+i+" exists", ts.incrementToken());
       assertEquals("term "+i, output[i], termAtt.term());
       if (startOffsets != null)
@@ -123,6 +124,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         assertEquals("posIncrement "+i, posIncrements[i], posIncrAtt.getPositionIncrement());
     }
     assertFalse("end of stream", ts.incrementToken());
+    ts.end();
     ts.close();
   }
   
