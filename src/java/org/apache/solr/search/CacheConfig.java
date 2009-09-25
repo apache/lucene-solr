@@ -22,7 +22,6 @@ import org.w3c.dom.NodeList;
 
 import java.util.Map;
 
-import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.core.SolrConfig;
@@ -78,7 +77,7 @@ public class CacheConfig {
 
 
   public static CacheConfig getConfig(SolrConfig solrConfig, String xpath) {
-    Node node = (Node)solrConfig.getNode(xpath, false);
+    Node node = solrConfig.getNode(xpath, false);
     return getConfig(solrConfig, node);
   }
 
@@ -88,14 +87,14 @@ public class CacheConfig {
     CacheConfig config = new CacheConfig();
     config.nodeName = node.getNodeName();
     config.args = DOMUtil.toMap(node.getAttributes());
-    String nameAttr = (String)config.args.get("name");  // OPTIONAL
+    String nameAttr = config.args.get("name");  // OPTIONAL
     if (nameAttr==null) {
       config.args.put("name",config.nodeName);
     }
 
     SolrResourceLoader loader = solrConfig.getResourceLoader();
-    config.cacheImpl = (String)config.args.get("class");
-    config.regenImpl = (String)config.args.get("regenerator");
+    config.cacheImpl = config.args.get("class");
+    config.regenImpl = config.args.get("regenerator");
     config.clazz = loader.findClass(config.cacheImpl);
     if (config.regenImpl != null) {
       config.regenerator = (CacheRegenerator) loader.newInstance(config.regenImpl);
