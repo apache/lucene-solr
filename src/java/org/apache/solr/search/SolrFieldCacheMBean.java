@@ -33,7 +33,7 @@ import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 /**
  * A SolrInfoMBean that provides introspection of the Lucene FiledCache, this is <b>NOT</b> a cache that is manged by Solr.
  *
- * @version $Id:$
+ * @version $Id$
  */
 public class SolrFieldCacheMBean implements SolrInfoMBean {
 
@@ -47,10 +47,10 @@ public class SolrFieldCacheMBean implements SolrInfoMBean {
   }
   public Category getCategory() { return Category.CACHE; } 
   public String getSourceId() { 
-    return "$Id:$"; 
+    return "$Id$"; 
   }
   public String getSource() { 
-    return "$URL:$";
+    return "$URL$";
   }
   public URL[] getDocs() {
     return null;
@@ -67,7 +67,7 @@ public class SolrFieldCacheMBean implements SolrInfoMBean {
 
     Insanity[] insanity = checker.checkSanity(entries);
 
-    stats.add("instanity_count", insanity.length);
+    stats.add("insanity_count", insanity.length);
     for (int i = 0; i < insanity.length; i++) {
       stats.add("insanity#" + i, insanity[i].toString());
     }
