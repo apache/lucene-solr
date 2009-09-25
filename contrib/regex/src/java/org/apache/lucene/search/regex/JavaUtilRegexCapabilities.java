@@ -37,7 +37,7 @@ public class JavaUtilRegexCapabilities implements RegexCapabilities {
   public static final int FLAG_CASE_INSENSITIVE = Pattern.CASE_INSENSITIVE;
   public static final int FLAG_COMMENTS = Pattern.COMMENTS;
   public static final int FLAG_DOTALL = Pattern.DOTALL;
-  public static final int FLAG_LITERAL = Pattern.LITERAL;
+  public static final int FLAG_LITERAL = 16; // not available in Java 1.4
   public static final int FLAG_MULTILINE = Pattern.MULTILINE;
   public static final int FLAG_UNICODE_CASE = Pattern.UNICODE_CASE;
   public static final int FLAG_UNIX_LINES = Pattern.UNIX_LINES;

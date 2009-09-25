@@ -371,7 +371,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   }
   
   private String escapeDateString(String s) {
-    if (s.contains(" ")) {
+    if (s.indexOf(' ')>=0) {
       return "\"" + s + "\"";
     } else {
       return s;
