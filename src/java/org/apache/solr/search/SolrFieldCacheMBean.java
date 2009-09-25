@@ -42,8 +42,8 @@ public class SolrFieldCacheMBean implements SolrInfoMBean {
   public String getName() { return this.getClass().getName(); }
   public String getVersion() { return SolrCore.version; }
   public String getDescription() {
-    return "Provides introspection of the Lucene FiledCache, "
-      +    "this is **NOT** a cache that is manged by Solr.";
+    return "Provides introspection of the Lucene FieldCache, "
+      +    "this is **NOT** a cache that is managed by Solr.";
   }
   public Category getCategory() { return Category.CACHE; } 
   public String getSourceId() { 
@@ -62,14 +62,14 @@ public class SolrFieldCacheMBean implements SolrInfoMBean {
     for (int i = 0; i < entries.length; i++) {
       CacheEntry e = entries[i];
       e.estimateSize();
-      stats.add("entry#" + i, e.toString());
+      stats.add("entry #" + i, e.toString());
     }
 
     Insanity[] insanity = checker.checkSanity(entries);
 
     stats.add("insanity_count", insanity.length);
     for (int i = 0; i < insanity.length; i++) {
-      stats.add("insanity#" + i, insanity[i].toString());
+      stats.add("insanity #" + i, insanity[i].toString());
     }
     return stats;
   }
