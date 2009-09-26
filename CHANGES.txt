@@ -1,6 +1,30 @@
 Lucene Change Log
 $Id$
 
+======================= Trunk (not yet released) =======================
+
+Changes in backwards compatibility policy
+
+Changes in runtime behavior
+
+API Changes
+
+* LUCENE-1925: Make IndexSearcher's subReaders and docStarts members
+  protected; add expert ctor to directly specify reader, subReaders
+  and docStarts.  (John Wang, Tim Smith via Mike McCandless)
+
+Bug fixes
+
+New features
+
+Optimizations
+
+Documentation
+
+Build
+
+Test Cases
+
 ======================= Release 2.9.0 2009-09-23 =======================
 
 Changes in backwards compatibility policy
