@@ -258,89 +258,31 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
             ,"//result/doc[1]/str[@name='id'][.='ZZZ']"
             );
   }
-  
+
   public void testExpungeDeletes() throws Exception {
-    for (int x = 0; x < 3000; x++) {
-      addSimpleDoc(x + "");
-    }
-    SolrCore core = h.getCore();
-    UpdateHandler updater = core.getUpdateHandler();
-    CommitUpdateCommand cmtCmd = new CommitUpdateCommand(false);
-    cmtCmd.waitSearcher = true;
-    updater.commit(cmtCmd);
+    assertU(adoc("id","1"));
+    assertU(adoc("id","2"));
+    assertU(commit());
 
-    List<String> todelete = new ArrayList<String>();
+    assertU(adoc("id","3"));
+    assertU(adoc("id","2"));
+    assertU(adoc("id","4"));
+    assertU(commit());
 
-    Set<String> segsdel = new HashSet<String>();
+    SolrQueryRequest sr = req("q","foo");
+    SolrIndexReader r = sr.getSearcher().getReader();
+    assertTrue(r.maxDoc() > r.numDocs());   // should have deletions
+    assertTrue(r.getLeafReaders().length > 1);  // more than 1 segment
+    sr.close();
 
-    SegmentReader[] sirs = getSegmentReaders(core);
-    assertTrue(sirs.length > 6);
-    todelete.add(getNthIDTerm(2, sirs[0]));
-    segsdel.add(sirs[0].getSegmentName());
-    
-    todelete.add(getNthIDTerm(7, sirs[2]));
-    segsdel.add(sirs[2].getSegmentName());
-    
-    todelete.add(getNthIDTerm(4, sirs[5]));
-    segsdel.add(sirs[5].getSegmentName());
-    
-    for (String id : todelete) {
-      deleteSimpleDoc(id);
-    }
-    // commit the deletes
-    cmtCmd = new CommitUpdateCommand(false);
-    cmtCmd.waitSearcher = true;
-    updater.commit(cmtCmd);
-    
-    // expunge deletes
-    cmtCmd = new CommitUpdateCommand(false);
-    cmtCmd.waitSearcher = true;
-    cmtCmd.expungeDeletes = true;
-    updater.commit(cmtCmd);
-    
-    // we'll have fewer segments
-    SegmentReader[] sirs2 = getSegmentReaders(core);
-    assertTrue(sirs.length > sirs2.length);
-    // check the actual segment names
-    for (SegmentReader sr : sirs2) {
-      assertTrue(!segsdel.contains(sr.getSegmentName()));
-    }
-  }
+    assertU(commit("expungeDeletes","true"));
 
-  SegmentReader[] getSegmentReaders(SolrCore core) throws IOException {
-    RefCounted<SolrIndexSearcher> ref = core.getSearcher(true, true, null);
-    SolrIndexSearcher is = ref.get();
-    SegmentReader[] segmentReaders = null;
-    try {
-      SolrIndexReader reader = is.getReader();
-      IndexReader[] subreaders = reader.getSequentialSubReaders();
-      segmentReaders = new SegmentReader[subreaders.length];
-      for (int x = 0; x < subreaders.length; x++) {
-        assert subreaders[x] instanceof SolrIndexReader;
-        SolrIndexReader sir = (SolrIndexReader) subreaders[x];
-        SegmentReader sr = (SegmentReader) sir.getWrappedReader();
-        segmentReaders[x] = sr;
-      }
-    } finally {
-      ref.decref();
-    }
-    return segmentReaders;
-  }
-
-  private String getNthIDTerm(int n, IndexReader r) throws IOException {
-    TermEnum te = r.terms(new Term("id", ""));
-    try {
-      int x = 0;
-      do {
-        if (x >= n) {
-          return te.term().text();
-        }
-        x++;
-      } while (te.next());
-    } finally {
-      te.close();
-    }
-    return null;
+    sr = req("q","foo");
+    r = sr.getSearcher().getReader();
+    assertEquals(r.maxDoc(), r.numDocs());  // no deletions
+    assertEquals(4,r.maxDoc());             // no dups
+    assertTrue(r.getLeafReaders().length > 1);  // still more than 1 segment
+    sr.close();
   }
   
   private void addSimpleDoc(String id) throws Exception {
