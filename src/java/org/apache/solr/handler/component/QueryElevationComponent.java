@@ -484,10 +484,6 @@ class ElevationComparatorSource extends FieldComparatorSource {
         idIndex = FieldCache.DEFAULT.getStringIndex(reader, fieldname);
       }
 
-      public int sortType() {
-        return SortField.CUSTOM;
-      }
-
       public Comparable value(int slot) {
         return values[slot];
       }

@@ -134,10 +134,6 @@ public class RandomSortField extends FieldType {
           seed = getSeed(fieldname, reader);
         }
 
-        public int sortType() {
-          return SortField.CUSTOM;
-        }
-
         public Comparable value(int slot) {
           return values[slot];
         }
