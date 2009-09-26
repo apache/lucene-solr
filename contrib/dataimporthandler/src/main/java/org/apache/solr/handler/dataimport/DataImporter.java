@@ -389,7 +389,7 @@ public class DataImporter {
     try {
       Date lastModified = sw.loadIndexStartTime();
       setLastIndexTime(lastModified);
-      if (command.equals("full-import")) {
+      if (FULL_IMPORT_CMD.equals(command) || IMPORT_CMD.equals(command)) {
         doFullImport(sw, reqParams);
       } else if (command.equals(DELTA_IMPORT_CMD)) {
         doDeltaImport(sw, reqParams);
