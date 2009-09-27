@@ -44,20 +44,32 @@ import java.util.Locale;
 public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitializedPlugin {
   public static Logger log = LoggerFactory.getLogger(SolrCore.class);
 
-  private boolean keepOptimizedOnly = false;
   private String maxCommitAge = null;
   private int maxCommitsToKeep = 1;
+  private int maxOptimizedCommitsToKeep = 0;
 
   public void init(NamedList args) {
     String keepOptimizedOnlyString = (String) args.get("keepOptimizedOnly");
     String maxCommitsToKeepString = (String) args.get("maxCommitsToKeep");
+    String maxOptimizedCommitsToKeepString = (String) args.get("maxOptimizedCommitsToKeep");
     String maxCommitAgeString = (String) args.get("maxCommitAge");
-    if (keepOptimizedOnlyString != null && keepOptimizedOnlyString.trim().length() > 0)
-      keepOptimizedOnly = Boolean.parseBoolean(keepOptimizedOnlyString);
+
     if (maxCommitsToKeepString != null && maxCommitsToKeepString.trim().length() > 0)
       maxCommitsToKeep = Integer.parseInt(maxCommitsToKeepString);
     if (maxCommitAgeString != null && maxCommitAgeString.trim().length() > 0)
       maxCommitAge = "-" + maxCommitAgeString;
+    if (maxOptimizedCommitsToKeepString != null && maxOptimizedCommitsToKeepString.trim().length() > 0) {
+      maxOptimizedCommitsToKeep = Integer.parseInt(maxOptimizedCommitsToKeepString);
+    }
+    
+    // legacy support
+    if (keepOptimizedOnlyString != null && keepOptimizedOnlyString.trim().length() > 0) {
+      boolean keepOptimizedOnly = Boolean.parseBoolean(keepOptimizedOnlyString);
+      if (keepOptimizedOnly) {
+        maxOptimizedCommitsToKeep = Math.max(maxOptimizedCommitsToKeep, maxCommitsToKeep);
+        maxCommitsToKeep=0;
+      }
+    }
   }
 
   static String str(IndexCommit commit) {
@@ -117,43 +129,49 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
     // in this specific call (may be across diff IndexWriter instances).
     // this will happen rarely, so just synchronize everything
     // for safety and to avoid race conditions
-    DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
 
     synchronized (this) {
-      IndexCommit last = commits.get(commits.size() - 1);
-      log.info("last commit = " + last.getVersion());
+      long maxCommitAgeTimeStamp = -1L;
+      IndexCommit newest = commits.get(commits.size() - 1);
+      log.info("newest commit = " + newest.getVersion());
 
-      int numCommitsToDelete = commits.size() - maxCommitsToKeep;
-      int i = 0;
-      for (IndexCommit commit : commits) {
-        // don't delete the last commit point
-        if (commit == last) {
-          continue;
-        }
+      int optimizedKept = newest.isOptimized() ? 1 : 0;
+      int totalKept = 1;
 
-        if (i < numCommitsToDelete) {
-          commit.delete();
-          i++;
-          continue;
-        }
+      // work our way from newest to oldest, skipping the first since we always want to keep it.
+      for (int i=commits.size()-2; i>=0; i--) {
+        IndexCommit commit = commits.get(i);
 
+        // delete anything too old, regardless of other policies
         try {
-          if (maxCommitAge != null)
-            if (commit.getTimestamp() < dmp.parseMath(maxCommitAge).getTime()) {
+          if (maxCommitAge != null) {
+            if (maxCommitAgeTimeStamp==-1) {
+              DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
+              maxCommitAgeTimeStamp = dmp.parseMath(maxCommitAge).getTime();
+            }
+            if (commit.getTimestamp() < maxCommitAgeTimeStamp) {
               commit.delete();
               continue;
             }
+          }
         } catch (Exception e) {
           log.warn("Exception while checking commit point's age for deletion", e);
         }
 
-        if (keepOptimizedOnly) {
-          if (!commit.isOptimized()) {
-            commit.delete();
-            log.info("Marking unoptimized index " + getId(commit) + " for deletion.");
-          }
+        if (optimizedKept < maxOptimizedCommitsToKeep && commit.isOptimized()) {
+          totalKept++;
+          optimizedKept++;
+          continue;
         }
+
+        if (totalKept < maxCommitsToKeep) {
+          totalKept++;
+          continue;
+        }
+                                                  
+        commit.delete();
       }
+
     } // end synchronized
   }
 
@@ -178,10 +196,6 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
     return sb.toString();
   }
 
-  public boolean isKeepOptimizedOnly() {
-    return keepOptimizedOnly;
-  }
-
   public String getMaxCommitAge() {
     return maxCommitAge;
   }
@@ -189,4 +203,21 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
   public int getMaxCommitsToKeep() {
     return maxCommitsToKeep;
   }
+
+  public int getMaxOptimizedCommitsToKeep() {
+    return maxOptimizedCommitsToKeep;
+  }
+
+  public void setMaxCommitsToKeep(int maxCommitsToKeep) {
+    synchronized (this) {
+      this.maxCommitsToKeep = maxCommitsToKeep;
+    }
+  }
+
+  public void setMaxOptimizedCommitsToKeep(int maxOptimizedCommitsToKeep) {
+    synchronized (this) {
+      this.maxOptimizedCommitsToKeep = maxOptimizedCommitsToKeep;
+    }    
+  }
+
 }

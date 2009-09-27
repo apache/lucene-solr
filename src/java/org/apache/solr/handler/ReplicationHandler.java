@@ -17,16 +17,14 @@
 package org.apache.solr.handler;
 
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.CloseHook;
-import org.apache.solr.core.IndexDeletionPolicyWrapper;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrEventListener;
+import org.apache.solr.core.*;
 import org.apache.solr.request.BinaryQueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
@@ -112,6 +110,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
    if (command.equals(CMD_INDEX_VERSION)) {
       IndexCommit commitPoint = indexCommitPoint;  // make a copy so it won't change
       if (commitPoint != null && replicationEnabled.get()) {
+        //
+        // There is a race condition here.  The commit point may be changed / deleted by the time
+        // we get around to reserving it.  This is a very small window though, and should not result
+        // in a catastrophic failure, but will result in the client getting an empty file list for
+        // the CMD_GET_FILE_LIST command.
+        //
+        core.getDeletionPolicy().setReserveDuration(commitPoint.getVersion(), reserveCommitDuration);
         rsp.add(CMD_INDEX_VERSION, commitPoint.getVersion());
         rsp.add(GENERATION, commitPoint.getGeneration());
       } else {
@@ -748,10 +753,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   void refreshCommitpoint() {
     IndexCommit commitPoint = core.getDeletionPolicy().getLatestCommit();
-    if(replicateOnCommit && !commitPoint.isOptimized()){
-      indexCommitPoint = commitPoint;
-    }
-    if(replicateOnOptimize && commitPoint.isOptimized()){
+    if(replicateOnCommit || (replicateOnOptimize && commitPoint.isOptimized())) {
       indexCommitPoint = commitPoint;
     }
   }
@@ -787,6 +789,21 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       List replicateAfter = master.getAll(REPLICATE_AFTER);
       replicateOnCommit = replicateAfter.contains("commit");
       replicateOnOptimize = replicateAfter.contains("optimize");
+
+      // if we only want to replicate on optimize, we need the deletion policy to
+      // save the last optimized commit point.
+      if (replicateOnOptimize && !replicateOnCommit) {
+        IndexDeletionPolicyWrapper wrapper = core.getDeletionPolicy();
+        IndexDeletionPolicy policy = wrapper == null ? null : wrapper.getWrappedDeletionPolicy();
+        if (policy instanceof SolrDeletionPolicy) {
+          SolrDeletionPolicy solrPolicy = (SolrDeletionPolicy)policy;
+          if (solrPolicy.getMaxOptimizedCommitsToKeep() < 1) {
+            solrPolicy.setMaxOptimizedCommitsToKeep(1);
+          }
+        } else {
+          LOG.warn("Replication can't call setMaxOptimizedCommitsToKeep on " + policy);
+        }
+      }
 
       if (replicateOnOptimize || backupOnOptimize) {
         core.getUpdateHandler().registerOptimizeCallback(getEventListener(backupOnOptimize, replicateOnOptimize));
@@ -876,13 +893,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
        * This refreshes the latest replicateable index commit and optionally can create Snapshots as well
        */
       public void postCommit() {
-        if (getCommit) {
+        if (getCommit || snapshoot) {
           indexCommitPoint = core.getDeletionPolicy().getLatestCommit();
         }
         if (snapshoot) {
           try {
             SnapShooter snapShooter = new SnapShooter(core, null);
-            snapShooter.createSnapAsync(core.getDeletionPolicy().getLatestCommit().getFileNames(), ReplicationHandler.this);
+            snapShooter.createSnapAsync(indexCommitPoint.getFileNames(), ReplicationHandler.this);
           } catch (Exception e) {
             LOG.error("Exception while snapshooting", e);
           }

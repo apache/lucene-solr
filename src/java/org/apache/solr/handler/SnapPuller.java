@@ -216,6 +216,11 @@ public class SnapPuller {
     List<Map<String, Object>> f = (List<Map<String, Object>>) nl.get(CMD_GET_FILE_LIST);
     if (f != null)
       filesToDownload = Collections.synchronizedList(f);
+    else {
+      filesToDownload = Collections.emptyList();
+      LOG.error("No files to download for indexversion: "+ version);
+    }
+
     f = (List<Map<String, Object>>) nl.get(CONF_FILES);
     if (f != null)
       confFilesToDownload = Collections.synchronizedList(f);
@@ -268,6 +273,8 @@ public class SnapPuller {
       LOG.info("Starting replication process");
       // get the list of files first
       fetchFileList(latestVersion);
+      // this can happen if the commit point is deleted before we fetch the file list.
+      if(filesToDownload.isEmpty()) return false;
       LOG.info("Number of files in latest index in master: " + filesToDownload.size());
 
       // Create the sync service

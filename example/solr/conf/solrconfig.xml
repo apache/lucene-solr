@@ -146,10 +146,10 @@
         of the criteria.
     -->
     <deletionPolicy class="solr.SolrDeletionPolicy">
-      <!-- Keep only optimized commit points -->
-      <str name="keepOptimizedOnly">false</str>
-      <!-- The maximum number of commit points to be kept -->
+      <!-- The number of commit points to be kept -->
       <str name="maxCommitsToKeep">1</str>
+      <!-- The number of optimized commit points to be kept -->
+      <str name="maxOptimizedCommitsToKeep">0</str>
       <!--
           Delete all commit points once they have reached the given age.
           Supports DateMathParser syntax e.g.
