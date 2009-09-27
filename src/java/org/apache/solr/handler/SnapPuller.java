@@ -832,6 +832,8 @@ public class SnapPuller {
     long bytesDownloaded = 0;
 
     FileChannel fileChannel;
+    
+    private FileOutputStream fileOutputStream;
 
     byte[] buf = new byte[1024 * 1024];
 
@@ -850,7 +852,7 @@ public class SnapPuller {
     private Long indexVersion;
 
     FileFetcher(File dir, Map<String, Object> fileDetails, String saveAs,
-                boolean isConf, long latestVersion) throws FileNotFoundException {
+                boolean isConf, long latestVersion) throws IOException {
       this.copy2Dir = dir;
       this.fileName = (String) fileDetails.get(NAME);
       this.size = (Long) fileDetails.get(SIZE);
@@ -862,7 +864,10 @@ public class SnapPuller {
       indexVersion = latestVersion;
 
       this.file = new File(copy2Dir, saveAs);
-      this.fileChannel = new FileOutputStream(file).getChannel();
+      
+      this.fileOutputStream = new FileOutputStream(file);
+      this.fileChannel = this.fileOutputStream.getChannel();
+
       if (includeChecksum)
         checksum = new Adler32();
     }
@@ -992,8 +997,8 @@ public class SnapPuller {
      */
     private void cleanup() {
       try {
-        //close the file
-        fileChannel.close();
+        //close the FileOutputStream (which also closes the Channel)
+        fileOutputStream.close();
       } catch (Exception e) {/* noop */
           LOG.error("Error closing the file stream: "+ this.saveAs ,e);
       }
