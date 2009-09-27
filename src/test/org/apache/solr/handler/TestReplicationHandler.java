@@ -40,7 +40,15 @@ import java.net.URL;
  * @version $Id$
  * @since 1.4
  */
-public class TestReplicationHandler extends TestCase {
+public class TestReplicationHandler extends AbstractSolrTestCase {
+  public String getSchemaFile() {
+    return null;
+  }
+
+  public String getSolrConfigFile() {
+    return null;
+  }
+
 
   private static final String CONF_DIR = "." + File.separator + "solr" + File.separator + "conf" + File.separator;
   private static final String SLAVE_CONFIG = CONF_DIR + "solrconfig-slave.xml";
@@ -51,7 +59,9 @@ public class TestReplicationHandler extends TestCase {
 
   String context = "/solr";
 
+
   public void setUp() throws Exception {
+    super.setUp();    
     master = new SolrInstance("master", null);
     master.setUp();
     masterJetty = createJetty(master);
@@ -65,10 +75,12 @@ public class TestReplicationHandler extends TestCase {
 
   @Override
   public void tearDown() throws Exception {
+    super.preTearDown();
     masterJetty.stop();
     slaveJetty.stop();
     master.tearDown();
     slave.tearDown();
+    super.tearDown();
   }
 
   private JettySolrRunner createJetty(SolrInstance instance) throws Exception {

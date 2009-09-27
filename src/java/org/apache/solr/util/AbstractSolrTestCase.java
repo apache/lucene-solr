@@ -28,6 +28,8 @@ import org.apache.solr.request.*;
 import org.apache.solr.util.TestHarness;
 
 import org.xml.sax.SAXException;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 import junit.framework.TestCase;
 import javax.xml.xpath.XPathExpressionException;
 
@@ -95,26 +97,53 @@ public abstract class AbstractSolrTestCase extends TestCase {
    * </ul>
    *
    */
+
+  public static Logger log = LoggerFactory.getLogger(AbstractSolrTestCase.class);
+
   public void setUp() throws Exception {
+    log.info("####SETUP_START " + getName());
     dataDir = new File(System.getProperty("java.io.tmpdir")
-        + System.getProperty("file.separator")
-        + getClass().getName() + "-" + System.currentTimeMillis());
+            + System.getProperty("file.separator")
+            + getClass().getName() + "-" + System.currentTimeMillis());
     dataDir.mkdirs();
-        
-    solrConfig = h.createConfig(getSolrConfigFile());
-    h = new TestHarness( dataDir.getAbsolutePath(),
-                    solrConfig,
-                    getSchemaFile());
-    lrf = h.getRequestFactory
-      ("standard",0,20,"version","2.2");
+
+    String configFile = getSolrConfigFile();
+    if (configFile != null) {
+
+      solrConfig = h.createConfig(getSolrConfigFile());
+      h = new TestHarness( dataDir.getAbsolutePath(),
+              solrConfig,
+              getSchemaFile());
+      lrf = h.getRequestFactory
+              ("standard",0,20,"version","2.2");
+    }
+    log.info("####SETUP_END " + getName());
   }
-    
+
+  /** Subclasses that override setUp can optionally call this method
+   * to log the fact that their setUp process has ended.
+   */
+  public void postSetUp() {
+    log.info("####POSTSETUP " + getName());
+  }
+
+
+  /** Subclasses that override tearDown can optionally call this method
+   * to log the fact that the tearDown process has started.  This is necessary
+   * since subclasses will want to call super.tearDown() at the *end* of their
+   * tearDown method.
+   */
+  public void preTearDown() {
+    log.info("####PRETEARDOWN " + getName());      
+  }
+
   /**
    * Shuts down the test harness, and makes the best attempt possible
    * to delete dataDir, unless the system property "solr.test.leavedatadir"
    * is set.
    */
   public void tearDown() throws Exception {
+    log.info("####TEARDOWN_START " + getName());
     if (h != null) { h.close(); }
     String skip = System.getProperty("solr.test.leavedatadir");
     if (null != skip && 0 != skip.trim().length()) {

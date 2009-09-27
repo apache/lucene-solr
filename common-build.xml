@@ -102,6 +102,7 @@
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
   <property name="junit.output.dir" location="${common.dir}/${dest}/test-results"/>
   <property name="junit.reports" location="${common.dir}/${dest}/test-results/reports"/>
+  <property name="junit.formatter" value="plain"/>
 
   <!-- Maven properties -->
   <property name="maven.build.dir" value="${basedir}/build/maven"/>

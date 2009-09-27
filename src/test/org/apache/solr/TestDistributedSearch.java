@@ -44,7 +44,15 @@ import junit.framework.TestCase;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestDistributedSearch extends TestCase {
+public class TestDistributedSearch extends AbstractSolrTestCase {
+  public String getSchemaFile() {
+    return null;
+  }
+
+  public String getSolrConfigFile() {
+    return null;
+  }
+
   static Random r = new Random(0);
   File testDir;
   
@@ -75,22 +83,24 @@ public class TestDistributedSearch extends TestCase {
   String missingField="missing_but_valid_field_t";
   String invalidField="invalid_field_not_in_schema";
 
-
-
   @Override public void setUp() throws Exception
   {
+    super.setUp();
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     testDir = new File(System.getProperty("java.io.tmpdir")
         + System.getProperty("file.separator")
         + getClass().getName() + "-" + System.currentTimeMillis());
     testDir.mkdirs();
+    super.postSetUp();
   }
 
   @Override public void tearDown() throws Exception
   {
+    super.preTearDown();
     destroyServers();
     AbstractSolrTestCase.recurseDelete(testDir);
+    super.tearDown();
   }
 
 
