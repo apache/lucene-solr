@@ -578,6 +578,9 @@ Bug Fixes
 
 67. SOLR-1427: Fixed registry.jsp issue with MBeans (gsingers) 
 
+68. SOLR-1468: SolrJ's XML response parsing threw an exception for null
+     names, such as those produced when facet.missing=true (yonik)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
