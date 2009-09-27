@@ -105,7 +105,7 @@ public class SolrIndexConfig {
       atrs.put("class",str.trim());
       mergeSchedulerInfo = new PluginInfo("mergeScheduler",atrs,null,null);
     } else {
-      mergeSchedulerInfo = getPluginInfo(prefix + "/mergeScheduler", solrConfig);
+      mergeSchedulerInfo = getPluginInfo(prefix + "/mergeScheduler", solrConfig, def.mergeSchedulerInfo);
     }
     str =  solrConfig.get(prefix+"/mergePolicy/text()",null);
     if(str != null && str.trim().length() >0){
@@ -116,7 +116,7 @@ public class SolrIndexConfig {
       atrs.put("class",str.trim());
       mergePolicyInfo = new PluginInfo("mergePolicy",atrs,null,null);
     } else {
-      mergePolicyInfo = getPluginInfo(prefix + "/mergePolicy", solrConfig);
+      mergePolicyInfo = getPluginInfo(prefix + "/mergePolicy", solrConfig, def.mergePolicyInfo);
     }
     
     luceneAutoCommit = solrConfig.getBool(prefix + "/luceneAutoCommit", def.luceneAutoCommit);
@@ -130,8 +130,8 @@ public class SolrIndexConfig {
 
   }
 
-  private PluginInfo getPluginInfo(String path, SolrConfig solrConfig){
+  private PluginInfo getPluginInfo(String path, SolrConfig solrConfig, PluginInfo def)  {
     List<PluginInfo> l = solrConfig.readPluginInfos(path, false, true);
-    return l.isEmpty() ? null : l.get(0);
+    return l.isEmpty() ? def : l.get(0);
   }
 }

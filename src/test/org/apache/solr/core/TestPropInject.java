@@ -14,7 +14,10 @@ public class TestPropInject extends AbstractSolrTestCase {
   }
 
   public String getSolrConfigFile() {
-    return "solrconfig-propinject.xml";
+    if ("testMergePolicyDefaults".equals(getName()) || "testPropsDefaults".equals(getName()))
+      return "solrconfig-propinject-indexdefault.xml";
+    else
+      return "solrconfig-propinject.xml";
   }
   
   class ExposeWriterHandler extends DirectUpdateHandler2 {
@@ -33,10 +36,22 @@ public class TestPropInject extends AbstractSolrTestCase {
     LogByteSizeMergePolicy mp = (LogByteSizeMergePolicy)writer.getMergePolicy();
     assertEquals(64.0, mp.getMaxMergeMB());
   }
+
+  public void testMergePolicyDefaults() throws Exception {
+    IndexWriter writer = new ExposeWriterHandler().getWriter();
+    LogByteSizeMergePolicy mp = (LogByteSizeMergePolicy)writer.getMergePolicy();
+    assertEquals(32.0, mp.getMaxMergeMB());
+  }
   
   public void testProps() throws Exception {
     IndexWriter writer = new ExposeWriterHandler().getWriter();
     ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler)writer.getMergeScheduler();
     assertEquals(2, cms.getMaxThreadCount());
+  }
+
+  public void testPropsDefaults() throws Exception {
+    IndexWriter writer = new ExposeWriterHandler().getWriter();
+    ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler)writer.getMergeScheduler();
+    assertEquals(10, cms.getMaxThreadCount());
   }
 }
