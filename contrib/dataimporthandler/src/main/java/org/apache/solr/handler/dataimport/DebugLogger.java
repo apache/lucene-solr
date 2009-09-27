@@ -271,7 +271,7 @@ class DebugLogger {
                 || type == SolrWriter.TRANSFORMER_EXCEPTION) {
           displayName = "transformer:" + name;
         } else if (type == SolrWriter.START_DOC) {
-          name = displayName = "document#" + SolrWriter.getDocCount();
+          this.name = displayName = "document#" + SolrWriter.getDocCount();
         }
         parent.lst.add(displayName, lst);
       }
