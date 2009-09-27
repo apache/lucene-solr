@@ -237,7 +237,7 @@ public class TestDistributedSearch extends AbstractSolrTestCase {
     compareResponses(rsp, controlRsp);
 
     if (stress>0) {
-      System.out.println("starting stress...");
+      log.info("starting stress...");
       Thread[] threads = new Thread[nThreads];
       for (int i=0; i<threads.length; i++) {
         threads[i] = new Thread() {
@@ -488,8 +488,7 @@ public class TestDistributedSearch extends AbstractSolrTestCase {
     String cmp;    
     cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
-      System.out.println(a);
-      System.out.println(b);
+      log.info("Mismatched responses:\n"+a+"\n"+b);
       TestCase.fail(cmp);
     }
   }
