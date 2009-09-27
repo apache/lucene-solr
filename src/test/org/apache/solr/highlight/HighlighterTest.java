@@ -585,6 +585,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
     args.put("hl.fl", "t_text");
     args.put("hl.fragsize", "40");
     args.put("hl.snippets", "10");
+    args.put("hl.usePhraseHighlighter", "false");
 
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard", 0, 200, args);

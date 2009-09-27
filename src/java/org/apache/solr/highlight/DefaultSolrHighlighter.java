@@ -144,7 +144,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    */
   private QueryScorer getSpanQueryScorer(Query query, String fieldName, TokenStream tokenStream, SolrQueryRequest request) throws IOException {
     boolean reqFieldMatch = request.getParams().getFieldBool(fieldName, HighlightParams.FIELD_MATCH, false);
-    Boolean highlightMultiTerm = request.getParams().getBool(HighlightParams.HIGHLIGHT_MULTI_TERM);
+    Boolean highlightMultiTerm = request.getParams().getBool(HighlightParams.HIGHLIGHT_MULTI_TERM, true);
     if(highlightMultiTerm == null) {
       highlightMultiTerm = false;
     }
@@ -306,8 +306,9 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
             }
                          
             Highlighter highlighter;
-            if (Boolean.valueOf(req.getParams().get(HighlightParams.USE_PHRASE_HIGHLIGHTER))) {
-              // wrap CachingTokenFilter around TokenStream for reuse
+            if (Boolean.valueOf(req.getParams().get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true"))) {
+              // TODO: this is not always necessary - eventually we would like to avoid this wrap
+              //       when it is not needed.
               tstream = new CachingTokenFilter(tstream);
               
               // get highlighter
