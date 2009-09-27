@@ -89,7 +89,7 @@ public class ReverseOrdFieldSource extends ValueSource {
   public boolean equals(Object o) {
     if (o.getClass() !=  ReverseOrdFieldSource.class) return false;
     ReverseOrdFieldSource other = (ReverseOrdFieldSource)o;
-    return this.field.equals(field);
+    return this.field.equals(other.field);
   }
 
   private static final int hcode = ReverseOrdFieldSource.class.hashCode();
