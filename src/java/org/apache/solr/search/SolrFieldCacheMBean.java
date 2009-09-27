@@ -62,14 +62,14 @@ public class SolrFieldCacheMBean implements SolrInfoMBean {
     for (int i = 0; i < entries.length; i++) {
       CacheEntry e = entries[i];
       e.estimateSize();
-      stats.add("entry #" + i, e.toString());
+      stats.add("entry#" + i, e.toString());
     }
 
     Insanity[] insanity = checker.checkSanity(entries);
 
     stats.add("insanity_count", insanity.length);
     for (int i = 0; i < insanity.length; i++) {
-      stats.add("insanity #" + i, insanity[i].toString());
+      stats.add("insanity#" + i, insanity[i].toString());
     }
     return stats;
   }
