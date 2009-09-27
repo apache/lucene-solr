@@ -87,7 +87,7 @@ public class SolrDeletionPolicy implements IndexDeletionPolicy, NamedListInitial
   static String str(List commits) {
     StringBuilder sb = new StringBuilder();
     sb.append("num=").append(commits.size());
-    IndexCommit comm = (IndexCommit) commits.get(0);
+
     for (IndexCommit commit : (List<IndexCommit>) commits) {
       sb.append("\n\t");
       sb.append(str(commit));
