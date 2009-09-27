@@ -119,7 +119,6 @@ public class HighlightComponent extends SearchComponent
   @Override
   public void finishStage(ResponseBuilder rb) {
     if (rb.doHighlights && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
-      NamedList hlResult = new SimpleOrderedMap();
 
       Map.Entry<String, Object>[] arr = new NamedList.NamedListEntry[rb.resultIds.size()];
 
