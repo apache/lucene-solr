@@ -397,14 +397,9 @@ public class TestReplicationHandler extends AbstractSolrTestCase {
   public void testReplicateAfterWrite2Slave() throws Exception {
 
     //add 500 docs to master
-    for (int i = 0; i < 500; i++)
+    for (int i = 0; i < 500; i++) {
       index(masterClient, "id", i, "name", "name = " + i);
-
-    masterClient.commit();
-
-    NamedList masterQueryRsp = query("*:*", masterClient);
-    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
-    assertEquals(500, masterQueryResult.getNumFound());
+    }
 
     String masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=disableReplication";
     URL url = new URL(masterUrl);
@@ -414,6 +409,12 @@ public class TestReplicationHandler extends AbstractSolrTestCase {
     } catch (IOException e) {
       //e.printStackTrace();
     }
+
+    masterClient.commit();
+
+    NamedList masterQueryRsp = query("*:*", masterClient);
+    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    assertEquals(500, masterQueryResult.getNumFound());
 
     index(slaveClient, "id", 555, "name", "name = " + 555);
     slaveClient.commit(true, true);
