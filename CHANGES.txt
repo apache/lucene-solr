@@ -4,7 +4,7 @@ Apache Solr Version 1.4-dev
 
 Introduction
 ------------
-Apache Solr is an open source enterprise search server based on the Lucene Java
+Apache Solr is an open source enterprise search server based on the Apache Lucene Java
 search library, with XML/HTTP and JSON APIs, hit highlighting, faceted search,
 caching, replication, and a web administration interface. It runs in a Java
 servlet container such as Tomcat.
@@ -61,8 +61,17 @@ error.  See SOLR-1410 for more information.
 
 Versions of Major Components
 ----------------------------
-Apache Lucene 2.9.0 final release candidate #1, subject to approval
+Apache Lucene 2.9.0 final release
 Apache Tika 0.4
+Carrot2 3.1.0
+
+Lucene Information
+----------------
+
+Since Solr is built on top of Lucene, many people add customizations to Solr
+ that are dependent on Lucene.  Please see http://lucene.apache.org/java/2_9_0/,
+ especially http://lucene.apache.org/java/2_9_0/changes/Changes.html for more information
+ on the version of Lucene used in Solr.
 
 Detailed Change List
 ----------------------
