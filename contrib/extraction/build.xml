@@ -110,11 +110,7 @@
   </target>
 
   <target name="dist" depends="build">
-    <mkdir dir="${solr-path}/dist/solr-cell-lib"/>
     <copy file="build/${fullnamever}.jar" todir="${solr-path}/dist"/>
-    <copy todir="${solr-path}/dist/solr-cell-lib">
-      <fileset dir="lib"/>
-    </copy>
   </target>
 
   <target name="example" depends="build">

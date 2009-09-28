@@ -152,12 +152,6 @@
   </target>
 
   <target name="dist" depends="build">
-    <mkdir dir="${solr-path}/dist/solr-clustering-lib"/>
-    <copy todir="${solr-path}/dist/solr-clustering-lib">
-      <fileset dir="lib">
-        <exclude name="downloads/**"/>
-      </fileset>
-    </copy>
     <!--
       <copy file="${dest}/${fullnamever}.jar" todir="${solr-path}/build/web/WEB-INF/lib"/>
       <copy todir="${solr-path}/build/web/WEB-INF/lib" flatten="true">
