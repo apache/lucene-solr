@@ -736,6 +736,8 @@ Documentation
  2. SOLR-962: Note about null handling in ModifiableSolrParams.add javadoc
     (Kay Kay via hossman)
 
+ 3. SOLR-1409: Added Solr Powered By Logos    
+
 ================== Release 1.3.0 20080915 ==================
 
 Upgrading from Solr 1.2
