@@ -25,13 +25,14 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.commons.io.FileUtils;
 
 import java.nio.ByteBuffer;
 import java.io.File;
 import java.util.List;
 
-public class TestBinaryField extends TestCase {
+public class TestBinaryField extends AbstractSolrTestCase {
   CommonsHttpSolrServer server;
   JettySolrRunner jetty;
 
@@ -39,14 +40,18 @@ public class TestBinaryField extends TestCase {
   static final String context = "/example";
 
 
+  public String getSchemaFile() {
+    return null;
+  }
+  public String getSolrConfigFile() {
+    return null;
+  }
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
 
-    String home = System.getProperty("java.io.tmpdir")
-            + File.separator
-            + getClass().getName() + "-" + System.currentTimeMillis();
-
+    File home = dataDir;
 
     File homeDir = new File(home, "example");
     File dataDir = new File(homeDir, "data");
@@ -76,6 +81,7 @@ public class TestBinaryField extends TestCase {
     String url = "http://localhost:" + jetty.getLocalPort() + context;
     server = new CommonsHttpSolrServer(url);
 //    server.setRequestWriter(new BinaryRequestWriter());
+    super.postSetUp();
   }
 
   public void testSimple() throws Exception {
@@ -172,7 +178,8 @@ public class TestBinaryField extends TestCase {
   }
 
 
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     jetty.stop();
+    super.tearDown();
   }
 }
