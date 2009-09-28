@@ -16,10 +16,12 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.apache.solr.analysis.HTMLStripReader;
+import org.apache.solr.analysis.HTMLStripCharFilter;
+import org.apache.lucene.analysis.CharReader;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.io.BufferedReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +31,7 @@ import java.util.Map;
  * in case you don't need this HTML anyway.
  *
  * @version $Id$
- * @see org.apache.solr.analysis.HTMLStripReader
+ * @see org.apache.solr.analysis.HTMLStripCharFilter
  * @since solr 1.4
  */
 public class HTMLStripTransformer extends Transformer {
@@ -73,7 +75,7 @@ public class HTMLStripTransformer extends Transformer {
     StringBuilder out = new StringBuilder();
     StringReader strReader = new StringReader(value);
     try {
-      HTMLStripReader html = new HTMLStripReader(strReader);
+      HTMLStripCharFilter html = new HTMLStripCharFilter(CharReader.get(strReader.markSupported() ? strReader : new BufferedReader(strReader)));
       char[] cbuf = new char[1024 * 10];
       while (true) {
         int count = html.read(cbuf);
