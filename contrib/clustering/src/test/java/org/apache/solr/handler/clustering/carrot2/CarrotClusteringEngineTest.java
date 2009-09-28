@@ -40,11 +40,11 @@ import java.util.List;
 @SuppressWarnings("unchecked")
 public class CarrotClusteringEngineTest extends AbstractClusteringTest {
   public void testCarrotLingo() throws Exception {
-    checkEngine(getClusteringEngine("default"), 9);
+    checkEngine(getClusteringEngine("default"), 10);
   }
 
   public void testCarrotStc() throws Exception {
-    checkEngine(getClusteringEngine("stc"), 2);
+    checkEngine(getClusteringEngine("stc"), 1);
   }
 
   public void testWithoutSubclusters() throws Exception {

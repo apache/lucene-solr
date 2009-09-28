@@ -1,0 +1,14 @@
+Apache Solr Clustering Implementation
+
+Intro:
+
+See http://wiki.apache.org/solr/ClusteringComponent
+
+CHANGES
+
+$Id:$
+
+================== Release 1.4-dev ==================
+
+Solr Clustering will be released for the first time in Solr 1.4.  See http://wiki.apache.org/solr/ClusteringComponent
+ for details on using.
