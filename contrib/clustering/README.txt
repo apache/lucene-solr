@@ -5,4 +5,4 @@ See http://wiki.apache.org/solr/ClusteringComponent for how to get started.
 
 Also, note, some of the Carrot2 libraries cannot be distributed in binary form because they are LGPL.  Thus, you will have
 to download those components.  See the build.xml file located in this directory for the location of the libraries.
-The libraries you will need are: nni.jar, Colt and PNJ.
+The libraries you will need are: nni.jar, Colt, PNJ and simple-xml.
