@@ -111,7 +111,7 @@ public class JettySolrRunner
   }
 
   /** Waits until a ping query to the solr server succeeds,
-   * retrying every 200 milliseconds for a total of 20 seconds.
+   * retrying every 200 milliseconds up to 2 minutes.
    */
   public void waitForSolr(String context) throws Exception
   {
@@ -122,7 +122,7 @@ public class JettySolrRunner
 
     Exception ex = null;
     // Wait for a total of 20 seconds: 100 tries, 200 milliseconds each
-    for (int i=0; i<100; i++) {
+    for (int i=0; i<600; i++) {
       try {
         InputStream stream = url.openStream();
         stream.close();
