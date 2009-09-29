@@ -171,6 +171,9 @@ Optimizations
 4. SOLR-1098: DateFormatTransformer can cache the format objects.
               (Noble Paul via shalin)
 
+5. SOLR-1465: Replaced string concatenations with StringBuilder append calls in XPathRecordReader.
+              (Mark Miller, shalin)
+
 Bug Fixes
 ----------------------
 1. SOLR-800:  Deep copy collections to avoid ConcurrentModificationException in XPathEntityprocessor while streaming

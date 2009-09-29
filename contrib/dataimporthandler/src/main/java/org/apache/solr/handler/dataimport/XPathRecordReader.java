@@ -288,19 +288,19 @@ public class XPathRecordReader {
             // becuase we are fetching events here we need to ensure the outer
             // loop does not end up doing an extra parser.next()
             isNextEventFetched = true;
-            String text = parser.getText();
+            StringBuilder text = new StringBuilder(parser.getText());
             event = parser.next();
 
             while (true) {
               if(event == CDATA || event == CHARACTERS || event == SPACE) {
-                text = text + parser.getText();
+                text.append(parser.getText());
               } else if(event == START_ELEMENT) {
                 if (flatten) {
                   int starts = 1;
                   while (true) {
                     event = parser.next();
                     if (event == CDATA || event == CHARACTERS || event == SPACE) {
-                      text = text + parser.getText();
+                      text.append(parser.getText());
                     } else if (event == START_ELEMENT) {
                       starts++;
                     } else if (event == END_ELEMENT) {
@@ -319,7 +319,7 @@ public class XPathRecordReader {
               event = parser.next();
             }
             // save the text we have read against the fieldName in the Map values
-            putText(values, text, fieldName, multiValued);
+            putText(values, text.toString(), fieldName, multiValued);
           } else if (event == START_ELEMENT) {
             handleStartElement(parser, childrenFound, handler, values, stack, recordStarted);
           }
