@@ -45,31 +45,36 @@
       <version>@maven_version@</version>
     </dependency>
 
-    <!-- Solr Specific Lucene -->
+    <!-- Lucene -->
     <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-lucene-analyzers</artifactId>
-      <version>@maven_version@</version>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-analyzers</artifactId>
+      <version>2.9.0</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-lucene-highlighter</artifactId>
-      <version>@maven_version@</version>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-highlighter</artifactId>
+      <version>2.9.0</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-lucene-queries</artifactId>
-      <version>@maven_version@</version>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-queries</artifactId>
+      <version>2.9.0</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-lucene-snowball</artifactId>
-      <version>@maven_version@</version>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-snowball</artifactId>
+      <version>2.9.0</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.solr</groupId>
-      <artifactId>solr-lucene-spellchecker</artifactId>
-      <version>@maven_version@</version>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-memory</artifactId>
+      <version>2.9.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-spellchecker</artifactId>
+      <version>2.9.0</version>
     </dependency>
 
     <!-- Apache Commons -->
