@@ -60,7 +60,7 @@
   </target>
 
   <target name="build" depends="compile">
-    <solr-jar destfile="target/${fullnamever}.jar" basedir="target/classes"
+    <solr-jar destfile="src/main/solr/lib/${fullnamever}.jar" basedir="target/classes"
               manifest="${common.dir}/${dest}/META-INF/MANIFEST.MF">
       <fileset dir="src/main/java" excludes="**/*.java"/>
     </solr-jar>
@@ -96,9 +96,7 @@
     <fail if="tests.failed">Tests failed!</fail>
   </target>
 
-  <target name="dist" depends="build">
-    <copy file="target/${fullnamever}.jar" todir="${common.dir}/dist/${fullnamever}.jar" />
-  </target>
+  <target name="dist" depends="build" />
 
   <target name="javadoc">
    	<sequential>
