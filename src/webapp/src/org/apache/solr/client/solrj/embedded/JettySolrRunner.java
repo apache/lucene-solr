@@ -127,7 +127,7 @@ public class JettySolrRunner
         InputStream stream = url.openStream();
         stream.close();
       } catch (IOException e) {
-        e.printStackTrace();
+        // e.printStackTrace();
         ex = e;
         Thread.sleep(200);
         continue;
