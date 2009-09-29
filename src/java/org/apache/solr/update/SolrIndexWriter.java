@@ -23,7 +23,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.StandardDirectoryFactory;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.SolrPluginUtils;
 
@@ -35,7 +34,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
-import java.lang.reflect.InvocationTargetException;
 import java.text.DateFormat;
 import java.util.Date;
 
@@ -63,7 +61,6 @@ public class SolrIndexWriter extends IndexWriter {
     // setUseCompoundFile(false);
 
     if (config != null) {
-      setUseCompoundFile(config.useCompoundFile);
       //only set maxBufferedDocs
       if (config.maxBufferedDocs != -1) {
         setMaxBufferedDocs(config.maxBufferedDocs);
@@ -86,6 +83,14 @@ public class SolrIndexWriter extends IndexWriter {
       }
       if(config.mergePolicyInfo != null) SolrPluginUtils.invokeSetters(policy,config.mergePolicyInfo.initArgs);
       setMergePolicy(policy);
+
+      if (getMergePolicy() instanceof LogMergePolicy) {
+        setUseCompoundFile(config.useCompoundFile);
+      } else  {
+        log.warn("Use of compound file format cannot be configured if merge policy is not an instance " +
+                "of LogMergePolicy. The configured policy's defaults will be used.");
+      }
+
       className = config.mergeSchedulerInfo == null ? SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME: config.mergeSchedulerInfo.className;
       MergeScheduler scheduler = (MergeScheduler) schema.getResourceLoader().newInstance(className);
       if(config.mergeSchedulerInfo != null) SolrPluginUtils.invokeSetters(scheduler,config.mergeSchedulerInfo.initArgs);
