@@ -395,9 +395,9 @@ public class TestReplicationHandler extends AbstractSolrTestCase {
   }
 
   public void testReplicateAfterWrite2Slave() throws Exception {
-
-    //add 500 docs to master
-    for (int i = 0; i < 500; i++) {
+    //add 50 docs to master
+    int nDocs = 50;
+    for (int i = 0; i < nDocs; i++) {
       index(masterClient, "id", i, "name", "name = " + i);
     }
 
@@ -414,8 +414,19 @@ public class TestReplicationHandler extends AbstractSolrTestCase {
 
     NamedList masterQueryRsp = query("*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
-    assertEquals(500, masterQueryResult.getNumFound());
+    assertEquals(nDocs, masterQueryResult.getNumFound());
 
+    // Make sure that both the index version and index generation on the slave is
+    // higher than that of the master, just to make the test harder.
+    Thread.sleep(100);
+    index(slaveClient, "id", 551, "name", "name = " + 551);
+    slaveClient.commit(true, true);
+    index(slaveClient, "id", 552, "name", "name = " + 552);
+    slaveClient.commit(true, true);
+    index(slaveClient, "id", 553, "name", "name = " + 553);
+    slaveClient.commit(true, true);
+    index(slaveClient, "id", 554, "name", "name = " + 554);
+    slaveClient.commit(true, true);
     index(slaveClient, "id", 555, "name", "name = " + 555);
     slaveClient.commit(true, true);
 
