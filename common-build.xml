@@ -58,8 +58,8 @@
 
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
-  <property name="javac.source" value="1.4"/>
-  <property name="javac.target" value="1.4"/>
+  <property name="javac.source" value="1.5"/>
+  <property name="javac.target" value="1.5"/>
 
   <property name="javadoc.link" value="http://java.sun.com/j2se/1.4/docs/api/"/>
   <property name="javadoc.access" value="protected"/>
