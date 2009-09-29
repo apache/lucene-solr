@@ -41,7 +41,7 @@ public class MultiCoreExampleJettyTest extends MultiCoreExampleTestBase {
     super.setUp();
 
     jetty = new JettySolrRunner( context, 0 );
-    jetty.start();
+    jetty.start(false);
     port = jetty.getLocalPort();
 
     h.getCoreContainer().setPersistent(false);    

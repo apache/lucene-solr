@@ -18,6 +18,8 @@
 package org.apache.solr.client.solrj.embedded;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -41,6 +43,7 @@ public class JettySolrRunner
 {
   Server server;
   FilterHolder dispatchFilter;
+  String context;
   
   public JettySolrRunner( String context, int port )
   {
@@ -70,6 +73,7 @@ public class JettySolrRunner
   
   private void init( String context, int port )
   {
+    this.context = context;
     server = new Server( port );    
     server.setStopAtShutdown( true );
     
@@ -86,17 +90,53 @@ public class JettySolrRunner
   
   public void start() throws Exception
   {
+    start(true);
+  }
+
+  public void start(boolean waitForSolr) throws Exception
+  {
     if(!server.isRunning() ) {
       server.start();
     }
+    if (waitForSolr) waitForSolr(context);
   }
-  
+
+
   public void stop() throws Exception
   {
     if( server.isRunning() ) {
       server.stop();
       server.join();
     }
+  }
+
+  /** Waits until a ping query to the solr server succeeds,
+   * retrying every 200 milliseconds for a total of 20 seconds.
+   */
+  public void waitForSolr(String context) throws Exception
+  {
+    int port = getLocalPort();
+
+    // A raw term query type doesn't check the schema
+    URL url = new URL("http://localhost:"+port+context+"/select?q={!raw+f=junit_test_query}ping");
+
+    Exception ex = null;
+    // Wait for a total of 20 seconds: 100 tries, 200 milliseconds each
+    for (int i=0; i<100; i++) {
+      try {
+        InputStream stream = url.openStream();
+        stream.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+        ex = e;
+        Thread.sleep(200);
+        continue;
+      }
+
+      return;
+    }
+
+    throw new RuntimeException("Jetty/Solr unresponsive",ex);
   }
 
   /**
@@ -110,7 +150,7 @@ public class JettySolrRunner
     }
     return conns[0].getLocalPort();
   }
-  
+
   //--------------------------------------------------------------
   //--------------------------------------------------------------
     
