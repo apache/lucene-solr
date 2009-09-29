@@ -60,7 +60,7 @@
   </target>
 
   <target name="build" depends="compile">
-    <solr-jar destfile="${common.dir}/dist/${fullnamever}.jar" basedir="target/classes"
+    <solr-jar destfile="target/${fullnamever}.jar" basedir="target/classes"
               manifest="${common.dir}/${dest}/META-INF/MANIFEST.MF">
       <fileset dir="src/main/java" excludes="**/*.java"/>
     </solr-jar>
@@ -97,6 +97,7 @@
   </target>
 
   <target name="dist" depends="build">
+    <copy file="target/${fullnamever}.jar" todir="${common.dir}/dist/${fullnamever}.jar" />
   </target>
 
   <target name="javadoc">
