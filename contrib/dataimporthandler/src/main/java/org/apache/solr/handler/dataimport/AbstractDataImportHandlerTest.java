@@ -73,12 +73,26 @@ public abstract class AbstractDataImportHandlerTest extends
             dataConfig);
     h.query("/dataimport", request);
   }
-  protected void runFullImport(String dataConfig, Map<String ,String > extraParams) throws Exception {
+
+  /**
+   * Runs a full-import using the given dataConfig and the provided request parameters.
+   *
+   * By default, debug=on, clean=true and commit=true are passed which can be overridden.
+   *
+   * @param dataConfig the data-config xml as a string
+   * @param extraParams any extra request parameters needed to be passed to DataImportHandler
+   * @throws Exception in case of any error
+   */
+  protected void runFullImport(String dataConfig, Map<String, String> extraParams) throws Exception {
+    HashMap<String, String> params = new HashMap<String, String>();
+    params.put("command", "full-import");
+    params.put("debug", "on");
+    params.put("dataConfig", dataConfig);
+    params.put("clean", "true");
+    params.put("commit", "true");
+    params.putAll(extraParams);
     NamedList l = new NamedList();
-    l.add("command", "full-import");
-    l.add("debug", "on");
-    l.add("dataConfig", dataConfig);
-    for (Map.Entry<String, String> e : extraParams.entrySet()) {
+    for (Map.Entry<String, String> e : params.entrySet()) {
       l.add(e.getKey(),e.getValue());
     }
     LocalSolrQueryRequest request = new LocalSolrQueryRequest(h.getCore(), l);  
