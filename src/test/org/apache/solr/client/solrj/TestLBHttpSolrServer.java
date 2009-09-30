@@ -48,7 +48,7 @@ public class TestLBHttpSolrServer extends TestCase {
 
   public void setUp() throws Exception {
     for (int i = 0; i < solr.length; i++) {
-      solr[i] = new SolrInstance("solr" + i, 43000 + i);
+      solr[i] = new SolrInstance("solr" + i, 0);
       solr[i].setUp();
       solr[i].startJetty();
       addDocs(solr[i]);
@@ -224,6 +224,7 @@ public class TestLBHttpSolrServer extends TestCase {
       System.setProperty("solr.solr.home", getHomeDir());
       System.setProperty("solr.data.dir", getDataDir());
       jetty.start();
+      this.port = jetty.getLocalPort();
 //      System.out.println("waiting.........");
 //      Thread.sleep(5000);
     }
