@@ -112,7 +112,7 @@
   </target>
 	
   <target name="test-tag" depends="download-tag, compile-core, compile-demo, jar-core"
-  	description="Runs tests of a previous Lucene version. Specify tag version like this: -Dtag=branches/lucene_2_4_back_compat_tests">
+  	description="Runs tests of a previous Lucene version. Specify tag version like this: -Dtag=branches/lucene_2_9_back_compat_tests">
 	<sequential>
       <available property="tag.available" file="${tags.dir}/${tag}/src/test" />
 
@@ -120,11 +120,12 @@
 	  	Specified tag '${tag}' could not be found in directory '${tags.dir}/${tag}'.
 	  </fail>
 	  <mkdir dir="${build.dir}/${tag}"/>	  
-		
+
 	  <!-- first compile tag classes -->
 	  <compile
 	    srcdir="${tags.dir}/${tag}/src/java"
-	    destdir="${build.dir}/${tag}/classes/java">
+	    destdir="${build.dir}/${tag}/classes/java"
+      javac.source="${javac.source.tag}" javac.target="${javac.target.tag}">
 	  <classpath refid="tag.classpath"/>
 	  </compile>
 
@@ -134,7 +135,7 @@
 		  	
 	  <!-- compile tag tests against tag jar -->	
 	  <compile-test-macro srcdir="${tags.dir}/${tag}/src/test" destdir="${build.dir}/${tag}/classes/test"
-			  			  test.classpath="tag.test.classpath"/>
+			  			  test.classpath="tag.test.classpath" javac.source="${javac.source.tag}" javac.target="${javac.target.tag}"/>
 		
 	  <!-- run tag tests against trunk jar -->
       <test-macro dataDir="${tags.dir}/${tag}/src/test" 

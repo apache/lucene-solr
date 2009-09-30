@@ -40,9 +40,9 @@
 
   <property name="name" value="${ant.project.name}"/>
   <property name="Name" value="Lucene"/>
-  <property name="dev.version" value="2.9"/>
+  <property name="dev.version" value="3.0-dev"/>
   <property name="version" value="${dev.version}"/>
-  <property name="compatibility.tag" value="lucene_2_4_back_compat_tests_20090911"/>
+  <property name="compatibility.tag" value="lucene_2_9_back_compat_tests_20090930a"/>
   <property name="spec.version" value="${version}"/>	
   <property name="year" value="2000-${current.year}"/>
   <property name="final.name" value="lucene-${name}-${version}"/>
@@ -60,6 +60,8 @@
   <property name="javac.debug" value="on"/>
   <property name="javac.source" value="1.5"/>
   <property name="javac.target" value="1.5"/>
+  <property name="javac.source.tag" value="1.4"/>
+  <property name="javac.target.tag" value="1.4"/>
 
   <property name="javadoc.link" value="http://java.sun.com/j2se/1.5/docs/api/"/>
   <property name="javadoc.access" value="protected"/>
@@ -358,10 +360,14 @@
   	<attribute name="srcdir"/>
   	<attribute name="destdir"/>
   	<attribute name="test.classpath"/>
+    <attribute name="javac.source" default="${javac.source}"/>
+    <attribute name="javac.target" default="${javac.target}"/>
    	<sequential>
       <compile
         srcdir="@{srcdir}" 
-        destdir="@{destdir}">
+        destdir="@{destdir}"
+        javac.source="@{javac.source}"
+        javac.target="@{javac.source}">
         <classpath refid="@{test.classpath}"/>
       </compile>
 
@@ -534,6 +540,8 @@
   <macrodef name="compile">
     <attribute name="srcdir"/>
     <attribute name="destdir"/>
+    <attribute name="javac.source" default="${javac.source}"/>
+    <attribute name="javac.target" default="${javac.target}"/>
     <element name="nested" implicit="yes" optional="yes"/>
 
     <sequential>
@@ -544,11 +552,13 @@
         destdir="@{destdir}"
         deprecation="${javac.deprecation}"
         debug="${javac.debug}"
-        source="${javac.source}"
-        target="${javac.target}">
+        source="@{javac.source}"
+        target="@{javac.target}">
         <nested/>
         <compilerarg line="-Xmaxwarns 10000000"/>
         <compilerarg line="-Xmaxerrs 10000000"/>
+        <!-- for generics in Java 1.5: -->
+        <!--<compilerarg line="-Xlint:unchecked"/>-->
       </javac>
     </sequential>
   </macrodef>
