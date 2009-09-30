@@ -23,9 +23,6 @@
     Lucene Spatial Indexing
   </description>
 
-  <property name="javac.source" value="1.5" />
-  <property name="javac.target" value="1.5" />
-
   <import file="../contrib-build.xml"/>
 
   <property name="misc.jar" location="${common.dir}/build/contrib/misc/lucene-misc-${version}.jar"/>

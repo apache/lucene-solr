@@ -23,9 +23,6 @@
     Hits highlighter using TermVectors
   </description>
 
-  <property name="javac.source" value="1.5" />
-  <property name="javac.target" value="1.5" />
-
   <import file="../contrib-build.xml"/>
 
   <property name="analyzers.jar" location="${common.dir}/build/contrib/analyzers/lucene-analyzers-${version}.jar"/>
