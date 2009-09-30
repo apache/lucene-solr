@@ -117,14 +117,15 @@ public class TestEvaluatorBag {
     Evaluator dateFormatEval = EvaluatorBag.getDateFormatEvaluator();
     resolver.context = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);
 
-    assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()),
-            dateFormatEval.evaluate("'NOW','yyyy-MM-dd HH:mm'", resolver.context));
+    long time = System.currentTimeMillis();
+    assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date(time - 2*86400*1000)),
+            dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm'", resolver.context));
 
     Map<String, Object> map = new HashMap<String, Object>();
-    map.put("key", new Date());
+    map.put("key", new Date(time));
     resolver.addNamespace("A", map);
 
-    assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date()),
+    assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date(time)),
             dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm'", resolver.context));
   }
 
