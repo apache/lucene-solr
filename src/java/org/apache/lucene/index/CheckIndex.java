@@ -657,6 +657,7 @@ public class CheckIndex {
               throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " is out of bounds");
             if (pos < lastPos)
               throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " < lastPos " + lastPos);
+            lastPos = pos;
           }
         }
 
