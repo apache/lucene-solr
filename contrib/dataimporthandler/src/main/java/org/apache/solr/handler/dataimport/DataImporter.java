@@ -252,14 +252,6 @@ public class DataImporter {
     this.indexStartTime = indextStartTime;
   }
 
-  Date getLastIndexTime() {
-    return lastIndexTime;
-  }
-
-  void setLastIndexTime(Date lastIndexTime) {
-    this.lastIndexTime = lastIndexTime;
-  }
-
   void store(Object key, Object value) {
     store.put(key, value);
   }
@@ -387,8 +379,6 @@ public class DataImporter {
       return;
     }
     try {
-      Date lastModified = sw.loadIndexStartTime();
-      setLastIndexTime(lastModified);
       if (FULL_IMPORT_CMD.equals(command) || IMPORT_CMD.equals(command)) {
         doFullImport(sw, reqParams);
       } else if (command.equals(DELTA_IMPORT_CMD)) {

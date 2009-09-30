@@ -22,6 +22,7 @@ import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.common.util.NamedList;
 
 import java.io.IOException;
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +47,14 @@ public abstract class AbstractDataImportHandlerTest extends
 
   @Override
   public void tearDown() throws Exception {
+    // remove dataimport.properties
+    File f = new File("solr/conf/dataimport.properties");
+    log.info("Looking for dataimport.properties at: " + f.getAbsolutePath());
+    if (f.exists()) {
+      log.info("Deleting dataimport.properties");
+      if (!f.delete())
+        log.warn("Could not delete dataimport.properties");
+    }
     super.tearDown();
   }
 

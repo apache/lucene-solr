@@ -29,6 +29,10 @@ from Transformers into an EntityProcessorWrapper class. The EntityProcessor#dest
 parent-row at the end of row (end of data). A new method EntityProcessor#close is added which is called at the end
 of import.
 
+In Solr 1.3, if the last_index_time was not available (first import) and a delta-import was requested, a full-import
+was run instead. This is no longer the case. In Solr 1.4 delta import is run with last_index_time as the epoch
+date (January 1, 1970, 00:00:00 GMT) if last_index_time is not available.
+
 Detailed Change List
 ----------------------
 
@@ -265,6 +269,9 @@ Bug Fixes
 30.SOLR-1450: Jdbc connection properties such as batchSize are not applied if the driver jar is placed
               in solr_home/lib.
               (Steve Sun via shalin)
+
+31.SOLR-1474: Delta-import should run even if last_index_time is not set.
+              (shalin)
              
 
 Documentation

@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.text.ParseException;
 
 /**
  * <p> DocBuilder is responsible for creating Solr documents out of the given configuration. It also maintains
@@ -40,6 +41,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class DocBuilder {
 
   private static final Logger LOG = LoggerFactory.getLogger(DocBuilder.class);
+
+  private static final Date EPOCH = new Date(0);
 
   DataImporter dataImporter;
 
@@ -76,24 +79,36 @@ public class DocBuilder {
   }
 
   public VariableResolverImpl getVariableResolver() {
-    VariableResolverImpl resolver = new VariableResolverImpl();
-    Map<String, Object> indexerNamespace = new HashMap<String, Object>();
-    if (dataImporter.getLastIndexTime() != null)
-      indexerNamespace.put(LAST_INDEX_TIME,
-              DataImporter.DATE_TIME_FORMAT.get().format(dataImporter.getLastIndexTime()));
-    indexerNamespace.put(INDEX_START_TIME, dataImporter.getIndexStartTime());
-    indexerNamespace.put("request", requestParameters.requestParams);
-    indexerNamespace.put("functions", functionsNamespace);
-    for (DataConfig.Entity entity : dataImporter.getConfig().document.entities) {
-      String key = entity.name + "." + SolrWriter.LAST_INDEX_KEY;
-      String lastIndex = persistedProperties.getProperty(key);
-      if (lastIndex != null) {
-        indexerNamespace.put(key, lastIndex);
+    try {
+      VariableResolverImpl resolver = new VariableResolverImpl();
+      Map<String, Object> indexerNamespace = new HashMap<String, Object>();
+      if (persistedProperties.getProperty(LAST_INDEX_TIME) != null) {
+        indexerNamespace.put(LAST_INDEX_TIME,
+                DataImporter.DATE_TIME_FORMAT.get().parse(persistedProperties.getProperty(LAST_INDEX_TIME)));
+      } else  {
+        // set epoch
+        indexerNamespace.put(LAST_INDEX_TIME, EPOCH);
       }
+      indexerNamespace.put(INDEX_START_TIME, dataImporter.getIndexStartTime());
+      indexerNamespace.put("request", requestParameters.requestParams);
+      indexerNamespace.put("functions", functionsNamespace);
+      for (DataConfig.Entity entity : dataImporter.getConfig().document.entities) {
+        String key = entity.name + "." + SolrWriter.LAST_INDEX_KEY;
+        String lastIndex = persistedProperties.getProperty(key);
+        if (lastIndex != null) {
+          indexerNamespace.put(key, lastIndex);
+        } else  {
+          indexerNamespace.put(key, EPOCH);
+        }
+      }
+      resolver.addNamespace(DataConfig.IMPORTER_NS_SHORT, indexerNamespace);
+      resolver.addNamespace(DataConfig.IMPORTER_NS, indexerNamespace);
+      return resolver;
+    } catch (ParseException e) {
+      DataImportHandlerException.wrapAndThrow(DataImportHandlerException.SEVERE, e);
+      // unreachable statement
+      return null;
     }
-    resolver.addNamespace(DataConfig.IMPORTER_NS_SHORT, indexerNamespace);
-    resolver.addNamespace(DataConfig.IMPORTER_NS, indexerNamespace);
-    return resolver;
   }
 
   private void invokeEventListener(String className) {
@@ -153,8 +168,7 @@ public class DocBuilder {
               DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
       root = e;
       String delQuery = e.allAttributes.get("preImportDeleteQuery");
-      if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP
-              && dataImporter.getLastIndexTime() != null) {
+      if (dataImporter.getStatus() == DataImporter.Status.RUNNING_DELTA_DUMP) {
         cleanByQuery(delQuery, fullCleanDone);
         doDelta();
         delQuery = e.allAttributes.get("postImportDeleteQuery");

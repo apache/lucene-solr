@@ -219,22 +219,6 @@ public class SolrWriter {
     }
   }
 
-  public Date loadIndexStartTime() {
-    Properties props;
-    props = readIndexerProperties();
-    String result = props.getProperty(SolrWriter.LAST_INDEX_KEY);
-
-    try {
-      if (result != null)
-        return DataImporter.DATE_TIME_FORMAT.get().parse(result);
-    } catch (ParseException e) {
-      throw new DataImportHandlerException(DataImportHandlerException.WARN,
-              "Unable to read last indexed time from: "
-                      + persistFilename, e);
-    }
-    return null;
-  }
-
   public DebugLogger getDebugLogger() {
     if (debugLogger == null) {
       debugLogger = new DebugLogger(this);
