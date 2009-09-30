@@ -25,6 +25,8 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Date;
+import java.io.File;
 
 /**
  * <p>
@@ -228,6 +230,29 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
     assertQ(req("id:3"), "//*[@numFound='1']");
   }
 
+  @Test
+  public void testFileListEntityProcessor_lastIndexTime() throws Exception  {
+    long time = System.currentTimeMillis();
+    File tmpdir = new File("." + time);
+    tmpdir.mkdir();
+    tmpdir.deleteOnExit();
+
+    Map<String, String> params = createMap("baseDir", tmpdir.getAbsolutePath());
+
+    TestFileListEntityProcessor.createFile(tmpdir, "a.xml", "a.xml".getBytes(), true);
+    TestFileListEntityProcessor.createFile(tmpdir, "b.xml", "b.xml".getBytes(), true);
+    TestFileListEntityProcessor.createFile(tmpdir, "c.props", "c.props".getBytes(), true);
+    super.runFullImport(dataConfigFileList, params);
+    assertQ(req("*:*"), "//*[@numFound='3']");
+
+    // Add a new file after a full index is done
+    TestFileListEntityProcessor.createFile(tmpdir, "t.xml", "t.xml".getBytes(), false);
+    super.runFullImport(dataConfigFileList, params);
+    // we should find only 1 because by default clean=true is passed
+    // and this particular import should find only one file t.xml
+    assertQ(req("*:*"), "//*[@numFound='1']");
+  }
+
   public static class MockTransformer extends Transformer {
     public Object transformRow(Map<String, Object> row, Context context) {
       Assert.assertTrue("Context gave incorrect data source", context.getDataSource("mockDs") instanceof MockDataSource2);
@@ -322,5 +347,15 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
           "            <field column=\"text\" name=\"${dih.request.text}\" />\n" +
           "        </entity>\n" +
           "    </document>\n" +
+          "</dataConfig>";
+
+  private final String dataConfigFileList = "<dataConfig>\n" +
+          "\t<document>\n" +
+          "\t\t<entity name=\"x\" processor=\"FileListEntityProcessor\" \n" +
+          "\t\t\t\tfileName=\".*\" newerThan=\"${dih.last_index_time}\" \n" +
+          "\t\t\t\tbaseDir=\"${dih.request.baseDir}\" transformer=\"TemplateTransformer\">\n" +
+          "\t\t\t<field column=\"id\" template=\"${x.file}\" />\n" +
+          "\t\t</entity>\n" +
+          "\t</document>\n" +
           "</dataConfig>";
 }

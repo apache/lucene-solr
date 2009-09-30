@@ -116,7 +116,7 @@ public class TestFileListEntityProcessor {
   }
 
   @SuppressWarnings("unchecked")
-  private List<String> getFiles(VariableResolverImpl resolver, Map attrs) {
+  static List<String> getFiles(VariableResolverImpl resolver, Map attrs) {
     Context c = AbstractDataImportHandlerTest.getContext(null,
             resolver, null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
     FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
@@ -152,6 +152,19 @@ public class TestFileListEntityProcessor {
             FileListEntityProcessor.NEWER_THAN, "'NOW-2HOURS'");
     fList = getFiles(null, attrs);
     Assert.assertEquals(2, fList.size());
+
+    // Use a variable for newerThan
+    attrs = AbstractDataImportHandlerTest.createMap(
+            FileListEntityProcessor.FILE_NAME, ".xml$",
+            FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
+            FileListEntityProcessor.NEWER_THAN, "${a.x}");
+    VariableResolverImpl resolver = new VariableResolverImpl();
+    String lastMod = DataImporter.DATE_TIME_FORMAT.get().format(new Date(System.currentTimeMillis() - 50000));
+    resolver.addNamespace("a", AbstractDataImportHandlerTest.createMap("x", lastMod));
+    createFile(tmpdir, "t.xml", "t.xml".getBytes(), false);
+    fList = getFiles(resolver, attrs);
+    Assert.assertEquals(1, fList.size());
+    Assert.assertEquals("File name must be t.xml", new File(tmpdir, "t.xml").getAbsolutePath(), fList.get(0));
   }
 
   @Test
