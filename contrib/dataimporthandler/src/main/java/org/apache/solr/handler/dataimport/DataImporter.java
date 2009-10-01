@@ -167,8 +167,14 @@ public class DataImporter {
   void loadDataConfig(String configFile) {
 
     try {
-      DocumentBuilder builder = DocumentBuilderFactory.newInstance()
-              .newDocumentBuilder();
+      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+      try {
+        dbf.setXIncludeAware(true);
+        dbf.setNamespaceAware(true);
+      } catch( UnsupportedOperationException e ) {
+        LOG.warn( "XML parser doesn't support XInclude option" );
+      }
+      DocumentBuilder builder = dbf.newDocumentBuilder();
       Document document = builder.parse(new InputSource(new StringReader(
               configFile)));
 

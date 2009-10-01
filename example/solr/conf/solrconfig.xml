@@ -15,7 +15,13 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
+<!-- 
+     For more details about configurations options that may appear in this 
+     file, see http://wiki.apache.org/solr/SolrConfigXml.
 
+     Specifically, the Solr Config can support XInclude, which may make it easier to manage
+     the configuration.  See https://issues.apache.org/jira/browse/SOLR-1167
+-->
 <config>
   <!-- Set this to 'false' if you want solr to continue working after it has 
        encountered an severe configuration error.  In a production environment, 

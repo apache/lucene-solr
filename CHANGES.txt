@@ -339,6 +339,8 @@ New Features
 83. SOLR-1292: Add FieldCache introspection to stats.jsp and JMX Monitoring via
     a new SolrFieldCacheMBean.  (hossman)
 
+84. SOLR-1167: Solr Config now supports XInclude for XML engines that can support it. (Bryan Talbot via gsingers)    
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

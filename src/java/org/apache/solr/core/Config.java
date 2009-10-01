@@ -100,8 +100,14 @@ public class Config {
       if (lis == null) {
         lis = loader.openConfig(name);
       }
-      javax.xml.parsers.DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-      doc = builder.parse(lis);
+      javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+      try {
+        dbf.setXIncludeAware(true);
+        dbf.setNamespaceAware(true);
+      } catch(UnsupportedOperationException e) {
+        log.warn(name + " XML parser doesn't support XInclude option");
+      }
+      doc = dbf.newDocumentBuilder().parse(lis);
 
         DOMUtil.substituteProperties(doc, loader.getCoreProperties());
     } catch (ParserConfigurationException e)  {
