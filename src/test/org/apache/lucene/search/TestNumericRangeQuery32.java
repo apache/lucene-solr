@@ -91,8 +91,8 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     String field="field"+precisionStep;
     int count=3000;
     int lower=(distance*3/2)+startOffset, upper=lower + count*distance + (distance/3);
-    NumericRangeQuery q = NumericRangeQuery.newIntRange(field, precisionStep, new Integer(lower), new Integer(upper), true, true);
-    NumericRangeFilter f = NumericRangeFilter.newIntRange(field, precisionStep, new Integer(lower), new Integer(upper), true, true);
+    NumericRangeQuery<Integer> q = NumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true);
+    NumericRangeFilter<Integer> f = NumericRangeFilter.newIntRange(field, precisionStep, lower, upper, true, true);
     int lastTerms = 0;
     for (byte i=0; i<3; i++) {
       TopDocs topDocs;
@@ -149,12 +149,12 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   }
   
   public void testInverseRange() throws Exception {
-    NumericRangeFilter f = NumericRangeFilter.newIntRange("field8", 8, new Integer(1000), new Integer(-1000), true, true);
+    NumericRangeFilter<Integer> f = NumericRangeFilter.newIntRange("field8", 8, 1000, -1000, true, true);
     assertSame("A inverse range should return the EMPTY_DOCIDSET instance", DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(searcher.getIndexReader()));
-    f = NumericRangeFilter.newIntRange("field8", 8, new Integer(Integer.MAX_VALUE), null, false, false);
+    f = NumericRangeFilter.newIntRange("field8", 8, Integer.MAX_VALUE, null, false, false);
     assertSame("A exclusive range starting with Integer.MAX_VALUE should return the EMPTY_DOCIDSET instance",
       DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(searcher.getIndexReader()));
-    f = NumericRangeFilter.newIntRange("field8", 8, null, new Integer(Integer.MIN_VALUE), false, false);
+    f = NumericRangeFilter.newIntRange("field8", 8, null, Integer.MIN_VALUE, false, false);
     assertSame("A exclusive range ending with Integer.MIN_VALUE should return the EMPTY_DOCIDSET instance",
       DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(searcher.getIndexReader()));
   }
@@ -163,7 +163,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     String field="field"+precisionStep;
     int count=3000;
     int upper=(count-1)*distance + (distance/3) + startOffset;
-    NumericRangeQuery q=NumericRangeQuery.newIntRange(field, precisionStep, null, new Integer(upper), true, true);
+    NumericRangeQuery<Integer> q=NumericRangeQuery.newIntRange(field, precisionStep, null, upper, true, true);
     TopDocs topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
     System.out.println("Found "+q.getTotalNumberOfTerms()+" distinct terms in left open range for field '"+field+"'.");
     ScoreDoc[] sd = topDocs.scoreDocs;
@@ -191,7 +191,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     String field="field"+precisionStep;
     int count=3000;
     int lower=(count-1)*distance + (distance/3) +startOffset;
-    NumericRangeQuery q=NumericRangeQuery.newIntRange(field, precisionStep, new Integer(lower), null, true, true);
+    NumericRangeQuery<Integer> q=NumericRangeQuery.newIntRange(field, precisionStep, lower, null, true, true);
     TopDocs topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
     System.out.println("Found "+q.getTotalNumberOfTerms()+" distinct terms in right open range for field '"+field+"'.");
     ScoreDoc[] sd = topDocs.scoreDocs;
@@ -226,7 +226,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
         int a=lower; lower=upper; upper=a;
       }
       // test inclusive range
-      NumericRangeQuery tq=NumericRangeQuery.newIntRange(field, precisionStep, new Integer(lower), new Integer(upper), true, true);
+      NumericRangeQuery<Integer> tq=NumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true);
       TermRangeQuery cq=new TermRangeQuery(field, NumericUtils.intToPrefixCoded(lower), NumericUtils.intToPrefixCoded(upper), true, true);
       TopDocs tTopDocs = searcher.search(tq, 1);
       TopDocs cTopDocs = searcher.search(cq, 1);
@@ -234,7 +234,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       termCountT += tq.getTotalNumberOfTerms();
       termCountC += cq.getTotalNumberOfTerms();
       // test exclusive range
-      tq=NumericRangeQuery.newIntRange(field, precisionStep, new Integer(lower), new Integer(upper), false, false);
+      tq=NumericRangeQuery.newIntRange(field, precisionStep, lower, upper, false, false);
       cq=new TermRangeQuery(field, NumericUtils.intToPrefixCoded(lower), NumericUtils.intToPrefixCoded(upper), false, false);
       tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
@@ -242,7 +242,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       termCountT += tq.getTotalNumberOfTerms();
       termCountC += cq.getTotalNumberOfTerms();
       // test left exclusive range
-      tq=NumericRangeQuery.newIntRange(field, precisionStep, new Integer(lower), new Integer(upper), false, true);
+      tq=NumericRangeQuery.newIntRange(field, precisionStep, lower, upper, false, true);
       cq=new TermRangeQuery(field, NumericUtils.intToPrefixCoded(lower), NumericUtils.intToPrefixCoded(upper), false, true);
       tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
@@ -250,7 +250,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       termCountT += tq.getTotalNumberOfTerms();
       termCountC += cq.getTotalNumberOfTerms();
       // test right exclusive range
-      tq=NumericRangeQuery.newIntRange(field, precisionStep, new Integer(lower), new Integer(upper), true, false);
+      tq=NumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, false);
       cq=new TermRangeQuery(field, NumericUtils.intToPrefixCoded(lower), NumericUtils.intToPrefixCoded(upper), true, false);
       tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
@@ -294,19 +294,19 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
         int a=lower; lower=upper; upper=a;
       }
       // test inclusive range
-      Query tq=NumericRangeQuery.newIntRange(field, precisionStep, new Integer(lower), new Integer(upper), true, true);
+      Query tq=NumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true);
       TopDocs tTopDocs = searcher.search(tq, 1);
       assertEquals("Returned count of range query must be equal to inclusive range length", upper-lower+1, tTopDocs.totalHits );
       // test exclusive range
-      tq=NumericRangeQuery.newIntRange(field, precisionStep, new Integer(lower), new Integer(upper), false, false);
+      tq=NumericRangeQuery.newIntRange(field, precisionStep, lower, upper, false, false);
       tTopDocs = searcher.search(tq, 1);
       assertEquals("Returned count of range query must be equal to exclusive range length", Math.max(upper-lower-1, 0), tTopDocs.totalHits );
       // test left exclusive range
-      tq=NumericRangeQuery.newIntRange(field, precisionStep, new Integer(lower), new Integer(upper), false, true);
+      tq=NumericRangeQuery.newIntRange(field, precisionStep, lower, upper, false, true);
       tTopDocs = searcher.search(tq, 1);
       assertEquals("Returned count of range query must be equal to half exclusive range length", upper-lower, tTopDocs.totalHits );
       // test right exclusive range
-      tq=NumericRangeQuery.newIntRange(field, precisionStep, new Integer(lower), new Integer(upper), true, false);
+      tq=NumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, false);
       tTopDocs = searcher.search(tq, 1);
       assertEquals("Returned count of range query must be equal to half exclusive range length", upper-lower, tTopDocs.totalHits );
     }
@@ -330,12 +330,12 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     final int lower=-1000, upper=+2000;
     
     Query tq=NumericRangeQuery.newFloatRange(field, precisionStep,
-      new Float(NumericUtils.sortableIntToFloat(lower)), new Float(NumericUtils.sortableIntToFloat(upper)), true, true);
+      NumericUtils.sortableIntToFloat(lower), NumericUtils.sortableIntToFloat(upper), true, true);
     TopDocs tTopDocs = searcher.search(tq, 1);
     assertEquals("Returned count of range query must be equal to inclusive range length", upper-lower+1, tTopDocs.totalHits );
     
     Filter tf=NumericRangeFilter.newFloatRange(field, precisionStep,
-      new Float(NumericUtils.sortableIntToFloat(lower)), new Float(NumericUtils.sortableIntToFloat(upper)), true, true);
+      NumericUtils.sortableIntToFloat(lower), NumericUtils.sortableIntToFloat(upper), true, true);
     tTopDocs = searcher.search(new MatchAllDocsQuery(), tf, 1);
     assertEquals("Returned count of range filter must be equal to inclusive range length", upper-lower+1, tTopDocs.totalHits );
   }
@@ -363,7 +363,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       if (lower>upper) {
         int a=lower; lower=upper; upper=a;
       }
-      Query tq=NumericRangeQuery.newIntRange(field, precisionStep, new Integer(lower), new Integer(upper), true, true);
+      Query tq=NumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true);
       TopDocs topDocs = searcher.search(tq, null, noDocs, new Sort(new SortField(field, SortField.INT, true)));
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
@@ -390,40 +390,40 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   }
   
   public void testEqualsAndHash() throws Exception {
-    QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test1", 4, new Integer(10), new Integer(20), true, true));
-    QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test2", 4, new Integer(10), new Integer(20), false, true));
-    QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test3", 4, new Integer(10), new Integer(20), true, false));
-    QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test4", 4, new Integer(10), new Integer(20), false, false));
-    QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test5", 4, new Integer(10), null, true, true));
-    QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test6", 4, null, new Integer(20), true, true));
+    QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test1", 4, 10, 20, true, true));
+    QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test2", 4, 10, 20, false, true));
+    QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test3", 4, 10, 20, true, false));
+    QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test4", 4, 10, 20, false, false));
+    QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test5", 4, 10, null, true, true));
+    QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test6", 4, null, 20, true, true));
     QueryUtils.checkHashEquals(NumericRangeQuery.newIntRange("test7", 4, null, null, true, true));
     QueryUtils.checkEqual(
-      NumericRangeQuery.newIntRange("test8", 4, new Integer(10), new Integer(20), true, true), 
-      NumericRangeQuery.newIntRange("test8", 4, new Integer(10), new Integer(20), true, true)
+      NumericRangeQuery.newIntRange("test8", 4, 10, 20, true, true), 
+      NumericRangeQuery.newIntRange("test8", 4, 10, 20, true, true)
     );
     QueryUtils.checkUnequal(
-      NumericRangeQuery.newIntRange("test9", 4, new Integer(10), new Integer(20), true, true), 
-      NumericRangeQuery.newIntRange("test9", 8, new Integer(10), new Integer(20), true, true)
+      NumericRangeQuery.newIntRange("test9", 4, 10, 20, true, true), 
+      NumericRangeQuery.newIntRange("test9", 8, 10, 20, true, true)
     );
     QueryUtils.checkUnequal(
-      NumericRangeQuery.newIntRange("test10a", 4, new Integer(10), new Integer(20), true, true), 
-      NumericRangeQuery.newIntRange("test10b", 4, new Integer(10), new Integer(20), true, true)
+      NumericRangeQuery.newIntRange("test10a", 4, 10, 20, true, true), 
+      NumericRangeQuery.newIntRange("test10b", 4, 10, 20, true, true)
     );
     QueryUtils.checkUnequal(
-      NumericRangeQuery.newIntRange("test11", 4, new Integer(10), new Integer(20), true, true), 
-      NumericRangeQuery.newIntRange("test11", 4, new Integer(20), new Integer(10), true, true)
+      NumericRangeQuery.newIntRange("test11", 4, 10, 20, true, true), 
+      NumericRangeQuery.newIntRange("test11", 4, 20, 10, true, true)
     );
     QueryUtils.checkUnequal(
-      NumericRangeQuery.newIntRange("test12", 4, new Integer(10), new Integer(20), true, true), 
-      NumericRangeQuery.newIntRange("test12", 4, new Integer(10), new Integer(20), false, true)
+      NumericRangeQuery.newIntRange("test12", 4, 10, 20, true, true), 
+      NumericRangeQuery.newIntRange("test12", 4, 10, 20, false, true)
     );
     QueryUtils.checkUnequal(
-      NumericRangeQuery.newIntRange("test13", 4, new Integer(10), new Integer(20), true, true), 
-      NumericRangeQuery.newFloatRange("test13", 4, new Float(10f), new Float(20f), true, true)
+      NumericRangeQuery.newIntRange("test13", 4, 10, 20, true, true), 
+      NumericRangeQuery.newFloatRange("test13", 4, 10f, 20f, true, true)
     );
     // the following produces a hash collision, because Long and Integer have the same hashcode, so only test equality:
-    Query q1 = NumericRangeQuery.newIntRange("test14", 4, new Integer(10), new Integer(20), true, true);
-    Query q2 = NumericRangeQuery.newLongRange("test14", 4, new Long(10L), new Long(20L), true, true);
+    Query q1 = NumericRangeQuery.newIntRange("test14", 4, 10, 20, true, true);
+    Query q2 = NumericRangeQuery.newLongRange("test14", 4, 10L, 20L, true, true);
     assertFalse(q1.equals(q2));
     assertFalse(q2.equals(q1));
   }

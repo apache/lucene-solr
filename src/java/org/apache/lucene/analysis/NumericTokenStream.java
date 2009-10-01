@@ -195,14 +195,14 @@ public final class NumericTokenStream extends TokenStream {
     return this;
   }
   
-  // @Override
+  @Override
   public void reset() {
     if (valSize == 0)
       throw new IllegalStateException("call set???Value() before usage");
     shift = 0;
   }
 
-  // @Override
+  @Override
   public boolean incrementToken() {
     if (valSize == 0)
       throw new IllegalStateException("call set???Value() before usage");
@@ -233,7 +233,7 @@ public final class NumericTokenStream extends TokenStream {
     return true;
   }
   
-  // @Override
+  @Override
   public String toString() {
     final StringBuffer sb = new StringBuffer("(numeric,valSize=").append(valSize);
     sb.append(",precisionStep=").append(precisionStep).append(')');

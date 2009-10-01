@@ -41,9 +41,7 @@ import org.apache.lucene.index.Term;
  * factory methods, eg:
  *
  * <pre>
- * Query q = NumericRangeQuery.newFloatRange("weight",
- *                                           new Float(0.3f), new Float(0.10f),
- *                                           true, true);
+ * Query q = NumericRangeQuery.newFloatRange("weight", 0.3f, 0.10f, true, true);
  * </pre>
  *
  * matches all documents whose float valued "weight" field
@@ -154,10 +152,10 @@ import org.apache.lucene.index.Term;
  *
  * @since 2.9
  **/
-public final class NumericRangeQuery extends MultiTermQuery {
+public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
 
   private NumericRangeQuery(final String field, final int precisionStep, final int valSize,
-    Number min, Number max, final boolean minInclusive, final boolean maxInclusive
+    T min, T max, final boolean minInclusive, final boolean maxInclusive
   ) {
     assert (valSize == 32 || valSize == 64);
     if (precisionStep < 1)
@@ -200,10 +198,10 @@ public final class NumericRangeQuery extends MultiTermQuery {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeQuery newLongRange(final String field, final int precisionStep,
+  public static NumericRangeQuery<Long> newLongRange(final String field, final int precisionStep,
     Long min, Long max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery(field, precisionStep, 64, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Long>(field, precisionStep, 64, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -213,10 +211,10 @@ public final class NumericRangeQuery extends MultiTermQuery {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeQuery newLongRange(final String field,
+  public static NumericRangeQuery<Long> newLongRange(final String field,
     Long min, Long max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery(field, NumericUtils.PRECISION_STEP_DEFAULT, 64, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Long>(field, NumericUtils.PRECISION_STEP_DEFAULT, 64, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -226,10 +224,10 @@ public final class NumericRangeQuery extends MultiTermQuery {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeQuery newIntRange(final String field, final int precisionStep,
+  public static NumericRangeQuery<Integer> newIntRange(final String field, final int precisionStep,
     Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery(field, precisionStep, 32, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Integer>(field, precisionStep, 32, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -239,10 +237,10 @@ public final class NumericRangeQuery extends MultiTermQuery {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeQuery newIntRange(final String field,
+  public static NumericRangeQuery<Integer> newIntRange(final String field,
     Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery(field, NumericUtils.PRECISION_STEP_DEFAULT, 32, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Integer>(field, NumericUtils.PRECISION_STEP_DEFAULT, 32, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -252,10 +250,10 @@ public final class NumericRangeQuery extends MultiTermQuery {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeQuery newDoubleRange(final String field, final int precisionStep,
+  public static NumericRangeQuery<Double> newDoubleRange(final String field, final int precisionStep,
     Double min, Double max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery(field, precisionStep, 64, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Double>(field, precisionStep, 64, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -265,10 +263,10 @@ public final class NumericRangeQuery extends MultiTermQuery {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeQuery newDoubleRange(final String field,
+  public static NumericRangeQuery<Double> newDoubleRange(final String field,
     Double min, Double max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery(field, NumericUtils.PRECISION_STEP_DEFAULT, 64, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Double>(field, NumericUtils.PRECISION_STEP_DEFAULT, 64, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -278,10 +276,10 @@ public final class NumericRangeQuery extends MultiTermQuery {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeQuery newFloatRange(final String field, final int precisionStep,
+  public static NumericRangeQuery<Float> newFloatRange(final String field, final int precisionStep,
     Float min, Float max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery(field, precisionStep, 32, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Float>(field, precisionStep, 32, min, max, minInclusive, maxInclusive);
   }
   
   /**
@@ -291,13 +289,13 @@ public final class NumericRangeQuery extends MultiTermQuery {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeQuery newFloatRange(final String field,
+  public static NumericRangeQuery<Float> newFloatRange(final String field,
     Float min, Float max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeQuery(field, NumericUtils.PRECISION_STEP_DEFAULT, 32, min, max, minInclusive, maxInclusive);
+    return new NumericRangeQuery<Float>(field, NumericUtils.PRECISION_STEP_DEFAULT, 32, min, max, minInclusive, maxInclusive);
   }
   
-  //@Override
+  @Override
   protected FilteredTermEnum getEnum(final IndexReader reader) throws IOException {
     return new NumericRangeTermEnum(reader);
   }
@@ -312,12 +310,12 @@ public final class NumericRangeQuery extends MultiTermQuery {
   public boolean includesMax() { return maxInclusive; }
 
   /** Returns the lower value of this range query */
-  public Number getMin() { return min; }
+  public T getMin() { return min; }
 
   /** Returns the upper value of this range query */
-  public Number getMax() { return max; }
+  public T getMax() { return max; }
   
-  //@Override
+  @Override
   public String toString(final String field) {
     final StringBuffer sb = new StringBuffer();
     if (!this.field.equals(field)) sb.append(this.field).append(':');
@@ -330,7 +328,7 @@ public final class NumericRangeQuery extends MultiTermQuery {
       .toString();
   }
 
-  //@Override
+  @Override
   public final boolean equals(final Object o) {
     if (o==this) return true;
     if (!super.equals(o))
@@ -349,7 +347,7 @@ public final class NumericRangeQuery extends MultiTermQuery {
     return false;
   }
 
-  //@Override
+  @Override
   public final int hashCode() {
     int hash = super.hashCode();
     hash += field.hashCode()^0x4565fd66 + precisionStep^0x64365465;
@@ -363,7 +361,7 @@ public final class NumericRangeQuery extends MultiTermQuery {
   // members (package private, to be also fast accessible by NumericRangeTermEnum)
   final String field;
   final int precisionStep, valSize;
-  final Number min, max;
+  final T min, max;
   final boolean minInclusive,maxInclusive;
 
   /**
@@ -379,7 +377,7 @@ public final class NumericRangeQuery extends MultiTermQuery {
   private final class NumericRangeTermEnum extends FilteredTermEnum {
 
     private final IndexReader reader;
-    private final LinkedList/*<String>*/ rangeBounds = new LinkedList/*<String>*/();
+    private final LinkedList<String> rangeBounds = new LinkedList<String>();
     private String currentUpperBound = null;
 
     NumericRangeTermEnum(final IndexReader reader) throws IOException {
@@ -412,7 +410,7 @@ public final class NumericRangeQuery extends MultiTermQuery {
           }
           
           NumericUtils.splitLongRange(new NumericUtils.LongRangeBuilder() {
-            //@Override
+            @Override
             public final void addRange(String minPrefixCoded, String maxPrefixCoded) {
               rangeBounds.add(minPrefixCoded);
               rangeBounds.add(maxPrefixCoded);
@@ -447,7 +445,7 @@ public final class NumericRangeQuery extends MultiTermQuery {
           }
           
           NumericUtils.splitIntRange(new NumericUtils.IntRangeBuilder() {
-            //@Override
+            @Override
             public final void addRange(String minPrefixCoded, String maxPrefixCoded) {
               rangeBounds.add(minPrefixCoded);
               rangeBounds.add(maxPrefixCoded);
@@ -465,13 +463,13 @@ public final class NumericRangeQuery extends MultiTermQuery {
       next();
     }
 
-    //@Override
+    @Override
     public float difference() {
       return 1.0f;
     }
     
     /** this is a dummy, it is not used by this class. */
-    //@Override
+    @Override
     protected boolean endEnum() {
       assert false; // should never be called
       return (currentTerm != null);
@@ -484,13 +482,13 @@ public final class NumericRangeQuery extends MultiTermQuery {
      * of <code>false</code> ends iterating the current enum
      * and forwards to the next sub-range.
      */
-    //@Override
+    @Override
     protected boolean termCompare(Term term) {
       return (term.field() == field && term.text().compareTo(currentUpperBound) <= 0);
     }
     
     /** Increments the enumeration to the next element.  True if one exists. */
-    //@Override
+    @Override
     public boolean next() throws IOException {
       // if a current term exists, the actual enum is initialized:
       // try change to next term, if no such term exists, fall-through
@@ -510,8 +508,8 @@ public final class NumericRangeQuery extends MultiTermQuery {
         actualEnum.close();
         actualEnum = null;
       }
-      final String lowerBound = (String)rangeBounds.removeFirst();
-      this.currentUpperBound = (String)rangeBounds.removeFirst();
+      final String lowerBound = rangeBounds.removeFirst();
+      this.currentUpperBound = rangeBounds.removeFirst();
       // this call recursively uses next(), if no valid term in
       // next enum found.
       // if this behavior is changed/modified in the superclass,
@@ -521,7 +519,7 @@ public final class NumericRangeQuery extends MultiTermQuery {
     }
 
     /** Closes the enumeration to further activity, freeing resources.  */
-    //@Override
+    @Override
     public void close() throws IOException {
       rangeBounds.clear();
       currentUpperBound = null;

@@ -51,13 +51,13 @@ public class MultiTermQueryWrapperFilter extends Filter {
       this.query = query;
   }
   
-  //@Override
+  @Override
   public String toString() {
     // query.toString should be ok for the filter, too, if the query boost is 1.0f
     return query.toString();
   }
 
-  //@Override
+  @Override
   public final boolean equals(final Object o) {
     if (o==this) return true;
     if (o==null) return false;
@@ -67,7 +67,7 @@ public class MultiTermQueryWrapperFilter extends Filter {
     return false;
   }
 
-  //@Override
+  @Override
   public final int hashCode() {
     return query.hashCode();
   }
@@ -135,7 +135,7 @@ public class MultiTermQueryWrapperFilter extends Filter {
    * not.
    * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
    */
-  //@Override
+  @Override
   public BitSet bits(IndexReader reader) throws IOException {
     final TermEnum enumerator = query.getEnum(reader);
     try {
@@ -155,7 +155,7 @@ public class MultiTermQueryWrapperFilter extends Filter {
    * Returns a DocIdSet with documents that should be
    * permitted in search results.
    */
-  //@Override
+  @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     final TermEnum enumerator = query.getEnum(reader);
     try {

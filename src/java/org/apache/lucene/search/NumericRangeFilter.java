@@ -31,9 +31,7 @@ import org.apache.lucene.util.NumericUtils; // for javadocs
  * factory methods, eg:
  *
  * <pre>
- * Filter f = NumericRangeFilter.newFloatRange("weight",
- *                                             new Float(0.3f), new Float(0.10f),
- *                                             true, true);
+ * Filter f = NumericRangeFilter.newFloatRange("weight", 0.3f, 0.10f, true, true);
  * </pre>
  *
  * accepts all documents whose float valued "weight" field
@@ -47,9 +45,9 @@ import org.apache.lucene.util.NumericUtils; // for javadocs
  *
  * @since 2.9
  **/
-public final class NumericRangeFilter extends MultiTermQueryWrapperFilter {
+public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWrapperFilter {
 
-  private NumericRangeFilter(final NumericRangeQuery query) {
+  private NumericRangeFilter(final NumericRangeQuery<T> query) {
     super(query);
   }
   
@@ -60,10 +58,10 @@ public final class NumericRangeFilter extends MultiTermQueryWrapperFilter {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeFilter newLongRange(final String field, final int precisionStep,
+  public static NumericRangeFilter<Long> newLongRange(final String field, final int precisionStep,
     Long min, Long max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter(
+    return new NumericRangeFilter<Long>(
       NumericRangeQuery.newLongRange(field, precisionStep, min, max, minInclusive, maxInclusive)
     );
   }
@@ -75,10 +73,10 @@ public final class NumericRangeFilter extends MultiTermQueryWrapperFilter {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeFilter newLongRange(final String field,
+  public static NumericRangeFilter<Long> newLongRange(final String field,
     Long min, Long max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter(
+    return new NumericRangeFilter<Long>(
       NumericRangeQuery.newLongRange(field, min, max, minInclusive, maxInclusive)
     );
   }
@@ -90,10 +88,10 @@ public final class NumericRangeFilter extends MultiTermQueryWrapperFilter {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeFilter newIntRange(final String field, final int precisionStep,
+  public static NumericRangeFilter<Integer> newIntRange(final String field, final int precisionStep,
     Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter(
+    return new NumericRangeFilter<Integer>(
       NumericRangeQuery.newIntRange(field, precisionStep, min, max, minInclusive, maxInclusive)
     );
   }
@@ -105,10 +103,10 @@ public final class NumericRangeFilter extends MultiTermQueryWrapperFilter {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeFilter newIntRange(final String field,
+  public static NumericRangeFilter<Integer> newIntRange(final String field,
     Integer min, Integer max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter(
+    return new NumericRangeFilter<Integer>(
       NumericRangeQuery.newIntRange(field, min, max, minInclusive, maxInclusive)
     );
   }
@@ -120,10 +118,10 @@ public final class NumericRangeFilter extends MultiTermQueryWrapperFilter {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeFilter newDoubleRange(final String field, final int precisionStep,
+  public static NumericRangeFilter<Double> newDoubleRange(final String field, final int precisionStep,
     Double min, Double max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter(
+    return new NumericRangeFilter<Double>(
       NumericRangeQuery.newDoubleRange(field, precisionStep, min, max, minInclusive, maxInclusive)
     );
   }
@@ -135,10 +133,10 @@ public final class NumericRangeFilter extends MultiTermQueryWrapperFilter {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeFilter newDoubleRange(final String field,
+  public static NumericRangeFilter<Double> newDoubleRange(final String field,
     Double min, Double max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter(
+    return new NumericRangeFilter<Double>(
       NumericRangeQuery.newDoubleRange(field, min, max, minInclusive, maxInclusive)
     );
   }
@@ -150,10 +148,10 @@ public final class NumericRangeFilter extends MultiTermQueryWrapperFilter {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeFilter newFloatRange(final String field, final int precisionStep,
+  public static NumericRangeFilter<Float> newFloatRange(final String field, final int precisionStep,
     Float min, Float max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter(
+    return new NumericRangeFilter<Float>(
       NumericRangeQuery.newFloatRange(field, precisionStep, min, max, minInclusive, maxInclusive)
     );
   }
@@ -165,27 +163,32 @@ public final class NumericRangeFilter extends MultiTermQueryWrapperFilter {
    * by setting the min or max value to <code>null</code>. By setting inclusive to false, it will
    * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    */
-  public static NumericRangeFilter newFloatRange(final String field,
+  public static NumericRangeFilter<Float> newFloatRange(final String field,
     Float min, Float max, final boolean minInclusive, final boolean maxInclusive
   ) {
-    return new NumericRangeFilter(
+    return new NumericRangeFilter<Float>(
       NumericRangeQuery.newFloatRange(field, min, max, minInclusive, maxInclusive)
     );
   }
   
   /** Returns the field name for this filter */
-  public String getField() { return ((NumericRangeQuery)query).getField(); }
+  @SuppressWarnings("unchecked")
+  public String getField() { return ((NumericRangeQuery<T>)query).getField(); }
 
   /** Returns <code>true</code> if the lower endpoint is inclusive */
-  public boolean includesMin() { return ((NumericRangeQuery)query).includesMin(); }
+  @SuppressWarnings("unchecked")
+  public boolean includesMin() { return ((NumericRangeQuery<T>)query).includesMin(); }
   
   /** Returns <code>true</code> if the upper endpoint is inclusive */
-  public boolean includesMax() { return ((NumericRangeQuery)query).includesMax(); }
+  @SuppressWarnings("unchecked")
+  public boolean includesMax() { return ((NumericRangeQuery<T>)query).includesMax(); }
 
   /** Returns the lower value of this range filter */
-  public Number getMin() { return ((NumericRangeQuery)query).getMin(); }
+  @SuppressWarnings("unchecked")
+  public T getMin() { return ((NumericRangeQuery<T>)query).getMin(); }
 
   /** Returns the upper value of this range filter */
-  public Number getMax() { return ((NumericRangeQuery)query).getMax(); }
+  @SuppressWarnings("unchecked")
+  public T getMax() { return ((NumericRangeQuery<T>)query).getMax(); }
   
 }

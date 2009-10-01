@@ -264,11 +264,13 @@ public abstract class MultiTermQuery extends Query {
       }
     }
     
+    @Override
     public int hashCode() {
       final int prime = 1279;
       return (int) (prime * termCountCutoff + Double.doubleToLongBits(docCountPercent));
     }
 
+    @Override
     public boolean equals(Object obj) {
       if (this == obj)
         return true;
@@ -303,10 +305,12 @@ public abstract class MultiTermQuery extends Query {
    *  instance; you'll need to create a private instance
    *  instead. */
   public final static RewriteMethod CONSTANT_SCORE_AUTO_REWRITE_DEFAULT = new ConstantScoreAutoRewrite() {
+    @Override
     public void setTermCountCutoff(int count) {
       throw new UnsupportedOperationException("Please create a private instance");
     }
 
+    @Override
     public void setDocCountPercent(double percent) {
       throw new UnsupportedOperationException("Please create a private instance");
     }
@@ -387,6 +391,7 @@ public abstract class MultiTermQuery extends Query {
    * Implemented for back compat in case MultiTermQuery
    * subclasses do no implement.
    */
+  @Override
   public String toString(String field) {
     StringBuffer buffer = new StringBuffer();
     if (term != null) {
@@ -417,7 +422,7 @@ public abstract class MultiTermQuery extends Query {
     rewriteMethod = method;
   }
 
-  //@Override
+  @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
@@ -427,7 +432,7 @@ public abstract class MultiTermQuery extends Query {
     return result;
   }
 
-  //@Override
+  @Override
   public boolean equals(Object obj) {
     if (this == obj)
       return true;

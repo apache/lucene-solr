@@ -212,6 +212,7 @@ public final class NumericField extends AbstractField {
   }
   
   /** Returns always <code>null</code> for numeric fields */
+  @Override
   public byte[] getBinaryValue(byte[] result){
     return null;
   }
@@ -251,7 +252,7 @@ public final class NumericField extends AbstractField {
    */
   public NumericField setIntValue(final int value) {
     tokenStream.setIntValue(value);
-    fieldsData = new Integer(value);
+    fieldsData = Integer.valueOf(value);
     return this;
   }
   
@@ -263,7 +264,7 @@ public final class NumericField extends AbstractField {
    */
   public NumericField setDoubleValue(final double value) {
     tokenStream.setDoubleValue(value);
-    fieldsData = new Double(value);
+    fieldsData = Double.valueOf(value);
     return this;
   }
   
@@ -275,7 +276,7 @@ public final class NumericField extends AbstractField {
    */
   public NumericField setFloatValue(final float value) {
     tokenStream.setFloatValue(value);
-    fieldsData = new Float(value);
+    fieldsData = Float.valueOf(value);
     return this;
   }
 

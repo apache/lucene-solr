@@ -18,6 +18,10 @@ API Changes
   attribute interface and no cast needed anymore.  (Uwe Schindler,
   Michael Busch, Robert Muir, Adriano Crestani)
 
+* LUCENE-1857: Convert NumericRangeQuery API to Generics. NumericRangeQuery
+  and NumericRangeFilter now have Integer, Long, Float, Double as type param.
+  (Uwe Schindler)
+
 Bug fixes
 
 New features
