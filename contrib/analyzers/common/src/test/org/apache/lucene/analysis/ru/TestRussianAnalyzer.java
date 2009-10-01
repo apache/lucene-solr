@@ -77,8 +77,8 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
             new RussianLetterTokenizer(
                 sampleUnicode);
 
-        TermAttribute text = (TermAttribute) in.getAttribute(TermAttribute.class);
-        TermAttribute sampleText = (TermAttribute) sample.getAttribute(TermAttribute.class);
+        TermAttribute text = in.getAttribute(TermAttribute.class);
+        TermAttribute sampleText = sample.getAttribute(TermAttribute.class);
 
         for (;;)
         {
@@ -113,8 +113,8 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
                 sampleKOI8,
                 RussianCharsets.KOI8);
 
-        TermAttribute text = (TermAttribute) in.getAttribute(TermAttribute.class);
-        TermAttribute sampleText = (TermAttribute) sample.getAttribute(TermAttribute.class);
+        TermAttribute text = in.getAttribute(TermAttribute.class);
+        TermAttribute sampleText = sample.getAttribute(TermAttribute.class);
 
         for (;;)
         {
@@ -147,8 +147,8 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
                 sample1251,
                 RussianCharsets.CP1251);
 
-        TermAttribute text = (TermAttribute) in.getAttribute(TermAttribute.class);
-        TermAttribute sampleText = (TermAttribute) sample.getAttribute(TermAttribute.class);
+        TermAttribute text = in.getAttribute(TermAttribute.class);
+        TermAttribute sampleText = sample.getAttribute(TermAttribute.class);
 
         for (;;)
         {
@@ -174,7 +174,7 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
         RussianAnalyzer ra = new RussianAnalyzer();
         TokenStream stream = ra.tokenStream("", reader);
 
-        TermAttribute termText = (TermAttribute) stream.getAttribute(TermAttribute.class);
+        TermAttribute termText = stream.getAttribute(TermAttribute.class);
         try {
             assertTrue(stream.incrementToken());
             assertEquals("text", termText.term());

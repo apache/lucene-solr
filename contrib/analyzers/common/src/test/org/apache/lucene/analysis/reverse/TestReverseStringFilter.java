@@ -29,7 +29,7 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
     TokenStream stream = new WhitespaceTokenizer(
         new StringReader("Do have a nice day"));     // 1-4 length string
     ReverseStringFilter filter = new ReverseStringFilter(stream);
-    TermAttribute text = (TermAttribute) filter.getAttribute(TermAttribute.class);
+    TermAttribute text = filter.getAttribute(TermAttribute.class);
     assertTrue(filter.incrementToken());
     assertEquals("oD", text.term());
     assertTrue(filter.incrementToken());
@@ -47,7 +47,7 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
     TokenStream stream = new WhitespaceTokenizer(new StringReader(
         "Do have a nice day")); // 1-4 length string
     ReverseStringFilter filter = new ReverseStringFilter(stream, '\u0001');
-    TermAttribute text = (TermAttribute) filter
+    TermAttribute text = filter
         .getAttribute(TermAttribute.class);
     assertTrue(filter.incrementToken());
     assertEquals("\u0001oD", text.term());

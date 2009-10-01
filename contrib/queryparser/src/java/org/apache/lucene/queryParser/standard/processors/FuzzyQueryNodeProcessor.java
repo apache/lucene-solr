@@ -55,8 +55,7 @@ public class FuzzyQueryNodeProcessor extends QueryNodeProcessorImpl {
       QueryConfigHandler config = getQueryConfigHandler();
 
       if (config != null && config.hasAttribute(FuzzyAttribute.class)) {
-        FuzzyAttribute fuzzyAttr = (FuzzyAttribute) config
-            .getAttribute(FuzzyAttribute.class);
+        FuzzyAttribute fuzzyAttr = config.getAttribute(FuzzyAttribute.class);
         fuzzyNode.setPrefixLength(fuzzyAttr.getPrefixLength());
 
         if (fuzzyNode.getSimilarity() < 0) {

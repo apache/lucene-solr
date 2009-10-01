@@ -126,9 +126,9 @@ public class TestTermVectorsReader extends LuceneTestCase {
     OffsetAttribute offsetAtt;
     
     public MyTokenStream() {
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-      offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
+      posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+      offsetAtt = addAttribute(OffsetAttribute.class);
     }
     
     public boolean incrementToken() {

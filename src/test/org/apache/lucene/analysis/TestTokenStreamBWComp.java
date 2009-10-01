@@ -188,8 +188,8 @@ public class TestTokenStreamBWComp extends LuceneTestCase {
 
   private static void consumeStreamNewAPI(TokenStream stream) throws IOException {
     stream.reset();
-    PayloadAttribute payloadAtt = (PayloadAttribute) stream.addAttribute(PayloadAttribute.class);
-    TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
+    PayloadAttribute payloadAtt = stream.addAttribute(PayloadAttribute.class);
+    TermAttribute termAtt = stream.addAttribute(TermAttribute.class);
     
     int i=0;
     while (stream.incrementToken()) {
@@ -350,7 +350,7 @@ public class TestTokenStreamBWComp extends LuceneTestCase {
     assertEquals("private 'bar' term should still be valid", "bar", bar.term());
     
     // and now we also use incrementToken()... (very bad, but should work)
-    TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
     assertTrue(stream.incrementToken());
     assertEquals("maeh", termAtt.term());    
     assertEquals("private 'bar' term should still be valid", "bar", bar.term());    
@@ -373,7 +373,7 @@ public class TestTokenStreamBWComp extends LuceneTestCase {
   public void testMixedOldApiConsumer2() throws Exception {
     // RoundRobinOldAPI is using TokenStream(next)
     TokenStream stream = new RoundRobinOldAPI();
-    TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
     
     assertTrue(stream.incrementToken());
     Token bar = stream.next();

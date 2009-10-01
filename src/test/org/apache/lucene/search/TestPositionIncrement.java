@@ -66,9 +66,9 @@ public class TestPositionIncrement extends BaseTokenStreamTestCase {
           private final int[] INCREMENTS = {0, 2, 1, 0, 1};
           private int i = 0;
 
-          PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-          TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-          OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+          PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+          TermAttribute termAtt = addAttribute(TermAttribute.class);
+          OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
           
           public boolean incrementToken() {
             if (i == TOKENS.length)
@@ -348,9 +348,9 @@ class PayloadFilter extends TokenFilter {
     this.fieldName = fieldName;
     pos = 0;
     i = 0;
-    posIncrAttr = (PositionIncrementAttribute) input.addAttribute(PositionIncrementAttribute.class);
-    payloadAttr = (PayloadAttribute) input.addAttribute(PayloadAttribute.class);
-    termAttr = (TermAttribute) input.addAttribute(TermAttribute.class);
+    posIncrAttr = input.addAttribute(PositionIncrementAttribute.class);
+    payloadAttr = input.addAttribute(PayloadAttribute.class);
+    termAttr = input.addAttribute(TermAttribute.class);
   }
 
   public boolean incrementToken() throws IOException {

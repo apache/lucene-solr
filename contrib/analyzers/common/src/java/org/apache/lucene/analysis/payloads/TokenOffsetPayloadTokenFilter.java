@@ -39,8 +39,8 @@ public class TokenOffsetPayloadTokenFilter extends TokenFilter {
 
   public TokenOffsetPayloadTokenFilter(TokenStream input) {
     super(input);
-    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    payAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+    offsetAtt = addAttribute(OffsetAttribute.class);
+    payAtt = addAttribute(PayloadAttribute.class);
   }
 
   public final boolean incrementToken() throws IOException {

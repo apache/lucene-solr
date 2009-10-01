@@ -175,8 +175,8 @@ public class EdgeNGramTokenizer extends Tokenizer {
     this.maxGram = maxGram;
     this.side = side;
     
-    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    this.termAtt = addAttribute(TermAttribute.class);
+    this.offsetAtt = addAttribute(OffsetAttribute.class);
 
   }
 

@@ -170,9 +170,9 @@ public class TestDocumentWriter extends BaseTokenStreamTestCase {
 
           }
 
-          TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-          PayloadAttribute payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
-          PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);          
+          TermAttribute termAtt = addAttribute(TermAttribute.class);
+          PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
+          PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);          
         };
       }
     };
@@ -209,7 +209,7 @@ public class TestDocumentWriter extends BaseTokenStreamTestCase {
       private String[] tokens = new String[] {"term1", "term2", "term3", "term2"};
       private int index = 0;
       
-      private TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      private TermAttribute termAtt = addAttribute(TermAttribute.class);
       
       public boolean incrementToken() throws IOException {
         if (index == tokens.length) {

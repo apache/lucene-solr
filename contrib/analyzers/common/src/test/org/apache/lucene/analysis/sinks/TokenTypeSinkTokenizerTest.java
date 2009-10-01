@@ -44,8 +44,8 @@ public class TokenTypeSinkTokenizerTest extends BaseTokenStreamTestCase {
     
     boolean seenDogs = false;
 
-    TermAttribute termAtt = (TermAttribute) ttf.addAttribute(TermAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) ttf.addAttribute(TypeAttribute.class);
+    TermAttribute termAtt = ttf.addAttribute(TermAttribute.class);
+    TypeAttribute typeAtt = ttf.addAttribute(TypeAttribute.class);
     ttf.reset();
     while (ttf.incrementToken()) {
       if (termAtt.term().equals("dogs")) {
@@ -72,8 +72,8 @@ public class TokenTypeSinkTokenizerTest extends BaseTokenStreamTestCase {
     
     private WordTokenFilter(TokenStream input) {
       super(input);
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
+      typeAtt = addAttribute(TypeAttribute.class);
     }
 
     public final boolean incrementToken() throws IOException {

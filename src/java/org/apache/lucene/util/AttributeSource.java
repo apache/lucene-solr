@@ -44,9 +44,8 @@ public class AttributeSource {
   public static abstract class AttributeFactory {
     /**
      * returns an {@link AttributeImpl} for the supplied {@link Attribute} interface class.
-     * <p>Signature for Java 1.5: <code>public AttributeImpl createAttributeInstance(Class%lt;? extends Attribute&gt; attClass)</code>
      */
-    public abstract AttributeImpl createAttributeInstance(Class attClass);
+    public abstract AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass);
     
     /**
      * This is the default factory that creates {@link AttributeImpl}s using the
@@ -55,13 +54,14 @@ public class AttributeSource {
     public static final AttributeFactory DEFAULT_ATTRIBUTE_FACTORY = new DefaultAttributeFactory();
     
     private static final class DefaultAttributeFactory extends AttributeFactory {
-      private static final IdentityHashMap/*<Class<? extends Attribute>,Class<? extends AttributeImpl>>*/ attClassImplMap = new IdentityHashMap();
+      private static final IdentityHashMap<Class<? extends Attribute>, Class<? extends AttributeImpl>> attClassImplMap =
+        new IdentityHashMap<Class<? extends Attribute>, Class<? extends AttributeImpl>>();
       
       private DefaultAttributeFactory() {}
     
-      public AttributeImpl createAttributeInstance(Class attClass) {
+      public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
         try {
-          return (AttributeImpl) getClassForInterface(attClass).newInstance();
+          return getClassForInterface(attClass).newInstance();
         } catch (InstantiationException e) {
           throw new IllegalArgumentException("Could not instantiate class " + attClass.getName());
         } catch (IllegalAccessException e) {
@@ -69,12 +69,12 @@ public class AttributeSource {
         }
       }
       
-      private static Class getClassForInterface(Class attClass) {
+      private static Class<? extends AttributeImpl> getClassForInterface(Class<? extends Attribute> attClass) {
         synchronized(attClassImplMap) {
-          Class clazz = (Class) attClassImplMap.get(attClass);
+          Class<? extends AttributeImpl> clazz = attClassImplMap.get(attClass);
           if (clazz == null) {
             try {
-              attClassImplMap.put(attClass, clazz = Class.forName(attClass.getName() + "Impl"));
+              attClassImplMap.put(attClass, clazz = Class.forName(attClass.getName() + "Impl").asSubclass(AttributeImpl.class));
             } catch (ClassNotFoundException e) {
               throw new IllegalArgumentException("Could not find implementing class for " + attClass.getName());
             }
@@ -87,8 +87,8 @@ public class AttributeSource {
       
   // These two maps must always be in sync!!!
   // So they are private, final and read-only from the outside (read-only iterators)
-  private final Map/*<Class<Attribute>,AttributeImpl>*/ attributes;
-  private final Map/*<Class<AttributeImpl>,AttributeImpl>*/ attributeImpls;
+  private final Map<Class<? extends Attribute>, AttributeImpl> attributes;
+  private final Map<Class<? extends AttributeImpl>, AttributeImpl> attributeImpls;
 
   private AttributeFactory factory;
   
@@ -115,8 +115,8 @@ public class AttributeSource {
    * An AttributeSource using the supplied {@link AttributeFactory} for creating new {@link Attribute} instances.
    */
   public AttributeSource(AttributeFactory factory) {
-    this.attributes = new LinkedHashMap();
-    this.attributeImpls = new LinkedHashMap();
+    this.attributes = new LinkedHashMap<Class<? extends Attribute>, AttributeImpl>();
+    this.attributeImpls = new LinkedHashMap<Class<? extends AttributeImpl>, AttributeImpl>();
     this.factory = factory;
   }
   
@@ -129,31 +129,29 @@ public class AttributeSource {
   
   /** Returns a new iterator that iterates the attribute classes
    * in the same order they were added in.
-   * <p>Signature for Java 1.5: <code>public Iterator&lt;Class&lt;? extends Attribute&gt;&gt; getAttributeClassesIterator()</code>
    */
-  public Iterator getAttributeClassesIterator() {
+  public Iterator<Class<? extends Attribute>> getAttributeClassesIterator() {
     return Collections.unmodifiableSet(attributes.keySet()).iterator();
   }
   
   /** Returns a new iterator that iterates all unique Attribute implementations.
    * This iterator may contain less entries that {@link #getAttributeClassesIterator},
    * if one instance implements more than one Attribute interface.
-   * <p>Signature for Java 1.5: <code>public Iterator&lt;AttributeImpl&gt; getAttributeImplsIterator()</code>
    */
-  public Iterator getAttributeImplsIterator() {
+  public Iterator<AttributeImpl> getAttributeImplsIterator() {
     if (hasAttributes()) {
       if (currentState == null) {
         computeCurrentState();
       }
       final State initState = currentState;
-      return new Iterator() {
+      return new Iterator<AttributeImpl>() {
         private State state = initState;
       
         public void remove() {
           throw new UnsupportedOperationException();
         }
         
-        public Object next() {
+        public AttributeImpl next() {
           if (state == null)
             throw new NoSuchElementException();
           final AttributeImpl att = state.attribute;
@@ -166,31 +164,30 @@ public class AttributeSource {
         }
       };
     } else {
-      return Collections.EMPTY_SET.iterator();
+      return Collections.<AttributeImpl>emptySet().iterator();
     }
   }
   
   /** a cache that stores all interfaces for known implementation classes for performance (slow reflection) */
-  private static final IdentityHashMap/*<Class<? extends AttributeImpl>,LinkedList<Class<? extends Attribute>>>*/ knownImplClasses = new IdentityHashMap();
+  private static final IdentityHashMap<Class<? extends AttributeImpl>,LinkedList<Class<? extends Attribute>>> knownImplClasses =
+    new IdentityHashMap<Class<? extends AttributeImpl>,LinkedList<Class<? extends Attribute>>>();
   
   /** Adds a custom AttributeImpl instance with one or more Attribute interfaces. */
   public void addAttributeImpl(final AttributeImpl att) {
-    final Class clazz = att.getClass();
+    final Class<? extends AttributeImpl> clazz = att.getClass();
     if (attributeImpls.containsKey(clazz)) return;
-    LinkedList foundInterfaces;
+    LinkedList<Class<? extends Attribute>> foundInterfaces;
     synchronized(knownImplClasses) {
-      foundInterfaces = (LinkedList) knownImplClasses.get(clazz);
+      foundInterfaces = knownImplClasses.get(clazz);
       if (foundInterfaces == null) {
-        knownImplClasses.put(clazz, foundInterfaces=new LinkedList());
+        knownImplClasses.put(clazz, foundInterfaces = new LinkedList<Class<? extends Attribute>>());
         // find all interfaces that this attribute instance implements
         // and that extend the Attribute interface
-        Class actClazz = clazz;
+        Class<?> actClazz = clazz;
         do {
-          Class[] interfaces = actClazz.getInterfaces();
-          for (int i = 0; i < interfaces.length; i++) {
-            final Class curInterface = interfaces[i];
+          for (Class<?> curInterface : actClazz.getInterfaces()) {
             if (curInterface != Attribute.class && Attribute.class.isAssignableFrom(curInterface)) {
-              foundInterfaces.add(curInterface);
+              foundInterfaces.add(curInterface.asSubclass(Attribute.class));
             }
           }
           actClazz = actClazz.getSuperclass();
@@ -199,8 +196,7 @@ public class AttributeSource {
     }
     
     // add all interfaces of this AttributeImpl to the maps
-    for (Iterator it = foundInterfaces.iterator(); it.hasNext(); ) {
-      final Class curInterface = (Class) it.next();
+    for (Class<? extends Attribute> curInterface : foundInterfaces) {
       // Attribute is a superclass of this interface
       if (!attributes.containsKey(curInterface)) {
         // invalidate state to force recomputation in captureState()
@@ -216,17 +212,13 @@ public class AttributeSource {
    * This method first checks if an instance of that class is 
    * already in this AttributeSource and returns it. Otherwise a
    * new instance is created, added to this AttributeSource and returned. 
-   * <p>Signature for Java 1.5: <code>public &lt;T extends Attribute&gt; T addAttribute(Class&lt;T&gt;)</code>
    */
-  public Attribute addAttribute(Class attClass) {
-    final Attribute att = (Attribute) attributes.get(attClass);
-    if (att == null) {
-      final AttributeImpl attImpl = this.factory.createAttributeInstance(attClass);
-      addAttributeImpl(attImpl);
-      return attImpl;
-    } else {
-      return att;
+  public <A extends Attribute> A addAttribute(Class<A> attClass) {
+    AttributeImpl attImpl = attributes.get(attClass);
+    if (attImpl == null) {
+      addAttributeImpl(attImpl = this.factory.createAttributeInstance(attClass));
     }
+    return attClass.cast(attImpl);
   }
   
   /** Returns true, iff this AttributeSource has any attributes */
@@ -237,16 +229,14 @@ public class AttributeSource {
   /**
    * The caller must pass in a Class&lt;? extends Attribute&gt; value. 
    * Returns true, iff this AttributeSource contains the passed-in Attribute.
-   * <p>Signature for Java 1.5: <code>public boolean hasAttribute(Class&lt;? extends Attribute&gt;)</code>
    */
-  public boolean hasAttribute(Class attClass) {
+  public boolean hasAttribute(Class<? extends Attribute> attClass) {
     return this.attributes.containsKey(attClass);
   }
 
   /**
    * The caller must pass in a Class&lt;? extends Attribute&gt; value. 
    * Returns the instance of the passed in Attribute contained in this AttributeSource
-   * <p>Signature for Java 1.5: <code>public &lt;T extends Attribute&gt; T getAttribute(Class&lt;T&gt;)</code>
    * 
    * @throws IllegalArgumentException if this AttributeSource does not contain the
    *         Attribute. It is recommended to always use {@link #addAttribute} even in consumers
@@ -255,13 +245,12 @@ public class AttributeSource {
    *         available. If you want to only use the attribute, if it is available (to optimize
    *         consuming), use {@link #hasAttribute}.
    */
-  public Attribute getAttribute(Class attClass) {
-    final Attribute att = (Attribute) this.attributes.get(attClass);
-    if (att == null) {
+  public <A extends Attribute> A getAttribute(Class<A> attClass) {
+    AttributeImpl attImpl = attributes.get(attClass);
+    if (attImpl == null) {
       throw new IllegalArgumentException("This AttributeSource does not have the attribute '" + attClass.getName() + "'.");
     }
-
-    return att;
+    return attClass.cast(attImpl);
   }
   
   /**
@@ -290,12 +279,12 @@ public class AttributeSource {
   private void computeCurrentState() {
     currentState = new State();
     State c = currentState;
-    Iterator it = attributeImpls.values().iterator();
-    c.attribute = (AttributeImpl) it.next();
+    final Iterator<AttributeImpl> it = attributeImpls.values().iterator();
+    c.attribute = it.next();
     while (it.hasNext()) {
       c.next = new State();
       c = c.next;
-      c.attribute = (AttributeImpl) it.next();
+      c.attribute = it.next();
     }        
   }
   
@@ -348,7 +337,7 @@ public class AttributeSource {
     if (state == null)  return;
     
     do {
-      AttributeImpl targetImpl = (AttributeImpl) attributeImpls.get(state.attribute.getClass());
+      AttributeImpl targetImpl = attributeImpls.get(state.attribute.getClass());
       if (targetImpl == null)
         throw new IllegalArgumentException("State contains an AttributeImpl that is not in this AttributeSource");
       state.attribute.copyTo(targetImpl);
@@ -412,9 +401,7 @@ public class AttributeSource {
   }
   
   public String toString() {
-    StringBuffer sb = new StringBuffer();
-    sb.append('(');
-    
+    StringBuilder sb = new StringBuilder().append('(');
     if (hasAttributes()) {
       if (currentState == null) {
         computeCurrentState();
@@ -424,8 +411,7 @@ public class AttributeSource {
         sb.append(state.attribute.toString());
       }
     }
-    sb.append(')');
-    return sb.toString();
+    return sb.append(')').toString();
   }
   
   /**
@@ -442,14 +428,12 @@ public class AttributeSource {
         computeCurrentState();
       }
       for (State state = currentState; state != null; state = state.next) {
-        clone.attributeImpls.put(state.attribute.getClass(), state.attribute.clone());
+        clone.attributeImpls.put(state.attribute.getClass(), (AttributeImpl) state.attribute.clone());
       }
     }
     
     // now the interfaces
-    Iterator/*<Entry<Class<Attribute>, AttributeImpl>>*/ attIt = this.attributes.entrySet().iterator(); 
-    while (attIt.hasNext()) {
-      Entry/*<Class<Attribute>, AttributeImpl>*/ entry = (Entry/*<Class<Attribute>, AttributeImpl>*/) attIt.next();
+    for (Entry<Class<? extends Attribute>, AttributeImpl> entry : this.attributes.entrySet()) {
       clone.attributes.put(entry.getKey(), clone.attributeImpls.get(entry.getValue().getClass()));
     }
     

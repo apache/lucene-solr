@@ -39,9 +39,9 @@ public class NumericPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
     NumericPayloadTokenFilter nptf = new NumericPayloadTokenFilter(new WordTokenFilter(new WhitespaceTokenizer(new StringReader(test))), 3, "D");
     boolean seenDogs = false;
-    TermAttribute termAtt = (TermAttribute) nptf.getAttribute(TermAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) nptf.getAttribute(TypeAttribute.class);
-    PayloadAttribute payloadAtt = (PayloadAttribute) nptf.getAttribute(PayloadAttribute.class);
+    TermAttribute termAtt = nptf.getAttribute(TermAttribute.class);
+    TypeAttribute typeAtt = nptf.getAttribute(TypeAttribute.class);
+    PayloadAttribute payloadAtt = nptf.getAttribute(PayloadAttribute.class);
     while (nptf.incrementToken()) {
       if (termAtt.term().equals("dogs")) {
         seenDogs = true;
@@ -65,8 +65,8 @@ public class NumericPayloadTokenFilterTest extends BaseTokenStreamTestCase {
     
     private WordTokenFilter(TokenStream input) {
       super(input);
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
+      typeAtt = addAttribute(TypeAttribute.class);
     }
     
     public boolean incrementToken() throws IOException {

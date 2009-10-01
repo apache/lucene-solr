@@ -59,14 +59,14 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
 
   static final TeeSinkTokenFilter.SinkFilter theFilter = new TeeSinkTokenFilter.SinkFilter() {
     public boolean accept(AttributeSource a) {
-      TermAttribute termAtt = (TermAttribute) a.getAttribute(TermAttribute.class);
+      TermAttribute termAtt = a.getAttribute(TermAttribute.class);
       return termAtt.term().equalsIgnoreCase("The");
     }
   };
 
   static final TeeSinkTokenFilter.SinkFilter dogFilter = new TeeSinkTokenFilter.SinkFilter() {
     public boolean accept(AttributeSource a) {
-      TermAttribute termAtt = (TermAttribute) a.getAttribute(TermAttribute.class);
+      TermAttribute termAtt = a.getAttribute(TermAttribute.class);
       return termAtt.term().equalsIgnoreCase("Dogs");
     }
   };
@@ -77,7 +77,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     final TokenStream sink1 = source.newSinkTokenStream();
     final TokenStream sink2 = source.newSinkTokenStream(theFilter);
     int i = 0;
-    TermAttribute termAtt = (TermAttribute) source.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = source.getAttribute(TermAttribute.class);
     while (source.incrementToken()) {
       assertEquals(tokens1[i], termAtt.term());
       i++;
@@ -85,7 +85,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     assertEquals(tokens1.length, i);
     
     i = 0;
-    termAtt = (TermAttribute) sink1.getAttribute(TermAttribute.class);
+    termAtt = sink1.getAttribute(TermAttribute.class);
     while (sink1.incrementToken()) {
       assertEquals(tokens1[i], termAtt.term());
       i++;
@@ -93,7 +93,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     assertEquals(tokens1.length, i);
     
     i = 0;
-    termAtt = (TermAttribute) sink2.getAttribute(TermAttribute.class);
+    termAtt = sink2.getAttribute(TermAttribute.class);
     while (sink2.incrementToken()) {
       assertTrue(termAtt.term().equalsIgnoreCase("The"));
       i++;
@@ -113,28 +113,28 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     final TokenStream source2 = tee2;
 
     int i = 0;
-    TermAttribute termAtt = (TermAttribute) source1.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = source1.getAttribute(TermAttribute.class);
     while (source1.incrementToken()) {
       assertEquals(tokens1[i], termAtt.term());
       i++;
     }
     assertEquals(tokens1.length, i);
     i = 0;
-    termAtt = (TermAttribute) source2.getAttribute(TermAttribute.class);
+    termAtt = source2.getAttribute(TermAttribute.class);
     while (source2.incrementToken()) {
       assertEquals(tokens2[i], termAtt.term());
       i++;
     }
     assertEquals(tokens2.length, i);
     i = 0;
-    termAtt = (TermAttribute) theDetector.getAttribute(TermAttribute.class);
+    termAtt = theDetector.getAttribute(TermAttribute.class);
     while (theDetector.incrementToken()) {
       assertTrue("'" + termAtt.term() + "' is not equal to 'The'", termAtt.term().equalsIgnoreCase("The"));
       i++;
     }
     assertEquals("there must be 4 times 'The' in the stream", 4, i);
     i = 0;
-    termAtt = (TermAttribute) dogDetector.getAttribute(TermAttribute.class);
+    termAtt = dogDetector.getAttribute(TermAttribute.class);
     while (dogDetector.incrementToken()) {
       assertTrue("'" + termAtt.term() + "' is not equal to 'Dogs'", termAtt.term().equalsIgnoreCase("Dogs"));
       i++;
@@ -144,7 +144,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     source1.reset();
     TokenStream lowerCasing = new LowerCaseFilter(source1);
     i = 0;
-    termAtt = (TermAttribute) lowerCasing.getAttribute(TermAttribute.class);
+    termAtt = lowerCasing.getAttribute(TermAttribute.class);
     while (lowerCasing.incrementToken()) {
       assertEquals(tokens1[i].toLowerCase(), termAtt.term());
       i++;
@@ -171,8 +171,8 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
       TokenStream sink = teeStream.newSinkTokenStream(new ModuloSinkFilter(100));
       teeStream.consumeAllTokens();
       TokenStream stream = new ModuloTokenFilter(new StandardFilter(new StandardTokenizer(new StringReader(buffer.toString()))), 100);
-      TermAttribute tfTok = (TermAttribute) stream.addAttribute(TermAttribute.class);
-      TermAttribute sinkTok = (TermAttribute) sink.addAttribute(TermAttribute.class);
+      TermAttribute tfTok = stream.addAttribute(TermAttribute.class);
+      TermAttribute sinkTok = sink.addAttribute(TermAttribute.class);
       for (int i=0; stream.incrementToken(); i++) {
         assertTrue(sink.incrementToken());
         assertTrue(tfTok + " is not equal to " + sinkTok + " at token: " + i, tfTok.equals(sinkTok) == true);
@@ -184,12 +184,12 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
         long start = System.currentTimeMillis();
         for (int i = 0; i < 20; i++) {
           stream = new StandardFilter(new StandardTokenizer(new StringReader(buffer.toString())));
-          PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) stream.getAttribute(PositionIncrementAttribute.class);
+          PositionIncrementAttribute posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
           while (stream.incrementToken()) {
             tfPos += posIncrAtt.getPositionIncrement();
           }
           stream = new ModuloTokenFilter(new StandardFilter(new StandardTokenizer(new StringReader(buffer.toString()))), modCounts[j]);
-          posIncrAtt = (PositionIncrementAttribute) stream.getAttribute(PositionIncrementAttribute.class);
+          posIncrAtt = stream.getAttribute(PositionIncrementAttribute.class);
           while (stream.incrementToken()) {
             tfPos += posIncrAtt.getPositionIncrement();
           }
@@ -202,12 +202,12 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
         for (int i = 0; i < 20; i++) {
           teeStream = new TeeSinkTokenFilter(new StandardFilter(new StandardTokenizer(new StringReader(buffer.toString()))));
           sink = teeStream.newSinkTokenStream(new ModuloSinkFilter(modCounts[j]));
-          PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) teeStream.getAttribute(PositionIncrementAttribute.class);
+          PositionIncrementAttribute posIncrAtt = teeStream.getAttribute(PositionIncrementAttribute.class);
           while (teeStream.incrementToken()) {
             sinkPos += posIncrAtt.getPositionIncrement();
           }
           //System.out.println("Modulo--------");
-          posIncrAtt = (PositionIncrementAttribute) sink.getAttribute(PositionIncrementAttribute.class);
+          posIncrAtt = sink.getAttribute(PositionIncrementAttribute.class);
           while (sink.incrementToken()) {
             sinkPos += posIncrAtt.getPositionIncrement();
           }

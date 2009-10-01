@@ -46,7 +46,7 @@ public class PositionFilter extends TokenFilter {
    */
   public PositionFilter(final TokenStream input) {
     super(input);
-    posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+    posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   }
 
   /**

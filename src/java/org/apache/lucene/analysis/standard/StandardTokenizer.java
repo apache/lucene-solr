@@ -148,10 +148,10 @@ public class StandardTokenizer extends Tokenizer {
   private void init(Reader input, boolean replaceInvalidAcronym) {
     this.replaceInvalidAcronym = replaceInvalidAcronym;
     this.input = input;    
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
+    offsetAtt = addAttribute(OffsetAttribute.class);
+    posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+    typeAtt = addAttribute(TypeAttribute.class);
   }
   
   // this tokenizer generates three attributes:

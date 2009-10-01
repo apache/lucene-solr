@@ -37,7 +37,7 @@ public final class PersianNormalizationFilter extends TokenFilter {
   public PersianNormalizationFilter(TokenStream input) {
     super(input);
     normalizer = new PersianNormalizer();
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   public boolean incrementToken() throws IOException {

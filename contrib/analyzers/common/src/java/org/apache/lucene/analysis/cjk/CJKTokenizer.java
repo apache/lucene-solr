@@ -127,9 +127,9 @@ public final class CJKTokenizer extends Tokenizer {
     }
     
     private void init() {
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-      typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
+      offsetAtt = addAttribute(OffsetAttribute.class);
+      typeAtt = addAttribute(TypeAttribute.class);
     }
     
     //~ Methods ----------------------------------------------------------------

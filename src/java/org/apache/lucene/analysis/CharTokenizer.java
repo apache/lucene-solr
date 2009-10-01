@@ -28,20 +28,20 @@ import org.apache.lucene.util.AttributeSource;
 public abstract class CharTokenizer extends Tokenizer {
   public CharTokenizer(Reader input) {
     super(input);
-    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    offsetAtt = addAttribute(OffsetAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   public CharTokenizer(AttributeSource source, Reader input) {
     super(source, input);
-    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    offsetAtt = addAttribute(OffsetAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   public CharTokenizer(AttributeFactory factory, Reader input) {
     super(factory, input);
-    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    offsetAtt = addAttribute(OffsetAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
   
   private int offset = 0, bufferIndex = 0, dataLen = 0;

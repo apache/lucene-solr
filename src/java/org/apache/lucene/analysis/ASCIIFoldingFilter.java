@@ -60,7 +60,7 @@ public final class ASCIIFoldingFilter extends TokenFilter {
   public ASCIIFoldingFilter(TokenStream input)
   {
     super(input);
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   private char[] output = new char[512];

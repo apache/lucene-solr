@@ -13,6 +13,11 @@ API Changes
   protected; add expert ctor to directly specify reader, subReaders
   and docStarts.  (John Wang, Tim Smith via Mike McCandless)
 
+* LUCENE-1855: Convert TokenStream/AttributeSource API to Generics.
+  Now addAttribute()/getAttribute() return an instance of the requested
+  attribute interface and no cast needed anymore.  (Uwe Schindler,
+  Michael Busch, Robert Muir, Adriano Crestani)
+
 Bug fixes
 
 New features

@@ -50,7 +50,7 @@ public class TestElision extends BaseTokenStreamTestCase {
 
   private List filtre(TokenFilter filter) throws IOException {
     List tas = new ArrayList();
-    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
     while (filter.incrementToken()) {
       tas.add(termAtt.term());
     }

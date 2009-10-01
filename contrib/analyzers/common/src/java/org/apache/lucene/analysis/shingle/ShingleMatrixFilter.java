@@ -228,22 +228,22 @@ public class ShingleMatrixFilter extends TokenStream {
     this.ignoringSinglePrefixOrSuffixShingle = ignoringSinglePrefixOrSuffixShingle;
     this.settingsCodec = settingsCodec;
 
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-    payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
-    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
-    flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
+    posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+    payloadAtt = addAttribute(PayloadAttribute.class);
+    offsetAtt = addAttribute(OffsetAttribute.class);
+    typeAtt = addAttribute(TypeAttribute.class);
+    flagsAtt = addAttribute(FlagsAttribute.class);
 
     // set the input to be an empty token stream, we already have the data.
     this.input = new EmptyTokenStream();
     
-    in_termAtt = (TermAttribute) input.addAttribute(TermAttribute.class);
-    in_posIncrAtt = (PositionIncrementAttribute) input.addAttribute(PositionIncrementAttribute.class);
-    in_payloadAtt = (PayloadAttribute) input.addAttribute(PayloadAttribute.class);
-    in_offsetAtt = (OffsetAttribute) input.addAttribute(OffsetAttribute.class);
-    in_typeAtt = (TypeAttribute) input.addAttribute(TypeAttribute.class);
-    in_flagsAtt = (FlagsAttribute) input.addAttribute(FlagsAttribute.class);
+    in_termAtt = input.addAttribute(TermAttribute.class);
+    in_posIncrAtt = input.addAttribute(PositionIncrementAttribute.class);
+    in_payloadAtt = input.addAttribute(PayloadAttribute.class);
+    in_offsetAtt = input.addAttribute(OffsetAttribute.class);
+    in_typeAtt = input.addAttribute(TypeAttribute.class);
+    in_flagsAtt = input.addAttribute(FlagsAttribute.class);
   }
 
   /**
@@ -310,19 +310,19 @@ public class ShingleMatrixFilter extends TokenStream {
     this.spacerCharacter = spacerCharacter;
     this.ignoringSinglePrefixOrSuffixShingle = ignoringSinglePrefixOrSuffixShingle;
     this.settingsCodec = settingsCodec;
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-    payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
-    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
-    flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
+    posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+    payloadAtt = addAttribute(PayloadAttribute.class);
+    offsetAtt = addAttribute(OffsetAttribute.class);
+    typeAtt = addAttribute(TypeAttribute.class);
+    flagsAtt = addAttribute(FlagsAttribute.class);
     
-    in_termAtt = (TermAttribute) input.addAttribute(TermAttribute.class);
-    in_posIncrAtt = (PositionIncrementAttribute) input.addAttribute(PositionIncrementAttribute.class);
-    in_payloadAtt = (PayloadAttribute) input.addAttribute(PayloadAttribute.class);
-    in_offsetAtt = (OffsetAttribute) input.addAttribute(OffsetAttribute.class);
-    in_typeAtt = (TypeAttribute) input.addAttribute(TypeAttribute.class);
-    in_flagsAtt = (FlagsAttribute) input.addAttribute(FlagsAttribute.class);
+    in_termAtt = input.addAttribute(TermAttribute.class);
+    in_posIncrAtt = input.addAttribute(PositionIncrementAttribute.class);
+    in_payloadAtt = input.addAttribute(PayloadAttribute.class);
+    in_offsetAtt = input.addAttribute(OffsetAttribute.class);
+    in_typeAtt = input.addAttribute(TypeAttribute.class);
+    in_flagsAtt = input.addAttribute(FlagsAttribute.class);
   }
 
   // internal filter instance variables

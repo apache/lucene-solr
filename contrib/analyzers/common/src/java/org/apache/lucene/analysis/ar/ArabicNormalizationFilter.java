@@ -36,7 +36,7 @@ public final class ArabicNormalizationFilter extends TokenFilter {
   public ArabicNormalizationFilter(TokenStream input) {
     super(input);
     normalizer = new ArabicNormalizer();
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   public boolean incrementToken() throws IOException {

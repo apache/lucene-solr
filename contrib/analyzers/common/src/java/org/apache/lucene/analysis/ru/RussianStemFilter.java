@@ -50,7 +50,7 @@ public final class RussianStemFilter extends TokenFilter
     {
         super(in);
         stemmer = new RussianStemmer(charset);
-        termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+        termAtt = addAttribute(TermAttribute.class);
     }
 
     public RussianStemFilter(TokenStream in)

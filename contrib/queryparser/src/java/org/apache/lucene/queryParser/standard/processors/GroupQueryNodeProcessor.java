@@ -70,8 +70,8 @@ public class GroupQueryNodeProcessor implements QueryNodeProcessor {
           "DefaultOperatorAttribute should be set on the QueryConfigHandler");
     }
 
-    usingAnd = Operator.AND == ((DefaultOperatorAttribute) getQueryConfigHandler()
-        .getAttribute(DefaultOperatorAttribute.class)).getOperator();
+    this.usingAnd = Operator.AND == getQueryConfigHandler()
+        .getAttribute(DefaultOperatorAttribute.class).getOperator();
 
     if (queryTree instanceof GroupQueryNode) {
       queryTree = ((GroupQueryNode) queryTree).getChild();

@@ -42,10 +42,10 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     public TestTokenStream(Token[] testToken) {
       super();
       this.testToken = testToken;
-      this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-      this.posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-      this.typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+      this.termAtt = addAttribute(TermAttribute.class);
+      this.offsetAtt = addAttribute(OffsetAttribute.class);
+      this.posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+      this.typeAtt = addAttribute(TypeAttribute.class);
     }
 
     public final boolean incrementToken() throws IOException {
@@ -299,10 +299,10 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     ShingleFilter filter = new ShingleFilter(new TestTokenStream(tokensToShingle), maxSize);
     filter.setOutputUnigrams(outputUnigrams);
 
-    TermAttribute termAtt = (TermAttribute) filter.addAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) filter.addAttribute(OffsetAttribute.class);
-    PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) filter.addAttribute(PositionIncrementAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) filter.addAttribute(TypeAttribute.class);
+    TermAttribute termAtt = filter.addAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = filter.addAttribute(OffsetAttribute.class);
+    PositionIncrementAttribute posIncrAtt = filter.addAttribute(PositionIncrementAttribute.class);
+    TypeAttribute typeAtt = filter.addAttribute(TypeAttribute.class);
 
     int i = 0;
     while (filter.incrementToken()) {

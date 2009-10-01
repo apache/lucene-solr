@@ -559,10 +559,10 @@ public class QueryParser implements QueryParserConstants {
     }
     if (success) {
       if (buffer.hasAttribute(TermAttribute.class)) {
-        termAtt = (TermAttribute) buffer.getAttribute(TermAttribute.class);
+        termAtt = buffer.getAttribute(TermAttribute.class);
       }
       if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
-        posIncrAtt = (PositionIncrementAttribute) buffer.getAttribute(PositionIncrementAttribute.class);
+        posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
       }
     }
 
@@ -759,7 +759,7 @@ public class QueryParser implements QueryParserConstants {
       DateTools.Resolution resolution = getDateResolution(field);
       if (resolution == null) {
         // no default or field specific date resolution has been set,
-        // use deprecated DateField to maintain compatibilty with
+        // use deprecated DateField to maintain compatibility with
         // pre-1.9 Lucene versions.
         part1 = DateField.dateToString(d1);
         part2 = DateField.dateToString(d2);
@@ -1591,16 +1591,6 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
-  private boolean jj_3_1() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_2()) {
-    jj_scanpos = xsp;
-    if (jj_3R_3()) return true;
-    }
-    return false;
-  }
-
   private boolean jj_3R_3() {
     if (jj_scan_token(STAR)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -1610,6 +1600,16 @@ public class QueryParser implements QueryParserConstants {
   private boolean jj_3R_2() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
+    return false;
+  }
+
+  private boolean jj_3_1() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_2()) {
+    jj_scanpos = xsp;
+    if (jj_3R_3()) return true;
+    }
     return false;
   }
 

@@ -54,8 +54,8 @@ public class TestPrefixAwareTokenFilter extends BaseTokenStreamTestCase {
 
 
   private void assertNext(TokenStream ts, String text, int startOffset, int endOffset) throws IOException {
-    TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) ts.addAttribute(OffsetAttribute.class);
+    TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
 
     assertTrue(ts.incrementToken());
     assertEquals(text, termAtt.term());

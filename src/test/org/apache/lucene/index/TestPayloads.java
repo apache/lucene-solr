@@ -436,7 +436,7 @@ public class TestPayloads extends LuceneTestCase {
             this.data = data;
             this.length = length;
             this.offset = offset;
-            payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+            payloadAtt = addAttribute(PayloadAttribute.class);
         }
         
         public boolean incrementToken() throws IOException {
@@ -526,8 +526,8 @@ public class TestPayloads extends LuceneTestCase {
             generateRandomData(payload);
             term = pool.bytesToString(payload);
             first = true;
-            payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
-            termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+            payloadAtt = addAttribute(PayloadAttribute.class);
+            termAtt = addAttribute(TermAttribute.class);
         }
         
         public boolean incrementToken() throws IOException {

@@ -106,12 +106,12 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
       addAllLowerCase(this.dictionary, dictionary);
     }
     
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
-    posIncAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
-    payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
+    offsetAtt = addAttribute(OffsetAttribute.class);
+    flagsAtt = addAttribute(FlagsAttribute.class);
+    posIncAtt = addAttribute(PositionIncrementAttribute.class);
+    typeAtt = addAttribute(TypeAttribute.class);
+    payloadAtt = addAttribute(PayloadAttribute.class);
   }
 
   /**

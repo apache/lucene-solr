@@ -195,8 +195,8 @@ public abstract class AbstractTestCase extends TestCase {
       ch = 0;
     }
 
-    TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    TermAttribute termAtt = addAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     public boolean incrementToken() throws IOException {
       if( !getNextPartialSnippet() )
         return false;

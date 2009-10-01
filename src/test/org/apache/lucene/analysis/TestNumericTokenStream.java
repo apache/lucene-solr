@@ -29,8 +29,8 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
   public void testLongStream() throws Exception {
     final NumericTokenStream stream=new NumericTokenStream().setLongValue(lvalue);
     // use getAttribute to test if attributes really exist, if not an IAE will be throwed
-    final TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
-    final TypeAttribute typeAtt = (TypeAttribute) stream.getAttribute(TypeAttribute.class);
+    final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+    final TypeAttribute typeAtt = stream.getAttribute(TypeAttribute.class);
     for (int shift=0; shift<64; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertTrue("New token is available", stream.incrementToken());
       assertEquals("Term is correctly encoded", NumericUtils.longToPrefixCoded(lvalue, shift), termAtt.term());
@@ -42,8 +42,8 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
   public void testIntStream() throws Exception {
     final NumericTokenStream stream=new NumericTokenStream().setIntValue(ivalue);
     // use getAttribute to test if attributes really exist, if not an IAE will be throwed
-    final TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
-    final TypeAttribute typeAtt = (TypeAttribute) stream.getAttribute(TypeAttribute.class);
+    final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+    final TypeAttribute typeAtt = stream.getAttribute(TypeAttribute.class);
     for (int shift=0; shift<32; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertTrue("New token is available", stream.incrementToken());
       assertEquals("Term is correctly encoded", NumericUtils.intToPrefixCoded(ivalue, shift), termAtt.term());

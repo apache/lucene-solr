@@ -196,7 +196,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
   
   void start(Fieldable f) {
     if (doVectorOffsets) {
-      offsetAttribute = (OffsetAttribute) fieldState.attributeSource.addAttribute(OffsetAttribute.class);
+      offsetAttribute = fieldState.attributeSource.addAttribute(OffsetAttribute.class);
     } else {
       offsetAttribute = null;
     }

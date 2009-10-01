@@ -217,8 +217,8 @@ public class Highlighter
 		ArrayList docFrags = new ArrayList();
 		StringBuffer newText=new StringBuffer();
 		
-	    TermAttribute termAtt = (TermAttribute) tokenStream.addAttribute(TermAttribute.class);
-	    OffsetAttribute offsetAtt = (OffsetAttribute) tokenStream.addAttribute(OffsetAttribute.class);
+	    TermAttribute termAtt = tokenStream.addAttribute(TermAttribute.class);
+	    OffsetAttribute offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
 	    tokenStream.addAttribute(PositionIncrementAttribute.class);
 	    tokenStream.reset();
 	    

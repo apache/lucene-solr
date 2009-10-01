@@ -46,7 +46,7 @@ public final class PorterStemFilter extends TokenFilter {
   public PorterStemFilter(TokenStream in) {
     super(in);
     stemmer = new PorterStemmer();
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   public final boolean incrementToken() throws IOException {

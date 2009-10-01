@@ -276,8 +276,8 @@ public class MemoryIndex implements Serializable {
     return new TokenStream() {
       private Iterator iter = keywords.iterator();
       private int start = 0;
-      private TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      private OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+      private TermAttribute termAtt = addAttribute(TermAttribute.class);
+      private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
       
       public boolean incrementToken() {
         if (!iter.hasNext()) return false;
@@ -338,9 +338,9 @@ public class MemoryIndex implements Serializable {
       int numOverlapTokens = 0;
       int pos = -1;
       
-      TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
-      PositionIncrementAttribute posIncrAttribute = (PositionIncrementAttribute) stream.addAttribute(PositionIncrementAttribute.class);
-      OffsetAttribute offsetAtt = (OffsetAttribute) stream.addAttribute(OffsetAttribute.class);
+      TermAttribute termAtt = stream.addAttribute(TermAttribute.class);
+      PositionIncrementAttribute posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);
+      OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
       
       stream.reset();
       while (stream.incrementToken()) {

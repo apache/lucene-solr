@@ -1316,9 +1316,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       private PositionIncrementAttribute posIncrAtt;
       private OffsetAttribute offsetAtt;
       {
-        termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-        posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-        offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+        termAtt = addAttribute(TermAttribute.class);
+        posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+        offsetAtt = addAttribute(OffsetAttribute.class);
         lst = new ArrayList();
         Token t;
         t = createToken("hi", 0, 2);
@@ -1363,9 +1363,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       private PositionIncrementAttribute posIncrAtt;
       private OffsetAttribute offsetAtt;
       {
-        termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-        posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-        offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+        termAtt = addAttribute(TermAttribute.class);
+        posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+        offsetAtt = addAttribute(OffsetAttribute.class);
         lst = new ArrayList();
         Token t;
         t = createToken("hispeed", 0, 8);
@@ -1686,13 +1686,13 @@ class SynonymTokenizer extends TokenStream {
   public SynonymTokenizer(TokenStream realStream, Map synonyms) {
     this.realStream = realStream;
     this.synonyms = synonyms;
-    realTermAtt = (TermAttribute) realStream.addAttribute(TermAttribute.class);
-    realPosIncrAtt = (PositionIncrementAttribute) realStream.addAttribute(PositionIncrementAttribute.class);
-    realOffsetAtt = (OffsetAttribute) realStream.addAttribute(OffsetAttribute.class);
+    realTermAtt = realStream.addAttribute(TermAttribute.class);
+    realPosIncrAtt = realStream.addAttribute(PositionIncrementAttribute.class);
+    realOffsetAtt = realStream.addAttribute(OffsetAttribute.class);
 
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
+    posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+    offsetAtt = addAttribute(OffsetAttribute.class);
   }
 
   public boolean incrementToken() throws IOException {

@@ -75,10 +75,10 @@ public class AnalyzerUtil {
       public TokenStream tokenStream(final String fieldName, Reader reader) {
         return new TokenFilter(child.tokenStream(fieldName, reader)) {
           private int position = -1;
-          private TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-          private PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-          private OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-          private TypeAttribute typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+          private TermAttribute termAtt = addAttribute(TermAttribute.class);
+          private PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+          private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+          private TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
          
           public boolean incrementToken() throws IOException {
             boolean hasNext = input.incrementToken();
@@ -307,7 +307,7 @@ public class AnalyzerUtil {
     // compute frequencies of distinct terms
     HashMap map = new HashMap();
     TokenStream stream = analyzer.tokenStream("", new StringReader(text));
-    TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
+    TermAttribute termAtt = stream.addAttribute(TermAttribute.class);
     try {
       while (stream.incrementToken()) {
         MutableInteger freq = (MutableInteger) map.get(termAtt.term());

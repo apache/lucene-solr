@@ -67,8 +67,8 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     boolean inPhrase = false;
     int savedStart = 0, savedEnd = 0;
 
-    TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    TermAttribute termAtt = addAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
     public boolean incrementToken() throws IOException {
       if (inPhrase) {

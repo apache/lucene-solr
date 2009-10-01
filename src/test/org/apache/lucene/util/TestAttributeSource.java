@@ -27,8 +27,8 @@ public class TestAttributeSource extends LuceneTestCase {
   public void testCaptureState() {
     // init a first instance
     AttributeSource src = new AttributeSource();
-    TermAttribute termAtt = (TermAttribute) src.addAttribute(TermAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) src.addAttribute(TypeAttribute.class);
+    TermAttribute termAtt = src.addAttribute(TermAttribute.class);
+    TypeAttribute typeAtt = src.addAttribute(TypeAttribute.class);
     termAtt.setTermBuffer("TestTerm");
     typeAtt.setType("TestType");
     final int hashCode = src.hashCode();
@@ -55,9 +55,9 @@ public class TestAttributeSource extends LuceneTestCase {
     
     // init a second instance (with attributes in different order and one additional attribute)
     AttributeSource src2 = new AttributeSource();
-    typeAtt = (TypeAttribute) src2.addAttribute(TypeAttribute.class);
-    FlagsAttribute flagsAtt = (FlagsAttribute) src2.addAttribute(FlagsAttribute.class);
-    termAtt = (TermAttribute) src2.addAttribute(TermAttribute.class);
+    typeAtt = src2.addAttribute(TypeAttribute.class);
+    FlagsAttribute flagsAtt = src2.addAttribute(FlagsAttribute.class);
+    termAtt = src2.addAttribute(TermAttribute.class);
     flagsAtt.setFlags(12345);
 
     src2.restoreState(state);
@@ -67,7 +67,7 @@ public class TestAttributeSource extends LuceneTestCase {
 
     // init a third instance missing one Attribute
     AttributeSource src3 = new AttributeSource();
-    termAtt = (TermAttribute) src3.addAttribute(TermAttribute.class);
+    termAtt = src3.addAttribute(TermAttribute.class);
     try {
       src3.restoreState(state);
       fail("The third instance is missing the TypeAttribute, so restoreState() should throw IllegalArgumentException");
@@ -78,19 +78,19 @@ public class TestAttributeSource extends LuceneTestCase {
   
   public void testCloneAttributes() {
     final AttributeSource src = new AttributeSource();
-    final TermAttribute termAtt = (TermAttribute) src.addAttribute(TermAttribute.class);
-    final TypeAttribute typeAtt = (TypeAttribute) src.addAttribute(TypeAttribute.class);
+    final TermAttribute termAtt = src.addAttribute(TermAttribute.class);
+    final TypeAttribute typeAtt = src.addAttribute(TypeAttribute.class);
     termAtt.setTermBuffer("TestTerm");
     typeAtt.setType("TestType");
     
     final AttributeSource clone = src.cloneAttributes();
-    final Iterator it = clone.getAttributeClassesIterator();
+    final Iterator<Class<? extends Attribute>> it = clone.getAttributeClassesIterator();
     assertEquals("TermAttribute must be the first attribute", TermAttribute.class, it.next());
     assertEquals("TypeAttribute must be the second attribute", TypeAttribute.class, it.next());
     assertFalse("No more attributes", it.hasNext());
     
-    final TermAttribute termAtt2 = (TermAttribute) clone.getAttribute(TermAttribute.class);
-    final TypeAttribute typeAtt2 = (TypeAttribute) clone.getAttribute(TypeAttribute.class);
+    final TermAttribute termAtt2 = clone.getAttribute(TermAttribute.class);
+    final TypeAttribute typeAtt2 = clone.getAttribute(TypeAttribute.class);
     assertNotSame("TermAttribute of original and clone must be different instances", termAtt2, termAtt);
     assertNotSame("TypeAttribute of original and clone must be different instances", typeAtt2, typeAtt);
     assertEquals("TermAttribute of original and clone must be equal", termAtt2, termAtt);
@@ -99,12 +99,12 @@ public class TestAttributeSource extends LuceneTestCase {
   
   public void testToStringAndMultiAttributeImplementations() {
     AttributeSource src = new AttributeSource();
-    TermAttribute termAtt = (TermAttribute) src.addAttribute(TermAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) src.addAttribute(TypeAttribute.class);
+    TermAttribute termAtt = src.addAttribute(TermAttribute.class);
+    TypeAttribute typeAtt = src.addAttribute(TypeAttribute.class);
     termAtt.setTermBuffer("TestTerm");
     typeAtt.setType("TestType");    
     assertEquals("Attributes should appear in original order", "("+termAtt.toString()+","+typeAtt.toString()+")", src.toString());
-    Iterator it = src.getAttributeImplsIterator();
+    Iterator<AttributeImpl> it = src.getAttributeImplsIterator();
     assertTrue("Iterator should have 2 attributes left", it.hasNext());
     assertSame("First AttributeImpl from iterator should be termAtt", termAtt, it.next());
     assertTrue("Iterator should have 1 attributes left", it.hasNext());
@@ -114,7 +114,7 @@ public class TestAttributeSource extends LuceneTestCase {
     src = new AttributeSource();
     src.addAttributeImpl(new Token());
     // this should not add a new attribute as Token implements TermAttribute, too
-    termAtt = (TermAttribute) src.addAttribute(TermAttribute.class);
+    termAtt = src.addAttribute(TermAttribute.class);
     assertTrue("TermAttribute should be implemented by Token", termAtt instanceof Token);
     // get the Token attribute and check, that it is the only one
     it = src.getAttributeImplsIterator();

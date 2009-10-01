@@ -32,7 +32,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 public class ISOLatin1AccentFilter extends TokenFilter {
   public ISOLatin1AccentFilter(TokenStream input) {
     super(input);
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   private char[] output = new char[256];

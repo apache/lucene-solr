@@ -44,8 +44,8 @@ public class ThaiWordFilter extends TokenFilter {
   public ThaiWordFilter(TokenStream input) {
     super(input);
     breaker = BreakIterator.getWordInstance(new Locale("th"));
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
+    offsetAtt = addAttribute(OffsetAttribute.class);
   }
   
   public final boolean incrementToken() throws IOException {

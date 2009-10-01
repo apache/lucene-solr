@@ -41,8 +41,8 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     Document doc = new Document();
     TokenStream stream = new TokenStream() {
       private int index = 0;
-      private TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      private OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+      private TermAttribute termAtt = addAttribute(TermAttribute.class);
+      private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
       
       public boolean incrementToken() throws IOException {
         if (index == tokens.length) {
@@ -96,7 +96,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
   private void checkTokens(TokenStream stream) throws IOException {
     int count = 0;
     
-    TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
     assertNotNull(termAtt);
     while (stream.incrementToken()) {
       assertTrue(count < tokens.length);

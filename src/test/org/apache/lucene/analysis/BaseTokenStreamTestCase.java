@@ -89,24 +89,24 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
     assertNotNull(output);
     assertTrue("has TermAttribute", ts.hasAttribute(TermAttribute.class));
-    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = ts.getAttribute(TermAttribute.class);
     
     OffsetAttribute offsetAtt = null;
     if (startOffsets != null || endOffsets != null) {
       assertTrue("has OffsetAttribute", ts.hasAttribute(OffsetAttribute.class));
-      offsetAtt = (OffsetAttribute) ts.getAttribute(OffsetAttribute.class);
+      offsetAtt = ts.getAttribute(OffsetAttribute.class);
     }
     
     TypeAttribute typeAtt = null;
     if (types != null) {
       assertTrue("has TypeAttribute", ts.hasAttribute(TypeAttribute.class));
-      typeAtt = (TypeAttribute) ts.getAttribute(TypeAttribute.class);
+      typeAtt = ts.getAttribute(TypeAttribute.class);
     }
     
     PositionIncrementAttribute posIncrAtt = null;
     if (posIncrements != null) {
       assertTrue("has PositionIncrementAttribute", ts.hasAttribute(PositionIncrementAttribute.class));
-      posIncrAtt = (PositionIncrementAttribute) ts.getAttribute(PositionIncrementAttribute.class);
+      posIncrAtt = ts.getAttribute(PositionIncrementAttribute.class);
     }
     
     ts.reset();

@@ -57,7 +57,7 @@ public class TermsQueryBuilder implements QueryBuilder {
 		TokenStream ts = analyzer.tokenStream(fieldName, new StringReader(text));
 		try
 		{
-		  TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+		  TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
 			Term term = null;
 			while (ts.incrementToken()) {
 				if (term == null)

@@ -139,8 +139,8 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
 
             fieldState.attributeSource = stream;
 
-            OffsetAttribute offsetAttribute = (OffsetAttribute) fieldState.attributeSource.addAttribute(OffsetAttribute.class);
-            PositionIncrementAttribute posIncrAttribute = (PositionIncrementAttribute) fieldState.attributeSource.addAttribute(PositionIncrementAttribute.class);
+            OffsetAttribute offsetAttribute = fieldState.attributeSource.addAttribute(OffsetAttribute.class);
+            PositionIncrementAttribute posIncrAttribute = fieldState.attributeSource.addAttribute(PositionIncrementAttribute.class);
             
             consumer.start(field);
             

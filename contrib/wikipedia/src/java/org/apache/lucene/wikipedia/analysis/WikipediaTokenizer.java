@@ -181,11 +181,11 @@ public class WikipediaTokenizer extends Tokenizer {
   private void init(int tokenOutput, Set untokenizedTypes) {
     this.tokenOutput = tokenOutput;
     this.untokenizedTypes = untokenizedTypes;
-    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    this.typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
-    this.posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    this.flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);    
+    this.offsetAtt = addAttribute(OffsetAttribute.class);
+    this.typeAtt = addAttribute(TypeAttribute.class);
+    this.posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+    this.termAtt = addAttribute(TermAttribute.class);
+    this.flagsAtt = addAttribute(FlagsAttribute.class);    
   }
 
   /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should

@@ -81,8 +81,8 @@ public class MultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
               "MultiFieldAttribute should be set on the QueryConfigHandler");
         }
 
-        CharSequence[] fields = ((MultiFieldAttribute) getQueryConfigHandler()
-            .getAttribute(MultiFieldAttribute.class)).getFields();
+        CharSequence[] fields = getQueryConfigHandler().getAttribute(
+            MultiFieldAttribute.class).getFields();
 
         if (fields != null && fields.length > 0) {
           fieldNode.setField(fields[0]);

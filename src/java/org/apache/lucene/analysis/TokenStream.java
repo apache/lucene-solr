@@ -103,13 +103,13 @@ public abstract class TokenStream extends AttributeSource {
   private static final class MethodSupport {
     final boolean hasIncrementToken, hasReusableNext, hasNext;
 
-    MethodSupport(Class clazz) {
-      hasIncrementToken = isMethodOverridden(clazz, "incrementToken", METHOD_NO_PARAMS);
-      hasReusableNext = isMethodOverridden(clazz, "next", METHOD_TOKEN_PARAM);
-      hasNext = isMethodOverridden(clazz, "next", METHOD_NO_PARAMS);
+    MethodSupport(Class<? extends TokenStream> clazz) {
+      hasIncrementToken = isMethodOverridden(clazz, "incrementToken");
+      hasReusableNext = isMethodOverridden(clazz, "next", Token.class);
+      hasNext = isMethodOverridden(clazz, "next");
     }
     
-    private static boolean isMethodOverridden(Class clazz, String name, Class[] params) {
+    private static boolean isMethodOverridden(Class<? extends TokenStream> clazz, String name, Class... params) {
       try {
         return clazz.getMethod(name, params).getDeclaringClass() != TokenStream.class;
       } catch (NoSuchMethodException e) {
@@ -117,19 +117,17 @@ public abstract class TokenStream extends AttributeSource {
         throw new RuntimeException(e);
       }
     }
-    
-    private static final Class[] METHOD_NO_PARAMS = new Class[0];
-    private static final Class[] METHOD_TOKEN_PARAM = new Class[]{Token.class};
   }
       
   /** @deprecated Remove this when old API is removed! */
-  private static final IdentityHashMap/*<Class<? extends TokenStream>,MethodSupport>*/ knownMethodSupport = new IdentityHashMap();
+  private static final IdentityHashMap<Class<? extends TokenStream>,MethodSupport> knownMethodSupport =
+    new IdentityHashMap<Class<? extends TokenStream>,MethodSupport>();
   
   /** @deprecated Remove this when old API is removed! */
-  private static MethodSupport getSupportedMethods(Class clazz) {
+  private static MethodSupport getSupportedMethods(Class<? extends TokenStream> clazz) {
     MethodSupport supportedMethods;
     synchronized(knownMethodSupport) {
-      supportedMethods = (MethodSupport) knownMethodSupport.get(clazz);
+      supportedMethods = knownMethodSupport.get(clazz);
       if (supportedMethods == null) {
         knownMethodSupport.put(clazz, supportedMethods = new MethodSupport(clazz));
       }
@@ -145,7 +143,7 @@ public abstract class TokenStream extends AttributeSource {
       this.delegate = delegate;
     }
   
-    public AttributeImpl createAttributeInstance(Class attClass) {
+    public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
       return attClass.isAssignableFrom(TokenWrapper.class)
         ? new TokenWrapper()
         : delegate.createAttributeInstance(attClass);

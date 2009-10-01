@@ -147,8 +147,8 @@ public class TokenSources
     
           StoredTokenStream(Token tokens[]) {
             this.tokens = tokens;
-            termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-            offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+            termAtt = addAttribute(TermAttribute.class);
+            offsetAtt = addAttribute(OffsetAttribute.class);
           }
     
           public boolean incrementToken() throws IOException {

@@ -37,8 +37,8 @@ public class TokenOffsetPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
     TokenOffsetPayloadTokenFilter nptf = new TokenOffsetPayloadTokenFilter(new WhitespaceTokenizer(new StringReader(test)));
     int count = 0;
-    PayloadAttribute payloadAtt = (PayloadAttribute) nptf.getAttribute(PayloadAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) nptf.getAttribute(OffsetAttribute.class);
+    PayloadAttribute payloadAtt = nptf.getAttribute(PayloadAttribute.class);
+    OffsetAttribute offsetAtt = nptf.getAttribute(OffsetAttribute.class);
     
     while (nptf.incrementToken()) {
       Payload pay = payloadAtt.getPayload();

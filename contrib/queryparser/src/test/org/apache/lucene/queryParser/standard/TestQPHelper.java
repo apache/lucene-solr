@@ -106,8 +106,8 @@ public class TestQPHelper extends LocalizedTestCase {
      */
     public QPTestFilter(TokenStream in) {
       super(in);
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
+      offsetAtt = addAttribute(OffsetAttribute.class);
     }
 
     boolean inPhrase = false;
@@ -1189,8 +1189,8 @@ public class TestQPHelper extends LocalizedTestCase {
       if (upto == 4) {
         return false;
       }
-      PositionIncrementAttribute posIncr = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-      TermAttribute term = (TermAttribute) addAttribute(TermAttribute.class);
+      PositionIncrementAttribute posIncr = addAttribute(PositionIncrementAttribute.class);
+      TermAttribute term = addAttribute(TermAttribute.class);
       if (upto == 0) {
         posIncr.setPositionIncrement(1);
         term.setTermBuffer("a");

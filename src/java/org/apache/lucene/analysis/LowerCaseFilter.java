@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 public final class LowerCaseFilter extends TokenFilter {
   public LowerCaseFilter(TokenStream in) {
     super(in);
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   private TermAttribute termAtt;

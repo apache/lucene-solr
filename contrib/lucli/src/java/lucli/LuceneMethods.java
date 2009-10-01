@@ -282,8 +282,8 @@ class LuceneMethods {
           int position = 0;
           // Tokenize field and add to postingTable
           TokenStream stream = analyzer.tokenStream(fieldName, reader);
-          TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
-          PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) stream.addAttribute(PositionIncrementAttribute.class);
+          TermAttribute termAtt = stream.addAttribute(TermAttribute.class);
+          PositionIncrementAttribute posIncrAtt = stream.addAttribute(PositionIncrementAttribute.class);
           
           try {
             while (stream.incrementToken()) {

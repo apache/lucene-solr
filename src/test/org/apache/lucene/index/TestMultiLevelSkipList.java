@@ -102,7 +102,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     
     protected PayloadFilter(TokenStream input) {
       super(input);
-      payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+      payloadAtt = addAttribute(PayloadAttribute.class);
     }
 
     public boolean incrementToken() throws IOException {

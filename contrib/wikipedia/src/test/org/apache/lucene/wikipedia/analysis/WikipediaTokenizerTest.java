@@ -128,8 +128,8 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
     int numBoldItalics = 0;
     int numCategory = 0;
     int numCitation = 0;
-    TermAttribute termAtt = (TermAttribute) tf.addAttribute(TermAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) tf.addAttribute(TypeAttribute.class);
+    TermAttribute termAtt = tf.addAttribute(TermAttribute.class);
+    TypeAttribute typeAtt = tf.addAttribute(TypeAttribute.class);
     
     while (tf.incrementToken()) {
       String tokText = termAtt.term();
@@ -164,8 +164,8 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
   }
 
   private void checkLinkPhrases(WikipediaTokenizer tf) throws IOException {
-    TermAttribute termAtt = (TermAttribute) tf.addAttribute(TermAttribute.class);
-    PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) tf.addAttribute(PositionIncrementAttribute.class);
+    TermAttribute termAtt = tf.addAttribute(TermAttribute.class);
+    PositionIncrementAttribute posIncrAtt = tf.addAttribute(PositionIncrementAttribute.class);
     
     assertTrue(tf.incrementToken());
     assertTrue(termAtt.term() + " is not equal to " + "click", termAtt.term().equals("click") == true);
@@ -229,8 +229,8 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
   public void testLinks() throws Exception {
     String test = "[http://lucene.apache.org/java/docs/index.html#news here] [http://lucene.apache.org/java/docs/index.html?b=c here] [https://lucene.apache.org/java/docs/index.html?b=c here]";
     WikipediaTokenizer tf = new WikipediaTokenizer(new StringReader(test));
-    TermAttribute termAtt = (TermAttribute) tf.addAttribute(TermAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) tf.addAttribute(TypeAttribute.class);
+    TermAttribute termAtt = tf.addAttribute(TermAttribute.class);
+    TypeAttribute typeAtt = tf.addAttribute(TypeAttribute.class);
     
     assertTrue(tf.incrementToken());
     assertTrue(termAtt.term() + " is not equal to " + "http://lucene.apache.org/java/docs/index.html#news",
@@ -262,9 +262,9 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
     checkLinkPhrases(tf);
     String test = "[[Category:a b c d]] [[Category:e f g]] [[link here]] [[link there]] ''italics here'' something ''more italics'' [[Category:h   i   j]]";
     tf = new WikipediaTokenizer(new StringReader(test), WikipediaTokenizer.UNTOKENIZED_ONLY, untoks);
-    TermAttribute termAtt = (TermAttribute) tf.addAttribute(TermAttribute.class);
-    PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) tf.addAttribute(PositionIncrementAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) tf.addAttribute(OffsetAttribute.class);
+    TermAttribute termAtt = tf.addAttribute(TermAttribute.class);
+    PositionIncrementAttribute posIncrAtt = tf.addAttribute(PositionIncrementAttribute.class);
+    OffsetAttribute offsetAtt = tf.addAttribute(OffsetAttribute.class);
     
     assertTrue(tf.incrementToken());
     assertTrue(termAtt.term() + " is not equal to " + "a b c d",
@@ -338,11 +338,11 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
     String test = "[[Category:a b c d]] [[Category:e f g]] [[link here]] [[link there]] ''italics here'' something ''more italics'' [[Category:h   i   j]]";
     //should output all the indivual tokens plus the untokenized tokens as well.  Untokenized tokens
     WikipediaTokenizer tf = new WikipediaTokenizer(new StringReader(test), WikipediaTokenizer.BOTH, untoks);
-    TermAttribute termAtt = (TermAttribute) tf.addAttribute(TermAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) tf.addAttribute(TypeAttribute.class);
-    PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) tf.addAttribute(PositionIncrementAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) tf.addAttribute(OffsetAttribute.class);
-    FlagsAttribute flagsAtt = (FlagsAttribute) tf.addAttribute(FlagsAttribute.class);
+    TermAttribute termAtt = tf.addAttribute(TermAttribute.class);
+    TypeAttribute typeAtt = tf.addAttribute(TypeAttribute.class);
+    PositionIncrementAttribute posIncrAtt = tf.addAttribute(PositionIncrementAttribute.class);
+    OffsetAttribute offsetAtt = tf.addAttribute(OffsetAttribute.class);
+    FlagsAttribute flagsAtt = tf.addAttribute(FlagsAttribute.class);
     
     assertTrue(tf.incrementToken());
     assertTrue(termAtt.term() + " is not equal to " + "a b c d",

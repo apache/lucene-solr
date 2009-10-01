@@ -41,8 +41,8 @@ public class TokenGroup {
   private TermAttribute termAtt;
 
   public TokenGroup(TokenStream tokenStream) {
-    offsetAtt = (OffsetAttribute) tokenStream.addAttribute(OffsetAttribute.class);
-    termAtt = (TermAttribute) tokenStream.addAttribute(TermAttribute.class);
+    offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
+    termAtt = tokenStream.addAttribute(TermAttribute.class);
   }
 
   void addToken(float score) {

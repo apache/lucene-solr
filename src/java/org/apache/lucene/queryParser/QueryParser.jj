@@ -583,10 +583,10 @@ public class QueryParser {
     }
     if (success) {
       if (buffer.hasAttribute(TermAttribute.class)) {
-        termAtt = (TermAttribute) buffer.getAttribute(TermAttribute.class);
+        termAtt = buffer.getAttribute(TermAttribute.class);
       }
       if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
-        posIncrAtt = (PositionIncrementAttribute) buffer.getAttribute(PositionIncrementAttribute.class);
+        posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
       }
     }
 

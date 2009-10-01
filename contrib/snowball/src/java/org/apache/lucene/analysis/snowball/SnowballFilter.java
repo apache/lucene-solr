@@ -39,7 +39,7 @@ public class SnowballFilter extends TokenFilter {
   public SnowballFilter(TokenStream input, SnowballProgram stemmer) {
     super(input);
     this.stemmer = stemmer;
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   /**
@@ -60,7 +60,7 @@ public class SnowballFilter extends TokenFilter {
     } catch (Exception e) {
       throw new RuntimeException(e.toString());
     }
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   /** Returns the next input Token, after being stemmed */

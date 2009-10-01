@@ -48,7 +48,7 @@ public final class GermanStemFilter extends TokenFilter
     {
       super(in);
       stemmer = new GermanStemmer();
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
     }
 
     /**

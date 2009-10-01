@@ -45,7 +45,7 @@ public final class RussianLowerCaseFilter extends TokenFilter
     {
         super(in);
         this.charset = charset;
-        termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+        termAtt = addAttribute(TermAttribute.class);
     }
     
     public RussianLowerCaseFilter(TokenStream in)

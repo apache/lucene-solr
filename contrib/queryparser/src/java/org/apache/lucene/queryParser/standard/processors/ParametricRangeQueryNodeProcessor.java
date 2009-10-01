@@ -84,13 +84,17 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
       boolean inclusive = false;
 
       if (getQueryConfigHandler().hasAttribute(RangeCollatorAttribute.class)) {
-        collator = ((RangeCollatorAttribute) getQueryConfigHandler()
-            .getAttribute(RangeCollatorAttribute.class)).getRangeCollator();
+
+        collator = getQueryConfigHandler().getAttribute(
+            RangeCollatorAttribute.class).getRangeCollator();
+
       }
 
       if (getQueryConfigHandler().hasAttribute(LocaleAttribute.class)) {
-        locale = ((LocaleAttribute) getQueryConfigHandler().getAttribute(
-            LocaleAttribute.class)).getLocale();
+
+        locale = getQueryConfigHandler().getAttribute(LocaleAttribute.class)
+            .getLocale();
+
       }
 
       FieldConfig fieldConfig = getQueryConfigHandler().getFieldConfig(
@@ -99,8 +103,10 @@ public class ParametricRangeQueryNodeProcessor extends QueryNodeProcessorImpl {
       if (fieldConfig != null) {
 
         if (fieldConfig.hasAttribute(DateResolutionAttribute.class)) {
-          dateRes = ((DateResolutionAttribute) fieldConfig
-              .getAttribute(DateResolutionAttribute.class)).getDateResolution();
+
+          dateRes = fieldConfig.getAttribute(DateResolutionAttribute.class)
+              .getDateResolution();
+
         }
 
       }

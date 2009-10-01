@@ -77,8 +77,8 @@ public class EdgeNGramTokenFilter extends TokenFilter {
 
   protected EdgeNGramTokenFilter(TokenStream input) {
     super(input);
-    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    this.termAtt = addAttribute(TermAttribute.class);
+    this.offsetAtt = addAttribute(OffsetAttribute.class);
   }
 
   /**
@@ -107,8 +107,8 @@ public class EdgeNGramTokenFilter extends TokenFilter {
     this.minGram = minGram;
     this.maxGram = maxGram;
     this.side = side;
-    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    this.termAtt = addAttribute(TermAttribute.class);
+    this.offsetAtt = addAttribute(OffsetAttribute.class);
   }
 
   /**

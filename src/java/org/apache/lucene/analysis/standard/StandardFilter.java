@@ -31,8 +31,8 @@ public final class StandardFilter extends TokenFilter {
   /** Construct filtering <i>in</i>. */
   public StandardFilter(TokenStream in) {
     super(in);
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
+    typeAtt = addAttribute(TypeAttribute.class);
   }
 
   private static final String APOSTROPHE_TYPE = StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.APOSTROPHE];

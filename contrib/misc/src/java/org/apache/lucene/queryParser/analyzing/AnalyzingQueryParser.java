@@ -106,7 +106,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
 
     // get Analyzer from superclass and tokenize the term
     TokenStream source = getAnalyzer().tokenStream(field, new StringReader(termStr));
-    TermAttribute termAtt = (TermAttribute) source.addAttribute(TermAttribute.class);
+    TermAttribute termAtt = source.addAttribute(TermAttribute.class);
     
     int countTokens = 0;
     while (true) {
@@ -188,7 +188,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
     // get Analyzer from superclass and tokenize the term
     TokenStream source = getAnalyzer().tokenStream(field, new StringReader(termStr));
     List tlist = new ArrayList();
-    TermAttribute termAtt = (TermAttribute) source.addAttribute(TermAttribute.class);
+    TermAttribute termAtt = source.addAttribute(TermAttribute.class);
     
     while (true) {
       try {
@@ -234,7 +234,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
       throws ParseException {
     // get Analyzer from superclass and tokenize the term
     TokenStream source = getAnalyzer().tokenStream(field, new StringReader(termStr));
-    TermAttribute termAtt = (TermAttribute) source.addAttribute(TermAttribute.class);
+    TermAttribute termAtt = source.addAttribute(TermAttribute.class);
     String nextToken = null;
     boolean multipleTokens = false;
     
@@ -269,7 +269,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
       throws ParseException {
     // get Analyzer from superclass and tokenize the terms
     TokenStream source = getAnalyzer().tokenStream(field, new StringReader(part1));
-    TermAttribute termAtt = (TermAttribute) source.addAttribute(TermAttribute.class);
+    TermAttribute termAtt = source.addAttribute(TermAttribute.class);
     boolean multipleTokens = false;
 
     // part1
@@ -293,7 +293,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
 
     // part2
     source = getAnalyzer().tokenStream(field, new StringReader(part2));
-    termAtt = (TermAttribute) source.addAttribute(TermAttribute.class);
+    termAtt = source.addAttribute(TermAttribute.class);
     
     try {
       if (source.incrementToken()) {

@@ -49,7 +49,7 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
     StringReader reader = new StringReader("This is a test of the english stop analyzer");
     TokenStream stream = stop.tokenStream("test", reader);
     assertTrue(stream != null);
-    TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
     
     while (stream.incrementToken()) {
       assertFalse(inValidTokens.contains(termAtt.term()));
@@ -65,8 +65,8 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
     StringReader reader = new StringReader("This is a good test of the english stop analyzer");
     TokenStream stream = newStop.tokenStream("test", reader);
     assertNotNull(stream);
-    TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
-    PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) stream.addAttribute(PositionIncrementAttribute.class);
+    TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+    PositionIncrementAttribute posIncrAtt = stream.addAttribute(PositionIncrementAttribute.class);
     
     while (stream.incrementToken()) {
       String text = termAtt.term();
@@ -89,8 +89,8 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
       TokenStream stream = newStop.tokenStream("test", reader);
       assertNotNull(stream);
       int i = 0;
-      TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
-      PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) stream.addAttribute(PositionIncrementAttribute.class);
+      TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+      PositionIncrementAttribute posIncrAtt = stream.addAttribute(PositionIncrementAttribute.class);
 
       while (stream.incrementToken()) {
         String text = termAtt.term();

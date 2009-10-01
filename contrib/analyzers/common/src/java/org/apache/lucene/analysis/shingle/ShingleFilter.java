@@ -84,10 +84,10 @@ public class ShingleFilter extends TokenFilter {
   public ShingleFilter(TokenStream input, int maxShingleSize) {
     super(input);
     setMaxShingleSize(maxShingleSize);
-    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    this.posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-    this.typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    this.termAtt = addAttribute(TermAttribute.class);
+    this.offsetAtt = addAttribute(OffsetAttribute.class);
+    this.posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+    this.typeAtt = addAttribute(TypeAttribute.class);
   }
 
   /**

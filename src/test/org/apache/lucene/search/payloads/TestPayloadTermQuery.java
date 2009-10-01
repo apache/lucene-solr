@@ -80,7 +80,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     public PayloadFilter(TokenStream input, String fieldName) {
       super(input);
       this.fieldName = fieldName;
-      payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+      payloadAtt = addAttribute(PayloadAttribute.class);
     }
     
     public boolean incrementToken() throws IOException {

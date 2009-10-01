@@ -40,7 +40,7 @@ public final class BrazilianStemFilter extends TokenFilter {
   public BrazilianStemFilter(TokenStream in) {
     super(in);
     stemmer = new BrazilianStemmer();
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   public BrazilianStemFilter(TokenStream in, Set exclusiontable) {

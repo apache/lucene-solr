@@ -52,7 +52,7 @@ public class BoostQueryNodeProcessor extends QueryNodeProcessorImpl {
         FieldConfig fieldConfig = config.getFieldConfig(fieldNode.getField());
 
         if (fieldConfig != null && fieldConfig.hasAttribute(BoostAttribute.class)) {
-          BoostAttribute boostAttr = (BoostAttribute) fieldConfig.getAttribute(BoostAttribute.class);
+          BoostAttribute boostAttr = fieldConfig.getAttribute(BoostAttribute.class);
 
           return new BoostQueryNode(node, boostAttr.getBoost());
 

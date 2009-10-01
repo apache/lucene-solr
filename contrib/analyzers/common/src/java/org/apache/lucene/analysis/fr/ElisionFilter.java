@@ -57,7 +57,7 @@ public class ElisionFilter extends TokenFilter {
     super(input);
     this.articles = new HashSet(Arrays.asList(new String[] { "l", "m", "t",
         "qu", "n", "s", "j" }));
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   /**
@@ -66,7 +66,7 @@ public class ElisionFilter extends TokenFilter {
   public ElisionFilter(TokenStream input, Set articles) {
     super(input);
     setArticles(articles);
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   /**
@@ -75,7 +75,7 @@ public class ElisionFilter extends TokenFilter {
   public ElisionFilter(TokenStream input, String[] articles) {
     super(input);
     setArticles(new HashSet(Arrays.asList(articles)));
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   /**

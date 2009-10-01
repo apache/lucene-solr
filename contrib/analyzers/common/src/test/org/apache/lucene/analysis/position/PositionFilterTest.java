@@ -35,7 +35,7 @@ public class PositionFilterTest extends BaseTokenStreamTestCase {
     public TestTokenStream(String[] testToken) {
       super();
       this.testToken = testToken;
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
     }
 
     public final boolean incrementToken() throws IOException {

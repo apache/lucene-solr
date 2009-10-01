@@ -96,8 +96,8 @@ public class NGramTokenizer extends Tokenizer {
     this.minGram = minGram;
     this.maxGram = maxGram;
     
-    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);    
+    this.termAtt = addAttribute(TermAttribute.class);
+    this.offsetAtt = addAttribute(OffsetAttribute.class);    
   }
 
   /** Returns the next token in the stream, or null at EOS. */

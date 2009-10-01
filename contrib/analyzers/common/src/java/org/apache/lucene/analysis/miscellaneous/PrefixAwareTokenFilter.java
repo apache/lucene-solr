@@ -64,19 +64,19 @@ public class PrefixAwareTokenFilter extends TokenStream {
     this.prefix = prefix;
     prefixExhausted = false;
     
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-    payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
-    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
-    flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
+    posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+    payloadAtt = addAttribute(PayloadAttribute.class);
+    offsetAtt = addAttribute(OffsetAttribute.class);
+    typeAtt = addAttribute(TypeAttribute.class);
+    flagsAtt = addAttribute(FlagsAttribute.class);
 
-    p_termAtt = (TermAttribute) prefix.addAttribute(TermAttribute.class);
-    p_posIncrAtt = (PositionIncrementAttribute) prefix.addAttribute(PositionIncrementAttribute.class);
-    p_payloadAtt = (PayloadAttribute) prefix.addAttribute(PayloadAttribute.class);
-    p_offsetAtt = (OffsetAttribute) prefix.addAttribute(OffsetAttribute.class);
-    p_typeAtt = (TypeAttribute) prefix.addAttribute(TypeAttribute.class);
-    p_flagsAtt = (FlagsAttribute) prefix.addAttribute(FlagsAttribute.class);
+    p_termAtt = prefix.addAttribute(TermAttribute.class);
+    p_posIncrAtt = prefix.addAttribute(PositionIncrementAttribute.class);
+    p_payloadAtt = prefix.addAttribute(PayloadAttribute.class);
+    p_offsetAtt = prefix.addAttribute(OffsetAttribute.class);
+    p_typeAtt = prefix.addAttribute(TypeAttribute.class);
+    p_flagsAtt = prefix.addAttribute(FlagsAttribute.class);
   }
 
   private Token previousPrefixToken = new Token();

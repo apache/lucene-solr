@@ -119,7 +119,7 @@ public class TestSpanQueryParserSimpleSample extends TestCase {
     // create a config handler with a attribute used in
     // UniqueFieldQueryNodeProcessor
     QueryConfigHandler spanQueryConfigHandler = new SpansQueryConfigHandler();
-    UniqueFieldAttribute uniqueFieldAtt = (UniqueFieldAttribute) spanQueryConfigHandler
+    UniqueFieldAttribute uniqueFieldAtt = spanQueryConfigHandler
         .getAttribute(UniqueFieldAttribute.class);
     uniqueFieldAtt.setUniqueField("index");
 

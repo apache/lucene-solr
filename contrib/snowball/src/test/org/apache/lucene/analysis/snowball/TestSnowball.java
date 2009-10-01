@@ -69,12 +69,12 @@ public class TestSnowball extends BaseTokenStreamTestCase {
   
   public void testFilterTokens() throws Exception {
     SnowballFilter filter = new SnowballFilter(new TestTokenStream(), "English");
-    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) filter.getAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) filter.getAttribute(TypeAttribute.class);
-    PayloadAttribute payloadAtt = (PayloadAttribute) filter.getAttribute(PayloadAttribute.class);
-    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) filter.getAttribute(PositionIncrementAttribute.class);
-    FlagsAttribute flagsAtt = (FlagsAttribute) filter.getAttribute(FlagsAttribute.class);
+    TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = filter.getAttribute(OffsetAttribute.class);
+    TypeAttribute typeAtt = filter.getAttribute(TypeAttribute.class);
+    PayloadAttribute payloadAtt = filter.getAttribute(PayloadAttribute.class);
+    PositionIncrementAttribute posIncAtt = filter.getAttribute(PositionIncrementAttribute.class);
+    FlagsAttribute flagsAtt = filter.getAttribute(FlagsAttribute.class);
     
     filter.incrementToken();
 
@@ -97,12 +97,12 @@ public class TestSnowball extends BaseTokenStreamTestCase {
     
     TestTokenStream() {
       super();
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-      typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
-      payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
-      posIncAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-      flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
+      offsetAtt = addAttribute(OffsetAttribute.class);
+      typeAtt = addAttribute(TypeAttribute.class);
+      payloadAtt = addAttribute(PayloadAttribute.class);
+      posIncAtt = addAttribute(PositionIncrementAttribute.class);
+      flagsAtt = addAttribute(FlagsAttribute.class);
     }
     
     public boolean incrementToken() {

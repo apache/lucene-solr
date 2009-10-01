@@ -39,9 +39,9 @@ public class TypeAsPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
     TypeAsPayloadTokenFilter nptf = new TypeAsPayloadTokenFilter(new WordTokenFilter(new WhitespaceTokenizer(new StringReader(test))));
     int count = 0;
-    TermAttribute termAtt = (TermAttribute) nptf.getAttribute(TermAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) nptf.getAttribute(TypeAttribute.class);
-    PayloadAttribute payloadAtt = (PayloadAttribute) nptf.getAttribute(PayloadAttribute.class);
+    TermAttribute termAtt = nptf.getAttribute(TermAttribute.class);
+    TypeAttribute typeAtt = nptf.getAttribute(TypeAttribute.class);
+    PayloadAttribute payloadAtt = nptf.getAttribute(PayloadAttribute.class);
     
     while (nptf.incrementToken()) {
       assertTrue(typeAtt.type() + " is not null and it should be", typeAtt.type().equals(String.valueOf(Character.toUpperCase(termAtt.termBuffer()[0]))));
@@ -61,8 +61,8 @@ public class TypeAsPayloadTokenFilterTest extends BaseTokenStreamTestCase {
     
     private WordTokenFilter(TokenStream input) {
       super(input);
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
+      typeAtt = addAttribute(TypeAttribute.class);
     }
 
     public boolean incrementToken() throws IOException {

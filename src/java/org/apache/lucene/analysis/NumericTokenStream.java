@@ -241,9 +241,9 @@ public final class NumericTokenStream extends TokenStream {
   }
 
   // members
-  private final TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-  private final TypeAttribute typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
-  private final PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+  private final TermAttribute termAtt = addAttribute(TermAttribute.class);
+  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   
   private int shift = 0, valSize = 0; // valSize==0 means not initialized
   private final int precisionStep;

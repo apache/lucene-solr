@@ -498,9 +498,9 @@ public class TestPayloadSpans extends LuceneTestCase {
       entities.add("one");
       nopayload.add("nopayload");
       nopayload.add("np");
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-      payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
+      posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+      payloadAtt = addAttribute(PayloadAttribute.class);
     }
 
     public boolean incrementToken() throws IOException {

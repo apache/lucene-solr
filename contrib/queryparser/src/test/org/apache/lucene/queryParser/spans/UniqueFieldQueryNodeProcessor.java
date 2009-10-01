@@ -62,8 +62,8 @@ public class UniqueFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
             "UniqueFieldAttribute should be defined in the config handler!");
       }
 
-      CharSequence uniqueField = ((UniqueFieldAttribute) queryConfig
-          .getAttribute(UniqueFieldAttribute.class)).getUniqueField();
+      CharSequence uniqueField = queryConfig.getAttribute(
+          UniqueFieldAttribute.class).getUniqueField();
 
       fieldNode.setField(uniqueField);
 

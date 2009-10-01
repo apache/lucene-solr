@@ -116,11 +116,14 @@ public class TestSpanQueryParser extends TestCase {
     this.spansQueryTreeBuilder = new SpansQueryTreeBuilder();
 
     // set up the processor pipeline
-    this.spanProcessorPipeline.setQueryConfigHandler(this.spanQueryConfigHandler);
+    this.spanProcessorPipeline
+        .setQueryConfigHandler(this.spanQueryConfigHandler);
 
     this.spanProcessorPipeline.addProcessor(new WildcardQueryNodeProcessor());
-    this.spanProcessorPipeline.addProcessor(new SpansValidatorQueryNodeProcessor());
-    this.spanProcessorPipeline.addProcessor(new UniqueFieldQueryNodeProcessor());
+    this.spanProcessorPipeline
+        .addProcessor(new SpansValidatorQueryNodeProcessor());
+    this.spanProcessorPipeline
+        .addProcessor(new UniqueFieldQueryNodeProcessor());
 
   }
 
@@ -130,7 +133,7 @@ public class TestSpanQueryParser extends TestCase {
 
   public SpanQuery getSpanQuery(CharSequence uniqueField, CharSequence query)
       throws QueryNodeException {
-    UniqueFieldAttribute uniqueFieldAtt = (UniqueFieldAttribute) this.spanQueryConfigHandler
+    UniqueFieldAttribute uniqueFieldAtt = this.spanQueryConfigHandler
         .getAttribute(UniqueFieldAttribute.class);
     uniqueFieldAtt.setUniqueField(uniqueField);
 

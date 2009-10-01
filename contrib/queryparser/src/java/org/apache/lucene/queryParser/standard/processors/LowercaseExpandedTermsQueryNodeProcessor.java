@@ -52,10 +52,11 @@ public class LowercaseExpandedTermsQueryNodeProcessor extends
     if (getQueryConfigHandler().hasAttribute(
         LowercaseExpandedTermsAttribute.class)) {
 
-      if (((LowercaseExpandedTermsAttribute) getQueryConfigHandler()
-          .getAttribute(LowercaseExpandedTermsAttribute.class))
-          .isLowercaseExpandedTerms()) {
+      if (getQueryConfigHandler().getAttribute(
+          LowercaseExpandedTermsAttribute.class).isLowercaseExpandedTerms()) {
+        
         return super.process(queryTree);
+        
       }
 
     }
@@ -69,7 +70,7 @@ public class LowercaseExpandedTermsQueryNodeProcessor extends
     if (node instanceof WildcardQueryNode || node instanceof FuzzyQueryNode
         || node instanceof ParametricQueryNode) {
 
-      FieldQueryNode fieldNode = (FieldQueryNode) node;      
+      FieldQueryNode fieldNode = (FieldQueryNode) node;
       fieldNode.setText(UnescapedCharSequence.toLowerCase(fieldNode.getText()));
     }
 

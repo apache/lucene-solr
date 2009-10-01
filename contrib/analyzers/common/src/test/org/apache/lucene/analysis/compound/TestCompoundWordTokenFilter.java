@@ -173,7 +173,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
     
-    TermAttribute termAtt = (TermAttribute) tf.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = tf.getAttribute(TermAttribute.class);
     assertTrue(tf.incrementToken());
     assertEquals("Rindfleischüberwachungsgesetz", termAtt.term());
     assertTrue(tf.incrementToken());

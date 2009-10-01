@@ -55,9 +55,8 @@ public class DefaultPhraseSlopQueryNodeProcessor extends QueryNodeProcessorImpl 
     if (queryConfig != null) {
 
       if (queryConfig.hasAttribute(DefaultPhraseSlopAttribute.class)) {
-        this.defaultPhraseSlop = ((DefaultPhraseSlopAttribute) queryConfig
-            .getAttribute(DefaultPhraseSlopAttribute.class))
-            .getDefaultPhraseSlop();
+        this.defaultPhraseSlop = queryConfig.getAttribute(
+            DefaultPhraseSlopAttribute.class).getDefaultPhraseSlop();
 
         return super.process(queryTree);
 

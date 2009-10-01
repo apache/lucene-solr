@@ -87,8 +87,8 @@ public class TestQueryParser extends LocalizedTestCase {
      */
     public QPTestFilter(TokenStream in) {
       super(in);
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
+      offsetAtt = addAttribute(OffsetAttribute.class);
     }
 
     boolean inPhrase = false;

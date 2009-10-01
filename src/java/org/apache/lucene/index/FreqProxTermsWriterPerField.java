@@ -77,7 +77,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
   
   void start(Fieldable f) {
     if (fieldState.attributeSource.hasAttribute(PayloadAttribute.class)) {
-      payloadAttribute = (PayloadAttribute) fieldState.attributeSource.getAttribute(PayloadAttribute.class);
+      payloadAttribute = fieldState.attributeSource.getAttribute(PayloadAttribute.class);
     } else {
       payloadAttribute = null;
     }

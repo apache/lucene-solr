@@ -31,7 +31,7 @@ public class TokenTypeSinkFilter extends SinkFilter {
 
   public boolean accept(AttributeSource source) {
     if (typeAtt == null) {
-      typeAtt = (TypeAttribute) source.addAttribute(TypeAttribute.class);
+      typeAtt = source.addAttribute(TypeAttribute.class);
     }
     
     //check to see if this is a Category

@@ -27,7 +27,7 @@ public class TestLengthFilter extends BaseTokenStreamTestCase {
     TokenStream stream = new WhitespaceTokenizer(
         new StringReader("short toolong evenmuchlongertext a ab toolong foo"));
     LengthFilter filter = new LengthFilter(stream, 2, 6);
-    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
 
     assertTrue(filter.incrementToken());
     assertEquals("short", termAtt.term());

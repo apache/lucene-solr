@@ -39,8 +39,8 @@ public class TypeAsPayloadTokenFilter extends TokenFilter {
 
   public TypeAsPayloadTokenFilter(TokenStream input) {
     super(input);
-    payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
-    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    payloadAtt = addAttribute(PayloadAttribute.class);
+    typeAtt = addAttribute(TypeAttribute.class);
   }
 
 

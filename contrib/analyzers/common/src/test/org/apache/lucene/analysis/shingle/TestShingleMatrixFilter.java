@@ -454,16 +454,16 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
   // assert-methods start here
 
   private void assertNext(TokenStream ts, String text) throws IOException {
-    TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+    TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
 
     assertTrue(ts.incrementToken());
     assertEquals(text, termAtt.term());
   }
 
   private void assertNext(TokenStream ts, String text, int positionIncrement, float boost) throws IOException {
-    TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
-    PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) ts.addAttribute(PositionIncrementAttribute.class);
-    PayloadAttribute payloadAtt = (PayloadAttribute) ts.addAttribute(PayloadAttribute.class);
+    TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
+    PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
+    PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
     
     assertTrue(ts.incrementToken());    
     assertEquals(text, termAtt.term());
@@ -472,10 +472,10 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
   }
 
   private void assertNext(TokenStream ts, String text, int positionIncrement, float boost, int startOffset, int endOffset) throws IOException {
-    TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
-    PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) ts.addAttribute(PositionIncrementAttribute.class);
-    PayloadAttribute payloadAtt = (PayloadAttribute) ts.addAttribute(PayloadAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) ts.addAttribute(OffsetAttribute.class);
+    TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
+    PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
+    PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
+    OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
     
     assertTrue(ts.incrementToken());
     assertEquals(text, termAtt.term());
@@ -486,8 +486,8 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
   }
   
   private void assertNext(TokenStream ts, String text, int startOffset, int endOffset) throws IOException {
-    TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) ts.addAttribute(OffsetAttribute.class);
+    TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
 
     assertTrue(ts.incrementToken());
     assertEquals(text, termAtt.term());
@@ -515,12 +515,12 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
     
     public TokenListStream(Collection tokens) {
       this.tokens = tokens;
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-      payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
-      offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-      typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
-      flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
+      posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+      payloadAtt = addAttribute(PayloadAttribute.class);
+      offsetAtt = addAttribute(OffsetAttribute.class);
+      typeAtt = addAttribute(TypeAttribute.class);
+      flagsAtt = addAttribute(FlagsAttribute.class);
     }
 
     private Iterator iterator;

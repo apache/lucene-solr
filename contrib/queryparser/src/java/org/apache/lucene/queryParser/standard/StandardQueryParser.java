@@ -182,7 +182,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * or {@link Operator#OR}.
    */
   public Operator getDefaultOperator() {
-    DefaultOperatorAttribute attr = (DefaultOperatorAttribute) getQueryConfigHandler().getAttribute(DefaultOperatorAttribute.class);
+    DefaultOperatorAttribute attr = getQueryConfigHandler().getAttribute(DefaultOperatorAttribute.class);
     return attr.getOperator();
   }
 
@@ -199,7 +199,7 @@ public class StandardQueryParser extends QueryParserHelper {
    *          the collator to use when constructing {@link RangeQueryNode}s
    */
   public void setRangeCollator(Collator collator) {
-    RangeCollatorAttribute attr = (RangeCollatorAttribute) getQueryConfigHandler().getAttribute(RangeCollatorAttribute.class);
+    RangeCollatorAttribute attr = getQueryConfigHandler().getAttribute(RangeCollatorAttribute.class);
     attr.setDateResolution(collator);
   }
 
@@ -208,7 +208,7 @@ public class StandardQueryParser extends QueryParserHelper {
    *         RangeQuerys.
    */
   public Collator getRangeCollator() {
-    RangeCollatorAttribute attr = (RangeCollatorAttribute) getQueryConfigHandler().getAttribute(RangeCollatorAttribute.class);
+    RangeCollatorAttribute attr = getQueryConfigHandler().getAttribute(RangeCollatorAttribute.class);
     return attr.getRangeCollator();
   }
 
@@ -221,7 +221,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * above mentioned query is parsed as <code>capital AND of AND Hungary</code>
    */
   public void setDefaultOperator(Operator operator) {
-    DefaultOperatorAttribute attr = (DefaultOperatorAttribute) getQueryConfigHandler().getAttribute(DefaultOperatorAttribute.class);
+    DefaultOperatorAttribute attr = getQueryConfigHandler().getAttribute(DefaultOperatorAttribute.class);
     attr.setOperator(operator);
   }
 
@@ -235,7 +235,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * Default: false.
    */
   public void setLowercaseExpandedTerms(boolean lowercaseExpandedTerms) {
-    LowercaseExpandedTermsAttribute attr= (LowercaseExpandedTermsAttribute) getQueryConfigHandler().getAttribute(LowercaseExpandedTermsAttribute.class);
+    LowercaseExpandedTermsAttribute attr = getQueryConfigHandler().getAttribute(LowercaseExpandedTermsAttribute.class);
     attr.setLowercaseExpandedTerms(lowercaseExpandedTerms);
   }
 
@@ -243,7 +243,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * @see #setLowercaseExpandedTerms(boolean)
    */
   public boolean getLowercaseExpandedTerms() {
-    LowercaseExpandedTermsAttribute attr = (LowercaseExpandedTermsAttribute) getQueryConfigHandler().getAttribute(LowercaseExpandedTermsAttribute.class);
+    LowercaseExpandedTermsAttribute attr = getQueryConfigHandler().getAttribute(LowercaseExpandedTermsAttribute.class);
     return attr.isLowercaseExpandedTerms();
   }
 
@@ -257,7 +257,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * Default: false.
    */
   public void setAllowLeadingWildcard(boolean allowLeadingWildcard) {
-    AllowLeadingWildcardAttribute attr = (AllowLeadingWildcardAttribute) getQueryConfigHandler().getAttribute(AllowLeadingWildcardAttribute.class);
+    AllowLeadingWildcardAttribute attr = getQueryConfigHandler().getAttribute(AllowLeadingWildcardAttribute.class);
     attr.setAllowLeadingWildcard(allowLeadingWildcard);
   }
 
@@ -271,7 +271,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * Default: false.
    */
   public void setEnablePositionIncrements(boolean enabled) {
-    PositionIncrementsAttribute attr = (PositionIncrementsAttribute) getQueryConfigHandler().getAttribute(PositionIncrementsAttribute.class);
+    PositionIncrementsAttribute attr = getQueryConfigHandler().getAttribute(PositionIncrementsAttribute.class);
     attr.setPositionIncrementsEnabled(enabled);
   }
 
@@ -279,7 +279,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * @see #setEnablePositionIncrements(boolean)
    */
   public boolean getEnablePositionIncrements() {
-    PositionIncrementsAttribute attr = (PositionIncrementsAttribute) getQueryConfigHandler().getAttribute(PositionIncrementsAttribute.class);
+    PositionIncrementsAttribute attr = getQueryConfigHandler().getAttribute(PositionIncrementsAttribute.class);
     return attr.isPositionIncrementsEnabled();
   }
 
@@ -294,7 +294,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * not relevant then use this change the rewrite method.
    */
   public void setMultiTermRewriteMethod(MultiTermQuery.RewriteMethod method) {
-    MultiTermRewriteMethodAttribute attr = (MultiTermRewriteMethodAttribute) getQueryConfigHandler().getAttribute(MultiTermRewriteMethodAttribute.class);
+    MultiTermRewriteMethodAttribute attr = getQueryConfigHandler().getAttribute(MultiTermRewriteMethodAttribute.class);
     attr.setMultiTermRewriteMethod(method);
   }
 
@@ -302,7 +302,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * @see #setMultiTermRewriteMethod(org.apache.lucene.search.MultiTermQuery.RewriteMethod)
    */
   public MultiTermQuery.RewriteMethod getMultiTermRewriteMethod() {
-    MultiTermRewriteMethodAttribute attr =(MultiTermRewriteMethodAttribute) getQueryConfigHandler().getAttribute(MultiTermRewriteMethodAttribute.class);    
+    MultiTermRewriteMethodAttribute attr = getQueryConfigHandler().getAttribute(MultiTermRewriteMethodAttribute.class);    
     return attr.getMultiTermRewriteMethod();
   }
 
@@ -312,7 +312,7 @@ public class StandardQueryParser extends QueryParserHelper {
       fields = new CharSequence[0];
     }
 
-    MultiFieldAttribute attr = (MultiFieldAttribute) getQueryConfigHandler().addAttribute(MultiFieldAttribute.class);
+    MultiFieldAttribute attr = getQueryConfigHandler().addAttribute(MultiFieldAttribute.class);
     attr.setFields(fields);
 
   }
@@ -324,7 +324,7 @@ public class StandardQueryParser extends QueryParserHelper {
    *          The fuzzyPrefixLength to set.
    */
   public void setFuzzyPrefixLength(int fuzzyPrefixLength) {
-    FuzzyAttribute attr = (FuzzyAttribute) getQueryConfigHandler().addAttribute(FuzzyAttribute.class);
+    FuzzyAttribute attr = getQueryConfigHandler().addAttribute(FuzzyAttribute.class);
     attr.setPrefixLength(fuzzyPrefixLength);
   }
 
@@ -332,7 +332,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * Set locale used by date range parsing.
    */
   public void setLocale(Locale locale) {
-    LocaleAttribute attr = (LocaleAttribute) getQueryConfigHandler().addAttribute(LocaleAttribute.class);
+    LocaleAttribute attr = getQueryConfigHandler().addAttribute(LocaleAttribute.class);
     attr.setLocale(locale);
   }
 
@@ -340,7 +340,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * Returns current locale, allowing access by subclasses.
    */
   public Locale getLocale() {
-    LocaleAttribute attr = (LocaleAttribute) getQueryConfigHandler().addAttribute(LocaleAttribute.class);
+    LocaleAttribute attr = getQueryConfigHandler().addAttribute(LocaleAttribute.class);
     return attr.getLocale();
   }
 
@@ -349,12 +349,12 @@ public class StandardQueryParser extends QueryParserHelper {
    * required. Default value is zero.
    */
   public void setDefaultPhraseSlop(int defaultPhraseSlop) {
-    DefaultPhraseSlopAttribute attr = (DefaultPhraseSlopAttribute) getQueryConfigHandler().addAttribute(DefaultPhraseSlopAttribute.class);
+    DefaultPhraseSlopAttribute attr = getQueryConfigHandler().addAttribute(DefaultPhraseSlopAttribute.class);
     attr.setDefaultPhraseSlop(defaultPhraseSlop);
   }
 
   public void setAnalyzer(Analyzer analyzer) {
-    AnalyzerAttribute attr= (AnalyzerAttribute) getQueryConfigHandler().getAttribute(AnalyzerAttribute.class);
+    AnalyzerAttribute attr = getQueryConfigHandler().getAttribute(AnalyzerAttribute.class);
     attr.setAnalyzer(analyzer);
   }
   
@@ -362,7 +362,7 @@ public class StandardQueryParser extends QueryParserHelper {
     QueryConfigHandler config = this.getQueryConfigHandler();
 
     if ( config.hasAttribute(AnalyzerAttribute.class)) {
-      AnalyzerAttribute attr= (AnalyzerAttribute) config.getAttribute(AnalyzerAttribute.class);
+      AnalyzerAttribute attr = config.getAttribute(AnalyzerAttribute.class);
       return attr.getAnalyzer();
     }
 
@@ -373,7 +373,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * @see #setAllowLeadingWildcard(boolean)
    */
   public boolean getAllowLeadingWildcard() {
-    AllowLeadingWildcardAttribute attr = (AllowLeadingWildcardAttribute) getQueryConfigHandler().addAttribute(AllowLeadingWildcardAttribute.class);
+    AllowLeadingWildcardAttribute attr = getQueryConfigHandler().addAttribute(AllowLeadingWildcardAttribute.class);
     return attr.isAllowLeadingWildcard();
   }
 
@@ -381,7 +381,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * Get the minimal similarity for fuzzy queries.
    */
   public float getFuzzyMinSim() {
-    FuzzyAttribute attr = (FuzzyAttribute) getQueryConfigHandler().addAttribute(FuzzyAttribute.class);
+    FuzzyAttribute attr = getQueryConfigHandler().addAttribute(FuzzyAttribute.class);
     return attr.getFuzzyMinSimilarity();
   }
 
@@ -391,7 +391,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * @return Returns the fuzzyPrefixLength.
    */
   public int getFuzzyPrefixLength() {
-    FuzzyAttribute attr = (FuzzyAttribute) getQueryConfigHandler().addAttribute(FuzzyAttribute.class);
+    FuzzyAttribute attr = getQueryConfigHandler().addAttribute(FuzzyAttribute.class);
     return attr.getPrefixLength();
   }
 
@@ -399,7 +399,7 @@ public class StandardQueryParser extends QueryParserHelper {
    * Gets the default slop for phrases.
    */
   public int getPhraseSlop() {
-    DefaultPhraseSlopAttribute attr = (DefaultPhraseSlopAttribute) getQueryConfigHandler().addAttribute(DefaultPhraseSlopAttribute.class);
+    DefaultPhraseSlopAttribute attr = getQueryConfigHandler().addAttribute(DefaultPhraseSlopAttribute.class);
     return attr.getDefaultPhraseSlop();
   }
 
@@ -408,22 +408,22 @@ public class StandardQueryParser extends QueryParserHelper {
    * {@link FuzzyQuery#defaultMinSimilarity}.
    */
   public void setFuzzyMinSim(float fuzzyMinSim) {
-    FuzzyAttribute attr = (FuzzyAttribute) getQueryConfigHandler().addAttribute(FuzzyAttribute.class);
+    FuzzyAttribute attr = getQueryConfigHandler().addAttribute(FuzzyAttribute.class);
     attr.setFuzzyMinSimilarity(fuzzyMinSim);
   }
   
   public void setFieldsBoost(Map<CharSequence, Float> boosts) {
-    FieldBoostMapAttribute attr = (FieldBoostMapAttribute) getQueryConfigHandler().addAttribute(FieldBoostMapAttribute.class);
+    FieldBoostMapAttribute attr = getQueryConfigHandler().addAttribute(FieldBoostMapAttribute.class);
     attr.setFieldBoostMap(boosts);
   }
 
   public void setDateResolution(DateTools.Resolution dateResolution) {
-    DateResolutionAttribute attr = (DateResolutionAttribute) getQueryConfigHandler().addAttribute(DateResolutionAttribute.class);
+    DateResolutionAttribute attr = getQueryConfigHandler().addAttribute(DateResolutionAttribute.class);
     attr.setDateResolution(dateResolution);
   }
 
   public void setDateResolution(Map<CharSequence, DateTools.Resolution> dateRes) {
-    FieldDateResolutionMapAttribute attr = (FieldDateResolutionMapAttribute) getQueryConfigHandler().addAttribute(FieldDateResolutionMapAttribute.class);
+    FieldDateResolutionMapAttribute attr = getQueryConfigHandler().addAttribute(FieldDateResolutionMapAttribute.class);
     attr.setFieldDateResolutionMap(dateRes);
   }
   

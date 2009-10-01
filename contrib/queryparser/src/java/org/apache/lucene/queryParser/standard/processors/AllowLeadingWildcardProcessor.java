@@ -49,7 +49,7 @@ public class AllowLeadingWildcardProcessor extends QueryNodeProcessorImpl {
 
     if (getQueryConfigHandler().hasAttribute(AllowLeadingWildcardAttribute.class)) {
 
-      AllowLeadingWildcardAttribute alwAttr= (AllowLeadingWildcardAttribute) getQueryConfigHandler().getAttribute(AllowLeadingWildcardAttribute.class);
+      AllowLeadingWildcardAttribute alwAttr= getQueryConfigHandler().getAttribute(AllowLeadingWildcardAttribute.class);
       if (!alwAttr.isAllowLeadingWildcard()) {
         return super.process(queryTree);
       }

@@ -43,7 +43,7 @@ public final class LengthFilter extends TokenFilter {
     super(in);
     this.min = min;
     this.max = max;
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
   
   /**
@@ -58,7 +58,7 @@ public final class LengthFilter extends TokenFilter {
       }
       // note: else we ignore it but should we index each part of it?
     }
-    // reached EOS -- return null
+    // reached EOS -- return false
     return false;
   }
 }

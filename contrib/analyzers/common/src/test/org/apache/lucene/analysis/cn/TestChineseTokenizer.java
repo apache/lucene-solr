@@ -38,7 +38,7 @@ public class TestChineseTokenizer extends BaseTokenStreamTestCase
 
         int correctStartOffset = 0;
         int correctEndOffset = 1;
-        OffsetAttribute offsetAtt = (OffsetAttribute) tokenizer.getAttribute(OffsetAttribute.class);
+        OffsetAttribute offsetAtt = tokenizer.getAttribute(OffsetAttribute.class);
         while (tokenizer.incrementToken()) {
           assertEquals(correctStartOffset, offsetAtt.startOffset());
           assertEquals(correctEndOffset, offsetAtt.endOffset());

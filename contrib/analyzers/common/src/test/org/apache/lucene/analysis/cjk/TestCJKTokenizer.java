@@ -48,9 +48,9 @@ public class TestCJKTokenizer extends BaseTokenStreamTestCase {
 
   public void checkCJKToken(final String str, final TestToken[] out_tokens) throws IOException {
     CJKTokenizer tokenizer = new CJKTokenizer(new StringReader(str));
-    TermAttribute termAtt = (TermAttribute) tokenizer.getAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) tokenizer.getAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) tokenizer.getAttribute(TypeAttribute.class);
+    TermAttribute termAtt = tokenizer.getAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = tokenizer.getAttribute(OffsetAttribute.class);
+    TypeAttribute typeAtt = tokenizer.getAttribute(TypeAttribute.class);
     for (int i = 0; i < out_tokens.length; i++) {
       assertTrue(tokenizer.incrementToken());
       assertEquals(termAtt.term(), out_tokens[i].termText);
@@ -63,9 +63,9 @@ public class TestCJKTokenizer extends BaseTokenStreamTestCase {
   
   public void checkCJKTokenReusable(final Analyzer a, final String str, final TestToken[] out_tokens) throws IOException {
     TokenStream ts = a.reusableTokenStream("dummy", new StringReader(str));
-    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) ts.getAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) ts.getAttribute(TypeAttribute.class);
+    TermAttribute termAtt = ts.getAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = ts.getAttribute(OffsetAttribute.class);
+    TypeAttribute typeAtt = ts.getAttribute(TypeAttribute.class);
     for (int i = 0; i < out_tokens.length; i++) {
       assertTrue(ts.incrementToken());
       assertEquals(termAtt.term(), out_tokens[i].termText);
@@ -220,7 +220,7 @@ public class TestCJKTokenizer extends BaseTokenStreamTestCase {
   public void testTokenStream() throws Exception {
     Analyzer analyzer = new CJKAnalyzer();
     TokenStream ts = analyzer.tokenStream("dummy", new StringReader("\u4e00\u4e01\u4e02"));
-    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = ts.getAttribute(TermAttribute.class);
     assertTrue(ts.incrementToken());
     assertEquals("\u4e00\u4e01", termAtt.term());
     assertTrue(ts.incrementToken());

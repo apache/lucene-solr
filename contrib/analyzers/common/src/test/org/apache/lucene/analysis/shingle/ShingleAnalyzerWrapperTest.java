@@ -157,8 +157,8 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
                                           new StringReader("this sentence"));
     int j = -1;
     
-    PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) ts.addAttribute(PositionIncrementAttribute.class);
-    TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+    PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
+    TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
     
     while (ts.incrementToken()) {
       j += posIncrAtt.getPositionIncrement();
@@ -185,7 +185,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     TokenStream ts = analyzer.tokenStream("content",
                                           new StringReader("test sentence"));
     
-    TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+    TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
     
     while (ts.incrementToken()) {
       String termText =  termAtt.term();

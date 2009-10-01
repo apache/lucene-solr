@@ -34,7 +34,7 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
       +" ð ñ ò ó ô õ ö ø œ ß þ ù ú û ü ý ÿ ﬁ ﬂ"));
     ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream);
 
-    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
 
     assertTermEquals("Des", filter, termAtt);
     assertTermEquals("mot", filter, termAtt);
@@ -1891,7 +1891,7 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
 
     TokenStream stream = new WhitespaceTokenizer(new StringReader(inputText.toString()));
     ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream);
-    TermAttribute termAtt = (TermAttribute) filter.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
     Iterator expectedIter = expectedOutputTokens.iterator();
     while (expectedIter.hasNext()) {;
       assertTermEquals((String)expectedIter.next(), filter, termAtt);

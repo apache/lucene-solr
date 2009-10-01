@@ -80,17 +80,16 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
 
     if (getQueryConfigHandler().hasAttribute(AnalyzerAttribute.class)) {
 
-      this.analyzer = ((AnalyzerAttribute) getQueryConfigHandler()
-          .getAttribute(AnalyzerAttribute.class)).getAnalyzer();
+      this.analyzer = getQueryConfigHandler().getAttribute(
+          AnalyzerAttribute.class).getAnalyzer();
 
       this.positionIncrementsEnabled = false;
 
       if (getQueryConfigHandler().hasAttribute(
           PositionIncrementsAttribute.class)) {
 
-        if (((PositionIncrementsAttribute) getQueryConfigHandler()
-            .getAttribute(PositionIncrementsAttribute.class))
-            .isPositionIncrementsEnabled()) {
+        if (getQueryConfigHandler().getAttribute(
+            PositionIncrementsAttribute.class).isPositionIncrementsEnabled()) {
 
           this.positionIncrementsEnabled = true;
 
@@ -130,8 +129,7 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
       boolean severalTokensAtSamePosition = false;
 
       if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
-        posIncrAtt = (PositionIncrementAttribute) buffer
-            .getAttribute(PositionIncrementAttribute.class);
+        posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
       }
 
       try {
@@ -167,8 +165,7 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
         return new NoTokenFoundQueryNode();
       }
 
-      TermAttribute termAtt = (TermAttribute) buffer
-          .getAttribute(TermAttribute.class);
+      TermAttribute termAtt = buffer.getAttribute(TermAttribute.class);
 
       if (numTokens == 0) {
         return new NoTokenFoundQueryNode();
@@ -209,7 +206,8 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
 
           }
 
-          return new GroupQueryNode(new StandardBooleanQueryNode(children, true));
+          return new GroupQueryNode(
+              new StandardBooleanQueryNode(children, true));
 
         } else {
           // phrase query:

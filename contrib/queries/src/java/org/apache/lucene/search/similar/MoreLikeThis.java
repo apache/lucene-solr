@@ -829,7 +829,7 @@ public final class MoreLikeThis {
 		   TokenStream ts = analyzer.tokenStream(fieldName, r);
 			int tokenCount=0;
 			// for every token
-			TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+			TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
 			
 			while (ts.incrementToken()) {
 				String word = termAtt.term();

@@ -72,9 +72,9 @@ public class SynonymTokenFilter extends TokenFilter {
     this.synonyms = synonyms;
     this.maxSynonyms = maxSynonyms;
     
-    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    this.typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
-    this.posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+    this.termAtt = addAttribute(TermAttribute.class);
+    this.typeAtt = addAttribute(TypeAttribute.class);
+    this.posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   }
   
   /** Returns the next token in the stream, or null at EOS. */

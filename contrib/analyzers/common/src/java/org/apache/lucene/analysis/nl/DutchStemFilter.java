@@ -47,7 +47,7 @@ public final class DutchStemFilter extends TokenFilter {
   public DutchStemFilter(TokenStream _in) {
     super(_in);
     stemmer = new DutchStemmer();
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   /**

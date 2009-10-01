@@ -36,7 +36,7 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     StringReader reader = new StringReader("Now is The Time");
     String[] stopWords = new String[] { "is", "the", "Time" };
     TokenStream stream = new StopFilter(false, new WhitespaceTokenizer(reader), stopWords);
-    final TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
     assertTrue(stream.incrementToken());
     assertEquals("Now", termAtt.term());
     assertTrue(stream.incrementToken());
@@ -48,7 +48,7 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     StringReader reader = new StringReader("Now is The Time");
     String[] stopWords = new String[] { "is", "the", "Time" };
     TokenStream stream = new StopFilter(false, new WhitespaceTokenizer(reader), stopWords, true);
-    final TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
     assertTrue(stream.incrementToken());
     assertEquals("Now", termAtt.term());
     assertFalse(stream.incrementToken());
@@ -59,7 +59,7 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     String[] stopWords = new String[] { "is", "the", "Time" };
     Set stopSet = StopFilter.makeStopSet(stopWords);
     TokenStream stream = new StopFilter(false, new WhitespaceTokenizer(reader), stopSet);
-    final TermAttribute termAtt = (TermAttribute) stream.getAttribute(TermAttribute.class);
+    final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
     assertTrue(stream.incrementToken());
     assertEquals("Now", termAtt.term());
     assertTrue(stream.incrementToken());
@@ -116,8 +116,8 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
   private void doTestStopPositons(StopFilter stpf, boolean enableIcrements) throws IOException {
     log("---> test with enable-increments-"+(enableIcrements?"enabled":"disabled"));
     stpf.setEnablePositionIncrements(enableIcrements);
-    TermAttribute termAtt = (TermAttribute) stpf.getAttribute(TermAttribute.class);
-    PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) stpf.getAttribute(PositionIncrementAttribute.class);
+    TermAttribute termAtt = stpf.getAttribute(TermAttribute.class);
+    PositionIncrementAttribute posIncrAtt = stpf.getAttribute(PositionIncrementAttribute.class);
     for (int i=0; i<20; i+=3) {
       assertTrue(stpf.incrementToken());
       log("Token "+i+": "+stpf);

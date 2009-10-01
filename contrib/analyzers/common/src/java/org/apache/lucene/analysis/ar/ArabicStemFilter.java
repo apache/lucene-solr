@@ -36,7 +36,7 @@ public final class ArabicStemFilter extends TokenFilter {
   public ArabicStemFilter(TokenStream input) {
     super(input);
     stemmer = new ArabicStemmer();
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   public boolean incrementToken() throws IOException {

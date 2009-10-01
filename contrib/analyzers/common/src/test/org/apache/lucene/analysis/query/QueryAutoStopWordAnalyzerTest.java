@@ -193,7 +193,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
     QueryAutoStopWordAnalyzer a = new QueryAutoStopWordAnalyzer(new WhitespaceAnalyzer());
     a.addStopWords(reader, 10);
     TokenStream ts = a.tokenStream("repetitiveField", new StringReader("this boring"));
-    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = ts.getAttribute(TermAttribute.class);
     assertTrue(ts.incrementToken());
     assertEquals("this", termAtt.term());
     assertFalse(ts.incrementToken());

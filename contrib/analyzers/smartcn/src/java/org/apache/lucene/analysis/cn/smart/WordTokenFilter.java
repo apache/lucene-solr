@@ -56,9 +56,9 @@ public final class WordTokenFilter extends TokenFilter {
   public WordTokenFilter(TokenStream in) {
     super(in);
     this.wordSegmenter = new WordSegmenter();
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
+    offsetAtt = addAttribute(OffsetAttribute.class);
+    typeAtt = addAttribute(TypeAttribute.class);
   }
   
   public boolean incrementToken() throws IOException {   

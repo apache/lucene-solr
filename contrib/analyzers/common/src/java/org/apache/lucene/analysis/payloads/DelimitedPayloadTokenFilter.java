@@ -53,8 +53,8 @@ public final class DelimitedPayloadTokenFilter extends TokenFilter {
 
   public DelimitedPayloadTokenFilter(TokenStream input, char delimiter, PayloadEncoder encoder) {
     super(input);
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    payAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
+    payAtt = addAttribute(PayloadAttribute.class);
     this.delimiter = delimiter;
     this.encoder = encoder;
   }

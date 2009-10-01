@@ -3540,8 +3540,8 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
   // LUCENE-1255
   public void testNegativePositions() throws Throwable {
     final TokenStream tokens = new TokenStream() {
-      final TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      final PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+      final TermAttribute termAtt = addAttribute(TermAttribute.class);
+      final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
       
       final Iterator tokens = Arrays.asList(new String[]{"a","b","c"}).iterator();
       boolean first = true;

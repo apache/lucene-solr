@@ -41,7 +41,7 @@ class RepeatingTokenStream extends TokenStream {
 
    public RepeatingTokenStream(String val) {
      this.value = val;
-     this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+     this.termAtt = addAttribute(TermAttribute.class);
    }
 
    public boolean incrementToken() throws IOException {

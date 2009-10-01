@@ -82,7 +82,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   }
 
   void verifyPayload(TokenStream ts) throws IOException {
-    PayloadAttribute payloadAtt = (PayloadAttribute) ts.getAttribute(PayloadAttribute.class);
+    PayloadAttribute payloadAtt = ts.getAttribute(PayloadAttribute.class);
     for(byte b=1;;b++) {
       boolean hasNext = ts.incrementToken();
       if (!hasNext) break;
@@ -139,7 +139,7 @@ class PayloadSetter extends TokenFilter {
   PayloadAttribute payloadAtt;
   public  PayloadSetter(TokenStream input) {
     super(input);
-    payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+    payloadAtt = addAttribute(PayloadAttribute.class);
   }
 
   byte[] data = new byte[1];

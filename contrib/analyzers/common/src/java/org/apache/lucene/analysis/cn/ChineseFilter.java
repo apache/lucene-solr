@@ -66,7 +66,7 @@ public final class ChineseFilter extends TokenFilter {
         stopTable = new HashMap(STOP_WORDS.length);
         for (int i = 0; i < STOP_WORDS.length; i++)
             stopTable.put(STOP_WORDS[i], STOP_WORDS[i]);
-        termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+        termAtt = addAttribute(TermAttribute.class);
     }
 
     public boolean incrementToken() throws IOException {

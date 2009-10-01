@@ -114,7 +114,7 @@ public final class SynExpand {
 
 		// [1] Parse query into separate words so that when we expand we can avoid dups
 		TokenStream ts = a.tokenStream( field, new StringReader( query));
-		TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+		TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
 		
 		while (ts.incrementToken()) {
 		  String word = termAtt.term();

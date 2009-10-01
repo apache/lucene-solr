@@ -163,8 +163,8 @@ public final class StopFilter extends TokenFilter {
   }
   
   public void init() {
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
+    posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   }
 
   /**

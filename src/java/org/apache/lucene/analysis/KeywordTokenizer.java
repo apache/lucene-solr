@@ -57,8 +57,8 @@ public class KeywordTokenizer extends Tokenizer {
   
   private void init(int bufferSize) {
     this.done = false;
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
+    offsetAtt = addAttribute(OffsetAttribute.class);
     termAtt.resizeTermBuffer(bufferSize);    
   }
   

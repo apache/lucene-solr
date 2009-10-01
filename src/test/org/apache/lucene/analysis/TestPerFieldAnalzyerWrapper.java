@@ -30,7 +30,7 @@ public class TestPerFieldAnalzyerWrapper extends BaseTokenStreamTestCase {
 
     TokenStream tokenStream = analyzer.tokenStream("field",
                                             new StringReader(text));
-    TermAttribute termAtt = (TermAttribute) tokenStream.getAttribute(TermAttribute.class);
+    TermAttribute termAtt = tokenStream.getAttribute(TermAttribute.class);
 
     assertTrue(tokenStream.incrementToken());
     assertEquals("WhitespaceAnalyzer does not lowercase",
@@ -39,7 +39,7 @@ public class TestPerFieldAnalzyerWrapper extends BaseTokenStreamTestCase {
 
     tokenStream = analyzer.tokenStream("special",
                                             new StringReader(text));
-    termAtt = (TermAttribute) tokenStream.getAttribute(TermAttribute.class);
+    termAtt = tokenStream.getAttribute(TermAttribute.class);
     assertTrue(tokenStream.incrementToken());
     assertEquals("SimpleAnalyzer lowercases",
                  "qwerty",

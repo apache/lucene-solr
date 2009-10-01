@@ -83,7 +83,7 @@ public final class ICUCollationKeyFilter extends TokenFilter {
   public ICUCollationKeyFilter(TokenStream input, Collator collator) {
     super(input);
     this.collator = collator;
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   public boolean incrementToken() throws IOException {

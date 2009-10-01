@@ -24,9 +24,10 @@ import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
 
 /**
  * This listener listens for every field configuration request and assign a
- * {@link DateResolutionAttribute} to the equivalent {@link FieldConfig} based on a
- * defined map: fieldName -> DateTools.Resolution stored in {@link FieldDateResolutionMapAttribute}
- * in the {@link DateResolutionAttribute}.
+ * {@link DateResolutionAttribute} to the equivalent {@link FieldConfig} based
+ * on a defined map: fieldName -> DateTools.Resolution stored in
+ * {@link FieldDateResolutionMapAttribute} in the
+ * {@link DateResolutionAttribute}.
  * 
  * @see DateResolutionAttribute
  * @see FieldDateResolutionMapAttribute
@@ -38,27 +39,27 @@ public class FieldDateResolutionFCListener implements FieldConfigListener {
   private static final long serialVersionUID = -5929802948798314067L;
 
   private QueryConfigHandler config = null;
-  
+
   public FieldDateResolutionFCListener(QueryConfigHandler config) {
     this.config = config;
   }
-  
+
   public void buildFieldConfig(FieldConfig fieldConfig) {
-    DateResolutionAttribute fieldDateResAttr = (DateResolutionAttribute) fieldConfig
+    DateResolutionAttribute fieldDateResAttr = fieldConfig
         .addAttribute(DateResolutionAttribute.class);
     DateTools.Resolution dateRes = null;
 
     if (this.config.hasAttribute(FieldDateResolutionMapAttribute.class)) {
-      FieldDateResolutionMapAttribute dateResMapAttr = (FieldDateResolutionMapAttribute) this.config
+      FieldDateResolutionMapAttribute dateResMapAttr = this.config
           .addAttribute(FieldDateResolutionMapAttribute.class);
       dateRes = dateResMapAttr.getFieldDateResolutionMap().get(
           fieldConfig.getFieldName().toString());
     }
 
     if (dateRes == null) {
-      
+
       if (this.config.hasAttribute(DateResolutionAttribute.class)) {
-        DateResolutionAttribute dateResAttr = (DateResolutionAttribute) this.config
+        DateResolutionAttribute dateResAttr = this.config
             .addAttribute(DateResolutionAttribute.class);
         dateRes = dateResAttr.getDateResolution();
 

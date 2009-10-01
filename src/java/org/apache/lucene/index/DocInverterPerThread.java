@@ -39,8 +39,8 @@ final class DocInverterPerThread extends DocFieldConsumerPerThread {
     OffsetAttribute offsetAttribute;
     
     SingleTokenTokenStream() {
-      termAttribute = (TermAttribute) addAttribute(TermAttribute.class);
-      offsetAttribute = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+      termAttribute = addAttribute(TermAttribute.class);
+      offsetAttribute = addAttribute(OffsetAttribute.class);
     }
     
     public void reinit(String stringValue, int startOffset,  int endOffset) {

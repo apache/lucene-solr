@@ -154,10 +154,10 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     
     public TestFilter(TokenStream in) {
       super(in);
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-      offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-      typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
+      posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+      offsetAtt = addAttribute(OffsetAttribute.class);
+      typeAtt = addAttribute(TypeAttribute.class);
     }
 
     public final boolean incrementToken() throws java.io.IOException {
@@ -214,8 +214,8 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     
     public TestPosIncrementFilter(TokenStream in) {
       super(in);
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
+      posIncrAtt = addAttribute(PositionIncrementAttribute.class);
     }
 
     public final boolean incrementToken () throws java.io.IOException {

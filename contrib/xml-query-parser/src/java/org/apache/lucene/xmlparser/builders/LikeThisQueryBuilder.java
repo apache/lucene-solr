@@ -77,7 +77,7 @@ public class LikeThisQueryBuilder implements QueryBuilder {
 		    for (int i = 0; i < fields.length; i++)
             {
                 TokenStream ts = analyzer.tokenStream(fields[i],new StringReader(stopWords));
-                TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+                TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
                 try
                 {
 	                while(ts.incrementToken()) {

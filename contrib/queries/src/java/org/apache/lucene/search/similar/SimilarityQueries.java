@@ -86,7 +86,7 @@ public final class SimilarityQueries
 										  throws IOException
 	{	
 		TokenStream ts = a.tokenStream( field, new StringReader( body));
-		TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+		TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
 		
 		BooleanQuery tmp = new BooleanQuery();
 		Set already = new HashSet(); // ignore dups

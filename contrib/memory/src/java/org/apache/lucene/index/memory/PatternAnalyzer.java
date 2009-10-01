@@ -332,8 +332,8 @@ public class PatternAnalyzer extends Analyzer {
     private Matcher matcher;
     private int pos = 0;
     private static final Locale locale = Locale.getDefault();
-    private TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    private OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    private TermAttribute termAtt = addAttribute(TermAttribute.class);
+    private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
     public PatternTokenizer(String str, Pattern pattern, boolean toLowerCase) {
       this.str = str;
@@ -390,8 +390,8 @@ public class PatternAnalyzer extends Analyzer {
     private final boolean toLowerCase;
     private final Set stopWords;
     private static final Locale locale = Locale.getDefault();
-    private TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    private OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    private TermAttribute termAtt = addAttribute(TermAttribute.class);
+    private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
     public FastStringTokenizer(String str, boolean isLetter, boolean toLowerCase, Set stopWords) {
       this.str = str;

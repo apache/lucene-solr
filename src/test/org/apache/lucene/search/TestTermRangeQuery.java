@@ -244,7 +244,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
       
       public SingleCharTokenizer(Reader r) {
         super(r);
-        termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+        termAtt = addAttribute(TermAttribute.class);
       }
 
       public boolean incrementToken() throws IOException {

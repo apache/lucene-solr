@@ -22,9 +22,6 @@
   <description>
     Additional Analyzers
   </description>
-
-  <property name="javac.source" value="1.4" />
-  <property name="javac.target" value="1.4" />
 	
   <property name="build.dir" location="../../../build/contrib/analyzers/common" />
   <property name="dist.dir" location="../../../dist/contrib/analyzers/common" />

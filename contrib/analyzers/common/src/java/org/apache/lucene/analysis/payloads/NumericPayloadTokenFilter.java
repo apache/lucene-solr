@@ -44,8 +44,8 @@ public class NumericPayloadTokenFilter extends TokenFilter {
     //Need to encode the payload
     thePayload = new Payload(PayloadHelper.encodeFloat(payload));
     this.typeMatch = typeMatch;
-    payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
-    typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    payloadAtt = addAttribute(PayloadAttribute.class);
+    typeAtt = addAttribute(TypeAttribute.class);
   }
 
   public final boolean incrementToken() throws IOException {

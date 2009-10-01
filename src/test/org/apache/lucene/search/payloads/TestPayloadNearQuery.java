@@ -68,7 +68,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
 		public PayloadFilter(TokenStream input, String fieldName) {
 			super(input);
 			this.fieldName = fieldName;
-      payAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+      payAtt = addAttribute(PayloadAttribute.class);
 		}
 
     public boolean incrementToken() throws IOException {

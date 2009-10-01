@@ -74,8 +74,8 @@ public final class ChineseTokenizer extends Tokenizer {
     }
     
     private void init() {
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
+      offsetAtt = addAttribute(OffsetAttribute.class);
     }
     
     private int offset = 0, bufferIndex=0, dataLen=0;

@@ -87,7 +87,7 @@ public final class ReverseStringFilter extends TokenFilter {
   public ReverseStringFilter(TokenStream in, char marker) {
     super(in);
     this.marker = marker;
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
 
   public boolean incrementToken() throws IOException {

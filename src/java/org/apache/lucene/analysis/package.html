@@ -230,8 +230,8 @@ the source code of any one of the many samples located in this package.
       public TokenStream tokenStream(final String fieldName, Reader reader) {
         final TokenStream ts = someAnalyzer.tokenStream(fieldName, reader);
         TokenStream res = new TokenStream() {
-          TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-          PositionIncrementAttribute posIncrAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+          TermAttribute termAtt = addAttribute(TermAttribute.class);
+          PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
         
           public boolean incrementToken() throws IOException {
             int extraIncrement = 0;
@@ -319,7 +319,7 @@ the Attribute instances.
 <li>
 For performance reasons a TokenStream/-Filter should add/get Attributes during instantiation; i.e., create an attribute in the
 constructor and store references to it in an instance variable.  Using an instance variable instead of calling addAttribute()/getAttribute() 
-in incrementToken() will avoid expensive casting and attribute lookups for every token in the document.
+in incrementToken() will avoid attribute lookups for every token in the document.
 </li>
 <br>
 <li>
@@ -356,7 +356,7 @@ public class MyAnalyzer extends Analyzer {
     TokenStream stream = analyzer.tokenStream("field", new StringReader(text));
     
     // get the TermAttribute from the TokenStream
-    TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
+    TermAttribute termAtt = stream.addAttribute(TermAttribute.class);
 
     stream.reset();
     
@@ -421,7 +421,7 @@ public final class LengthFilter extends TokenFilter {
     super(in);
     this.min = min;
     this.max = max;
-    termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    termAtt = addAttribute(TermAttribute.class);
   }
   
   /**
@@ -448,7 +448,7 @@ Remember that there can only be a single instance of TermAttribute in the chain,
 <code>addAttribute()</code> call in LengthFilter returns the TermAttribute that the WhitespaceTokenizer already added. The tokens
 are retrieved from the input stream in the <code>incrementToken()</code> method. By looking at the term text
 in the TermAttribute the length of the term can be determined and too short or too long tokens are skipped. 
-Note how <code>incrementToken()</code> can efficiently access the instance variable; no attribute lookup or downcasting
+Note how <code>incrementToken()</code> can efficiently access the instance variable; no attribute lookup
 is neccessary. The same is true for the consumer, which can simply use local references to the Attributes.
 
 <h4>Adding a custom Attribute</h4>
@@ -526,8 +526,8 @@ that tags every word with a leading upper-case letter as a 'Noun' and all other 
     
     protected PartOfSpeechTaggingFilter(TokenStream input) {
       super(input);
-      posAtt = (PartOfSpeechAttribute) addAttribute(PartOfSpeechAttribute.class);
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+      posAtt = addAttribute(PartOfSpeechAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
     }
     
     public boolean incrementToken() throws IOException {
@@ -579,10 +579,10 @@ to make use of the new PartOfSpeechAttribute and print it out:
     TokenStream stream = analyzer.tokenStream("field", new StringReader(text));
     
     // get the TermAttribute from the TokenStream
-    TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
+    TermAttribute termAtt = stream.addAttribute(TermAttribute.class);
     
     // get the PartOfSpeechAttribute from the TokenStream
-    PartOfSpeechAttribute posAtt = (PartOfSpeechAttribute) stream.addAttribute(PartOfSpeechAttribute.class);
+    PartOfSpeechAttribute posAtt = stream.addAttribute(PartOfSpeechAttribute.class);
     
     stream.reset();
 

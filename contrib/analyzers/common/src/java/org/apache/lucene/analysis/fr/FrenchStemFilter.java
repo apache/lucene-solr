@@ -47,7 +47,7 @@ public final class FrenchStemFilter extends TokenFilter {
 	public FrenchStemFilter( TokenStream in ) {
           super(in);
 		stemmer = new FrenchStemmer();
-		termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+		termAtt = addAttribute(TermAttribute.class);
 	}
 
 
