@@ -312,4 +312,59 @@ public class TestXPathRecordReader {
     List<Map<String, Object>> l = rr.getAllRecords(new StringReader(xml));
     Assert.assertEquals("hello",l.get(0).get("catName"));
   }
+
+  @Test
+  public void putNullTest(){
+    String xml = "<root>\n" +
+            "  <i>\n" +
+            "    <x>\n" +
+            "      <a>A.1.1</a>\n" +
+            "      <b>B.1.1</b>\n" +
+            "    </x>\n" +
+            "    <x>\n" +
+            "      <b>B.1.2</b>\n" +
+            "      <c>C.1.2</c>\n" +
+            "    </x>\n" +
+            "  </i>\n" +
+            "  <i>\n" +
+            "    <x>\n" +
+            "      <a>A.2.1</a>\n" +
+            "      <c>C.2.1</c>\n" +
+            "    </x>\n" +
+            "    <x>\n" +
+            "      <b>B.2.2</b>\n" +
+            "      <c>C.2.2</c>\n" +
+            "    </x>\n" +
+            "  </i>\n" +
+            "</root>";
+    XPathRecordReader rr = new XPathRecordReader("/root/i");
+    rr.addField("a", "/root/i/x/a", true);
+    rr.addField("b", "/root/i/x/b", true);
+    rr.addField("c", "/root/i/x/c", true);
+    List<Map<String, Object>> l = rr.getAllRecords(new StringReader(xml));
+    Map<String, Object> map = l.get(0);
+    List<String> a = (List<String>) map.get("a");
+    List<String> b = (List<String>) map.get("b");
+    List<String> c = (List<String>) map.get("c");
+
+    Assert.assertEquals("A.1.1",a.get(0));
+    Assert.assertEquals("B.1.1",b.get(0));
+    Assert.assertNull(c.get(0));
+
+    Assert.assertNull(a.get(1));
+    Assert.assertEquals("B.1.2",b.get(1));
+    Assert.assertEquals("C.1.2",c.get(1));
+
+    map = l.get(1);
+    a = (List<String>) map.get("a");
+    b = (List<String>) map.get("b");
+    c = (List<String>) map.get("c");
+    Assert.assertEquals("A.2.1",a.get(0));
+    Assert.assertNull(b.get(0));
+    Assert.assertEquals("C.2.1",c.get(0));
+
+    Assert.assertNull(a.get(1));
+    Assert.assertEquals("B.2.2",b.get(1));
+    Assert.assertEquals("C.2.2",c.get(1));
+  }
 }
