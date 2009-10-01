@@ -14,6 +14,11 @@ Bug fixes
 
 New features
 
+ * LUCENE-1924: Added BalancedSegmentMergePolicy to contrib/misc,
+   which is a merge policy that tries to avoid doing very large
+   segment merges to give better search performance in a mixed
+   indexing/searching environment.  (John Wang via Mike McCandless)
+
 Optimizations
 
 Documentation
