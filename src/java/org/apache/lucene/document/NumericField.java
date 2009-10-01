@@ -240,7 +240,7 @@ public final class NumericField extends AbstractField {
    */
   public NumericField setLongValue(final long value) {
     tokenStream.setLongValue(value);
-    fieldsData = new Long(value);
+    fieldsData = Long.valueOf(value);
     return this;
   }
   
