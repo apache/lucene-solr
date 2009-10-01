@@ -601,7 +601,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       addVal(slave, SnapPuller.REPLICATION_FAILED_AT, props, Date.class);
       addVal(slave, SnapPuller.PREVIOUS_CYCLE_TIME_TAKEN, props, Long.class);
 
-
+      slave.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
       boolean isReplicating = isReplicating();
       slave.add("isReplicating", String.valueOf(isReplicating));
       if (isReplicating) {
@@ -678,7 +678,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           slave.add("totalPercent", String.valueOf(totalPercent));
           slave.add("timeRemaining", String.valueOf(estimatedTimeRemaining) + "s");
           slave.add("downloadSpeed", readableSize(downloadSpeed));
-          slave.add("isPollingDisabled", String.valueOf(isPollingDisabled()));
         } catch (Exception e) {
           LOG.error("Exception while writing replication details: ", e);
         }
