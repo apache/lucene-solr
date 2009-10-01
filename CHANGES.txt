@@ -22,6 +22,9 @@ Bug fixes
 
 New features
 
+* LUCENE-1933: Provide a convenience AttributeFactory that creates a
+  Token instance for all basic attributes.  (Uwe Schindler)
+
 Optimizations
 
 Documentation

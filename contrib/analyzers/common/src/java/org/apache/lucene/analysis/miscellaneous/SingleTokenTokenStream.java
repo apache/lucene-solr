@@ -35,15 +35,8 @@ public class SingleTokenTokenStream extends TokenStream {
   private Token singleToken;
   private final AttributeImpl tokenAtt;
 
-  private static final AttributeFactory TOKEN_ATTRIBUTE_FACTORY = new AttributeFactory() {
-    public AttributeImpl createAttributeInstance(Class attClass) {
-      return attClass.isAssignableFrom(Token.class)
-        ? new Token() : DEFAULT_ATTRIBUTE_FACTORY.createAttributeInstance(attClass);
-    }
-  };
-
   public SingleTokenTokenStream(Token token) {
-    super(TOKEN_ATTRIBUTE_FACTORY);
+    super(Token.TOKEN_ATTRIBUTE_FACTORY);
     
     assert token != null;
     this.singleToken = (Token) token.clone();

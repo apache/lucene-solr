@@ -45,7 +45,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.AttributeImpl;
 
 /**
  * Asserts equality of content and behaviour of two index readers.
@@ -177,16 +177,16 @@ public class TestIndicesEquals extends TestCase {
               t.setPayload(new Payload(new byte[]{2}));
               tokens.add(t);
               tokens.add(createToken("fin", 7, 9));
-              final Token reusableToken = new Token();
-              TokenStream ts = new TokenStream() {
+              TokenStream ts = new TokenStream(Token.TOKEN_ATTRIBUTE_FACTORY) {
+                final AttributeImpl reusableToken = (AttributeImpl) addAttribute(TermAttribute.class);
                 Iterator<Token> it = tokens.iterator();
                 
                 public final boolean incrementToken() throws IOException {
                   if (!it.hasNext()) {
                     return false;
                   }
-
-                  reusableToken.reinit(it.next());
+                  clearAttributes();
+                  it.next().copyTo(reusableToken);
                   return true;
                 }
 
@@ -194,7 +194,6 @@ public class TestIndicesEquals extends TestCase {
                   it = tokens.iterator();
                 }
               };
-              ts.addAttributeImpl(reusableToken);
               
               document.add(new Field("f", ts));
             }

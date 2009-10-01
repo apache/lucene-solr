@@ -27,6 +27,7 @@ import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.TermPositions;     // for javadoc
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeImpl;
 
 /** 
@@ -879,4 +880,46 @@ public class Token extends AttributeImpl
       ((TypeAttribute) target).setType(type);
     }
   }
+
+  /** Convenience factory that returns <code>Token</code> as implementation for the basic
+   * attributes and return the default impl (with &quot;Impl&quot; appended) for all other
+   * attributes.
+   * @since 3.0
+   */
+  public static final AttributeSource.AttributeFactory TOKEN_ATTRIBUTE_FACTORY =
+    new TokenAttributeFactory(AttributeSource.AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY);
+  
+  /** <b>Expert:</b> Creates a TokenAttributeFactory returning {@link Token} as instance for the basic attributes
+   * and for all other attributes calls the given delegate factory.
+   * @since 3.0
+   */
+  public static final class TokenAttributeFactory extends AttributeSource.AttributeFactory {
+    
+    private final AttributeSource.AttributeFactory delegate;
+    
+    /** <b>Expert</b>: Creates an AttributeFactory returning {@link Token} as instance for the basic attributes
+     * and for all other attributes calls the given delegate factory. */
+    public TokenAttributeFactory(AttributeSource.AttributeFactory delegate) {
+      this.delegate = delegate;
+    }
+  
+    public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
+      return attClass.isAssignableFrom(Token.class)
+        ? new Token() : delegate.createAttributeInstance(attClass);
+    }
+    
+    public boolean equals(Object other) {
+      if (this == other) return true;
+      if (other instanceof TokenAttributeFactory) {
+        final TokenAttributeFactory af = (TokenAttributeFactory) other;
+        return this.delegate.equals(af.delegate);
+      }
+      return false;
+    }
+    
+    public int hashCode() {
+      return delegate.hashCode() ^ 0x0a45aa31;
+    }
+  }
+
 }
