@@ -40,7 +40,7 @@ import java.io.IOException;
  * {@link org.apache.lucene.index.Term} occurs.
  * <p>
  * In order to take advantage of this, you must override
- * {@link org.apache.lucene.search.Similarity#scorePayload(String, byte[],int,int)}
+ * {@link org.apache.lucene.search.Similarity#scorePayload(int, String, int, int, byte[],int,int)}
  * which returns 1 by default.
  * <p>
  * Payload scores are aggregated using a pluggable {@link PayloadFunction}.
