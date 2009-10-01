@@ -39,111 +39,19 @@ import java.util.Set;
  */
 public final class GreekAnalyzer extends Analyzer
 {
-    // the letters are indexes to the charset array (see GreekCharsets.java)
-    private static char A = 6;
-    private static char B = 7;
-    private static char G = 8;
-    private static char D = 9;
-    private static char E = 10;
-    private static char Z = 11;
-    private static char H = 12;
-    private static char TH = 13;
-    private static char I = 14;
-    private static char K = 15;
-    private static char L = 16;
-    private static char M = 17;
-    private static char N = 18;
-    private static char KS = 19;
-    private static char O = 20;
-    private static char P = 21;
-    private static char R = 22;
-    private static char S = 24;	// skip final sigma
-    private static char T = 25;
-    private static char Y = 26;
-    private static char F = 27;
-    private static char X = 28;
-    private static char PS = 29;
-    private static char W = 30;
-
     /**
      * List of typical Greek stopwords.
      */
-    private static char[][] GREEK_STOP_WORDS = {
-        {O},
-		{H},
-		{T, O},
-        {O, I},
-		{T, A},
-		{T, O, Y},
-		{T, H, S},
-		{T, W, N},
-		{T, O, N},
-		{T, H, N},
-		{K, A, I},
-		{K, I},
-		{K},
-		{E, I, M, A, I},
-		{E, I, S, A, I},
-		{E, I, N, A, I},
-		{E, I, M, A, S, T, E},
-		{E, I, S, T, E},
-		{S, T, O},
-		{S, T, O, N},
-		{S, T, H},
-		{S, T, H, N},
-		{M, A},
-		{A, L, L, A},
-		{A, P, O},
-		{G, I, A},
-		{P, R, O, S},
-		{M, E},
-		{S, E},
-		{W, S},
-		{P, A, R, A},
-		{A, N, T, I},
-		{K, A, T, A},
-		{M, E, T, A},
-		{TH, A},
-		{N, A},
-		{D, E},
-		{D, E, N},
-		{M, H},
-		{M, H, N},
-		{E, P, I},
-		{E, N, W},
-		{E, A, N},
-		{A, N},
-		{T, O, T, E},
-		{P, O, Y},
-		{P, W, S},
-		{P, O, I, O, S},
-		{P, O, I, A},
-		{P, O, I, O},
-		{P, O, I, O, I},
-		{P, O, I, E, S},
-		{P, O, I, W, N},
-		{P, O, I, O, Y, S},
-		{A, Y, T, O, S},
-		{A, Y, T, H},
-		{A, Y, T, O},
-		{A, Y, T, O, I},
-		{A, Y, T, W, N},
-		{A, Y, T, O, Y, S},
-		{A, Y, T, E, S},
-		{A, Y, T, A},
-		{E, K, E, I, N, O, S},
-		{E, K, E, I, N, H},
-		{E, K, E, I, N, O},
-		{E, K, E, I, N, O, I},
-		{E, K, E, I, N, E, S},
-		{E, K, E, I, N, A},
-		{E, K, E, I, N, W, N},
-		{E, K, E, I, N, O, Y, S},
-		{O, P, W, S},
-		{O, M, W, S},
-		{I, S, W, S},
-		{O, S, O},
-		{O, T, I}
+    private static final String[] GREEK_STOP_WORDS = {
+      "ο", "η", "το", "οι", "τα", "του", "τησ", "των", "τον", "την", "και", 
+      "κι", "κ", "ειμαι", "εισαι", "ειναι", "ειμαστε", "ειστε", "στο", "στον",
+      "στη", "στην", "μα", "αλλα", "απο", "για", "προσ", "με", "σε", "ωσ",
+      "παρα", "αντι", "κατα", "μετα", "θα", "να", "δε", "δεν", "μη", "μην",
+      "επι", "ενω", "εαν", "αν", "τοτε", "που", "πωσ", "ποιοσ", "ποια", "ποιο",
+      "ποιοι", "ποιεσ", "ποιων", "ποιουσ", "αυτοσ", "αυτη", "αυτο", "αυτοι",
+      "αυτων", "αυτουσ", "αυτεσ", "αυτα", "εκεινοσ", "εκεινη", "εκεινο",
+      "εκεινοι", "εκεινεσ", "εκεινα", "εκεινων", "εκεινουσ", "οπωσ", "ομωσ",
+      "ισωσ", "οσο", "οτι"
     };
 
     /**
@@ -151,28 +59,8 @@ public final class GreekAnalyzer extends Analyzer
      */
     private Set stopSet = new HashSet();
 
-    /**
-     * Charset for Greek letters.
-     * Represents encoding for 24 lowercase Greek letters.
-     * Predefined charsets can be taken from {@link GreekCharsets} class
-     * @deprecated Support for non-Unicode encodings will be removed in Lucene 3.0
-     */
-    private char[] charset;
-
     public GreekAnalyzer() {
-        charset = GreekCharsets.UnicodeGreek;
-        stopSet = StopFilter.makeStopSet(
-                    makeStopWords(GreekCharsets.UnicodeGreek));
-    }
-
-    /**
-     * Builds an analyzer.
-     * @deprecated Use {@link #GreekAnalyzer()} instead.
-     */
-    public GreekAnalyzer(char[] charset)
-    {
-        this.charset = charset;
-        stopSet = StopFilter.makeStopSet(makeStopWords(charset));
+        this(GREEK_STOP_WORDS);
     }
     
     /**
@@ -181,50 +69,8 @@ public final class GreekAnalyzer extends Analyzer
      */
     public GreekAnalyzer(String [] stopwords)
     {
-    	charset = GreekCharsets.UnicodeGreek;
+        super();
     	stopSet = StopFilter.makeStopSet(stopwords);
-    }
-
-    /**
-     * Builds an analyzer with the given stop words.
-     * @deprecated Use {@link #GreekAnalyzer(String[])} instead.
-     */
-    public GreekAnalyzer(char[] charset, String[] stopwords)
-    {
-        this.charset = charset;
-        stopSet = StopFilter.makeStopSet(stopwords);
-    }
-
-    /**
-     * Takes greek stop words and translates them to a String array, using
-     * the given charset.
-     * @deprecated Support for non-Unicode encodings will be removed in Lucene 3.0
-     */
-    private static String[] makeStopWords(char[] charset)
-    {
-        String[] res = new String[GREEK_STOP_WORDS.length];
-        for (int i = 0; i < res.length; i++)
-        {
-            char[] theStopWord = GREEK_STOP_WORDS[i];
-            // translate the word,using the charset
-            StringBuffer theWord = new StringBuffer();
-            for (int j = 0; j < theStopWord.length; j++)
-            {
-                theWord.append(charset[theStopWord[j]]);
-            }
-            res[i] = theWord.toString();
-        }
-        return res;
-    }
-
-    /**
-     * Builds an analyzer with the given stop words.
-     * @deprecated Use {@link #GreekAnalyzer(Map)} instead.
-     */
-    public GreekAnalyzer(char[] charset, Map stopwords)
-    {
-        this.charset = charset;
-        stopSet = new HashSet(stopwords.keySet());
     }
     
     /**
@@ -232,7 +78,7 @@ public final class GreekAnalyzer extends Analyzer
      */
     public GreekAnalyzer(Map stopwords)
     {
-    	charset = GreekCharsets.UnicodeGreek;
+        super();
     	stopSet = new HashSet(stopwords.keySet());
     }
 
@@ -245,7 +91,7 @@ public final class GreekAnalyzer extends Analyzer
     public TokenStream tokenStream(String fieldName, Reader reader)
     {
     	TokenStream result = new StandardTokenizer(reader);
-        result = new GreekLowerCaseFilter(result, charset);
+        result = new GreekLowerCaseFilter(result);
         result = new StopFilter(result, stopSet);
         return result;
     }
@@ -268,7 +114,7 @@ public final class GreekAnalyzer extends Analyzer
       if (streams == null) {
         streams = new SavedStreams();
         streams.source = new StandardTokenizer(reader);
-        streams.result = new GreekLowerCaseFilter(streams.source, charset);
+        streams.result = new GreekLowerCaseFilter(streams.source);
         streams.result = new StopFilter(streams.result, stopSet);
         setPreviousTokenStream(streams);
       } else {

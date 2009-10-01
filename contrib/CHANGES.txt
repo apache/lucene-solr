@@ -6,6 +6,10 @@ Changes in runtime behavior
 
 API Changes
 
+ * LUCENE-1936: Deprecated RussianLowerCaseFilter, because it transforms
+   text exactly the same as LowerCaseFilter. Please use LowerCaseFilter
+   instead, which has the same functionality.  (Robert Muir)
+   
 Bug fixes
 
  * LUCENE-1781: Fixed various issues with the lat/lng bounding box

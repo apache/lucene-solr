@@ -25,47 +25,42 @@ package org.apache.lucene.analysis.ru;
  */
 class RussianStemmer
 {
-    /**
-     * @deprecated Support for non-Unicode encodings will be removed in Lucene 3.0 
-     */
-    private char[] charset;
-
     // positions of RV, R1 and R2 respectively
     private int RV, R1, R2;
 
     // letters (currently unused letters are commented out)
-    private final static char A = 0;
-    //private final static char B = 1;
-    private final static char V = 2;
-    private final static char G = 3;
-    //private final static char D = 4;
-    private final static char E = 5;
-    //private final static char ZH = 6;
-    //private final static char Z = 7;
-    private final static char I = 8;
-    private final static char I_ = 9;
-    //private final static char K = 10;
-    private final static char L = 11;
-    private final static char M = 12;
-    private final static char N = 13;
-    private final static char O = 14;
-    //private final static char P = 15;
-    //private final static char R = 16;
-    private final static char S = 17;
-    private final static char T = 18;
-    private final static char U = 19;
-    //private final static char F = 20;
-    private final static char X = 21;
-    //private final static char TS = 22;
-    //private final static char CH = 23;
-    private final static char SH = 24;
-    private final static char SHCH = 25;
-    //private final static char HARD = 26;
-    private final static char Y = 27;
-    private final static char SOFT = 28;
-    private final static char AE = 29;
-    private final static char IU = 30;
-    private final static char IA = 31;
+    private final static char A = '\u0430';
+    //private final static char B = '\u0431';
+    private final static char V = '\u0432';
+    private final static char G = '\u0433';
+    //private final static char D = '\u0434';
+    private final static char E = '\u0435';
+    //private final static char ZH = '\u0436';
+    //private final static char Z = '\u0437';
+    private final static char I = '\u0438';
+    private final static char I_ = '\u0439';
+    //private final static char K = '\u043A';
+    private final static char L = '\u043B';
+    private final static char M = '\u043C';
+    private final static char N = '\u043D';
+    private final static char O = '\u043E';
+    //private final static char P = '\u043F';
+    //private final static char R = '\u0440';
+    private final static char S = '\u0441';
+    private final static char T = '\u0442';
+    private final static char U = '\u0443';
+    //private final static char F = '\u0444';
+    private final static char X = '\u0445';
+    //private final static char TS = '\u0446';
+    //private final static char CH = '\u0447';
+    private final static char SH = '\u0448';
+    private final static char SHCH = '\u0449';
+    //private final static char HARD = '\u044A';
+    private final static char Y = '\u044B';
+    private final static char SOFT = '\u044C';
+    private final static char AE = '\u044D';
+    private final static char IU = '\u044E';
+    private final static char IA = '\u044F';
 
     // stem definitions
     private static char[] vowels = { A, E, I, O, U, Y, AE, IU, IA };
@@ -257,16 +252,6 @@ class RussianStemmer
     }
 
     /**
-     * RussianStemmer constructor comment.
-     * @deprecated Use {@link #RussianStemmer()} instead.
-     */
-    public RussianStemmer(char[] charset)
-    {
-        super();
-        this.charset = charset;
-    }
-
-    /**
      * Adjectival ending is an adjective ending,
      * optionally preceded by participle ending.
      * Creation date: (17/03/2002 12:14:58 AM)
@@ -333,7 +318,7 @@ class RussianStemmer
             int stemmingIndex = startIndex;
             for (int j = theEnding.length - 1; j >= 0; j--)
             {
-                if (stemmingZone.charAt(stemmingIndex--) != charset[theEnding[j]])
+                if (stemmingZone.charAt(stemmingIndex--) != theEnding[j])
                 {
                     match = false;
                     break;
@@ -451,7 +436,7 @@ class RussianStemmer
     {
         for (int i = 0; i < vowels.length; i++)
         {
-            if (letter == charset[vowels[i]])
+            if (letter == vowels[i])
                 return true;
         }
         return false;
@@ -499,7 +484,7 @@ class RussianStemmer
     private boolean removeI(StringBuffer stemmingZone)
     {
         if (stemmingZone.length() > 0
-            && stemmingZone.charAt(stemmingZone.length() - 1) == charset[I])
+            && stemmingZone.charAt(stemmingZone.length() - 1) == I)
         {
             stemmingZone.setLength(stemmingZone.length() - 1);
             return true;
@@ -518,7 +503,7 @@ class RussianStemmer
     private boolean removeSoft(StringBuffer stemmingZone)
     {
         if (stemmingZone.length() > 0
-            && stemmingZone.charAt(stemmingZone.length() - 1) == charset[SOFT])
+            && stemmingZone.charAt(stemmingZone.length() - 1) == SOFT)
         {
             stemmingZone.setLength(stemmingZone.length() - 1);
             return true;
@@ -527,17 +512,6 @@ class RussianStemmer
         {
             return false;
         }
-    }
-
-    /**
-     * Insert the method's description here.
-     * Creation date: (16/03/2002 10:58:42 PM)
-     * @param newCharset char[]
-     * @deprecated Support for non-Unicode encodings will be removed in Lucene 3.0
-     */
-    public void setCharset(char[] newCharset)
-    {
-        charset = newCharset;
     }
 
     /**
@@ -622,25 +596,13 @@ class RussianStemmer
             verb1Predessors)
             || findAndRemoveEnding(stemmingZone, verbEndings2);
     }
-
-    /**
-     * Static method for stemming with different charsets
-     * @deprecated Use {@link #stemWord(String)} instead.
-     */
-    public static String stem(String theWord, char[] charset)
-    {
-        RussianStemmer stemmer = new RussianStemmer();
-        stemmer.setCharset(charset);
-        return stemmer.stem(theWord);
-    }
-    
+   
     /**
      * Static method for stemming.
      */
     public static String stemWord(String theWord)
     {
         RussianStemmer stemmer = new RussianStemmer();
-        stemmer.setCharset(RussianCharsets.UnicodeRussian);
         return stemmer.stem(theWord);
     }
 }

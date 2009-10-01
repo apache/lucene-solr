@@ -25,49 +25,26 @@ import org.apache.lucene.util.AttributeSource;
 
 /**
  * A RussianLetterTokenizer is a {@link Tokenizer} that extends {@link LetterTokenizer}
- * by additionally looking up letters in a given "russian charset". 
- * <p>
- * The problem with 
- * {@link LetterTokenizer} is that it uses {@link Character#isLetter(char)} method,
- * which doesn't know how to detect letters in encodings like CP1252 and KOI8
- * (well-known problems with 0xD7 and 0xF7 chars)
- * </p>
+ * by also allowing the basic latin digits 0-9. 
  *
  * @version $Id$
  */
 
 public class RussianLetterTokenizer extends CharTokenizer
-{
-    /** 
-     * Charset this tokenizer uses.
-     * @deprecated Support for non-Unicode encodings will be removed in Lucene 3.0
-     */
-    private char[] charset;
-
-    /**
-     * @deprecated Use {@link #RussianLetterTokenizer(Reader)} instead. 
-     */
-    public RussianLetterTokenizer(Reader in, char[] charset)
-    {
-        super(in);
-        this.charset = charset;
-    }
-    
+{    
     public RussianLetterTokenizer(Reader in)
     {
-    	this(in, RussianCharsets.UnicodeRussian);
+    	super(in);
     }
 
     public RussianLetterTokenizer(AttributeSource source, Reader in)
     {
         super(source, in);
-        this.charset = RussianCharsets.UnicodeRussian;
     }
 
     public RussianLetterTokenizer(AttributeFactory factory, Reader in)
     {
         super(factory, in);
-        this.charset = RussianCharsets.UnicodeRussian;
     }
     
     /**
@@ -76,14 +53,9 @@ public class RussianLetterTokenizer extends CharTokenizer
      */
     protected boolean isTokenChar(char c)
     {
-    	/* in the next release, this can be implemented as isLetter(c) or [0-9] */
-        if (Character.isLetter(c))
+        if (Character.isLetter(c) || (c >= '0' && c <= '9'))
             return true;
-        for (int i = 0; i < charset.length; i++)
-        {
-            if (c == charset[i])
-                return true;
-        }
-        return false;
+        else
+            return false;
     }
 }

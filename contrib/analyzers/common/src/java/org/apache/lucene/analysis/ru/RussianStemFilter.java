@@ -17,6 +17,7 @@ package org.apache.lucene.analysis.ru;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.LowerCaseFilter; // for javadoc
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
@@ -28,8 +29,8 @@ import java.io.IOException;
  * A {@link TokenFilter} that stems Russian words. 
  * <p>
  * The implementation was inspired by GermanStemFilter.
- * The input should be filtered by {@link RussianLowerCaseFilter} before passing it to RussianStemFilter ,
- * because RussianStemFilter only works with lowercase part of any "russian" charset.
+ * The input should be filtered by {@link LowerCaseFilter} before passing it to RussianStemFilter ,
+ * because RussianStemFilter only works with lowercase characters.
  * </p>
  *
  * @version   $Id$
@@ -43,19 +44,11 @@ public final class RussianStemFilter extends TokenFilter
 
     private TermAttribute termAtt;
 
-    /**
-     * @deprecated Use {@link #RussianStemFilter(TokenStream)} instead.
-     */
-    public RussianStemFilter(TokenStream in, char[] charset)
-    {
-        super(in);
-        stemmer = new RussianStemmer(charset);
-        termAtt = addAttribute(TermAttribute.class);
-    }
-
     public RussianStemFilter(TokenStream in)
     {
-    	this(in, RussianCharsets.UnicodeRussian);
+        super(in);
+        stemmer = new RussianStemmer();
+        termAtt = addAttribute(TermAttribute.class);
     }
     /**
      * Returns the next token in the stream, or null at EOS

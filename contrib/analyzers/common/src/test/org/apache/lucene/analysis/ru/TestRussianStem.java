@@ -84,9 +84,8 @@ public class TestRussianStem extends LuceneTestCase
         {
             //if ( (i % 100) == 0 ) System.err.println(i);
             String realStem =
-                RussianStemmer.stem(
-                    (String) words.get(i),
-                    RussianCharsets.UnicodeRussian);
+                RussianStemmer.stemWord(
+                    (String) words.get(i));
             assertEquals("unicode", stems.get(i), realStem);
         }
     }
