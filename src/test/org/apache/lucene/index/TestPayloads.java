@@ -179,7 +179,7 @@ public class TestPayloads extends LuceneTestCase {
         int numDocs = skipInterval + 1; 
         // create content for the test documents with just a few terms
         Term[] terms = generateTerms(fieldName, numTerms);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < terms.length; i++) {
             sb.append(terms[i].text);
             sb.append(" ");
@@ -350,7 +350,7 @@ public class TestPayloads extends LuceneTestCase {
     private Term[] generateTerms(String fieldName, int n) {
         int maxDigits = (int) (Math.log(n) / Math.log(10));
         Term[] terms = new Term[n];
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (int i = 0; i < n; i++) {
             sb.setLength(0);
             sb.append("t");

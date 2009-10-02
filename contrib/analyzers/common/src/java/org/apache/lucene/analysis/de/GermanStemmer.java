@@ -33,7 +33,7 @@ public class GermanStemmer
     /**
      * Buffer for the terms while stemming them.
      */
-    private StringBuffer sb = new StringBuffer();
+    private StringBuilder sb = new StringBuilder();
 
     /**
      * Amount of characters that are removed with <tt>substitute()</tt> while stemming.
@@ -52,7 +52,7 @@ public class GermanStemmer
       term = term.toLowerCase();
       if ( !isStemmable( term ) )
         return term;
-      // Reset the StringBuffer.
+      // Reset the StringBuilder.
       sb.delete( 0, sb.length() );
       sb.insert( 0, term );
       // Stemming starts here...
@@ -86,7 +86,7 @@ public class GermanStemmer
      * discriminators in the most of those cases.
      * The algorithm is context free, except of the length restrictions.
      */
-    private void strip( StringBuffer buffer )
+    private void strip( StringBuilder buffer )
     {
       boolean doMore = true;
       while ( doMore && buffer.length() > 3 ) {
@@ -126,7 +126,7 @@ public class GermanStemmer
      * Does some optimizations on the term. This optimisations are
      * contextual.
      */
-    private void optimize( StringBuffer buffer )
+    private void optimize( StringBuilder buffer )
     {
       // Additional step for female plurals of professions and inhabitants.
       if ( buffer.length() > 5 && buffer.substring( buffer.length() - 5, buffer.length() ).equals( "erin*" ) ) {
@@ -142,7 +142,7 @@ public class GermanStemmer
     /**
      * Removes a particle denotion ("ge") from a term.
      */
-    private void removeParticleDenotion( StringBuffer buffer )
+    private void removeParticleDenotion( StringBuilder buffer )
     {
       if ( buffer.length() > 4 ) {
         for ( int c = 0; c < buffer.length() - 3; c++ ) {
@@ -164,7 +164,7 @@ public class GermanStemmer
      * - Substitute some common character combinations with a token:
      *   sch/ch/ei/ie/ig/st -> $/§/%/&/#/!
      */
-    private void substitute( StringBuffer buffer )
+    private void substitute( StringBuilder buffer )
     {
       substCount = 0;
       for ( int c = 0; c < buffer.length(); c++ ) {
@@ -232,7 +232,7 @@ public class GermanStemmer
      * character combinations. Umlauts will remain as their corresponding vowel,
      * as "ß" remains as "ss".
      */
-    private void resubstitute( StringBuffer buffer )
+    private void resubstitute( StringBuilder buffer )
     {
       for ( int c = 0; c < buffer.length(); c++ ) {
         if ( buffer.charAt( c ) == '*' ) {

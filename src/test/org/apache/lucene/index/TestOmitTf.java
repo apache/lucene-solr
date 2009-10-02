@@ -242,7 +242,7 @@ public class TestOmitTf extends LuceneTestCase {
     writer.setSimilarity(new SimpleSimilarity());
         
         
-    StringBuffer sb = new StringBuffer(265);
+    StringBuilder sb = new StringBuilder(265);
     String term = "term";
     for(int i = 0; i<30; i++){
       Document d = new Document();

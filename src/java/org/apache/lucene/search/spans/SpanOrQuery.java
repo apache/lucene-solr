@@ -112,7 +112,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
   }
 
   public String toString(String field) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("spanOr([");
     Iterator i = clauses.iterator();
     while (i.hasNext()) {

@@ -955,7 +955,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
 
   public static Document createDocument(int n, int numFields) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     Document doc = new Document();
     sb.append("a");
     sb.append(n);

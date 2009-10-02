@@ -21,12 +21,12 @@ package org.apache.lucene.util;
 public class English {
 
   public static String intToEnglish(int i) {
-    StringBuffer result = new StringBuffer();
+    StringBuilder result = new StringBuilder();
     intToEnglish(i, result);
     return result.toString();
   }
 
-  public static void intToEnglish(int i, StringBuffer result) {
+  public static void intToEnglish(int i, StringBuilder result) {
     if (i == 0) {
       result.append("zero");
       return;

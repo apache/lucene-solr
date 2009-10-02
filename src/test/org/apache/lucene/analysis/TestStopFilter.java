@@ -71,7 +71,7 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
    * Test Position increments applied by StopFilter with and without enabling this option.
    */
   public void testStopPositons() throws IOException {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     ArrayList a = new ArrayList();
     for (int i=0; i<20; i++) {
       String w = English.intToEnglish(i).trim();

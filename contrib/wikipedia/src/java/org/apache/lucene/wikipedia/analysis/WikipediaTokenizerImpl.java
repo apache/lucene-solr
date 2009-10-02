@@ -480,7 +480,7 @@ final void getText(TermAttribute t) {
   t.setTermBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
 }
 
-final int setText(StringBuffer buffer){
+final int setText(StringBuilder buffer){
   int length = zzMarkedPos - zzStartRead;
   buffer.append(zzBuffer, zzStartRead, length);
   return length;

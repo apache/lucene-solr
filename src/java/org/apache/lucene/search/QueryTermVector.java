@@ -108,7 +108,7 @@ public class QueryTermVector implements TermFreqVector {
   }
   
   public final String toString() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append('{');
         for (int i=0; i<terms.length; i++) {
             if (i>0) sb.append(", ");

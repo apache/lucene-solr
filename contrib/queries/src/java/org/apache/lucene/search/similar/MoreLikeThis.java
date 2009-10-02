@@ -681,7 +681,7 @@ public final class MoreLikeThis {
      * Describe the parameters that control how the "more like this" query is formed.
      */
     public String describeParams() {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("\t" + "maxQueryTerms  : " + maxQueryTerms + "\n");
         sb.append("\t" + "minWordLen     : " + minWordLen + "\n");
         sb.append("\t" + "maxWordLen     : " + maxWordLen + "\n");

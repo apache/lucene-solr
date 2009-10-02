@@ -173,7 +173,7 @@ public class FuzzyQuery extends MultiTermQuery {
   }
     
   public String toString(String field) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     if (!term.field().equals(field)) {
         buffer.append(term.field());
         buffer.append(":");

@@ -826,7 +826,7 @@ public abstract class Similarity implements Serializable {
     }
     final int max = searcher.maxDoc();
     float idf = 0.0f;
-    final StringBuffer exp = new StringBuffer();
+    final StringBuilder exp = new StringBuilder();
     Iterator i = terms.iterator();
     while (i.hasNext()) {
       Term term = (Term)i.next();

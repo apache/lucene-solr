@@ -195,7 +195,7 @@ implements Serializable {
 
                 luceneId = new Integer(hits[docnum].doc);
                 if(idMap.containsKey(luceneId)) {
-                    StringBuffer message = new StringBuffer(prefix);
+                    StringBuilder message = new StringBuilder(prefix);
                     message.append("Duplicate key for hit index = ");
                     message.append(docnum);
                     message.append(", previous index = ");

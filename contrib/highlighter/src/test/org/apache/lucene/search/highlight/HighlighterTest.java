@@ -1034,7 +1034,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         TermQuery query = new TermQuery(new Term("data", goodWord));
 
         String match = null;
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append(goodWord);
         for (int i = 0; i < 10000; i++) {
           sb.append(" ");

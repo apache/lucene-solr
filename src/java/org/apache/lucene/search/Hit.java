@@ -113,7 +113,7 @@ public class Hit implements java.io.Serializable {
    * Prints the parameters to be used to discover the promised result.
    */
   public String toString() {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("Hit<");
     buffer.append(hits.toString());
     buffer.append(" [");

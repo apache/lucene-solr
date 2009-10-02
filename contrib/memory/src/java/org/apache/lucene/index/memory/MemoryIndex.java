@@ -507,7 +507,7 @@ public class MemoryIndex implements Serializable {
    * @return the string representation
    */
   public String toString() {
-    StringBuffer result = new StringBuffer(256);    
+    StringBuilder result = new StringBuilder(256);    
     sortFields();   
     int sumChars = 0;
     int sumPositions = 0;
@@ -688,7 +688,7 @@ public class MemoryIndex implements Serializable {
     public String toString(int stride) {
       int s = size() / stride;
       int len = Math.min(10, s); // avoid printing huge lists
-      StringBuffer buf = new StringBuffer(4*len);
+      StringBuilder buf = new StringBuilder(4*len);
       buf.append("[");
       for (int i = 0; i < len; i++) {
         buf.append(get(i*stride));

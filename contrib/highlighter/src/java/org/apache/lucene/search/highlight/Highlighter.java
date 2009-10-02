@@ -215,7 +215,7 @@ public class Highlighter
 		throws IOException, InvalidTokenOffsetsException
 	{
 		ArrayList docFrags = new ArrayList();
-		StringBuffer newText=new StringBuffer();
+		StringBuilder newText=new StringBuilder();
 		
 	    TermAttribute termAtt = tokenStream.addAttribute(TermAttribute.class);
 	    OffsetAttribute offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
@@ -486,7 +486,7 @@ public class Highlighter
 		throws IOException, InvalidTokenOffsetsException
 	{
 		String sections[] =	getBestFragments(tokenStream,text, maxNumFragments);
-		StringBuffer result = new StringBuffer();
+		StringBuilder result = new StringBuilder();
 		for (int i = 0; i < sections.length; i++)
 		{
 			if (i > 0)

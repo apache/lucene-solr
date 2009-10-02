@@ -122,7 +122,7 @@ public class SynonymMap {
    * @return a String representation
    */
   public String toString() {
-    StringBuffer buf = new StringBuffer();
+    StringBuilder buf = new StringBuilder();
     Iterator iter = new TreeMap(table).keySet().iterator();
     int count = 0;
     int f0 = 0;
@@ -327,7 +327,7 @@ public class SynonymMap {
     }
     
     // assemble large string containing all words
-    StringBuffer buf = new StringBuffer(len);
+    StringBuilder buf = new StringBuilder(len);
     for (int j=0; j < size; j++) buf.append(words[j]);
     String allWords = new String(buf.toString()); // ensure compact string across JDK versions
     buf = null;

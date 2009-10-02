@@ -81,7 +81,7 @@ public class NumberTools {
             return MIN_STRING_VALUE;
         }
 
-        StringBuffer buf = new StringBuffer(STR_SIZE);
+        StringBuilder buf = new StringBuilder(STR_SIZE);
 
         if (l < 0) {
             buf.append(NEGATIVE_PREFIX);

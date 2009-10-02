@@ -255,9 +255,9 @@ class RussianStemmer
      * Adjectival ending is an adjective ending,
      * optionally preceded by participle ending.
      * Creation date: (17/03/2002 12:14:58 AM)
-     * @param stemmingZone java.lang.StringBuffer
+     * @param stemmingZone java.lang.StringBuilder
      */
-    private boolean adjectival(StringBuffer stemmingZone)
+    private boolean adjectival(StringBuilder stemmingZone)
     {
         // look for adjective ending in a stemming zone
         if (!findAndRemoveEnding(stemmingZone, adjectiveEndings))
@@ -275,9 +275,9 @@ class RussianStemmer
     /**
      * Derivational endings
      * Creation date: (17/03/2002 12:14:58 AM)
-     * @param stemmingZone java.lang.StringBuffer
+     * @param stemmingZone java.lang.StringBuilder
      */
-    private boolean derivational(StringBuffer stemmingZone)
+    private boolean derivational(StringBuilder stemmingZone)
     {
         int endingLength = findEnding(stemmingZone, derivationalEndings);
         if (endingLength == 0)
@@ -302,7 +302,7 @@ class RussianStemmer
      * Finds ending among given ending class and returns the length of ending found(0, if not found).
      * Creation date: (17/03/2002 8:18:34 PM)
      */
-    private int findEnding(StringBuffer stemmingZone, int startIndex, char[][] theEndingClass)
+    private int findEnding(StringBuilder stemmingZone, int startIndex, char[][] theEndingClass)
     {
         boolean match = false;
         for (int i = theEndingClass.length - 1; i >= 0; i--)
@@ -333,7 +333,7 @@ class RussianStemmer
         return 0;
     }
 
-    private int findEnding(StringBuffer stemmingZone, char[][] theEndingClass)
+    private int findEnding(StringBuilder stemmingZone, char[][] theEndingClass)
     {
         return findEnding(stemmingZone, stemmingZone.length() - 1, theEndingClass);
     }
@@ -342,7 +342,7 @@ class RussianStemmer
      * Finds the ending among the given class of endings and removes it from stemming zone.
      * Creation date: (17/03/2002 8:18:34 PM)
      */
-    private boolean findAndRemoveEnding(StringBuffer stemmingZone, char[][] theEndingClass)
+    private boolean findAndRemoveEnding(StringBuilder stemmingZone, char[][] theEndingClass)
     {
         int endingLength = findEnding(stemmingZone, theEndingClass);
         if (endingLength == 0)
@@ -360,7 +360,7 @@ class RussianStemmer
      * preceded by any of given predecessors, and if so, removes it from stemming zone.
      * Creation date: (17/03/2002 8:18:34 PM)
      */
-    private boolean findAndRemoveEnding(StringBuffer stemmingZone,
+    private boolean findAndRemoveEnding(StringBuilder stemmingZone,
         char[][] theEndingClass, char[][] thePredessors)
     {
         int endingLength = findEnding(stemmingZone, theEndingClass);
@@ -445,9 +445,9 @@ class RussianStemmer
     /**
      * Noun endings.
      * Creation date: (17/03/2002 12:14:58 AM)
-     * @param stemmingZone java.lang.StringBuffer
+     * @param stemmingZone java.lang.StringBuilder
      */
-    private boolean noun(StringBuffer stemmingZone)
+    private boolean noun(StringBuilder stemmingZone)
     {
         return findAndRemoveEnding(stemmingZone, nounEndings);
     }
@@ -455,9 +455,9 @@ class RussianStemmer
     /**
      * Perfective gerund endings.
      * Creation date: (17/03/2002 12:14:58 AM)
-     * @param stemmingZone java.lang.StringBuffer
+     * @param stemmingZone java.lang.StringBuilder
      */
-    private boolean perfectiveGerund(StringBuffer stemmingZone)
+    private boolean perfectiveGerund(StringBuilder stemmingZone)
     {
         return findAndRemoveEnding(
             stemmingZone,
@@ -469,9 +469,9 @@ class RussianStemmer
     /**
      * Reflexive endings.
      * Creation date: (17/03/2002 12:14:58 AM)
-     * @param stemmingZone java.lang.StringBuffer
+     * @param stemmingZone java.lang.StringBuilder
      */
-    private boolean reflexive(StringBuffer stemmingZone)
+    private boolean reflexive(StringBuilder stemmingZone)
     {
         return findAndRemoveEnding(stemmingZone, reflexiveEndings);
     }
@@ -479,9 +479,9 @@ class RussianStemmer
     /**
      * Insert the method's description here.
      * Creation date: (17/03/2002 12:14:58 AM)
-     * @param stemmingZone java.lang.StringBuffer
+     * @param stemmingZone java.lang.StringBuilder
      */
-    private boolean removeI(StringBuffer stemmingZone)
+    private boolean removeI(StringBuilder stemmingZone)
     {
         if (stemmingZone.length() > 0
             && stemmingZone.charAt(stemmingZone.length() - 1) == I)
@@ -498,9 +498,9 @@ class RussianStemmer
     /**
      * Insert the method's description here.
      * Creation date: (17/03/2002 12:14:58 AM)
-     * @param stemmingZone java.lang.StringBuffer
+     * @param stemmingZone java.lang.StringBuilder
      */
-    private boolean removeSoft(StringBuffer stemmingZone)
+    private boolean removeSoft(StringBuilder stemmingZone)
     {
         if (stemmingZone.length() > 0
             && stemmingZone.charAt(stemmingZone.length() - 1) == SOFT)
@@ -525,7 +525,7 @@ class RussianStemmer
         markPositions(input);
         if (RV == 0)
             return input; //RV wasn't detected, nothing to stem
-        StringBuffer stemmingZone = new StringBuffer(input.substring(RV));
+        StringBuilder stemmingZone = new StringBuilder(input.substring(RV));
         // stemming goes on in RV
         // Step 1
 
@@ -555,9 +555,9 @@ class RussianStemmer
     /**
      * Superlative endings.
      * Creation date: (17/03/2002 12:14:58 AM)
-     * @param stemmingZone java.lang.StringBuffer
+     * @param stemmingZone java.lang.StringBuilder
      */
-    private boolean superlative(StringBuffer stemmingZone)
+    private boolean superlative(StringBuilder stemmingZone)
     {
         return findAndRemoveEnding(stemmingZone, superlativeEndings);
     }
@@ -565,9 +565,9 @@ class RussianStemmer
     /**
      * Undoubles N.
      * Creation date: (17/03/2002 12:14:58 AM)
-     * @param stemmingZone java.lang.StringBuffer
+     * @param stemmingZone java.lang.StringBuilder
      */
-    private boolean undoubleN(StringBuffer stemmingZone)
+    private boolean undoubleN(StringBuilder stemmingZone)
     {
         char[][] doubleN = {
             { N, N }
@@ -586,9 +586,9 @@ class RussianStemmer
     /**
      * Verb endings.
      * Creation date: (17/03/2002 12:14:58 AM)
-     * @param stemmingZone java.lang.StringBuffer
+     * @param stemmingZone java.lang.StringBuilder
      */
-    private boolean verb(StringBuffer stemmingZone)
+    private boolean verb(StringBuilder stemmingZone)
     {
         return findAndRemoveEnding(
             stemmingZone,

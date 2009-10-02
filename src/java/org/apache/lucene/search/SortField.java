@@ -347,7 +347,7 @@ implements Serializable {
   }
 
   public String toString() {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     switch (type) {
       case SCORE:
         buffer.append("<score>");

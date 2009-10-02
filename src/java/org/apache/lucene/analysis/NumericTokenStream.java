@@ -235,7 +235,7 @@ public final class NumericTokenStream extends TokenStream {
   
   @Override
   public String toString() {
-    final StringBuffer sb = new StringBuffer("(numeric,valSize=").append(valSize);
+    final StringBuilder sb = new StringBuilder("(numeric,valSize=").append(valSize);
     sb.append(",precisionStep=").append(precisionStep).append(')');
     return sb.toString();
   }

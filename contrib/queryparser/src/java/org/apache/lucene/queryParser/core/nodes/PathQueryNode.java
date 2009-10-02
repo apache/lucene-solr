@@ -171,7 +171,7 @@ public class PathQueryNode extends QueryNodeImpl {
   }
 
   private CharSequence getPathString() {
-    StringBuffer path = new StringBuffer();
+    StringBuilder path = new StringBuilder();
 
     for (QueryText pathelement : values) {
       path.append("/").append(pathelement.value);
@@ -180,7 +180,7 @@ public class PathQueryNode extends QueryNodeImpl {
   }
 
   public CharSequence toQueryString(EscapeQuerySyntax escaper) {
-    StringBuffer path = new StringBuffer();
+    StringBuilder path = new StringBuilder();
     path.append("/").append(getFirstPathElement());
 
     for (QueryText pathelement : getPathElements(1)) {

@@ -102,7 +102,7 @@ public class DateField {
 
     // Pad with leading zeros
     if (s.length() < DATE_LEN) {
-      StringBuffer sb = new StringBuffer(s);
+      StringBuilder sb = new StringBuilder(s);
       while (sb.length() < DATE_LEN)
         sb.insert(0, 0);
       s = sb.toString();

@@ -41,7 +41,7 @@ public class TestWindowsMMap extends LuceneTestCase {
 	
 	private String randomToken() {
 		int tl = 1 + random.nextInt(7);
-		StringBuffer sb = new StringBuffer();
+		StringBuilder sb = new StringBuilder();
 		for(int cx = 0; cx < tl; cx ++) {
 			int c = random.nextInt(25);
 			sb.append(alphabet.substring(c, c+1));
@@ -51,7 +51,7 @@ public class TestWindowsMMap extends LuceneTestCase {
 	
 	private String randomField() {
 		int fl = 1 + random.nextInt(3);
-		StringBuffer fb = new StringBuffer();
+		StringBuilder fb = new StringBuilder();
 		for(int fx = 0; fx < fl; fx ++) {
 			fb.append(randomToken());
 			fb.append(" ");

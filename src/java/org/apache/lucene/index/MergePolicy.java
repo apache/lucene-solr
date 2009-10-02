@@ -123,7 +123,7 @@ public abstract class MergePolicy {
     }
 
     String segString(Directory dir) {
-      StringBuffer b = new StringBuffer();
+      StringBuilder b = new StringBuilder();
       final int numSegments = segments.size();
       for(int i=0;i<numSegments;i++) {
         if (i > 0) b.append(' ');
@@ -159,7 +159,7 @@ public abstract class MergePolicy {
     }
 
     public String segString(Directory dir) {
-      StringBuffer b = new StringBuffer();
+      StringBuilder b = new StringBuilder();
       b.append("MergeSpec:\n");
       final int count = merges.size();
       for(int i=0;i<count;i++)

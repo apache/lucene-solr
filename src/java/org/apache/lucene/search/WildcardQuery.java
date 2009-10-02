@@ -65,7 +65,7 @@ public class WildcardQuery extends MultiTermQuery {
   
   /** Prints a user-readable version of this query. */
   public String toString(String field) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     if (!term.field().equals(field)) {
       buffer.append(term.field());
       buffer.append(":");

@@ -393,7 +393,7 @@ public abstract class MultiTermQuery extends Query {
    */
   @Override
   public String toString(String field) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     if (term != null) {
       if (!term.field().equals(field)) {
         buffer.append(term.field());

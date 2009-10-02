@@ -65,7 +65,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
      * a simple padding function that should work with any int
      */
     public static String pad(int n) {
-        StringBuffer b = new StringBuffer(40);
+        StringBuilder b = new StringBuilder(40);
         String p = "0";
         if (n < 0) {
             p = "-";

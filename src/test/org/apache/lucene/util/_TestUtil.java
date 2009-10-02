@@ -85,7 +85,7 @@ public class _TestUtil {
    *  @deprecated -- in 3.0 we can use Arrays.toString
    *  instead */
   public static String arrayToString(int[] array) {
-    StringBuffer buf = new StringBuffer();
+    StringBuilder buf = new StringBuilder();
     buf.append("[");
     for(int i=0;i<array.length;i++) {
       if (i > 0) {
@@ -101,7 +101,7 @@ public class _TestUtil {
    *  @deprecated -- in 3.0 we can use Arrays.toString
    *  instead */
   public static String arrayToString(Object[] array) {
-    StringBuffer buf = new StringBuffer();
+    StringBuilder buf = new StringBuilder();
     buf.append("[");
     for(int i=0;i<array.length;i++) {
       if (i > 0) {

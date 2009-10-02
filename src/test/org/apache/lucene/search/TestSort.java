@@ -164,7 +164,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   }
   
   public String getRandomNumberString(int num, int low, int high) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int i = 0; i < num; i++) {
       sb.append(getRandomNumber(low, high));
     }
@@ -176,7 +176,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   }
   
   public String getRandomCharString(int num, int start, int end) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int i = 0; i < num; i++) {
       sb.append(new Character((char) getRandomNumber(start, end)));
     }
@@ -277,7 +277,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
 
     result = searcher.search(new MatchAllDocsQuery(), null, 500, sort).scoreDocs;
 
-    StringBuffer buff = new StringBuffer();
+    StringBuilder buff = new StringBuilder();
     int n = result.length;
     String last = null;
     String lastSub = null;
@@ -998,7 +998,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     TopDocs hits = searcher.search (query, null, expectedResult.length(), sort);
     ScoreDoc[] result = hits.scoreDocs;
     assertEquals(hits.totalHits, expectedResult.length());
-    StringBuffer buff = new StringBuffer(10);
+    StringBuilder buff = new StringBuilder(10);
     int n = result.length;
     for (int i=0; i<n; ++i) {
       Document doc = searcher.doc(result[i].doc);

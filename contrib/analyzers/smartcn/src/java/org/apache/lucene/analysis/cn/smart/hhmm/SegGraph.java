@@ -141,7 +141,7 @@ class SegGraph {
 
   public String toString() {
     List tokenList = this.toTokenList();
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (Iterator iter = tokenList.iterator(); iter.hasNext();) {
       SegToken t = (SegToken) iter.next();
       sb.append(t + "\n");

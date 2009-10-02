@@ -225,7 +225,7 @@ class BiSegGraph {
   }
 
   public String toString() {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     Collection values = tokenPairListTable.values();
     for (Iterator iter1 = values.iterator(); iter1.hasNext();) {
       List segList = (List) iter1.next();

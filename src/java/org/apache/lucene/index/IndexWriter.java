@@ -5220,7 +5220,7 @@ public class IndexWriter {
   }
 
   private synchronized String segString(SegmentInfos infos) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     final int count = infos.size();
     for(int i = 0; i < count; i++) {
       if (i > 0) {

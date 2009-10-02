@@ -431,7 +431,7 @@ public abstract class FieldCacheRangeFilter extends Filter {
   }
   
   public final String toString() {
-    final StringBuffer sb = new StringBuffer(field).append(":");
+    final StringBuilder sb = new StringBuilder(field).append(":");
     return sb.append(includeLower ? '[' : '{')
       .append((lowerVal == null) ? "*" : lowerVal.toString())
       .append(" TO ")

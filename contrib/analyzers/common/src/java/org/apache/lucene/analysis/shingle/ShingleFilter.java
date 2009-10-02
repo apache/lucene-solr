@@ -44,7 +44,7 @@ import org.apache.lucene.util.AttributeSource;
 public class ShingleFilter extends TokenFilter {
 
   private LinkedList shingleBuf = new LinkedList();
-  private StringBuffer[] shingles;
+  private StringBuilder[] shingles;
   private String tokenType = "shingle";
 
   /**
@@ -140,15 +140,15 @@ public class ShingleFilter extends TokenFilter {
     if (maxShingleSize < 2) {
       throw new IllegalArgumentException("Max shingle size must be >= 2");
     }
-    shingles = new StringBuffer[maxShingleSize];
+    shingles = new StringBuilder[maxShingleSize];
     for (int i = 0; i < shingles.length; i++) {
-      shingles[i] = new StringBuffer();
+      shingles[i] = new StringBuilder();
     }
     this.maxShingleSize = maxShingleSize;
   }
 
   /**
-   * Clear the StringBuffers that are used for storing the output shingles.
+   * Clear the StringBuilders that are used for storing the output shingles.
    */
   private void clearShingles() {
     for (int i = 0; i < shingles.length; i++) {
@@ -188,7 +188,7 @@ public class ShingleFilter extends TokenFilter {
         restoreState(nextToken);
         typeAtt.setType(tokenType);
         offsetAtt.setOffset(offsetAtt.startOffset(), endOffsets[shingleBufferPosition]);
-        StringBuffer buf = shingles[shingleBufferPosition];
+        StringBuilder buf = shingles[shingleBufferPosition];
         int termLength = buf.length();
         char[] termBuffer = termAtt.termBuffer();
         if (termBuffer.length < termLength)

@@ -52,7 +52,7 @@ public class SpanTermQuery extends SpanQuery {
   }
 
   public String toString(String field) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     if (term.field().equals(field))
       buffer.append(term.text());
     else

@@ -80,7 +80,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
     /* somewhat a hack: find/store wildcard chars
      * in order to put them back after analyzing */
     boolean isWithinToken = (!termStr.startsWith("?") && !termStr.startsWith("*"));
-    StringBuffer tmpBuffer = new StringBuffer();
+    StringBuilder tmpBuffer = new StringBuilder();
     char[] chars = termStr.toCharArray();
     for (int i = 0; i < termStr.length(); i++) {
       if (chars[i] == '?' || chars[i] == '*') {
@@ -154,7 +154,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
     } else {
       /* the term was tokenized, let's rebuild to one token
        * with wildcards put back in postion */
-      StringBuffer sb = new StringBuffer();
+      StringBuilder sb = new StringBuilder();
       for (int i = 0; i < tlist.size(); i++) {
         sb.append((String) tlist.get(i));
         if (wlist != null && wlist.size() > i) {

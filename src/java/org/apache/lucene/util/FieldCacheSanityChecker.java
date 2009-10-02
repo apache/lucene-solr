@@ -366,7 +366,7 @@ public final class FieldCacheSanityChecker {
      * own line prefaced by a tab character
      */
     public String toString() {
-      StringBuffer buf = new StringBuffer();
+      StringBuilder buf = new StringBuilder();
       buf.append(getType()).append(": ");
 
       String m = getMsg();

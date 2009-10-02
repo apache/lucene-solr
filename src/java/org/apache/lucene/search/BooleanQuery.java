@@ -464,7 +464,7 @@ public class BooleanQuery extends Query {
 
   /** Prints a user-readable version of this query. */
   public String toString(String field) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     boolean needParens=(getBoost() != 1.0) || (getMinimumNumberShouldMatch()>0) ;
     if (needParens) {
       buffer.append("(");

@@ -275,7 +275,7 @@ public class HtmlDocument {
      */
     private String getBodyText(Node node) {
         NodeList nl = node.getChildNodes();
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         for (int i = 0; i < nl.getLength(); i++) {
             Node child = nl.item(i);
             switch (child.getNodeType()) {

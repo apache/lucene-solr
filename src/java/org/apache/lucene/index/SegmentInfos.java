@@ -895,7 +895,7 @@ public final class SegmentInfos extends Vector {
   }
 
   public synchronized String segString(Directory directory) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     final int count = size();
     for(int i = 0; i < count; i++) {
       if (i > 0) {

@@ -47,7 +47,7 @@ public class PrefixQuery extends MultiTermQuery {
 
   /** Prints a user-readable version of this query. */
   public String toString(String field) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     if (!prefix.field().equals(field)) {
       buffer.append(prefix.field());
       buffer.append(":");

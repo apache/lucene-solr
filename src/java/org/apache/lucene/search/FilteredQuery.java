@@ -206,7 +206,7 @@ extends Query {
 
   /** Prints a user-readable version of this query. */
   public String toString (String s) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("filtered(");
     buffer.append(query.toString(s));
     buffer.append(")->");

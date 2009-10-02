@@ -1440,7 +1440,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         // occurs but the terms are very long (heavy on
         // char[] arrays)
         for(int j=0;j<100;j++) {
-          StringBuffer b = new StringBuffer();
+          StringBuilder b = new StringBuilder();
           String x = Integer.toString(j) + ".";
           for(int k=0;k<1000;k++)
             b.append(x);
@@ -1513,7 +1513,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, new IndexWriter.MaxFieldLength(100000000));
       writer.setRAMBufferSizeMB(0.01);
       // Massive doc that has 128 K a's
-      StringBuffer b = new StringBuffer(1024*1024);
+      StringBuilder b = new StringBuilder(1024*1024);
       for(int i=0;i<4096;i++) {
         b.append(" a a a a a a a a");
         b.append(" a a a a a a a a");
@@ -2677,7 +2677,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
 
     Document doc = new Document();
-    StringBuffer b = new StringBuffer();
+    StringBuilder b = new StringBuilder();
     for(int i=0;i<10000;i++)
       b.append(" a");
     b.append(" x");
@@ -2957,7 +2957,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), new IndexWriter.MaxFieldLength(100000));
 
     Document doc = new Document();
-    StringBuffer b = new StringBuffer();
+    StringBuilder b = new StringBuilder();
     for(int i=0;i<10000;i++)
       b.append(" a");
     b.append(" x");

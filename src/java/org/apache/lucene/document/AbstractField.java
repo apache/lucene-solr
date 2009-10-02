@@ -305,7 +305,7 @@ public abstract class AbstractField implements Fieldable {
 
   /** Prints a Field for human consumption. */
   public final String toString() {
-    StringBuffer result = new StringBuffer();
+    StringBuilder result = new StringBuilder();
     if (isStored) {
       result.append("stored");
       if (isCompressed)

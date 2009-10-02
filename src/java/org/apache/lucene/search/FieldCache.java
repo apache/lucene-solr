@@ -563,7 +563,7 @@ public interface FieldCache {
     
     
     public String toString() {
-      StringBuffer b = new StringBuffer();
+      StringBuilder b = new StringBuilder();
       b.append("'").append(getReaderKey()).append("'=>");
       b.append("'").append(getFieldName()).append("',");
       b.append(getCacheType()).append(",").append(getCustom());

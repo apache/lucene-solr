@@ -177,7 +177,7 @@ class MultiThreadTermVectorsReader implements Runnable {
   }
   
   private void verifyVectors(TermFreqVector[] vectors, int num) {
-    StringBuffer temp = new StringBuffer();
+    StringBuilder temp = new StringBuilder();
     String[] terms = null;
     for (int i = 0; i < vectors.length; i++) {
       terms = vectors[i].getTerms();

@@ -123,7 +123,7 @@ public class GradientFormatter implements Formatter
         {
             return originalText;
         }
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("<font ");
         if (highlightForeground)
         {
@@ -148,7 +148,7 @@ public class GradientFormatter implements Formatter
         int rVal = getColorVal(fgRMin, fgRMax, score);
         int gVal = getColorVal(fgGMin, fgGMax, score);
         int bVal = getColorVal(fgBMin, fgBMax, score);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("#");
         sb.append(intToHex(rVal));
         sb.append(intToHex(gVal));
@@ -161,7 +161,7 @@ public class GradientFormatter implements Formatter
         int rVal = getColorVal(bgRMin, bgRMax, score);
         int gVal = getColorVal(bgGMin, bgGMax, score);
         int bVal = getColorVal(bgBMin, bgBMax, score);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("#");
         sb.append(intToHex(rVal));
         sb.append(intToHex(gVal));

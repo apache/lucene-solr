@@ -357,7 +357,7 @@ final class BooleanScorer extends Scorer {
   }
 
   public String toString() {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("boolean(");
     for (SubScorer sub = scorers; sub != null; sub = sub.next) {
       buffer.append(sub.scorer.toString());

@@ -107,7 +107,7 @@ public class SpanRegexQuery extends SpanQuery implements RegexQueryCapable {
   }
 
   public String toString(String field) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("spanRegexQuery(");
     buffer.append(term);
     buffer.append(")");

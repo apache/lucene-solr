@@ -182,7 +182,7 @@ public class BooleanFilter extends Filter
   /** Prints a user-readable version of this query. */
   public String toString()
   {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("BooleanFilter(");
     appendFilters(shouldFilters, "", buffer);
     appendFilters(mustFilters, "+", buffer);
@@ -191,7 +191,7 @@ public class BooleanFilter extends Filter
     return buffer.toString();
   }
   
-  private void appendFilters(ArrayList filters, String occurString, StringBuffer buffer)
+  private void appendFilters(ArrayList filters, String occurString, StringBuilder buffer)
   {
     if (filters != null) {
       for (int i = 0; i < filters.size(); i++) {

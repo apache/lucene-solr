@@ -317,7 +317,7 @@ public final class Document implements java.io.Serializable {
   
   /** Prints the fields of a document for human consumption. */
   public final String toString() {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("Document<");
     for (int i = 0; i < fields.size(); i++) {
       Fieldable field = (Fieldable)fields.get(i);

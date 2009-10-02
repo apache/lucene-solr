@@ -39,7 +39,7 @@ public class TestTermAttributeImpl extends LuceneTestCase {
 
   public void testGrow() {
     TermAttributeImpl t = new TermAttributeImpl();
-    StringBuffer buf = new StringBuffer("ab");
+    StringBuilder buf = new StringBuilder("ab");
     for (int i = 0; i < 20; i++)
     {
       char[] content = buf.toString().toCharArray();
@@ -53,7 +53,7 @@ public class TestTermAttributeImpl extends LuceneTestCase {
 
     // now as a string, first variant
     t = new TermAttributeImpl();
-    buf = new StringBuffer("ab");
+    buf = new StringBuilder("ab");
     for (int i = 0; i < 20; i++)
     {
       String content = buf.toString();
@@ -67,7 +67,7 @@ public class TestTermAttributeImpl extends LuceneTestCase {
 
     // now as a string, second variant
     t = new TermAttributeImpl();
-    buf = new StringBuffer("ab");
+    buf = new StringBuilder("ab");
     for (int i = 0; i < 20; i++)
     {
       String content = buf.toString();
@@ -81,7 +81,7 @@ public class TestTermAttributeImpl extends LuceneTestCase {
 
     // Test for slow growth to a long term
     t = new TermAttributeImpl();
-    buf = new StringBuffer("a");
+    buf = new StringBuilder("a");
     for (int i = 0; i < 20000; i++)
     {
       String content = buf.toString();
@@ -95,7 +95,7 @@ public class TestTermAttributeImpl extends LuceneTestCase {
 
     // Test for slow growth to a long term
     t = new TermAttributeImpl();
-    buf = new StringBuffer("a");
+    buf = new StringBuilder("a");
     for (int i = 0; i < 20000; i++)
     {
       String content = buf.toString();

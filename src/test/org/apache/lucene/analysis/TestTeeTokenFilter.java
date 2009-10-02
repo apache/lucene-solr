@@ -30,8 +30,8 @@ import java.util.List;
  * tests for the TeeTokenFilter and SinkTokenizer
  */
 public class TestTeeTokenFilter extends LuceneTestCase {
-  protected StringBuffer buffer1;
-  protected StringBuffer buffer2;
+  protected StringBuilder buffer1;
+  protected StringBuilder buffer2;
   protected String[] tokens1;
   protected String[] tokens2;
 
@@ -44,12 +44,12 @@ public class TestTeeTokenFilter extends LuceneTestCase {
     super.setUp();
     tokens1 = new String[]{"The", "quick", "Burgundy", "Fox", "jumped", "over", "the", "lazy", "Red", "Dogs"};
     tokens2 = new String[]{"The", "Lazy", "Dogs", "should", "stay", "on", "the", "porch"};
-    buffer1 = new StringBuffer();
+    buffer1 = new StringBuilder();
 
     for (int i = 0; i < tokens1.length; i++) {
       buffer1.append(tokens1[i]).append(' ');
     }
-    buffer2 = new StringBuffer();
+    buffer2 = new StringBuilder();
     for (int i = 0; i < tokens2.length; i++) {
       buffer2.append(tokens2[i]).append(' ');
 
@@ -147,7 +147,7 @@ public class TestTeeTokenFilter extends LuceneTestCase {
     int[] tokCount = {100, 500, 1000, 2000, 5000, 10000};
     int[] modCounts = {1, 2, 5, 10, 20, 50, 100, 200, 500};
     for (int k = 0; k < tokCount.length; k++) {
-      StringBuffer buffer = new StringBuffer();
+      StringBuilder buffer = new StringBuilder();
       System.out.println("-----Tokens: " + tokCount[k] + "-----");
       for (int i = 0; i < tokCount[k]; i++) {
         buffer.append(English.intToEnglish(i).toUpperCase()).append(' ');

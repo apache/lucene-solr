@@ -236,7 +236,7 @@ public class WikipediaTokenizer extends Tokenizer {
 
   private void collapseAndSaveTokens(int tokenType, String type) throws IOException {
     //collapse
-    StringBuffer buffer = new StringBuffer(32);
+    StringBuilder buffer = new StringBuilder(32);
     int numAdded = scanner.setText(buffer);
     //TODO: how to know how much whitespace to add
     int theStart = scanner.yychar();
@@ -279,7 +279,7 @@ public class WikipediaTokenizer extends Tokenizer {
 
   private void collapseTokens(int tokenType) throws IOException {
     //collapse
-    StringBuffer buffer = new StringBuffer(32);
+    StringBuilder buffer = new StringBuilder(32);
     int numAdded = scanner.setText(buffer);
     //TODO: how to know how much whitespace to add
     int theStart = scanner.yychar();

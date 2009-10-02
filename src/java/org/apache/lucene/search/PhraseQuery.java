@@ -167,8 +167,8 @@ public class PhraseQuery extends Query {
       Explanation result = new Explanation();
       result.setDescription("weight("+getQuery()+" in "+doc+"), product of:");
 
-      StringBuffer docFreqs = new StringBuffer();
-      StringBuffer query = new StringBuffer();
+      StringBuilder docFreqs = new StringBuilder();
+      StringBuilder query = new StringBuilder();
       query.append('\"');
       docFreqs.append(idfExp.explain());
       for (int i = 0; i < terms.size(); i++) {
@@ -259,7 +259,7 @@ public class PhraseQuery extends Query {
 
   /** Prints a user-readable version of this query. */
   public String toString(String f) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     if (field != null && !field.equals(f)) {
       buffer.append(field);
       buffer.append(":");

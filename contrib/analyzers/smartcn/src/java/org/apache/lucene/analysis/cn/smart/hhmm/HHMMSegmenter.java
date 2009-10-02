@@ -47,7 +47,7 @@ public class HHMMSegmenter {
     int length = sentence.length();
     int foundIndex;
     int[] charTypeArray = getCharTypes(sentence);
-    StringBuffer wordBuf = new StringBuffer();
+    StringBuilder wordBuf = new StringBuilder();
     SegToken token;
     int frequency = 0; // word的出现次数
     boolean hasFullWidth;

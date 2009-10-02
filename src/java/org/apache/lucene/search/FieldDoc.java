@@ -63,7 +63,7 @@ public class FieldDoc extends ScoreDoc {
 	public String toString() {
 	  // super.toString returns the doc and score information, so just add the
           // fields information
-	  StringBuffer sb = new StringBuffer(super.toString());
+	  StringBuilder sb = new StringBuilder(super.toString());
 	  sb.append("[");
 	  for (int i = 0; i < fields.length; i++) {
             sb.append(fields[i]).append(", ");

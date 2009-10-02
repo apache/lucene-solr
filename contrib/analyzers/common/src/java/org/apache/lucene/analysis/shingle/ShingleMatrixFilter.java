@@ -451,7 +451,7 @@ public class ShingleMatrixFilter extends TokenStream {
         }
 
         // shingle token factory
-        StringBuffer sb = new StringBuffer(termLength + 10); // paranormal ability to foresee the future.
+        StringBuilder sb = new StringBuilder(termLength + 10); // paranormal ability to foresee the future.
         for (Iterator iterator = shingle.iterator(); iterator.hasNext();) {
           Token shingleToken = (Token) iterator.next();
           if (spacerCharacter != null && sb.length() > 0) {

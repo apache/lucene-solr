@@ -152,7 +152,7 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
   }
   
   public String binaryDump(ByteBuffer binaryBuf) {
-    StringBuffer buf = new StringBuffer();
+    StringBuilder buf = new StringBuilder();
     int numBytes = binaryBuf.limit() - binaryBuf.arrayOffset();
     byte[] binary = binaryBuf.array();
     for (int byteNum = 0 ; byteNum < numBytes ; ++byteNum) {
@@ -169,7 +169,7 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
   }
 
   public String charArrayDump(CharBuffer charBuf) {
-    StringBuffer buf = new StringBuffer();
+    StringBuilder buf = new StringBuilder();
     int numBytes = charBuf.limit() - charBuf.arrayOffset();
     char[] charArray = charBuf.array();
     for (int charNum = 0 ; charNum < numBytes ; ++charNum) {

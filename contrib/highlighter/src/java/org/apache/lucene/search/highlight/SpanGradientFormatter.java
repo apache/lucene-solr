@@ -50,7 +50,7 @@ public class SpanGradientFormatter
         }
 
 		// try to size sb correctly
-        StringBuffer sb = new StringBuffer( originalText.length() + EXTRA);
+        StringBuilder sb = new StringBuilder( originalText.length() + EXTRA);
 		
 		sb.append("<span style=\""); 
 		if (highlightForeground) 
@@ -71,7 +71,7 @@ public class SpanGradientFormatter
         return sb.toString();
     }
 
-	// guess how much extra text we'll add to the text we're highlighting to try to avoid a  StringBuffer resize
+	// guess how much extra text we'll add to the text we're highlighting to try to avoid a  StringBuilder resize
 	private static final String TEMPLATE = "<span style=\"background: #EEEEEE; color: #000000;\">...</span>";
 	private static final int EXTRA = TEMPLATE.length();	
 }

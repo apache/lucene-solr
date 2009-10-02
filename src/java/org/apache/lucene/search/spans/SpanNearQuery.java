@@ -104,7 +104,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   
 
   public String toString(String field) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("spanNear([");
     Iterator i = clauses.iterator();
     while (i.hasNext()) {

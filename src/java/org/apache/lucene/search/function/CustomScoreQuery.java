@@ -118,7 +118,7 @@ public class CustomScoreQuery extends Query {
 
   /* (non-Javadoc) @see org.apache.lucene.search.Query#toString(java.lang.String) */
   public String toString(String field) {
-    StringBuffer sb = new StringBuffer(name()).append("(");
+    StringBuilder sb = new StringBuilder(name()).append("(");
     sb.append(subQuery.toString(field));
     for(int i = 0; i < valSrcQueries.length; i++) {
       sb.append(", ").append(valSrcQueries[i].toString(field));

@@ -312,7 +312,7 @@ public class QueryUtils {
               float scorerDiff = Math.abs(scorerScore2 - scorerScore);
               if (!more || doc != sdoc[0] || scoreDiff > maxDiff
                   || scorerDiff > maxDiff) {
-                StringBuffer sbord = new StringBuffer();
+                StringBuilder sbord = new StringBuilder();
                 for (int i = 0; i < order.length; i++)
                   sbord.append(order[i] == skip_op ? " skip()" : " next()");
                 throw new RuntimeException("ERROR matching docs:" + "\n\t"

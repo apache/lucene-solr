@@ -137,7 +137,7 @@ public class TermRangeQuery extends MultiTermQuery {
 
   /** Prints a user-readable version of this query. */
   public String toString(String field) {
-      StringBuffer buffer = new StringBuffer();
+      StringBuilder buffer = new StringBuilder();
       if (!getField().equals(field)) {
           buffer.append(getField());
           buffer.append(":");

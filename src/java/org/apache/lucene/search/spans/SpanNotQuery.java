@@ -58,7 +58,7 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
   public void extractTerms(Set terms) { include.extractTerms(terms); }
 
   public String toString(String field) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("spanNot(");
     buffer.append(include.toString(field));
     buffer.append(", ");

@@ -40,7 +40,7 @@ public class SimpleHTMLEncoder implements Encoder
 			return "";
 		}
 
-		StringBuffer result = new StringBuffer(plainText.length());
+		StringBuilder result = new StringBuilder(plainText.length());
 
 		for (int index=0; index<plainText.length(); index++) 
 		{

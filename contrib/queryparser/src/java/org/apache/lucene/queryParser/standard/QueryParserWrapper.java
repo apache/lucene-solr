@@ -95,7 +95,7 @@ public class QueryParserWrapper {
    * escaped are escaped by a preceding <code>\</code>.
    */
   public static String escape(String s) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     for (int i = 0; i < s.length(); i++) {
       char c = s.charAt(i);
       // These characters are part of the query syntax and must be escaped

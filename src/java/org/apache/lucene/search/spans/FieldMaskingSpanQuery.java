@@ -128,7 +128,7 @@ public class FieldMaskingSpanQuery extends SpanQuery {
   }
 
   public String toString(String field) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("mask(");
     buffer.append(maskedQuery.toString(field));
     buffer.append(")");

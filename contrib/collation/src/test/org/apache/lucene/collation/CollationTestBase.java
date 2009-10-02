@@ -292,7 +292,7 @@ public class CollationTestBase extends TestCase {
   private void assertMatches(Searcher searcher, Query query, Sort sort, 
                              String expectedResult) throws IOException {
     ScoreDoc[] result = searcher.search(query, null, 1000, sort).scoreDocs;
-    StringBuffer buff = new StringBuffer(10);
+    StringBuilder buff = new StringBuilder(10);
     int n = result.length;
     for (int i = 0 ; i < n ; ++i) {
       Document doc = searcher.doc(result[i].doc);

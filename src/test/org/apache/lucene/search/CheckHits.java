@@ -223,7 +223,7 @@ public class CheckHits {
   }
 
   public static String hits2str(ScoreDoc[] hits1, ScoreDoc[] hits2, int start, int end) throws IOException {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     int len1=hits1==null ? 0 : hits1.length;
     int len2=hits2==null ? 0 : hits2.length;
     if (end<=0) {
@@ -251,7 +251,7 @@ public class CheckHits {
 
 
   public static String topdocsString(TopDocs docs, int start, int end) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
       sb.append("TopDocs totalHits=").append(docs.totalHits).append(" top=").append(docs.scoreDocs.length).append('\n');
     if (end<=0) end=docs.scoreDocs.length;
     else end=Math.min(end,docs.scoreDocs.length);

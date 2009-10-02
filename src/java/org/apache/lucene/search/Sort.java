@@ -229,7 +229,7 @@ implements Serializable {
   }
 
   public String toString() {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
 
     for (int i = 0; i < fields.length; i++) {
       buffer.append(fields[i].toString());

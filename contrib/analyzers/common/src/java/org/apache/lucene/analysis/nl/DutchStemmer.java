@@ -32,7 +32,7 @@ public class DutchStemmer {
   /**
    * Buffer for the terms while stemming them.
    */
-  private StringBuffer sb = new StringBuffer();
+  private StringBuilder sb = new StringBuilder();
   private boolean _removedE;
   private Map _stemDict;
 
@@ -56,7 +56,7 @@ public class DutchStemmer {
       else
         return null;
 
-    // Reset the StringBuffer.
+    // Reset the StringBuilder.
     sb.delete(0, sb.length());
     sb.insert(0, term);
     // Stemming starts here...
@@ -74,7 +74,7 @@ public class DutchStemmer {
     return sb.toString();
   }
 
-  private boolean enEnding(StringBuffer sb) {
+  private boolean enEnding(StringBuilder sb) {
     String[] enend = new String[]{"ene", "en"};
     for (int i = 0; i < enend.length; i++) {
       String end = enend[i];
@@ -93,7 +93,7 @@ public class DutchStemmer {
   }
 
 
-  private void step1(StringBuffer sb) {
+  private void step1(StringBuilder sb) {
     if (_R1 >= sb.length())
       return;
 
@@ -129,7 +129,7 @@ public class DutchStemmer {
    *
    * @param sb String being stemmed
    */
-  private void step2(StringBuffer sb) {
+  private void step2(StringBuilder sb) {
     _removedE = false;
     if (_R1 >= sb.length())
       return;
@@ -149,7 +149,7 @@ public class DutchStemmer {
    *
    * @param sb String being stemmed
    */
-  private void step3a(StringBuffer sb) {
+  private void step3a(StringBuilder sb) {
     if (_R2 >= sb.length())
       return;
     String s = sb.toString();
@@ -174,7 +174,7 @@ public class DutchStemmer {
    *
    * @param sb String being stemmed
    */
-  private void step3b(StringBuffer sb) {
+  private void step3b(StringBuilder sb) {
     if (_R2 >= sb.length())
       return;
     String s = sb.toString();
@@ -229,7 +229,7 @@ public class DutchStemmer {
    *
    * @param sb String being stemmed
    */
-  private void step4(StringBuffer sb) {
+  private void step4(StringBuilder sb) {
     if (sb.length() < 4)
       return;
     String end = sb.substring(sb.length() - 4, sb.length());
@@ -262,7 +262,7 @@ public class DutchStemmer {
   /**
    * Substitute ä, ë, ï, ö, ü, á , é, í, ó, ú
    */
-  private void substitute(StringBuffer buffer) {
+  private void substitute(StringBuilder buffer) {
     for (int i = 0; i < buffer.length(); i++) {
       switch (buffer.charAt(i)) {
         case 'ä':
@@ -299,22 +299,22 @@ public class DutchStemmer {
     }
   }
 
-  /*private boolean isValidSEnding(StringBuffer sb) {
+  /*private boolean isValidSEnding(StringBuilder sb) {
     return isValidSEnding(sb, sb.length() - 1);
   }*/
 
-  private boolean isValidSEnding(StringBuffer sb, int index) {
+  private boolean isValidSEnding(StringBuilder sb, int index) {
     char c = sb.charAt(index);
     if (isVowel(c) || c == 'j')
       return false;
     return true;
   }
 
-  /*private boolean isValidEnEnding(StringBuffer sb) {
+  /*private boolean isValidEnEnding(StringBuilder sb) {
     return isValidEnEnding(sb, sb.length() - 1);
   }*/
 
-  private boolean isValidEnEnding(StringBuffer sb, int index) {
+  private boolean isValidEnEnding(StringBuilder sb, int index) {
     char c = sb.charAt(index);
     if (isVowel(c))
       return false;
@@ -326,18 +326,18 @@ public class DutchStemmer {
     return true;
   }
 
-  private void unDouble(StringBuffer sb) {
+  private void unDouble(StringBuilder sb) {
     unDouble(sb, sb.length());
   }
 
-  private void unDouble(StringBuffer sb, int endIndex) {
+  private void unDouble(StringBuilder sb, int endIndex) {
     String s = sb.substring(0, endIndex);
     if (s.endsWith("kk") || s.endsWith("tt") || s.endsWith("dd") || s.endsWith("nn") || s.endsWith("mm") || s.endsWith("ff")) {
       sb.delete(endIndex - 1, endIndex);
     }
   }
 
-  private int getRIndex(StringBuffer sb, int start) {
+  private int getRIndex(StringBuilder sb, int start) {
     if (start == 0)
       start = 1;
     int i = start;
@@ -350,7 +350,7 @@ public class DutchStemmer {
     return i + 1;
   }
 
-  private void storeYandI(StringBuffer sb) {
+  private void storeYandI(StringBuilder sb) {
     if (sb.charAt(0) == 'y')
       sb.setCharAt(0, 'Y');
 
@@ -378,7 +378,7 @@ public class DutchStemmer {
       sb.setCharAt(last, 'Y');
   }
 
-  private void reStoreYandI(StringBuffer sb) {
+  private void reStoreYandI(StringBuilder sb) {
     String tmp = sb.toString();
     sb.delete(0, sb.length());
     sb.insert(0, tmp.replaceAll("I", "i").replaceAll("Y", "y"));

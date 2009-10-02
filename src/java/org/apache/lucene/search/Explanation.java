@@ -86,7 +86,7 @@ public class Explanation implements java.io.Serializable {
     return toString(0);
   }
   protected String toString(int depth) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     for (int i = 0; i < depth; i++) {
       buffer.append("  ");
     }
@@ -106,7 +106,7 @@ public class Explanation implements java.io.Serializable {
 
   /** Render an explanation as HTML. */
   public String toHtml() {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("<ul>\n");
 
     buffer.append("<li>");

@@ -47,9 +47,9 @@ public class SimpleHTMLFormatter implements Formatter {
 	    return originalText;
 	  }
 	  
-	  // Allocate StringBuffer with the right number of characters from the
+	  // Allocate StringBuilder with the right number of characters from the
     // beginning, to avoid char[] allocations in the middle of appends.
-	  StringBuffer returnBuffer = new StringBuffer(preTag.length() + originalText.length() + postTag.length());
+	  StringBuilder returnBuffer = new StringBuilder(preTag.length() + originalText.length() + postTag.length());
 	  returnBuffer.append(preTag);
 	  returnBuffer.append(originalText);
 	  returnBuffer.append(postTag);

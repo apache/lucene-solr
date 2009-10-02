@@ -718,7 +718,7 @@ public class FSDirectory extends Directory {
     synchronized (DIGESTER) {
       digest = DIGESTER.digest(dirName.getBytes());
     }
-    StringBuffer buf = new StringBuffer();
+    StringBuilder buf = new StringBuilder();
     buf.append("lucene-");
     for (int i = 0; i < digest.length; i++) {
       int b = digest[i];

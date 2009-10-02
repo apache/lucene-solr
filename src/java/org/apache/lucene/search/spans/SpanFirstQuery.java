@@ -54,7 +54,7 @@ public class SpanFirstQuery extends SpanQuery implements Cloneable {
   public Collection getTerms() { return match.getTerms(); }
 
   public String toString(String field) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("spanFirst(");
     buffer.append(match.toString(field));
     buffer.append(", ");

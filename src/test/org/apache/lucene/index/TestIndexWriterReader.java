@@ -509,7 +509,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
   
   public static Document createDocument(int n, String indexName, int numFields) {
-    StringBuffer sb = new StringBuffer();
+    StringBuilder sb = new StringBuilder();
     Document doc = new Document();
     doc.add(new Field("id", Integer.toString(n), Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("indexname", indexName, Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));

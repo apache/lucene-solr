@@ -85,7 +85,7 @@ public class PayloadNearQuery extends SpanNearQuery {
   }
 
   public String toString(String field) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("payloadNear([");
     Iterator i = clauses.iterator();
     while (i.hasNext()) {

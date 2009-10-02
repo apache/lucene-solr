@@ -197,7 +197,7 @@ public class DOMUtils
 	//MH changed to Node from Element 25/11/2005
 	public static String getText(Node e)
 	{
-		StringBuffer sb=new StringBuffer();
+		StringBuilder sb=new StringBuilder();
 		getTextBuffer(e, sb);
 		return sb.toString();
 	}
@@ -215,7 +215,7 @@ public class DOMUtils
 		return null;
 	}	
 
-	private static void getTextBuffer(Node e, StringBuffer sb)
+	private static void getTextBuffer(Node e, StringBuilder sb)
 	{
 	    for (Node kid = e.getFirstChild(); kid != null; kid = kid.getNextSibling())
 		{

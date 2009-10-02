@@ -44,7 +44,7 @@ public final class SentenceTokenizer extends Tokenizer {
    */
   private final static String PUNCTION = "。，！？；,!?;";
 
-  private final StringBuffer buffer = new StringBuffer();
+  private final StringBuilder buffer = new StringBuilder();
 
   private int tokenStart = 0, tokenEnd = 0;
   

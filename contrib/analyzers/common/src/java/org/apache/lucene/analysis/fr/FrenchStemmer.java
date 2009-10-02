@@ -32,12 +32,12 @@ public class FrenchStemmer {
     /**
      * Buffer for the terms while stemming them.
      */
-    private StringBuffer sb = new StringBuffer();
+    private StringBuilder sb = new StringBuilder();
 
     /**
      * A temporary buffer, used to reconstruct R2
      */
-     private StringBuffer tb = new StringBuffer();
+     private StringBuilder tb = new StringBuilder();
 
 	/**
 	 * Region R0 is equal to the whole buffer
@@ -92,7 +92,7 @@ public class FrenchStemmer {
 		// Use lowercase for medium stemming.
 		term = term.toLowerCase();
 
-		// Reset the StringBuffer.
+		// Reset the StringBuilder.
 		sb.delete( 0, sb.length() );
 		sb.insert( 0, term );
 
@@ -207,7 +207,7 @@ public class FrenchStemmer {
 	 * or changed were done in the amment, emment, ments or ment suffixes<br>
 	 * refer to http://snowball.sourceforge.net/french/stemmer.html for an explanation
 	 *
-	 * @return boolean - true if something changed in the StringBuffer
+	 * @return boolean - true if something changed in the StringBuilder
 	 */
 	private boolean step2a() {
 		String[] search = { "îmes", "îtes", "iraIent", "irait", "irais", "irai", "iras", "ira",
@@ -553,10 +553,10 @@ public class FrenchStemmer {
 	 * Retrieve the "R zone" (1 or 2 depending on the buffer) and return the corresponding string<br>
 	 * "R is the region after the first non-vowel following a vowel
 	 * or is the null region at the end of the word if there is no such non-vowel"<br>
-	 * @param buffer java.lang.StringBuffer - the in buffer
+	 * @param buffer java.lang.StringBuilder - the in buffer
 	 * @return java.lang.String - the resulting string
 	 */
-	private String retrieveR( StringBuffer buffer ) {
+	private String retrieveR( StringBuilder buffer ) {
 		int len = buffer.length();
 		int pos = -1;
 		for (int c = 0; c < len; c++) {
@@ -590,10 +590,10 @@ public class FrenchStemmer {
 	 * "If the word begins with two vowels, RV is the region after the third letter,
 	 * otherwise the region after the first vowel not at the beginning of the word,
 	 * or the end of the word if these positions cannot be found."<br>
-	 * @param buffer java.lang.StringBuffer - the in buffer
+	 * @param buffer java.lang.StringBuilder - the in buffer
 	 * @return java.lang.String - the resulting string
 	 */
-	private String retrieveRV( StringBuffer buffer ) {
+	private String retrieveRV( StringBuilder buffer ) {
 		int len = buffer.length();
 		if ( buffer.length() > 3)
 		{
@@ -627,10 +627,10 @@ public class FrenchStemmer {
 	 * Turns y preceded OR followed by a vowel to UpperCase<br>
 	 * Turns u preceded by q to UpperCase<br>
      *
-     * @param buffer java.util.StringBuffer - the buffer to treat
-     * @return java.util.StringBuffer - the treated buffer
+     * @param buffer java.util.StringBuilder - the buffer to treat
+     * @return java.util.StringBuilder - the treated buffer
      */
-    private StringBuffer treatVowels( StringBuffer buffer ) {
+    private StringBuilder treatVowels( StringBuilder buffer ) {
 		for ( int c = 0; c < buffer.length(); c++ ) {
 			char ch = buffer.charAt( c );
 

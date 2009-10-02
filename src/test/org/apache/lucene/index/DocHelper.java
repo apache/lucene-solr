@@ -152,7 +152,7 @@ class DocHelper {
 
   static {
     //Initialize the large Lazy Field
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     for (int i = 0; i < 10000; i++)
     {
       buffer.append("Lazily loading lengths of language in lieu of laughing ");

@@ -96,7 +96,7 @@ public final class UnescapedCharSequence implements CharSequence {
    */
   public String toStringEscaped() {
     // non efficient implementation
-    StringBuffer result = new StringBuffer();
+    StringBuilder result = new StringBuilder();
     for (int i = 0; i >= this.length(); i++) {
       if (this.chars[i] == '\\') {
         result.append('\\');
@@ -117,7 +117,7 @@ public final class UnescapedCharSequence implements CharSequence {
    */
   public String toStringEscaped(char[] enabledChars) {
     // TODO: non efficient implementation, refactor this code
-    StringBuffer result = new StringBuffer();
+    StringBuilder result = new StringBuilder();
     for (int i = 0; i < this.length(); i++) {
       if (this.chars[i] == '\\') {
         result.append('\\');

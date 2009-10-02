@@ -1872,7 +1872,7 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
 
     // Construct input text and expected output tokens
     List expectedOutputTokens = new ArrayList();
-    StringBuffer inputText = new StringBuffer();
+    StringBuilder inputText = new StringBuilder();
     for (int n = 0 ; n < foldings.length ; n += 2) {
       if (n > 0) {
         inputText.append(' ');  // Space between tokens
@@ -1881,7 +1881,7 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
 
       // Construct the expected output token: the ASCII string to fold to,
       // duplicated as many times as the number of characters in the input text.
-      StringBuffer expected = new StringBuffer();
+      StringBuilder expected = new StringBuilder();
       int numChars = foldings[n].length();
       for (int m = 0 ; m < numChars; ++m) {
         expected.append(foldings[n + 1]);

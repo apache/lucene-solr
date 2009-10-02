@@ -224,7 +224,7 @@ public class DisjunctionMaxQuery extends Query {
    * @return a string that shows what we do, of the form "(disjunct1 | disjunct2 | ... | disjunctn)^boost"
    */
   public String toString(String field) {
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     buffer.append("(");
     int numDisjunctions = disjuncts.size();
     for (int i = 0 ; i < numDisjunctions; i++) {

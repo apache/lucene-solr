@@ -317,7 +317,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
   
   @Override
   public String toString(final String field) {
-    final StringBuffer sb = new StringBuffer();
+    final StringBuilder sb = new StringBuilder();
     if (!this.field.equals(field)) sb.append(this.field).append(':');
     return sb.append(minInclusive ? '[' : '{')
       .append((min == null) ? "*" : min.toString())

@@ -495,14 +495,14 @@ public class TernaryTree implements Cloneable, Serializable {
     Stack ns;
 
     /**
-     * key stack implemented with a StringBuffer
+     * key stack implemented with a StringBuilder
      */
-    StringBuffer ks;
+    StringBuilder ks;
 
     public Iterator() {
       cur = -1;
       ns = new Stack();
-      ks = new StringBuffer();
+      ks = new StringBuilder();
       rewind();
     }
 
@@ -619,7 +619,7 @@ public class TernaryTree implements Cloneable, Serializable {
       }
       // The current node should be a data node and
       // the key should be in the key stack (at least partially)
-      StringBuffer buf = new StringBuffer(ks.toString());
+      StringBuilder buf = new StringBuilder(ks.toString());
       if (sc[cur] == 0xFFFF) {
         int p = lo[cur];
         while (kv.get(p) != 0) {
