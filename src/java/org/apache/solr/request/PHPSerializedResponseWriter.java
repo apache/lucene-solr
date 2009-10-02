@@ -24,6 +24,7 @@ import java.util.*;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
@@ -89,6 +90,8 @@ class PHPSerializedWriter extends JSONWriter {
   }
 
   public void writeResponse() throws IOException {
+    Boolean omitHeader = req.getParams().getBool(CommonParams.OMIT_HEADER);
+    if(omitHeader != null && omitHeader) rsp.getValues().remove("responseHeader");
     writeNamedList(null, rsp.getValues());
   }
   

@@ -597,6 +597,8 @@ Bug Fixes
 69. SOLR-1471: Fixed issue with calculating missing values for facets in single valued cases in Stats Component.
   This is not correctly calculated for the multivalued case. (James Miller, gsingers)
 
+70. SOLR-1481: Fixed omitHeader parameter for PHP ResponseWriter.  (Jun Ohtani via billa)
+
 
 Other Changes
 ----------------------
