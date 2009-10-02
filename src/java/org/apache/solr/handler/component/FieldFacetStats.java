@@ -82,8 +82,6 @@ public class FieldFacetStats {
 
 
   public boolean facet(int docID, Double v) {
-    if (v == null) return false;
-
     int term = termNum[docID];
     int arrIdx = term - startTermIndex;
     if (arrIdx >= 0 && arrIdx < nTerms) {
@@ -93,7 +91,12 @@ public class FieldFacetStats {
         stats = new StatsValues();
         facetStatsValues.put(key, stats);
       }
-      stats.accumulate(v);
+      if (v != null) {
+        stats.accumulate(v);
+      } else {
+        stats.missing++;
+        return false;
+      }
       return true;
     }
     return false;

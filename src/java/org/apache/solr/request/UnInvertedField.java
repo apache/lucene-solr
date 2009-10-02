@@ -634,23 +634,7 @@ public class UnInvertedField {
     //functionality between the two and refactor code somewhat
     use.incrementAndGet();
 
-    FieldType ft = searcher.getSchema().getFieldType(field);
     StatsValues allstats = new StatsValues();
-
-    int i = 0;
-    final FieldFacetStats[] finfo = new FieldFacetStats[facet.length];
-    //Initialize facetstats, if facets have been passed in
-    FieldCache.StringIndex si;
-    for (String f : facet) {
-      ft = searcher.getSchema().getFieldType(f);
-      try {
-        si = FieldCache.DEFAULT.getStringIndex(searcher.getReader(), f);
-      }
-      catch (IOException e) {
-        throw new RuntimeException("failed to open field cache for: " + f, e);
-      }
-      finfo[i++] = new FieldFacetStats(f, si, ft, numTermsInField);
-    }
 
 
     DocSet docs = baseDocs;
@@ -658,9 +642,25 @@ public class UnInvertedField {
     int maxDoc = searcher.maxDoc();
 
     if (baseSize > 0) {
+      FieldType ft = searcher.getSchema().getFieldType(field);
+
+      int i = 0;
+      final FieldFacetStats[] finfo = new FieldFacetStats[facet.length];
+      //Initialize facetstats, if facets have been passed in
+      FieldCache.StringIndex si;
+      for (String f : facet) {
+        ft = searcher.getSchema().getFieldType(f);
+        try {
+          si = FieldCache.DEFAULT.getStringIndex(searcher.getReader(), f);
+        }
+        catch (IOException e) {
+          throw new RuntimeException("failed to open field cache for: " + f, e);
+        }
+        finfo[i++] = new FieldFacetStats(f, si, ft, numTermsInField);
+      }
 
       final int[] index = this.index;
-      final int[] counts = new int[numTermsInField];
+      final int[] counts = new int[numTermsInField];//keep track of the number of times we see each word in the field for all the documents in the docset
 
       NumberedTermEnum te = ti.getEnumerator(searcher.getReader());
 
@@ -769,11 +769,11 @@ public class UnInvertedField {
       if (c > 0) {
         allstats.addMissing(c);
       }
-    }
-    if (finfo.length > 0) {
-      allstats.facets = new HashMap<String, Map<String, StatsValues>>();
-      for (FieldFacetStats f : finfo) {
-        allstats.facets.put(f.name, f.facetStatsValues);
+      if (finfo.length > 0) {
+        allstats.facets = new HashMap<String, Map<String, StatsValues>>();
+        for (FieldFacetStats f : finfo) {
+          allstats.facets.put(f.name, f.facetStatsValues);
+        }
       }
     }
     return allstats;

@@ -594,6 +594,10 @@ Bug Fixes
 68. SOLR-1468: SolrJ's XML response parsing threw an exception for null
      names, such as those produced when facet.missing=true (yonik)
 
+69. SOLR-1471: Fixed issue with calculating missing values for facets in single valued cases in Stats Component.
+  This is not correctly calculated for the multivalued case. (James Miller, gsingers)
+
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
