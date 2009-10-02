@@ -191,7 +191,7 @@ public class ListSearcher extends AbstractListModel {
             for (int t=0; t<hits.length(); t++){
                 Document document = hits.doc(t);
                 Fieldable field = document.getField(ROW_NUMBER);
-                rowToModelIndex.add(new Integer(field.stringValue()));
+                rowToModelIndex.add(Integer.valueOf(field.stringValue()));
             }
         } catch (Exception e){
             e.printStackTrace();
@@ -227,7 +227,7 @@ public class ListSearcher extends AbstractListModel {
         searchString = null;
         rowToModelIndex.clear();
         for (int t=0; t<listModel.getSize(); t++){
-            rowToModelIndex.add(new Integer(t));
+            rowToModelIndex.add(Integer.valueOf(t));
         }
     }
 

@@ -219,7 +219,7 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
     }
 
     public Comparable value(int slot) {
-      return new Integer(slotValues[slot]);
+      return Integer.valueOf(slotValues[slot]);
     }
   }
 
@@ -414,7 +414,7 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
       Document doc = searcher.doc(hits[i].doc);
       String[] v = doc.getValues("tracer");
       assertEquals (v.length, 1);
-      scoreMap.put (v[0], new Float(hits[i].score));
+      scoreMap.put (v[0], Float.valueOf(hits[i].score));
     }
     return scoreMap;
   }

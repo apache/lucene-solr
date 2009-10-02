@@ -129,7 +129,7 @@ class BiSegGraph {
    * @return true if a token pair exists
    */
   public boolean isToExist(int to) {
-    return tokenPairListTable.get(new Integer(to)) != null;
+    return tokenPairListTable.get(Integer.valueOf(to)) != null;
   }
 
   /**
@@ -139,7 +139,7 @@ class BiSegGraph {
    * @return {@link List} of token pairs.
    */
   public List getToList(int to) {
-    return (List) tokenPairListTable.get(new Integer(to));
+    return (List) tokenPairListTable.get(Integer.valueOf(to));
   }
 
   /**
@@ -152,9 +152,9 @@ class BiSegGraph {
     if (!isToExist(to)) {
       ArrayList newlist = new ArrayList();
       newlist.add(tokenPair);
-      tokenPairListTable.put(new Integer(to), newlist);
+      tokenPairListTable.put(Integer.valueOf(to), newlist);
     } else {
-      List tokenPairList = (List) tokenPairListTable.get(new Integer(to));
+      List tokenPairList = (List) tokenPairListTable.get(Integer.valueOf(to));
       tokenPairList.add(tokenPair);
     }
   }
@@ -207,11 +207,11 @@ class BiSegGraph {
     List rpath = new ArrayList();
     List resultPath = new ArrayList();
 
-    rpath.add(new Integer(current));
+    rpath.add(Integer.valueOf(current));
     while (current != 0) {
       PathNode currentPathNode = (PathNode) path.get(current);
       preNode = currentPathNode.preNode;
-      rpath.add(new Integer(preNode));
+      rpath.add(Integer.valueOf(preNode));
       current = preNode;
     }
     for (int j = rpath.size() - 1; j >= 0; j--) {

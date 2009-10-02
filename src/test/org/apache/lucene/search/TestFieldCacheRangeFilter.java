@@ -203,9 +203,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     int numDocs = reader.numDocs();
     int medId = ((maxId - minId) / 2);
-    Short minIdO = new Short((short) minId);
-    Short maxIdO = new Short((short) maxId);
-    Short medIdO = new Short((short) medId);
+    Short minIdO = Short.valueOf((short) minId);
+    Short maxIdO = Short.valueOf((short) maxId);
+    Short medIdO = Short.valueOf((short) medId);
         
     assertEquals("num of docs", numDocs, 1+ maxId - minId);
         
@@ -279,9 +279,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     assertEquals("med,med,T,T", 1, result.length);
     
     // special cases
-    result = search.search(q,FieldCacheRangeFilter.newShortRange("id",new Short(Short.MAX_VALUE),null,F,F), numDocs).scoreDocs;
+    result = search.search(q,FieldCacheRangeFilter.newShortRange("id",Short.valueOf(Short.MAX_VALUE),null,F,F), numDocs).scoreDocs;
     assertEquals("overflow special case", 0, result.length);
-    result = search.search(q,FieldCacheRangeFilter.newShortRange("id",null,new Short(Short.MIN_VALUE),F,F), numDocs).scoreDocs;
+    result = search.search(q,FieldCacheRangeFilter.newShortRange("id",null,Short.valueOf(Short.MIN_VALUE),F,F), numDocs).scoreDocs;
     assertEquals("overflow special case", 0, result.length);
     result = search.search(q,FieldCacheRangeFilter.newShortRange("id",maxIdO,minIdO,T,T), numDocs).scoreDocs;
     assertEquals("inverse range", 0, result.length);
@@ -294,9 +294,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     int numDocs = reader.numDocs();
     int medId = ((maxId - minId) / 2);
-    Integer minIdO = new Integer(minId);
-    Integer maxIdO = new Integer(maxId);
-    Integer medIdO = new Integer(medId);
+    Integer minIdO = Integer.valueOf(minId);
+    Integer maxIdO = Integer.valueOf(maxId);
+    Integer medIdO = Integer.valueOf(medId);
         
     assertEquals("num of docs", numDocs, 1+ maxId - minId);
         
@@ -371,9 +371,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     assertEquals("med,med,T,T", 1, result.length);
     
     // special cases
-    result = search.search(q,FieldCacheRangeFilter.newIntRange("id",new Integer(Integer.MAX_VALUE),null,F,F), numDocs).scoreDocs;
+    result = search.search(q,FieldCacheRangeFilter.newIntRange("id",Integer.valueOf(Integer.MAX_VALUE),null,F,F), numDocs).scoreDocs;
     assertEquals("overflow special case", 0, result.length);
-    result = search.search(q,FieldCacheRangeFilter.newIntRange("id",null,new Integer(Integer.MIN_VALUE),F,F), numDocs).scoreDocs;
+    result = search.search(q,FieldCacheRangeFilter.newIntRange("id",null,Integer.valueOf(Integer.MIN_VALUE),F,F), numDocs).scoreDocs;
     assertEquals("overflow special case", 0, result.length);
     result = search.search(q,FieldCacheRangeFilter.newIntRange("id",maxIdO,minIdO,T,T), numDocs).scoreDocs;
     assertEquals("inverse range", 0, result.length);
@@ -386,9 +386,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     int numDocs = reader.numDocs();
     int medId = ((maxId - minId) / 2);
-    Long minIdO = new Long(minId);
-    Long maxIdO = new Long(maxId);
-    Long medIdO = new Long(medId);
+    Long minIdO = Long.valueOf(minId);
+    Long maxIdO = Long.valueOf(maxId);
+    Long medIdO = Long.valueOf(medId);
         
     assertEquals("num of docs", numDocs, 1+ maxId - minId);
         
@@ -463,9 +463,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     assertEquals("med,med,T,T", 1, result.length);
     
     // special cases
-    result = search.search(q,FieldCacheRangeFilter.newLongRange("id",new Long(Long.MAX_VALUE),null,F,F), numDocs).scoreDocs;
+    result = search.search(q,FieldCacheRangeFilter.newLongRange("id",Long.valueOf(Long.MAX_VALUE),null,F,F), numDocs).scoreDocs;
     assertEquals("overflow special case", 0, result.length);
-    result = search.search(q,FieldCacheRangeFilter.newLongRange("id",null,new Long(Long.MIN_VALUE),F,F), numDocs).scoreDocs;
+    result = search.search(q,FieldCacheRangeFilter.newLongRange("id",null,Long.valueOf(Long.MIN_VALUE),F,F), numDocs).scoreDocs;
     assertEquals("overflow special case", 0, result.length);
     result = search.search(q,FieldCacheRangeFilter.newLongRange("id",maxIdO,minIdO,T,T), numDocs).scoreDocs;
     assertEquals("inverse range", 0, result.length);
@@ -479,8 +479,8 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     IndexSearcher search = new IndexSearcher(reader);
 
     int numDocs = reader.numDocs();
-    Float minIdO = new Float(minId + .5f);
-    Float medIdO = new Float(minIdO.floatValue() + ((float) (maxId-minId))/2.0f);
+    Float minIdO = Float.valueOf(minId + .5f);
+    Float medIdO = Float.valueOf(minIdO.floatValue() + ((float) (maxId-minId))/2.0f);
         
     ScoreDoc[] result;
     Query q = new TermQuery(new Term("body","body"));
@@ -495,9 +495,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     assertEquals("sum of two concenatted ranges", numDocs, count);
     result = search.search(q,FieldCacheRangeFilter.newFloatRange("id",null,null,T,T), numDocs).scoreDocs;
     assertEquals("find all", numDocs, result.length);
-    result = search.search(q,FieldCacheRangeFilter.newFloatRange("id",new Float(Float.POSITIVE_INFINITY),null,F,F), numDocs).scoreDocs;
+    result = search.search(q,FieldCacheRangeFilter.newFloatRange("id",Float.valueOf(Float.POSITIVE_INFINITY),null,F,F), numDocs).scoreDocs;
     assertEquals("infinity special case", 0, result.length);
-    result = search.search(q,FieldCacheRangeFilter.newFloatRange("id",null,new Float(Float.NEGATIVE_INFINITY),F,F), numDocs).scoreDocs;
+    result = search.search(q,FieldCacheRangeFilter.newFloatRange("id",null,Float.valueOf(Float.NEGATIVE_INFINITY),F,F), numDocs).scoreDocs;
     assertEquals("infinity special case", 0, result.length);
   }
   
@@ -507,8 +507,8 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     IndexSearcher search = new IndexSearcher(reader);
 
     int numDocs = reader.numDocs();
-    Double minIdO = new Double(minId + .5);
-    Double medIdO = new Double(minIdO.floatValue() + ((double) (maxId-minId))/2.0);
+    Double minIdO = Double.valueOf(minId + .5);
+    Double medIdO = Double.valueOf(minIdO.floatValue() + ((double) (maxId-minId))/2.0);
         
     ScoreDoc[] result;
     Query q = new TermQuery(new Term("body","body"));
@@ -523,9 +523,9 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     assertEquals("sum of two concenatted ranges", numDocs, count);
     result = search.search(q,FieldCacheRangeFilter.newDoubleRange("id",null,null,T,T), numDocs).scoreDocs;
     assertEquals("find all", numDocs, result.length);
-    result = search.search(q,FieldCacheRangeFilter.newDoubleRange("id",new Double(Double.POSITIVE_INFINITY),null,F,F), numDocs).scoreDocs;
+    result = search.search(q,FieldCacheRangeFilter.newDoubleRange("id",Double.valueOf(Double.POSITIVE_INFINITY),null,F,F), numDocs).scoreDocs;
     assertEquals("infinity special case", 0, result.length);
-    result = search.search(q,FieldCacheRangeFilter.newDoubleRange("id",null, new Double(Double.NEGATIVE_INFINITY),F,F), numDocs).scoreDocs;
+    result = search.search(q,FieldCacheRangeFilter.newDoubleRange("id",null, Double.valueOf(Double.NEGATIVE_INFINITY),F,F), numDocs).scoreDocs;
     assertEquals("infinity special case", 0, result.length);
   }
   
@@ -553,23 +553,23 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     FieldCacheRangeFilter fcrf;
     Query q = new TermQuery(new Term("body","body"));
 
-    result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",new Byte((byte) -20),new Byte((byte) 20),T,T), 100).scoreDocs;
+    result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",Byte.valueOf((byte) -20),Byte.valueOf((byte) 20),T,T), 100).scoreDocs;
     assertFalse("DocIdSet must be not cacheable", fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", 40, result.length);
 
-    result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",new Byte((byte) 0),new Byte((byte) 20),T,T), 100).scoreDocs;
+    result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",Byte.valueOf((byte) 0),Byte.valueOf((byte) 20),T,T), 100).scoreDocs;
     assertFalse("DocIdSet must be not cacheable", fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", 20, result.length);
 
-    result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",new Byte((byte) -20),new Byte((byte) 0),T,T), 100).scoreDocs;
+    result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",Byte.valueOf((byte) -20),Byte.valueOf((byte) 0),T,T), 100).scoreDocs;
     assertFalse("DocIdSet must be not cacheable", fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", 20, result.length);
 
-    result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",new Byte((byte) 10),new Byte((byte) 20),T,T), 100).scoreDocs;
+    result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",Byte.valueOf((byte) 10),Byte.valueOf((byte) 20),T,T), 100).scoreDocs;
     assertTrue("DocIdSet must be cacheable", fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", 11, result.length);
 
-    result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",new Byte((byte) -20),new Byte((byte) -10),T,T), 100).scoreDocs;
+    result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",Byte.valueOf((byte) -20),Byte.valueOf((byte) -10),T,T), 100).scoreDocs;
     assertTrue("DocIdSet must be cacheable", fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", 11, result.length);
   }

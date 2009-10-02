@@ -208,17 +208,17 @@ public class TestTermVectors extends LuceneTestCase {
     String test3 = "a chocolate lab grows old"; //5 terms
     String test4 = "eating chocolate with a chocolate lab in an old chocolate colored computer lab"; //13 terms
     Map test4Map = new HashMap();
-    test4Map.put("chocolate", new Integer(3));
-    test4Map.put("lab", new Integer(2));
-    test4Map.put("eating", new Integer(1));
-    test4Map.put("computer", new Integer(1));
-    test4Map.put("with", new Integer(1));
-    test4Map.put("a", new Integer(1));
-    test4Map.put("colored", new Integer(1));
-    test4Map.put("in", new Integer(1));
-    test4Map.put("an", new Integer(1));
-    test4Map.put("computer", new Integer(1));
-    test4Map.put("old", new Integer(1));
+    test4Map.put("chocolate", Integer.valueOf(3));
+    test4Map.put("lab", Integer.valueOf(2));
+    test4Map.put("eating", Integer.valueOf(1));
+    test4Map.put("computer", Integer.valueOf(1));
+    test4Map.put("with", Integer.valueOf(1));
+    test4Map.put("a", Integer.valueOf(1));
+    test4Map.put("colored", Integer.valueOf(1));
+    test4Map.put("in", Integer.valueOf(1));
+    test4Map.put("an", Integer.valueOf(1));
+    test4Map.put("computer", Integer.valueOf(1));
+    test4Map.put("old", Integer.valueOf(1));
     
     Document testDoc1 = new Document();
     setupDoc(testDoc1, test1);

@@ -126,7 +126,7 @@ class BufferedDeletes {
       Iterator iter = docIDs.iterator();
       while(iter.hasNext()) {
         Integer num = (Integer) iter.next();
-        newDeleteDocIDs.add(new Integer(mapper.remap(num.intValue())));
+        newDeleteDocIDs.add(Integer.valueOf(mapper.remap(num.intValue())));
       }
     } else
       newDeleteDocIDs = null;
@@ -141,7 +141,7 @@ class BufferedDeletes {
         Entry entry = (Entry) iter.next();
         Integer num = (Integer) entry.getValue();
         newDeleteQueries.put(entry.getKey(),
-                             new Integer(mapper.remap(num.intValue())));
+                             Integer.valueOf(mapper.remap(num.intValue())));
       }
     } else
       newDeleteQueries = null;

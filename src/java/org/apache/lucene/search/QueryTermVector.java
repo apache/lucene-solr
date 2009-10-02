@@ -87,13 +87,13 @@ public class QueryTermVector implements TermFreqVector {
         String term = queryTerms[i];
         Integer position = (Integer)tmpSet.get(term);
         if (position == null) {
-          tmpSet.put(term, new Integer(j++));
+          tmpSet.put(term, Integer.valueOf(j++));
           tmpList.add(term);
-          tmpFreqs.add(new Integer(1));
+          tmpFreqs.add(Integer.valueOf(1));
         }       
         else {
           Integer integer = (Integer)tmpFreqs.get(position.intValue());
-          tmpFreqs.set(position.intValue(), new Integer(integer.intValue() + 1));          
+          tmpFreqs.set(position.intValue(), Integer.valueOf(integer.intValue() + 1));          
         }
       }
       terms = (String[])tmpList.toArray(terms);

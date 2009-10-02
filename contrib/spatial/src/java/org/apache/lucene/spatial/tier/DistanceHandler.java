@@ -84,7 +84,7 @@ public class DistanceHandler {
       double xLat = getPrecision(lat, precise);
       double xLng = getPrecision(lng, precise);
       
-      String k = new Double(xLat).toString() +","+ new Double(xLng).toString();
+      String k = Double.valueOf(xLat).toString() +","+ Double.valueOf(xLng).toString();
     
       Double d = (distanceLookupCache.get(k));
       if (d != null){

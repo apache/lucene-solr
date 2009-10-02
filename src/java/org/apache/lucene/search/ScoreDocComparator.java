@@ -37,7 +37,7 @@ public interface ScoreDocComparator {
 			return 0;
 		}
 		public Comparable sortValue (ScoreDoc i) {
-			return new Float (i.score);
+			return Float.valueOf(i.score);
 		}
 		public int sortType() {
 			return SortField.SCORE;
@@ -52,7 +52,7 @@ public interface ScoreDocComparator {
 			return 0;
 		}
 		public Comparable sortValue (ScoreDoc i) {
-			return new Integer (i.doc);
+			return Integer.valueOf(i.doc);
 		}
 		public int sortType() {
 			return SortField.DOC;

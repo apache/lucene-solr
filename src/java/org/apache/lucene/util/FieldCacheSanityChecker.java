@@ -130,7 +130,7 @@ public final class FieldCacheSanityChecker {
       final ReaderField rf = new ReaderField(item.getReaderKey(), 
                                             item.getFieldName());
 
-      final Integer valId = new Integer(System.identityHashCode(val));
+      final Integer valId = Integer.valueOf(System.identityHashCode(val));
 
       // indirect mapping, so the MapOfSet will dedup identical valIds for us
       valIdToItems.put(valId, item);

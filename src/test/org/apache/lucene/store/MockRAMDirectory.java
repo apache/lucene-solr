@@ -236,10 +236,10 @@ public class MockRAMDirectory extends RAMDirectory {
     else {
       if (openFiles.containsKey(name)) {
         Integer v = (Integer) openFiles.get(name);
-        v = new Integer(v.intValue()+1);
+        v = Integer.valueOf(v.intValue()+1);
         openFiles.put(name, v);
       } else {
-         openFiles.put(name, new Integer(1));
+         openFiles.put(name, Integer.valueOf(1));
       }
     }
     return new MockRAMInputStream(this, name, file);

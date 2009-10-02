@@ -292,10 +292,10 @@ class LuceneMethods {
               String name = termAtt.term();
               Integer Count = (Integer) tokenMap.get(name);
               if (Count == null) { // not in there yet
-                tokenMap.put(name, new Integer(1)); //first one
+                tokenMap.put(name, Integer.valueOf(1)); //first one
               } else {
                 int count = Count.intValue();
-                tokenMap.put(name, new Integer(count + 1));
+                tokenMap.put(name, Integer.valueOf(count + 1));
               }
               if (position > maxFieldLength) break;
             }
@@ -327,7 +327,7 @@ class LuceneMethods {
       //message(term.field() + ":" + term.text() + " freq:" + terms.docFreq());
       //if we're either not looking by field or we're matching the specific field
       if ((field == null) || field.equals(term.field()))
-        termMap.put(term.field() + ":" + term.text(), new Integer((terms.docFreq())));
+        termMap.put(term.field() + ":" + term.text(), Integer.valueOf((terms.docFreq())));
     }
 
     Iterator termIterator = termMap.keySet().iterator();

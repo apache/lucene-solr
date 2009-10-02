@@ -47,12 +47,12 @@ public class CheckHits {
     String d = q.toString(defaultFieldName);
     Set ignore = new TreeSet();
     for (int i = 0; i < results.length; i++) {
-      ignore.add(new Integer(results[i]));
+      ignore.add(Integer.valueOf(results[i]));
     }
     
     int maxDoc = searcher.maxDoc();
     for (int doc = 0; doc < maxDoc; doc++) {
-      if (ignore.contains(new Integer(doc))) continue;
+      if (ignore.contains(Integer.valueOf(doc))) continue;
 
       Explanation exp = searcher.explain(q, doc);
       Assert.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null",
@@ -87,7 +87,7 @@ public class CheckHits {
     
     Set correct = new TreeSet();
     for (int i = 0; i < results.length; i++) {
-      correct.add(new Integer(results[i]));
+      correct.add(Integer.valueOf(results[i]));
     }
     final Set actual = new TreeSet();
     final Collector c = new SetCollector(actual);
@@ -124,7 +124,7 @@ public class CheckHits {
     private int base = 0;
     public void setScorer(Scorer scorer) throws IOException {}
     public void collect(int doc) {
-      bag.add(new Integer(doc + base));
+      bag.add(Integer.valueOf(doc + base));
     }
     public void setNextReader(IndexReader reader, int docBase) {
       base = docBase;
@@ -162,12 +162,12 @@ public class CheckHits {
 
     Set correct = new TreeSet();
     for (int i = 0; i < results.length; i++) {
-      correct.add(new Integer(results[i]));
+      correct.add(Integer.valueOf(results[i]));
     }
 
     Set actual = new TreeSet();
     for (int i = 0; i < hits.length; i++) {
-      actual.add(new Integer(hits[i].doc));
+      actual.add(Integer.valueOf(hits[i].doc));
     }
 
     Assert.assertEquals(query.toString(defaultFieldName), correct, actual);

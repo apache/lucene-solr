@@ -142,8 +142,8 @@ public class TestMultiFieldQueryParserWrapper extends LuceneTestCase {
 
   public void testBoostsSimple() throws Exception {
     Map boosts = new HashMap();
-    boosts.put("b", new Float(5));
-    boosts.put("t", new Float(10));
+    boosts.put("b", Float.valueOf(5));
+    boosts.put("t", Float.valueOf(10));
     String[] fields = { "b", "t" };
     MultiFieldQueryParserWrapper mfqp = new MultiFieldQueryParserWrapper(
         fields, new StandardAnalyzer(), boosts);

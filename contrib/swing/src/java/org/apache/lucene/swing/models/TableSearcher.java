@@ -272,7 +272,7 @@ public class TableSearcher extends AbstractTableModel {
             for (int t=0; t<hits.length(); t++){
                 Document document = hits.doc(t);
                 Fieldable field = document.getField(ROW_NUMBER);
-                rowToModelIndex.add(new Integer(field.stringValue()));
+                rowToModelIndex.add(Integer.valueOf(field.stringValue()));
             }
         } catch (Exception e){
             e.printStackTrace();
@@ -292,7 +292,7 @@ public class TableSearcher extends AbstractTableModel {
         searchString = null;
         rowToModelIndex.clear();
         for (int t=0; t<tableModel.getRowCount(); t++){
-            rowToModelIndex.add(new Integer(t));
+            rowToModelIndex.add(Integer.valueOf(t));
         }
     }
 

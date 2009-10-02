@@ -88,7 +88,7 @@ public class PhraseQuery extends Query {
           throw new IllegalArgumentException("All phrase terms must be in the same field: " + term);
 
       terms.add(term);
-      positions.add(new Integer(position));
+      positions.add(Integer.valueOf(position));
       if (position > maxPosition) maxPosition = position;
   }
 

@@ -193,7 +193,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     if (oldReaders != null) {
       // create a Map SegmentName->SegmentReader
       for (int i = 0; i < oldReaders.length; i++) {
-        segmentReaders.put(oldReaders[i].getSegmentName(), new Integer(i));
+        segmentReaders.put(oldReaders[i].getSegmentName(), Integer.valueOf(i));
       }
     }
     

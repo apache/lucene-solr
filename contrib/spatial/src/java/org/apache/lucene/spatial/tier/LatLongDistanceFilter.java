@@ -124,10 +124,10 @@ public class LatLongDistanceFilter extends DistanceFilter {
   /** Returns a hash code value for this object.*/
   @Override
   public int hashCode() {
-    int h = new Double(distance).hashCode();
+    int h = Double.valueOf(distance).hashCode();
     h ^= startingFilter.hashCode();
-    h ^= new Double(lat).hashCode();
-    h ^= new Double(lng).hashCode();
+    h ^= Double.valueOf(lat).hashCode();
+    h ^= Double.valueOf(lng).hashCode();
     h ^= latField.hashCode();
     h ^= lngField.hashCode();
     return h;

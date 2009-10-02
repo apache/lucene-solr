@@ -119,7 +119,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
 	for (int i = 0; i < clauses.size(); i++) {
 	    BooleanClause clause = (BooleanClause) clauses.get(i);
 	    TermQuery tq = (TermQuery) clause.getQuery();
-	    originalValues.put(tq.getTerm().text(), new Float(tq.getBoost()));
+	    originalValues.put(tq.getTerm().text(), Float.valueOf(tq.getBoost()));
 	}
 	return originalValues;
     }

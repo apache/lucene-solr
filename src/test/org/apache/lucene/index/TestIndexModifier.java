@@ -238,7 +238,7 @@ class IndexThread extends Thread {
           } catch (EmptyStackException e) {
             continue;
           }
-          Term delTerm = new Term("id", new Integer(delId).toString());
+          Term delTerm = new Term("id", Integer.valueOf(delId).toString());
           int delCount = index.deleteDocuments(delTerm);
           if (delCount != 1) {
             throw new RuntimeException("Internal error: " + threadNumber + " deleted " + delCount + 

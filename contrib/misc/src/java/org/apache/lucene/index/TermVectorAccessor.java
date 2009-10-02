@@ -106,7 +106,7 @@ public class TermVectorAccessor {
         TermPositions termPositions = indexReader.termPositions(termEnum.term());
         if (termPositions.skipTo(documentNumber)) {
 
-          frequencies.add(new Integer(termPositions.freq()));
+          frequencies.add(Integer.valueOf(termPositions.freq()));
           tokens.add(termEnum.term().text());
 
 

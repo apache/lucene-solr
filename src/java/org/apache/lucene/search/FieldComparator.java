@@ -120,7 +120,7 @@ public abstract class FieldComparator {
     }
 
     public Comparable value(int slot) {
-      return new Byte(values[slot]);
+      return Byte.valueOf(values[slot]);
     }
   }
 
@@ -160,7 +160,7 @@ public abstract class FieldComparator {
     }
 
     public Comparable value(int slot) {
-      return new Integer(docIDs[slot]);
+      return Integer.valueOf(docIDs[slot]);
     }
   }
 
@@ -215,7 +215,7 @@ public abstract class FieldComparator {
     }
 
     public Comparable value(int slot) {
-      return new Double(values[slot]);
+      return Double.valueOf(values[slot]);
     }
   }
 
@@ -274,7 +274,7 @@ public abstract class FieldComparator {
     }
 
     public Comparable value(int slot) {
-      return new Float(values[slot]);
+      return Float.valueOf(values[slot]);
     }
   }
 
@@ -337,7 +337,7 @@ public abstract class FieldComparator {
     }
 
     public Comparable value(int slot) {
-      return new Integer(values[slot]);
+      return Integer.valueOf(values[slot]);
     }
   }
 
@@ -396,7 +396,7 @@ public abstract class FieldComparator {
     }
 
     public Comparable value(int slot) {
-      return new Long(values[slot]);
+      return Long.valueOf(values[slot]);
     }
   }
 
@@ -444,7 +444,7 @@ public abstract class FieldComparator {
     }
     
     public Comparable value(int slot) {
-      return new Float(scores[slot]);
+      return Float.valueOf(scores[slot]);
     }
   }
 
@@ -484,7 +484,7 @@ public abstract class FieldComparator {
     }
 
     public Comparable value(int slot) {
-      return new Short(values[slot]);
+      return Short.valueOf(values[slot]);
     }
   }
 

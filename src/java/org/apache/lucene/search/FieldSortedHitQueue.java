@@ -252,7 +252,7 @@ extends PriorityQueue {
       }
 
       public Comparable sortValue (final ScoreDoc i) {
-        return new Byte(fieldOrder[i.doc]);
+        return Byte.valueOf(fieldOrder[i.doc]);
       }
 
       public int sortType() {
@@ -283,7 +283,7 @@ extends PriorityQueue {
       }
 
       public Comparable sortValue (final ScoreDoc i) {
-        return new Short(fieldOrder[i.doc]);
+        return Short.valueOf(fieldOrder[i.doc]);
       }
 
       public int sortType() {
@@ -314,7 +314,7 @@ extends PriorityQueue {
       }
 
       public Comparable sortValue (final ScoreDoc i) {
-        return new Integer (fieldOrder[i.doc]);
+        return Integer.valueOf(fieldOrder[i.doc]);
       }
 
       public int sortType() {
@@ -345,7 +345,7 @@ extends PriorityQueue {
       }
 
       public Comparable sortValue (final ScoreDoc i) {
-        return new Long(fieldOrder[i.doc]);
+        return Long.valueOf(fieldOrder[i.doc]);
       }
 
       public int sortType() {
@@ -377,7 +377,7 @@ extends PriorityQueue {
       }
 
       public Comparable sortValue (final ScoreDoc i) {
-        return new Float (fieldOrder[i.doc]);
+        return Float.valueOf(fieldOrder[i.doc]);
       }
 
       public int sortType() {
@@ -408,7 +408,7 @@ extends PriorityQueue {
       }
 
       public Comparable sortValue (final ScoreDoc i) {
-        return new Double (fieldOrder[i.doc]);
+        return Double.valueOf(fieldOrder[i.doc]);
       }
 
       public int sortType() {

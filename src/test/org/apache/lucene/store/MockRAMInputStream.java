@@ -50,7 +50,7 @@ public class MockRAMInputStream extends RAMInputStream {
           if (v.intValue() == 1) {
             dir.openFiles.remove(name);
           } else {
-            v = new Integer(v.intValue()-1);
+            v = Integer.valueOf(v.intValue()-1);
             dir.openFiles.put(name, v);
           }
         }
@@ -68,7 +68,7 @@ public class MockRAMInputStream extends RAMInputStream {
     synchronized(dir.openFiles) {
       if (dir.openFiles.containsKey(name)) {
         Integer v = (Integer) dir.openFiles.get(name);
-        v = new Integer(v.intValue()+1);
+        v = Integer.valueOf(v.intValue()+1);
         dir.openFiles.put(name, v);
       } else {
         throw new RuntimeException("BUG: cloned file was not open?");

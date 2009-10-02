@@ -197,7 +197,7 @@ public class TestCartesian extends TestCase{
           distance = 1.0d;
         //boost by distance is invertly proportional to
         // to distance from center point to location
-        float score = new Float((miles - distance) / miles ).floatValue();
+        float score = (float) ((miles - distance) / miles );
         return score * subQueryScore;
       }
     };
@@ -284,7 +284,7 @@ public class TestCartesian extends TestCase{
           distance = 1.0d;
         //boost by distance is invertly proportional to
         // to distance from center point to location
-        float score = new Float((miles - distance) / miles ).floatValue();
+        float score = (float) ((miles - distance) / miles );
         return score * subQueryScore;
       }
     };
@@ -373,7 +373,7 @@ public class TestCartesian extends TestCase{
               distance = 1.0d;
             //boost by distance is invertly proportional to
             // to distance from center point to location
-            float score = new Float((miles - distance) / miles ).floatValue();
+            float score = (float) ( (miles - distance) / miles );
             return score * subQueryScore;
           }
         };
@@ -462,7 +462,7 @@ public class TestCartesian extends TestCase{
               distance = 1.0d;
             //boost by distance is invertly proportional to
             // to distance from center point to location
-            float score = new Float((miles - distance) / miles ).floatValue();
+            float score = (float) ( (miles - distance) / miles );
             return score * subQueryScore;
           }
         };

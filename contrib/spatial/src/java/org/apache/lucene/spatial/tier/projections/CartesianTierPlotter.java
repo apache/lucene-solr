@@ -31,7 +31,7 @@ public class CartesianTierPlotter {
   int tierVerticalPosDivider;
   final IProjector projector;
   final String fieldPrefix;
-  Double idd = new Double(180);
+  Double idd = Double.valueOf(180);
   
   public CartesianTierPlotter (int tierLevel, IProjector projector, String fieldPrefix) {
   
@@ -65,8 +65,8 @@ public class CartesianTierPlotter {
     
     // ceiling of log base 10 of tierLen
     
-    tierVerticalPosDivider = new Double(Math.ceil(
-          Math.log10(new Integer(this.tierLength).doubleValue()))).intValue();
+    tierVerticalPosDivider = Double.valueOf(Math.ceil(
+          Math.log10(Integer.valueOf(this.tierLength).doubleValue()))).intValue();
     
     // 
     tierVerticalPosDivider = (int)Math.pow(10, tierVerticalPosDivider );

@@ -236,7 +236,7 @@ public class SynonymMap {
       
       Integer group = lastGroup;
       if (num != lastNum) {
-        group = new Integer(num);
+        group = Integer.valueOf(num);
         lastGroup = group;
         lastNum = num;
       }

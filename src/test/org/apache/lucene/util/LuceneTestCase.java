@@ -201,7 +201,7 @@ public abstract class LuceneTestCase extends TestCase {
     if (this.seed != null) {
       throw new IllegalStateException("please call LuceneTestCase.newRandom only once per test");
     }
-    this.seed = new Long(seed);
+    this.seed = Long.valueOf(seed);
     return new Random(seed);
   }
   

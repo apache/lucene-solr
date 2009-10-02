@@ -635,7 +635,7 @@ public abstract class IndexReader implements Cloneable {
   public static long lastModified(final Directory directory2) throws CorruptIndexException, IOException {
     return ((Long) new SegmentInfos.FindSegmentsFile(directory2) {
         public Object doBody(String segmentFileName) throws IOException {
-          return new Long(directory2.fileModified(segmentFileName));
+          return Long.valueOf(directory2.fileModified(segmentFileName));
         }
       }.run()).longValue();
   }

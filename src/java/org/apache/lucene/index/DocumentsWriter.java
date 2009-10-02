@@ -1040,12 +1040,12 @@ final class DocumentsWriter {
   // Buffer a specific docID for deletion.  Currently only
   // used when we hit a exception when adding a document
   synchronized private void addDeleteDocID(int docID) {
-    deletesInRAM.docIDs.add(new Integer(flushedDocCount+docID));
+    deletesInRAM.docIDs.add(Integer.valueOf(flushedDocCount+docID));
     deletesInRAM.addBytesUsed(BYTES_PER_DEL_DOCID);
   }
 
   synchronized private void addDeleteQuery(Query query, int docID) {
-    deletesInRAM.queries.put(query, new Integer(flushedDocCount + docID));
+    deletesInRAM.queries.put(query, Integer.valueOf(flushedDocCount + docID));
     deletesInRAM.addBytesUsed(BYTES_PER_DEL_QUERY);
   }
 

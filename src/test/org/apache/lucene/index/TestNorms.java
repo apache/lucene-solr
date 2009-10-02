@@ -169,8 +169,8 @@ public class TestNorms extends LuceneTestCase {
       float newNorm = ((Float)modifiedNorms.get(k)).floatValue();
       //System.out.println("Modifying: for "+i+" from "+origNorm+" to "+newNorm);
       //System.out.println("      and: for "+k+" from "+newNorm+" to "+origNorm);
-      modifiedNorms.set(i, new Float(newNorm));
-      modifiedNorms.set(k, new Float(origNorm));
+      modifiedNorms.set(i, Float.valueOf(newNorm));
+      modifiedNorms.set(k, Float.valueOf(origNorm));
       ir.setNorm(i, "f"+1, newNorm); 
       ir.setNorm(k, "f"+1, origNorm); 
     }
@@ -229,8 +229,8 @@ public class TestNorms extends LuceneTestCase {
       }
       norm += normDelta;
     } while (true);
-    norms.add(numDocNorms, new Float(norm));
-    modifiedNorms.add(numDocNorms, new Float(norm));
+    norms.add(numDocNorms, Float.valueOf(norm));
+    modifiedNorms.add(numDocNorms, Float.valueOf(norm));
     //System.out.println("creating norm("+numDocNorms+"): "+norm);
     numDocNorms ++;
     lastNorm = (norm>10 ? 0 : norm); //there's a limit to how many distinct values can be stored in a ingle byte

@@ -287,7 +287,7 @@ public class Config {
     StringTokenizer st = new StringTokenizer(s,":");
     while (st.hasMoreTokens()) {
       String t = st.nextToken();
-      a.add(new Integer(t));
+      a.add(Integer.valueOf(t));
     }
     int res[] = new int[a.size()]; 
     for (int i=0; i<a.size(); i++) {
@@ -306,7 +306,7 @@ public class Config {
     StringTokenizer st = new StringTokenizer(s,":");
     while (st.hasMoreTokens()) {
       String t = st.nextToken();
-      a.add(new Double(t));
+      a.add(Double.valueOf(t));
     }
     double res[] = new double[a.size()]; 
     for (int i=0; i<a.size(); i++) {

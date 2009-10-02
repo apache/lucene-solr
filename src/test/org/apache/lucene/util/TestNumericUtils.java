@@ -188,7 +188,7 @@ public class TestNumericUtils extends LuceneTestCase {
         // make unsigned longs for easier display and understanding
         min ^= 0x8000000000000000L;
         max ^= 0x8000000000000000L;
-        //System.out.println("new Long(0x"+Long.toHexString(min>>>shift)+"L),new Long(0x"+Long.toHexString(max>>>shift)+"L),");
+        //System.out.println("Long.valueOf(0x"+Long.toHexString(min>>>shift)+"L),Long.valueOf(0x"+Long.toHexString(max>>>shift)+"L),");
         assertEquals( "inner min bound", ((Long)neededBounds.next()).longValue(), min>>>shift);
         assertEquals( "inner max bound", ((Long)neededBounds.next()).longValue(), max>>>shift);
       }
@@ -204,45 +204,45 @@ public class TestNumericUtils extends LuceneTestCase {
   public void testSplitLongRange() throws Exception {
     // a hard-coded "standard" range
     assertLongRangeSplit(-5000L, 9500L, 4, true, Arrays.asList(new Long[]{
-      new Long(0x7fffffffffffec78L),new Long(0x7fffffffffffec7fL),
-      new Long(0x8000000000002510L),new Long(0x800000000000251cL),
-      new Long(0x7fffffffffffec8L), new Long(0x7fffffffffffecfL),
-      new Long(0x800000000000250L), new Long(0x800000000000250L),
-      new Long(0x7fffffffffffedL),  new Long(0x7fffffffffffefL),
-      new Long(0x80000000000020L),  new Long(0x80000000000024L),
-      new Long(0x7ffffffffffffL),   new Long(0x8000000000001L)
+      Long.valueOf(0x7fffffffffffec78L),Long.valueOf(0x7fffffffffffec7fL),
+      Long.valueOf(0x8000000000002510L),Long.valueOf(0x800000000000251cL),
+      Long.valueOf(0x7fffffffffffec8L), Long.valueOf(0x7fffffffffffecfL),
+      Long.valueOf(0x800000000000250L), Long.valueOf(0x800000000000250L),
+      Long.valueOf(0x7fffffffffffedL),  Long.valueOf(0x7fffffffffffefL),
+      Long.valueOf(0x80000000000020L),  Long.valueOf(0x80000000000024L),
+      Long.valueOf(0x7ffffffffffffL),   Long.valueOf(0x8000000000001L)
     }).iterator());
     
     // the same with no range splitting
     assertLongRangeSplit(-5000L, 9500L, 64, true, Arrays.asList(new Long[]{
-      new Long(0x7fffffffffffec78L),new Long(0x800000000000251cL)
+      Long.valueOf(0x7fffffffffffec78L),Long.valueOf(0x800000000000251cL)
     }).iterator());
     
     // this tests optimized range splitting, if one of the inner bounds
     // is also the bound of the next lower precision, it should be used completely
     assertLongRangeSplit(0L, 1024L+63L, 4, true, Arrays.asList(new Long[]{
-      new Long(0x800000000000040L), new Long(0x800000000000043L),
-      new Long(0x80000000000000L),  new Long(0x80000000000003L)
+      Long.valueOf(0x800000000000040L), Long.valueOf(0x800000000000043L),
+      Long.valueOf(0x80000000000000L),  Long.valueOf(0x80000000000003L)
     }).iterator());
     
     // the full long range should only consist of a lowest precision range; no bitset testing here, as too much memory needed :-)
     assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 8, false, Arrays.asList(new Long[]{
-      new Long(0x00L),new Long(0xffL)
+      Long.valueOf(0x00L),Long.valueOf(0xffL)
     }).iterator());
 
     // the same with precisionStep=4
     assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 4, false, Arrays.asList(new Long[]{
-      new Long(0x0L),new Long(0xfL)
+      Long.valueOf(0x0L),Long.valueOf(0xfL)
     }).iterator());
 
     // the same with precisionStep=2
     assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 2, false, Arrays.asList(new Long[]{
-      new Long(0x0L),new Long(0x3L)
+      Long.valueOf(0x0L),Long.valueOf(0x3L)
     }).iterator());
 
     // the same with precisionStep=1
     assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 1, false, Arrays.asList(new Long[]{
-      new Long(0x0L),new Long(0x1L)
+      Long.valueOf(0x0L),Long.valueOf(0x1L)
     }).iterator());
 
     // a inverse range should produce no sub-ranges
@@ -250,7 +250,7 @@ public class TestNumericUtils extends LuceneTestCase {
 
     // a 0-length range should reproduce the range itsself
     assertLongRangeSplit(9500L, 9500L, 4, false, Arrays.asList(new Long[]{
-      new Long(0x800000000000251cL),new Long(0x800000000000251cL)
+      Long.valueOf(0x800000000000251cL),Long.valueOf(0x800000000000251cL)
     }).iterator());
   }
 
@@ -270,7 +270,7 @@ public class TestNumericUtils extends LuceneTestCase {
         // make unsigned ints for easier display and understanding
         min ^= 0x80000000;
         max ^= 0x80000000;
-        //System.out.println("new Integer(0x"+Integer.toHexString(min>>>shift)+"),new Integer(0x"+Integer.toHexString(max>>>shift)+"),");
+        //System.out.println("Integer.valueOf(0x"+Integer.toHexString(min>>>shift)+"),Integer.valueOf(0x"+Integer.toHexString(max>>>shift)+"),");
         assertEquals( "inner min bound", ((Integer)neededBounds.next()).intValue(), min>>>shift);
         assertEquals( "inner max bound", ((Integer)neededBounds.next()).intValue(), max>>>shift);
       }
@@ -286,45 +286,45 @@ public class TestNumericUtils extends LuceneTestCase {
   public void testSplitIntRange() throws Exception {
     // a hard-coded "standard" range
     assertIntRangeSplit(-5000, 9500, 4, true, Arrays.asList(new Integer[]{
-      new Integer(0x7fffec78),new Integer(0x7fffec7f),
-      new Integer(0x80002510),new Integer(0x8000251c),
-      new Integer(0x7fffec8), new Integer(0x7fffecf),
-      new Integer(0x8000250), new Integer(0x8000250),
-      new Integer(0x7fffed),  new Integer(0x7fffef),
-      new Integer(0x800020),  new Integer(0x800024),
-      new Integer(0x7ffff),   new Integer(0x80001)
+      Integer.valueOf(0x7fffec78),Integer.valueOf(0x7fffec7f),
+      Integer.valueOf(0x80002510),Integer.valueOf(0x8000251c),
+      Integer.valueOf(0x7fffec8), Integer.valueOf(0x7fffecf),
+      Integer.valueOf(0x8000250), Integer.valueOf(0x8000250),
+      Integer.valueOf(0x7fffed),  Integer.valueOf(0x7fffef),
+      Integer.valueOf(0x800020),  Integer.valueOf(0x800024),
+      Integer.valueOf(0x7ffff),   Integer.valueOf(0x80001)
     }).iterator());
     
     // the same with no range splitting
     assertIntRangeSplit(-5000, 9500, 32, true, Arrays.asList(new Integer[]{
-      new Integer(0x7fffec78),new Integer(0x8000251c)
+      Integer.valueOf(0x7fffec78),Integer.valueOf(0x8000251c)
     }).iterator());
     
     // this tests optimized range splitting, if one of the inner bounds
     // is also the bound of the next lower precision, it should be used completely
     assertIntRangeSplit(0, 1024+63, 4, true, Arrays.asList(new Integer[]{
-      new Integer(0x8000040), new Integer(0x8000043),
-      new Integer(0x800000),  new Integer(0x800003)
+      Integer.valueOf(0x8000040), Integer.valueOf(0x8000043),
+      Integer.valueOf(0x800000),  Integer.valueOf(0x800003)
     }).iterator());
     
     // the full int range should only consist of a lowest precision range; no bitset testing here, as too much memory needed :-)
     assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 8, false, Arrays.asList(new Integer[]{
-      new Integer(0x00),new Integer(0xff)
+      Integer.valueOf(0x00),Integer.valueOf(0xff)
     }).iterator());
 
     // the same with precisionStep=4
     assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 4, false, Arrays.asList(new Integer[]{
-      new Integer(0x0),new Integer(0xf)
+      Integer.valueOf(0x0),Integer.valueOf(0xf)
     }).iterator());
 
     // the same with precisionStep=2
     assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 2, false, Arrays.asList(new Integer[]{
-      new Integer(0x0),new Integer(0x3)
+      Integer.valueOf(0x0),Integer.valueOf(0x3)
     }).iterator());
 
     // the same with precisionStep=1
     assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 1, false, Arrays.asList(new Integer[]{
-      new Integer(0x0),new Integer(0x1)
+      Integer.valueOf(0x0),Integer.valueOf(0x1)
     }).iterator());
 
     // a inverse range should produce no sub-ranges
@@ -332,7 +332,7 @@ public class TestNumericUtils extends LuceneTestCase {
 
     // a 0-length range should reproduce the range itsself
     assertIntRangeSplit(9500, 9500, 4, false, Arrays.asList(new Integer[]{
-      new Integer(0x8000251c),new Integer(0x8000251c)
+      Integer.valueOf(0x8000251c),Integer.valueOf(0x8000251c)
     }).iterator());
   }
 

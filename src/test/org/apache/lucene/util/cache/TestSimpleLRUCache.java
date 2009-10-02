@@ -28,34 +28,34 @@ public class TestSimpleLRUCache extends LuceneTestCase {
     Cache cache = new SimpleLRUCache(n);
     
     for (int i = 0; i < n; i++) {
-      cache.put(new Integer(i), dummy);
+      cache.put(Integer.valueOf(i), dummy);
     }
     
     // access every 2nd item in cache
     for (int i = 0; i < n; i+=2) {
-      assertNotNull(cache.get(new Integer(i)));
+      assertNotNull(cache.get(Integer.valueOf(i)));
     }
     
     // add n/2 elements to cache, the ones that weren't
     // touched in the previous loop should now be thrown away
     for (int i = n; i < n + (n / 2); i++) {
-      cache.put(new Integer(i), dummy);
+      cache.put(Integer.valueOf(i), dummy);
     }
     
     // access every 4th item in cache
     for (int i = 0; i < n; i+=4) {
-      assertNotNull(cache.get(new Integer(i)));
+      assertNotNull(cache.get(Integer.valueOf(i)));
     }
 
     // add 3/4n elements to cache, the ones that weren't
     // touched in the previous loops should now be thrown away
     for (int i = n; i < n + (n * 3 / 4); i++) {
-      cache.put(new Integer(i), dummy);
+      cache.put(Integer.valueOf(i), dummy);
     }
     
     // access every 4th item in cache
     for (int i = 0; i < n; i+=4) {
-      assertNotNull(cache.get(new Integer(i)));
+      assertNotNull(cache.get(Integer.valueOf(i)));
     }
     
   }

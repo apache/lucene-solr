@@ -244,7 +244,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   private HashMap topDocsToMap(TopDocs td) {
     HashMap h = new HashMap(); 
     for (int i=0; i<td.totalHits; i++) {
-      h.put(new Integer(td.scoreDocs[i].doc), new Float(td.scoreDocs[i].score));
+      h.put(Integer.valueOf(td.scoreDocs[i].doc), Float.valueOf(td.scoreDocs[i].score));
     }
     return h;
   }

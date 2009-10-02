@@ -50,7 +50,7 @@ class SegGraph {
    * @return true if there are tokens for the startOffset
    */
   public boolean isStartExist(int s) {
-    return tokenListTable.get(new Integer(s)) != null;
+    return tokenListTable.get(Integer.valueOf(s)) != null;
   }
 
   /**
@@ -60,7 +60,7 @@ class SegGraph {
    * @return List of tokens at the specified start offset.
    */
   public List getStartList(int s) {
-    return (List) tokenListTable.get(new Integer(s));
+    return (List) tokenListTable.get(Integer.valueOf(s));
   }
 
   /**
@@ -83,7 +83,7 @@ class SegGraph {
     short index = 0;
     while (count < size) {
       if (isStartExist(s)) {
-        tokenList = (List) tokenListTable.get(new Integer(s));
+        tokenList = (List) tokenListTable.get(Integer.valueOf(s));
         for (Iterator iter = tokenList.iterator(); iter.hasNext();) {
           SegToken st = (SegToken) iter.next();
           st.index = index;
@@ -106,9 +106,9 @@ class SegGraph {
     if (!isStartExist(s)) {
       ArrayList newlist = new ArrayList();
       newlist.add(token);
-      tokenListTable.put((Object) (new Integer(s)), newlist);
+      tokenListTable.put((Object) (Integer.valueOf(s)), newlist);
     } else {
-      List tokenList = (List) tokenListTable.get((Object) (new Integer(s)));
+      List tokenList = (List) tokenListTable.get((Object) (Integer.valueOf(s)));
       tokenList.add(token);
     }
     if (s > maxStart)
@@ -127,7 +127,7 @@ class SegGraph {
 
     while (count < size) {
       if (isStartExist(s)) {
-        tokenList = (List) tokenListTable.get(new Integer(s));
+        tokenList = (List) tokenListTable.get(Integer.valueOf(s));
         for (Iterator iter = tokenList.iterator(); iter.hasNext();) {
           SegToken st = (SegToken) iter.next();
           result.add(st);

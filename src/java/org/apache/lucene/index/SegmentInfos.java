@@ -419,13 +419,13 @@ public final class SegmentInfos extends Vector {
           }
      
           if(format < 0)
-            return new Long(version);
+            return Long.valueOf(version);
 
           // We cannot be sure about the format of the file.
           // Therefore we have to read the whole file and cannot simply seek to the version entry.
           SegmentInfos sis = new SegmentInfos();
           sis.read(directory, segmentFileName);
-          return new Long(sis.getVersion());
+          return Long.valueOf(sis.getVersion());
         }
       }.run()).longValue();
   }

@@ -123,9 +123,9 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    */
   public void setLengthNormFactors(String field, int min, int max,
                                    float steepness, boolean discountOverlaps) {
-    ln_mins.put(field, new Integer(min));
-    ln_maxs.put(field, new Integer(max));
-    ln_steeps.put(field, new Float(steepness));
+    ln_mins.put(field, Integer.valueOf(min));
+    ln_maxs.put(field, Integer.valueOf(max));
+    ln_steeps.put(field, Float.valueOf(steepness));
     ln_overlaps.put(field, new Boolean(discountOverlaps));
   }
     

@@ -103,12 +103,12 @@ public class FilterManager {
   public Filter getFilter(Filter filter) {
     synchronized(cache) {
       FilterItem fi = null;
-      fi = (FilterItem)cache.get(new Integer(filter.hashCode()));
+      fi = (FilterItem)cache.get(Integer.valueOf(filter.hashCode()));
       if (fi != null) {
         fi.timestamp = new Date().getTime();
         return fi.filter;
       }
-      cache.put(new Integer(filter.hashCode()), new FilterItem(filter));
+      cache.put(Integer.valueOf(filter.hashCode()), new FilterItem(filter));
       return filter;
     }
   }

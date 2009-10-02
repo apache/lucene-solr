@@ -36,11 +36,11 @@ public class TestHugeRamFile extends LuceneTestCase {
       capacity += size;
       if (capacity <= MAX_VALUE) {
         // below maxint we reuse buffers
-        byte buf[] = (byte[]) singleBuffers.get(new Integer(size));
+        byte buf[] = (byte[]) singleBuffers.get(Integer.valueOf(size));
         if (buf==null) {
           buf = new byte[size]; 
           //System.out.println("allocate: "+size);
-          singleBuffers.put(new Integer(size),buf);
+          singleBuffers.put(Integer.valueOf(size),buf);
         }
         return buf;
       }

@@ -1631,7 +1631,7 @@ public class IndexWriter {
     rollbackSegments = new HashMap();
     final int size = rollbackSegmentInfos.size();
     for(int i=0;i<size;i++)
-      rollbackSegments.put(rollbackSegmentInfos.info(i), new Integer(i));
+      rollbackSegments.put(rollbackSegmentInfos.info(i), Integer.valueOf(i));
   }
 
   /**

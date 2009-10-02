@@ -101,9 +101,9 @@ public class SpanNearClauseFactory {
   protected void addSpanQueryWeighted(SpanQuery sq, float weight) {
     Float w = (Float) weightBySpanQuery.get(sq);
     if (w != null)
-      w = new Float(w.floatValue() + weight);
+      w = Float.valueOf(w.floatValue() + weight);
     else
-      w = new Float(weight);
+      w = Float.valueOf(weight);
     weightBySpanQuery.put(sq, w); 
   }
   

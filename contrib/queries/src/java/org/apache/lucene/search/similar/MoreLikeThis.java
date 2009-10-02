@@ -668,10 +668,10 @@ public final class MoreLikeThis {
             // only really need 1st 3 entries, other ones are for troubleshooting
             res.insert(new Object[]{word,                   // the word
                                     topField,               // the top field
-                                    new Float(score),       // overall score
-                                    new Float(idf),         // idf
-                                    new Integer(docFreq),   // freq in all docs
-                                    new Integer(tf)
+                                    Float.valueOf(score),       // overall score
+                                    Float.valueOf(idf),         // idf
+                                    Integer.valueOf(docFreq),   // freq in all docs
+                                    Integer.valueOf(tf)
             });
         }
         return res;

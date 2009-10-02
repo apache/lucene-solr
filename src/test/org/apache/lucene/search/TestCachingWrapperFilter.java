@@ -81,9 +81,9 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     // not cacheable:
     assertDocIdSetCacheable(reader, new QueryWrapperFilter(new TermQuery(new Term("test","value"))), false);
     // returns default empty docidset, always cacheable:
-    assertDocIdSetCacheable(reader, NumericRangeFilter.newIntRange("test", new Integer(10000), new Integer(-10000), true, true), true);
+    assertDocIdSetCacheable(reader, NumericRangeFilter.newIntRange("test", Integer.valueOf(10000), Integer.valueOf(-10000), true, true), true);
     // is cacheable:
-    assertDocIdSetCacheable(reader, FieldCacheRangeFilter.newIntRange("test", new Integer(10), new Integer(20), true, true), true);
+    assertDocIdSetCacheable(reader, FieldCacheRangeFilter.newIntRange("test", Integer.valueOf(10), Integer.valueOf(20), true, true), true);
     // a openbitset filter is always cacheable
     assertDocIdSetCacheable(reader, new Filter() {
       public DocIdSet getDocIdSet(IndexReader reader) {

@@ -110,7 +110,7 @@ public class TestElevationComparator extends LuceneTestCase {
    int max = (vals.length / 2) + 5;
    for (int i = 0; i < vals.length - 1; i += 2) {
      q.add(new TermQuery(new Term(vals[i], vals[i + 1])), BooleanClause.Occur.SHOULD);
-     priority.put(vals[i + 1], new Integer(max--));
+     priority.put(vals[i + 1], Integer.valueOf(max--));
      // System.out.println(" pri doc=" + vals[i+1] + " pri=" + (1+max));
    }
    return q;
@@ -166,7 +166,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
      }
 
      public Comparable value(int slot) {
-       return new Integer(values[slot]);
+       return Integer.valueOf(values[slot]);
      }
    };
  }

@@ -91,7 +91,7 @@ public class BoostQueryNode extends QueryNodeImpl {
    * @return the parsed value
    */
   private CharSequence getValueString() {
-    Float f = new Float(this.value);
+    Float f = Float.valueOf(this.value);
     if (f == f.longValue())
       return "" + f.longValue();
     else

@@ -91,7 +91,7 @@ public class MultiPhraseQuery extends Query {
     }
 
     termArrays.add(terms);
-    positions.add(new Integer(position));
+    positions.add(Integer.valueOf(position));
   }
 
   /**

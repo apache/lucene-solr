@@ -56,7 +56,7 @@ implements Comparable, Serializable {
   public SampleComparable (String s) {
     int i = s.indexOf ("-");
     string_part = s.substring (0, i);
-    int_part = new Integer (s.substring (i + 1));
+    int_part = Integer.valueOf(s.substring (i + 1));
   }
 
   public int compareTo (Object o) {

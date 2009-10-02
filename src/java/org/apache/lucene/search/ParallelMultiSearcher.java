@@ -253,7 +253,7 @@ class MultiSearcherThread extends Thread {
             // iterate over the score docs and change their fields value
             for (int j2 = 0; j2 < docs.scoreDocs.length; j2++) {
               FieldDoc fd = (FieldDoc) docs.scoreDocs[j2];
-              fd.fields[j] = new Integer(((Integer) fd.fields[j]).intValue() + starts[i]);
+              fd.fields[j] = Integer.valueOf(((Integer) fd.fields[j]).intValue() + starts[i]);
             }
             break;
           }

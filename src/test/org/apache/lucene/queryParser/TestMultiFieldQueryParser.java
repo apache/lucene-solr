@@ -130,8 +130,8 @@ public class TestMultiFieldQueryParser extends BaseTokenStreamTestCase {
   
   public void testBoostsSimple() throws Exception {
       Map boosts = new HashMap();
-      boosts.put("b", new Float(5));
-      boosts.put("t", new Float(10));
+      boosts.put("b", Float.valueOf(5));
+      boosts.put("t", Float.valueOf(10));
       String[] fields = {"b", "t"};
       MultiFieldQueryParser mfqp = new MultiFieldQueryParser(fields, new StandardAnalyzer(), boosts);
       

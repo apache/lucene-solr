@@ -57,14 +57,14 @@ public class TestCharArraySet extends LuceneTestCase {
   
   public void testObjectContains() {
     CharArraySet set = new CharArraySet(10, true);
-    Integer val = new Integer(1);
+    Integer val = Integer.valueOf(1);
     set.add(val);
     assertTrue(set.contains(val));
-    assertTrue(set.contains(new Integer(1)));
+    assertTrue(set.contains(Integer.valueOf(1)));
     // test unmodifiable
     set = CharArraySet.unmodifiableSet(set);
     assertTrue(set.contains(val));
-    assertTrue(set.contains(new Integer(1)));
+    assertTrue(set.contains(Integer.valueOf(1)));
   }
   
   public void testClear(){

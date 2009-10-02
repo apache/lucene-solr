@@ -156,8 +156,8 @@ implements Serializable {
         // store hits in TreeMap - TreeMap does not allow duplicates; existing entries are silently overwritten
         for(int hitid=0;hitid<hitsByRank.length; ++hitid) {
             resultMap.put(
-                    new Integer(hitsByRank[hitid].doc),  // Key:   Lucene Document ID
-                    new Integer(hitid));				// Value: Hits-Objekt Index
+                    Integer.valueOf(hitsByRank[hitid].doc),  // Key:   Lucene Document ID
+                    Integer.valueOf(hitid));				// Value: Hits-Objekt Index
         }
         
         // now make a query using the sort criteria
@@ -166,7 +166,7 @@ implements Serializable {
 		
         // besides the sorting both sets of hits must be identical
         for(int hitid=0;hitid<resultSort.length; ++hitid) {
-            Integer idHitDate = new Integer(resultSort[hitid].doc); // document ID from sorted search
+            Integer idHitDate = Integer.valueOf(resultSort[hitid].doc); // document ID from sorted search
             if(!resultMap.containsKey(idHitDate)) {
                 log("ID "+idHitDate+" not found. Possibliy a duplicate.");
             }
@@ -193,7 +193,7 @@ implements Serializable {
             for(int docnum=0;docnum<hits.length;++docnum) {
                 Integer luceneId = null;
 
-                luceneId = new Integer(hits[docnum].doc);
+                luceneId = Integer.valueOf(hits[docnum].doc);
                 if(idMap.containsKey(luceneId)) {
                     StringBuilder message = new StringBuilder(prefix);
                     message.append("Duplicate key for hit index = ");
@@ -204,7 +204,7 @@ implements Serializable {
                     message.append(luceneId);
                     log(message.toString());
                 } else { 
-                    idMap.put(luceneId, new Integer(docnum));
+                    idMap.put(luceneId, Integer.valueOf(docnum));
                 }
             }
         }

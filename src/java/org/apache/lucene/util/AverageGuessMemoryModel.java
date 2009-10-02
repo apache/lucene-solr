@@ -28,14 +28,14 @@ public class AverageGuessMemoryModel extends MemoryModel {
   // best guess primitive sizes
   private final Map sizes = new IdentityHashMap() {
     {
-      put(boolean.class, new Integer(1));
-      put(byte.class, new Integer(1));
-      put(char.class, new Integer(2));
-      put(short.class, new Integer(2));
-      put(int.class, new Integer(4));
-      put(float.class, new Integer(4));
-      put(double.class, new Integer(8));
-      put(long.class, new Integer(8));
+      put(boolean.class, Integer.valueOf(1));
+      put(byte.class, Integer.valueOf(1));
+      put(char.class, Integer.valueOf(2));
+      put(short.class, Integer.valueOf(2));
+      put(int.class, Integer.valueOf(4));
+      put(float.class, Integer.valueOf(4));
+      put(double.class, Integer.valueOf(8));
+      put(long.class, Integer.valueOf(8));
     }
   };
 
