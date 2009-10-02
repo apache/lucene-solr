@@ -339,7 +339,9 @@ New Features
 83. SOLR-1292: Add FieldCache introspection to stats.jsp and JMX Monitoring via
     a new SolrFieldCacheMBean.  (hossman)
 
-84. SOLR-1167: Solr Config now supports XInclude for XML engines that can support it. (Bryan Talbot via gsingers)    
+84. SOLR-1167: Solr Config now supports XInclude for XML engines that can support it. (Bryan Talbot via gsingers)
+
+85. SOLR-1478: Enable sort by Lucene docid.  (ehatcher)
 
 Optimizations
 ----------------------

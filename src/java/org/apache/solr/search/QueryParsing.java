@@ -265,7 +265,9 @@ public class QueryParsing {
         else {
           lst[i] = new SortField(null, SortField.SCORE, true);
         }
-      } 
+      } else if ("#".equals(part)) {
+        lst[i] = new SortField(null, SortField.DOC, top);
+      }
       else {
         // getField could throw an exception if the name isn't found
         SchemaField f = null;
