@@ -25,14 +25,14 @@ package org.apache.lucene.util;
  * length <code>maxSize+1</code>, in {@link #initialize}.
   * 
 */
-public abstract class PriorityQueue {
+public abstract class PriorityQueue<T> {
   private int size;
   private int maxSize;
-  protected Object[] heap;
+  protected T[] heap;
 
   /** Determines the ordering of objects in this priority queue.  Subclasses
     must define this one method. */
-  protected abstract boolean lessThan(Object a, Object b);
+  protected abstract boolean lessThan(T a, T b);
 
   /**
    * This method can be overridden by extending classes to return a sentinel
@@ -41,7 +41,7 @@ public abstract class PriorityQueue {
    * change the top without attempting to insert any new object.<br>
    * 
    * Those sentinel values should always compare worse than any non-sentinel
-   * value (i.e., {@link #lessThan(Object, Object)} should always favor the
+   * value (i.e., {@link #lessThan(T, T)} should always favor the
    * non-sentinel values).<br>
    * 
    * By default, this method returns false, which means the queue will not be
@@ -53,9 +53,9 @@ public abstract class PriorityQueue {
    * 
    * <pre>
    * // extends getSentinelObject() to return a non-null value.
-   * PriorityQueue pq = new MyQueue(numHits);
+   * PriorityQueue<MyObject> pq = new MyQueue<MyObject>(numHits);
    * // save the 'top' element, which is guaranteed to not be null.
-   * MyObject pqTop = (MyObject) pq.top();
+   * MyObject pqTop = pq.top();
    * &lt;...&gt;
    * // now in order to add a new element, which is 'better' than top (after 
    * // you've verified it is better), it is as simple as:
@@ -73,11 +73,12 @@ public abstract class PriorityQueue {
    * @return the sentinel object to use to pre-populate the queue, or null if
    *         sentinel objects are not supported.
    */
-  protected Object getSentinelObject() {
+  protected T getSentinelObject() {
     return null;
   }
 
   /** Subclass constructors must call this. */
+  @SuppressWarnings("unchecked")
   protected final void initialize(int maxSize) {
     size = 0;
     int heapSize;
@@ -86,11 +87,11 @@ public abstract class PriorityQueue {
       heapSize = 2;
     else
       heapSize = maxSize + 1;
-    heap = new Object[heapSize];
+    heap = (T[]) new Object[heapSize]; // T is unbounded type, so this unchecked cast works always
     this.maxSize = maxSize;
     
     // If sentinel objects are supported, populate the queue with them
-    Object sentinel = getSentinelObject();
+    T sentinel = getSentinelObject();
     if (sentinel != null) {
       heap[1] = sentinel;
       for (int i = 2; i < heap.length; i++) {
@@ -105,10 +106,10 @@ public abstract class PriorityQueue {
    * more objects than maxSize from initialize a RuntimeException
    * (ArrayIndexOutOfBound) is thrown.
    * 
-   * @deprecated use {@link #add(Object)} which returns the new top object,
+   * @deprecated use {@link #add(T)} which returns the new top object,
    *             saving an additional call to {@link #top()}.
    */
-  public final void put(Object element) {
+  public final void put(T element) {
     size++;
     heap[size] = element;
     upHeap();
@@ -121,7 +122,7 @@ public abstract class PriorityQueue {
    * 
    * @return the new 'top' element in the queue.
    */
-  public final Object add(Object element) {
+  public final T add(T element) {
     size++;
     heap[size] = element;
     upHeap();
@@ -134,10 +135,10 @@ public abstract class PriorityQueue {
    * 
    * @param element
    * @return true if element is added, false otherwise.
-   * @deprecated use {@link #insertWithOverflow(Object)} instead, which
+   * @deprecated use {@link #insertWithOverflow(T)} instead, which
    *             encourages objects reuse.
    */
-  public boolean insert(Object element) {
+  public boolean insert(T element) {
     return insertWithOverflow(element) != element;
   }
 
@@ -151,12 +152,12 @@ public abstract class PriorityQueue {
    * heap and now has been replaced by a larger one, or null
    * if the queue wasn't yet full with maxSize elements.
    */
-  public Object insertWithOverflow(Object element) {
+  public T insertWithOverflow(T element) {
     if (size < maxSize) {
       put(element);
       return null;
     } else if (size > 0 && !lessThan(element, heap[1])) {
-      Object ret = heap[1];
+      T ret = heap[1];
       heap[1] = element;
       adjustTop();
       return ret;
@@ -166,7 +167,7 @@ public abstract class PriorityQueue {
   }
 
   /** Returns the least element of the PriorityQueue in constant time. */
-  public final Object top() {
+  public final T top() {
     // We don't need to check size here: if maxSize is 0,
     // then heap is length 2 array with both entries null.
     // If size is 0 then heap[1] is already null.
@@ -175,9 +176,9 @@ public abstract class PriorityQueue {
 
   /** Removes and returns the least element of the PriorityQueue in log(size)
     time. */
-  public final Object pop() {
+  public final T pop() {
     if (size > 0) {
-      Object result = heap[1];			  // save first value
+      T result = heap[1];			  // save first value
       heap[1] = heap[size];			  // move last to first
       heap[size] = null;			  // permit GC of objects
       size--;
@@ -230,7 +231,7 @@ public abstract class PriorityQueue {
    * 
    * @return the new 'top' element.
    */
-  public final Object updateTop() {
+  public final T updateTop() {
     downHeap();
     return heap[1];
   }
@@ -250,7 +251,7 @@ public abstract class PriorityQueue {
 
   private final void upHeap() {
     int i = size;
-    Object node = heap[i];			  // save bottom node
+    T node = heap[i];			  // save bottom node
     int j = i >>> 1;
     while (j > 0 && lessThan(node, heap[j])) {
       heap[i] = heap[j];			  // shift parents down
@@ -262,7 +263,7 @@ public abstract class PriorityQueue {
 
   private final void downHeap() {
     int i = 1;
-    Object node = heap[i];			  // save top node
+    T node = heap[i];			  // save top node
     int j = i << 1;				  // find smaller child
     int k = j + 1;
     if (k <= size && lessThan(heap[k], heap[j])) {
