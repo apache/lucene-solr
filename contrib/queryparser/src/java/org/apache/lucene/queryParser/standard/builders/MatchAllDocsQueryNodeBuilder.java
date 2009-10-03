@@ -40,9 +40,9 @@ public class MatchAllDocsQueryNodeBuilder implements StandardQueryBuilder {
     // validates node
     if (!(queryNode instanceof MatchAllDocsQueryNode)) {
       throw new QueryNodeException(new MessageImpl(
-          QueryParserMessages.LUCENE_QUERY_CONVERSION_ERROR, new Object[]{queryNode
+          QueryParserMessages.LUCENE_QUERY_CONVERSION_ERROR, queryNode
               .toQueryString(new EscapeQuerySyntaxImpl()), queryNode.getClass()
-              .getName()}));
+              .getName()));
     }
 
     return new MatchAllDocsQuery();

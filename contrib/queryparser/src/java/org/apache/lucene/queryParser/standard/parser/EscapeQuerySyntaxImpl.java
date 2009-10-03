@@ -289,7 +289,7 @@ public class EscapeQuerySyntaxImpl implements EscapeQuerySyntax {
       return c - 'A' + 10;
     } else {
       throw new ParseException(new MessageImpl(
-          QueryParserMessages.INVALID_SYNTAX_ESCAPE_NONE_HEX_UNICODE, new Object[]{c}));
+          QueryParserMessages.INVALID_SYNTAX_ESCAPE_NONE_HEX_UNICODE, c));
     }
   }
 

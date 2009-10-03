@@ -36,7 +36,7 @@ public class MessageImpl implements Message {
 
   }
 
-  public MessageImpl(String key, Object[] args) {
+  public MessageImpl(String key, Object... args) {
     this(key);
     this.arguments = args;
   }

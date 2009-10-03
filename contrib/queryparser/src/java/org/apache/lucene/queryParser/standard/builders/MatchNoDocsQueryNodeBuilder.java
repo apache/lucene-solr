@@ -40,9 +40,9 @@ public class MatchNoDocsQueryNodeBuilder implements StandardQueryBuilder {
     // validates node
     if (!(queryNode instanceof MatchNoDocsQueryNode)) {
       throw new QueryNodeException(new MessageImpl(
-          QueryParserMessages.LUCENE_QUERY_CONVERSION_ERROR, new Object[]{queryNode
+          QueryParserMessages.LUCENE_QUERY_CONVERSION_ERROR, queryNode
               .toQueryString(new EscapeQuerySyntaxImpl()), queryNode.getClass()
-              .getName()}));
+              .getName()));
     }
 
     return new BooleanQuery();

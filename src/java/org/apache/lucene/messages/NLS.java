@@ -45,8 +45,8 @@ import java.util.ResourceBundle;
  */
 public class NLS {
 
-  private static Map/*<String, Class<Object>>*/ bundles = new HashMap/*<String, Class<Object>>*/(
-      0);
+  private static Map<String, Class<Object>> bundles = 
+    new HashMap<String, Class<Object>>(0);
 
   protected NLS() {
     // Do not instantiate
@@ -66,7 +66,7 @@ public class NLS {
   }
 
   public static String getLocalizedMessage(String key, Locale locale,
-      Object[] args) {
+      Object... args) {
     String str = getLocalizedMessage(key, locale);
 
     if (args.length > 0) {
@@ -76,7 +76,7 @@ public class NLS {
     return str;
   }
 
-  public static String getLocalizedMessage(String key, Object[] args) {
+  public static String getLocalizedMessage(String key, Object... args) {
     return getLocalizedMessage(key, Locale.getDefault(), args);
   }
 
@@ -89,7 +89,7 @@ public class NLS {
    * @param clazz
    *          where constants will reside
    */
-  //@SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked")
   protected static void initializeMessages(String bundleName, Class clazz) {
     try {
       load(clazz);
@@ -105,8 +105,8 @@ public class NLS {
 
     // slow resource checking
     // need to loop thru all registered resource bundles
-    for (Iterator/*<String>*/ it = bundles.keySet().iterator(); it.hasNext();) {
-      Class/*<Object>*/ clazz = (Class) bundles.get((String)it.next());
+    for (Iterator<String> it = bundles.keySet().iterator(); it.hasNext();) {
+      Class<Object> clazz = bundles.get(it.next());
       ResourceBundle resourceBundle = ResourceBundle.getBundle(clazz.getName(),
           locale);
       if (resourceBundle != null) {
@@ -126,14 +126,14 @@ public class NLS {
   /**
    * @param clazz
    */
-  private static void load(Class/*<Object>*/ clazz) {
+  private static void load(Class<Object> clazz) {
     final Field[] fieldArray = clazz.getDeclaredFields();
 
     boolean isFieldAccessible = (clazz.getModifiers() & Modifier.PUBLIC) != 0;
 
     // build a map of field names to Field objects
     final int len = fieldArray.length;
-    Map/*<String, Field>*/ fields = new HashMap/*<String, Field>*/(len * 2);
+    Map<String, Field> fields = new HashMap<String, Field>(len * 2);
     for (int i = 0; i < len; i++) {
       fields.put(fieldArray[i].getName(), fieldArray[i]);
       loadfieldValue(fieldArray[i], isFieldAccessible, clazz);
@@ -145,7 +145,7 @@ public class NLS {
    * @param isFieldAccessible
    */
   private static void loadfieldValue(Field field, boolean isFieldAccessible,
-      Class/*<Object>*/ clazz) {
+      Class<Object> clazz) {
     int MOD_EXPECTED = Modifier.PUBLIC | Modifier.STATIC;
     int MOD_MASK = MOD_EXPECTED | Modifier.FINAL;
     if ((field.getModifiers() & MOD_MASK) != MOD_EXPECTED)
@@ -168,7 +168,7 @@ public class NLS {
    * @param key
    *          - Message Key
    */
-  private static void validateMessage(String key, Class/*<Object>*/ clazz) {
+  private static void validateMessage(String key, Class<Object> clazz) {
     // Test if the message is present in the resource bundle
     try {
       ResourceBundle resourceBundle = ResourceBundle.getBundle(clazz.getName(),
@@ -192,7 +192,7 @@ public class NLS {
   /*
    * Make a class field accessible
    */
-  //@SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked")
   private static void makeAccessible(final Field field) {
     if (System.getSecurityManager() == null) {
       field.setAccessible(true);

@@ -47,7 +47,7 @@ public class SlopQueryNode extends QueryNodeImpl implements FieldableNode {
   public SlopQueryNode(QueryNode query, int value) {
     if (query == null) {
       throw new QueryNodeError(new MessageImpl(
-          QueryParserMessages.NODE_ACTION_NOT_SUPPORTED, new Object[]{"query", "null"}));
+          QueryParserMessages.NODE_ACTION_NOT_SUPPORTED, "query", "null"));
     }
 
     this.value = value;

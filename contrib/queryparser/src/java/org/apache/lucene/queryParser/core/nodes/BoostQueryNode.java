@@ -51,7 +51,7 @@ public class BoostQueryNode extends QueryNodeImpl {
   public BoostQueryNode(QueryNode query, float value) throws QueryNodeException {
     if (query == null) {
       throw new QueryNodeError(new MessageImpl(
-          QueryParserMessages.NODE_ACTION_NOT_SUPPORTED, new Object[]{"query", "null"}));
+          QueryParserMessages.NODE_ACTION_NOT_SUPPORTED, "query", "null"));
     }
 
     this.value = value;

@@ -94,7 +94,7 @@ public class ModifierQueryNode extends QueryNodeImpl {
   public ModifierQueryNode(QueryNode query, Modifier mod) {
     if (query == null) {
       throw new QueryNodeError(new MessageImpl(
-          QueryParserMessages.PARAMETER_VALUE_NOT_SUPPORTED, new Object[]{"query", "null"}));
+          QueryParserMessages.PARAMETER_VALUE_NOT_SUPPORTED, "query", "null"));
     }
 
     allocate();
