@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.FSDirectory;
 
 /**
  * This tests the patch for issue #LUCENE-715 (IndexWriter does not
@@ -72,14 +73,16 @@ public class TestIndexWriterLockRelease extends LuceneTestCase {
 
     public void testIndexWriterLockRelease() throws IOException {
         IndexWriter im;
-
+        FSDirectory dir = FSDirectory.open(this.__test_dir);
         try {
-            im = new IndexWriter(this.__test_dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+            im = new IndexWriter(dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
         } catch (FileNotFoundException e) {
             try {
-                im = new IndexWriter(this.__test_dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+                im = new IndexWriter(dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
             } catch (FileNotFoundException e1) {
             }
+        } finally {
+          dir.close();
         }
     }
 }

@@ -128,7 +128,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     }
     //writer.optimize ();
     writer.close ();
-    IndexSearcher s = new IndexSearcher (indexStore);
+    IndexSearcher s = new IndexSearcher (indexStore, true);
     s.setDefaultFieldSortScoring(true, true);
     return s;
   }
@@ -160,7 +160,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     //writer.optimize ();
     //System.out.println(writer.getSegmentCount());
     writer.close ();
-    return new IndexSearcher (indexStore);
+    return new IndexSearcher (indexStore, true);
   }
   
   public String getRandomNumberString(int num, int low, int high) {

@@ -320,9 +320,6 @@ public class TestFieldsReader extends LuceneTestCase {
     public IndexInput openInput(String name) throws IOException {
       return new FaultyIndexInput(fsDir.openInput(name));
     }
-    public String[] list() throws IOException {
-      return fsDir.list();
-    }
     public String[] listAll() throws IOException {
       return fsDir.listAll();
     }
@@ -337,9 +334,6 @@ public class TestFieldsReader extends LuceneTestCase {
     }
     public void deleteFile(String name) throws IOException {
       fsDir.deleteFile(name);
-    }
-    public void renameFile(String name, String newName) throws IOException {
-      fsDir.renameFile(name, newName);
     }
     public long fileLength(String name) throws IOException {
       return fsDir.fileLength(name);

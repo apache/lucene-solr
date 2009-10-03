@@ -74,7 +74,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     writer.optimize ();
     writer.close ();
 
-    searcher = new IndexSearcher (directory);
+    searcher = new IndexSearcher (directory, true);
     query = new TermQuery (new Term ("field", "three"));
     filter = newStaticFilterB();
   }

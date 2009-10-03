@@ -96,13 +96,13 @@ public class TestBufferedIndexInput extends LuceneTestCase {
                                                 inputBufferSize, 10), inputBufferSize, r);
     // run test with chunk size of 100 MB - default
     runReadBytesAndClose(new SimpleFSIndexInput(tmpInputFile,
-                                                inputBufferSize), inputBufferSize, r);
+                                                inputBufferSize, FSDirectory.DEFAULT_READ_CHUNK_SIZE), inputBufferSize, r);
     // run test with chunk size of 10 bytes
     runReadBytesAndClose(new NIOFSIndexInput(tmpInputFile,
                                              inputBufferSize, 10), inputBufferSize, r);
     // run test with chunk size of 100 MB - default
     runReadBytesAndClose(new NIOFSIndexInput(tmpInputFile,
-                                             inputBufferSize), inputBufferSize, r);
+                                             inputBufferSize, FSDirectory.DEFAULT_READ_CHUNK_SIZE), inputBufferSize, r);
   }
 
   private void runReadBytesAndClose(IndexInput input, int bufferSize, Random r)
@@ -352,11 +352,6 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       {
         return dir.fileExists(name);
       }
-      public String[] list()
-        throws IOException
-      {
-        return dir.list();
-      }
       public String[] listAll()
         throws IOException
       {
@@ -365,11 +360,6 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
       public long fileLength(String name) throws IOException {
         return dir.fileLength(name);
-      }
-      public void renameFile(String from, String to)
-        throws IOException
-      {
-        dir.renameFile(from, to);
       }
 
 

@@ -552,24 +552,24 @@ public class TestIndexReader extends LuceneTestCase
         reader.setNorm(0, "content", (float) 2.0);
 
         // we should be holding the write lock now:
-        assertTrue("locked", IndexReader.isLocked(dir));
+        assertTrue("locked", IndexWriter.isLocked(dir));
 
         reader.commit();
 
         // we should not be holding the write lock now:
-        assertTrue("not locked", !IndexReader.isLocked(dir));
+        assertTrue("not locked", !IndexWriter.isLocked(dir));
 
         // open a 2nd reader:
         IndexReader reader2 = IndexReader.open(dir, false);
 
         // set norm again for doc 0
         reader.setNorm(0, "content", (float) 3.0);
-        assertTrue("locked", IndexReader.isLocked(dir));
+        assertTrue("locked", IndexWriter.isLocked(dir));
 
         reader.close();
 
         // we should not be holding the write lock now:
-        assertTrue("not locked", !IndexReader.isLocked(dir));
+        assertTrue("not locked", !IndexWriter.isLocked(dir));
 
         reader2.close();
         dir.close();
@@ -752,7 +752,6 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     public void testLastModified() throws Exception {
-      assertFalse(IndexReader.indexExists("there_is_no_such_index"));
       final File fileDir = new File(System.getProperty("tempDir"), "testIndex");
       for(int i=0;i<2;i++) {
         try {
@@ -764,14 +763,14 @@ public class TestIndexReader extends LuceneTestCase
           assertFalse(IndexReader.indexExists(dir));
           IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
           addDocumentWithFields(writer);
-          assertTrue(IndexReader.isLocked(dir));		// writer open, so dir is locked
+          assertTrue(IndexWriter.isLocked(dir));		// writer open, so dir is locked
           writer.close();
           assertTrue(IndexReader.indexExists(dir));
           IndexReader reader = IndexReader.open(dir, false);
-          assertFalse(IndexReader.isLocked(dir));		// reader only, no lock
+          assertFalse(IndexWriter.isLocked(dir));		// reader only, no lock
           long version = IndexReader.lastModified(dir);
           if (i == 1) {
-            long version2 = IndexReader.lastModified(fileDir);
+            long version2 = IndexReader.lastModified(dir);
             assertEquals(version, version2);
           }
           reader.close();
@@ -794,16 +793,15 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     public void testVersion() throws IOException {
-      assertFalse(IndexReader.indexExists("there_is_no_such_index"));
       Directory dir = new MockRAMDirectory();
       assertFalse(IndexReader.indexExists(dir));
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       addDocumentWithFields(writer);
-      assertTrue(IndexReader.isLocked(dir));		// writer open, so dir is locked
+      assertTrue(IndexWriter.isLocked(dir));		// writer open, so dir is locked
       writer.close();
       assertTrue(IndexReader.indexExists(dir));
       IndexReader reader = IndexReader.open(dir, false);
-      assertFalse(IndexReader.isLocked(dir));		// reader only, no lock
+      assertFalse(IndexWriter.isLocked(dir));		// reader only, no lock
       long version = IndexReader.getCurrentVersion(dir);
       reader.close();
       // modify index and check version has been
@@ -830,7 +828,7 @@ public class TestIndexReader extends LuceneTestCase
       } catch(IOException e) {
         // expected exception
       }
-      IndexReader.unlock(dir);		// this should not be done in the real world! 
+      IndexWriter.unlock(dir);		// this should not be done in the real world! 
       reader.deleteDocument(0);
       reader.close();
       writer.close();
@@ -1153,7 +1151,7 @@ public class TestIndexReader extends LuceneTestCase
         // expected
       }
       reader.close();
-      if (IndexReader.isLocked(dir)) {
+      if (IndexWriter.isLocked(dir)) {
         fail("write lock is still held after close");
       }
 
@@ -1165,7 +1163,7 @@ public class TestIndexReader extends LuceneTestCase
         // expected
       }
       reader.close();
-      if (IndexReader.isLocked(dir)) {
+      if (IndexWriter.isLocked(dir)) {
         fail("write lock is still held after close");
       }
       dir.close();

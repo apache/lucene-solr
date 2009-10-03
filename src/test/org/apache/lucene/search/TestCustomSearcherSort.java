@@ -222,7 +222,7 @@ implements Serializable {
          * @throws IOException
          */
         public CustomSearcher(Directory directory, int switcher) throws IOException {
-            super(directory);
+            super(directory, true);
             this.switcher = switcher;
         }
         /**
@@ -230,14 +230,6 @@ implements Serializable {
          */
         public CustomSearcher(IndexReader r, int switcher) {
             super(r);
-            this.switcher = switcher;
-        }
-        /**
-         * @param path
-         * @throws IOException
-         */
-        public CustomSearcher(String path, int switcher) throws IOException {
-            super(path);
             this.switcher = switcher;
         }
         /* (non-Javadoc)
