@@ -37,6 +37,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -455,7 +456,7 @@ public class InstantiatedIndexWriter {
     // normalize settings per field name in document
 
     Map<String /* field name */, FieldSetting> fieldSettingsByFieldName = new HashMap<String, FieldSetting>();
-    for (Field field : (List<Field>) document.getDocument().getFields()) {
+    for (Fieldable field : (List<Fieldable>) document.getDocument().getFields()) {
       FieldSetting fieldSetting = fieldSettingsByFieldName.get(field.name());
       if (fieldSetting == null) {
         fieldSetting = new FieldSetting();
@@ -499,12 +500,12 @@ public class InstantiatedIndexWriter {
       }
     }
 
-    Map<Field, LinkedList<Token>> tokensByField = new LinkedHashMap<Field, LinkedList<Token>>(20);
+    Map<Fieldable, LinkedList<Token>> tokensByField = new LinkedHashMap<Fieldable, LinkedList<Token>>(20);
 
     // tokenize indexed fields.
-    for (Iterator<Field> it = (Iterator<Field>) document.getDocument().getFields().iterator(); it.hasNext();) {
+    for (Iterator<Fieldable> it = (Iterator<Fieldable>) document.getDocument().getFields().iterator(); it.hasNext();) {
 
-      Field field = it.next();
+      Fieldable field = it.next();
 
       FieldSetting fieldSetting = fieldSettingsByFieldName.get(field.name());
 
@@ -554,7 +555,7 @@ public class InstantiatedIndexWriter {
     termDocumentInformationFactoryByDocument.put(document, termDocumentInformationFactoryByTermTextAndFieldSetting);
 
     // build term vector, term positions and term offsets
-    for (Map.Entry<Field, LinkedList<Token>> eField_Tokens : tokensByField.entrySet()) {
+    for (Map.Entry<Fieldable, LinkedList<Token>> eField_Tokens : tokensByField.entrySet()) {
       FieldSetting fieldSetting = fieldSettingsByFieldName.get(eField_Tokens.getKey().name());
 
       Map<String, TermDocumentInformationFactory> termDocumentInformationFactoryByTermText = termDocumentInformationFactoryByTermTextAndFieldSetting.get(fieldSettingsByFieldName.get(eField_Tokens.getKey().name()));

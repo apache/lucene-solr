@@ -28,7 +28,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
@@ -182,14 +182,14 @@ public class InstantiatedIndex
         InstantiatedDocument document = new InstantiatedDocument();
         // copy stored fields from source reader
         Document sourceDocument = sourceIndexReader.document(i);
-        for (Field field : (List<Field>) sourceDocument.getFields()) {
+        for (Fieldable field : sourceDocument.getFields()) {
           if (fields == null || fields.contains(field.name())) {
             document.getDocument().add(field);
           }
         }
         document.setDocumentNumber(i);
         documentsByNumber[i] = document;
-        for (Field field : (List<Field>) document.getDocument().getFields()) {
+        for (Fieldable field : document.getDocument().getFields()) {
           if (fields == null || fields.contains(field.name())) {
             if (field.isTermVectorStored()) {
               if (document.getVectorSpace() == null) {
@@ -266,7 +266,7 @@ public class InstantiatedIndex
       if (document == null) {
         continue; // deleted
       }
-      for (Field field : (List<Field>) document.getDocument().getFields()) {
+      for (Fieldable field : document.getDocument().getFields()) {
         if (field.isTermVectorStored() && field.isStoreOffsetWithTermVector()) {
           TermPositionVector termPositionVector = (TermPositionVector) sourceIndexReader.getTermFreqVector(document.getDocumentNumber(), field.name());
           if (termPositionVector != null) {
