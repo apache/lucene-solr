@@ -112,7 +112,7 @@ import org.apache.lucene.index.Payload;
  * See {@link #calculateShingleWeight(org.apache.lucene.analysis.Token, java.util.List, int, java.util.List, java.util.List)}.
  * <p/>
  * <b>NOTE:</b> This filter might not behave correctly if used with custom Attributes, i.e. Attributes other than
- * the ones located in org.apache.lucene.analysis.tokenattributes. 
+ * the ones located in org.apache.lucene.analysis.tokenattributes.
  */
 public class ShingleMatrixFilter extends TokenStream {
 
@@ -206,7 +206,7 @@ public class ShingleMatrixFilter extends TokenStream {
   private TypeAttribute in_typeAtt;
   private FlagsAttribute in_flagsAtt;
 
-  
+
   /**
    * Creates a shingle filter based on a user defined matrix.
    *
@@ -237,7 +237,7 @@ public class ShingleMatrixFilter extends TokenStream {
 
     // set the input to be an empty token stream, we already have the data.
     this.input = new EmptyTokenStream();
-    
+
     in_termAtt = input.addAttribute(TermAttribute.class);
     in_posIncrAtt = input.addAttribute(PositionIncrementAttribute.class);
     in_payloadAtt = input.addAttribute(PayloadAttribute.class);
@@ -316,7 +316,7 @@ public class ShingleMatrixFilter extends TokenStream {
     offsetAtt = addAttribute(OffsetAttribute.class);
     typeAtt = addAttribute(TypeAttribute.class);
     flagsAtt = addAttribute(FlagsAttribute.class);
-    
+
     in_termAtt = input.addAttribute(TermAttribute.class);
     in_posIncrAtt = input.addAttribute(PositionIncrementAttribute.class);
     in_payloadAtt = input.addAttribute(PayloadAttribute.class);
@@ -328,12 +328,12 @@ public class ShingleMatrixFilter extends TokenStream {
   // internal filter instance variables
 
   /** iterator over the current matrix row permutations */
-  private Iterator permutations;
+  private Iterator<Matrix.Column.Row[]> permutations;
 
   /** the current permutation of tokens used to produce shingles */
-  private List currentPermuationTokens;
+  private List<Token> currentPermuationTokens;
   /** index to what row a token in currentShingleTokens represents*/
-  private List currentPermutationRows;
+  private List<Matrix.Column.Row> currentPermutationRows;
 
   private int currentPermutationTokensStartOffset;
   private int currentShingleLength;
@@ -342,7 +342,7 @@ public class ShingleMatrixFilter extends TokenStream {
    * a set containing shingles that has been the result of a call to next(Token),
    * used to avoid producing the same shingle more than once.
    */
-  private Set shinglesSeen = new HashSet();
+  private Set<List<Token>> shinglesSeen = new HashSet<List<Token>>();
 
 
   public void reset() throws IOException {
@@ -352,9 +352,9 @@ public class ShingleMatrixFilter extends TokenStream {
   }
 
   private Matrix matrix;
-  
+
   private Token reusableToken = new Token();
-  
+
   public final boolean incrementToken() throws IOException {
     if (matrix == null) {
       matrix = new Matrix();
@@ -372,7 +372,7 @@ public class ShingleMatrixFilter extends TokenStream {
       token = produceNextToken(reusableToken);
     } while (token == request_next_token);
     if (token == null) return false;
-    
+
     termAtt.setTermBuffer(token.termBuffer(), 0, token.termLength());
     posIncrAtt.setPositionIncrement(token.getPositionIncrement());
     flagsAtt.setFlags(token.getFlags());
@@ -381,7 +381,7 @@ public class ShingleMatrixFilter extends TokenStream {
     payloadAtt.setPayload(token.getPayload());
     return true;
   }
-  
+
   private Token getNextInputToken(Token token) throws IOException {
     if (!input.incrementToken()) return null;
     token.setTermBuffer(in_termAtt.termBuffer(), 0, in_termAtt.termLength());
@@ -404,7 +404,7 @@ public class ShingleMatrixFilter extends TokenStream {
   public final Token next() throws java.io.IOException {
     return super.next();
   }
-  
+
   private static final Token request_next_token = new Token();
 
   /**
@@ -428,16 +428,16 @@ public class ShingleMatrixFilter extends TokenStream {
 
         if (ignoringSinglePrefixOrSuffixShingle
             && currentShingleLength == 1
-            && (((Matrix.Column.Row) currentPermutationRows.get(currentPermutationTokensStartOffset)).getColumn().isFirst() || ((Matrix.Column.Row) currentPermutationRows.get(currentPermutationTokensStartOffset)).getColumn().isLast())) {
+            && ((currentPermutationRows.get(currentPermutationTokensStartOffset)).getColumn().isFirst() || (currentPermutationRows.get(currentPermutationTokensStartOffset)).getColumn().isLast())) {
           return next(reusableToken);
         }
 
         int termLength = 0;
 
-        List shingle = new ArrayList();
+        List<Token> shingle = new ArrayList<Token>(currentShingleLength);
 
         for (int i = 0; i < currentShingleLength; i++) {
-          Token shingleToken = (Token) currentPermuationTokens.get(i + currentPermutationTokensStartOffset);
+          Token shingleToken = currentPermuationTokens.get(i + currentPermutationTokensStartOffset);
           termLength += shingleToken.termLength();
           shingle.add(shingleToken);
         }
@@ -452,8 +452,7 @@ public class ShingleMatrixFilter extends TokenStream {
 
         // shingle token factory
         StringBuilder sb = new StringBuilder(termLength + 10); // paranormal ability to foresee the future.
-        for (Iterator iterator = shingle.iterator(); iterator.hasNext();) {
-          Token shingleToken = (Token) iterator.next();
+        for (Token shingleToken : shingle) {
           if (spacerCharacter != null && sb.length() > 0) {
             sb.append(spacerCharacter);
           }
@@ -493,22 +492,19 @@ public class ShingleMatrixFilter extends TokenStream {
           // get rid of resources
 
           // delete the first column in the matrix
-          Matrix.Column deletedColumn = (Matrix.Column) matrix.columns.remove(0);
+          Matrix.Column deletedColumn = matrix.columns.remove(0);
 
           // remove all shingles seen that include any of the tokens from the deleted column.
-          List deletedColumnTokens = new ArrayList();
-          for (Iterator iterator = deletedColumn.getRows().iterator(); iterator.hasNext();) {
-            Matrix.Column.Row row = (Matrix.Column.Row) iterator.next();
-            for (Iterator rowIter = row.getTokens().iterator(); rowIter.hasNext();) {
-              Object o = rowIter.next();//Token
-              deletedColumnTokens.add(o);
+          List<Token> deletedColumnTokens = new ArrayList<Token>();
+          for (Matrix.Column.Row row : deletedColumn.getRows()) {
+            for (Token token : row.getTokens()) {
+              deletedColumnTokens.add(token);
             }
 
           }
-          for (Iterator shinglesSeenIterator = shinglesSeen.iterator(); shinglesSeenIterator.hasNext();) {
-            List shingle = (List) shinglesSeenIterator.next();
-            for (Iterator deletedIter = deletedColumnTokens.iterator(); deletedIter.hasNext();) {
-              Token deletedColumnToken = (Token) deletedIter.next();
+          for (Iterator<List<Token>> shinglesSeenIterator = shinglesSeen.iterator(); shinglesSeenIterator.hasNext();) {
+            List<Token> shingle = shinglesSeenIterator.next();
+            for (Token deletedColumnToken : deletedColumnTokens) {
               if (shingle.contains(deletedColumnToken)) {
                 shinglesSeenIterator.remove();
                 break;
@@ -552,14 +548,12 @@ public class ShingleMatrixFilter extends TokenStream {
    * finally resets the current (next) shingle size and offset.
    */
   private void nextTokensPermutation() {
-    Matrix.Column.Row[] rowsPermutation;
-    rowsPermutation = (Matrix.Column.Row[]) permutations.next();
-    List currentPermutationRows = new ArrayList();
-    List currentPermuationTokens = new ArrayList();
-    for (int i = 0; i < rowsPermutation.length; i++) {
-      Matrix.Column.Row row = rowsPermutation[i];
-      for (Iterator iterator = row.getTokens().iterator(); iterator.hasNext();) {
-        currentPermuationTokens.add(iterator.next());
+    Matrix.Column.Row[] rowsPermutation = permutations.next();
+    List<Matrix.Column.Row> currentPermutationRows = new ArrayList<Matrix.Column.Row>();
+    List<Token> currentPermuationTokens = new ArrayList<Token>();
+    for (Matrix.Column.Row row : rowsPermutation) {
+      for (Token token : row.getTokens()) {
+        currentPermuationTokens.add(token);
         currentPermutationRows.add(row);
       }
     }
@@ -627,8 +621,7 @@ public class ShingleMatrixFilter extends TokenStream {
     double factor = 1d / Math.sqrt(total);
 
     double weight = 0d;
-    for (int i = 0; i < weights.length; i++) {
-      double partWeight = weights[i];
+    for (double partWeight : weights) {
       weight += partWeight * factor;
     }
 
@@ -709,7 +702,7 @@ public class ShingleMatrixFilter extends TokenStream {
 
     private boolean columnsHasBeenCreated = false;
 
-    private List columns = new ArrayList();
+    private List<Column> columns = new ArrayList<Column>();
 
     public List getColumns() {
       return columns;
@@ -740,9 +733,9 @@ public class ShingleMatrixFilter extends TokenStream {
         Matrix.this.columns.add(this);
       }
 
-      private List rows = new ArrayList();
+      private List<Row> rows = new ArrayList<Row>();
 
-      public List getRows() {
+      public List<Row> getRows() {
         return rows;
       }
 
@@ -781,7 +774,7 @@ public class ShingleMatrixFilter extends TokenStream {
           return Column.this;
         }
 
-        private List tokens = new LinkedList();
+        private List<Token> tokens = new LinkedList<Token>();
 
         public Row() {
           Column.this.rows.add(this);
@@ -791,11 +784,11 @@ public class ShingleMatrixFilter extends TokenStream {
           return Column.this.rows.indexOf(this);
         }
 
-        public List getTokens() {
+        public List<Token> getTokens() {
           return tokens;
         }
 
-        public void setTokens(List tokens) {
+        public void setTokens(List<Token> tokens) {
           this.tokens = tokens;
         }
 
@@ -826,9 +819,9 @@ public class ShingleMatrixFilter extends TokenStream {
     }
 
 
-    public Iterator permutationIterator() {
+    public Iterator<Column.Row[]> permutationIterator() {
 
-      return new Iterator() {
+      return new Iterator<Column.Row[]>() {
 
         private int[] columnRowCounters = new int[columns.size()];
 
@@ -838,10 +831,10 @@ public class ShingleMatrixFilter extends TokenStream {
 
         public boolean hasNext() {
           int s = columnRowCounters.length;
-          return s != 0 && columnRowCounters[s - 1] < ((Column) columns.get(s - 1)).getRows().size();
+          return s != 0 && columnRowCounters[s - 1] < (columns.get(s - 1)).getRows().size();
         }
 
-        public Object next() {
+        public Column.Row[] next() {
           if (!hasNext()) {
             throw new NoSuchElementException("no more elements");
           }
@@ -849,7 +842,7 @@ public class ShingleMatrixFilter extends TokenStream {
           Column.Row[] rows = new Column.Row[columnRowCounters.length];
 
           for (int i = 0; i < columnRowCounters.length; i++) {
-            rows[i] = (Matrix.Column.Row) ((Column) columns.get(i)).rows.get(columnRowCounters[i]);
+            rows[i] = columns.get(i).rows.get(columnRowCounters[i]);
           }
           incrementColumnRowCounters();
 
@@ -859,7 +852,7 @@ public class ShingleMatrixFilter extends TokenStream {
         private void incrementColumnRowCounters() {
           for (int i = 0; i < columnRowCounters.length; i++) {
             columnRowCounters[i]++;
-            if (columnRowCounters[i] == ((Column) columns.get(i)).rows.size() &&
+            if (columnRowCounters[i] == columns.get(i).rows.size() &&
                 i < columnRowCounters.length - 1) {
               columnRowCounters[i] = 0;
             } else {

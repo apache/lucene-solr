@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.shingle;
  */
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -28,6 +29,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.miscellaneous.EmptyTokenStream;
 import org.apache.lucene.analysis.miscellaneous.PrefixAndSuffixAwareTokenFilter;
 import org.apache.lucene.analysis.miscellaneous.SingleTokenTokenStream;
@@ -44,7 +46,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
       "testBehavingAsShingleFilter", "testMatrix"
     })));
   }
-
+    
   public void testBehavingAsShingleFilter() throws IOException {
 
     ShingleMatrixFilter.defaultSettingsCodec = null;
