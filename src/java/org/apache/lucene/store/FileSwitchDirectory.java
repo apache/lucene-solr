@@ -79,10 +79,6 @@ public class FileSwitchDirectory extends Directory {
     System.arraycopy(secondaryFiles, 0, files, primaryFiles.length, secondaryFiles.length);
     return files;
   }
-  
-  public String[] list() throws IOException {
-    return listAll();
-  }
 
   /** Utility method to return a file's extension. */
   public static String getExtension(String name) {
@@ -116,10 +112,6 @@ public class FileSwitchDirectory extends Directory {
 
   public void deleteFile(String name) throws IOException {
     getDirectory(name).deleteFile(name);
-  }
-
-  public void renameFile(String from, String to) throws IOException {
-    getDirectory(from).renameFile(from, to);
   }
 
   public long fileLength(String name) throws IOException {

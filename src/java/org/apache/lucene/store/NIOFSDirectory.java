@@ -60,10 +60,6 @@ public class NIOFSDirectory extends FSDirectory {
     super(path, null);
   }
 
-  // back compatibility so FSDirectory can instantiate via reflection
-  /** @deprecated */
-  NIOFSDirectory() {}
-
   /** Creates an IndexInput for the file with the given name. */
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
@@ -85,11 +81,6 @@ public class NIOFSDirectory extends FSDirectory {
 
     final FileChannel channel;
 
-    /** @deprecated Please use ctor taking chunkSize */
-    public NIOFSIndexInput(File path, int bufferSize) throws IOException {
-      this(path, bufferSize, FSDirectory.DEFAULT_READ_CHUNK_SIZE);
-    }
-    
     public NIOFSIndexInput(File path, int bufferSize, int chunkSize) throws IOException {
       super(path, bufferSize, chunkSize);
       channel = file.getChannel();

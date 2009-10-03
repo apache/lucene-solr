@@ -1335,9 +1335,11 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * Lotsa tests did hacks like:<br/>
    * SegmentReader reader = (SegmentReader) IndexReader.open(dir);<br/>
    * They broke. This method serves as a hack to keep hacks working
+   * We do it with R/W access for the tests (BW compatibility)
+   * @deprecated Remove this when tests are fixed!
    */
   static SegmentReader getOnlySegmentReader(Directory dir) throws IOException {
-    return getOnlySegmentReader(IndexReader.open(dir));
+    return getOnlySegmentReader(IndexReader.open(dir,false));
   }
 
   static SegmentReader getOnlySegmentReader(IndexReader reader) {

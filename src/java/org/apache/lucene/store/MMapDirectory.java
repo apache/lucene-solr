@@ -91,10 +91,6 @@ public class MMapDirectory extends FSDirectory {
     super(path, null);
   }
 
-  // back compatibility so FSDirectory can instantiate via reflection
-  /** @deprecated */
-  MMapDirectory() {}
-  
   static final Class[] NO_PARAM_TYPES = new Class[0];
   static final Object[] NO_PARAMS = new Object[0];
   

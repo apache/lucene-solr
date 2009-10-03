@@ -45,30 +45,12 @@ public abstract class Directory {
    * this Directory instance). */
   protected LockFactory lockFactory;
 
-  /** List the files in the directory.
-   * 
-   *  @deprecated For some Directory implementations ({@link
-   *  FSDirectory}, and its subclasses), this method
-   *  silently filters its results to include only index
-   *  files.  Please use {@link #listAll} instead, which
-   *  does no filtering. */
-  public abstract String[] list()
-       throws IOException;
-
   /** Returns an array of strings, one for each file in the
    *  directory.  Unlike {@link #list} this method does no
    *  filtering of the contents in a directory, and it will
    *  never return null (throws IOException instead).
-   *
-   *  Currently this method simply falls back to {@link
-   *  #list} for Directory impls outside of Lucene's core &
-   *  contrib, but in 3.0 that method will be removed and
-   *  this method will become abstract. */
-  public String[] listAll()
-    throws IOException
-  {
-    return list();
-  }
+   */
+  public abstract String[] listAll() throws IOException;
 
   /** Returns true iff a file with the given name exists. */
   public abstract boolean fileExists(String name)
@@ -86,14 +68,6 @@ public abstract class Directory {
   public abstract void deleteFile(String name)
        throws IOException;
 
-  /** Renames an existing file in the directory.
-   * If a file already exists with the new name, then it is replaced.
-   * This replacement is not guaranteed to be atomic.
-   * @deprecated 
-   */
-  public abstract void renameFile(String from, String to)
-       throws IOException;
-
   /** Returns the length of a file in the directory. */
   public abstract long fileLength(String name)
        throws IOException;
@@ -101,7 +75,8 @@ public abstract class Directory {
 
   /** Creates a new, empty file in the directory with the given name.
       Returns a stream writing this file. */
-  public abstract IndexOutput createOutput(String name) throws IOException;
+  public abstract IndexOutput createOutput(String name)
+       throws IOException;
 
   /** Ensure that any writes to this file are moved to
    *  stable storage.  Lucene uses this to properly commit
@@ -156,8 +131,9 @@ public abstract class Directory {
    * @param lockFactory instance of {@link LockFactory}.
    */
   public void setLockFactory(LockFactory lockFactory) {
-      this.lockFactory = lockFactory;
-      lockFactory.setLockPrefix(this.getLockID());
+    assert lockFactory != null;
+    this.lockFactory = lockFactory;
+    lockFactory.setLockPrefix(this.getLockID());
   }
 
   /**

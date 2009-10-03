@@ -28,11 +28,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.IndexFileNameFilter;
 import org.apache.lucene.util.Constants;
-
-// Used only for WRITE_LOCK_NAME in deprecated create=true case:
-import org.apache.lucene.index.IndexWriter;
 
 /**
  * <a name="subclasses"/>
@@ -97,104 +93,10 @@ import org.apache.lucene.index.IndexWriter;
  * <p>The locking implementation is by default {@link
  * NativeFSLockFactory}, but can be changed by
  * passing in a custom {@link LockFactory} instance.
- * The deprecated <code>getDirectory</code> methods default to use
- * {@link SimpleFSLockFactory} for backwards compatibility.
- * The system properties 
- * <code>org.apache.lucene.store.FSDirectoryLockFactoryClass</code>
- * and <code>org.apache.lucene.FSDirectory.class</code>
- * are deprecated and only used by the deprecated
- * <code>getDirectory</code> methods. The system property
- * <code>org.apache.lucene.lockDir</code> is ignored completely,
- * If you really want to store locks
- * elsewhere, you can create your own {@link
- * SimpleFSLockFactory} (or {@link NativeFSLockFactory},
- * etc.) passing in your preferred lock directory.
- *
- * <p><em>In 3.0 this class will become abstract.</em>
  *
  * @see Directory
  */
-// TODO: in 3.0 this will become an abstract base class
-public class FSDirectory extends Directory {
-    
-  /** This cache of directories ensures that there is a unique Directory
-   * instance per path, so that synchronization on the Directory can be used to
-   * synchronize access between readers and writers.  We use
-   * refcounts to ensure when the last use of an FSDirectory
-   * instance for a given canonical path is closed, we remove the
-   * instance from the cache.  See LUCENE-776
-   * for some relevant discussion.
-   * @deprecated Not used by any non-deprecated methods anymore
-   */
-  private static final Map DIRECTORIES = new HashMap();
-
-  private static boolean disableLocks = false;
-
-  // TODO: should this move up to the Directory base class?  Also: should we
-  // make a per-instance (in addition to the static "default") version?
-
-  /**
-   * Set whether Lucene's use of lock files is disabled. By default, 
-   * lock files are enabled. They should only be disabled if the index
-   * is on a read-only medium like a CD-ROM.
-   * @deprecated Use a {@link #open(File, LockFactory)} or a constructor
-   * that takes a {@link LockFactory} and supply
-   * {@link NoLockFactory#getNoLockFactory}. This setting does not work
-   * with {@link #open(File)} only the deprecated <code>getDirectory</code>
-   * respect this setting.   
-   */
-  public static void setDisableLocks(boolean doDisableLocks) {
-    FSDirectory.disableLocks = doDisableLocks;
-  }
-
-  /**
-   * Returns whether Lucene's use of lock files is disabled.
-   * @return true if locks are disabled, false if locks are enabled.
-   * @see #setDisableLocks
-   * @deprecated Use a constructor that takes a {@link LockFactory} and
-   * supply {@link NoLockFactory#getNoLockFactory}.
-  */
-  public static boolean getDisableLocks() {
-    return FSDirectory.disableLocks;
-  }
-
-  /**
-   * Directory specified by <code>org.apache.lucene.lockDir</code>
-   * or <code>java.io.tmpdir</code> system property.
-
-   * @deprecated As of 2.1, <code>LOCK_DIR</code> is unused
-   * because the write.lock is now stored by default in the
-   * index directory.  If you really want to store locks
-   * elsewhere, you can create your own {@link
-   * SimpleFSLockFactory} (or {@link NativeFSLockFactory},
-   * etc.) passing in your preferred lock directory.  Then,
-   * pass this <code>LockFactory</code> instance to one of
-   * the <code>open</code> methods that take a
-   * <code>lockFactory</code> (for example, {@link #open(File, LockFactory)}).
-   */
-  public static final String LOCK_DIR = System.getProperty("org.apache.lucene.lockDir",
-                                                           System.getProperty("java.io.tmpdir"));
-
-  /** The default class which implements filesystem-based directories. */
-  // deprecated
-  private static Class IMPL;
-  static {
-    try {
-      String name =
-        System.getProperty("org.apache.lucene.FSDirectory.class",
-                           SimpleFSDirectory.class.getName());
-      if (FSDirectory.class.getName().equals(name)) {
-        // FSDirectory will be abstract, so we replace it by the correct class
-        IMPL = SimpleFSDirectory.class;
-      } else {
-        IMPL = Class.forName(name);
-      }
-    } catch (ClassNotFoundException e) {
-      throw new RuntimeException("cannot load FSDirectory class: " + e.toString(), e);
-    } catch (SecurityException se) {
-      IMPL = SimpleFSDirectory.class;
-    }
-  }
+public abstract class FSDirectory extends Directory {
 
   private static MessageDigest DIGESTER;
 
@@ -204,135 +106,6 @@ public class FSDirectory extends Directory {
     } catch (NoSuchAlgorithmException e) {
         throw new RuntimeException(e.toString(), e);
     }
-  }
-
-  /** A buffer optionally used in renameTo method */
-  private byte[] buffer = null;
-
-
-  /** Returns the directory instance for the named location.
-   *
-   * @deprecated Use {@link #open(File)}
-   *
-   * @param path the path to the directory.
-   * @return the FSDirectory for the named file.  */
-  public static FSDirectory getDirectory(String path)
-      throws IOException {
-    return getDirectory(new File(path), null);
-  }
-
-  /** Returns the directory instance for the named location.
-   *
-   * @deprecated Use {@link #open(File, LockFactory)}
-   *
-   * @param path the path to the directory.
-   * @param lockFactory instance of {@link LockFactory} providing the
-   *        locking implementation.
-   * @return the FSDirectory for the named file.  */
-  public static FSDirectory getDirectory(String path, LockFactory lockFactory)
-      throws IOException {
-    return getDirectory(new File(path), lockFactory);
-  }
-
-  /** Returns the directory instance for the named location.
-   *
-   * @deprecated Use {@link #open(File)}
-   *
-   * @param file the path to the directory.
-   * @return the FSDirectory for the named file.  */
-  public static FSDirectory getDirectory(File file)
-    throws IOException {
-    return getDirectory(file, null);
-  }
-
-  /** Returns the directory instance for the named location.
-   *
-   * @deprecated Use {@link #open(File, LockFactory)}
-   *
-   * @param file the path to the directory.
-   * @param lockFactory instance of {@link LockFactory} providing the
-   *        locking implementation.
-   * @return the FSDirectory for the named file.  */
-  public static FSDirectory getDirectory(File file, LockFactory lockFactory)
-    throws IOException
-  {
-    file = getCanonicalPath(file);
-
-    FSDirectory dir;
-    synchronized (DIRECTORIES) {
-      dir = (FSDirectory)DIRECTORIES.get(file);
-      if (dir == null) {
-        try {
-          dir = (FSDirectory)IMPL.newInstance();
-        } catch (Exception e) {
-          throw new RuntimeException("cannot load FSDirectory class: " + e.toString(), e);
-        }
-        dir.init(file, lockFactory);
-        DIRECTORIES.put(file, dir);
-      } else {
-        // Catch the case where a Directory is pulled from the cache, but has a
-        // different LockFactory instance.
-        if (lockFactory != null && lockFactory != dir.getLockFactory()) {
-          throw new IOException("Directory was previously created with a different LockFactory instance; please pass null as the lockFactory instance and use setLockFactory to change it");
-        }
-        dir.checked = false;
-      }
-    }
-    synchronized (dir) {
-      dir.refCount++;
-    }
-    return dir;
-  }
-
-
-  /** Returns the directory instance for the named location.
-   *
-   * @deprecated Use IndexWriter's create flag, instead, to
-   * create a new index.
-   *
-   * @param path the path to the directory.
-   * @param create if true, create, or erase any existing contents.
-   * @return the FSDirectory for the named file.  */
-  public static FSDirectory getDirectory(String path, boolean create)
-      throws IOException {
-    return getDirectory(new File(path), create);
-  }
-
-  /** Returns the directory instance for the named location.
-   *
-   * @deprecated Use IndexWriter's create flag, instead, to
-   * create a new index.
-   *
-   * @param file the path to the directory.
-   * @param create if true, create, or erase any existing contents.
-   * @return the FSDirectory for the named file.  */
-  public static FSDirectory getDirectory(File file, boolean create)
-    throws IOException
-  {
-    FSDirectory dir = getDirectory(file, null);
-
-    // This is now deprecated (creation should only be done
-    // by IndexWriter):
-    if (create) {
-      dir.create();
-    }
-
-    return dir;
-  }
-
-  /** @deprecated */
-  private void create() throws IOException {
-    if (directory.exists()) {
-      String[] files = directory.list(IndexFileNameFilter.getFilter());            // clear old files
-      if (files == null)
-        throw new IOException("cannot read directory " + directory.getAbsolutePath() + ": list() returned null");
-      for (int i = 0; i < files.length; i++) {
-        File file = new File(directory, files[i]);
-        if (!file.delete())
-          throw new IOException("Cannot delete " + file);
-      }
-    }
-    lockFactory.clearLock(IndexWriter.WRITE_LOCK_NAME);
   }
 
   // returns the canonical version of the directory, creating it if it doesn't exist.
@@ -365,12 +138,6 @@ public class FSDirectory extends Directory {
   /** The underlying filesystem directory */
   protected File directory = null;
   
-  /** @deprecated */
-  private int refCount = 0;
-
-  /** @deprecated */
-  protected FSDirectory() {}; // permit subclassing
-
   /** Create a new FSDirectory for the named location (ctor for subclasses).
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default
@@ -383,8 +150,26 @@ public class FSDirectory extends Directory {
     if (lockFactory == null) {
       lockFactory = new NativeFSLockFactory();
     }
-    init(path, lockFactory);
-    refCount = 1;
+    directory = path;
+
+    if (directory.exists() && !directory.isDirectory())
+      throw new NoSuchDirectoryException("file '" + directory + "' exists but is not a directory");
+
+    setLockFactory(lockFactory);
+    
+    // for filesystem based LockFactory, delete the lockPrefix, if the locks are placed
+    // in index dir. If no index dir is given, set ourselves
+    if (lockFactory instanceof FSLockFactory) {
+      final FSLockFactory lf = (FSLockFactory) lockFactory;
+      final File dir = lf.getLockDir();
+      // if the lock factory has no lockDir set, use the this directory as lockDir
+      if (dir == null) {
+        lf.setLockDir(this.directory);
+        lf.setLockPrefix(null);
+      } else if (dir.getCanonicalPath().equals(this.directory.getCanonicalPath())) {
+        lf.setLockPrefix(null);
+      }
+    }
   }
 
   /** Creates an FSDirectory instance, trying to pick the
@@ -427,70 +212,6 @@ public class FSDirectory extends Directory {
     }
   }
 
-  /* will move to ctor, when reflection is removed in 3.0 */
-  private void init(File path, LockFactory lockFactory) throws IOException {
-
-    // Set up lockFactory with cascaded defaults: if an instance was passed in,
-    // use that; else if locks are disabled, use NoLockFactory; else if the
-    // system property org.apache.lucene.store.FSDirectoryLockFactoryClass is set,
-    // instantiate that; else, use SimpleFSLockFactory:
-
-    directory = path;
-
-    if (directory.exists() && !directory.isDirectory())
-      throw new NoSuchDirectoryException("file '" + directory + "' exists but is not a directory");
-
-    if (lockFactory == null) {
-
-      if (disableLocks) {
-        // Locks are disabled:
-        lockFactory = NoLockFactory.getNoLockFactory();
-      } else {
-        String lockClassName = System.getProperty("org.apache.lucene.store.FSDirectoryLockFactoryClass");
-
-        if (lockClassName != null && !lockClassName.equals("")) {
-          Class c;
-
-          try {
-            c = Class.forName(lockClassName);
-          } catch (ClassNotFoundException e) {
-            throw new IOException("unable to find LockClass " + lockClassName);
-          }
-
-          try {
-            lockFactory = (LockFactory) c.newInstance();          
-          } catch (IllegalAccessException e) {
-            throw new IOException("IllegalAccessException when instantiating LockClass " + lockClassName);
-          } catch (InstantiationException e) {
-            throw new IOException("InstantiationException when instantiating LockClass " + lockClassName);
-          } catch (ClassCastException e) {
-            throw new IOException("unable to cast LockClass " + lockClassName + " instance to a LockFactory");
-          }
-        } else {
-          // Our default lock is SimpleFSLockFactory;
-          // default lockDir is our index directory:
-          lockFactory = new SimpleFSLockFactory();
-        }
-      }
-    }
-
-    setLockFactory(lockFactory);
-    
-    // for filesystem based LockFactory, delete the lockPrefix, if the locks are placed
-    // in index dir. If no index dir is given, set ourselves
-    if (lockFactory instanceof FSLockFactory) {
-      final FSLockFactory lf = (FSLockFactory) lockFactory;
-      final File dir = lf.getLockDir();
-      // if the lock factory has no lockDir set, use the this directory as lockDir
-      if (dir == null) {
-        lf.setLockDir(this.directory);
-        lf.setLockPrefix(null);
-      } else if (dir.getCanonicalPath().equals(this.directory.getCanonicalPath())) {
-        lf.setLockPrefix(null);
-      }
-    }
-  }
-
   /** Lists all files (not subdirectories) in the
    *  directory.  This method never returns null (throws
    *  {@link IOException} instead).
@@ -516,11 +237,6 @@ public class FSDirectory extends Directory {
       throw new IOException("directory '" + dir + "' exists and is a directory, but cannot be listed: list() returned null");
 
     return result;
-  }
-
-  public String[] list() {
-    ensureOpen();
-    return directory.list(IndexFileNameFilter.getFilter());
   }
 
   /** Lists all files (not subdirectories) in the
@@ -573,81 +289,6 @@ public class FSDirectory extends Directory {
       throw new IOException("Cannot delete " + file);
   }
 
-  /** Renames an existing file in the directory. 
-   * Warning: This is not atomic.
-   * @deprecated 
-   */
-  public synchronized void renameFile(String from, String to)
-      throws IOException {
-    ensureOpen();
-    File old = new File(directory, from);
-    File nu = new File(directory, to);
-
-    /* This is not atomic.  If the program crashes between the call to
-       delete() and the call to renameTo() then we're screwed, but I've
-       been unable to figure out how else to do this... */
-
-    if (nu.exists())
-      if (!nu.delete())
-        throw new IOException("Cannot delete " + nu);
-
-    // Rename the old file to the new one. Unfortunately, the renameTo()
-    // method does not work reliably under some JVMs.  Therefore, if the
-    // rename fails, we manually rename by copying the old file to the new one
-    if (!old.renameTo(nu)) {
-      java.io.InputStream in = null;
-      java.io.OutputStream out = null;
-      try {
-        in = new FileInputStream(old);
-        out = new FileOutputStream(nu);
-        // see if the buffer needs to be initialized. Initialization is
-        // only done on-demand since many VM's will never run into the renameTo
-        // bug and hence shouldn't waste 1K of mem for no reason.
-        if (buffer == null) {
-          buffer = new byte[1024];
-        }
-        int len;
-        while ((len = in.read(buffer)) >= 0) {
-          out.write(buffer, 0, len);
-        }
-
-        // delete the old file.
-        old.delete();
-      }
-      catch (IOException ioe) {
-        IOException newExc = new IOException("Cannot rename " + old + " to " + nu);
-        newExc.initCause(ioe);
-        throw newExc;
-      }
-      finally {
-        try {
-          if (in != null) {
-            try {
-              in.close();
-            } catch (IOException e) {
-              throw new RuntimeException("Cannot close input stream: " + e.toString(), e);
-            }
-          }
-        } finally {
-          if (out != null) {
-            try {
-              out.close();
-            } catch (IOException e) {
-              throw new RuntimeException("Cannot close output stream: " + e.toString(), e);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  /** Creates an IndexOutput for the file with the given name.
-   * <em>In 3.0 this method will become abstract.</em> */
-  public IndexOutput createOutput(String name) throws IOException {
-    initOutput(name);
-    return new FSIndexOutput(new File(directory, name));
-  }
-
   public void sync(String name) throws IOException {
     ensureOpen();
     File fullFile = new File(directory, name);
@@ -691,13 +332,6 @@ public class FSDirectory extends Directory {
     return openInput(name, BufferedIndexInput.BUFFER_SIZE);
   }
 
-  /** Creates an IndexInput for the file with the given name.
-   * <em>In 3.0 this method will become abstract.</em> */
-  public IndexInput openInput(String name, int bufferSize) throws IOException {
-    ensureOpen();
-    return new FSIndexInput(new File(directory, name), bufferSize);
-  }
-
   /**
    * So we can do some byte-to-hexchar conversion below
    */
@@ -731,12 +365,7 @@ public class FSDirectory extends Directory {
 
   /** Closes the store to future operations. */
   public synchronized void close() {
-    if (isOpen && --refCount <= 0) {
-      isOpen = false;
-      synchronized (DIRECTORIES) {
-        DIRECTORIES.remove(directory);
-      }
-    }
+    isOpen = false;
   }
 
   public File getFile() {
@@ -802,37 +431,4 @@ public class FSDirectory extends Directory {
     return chunkSize;
   }
 
-
-  /** @deprecated Use SimpleFSDirectory.SimpleFSIndexInput instead */
-  protected static class FSIndexInput extends SimpleFSDirectory.SimpleFSIndexInput {
-  
-    /** @deprecated */
-    protected static class Descriptor extends SimpleFSDirectory.SimpleFSIndexInput.Descriptor {
-      /** @deprecated */
-      public Descriptor(File file, String mode) throws IOException {
-        super(file, mode);
-      }
-    }
-  
-    /** @deprecated */
-    public FSIndexInput(File path) throws IOException {
-      super(path);
-    }
-  
-    /** @deprecated */
-    public FSIndexInput(File path, int bufferSize) throws IOException {
-      super(path, bufferSize);
-    }
-  
-  }
-
-  /** @deprecated Use SimpleFSDirectory.SimpleFSIndexOutput instead */
-  protected static class FSIndexOutput extends SimpleFSDirectory.SimpleFSIndexOutput {
-
-    /** @deprecated */
-    public FSIndexOutput(File path) throws IOException {
-      super(path);
-    }
-
-  }
 }

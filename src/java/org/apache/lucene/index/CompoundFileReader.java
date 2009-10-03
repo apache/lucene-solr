@@ -140,7 +140,7 @@ class CompoundFileReader extends Directory {
     }
 
     /** Returns an array of strings, one for each file in the directory. */
-    public String[] list() {
+    public String[] listAll() {
         String res[] = new String[entries.size()];
         return (String[]) entries.keySet().toArray(res);
     }

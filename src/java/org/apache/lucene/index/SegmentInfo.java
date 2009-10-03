@@ -375,16 +375,18 @@ public final class SegmentInfo {
         // This means this segment was saved with pre-LOCKLESS
         // code.  So we must fallback to the original
         // directory list check:
-        String[] result = dir.list();
+        String[] result = dir.listAll();
         if (result == null)
-          throw new IOException("cannot read directory " + dir + ": list() returned null");
-        
+          throw new IOException("cannot read directory " + dir + ": listAll() returned null");
+
+        final IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
         String pattern;
         pattern = name + ".s";
         int patternLength = pattern.length();
         for(int i = 0; i < result.length; i++){
-          if(result[i].startsWith(pattern) && Character.isDigit(result[i].charAt(patternLength)))
-            return true;
+          String fileName = result[i];
+          if (filter.accept(null, fileName) && fileName.startsWith(pattern) && Character.isDigit(fileName.charAt(patternLength)))
+              return true;
         }
         return false;
       }

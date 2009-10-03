@@ -9,6 +9,9 @@ Changes in runtime behavior
 
 API Changes
 
+* LUCENE-1944, ...: Removed (all) deprecated methods/classes left over
+  from Lucene 2.9 [not yet finished].  (Uwe Schindler)
+
 * LUCENE-1925: Make IndexSearcher's subReaders and docStarts members
   protected; add expert ctor to directly specify reader, subReaders
   and docStarts.  (John Wang, Tim Smith via Mike McCandless)

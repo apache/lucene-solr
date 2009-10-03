@@ -49,10 +49,6 @@ public class SimpleFSDirectory extends FSDirectory {
     super(path, null);
   }
 
-  // back compatibility so FSDirectory can instantiate via reflection
-  /** @deprecated */
-  SimpleFSDirectory() {}
-
   /** Creates an IndexOutput for the file with the given name. */
   public IndexOutput createOutput(String name) throws IOException {
     initOutput(name);
@@ -92,16 +88,6 @@ public class SimpleFSDirectory extends FSDirectory {
     boolean isClone;
     //  LUCENE-1566 - maximum read length on a 32bit JVM to prevent incorrect OOM 
     protected final int chunkSize;
-
-    /** @deprecated Please use ctor taking chunkSize */
-    public SimpleFSIndexInput(File path) throws IOException {
-      this(path, BufferedIndexInput.BUFFER_SIZE, SimpleFSDirectory.DEFAULT_READ_CHUNK_SIZE);
-    }
-  
-    /** @deprecated Please use ctor taking chunkSize */
-    public SimpleFSIndexInput(File path, int bufferSize) throws IOException {
-      this(path, bufferSize, SimpleFSDirectory.DEFAULT_READ_CHUNK_SIZE);
-    }
     
     public SimpleFSIndexInput(File path, int bufferSize, int chunkSize) throws IOException {
       super(bufferSize);

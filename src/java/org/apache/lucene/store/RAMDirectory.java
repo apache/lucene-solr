@@ -73,34 +73,6 @@ public class RAMDirectory extends Directory implements Serializable {
     Directory.copy(dir, this, closeDir);
   }
 
-  /**
-   * Creates a new <code>RAMDirectory</code> instance from the {@link FSDirectory}.
-   *
-   * @param dir a <code>File</code> specifying the index directory
-   *
-   * @see #RAMDirectory(Directory)
-   * @deprecated Use {@link #RAMDirectory(Directory)} instead
-   */
-  public RAMDirectory(File dir) throws IOException {
-    this(FSDirectory.getDirectory(dir), true);
-  }
-
-  /**
-   * Creates a new <code>RAMDirectory</code> instance from the {@link FSDirectory}.
-   *
-   * @param dir a <code>String</code> specifying the full index directory path
-   *
-   * @see #RAMDirectory(Directory)
-   * @deprecated Use {@link #RAMDirectory(Directory)} instead
-   */
-  public RAMDirectory(String dir) throws IOException {
-    this(FSDirectory.getDirectory(dir), true);
-  }
-
-  public synchronized final String[] list() {
-    return listAll();
-  }
-
   public synchronized final String[] listAll() {
     ensureOpen();
     Set fileNames = fileMap.keySet();
@@ -198,24 +170,6 @@ public class RAMDirectory extends Directory implements Serializable {
         sizeInBytes -= file.sizeInBytes;       // updates to RAMFile.sizeInBytes synchronized on directory
     } else
       throw new FileNotFoundException(name);
-  }
-
-  /** Renames an existing file in the directory.
-   * @throws FileNotFoundException if from does not exist
-   * @deprecated
-   */
-  public synchronized final void renameFile(String from, String to) throws IOException {
-    ensureOpen();
-    RAMFile fromFile = (RAMFile)fileMap.get(from);
-    if (fromFile==null)
-      throw new FileNotFoundException(from);
-    RAMFile toFile = (RAMFile)fileMap.get(to);
-    if (toFile!=null) {
-      sizeInBytes -= toFile.sizeInBytes;       // updates to RAMFile.sizeInBytes synchronized on directory
-      toFile.directory = null;
-    }
-    fileMap.remove(from);
-    fileMap.put(to, fromFile);
   }
 
   /** Creates a new, empty file in the directory with the given name. Returns a stream writing this file. */
