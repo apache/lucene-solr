@@ -117,8 +117,9 @@ abstract class AbstractDictionary {
         // Should be a two-byte character
         return -1;
       }
-      int b0 = (int) (buffer[0] & 0x0FF) - 161; // 编码从A1开始，因此减去0xA1=161
-      int b1 = (int) (buffer[1] & 0x0FF) - 161; // 第一个字符和最后一个字符没有汉字，因此每个区只收16*6-2=94个汉字
+      int b0 = (int) (buffer[0] & 0x0FF) - 161; // Code starts from A1, therefore subtract 0xA1=161
+      int b1 = (int) (buffer[1] & 0x0FF) - 161; // There is no Chinese char for the first and last symbol. 
+      											// Therefore, each code page only has 16*6-2=94 characters.
       return (short) (b0 * 94 + b1);
     } catch (UnsupportedEncodingException e) {
       e.printStackTrace();

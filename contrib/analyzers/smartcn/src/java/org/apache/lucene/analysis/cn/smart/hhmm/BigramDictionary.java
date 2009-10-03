@@ -156,7 +156,8 @@ class BigramDictionary extends AbstractDictionary {
       IOException, UnsupportedEncodingException {
 
     int i, cnt, length, total = 0;
-    // 文件中只统计了6763个汉字加5个空汉字符3756~3760，其中第3756个用来存储符号信息。
+    // The file only counted 6763 Chinese characters plus 5 reserved slots 3756~3760.  
+    // The 3756th is used (as a header) to store information.
     int[] buffer = new int[3];
     byte[] intBuffer = new byte[4];
     String tmpword;

@@ -55,19 +55,24 @@ class WordDictionary extends AbstractDictionary {
   public static final int PRIME_INDEX_LENGTH = 12071;
 
   /**
-   * wordIndexTable保证将Unicode中的所有汉字编码hash到PRIME_INDEX_LENGTH长度的数组中，
-   * 当然会有冲突，但实际上本程序只处理GB2312字符部分，6768个字符加上一些ASCII字符，
-   * 因此对这些字符是有效的，为了保证比较的准确性，保留原来的字符在charIndexTable中以确定查找的准确性
+   * wordIndexTable guarantees to hash all Chinese characters in Unicode into 
+   * PRIME_INDEX_LENGTH array. There will be conflict, but in reality this 
+   * program only handles the 6768 characters found in GB2312 plus some 
+   * ASCII characters. Therefore in order to guarantee better precision, it is
+   * necessary to retain the original symbol in the charIndexTable.
    */
   private short[] wordIndexTable;
 
   private char[] charIndexTable;
 
   /**
-   * 存储所有词库的真正数据结构，为了避免占用空间太多，用了两个单独的多维数组来存储词组和频率。
-   * 每个词放在一个char[]中，每个char对应一个汉字或其他字符，每个频率放在一个int中，
-   * 这两个数组的前两个下表是一一对应的。因此可以利用wordItem_charArrayTable[i][j]来查词，
-   * 用wordItem_frequencyTable[i][j]来查询对应的频率
+   * To avoid taking too much space, the data structure needed to store the 
+   * lexicon requires two multidimensional arrays to store word and frequency.
+   * Each word is placed in a char[]. Each char represents a Chinese char or 
+   * other symbol.  Each frequency is put into an int. These two arrays 
+   * correspond to each other one-to-one. Therefore, one can use 
+   * wordItem_charArrayTable[i][j] to look up word from lexicon, and 
+   * wordItem_frequencyTable[i][j] to look up the corresponding frequency. 
    */
   private char[][][] wordItem_charArrayTable;
 
@@ -193,7 +198,8 @@ class WordDictionary extends AbstractDictionary {
   private int loadMainDataFromFile(String dctFilePath)
       throws FileNotFoundException, IOException, UnsupportedEncodingException {
     int i, cnt, length, total = 0;
-    // 文件中只统计了6763个汉字加5个空汉字符3756~3760，其中第3756个用来存储符号信息。
+    // The file only counted 6763 Chinese characters plus 5 reserved slots 3756~3760.
+    // The 3756th is used (as a header) to store information.
     int[] buffer = new int[3];
     byte[] intBuffer = new byte[4];
     String tmpword;
@@ -255,33 +261,37 @@ class WordDictionary extends AbstractDictionary {
   }
 
   /**
-   * 原词库将所有标点符号的信息合并到一个列表里(从1开始的3755处)。这里将其展开，分别放到各个符号对应的列表中
+   * The original lexicon puts all information with punctuation into a 
+   * chart (from 1 to 3755). Here it then gets expanded, separately being
+   * placed into the chart that has the corresponding symbol.
    */
   private void expandDelimiterData() {
     int i;
     int cnt;
-    // 标点符号在从1开始的3755处，将原始的标点符号对应的字典分配到对应的标点符号中
+    // Punctuation then treating index 3755 as 1, 
+    // distribute the original punctuation corresponding dictionary into 
     int delimiterIndex = 3755 + GB2312_FIRST_CHAR;
     i = 0;
     while (i < wordItem_charArrayTable[delimiterIndex].length) {
       char c = wordItem_charArrayTable[delimiterIndex][i][0];
-      int j = getGB2312Id(c);// 该标点符号应该所在的index值
+      int j = getGB2312Id(c);// the id value of the punctuation
       if (wordItem_charArrayTable[j] == null) {
 
         int k = i;
-        // 从i开始计数后面以j开头的符号的worditem的个数
+        // Starting from i, count the number of the following worditem symbol from j
         while (k < wordItem_charArrayTable[delimiterIndex].length
             && wordItem_charArrayTable[delimiterIndex][k][0] == c) {
           k++;
         }
-        // 此时k-i为id为j的标点符号对应的wordItem的个数
+        // c is the punctuation character, j is the id value of c
+        // k-1 represents the index of the last punctuation character
         cnt = k - i;
         if (cnt != 0) {
           wordItem_charArrayTable[j] = new char[cnt][];
           wordItem_frequencyTable[j] = new int[cnt];
         }
 
-        // 为每一个wordItem赋值
+        // Assign value for each wordItem.
         for (k = 0; k < cnt; k++, i++) {
           // wordItemTable[j][k] = new WordItem();
           wordItem_frequencyTable[j][k] = wordItem_frequencyTable[delimiterIndex][i];
@@ -293,7 +303,7 @@ class WordDictionary extends AbstractDictionary {
         setTableIndex(c, j);
       }
     }
-    // 将原符号对应的数组删除
+    // Delete the original corresponding symbol array.
     wordItem_charArrayTable[delimiterIndex] = null;
     wordItem_frequencyTable[delimiterIndex] = null;
   }
@@ -362,8 +372,8 @@ class WordDictionary extends AbstractDictionary {
   }
 
   /*
-   * 计算字符c在哈希表中应该在的位置，然后将地址列表中该位置的值初始化
-   * 
+   * Calculate character c's position in hash table, 
+   * then initialize the value of that position in the address table.
    */
   private boolean setTableIndex(char c, int j) {
     int index = getAvaliableTableIndex(c);
@@ -420,12 +430,14 @@ class WordDictionary extends AbstractDictionary {
   }
 
   /**
-   * 在字典库中查找单词对应的char数组为charArray的字符串。返回该单词在单词序列中的位置
+   * Look up the text string corresponding with the word char array, 
+   * and return the position of the word list.
    * 
-   * @param knownHashIndex 已知单词第一个字符charArray[0]在hash表中的位置，如果未计算，可以用函数int
-   *        findInTable(char[] charArray) 代替
-   * @param charArray 查找单词对应的char数组
-   * @return 单词在单词数组中的位置，如果没找到则返回-1
+   * @param knownHashIndex already figure out position of the first word 
+   *   symbol charArray[0] in hash table. If not calculated yet, can be 
+   *   replaced with function int findInTable(char[] charArray).
+   * @param charArray look up the char array corresponding with the word.
+   * @return word location in word array.  If not found, then return -1.
    */
   private int findInTable(short knownHashIndex, char[] charArray) {
     if (charArray == null || charArray.length == 0)
@@ -488,7 +500,7 @@ class WordDictionary extends AbstractDictionary {
             && Utility.compareArrayByPrefix(charArray, 1, items[mid], 0) == 0)
           mid--;
         mid++;
-        return mid;// 找到第一个以charArray为前缀的单词
+        return mid;// Find the first word that uses charArray as prefix.
       } else if (cmpResult < 0)
         end = mid - 1;
       else

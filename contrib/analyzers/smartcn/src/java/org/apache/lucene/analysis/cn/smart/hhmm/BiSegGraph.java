@@ -63,7 +63,7 @@ class BiSegGraph {
     char[] idBuffer;
     // get the list of tokens ordered and indexed
     segTokenList = segGraph.makeIndex();
-    // 因为startToken（"始##始"）的起始位置是-1因此key为-1时可以取出startToken
+    // Because the beginning position of startToken is -1, therefore startToken can be obtained when key = -1
     int key = -1;
     List nextTokens = null;
     while (key < maxStart) {
@@ -71,16 +71,17 @@ class BiSegGraph {
 
         List tokenList = segGraph.getStartList(key);
 
-        // 为某一个key对应的所有Token都计算一次
+        // Calculate all tokens for a given key.
         for (Iterator iter = tokenList.iterator(); iter.hasNext();) {
           SegToken t1 = (SegToken) iter.next();
           oneWordFreq = t1.weight;
           next = t1.endOffset;
           nextTokens = null;
-          // 找到下一个对应的Token，例如“阳光海岸”，当前Token是“阳光”， 下一个Token可以是“海”或者“海岸”
-          // 如果找不到下一个Token，则说明到了末尾，重新循环。
+          // Find the next corresponding Token.
+          // For example: "Sunny seashore", the present Token is "sunny", next one should be "sea" or "seashore".
+          // If we cannot find the next Token, then go to the end and repeat the same cycle.
           while (next <= maxStart) {
-            // 因为endToken的起始位置是sentenceLen，因此等于sentenceLen是可以找到endToken
+            // Because the beginning position of endToken is sentenceLen, so equal to sentenceLen can find endToken.
             if (segGraph.isStartExist(next)) {
               nextTokens = segGraph.getStartList(next);
               break;

@@ -49,7 +49,7 @@ public class HHMMSegmenter {
     int[] charTypeArray = getCharTypes(sentence);
     StringBuilder wordBuf = new StringBuilder();
     SegToken token;
-    int frequency = 0; // word的出现次数
+    int frequency = 0; // the number of times word appears.
     boolean hasFullWidth;
     int wordType;
     char[] charArray;
@@ -64,7 +64,9 @@ public class HHMMSegmenter {
         case CharType.HANZI:
           j = i + 1;
           wordBuf.delete(0, wordBuf.length());
-          // 不管单个汉字能不能构成词，都将单个汉字存到segGraph中去，否则会造成分此图断字
+          // It doesn't matter if a single Chinese character (Hanzi) can form a phrase or not, 
+          // it will store that single Chinese character (Hanzi) in the SegGraph.  Otherwise, it will 
+          // cause word division.
           wordBuf.append(sentence.charAt(i));
           charArray = new char[] { sentence.charAt(i) };
           frequency = wordDict.getFrequency(charArray);
@@ -75,7 +77,8 @@ public class HHMMSegmenter {
           foundIndex = wordDict.getPrefixMatch(charArray);
           while (j <= length && foundIndex != -1) {
             if (wordDict.isEqual(charArray, foundIndex) && charArray.length > 1) {
-              // 就是我们要找的词， 也就是说找到了从i到j的一个成词SegToken，并且不是单字词
+              // It is the phrase we are looking for; In other words, we have found a phrase SegToken
+              // from i to j.  It is not a monosyllabic word (single word).
               frequency = wordDict.getFrequency(charArray);
               token = new SegToken(charArray, i, j, WordType.CHINESE_WORD,
                   frequency);
@@ -89,9 +92,9 @@ public class HHMMSegmenter {
               wordBuf.append(sentence.charAt(j));
               charArray = new char[wordBuf.length()];
               wordBuf.getChars(0, charArray.length, charArray, 0);
-              // idArray作为前缀已经找到过(foundWordIndex!=-1),
-              // 因此加长过后的idArray只可能出现在foundWordIndex以后,
-              // 故从foundWordIndex之后开始查找
+              // idArray has been found (foundWordIndex!=-1) as a prefix before.  
+              // Therefore, idArray after it has been lengthened can only appear after foundWordIndex.  
+              // So start searching after foundWordIndex.
               foundIndex = wordDict.getPrefixMatch(charArray, foundIndex);
               j++;
             } else {
@@ -110,7 +113,7 @@ public class HHMMSegmenter {
               hasFullWidth = true;
             j++;
           }
-          // 找到了从i到j的一个Token，类型为LETTER的字符串
+          // Found a Token from i to j. Type is LETTER char string.
           charArray = Utility.STRING_CHAR_ARRAY;
           frequency = wordDict.getFrequency(charArray);
           wordType = hasFullWidth ? WordType.FULLWIDTH_STRING : WordType.STRING;
@@ -128,7 +131,7 @@ public class HHMMSegmenter {
               hasFullWidth = true;
             j++;
           }
-          // 找到了从i到j的一个Token，类型为NUMBER的字符串
+          // Found a Token from i to j. Type is NUMBER char string.
           charArray = Utility.NUMBER_CHAR_ARRAY;
           frequency = wordDict.getFrequency(charArray);
           wordType = hasFullWidth ? WordType.FULLWIDTH_NUMBER : WordType.NUMBER;
@@ -138,7 +141,7 @@ public class HHMMSegmenter {
           break;
         case CharType.DELIMITER:
           j = i + 1;
-          // 标点符号的weight不用查了，选个最大的频率即可
+          // No need to search the weight for the punctuation.  Picking the highest frequency will work.
           frequency = Utility.MAX_FREQUENCE;
           charArray = new char[] { sentence.charAt(i) };
           token = new SegToken(charArray, i, j, WordType.DELIMITER, frequency);
@@ -147,7 +150,8 @@ public class HHMMSegmenter {
           break;
         default:
           j = i + 1;
-          // 把不认识的字符当作未知串看待，例如GB2312编码之外的字符，每个字符当作一个
+          // Treat the unrecognized char symbol as unknown string.
+          // For example, any symbol not in GB2312 is treated as one of these.
           charArray = Utility.STRING_CHAR_ARRAY;
           frequency = wordDict.getFrequency(charArray);
           token = new SegToken(charArray, i, j, WordType.STRING, frequency);
@@ -157,13 +161,13 @@ public class HHMMSegmenter {
       }
     }
 
-    // 为segGraph增加两个新Token： "始##始","末##末"
+    // Add two more Tokens: "beginning xx beginning"
     charArray = Utility.START_CHAR_ARRAY;
     frequency = wordDict.getFrequency(charArray);
     token = new SegToken(charArray, -1, 0, WordType.SENTENCE_BEGIN, frequency);
     segGraph.addToken(token);
 
-    // "末##末"
+    // "end xx end"
     charArray = Utility.END_CHAR_ARRAY;
     frequency = wordDict.getFrequency(charArray);
     token = new SegToken(charArray, length, length + 1, WordType.SENTENCE_END,

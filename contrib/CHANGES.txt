@@ -27,6 +27,9 @@ Optimizations
 
 Documentation
 
+ * LUCENE-1916: Translated documentation in the smartcn hhmm package.
+   (Patricia Peng via Robert Muir)
+
 Build
 
 Test Cases
