@@ -49,7 +49,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
   public void testRangeFilterId() throws IOException {
 
-    IndexReader reader = IndexReader.open(signedIndex.index);
+    IndexReader reader = IndexReader.open(signedIndex.index, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     int medId = ((maxId - minId) / 2);
@@ -135,7 +135,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
   public void testFieldCacheRangeFilterRand() throws IOException {
 
-    IndexReader reader = IndexReader.open(signedIndex.index);
+    IndexReader reader = IndexReader.open(signedIndex.index, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     String minRP = pad(signedIndex.minR);
@@ -198,7 +198,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
   public void testFieldCacheRangeFilterShorts() throws IOException {
 
-    IndexReader reader = IndexReader.open(signedIndex.index);
+    IndexReader reader = IndexReader.open(signedIndex.index, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     int numDocs = reader.numDocs();
@@ -289,7 +289,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   
   public void testFieldCacheRangeFilterInts() throws IOException {
 
-    IndexReader reader = IndexReader.open(signedIndex.index);
+    IndexReader reader = IndexReader.open(signedIndex.index, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     int numDocs = reader.numDocs();
@@ -381,7 +381,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   
   public void testFieldCacheRangeFilterLongs() throws IOException {
 
-    IndexReader reader = IndexReader.open(signedIndex.index);
+    IndexReader reader = IndexReader.open(signedIndex.index, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     int numDocs = reader.numDocs();
@@ -475,7 +475,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   
   public void testFieldCacheRangeFilterFloats() throws IOException {
 
-    IndexReader reader = IndexReader.open(signedIndex.index);
+    IndexReader reader = IndexReader.open(signedIndex.index, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     int numDocs = reader.numDocs();
@@ -503,7 +503,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   
   public void testFieldCacheRangeFilterDoubles() throws IOException {
 
-    IndexReader reader = IndexReader.open(signedIndex.index);
+    IndexReader reader = IndexReader.open(signedIndex.index, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     int numDocs = reader.numDocs();
@@ -545,7 +545,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     writer.deleteDocuments(new Term("id","0"));
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     IndexSearcher search = new IndexSearcher(reader);
     assertTrue(reader.hasDeletions());
 

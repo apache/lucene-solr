@@ -43,7 +43,7 @@ public class TestCheckIndex extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.close();
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     reader.deleteDocument(5);
     reader.close();
 

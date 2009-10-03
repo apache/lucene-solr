@@ -158,7 +158,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
 
     // Confirm that when doc hits exception partway through tokenization, it's deleted:
-    IndexReader r2 = IndexReader.open(dir);
+    IndexReader r2 = IndexReader.open(dir, true);
     final int count = r2.docFreq(new Term("content4", "aaa"));
     final int count2 = r2.docFreq(new Term("content4", "ddd"));
     assertEquals(count, count2);
@@ -204,7 +204,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
 
     // Confirm that when doc hits exception partway through tokenization, it's deleted:
-    IndexReader r2 = IndexReader.open(dir);
+    IndexReader r2 = IndexReader.open(dir, true);
     final int count = r2.docFreq(new Term("content4", "aaa"));
     final int count2 = r2.docFreq(new Term("content4", "ddd"));
     assertEquals(count, count2);

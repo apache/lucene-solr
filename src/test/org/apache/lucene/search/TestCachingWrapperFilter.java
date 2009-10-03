@@ -36,7 +36,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
 
     MockFilter filter = new MockFilter();
     CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
@@ -76,7 +76,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
 
     // not cacheable:
     assertDocIdSetCacheable(reader, new QueryWrapperFilter(new TermQuery(new Term("test","value"))), false);

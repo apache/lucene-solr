@@ -45,7 +45,7 @@ public class TestPrefixQuery extends LuceneTestCase {
     writer.close();
 
     PrefixQuery query = new PrefixQuery(new Term("category", "/Computers"));
-    IndexSearcher searcher = new IndexSearcher(directory);
+    IndexSearcher searcher = new IndexSearcher(directory, true);
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("All documents in /Computers category and below", 3, hits.length);
 

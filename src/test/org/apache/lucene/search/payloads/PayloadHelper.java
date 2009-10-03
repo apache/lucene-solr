@@ -116,7 +116,7 @@ public class PayloadHelper {
     //writer.optimize();
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(directory);
+    IndexSearcher searcher = new IndexSearcher(directory, true);
     searcher.setSimilarity(similarity);
     return searcher;
   }

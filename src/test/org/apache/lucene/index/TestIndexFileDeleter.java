@@ -54,7 +54,7 @@ public class TestIndexFileDeleter extends LuceneTestCase
     writer.close();
 
     // Delete one doc so we get a .del file:
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     Term searchTerm = new Term("id", "7");
     int delCount = reader.deleteDocuments(searchTerm);
     assertEquals("didn't delete the right number of documents", 1, delCount);

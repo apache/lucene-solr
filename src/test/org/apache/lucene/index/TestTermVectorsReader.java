@@ -342,7 +342,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
 
     // test setDocumentNumber()
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, true);
     DocNumAwareMapper docNumAwareMapper = new DocNumAwareMapper();
     assertEquals(-1, docNumAwareMapper.getDocumentNumber());
 

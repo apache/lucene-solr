@@ -297,38 +297,6 @@ public class TestLockFactory extends LuceneTestCase {
         _TestUtil.rmDir(indexDirName);
     }
 
-    // Verify: if I try to getDirectory() with two different locking implementations, I get an IOException
-    public void testFSDirectoryDifferentLockFactory() throws IOException {
-        File indexDirName = _TestUtil.getTempDir("index.TestLockFactory5");
-
-        LockFactory lf = new SingleInstanceLockFactory();
-        FSDirectory fs1 = FSDirectory.getDirectory(indexDirName, lf);
-
-        // Different lock factory instance should hit IOException:
-        try {
-          FSDirectory.getDirectory(indexDirName, new SingleInstanceLockFactory());
-          fail("Should have hit an IOException because LockFactory instances differ");
-        } catch (IOException e) {
-        }
-
-        FSDirectory fs2 = null;
-
-        // Same lock factory instance should not:
-        try {
-            fs2 = FSDirectory.getDirectory(indexDirName, lf);
-        } catch (IOException e) {
-            e.printStackTrace(System.out);
-            fail("Should not have hit an IOException because LockFactory instances are the same");
-        }
-
-        fs1.close();
-        if (fs2 != null) {
-            fs2.close();
-        }
-        // Cleanup
-        _TestUtil.rmDir(indexDirName);
-    }
-
     // Verify: do stress test, by opening IndexReaders and
     // IndexWriters over & over in 2 threads and making sure
     // no unexpected exceptions are raised:
@@ -499,7 +467,7 @@ public class TestLockFactory extends LuceneTestCase {
             Query query = new TermQuery(new Term("content", "aaa"));
             for(int i=0;i<this.numIteration;i++) {
                 try{
-                    searcher = new IndexSearcher(dir);
+                    searcher = new IndexSearcher(dir, false);
                 } catch (Exception e) {
                     hitException = true;
                     System.out.println("Stress Test Index Searcher: create hit unexpected exception: " + e.toString());

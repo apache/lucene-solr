@@ -122,7 +122,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(ramDir);
+    IndexSearcher searcher = new IndexSearcher(ramDir, true);
     TopDocs td = searcher.search(query,null,10);
     //System.out.println("slop: "+slop+"  query: "+query+"  doc: "+doc+"  Expecting number of hits: "+expectedNumResults+" maxScore="+td.getMaxScore());
     assertEquals("slop: "+slop+"  query: "+query+"  doc: "+doc+"  Wrong number of hits", expectedNumResults, td.totalHits);

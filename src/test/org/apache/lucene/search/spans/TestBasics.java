@@ -65,7 +65,7 @@ public class TestBasics extends LuceneTestCase {
 
     writer.close();
 
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
   }
   
   public void testTerm() throws Exception {

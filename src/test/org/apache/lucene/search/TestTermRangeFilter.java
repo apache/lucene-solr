@@ -49,7 +49,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
 
     public void testRangeFilterId() throws IOException {
 
-        IndexReader reader = IndexReader.open(signedIndex.index);
+        IndexReader reader = IndexReader.open(signedIndex.index, true);
 	IndexSearcher search = new IndexSearcher(reader);
 
         int medId = ((maxId - minId) / 2);
@@ -131,7 +131,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
 
     public void testRangeFilterIdCollating() throws IOException {
 
-        IndexReader reader = IndexReader.open(signedIndex.index);
+        IndexReader reader = IndexReader.open(signedIndex.index, true);
         IndexSearcher search = new IndexSearcher(reader);
 
         Collator c = Collator.getInstance(Locale.ENGLISH);
@@ -214,7 +214,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
 
     public void testRangeFilterRand() throws IOException {
 
-  IndexReader reader = IndexReader.open(signedIndex.index);
+  IndexReader reader = IndexReader.open(signedIndex.index, true);
 	IndexSearcher search = new IndexSearcher(reader);
 
         String minRP = pad(signedIndex.minR);
@@ -277,7 +277,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     public void testRangeFilterRandCollating() throws IOException {
 
         // using the unsigned index because collation seems to ignore hyphens
-        IndexReader reader = IndexReader.open(unsignedIndex.index);
+        IndexReader reader = IndexReader.open(unsignedIndex.index, true);
         IndexSearcher search = new IndexSearcher(reader);
 
         Collator c = Collator.getInstance(Locale.ENGLISH);
@@ -354,7 +354,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
         writer.optimize();
         writer.close();
 
-        IndexReader reader = IndexReader.open(farsiIndex);
+        IndexReader reader = IndexReader.open(farsiIndex, true);
         IndexSearcher search = new IndexSearcher(reader);
         Query q = new TermQuery(new Term("body","body"));
 
@@ -398,7 +398,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
         writer.optimize();
         writer.close();
 
-        IndexReader reader = IndexReader.open(danishIndex);
+        IndexReader reader = IndexReader.open(danishIndex, true);
         IndexSearcher search = new IndexSearcher(reader);
         Query q = new TermQuery(new Term("body","body"));
 

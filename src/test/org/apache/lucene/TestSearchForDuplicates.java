@@ -100,7 +100,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       writer.close();
 
       // try a search without OR
-      Searcher searcher = new IndexSearcher(directory);
+      Searcher searcher = new IndexSearcher(directory, true);
 
       QueryParser parser = new QueryParser(PRIORITY_FIELD, analyzer);
 
@@ -114,7 +114,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       searcher.close();
 
       // try a new search with OR
-      searcher = new IndexSearcher(directory);
+      searcher = new IndexSearcher(directory, true);
       hits = null;
 
       parser = new QueryParser(PRIORITY_FIELD, analyzer);

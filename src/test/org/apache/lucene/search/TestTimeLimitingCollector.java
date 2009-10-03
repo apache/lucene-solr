@@ -79,7 +79,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
       add(docText[i%docText.length], iw);
     }
     iw.close();
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
 
     String qtxt = "one";
     for (int i = 0; i < docText.length; i++) {

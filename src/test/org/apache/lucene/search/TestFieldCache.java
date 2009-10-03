@@ -57,7 +57,7 @@ public class TestFieldCache extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.close();
-    reader = IndexReader.open(directory);
+    reader = IndexReader.open(directory, true);
   }
 
   public void testInfoStream() throws Exception {

@@ -178,7 +178,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     }
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     reader.deleteDocuments(new Term("content", "aaa"));
     reader.close();
 

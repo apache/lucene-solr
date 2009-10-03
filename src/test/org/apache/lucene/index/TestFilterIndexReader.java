@@ -110,7 +110,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
 
     writer.close();
 
-    IndexReader reader = new TestReader(IndexReader.open(directory));
+    IndexReader reader = new TestReader(IndexReader.open(directory, true));
 
     assertTrue(reader.isOptimized());
     

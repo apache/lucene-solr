@@ -48,7 +48,7 @@ public class TestBoolean2 extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.close();
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
   }
 
   private String[] docFields = {

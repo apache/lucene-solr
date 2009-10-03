@@ -165,20 +165,20 @@ public class TestStressSort extends LuceneTestCase {
       }
     }
     writer.close();
-    searcherMultiSegment = new IndexSearcher(dir);
+    searcherMultiSegment = new IndexSearcher(dir, true);
     searcherMultiSegment.setDefaultFieldSortScoring(true, true);
 
     dir2 = new MockRAMDirectory(dir);
     writer = new IndexWriter(dir2, new StandardAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     writer.optimize();
     writer.close();
-    searcherSingleSegment = new IndexSearcher(dir2);
+    searcherSingleSegment = new IndexSearcher(dir2, true);
     searcherSingleSegment.setDefaultFieldSortScoring(true, true);
     dir3 = new MockRAMDirectory(dir);
     writer = new IndexWriter(dir3, new StandardAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     writer.optimize(3);
     writer.close();
-    searcherFewSegment = new IndexSearcher(dir3);
+    searcherFewSegment = new IndexSearcher(dir3, true);
     searcherFewSegment.setDefaultFieldSortScoring(true, true);
   }
 

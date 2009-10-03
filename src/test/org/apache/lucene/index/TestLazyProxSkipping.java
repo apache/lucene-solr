@@ -125,7 +125,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         }
         
         writer.close();
-        IndexReader reader = IndexReader.open(directory);
+        IndexReader reader = IndexReader.open(directory, true);
         TermPositions tp = reader.termPositions();
         tp.seek(new Term(this.field, "b"));
         for (int i = 0; i < 10; i++) {

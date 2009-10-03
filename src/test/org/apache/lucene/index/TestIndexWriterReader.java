@@ -101,7 +101,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     r2.close();
     writer.close();
     
-    IndexReader r3 = IndexReader.open(dir1);
+    IndexReader r3 = IndexReader.open(dir1, true);
     assertEquals(0, count(new Term("id", id10), r3));
     assertEquals(1, count(new Term("id", Integer.toString(8000)), r3));
     r3.close();
@@ -262,7 +262,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     _TestUtil.checkIndex(mainDir);
 
-    IndexReader reader = IndexReader.open(mainDir);
+    IndexReader reader = IndexReader.open(mainDir, true);
     assertEquals(addDirThreads.count.intValue(), reader.numDocs());
     //assertEquals(100 + numDirs * (3 * numIter / 4) * addDirThreads.NUM_THREADS
     //    * addDirThreads.NUM_INIT_DOCS, reader.numDocs());
@@ -364,7 +364,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       
       readers = new IndexReader[numDirs];
       for (int i = 0; i < numDirs; i++)
-        readers[i] = IndexReader.open(addDir);
+        readers[i] = IndexReader.open(addDir, false);
     }
     
     void joinThreads() {
@@ -824,7 +824,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     w.expungeDeletes();
     w.close();
     r.close();
-    r = IndexReader.open(dir);
+    r = IndexReader.open(dir, true);
     assertEquals(1, r.numDocs());
     assertFalse(r.hasDeletions());
     r.close();

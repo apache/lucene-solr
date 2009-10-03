@@ -137,7 +137,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   // Test that FieldScoreQuery returns docs with expected score.
   private void doTestCustomScore (String field, FieldScoreQuery.Type tp, double dboost) throws CorruptIndexException, Exception {
     float boost = (float) dboost;
-    IndexSearcher s = new IndexSearcher(dir);
+    IndexSearcher s = new IndexSearcher(dir, true);
     FieldScoreQuery qValSrc = new FieldScoreQuery(field,tp); // a query that would score by the field
     QueryParser qp = new QueryParser(TEXT_FIELD,anlzr); 
     String qtxt = "first aid text"; // from the doc texts in FunctionQuerySetup.

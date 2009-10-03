@@ -624,19 +624,6 @@ public class TestSort extends LuceneTestCase implements Serializable {
     sort.setSort (new SortField ("i18n", new Locale("da", "dk")));
     assertMatches (multiSearcher, queryY, sort, "BJDHF");
   } 
-    
-  // test a custom sort function
-  public void testCustomSorts() throws Exception {
-    sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource()));
-    assertMatches (full, queryX, sort, "CAIEG");
-    sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource(), true));
-    assertMatches (full, queryY, sort, "HJDBF");
-    SortComparator custom = SampleComparable.getComparator();
-    sort.setSort (new SortField ("custom", custom));
-    assertMatches (full, queryX, sort, "CAIEG");
-    sort.setSort (new SortField ("custom", custom, true));
-    assertMatches (full, queryY, sort, "HJDBF");
-  }
 
   // test a variety of sorts using more than one searcher
   public void testMultiSort() throws Exception {

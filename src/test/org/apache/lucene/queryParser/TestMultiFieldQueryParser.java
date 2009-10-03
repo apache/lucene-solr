@@ -294,7 +294,7 @@ public class TestMultiFieldQueryParser extends BaseTokenStreamTestCase {
       new MultiFieldQueryParser(new String[] {"body"}, analyzer);
     mfqp.setDefaultOperator(QueryParser.Operator.AND);
     Query q = mfqp.parse("the footest");
-    IndexSearcher is = new IndexSearcher(ramDir);
+    IndexSearcher is = new IndexSearcher(ramDir, true);
     ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     is.close();

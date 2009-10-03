@@ -71,7 +71,7 @@ public class TestBinaryDocument extends LuceneTestCase
     writer.close();
     
     /** open a reader and fetch the document */ 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     Document docFromReader = reader.document(0);
     assertTrue(docFromReader != null);
     
@@ -117,7 +117,7 @@ public class TestBinaryDocument extends LuceneTestCase
     writer.close();
     
     /** open a reader and fetch the document */ 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     Document docFromReader = reader.document(0);
     assertTrue(docFromReader != null);
     

@@ -88,7 +88,7 @@ public class TestTransactionRollback extends LuceneTestCase {
   }
 	
   private void checkExpecteds(BitSet expecteds) throws Exception {
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = IndexReader.open(dir, true);
 		
     //Perhaps not the most efficient approach but meets our needs here.
     for (int i = 0; i < r.maxDoc(); i++) {
@@ -199,7 +199,7 @@ public class TestTransactionRollback extends LuceneTestCase {
       new IndexWriter(dir,new WhitespaceAnalyzer(),
                       new DeleteLastCommitPolicy(),
                       MaxFieldLength.UNLIMITED).close();
-      IndexReader r = IndexReader.open(dir);
+      IndexReader r = IndexReader.open(dir, true);
       assertEquals(100, r.numDocs());
       r.close();
     }

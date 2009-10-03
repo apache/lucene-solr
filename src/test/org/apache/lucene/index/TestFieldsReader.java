@@ -398,7 +398,7 @@ public class TestFieldsReader extends LuceneTestCase {
       writer.optimize();
       writer.close();
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
 
       FaultyIndexInput.doFail = true;
 

@@ -88,7 +88,7 @@ public class TestLazyBug extends LuceneTestCase {
   
   public void doTest(int[] docs) throws Exception {
     Directory dir = makeIndex();
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     for (int i = 0; i < docs.length; i++) {
       Document d = reader.document(docs[i], SELECTOR);
       d.get(MAGIC_FIELD);

@@ -67,15 +67,7 @@ public class MockRAMDirectory extends RAMDirectory {
     super();
     init();
   }
-  public MockRAMDirectory(String dir) throws IOException {
-    super(dir);
-    init();
-  }
   public MockRAMDirectory(Directory dir) throws IOException {
-    super(dir);
-    init();
-  }
-  public MockRAMDirectory(File dir) throws IOException {
     super(dir);
     init();
   }

@@ -265,7 +265,7 @@ public class TestDocumentWriter extends BaseTokenStreamTestCase {
 
     _TestUtil.checkIndex(dir);
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     // f1
     TermFreqVector tfv1 = reader.getTermFreqVector(0, "f1");
     assertNotNull(tfv1);

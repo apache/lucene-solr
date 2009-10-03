@@ -43,7 +43,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     final Directory dir1 = new MockRAMDirectory();
 
     TestIndexReaderReopen.createIndex(dir1, false);
-    IndexReader reader = IndexReader.open(dir1);
+    IndexReader reader = IndexReader.open(dir1, false);
     IndexReader readOnlyReader = reader.clone(true);
     if (!isReadOnly(readOnlyReader)) {
       fail("reader isn't read only");
@@ -54,34 +54,6 @@ public class TestIndexReaderClone extends LuceneTestCase {
     reader.close();
     readOnlyReader.close();
     dir1.close();
-  }
-
-  // LUCENE-1453
-  public void testFSDirectoryClone() throws Exception {
-
-    String tempDir = System.getProperty("java.io.tmpdir");
-    if (tempDir == null)
-      throw new IOException("java.io.tmpdir undefined, cannot run test");
-    File indexDir2 = new File(tempDir, "FSDirIndexReaderClone");
-
-    Directory dir1 = FSDirectory.getDirectory(indexDir2);
-    TestIndexReaderReopen.createIndex(dir1, false);
-
-    IndexReader reader = IndexReader.open(indexDir2);
-    IndexReader readOnlyReader = (IndexReader) reader.clone();
-    reader.close();
-    readOnlyReader.close();
-
-    // Make sure we didn't pick up too many incRef's along
-    // the way -- this close should be the final close:
-    dir1.close();
-
-    try {
-      dir1.listAll();
-      fail("did not hit AlreadyClosedException");
-    } catch (AlreadyClosedException ace) {
-      // expected
-    }
   }
 
   // open non-readOnly reader1, clone to non-readOnly
@@ -255,7 +227,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     final Directory dir1 = new MockRAMDirectory();
 
     TestIndexReaderReopen.createIndex(dir1, true);
-    IndexReader reader = IndexReader.open(dir1);
+    IndexReader reader = IndexReader.open(dir1, false);
     IndexReader readOnlyReader = reader.clone(true);
     if (!isReadOnly(readOnlyReader)) {
       fail("reader isn't read only");
@@ -277,8 +249,8 @@ public class TestIndexReaderClone extends LuceneTestCase {
     TestIndexReaderReopen.createIndex(dir1, true);
     final Directory dir2 = new MockRAMDirectory();
     TestIndexReaderReopen.createIndex(dir2, true);
-    IndexReader r1 = IndexReader.open(dir1);
-    IndexReader r2 = IndexReader.open(dir2);
+    IndexReader r1 = IndexReader.open(dir1, false);
+    IndexReader r2 = IndexReader.open(dir2, false);
 
     ParallelReader pr1 = new ParallelReader();
     pr1.add(r1);
@@ -327,8 +299,8 @@ public class TestIndexReaderClone extends LuceneTestCase {
     TestIndexReaderReopen.createIndex(dir1, true);
     final Directory dir2 = new MockRAMDirectory();
     TestIndexReaderReopen.createIndex(dir2, true);
-    IndexReader r1 = IndexReader.open(dir1);
-    IndexReader r2 = IndexReader.open(dir2);
+    IndexReader r1 = IndexReader.open(dir1, false);
+    IndexReader r2 = IndexReader.open(dir2, false);
 
     MultiReader multiReader = new MultiReader(new IndexReader[] { r1, r2 });
     performDefaultTests(multiReader);
@@ -373,7 +345,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     final Directory dir1 = new MockRAMDirectory();
     TestIndexReaderReopen.createIndex(dir1, false);
 
-    IndexReader origReader = IndexReader.open(dir1);
+    IndexReader origReader = IndexReader.open(dir1, false);
     SegmentReader origSegmentReader = SegmentReader.getOnlySegmentReader(origReader);
     // deletedDocsRef should be null because nothing has updated yet
     assertNull(origSegmentReader.deletedDocsRef);
@@ -435,14 +407,14 @@ public class TestIndexReaderClone extends LuceneTestCase {
   public void testCloneWithDeletes() throws Throwable {
     final Directory dir1 = new MockRAMDirectory();
     TestIndexReaderReopen.createIndex(dir1, false);
-    IndexReader origReader = IndexReader.open(dir1);
+    IndexReader origReader = IndexReader.open(dir1, false);
     origReader.deleteDocument(1);
 
     IndexReader clonedReader = (IndexReader) origReader.clone();
     origReader.close();
     clonedReader.close();
 
-    IndexReader r = IndexReader.open(dir1);
+    IndexReader r = IndexReader.open(dir1, false);
     assertTrue(r.isDeleted(1));
     r.close();
     dir1.close();
@@ -452,7 +424,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
   public void testCloneWithSetNorm() throws Throwable {
     final Directory dir1 = new MockRAMDirectory();
     TestIndexReaderReopen.createIndex(dir1, false);
-    IndexReader orig = IndexReader.open(dir1);
+    IndexReader orig = IndexReader.open(dir1, false);
     orig.setNorm(1, "field1", 17.0f);
     final byte encoded = Similarity.encodeNorm(17.0f);
     assertEquals(encoded, orig.norms("field1")[1]);
@@ -463,7 +435,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     orig.close();
     clonedReader.close();
 
-    IndexReader r = IndexReader.open(dir1);
+    IndexReader r = IndexReader.open(dir1, false);
     assertEquals(encoded, r.norms("field1")[1]);
     r.close();
     dir1.close();
@@ -482,7 +454,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     final Directory dir1 = new MockRAMDirectory();
  
     TestIndexReaderReopen.createIndex(dir1, true);
-    IndexReader reader = IndexReader.open(dir1);
+    IndexReader reader = IndexReader.open(dir1, false);
     reader.deleteDocument(1); // acquire write lock
     IndexReader[] subs = reader.getSequentialSubReaders();
     assert subs.length > 1;
@@ -501,7 +473,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
   public void testLucene1516Bug() throws Exception {
     final Directory dir1 = new MockRAMDirectory();
     TestIndexReaderReopen.createIndex(dir1, false);
-    IndexReader r1 = IndexReader.open(dir1);
+    IndexReader r1 = IndexReader.open(dir1, false);
     r1.incRef();
     IndexReader r2 = r1.clone(false);
     r1.deleteDocument(5);
@@ -523,7 +495,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     doc.add(new Field("field", "yes it's stored", Field.Store.YES, Field.Index.ANALYZED));
     w.addDocument(doc);
     w.close();
-    IndexReader r1 = IndexReader.open(dir);
+    IndexReader r1 = IndexReader.open(dir, false);
     IndexReader r2 = r1.clone(false);
     r1.close();
     r2.close();

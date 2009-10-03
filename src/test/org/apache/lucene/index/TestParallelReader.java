@@ -68,8 +68,8 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir1 = getDir1();
     Directory dir2 = getDir2();
     ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1));
-    pr.add(IndexReader.open(dir2));
+    pr.add(IndexReader.open(dir1, false));
+    pr.add(IndexReader.open(dir2, false));
     Collection fieldNames = pr.getFieldNames(IndexReader.FieldOption.ALL);
     assertEquals(4, fieldNames.size());
     assertTrue(fieldNames.contains("f1"));
@@ -82,8 +82,8 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir1 = getDir1();
     Directory dir2 = getDir2();
     ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1));
-    pr.add(IndexReader.open(dir2));
+    pr.add(IndexReader.open(dir1, false));
+    pr.add(IndexReader.open(dir2, false));
 
     Document doc11 = pr.document(0, new MapFieldSelector(new String[] {"f1"}));
     Document doc24 = pr.document(1, new MapFieldSelector(Arrays.asList(new String[] {"f4"})));
@@ -112,9 +112,9 @@ public class TestParallelReader extends LuceneTestCase {
     w2.close();
     
     ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1));
+    pr.add(IndexReader.open(dir1, false));
     try {
-      pr.add(IndexReader.open(dir2));
+      pr.add(IndexReader.open(dir2, false));
       fail("didn't get exptected exception: indexes don't have same number of documents");
     } catch (IllegalArgumentException e) {
       // expected exception
@@ -125,11 +125,11 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir1 = getDir1();
     Directory dir2 = getDir2();
     ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1));
-    pr.add(IndexReader.open(dir2));
+    pr.add(IndexReader.open(dir1, false));
+    pr.add(IndexReader.open(dir2, false));
     
     assertTrue(pr.isCurrent());
-    IndexReader modifier = IndexReader.open(dir1);
+    IndexReader modifier = IndexReader.open(dir1, false);
     modifier.setNorm(0, "f1", 100);
     modifier.close();
     
@@ -137,7 +137,7 @@ public class TestParallelReader extends LuceneTestCase {
     // is not current anymore
     assertFalse(pr.isCurrent());
     
-    modifier = IndexReader.open(dir2);
+    modifier = IndexReader.open(dir2, false);
     modifier.setNorm(0, "f3", 100);
     modifier.close();
     
@@ -164,8 +164,8 @@ public class TestParallelReader extends LuceneTestCase {
 
     
     ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1));
-    pr.add(IndexReader.open(dir2));
+    pr.add(IndexReader.open(dir1, false));
+    pr.add(IndexReader.open(dir2, false));
     assertFalse(pr.isOptimized());
     pr.close();
     
@@ -174,8 +174,8 @@ public class TestParallelReader extends LuceneTestCase {
     modifier.close();
     
     pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1));
-    pr.add(IndexReader.open(dir2));
+    pr.add(IndexReader.open(dir1, false));
+    pr.add(IndexReader.open(dir2, false));
     // just one of the two indexes are optimized
     assertFalse(pr.isOptimized());
     pr.close();
@@ -186,8 +186,8 @@ public class TestParallelReader extends LuceneTestCase {
     modifier.close();
     
     pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1));
-    pr.add(IndexReader.open(dir2));
+    pr.add(IndexReader.open(dir1, false));
+    pr.add(IndexReader.open(dir2, false));
     // now both indexes are optimized
     assertTrue(pr.isOptimized());
     pr.close();
@@ -198,8 +198,8 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir1 = getDir1();
     Directory dir2 = getDir2();
     ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1));
-    pr.add(IndexReader.open(dir2));
+    pr.add(IndexReader.open(dir1, false));
+    pr.add(IndexReader.open(dir2, false));
     int NUM_DOCS = 2;
     TermDocs td = pr.termDocs(null);
     for(int i=0;i<NUM_DOCS;i++) {
@@ -247,7 +247,7 @@ public class TestParallelReader extends LuceneTestCase {
     w.addDocument(d2);
     w.close();
 
-    return new IndexSearcher(dir);
+    return new IndexSearcher(dir, false);
   }
 
   // Fields 1 & 2 in one index, 3 & 4 in other, with ParallelReader:
@@ -255,8 +255,8 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir1 = getDir1();
     Directory dir2 = getDir2();
     ParallelReader pr = new ParallelReader();
-    pr.add(IndexReader.open(dir1));
-    pr.add(IndexReader.open(dir2));
+    pr.add(IndexReader.open(dir1, false));
+    pr.add(IndexReader.open(dir2, false));
     return new IndexSearcher(pr);
   }
 

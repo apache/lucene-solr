@@ -61,7 +61,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
         addDocument(writer, "3", "I think it should work.");
         addDocument(writer, "4", "I think it should work.");
         writer.close();
-        searcher = new IndexSearcher(mDirectory);
+        searcher = new IndexSearcher(mDirectory, true);
     }
 
     protected void tearDown() throws Exception {

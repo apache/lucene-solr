@@ -80,57 +80,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
     
     // open reader to test document count
-    IndexReader reader = IndexReader.open(ramDir);
-    assertEquals(docsToAdd, reader.numDocs());
-    
-    // open search zo check if all doc's are there
-    IndexSearcher searcher = new IndexSearcher(reader);
-    
-    // search for all documents
-    for (int i = 0; i < docsToAdd; i++) {
-      Document doc = searcher.doc(i);
-      assertTrue(doc.getField("content") != null);
-    }
-
-    // cleanup
-    reader.close();
-    searcher.close();
-  }
-
-  public void testRAMDirectoryFile () throws IOException {
-    
-    MockRAMDirectory ramDir = new MockRAMDirectory(indexDir);
-    
-    // Check size
-    assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
-    
-    // open reader to test document count
-    IndexReader reader = IndexReader.open(ramDir);
-    assertEquals(docsToAdd, reader.numDocs());
-    
-    // open search zo check if all doc's are there
-    IndexSearcher searcher = new IndexSearcher(reader);
-    
-    // search for all documents
-    for (int i = 0; i < docsToAdd; i++) {
-      Document doc = searcher.doc(i);
-      assertTrue(doc.getField("content") != null);
-    }
-
-    // cleanup
-    reader.close();
-    searcher.close();
-  }
-  
-  public void testRAMDirectoryString () throws IOException {
-    
-    MockRAMDirectory ramDir = new MockRAMDirectory(indexDir.getCanonicalPath());
-    
-    // Check size
-    assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
-    
-    // open reader to test document count
-    IndexReader reader = IndexReader.open(ramDir);
+    IndexReader reader = IndexReader.open(ramDir, true);
     assertEquals(docsToAdd, reader.numDocs());
     
     // open search zo check if all doc's are there
@@ -152,7 +102,10 @@ public class TestRAMDirectory extends LuceneTestCase {
   
   public void testRAMDirectorySize() throws IOException, InterruptedException {
       
-    final MockRAMDirectory ramDir = new MockRAMDirectory(indexDir.getCanonicalPath());
+    Directory dir = FSDirectory.open(indexDir);
+    final MockRAMDirectory ramDir = new MockRAMDirectory(dir);
+    dir.close();
+    
     final IndexWriter writer  = new IndexWriter(ramDir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
     writer.optimize();
     

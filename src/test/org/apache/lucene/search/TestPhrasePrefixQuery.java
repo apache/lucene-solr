@@ -70,7 +70,7 @@ public class TestPhrasePrefixQuery
         writer.optimize();
         writer.close();
 
-        IndexSearcher searcher = new IndexSearcher(indexStore);
+        IndexSearcher searcher = new IndexSearcher(indexStore, true);
 
         //PhrasePrefixQuery query1 = new PhrasePrefixQuery();
         MultiPhraseQuery query1 = new MultiPhraseQuery();
@@ -80,7 +80,7 @@ public class TestPhrasePrefixQuery
         query2.add(new Term("body", "strawberry"));
 
         LinkedList termsWithPrefix = new LinkedList();
-        IndexReader ir = IndexReader.open(indexStore);
+        IndexReader ir = IndexReader.open(indexStore, true);
 
         // this TermEnum gives "piccadilly", "pie" and "pizza".
         String prefix = "pi";

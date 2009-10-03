@@ -59,7 +59,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase
         writer.optimize();
         writer.close();
 
-        IndexSearcher searcher = new IndexSearcher(indexStore);
+        IndexSearcher searcher = new IndexSearcher(indexStore, true);
 
         // search for "blueberry pi*":
         MultiPhraseQuery query1 = new MultiPhraseQuery();
@@ -69,7 +69,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase
         query2.add(new Term("body", "strawberry"));
 
         LinkedList termsWithPrefix = new LinkedList();
-        IndexReader ir = IndexReader.open(indexStore);
+        IndexReader ir = IndexReader.open(indexStore, true);
 
         // this TermEnum gives "piccadilly", "pie" and "pizza".
         String prefix = "pi";
@@ -149,7 +149,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase
       writer.optimize();
       writer.close();
 
-      IndexSearcher searcher = new IndexSearcher(indexStore);
+      IndexSearcher searcher = new IndexSearcher(indexStore, true);
       // This query will be equivalent to +body:pie +body:"blue*"
       BooleanQuery q = new BooleanQuery();
       q.add(new TermQuery(new Term("body", "pie")), BooleanClause.Occur.MUST);
@@ -175,7 +175,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase
     add("a note", "note", writer);
     writer.close();
     
-    IndexSearcher searcher = new IndexSearcher(indexStore);
+    IndexSearcher searcher = new IndexSearcher(indexStore, true);
 
     // This query will be equivalent to +type:note +body:"a t*"
     BooleanQuery q = new BooleanQuery();
