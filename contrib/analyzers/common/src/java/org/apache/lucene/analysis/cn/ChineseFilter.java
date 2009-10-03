@@ -18,9 +18,9 @@ package org.apache.lucene.analysis.cn;
  */
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
 
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
@@ -56,33 +56,32 @@ public final class ChineseFilter extends TokenFilter {
     };
 
 
-    private Map stopTable;
+    private CharArraySet stopTable;
 
     private TermAttribute termAtt;
     
     public ChineseFilter(TokenStream in) {
         super(in);
 
-        stopTable = new HashMap(STOP_WORDS.length);
-        for (int i = 0; i < STOP_WORDS.length; i++)
-            stopTable.put(STOP_WORDS[i], STOP_WORDS[i]);
+        stopTable = new CharArraySet(Arrays.asList(STOP_WORDS), false);
         termAtt = addAttribute(TermAttribute.class);
     }
 
     public boolean incrementToken() throws IOException {
 
         while (input.incrementToken()) {
-            String text = termAtt.term();
+            char text[] = termAtt.termBuffer();
+            int termLength = termAtt.termLength();
 
           // why not key off token type here assuming ChineseTokenizer comes first?
-            if (stopTable.get(text) == null) {
-                switch (Character.getType(text.charAt(0))) {
+            if (!stopTable.contains(text, 0, termLength)) {
+                switch (Character.getType(text[0])) {
 
                 case Character.LOWERCASE_LETTER:
                 case Character.UPPERCASE_LETTER:
 
                     // English word/token should larger than 1 character.
-                    if (text.length()>1) {
+                    if (termLength>1) {
                         return true;
                     }
                     break;
