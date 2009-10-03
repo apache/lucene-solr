@@ -55,7 +55,7 @@ public class DuplicateFilterTest extends TestCase
 		addDoc(writer, "http://lucene.apache.org", "Oops. Lucene 2.1 out", "20050102");
 		
 		writer.close();
-		reader=IndexReader.open(directory);			
+		reader=IndexReader.open(directory, true);			
 		searcher =new IndexSearcher(reader);
 		
 	}

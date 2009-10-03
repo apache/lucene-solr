@@ -53,7 +53,7 @@ public class SynLookup {
 		}
 
 		FSDirectory directory = FSDirectory.open(new File(args[0]));
-		IndexSearcher searcher = new IndexSearcher(directory);
+		IndexSearcher searcher = new IndexSearcher(directory, true);
 
 		String word = args[1];
 		Hits hits = searcher.search(

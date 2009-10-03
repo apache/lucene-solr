@@ -42,7 +42,7 @@ public class TestSerialization extends TestCase {
     iw.addDocument(doc);
     iw.close();
 
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, false);
     InstantiatedIndex ii = new InstantiatedIndex(ir);
     ir.close();
 

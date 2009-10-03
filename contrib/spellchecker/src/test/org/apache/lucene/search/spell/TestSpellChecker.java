@@ -63,7 +63,7 @@ public class TestSpellChecker extends TestCase {
 
 
   public void testBuild() throws CorruptIndexException, IOException {
-    IndexReader r = IndexReader.open(userindex);
+    IndexReader r = IndexReader.open(userindex, true);
 
     spellChecker.clearIndex();
 
@@ -192,7 +192,7 @@ public class TestSpellChecker extends TestCase {
   }
 
   private int numdoc() throws IOException {
-    IndexReader rs = IndexReader.open(spellindex);
+    IndexReader rs = IndexReader.open(spellindex, true);
     int num = rs.numDocs();
     assertTrue(num != 0);
     //System.out.println("num docs: " + num);

@@ -79,7 +79,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
     writer.close();
 
-    return new IndexSearcher(dir);
+    return new IndexSearcher(dir, true);
   }
 
   protected Hits queryParsingTest(Analyzer analyzer, String qs) throws Exception {

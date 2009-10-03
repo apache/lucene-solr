@@ -112,7 +112,7 @@ public class FieldNormModifier {
     TermEnum termEnum = null;
     TermDocs termDocs = null;
     try {
-      reader = IndexReader.open(dir);
+      reader = IndexReader.open(dir, true);
       termCounts = new int[reader.maxDoc()];
       // if we are killing norms, get fake ones
       if (sim == null)
@@ -142,7 +142,7 @@ public class FieldNormModifier {
     }
     
     try {
-      reader = IndexReader.open(dir); 
+      reader = IndexReader.open(dir, false); 
       for (int d = 0; d < termCounts.length; d++) {
         if (! reader.isDeleted(d)) {
           if (sim == null)

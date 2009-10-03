@@ -54,7 +54,7 @@ public class TestIndicesEquals extends TestCase {
 
 //  public void test2() throws Exception {
 //    FSDirectory fsdir = FSDirectory.open(new File("/tmp/fatcorpus"));
-//    IndexReader ir = IndexReader.open(fsdir);
+//    IndexReader ir = IndexReader.open(fsdir, false);
 //    InstantiatedIndex ii = new InstantiatedIndex(ir);
 //    ir.close();
 //    testEquals(fsdir, ii);
@@ -74,7 +74,7 @@ public class TestIndicesEquals extends TestCase {
     indexWriter.close();
 
     // test load ii from index reader
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, false);
     InstantiatedIndex ii = new InstantiatedIndex(ir);
     ir.close();
 
@@ -116,7 +116,7 @@ public class TestIndicesEquals extends TestCase {
 
   private void testTermDocs(Directory aprioriIndex, InstantiatedIndex testIndex) throws Exception {
 
-    IndexReader aprioriReader = IndexReader.open(aprioriIndex);
+    IndexReader aprioriReader = IndexReader.open(aprioriIndex, false);
     IndexReader testReader = testIndex.indexReaderFactory();
 
     TermEnum aprioriTermEnum = aprioriReader.terms(new Term("c", "danny"));
@@ -216,7 +216,7 @@ public class TestIndicesEquals extends TestCase {
     testEquals(aprioriIndex,  testIndex);
 
        // delete a few documents
-    IndexReader ir = IndexReader.open(aprioriIndex);
+    IndexReader ir = IndexReader.open(aprioriIndex, false);
     ir.deleteDocument(3);
     ir.deleteDocument(8);
     ir.close();
@@ -232,7 +232,7 @@ public class TestIndicesEquals extends TestCase {
 
   protected void testEquals(Directory aprioriIndex, InstantiatedIndex testIndex) throws Exception {
 
-    IndexReader aprioriReader = IndexReader.open(aprioriIndex);
+    IndexReader aprioriReader = IndexReader.open(aprioriIndex, false);
     IndexReader testReader = testIndex.indexReaderFactory();
 
     assertEquals(aprioriReader.numDocs(), testReader.numDocs());

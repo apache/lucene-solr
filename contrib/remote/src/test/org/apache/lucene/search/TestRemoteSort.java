@@ -237,6 +237,7 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
   }
 
   // test custom search when remote
+  /* rewrite with new API
   public void testRemoteCustomSort() throws Exception {
     Searchable searcher = getRemote();
     MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
@@ -256,7 +257,7 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
 
     assertSaneFieldCaches(getName() + " Comparator");
     FieldCache.DEFAULT.purgeAllCaches();
-  }
+  }*/
 
   // test that the relevancy scores are the same even if
   // hits are sorted

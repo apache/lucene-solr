@@ -77,7 +77,7 @@ public class TestLuceneDictionary extends TestCase {
 
   public void testFieldNonExistent() throws IOException {
     try {
-      indexReader = IndexReader.open(store);
+      indexReader = IndexReader.open(store, true);
 
       ld = new LuceneDictionary(indexReader, "nonexistent_field");
       it = ld.getWordsIterator();
@@ -91,7 +91,7 @@ public class TestLuceneDictionary extends TestCase {
 
   public void testFieldAaa() throws IOException {
     try {
-      indexReader = IndexReader.open(store);
+      indexReader = IndexReader.open(store, true);
 
       ld = new LuceneDictionary(indexReader, "aaa");
       it = ld.getWordsIterator();
@@ -107,7 +107,7 @@ public class TestLuceneDictionary extends TestCase {
 
   public void testFieldContents_1() throws IOException {
     try {
-      indexReader = IndexReader.open(store);
+      indexReader = IndexReader.open(store, true);
 
       ld = new LuceneDictionary(indexReader, "contents");
       it = ld.getWordsIterator();
@@ -137,7 +137,7 @@ public class TestLuceneDictionary extends TestCase {
 
   public void testFieldContents_2() throws IOException {
     try {
-      indexReader = IndexReader.open(store);
+      indexReader = IndexReader.open(store, true);
 
       ld = new LuceneDictionary(indexReader, "contents");
       it = ld.getWordsIterator();
@@ -169,7 +169,7 @@ public class TestLuceneDictionary extends TestCase {
 
   public void testFieldZzz() throws IOException {
     try {
-      indexReader = IndexReader.open(store);
+      indexReader = IndexReader.open(store, true);
 
       ld = new LuceneDictionary(indexReader, "zzz");
       it = ld.getWordsIterator();
@@ -186,7 +186,7 @@ public class TestLuceneDictionary extends TestCase {
   
   public void testSpellchecker() throws IOException {
     SpellChecker sc = new SpellChecker(new RAMDirectory());
-    indexReader = IndexReader.open(store);
+    indexReader = IndexReader.open(store, true);
     sc.indexDictionary(new LuceneDictionary(indexReader, "contents"));
     String[] suggestions = sc.suggestSimilar("Tam", 1);
     assertEquals(1, suggestions.length);

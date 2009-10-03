@@ -113,7 +113,7 @@ public class SpellChecker {
     if (searcher != null) {
       searcher.close();
     }
-    searcher = new IndexSearcher(this.spellIndex);
+    searcher = new IndexSearcher(this.spellIndex, true);
   }
   
   public void setStringDistance(StringDistance sd) {
@@ -302,7 +302,7 @@ public class SpellChecker {
     
     //close the old searcher
     searcher.close();
-    searcher = new IndexSearcher(this.spellIndex);
+    searcher = new IndexSearcher(this.spellIndex, true);
   }
 
   /**
@@ -350,7 +350,7 @@ public class SpellChecker {
     // also re-open the spell index to see our own changes when the next suggestion
     // is fetched:
     searcher.close();
-    searcher = new IndexSearcher(this.spellIndex);
+    searcher = new IndexSearcher(this.spellIndex, true);
   }
 
   /**

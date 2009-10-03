@@ -51,7 +51,7 @@ public class FuzzyLikeThisQueryTest extends TestCase
 		addDoc(writer, "johnathon smythe","6");
 	
 		writer.close();
-		searcher=new IndexSearcher(directory);			
+		searcher=new IndexSearcher(directory, true);			
 	}
 	
 	private void addDoc(IndexWriter writer, String name, String id) throws IOException

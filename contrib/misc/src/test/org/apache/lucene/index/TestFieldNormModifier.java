@@ -87,7 +87,7 @@ public class TestFieldNormModifier extends TestCase {
   
   public void testFieldWithNoNorm() throws Exception {
     
-    IndexReader r = IndexReader.open(store);
+    IndexReader r = IndexReader.open(store, false);
     byte[] norms = r.norms("nonorm");
     
     // sanity check, norms should all be 1
@@ -110,7 +110,7 @@ public class TestFieldNormModifier extends TestCase {
     }
     
     // nothing should have changed
-    r = IndexReader.open(store);
+    r = IndexReader.open(store, false);
     
     norms = r.norms("nonorm");
     assertTrue("Whoops we have norms?", !r.hasNorms("nonorm"));
@@ -128,7 +128,7 @@ public class TestFieldNormModifier extends TestCase {
   
   public void testGoodCases() throws Exception {
     
-    IndexSearcher searcher = new IndexSearcher(store);
+    IndexSearcher searcher = new IndexSearcher(store, true);
     final float[] scores = new float[NUM_DOCS];
     float lastScore = 0.0f;
     
@@ -164,7 +164,7 @@ public class TestFieldNormModifier extends TestCase {
     fnm.reSetNorms("field");
     
     // new norm (with default similarity) should put longer docs first
-    searcher = new IndexSearcher(store);
+    searcher = new IndexSearcher(store, true);
     searcher.search(new TermQuery(new Term("field", "word")),  new Collector() {
       private int docBase = 0;
       private Scorer scorer;
@@ -194,21 +194,21 @@ public class TestFieldNormModifier extends TestCase {
 
   public void testNormKiller() throws IOException {
 
-    IndexReader r = IndexReader.open(store);
+    IndexReader r = IndexReader.open(store, false);
     byte[] oldNorms = r.norms("untokfield");    
     r.close();
     
     FieldNormModifier fnm = new FieldNormModifier(store, s);
     fnm.reSetNorms("untokfield");
 
-    r = IndexReader.open(store);
+    r = IndexReader.open(store, false);
     byte[] newNorms = r.norms("untokfield");
     r.close();
     assertFalse(Arrays.equals(oldNorms, newNorms));    
 
     
     // verify that we still get documents in the same order as originally
-    IndexSearcher searcher = new IndexSearcher(store);
+    IndexSearcher searcher = new IndexSearcher(store, true);
     final float[] scores = new float[NUM_DOCS];
     float lastScore = 0.0f;
     

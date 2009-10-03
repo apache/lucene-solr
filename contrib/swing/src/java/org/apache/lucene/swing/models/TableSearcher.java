@@ -231,7 +231,7 @@ public class TableSearcher extends AbstractTableModel {
             this.searchString = searchString;
 
             //make a new index searcher with the in memory (RAM) index.
-            IndexSearcher is = new IndexSearcher(directory);
+            IndexSearcher is = new IndexSearcher(directory, true);
 
             //make an array of fields - one for each column
             String[] fields = new String[tableModel.getColumnCount()];

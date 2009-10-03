@@ -65,7 +65,7 @@ public class TestTermVectorAccessor extends TestCase {
 
     iw.close();
 
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, false);
 
     TermVectorAccessor accessor = new TermVectorAccessor();
 

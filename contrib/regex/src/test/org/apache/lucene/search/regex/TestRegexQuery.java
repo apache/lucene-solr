@@ -45,7 +45,7 @@ public class TestRegexQuery extends TestCase {
       writer.addDocument(doc);
       writer.optimize();
       writer.close();
-      searcher = new IndexSearcher(directory);
+      searcher = new IndexSearcher(directory, true);
     } catch (Exception e) {
       fail(e.toString());
     }

@@ -73,7 +73,7 @@ public class TestParser extends TestCase {
 			d.close();
       writer.close();
 		}
-		reader=IndexReader.open(dir);
+		reader=IndexReader.open(dir, true);
 		searcher=new IndexSearcher(reader);
 		
 	}

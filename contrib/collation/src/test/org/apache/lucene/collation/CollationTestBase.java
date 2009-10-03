@@ -82,7 +82,7 @@ public class CollationTestBase extends TestCase {
                       Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.close();
-    IndexSearcher is = new IndexSearcher(ramDir);
+    IndexSearcher is = new IndexSearcher(ramDir, true);
 
     AnalyzingQueryParser aqp = new AnalyzingQueryParser("content", analyzer);
     aqp.setLowercaseExpandedTerms(false);
@@ -127,7 +127,7 @@ public class CollationTestBase extends TestCase {
                       Field.Store.YES, Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(ramDir);
+    IndexSearcher searcher = new IndexSearcher(ramDir, true);
     Query query = new TermQuery(new Term("body","body"));
 
     // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
@@ -162,7 +162,7 @@ public class CollationTestBase extends TestCase {
                       Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(ramDir);
+    IndexSearcher searcher = new IndexSearcher(ramDir, true);
 
     Query query = new TermRangeQuery("content", firstBeg, firstEnd, true, true);
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -189,7 +189,7 @@ public class CollationTestBase extends TestCase {
     writer.addDocument(doc);
     writer.close();
 
-    IndexReader reader = IndexReader.open(farsiIndex);
+    IndexReader reader = IndexReader.open(farsiIndex, true);
     IndexSearcher search = new IndexSearcher(reader);
         
     // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
@@ -268,7 +268,7 @@ public class CollationTestBase extends TestCase {
     }
     writer.optimize();
     writer.close();
-    Searcher searcher = new IndexSearcher(indexStore);
+    Searcher searcher = new IndexSearcher(indexStore, true);
 
     Sort sort = new Sort();
     Query queryX = new TermQuery(new Term ("contents", "x"));

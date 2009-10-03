@@ -62,7 +62,7 @@ public class TestEmptyIndex extends TestCase {
 
     Directory d = new RAMDirectory();
     new IndexWriter(d, null, true, IndexWriter.MaxFieldLength.UNLIMITED).close();
-    r = IndexReader.open(d);
+    r = IndexReader.open(d, false);
     testNorms(r);
     r.close();
     d.close();
@@ -96,7 +96,7 @@ public class TestEmptyIndex extends TestCase {
 
     Directory d = new RAMDirectory();
     new IndexWriter(d, null, true, IndexWriter.MaxFieldLength.UNLIMITED).close();
-    r = IndexReader.open(d);
+    r = IndexReader.open(d, false);
     termEnumTest(r);
     r.close();
     d.close();

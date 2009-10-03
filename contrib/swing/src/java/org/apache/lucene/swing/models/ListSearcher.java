@@ -153,7 +153,7 @@ public class ListSearcher extends AbstractListModel {
             this.searchString = searchString;
 
             //make a new index searcher with the in memory (RAM) index.
-            IndexSearcher is = new IndexSearcher(directory);
+            IndexSearcher is = new IndexSearcher(directory, true);
 
             //make an array of fields - one for each column
             String[] fields = {FIELD_NAME};

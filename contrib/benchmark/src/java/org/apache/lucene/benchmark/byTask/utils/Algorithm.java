@@ -57,16 +57,14 @@ public class Algorithm {
     currSequence.setDepth(0);
     String taskPackage = PerfTask.class.getPackage().getName() + ".";
     
-    Class paramClass[] = {PerfRunData.class};
-    PerfRunData paramObj[] = {runData};
-    
     while (stok.nextToken() != StreamTokenizer.TT_EOF) { 
       switch(stok.ttype) {
   
         case StreamTokenizer.TT_WORD:
           String s = stok.sval;
-          Constructor cnstr = Class.forName(taskPackage+s+"Task").getConstructor(paramClass);
-          PerfTask task = (PerfTask) cnstr.newInstance(paramObj);
+          Constructor<? extends PerfTask> cnstr = Class.forName(taskPackage+s+"Task")
+            .asSubclass(PerfTask.class).getConstructor(PerfRunData.class);
+          PerfTask task = cnstr.newInstance(runData);
           task.setDisableCounting(isDisableCountNextTask);
           isDisableCountNextTask = false;
           currSequence.addTask(task);

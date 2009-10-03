@@ -149,7 +149,7 @@ public class TestQueryTemplateManager extends TestCase {
 		}
 		w.optimize();
 		w.close();
-		searcher=new IndexSearcher(dir);
+		searcher=new IndexSearcher(dir, true);
 		
 		//initialize the parser
 		builder=new CorePlusExtensionsParser("artist", analyzer);

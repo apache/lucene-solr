@@ -35,7 +35,7 @@ public class IndexMergeTool {
       System.err.println("Usage: IndexMergeTool <mergedIndex> <index1> <index2> [index3] ...");
       System.exit(1);
     }
-    File mergedIndex = new File(args[0]);
+    FSDirectory mergedIndex = FSDirectory.open(new File(args[0]));
 
     IndexWriter writer = new IndexWriter(mergedIndex, new  SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
 

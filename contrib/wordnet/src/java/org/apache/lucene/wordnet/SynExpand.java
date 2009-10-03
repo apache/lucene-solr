@@ -70,7 +70,7 @@ public final class SynExpand {
 		}
 
 		FSDirectory directory = FSDirectory.open(new File(args[0]));
-		IndexSearcher searcher = new IndexSearcher(directory);
+		IndexSearcher searcher = new IndexSearcher(directory, true);
 
 		String query = args[1];
 		String field = "contents";

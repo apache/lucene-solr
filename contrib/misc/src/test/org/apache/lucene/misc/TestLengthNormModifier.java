@@ -93,7 +93,7 @@ public class TestLengthNormModifier extends TestCase {
 	
     public void testFieldWithNoNorm() throws Exception {
 
-	IndexReader r = IndexReader.open(store);
+	IndexReader r = IndexReader.open(store, false);
 	byte[] norms = r.norms("nonorm");
 
 	// sanity check, norms should all be 1
@@ -116,7 +116,7 @@ public class TestLengthNormModifier extends TestCase {
 	}
 
 	// nothing should have changed
-	r = IndexReader.open(store);
+	r = IndexReader.open(store, false);
 	
 	norms = r.norms("nonorm");
 	assertTrue("Whoops we have norms?", !r.hasNorms("nonorm"));
@@ -140,7 +140,7 @@ public class TestLengthNormModifier extends TestCase {
 	float lastScore = 0.0f;
 	
 	// default similarity should put docs with shorter length first
-  searcher = new IndexSearcher(store);
+  searcher = new IndexSearcher(store, false);
   searcher.search(new TermQuery(new Term("field", "word")), new Collector() {
     private int docBase = 0;
     private Scorer scorer;
@@ -177,7 +177,7 @@ public class TestLengthNormModifier extends TestCase {
 	fnm.reSetNorms("field");
 
 	// new norm (with default similarity) should put longer docs first
-	searcher = new IndexSearcher(store);
+	searcher = new IndexSearcher(store, false);
 	searcher.search(new TermQuery(new Term("field", "word")), new Collector() {
       private int docBase = 0;
       private Scorer scorer;

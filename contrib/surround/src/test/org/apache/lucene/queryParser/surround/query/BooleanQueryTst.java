@@ -98,7 +98,7 @@ public class BooleanQueryTst {
     /* if (verbose) System.out.println("Lucene: " + query.toString()); */
 
     TestCollector tc = new TestCollector();
-    Searcher searcher = new IndexSearcher(dBase.getDb());
+    Searcher searcher = new IndexSearcher(dBase.getDb(), true);
     try {
       searcher.search(query, tc);
     } finally {

@@ -24,6 +24,7 @@ import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
 import org.apache.lucene.benchmark.quality.*;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Searcher;
+import org.apache.lucene.store.FSDirectory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -41,7 +42,8 @@ public class QueryDriver {
     
     File topicsFile = new File(args[0]);
     File qrelsFile = new File(args[1]);
-    Searcher searcher = new IndexSearcher(args[3]);
+    FSDirectory dir = FSDirectory.open(new File(args[3]));
+    Searcher searcher = new IndexSearcher(dir, true);
 
     int maxResults = 1000;
     String docNameField = "docname";

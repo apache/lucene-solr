@@ -145,6 +145,6 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
 		writer.close();
 
 		//open searcher
-		searcher=new IndexSearcher(rd);
+		searcher=new IndexSearcher(rd, true);
 	}
 }

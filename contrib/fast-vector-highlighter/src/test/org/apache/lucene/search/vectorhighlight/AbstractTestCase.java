@@ -288,7 +288,7 @@ public abstract class AbstractTestCase extends TestCase {
     writer.addDocument( doc );
     writer.close();
 
-    reader = IndexReader.open( dir );
+    reader = IndexReader.open( dir, true );
   }
   
   protected void makeIndexShortMV() throws Exception {

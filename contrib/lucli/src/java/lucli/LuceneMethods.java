@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.io.File;
 
 import jline.ConsoleReader;
 
@@ -54,6 +55,7 @@ import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
+import org.apache.lucene.store.FSDirectory;
 
 /**
  * Various methods that interact with Lucene and provide info about the 
@@ -62,7 +64,7 @@ import org.apache.lucene.search.Searcher;
 class LuceneMethods {
 
   private int numDocs;
-  private String indexName; //directory of this index
+  private FSDirectory indexName; //directory of this index
   private java.util.Iterator fieldIterator;
   private List fields; //Fields as a vector
   private List indexedFields; //Fields as a vector
@@ -71,8 +73,8 @@ class LuceneMethods {
   private Query query; //current query string
   private String analyzerClassFQN = null; // Analyzer class, if NULL, use default Analyzer
 
-  public LuceneMethods(String index) {
-    indexName = index;
+  public LuceneMethods(String index) throws IOException {
+    indexName = FSDirectory.open(new File(index));
     message("Lucene CLI. Using directory '" + indexName + "'. Type 'help' for instructions.");
   }
 
@@ -94,7 +96,7 @@ class LuceneMethods {
 
 
   public void info() throws java.io.IOException {
-    IndexReader indexReader = IndexReader.open(indexName);
+    IndexReader indexReader = IndexReader.open(indexName, true);
 
 
     getFieldInfo();
@@ -103,7 +105,7 @@ class LuceneMethods {
     message("All Fields:" + fields.toString());
     message("Indexed Fields:" + indexedFields.toString());
 
-    if (IndexReader.isLocked(indexName)) {
+    if (IndexWriter.isLocked(indexName)) {
       message("Index is locked");
     }
     //IndexReader.getCurrentVersion(indexName);
@@ -180,7 +182,7 @@ class LuceneMethods {
 
     private Query explainQuery(String queryString) throws IOException, ParseException {
 
-    searcher = new IndexSearcher(indexName);
+    searcher = new IndexSearcher(indexName, true);
     Analyzer analyzer = createAnalyzer();
     getFieldInfo();
 
@@ -201,7 +203,7 @@ class LuceneMethods {
    */
   private Hits initSearch(String queryString) throws IOException, ParseException {
 
-    searcher = new IndexSearcher(indexName);
+    searcher = new IndexSearcher(indexName, true);
     Analyzer analyzer = createAnalyzer();
     getFieldInfo();
 
@@ -229,7 +231,7 @@ class LuceneMethods {
   }
 
   private void getFieldInfo() throws IOException {
-    IndexReader indexReader = IndexReader.open(indexName);
+    IndexReader indexReader = IndexReader.open(indexName, true);
     fields = new ArrayList();
     indexedFields = new ArrayList();
 
@@ -320,7 +322,7 @@ class LuceneMethods {
    */
   public void terms(String field) throws IOException {
     TreeMap termMap = new TreeMap();
-    IndexReader indexReader = IndexReader.open(indexName);
+    IndexReader indexReader = IndexReader.open(indexName, true);
     TermEnum terms = indexReader.terms();
     while (terms.next()) {
       Term term = terms.term();

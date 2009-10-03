@@ -598,7 +598,7 @@ public class TestQPHelper extends LocalizedTestCase {
         Field.Index.UN_TOKENIZED));
     iw.addDocument(doc);
     iw.close();
-    IndexSearcher is = new IndexSearcher(ramDir);
+    IndexSearcher is = new IndexSearcher(ramDir, true);
 
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(new WhitespaceAnalyzer());
@@ -1020,7 +1020,7 @@ public class TestQPHelper extends LocalizedTestCase {
     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
     addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
     iw.close();
-    IndexSearcher is = new IndexSearcher(ramDir);
+    IndexSearcher is = new IndexSearcher(ramDir, true);
     assertHits(1, "[12/1/2005 TO 12/3/2005]", is);
     assertHits(2, "[12/1/2005 TO 12/4/2005]", is);
     assertHits(1, "[12/3/2005 TO 12/4/2005]", is);

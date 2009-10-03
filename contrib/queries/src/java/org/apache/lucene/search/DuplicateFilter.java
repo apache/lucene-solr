@@ -162,28 +162,6 @@ public class DuplicateFilter extends Filter
 		return bits;
 	}
 
-	/**
-	 * @param args
-	 * @throws IOException 
-	 * @throws Exception 
-	 */
-	public static void main(String[] args) throws Exception
-	{
-		IndexReader r=IndexReader.open("/indexes/personCentricAnon");
-//		IndexReader r=IndexReader.open("/indexes/enron");
-		long start=System.currentTimeMillis();
-//		DuplicateFilter df = new DuplicateFilter("threadId",KM_USE_FIRST_OCCURRENCE, PM_FAST_INVALIDATION);
-//		DuplicateFilter df = new DuplicateFilter("threadId",KM_USE_LAST_OCCURRENCE, PM_FAST_INVALIDATION);
-		DuplicateFilter df = new DuplicateFilter("vehicle.vrm",KM_USE_LAST_OCCURRENCE, PM_FAST_INVALIDATION);
-//		DuplicateFilter df = new DuplicateFilter("title",USE_LAST_OCCURRENCE);
-//		df.setProcessingMode(PM_SLOW_VALIDATION);
-		BitSet b = df.bits(r);
-		long end=System.currentTimeMillis()-start;
-		System.out.println(b.cardinality()+" in "+end+" ms ");
-
-	}
-
-
 	public String getFieldName()
 	{
 		return fieldName;

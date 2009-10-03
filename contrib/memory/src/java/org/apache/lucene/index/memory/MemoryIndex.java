@@ -715,7 +715,7 @@ public class MemoryIndex implements Serializable {
     private Searcher searcher; // needed to find searcher.getSimilarity() 
     
     private MemoryIndexReader() {
-      super(null); // avoid as much superclass baggage as possible
+      super(); // avoid as much superclass baggage as possible
     }
     
     // lucene >= 1.9 or lucene-1.4.3 with patch removing "final" in superclass

@@ -67,7 +67,7 @@ public abstract class ReadTask extends PerfTask {
     IndexReader ir = getRunData().getIndexReader();
     if (ir == null) {
       Directory dir = getRunData().getDirectory();
-      ir = IndexReader.open(dir);
+      ir = IndexReader.open(dir, true);
       closeReader = true;
       //res++; //this is confusing, comment it out
     }

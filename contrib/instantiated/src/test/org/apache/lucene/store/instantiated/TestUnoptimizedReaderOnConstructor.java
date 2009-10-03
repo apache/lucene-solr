@@ -50,7 +50,7 @@ public class TestUnoptimizedReaderOnConstructor extends TestCase {
     addDocument(iw, "All work and no play makes wendy a dull girl");
     iw.close();
 
-    IndexReader unoptimizedReader = IndexReader.open(dir);
+    IndexReader unoptimizedReader = IndexReader.open(dir, false);
     unoptimizedReader.deleteDocument(2);
 
     InstantiatedIndex ii;

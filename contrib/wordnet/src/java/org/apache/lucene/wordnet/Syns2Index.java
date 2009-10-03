@@ -35,6 +35,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.store.FSDirectory;
 
 /**
  * Convert the prolog file wn_s.pl from the <a href="http://www.cogsci.princeton.edu/2.0/WNprolog-2.0.tar.gz">WordNet prolog download</a>
@@ -239,31 +240,36 @@ public class Syns2Index
     {
         int row = 0;
         int mod = 1;
+        FSDirectory dir = FSDirectory.open(new File(indexDir));
+        try {
 
-        // override the specific index if it already exists
-        IndexWriter writer = new IndexWriter(indexDir, ana, true, IndexWriter.MaxFieldLength.LIMITED);
-        writer.setUseCompoundFile(true); // why?
-        Iterator i1 = word2Nums.keySet().iterator();
-        while (i1.hasNext()) // for each word
-        {
-            String g = (String) i1.next();
-            Document doc = new Document();
+          // override the specific index if it already exists
+          IndexWriter writer = new IndexWriter(dir, ana, true, IndexWriter.MaxFieldLength.LIMITED);
+          writer.setUseCompoundFile(true); // why?
+          Iterator i1 = word2Nums.keySet().iterator();
+          while (i1.hasNext()) // for each word
+          {
+              String g = (String) i1.next();
+              Document doc = new Document();
 
-            int n = index(word2Nums, num2Words, g, doc);
-            if (n > 0)
-            {
-				doc.add( new Field( F_WORD, g, Field.Store.YES, Field.Index.NOT_ANALYZED));
-                if ((++row % mod) == 0)
-                {
-                    o.println("\trow=" + row + "/" + word2Nums.size() + " doc= " + doc);
-                    mod *= 2;
-                }
-                writer.addDocument(doc);
-            } // else degenerate
+              int n = index(word2Nums, num2Words, g, doc);
+              if (n > 0)
+              {
+          doc.add( new Field( F_WORD, g, Field.Store.YES, Field.Index.NOT_ANALYZED));
+                  if ((++row % mod) == 0)
+                  {
+                      o.println("\trow=" + row + "/" + word2Nums.size() + " doc= " + doc);
+                      mod *= 2;
+                  }
+                  writer.addDocument(doc);
+              } // else degenerate
+          }
+          o.println( "Optimizing..");
+          writer.optimize();
+          writer.close();
+        } finally {
+          dir.close();
         }
-		o.println( "Optimizing..");
-        writer.optimize();
-        writer.close();
     }
 
     /**

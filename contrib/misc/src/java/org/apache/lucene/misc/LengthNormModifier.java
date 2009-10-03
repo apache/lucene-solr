@@ -113,7 +113,7 @@ public class LengthNormModifier {
     TermEnum termEnum = null;
     TermDocs termDocs = null;
     try {
-      reader = IndexReader.open(dir);
+      reader = IndexReader.open(dir, false);
       termCounts = new int[reader.maxDoc()];
       try {
         termEnum = reader.terms(new Term(field));
@@ -139,7 +139,7 @@ public class LengthNormModifier {
     }
     
     try {
-      reader = IndexReader.open(dir); 
+      reader = IndexReader.open(dir, false); 
       for (int d = 0; d < termCounts.length; d++) {
         if (! reader.isDeleted(d)) {
           byte norm = sim.encodeNorm(sim.lengthNorm(fieldName, termCounts[d]));

@@ -85,7 +85,7 @@ public class QualityQueriesFinder {
   
   private String [] bestTerms(String field,int numTerms) throws IOException {
     PriorityQueue pq = new TermsDfQueue(numTerms);
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, true);
     try {
       int threshold = ir.maxDoc() / 10; // ignore words too common.
       TermEnum terms = ir.terms(new Term(field,""));

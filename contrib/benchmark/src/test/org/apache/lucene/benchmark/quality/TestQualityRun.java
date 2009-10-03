@@ -82,7 +82,7 @@ public class TestQualityRun extends TestCase {
     // validate topics & judgments match each other
     judge.validateData(qqs, logger);
     
-    IndexSearcher searcher = new IndexSearcher(FSDirectory.open(new File(workDir,"index")));
+    IndexSearcher searcher = new IndexSearcher(FSDirectory.open(new File(workDir,"index")), true);
 
     QualityQueryParser qqParser = new SimpleQQParser("title","body");
     QualityBenchmark qrun = new QualityBenchmark(qqs, qqParser, searcher, docNameField);

@@ -72,7 +72,7 @@ public class TestRemoteSearchable extends LuceneTestCase {
     // publish it
     port = _TestUtil.getRandomSocketPort();
     LocateRegistry.createRegistry(port);
-    Searchable local = new IndexSearcher(indexStore);
+    Searchable local = new IndexSearcher(indexStore, true);
     RemoteSearchable impl = new RemoteSearchable(local);
     Naming.rebind("//localhost:" + port + "/Searchable", impl);
   }

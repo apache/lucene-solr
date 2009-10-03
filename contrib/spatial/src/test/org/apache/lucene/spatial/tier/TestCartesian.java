@@ -164,7 +164,7 @@ public class TestCartesian extends TestCase{
   }
 
   public void testAntiM() throws IOException, InvalidGeoException {
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
 
     final double miles = 2800.0;
         // Hawaii
@@ -252,7 +252,7 @@ public class TestCartesian extends TestCase{
   }
 
   public void testPoleFlipping() throws IOException, InvalidGeoException {
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
 
     final double miles = 3500.0;
     lat = 41.6032207;
@@ -340,7 +340,7 @@ public class TestCartesian extends TestCase{
   }
   
   public void testRange() throws IOException, InvalidGeoException {
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
 
     final double[] milesToTest = new double[] {6.0, 0.5, 0.001, 0.0};
     final int[] expected = new int[] {7, 1, 0, 0};
@@ -431,7 +431,7 @@ public class TestCartesian extends TestCase{
   
   
   public void testGeoHashRange() throws IOException, InvalidGeoException {
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
 	    
     final double[] milesToTest = new double[] {6.0, 0.5, 0.001, 0.0};
     final int[] expected = new int[] {7, 1, 0, 0};

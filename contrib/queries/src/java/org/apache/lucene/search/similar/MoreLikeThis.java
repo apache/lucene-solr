@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.store.FSDirectory;
 
 import java.util.Set;
 import java.util.HashMap;
@@ -720,7 +721,8 @@ public final class MoreLikeThis {
         }
 
         PrintStream o = System.out;
-        IndexReader r = IndexReader.open(indexName);
+        FSDirectory dir = FSDirectory.open(new File(indexName));
+        IndexReader r = IndexReader.open(dir, true);
         o.println("Open index " + indexName + " which has " + r.numDocs() + " docs");
 
         MoreLikeThis mlt = new MoreLikeThis(r);
@@ -741,7 +743,7 @@ public final class MoreLikeThis {
 
         o.println("q: " + query);
         o.println();
-        IndexSearcher searcher = new IndexSearcher(indexName);
+        IndexSearcher searcher = new IndexSearcher(dir, true);
 
         Hits hits = searcher.search(query);
         int len = hits.length();

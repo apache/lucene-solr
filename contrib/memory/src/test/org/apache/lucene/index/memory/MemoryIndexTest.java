@@ -420,7 +420,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     Searcher searcher = null;
     try {
       if (index instanceof Directory)
-        searcher = new IndexSearcher((Directory)index);
+        searcher = new IndexSearcher((Directory)index, true);
       else 
         searcher = ((MemoryIndex) index).createSearcher();
 
@@ -450,7 +450,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       try {
         Directory dir = (Directory) index;
         int size = 0;
-        String[] fileNames = dir.list();
+        String[] fileNames = dir.listAll();
         for (int i=0; i < fileNames.length; i++) {
           size += dir.fileLength(fileNames[i]);
         }

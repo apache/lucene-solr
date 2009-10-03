@@ -54,7 +54,7 @@ public class BooleanFilterTest extends TestCase
 		addDoc(writer, "admin guest", "030", "20050101","N");
 		
 		writer.close();
-		reader=IndexReader.open(directory);			
+		reader=IndexReader.open(directory, true);			
 	}
 	
 	private void addDoc(IndexWriter writer, String accessRights, String price, String date, String inStock) throws IOException

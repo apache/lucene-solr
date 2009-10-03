@@ -64,7 +64,7 @@ public class TermsFilterTest extends TestCase
 			w.addDocument(doc);			
 		}
 		w.close();
-		IndexReader reader = IndexReader.open(rd);
+		IndexReader reader = IndexReader.open(rd, true);
 		
 		TermsFilter tf=new TermsFilter();
 		tf.addTerm(new Term(fieldName,"19"));

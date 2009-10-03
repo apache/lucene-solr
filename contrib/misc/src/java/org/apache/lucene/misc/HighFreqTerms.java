@@ -19,7 +19,10 @@ package org.apache.lucene.misc;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PriorityQueue;
+
+import java.io.File;
 
 /**
  * <code>HighFreqTerms</code> class extracts terms and their frequencies out
@@ -34,11 +37,14 @@ public class HighFreqTerms {
 
   public static void main(String[] args) throws Exception {
     IndexReader reader = null;
+    FSDirectory dir = null;
     String field = null;
     if (args.length == 1) {
-      reader = IndexReader.open(args[0]);
+      dir = FSDirectory.open(new File(args[0]));
+      reader = IndexReader.open(dir, true);
     } else if (args.length == 2) {
-      reader = IndexReader.open(args[0]);
+      dir = FSDirectory.open(new File(args[0]));
+      reader = IndexReader.open(dir, true);
       field = args[1];
     } else {
       usage();

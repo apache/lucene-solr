@@ -27,6 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Searcher;
@@ -256,133 +257,138 @@ public class IndexTask extends Task {
       create = true;
     }
 
-    Searcher searcher = null;
-    boolean checkLastModified = false;
-    if (!create) {
-      try {
-        searcher = new IndexSearcher(indexDir.getAbsolutePath());
-        checkLastModified = true;
-      } catch (IOException ioe) {
-        log("IOException: " + ioe.getMessage());
-        // Empty - ignore, which indicates to index all
-        // documents
-      }
-    }
-
-    log("checkLastModified = " + checkLastModified, Project.MSG_VERBOSE);
-
-    IndexWriter writer =
-      new IndexWriter(indexDir, analyzer, create, IndexWriter.MaxFieldLength.LIMITED);
-
-    writer.setUseCompoundFile(useCompoundIndex);
-    int totalFiles = 0;
-    int totalIndexed = 0;
-    int totalIgnored = 0;
+    FSDirectory dir = FSDirectory.open(indexDir);
     try {
-      writer.setMergeFactor(mergeFactor);
-
-      for (int i = 0; i < rcs.size(); i++) {
-      	ResourceCollection rc = (ResourceCollection) rcs.elementAt(i);
-        if (rc.isFilesystemOnly()) {
-          Iterator resources = rc.iterator();
-          while (resources.hasNext()) {
-            Resource r = (Resource) resources.next();
-            if (!r.isExists() || !(r instanceof FileResource)) {
-              continue;
-            }
-            
-            totalFiles++;
-
-            File file = ((FileResource) r).getFile();
-            
-            if (!file.exists() || !file.canRead()) {
-              throw new BuildException("File \"" +
-                                       file.getAbsolutePath()
-                                       + "\" does not exist or is not readable.");
-            }
-
-            boolean indexIt = true;
-
-            if (checkLastModified) {
-              Term pathTerm =
-                new Term("path", file.getPath());
-              TermQuery query =
-                new TermQuery(pathTerm);
-              Hits hits = searcher.search(query);
-
-              // if document is found, compare the
-              // indexed last modified time with the
-              // current file
-              // - don't index if up to date
-              if (hits.length() > 0) {
-                Document doc = hits.doc(0);
-                String indexModified =
-                  doc.get("modified").trim();
-                if (indexModified != null) {
-                  long lastModified = 0;
-                  try {
-                    lastModified = DateTools.stringToTime(indexModified);
-                  } catch (ParseException e) {
-                    // if modified time is not parsable, skip
-                  }
-                  if (lastModified == file.lastModified()) {
-                    // TODO: remove existing document
-                    indexIt = false;
-                  }
-                }
-              }
-            }
-
-            if (indexIt) {
-              try {
-                log("Indexing " + file.getPath(),
-                    Project.MSG_VERBOSE);
-                Document doc =
-                  handler.getDocument(file);
-
-                if (doc == null) {
-                  totalIgnored++;
-                } else {
-                  // Add the path of the file as a field named "path".  Use a Keyword field, so
-                  // that the index stores the path, and so that the path is searchable
-                  doc.add(new Field("path", file.getPath(), Field.Store.YES, Field.Index.NOT_ANALYZED));
-
-                  // Add the last modified date of the file a field named "modified".  Use a
-                  // Keyword field, so that it's searchable, but so that no attempt is made
-                  // to tokenize the field into words.
-                  doc.add(new Field("modified", DateTools.timeToString(file.lastModified(), DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.NOT_ANALYZED));
-
-                  writer.addDocument(doc);
-                  totalIndexed++;
-                }
-              } catch (DocumentHandlerException e) {
-                throw new BuildException(e);
-              }
-            }
-          }
-          // for j
+      Searcher searcher = null;
+      boolean checkLastModified = false;
+      if (!create) {
+        try {
+          searcher = new IndexSearcher(dir, true);
+          checkLastModified = true;
+        } catch (IOException ioe) {
+          log("IOException: " + ioe.getMessage());
+          // Empty - ignore, which indicates to index all
+          // documents
         }
-        // if (fs != null)
       }
-      // for i
 
-      writer.optimize();
-    }
-      //try
-    finally {
-      // always make sure everything gets closed,
-      // no matter how we exit.
-      writer.close();
-      if (searcher != null) {
-        searcher.close();
+      log("checkLastModified = " + checkLastModified, Project.MSG_VERBOSE);
+
+      IndexWriter writer =
+        new IndexWriter(dir, analyzer, create, IndexWriter.MaxFieldLength.LIMITED);
+
+      writer.setUseCompoundFile(useCompoundIndex);
+      int totalFiles = 0;
+      int totalIndexed = 0;
+      int totalIgnored = 0;
+      try {
+        writer.setMergeFactor(mergeFactor);
+
+        for (int i = 0; i < rcs.size(); i++) {
+          ResourceCollection rc = (ResourceCollection) rcs.elementAt(i);
+          if (rc.isFilesystemOnly()) {
+            Iterator resources = rc.iterator();
+            while (resources.hasNext()) {
+              Resource r = (Resource) resources.next();
+              if (!r.isExists() || !(r instanceof FileResource)) {
+                continue;
+              }
+              
+              totalFiles++;
+
+              File file = ((FileResource) r).getFile();
+              
+              if (!file.exists() || !file.canRead()) {
+                throw new BuildException("File \"" +
+                                         file.getAbsolutePath()
+                                         + "\" does not exist or is not readable.");
+              }
+
+              boolean indexIt = true;
+
+              if (checkLastModified) {
+                Term pathTerm =
+                  new Term("path", file.getPath());
+                TermQuery query =
+                  new TermQuery(pathTerm);
+                Hits hits = searcher.search(query);
+
+                // if document is found, compare the
+                // indexed last modified time with the
+                // current file
+                // - don't index if up to date
+                if (hits.length() > 0) {
+                  Document doc = hits.doc(0);
+                  String indexModified =
+                    doc.get("modified").trim();
+                  if (indexModified != null) {
+                    long lastModified = 0;
+                    try {
+                      lastModified = DateTools.stringToTime(indexModified);
+                    } catch (ParseException e) {
+                      // if modified time is not parsable, skip
+                    }
+                    if (lastModified == file.lastModified()) {
+                      // TODO: remove existing document
+                      indexIt = false;
+                    }
+                  }
+                }
+              }
+
+              if (indexIt) {
+                try {
+                  log("Indexing " + file.getPath(),
+                      Project.MSG_VERBOSE);
+                  Document doc =
+                    handler.getDocument(file);
+
+                  if (doc == null) {
+                    totalIgnored++;
+                  } else {
+                    // Add the path of the file as a field named "path".  Use a Keyword field, so
+                    // that the index stores the path, and so that the path is searchable
+                    doc.add(new Field("path", file.getPath(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+
+                    // Add the last modified date of the file a field named "modified".  Use a
+                    // Keyword field, so that it's searchable, but so that no attempt is made
+                    // to tokenize the field into words.
+                    doc.add(new Field("modified", DateTools.timeToString(file.lastModified(), DateTools.Resolution.MILLISECOND), Field.Store.YES, Field.Index.NOT_ANALYZED));
+
+                    writer.addDocument(doc);
+                    totalIndexed++;
+                  }
+                } catch (DocumentHandlerException e) {
+                  throw new BuildException(e);
+                }
+              }
+            }
+            // for j
+          }
+          // if (fs != null)
+        }
+        // for i
+
+        writer.optimize();
       }
+        //try
+      finally {
+        // always make sure everything gets closed,
+        // no matter how we exit.
+        writer.close();
+        if (searcher != null) {
+          searcher.close();
+        }
+      }
+
+      Date end = new Date();
+
+      log(totalIndexed + " out of " + totalFiles + " indexed (" +
+          totalIgnored + " ignored) in " + (end.getTime() - start.getTime()) +
+          " milliseconds");
+    } finally {
+      dir.close();
     }
-
-    Date end = new Date();
-
-    log(totalIndexed + " out of " + totalFiles + " indexed (" +
-        totalIgnored + " ignored) in " + (end.getTime() - start.getTime()) +
-        " milliseconds");
   }
 
   public static class HandlerConfig implements DynamicConfigurator {

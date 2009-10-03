@@ -122,7 +122,7 @@ public class TestComplexPhraseQuery extends TestCase {
       w.addDocument(doc);
     }
     w.close();
-    searcher = new IndexSearcher(rd);
+    searcher = new IndexSearcher(rd, true);
   }
 
   protected void tearDown() throws Exception {

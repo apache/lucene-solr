@@ -114,7 +114,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     Analyzer analyzer = new SimpleAnalyzer();
     QueryParser qp = new QueryParser(FIELD_NAME, analyzer);
     query = qp.parse("\"very long\"");
-    searcher = new IndexSearcher(ramDir, false);
+    searcher = new IndexSearcher(ramDir, true);
     TopDocs hits = searcher.search(query, 10);
     
     QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
@@ -564,7 +564,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     query = new ConstantScoreRangeQuery(FIELD_NAME, "kannedy", "kznnedy", true, true);
 
-    searcher = new IndexSearcher(ramDir);
+    searcher = new IndexSearcher(ramDir, true);
     // can't rewrite ConstantScoreRangeQuery if you want to highlight it -
     // it rewrites to ConstantScoreQuery which cannot be highlighted
     // query = unReWrittenQuery.rewrite(reader);
@@ -600,7 +600,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     query = new WildcardQuery(new Term(FIELD_NAME, "ken*"));
     ((WildcardQuery)query).setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
-    searcher = new IndexSearcher(ramDir);
+    searcher = new IndexSearcher(ramDir, true);
     // can't rewrite ConstantScore if you want to highlight it -
     // it rewrites to ConstantScoreQuery which cannot be highlighted
     // query = unReWrittenQuery.rewrite(reader);
@@ -1098,7 +1098,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public void run() throws Exception {
         numHighlights = 0;
         // test to show how rewritten query can still be used
-        searcher = new IndexSearcher(ramDir);
+        searcher = new IndexSearcher(ramDir, true);
         Analyzer analyzer = new StandardAnalyzer();
 
         QueryParser parser = new QueryParser(FIELD_NAME, analyzer);
@@ -1218,7 +1218,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     writer1.addDocument(d);
     writer1.optimize();
     writer1.close();
-    IndexReader reader1 = IndexReader.open(ramDir1);
+    IndexReader reader1 = IndexReader.open(ramDir1, true);
 
     // setup index 2
     RAMDirectory ramDir2 = new RAMDirectory();
@@ -1229,11 +1229,11 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     writer2.addDocument(d);
     writer2.optimize();
     writer2.close();
-    IndexReader reader2 = IndexReader.open(ramDir2);
+    IndexReader reader2 = IndexReader.open(ramDir2, true);
 
     IndexSearcher searchers[] = new IndexSearcher[2];
-    searchers[0] = new IndexSearcher(ramDir1);
-    searchers[1] = new IndexSearcher(ramDir2);
+    searchers[0] = new IndexSearcher(ramDir1, true);
+    searchers[1] = new IndexSearcher(ramDir2, true);
     MultiSearcher multiSearcher = new MultiSearcher(searchers);
     QueryParser parser = new QueryParser(FIELD_NAME, new StandardAnalyzer());
     parser.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
@@ -1513,7 +1513,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     String q = "t_text1:random";
     QueryParser parser = new QueryParser( "t_text1", a );
     Query query = parser.parse( q );
-    IndexSearcher searcher = new IndexSearcher( dir );
+    IndexSearcher searcher = new IndexSearcher( dir, true );
     // This scorer can return negative idf -> null fragment
     Scorer scorer = new QueryTermScorer( query, searcher.getIndexReader(), "t_text1" );
     // This scorer doesn't use idf (patch version)
@@ -1539,7 +1539,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
    * writer = new IndexWriter(ramDir,bigramAnalyzer , true); Document d = new
    * Document(); Field f = new Field(FIELD_NAME, "java abc def", true, true,
    * true); d.add(f); writer.addDocument(d); writer.close(); IndexReader reader =
-   * IndexReader.open(ramDir);
+   * IndexReader.open(ramDir, true);
    * 
    * IndexSearcher searcher=new IndexSearcher(reader); query =
    * QueryParser.parse("abc", FIELD_NAME, bigramAnalyzer);
@@ -1572,7 +1572,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
 
   public void doSearching(Query unReWrittenQuery) throws Exception {
-    searcher = new IndexSearcher(ramDir);
+    searcher = new IndexSearcher(ramDir, true);
     // for any multi-term queries to work (prefix, wildcard, range,fuzzy etc)
     // you must use a rewritten query!
     query = unReWrittenQuery.rewrite(reader);
@@ -1609,7 +1609,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     writer.optimize();
     writer.close();
-    reader = IndexReader.open(ramDir);
+    reader = IndexReader.open(ramDir, true);
     numHighlights = 0;
   }
 

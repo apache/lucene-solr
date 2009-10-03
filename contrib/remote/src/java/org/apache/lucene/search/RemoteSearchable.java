@@ -21,8 +21,10 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.store.FSDirectory;
 
 import java.io.IOException;
+import java.io.File;
 import java.rmi.Naming;
 import java.rmi.RMISecurityManager;
 import java.rmi.RemoteException;
@@ -116,7 +118,7 @@ public class RemoteSearchable
       System.setSecurityManager(new RMISecurityManager());
     }
     
-    Searchable local = new IndexSearcher(indexName);
+    Searchable local = new IndexSearcher(FSDirectory.open(new File(indexName)), true);
     RemoteSearchable impl = new RemoteSearchable(local);
       
     // bind the implementation to "Searchable"

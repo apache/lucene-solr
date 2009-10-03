@@ -64,7 +64,7 @@ public class ChainedFilterTest extends TestCase {
 
     writer.close();
 
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
 
     // query for everything to make life easier
     BooleanQuery bq = new BooleanQuery();
@@ -222,7 +222,7 @@ public class ChainedFilterTest extends TestCase {
     IndexWriter writer = new IndexWriter(dir, analyzer, true, MaxFieldLength.LIMITED);
     writer.close();
   
-    Searcher searcher = new IndexSearcher(dir);
+    Searcher searcher = new IndexSearcher(dir, true);
   
     Query query = new TermQuery(new Term("none", "none"));
   

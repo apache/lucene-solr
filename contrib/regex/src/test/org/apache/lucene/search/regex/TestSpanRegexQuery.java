@@ -61,7 +61,7 @@ public class TestSpanRegexQuery extends TestCase {
     writer.optimize();
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(directory);
+    IndexSearcher searcher = new IndexSearcher(directory, true);
     SpanRegexQuery srq = new SpanRegexQuery(new Term("field", "aut.*"));
     SpanFirstQuery sfq = new SpanFirstQuery(srq, 1);
     // SpanNearQuery query = new SpanNearQuery(new SpanQuery[] {srq, stq}, 6,
@@ -80,8 +80,8 @@ public class TestSpanRegexQuery extends TestCase {
 
     // 1. Search the same store which works
     IndexSearcher[] arrSearcher = new IndexSearcher[2];
-    arrSearcher[0] = new IndexSearcher(indexStoreA);
-    arrSearcher[1] = new IndexSearcher(indexStoreB);
+    arrSearcher[0] = new IndexSearcher(indexStoreA, true);
+    arrSearcher[1] = new IndexSearcher(indexStoreB, true);
     MultiSearcher searcher = new MultiSearcher(arrSearcher);
     Hits hits = searcher.search(query);
     arrSearcher[0].close();

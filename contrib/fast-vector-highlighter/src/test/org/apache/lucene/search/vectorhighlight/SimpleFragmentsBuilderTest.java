@@ -125,6 +125,6 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     writer.addDocument( doc );
     writer.close();
 
-    reader = IndexReader.open( dir );
+    reader = IndexReader.open( dir, true );
   }
 }

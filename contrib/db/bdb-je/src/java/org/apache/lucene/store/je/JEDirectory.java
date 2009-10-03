@@ -140,7 +140,7 @@ public class JEDirectory extends Directory {
         throw new IOException("File does not exist: " + name);
     }
 
-    public String[] list() throws IOException {
+    public String[] listAll() throws IOException {
         Cursor cursor = null;
         List list = new ArrayList();
 
@@ -188,10 +188,6 @@ public class JEDirectory extends Directory {
 
     public Lock makeLock(String name) {
         return new JELock();
-    }
-
-    public void renameFile(String from, String to) throws IOException {
-        new File(from).rename(this, to);
     }
 
     public void touchFile(String name) throws IOException {

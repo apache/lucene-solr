@@ -30,6 +30,7 @@ import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
+import org.apache.lucene.store.FSDirectory;
 
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.types.FileSet;
@@ -43,10 +44,11 @@ public class IndexTaskTest extends TestCase {
             "org.apache.lucene.ant.FileExtensionDocumentHandler";
 
     private String docsDir = System.getProperty("docs.dir");
-    private String indexDir = System.getProperty("index.dir");
+    private File indexDir = new File(System.getProperty("index.dir"));
 
     private Searcher searcher;
     private Analyzer analyzer;
+    private FSDirectory dir;
 
 
     /**
@@ -64,11 +66,12 @@ public class IndexTaskTest extends TestCase {
         task.addFileset(fs);
         task.setOverwrite(true);
         task.setDocumentHandler(docHandler);
-        task.setIndex(new File(indexDir));
+        task.setIndex(indexDir);
         task.setProject(project);
         task.execute();
 
-        searcher = new IndexSearcher(indexDir);
+        dir = FSDirectory.open(indexDir);
+        searcher = new IndexSearcher(dir, true);
         analyzer = new StopAnalyzer();
     }
 
@@ -87,6 +90,7 @@ public class IndexTaskTest extends TestCase {
      */
     public void tearDown() throws IOException {
         searcher.close();
+        dir.close();
     }
 }
 
