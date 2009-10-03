@@ -30,7 +30,7 @@ public class ExceptionQueryTst {
     this.verbose = verbose;
   }
 
-  public void doTest(StringBuffer failQueries) {
+  public void doTest(StringBuilder failQueries) {
     boolean pass = false;
     SrndQuery lq = null;
     try {
@@ -55,7 +55,7 @@ public class ExceptionQueryTst {
   }
   
   public static String getFailQueries(String[] exceptionQueries, boolean verbose) {
-    StringBuffer failQueries = new StringBuffer();
+    StringBuilder failQueries = new StringBuilder();
     for (int i = 0; i < exceptionQueries.length; i++ ) {
       new ExceptionQueryTst( exceptionQueries[i], verbose).doTest(failQueries);
     }

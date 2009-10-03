@@ -75,7 +75,7 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
   public char getFieldOperator() { return fieldOp;}
   
   public String toString() {
-    StringBuffer r = new StringBuffer();
+    StringBuilder r = new StringBuilder();
     r.append("(");
     fieldNamesToString(r);
     r.append(q.toString());
@@ -83,7 +83,7 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
     return r.toString();
   }
   
-  protected void fieldNamesToString(StringBuffer r) {
+  protected void fieldNamesToString(StringBuilder r) {
     Iterator fni = getFieldNames().listIterator();
     while (fni.hasNext()) {
       r.append((String) fni.next());

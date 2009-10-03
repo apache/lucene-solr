@@ -2,6 +2,12 @@ Lucene contrib change Log
 
 ======================= Trunk (not yet released) =======================
 
+Changes in backwards compatibility policy
+
+ * LUCENE-1257: Change some occurences of StringBuffer in public/protected
+   APIs of contrib/surround to StringBuilder.
+   (Paul Elschot via Uwe Schindler)
+
 Changes in runtime behavior
 
 API Changes

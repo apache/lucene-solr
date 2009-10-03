@@ -42,7 +42,7 @@ public class SrndPrefixQuery extends SimpleTerm {
   
   public String toStringUnquoted() {return getPrefix();}
   
-  protected void suffixToString(StringBuffer r) {r.append(getSuffixOperator());}
+  protected void suffixToString(StringBuilder r) {r.append(getSuffixOperator());}
   
   public void visitMatchingTerms(
     IndexReader reader,

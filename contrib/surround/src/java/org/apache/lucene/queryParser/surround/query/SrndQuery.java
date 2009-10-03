@@ -36,7 +36,7 @@ public abstract class SrndQuery implements Cloneable {
 
   public String getWeightOperator() {return "^";}
 
-  protected void weightToString(StringBuffer r) { /* append the weight part of a query */
+  protected void weightToString(StringBuilder r) { /* append the weight part of a query */
     if (isWeighted()) {
       r.append(getWeightOperator());
       r.append(getWeightString());

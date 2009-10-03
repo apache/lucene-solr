@@ -45,10 +45,10 @@ public abstract class SimpleTerm
     return this.toStringUnquoted().compareTo( ost.toStringUnquoted());
   }
   
-  protected void suffixToString(StringBuffer r) {;} /* override for prefix query */
+  protected void suffixToString(StringBuilder r) {;} /* override for prefix query */
   
   public String toString() {
-    StringBuffer r = new StringBuffer();
+    StringBuilder r = new StringBuilder();
     if (isQuoted()) {
       r.append(getQuote());
     }

@@ -52,7 +52,7 @@ public class SrndTruncQuery extends SimpleTerm {
     return (c != unlimited) && (c != mask);
   }
 
-  protected void appendRegExpForChar(char c, StringBuffer re) {
+  protected void appendRegExpForChar(char c, StringBuilder re) {
     if (c == unlimited)
       re.append(".*");
     else if (c == mask)
@@ -68,7 +68,7 @@ public class SrndTruncQuery extends SimpleTerm {
     }
     prefix = truncated.substring(0, i);
     
-    StringBuffer re = new StringBuffer();
+    StringBuilder re = new StringBuilder();
     while (i < truncated.length()) {
       appendRegExpForChar(truncated.charAt(i), re);
       i++;

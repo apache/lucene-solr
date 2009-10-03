@@ -57,7 +57,7 @@ public abstract class ComposedQuery extends SrndQuery {
   }
 
   public String toString() {
-    StringBuffer r = new StringBuffer();
+    StringBuilder r = new StringBuilder();
     if (isOperatorInfix()) {
       infixToString(r);
     } else {
@@ -72,7 +72,7 @@ public abstract class ComposedQuery extends SrndQuery {
   protected String getBracketOpen() { return "(";}
   protected String getBracketClose() { return ")";}
   
-  protected void infixToString(StringBuffer r) {
+  protected void infixToString(StringBuilder r) {
     /* Brackets are possibly redundant in the result. */
     Iterator sqi = getSubQueriesIterator();
     r.append(getBracketOpen());
@@ -88,7 +88,7 @@ public abstract class ComposedQuery extends SrndQuery {
     r.append(getBracketClose());
   }
 
-  protected void prefixToString(StringBuffer r) {
+  protected void prefixToString(StringBuilder r) {
     Iterator sqi = getSubQueriesIterator();
     r.append(getOperatorName()); /* prefix operator */
     r.append(getBracketOpen());
