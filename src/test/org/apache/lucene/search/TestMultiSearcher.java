@@ -109,8 +109,8 @@ public class TestMultiSearcher extends LuceneTestCase
         // building the searchables
         Searcher[] searchers = new Searcher[2];
         // VITAL STEP:adding the searcher for the empty index first, before the searcher for the populated index
-        searchers[0] = new IndexSearcher(indexStoreB);
-        searchers[1] = new IndexSearcher(indexStoreA);
+        searchers[0] = new IndexSearcher(indexStoreB, true);
+        searchers[1] = new IndexSearcher(indexStoreA, true);
         // creating the multiSearcher
         Searcher mSearcher = getMultiSearcherInstance(searchers);
         // performing the search
@@ -138,8 +138,8 @@ public class TestMultiSearcher extends LuceneTestCase
         // building the searchables
         Searcher[] searchers2 = new Searcher[2];
         // VITAL STEP:adding the searcher for the empty index first, before the searcher for the populated index
-        searchers2[0] = new IndexSearcher(indexStoreB);
-        searchers2[1] = new IndexSearcher(indexStoreA);
+        searchers2[0] = new IndexSearcher(indexStoreB, true);
+        searchers2[1] = new IndexSearcher(indexStoreA, true);
         // creating the mulitSearcher
         MultiSearcher mSearcher2 = getMultiSearcherInstance(searchers2);
         // performing the same search
@@ -171,7 +171,7 @@ public class TestMultiSearcher extends LuceneTestCase
 
         // deleting the document just added, this will cause a different exception to take place
         Term term = new Term("id", "doc1");
-        IndexReader readerB = IndexReader.open(indexStoreB);
+        IndexReader readerB = IndexReader.open(indexStoreB, false);
         readerB.deleteDocuments(term);
         readerB.close();
 
@@ -183,8 +183,8 @@ public class TestMultiSearcher extends LuceneTestCase
         // building the searchables
         Searcher[] searchers3 = new Searcher[2];
 
-        searchers3[0] = new IndexSearcher(indexStoreB);
-        searchers3[1] = new IndexSearcher(indexStoreA);
+        searchers3[0] = new IndexSearcher(indexStoreB, true);
+        searchers3[1] = new IndexSearcher(indexStoreA, true);
         // creating the mulitSearcher
         Searcher mSearcher3 = getMultiSearcherInstance(searchers3);
         // performing the same search
@@ -241,8 +241,8 @@ public class TestMultiSearcher extends LuceneTestCase
     initIndex(ramDirectory1, 10, true, null); // documents with a single token "doc0", "doc1", etc...
     initIndex(ramDirectory2, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
 
-    indexSearcher1 = new IndexSearcher(ramDirectory1);
-    indexSearcher2 = new IndexSearcher(ramDirectory2);
+    indexSearcher1 = new IndexSearcher(ramDirectory1, true);
+    indexSearcher2 = new IndexSearcher(ramDirectory2, true);
 
     MultiSearcher searcher = getMultiSearcherInstance(new Searcher[]{indexSearcher1, indexSearcher2});
     assertTrue("searcher is null and it shouldn't be", searcher != null);
@@ -297,7 +297,7 @@ public class TestMultiSearcher extends LuceneTestCase
         initIndex(ramDirectory1, nDocs, true, null); // documents with a single token "doc0", "doc1", etc...
         initIndex(ramDirectory1, nDocs, false, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
         
-        indexSearcher1=new IndexSearcher(ramDirectory1);
+        indexSearcher1=new IndexSearcher(ramDirectory1, true);
         indexSearcher1.setDefaultFieldSortScoring(true, true);
         
         hits=indexSearcher1.search(query, null, 1000).scoreDocs;
@@ -325,9 +325,9 @@ public class TestMultiSearcher extends LuceneTestCase
         initIndex(ramDirectory1, nDocs, true, null); // documents with a single token "doc0", "doc1", etc...
         initIndex(ramDirectory2, nDocs, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
         
-        indexSearcher1=new IndexSearcher(ramDirectory1);
+        indexSearcher1=new IndexSearcher(ramDirectory1, true);
         indexSearcher1.setDefaultFieldSortScoring(true, true);
-        indexSearcher2=new IndexSearcher(ramDirectory2);
+        indexSearcher2=new IndexSearcher(ramDirectory2, true);
         indexSearcher2.setDefaultFieldSortScoring(true, true);
         
         Searcher searcher=getMultiSearcherInstance(new Searcher[] { indexSearcher1, indexSearcher2 });
@@ -363,7 +363,7 @@ public class TestMultiSearcher extends LuceneTestCase
     public void testCustomSimilarity () throws IOException {
         RAMDirectory dir = new RAMDirectory();
         initIndex(dir, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
-        IndexSearcher srchr = new IndexSearcher(dir);
+        IndexSearcher srchr = new IndexSearcher(dir, true);
         MultiSearcher msrchr = getMultiSearcherInstance(new Searcher[]{srchr});
         
         Similarity customSimilarity = new DefaultSimilarity() {

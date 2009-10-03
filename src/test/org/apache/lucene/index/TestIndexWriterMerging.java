@@ -71,7 +71,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
   private boolean verifyIndex(Directory directory, int startAt) throws IOException
   {
     boolean fail = false;
-    IndexReader reader = IndexReader.open(directory);
+    IndexReader reader = IndexReader.open(directory, true);
 
     int max = reader.maxDoc();
     for (int i = 0; i < max; i++)

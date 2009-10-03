@@ -71,7 +71,7 @@ public class TestWindowsMMap extends LuceneTestCase {
 		StandardAnalyzer analyzer = new StandardAnalyzer(new HashSet());
 		// TODO: something about lock timeouts and leftover locks.
 		IndexWriter writer = new IndexWriter(storeDirectory, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
-		IndexSearcher searcher = new IndexSearcher(storePathname);
+		IndexSearcher searcher = new IndexSearcher(storeDirectory, true);
 		
 		for(int dx = 0; dx < 1000; dx ++) {
 			String f = randomField();

@@ -61,7 +61,7 @@ public class TestFilteredSearch extends LuceneTestCase {
       booleanQuery.add(new TermQuery(new Term(FIELD, "36")), BooleanClause.Occur.SHOULD);
      
      
-      IndexSearcher indexSearcher = new IndexSearcher(directory);
+      IndexSearcher indexSearcher = new IndexSearcher(directory, true);
       ScoreDoc[] hits = indexSearcher.search(booleanQuery, filter, 1000).scoreDocs;
       assertEquals("Number of matched documents", 1, hits.length);
 

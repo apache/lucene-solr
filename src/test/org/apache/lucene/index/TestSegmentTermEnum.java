@@ -81,7 +81,7 @@ public class TestSegmentTermEnum extends LuceneTestCase
   private void verifyDocFreq()
       throws IOException
   {
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
       TermEnum termEnum = null;
 
     // create enumeration of all terms

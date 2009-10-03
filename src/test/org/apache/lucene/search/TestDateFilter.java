@@ -62,7 +62,7 @@ public class TestDateFilter
  	writer.optimize();
 	writer.close();
 
-	IndexSearcher searcher = new IndexSearcher(indexStore);
+	IndexSearcher searcher = new IndexSearcher(indexStore, true);
 
 	// filter that should preserve matches
 	//DateFilter df1 = DateFilter.Before("datefield", now);
@@ -123,7 +123,7 @@ public class TestDateFilter
  	writer.optimize();
 	writer.close();
 
-	IndexSearcher searcher = new IndexSearcher(indexStore);
+	IndexSearcher searcher = new IndexSearcher(indexStore, true);
 
 	// filter that should preserve matches
 	//DateFilter df1 = DateFilter.After("datefield", now);

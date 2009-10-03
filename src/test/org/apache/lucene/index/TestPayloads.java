@@ -220,7 +220,7 @@ public class TestPayloads extends LuceneTestCase {
          * Verify the index
          * first we test if all payloads are stored correctly
          */        
-        IndexReader reader = IndexReader.open(dir);
+        IndexReader reader = IndexReader.open(dir, true);
         
         byte[] verifyPayloadData = new byte[payloadDataLength];
         offset = 0;
@@ -320,7 +320,7 @@ public class TestPayloads extends LuceneTestCase {
         // flush
         writer.close();
         
-        reader = IndexReader.open(dir);
+        reader = IndexReader.open(dir, true);
         tp = reader.termPositions(new Term(fieldName, singleTerm));
         tp.next();
         tp.nextPosition();
@@ -492,7 +492,7 @@ public class TestPayloads extends LuceneTestCase {
           ingesters[i].join();
         }
         writer.close();
-        IndexReader reader = IndexReader.open(dir);
+        IndexReader reader = IndexReader.open(dir, true);
         TermEnum terms = reader.terms();
         while (terms.next()) {
             TermPositions tp = reader.termPositions(terms.term());

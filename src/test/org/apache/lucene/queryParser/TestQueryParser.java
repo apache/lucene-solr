@@ -41,7 +41,6 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -470,7 +469,7 @@ public class TestQueryParser extends LocalizedTestCase {
                       Field.Store.YES, Field.Index.UN_TOKENIZED));
     iw.addDocument(doc);
     iw.close();
-    IndexSearcher is = new IndexSearcher(ramDir);
+    IndexSearcher is = new IndexSearcher(ramDir, true);
 
     QueryParser qp = new QueryParser("content", new WhitespaceAnalyzer());
 
@@ -513,27 +512,6 @@ public class TestQueryParser extends LocalizedTestCase {
     }
   }
   
-  /** for testing legacy DateField support */
-  private String getLegacyDate(String s) throws Exception {
-    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
-    return DateField.dateToString(df.parse(s));
-  }
-
-  /** for testing DateTools support */
-  private String getDate(String s, DateTools.Resolution resolution) throws Exception {
-    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
-    return getDate(df.parse(s), resolution);      
-  }
-  
-  /** for testing DateTools support */
-  private String getDate(Date d, DateTools.Resolution resolution) throws Exception {
-      if (resolution == null) {
-        return DateField.dateToString(d);      
-      } else {
-        return DateTools.dateToString(d, resolution);
-      }
-    }
-  
   private String getLocalizedDate(int year, int month, int day, boolean extendLastDate) {
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
     Calendar calendar = new GregorianCalendar();
@@ -545,68 +523,6 @@ public class TestQueryParser extends LocalizedTestCase {
       calendar.set(Calendar.MILLISECOND, 999);
     }
     return df.format(calendar.getTime());
-  }
-
-  /** for testing legacy DateField support */
-  public void testLegacyDateRange() throws Exception {
-    String startDate = getLocalizedDate(2002, 1, 1, false);
-    String endDate = getLocalizedDate(2002, 1, 4, false);
-    Calendar endDateExpected = new GregorianCalendar();
-    endDateExpected.set(2002, 1, 4, 23, 59, 59);
-    endDateExpected.set(Calendar.MILLISECOND, 999);
-    assertQueryEquals("[ " + escapeDateString(startDate) + " TO " + escapeDateString(endDate) + "]", null,
-                      "[" + getLegacyDate(startDate) + " TO " + DateField.dateToString(endDateExpected.getTime()) + "]");
-    assertQueryEquals("{  " + escapeDateString(startDate) + "    " + escapeDateString(endDate) + "   }", null,
-                      "{" + getLegacyDate(startDate) + " TO " + getLegacyDate(endDate) + "}");
-  }
-  
-  public void testDateRange() throws Exception {
-    String startDate = getLocalizedDate(2002, 1, 1, false);
-    String endDate = getLocalizedDate(2002, 1, 4, false);
-    Calendar endDateExpected = new GregorianCalendar();
-    endDateExpected.set(2002, 1, 4, 23, 59, 59);
-    endDateExpected.set(Calendar.MILLISECOND, 999);
-    final String defaultField = "default";
-    final String monthField = "month";
-    final String hourField = "hour";
-    QueryParser qp = new QueryParser("field", new SimpleAnalyzer());
-    
-    // Don't set any date resolution and verify if DateField is used
-    assertDateRangeQueryEquals(qp, defaultField, startDate, endDate, 
-                               endDateExpected.getTime(), null);
-    
-    // set a field specific date resolution
-    qp.setDateResolution(monthField, DateTools.Resolution.MONTH);
-    
-    // DateField should still be used for defaultField
-    assertDateRangeQueryEquals(qp, defaultField, startDate, endDate, 
-                               endDateExpected.getTime(), null);
-    
-    // set default date resolution to MILLISECOND 
-    qp.setDateResolution(DateTools.Resolution.MILLISECOND);
-    
-    // set second field specific date resolution    
-    qp.setDateResolution(hourField, DateTools.Resolution.HOUR);
-
-    // for this field no field specific date resolution has been set,
-    // so verify if the default resolution is used
-    assertDateRangeQueryEquals(qp, defaultField, startDate, endDate, 
-            endDateExpected.getTime(), DateTools.Resolution.MILLISECOND);
-
-    // verify if field specific date resolutions are used for these two fields
-    assertDateRangeQueryEquals(qp, monthField, startDate, endDate, 
-            endDateExpected.getTime(), DateTools.Resolution.MONTH);
-
-    assertDateRangeQueryEquals(qp, hourField, startDate, endDate, 
-            endDateExpected.getTime(), DateTools.Resolution.HOUR);  
-  }
-  
-  public void assertDateRangeQueryEquals(QueryParser qp, String field, String startDate, String endDate, 
-                                         Date endDateInclusive, DateTools.Resolution resolution) throws Exception {
-    assertQueryEquals(qp, field, field + ":[" + escapeDateString(startDate) + " TO " + escapeDateString(endDate) + "]",
-               "[" + getDate(startDate, resolution) + " TO " + getDate(endDateInclusive, resolution) + "]");
-    assertQueryEquals(qp, field, field + ":{" + escapeDateString(startDate) + " TO " + escapeDateString(endDate) + "}",
-               "{" + getDate(startDate, resolution) + " TO " + getDate(endDate, resolution) + "}");
   }
 
   public void testEscaped() throws Exception {
@@ -870,22 +786,6 @@ public class TestQueryParser extends LocalizedTestCase {
     assertEquals(query1, query2);
   }
 
-  public void testLocalDateFormat() throws IOException, ParseException {
-    RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
-    addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
-    addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
-    iw.close();
-    IndexSearcher is = new IndexSearcher(ramDir);
-    assertHits(1, "[12/1/2005 TO 12/3/2005]", is);
-    assertHits(2, "[12/1/2005 TO 12/4/2005]", is);
-    assertHits(1, "[12/3/2005 TO 12/4/2005]", is);
-    assertHits(1, "{12/1/2005 TO 12/3/2005}", is);
-    assertHits(1, "{12/1/2005 TO 12/4/2005}", is);
-    assertHits(0, "{12/3/2005 TO 12/4/2005}", is);
-    is.close();
-  }
-
   public void testStarParsing() throws Exception {
     final int[] type = new int[1];
     QueryParser qp = new QueryParser("field", new WhitespaceAnalyzer()) {
@@ -997,16 +897,6 @@ public class TestQueryParser extends LocalizedTestCase {
     Query q = qp.parse(query);
     ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
     assertEquals(expected, hits.length);
-  }
-
-  private static void addDateDoc(String content, int year, int month,
-      int day, int hour, int minute, int second, IndexWriter iw) throws IOException {
-    Document d = new Document();
-    d.add(new Field("f", content, Field.Store.YES, Field.Index.ANALYZED));
-    Calendar cal = Calendar.getInstance(Locale.ENGLISH);
-    cal.set(year, month-1, day, hour, minute, second);
-    d.add(new Field("date", DateField.dateToString(cal.getTime()), Field.Store.YES, Field.Index.NOT_ANALYZED));
-    iw.addDocument(d);
   }
 
   public void tearDown() throws Exception {

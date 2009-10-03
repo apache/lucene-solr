@@ -358,7 +358,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
 
     setUpDirs(dir, aux);
 
-    IndexReader reader = IndexReader.open(aux);
+    IndexReader reader = IndexReader.open(aux, false);
     for (int i = 0; i < 20; i++) {
       reader.deleteDocument(i);
     }
@@ -396,14 +396,14 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     assertEquals(3, writer.getSegmentCount());
     writer.close();
 
-    IndexReader reader = IndexReader.open(aux);
+    IndexReader reader = IndexReader.open(aux, false);
     for (int i = 0; i < 27; i++) {
       reader.deleteDocument(i);
     }
     assertEquals(3, reader.numDocs());
     reader.close();
 
-    reader = IndexReader.open(aux2);
+    reader = IndexReader.open(aux2, false);
     for (int i = 0; i < 8; i++) {
       reader.deleteDocument(i);
     }
@@ -449,7 +449,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
   }
 
   private void verifyNumDocs(Directory dir, int numDocs) throws IOException {
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     assertEquals(numDocs, reader.maxDoc());
     assertEquals(numDocs, reader.numDocs());
     reader.close();
@@ -457,7 +457,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
 
   private void verifyTermDocs(Directory dir, Term term, int numDocs)
       throws IOException {
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     TermDocs termDocs = reader.termDocs(term);
     int count = 0;
     while (termDocs.next())

@@ -161,7 +161,7 @@ public class TestNorms extends LuceneTestCase {
   }
 
   private void modifyNormsForF1(Directory dir) throws IOException {
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, false);
     int n = ir.maxDoc();
     for (int i = 0; i < n; i+=3) { // modify for every third doc
       int k = (i*3) % modifiedNorms.size();
@@ -179,7 +179,7 @@ public class TestNorms extends LuceneTestCase {
 
 
   private void verifyIndex(Directory dir) throws IOException {
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, false);
     for (int i = 0; i < NUM_FIELDS; i++) {
       String field = "f"+i;
       byte b[] = ir.norms(field);

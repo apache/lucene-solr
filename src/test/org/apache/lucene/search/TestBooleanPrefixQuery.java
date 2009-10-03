@@ -89,7 +89,7 @@ public class TestBooleanPrefixQuery extends LuceneTestCase {
       }
       writer.close();
       
-      reader = IndexReader.open(directory);
+      reader = IndexReader.open(directory, true);
       PrefixQuery query = new PrefixQuery(new Term("category", "foo"));
       rw1 = query.rewrite(reader);
       

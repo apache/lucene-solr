@@ -70,7 +70,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     writer.addDocument(doc);
     writer.close();
     
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     TermPositions termPositions = reader.termPositions(new Term("preanalyzed", "term1"));
     assertTrue(termPositions.next());
     assertEquals(1, termPositions.freq());

@@ -102,7 +102,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
       modifier.commit();
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
       assertEquals(7, reader.numDocs());
       reader.close();
 
@@ -110,7 +110,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
       modifier.commit();
 
-      reader = IndexReader.open(dir);
+      reader = IndexReader.open(dir, true);
       assertEquals(0, reader.numDocs());
       reader.close();
       modifier.close();
@@ -168,7 +168,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
         modifier.commit();
 
-        IndexReader reader = IndexReader.open(dir);
+        IndexReader reader = IndexReader.open(dir, true);
         assertEquals(1, reader.numDocs());
 
         int hitCount = getHitCount(dir, new Term("id", String.valueOf(id)));
@@ -211,7 +211,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
       modifier.commit();
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
       assertEquals(5, reader.numDocs());
       modifier.close();
     }
@@ -235,7 +235,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
       modifier.commit();
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
       assertEquals(7, reader.numDocs());
       reader.close();
       
@@ -245,7 +245,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
       modifier.commit();
 
-      reader = IndexReader.open(dir);
+      reader = IndexReader.open(dir, true);
       assertEquals(5, reader.numDocs());
       reader.close();
 
@@ -255,7 +255,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
       modifier.deleteDocuments(terms);
       modifier.commit();
-      reader = IndexReader.open(dir);
+      reader = IndexReader.open(dir, true);
       assertEquals(2, reader.numDocs());
       reader.close();
 
@@ -282,7 +282,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
       modifier.commit();
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
       assertEquals(7, reader.numDocs());
       reader.close();
 
@@ -293,7 +293,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       modifier.deleteAll();
 
       // Delete all shouldn't be on disk yet
-      reader = IndexReader.open(dir);
+      reader = IndexReader.open(dir, true);
       assertEquals(7, reader.numDocs());
       reader.close();
 
@@ -305,7 +305,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       modifier.commit();
 
       // Validate there are no docs left
-      reader = IndexReader.open(dir);
+      reader = IndexReader.open(dir, true);
       assertEquals(2, reader.numDocs());
       reader.close();
 
@@ -332,7 +332,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     
     addDoc(modifier, ++id, value);
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     assertEquals(7, reader.numDocs());
     reader.close();
     
@@ -344,7 +344,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     modifier.close();
     
     // Validate that the docs are still there
-    reader = IndexReader.open(dir);
+    reader = IndexReader.open(dir, true);
     assertEquals(7, reader.numDocs());
     reader.close();
     
@@ -388,7 +388,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     modifier.close();
     
     // Validate that the docs are still there
-    reader = IndexReader.open(dir);
+    reader = IndexReader.open(dir, true);
     assertEquals(7, reader.numDocs());
     reader.close();
     
@@ -420,7 +420,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   }
 
   private int getHitCount(Directory dir, Term term) throws IOException {
-    IndexSearcher searcher = new IndexSearcher(dir);
+    IndexSearcher searcher = new IndexSearcher(dir, true);
     int hitCount = searcher.search(new TermQuery(term), null, 1000).totalHits;
     searcher.close();
     return hitCount;
@@ -567,7 +567,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           // changed (transactional semantics):
           IndexReader newReader = null;
           try {
-            newReader = IndexReader.open(dir);
+            newReader = IndexReader.open(dir, true);
           }
           catch (IOException e) {
             e.printStackTrace();

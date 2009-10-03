@@ -70,7 +70,7 @@ public class TestExplanations extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.close();
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
   }
 
   protected String[] docFields = {

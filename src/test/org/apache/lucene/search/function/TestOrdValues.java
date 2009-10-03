@@ -55,7 +55,7 @@ public class TestOrdValues extends FunctionTestSetup {
 
   // Test that queries based on reverse/ordFieldScore scores correctly
   private void doTestRank (String field, boolean inOrder) throws CorruptIndexException, Exception {
-    IndexSearcher s = new IndexSearcher(dir);
+    IndexSearcher s = new IndexSearcher(dir, true);
     ValueSource vs;
     if (inOrder) {
       vs = new MultiValueSource(new OrdFieldSource(field));
@@ -98,7 +98,7 @@ public class TestOrdValues extends FunctionTestSetup {
   
   // Test that queries based on reverse/ordFieldScore returns docs with expected score.
   private void doTestExactScore (String field, boolean inOrder) throws CorruptIndexException, Exception {
-    IndexSearcher s = new IndexSearcher(dir);
+    IndexSearcher s = new IndexSearcher(dir, true);
     ValueSource vs;
     if (inOrder) {
       vs = new OrdFieldSource(field);
@@ -135,7 +135,7 @@ public class TestOrdValues extends FunctionTestSetup {
 
   // Test that values loaded for FieldScoreQuery are cached properly and consumes the proper RAM resources.
   private void doTestCaching (String field, boolean inOrder) throws CorruptIndexException, Exception {
-    IndexSearcher s = new IndexSearcher(dir);
+    IndexSearcher s = new IndexSearcher(dir, true);
     Object innerArray = null;
 
     boolean warned = false; // print warning once
@@ -205,7 +205,7 @@ public class TestOrdValues extends FunctionTestSetup {
     }
 
     // verify new values are reloaded (not reused) for a new reader
-    s = new IndexSearcher(dir);
+    s = new IndexSearcher(dir, true);
     if (inOrder) {
       vs = new OrdFieldSource(field);
     } else {

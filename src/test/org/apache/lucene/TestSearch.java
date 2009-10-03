@@ -98,7 +98,7 @@ public class TestSearch extends LuceneTestCase {
       }
       writer.close();
 
-      Searcher searcher = new IndexSearcher(directory);
+      Searcher searcher = new IndexSearcher(directory, true);
 
       String[] queries = {
         "a b",

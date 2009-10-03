@@ -72,7 +72,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
 
   // Test that FieldScoreQuery returns docs in expected order.
   private void doTestRank (String field, FieldScoreQuery.Type tp) throws CorruptIndexException, Exception {
-    IndexSearcher s = new IndexSearcher(dir);
+    IndexSearcher s = new IndexSearcher(dir, true);
     Query q = new FieldScoreQuery(field,tp);
     log("test: "+q);
     QueryUtils.check(q,s);
@@ -115,7 +115,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
 
   // Test that FieldScoreQuery returns docs with expected score.
   private void doTestExactScore (String field, FieldScoreQuery.Type tp) throws CorruptIndexException, Exception {
-    IndexSearcher s = new IndexSearcher(dir);
+    IndexSearcher s = new IndexSearcher(dir, true);
     Query q = new FieldScoreQuery(field,tp);
     TopDocs td = s.search(q,null,1000);
     assertEquals("All docs should be matched!",N_DOCS,td.totalHits);
@@ -163,7 +163,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     expectedArrayTypes.put(FieldScoreQuery.Type.INT, new int[0]);
     expectedArrayTypes.put(FieldScoreQuery.Type.FLOAT, new float[0]);
     
-    IndexSearcher s = new IndexSearcher(dir);
+    IndexSearcher s = new IndexSearcher(dir, true);
     Object innerArray = null;
 
     boolean warned = false; // print warning once.
@@ -199,7 +199,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     }
     
     // verify new values are reloaded (not reused) for a new reader
-    s = new IndexSearcher(dir);
+    s = new IndexSearcher(dir, true);
     FieldScoreQuery q = new FieldScoreQuery(field,tp);
     ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
     assertEquals("All docs should be matched!",N_DOCS,h.length);

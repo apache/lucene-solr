@@ -51,7 +51,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
 
     writer.close();
 
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
   }
 
   public void testPerFieldAnalyzer() throws Exception {
@@ -78,7 +78,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     writer.addDocument(doc);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     TermDocs td = reader.termDocs(new Term("partnum", "Q36"));
     assertTrue(td.next());
     td = reader.termDocs(new Term("partnum", "Q37"));

@@ -58,7 +58,7 @@ public class TestTermScorer extends LuceneTestCase
             writer.addDocument(doc);
         }
         writer.close();
-        indexSearcher = new IndexSearcher(directory);
+        indexSearcher = new IndexSearcher(directory, false);
         indexReader = indexSearcher.getIndexReader();
 
 

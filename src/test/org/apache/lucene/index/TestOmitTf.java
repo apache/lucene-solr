@@ -267,7 +267,7 @@ public class TestOmitTf extends LuceneTestCase {
     /*
      * Verify the index
      */         
-    Searcher searcher = new IndexSearcher(dir);
+    Searcher searcher = new IndexSearcher(dir, true);
     searcher.setSimilarity(new SimpleSimilarity());
         
     Term a = new Term("noTf", term);

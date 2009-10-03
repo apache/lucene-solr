@@ -161,7 +161,7 @@ public class TestDocument extends LuceneTestCase
         writer.addDocument(makeDocumentWithFields());
         writer.close();
 
-        Searcher searcher = new IndexSearcher(dir);
+        Searcher searcher = new IndexSearcher(dir, true);
 
 	// search for something that does exists
 	Query query = new TermQuery(new Term("keyword", "test1"));
@@ -236,7 +236,7 @@ public class TestDocument extends LuceneTestCase
       writer.addDocument(doc);
       writer.close();
 
-      Searcher searcher = new IndexSearcher(dir);
+      Searcher searcher = new IndexSearcher(dir, true);
 
       Query query = new TermQuery(new Term("keyword", "test"));
 

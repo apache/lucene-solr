@@ -61,7 +61,7 @@ public class TestCrash extends LuceneTestCase {
     IndexWriter writer = initIndex();
     MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
     crash(writer);
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     assertTrue(reader.numDocs() < 157);
   }
 
@@ -73,7 +73,7 @@ public class TestCrash extends LuceneTestCase {
     writer = initIndex(dir);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     assertTrue(reader.numDocs() < 314);
   }
 
@@ -94,7 +94,7 @@ public class TestCrash extends LuceneTestCase {
     dir.fileLength(l[i]) + " bytes");
     */
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     assertTrue(reader.numDocs() >= 157);
   }
 
@@ -113,7 +113,7 @@ public class TestCrash extends LuceneTestCase {
       System.out.println("file " + i + " = " + l[i] + " " + dir.fileLength(l[i]) + " bytes");
     */
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     assertEquals(157, reader.numDocs());
   }
 
@@ -132,7 +132,7 @@ public class TestCrash extends LuceneTestCase {
     for(int i=0;i<l.length;i++)
       System.out.println("file " + i + " = " + l[i] + " " + dir.fileLength(l[i]) + " bytes");
     */
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     assertEquals(157, reader.numDocs());
   }
 
@@ -142,7 +142,7 @@ public class TestCrash extends LuceneTestCase {
     MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
 
     writer.close(false);
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     reader.deleteDocument(3);
 
     dir.crash();
@@ -153,7 +153,7 @@ public class TestCrash extends LuceneTestCase {
     for(int i=0;i<l.length;i++)
       System.out.println("file " + i + " = " + l[i] + " " + dir.fileLength(l[i]) + " bytes");
     */
-    reader = IndexReader.open(dir);
+    reader = IndexReader.open(dir, false);
     assertEquals(157, reader.numDocs());
   }
 
@@ -163,7 +163,7 @@ public class TestCrash extends LuceneTestCase {
     MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
 
     writer.close(false);
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     reader.deleteDocument(3);
     reader.close();
 
@@ -175,7 +175,7 @@ public class TestCrash extends LuceneTestCase {
     for(int i=0;i<l.length;i++)
       System.out.println("file " + i + " = " + l[i] + " " + dir.fileLength(l[i]) + " bytes");
     */
-    reader = IndexReader.open(dir);
+    reader = IndexReader.open(dir, false);
     assertEquals(156, reader.numDocs());
   }
 }

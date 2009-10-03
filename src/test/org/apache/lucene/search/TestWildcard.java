@@ -65,7 +65,7 @@ public class TestWildcard
    */
   public void testTermWithoutWildcard() throws IOException {
       RAMDirectory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
-      IndexSearcher searcher = new IndexSearcher(indexStore);
+      IndexSearcher searcher = new IndexSearcher(indexStore, true);
 
       Query wq = new WildcardQuery(new Term("field", "nowildcard"));
       assertMatches(searcher, wq, 1);
@@ -81,7 +81,7 @@ public class TestWildcard
       throws IOException {
     RAMDirectory indexStore = getIndexStore("body", new String[]
     {"metal", "metals"});
-    IndexSearcher searcher = new IndexSearcher(indexStore);
+    IndexSearcher searcher = new IndexSearcher(indexStore, true);
     Query query1 = new TermQuery(new Term("body", "metal"));
     Query query2 = new WildcardQuery(new Term("body", "metal*"));
     Query query3 = new WildcardQuery(new Term("body", "m*tal"));
@@ -120,7 +120,7 @@ public class TestWildcard
       throws IOException {
     RAMDirectory indexStore = getIndexStore("body", new String[]
     {"metal", "metals", "mXtals", "mXtXls"});
-    IndexSearcher searcher = new IndexSearcher(indexStore);
+    IndexSearcher searcher = new IndexSearcher(indexStore, true);
     Query query1 = new WildcardQuery(new Term("body", "m?tal"));
     Query query2 = new WildcardQuery(new Term("body", "metal?"));
     Query query3 = new WildcardQuery(new Term("body", "metals?"));
@@ -205,7 +205,7 @@ public class TestWildcard
     }
     iw.close();
     
-    IndexSearcher searcher = new IndexSearcher(dir);
+    IndexSearcher searcher = new IndexSearcher(dir, true);
     
     // test queries that must find all
     for (int i = 0; i < matchAll.length; i++) {

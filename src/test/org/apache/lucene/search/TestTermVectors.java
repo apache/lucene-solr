@@ -67,7 +67,7 @@ public class TestTermVectors extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.close();
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
   }
 
   public void test() {
@@ -101,7 +101,7 @@ public class TestTermVectors extends LuceneTestCase {
     doc.add(new Field("x", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
     writer.close();
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     TermFreqVector[] v = reader.getTermFreqVectors(0);
     assertEquals(4, v.length);
     String[] expectedFields = new String[]{"a", "b", "c", "x"};
@@ -240,7 +240,7 @@ public class TestTermVectors extends LuceneTestCase {
       writer.addDocument(testDoc3);
       writer.addDocument(testDoc4);
       writer.close();
-      IndexSearcher knownSearcher = new IndexSearcher(dir);
+      IndexSearcher knownSearcher = new IndexSearcher(dir, true);
       TermEnum termEnum = knownSearcher.reader.terms();
       TermDocs termDocs = knownSearcher.reader.termDocs();
       //System.out.println("Terms: " + termEnum.size() + " Orig Len: " + termArray.length);
@@ -366,7 +366,7 @@ public class TestTermVectors extends LuceneTestCase {
     }
 
     writer.close();
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
 
     Query query = new TermQuery(new Term("field", "hundred"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -398,7 +398,7 @@ public class TestTermVectors extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
 
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
 
     Query query = new TermQuery(new Term("field", "one"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;

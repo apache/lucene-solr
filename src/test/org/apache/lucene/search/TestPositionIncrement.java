@@ -92,7 +92,7 @@ public class TestPositionIncrement extends BaseTokenStreamTestCase {
     writer.close();
     
 
-    IndexSearcher searcher = new IndexSearcher(store);
+    IndexSearcher searcher = new IndexSearcher(store, true);
     
     TermPositions pos = searcher.getIndexReader().termPositions(new Term("field", "1"));
     pos.next();

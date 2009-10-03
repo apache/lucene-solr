@@ -256,7 +256,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
         dir.allIndexInputs.clear();
 
-        IndexReader reader = IndexReader.open(dir);
+        IndexReader reader = IndexReader.open(dir, false);
         Term aaa = new Term("content", "aaa");
         Term bbb = new Term("content", "bbb");
         Term ccc = new Term("content", "ccc");

@@ -117,7 +117,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
                                          field("last",   "jones")     }));
     
     writer.close();
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
   }
 
   public void tearDown() throws Exception {

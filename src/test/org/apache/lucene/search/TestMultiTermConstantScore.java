@@ -146,7 +146,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testEqualScores() throws IOException {
     // NOTE: uses index build in *this* setUp
 
-    IndexReader reader = IndexReader.open(small);
+    IndexReader reader = IndexReader.open(small, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     ScoreDoc[] result;
@@ -175,7 +175,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testBoost() throws IOException {
     // NOTE: uses index build in *this* setUp
 
-    IndexReader reader = IndexReader.open(small);
+    IndexReader reader = IndexReader.open(small, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     // test for correct application of query normalization
@@ -243,7 +243,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testBooleanOrderUnAffected() throws IOException {
     // NOTE: uses index build in *this* setUp
 
-    IndexReader reader = IndexReader.open(small);
+    IndexReader reader = IndexReader.open(small, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     // first do a regular TermRangeQuery which uses term expansion so
@@ -274,7 +274,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testRangeQueryId() throws IOException {
     // NOTE: uses index build in *super* setUp
 
-    IndexReader reader = IndexReader.open(signedIndex.index);
+    IndexReader reader = IndexReader.open(signedIndex.index, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     int medId = ((maxId - minId) / 2);
@@ -401,7 +401,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testRangeQueryIdCollating() throws IOException {
     // NOTE: uses index build in *super* setUp
 
-    IndexReader reader = IndexReader.open(signedIndex.index);
+    IndexReader reader = IndexReader.open(signedIndex.index, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     int medId = ((maxId - minId) / 2);
@@ -484,7 +484,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testRangeQueryRand() throws IOException {
     // NOTE: uses index build in *super* setUp
 
-    IndexReader reader = IndexReader.open(signedIndex.index);
+    IndexReader reader = IndexReader.open(signedIndex.index, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     String minRP = pad(signedIndex.minR);
@@ -547,7 +547,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     // NOTE: uses index build in *super* setUp
 
     // using the unsigned index because collation seems to ignore hyphens
-    IndexReader reader = IndexReader.open(unsignedIndex.index);
+    IndexReader reader = IndexReader.open(unsignedIndex.index, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     String minRP = pad(unsignedIndex.minR);
@@ -624,7 +624,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     writer.optimize();
     writer.close();
 
-    IndexReader reader = IndexReader.open(farsiIndex);
+    IndexReader reader = IndexReader.open(farsiIndex, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     // Neither Java 1.4.2 nor 1.5.0 has Farsi Locale collation available in
@@ -668,7 +668,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     writer.optimize();
     writer.close();
 
-    IndexReader reader = IndexReader.open(danishIndex);
+    IndexReader reader = IndexReader.open(danishIndex, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     Collator c = Collator.getInstance(new Locale("da", "dk"));

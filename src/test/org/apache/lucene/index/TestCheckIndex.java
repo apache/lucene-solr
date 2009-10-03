@@ -43,7 +43,7 @@ public class TestCheckIndex extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.close();
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     reader.deleteDocument(5);
     reader.close();
 
@@ -90,6 +90,7 @@ public class TestCheckIndex extends LuceneTestCase {
     assertTrue(checker.checkIndex(onlySegments).clean == true);
   }
 
+  /* Does not work, because compilation puts final field from Constants of 2.9 into class file:
   public void testLuceneConstantVersion() throws IOException {
     // common-build.xml sets lucene.version
     final String version = System.getProperty("lucene.version");
@@ -97,5 +98,5 @@ public class TestCheckIndex extends LuceneTestCase {
     assertTrue(version.equals(Constants.LUCENE_MAIN_VERSION+"-dev") ||
                version.equals(Constants.LUCENE_MAIN_VERSION));
     assertTrue(Constants.LUCENE_VERSION.startsWith(version));
-  }
+  }*/
 }

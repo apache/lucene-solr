@@ -125,7 +125,7 @@ public class TestPayloadSpans extends LuceneTestCase {
 
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(directory);
+    IndexSearcher searcher = new IndexSearcher(directory, true);
     searcher.setSimilarity(similarity);
     return searcher;
 
@@ -261,7 +261,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
 
-    IndexSearcher is = new IndexSearcher(directory);
+    IndexSearcher is = new IndexSearcher(directory, true);
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -295,7 +295,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
 
-    IndexSearcher is = new IndexSearcher(directory);
+    IndexSearcher is = new IndexSearcher(directory, true);
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -329,7 +329,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
 
-    IndexSearcher is = new IndexSearcher(directory);
+    IndexSearcher is = new IndexSearcher(directory, true);
 
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -370,7 +370,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(directory);
+    IndexSearcher searcher = new IndexSearcher(directory, true);
 
     IndexReader reader = searcher.getIndexReader();
     PayloadSpanUtil psu = new PayloadSpanUtil(reader);
@@ -439,7 +439,7 @@ public class TestPayloadSpans extends LuceneTestCase {
 
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(directory);
+    IndexSearcher searcher = new IndexSearcher(directory, true);
     return searcher;
   }
   

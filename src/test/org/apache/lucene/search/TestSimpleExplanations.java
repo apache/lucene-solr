@@ -331,8 +331,8 @@ public class TestSimpleExplanations extends TestExplanations {
     Query query = parser.parse("handle:1");
 
     Searcher[] searchers = new Searcher[2];
-    searchers[0] = new IndexSearcher(indexStoreB);
-    searchers[1] = new IndexSearcher(indexStoreA);
+    searchers[0] = new IndexSearcher(indexStoreB, true);
+    searchers[1] = new IndexSearcher(indexStoreA, true);
     Searcher mSearcher = new MultiSearcher(searchers);
     ScoreDoc[] hits = mSearcher.search(query, null, 1000).scoreDocs;
 

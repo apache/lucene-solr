@@ -88,7 +88,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     }
 
     writer.close();
-    IndexReader reader = IndexReader.open(directory);
+    IndexReader reader = IndexReader.open(directory, true);
     assertEquals(200, reader.numDocs());
     reader.close();
     directory.close();
@@ -131,7 +131,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     }
 
     writer.close();
-    IndexReader reader = IndexReader.open(directory);
+    IndexReader reader = IndexReader.open(directory, true);
     // Verify that we did not lose any deletes...
     assertEquals(450, reader.numDocs());
     reader.close();
@@ -207,7 +207,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
         writer.close(false);
 
-        IndexReader reader = IndexReader.open(directory);
+        IndexReader reader = IndexReader.open(directory, true);
         assertEquals((1+iter)*182, reader.numDocs());
         reader.close();
 

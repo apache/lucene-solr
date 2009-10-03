@@ -145,19 +145,19 @@ public class QueryUtils {
     // we can't put deleted docs before the nested reader, because
     // it will throw off the docIds
     IndexReader[] readers = new IndexReader[] {
-      edge < 0 ? r : IndexReader.open(makeEmptyIndex(0)),
-      IndexReader.open(makeEmptyIndex(0)),
+      edge < 0 ? r : IndexReader.open(makeEmptyIndex(0), true),
+      IndexReader.open(makeEmptyIndex(0), true),
       new MultiReader(new IndexReader[] {
-        IndexReader.open(makeEmptyIndex(edge < 0 ? 4 : 0)),
-        IndexReader.open(makeEmptyIndex(0)),
-        0 == edge ? r : IndexReader.open(makeEmptyIndex(0))
+        IndexReader.open(makeEmptyIndex(edge < 0 ? 4 : 0), true),
+        IndexReader.open(makeEmptyIndex(0), true),
+        0 == edge ? r : IndexReader.open(makeEmptyIndex(0), true)
       }),
-      IndexReader.open(makeEmptyIndex(0 < edge ? 0 : 7)),
-      IndexReader.open(makeEmptyIndex(0)),
+      IndexReader.open(makeEmptyIndex(0 < edge ? 0 : 7), true),
+      IndexReader.open(makeEmptyIndex(0), true),
       new MultiReader(new IndexReader[] {
-        IndexReader.open(makeEmptyIndex(0 < edge ? 0 : 5)),
-        IndexReader.open(makeEmptyIndex(0)),
-        0 < edge ? r : IndexReader.open(makeEmptyIndex(0))
+        IndexReader.open(makeEmptyIndex(0 < edge ? 0 : 5), true),
+        IndexReader.open(makeEmptyIndex(0), true),
+        0 < edge ? r : IndexReader.open(makeEmptyIndex(0), true)
       })
     };
     IndexSearcher out = new IndexSearcher(new MultiReader(readers));
@@ -179,18 +179,18 @@ public class QueryUtils {
     // we can't put deleted docs before the nested reader, because
     // it will through off the docIds
     Searcher[] searchers = new Searcher[] {
-      edge < 0 ? s : new IndexSearcher(makeEmptyIndex(0)),
+      edge < 0 ? s : new IndexSearcher(makeEmptyIndex(0), true),
       new MultiSearcher(new Searcher[] {
-        new IndexSearcher(makeEmptyIndex(edge < 0 ? 65 : 0)),
-        new IndexSearcher(makeEmptyIndex(0)),
-        0 == edge ? s : new IndexSearcher(makeEmptyIndex(0))
+        new IndexSearcher(makeEmptyIndex(edge < 0 ? 65 : 0), true),
+        new IndexSearcher(makeEmptyIndex(0), true),
+        0 == edge ? s : new IndexSearcher(makeEmptyIndex(0), true)
       }),
-      new IndexSearcher(makeEmptyIndex(0 < edge ? 0 : 3)),
-      new IndexSearcher(makeEmptyIndex(0)),
+      new IndexSearcher(makeEmptyIndex(0 < edge ? 0 : 3), true),
+      new IndexSearcher(makeEmptyIndex(0), true),
       new MultiSearcher(new Searcher[] {
-        new IndexSearcher(makeEmptyIndex(0 < edge ? 0 : 5)),
-        new IndexSearcher(makeEmptyIndex(0)),
-        0 < edge ? s : new IndexSearcher(makeEmptyIndex(0))
+        new IndexSearcher(makeEmptyIndex(0 < edge ? 0 : 5), true),
+        new IndexSearcher(makeEmptyIndex(0), true),
+        0 < edge ? s : new IndexSearcher(makeEmptyIndex(0), true)
       })
     };
     MultiSearcher out = new MultiSearcher(searchers);
@@ -218,7 +218,7 @@ public class QueryUtils {
       Assert.assertEquals("writer has non-deleted docs", 
                           0, w.numDocs());
       w.close();
-      IndexReader r = IndexReader.open(d);
+      IndexReader r = IndexReader.open(d, true);
       Assert.assertEquals("reader has wrong number of deleted docs", 
                           numDeletedDocs, r.numDeletedDocs());
       r.close();

@@ -45,7 +45,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     addDoc("ddddd", writer);
     writer.optimize();
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(directory);
+    IndexSearcher searcher = new IndexSearcher(directory, true);
 
     FuzzyQuery query = new FuzzyQuery(new Term("field", "aaaaa"), FuzzyQuery.defaultMinSimilarity, 0);   
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -168,7 +168,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     addDoc("segment", writer);
     writer.optimize();
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(directory);
+    IndexSearcher searcher = new IndexSearcher(directory, true);
 
     FuzzyQuery query;
     // not similar enough:
@@ -257,7 +257,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     addDoc("segment", writer);
     writer.optimize();
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(directory);
+    IndexSearcher searcher = new IndexSearcher(directory, true);
 
     Query query;
     // term not over 10 chars, so optimization shortcuts

@@ -52,7 +52,7 @@ public class TestSetNorm extends LuceneTestCase {
     writer.close();
 
     // reset the boost of each instance of this document
-    IndexReader reader = IndexReader.open(store);
+    IndexReader reader = IndexReader.open(store, false);
     reader.setNorm(0, "field", 1.0f);
     reader.setNorm(1, "field", 2.0f);
     reader.setNorm(2, "field", 4.0f);
@@ -62,7 +62,7 @@ public class TestSetNorm extends LuceneTestCase {
     // check that searches are ordered by this boost
     final float[] scores = new float[4];
 
-    new IndexSearcher(store).search
+    new IndexSearcher(store, true).search
       (new TermQuery(new Term("field", "word")),
        new Collector() {
          private int base = 0;

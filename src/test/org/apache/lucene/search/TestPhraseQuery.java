@@ -77,7 +77,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer.optimize();
     writer.close();
 
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
     query = new PhraseQuery();
   }
 
@@ -209,7 +209,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer.addDocument(doc);
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(directory);
+    IndexSearcher searcher = new IndexSearcher(directory, true);
 
     // valid exact phrase query
     PhraseQuery query = new PhraseQuery();
@@ -249,7 +249,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer.optimize();
     writer.close();
     
-    IndexSearcher searcher = new IndexSearcher(directory);
+    IndexSearcher searcher = new IndexSearcher(directory, true);
     
     PhraseQuery phraseQuery = new PhraseQuery();
     phraseQuery.add(new Term("source", "marketing"));
@@ -287,7 +287,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer.optimize();
     writer.close();
     
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
     
     termQuery = new TermQuery(new Term("contents","woo"));
     phraseQuery = new PhraseQuery();
@@ -338,7 +338,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer.optimize();
     writer.close();
 
-    Searcher searcher = new IndexSearcher(directory);
+    Searcher searcher = new IndexSearcher(directory, true);
     PhraseQuery query = new PhraseQuery();
     query.add(new Term("field", "firstname"));
     query.add(new Term("field", "lastname"));

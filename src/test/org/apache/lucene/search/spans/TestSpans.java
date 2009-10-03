@@ -56,7 +56,7 @@ public class TestSpans extends LuceneTestCase {
       writer.addDocument(doc);
     }
     writer.close();
-    searcher = new IndexSearcher(directory);
+    searcher = new IndexSearcher(directory, true);
   }
 
   private String[] docFields = {
@@ -459,7 +459,7 @@ public class TestSpans extends LuceneTestCase {
     writer.close();
 
     // Get searcher
-    final IndexReader reader = IndexReader.open(dir);
+    final IndexReader reader = IndexReader.open(dir, true);
     final IndexSearcher searcher = new IndexSearcher(reader);
 
     // Control (make sure docs indexed)

@@ -91,7 +91,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
 
   private TopDocsCollector doSearch(int numResults) throws IOException {
     Query q = new MatchAllDocsQuery();
-    IndexSearcher searcher = new IndexSearcher(dir);
+    IndexSearcher searcher = new IndexSearcher(dir, true);
     TopDocsCollector tdc = new MyTopsDocCollector(numResults);
     searcher.search(q, tdc);
     searcher.close();

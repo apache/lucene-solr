@@ -32,56 +32,22 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
 
-  private boolean onlyUseNewAPI = false;
-  private final Set testWithNewAPI;
-  
   public BaseTokenStreamTestCase() {
     super();
-    this.testWithNewAPI = null; // run all tests also with onlyUseNewAPI
   }
 
   public BaseTokenStreamTestCase(String name) {
     super(name);
-    this.testWithNewAPI = null; // run all tests also with onlyUseNewAPI
   }
 
+  /** @deprecated */
   public BaseTokenStreamTestCase(Set testWithNewAPI) {
     super();
-    this.testWithNewAPI = testWithNewAPI;
   }
 
+  /** @deprecated */
   public BaseTokenStreamTestCase(String name, Set testWithNewAPI) {
     super(name);
-    this.testWithNewAPI = testWithNewAPI;
-  }
-
-  // @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    TokenStream.setOnlyUseNewAPI(onlyUseNewAPI);
-  }
-
-  // @Override
-  public void runBare() throws Throwable {
-    // Do the test with onlyUseNewAPI=false (default)
-    try {
-      onlyUseNewAPI = false;
-      super.runBare();
-    } catch (Throwable e) {
-      System.out.println("Test failure of '"+getName()+"' occurred with onlyUseNewAPI=false");
-      throw e;
-    }
-
-    if (testWithNewAPI == null || testWithNewAPI.contains(getName())) {
-      // Do the test again with onlyUseNewAPI=true
-      try {
-        onlyUseNewAPI = true;
-        super.runBare();
-      } catch (Throwable e) {
-        System.out.println("Test failure of '"+getName()+"' occurred with onlyUseNewAPI=true");
-        throw e;
-      }
-    }
   }
   
   // some helpers to test Analyzers and TokenStreams:

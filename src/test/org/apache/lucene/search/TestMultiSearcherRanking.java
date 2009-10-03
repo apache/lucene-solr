@@ -125,8 +125,8 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
     iw2.close();
 
     Searchable[] s = new Searchable[2];
-    s[0] = new IndexSearcher(d1);
-    s[1] = new IndexSearcher(d2);
+    s[0] = new IndexSearcher(d1, true);
+    s[1] = new IndexSearcher(d2, true);
     multiSearcher = new MultiSearcher(s);
 
     // create IndexSearcher which contains all documents
@@ -136,7 +136,7 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
     addCollection1(iw);
     addCollection2(iw);
     iw.close();
-    singleSearcher = new IndexSearcher(d);
+    singleSearcher = new IndexSearcher(d, true);
   }
   
   private void addCollection1(IndexWriter iw) throws IOException {

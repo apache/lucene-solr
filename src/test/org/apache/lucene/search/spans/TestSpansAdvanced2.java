@@ -47,7 +47,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
         writer.close();
 
         // re-open the searcher since we added more docs
-        searcher2 = new IndexSearcher(mDirectory);
+        searcher2 = new IndexSearcher(mDirectory, true);
     }
 
     /**
@@ -56,7 +56,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
      * @throws Exception
      */
     public void testVerifyIndex() throws Exception {
-        final IndexReader reader = IndexReader.open(mDirectory);
+        final IndexReader reader = IndexReader.open(mDirectory, true);
         assertEquals(8, reader.numDocs());
         reader.close();
     }

@@ -70,7 +70,7 @@ public class TestDateSort extends LuceneTestCase {
   }
 
   public void testReverseDateSort() throws Exception {
-    IndexSearcher searcher = new IndexSearcher(directory);
+    IndexSearcher searcher = new IndexSearcher(directory, true);
 
     // Create a Sort object.  reverse is set to true.
     // problem occurs only with SortField.AUTO:

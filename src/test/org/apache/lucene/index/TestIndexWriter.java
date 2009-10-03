@@ -104,7 +104,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         writer.close();
 
         // delete 40 documents
-        reader = IndexReader.open(dir);
+        reader = IndexReader.open(dir, false);
         for (i = 0; i < 40; i++) {
             reader.deleteDocument(i);
         }
@@ -115,7 +115,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         assertEquals(100, writer.docCount());
         writer.close();
 
-        reader = IndexReader.open(dir);
+        reader = IndexReader.open(dir, true);
         assertEquals(100, reader.maxDoc());
         assertEquals(60, reader.numDocs());
         reader.close();
@@ -130,7 +130,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         writer.close();
 
         // check that the index reader gives the same numbers.
-        reader = IndexReader.open(dir);
+        reader = IndexReader.open(dir, true);
         assertEquals(60, reader.maxDoc());
         assertEquals(60, reader.numDocs());
         reader.close();
@@ -202,7 +202,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
       // Make sure starting index seems to be working properly:
       Term searchTerm = new Term("content", "aaa");        
-      IndexReader reader = IndexReader.open(startDir);
+      IndexReader reader = IndexReader.open(startDir, true);
       assertEquals("first docFreq", 57, reader.docFreq(searchTerm));
 
       IndexSearcher searcher = new IndexSearcher(reader);
@@ -315,7 +315,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
               } else if (1 == method) {
                 IndexReader readers[] = new IndexReader[dirs.length];
                 for(int i=0;i<dirs.length;i++) {
-                  readers[i] = IndexReader.open(dirs[i]);
+                  readers[i] = IndexReader.open(dirs[i], true);
                 }
                 try {
                   writer.addIndexes(readers);
@@ -387,7 +387,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
             // failed, we see either all docs or no docs added
             // (transactional semantics):
             try {
-              reader = IndexReader.open(dir);
+              reader = IndexReader.open(dir, true);
             } catch (IOException e) {
               e.printStackTrace(System.out);
               fail(testName + ": exception when creating IndexReader: " + e);
@@ -538,7 +538,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
             assertNoUnreferencedFiles(dir, "after disk full during addDocument with autoCommit=" + autoCommit);
 
             // Make sure reader can open the index:
-            IndexReader.open(dir).close();
+            IndexReader.open(dir, true).close();
 
             dir.close();
 
@@ -592,7 +592,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.addDocument(doc);
       writer.close();
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
 
       // Make sure all terms < max size were indexed
       assertEquals(2, reader.docFreq(new Term("content", "abc")));
@@ -622,7 +622,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer  = new IndexWriter(dir, sa, IndexWriter.MaxFieldLength.LIMITED);
       writer.addDocument(doc);
       writer.close();
-      reader = IndexReader.open(dir);
+      reader = IndexReader.open(dir, true);
       assertEquals(1, reader.docFreq(new Term("content", bigTerm)));
       reader.close();
 
@@ -765,7 +765,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
           writer.close();
 
           // now open reader:
-          IndexReader reader = IndexReader.open(dir);
+          IndexReader reader = IndexReader.open(dir, true);
           assertEquals("should be one document", reader.numDocs(), 1);
 
           // now open index for create:
@@ -775,74 +775,12 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
           writer.close();
 
           assertEquals("should be one document", reader.numDocs(), 1);
-          IndexReader reader2 = IndexReader.open(dir);
+          IndexReader reader2 = IndexReader.open(dir, true);
           assertEquals("should be one document", reader2.numDocs(), 1);
           reader.close();
           reader2.close();
         } finally {
           rmDir(indexDir);
-        }
-    }
-
-
-    // Same test as above, but use IndexWriter constructor
-    // that takes File:
-    public void testCreateWithReader2() throws IOException {
-        File indexDir = _TestUtil.getTempDir("lucenetestindexwriter");
-        try {
-          // add one document & close writer
-          IndexWriter writer = new IndexWriter(indexDir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
-          addDoc(writer);
-          writer.close();
-
-          // now open reader:
-          IndexReader reader = IndexReader.open(indexDir);
-          assertEquals("should be one document", reader.numDocs(), 1);
-
-          // now open index for create:
-          writer = new IndexWriter(indexDir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
-          assertEquals("should be zero documents", writer.docCount(), 0);
-          addDoc(writer);
-          writer.close();
-
-          assertEquals("should be one document", reader.numDocs(), 1);
-          IndexReader reader2 = IndexReader.open(indexDir);
-          assertEquals("should be one document", reader2.numDocs(), 1);
-          reader.close();
-          reader2.close();
-        } finally {
-          rmDir(indexDir);
-        }
-    }
-
-    // Same test as above, but use IndexWriter constructor
-    // that takes String:
-    public void testCreateWithReader3() throws IOException {
-        File dirName = _TestUtil.getTempDir("lucenetestindexwriter");
-        try {
-
-          // add one document & close writer
-          IndexWriter writer = new IndexWriter(dirName, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
-          addDoc(writer);
-          writer.close();
-
-          // now open reader:
-          IndexReader reader = IndexReader.open(dirName);
-          assertEquals("should be one document", reader.numDocs(), 1);
-
-          // now open index for create:
-          writer = new IndexWriter(dirName, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
-          assertEquals("should be zero documents", writer.docCount(), 0);
-          addDoc(writer);
-          writer.close();
-
-          assertEquals("should be one document", reader.numDocs(), 1);
-          IndexReader reader2 = IndexReader.open(dirName);
-          assertEquals("should be one document", reader2.numDocs(), 1);
-          reader.close();
-          reader2.close();
-        } finally {
-          rmDir(dirName);
         }
     }
 
@@ -886,7 +824,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
         IndexReader reader = null;
         try {
-          reader = IndexReader.open(dir);
+          reader = IndexReader.open(dir, true);
         } catch (Exception e) {
           fail("reader failed to open on a crashed index");
         }
@@ -944,7 +882,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
         IndexReader reader = null;
         try {
-          reader = IndexReader.open(dir);
+          reader = IndexReader.open(dir, true);
           fail("reader did not hit IOException on opening a corrupt index");
         } catch (Exception e) {
         }
@@ -1003,7 +941,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
         IndexReader reader = null;
         try {
-          reader = IndexReader.open(dir);
+          reader = IndexReader.open(dir, true);
           fail("reader did not hit IOException on opening a corrupt index");
         } catch (Exception e) {
         }
@@ -1027,19 +965,19 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         writer.close();
 
         Term searchTerm = new Term("content", "aaa");        
-        IndexSearcher searcher = new IndexSearcher(dir);
+        IndexSearcher searcher = new IndexSearcher(dir, false);
         ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
         assertEquals("first number of hits", 14, hits.length);
         searcher.close();
 
-        IndexReader reader = IndexReader.open(dir);
+        IndexReader reader = IndexReader.open(dir, true);
 
         writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
         for(int i=0;i<3;i++) {
           for(int j=0;j<11;j++) {
             addDoc(writer);
           }
-          searcher = new IndexSearcher(dir);
+          searcher = new IndexSearcher(dir, false);
           hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
           assertEquals("reader incorrectly sees changes from writer with autoCommit disabled", 14, hits.length);
           searcher.close();
@@ -1050,7 +988,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         writer.close();
         assertFalse("reader should not be current now", reader.isCurrent());
 
-        searcher = new IndexSearcher(dir);
+        searcher = new IndexSearcher(dir, false);
         hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
         assertEquals("reader did not see changes after writer was closed", 47, hits.length);
         searcher.close();
@@ -1075,7 +1013,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.close();
 
       Term searchTerm = new Term("content", "aaa");        
-      IndexSearcher searcher = new IndexSearcher(dir);
+      IndexSearcher searcher = new IndexSearcher(dir, false);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("first number of hits", 14, hits.length);
       searcher.close();
@@ -1088,7 +1026,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       // Delete all docs:
       writer.deleteDocuments(searchTerm);
 
-      searcher = new IndexSearcher(dir);
+      searcher = new IndexSearcher(dir, false);
       hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("reader incorrectly sees changes from writer with autoCommit disabled", 14, hits.length);
       searcher.close();
@@ -1098,7 +1036,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
       assertNoUnreferencedFiles(dir, "unreferenced files remain after abort()");
 
-      searcher = new IndexSearcher(dir);
+      searcher = new IndexSearcher(dir, false);
       hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("saw changes after writer.abort", 14, hits.length);
       searcher.close();
@@ -1116,14 +1054,14 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         for(int j=0;j<17;j++) {
           addDoc(writer);
         }
-        searcher = new IndexSearcher(dir);
+        searcher = new IndexSearcher(dir, false);
         hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
         assertEquals("reader incorrectly sees changes from writer with autoCommit disabled", 14, hits.length);
         searcher.close();
       }
 
       writer.close();
-      searcher = new IndexSearcher(dir);
+      searcher = new IndexSearcher(dir, false);
       hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("didn't see changes after close", 218, hits.length);
       searcher.close();
@@ -1159,7 +1097,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.optimize();
       writer.close();
 
-      IndexReader.open(dir).close();
+      IndexReader.open(dir, true).close();
 
       long endDiskUsage = dir.getMaxUsedSizeInBytes();
 
@@ -1194,7 +1132,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.optimize();
 
       // Open a reader before closing (commiting) the writer:
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
 
       // Reader should see index as unoptimized at this
       // point:
@@ -1206,7 +1144,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       assertNoUnreferencedFiles(dir, "aborted writer after optimize");
 
       // Open a reader after aborting writer:
-      reader = IndexReader.open(dir);
+      reader = IndexReader.open(dir, true);
 
       // Reader should still see index as unoptimized:
       assertFalse("Reader incorrectly sees that the index is optimized", reader.isOptimized());
@@ -1218,7 +1156,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       assertNoUnreferencedFiles(dir, "aborted writer after optimize");
 
       // Open a reader after aborting writer:
-      reader = IndexReader.open(dir);
+      reader = IndexReader.open(dir, true);
 
       // Reader should still see index as unoptimized:
       assertTrue("Reader incorrectly sees that the index is unoptimized", reader.isOptimized());
@@ -1231,7 +1169,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.flush();
       writer.close();
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
       assertEquals(0, reader.maxDoc());
       assertEquals(0, reader.numDocs());
       reader.close();
@@ -1240,7 +1178,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.flush();
       writer.close();
 
-      reader = IndexReader.open(dir);
+      reader = IndexReader.open(dir, true);
       assertEquals(0, reader.maxDoc());
       assertEquals(0, reader.numDocs());
       reader.close();
@@ -1262,7 +1200,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       }
       writer.close();
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
       assertEquals(100, reader.maxDoc());
       assertEquals(100, reader.numDocs());
       for(int j=0;j<100;j++) {
@@ -1453,7 +1391,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       }
       writer.close();
 
-      IndexSearcher searcher = new IndexSearcher(dir);
+      IndexSearcher searcher = new IndexSearcher(dir, false);
       ScoreDoc[] hits = searcher.search(new TermQuery(new Term("field", "aaa")), null, 1000).scoreDocs;
       assertEquals(300, hits.length);
       searcher.close();
@@ -1479,7 +1417,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
       Term searchTerm = new Term("field", "aaa");
 
-      IndexSearcher searcher = new IndexSearcher(dir);
+      IndexSearcher searcher = new IndexSearcher(dir, false);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals(10, hits.length);
       searcher.close();
@@ -1497,12 +1435,12 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         writer.addDocument(doc);
       }
       writer.close();
-      searcher = new IndexSearcher(dir);
+      searcher = new IndexSearcher(dir, false);
       hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals(27, hits.length);
       searcher.close();
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
       reader.close();
 
       dir.close();
@@ -1525,7 +1463,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.addDocument(doc);
       writer.close();
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
       assertEquals(1, reader.maxDoc());
       assertEquals(1, reader.numDocs());
       Term t = new Term("field", "a");
@@ -1562,7 +1500,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       }
       writer.close();
       Term searchTerm = new Term("content", "aaa");        
-      IndexSearcher searcher = new IndexSearcher(dir);
+      IndexSearcher searcher = new IndexSearcher(dir, false);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("did not get right number of hits", 100, hits.length);
       writer.close();
@@ -1602,7 +1540,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.addDocument(new Document());
       writer.close();
       _TestUtil.checkIndex(dir);
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
       assertEquals(2, reader.numDocs());
     }
 
@@ -1625,7 +1563,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
         if (0 == pass) {
           writer.close();
-          IndexReader reader = IndexReader.open(dir);
+          IndexReader reader = IndexReader.open(dir, true);
           assertTrue(reader.isOptimized());
           reader.close();
         } else {
@@ -1635,7 +1573,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
           writer.addDocument(doc);
           writer.close();
 
-          IndexReader reader = IndexReader.open(dir);
+          IndexReader reader = IndexReader.open(dir, true);
           assertTrue(!reader.isOptimized());
           reader.close();
 
@@ -1832,7 +1770,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     writer.addDocument(doc);
 
     writer.close();
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     final Term t = new Term("content", "aa");
     assertEquals(reader.docFreq(t), 3);
 
@@ -1907,7 +1845,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     }
     assertTrue(hitError);
     writer.close();
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     assertEquals(198, reader.docFreq(new Term("content", "aa")));
     reader.close();
   }
@@ -1968,7 +1906,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       }
       writer.close();
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
       int expected = 3+(1-i)*2;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
@@ -1995,7 +1933,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.optimize();
       writer.close();
 
-      reader = IndexReader.open(dir);
+      reader = IndexReader.open(dir, true);
       expected = 19+(1-i)*2;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
@@ -2080,7 +2018,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         writer.close();
       }
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
       int expected = (3+(1-i)*2)*NUM_THREAD*NUM_ITER;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
@@ -2107,7 +2045,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.optimize();
       writer.close();
 
-      reader = IndexReader.open(dir);
+      reader = IndexReader.open(dir, true);
       expected += 17-NUM_THREAD*NUM_ITER;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
@@ -2162,7 +2100,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         writer.addDocument(doc);
 
       writer.close();
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, false);
       reader.deleteDocument(delID++);
       reader.close();
 
@@ -2251,7 +2189,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         t1.join();
 
         // Make sure reader can read
-        IndexReader reader = IndexReader.open(directory);
+        IndexReader reader = IndexReader.open(directory, true);
         reader.close();
 
         // Reopen
@@ -2376,7 +2314,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       }
 
       // Quick test to make sure index is not corrupt:
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
       TermDocs tdocs = reader.termDocs(new Term("field", "aaa"));
       int count = 0;
       while(tdocs.next()) {
@@ -2552,7 +2490,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       }
 
       if (success) {
-        IndexReader reader = IndexReader.open(dir);
+        IndexReader reader = IndexReader.open(dir, true);
         for(int j=0;j<reader.maxDoc();j++) {
           if (!reader.isDeleted(j)) {
             reader.document(j);
@@ -2685,7 +2623,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     writer.addDocument(doc);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     Term t = new Term("field", "x");
     assertEquals(1, reader.docFreq(t));
     reader.close();
@@ -2722,7 +2660,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
     IndexReader reader = null;
     try {
-      reader = IndexReader.open(dir);
+      reader = IndexReader.open(dir, true);
     } catch (IOException e) {
       e.printStackTrace(System.out);
       fail("segmentInfos failed to retry fallback to correct segments_N file");
@@ -2741,7 +2679,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     for (int i = 0; i < 23; i++)
       addDoc(writer);
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     assertEquals(0, reader.numDocs());
     writer.commit();
     IndexReader reader2 = reader.reopen();
@@ -2753,12 +2691,12 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       addDoc(writer);
     assertEquals(23, reader2.numDocs());
     reader2.close();
-    reader = IndexReader.open(dir);
+    reader = IndexReader.open(dir, true);
     assertEquals(23, reader.numDocs());
     reader.close();
     writer.commit();
 
-    reader = IndexReader.open(dir);
+    reader = IndexReader.open(dir, true);
     assertEquals(40, reader.numDocs());
     reader.close();
     writer.close();
@@ -2805,7 +2743,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     failure.clearDoFail();
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     assertEquals(23, reader.numDocs());
     reader.close();
     dir.close();
@@ -2843,7 +2781,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.optimize();
       writer.close();
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
       for(int i=0;i<reader.numDocs();i++) {
         reader.document(i);
         reader.getTermFreqVectors(i);
@@ -2894,7 +2832,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.optimize();
       writer.close();
 
-      IndexReader reader = IndexReader.open(dir);
+      IndexReader reader = IndexReader.open(dir, true);
       assertTrue(reader.getTermFreqVectors(0)==null);
       assertTrue(reader.getTermFreqVectors(1)==null);
       assertTrue(reader.getTermFreqVectors(2)!=null);
@@ -2941,7 +2879,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     writer.optimize();
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     for(int i=0;i<10;i++) {
       reader.getTermFreqVectors(i);
       reader.document(i);
@@ -2965,7 +2903,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     writer.addDocument(doc);
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     Term t = new Term("field", "x");
     assertEquals(1, reader.docFreq(t));
     reader.close();
@@ -2996,7 +2934,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.addDocument(document);
     writer.close();
 
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, false);
     assertEquals(10, ir.maxDoc());
     assertEquals(10, ir.numDocs());
     ir.deleteDocument(0);
@@ -3012,7 +2950,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     writer.expungeDeletes();
     assertEquals(8, writer.numDocs());
     writer.close();
-    ir = IndexReader.open(dir);
+    ir = IndexReader.open(dir, true);
     assertEquals(8, ir.maxDoc());
     assertEquals(8, ir.numDocs());
     ir.close();
@@ -3043,7 +2981,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.addDocument(document);
     writer.close();
 
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, false);
     assertEquals(98, ir.maxDoc());
     assertEquals(98, ir.numDocs());
     for(int i=0;i<98;i+=2)
@@ -3058,7 +2996,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     assertEquals(49, writer.numDocs());
     writer.expungeDeletes();
     writer.close();
-    ir = IndexReader.open(dir);
+    ir = IndexReader.open(dir, true);
     assertEquals(49, ir.maxDoc());
     assertEquals(49, ir.numDocs());
     ir.close();
@@ -3090,7 +3028,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.addDocument(document);
     writer.close();
 
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, false);
     assertEquals(98, ir.maxDoc());
     assertEquals(98, ir.numDocs());
     for(int i=0;i<98;i+=2)
@@ -3105,7 +3043,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     writer.setMergeFactor(3);
     writer.expungeDeletes(false);
     writer.close();
-    ir = IndexReader.open(dir);
+    ir = IndexReader.open(dir, true);
     assertEquals(49, ir.maxDoc());
     assertEquals(49, ir.numDocs());
     ir.close();
@@ -3258,7 +3196,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     assertTrue(w.wasCalled);
     w.close();
 
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, true);
     assertEquals(1, ir.maxDoc());
     assertEquals(0, ir.numDocs());
     ir.close();
@@ -3354,7 +3292,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, true);
     Document doc2 = ir.document(0);
     for(int i=0;i<count;i++) {
       assertEquals("field " + i + " was not indexed correctly", 1, ir.docFreq(new Term("f"+i, utf8Data[2*i+1])));
@@ -3563,7 +3501,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     w.addDocument(doc);
     w.commit();
 
-    IndexSearcher s = new IndexSearcher(dir);
+    IndexSearcher s = new IndexSearcher(dir, false);
     PhraseQuery pq = new PhraseQuery();
     pq.add(new Term("field", "a"));
     pq.add(new Term("field", "b"));
@@ -3596,12 +3534,12 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     for (int i = 0; i < 23; i++)
       addDoc(writer);
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     assertEquals(0, reader.numDocs());
 
     writer.prepareCommit();
 
-    IndexReader reader2 = IndexReader.open(dir);
+    IndexReader reader2 = IndexReader.open(dir, true);
     assertEquals(0, reader2.numDocs());
 
     writer.commit();
@@ -3618,18 +3556,18 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
     assertEquals(23, reader3.numDocs());
     reader3.close();
-    reader = IndexReader.open(dir);
+    reader = IndexReader.open(dir, true);
     assertEquals(23, reader.numDocs());
     reader.close();
 
     writer.prepareCommit();
 
-    reader = IndexReader.open(dir);
+    reader = IndexReader.open(dir, true);
     assertEquals(23, reader.numDocs());
     reader.close();
 
     writer.commit();
-    reader = IndexReader.open(dir);
+    reader = IndexReader.open(dir, true);
     assertEquals(40, reader.numDocs());
     reader.close();
     writer.close();
@@ -3649,12 +3587,12 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     for (int i = 0; i < 23; i++)
       addDoc(writer);
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     assertEquals(0, reader.numDocs());
 
     writer.prepareCommit();
 
-    IndexReader reader2 = IndexReader.open(dir);
+    IndexReader reader2 = IndexReader.open(dir, true);
     assertEquals(0, reader2.numDocs());
 
     writer.rollback();
@@ -3672,18 +3610,18 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
     assertEquals(0, reader3.numDocs());
     reader3.close();
-    reader = IndexReader.open(dir);
+    reader = IndexReader.open(dir, true);
     assertEquals(0, reader.numDocs());
     reader.close();
 
     writer.prepareCommit();
 
-    reader = IndexReader.open(dir);
+    reader = IndexReader.open(dir, true);
     assertEquals(0, reader.numDocs());
     reader.close();
 
     writer.commit();
-    reader = IndexReader.open(dir);
+    reader = IndexReader.open(dir, true);
     assertEquals(17, reader.numDocs());
     reader.close();
     writer.close();
@@ -3699,7 +3637,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     writer.commit();
     writer.close();
 
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, true);
     assertEquals(0, reader.numDocs());
     reader.close();
     dir.close();
@@ -3733,7 +3671,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
       readers = new IndexReader[NUM_COPY];
       for(int i=0;i<NUM_COPY;i++)
-        readers[i] = IndexReader.open(dir);
+        readers[i] = IndexReader.open(dir, true);
     }
 
     void launchThreads(final int numIter) {
@@ -3837,7 +3775,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
     _TestUtil.checkIndex(c.dir2);
 
-    IndexReader reader = IndexReader.open(c.dir2);
+    IndexReader reader = IndexReader.open(c.dir2, true);
     assertEquals(100+NUM_COPY*(3*NUM_ITER/4)*c.NUM_THREADS*c.NUM_INIT_DOCS, reader.numDocs());
     reader.close();
 
@@ -4019,7 +3957,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, true);
     doc = ir.document(0);
     f = doc.getField("binary");
     b = f.getBinaryValue();
@@ -4055,7 +3993,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
       byte[] cmp = new byte[20];
 
-      IndexReader r = IndexReader.open(dir);
+      IndexReader r = IndexReader.open(dir, true);
       try {
         for(int i=0;i<5;i++) {
           Document doc = r.document(i);
@@ -4083,7 +4021,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
     assertEquals(0, IndexReader.getCommitUserData(dir).size());
 
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = IndexReader.open(dir, true);
     // commit(Map) never called for this index
     assertEquals(0, r.getCommitUserData().size());
     r.close();
@@ -4099,7 +4037,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       
     assertEquals("test1", IndexReader.getCommitUserData(dir).get("label"));
 
-    r = IndexReader.open(dir);
+    r = IndexReader.open(dir, true);
     assertEquals("test1", r.getCommitUserData().get("label"));
     r.close();
 
@@ -4177,7 +4115,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = IndexReader.open(dir, true);
     TermVectorOffsetInfo[] termOffsets = ((TermPositionVector) r.getTermFreqVector(0, "field")).getOffsets(0);
 
     // Token "" occurred once
@@ -4209,7 +4147,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = IndexReader.open(dir, true);
     TermVectorOffsetInfo[] termOffsets = ((TermPositionVector) r.getTermFreqVector(0, "field")).getOffsets(0);
     assertEquals(2, termOffsets.length);
     assertEquals(0, termOffsets[0].getStartOffset());
@@ -4231,7 +4169,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = IndexReader.open(dir, true);
     TermVectorOffsetInfo[] termOffsets = ((TermPositionVector) r.getTermFreqVector(0, "field")).getOffsets(0);
     assertEquals(2, termOffsets.length);
     assertEquals(0, termOffsets[0].getStartOffset());
@@ -4255,7 +4193,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = IndexReader.open(dir, true);
     TermVectorOffsetInfo[] termOffsets = ((TermPositionVector) r.getTermFreqVector(0, "field")).getOffsets(0);
     assertEquals(2, termOffsets.length);
     assertEquals(0, termOffsets[0].getStartOffset());
@@ -4281,7 +4219,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = IndexReader.open(dir, true);
     TermVectorOffsetInfo[] termOffsets = ((TermPositionVector) r.getTermFreqVector(0, "field")).getOffsets(0);
     assertEquals(2, termOffsets.length);
     assertEquals(0, termOffsets[0].getStartOffset());
@@ -4303,7 +4241,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = IndexReader.open(dir, true);
     TermVectorOffsetInfo[] termOffsets = ((TermPositionVector) r.getTermFreqVector(0, "field")).getOffsets(0);
     assertEquals(2, termOffsets.length);
     assertEquals(0, termOffsets[0].getStartOffset());
@@ -4328,7 +4266,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = IndexReader.open(dir, true);
     TermPositionVector tpv = ((TermPositionVector) r.getTermFreqVector(0, "field"));
     TermVectorOffsetInfo[] termOffsets = tpv.getOffsets(0);
     assertEquals(1, termOffsets.length);
@@ -4358,7 +4296,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = IndexReader.open(dir, true);
     TermPositionVector tpv = ((TermPositionVector) r.getTermFreqVector(0, "field"));
     TermVectorOffsetInfo[] termOffsets = tpv.getOffsets(0);
     assertEquals(1, termOffsets.length);
@@ -4389,7 +4327,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     w.addDocument(doc);
     w.close();
 
-    IndexReader r = IndexReader.open(dir);
+    IndexReader r = IndexReader.open(dir, true);
     TermPositionVector tpv = ((TermPositionVector) r.getTermFreqVector(0, "field"));
     TermVectorOffsetInfo[] termOffsets = tpv.getOffsets(0);
     assertEquals(1, termOffsets.length);
@@ -4448,12 +4386,12 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     writer2.addDocument(doc);
     writer2.close();
 
-    IndexReader r1 = IndexReader.open(dir2);
+    IndexReader r1 = IndexReader.open(dir2, true);
     IndexReader r2 = (IndexReader) r1.clone();
     writer.addIndexes(new IndexReader[] {r1, r2});
     writer.close();
 
-    IndexReader r3 = IndexReader.open(dir);
+    IndexReader r3 = IndexReader.open(dir, true);
     assertEquals(5, r3.numDocs());
     r3.close();
 
@@ -4532,7 +4470,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
           e.printStackTrace(System.out);
         }
         try {
-          IndexReader r = IndexReader.open(dir);
+          IndexReader r = IndexReader.open(dir, true);
           //System.out.println("doc count=" + r.numDocs());
           r.close();
         } catch (Exception e) {
@@ -4594,7 +4532,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     w.commit();
     w.optimize();   // force segment merge.
 
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, true);
     doc = ir.document(0);
     f = doc.getField("binary");
     b = f.getBinaryValue();

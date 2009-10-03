@@ -148,10 +148,10 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   // try cloning and reopening the norms
   private void doTestNorms(Directory dir) throws IOException {
     addDocs(dir, 12, true);
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, false);
     verifyIndex(ir);
     modifyNormsForF1(ir);
-    IndexReader irc = (IndexReader) ir.clone();// IndexReader.open(dir);//ir.clone();
+    IndexReader irc = (IndexReader) ir.clone();// IndexReader.open(dir, false);//ir.clone();
     verifyIndex(irc);
 
     modifyNormsForF1(irc);
@@ -183,7 +183,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   public void testNormsRefCounting() throws IOException { 
     Directory dir1 = new MockRAMDirectory(); 
     TestIndexReaderReopen.createIndex(dir1, false);
-    IndexReader reader1 = IndexReader.open(dir1);
+    IndexReader reader1 = IndexReader.open(dir1, false);
         
     IndexReader reader2C = (IndexReader) reader1.clone();
     SegmentReader segmentReader2C = SegmentReader.getOnlySegmentReader(reader2C);
@@ -243,7 +243,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   }
 
   private void modifyNormsForF1(Directory dir) throws IOException {
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, false);
     modifyNormsForF1(ir);
   }
 
@@ -268,7 +268,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   }
 
   private void verifyIndex(Directory dir) throws IOException {
-    IndexReader ir = IndexReader.open(dir);
+    IndexReader ir = IndexReader.open(dir, false);
     verifyIndex(ir);
     ir.close();
   }
