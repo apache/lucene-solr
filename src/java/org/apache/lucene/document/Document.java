@@ -37,7 +37,7 @@ import org.apache.lucene.index.IndexReader;  // for javadoc
  */
 
 public final class Document implements java.io.Serializable {
-  List fields = new ArrayList();
+  List<Fieldable> fields = new ArrayList<Fieldable>();
   private float boost = 1.0f;
 
   /** Constructs a new document with no fields. */
@@ -100,7 +100,7 @@ public final class Document implements java.io.Serializable {
    * document has to be added.</p>
    */
   public final void removeField(String name) {
-    Iterator it = fields.iterator();
+    Iterator<Fieldable> it = fields.iterator();
     while (it.hasNext()) {
       Fieldable field = (Fieldable)it.next();
       if (field.name().equals(name)) {
@@ -120,7 +120,7 @@ public final class Document implements java.io.Serializable {
    * document has to be added.</p>
    */
   public final void removeFields(String name) {
-    Iterator it = fields.iterator();
+    Iterator<Fieldable> it = fields.iterator();
     while (it.hasNext()) {
       Fieldable field = (Fieldable)it.next();
       if (field.name().equals(name)) {
@@ -135,12 +135,7 @@ public final class Document implements java.io.Serializable {
    * Do not use this method with lazy loaded fields.
    */
   public final Field getField(String name) {
-    for (int i = 0; i < fields.size(); i++) {
-      Field field = (Field)fields.get(i);
-      if (field.name().equals(name))
-        return field;
-    }
-    return null;
+    return (Field) getFieldable(name);
   }
 
 
@@ -149,8 +144,7 @@ public final class Document implements java.io.Serializable {
    * first value added.
    */
  public Fieldable getFieldable(String name) {
-   for (int i = 0; i < fields.size(); i++) {
-     Fieldable field = (Fieldable)fields.get(i);
+   for (Fieldable field : fields) {
      if (field.name().equals(name))
        return field;
    }
@@ -163,8 +157,7 @@ public final class Document implements java.io.Serializable {
    * exist, returns null.
    */
   public final String get(String name) {
-    for (int i = 0; i < fields.size(); i++) {
-      Fieldable field = (Fieldable)fields.get(i);
+   for (Fieldable field : fields) {
       if (field.name().equals(name) && (!field.isBinary()))
         return field.stringValue();
     }
@@ -174,13 +167,13 @@ public final class Document implements java.io.Serializable {
   /** Returns an Enumeration of all the fields in a document.
    * @deprecated use {@link #getFields()} instead
    */
-  public final Enumeration fields() {
-    return new Enumeration() {
-      final Iterator iter = fields.iterator();
+  public final Enumeration<Fieldable> fields() {
+    return new Enumeration<Fieldable>() {
+      final Iterator<Fieldable> iter = fields.iterator();
       public boolean hasMoreElements() {
         return iter.hasNext();
       }
-      public Object nextElement() {
+      public Fieldable nextElement() {
         return iter.next();
       }
     };
@@ -192,7 +185,7 @@ public final class Document implements java.io.Serializable {
    * index, e.g. {@link Searcher#doc(int)} or {@link
    * IndexReader#document(int)}.
    */
-  public final List getFields() {
+  public final List<Fieldable> getFields() {
     return fields;
   }
 
@@ -208,11 +201,10 @@ public final class Document implements java.io.Serializable {
    * @return a <code>Field[]</code> array
    */
    public final Field[] getFields(String name) {
-     List result = new ArrayList();
-     for (int i = 0; i < fields.size(); i++) {
-       Field field = (Field)fields.get(i);
+     List<Field> result = new ArrayList<Field>();
+     for (Fieldable field : fields) {
        if (field.name().equals(name)) {
-         result.add(field);
+         result.add((Field) field);
        }
      }
 
@@ -234,9 +226,8 @@ public final class Document implements java.io.Serializable {
    * @return a <code>Fieldable[]</code> array
    */
    public Fieldable[] getFieldables(String name) {
-     List result = new ArrayList();
-     for (int i = 0; i < fields.size(); i++) {
-       Fieldable field = (Fieldable)fields.get(i);
+     List<Fieldable> result = new ArrayList<Fieldable>();
+     for (Fieldable field : fields) {
        if (field.name().equals(name)) {
          result.add(field);
        }
@@ -259,9 +250,8 @@ public final class Document implements java.io.Serializable {
    * @return a <code>String[]</code> of field values
    */
   public final String[] getValues(String name) {
-    List result = new ArrayList();
-    for (int i = 0; i < fields.size(); i++) {
-      Fieldable field = (Fieldable)fields.get(i);
+    List<String> result = new ArrayList<String>();
+    for (Fieldable field : fields) {
       if (field.name().equals(name) && (!field.isBinary()))
         result.add(field.stringValue());
     }
@@ -284,9 +274,8 @@ public final class Document implements java.io.Serializable {
   * @return a <code>byte[][]</code> of binary field values
   */
   public final byte[][] getBinaryValues(String name) {
-    List result = new ArrayList();
-    for (int i = 0; i < fields.size(); i++) {
-      Fieldable field = (Fieldable)fields.get(i);
+    List<byte[]> result = new ArrayList<byte[]>();
+    for (Fieldable field : fields) {
       if (field.name().equals(name) && (field.isBinary()))
         result.add(field.binaryValue());
     }
@@ -307,8 +296,7 @@ public final class Document implements java.io.Serializable {
   * @return a <code>byte[]</code> containing the binary field value or <code>null</code>
   */
   public final byte[] getBinaryValue(String name) {
-    for (int i=0; i < fields.size(); i++) {
-      Fieldable field = (Fieldable)fields.get(i);
+    for (Fieldable field : fields) {
       if (field.name().equals(name) && (field.isBinary()))
         return field.binaryValue();
     }
@@ -320,7 +308,7 @@ public final class Document implements java.io.Serializable {
     StringBuilder buffer = new StringBuilder();
     buffer.append("Document<");
     for (int i = 0; i < fields.size(); i++) {
-      Fieldable field = (Fieldable)fields.get(i);
+      Fieldable field = fields.get(i);
       buffer.append(field.toString());
       if (i != fields.size()-1)
         buffer.append(" ");
