@@ -18,23 +18,23 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.NumericTokenStream;
+import org.apache.lucene.index.IndexReader;
 import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.TextResponseWriter;
 import org.apache.solr.request.XMLWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SolrQueryWrapper;
 import org.apache.solr.search.function.*;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Date;
+import java.util.Set;
 
 /**
  * Provides field types to support for Lucene's Trie Range Queries.
@@ -260,7 +260,10 @@ public class TrieField extends FieldType {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field");
     }
 
-    return query;
+    // NumericRangeQuery extends MultiTermQuery but returns null for getTerm() which currently breaks
+    // the span based highlighter in Lucene 2.9.0.  Wrapping the query prevents the highlighter
+    // from calling getTerm()
+    return new SolrQueryWrapper(query);
   }
 
 
@@ -483,3 +486,5 @@ class TrieDateFieldSource extends LongFieldSource {
     return TrieField.dateField.parseMath(null, extVal).getTime();
   }
 }
+
+

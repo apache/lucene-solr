@@ -518,7 +518,7 @@ Bug Fixes
     international non-letter characters such as non spacing marks. (yonik)
     
 46. SOLR-825, SOLR-1221: Enables highlighting for range/wildcard/fuzzy/prefix queries if using hl.usePhraseHighlighter=true
-    and hl.highlightMultiTerm=true. Also make both options default to true. (Mark Miller)
+    and hl.highlightMultiTerm=true. Also make both options default to true. (Mark Miller, yonik)
 
 47. SOLR-1174: Fix Logging admin form submit url for multicore. (Jacob Singh via shalin)
 
