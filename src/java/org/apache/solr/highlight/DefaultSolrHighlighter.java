@@ -165,7 +165,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    * @param fieldName The name of the field
    * @param request The SolrQueryRequest
    */
-  protected QueryTermScorer getQueryScorer(Query query, String fieldName, SolrQueryRequest request) {
+  private Scorer getQueryScorer(Query query, String fieldName, SolrQueryRequest request) {
      boolean reqFieldMatch = request.getParams().getFieldBool(fieldName, HighlightParams.FIELD_MATCH, false);
      if (reqFieldMatch) {
         return new QueryTermScorer(query, request.getSearcher().getReader(), fieldName);

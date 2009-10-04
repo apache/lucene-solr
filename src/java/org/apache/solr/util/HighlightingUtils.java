@@ -90,14 +90,6 @@ public class HighlightingUtils implements HighlightParams {
    
    /**
     * @deprecated use DefaultSolrHighlighter
-    * @see DefaultSolrHighlighter
-    */
-   public static QueryTermScorer getQueryScorer(Query query, String fieldName, SolrQueryRequest request) {
-     return HIGHLIGHTER.getQueryScorerX(query, fieldName, request);
-   }
-   
-   /**
-    * @deprecated use DefaultSolrHighlighter
     * @see DefaultSolrHighlighter#getHighlightFields
     */
    public static String[] getHighlightFields(Query query, SolrQueryRequest request, String[] defaultFields) {
@@ -144,9 +136,6 @@ public class HighlightingUtils implements HighlightParams {
 class SolrHighlighterX extends DefaultSolrHighlighter {
   Highlighter getHighlighterX(Query query, String fieldName, SolrQueryRequest request) {
     return getHighlighter(query, fieldName, request);
-  }
-  QueryTermScorer getQueryScorerX(Query query, String fieldName, SolrQueryRequest request) {
-    return getQueryScorer(query, fieldName, request);
   }
   int getMaxSnippetsX(String fieldName, SolrQueryRequest request) {
     return getMaxSnippets(fieldName, HighlightingUtils.getParams(request));

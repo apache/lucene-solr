@@ -731,6 +731,11 @@ Other Changes
 48. SOLR-1423: Due to LUCENE-1906, Solr's tokenizer should use Tokenizer.correctOffset() instead of CharStream.correctOffset().
     (Uwe Schindler via koji)
 
+49. SOLR-1319, SOLR-1345: Upgrade Solr Highlighter classes to new Lucene Highlighter API. This upgrade has 
+    resulted in a back compat break in the DefaultSolrHighlighter class - getQueryScorer is no longer 
+    protected. If you happened to be overriding that method in custom code, overide getHighlighter instead. 
+    Also, HighlightingUtils#getQueryScorer has been removed as it was deprecated and backcompat has been 
+    broken with it anyway.  (Mark Miller)
 
 Build
 ----------------------
