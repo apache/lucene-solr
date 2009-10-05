@@ -106,6 +106,7 @@
 
      Smaller precisionStep values (specified in bits) will lead to more tokens
      indexed per value, slightly larger index size, and faster range queries.
+     A precisionStep of 0 disables indexing at different precision levels.
 
      Note: faceting does not currently work for these fields.
     -->
