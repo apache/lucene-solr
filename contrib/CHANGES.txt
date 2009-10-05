@@ -22,6 +22,10 @@ Bug fixes
    distance filter created for radius search in contrib/spatial.
    (Bill Bell via Mike McCandless)
 
+ * LUCENE-1939: IndexOutOfBoundsException at ShingleMatrixFilter's
+   Iterator#hasNext method on exhausted streams.
+   (Patrick Jungermann via Karl Wettin)
+
 New features
 
  * LUCENE-1924: Added BalancedSegmentMergePolicy to contrib/misc,

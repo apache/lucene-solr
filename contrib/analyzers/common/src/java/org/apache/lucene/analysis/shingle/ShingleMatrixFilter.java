@@ -831,7 +831,8 @@ public class ShingleMatrixFilter extends TokenStream {
 
         public boolean hasNext() {
           int s = columnRowCounters.length;
-          return s != 0 && columnRowCounters[s - 1] < (columns.get(s - 1)).getRows().size();
+          int n = columns.size();
+          return s != 0 && n >= s && columnRowCounters[s - 1] < (columns.get(s - 1)).getRows().size();
         }
 
         public Column.Row[] next() {

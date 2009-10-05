@@ -25,10 +25,7 @@ import java.util.LinkedList;
 import java.util.HashSet;
 import java.util.Arrays;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CachingTokenFilter;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.miscellaneous.EmptyTokenStream;
 import org.apache.lucene.analysis.miscellaneous.PrefixAndSuffixAwareTokenFilter;
@@ -42,11 +39,25 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
   public TestShingleMatrixFilter(String name) {
     // use this ctor, because SingleTokenTokenStream only uses next(Token), so exclude it
-    super(name, new HashSet(Arrays.asList(new String[]{
-      "testBehavingAsShingleFilter", "testMatrix"
-    })));
+    super(name, new HashSet<String>(Arrays.asList("testBehavingAsShingleFilter", "testMatrix", "testIterator")));
   }
-    
+
+  public void testIterator() throws IOException {
+
+    WhitespaceTokenizer wst = new WhitespaceTokenizer(new StringReader("one two three four five"));
+    ShingleMatrixFilter smf = new ShingleMatrixFilter(wst, 2, 2, '_', false, new ShingleMatrixFilter.OneDimensionalNonWeightedTokenSettingsCodec());
+
+    int i;
+    for(i=0; smf.incrementToken(); i++);
+    assertEquals(4, i);
+
+    // call next once more. this should return false again rather than throwing an exception (LUCENE-1939)
+    assertFalse(smf.incrementToken());
+
+    System.currentTimeMillis();
+
+  }
+
   public void testBehavingAsShingleFilter() throws IOException {
 
     ShingleMatrixFilter.defaultSettingsCodec = null;
@@ -466,8 +477,8 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
     TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
     PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
     PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
-    
-    assertTrue(ts.incrementToken());    
+
+    assertTrue(ts.incrementToken());
     assertEquals(text, termAtt.term());
     assertEquals(positionIncrement, posIncrAtt.getPositionIncrement());
     assertEquals(boost, payloadAtt.getPayload() == null ? 1f : PayloadHelper.decodeFloat(payloadAtt.getPayload().getData()), 0);
