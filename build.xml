@@ -638,7 +638,7 @@
           description="Packages the Solr Distribution files and Documentation."
           depends="dist, example, javadoc, dist-src, dist-javadoc">
 
-    <copy todir="${build.docs}">
+    <copy failonerror="false" todir="${build.docs}">
       <fileset dir="site" />
     </copy>
 
