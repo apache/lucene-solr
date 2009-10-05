@@ -49,22 +49,28 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     lrf = h.getRequestFactory("standard", 0, 20);
   }
 
-  public void testFieldStatisticsResult() throws Exception {
-    SolrCore core = h.getCore();
-    assertU(adoc("id", "1", "stats_i", "-10"));
-    assertU(adoc("id", "2", "stats_i", "-20"));
-    assertU(adoc("id", "3", "stats_i", "-30"));
-    assertU(adoc("id", "4", "stats_i", "-40"));
+  public void testStats() throws Exception {
+    for (String f : new String[] {"stats_i"}) {
+      doTestFieldStatisticsResult(f);
+      doTestFieldStatisticsMissingResult(f);
+      doTestFacetStatisticsResult(f);
+      doTestFacetStatisticsMissingResult(f);
+    }
+
+    for (String f : new String[] {"stats_ii"}) {
+      doTestMVFieldStatisticsResult(f);
+    }
+    
+  }
+
+  public void doTestFieldStatisticsResult(String f) throws Exception {
+    assertU(adoc("id", "1", f, "-10"));
+    assertU(adoc("id", "2", f, "-20"));
+    assertU(adoc("id", "3", f, "-30"));
+    assertU(adoc("id", "4", f, "-40"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<String, String>();
-    args.put(CommonParams.Q, "*:*");
-    args.put(StatsParams.STATS, "true");
-    args.put(StatsParams.STATS_FIELD, "stats_i");
-    args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
-
-    assertQ("test statistics values", req
+    assertQ("test statistics values", req("q","*:*", "stats","true", "stats.field",f)
             , "//double[@name='min'][.='-40.0']"
             , "//double[@name='max'][.='-10.0']"
             , "//double[@name='sum'][.='-100.0']"
@@ -73,40 +79,20 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             , "//double[@name='sumOfSquares'][.='3000.0']"
             , "//double[@name='mean'][.='-25.0']"
             , "//double[@name='stddev'][.='12.909944487358056']"
-    );
+    );    
   }
 
 
-  public void testMVFieldStatisticsResult() throws Exception {
-    SolrCore core = h.getCore();
+  public void doTestMVFieldStatisticsResult(String f) throws Exception {
+    assertU(adoc("id", "1", f, "-10", f, "-100", "active_s", "true"));
+    assertU(adoc("id", "2", f, "-20", f, "200", "active_s", "true"));
 
-    assertU(adoc("id", "1", "stats_ii", "-10", "stats_ii", "-100", "active_s", "true"));
-    assertU(adoc("id", "2", "stats_ii", "-20", "stats_ii", "200", "active_s", "true"));
-
-    assertU(adoc("id", "3", "stats_ii", "-30", "stats_ii", "-1", "active_s", "false"));
-    assertU(adoc("id", "4", "stats_ii", "-40", "stats_ii", "10", "active_s", "false"));
+    assertU(adoc("id", "3", f, "-30", f, "-1", "active_s", "false"));
+    assertU(adoc("id", "4", f, "-40", f, "10", "active_s", "false"));
     assertU(adoc("id", "5", "active_s", "false"));
     assertU(commit());
-    Map<String, String> args = new HashMap<String, String>();
-    args.put(CommonParams.Q, "*:*");
-    args.put(StatsParams.STATS, "true");
-    args.put(StatsParams.STATS_FIELD, "stats_ii");
-    args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
-    assertQ("test statistics values", req
-            , "//double[@name='min'][.='-100.0']"
-            , "//double[@name='max'][.='200.0']"
-            , "//double[@name='sum'][.='9.0']"
-            , "//long[@name='count'][.='8']"
-            , "//long[@name='missing'][.='1']"
-            , "//double[@name='sumOfSquares'][.='53101.0']"
-            , "//double[@name='mean'][.='1.125']"
-            , "//double[@name='stddev'][.='87.08852228787508']"
-    );
-    args.put(StatsParams.STATS_FACET, "active_s");
-    req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
-    assertQ("test statistics values", req
+    assertQ("test statistics values", req("q","*:*", "stats","true", "stats.field",f)
             , "//double[@name='min'][.='-100.0']"
             , "//double[@name='max'][.='200.0']"
             , "//double[@name='sum'][.='9.0']"
@@ -116,7 +102,19 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             , "//double[@name='mean'][.='1.125']"
             , "//double[@name='stddev'][.='87.08852228787508']"
     );
-    assertQ("test value for active_s=true", req
+
+    assertQ("test statistics values", req("q","*:*", "stats","true", "stats.field",f, "stats.facet","active_s")
+            , "//double[@name='min'][.='-100.0']"
+            , "//double[@name='max'][.='200.0']"
+            , "//double[@name='sum'][.='9.0']"
+            , "//long[@name='count'][.='8']"
+            , "//long[@name='missing'][.='1']"
+            , "//double[@name='sumOfSquares'][.='53101.0']"
+            , "//double[@name='mean'][.='1.125']"
+            , "//double[@name='stddev'][.='87.08852228787508']"
+    );
+
+    assertQ("test value for active_s=true", req("q","*:*", "stats","true", "stats.field",f, "stats.facet","active_s")
             , "//lst[@name='true']/double[@name='min'][.='-100.0']"
             , "//lst[@name='true']/double[@name='max'][.='200.0']"
             , "//lst[@name='true']/double[@name='sum'][.='70.0']"
@@ -142,22 +140,14 @@ public class StatsComponentTest extends AbstractSolrTestCase {
   }
 
 
-  public void testFieldStatisticsMissingResult() throws Exception {
-    SolrCore core = h.getCore();
-    assertU(adoc("id", "1", "stats_i", "-10"));
-    assertU(adoc("id", "2", "stats_i", "-20"));
+  public void doTestFieldStatisticsMissingResult(String f) throws Exception {
+    assertU(adoc("id", "1", f, "-10"));
+    assertU(adoc("id", "2", f, "-20"));
     assertU(adoc("id", "3"));
-    assertU(adoc("id", "4", "stats_i", "-40"));
+    assertU(adoc("id", "4", f, "-40"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<String, String>();
-    args.put(CommonParams.Q, "*:*");
-    args.put(StatsParams.STATS, "true");
-    args.put(StatsParams.STATS_FIELD, "stats_i");
-    args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
-
-    assertQ("test statistics values", req
+    assertQ("test statistics values", req("q","*:*", "stats","true", "stats.field",f)
             , "//double[@name='min'][.='-40.0']"
             , "//double[@name='max'][.='-10.0']"
             , "//double[@name='sum'][.='-70.0']"
@@ -169,23 +159,14 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     );
   }
 
-  public void testFacetStatisticsResult() throws Exception {
-    SolrCore core = h.getCore();
-    assertU(adoc("id", "1", "stats_i", "10", "active_s", "true"));
-    assertU(adoc("id", "2", "stats_i", "20", "active_s", "true"));
-    assertU(adoc("id", "3", "stats_i", "30", "active_s", "false"));
-    assertU(adoc("id", "4", "stats_i", "40", "active_s", "false"));
+  public void doTestFacetStatisticsResult(String f) throws Exception {
+    assertU(adoc("id", "1", f, "10", "active_s", "true"));
+    assertU(adoc("id", "2", f, "20", "active_s", "true"));
+    assertU(adoc("id", "3", f, "30", "active_s", "false"));
+    assertU(adoc("id", "4", f, "40", "active_s", "false"));
     assertU(commit());
 
-    Map<String, String> args = new HashMap<String, String>();
-    args.put(CommonParams.Q, "*:*");
-    args.put(StatsParams.STATS, "true");
-    args.put(StatsParams.STATS_FIELD, "stats_i");
-    args.put(StatsParams.STATS_FACET, "active_s");
-    args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
-
-    assertQ("test value for active_s=true", req
+    assertQ("test value for active_s=true", req("q","*:*", "stats","true", "stats.field",f, "stats.facet","active_s")
             , "//lst[@name='true']/double[@name='min'][.='10.0']"
             , "//lst[@name='true']/double[@name='max'][.='20.0']"
             , "//lst[@name='true']/double[@name='sum'][.='30.0']"
@@ -196,7 +177,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             , "//lst[@name='true']/double[@name='stddev'][.='7.0710678118654755']"
     );
 
-    assertQ("test value for active_s=false", req
+    assertQ("test value for active_s=false", req("q","*:*", "stats","true", "stats.field",f, "stats.facet","active_s")
             , "//lst[@name='false']/double[@name='min'][.='30.0']"
             , "//lst[@name='false']/double[@name='max'][.='40.0']"
             , "//lst[@name='false']/double[@name='sum'][.='70.0']"
@@ -208,23 +189,14 @@ public class StatsComponentTest extends AbstractSolrTestCase {
     );
   }
   
-  public void testFacetStatisticsMissingResult() throws Exception {
-	    SolrCore core = h.getCore();
-	    assertU(adoc("id", "1", "stats_i", "10", "active_s", "true"));
-	    assertU(adoc("id", "2", "stats_i", "20", "active_s", "true"));
+  public void doTestFacetStatisticsMissingResult(String f) throws Exception {
+	    assertU(adoc("id", "1", f, "10", "active_s", "true"));
+	    assertU(adoc("id", "2", f, "20", "active_s", "true"));
 	    assertU(adoc("id", "3", "active_s", "false"));
-	    assertU(adoc("id", "4", "stats_i", "40", "active_s", "false"));
+	    assertU(adoc("id", "4", f, "40", "active_s", "false"));
 	    assertU(commit());
 
-	    Map<String, String> args = new HashMap<String, String>();
-	    args.put(CommonParams.Q, "*:*");
-	    args.put(StatsParams.STATS, "true");
-	    args.put(StatsParams.STATS_FIELD, "stats_i");
-	    args.put(StatsParams.STATS_FACET, "active_s");
-	    args.put("indent", "true");
-	    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
-
-	    assertQ("test value for active_s=true", req
+	    assertQ("test value for active_s=true", req("q","*:*", "stats","true", "stats.field",f, "stats.facet","active_s")
 	            , "//lst[@name='true']/double[@name='min'][.='10.0']"
 	            , "//lst[@name='true']/double[@name='max'][.='20.0']"
 	            , "//lst[@name='true']/double[@name='sum'][.='30.0']"
@@ -235,7 +207,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
 	            , "//lst[@name='true']/double[@name='stddev'][.='7.0710678118654755']"
 	    );
 
-	    assertQ("test value for active_s=false", req
+	    assertQ("test value for active_s=false", req("q","*:*", "stats","true", "stats.field",f, "stats.facet","active_s")
 	            , "//lst[@name='false']/double[@name='min'][.='40.0']"
 	            , "//lst[@name='false']/double[@name='max'][.='40.0']"
 	            , "//lst[@name='false']/double[@name='sum'][.='40.0']"
