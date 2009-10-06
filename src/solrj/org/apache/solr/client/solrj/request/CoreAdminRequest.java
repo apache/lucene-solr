@@ -48,7 +48,8 @@ public class CoreAdminRequest extends SolrRequest
     protected String instanceDir;
     protected String configName = null;
     protected String schemaName = null;
-    
+    protected String dataDir = null;
+
     public Create() {
       action = CoreAdminAction.CREATE;
     }
@@ -56,11 +57,13 @@ public class CoreAdminRequest extends SolrRequest
     public void setInstanceDir(String instanceDir) { this.instanceDir = instanceDir; }
     public void setSchemaName(String schema) { this.schemaName = schema; }
     public void setConfigName(String config) { this.configName = config; }
-    
+    public void setDataDir(String dataDir) { this.dataDir = dataDir; }
+
     public String getInstanceDir() { return instanceDir; }
     public String getSchemaName()  { return schemaName; }
     public String getConfigName()  { return configName; }
-    
+    public String getDataDir() { return dataDir; }
+
     @Override
     public SolrParams getParams() {
       if( action == null ) {
@@ -79,6 +82,9 @@ public class CoreAdminRequest extends SolrRequest
       }
       if (schemaName != null) {
         params.set( CoreAdminParams.SCHEMA, schemaName);
+      }
+      if (dataDir != null) {
+        params.set( CoreAdminParams.DATA_DIR, dataDir);
       }
       return params;
     }
