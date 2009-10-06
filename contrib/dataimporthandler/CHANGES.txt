@@ -161,6 +161,8 @@ New Features
 
 38.SOLR-1406: Make FileDataSource and FileListEntityProcessor to be more extensible (Luke Forehand, shalin)
 
+39.SOLR-1437 : XPathEntityProcessor can deal with xpath syntaxes such as //tagname , /root//tagname (Fergus McMenemie via noble)
+
 Optimizations
 ----------------------
 1. SOLR-846:  Reduce memory consumption during delta import by removing keys when used
@@ -178,7 +180,6 @@ Optimizations
 5. SOLR-1465: Replaced string concatenations with StringBuilder append calls in XPathRecordReader.
               (Mark Miller, shalin)
 
-6.SOLR-1437 : XPathEntityProcessor can deal with xpath syntaxes such as //tagname , /root//tagname (Fergus McMenemie via noble)
 
 Bug Fixes
 ----------------------
