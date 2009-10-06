@@ -561,10 +561,9 @@ public class TestXPathRecordReader {
     XPathRecordReader rr = new XPathRecordReader("/root/node");
     rr.addField("id", "/root/node/id", true);
     rr.addField("desc", "/root/node/desc", true);
-    try {
-      rr.getAllRecords(new StringReader(malformedXml));
-      Assert.fail("A RuntimeException was expected: the input XML is invalid.");
-      }
-    catch (Exception e) { }
+   try {
+     rr.getAllRecords(new StringReader(malformedXml));
+     Assert.fail("A RuntimeException was expected: the input XML is invalid.");
+   } catch (Exception e) { }
  }
 }
