@@ -41,6 +41,8 @@ Documentation
 
 Build
 
+* LUCENE-486: Remove test->demo dependencies. (Michael Busch)
+
 Test Cases
 
 ======================= Release 2.9.0 2009-09-23 =======================

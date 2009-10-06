@@ -16,19 +16,25 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
-
 import org.apache.lucene.analysis.SimpleAnalyzer;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.demo.FileDocument;
-
-import java.io.*;
-import java.util.*;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
 
 /** JUnit adaptation of an older test case DocTest.
@@ -163,7 +169,8 @@ public class TestDoc extends LuceneTestCase {
    throws Exception
    {
       File file = new File(workDir, fileName);
-      Document doc = FileDocument.Document(file);
+      Document doc = new Document();
+      doc.add(new Field("contents", new FileReader(file)));
       writer.addDocument(doc);
       writer.flush();
       return writer.newestSegment();
