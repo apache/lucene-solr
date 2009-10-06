@@ -33,9 +33,13 @@ import java.util.Map;
 public class TestXPathRecordReader {
   @Test
   public void basic() {
-    String xml = "<root>\n" + "   <b>\n" + "     <c>Hello C1</c>\n"
-            + "     <c>Hello C1</c>\n" + "   </b>\n" + "   <b>\n"
-            + "     <c>Hello C2</c>\n" + "   </b>\n" + "</root>";
+    String xml="<root>\n"
+             + "   <b><c>Hello C1</c>\n"
+             + "      <c>Hello C1</c>\n"
+             + "      </b>\n"
+             + "   <b><c>Hello C2</c>\n"
+             + "     </b>\n"
+             + "</root>";
     XPathRecordReader rr = new XPathRecordReader("/root/b");
     rr.addField("c", "/root/b/c", true);
     List<Map<String, Object>> l = rr.getAllRecords(new StringReader(xml));
@@ -46,8 +50,10 @@ public class TestXPathRecordReader {
 
   @Test
   public void attributes() {
-    String xml = "<root>\n" + "   <b a=\"x0\" b=\"y0\" />\n"
-            + "   <b a=\"x1\" b=\"y1\" />\n" + "   <b a=\"x2\" b=\"y2\" />\n"
+    String xml="<root>\n"
+             + "   <b a=\"x0\" b=\"y0\" />\n"
+             + "   <b a=\"x1\" b=\"y1\" />\n"
+             + "   <b a=\"x2\" b=\"y2\" />\n"
             + "</root>";
     XPathRecordReader rr = new XPathRecordReader("/root/b");
     rr.addField("a", "/root/b/@a", false);
@@ -55,22 +61,26 @@ public class TestXPathRecordReader {
     List<Map<String, Object>> l = rr.getAllRecords(new StringReader(xml));
     Assert.assertEquals(3, l.size());
     Assert.assertEquals("x0", l.get(0).get("a"));
+    Assert.assertEquals("x1", l.get(1).get("a"));
+    Assert.assertEquals("x2", l.get(2).get("a"));
+    Assert.assertEquals("y0", l.get(0).get("b"));
     Assert.assertEquals("y1", l.get(1).get("b"));
+    Assert.assertEquals("y2", l.get(2).get("b"));
   }
   
   @Test
   public void attrInRoot(){
-    String xml = "<r>\n" +
+    String xml="<r>\n" +
             "<merchantProduct id=\"814636051\" mid=\"189973\">\n" +
             "                   <in_stock type=\"stock-4\" />\n" +
             "                   <condition type=\"cond-0\" />\n" +
             "                   <price>301.46</price>\n" +
-            "</merchantProduct>\n" +
+               "   </merchantProduct>\n" +
             "<merchantProduct id=\"814636052\" mid=\"189974\">\n" +
             "                   <in_stock type=\"stock-5\" />\n" +
             "                   <condition type=\"cond-1\" />\n" +
             "                   <price>302.46</price>\n" +
-            "</merchantProduct>\n" +
+               "   </merchantProduct>\n" +
             "\n" +
             "</r>";
      XPathRecordReader rr = new XPathRecordReader("/r/merchantProduct");
@@ -94,9 +104,12 @@ public class TestXPathRecordReader {
 
   @Test
   public void attributes2Level() {
-    String xml = "<root>\n" + "<a>\n" + "   <b a=\"x0\" b=\"y0\" />\n"
-            + "   <b a=\"x1\" b=\"y1\" />\n" + "   <b a=\"x2\" b=\"y2\" />\n"
-            + "</a>" + "</root>";
+    String xml="<root>\n"
+             + "<a>\n  <b a=\"x0\" b=\"y0\" />\n"
+             + "       <b a=\"x1\" b=\"y1\" />\n"
+             + "       <b a=\"x2\" b=\"y2\" />\n"
+             + "       </a>"
+             + "</root>";
     XPathRecordReader rr = new XPathRecordReader("/root/a/b");
     rr.addField("a", "/root/a/b/@a", false);
     rr.addField("b", "/root/a/b/@b", false);
@@ -108,11 +121,16 @@ public class TestXPathRecordReader {
 
   @Test
   public void attributes2LevelHetero() {
-    String xml = "<root>\n" + "<a>\n" + "   <b a=\"x0\" b=\"y0\" />\n"
-            + "   <b a=\"x1\" b=\"y1\" />\n" + "   <b a=\"x2\" b=\"y2\" />\n"
-            + "</a>" + "<x>\n" + "   <b a=\"x4\" b=\"y4\" />\n"
-            + "   <b a=\"x5\" b=\"y5\" />\n" + "   <b a=\"x6\" b=\"y6\" />\n"
-            + "</x>" + "</root>";
+    String xml="<root>\n"
+             + "<a>\n   <b a=\"x0\" b=\"y0\" />\n"
+             + "        <b a=\"x1\" b=\"y1\" />\n"
+             + "        <b a=\"x2\" b=\"y2\" />\n"
+             + "        </a>"
+             + "<x>\n   <b a=\"x4\" b=\"y4\" />\n"
+             + "        <b a=\"x5\" b=\"y5\" />\n"
+             + "        <b a=\"x6\" b=\"y6\" />\n"
+             + "        </x>"
+             + "</root>";
     XPathRecordReader rr = new XPathRecordReader("/root/a | /root/x");
     rr.addField("a", "/root/a/b/@a", false);
     rr.addField("b", "/root/a/b/@b", false);
@@ -123,12 +141,9 @@ public class TestXPathRecordReader {
     final List<Map<String, Object>> x = new ArrayList<Map<String, Object>>();
     rr.streamRecords(new StringReader(xml), new XPathRecordReader.Handler() {
       public void handle(Map<String, Object> record, String xpath) {
-        if (record == null)
-          return;
-        if (xpath.equals("/root/a"))
-          a.add(record);
-        if (xpath.equals("/root/x"))
-          x.add(record);
+        if (record == null) return;
+        if (xpath.equals("/root/a")) a.add(record);
+        if (xpath.equals("/root/x")) x.add(record);
       }
     });
 
@@ -138,9 +153,14 @@ public class TestXPathRecordReader {
 
   @Test
   public void attributes2LevelMissingAttrVal() {
-    String xml = "<root>\n" + "<a>\n" + "   <b a=\"x0\" b=\"y0\" />\n"
-            + "   <b a=\"x1\" b=\"y1\" />\n" + "</a>" + "<a>\n"
-            + "   <b a=\"x3\"  />\n" + "   <b b=\"y4\" />\n" + "</a>" + "</root>";
+    String xml="<root>\n"
+             + "<a>\n  <b a=\"x0\" b=\"y0\" />\n"
+             + "       <b a=\"x1\" b=\"y1\" />\n"
+             + "       </a>"
+             + "<a>\n  <b a=\"x3\"  />\n"
+             + "       <b b=\"y4\" />\n"
+             + "       </a>"
+             + "</root>";
     XPathRecordReader rr = new XPathRecordReader("/root/a");
     rr.addField("a", "/root/a/b/@a", true);
     rr.addField("b", "/root/a/b/@b", true);
@@ -152,12 +172,20 @@ public class TestXPathRecordReader {
 
   @Test
   public void elems2LevelMissing() {
-    String xml = "<root>\n" + "\t<a>\n" + "\t   <b>\n" + "\t      <x>x0</x>\n"
-            + "\t      <y>y0</y>\n" + "\t   </b>\n" + "\t   <b>\n"
-            + "\t   \t<x>x1</x>\n" + "\t   \t<y>y1</y>\n" + "\t   </b>\n"
-            + "\t</a>\n" + "\t<a>\n" + "\t   <b>\n" + "\t      <x>x3</x>\n"
-            + "\t   </b>\n" + "\t   <b>\n" + "\t   \t<y>y4</y>\n" + "\t   </b>\n"
-            + "\t</a>\n" + "</root>";
+    String xml="<root>\n"
+             + "\t<a>\n"
+             + "\t   <b>\n\t  <x>x0</x>\n"
+             + "\t            <y>y0</y>\n"
+             + "\t            </b>\n"
+             + "\t   <b>\n\t  <x>x1</x>\n"
+             + "\t            <y>y1</y>\n"
+             + "\t            </b>\n"
+             + "\t   </a>\n"
+             + "\t<a>\n"
+             + "\t   <b>\n\t  <x>x3</x>\n\t   </b>\n"
+             + "\t   <b>\n\t  <y>y4</y>\n\t   </b>\n"
+             + "\t   </a>\n"
+             + "</root>";
     XPathRecordReader rr = new XPathRecordReader("/root/a");
     rr.addField("a", "/root/a/b/x", true);
     rr.addField("b", "/root/a/b/y", true);
@@ -207,12 +235,23 @@ public class TestXPathRecordReader {
 
   @Test
   public void elems2LevelWithAttrib() {
-    String xml = "<root>\n" + "\t<a>\n" + "\t   <b k=\"x\">\n"
-            + "\t      <x>x0</x>\n" + "\t      <y>y0</y>\n" + "\t   </b>\n"
-            + "\t   <b k=\"y\">\n" + "\t   \t<x>x1</x>\n" + "\t   \t<y>y1</y>\n"
-            + "\t   </b>\n" + "\t</a>\n" + "\t<a>\n" + "\t   <b>\n"
-            + "\t      <x>x3</x>\n" + "\t   </b>\n" + "\t   <b>\n"
-            + "\t   \t<y>y4</y>\n" + "\t   </b>\n" + "\t</a>\n" + "</root>";
+    String xml = "<root>\n\t<a>\n\t   <b k=\"x\">\n"
+            + "\t                        <x>x0</x>\n"
+            + "\t                        <y>y0</y>\n"
+            + "\t                        </b>\n"
+            + "\t                     <b k=\"y\">\n"
+            + "\t                        <x>x1</x>\n"
+            + "\t                        <y>y1</y>\n"
+            + "\t                        </b>\n"
+            + "\t                </a>\n"
+            + "\t           <a>\n\t   <b>\n"
+            + "\t                        <x>x3</x>\n"
+            + "\t                        </b>\n"
+            + "\t                     <b>\n"
+            + "\t                     <y>y4</y>\n"
+            + "\t                        </b>\n"
+            + "\t               </a>\n"
+            + "</root>";
     XPathRecordReader rr = new XPathRecordReader("/root/a");
     rr.addField("x", "/root/a/b[@k]/x", true);
     rr.addField("y", "/root/a/b[@k]/y", true);
@@ -225,13 +264,24 @@ public class TestXPathRecordReader {
 
   @Test
   public void elems2LevelWithAttribMultiple() {
-    String xml = "<root>\n" + "\t<a>\n" + "\t   <b k=\"x\" m=\"n\" >\n"
-            + "\t      <x>x0</x>\n" + "\t      <y>y0</y>\n" + "\t   </b>\n"
-            + "\t   <b k=\"y\" m=\"p\">\n" + "\t   \t<x>x1</x>\n"
-            + "\t   \t<y>y1</y>\n" + "\t   </b>\n" + "\t</a>\n" + "\t<a>\n"
-            + "\t   <b k=\"x\">\n" + "\t      <x>x3</x>\n" + "\t   </b>\n"
-            + "\t   <b m=\"n\">\n" + "\t   \t<y>y4</y>\n" + "\t   </b>\n"
-            + "\t</a>\n" + "</root>";
+    String xml="<root>\n"
+             + "\t<a>\n\t   <b k=\"x\" m=\"n\" >\n"
+             + "\t             <x>x0</x>\n"
+             + "\t             <y>y0</y>\n"
+             + "\t             </b>\n"
+             + "\t          <b k=\"y\" m=\"p\">\n"
+             + "\t             <x>x1</x>\n"
+             + "\t             <y>y1</y>\n"
+             + "\t             </b>\n"
+             + "\t   </a>\n"
+             + "\t<a>\n\t   <b k=\"x\">\n"
+             + "\t             <x>x3</x>\n"
+             + "\t             </b>\n"
+             + "\t          <b m=\"n\">\n"
+             + "\t             <y>y4</y>\n"
+             + "\t             </b>\n"
+             + "\t   </a>\n"
+             + "</root>";
     XPathRecordReader rr = new XPathRecordReader("/root/a");
     rr.addField("x", "/root/a/b[@k][@m='n']/x", true);
     rr.addField("y", "/root/a/b[@k][@m='n']/y", true);
@@ -244,12 +294,18 @@ public class TestXPathRecordReader {
 
   @Test
   public void elems2LevelWithAttribVal() {
-    String xml = "<root>\n" + "\t<a>\n" + "\t   <b k=\"x\">\n"
-            + "\t      <x>x0</x>\n" + "\t      <y>y0</y>\n" + "\t   </b>\n"
-            + "\t   <b k=\"y\">\n" + "\t   \t<x>x1</x>\n" + "\t   \t<y>y1</y>\n"
-            + "\t   </b>\n" + "\t</a>\n" + "\t<a>\n" + "\t   <b>\n"
-            + "\t      <x>x3</x>\n" + "\t   </b>\n" + "\t   <b>\n"
-            + "\t   \t<y>y4</y>\n" + "\t   </b>\n" + "\t</a>\n" + "</root>";
+    String xml="<root>\n\t<a>\n   <b k=\"x\">\n"
+             + "\t                  <x>x0</x>\n"
+             + "\t                  <y>y0</y>\n"
+             + "\t                  </b>\n"
+             + "\t                <b k=\"y\">\n"
+             + "\t                  <x>x1</x>\n"
+             + "\t                  <y>y1</y>\n"
+             + "\t                  </b>\n"
+             + "\t                </a>\n"
+             + "\t        <a>\n   <b><x>x3</x></b>\n"
+             + "\t                <b><y>y4</y></b>\n"
+             + "\t</a>\n" + "</root>";
     XPathRecordReader rr = new XPathRecordReader("/root/a");
     rr.addField("x", "/root/a/b[@k='x']/x", true);
     rr.addField("y", "/root/a/b[@k='x']/y", true);
@@ -274,31 +330,148 @@ public class TestXPathRecordReader {
   }
 
   @Test
+  public void  unsupported_Xpaths() {
+    String xml = "<root><b><a x=\"a/b\" h=\"hello-A\"/>  </b></root>";
+    XPathRecordReader rr=null;
+    try {
+      rr = new XPathRecordReader("//b");
+      Assert.fail("A RuntimeException was expected: //b forEach cannot begin with '//'.");
+      }
+    catch (RuntimeException ex) {  }
+     try {
+      rr.addField("bold"  ,"b",        false);
+      Assert.fail("A RuntimeException was expected: 'b' xpaths must begin with '/'.");
+      }
+    catch (RuntimeException ex) {  }
+
+  }
+
+  @Test
+  public void any_decendent_from_root() {
+    XPathRecordReader rr = new XPathRecordReader("/anyd/contenido");
+    rr.addField("descdend", "//boo",                   true);
+    rr.addField("inr_descd","//boo/i",                false);
+    rr.addField("cont",     "/anyd/contenido",        false);
+    rr.addField("id",       "/anyd/contenido/@id",    false);
+    rr.addField("status",   "/anyd/status",           false);
+    rr.addField("title",    "/anyd/contenido/titulo", false,XPathRecordReader.FLATTEN);
+    rr.addField("resume",   "/anyd/contenido/resumen",false);
+    rr.addField("text",     "/anyd/contenido/texto",  false);
+
+    String xml="<anyd>\n"
+             + "  this <boo>top level</boo> is ignored because it is external to the forEach\n"
+             + "  <status>as is <boo>this element</boo></status>\n"
+             + "  <contenido id=\"10097\" idioma=\"cat\">\n"
+             + "    This one is <boo>not ignored as its</boo> inside a forEach\n"
+             + "    <antetitulo><i> big <boo>antler</boo></i></antetitulo>\n"
+             + "    <titulo>  My <i>flattened <boo>title</boo></i> </titulo>\n"
+             + "    <resumen> My summary <i>skip this!</i>  </resumen>\n"
+             + "    <texto>   <boo>Within the body of</boo>My text</texto>\n"
+             + "    <p>Access <boo>inner <i>sub clauses</i> as well</boo></p>\n"
+             + "    </contenido>\n"
+             + "</anyd>";
+
+    List<Map<String, Object>> l = rr.getAllRecords(new StringReader(xml));
+    Assert.assertEquals(1, l.size());
+    Map<String, Object> m = l.get(0);
+    Assert.assertEquals("This one is  inside a forEach", m.get("cont").toString().trim());
+    Assert.assertEquals("10097"             ,m.get("id"));
+    Assert.assertEquals("My flattened title",m.get("title").toString().trim());
+    Assert.assertEquals("My summary"        ,m.get("resume").toString().trim());
+    Assert.assertEquals("My text"           ,m.get("text").toString().trim());
+    Assert.assertEquals("not ignored as its",(String) ((List) m.get("descdend")).get(0) );
+    Assert.assertEquals("antler"            ,(String) ((List) m.get("descdend")).get(1) );
+    Assert.assertEquals("Within the body of",(String) ((List) m.get("descdend")).get(2) );
+    Assert.assertEquals("inner  as well"    ,(String) ((List) m.get("descdend")).get(3) );
+    Assert.assertEquals("sub clauses"       ,m.get("inr_descd").toString().trim());
+  }
+
+  @Test
+  public void any_decendent_of_a_child1() {
+    XPathRecordReader rr = new XPathRecordReader("/anycd");
+    rr.addField("descdend", "/anycd//boo",         true);
+
+    // same test string as above but checking to see if *all* //boo's are collected
+    String xml="<anycd>\n"
+             + "  this <boo>top level</boo> is ignored because it is external to the forEach\n"
+             + "  <status>as is <boo>this element</boo></status>\n"
+             + "  <contenido id=\"10097\" idioma=\"cat\">\n"
+             + "    This one is <boo>not ignored as its</boo> inside a forEach\n"
+             + "    <antetitulo><i> big <boo>antler</boo></i></antetitulo>\n"
+             + "    <titulo>  My <i>flattened <boo>title</boo></i> </titulo>\n"
+             + "    <resumen> My summary <i>skip this!</i>  </resumen>\n"
+             + "    <texto>   <boo>Within the body of</boo>My text</texto>\n"
+             + "    <p>Access <boo>inner <i>sub clauses</i> as well</boo></p>\n"
+             + "    </contenido>\n"
+             + "</anycd>";
+
+    List<Map<String, Object>> l = rr.getAllRecords(new StringReader(xml));
+    Assert.assertEquals(1, l.size());
+    Map<String, Object> m = l.get(0);
+    Assert.assertEquals("top level"         ,(String) ((List) m.get("descdend")).get(0) );
+    Assert.assertEquals("this element"      ,(String) ((List) m.get("descdend")).get(1) );
+    Assert.assertEquals("not ignored as its",(String) ((List) m.get("descdend")).get(2) );
+    Assert.assertEquals("antler"            ,(String) ((List) m.get("descdend")).get(3) );
+    Assert.assertEquals("title"             ,(String) ((List) m.get("descdend")).get(4) );
+    Assert.assertEquals("Within the body of",(String) ((List) m.get("descdend")).get(5) );
+    Assert.assertEquals("inner  as well"    ,(String) ((List) m.get("descdend")).get(6) );
+  }
+
+  @Test
+  public void any_decendent_of_a_child2() {
+    XPathRecordReader rr = new XPathRecordReader("/anycd");
+    rr.addField("descdend", "/anycd/contenido//boo",         true);
+
+    // same test string as above but checking to see if *some* //boo's are collected
+    String xml="<anycd>\n"
+             + "  this <boo>top level</boo> is ignored because it is external to the forEach\n"
+             + "  <status>as is <boo>this element</boo></status>\n"
+             + "  <contenido id=\"10097\" idioma=\"cat\">\n"
+             + "    This one is <boo>not ignored as its</boo> inside a forEach\n"
+             + "    <antetitulo><i> big <boo>antler</boo></i></antetitulo>\n"
+             + "    <titulo>  My <i>flattened <boo>title</boo></i> </titulo>\n"
+             + "    <resumen> My summary <i>skip this!</i>  </resumen>\n"
+             + "    <texto>   <boo>Within the body of</boo>My text</texto>\n"
+             + "    <p>Access <boo>inner <i>sub clauses</i> as well</boo></p>\n"
+             + "    </contenido>\n"
+             + "</anycd>";
+
+    List<Map<String, Object>> l = rr.getAllRecords(new StringReader(xml));
+    Assert.assertEquals(1, l.size());
+    Map<String, Object> m = l.get(0);
+    Assert.assertEquals("not ignored as its",((List) m.get("descdend")).get(0) );
+    Assert.assertEquals("antler"            ,((List) m.get("descdend")).get(1) );
+    Assert.assertEquals("title"             ,((List) m.get("descdend")).get(2) );
+    Assert.assertEquals("Within the body of",((List) m.get("descdend")).get(3) );
+    Assert.assertEquals("inner  as well"    ,((List) m.get("descdend")).get(4) );
+  }
+  
+  @Test
   public void another() {
-    String xml = "<root>\n"
+    String xml="<root>\n"
             + "       <contenido id=\"10097\" idioma=\"cat\">\n"
-            + "       <antetitulo></antetitulo>\n" + "       <titulo>\n"
-            + "               This is my title\n" + "       </titulo>\n"
-            + "       <resumen>\n" + "               This is my summary\n"
-            + "       </resumen>\n" + "       <texto>\n"
-            + "               This is the body of my text\n" + "       </texto>\n"
-            + "       </contenido>\n" + "</root>";
+             + "    <antetitulo></antetitulo>\n"
+             + "    <titulo>    This is my title             </titulo>\n"
+             + "    <resumen>   This is my summary           </resumen>\n"
+             + "    <texto>     This is the body of my text  </texto>\n"
+             + "    </contenido>\n"
+             + "</root>";
     XPathRecordReader rr = new XPathRecordReader("/root/contenido");
     rr.addField("id", "/root/contenido/@id", false);
     rr.addField("title", "/root/contenido/titulo", false);
-    rr.addField("resume", "/root/contenido/resumen", false);
+    rr.addField("resume","/root/contenido/resumen",false);
     rr.addField("text", "/root/contenido/texto", false);
 
     List<Map<String, Object>> l = rr.getAllRecords(new StringReader(xml));
     Assert.assertEquals(1, l.size());
     Map<String, Object> m = l.get(0);
-    Assert.assertEquals("10097", m.get("id").toString().trim());
+    Assert.assertEquals("10097", m.get("id"));
     Assert.assertEquals("This is my title", m.get("title").toString().trim());
-    Assert
-            .assertEquals("This is my summary", m.get("resume").toString().trim());
+    Assert.assertEquals("This is my summary", m.get("resume").toString().trim());
     Assert.assertEquals("This is the body of my text", m.get("text").toString()
             .trim());
   }
+
   @Test
   public void sameForEachAndXpath(){
     String xml="<root>\n" +
@@ -367,4 +540,31 @@ public class TestXPathRecordReader {
     Assert.assertEquals("B.2.2",b.get(1));
     Assert.assertEquals("C.2.2",c.get(1));
   }
+
+
+ @Test
+  public void testError(){
+    String malformedXml = "<root>\n" +
+          "    <node>\n" +
+          "        <id>1</id>\n" +
+          "        <desc>test1</desc>\n" +
+          "    </node>\n" +
+          "    <node>\n" +
+          "        <id>2</id>\n" +
+          "        <desc>test2</desc>\n" +
+          "    </node>\n" +
+          "    <node>\n" +
+          "        <id/>3</id>\n" +   // invalid XML
+          "        <desc>test3</desc>\n" +
+          "    </node>\n" +
+          "</root>";
+    XPathRecordReader rr = new XPathRecordReader("/root/node");
+    rr.addField("id", "/root/node/id", true);
+    rr.addField("desc", "/root/node/desc", true);
+    try {
+      rr.getAllRecords(new StringReader(malformedXml));
+      Assert.fail("A RuntimeException was expected: the input XML is invalid.");
+      }
+    catch (Exception e) { }
+ }
 }
