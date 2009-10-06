@@ -158,11 +158,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     for(int i=0;i<oldNames.length;i++) {
       String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
       unzip(dirName, oldNames[i]);
-      changeIndexNoAdds(oldNames[i], true);
-      rmDir(oldNames[i]);
-
-      unzip(dirName, oldNames[i]);
-      changeIndexNoAdds(oldNames[i], false);
+      changeIndexNoAdds(oldNames[i]);
       rmDir(oldNames[i]);
     }
   }
@@ -171,11 +167,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     for(int i=0;i<oldNames.length;i++) {
       String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
       unzip(dirName, oldNames[i]);
-      changeIndexWithAdds(oldNames[i], true);
-      rmDir(oldNames[i]);
-
-      unzip(dirName, oldNames[i]);
-      changeIndexWithAdds(oldNames[i], false);
+      changeIndexWithAdds(oldNames[i]);
       rmDir(oldNames[i]);
     }
   }
@@ -196,7 +188,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     dirName = fullDir(dirName);
 
     Directory dir = FSDirectory.open(new File(dirName));
-    IndexSearcher searcher = new IndexSearcher(dir);
+    IndexSearcher searcher = new IndexSearcher(dir, true);
     IndexReader reader = searcher.getIndexReader();
 
     _TestUtil.checkIndex(dir);
@@ -267,14 +259,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
   /* Open pre-lockless index, add docs, do a delete &
    * setNorm, and search */
-  public void changeIndexWithAdds(String dirName, boolean autoCommit) throws IOException {
+  public void changeIndexWithAdds(String dirName) throws IOException {
     String origDirName = dirName;
     dirName = fullDir(dirName);
 
     Directory dir = FSDirectory.open(new File(dirName));
 
     // open writer
-    IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.UNLIMITED);
 
     // add 10 docs
     for(int i=0;i<10;i++) {
@@ -288,11 +280,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     } else {
       expected = 46;
     }
-    assertEquals("wrong doc count", expected, writer.docCount());
+    assertEquals("wrong doc count", expected, writer.maxDoc());
     writer.close();
 
     // make sure searching sees right # hits
-    IndexSearcher searcher = new IndexSearcher(dir);
+    IndexSearcher searcher = new IndexSearcher(dir, true);
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     Document d = searcher.doc(hits[0].doc);
     assertEquals("wrong first document", "21", d.get("id"));
@@ -301,7 +293,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     // make sure we can do delete & setNorm against this
     // pre-lockless segment:
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     Term searchTerm = new Term("id", "6");
     int delCount = reader.deleteDocuments(searchTerm);
     assertEquals("wrong delete count", 1, delCount);
@@ -309,7 +301,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     reader.close();
 
     // make sure they "took":
-    searcher = new IndexSearcher(dir);
+    searcher = new IndexSearcher(dir, true);
     hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 43, hits.length);
     d = searcher.doc(hits[0].doc);
@@ -318,11 +310,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     searcher.close();
 
     // optimize
-    writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
+    writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.optimize();
     writer.close();
 
-    searcher = new IndexSearcher(dir);
+    searcher = new IndexSearcher(dir, true);
     hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 43, hits.length);
     d = searcher.doc(hits[0].doc);
@@ -335,14 +327,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
   /* Open pre-lockless index, add docs, do a delete &
    * setNorm, and search */
-  public void changeIndexNoAdds(String dirName, boolean autoCommit) throws IOException {
+  public void changeIndexNoAdds(String dirName) throws IOException {
 
     dirName = fullDir(dirName);
 
     Directory dir = FSDirectory.open(new File(dirName));
 
     // make sure searching sees right # hits
-    IndexSearcher searcher = new IndexSearcher(dir);
+    IndexSearcher searcher = new IndexSearcher(dir, true);
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 34, hits.length);
     Document d = searcher.doc(hits[0].doc);
@@ -351,7 +343,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
     // make sure we can do a delete & setNorm against this
     // pre-lockless segment:
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     Term searchTerm = new Term("id", "6");
     int delCount = reader.deleteDocuments(searchTerm);
     assertEquals("wrong delete count", 1, delCount);
@@ -359,7 +351,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     reader.close();
 
     // make sure they "took":
-    searcher = new IndexSearcher(dir);
+    searcher = new IndexSearcher(dir, true);
     hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 33, hits.length);
     d = searcher.doc(hits[0].doc);
@@ -368,11 +360,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     searcher.close();
 
     // optimize
-    IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.optimize();
     writer.close();
 
-    searcher = new IndexSearcher(dir);
+    searcher = new IndexSearcher(dir, true);
     hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 33, hits.length);
     d = searcher.doc(hits[0].doc);
@@ -397,7 +389,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     for(int i=0;i<35;i++) {
       addDoc(writer, i);
     }
-    assertEquals("wrong doc count", 35, writer.docCount());
+    assertEquals("wrong doc count", 35, writer.maxDoc());
     writer.close();
 
     // open fresh writer so we get no prx file in the added segment
@@ -408,7 +400,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     writer.close();
 
     // Delete one doc so we get a .del file:
-    IndexReader reader = IndexReader.open(dir);
+    IndexReader reader = IndexReader.open(dir, false);
     Term searchTerm = new Term("id", "7");
     int delCount = reader.deleteDocuments(searchTerm);
     assertEquals("didn't delete the right number of documents", 1, delCount);
@@ -422,71 +414,66 @@ public class TestBackwardsCompatibility extends LuceneTestCase
 
   public void testExactFileNames() throws IOException {
 
-    for(int pass=0;pass<2;pass++) {
+    String outputDir = "lucene.backwardscompat0.index";
+    rmDir(outputDir);
 
-      String outputDir = "lucene.backwardscompat0.index";
-      rmDir(outputDir);
+    try {
+      Directory dir = FSDirectory.open(new File(fullDir(outputDir)));
 
-      try {
-        Directory dir = FSDirectory.open(new File(fullDir(outputDir)));
-
-        boolean autoCommit = 0 == pass;
- 
-        IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true);
-        writer.setRAMBufferSizeMB(16.0);
-        for(int i=0;i<35;i++) {
-          addDoc(writer, i);
-        }
-        assertEquals("wrong doc count", 35, writer.docCount());
-        writer.close();
-
-        // Delete one doc so we get a .del file:
-        IndexReader reader = IndexReader.open(dir);
-        Term searchTerm = new Term("id", "7");
-        int delCount = reader.deleteDocuments(searchTerm);
-        assertEquals("didn't delete the right number of documents", 1, delCount);
-
-        // Set one norm so we get a .s0 file:
-        reader.setNorm(21, "content", (float) 1.5);
-        reader.close();
-
-        // The numbering of fields can vary depending on which
-        // JRE is in use.  On some JREs we see content bound to
-        // field 0; on others, field 1.  So, here we have to
-        // figure out which field number corresponds to
-        // "content", and then set our expected file names below
-        // accordingly:
-        CompoundFileReader cfsReader = new CompoundFileReader(dir, "_0.cfs");
-        FieldInfos fieldInfos = new FieldInfos(cfsReader, "_0.fnm");
-        int contentFieldIndex = -1;
-        for(int i=0;i<fieldInfos.size();i++) {
-          FieldInfo fi = fieldInfos.fieldInfo(i);
-          if (fi.name.equals("content")) {
-            contentFieldIndex = i;
-            break;
-          }
-        }
-        cfsReader.close();
-        assertTrue("could not locate the 'content' field number in the _2.cfs segment", contentFieldIndex != -1);
-
-        // Now verify file names:
-        String[] expected;
-        expected = new String[] {"_0.cfs",
-                    "_0_1.del",
-                    "_0_1.s" + contentFieldIndex,
-                    "segments_3",
-                    "segments.gen"};
-
-        String[] actual = dir.listAll();
-        Arrays.sort(expected);
-        Arrays.sort(actual);
-        if (!Arrays.equals(expected, actual)) {
-          fail("incorrect filenames in index: expected:\n    " + asString(expected) + "\n  actual:\n    " + asString(actual));
-        }
-        dir.close();
-      } finally {
-        rmDir(outputDir);
+      IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+      writer.setRAMBufferSizeMB(16.0);
+      for(int i=0;i<35;i++) {
+        addDoc(writer, i);
       }
+      assertEquals("wrong doc count", 35, writer.maxDoc());
+      writer.close();
+
+      // Delete one doc so we get a .del file:
+      IndexReader reader = IndexReader.open(dir, false);
+      Term searchTerm = new Term("id", "7");
+      int delCount = reader.deleteDocuments(searchTerm);
+      assertEquals("didn't delete the right number of documents", 1, delCount);
+
+      // Set one norm so we get a .s0 file:
+      reader.setNorm(21, "content", (float) 1.5);
+      reader.close();
+
+      // The numbering of fields can vary depending on which
+      // JRE is in use.  On some JREs we see content bound to
+      // field 0; on others, field 1.  So, here we have to
+      // figure out which field number corresponds to
+      // "content", and then set our expected file names below
+      // accordingly:
+      CompoundFileReader cfsReader = new CompoundFileReader(dir, "_0.cfs");
+      FieldInfos fieldInfos = new FieldInfos(cfsReader, "_0.fnm");
+      int contentFieldIndex = -1;
+      for(int i=0;i<fieldInfos.size();i++) {
+        FieldInfo fi = fieldInfos.fieldInfo(i);
+        if (fi.name.equals("content")) {
+          contentFieldIndex = i;
+          break;
+        }
+      }
+      cfsReader.close();
+      assertTrue("could not locate the 'content' field number in the _2.cfs segment", contentFieldIndex != -1);
+
+      // Now verify file names:
+      String[] expected;
+      expected = new String[] {"_0.cfs",
+                               "_0_1.del",
+                               "_0_1.s" + contentFieldIndex,
+                               "segments_3",
+                               "segments.gen"};
+
+      String[] actual = dir.listAll();
+      Arrays.sort(expected);
+      Arrays.sort(actual);
+      if (!Arrays.equals(expected, actual)) {
+        fail("incorrect filenames in index: expected:\n    " + asString(expected) + "\n  actual:\n    " + asString(actual));
+      }
+      dir.close();
+    } finally {
+      rmDir(outputDir);
     }
   }
 
@@ -509,17 +496,17 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     doc.add(new Field("autf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("content2", "here is more content with aaa aaa aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("fie\u2C77ld", "field with non-ascii name", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(new Field("fie\u2C77ld", "field with non-ascii name", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
   }
 
   private void addNoProxDoc(IndexWriter writer) throws IOException {
     Document doc = new Document();
     Field f = new Field("content3", "aaa", Field.Store.YES, Field.Index.ANALYZED);
-    f.setOmitTf(true);
+    f.setOmitTermFreqAndPositions(true);
     doc.add(f);
     f = new Field("content4", "aaa", Field.Store.YES, Field.Index.NO);
-    f.setOmitTf(true);
+    f.setOmitTermFreqAndPositions(true);
     doc.add(f);
     writer.addDocument(doc);
   }
