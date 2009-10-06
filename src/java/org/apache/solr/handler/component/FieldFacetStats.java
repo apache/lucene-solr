@@ -103,7 +103,8 @@ public class FieldFacetStats {
   }
 
 
-  //function to keep track of facet counts for term number
+  // Function to keep track of facet counts for term number.
+  // Currently only used by UnInvertedField stats
   public boolean facetTermNum(int docID, int statsTermNum) {
 
     int term = termNum[docID];

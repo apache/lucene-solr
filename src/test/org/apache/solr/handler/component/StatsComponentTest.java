@@ -50,14 +50,20 @@ public class StatsComponentTest extends AbstractSolrTestCase {
   }
 
   public void testStats() throws Exception {
-    for (String f : new String[] {"stats_i"}) {
+    for (String f : new String[] {
+            "stats_i","stats_l","stats_f","stats_d",
+            "stats_ti","stats_tl","stats_tf","stats_td"
+    }) {
       doTestFieldStatisticsResult(f);
       doTestFieldStatisticsMissingResult(f);
       doTestFacetStatisticsResult(f);
       doTestFacetStatisticsMissingResult(f);
     }
 
-    for (String f : new String[] {"stats_ii"}) {
+    for (String f : new String[] {"stats_ii", // plain int
+            "stats_is",    // sortable int
+            "stats_tis","stats_tfs","stats_tls","stats_tds"  // trie fields
+                                  }) {
       doTestMVFieldStatisticsResult(f);
     }
     
@@ -86,7 +92,6 @@ public class StatsComponentTest extends AbstractSolrTestCase {
   public void doTestMVFieldStatisticsResult(String f) throws Exception {
     assertU(adoc("id", "1", f, "-10", f, "-100", "active_s", "true"));
     assertU(adoc("id", "2", f, "-20", f, "200", "active_s", "true"));
-
     assertU(adoc("id", "3", f, "-30", f, "-1", "active_s", "false"));
     assertU(adoc("id", "4", f, "-40", f, "10", "active_s", "false"));
     assertU(adoc("id", "5", "active_s", "false"));
@@ -124,17 +129,17 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             , "//lst[@name='true']/double[@name='mean'][.='17.5']"
             , "//lst[@name='true']/double[@name='stddev'][.='128.16005617976296']"
     );
-    //Test for fixing multivalued missing
-    /*assertQ("test value for active_s=false", req
+
+    assertQ("test value for active_s=false", req("q","*:*", "stats","true", "stats.field",f, "stats.facet","active_s", "indent","true")
             , "//lst[@name='false']/double[@name='min'][.='-40.0']"
             , "//lst[@name='false']/double[@name='max'][.='10.0']"
             , "//lst[@name='false']/double[@name='sum'][.='-61.0']"
             , "//lst[@name='false']/long[@name='count'][.='4']"
             , "//lst[@name='false']/long[@name='missing'][.='1']"
             , "//lst[@name='false']/double[@name='sumOfSquares'][.='2601.0']"
-            , "//lst[@name='false']/double[@name='mean'][.='-15.22']"
+            , "//lst[@name='false']/double[@name='mean'][.='-15.25']"
             , "//lst[@name='false']/double[@name='stddev'][.='23.59908190304586']"
-    );*/
+    );
 
 
   }

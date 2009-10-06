@@ -288,6 +288,7 @@
    <dynamicField name="*_ss"  type="string"  indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_ii"  type="integer"    indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_i"  type="sint"    indexed="true"  stored="true"/>
+   <dynamicField name="*_is"  type="sint"    indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_l"  type="slong"   indexed="true"  stored="true"/>
    <dynamicField name="*_f"  type="sfloat"  indexed="true"  stored="true"/>
    <dynamicField name="*_d"  type="sdouble" indexed="true"  stored="true"/>

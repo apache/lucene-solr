@@ -34,6 +34,7 @@ import org.apache.solr.handler.component.FieldFacetStats;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -224,7 +225,11 @@ class SimpleStats {
         SchemaField sf = searcher.getSchema().getField(f);
         FieldType ft = sf.getType();
         NamedList stv;
-        if (ft.isTokenized() || sf.multiValued()) {
+
+        // Currently, only UnInvertedField can deal with multi-part trie fields
+        String prefix = TrieField.getMainValuePrefix(ft);
+
+        if (sf.multiValued() || ft.multiValuedFieldCache() || prefix!=null) {
           //use UnInvertedField for multivalued fields
           UnInvertedField uif = UnInvertedField.getUnInvertedField(f, searcher);
           stv = uif.getStats(searcher, docs, facets).getStatsValues();

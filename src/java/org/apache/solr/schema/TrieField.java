@@ -207,6 +207,11 @@ public class TrieField extends FieldType {
     return true;
   }
 
+  @Override
+  public boolean multiValuedFieldCache() {
+    return false;
+  }
+
   /**
    * @return the precisionStep used to index values into the field
    */
@@ -464,6 +469,38 @@ public class TrieField extends FieldType {
     FLOAT,
     DOUBLE,
     DATE
+  }
+
+
+  static final String INT_PREFIX = new String(new char[]{NumericUtils.SHIFT_START_INT});
+  static final String LONG_PREFIX = new String(new char[]{NumericUtils.SHIFT_START_LONG});
+
+  /** expert internal use, subject to change.
+   * Returns null if no prefix or prefix not needed, or the prefix of the main value of a trie field
+   * that indexes multiple precisions per value.
+   */
+  public static String getMainValuePrefix(FieldType ft) {
+    if (ft instanceof TrieDateField) {
+      int step = ((TrieDateField)ft).getPrecisionStep();
+      if (step <= 0 || step >=64) return null;
+      return LONG_PREFIX;
+    } else if (ft instanceof TrieField) {
+      TrieField trie = (TrieField)ft;
+      if (trie.precisionStep  == Integer.MAX_VALUE) return null;
+
+      switch (trie.type) {
+        case INTEGER:
+        case FLOAT:
+          return INT_PREFIX;
+        case LONG:
+        case DOUBLE:
+        case DATE:
+          return LONG_PREFIX;
+        default:
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + trie.type);
+      }
+    }
+    return null;
   }
 }
 

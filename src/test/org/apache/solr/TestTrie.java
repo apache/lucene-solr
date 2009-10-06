@@ -18,6 +18,8 @@ package org.apache.solr;
 
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.DateField;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.DateMathParser;
 
@@ -193,5 +195,79 @@ public class TestTrie extends AbstractSolrTestCase {
     assertU(commit());
     String fq = "tdouble4:[" + Integer.MAX_VALUE * 2.33d + " TO " + (5l + Integer.MAX_VALUE) * 2.33d + "]";
     assertQ("Range filter must match only 5 documents", req("q", "*:*", "fq", fq), "//*[@numFound='6']");
+  }
+
+  public void testTrieFacet_PrecisionStep() throws Exception {
+    // Future protect - assert 0<precisionStep<64
+    checkPrecisionSteps("tint");
+    checkPrecisionSteps("tfloat");
+    checkPrecisionSteps("tdouble");
+    checkPrecisionSteps("tlong");
+    checkPrecisionSteps("tdate");
+
+    // For tdate tests
+    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    format.setTimeZone(TimeZone.getTimeZone("UTC"));
+    DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
+
+    for (int i = 0; i < 10; i++) {
+      long l = Integer.MAX_VALUE + i*1L;
+      // index 10 days starting with today
+      String d = format.format(i == 0 ? dmp.parseMath("/DAY") : dmp.parseMath("/DAY+" + i + "DAYS"));
+      assertU(adoc("id", String.valueOf(i), "tint", String.valueOf(i),
+              "tlong", String.valueOf(l),
+              "tfloat", String.valueOf(i * i * 31.11f),
+              "tdouble", String.valueOf(i * 2.33d),
+              "tdate", d));
+    }
+    for (int i = 0; i < 5; i++) {
+      long l = Integer.MAX_VALUE + i*1L;
+      String d = format.format(i == 0 ? dmp.parseMath("/DAY") : dmp.parseMath("/DAY+" + i + "DAYS"));
+      assertU(adoc("id", String.valueOf((i+1)*10), "tint", String.valueOf(i),
+              "tlong", String.valueOf(l),
+              "tfloat", String.valueOf(i * i * 31.11f),
+              "tdouble", String.valueOf(i * 2.33d),
+              "tdate", d));
+    }
+    assertU(commit());
+
+    SolrQueryRequest req = req("q", "*:*", "facet", "true", "rows", "15",
+            "facet.field", "tint",
+            "facet.field", "tlong",
+            "facet.field", "tfloat",
+            "facet.field", "tdouble",
+            "facet.date", "tdate",
+            "facet.date.start", "NOW/DAY",
+            "facet.date.end", "NOW/DAY+6DAYS",
+            "facet.date.gap", "+1DAY");
+    testFacetField(req, "tint", "0", "2");
+    testFacetField(req, "tint", "5", "1");
+    testFacetField(req, "tlong", String.valueOf(Integer.MAX_VALUE), "2");
+    testFacetField(req, "tlong", String.valueOf(Integer.MAX_VALUE+5L), "1");
+    testFacetField(req, "tfloat", String.valueOf(31.11f), "2");
+    testFacetField(req, "tfloat", String.valueOf(5*5*31.11f), "1");
+    testFacetField(req, "tdouble", String.valueOf(2.33d), "2");
+    testFacetField(req, "tdouble", String.valueOf(5*2.33d), "1");
+
+    testFacetDate(req, "tdate", format.format(dmp.parseMath("/DAY")), "4");
+    testFacetDate(req, "tdate", format.format(dmp.parseMath("/DAY+5DAYS")), "2");
+  }
+
+  private void checkPrecisionSteps(String fieldType) {
+    FieldType type = h.getCore().getSchema().getFieldType(fieldType);
+    if (type instanceof TrieField) {
+      TrieField field = (TrieField) type;
+      assertTrue(field.getPrecisionStep() > 0 && field.getPrecisionStep() < 64);
+    }
+  }
+
+  private void testFacetField(SolrQueryRequest req, String field, String value, String count) {
+    String xpath = "//lst[@name='facet_fields']/lst[@name='" + field + "']/int[@name='" + value + "'][.='" + count + "']";
+    assertQ(req, xpath);
+  }
+
+  private void testFacetDate(SolrQueryRequest req, String field, String value, String count)  {
+    String xpath = "//lst[@name='facet_dates']/lst[@name='" + field + "']/int[@name='" + value + "'][.='" + count + "']";
+    assertQ(req, xpath);
   }
 }

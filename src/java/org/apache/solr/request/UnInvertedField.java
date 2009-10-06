@@ -23,12 +23,14 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.*;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.handler.component.StatsValues;
@@ -171,7 +173,8 @@ public class UnInvertedField {
 
   public UnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
     this.field = field;
-    this.ti = new TermIndex(field);
+    this.ti = new TermIndex(field,
+            TrieField.getMainValuePrefix(searcher.getSchema().getFieldType(field)));
     uninvert(searcher);
   }
 
@@ -641,141 +644,150 @@ public class UnInvertedField {
     int baseSize = docs.size();
     int maxDoc = searcher.maxDoc();
 
-    if (baseSize > 0) {
-      FieldType ft = searcher.getSchema().getFieldType(field);
+    if (baseSize <= 0) return allstats;
 
-      int i = 0;
-      final FieldFacetStats[] finfo = new FieldFacetStats[facet.length];
-      //Initialize facetstats, if facets have been passed in
-      FieldCache.StringIndex si;
-      for (String f : facet) {
-        ft = searcher.getSchema().getFieldType(f);
-        try {
-          si = FieldCache.DEFAULT.getStringIndex(searcher.getReader(), f);
-        }
-        catch (IOException e) {
-          throw new RuntimeException("failed to open field cache for: " + f, e);
-        }
-        finfo[i++] = new FieldFacetStats(f, si, ft, numTermsInField);
+    FieldType ft = searcher.getSchema().getFieldType(field);
+
+    DocSet missing = docs.andNot( searcher.getDocSet(new TermRangeQuery(field, null, null, false, false)) );
+
+    int i = 0;
+    final FieldFacetStats[] finfo = new FieldFacetStats[facet.length];
+    //Initialize facetstats, if facets have been passed in
+    FieldCache.StringIndex si;
+    for (String f : facet) {
+      FieldType facet_ft = searcher.getSchema().getFieldType(f);
+      try {
+        si = FieldCache.DEFAULT.getStringIndex(searcher.getReader(), f);
       }
-
-      final int[] index = this.index;
-      final int[] counts = new int[numTermsInField];//keep track of the number of times we see each word in the field for all the documents in the docset
-
-      NumberedTermEnum te = ti.getEnumerator(searcher.getReader());
-
-
-      boolean doNegative = false;
-      if (finfo.length == 0) {
-        //if we're collecting statistics with a facet field, can't do inverted counting
-        doNegative = baseSize > maxDoc >> 1 && termInstances > 0
-                && docs instanceof BitDocSet;
+      catch (IOException e) {
+        throw new RuntimeException("failed to open field cache for: " + f, e);
       }
+      finfo[i] = new FieldFacetStats(f, si, facet_ft, numTermsInField);
+      i++;
+    }
 
-      if (doNegative) {
-        OpenBitSet bs = (OpenBitSet) ((BitDocSet) docs).getBits().clone();
-        bs.flip(0, maxDoc);
-        // TODO: when iterator across negative elements is available, use that
-        // instead of creating a new bitset and inverting.
-        docs = new BitDocSet(bs, maxDoc - baseSize);
-        // simply negating will mean that we have deleted docs in the set.
-        // that should be OK, as their entries in our table should be empty.
-      }
+    final int[] index = this.index;
+    final int[] counts = new int[numTermsInField];//keep track of the number of times we see each word in the field for all the documents in the docset
 
-      // For the biggest terms, do straight set intersections
-      for (TopTerm tt : bigTerms.values()) {
-        // TODO: counts could be deferred if sorted==false
-        if (tt.termNum >= 0 && tt.termNum < numTermsInField) {
-          if (finfo.length == 0) {
-            counts[tt.termNum] = searcher.numDocs(new TermQuery(tt.term), docs);
-          } else {
-            //COULD BE VERY SLOW
-            //if we're collecting stats for facet fields, we need to iterate on all matching documents
-            DocSet bigTermDocSet = searcher.getDocSet(new TermQuery(tt.term)).intersection(docs);
-            DocIterator iter = bigTermDocSet.iterator();
-            while (iter.hasNext()) {
-              int doc = iter.nextDoc();
-              counts[tt.termNum]++;
-              for (FieldFacetStats f : finfo) {
-                f.facetTermNum(doc, tt.termNum);
-              }
+    NumberedTermEnum te = ti.getEnumerator(searcher.getReader());
+
+
+    boolean doNegative = false;
+    if (finfo.length == 0) {
+      //if we're collecting statistics with a facet field, can't do inverted counting
+      doNegative = baseSize > maxDoc >> 1 && termInstances > 0
+              && docs instanceof BitDocSet;
+    }
+
+    if (doNegative) {
+      OpenBitSet bs = (OpenBitSet) ((BitDocSet) docs).getBits().clone();
+      bs.flip(0, maxDoc);
+      // TODO: when iterator across negative elements is available, use that
+      // instead of creating a new bitset and inverting.
+      docs = new BitDocSet(bs, maxDoc - baseSize);
+      // simply negating will mean that we have deleted docs in the set.
+      // that should be OK, as their entries in our table should be empty.
+    }
+
+    // For the biggest terms, do straight set intersections
+    for (TopTerm tt : bigTerms.values()) {
+      // TODO: counts could be deferred if sorted==false
+      if (tt.termNum >= 0 && tt.termNum < numTermsInField) {
+        if (finfo.length == 0) {
+          counts[tt.termNum] = searcher.numDocs(new TermQuery(tt.term), docs);
+        } else {
+          //COULD BE VERY SLOW
+          //if we're collecting stats for facet fields, we need to iterate on all matching documents
+          DocSet bigTermDocSet = searcher.getDocSet(new TermQuery(tt.term)).intersection(docs);
+          DocIterator iter = bigTermDocSet.iterator();
+          while (iter.hasNext()) {
+            int doc = iter.nextDoc();
+            counts[tt.termNum]++;
+            for (FieldFacetStats f : finfo) {
+              f.facetTermNum(doc, tt.termNum);
             }
           }
         }
       }
+    }
 
 
-      if (termInstances > 0) {
-        DocIterator iter = docs.iterator();
-        while (iter.hasNext()) {
-          int doc = iter.nextDoc();
-          int code = index[doc];
+    if (termInstances > 0) {
+      DocIterator iter = docs.iterator();
+      while (iter.hasNext()) {
+        int doc = iter.nextDoc();
+        int code = index[doc];
 
-          if ((code & 0xff) == 1) {
-            int pos = code >>> 8;
-            int whichArray = (doc >>> 16) & 0xff;
-            byte[] arr = tnums[whichArray];
-            int tnum = 0;
+        if ((code & 0xff) == 1) {
+          int pos = code >>> 8;
+          int whichArray = (doc >>> 16) & 0xff;
+          byte[] arr = tnums[whichArray];
+          int tnum = 0;
+          for (; ;) {
+            int delta = 0;
             for (; ;) {
-              int delta = 0;
-              for (; ;) {
-                byte b = arr[pos++];
-                delta = (delta << 7) | (b & 0x7f);
-                if ((b & 0x80) == 0) break;
-              }
+              byte b = arr[pos++];
+              delta = (delta << 7) | (b & 0x7f);
+              if ((b & 0x80) == 0) break;
+            }
+            if (delta == 0) break;
+            tnum += delta - TNUM_OFFSET;
+            counts[tnum]++;
+            for (FieldFacetStats f : finfo) {
+              f.facetTermNum(doc, tnum);
+            }
+          }
+        } else {
+          int tnum = 0;
+          int delta = 0;
+          for (; ;) {
+            delta = (delta << 7) | (code & 0x7f);
+            if ((code & 0x80) == 0) {
               if (delta == 0) break;
               tnum += delta - TNUM_OFFSET;
               counts[tnum]++;
               for (FieldFacetStats f : finfo) {
                 f.facetTermNum(doc, tnum);
               }
+              delta = 0;
             }
-          } else {
-            int tnum = 0;
-            int delta = 0;
-            for (; ;) {
-              delta = (delta << 7) | (code & 0x7f);
-              if ((code & 0x80) == 0) {
-                if (delta == 0) break;
-                tnum += delta - TNUM_OFFSET;
-                counts[tnum]++;
-                for (FieldFacetStats f : finfo) {
-                  f.facetTermNum(doc, tnum);
-                }
-                delta = 0;
-              }
-              code >>>= 8;
-            }
+            code >>>= 8;
           }
         }
       }
+    }
 
-      // add results in index order
+    // add results in index order
 
-      for (i = 0; i < numTermsInField; i++) {
-        int c = doNegative ? maxTermCounts[i] - counts[i] : counts[i];
-        if (c == 0) {
-          continue;
-        }
-        Double value = Double.parseDouble(ft.indexedToReadable(getTermText(te, i)));
-        allstats.accumulate(value, c);
-        //as we've parsed the termnum into a value, lets also accumulate fieldfacet statistics
-        for (FieldFacetStats f : finfo) {
-          f.accumulateTermNum(i, value);
-        }
-      }
-      te.close();
-      int c = SimpleFacets.getFieldMissingCount(searcher, baseDocs, field);
-      if (c > 0) {
-        allstats.addMissing(c);
-      }
-      if (finfo.length > 0) {
-        allstats.facets = new HashMap<String, Map<String, StatsValues>>();
-        for (FieldFacetStats f : finfo) {
-          allstats.facets.put(f.name, f.facetStatsValues);
-        }
+    for (i = 0; i < numTermsInField; i++) {
+      int c = doNegative ? maxTermCounts[i] - counts[i] : counts[i];
+      if (c == 0) continue;
+      Double value = Double.parseDouble(ft.indexedToReadable(getTermText(te, i)));
+      allstats.accumulate(value, c);
+      //as we've parsed the termnum into a value, lets also accumulate fieldfacet statistics
+      for (FieldFacetStats f : finfo) {
+        f.accumulateTermNum(i, value);
       }
     }
+    te.close();
+
+    int c = missing.size();
+    allstats.addMissing(c);
+
+    if (finfo.length > 0) {
+      allstats.facets = new HashMap<String, Map<String, StatsValues>>();
+      for (FieldFacetStats f : finfo) {
+        Map<String, StatsValues> facetStatsValues = f.facetStatsValues;
+        FieldType facetType = searcher.getSchema().getFieldType(f.name);
+        for (Map.Entry<String,StatsValues> entry : facetStatsValues.entrySet()) {
+          String termLabel = entry.getKey();
+          int missingCount = searcher.numDocs(new TermQuery(new Term(f.name, facetType.toInternal(termLabel))), missing);
+          entry.getValue().addMissing(missingCount);
+        }
+        allstats.facets.put(f.name, facetStatsValues);
+      }
+    }
+
     return allstats;
 
   }
@@ -879,7 +891,10 @@ class NumberedTermEnum extends TermEnum {
 
   protected boolean setTerm() {
     t = tenum.term();
-    if (t==null || t.field() != tindex.fterm.field()) {  // intern'd compare
+    if (t==null
+            || t.field() != tindex.fterm.field()  // intern'd compare
+            || (tindex.prefix != null && !t.text().startsWith(tindex.prefix,0)) )
+    {
       t = null;
       return false;
     }
@@ -1004,12 +1019,18 @@ class TermIndex {
   final static int interval = 1 << intervalBits;
 
   final Term fterm; // prototype to be used in term construction w/o String.intern overhead
+  final String prefix;
   String[] index;
   int nTerms;
   long sizeOfStrings;
 
   TermIndex(String field) {
+    this(field, null);
+  }
+
+  TermIndex(String field, String prefix) {
     this.fterm = new Term(field, "");
+    this.prefix = prefix;
   }
 
   Term createTerm(String termVal) {
@@ -1027,7 +1048,7 @@ class TermIndex {
      will be built.
    */
   NumberedTermEnum getEnumerator(IndexReader reader) throws IOException {
-    if (index==null) return new NumberedTermEnum(reader,this,"",0) {
+    if (index==null) return new NumberedTermEnum(reader,this, prefix==null?"":prefix, 0) {
       ArrayList<String> lst;
 
       protected boolean setTerm() {

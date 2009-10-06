@@ -233,7 +233,14 @@ public class SimpleFacets {
       // Always use filters for booleans... we know the number of values is very small.
       enumMethod = true;
     }
-    boolean multiToken = sf.multiValued() || ft.isTokenized();
+    boolean multiToken = sf.multiValued() || ft.multiValuedFieldCache();
+
+    if (TrieField.getMainValuePrefix(ft) != null) {
+      // A TrieField with multiple parts indexed per value... currently only
+      // UnInvertedField can handle this case, so force it's use.
+      enumMethod = false;
+      multiToken = true;
+    }
 
     // unless the enum method is explicitly specified, use a counting method.
     if (enumMethod) {
