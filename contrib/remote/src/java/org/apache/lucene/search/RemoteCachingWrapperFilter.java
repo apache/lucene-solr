@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.BitSet;
 
 import org.apache.lucene.index.IndexReader;
 
@@ -44,18 +43,6 @@ public class RemoteCachingWrapperFilter extends Filter {
 
   public RemoteCachingWrapperFilter(Filter filter) {
     this.filter = filter;
-  }
-
-  /**
-   * Uses the {@link org.apache.lucene.search.FilterManager} to keep the cache for a filter on the 
-   * searcher side of a remote connection.
-   * @param reader the index reader for the Filter
-   * @return the bitset
-   * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
-   */
-  public BitSet bits(IndexReader reader) throws IOException {
-    Filter cachedFilter = FilterManager.getInstance().getFilter(filter);
-    return cachedFilter.bits(reader);
   }
   
   /**

@@ -17,13 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.DocIdBitSet;
-import org.apache.lucene.util.OpenBitSetDISI;
-import java.util.BitSet;
-import java.util.WeakHashMap;
-import java.util.Map;
 import java.io.IOException;
+import java.util.Map;
+import java.util.WeakHashMap;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.OpenBitSetDISI;
 
 /**
  * Wraps another filter's result and caches it.  The purpose is to allow
@@ -35,43 +34,13 @@ public class CachingWrapperFilter extends Filter {
   /**
    * A transient Filter cache.
    */
-  protected transient Map cache;
+  protected transient Map<IndexReader, DocIdSet> cache;
 
   /**
    * @param filter Filter to cache results of
    */
   public CachingWrapperFilter(Filter filter) {
     this.filter = filter;
-  }
-
-  /**
-   * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
-   */
-  public BitSet bits(IndexReader reader) throws IOException {
-    if (cache == null) {
-      cache = new WeakHashMap();
-    }
-
-    Object cached = null;
-    synchronized (cache) {  // check cache
-      cached = cache.get(reader);
-    }
-	
-    if (cached != null) {
-      if (cached instanceof BitSet) {
-        return (BitSet) cached;
-      } else if (cached instanceof DocIdBitSet)
-        return ((DocIdBitSet) cached).getBitSet();
-      // It would be nice to handle the DocIdSet case, but that's not really possible
-    }
-
-    final BitSet bits = filter.bits(reader);
-
-    synchronized (cache) {  // update cache
-      cache.put(reader, bits);
-    }
-
-    return bits;
   }
 
   /** Provide the DocIdSet to be cached, using the DocIdSet provided
@@ -94,19 +63,16 @@ public class CachingWrapperFilter extends Filter {
   
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     if (cache == null) {
-      cache = new WeakHashMap();
+      cache = new WeakHashMap<IndexReader, DocIdSet>();
     }
 
-    Object cached = null;
+    DocIdSet cached = null;
     synchronized (cache) {  // check cache
       cached = cache.get(reader);
     }
 
     if (cached != null) {
-      if (cached instanceof DocIdSet)
-        return (DocIdSet) cached;
-      else
-        return new DocIdBitSet((BitSet) cached);
+      return (DocIdSet) cached;
     }
 
     final DocIdSet docIdSet = docIdSetToCache(filter.getDocIdSet(reader), reader);

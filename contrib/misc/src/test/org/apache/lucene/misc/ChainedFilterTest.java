@@ -17,21 +17,31 @@ package org.apache.lucene.misc;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
-import java.util.*;
-import java.io.IOException;
+import java.util.Calendar;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import junit.framework.TestCase;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.*;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.CachingWrapperFilter;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryWrapperFilter;
+import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeFilter;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
 
 public class ChainedFilterTest extends TestCase {
   public static final int MAX = 500;
@@ -84,32 +94,7 @@ public class ChainedFilterTest extends TestCase {
         new TermQuery(new Term("owner", "sue")));
   }
 
-  private Filter[] getChainWithOldFilters(Filter[] chain) {
-    Filter[] oldFilters = new Filter[chain.length];
-    for (int i = 0; i < chain.length; i++) {
-      final Filter f = chain[i];
-    // create old BitSet-based Filter as wrapper
-      oldFilters[i] = new Filter() {
-        /** @deprecated */
-        public BitSet bits(IndexReader reader) throws IOException {
-          BitSet bits = new BitSet(reader.maxDoc());
-          DocIdSetIterator it = f.getDocIdSet(reader).iterator();  
-          int doc;
-          while((doc = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-            bits.set(doc);
-          }
-          return bits;
-        }
-      };
-    }
-    return oldFilters;
-  }
-  
-  private ChainedFilter getChainedFilter(Filter[] chain, int[] logic, boolean old) {
-    if (old) {
-      chain = getChainWithOldFilters(chain);
-    }
-    
+  private ChainedFilter getChainedFilter(Filter[] chain, int[] logic) {
     if (logic == null) {
       return new ChainedFilter(chain);
     } else {
@@ -117,98 +102,78 @@ public class ChainedFilterTest extends TestCase {
     }
   }
 
-  private ChainedFilter getChainedFilter(Filter[] chain, int logic, boolean old) {
-    if (old) {
-      chain = getChainWithOldFilters(chain);
-    }
-    
+  private ChainedFilter getChainedFilter(Filter[] chain, int logic) {
     return new ChainedFilter(chain, logic);
   }
 
   
   public void testSingleFilter() throws Exception {
-    for (int mode = 0; mode < 2; mode++) {
-      boolean old = (mode==0);
-      
-      ChainedFilter chain = getChainedFilter(new Filter[] {dateFilter}, null, old);
-  
-      int numHits = searcher.search(query, chain, 1000).totalHits;
-      assertEquals(MAX, numHits);
-  
-      chain = new ChainedFilter(new Filter[] {bobFilter});
-      numHits = searcher.search(query, chain, 1000).totalHits;
-      assertEquals(MAX / 2, numHits);
-      
-      chain = getChainedFilter(new Filter[] {bobFilter}, new int[] {ChainedFilter.AND}, old);
-      TopDocs hits = searcher.search(query, chain, 1000);
-      numHits = hits.totalHits;
-      assertEquals(MAX / 2, numHits);
-      assertEquals("bob", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
-      
-      chain = getChainedFilter(new Filter[] {bobFilter}, new int[] {ChainedFilter.ANDNOT}, old);
-      hits = searcher.search(query, chain, 1000);
-      numHits = hits.totalHits;
-      assertEquals(MAX / 2, numHits);
-      assertEquals("sue", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
-    }
+    ChainedFilter chain = getChainedFilter(new Filter[] {dateFilter}, null);
+
+    int numHits = searcher.search(query, chain, 1000).totalHits;
+    assertEquals(MAX, numHits);
+
+    chain = new ChainedFilter(new Filter[] {bobFilter});
+    numHits = searcher.search(query, chain, 1000).totalHits;
+    assertEquals(MAX / 2, numHits);
+    
+    chain = getChainedFilter(new Filter[] {bobFilter}, new int[] {ChainedFilter.AND});
+    TopDocs hits = searcher.search(query, chain, 1000);
+    numHits = hits.totalHits;
+    assertEquals(MAX / 2, numHits);
+    assertEquals("bob", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
+    
+    chain = getChainedFilter(new Filter[] {bobFilter}, new int[] {ChainedFilter.ANDNOT});
+    hits = searcher.search(query, chain, 1000);
+    numHits = hits.totalHits;
+    assertEquals(MAX / 2, numHits);
+    assertEquals("sue", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
   }
 
   public void testOR() throws Exception {
-    for (int mode = 0; mode < 2; mode++) {
-      boolean old = (mode==0);
-      ChainedFilter chain = getChainedFilter(
-        new Filter[] {sueFilter, bobFilter}, null, old);
-  
-      int numHits = searcher.search(query, chain, 1000).totalHits;
-      assertEquals("OR matches all", MAX, numHits);
-    }
+    ChainedFilter chain = getChainedFilter(
+      new Filter[] {sueFilter, bobFilter}, null);
+
+    int numHits = searcher.search(query, chain, 1000).totalHits;
+    assertEquals("OR matches all", MAX, numHits);
   }
 
   public void testAND() throws Exception {
-    for (int mode = 0; mode < 2; mode++) {
-      boolean old = (mode==0);
-      ChainedFilter chain = getChainedFilter(
-        new Filter[] {dateFilter, bobFilter}, ChainedFilter.AND, old);
-  
-      TopDocs hits = searcher.search(query, chain, 1000);
-      assertEquals("AND matches just bob", MAX / 2, hits.totalHits);
-      assertEquals("bob", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
-    }
+    ChainedFilter chain = getChainedFilter(
+      new Filter[] {dateFilter, bobFilter}, ChainedFilter.AND);
+
+    TopDocs hits = searcher.search(query, chain, 1000);
+    assertEquals("AND matches just bob", MAX / 2, hits.totalHits);
+    assertEquals("bob", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
   }
 
   public void testXOR() throws Exception {
-    for (int mode = 0; mode < 2; mode++) {
-      boolean old = (mode==0);
-      ChainedFilter chain = getChainedFilter(
-        new Filter[]{dateFilter, bobFilter}, ChainedFilter.XOR, old);
-  
-      TopDocs hits = searcher.search(query, chain, 1000);
-      assertEquals("XOR matches sue", MAX / 2, hits.totalHits);
-      assertEquals("sue", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
-    }
+    ChainedFilter chain = getChainedFilter(
+      new Filter[]{dateFilter, bobFilter}, ChainedFilter.XOR);
+
+    TopDocs hits = searcher.search(query, chain, 1000);
+    assertEquals("XOR matches sue", MAX / 2, hits.totalHits);
+    assertEquals("sue", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
   }
 
   public void testANDNOT() throws Exception {
-    for (int mode = 0; mode < 2; mode++) {
-      boolean old = (mode==0);
-      ChainedFilter chain = getChainedFilter(
-        new Filter[]{dateFilter, sueFilter},
-          new int[] {ChainedFilter.AND, ChainedFilter.ANDNOT}, old);
-  
-      TopDocs hits = searcher.search(query, chain, 1000);
-      assertEquals("ANDNOT matches just bob",
+    ChainedFilter chain = getChainedFilter(
+      new Filter[]{dateFilter, sueFilter},
+        new int[] {ChainedFilter.AND, ChainedFilter.ANDNOT});
+
+    TopDocs hits = searcher.search(query, chain, 1000);
+    assertEquals("ANDNOT matches just bob",
+        MAX / 2, hits.totalHits);
+    assertEquals("bob", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
+    
+    chain = getChainedFilter(
+        new Filter[]{bobFilter, bobFilter},
+          new int[] {ChainedFilter.ANDNOT, ChainedFilter.ANDNOT});
+
+      hits = searcher.search(query, chain, 1000);
+      assertEquals("ANDNOT bob ANDNOT bob matches all sues",
           MAX / 2, hits.totalHits);
-      assertEquals("bob", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
-      
-      chain = getChainedFilter(
-          new Filter[]{bobFilter, bobFilter},
-            new int[] {ChainedFilter.ANDNOT, ChainedFilter.ANDNOT}, old);
-  
-        hits = searcher.search(query, chain, 1000);
-        assertEquals("ANDNOT bob ANDNOT bob matches all sues",
-            MAX / 2, hits.totalHits);
-        assertEquals("sue", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
-    }
+      assertEquals("sue", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
   }
 
   /*

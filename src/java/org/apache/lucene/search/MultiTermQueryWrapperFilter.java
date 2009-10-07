@@ -17,14 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.util.OpenBitSet;
-
-import java.io.IOException;
-import java.util.BitSet;
 
 /**
  * A wrapper for {@link MultiTermQuery}, that exposes its
@@ -129,28 +128,6 @@ public class MultiTermQueryWrapperFilter extends Filter {
     abstract public void handleDoc(int doc);
   }
   
-  /**
-   * Returns a BitSet with true for documents which should be
-   * permitted in search results, and false for those that should
-   * not.
-   * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
-   */
-  @Override
-  public BitSet bits(IndexReader reader) throws IOException {
-    final TermEnum enumerator = query.getEnum(reader);
-    try {
-      final BitSet bitSet = new BitSet(reader.maxDoc());
-      new TermGenerator() {
-        public void handleDoc(int doc) {
-          bitSet.set(doc);
-        }
-      }.generate(reader, enumerator);
-      return bitSet;
-    } finally {
-      enumerator.close();
-    }
-  }
-
   /**
    * Returns a DocIdSet with documents that should be
    * permitted in search results.

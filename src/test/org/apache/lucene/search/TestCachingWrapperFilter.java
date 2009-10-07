@@ -17,18 +17,17 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.OpenBitSetDISI;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import java.io.IOException;
+
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-
-import java.io.IOException;
-import java.util.BitSet;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.OpenBitSetDISI;
 
 public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testCachingWorks() throws Exception {
@@ -45,8 +44,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     cacher.getDocIdSet(reader);
     assertTrue("first time", filter.wasCalled());
 
-    // make sure no exception if cache is holding the wrong bitset
-    cacher.bits(reader);
+    // make sure no exception if cache is holding the wrong docIdSet
     cacher.getDocIdSet(reader);
 
     // second time, nested filter should not be called
@@ -88,12 +86,6 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     assertDocIdSetCacheable(reader, new Filter() {
       public DocIdSet getDocIdSet(IndexReader reader) {
         return new OpenBitSet();
-      }
-    }, true);
-    // a deprecated filter is always cacheable
-    assertDocIdSetCacheable(reader, new Filter() {
-      public BitSet bits(IndexReader reader) {
-        return new BitSet();
       }
     }, true);
 

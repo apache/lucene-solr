@@ -18,7 +18,8 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.BitSet;
+
+import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -26,15 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanFilter;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilterClause;
-import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.DocIdBitSet;
-
-import junit.framework.TestCase;
 
 public class BooleanFilterTest extends TestCase
 {
@@ -67,37 +60,15 @@ public class BooleanFilterTest extends TestCase
 		writer.addDocument(doc);
 	}
 	
-  private Filter getOldBitSetFilter(final Filter filter) {
-    
-    return new Filter() {
-      public BitSet bits(IndexReader reader) throws IOException {
-        BitSet bits = new BitSet(reader.maxDoc());
-        DocIdSetIterator it = filter.getDocIdSet(reader).iterator();
-        while(it.next()) {
-          bits.set(it.doc());
-        }
-        return bits;
-      }
-    };
-  }
-
-	
-  private Filter getRangeFilter(String field,String lowerPrice, String upperPrice, boolean old)
+  private Filter getRangeFilter(String field,String lowerPrice, String upperPrice)
 	{
     Filter f = new TermRangeFilter(field,lowerPrice,upperPrice,true,true);
-    if (old) {
-      return getOldBitSetFilter(f);
-    }
-    
     return f;
 	}
-  private Filter getTermsFilter(String field,String text, boolean old)
+  private Filter getTermsFilter(String field,String text)
 	{
 		TermsFilter tf=new TermsFilter();
 		tf.addTerm(new Term(field,text));
-    if (old) {
-      return getOldBitSetFilter(tf);
-    }
     
 		return tf;
 	}
@@ -116,107 +87,73 @@ public class BooleanFilterTest extends TestCase
 		
 	public void testShould() throws Throwable
 	{
-    for (int i = 0; i < 2; i++) {
-      boolean old = (i==0);
-      BooleanFilter booleanFilter = new BooleanFilter();
-      booleanFilter.add(new FilterClause(getTermsFilter("price","030", old),BooleanClause.Occur.SHOULD));
-      tstFilterCard("Should retrieves only 1 doc",1,booleanFilter);
-    }
+    BooleanFilter booleanFilter = new BooleanFilter();
+    booleanFilter.add(new FilterClause(getTermsFilter("price","030"),BooleanClause.Occur.SHOULD));
+    tstFilterCard("Should retrieves only 1 doc",1,booleanFilter);
 	}
 	
 	public void testShoulds() throws Throwable
 	{
-    for (int i = 0; i < 2; i++) {
-      boolean old = (i==0);
-      BooleanFilter booleanFilter = new BooleanFilter();
-      booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020", old),BooleanClause.Occur.SHOULD));
-      booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030", old),BooleanClause.Occur.SHOULD));
-      tstFilterCard("Shoulds are Ored together",5,booleanFilter);
-    }
+    BooleanFilter booleanFilter = new BooleanFilter();
+    booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020"),BooleanClause.Occur.SHOULD));
+    booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030"),BooleanClause.Occur.SHOULD));
+    tstFilterCard("Shoulds are Ored together",5,booleanFilter);
 	}
 	public void testShouldsAndMustNot() throws Throwable
 	{
-    for (int i = 0; i < 2; i++) {
-      boolean old = (i==0);
+    BooleanFilter booleanFilter = new BooleanFilter();
+    booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020"),BooleanClause.Occur.SHOULD));
+    booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030"),BooleanClause.Occur.SHOULD));
+    booleanFilter.add(new FilterClause(getTermsFilter("inStock", "N"),BooleanClause.Occur.MUST_NOT));
+    tstFilterCard("Shoulds Ored but AndNot",4,booleanFilter);
 
-      BooleanFilter booleanFilter = new BooleanFilter();
-      booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020", old),BooleanClause.Occur.SHOULD));
-      booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030", old),BooleanClause.Occur.SHOULD));
-      booleanFilter.add(new FilterClause(getTermsFilter("inStock", "N", old),BooleanClause.Occur.MUST_NOT));
-      tstFilterCard("Shoulds Ored but AndNot",4,booleanFilter);
-  
-      booleanFilter.add(new FilterClause(getTermsFilter("inStock", "Maybe", old),BooleanClause.Occur.MUST_NOT));
-      tstFilterCard("Shoulds Ored but AndNots",3,booleanFilter);
-    }
-		
+    booleanFilter.add(new FilterClause(getTermsFilter("inStock", "Maybe"),BooleanClause.Occur.MUST_NOT));
+    tstFilterCard("Shoulds Ored but AndNots",3,booleanFilter);
 	}
 	public void testShouldsAndMust() throws Throwable
 	{
-    for (int i = 0; i < 2; i++) {
-      boolean old = (i==0);
-      BooleanFilter booleanFilter = new BooleanFilter();
-      booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020", old),BooleanClause.Occur.SHOULD));
-      booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030", old),BooleanClause.Occur.SHOULD));
-      booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin", old),BooleanClause.Occur.MUST));
-      tstFilterCard("Shoulds Ored but MUST",3,booleanFilter);
-    }
+    BooleanFilter booleanFilter = new BooleanFilter();
+    booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020"),BooleanClause.Occur.SHOULD));
+    booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030"),BooleanClause.Occur.SHOULD));
+    booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin"),BooleanClause.Occur.MUST));
+    tstFilterCard("Shoulds Ored but MUST",3,booleanFilter);
 	}
 	public void testShouldsAndMusts() throws Throwable
 	{
-    for (int i = 0; i < 2; i++) {
-      boolean old = (i==0);
-
-      BooleanFilter booleanFilter = new BooleanFilter();
-      booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020", old),BooleanClause.Occur.SHOULD));
-      booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030", old),BooleanClause.Occur.SHOULD));
-      booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin", old),BooleanClause.Occur.MUST));
-      booleanFilter.add(new FilterClause(getRangeFilter("date","20040101", "20041231", old),BooleanClause.Occur.MUST));
-      tstFilterCard("Shoulds Ored but MUSTs ANDED",1,booleanFilter);
-    }
+    BooleanFilter booleanFilter = new BooleanFilter();
+    booleanFilter.add(new FilterClause(getRangeFilter("price","010", "020"),BooleanClause.Occur.SHOULD));
+    booleanFilter.add(new FilterClause(getRangeFilter("price","020", "030"),BooleanClause.Occur.SHOULD));
+    booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin"),BooleanClause.Occur.MUST));
+    booleanFilter.add(new FilterClause(getRangeFilter("date","20040101", "20041231"),BooleanClause.Occur.MUST));
+    tstFilterCard("Shoulds Ored but MUSTs ANDED",1,booleanFilter);
 	}
 	public void testShouldsAndMustsAndMustNot() throws Throwable
 	{
-    for (int i = 0; i < 2; i++) {
-      boolean old = (i==0);
-
-      BooleanFilter booleanFilter = new BooleanFilter();
-      booleanFilter.add(new FilterClause(getRangeFilter("price","030", "040", old),BooleanClause.Occur.SHOULD));
-      booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin", old),BooleanClause.Occur.MUST));
-      booleanFilter.add(new FilterClause(getRangeFilter("date","20050101", "20051231", old),BooleanClause.Occur.MUST));
-      booleanFilter.add(new FilterClause(getTermsFilter("inStock","N", old),BooleanClause.Occur.MUST_NOT));
-      tstFilterCard("Shoulds Ored but MUSTs ANDED and MustNot",0,booleanFilter);
-    }
+    BooleanFilter booleanFilter = new BooleanFilter();
+    booleanFilter.add(new FilterClause(getRangeFilter("price","030", "040"),BooleanClause.Occur.SHOULD));
+    booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin"),BooleanClause.Occur.MUST));
+    booleanFilter.add(new FilterClause(getRangeFilter("date","20050101", "20051231"),BooleanClause.Occur.MUST));
+    booleanFilter.add(new FilterClause(getTermsFilter("inStock","N"),BooleanClause.Occur.MUST_NOT));
+    tstFilterCard("Shoulds Ored but MUSTs ANDED and MustNot",0,booleanFilter);
 	}
 	
 	public void testJustMust() throws Throwable
 	{
-    for (int i = 0; i < 2; i++) {
-      boolean old = (i==0);
-
-      BooleanFilter booleanFilter = new BooleanFilter();
-      booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin", old),BooleanClause.Occur.MUST));
-      tstFilterCard("MUST",3,booleanFilter);
-    }
+    BooleanFilter booleanFilter = new BooleanFilter();
+    booleanFilter.add(new FilterClause(getTermsFilter("accessRights", "admin"),BooleanClause.Occur.MUST));
+    tstFilterCard("MUST",3,booleanFilter);
 	}
 	public void testJustMustNot() throws Throwable
 	{
-    for (int i = 0; i < 2; i++) {
-      boolean old = (i==0);
-
-      BooleanFilter booleanFilter = new BooleanFilter();
-      booleanFilter.add(new FilterClause(getTermsFilter("inStock","N", old),BooleanClause.Occur.MUST_NOT));
-      tstFilterCard("MUST_NOT",4,booleanFilter);
-    }
+    BooleanFilter booleanFilter = new BooleanFilter();
+    booleanFilter.add(new FilterClause(getTermsFilter("inStock","N"),BooleanClause.Occur.MUST_NOT));
+    tstFilterCard("MUST_NOT",4,booleanFilter);
 	}
 	public void testMustAndMustNot() throws Throwable
 	{
-    for (int i = 0; i < 2; i++) {
-      boolean old = (i==0);
-
-      BooleanFilter booleanFilter = new BooleanFilter();
-      booleanFilter.add(new FilterClause(getTermsFilter("inStock","N", old),BooleanClause.Occur.MUST));
-      booleanFilter.add(new FilterClause(getTermsFilter("price","030", old),BooleanClause.Occur.MUST_NOT));
-      tstFilterCard("MUST_NOT wins over MUST for same docs",0,booleanFilter);
-    }
+    BooleanFilter booleanFilter = new BooleanFilter();
+    booleanFilter.add(new FilterClause(getTermsFilter("inStock","N"),BooleanClause.Occur.MUST));
+    booleanFilter.add(new FilterClause(getTermsFilter("price","030"),BooleanClause.Occur.MUST_NOT));
+    tstFilterCard("MUST_NOT wins over MUST for same docs",0,booleanFilter);
 	}
 }

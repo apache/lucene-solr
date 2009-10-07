@@ -44,30 +44,6 @@ public class QueryWrapperFilter extends Filter {
     this.query = query;
   }
 
-  /**
-   * @deprecated Use {@link #getDocIdSet(IndexReader)} instead.
-   */
-  public BitSet bits(IndexReader reader) throws IOException {
-    final BitSet bits = new BitSet(reader.maxDoc());
-
-    new IndexSearcher(reader).search(query, new Collector() {
-      private int base = 0;
-      public void setScorer(Scorer scorer) throws IOException {
-        // score is not needed by this collector 
-      }
-      public final void collect(int doc) {
-        bits.set(doc + base);  // set bit for hit
-      }
-      public void setNextReader(IndexReader reader, int docBase) {
-        base = docBase;
-      }
-      public boolean acceptsDocsOutOfOrder() {
-        return true;
-      }
-    });
-    return bits;
-  }
-  
   public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
     final Weight weight = query.weight(new IndexSearcher(reader));
     return new DocIdSet() {

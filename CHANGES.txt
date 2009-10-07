@@ -31,6 +31,9 @@ API Changes
 * LUCENE-1856: Remove Hits and all references from core and contrib.
   (Michael Busch)
 
+* LUCENE-1957: Remove Filter.bits(IndexReader) method and make 
+               Filter.getDocIdSet(IndexReader) abstract. (Michael Busch)
+
 Bug fixes
 
 New features

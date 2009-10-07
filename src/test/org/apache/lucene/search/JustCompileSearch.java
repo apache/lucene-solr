@@ -244,6 +244,11 @@ final class JustCompileSearch {
   static final class JustCompileFilter extends Filter {
     // Filter is just an abstract class with no abstract methods. However it is
     // still added here in case someone will add abstract methods in the future.
+    
+    @Override
+    public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+      return null;
+    }
   }
 
   static final class JustCompileFilteredDocIdSet extends FilteredDocIdSet {
@@ -396,6 +401,10 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
+    @Override
+    public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+      return null;
+    }    
   }
 
   static final class JustCompileTopDocsCollector extends TopDocsCollector {
