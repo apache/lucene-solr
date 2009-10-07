@@ -1,6 +1,9 @@
 package org.apache.lucene.xmlparser;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import junit.framework.TestCase;
 
@@ -9,9 +12,10 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 /**
@@ -116,8 +120,8 @@ public class TestParser extends TestCase {
 	public void testCustomFieldUserQueryXML() throws ParserException, IOException
 	{
 			Query q=parse("UserInputQueryCustomField.xml");
-			Hits h = searcher.search(q);
-			assertEquals("UserInputQueryCustomField should produce 0 result ", 0,h.length());
+			int h = searcher.search(q, null, 1000).totalHits;
+			assertEquals("UserInputQueryCustomField should produce 0 result ", 0,h);
 	}
 	
 	public void testLikeThisQueryXML() throws Exception
@@ -183,8 +187,8 @@ public class TestParser extends TestCase {
 	public void testDuplicateFilterQueryXML() throws ParserException, IOException
 	{
 			Query q=parse("DuplicateFilterQuery.xml");
-			Hits h = searcher.search(q);
-			assertEquals("DuplicateFilterQuery should produce 1 result ", 1,h.length());
+			int h = searcher.search(q, null, 1000).totalHits;
+			assertEquals("DuplicateFilterQuery should produce 1 result ", 1,h);
 	}
 	
 
@@ -199,14 +203,15 @@ public class TestParser extends TestCase {
 	}
 	private void dumpResults(String qType,Query q, int numDocs) throws IOException
 	{
-		Hits h = searcher.search(q);
-		assertTrue(qType +" should produce results ", h.length()>0);
+		TopDocs hits = searcher.search(q, null, numDocs);
+		assertTrue(qType +" should produce results ", hits.totalHits>0);
 		if(printResults)
 		{
 			System.out.println("========="+qType+"============");
-			for(int i=0;i<Math.min(numDocs,h.length());i++)
+			ScoreDoc[] scoreDocs = hits.scoreDocs;
+			for(int i=0;i<Math.min(numDocs,hits.totalHits);i++)
 			{
-				org.apache.lucene.document.Document ldoc=h.doc(i);
+				org.apache.lucene.document.Document ldoc=searcher.doc(scoreDocs[i].doc);
 				System.out.println("["+ldoc.get("date")+"]"+ldoc.get("contents"));
 			}
 			System.out.println();

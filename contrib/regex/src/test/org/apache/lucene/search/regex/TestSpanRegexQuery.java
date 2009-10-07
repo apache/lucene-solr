@@ -28,7 +28,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.spans.SpanFirstQuery;
@@ -66,8 +65,8 @@ public class TestSpanRegexQuery extends TestCase {
     SpanFirstQuery sfq = new SpanFirstQuery(srq, 1);
     // SpanNearQuery query = new SpanNearQuery(new SpanQuery[] {srq, stq}, 6,
     // true);
-    Hits hits = searcher.search(sfq);
-    assertEquals(1, hits.length());
+    int numHits = searcher.search(sfq, null, 1000).totalHits;
+    assertEquals(1, numHits);
   }
 
   public void testSpanRegexBug() throws CorruptIndexException, IOException {
@@ -83,7 +82,7 @@ public class TestSpanRegexQuery extends TestCase {
     arrSearcher[0] = new IndexSearcher(indexStoreA, true);
     arrSearcher[1] = new IndexSearcher(indexStoreB, true);
     MultiSearcher searcher = new MultiSearcher(arrSearcher);
-    Hits hits = searcher.search(query);
+    int numHits = searcher.search(query, null, 1000).totalHits;
     arrSearcher[0].close();
     arrSearcher[1].close();
 
@@ -92,7 +91,7 @@ public class TestSpanRegexQuery extends TestCase {
     // The rewriter function only write it once on the first IndexSearcher
     // So it's using term: a1 b1 to search on the second IndexSearcher
     // As a result, it won't match the document in the second IndexSearcher
-    assertEquals(2, hits.length());
+    assertEquals(2, numHits);
     indexStoreA.close();
     indexStoreB.close();
   }

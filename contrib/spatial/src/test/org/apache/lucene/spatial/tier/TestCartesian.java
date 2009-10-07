@@ -28,25 +28,26 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.function.CustomScoreQuery;
 import org.apache.lucene.search.function.FieldScoreQuery;
 import org.apache.lucene.search.function.FieldScoreQuery.Type;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
+import org.apache.lucene.spatial.geometry.DistanceUnits;
+import org.apache.lucene.spatial.geometry.FloatLatLng;
+import org.apache.lucene.spatial.geometry.LatLng;
 import org.apache.lucene.spatial.tier.projections.CartesianTierPlotter;
 import org.apache.lucene.spatial.tier.projections.IProjector;
 import org.apache.lucene.spatial.tier.projections.SinusoidalProjector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.spatial.geometry.LatLng;
-import org.apache.lucene.spatial.geometry.FloatLatLng;
-import org.apache.lucene.spatial.geometry.DistanceUnits;
+import org.apache.lucene.util.NumericUtils;
 
 /**
  *
@@ -210,10 +211,10 @@ public class TestCartesian extends TestCase{
 
     // Perform the search, using the term query, the serial chain filter, and the
     // distance sort
-    Hits hits = searcher.search(customScore,null,sort);
-
-    int results = hits.length();
-
+    TopDocs hits = searcher.search(customScore.createWeight(searcher),null, 1000, sort);
+    int results = hits.totalHits;
+    ScoreDoc[] scoreDocs = hits.scoreDocs; 
+    
     // Get a list of distances
     Map<Integer,Double> distances = dq.distanceFilter.getDistances();
 
@@ -234,12 +235,12 @@ public class TestCartesian extends TestCase{
     assertEquals(2, results);
     double lastDistance = 0;
     for(int i =0 ; i < results; i++){
-      Document d = hits.doc(i);
+      Document d = searcher.doc(scoreDocs[i].doc);
 
       String name = d.get("name");
       double rsLat = NumericUtils.prefixCodedToDouble(d.get(latField));
       double rsLng = NumericUtils.prefixCodedToDouble(d.get(lngField));
-      Double geo_distance = distances.get(hits.id(i));
+      Double geo_distance = distances.get(scoreDocs[i].doc);
 
       double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
       double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
@@ -297,9 +298,9 @@ public class TestCartesian extends TestCase{
 
     // Perform the search, using the term query, the serial chain filter, and the
     // distance sort
-    Hits hits = searcher.search(customScore,null,sort);
-
-    int results = hits.length();
+    TopDocs hits = searcher.search(customScore.createWeight(searcher),null, 1000, sort);
+    int results = hits.totalHits;
+    ScoreDoc[] scoreDocs = hits.scoreDocs; 
 
     // Get a list of distances
     Map<Integer,Double> distances = dq.distanceFilter.getDistances();
@@ -321,11 +322,11 @@ public class TestCartesian extends TestCase{
     assertEquals(18, results);
     double lastDistance = 0;
     for(int i =0 ; i < results; i++){
-      Document d = hits.doc(i);
+      Document d = searcher.doc(scoreDocs[i].doc);
       String name = d.get("name");
       double rsLat = NumericUtils.prefixCodedToDouble(d.get(latField));
       double rsLng = NumericUtils.prefixCodedToDouble(d.get(lngField));
-      Double geo_distance = distances.get(hits.id(i));
+      Double geo_distance = distances.get(scoreDocs[i].doc);
 
       double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
       double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
@@ -386,9 +387,9 @@ public class TestCartesian extends TestCase{
     
       // Perform the search, using the term query, the serial chain filter, and the
       // distance sort
-      Hits hits = searcher.search(customScore,null,sort);
-
-      int results = hits.length();
+      TopDocs hits = searcher.search(customScore.createWeight(searcher),null, 1000, sort);
+      int results = hits.totalHits;
+      ScoreDoc[] scoreDocs = hits.scoreDocs; 
     
       // Get a list of distances 
       Map<Integer,Double> distances = dq.distanceFilter.getDistances();
@@ -410,12 +411,12 @@ public class TestCartesian extends TestCase{
       assertEquals(expected[x], results);
       double lastDistance = 0;
       for(int i =0 ; i < results; i++){
-        Document d = hits.doc(i);
+        Document d = searcher.doc(scoreDocs[i].doc);
       
         String name = d.get("name");
         double rsLat = NumericUtils.prefixCodedToDouble(d.get(latField));
         double rsLng = NumericUtils.prefixCodedToDouble(d.get(lngField)); 
-        Double geo_distance = distances.get(hits.id(i));
+        Double geo_distance = distances.get(scoreDocs[i].doc);
       
         double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
         double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
@@ -475,9 +476,9 @@ public class TestCartesian extends TestCase{
 	    
       // Perform the search, using the term query, the serial chain filter, and the
       // distance sort
-      Hits hits = searcher.search(customScore, dq.getFilter()); //,sort);
-
-      int results = hits.length();
+      TopDocs hits = searcher.search(customScore.createWeight(searcher),dq.getFilter(), 1000); //,sort);
+      int results = hits.totalHits;
+      ScoreDoc[] scoreDocs = hits.scoreDocs; 
 	    
       // Get a list of distances 
       Map<Integer,Double> distances = dq.distanceFilter.getDistances();
@@ -499,16 +500,16 @@ public class TestCartesian extends TestCase{
       assertEquals(expected[x], results);
 	    
       for(int i =0 ; i < results; i++){
-        Document d = hits.doc(i);
+        Document d = searcher.doc(scoreDocs[i].doc);
 	      
         String name = d.get("name");
         double rsLat = NumericUtils.prefixCodedToDouble(d.get(latField));
         double rsLng = NumericUtils.prefixCodedToDouble(d.get(lngField)); 
-        Double geo_distance = distances.get(hits.id(i));
+        Double geo_distance = distances.get(scoreDocs[i].doc);
 	      
         double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
         double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
-        System.out.println("Name: "+ name +", Distance (res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
+        System.out.println("Name: "+ name +", Distance (res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ scoreDocs[i].score);
         assertTrue(Math.abs((distance - llm)) < 1);
         assertTrue((distance < miles ));
 	      

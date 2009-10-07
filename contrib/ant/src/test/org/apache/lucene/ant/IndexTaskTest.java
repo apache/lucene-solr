@@ -18,7 +18,6 @@ package org.apache.lucene.ant;
  */
 
 import java.io.File;
-
 import java.io.IOException;
 
 import junit.framework.TestCase;
@@ -26,12 +25,10 @@ import junit.framework.TestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.FSDirectory;
-
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.types.FileSet;
 
@@ -79,9 +76,9 @@ public class IndexTaskTest extends TestCase {
     public void testSearch() throws Exception {
         Query query = new QueryParser("contents",analyzer).parse("test");
 
-        Hits hits = searcher.search(query);
+        int numHits = searcher.search(query, null, 1000).totalHits;
 
-        assertEquals("Find document(s)", 2, hits.length());
+        assertEquals("Find document(s)", 2, numHits);
     }
 
     /**

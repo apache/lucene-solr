@@ -17,6 +17,9 @@ package org.apache.lucene.search.spell;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Iterator;
+
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -25,14 +28,11 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-
-import java.io.IOException;
-import java.util.Iterator;
 
 /**
  * <p>
@@ -214,17 +214,19 @@ public class SpellChecker {
       }
     }
 
+    int maxHits = 10 * numSug;
+    
 //    System.out.println("Q: " + query);
-    Hits hits = searcher.search(query);
+    ScoreDoc[] hits = searcher.search(query, null, maxHits).scoreDocs;
 //    System.out.println("HITS: " + hits.length());
     SuggestWordQueue sugQueue = new SuggestWordQueue(numSug);
 
     // go thru more than 'maxr' matches in case the distance filter triggers
-    int stop = Math.min(hits.length(), 10 * numSug);
+    int stop = Math.min(hits.length, maxHits);
     SuggestWord sugWord = new SuggestWord();
     for (int i = 0; i < stop; i++) {
 
-      sugWord.string = hits.doc(i).get(F_WORD); // get orig word
+      sugWord.string = searcher.doc(hits[i].doc).get(F_WORD); // get orig word
 
       // don't suggest a word for itself, that would be silly
       if (sugWord.string.equals(word)) {

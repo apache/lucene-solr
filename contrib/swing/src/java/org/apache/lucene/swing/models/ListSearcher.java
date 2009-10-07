@@ -16,22 +16,28 @@ package org.apache.lucene.swing.models;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.RAMDirectory;
+import java.io.IOException;
+import java.util.ArrayList;
+
+import javax.swing.AbstractListModel;
+import javax.swing.ListModel;
+import javax.swing.event.ListDataEvent;
+import javax.swing.event.ListDataListener;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.queryParser.MultiFieldQueryParser;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Hits;
-import org.apache.lucene.queryParser.MultiFieldQueryParser;
-
-import javax.swing.*;
-import javax.swing.event.ListDataListener;
-import javax.swing.event.ListDataEvent;
-import java.util.ArrayList;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.store.RAMDirectory;
 
 /**
  * See table searcher explanation.
@@ -163,10 +169,8 @@ public class ListSearcher extends AbstractListModel {
             // has some weirdness.
             MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, analyzer);
             Query query =parser.parse(searchString);
-            //run the search
-            Hits hits = is.search(query);
             //reset this list model with the new results
-            resetSearchResults(hits);
+            resetSearchResults(is, query);
         } catch (Exception e){
             e.printStackTrace();
         }
@@ -175,21 +179,41 @@ public class ListSearcher extends AbstractListModel {
         fireContentsChanged(this, 0, getSize());
     }
 
+    final static class CountingCollector extends Collector {
+      public int numHits = 0;
+      
+      public void setScorer(Scorer scorer) throws IOException {}
+      public void collect(int doc) throws IOException {
+        numHits++;
+      }
+
+      public void setNextReader(IndexReader reader, int docBase) {}
+      public boolean acceptsDocsOutOfOrder() {
+        return true;
+      }    
+    }
+
+    
     /**
      *
      * @param hits The new result set to set this list to.
      */
-    private void resetSearchResults(Hits hits) {
+    private void resetSearchResults(IndexSearcher searcher, Query query) {
         try {
             //clear our index mapping this list model rows to
             //the decorated inner list model
             rowToModelIndex.clear();
+            
+            CountingCollector countingCollector = new CountingCollector();
+            searcher.search(query, countingCollector);
+            ScoreDoc[] hits = searcher.search(query, countingCollector.numHits).scoreDocs;
+            
             //iterate through the hits
             //get the row number stored at the index
             //that number is the row number of the decorated
             //table model row that we are mapping to
-            for (int t=0; t<hits.length(); t++){
-                Document document = hits.doc(t);
+            for (int t=0; t<hits.length; t++){
+                Document document = searcher.doc(hits[t].doc);
                 Fieldable field = document.getField(ROW_NUMBER);
                 rowToModelIndex.add(Integer.valueOf(field.stringValue()));
             }

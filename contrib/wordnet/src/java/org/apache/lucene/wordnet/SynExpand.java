@@ -17,9 +17,9 @@ package org.apache.lucene.wordnet;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
-import java.io.File;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -31,12 +31,14 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Hits;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.FSDirectory;
@@ -103,13 +105,13 @@ public final class SynExpand {
 	public static Query expand( String query,
 								Searcher syns,
 								Analyzer a,
-								String field,
-								float boost)
+								String f,
+								final float boost)
 		throws IOException
 	{
-		Set already = new HashSet(); // avoid dups 
+		final Set already = new HashSet(); // avoid dups 
 		List top = new LinkedList(); // needs to be separately listed..
-		if ( field == null) field = "contents";
+		final String field = ( f == null) ? "contents" : f;
 		if ( a == null) a = new StandardAnalyzer();
 
 		// [1] Parse query into separate words so that when we expand we can avoid dups
@@ -121,7 +123,7 @@ public final class SynExpand {
 			if ( already.add( word))
 				top.add( word);
 		}
-		BooleanQuery tmp = new BooleanQuery();
+		final BooleanQuery tmp = new BooleanQuery();
 		
 		// [2] form query
 		Iterator it = top.iterator();
@@ -132,24 +134,42 @@ public final class SynExpand {
 			TermQuery tq = new TermQuery( new Term( field, word));
 			tmp.add( tq, BooleanClause.Occur.SHOULD);
 
+			syns.search(new TermQuery( new Term(Syns2Index.F_WORD, word)), new Collector() {
+			  IndexReader reader;
+			  
+        @Override
+        public boolean acceptsDocsOutOfOrder() {
+          return true;
+        }
+
+        @Override
+        public void collect(int doc) throws IOException {
+          Document d = reader.document(doc);
+          String[] values = d.getValues( Syns2Index.F_SYN);
+          for ( int j = 0; j < values.length; j++)
+          {
+            String syn = values[ j];
+            if ( already.add( syn)) // avoid dups of top level words and synonyms
+            {
+              TermQuery tq = new TermQuery( new Term( field, syn));
+              if ( boost > 0) // else keep normal 1.0
+                tq.setBoost( boost);
+              tmp.add( tq, BooleanClause.Occur.SHOULD); 
+            }
+          }
+        }
+
+        @Override
+        public void setNextReader(IndexReader reader, int docBase)
+            throws IOException {
+          this.reader = reader;
+        }
+
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {}
+			});
+			
 			// [2b] add in unique synonums
-			Hits hits = syns.search( new TermQuery( new Term(Syns2Index.F_WORD, word)));
-			for (int i = 0; i < hits.length(); i++)
-			{
-				Document doc = hits.doc(i);
-				String[] values = doc.getValues( Syns2Index.F_SYN);
-				for ( int j = 0; j < values.length; j++)
-				{
-					String syn = values[ j];
-					if ( already.add( syn)) // avoid dups of top level words and synonyms
-					{
-						tq = new TermQuery( new Term( field, syn));
-						if ( boost > 0) // else keep normal 1.0
-							tq.setBoost( boost);
-						tmp.add( tq, BooleanClause.Occur.SHOULD); 
-					}
-				}
-			}
 		}
 
 

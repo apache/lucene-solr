@@ -16,6 +16,13 @@ package org.apache.lucene.swing.models;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableModel;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -23,16 +30,11 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.queryParser.MultiFieldQueryParser;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.RAMDirectory;
-
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
-import javax.swing.table.AbstractTableModel;
-import javax.swing.table.TableModel;
-import java.util.ArrayList;
+import org.apache.lucene.swing.models.ListSearcher.CountingCollector;
 
 
 /**
@@ -244,10 +246,8 @@ public class TableSearcher extends AbstractTableModel {
             // has some weirdness.
             MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, analyzer);
             Query query = parser.parse(searchString);
-            //run the search
-            Hits hits = is.search(query);
             //reset this table model with the new results
-            resetSearchResults(hits);
+            resetSearchResults(is, query);
         } catch (Exception e){
             e.printStackTrace();
         }
@@ -260,17 +260,22 @@ public class TableSearcher extends AbstractTableModel {
      *
      * @param hits The new result set to set this table to.
      */
-    private void resetSearchResults(Hits hits) {
+    private void resetSearchResults(IndexSearcher searcher, Query query) {
         try {
             //clear our index mapping this table model rows to
             //the decorated inner table model
             rowToModelIndex.clear();
+            
+            CountingCollector countingCollector = new CountingCollector();
+            searcher.search(query, countingCollector);
+            ScoreDoc[] hits = searcher.search(query, countingCollector.numHits).scoreDocs;
+            
             //iterate through the hits
             //get the row number stored at the index
             //that number is the row number of the decorated
             //table model row that we are mapping to
-            for (int t=0; t<hits.length(); t++){
-                Document document = hits.doc(t);
+            for (int t=0; t<hits.length; t++){
+                Document document = searcher.doc(hits[t].doc);
                 Fieldable field = document.getField(ROW_NUMBER);
                 rowToModelIndex.add(Integer.valueOf(field.stringValue()));
             }

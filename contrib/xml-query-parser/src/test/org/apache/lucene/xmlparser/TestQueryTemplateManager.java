@@ -13,7 +13,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.RAMDirectory;
@@ -90,11 +89,11 @@ public class TestQueryTemplateManager extends TestCase {
 			Query q=builder.getQuery(doc.getDocumentElement());
 			
 			//Run the query
-			Hits h=searcher.search(q);
+			int h=searcher.search(q, null, 1000).totalHits;
 			
 			//Check we have the expected number of results
 			int expectedHits=Integer.parseInt(queryFormProperties.getProperty("expectedMatches"));
-			assertEquals("Number of results should match for query "+queryForms[i],expectedHits,h.length());
+			assertEquals("Number of results should match for query "+queryForms[i],expectedHits,h);
 			
 		}
 	}

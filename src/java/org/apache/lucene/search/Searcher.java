@@ -32,48 +32,6 @@ import org.apache.lucene.index.Term;
  * closed, otherwise an IOException will be thrown.
  */
 public abstract class Searcher implements Searchable {
-
-  /** Returns the documents matching <code>query</code>. 
-   * @throws BooleanQuery.TooManyClauses
-   * @deprecated Hits will be removed in Lucene 3.0. Use
-   * {@link #search(Query, Filter, int)} instead.
-   */
-  public final Hits search(Query query) throws IOException {
-    return search(query, (Filter)null);
-  }
-
-  /** Returns the documents matching <code>query</code> and
-   * <code>filter</code>.
-   * @throws BooleanQuery.TooManyClauses
-   * @deprecated Hits will be removed in Lucene 3.0. Use
-   * {@link #search(Query, Filter, int)} instead.
-   */
-  public Hits search(Query query, Filter filter) throws IOException {
-    return new Hits(this, query, filter);
-  }
-
-  /** Returns documents matching <code>query</code> sorted by
-   * <code>sort</code>.
-   * @throws BooleanQuery.TooManyClauses
-   * @deprecated Hits will be removed in Lucene 3.0. Use 
-   * {@link #search(Query, Filter, int, Sort)} instead.
-   */
-  public Hits search(Query query, Sort sort)
-    throws IOException {
-    return new Hits(this, query, null, sort);
-  }
-
-  /** Returns documents matching <code>query</code> and <code>filter</code>,
-   * sorted by <code>sort</code>.
-   * @throws BooleanQuery.TooManyClauses
-   * @deprecated Hits will be removed in Lucene 3.0. Use 
-   * {@link #search(Query, Filter, int, Sort)} instead.
-   */
-  public Hits search(Query query, Filter filter, Sort sort)
-    throws IOException {
-    return new Hits(this, query, filter, sort);
-  }
-
   /** Search implementation with arbitrary sorting.  Finds
    * the top <code>n</code> hits for <code>query</code>, applying
    * <code>filter</code> if non-null, and sorting the hits by the criteria in

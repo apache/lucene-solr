@@ -15,39 +15,40 @@
  */
 package org.apache.lucene.search.similar;
 
-import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermFreqVector;
-import org.apache.lucene.search.BooleanClause;	
-import org.apache.lucene.search.DefaultSimilarity;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Hits;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.io.Reader;
+import java.io.StringReader;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Similarity;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
-
-import java.util.Set;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Collection;
-import java.util.Iterator;
-import java.io.IOException;
-import java.io.Reader;
-import java.io.File;
-import java.io.PrintStream;
-import java.io.StringReader;
-import java.io.FileReader;
-import java.io.InputStreamReader;
-import java.net.URL;
-import java.util.ArrayList;
+import org.apache.lucene.util.PriorityQueue;
 
 
 /**
@@ -745,14 +746,15 @@ public final class MoreLikeThis {
         o.println();
         IndexSearcher searcher = new IndexSearcher(dir, true);
 
-        Hits hits = searcher.search(query);
-        int len = hits.length();
+        TopDocs hits = searcher.search(query, null, 25);
+        int len = hits.totalHits;
         o.println("found: " + len + " documents matching");
         o.println();
+        ScoreDoc[] scoreDocs = hits.scoreDocs;
         for (int i = 0; i < Math.min(25, len); i++) {
-            Document d = hits.doc(i);
+            Document d = searcher.doc(scoreDocs[i].doc);
 			String summary = d.get( "summary");
-            o.println("score  : " + hits.score(i));
+            o.println("score  : " + scoreDocs[i].score);
             o.println("url    : " + d.get("url"));
             o.println("\ttitle  : " + d.get("title"));
 			if ( summary != null)

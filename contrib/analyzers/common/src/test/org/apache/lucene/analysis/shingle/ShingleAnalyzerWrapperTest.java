@@ -20,26 +20,26 @@ package org.apache.lucene.analysis.shingle;
 import java.io.Reader;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.LetterTokenizer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.*;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -82,20 +82,20 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     return new IndexSearcher(dir, true);
   }
 
-  protected Hits queryParsingTest(Analyzer analyzer, String qs) throws Exception {
+  protected ScoreDoc[] queryParsingTest(Analyzer analyzer, String qs) throws Exception {
     searcher = setUpSearcher(analyzer);
 
     QueryParser qp = new QueryParser("content", analyzer);
 
     Query q = qp.parse(qs);
 
-    return searcher.search(q);
+    return searcher.search(q, null, 1000).scoreDocs;
   }
 
-  protected void compareRanks(Hits hits, int[] ranks) throws Exception {
-    assertEquals(ranks.length, hits.length());
+  protected void compareRanks(ScoreDoc[] hits, int[] ranks) throws Exception {
+    assertEquals(ranks.length, hits.length);
     for (int i = 0; i < ranks.length; i++) {
-      assertEquals(ranks[i], hits.id(i));
+      assertEquals(ranks[i], hits[i].doc);
     }
   }
 
@@ -104,7 +104,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    * tokenizes on whitespace.
    */
   public void testShingleAnalyzerWrapperQueryParsing() throws Exception {
-    Hits hits = queryParsingTest(new ShingleAnalyzerWrapper
+    ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
                                      (new WhitespaceAnalyzer(), 2),
                                  "test sentence");
     int[] ranks = new int[] { 1, 2, 0 };
@@ -115,7 +115,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    * This one fails with an exception.
    */
   public void testShingleAnalyzerWrapperPhraseQueryParsingFails() throws Exception {
-    Hits hits = queryParsingTest(new ShingleAnalyzerWrapper
+    ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
                                      (new WhitespaceAnalyzer(), 2),
                                  "\"this sentence\"");
     int[] ranks = new int[] { 0 };
@@ -126,7 +126,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    * This one works, actually.
    */
   public void testShingleAnalyzerWrapperPhraseQueryParsing() throws Exception {
-    Hits hits = queryParsingTest(new ShingleAnalyzerWrapper
+    ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
                                      (new WhitespaceAnalyzer(), 2),
                                  "\"test sentence\"");
     int[] ranks = new int[] { 1 };
@@ -137,7 +137,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    * Same as above, is tokenized without using the analyzer.
    */
   public void testShingleAnalyzerWrapperRequiredQueryParsing() throws Exception {
-    Hits hits = queryParsingTest(new ShingleAnalyzerWrapper
+    ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
                                      (new WhitespaceAnalyzer(), 2),
                                  "+test +sentence");
     int[] ranks = new int[] { 1, 2 };
@@ -166,7 +166,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
       q.add(new Term("content", termText), j);
     }
 
-    Hits hits = searcher.search(q);
+    ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
     int[] ranks = new int[] { 0 };
     compareRanks(hits, ranks);
   }
@@ -193,7 +193,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
             BooleanClause.Occur.SHOULD);
     }
 
-    Hits hits = searcher.search(q);
+    ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
     int[] ranks = new int[] { 1, 2, 0 };
     compareRanks(hits, ranks);
   }

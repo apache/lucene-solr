@@ -28,6 +28,9 @@ API Changes
   and NumericRangeFilter now have Integer, Long, Float, Double as type param.
   (Uwe Schindler)
 
+* LUCENE-1856: Remove Hits and all references from core and contrib.
+  (Michael Busch)
+
 Bug fixes
 
 New features

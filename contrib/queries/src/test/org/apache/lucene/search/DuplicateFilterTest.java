@@ -80,10 +80,10 @@ public class DuplicateFilterTest extends TestCase
 	{
 		DuplicateFilter df=new DuplicateFilter(KEY_FIELD);		
 		HashSet results=new HashSet();
-		Hits h = searcher.search(tq,df);
-		for(int i=0;i<h.length();i++)
+		ScoreDoc[] hits = searcher.search(tq,df, 1000).scoreDocs;
+		for(int i=0;i<hits.length;i++)
 		{
-			Document d=h.doc(i);
+			Document d=searcher.doc(hits[i].doc);
 			String url=d.get(KEY_FIELD);
 			assertFalse("No duplicate urls should be returned",results.contains(url));
 			results.add(url);
@@ -92,12 +92,12 @@ public class DuplicateFilterTest extends TestCase
 	public void testNoFilter() throws Throwable
 	{
 		HashSet results=new HashSet();
-		Hits h = searcher.search(tq);
-		assertTrue("Default searching should have found some matches",h.length()>0);
+		ScoreDoc[] hits = searcher.search(tq, null, 1000).scoreDocs;
+		assertTrue("Default searching should have found some matches",hits.length>0);
 		boolean dupsFound=false;
-		for(int i=0;i<h.length();i++)
+		for(int i=0;i<hits.length;i++)
 		{
-			Document d=h.doc(i);
+			Document d=searcher.doc(hits[i].doc);
 			String url=d.get(KEY_FIELD);
 			if(!dupsFound)
 				dupsFound=results.contains(url);
@@ -111,11 +111,11 @@ public class DuplicateFilterTest extends TestCase
 		DuplicateFilter df=new DuplicateFilter(KEY_FIELD);
 		df.setProcessingMode(DuplicateFilter.PM_FAST_INVALIDATION);
 		HashSet results=new HashSet();
-		Hits h = searcher.search(tq,df);
-		assertTrue("Filtered searching should have found some matches",h.length()>0);
-		for(int i=0;i<h.length();i++)
+		ScoreDoc[] hits = searcher.search(tq,df, 1000).scoreDocs;
+		assertTrue("Filtered searching should have found some matches",hits.length>0);
+		for(int i=0;i<hits.length;i++)
 		{
-			Document d=h.doc(i);
+			Document d=searcher.doc(hits[i].doc);
 			String url=d.get(KEY_FIELD);
 			assertFalse("No duplicate urls should be returned",results.contains(url));
 			results.add(url);
@@ -126,11 +126,11 @@ public class DuplicateFilterTest extends TestCase
 	{
 		DuplicateFilter df=new DuplicateFilter(KEY_FIELD);
 		df.setKeepMode(DuplicateFilter.KM_USE_LAST_OCCURRENCE);
-		Hits h = searcher.search(tq,df);
-		assertTrue("Filtered searching should have found some matches",h.length()>0);
-		for(int i=0;i<h.length();i++)
+		ScoreDoc[] hits = searcher.search(tq,df, 1000).scoreDocs;
+		assertTrue("Filtered searching should have found some matches",hits.length>0);
+		for(int i=0;i<hits.length;i++)
 		{
-			Document d=h.doc(i);
+			Document d=searcher.doc(hits[i].doc);
 			String url=d.get(KEY_FIELD);
 			TermDocs td = reader.termDocs(new Term(KEY_FIELD,url));
 			int lastDoc=0;
@@ -138,7 +138,7 @@ public class DuplicateFilterTest extends TestCase
 			{
 				lastDoc=td.doc();
 			}
-			assertEquals("Duplicate urls should return last doc",lastDoc, h.id((i)));
+			assertEquals("Duplicate urls should return last doc",lastDoc, hits[i].doc);
 		}
 	}	
 	
@@ -147,17 +147,17 @@ public class DuplicateFilterTest extends TestCase
 	{
 		DuplicateFilter df=new DuplicateFilter(KEY_FIELD);
 		df.setKeepMode(DuplicateFilter.KM_USE_FIRST_OCCURRENCE);
-		Hits h = searcher.search(tq,df);
-		assertTrue("Filtered searching should have found some matches",h.length()>0);
-		for(int i=0;i<h.length();i++)
+		ScoreDoc[] hits = searcher.search(tq,df, 1000).scoreDocs;
+		assertTrue("Filtered searching should have found some matches",hits.length>0);
+		for(int i=0;i<hits.length;i++)
 		{
-			Document d=h.doc(i);
+			Document d=searcher.doc(hits[i].doc);
 			String url=d.get(KEY_FIELD);
 			TermDocs td = reader.termDocs(new Term(KEY_FIELD,url));
 			int lastDoc=0;
 			td.next();
 			lastDoc=td.doc();
-			assertEquals("Duplicate urls should return first doc",lastDoc, h.id((i)));
+			assertEquals("Duplicate urls should return first doc",lastDoc, hits[i].doc);
 		}
 	}	
 	

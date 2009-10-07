@@ -17,13 +17,13 @@ package lucli;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.Map.Entry;
-import java.io.File;
 
 import jline.ConsoleReader;
 
@@ -50,10 +49,12 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.queryParser.MultiFieldQueryParser;
 import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Explanation;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.FSDirectory;
 
@@ -117,31 +118,33 @@ class LuceneMethods {
 
   public void search(String queryString, boolean explain, boolean showTokens, ConsoleReader cr)
   		throws java.io.IOException, org.apache.lucene.queryParser.ParseException {
-    Hits hits = initSearch(queryString);
-    System.out.println(hits.length() + " total matching documents");
+    initSearch(queryString);
+    int numHits = computeCount(query);
+    System.out.println(numHits + " total matching documents");
     if (explain) {
       query = explainQuery(queryString);
     }
 
     final int HITS_PER_PAGE = 10;
     message("--------------------------------------");
-    for (int start = 0; start < hits.length(); start += HITS_PER_PAGE) {
-      int end = Math.min(hits.length(), start + HITS_PER_PAGE);
+    for (int start = 0; start < numHits; start += HITS_PER_PAGE) {
+      int end = Math.min(numHits, start + HITS_PER_PAGE);
+      ScoreDoc[] hits = search(query, end);
       for (int ii = start; ii < end; ii++) {
-        Document doc = hits.doc(ii);
-        message("---------------- " + (ii + 1) + " score:" + hits.score(ii) + "---------------------");
+        Document doc = searcher.doc(hits[ii].doc);
+        message("---------------- " + (ii + 1) + " score:" + hits[ii].score + "---------------------");
         printHit(doc);
         if (showTokens) {
           invertDocument(doc);
         }
         if (explain) {
-          Explanation exp = searcher.explain(query, hits.id(ii));
+          Explanation exp = searcher.explain(query, hits[ii].doc);
           message("Explanation:" + exp.toString());
         }
       }
       message("#################################################");
 
-      if (hits.length() > end) {
+      if (numHits > end) {
       	// TODO: don't let the input end up in the command line history
       	queryString = cr.readLine("more (y/n) ? ");
         if (queryString.length() == 0 || queryString.charAt(0) == 'n')
@@ -201,7 +204,7 @@ class LuceneMethods {
   /**
    * TODO: Allow user to specify analyzer
    */
-  private Hits initSearch(String queryString) throws IOException, ParseException {
+  private void initSearch(String queryString) throws IOException, ParseException {
 
     searcher = new IndexSearcher(indexName, true);
     Analyzer analyzer = createAnalyzer();
@@ -215,15 +218,37 @@ class LuceneMethods {
     MultiFieldQueryParser parser = new MultiFieldQueryParser(fieldsArray, analyzer);
     query = parser.parse(queryString);
     System.out.println("Searching for: " + query.toString());
-    Hits hits = searcher.search(query);
-    return (hits);
+  }
+  
+  final static class CountingCollector extends Collector {
+    public int numHits = 0;
+    
+    public void setScorer(Scorer scorer) throws IOException {}
+    public void collect(int doc) throws IOException {
+      numHits++;
+    }
 
+    public void setNextReader(IndexReader reader, int docBase) {}
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }    
+  }
+  
+  private int computeCount(Query q) throws IOException {
+    CountingCollector countingCollector = new CountingCollector();
+    
+    searcher.search(q, countingCollector);    
+    return countingCollector.numHits;
   }
 
   public void count(String queryString) throws java.io.IOException, ParseException {
-    Hits hits = initSearch(queryString);
-    System.out.println(hits.length() + " total documents");
+    initSearch(queryString);
+    System.out.println(computeCount(query) + " total documents");
     searcher.close();
+  }
+  
+  private ScoreDoc[] search(Query q, int numHits) throws IOException {
+    return searcher.search(query, numHits).scoreDocs;
   }
 
   static public void message(String s) {

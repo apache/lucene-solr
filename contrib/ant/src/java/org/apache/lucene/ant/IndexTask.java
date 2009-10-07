@@ -17,43 +17,41 @@ package org.apache.lucene.ant;
  * limitations under the License.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.Vector;
+
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.tools.ant.BuildException;
-import org.apache.tools.ant.DirectoryScanner;
 import org.apache.tools.ant.DynamicConfigurator;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.Task;
-import org.apache.tools.ant.types.FileSet;
 import org.apache.tools.ant.types.EnumeratedAttribute;
+import org.apache.tools.ant.types.FileSet;
 import org.apache.tools.ant.types.Resource;
 import org.apache.tools.ant.types.ResourceCollection;
 import org.apache.tools.ant.types.resources.FileResource;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Properties;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.ArrayList;
-import java.util.Vector;
-import java.text.ParseException;
 
 /**
  *  Ant task to index files with Lucene
@@ -311,14 +309,14 @@ public class IndexTask extends Task {
                   new Term("path", file.getPath());
                 TermQuery query =
                   new TermQuery(pathTerm);
-                Hits hits = searcher.search(query);
+                ScoreDoc[] hits = searcher.search(query, null, 1).scoreDocs;
 
                 // if document is found, compare the
                 // indexed last modified time with the
                 // current file
                 // - don't index if up to date
-                if (hits.length() > 0) {
-                  Document doc = hits.doc(0);
+                if (hits.length > 0) {
+                  Document doc = searcher.doc(hits[0].doc);
                   String indexModified =
                     doc.get("modified").trim();
                   if (indexModified != null) {

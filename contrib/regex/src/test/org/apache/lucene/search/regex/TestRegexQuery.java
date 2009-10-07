@@ -67,7 +67,7 @@ public class TestRegexQuery extends TestCase {
     if ( capability != null )
       query.setRegexImplementation(capability);
     
-    return searcher.search(query).length();
+    return searcher.search(query, null, 1000).totalHits;
   }
 
   private int  spanRegexQueryNrHits(String regex1, String regex2, int slop, boolean ordered) throws Exception {
@@ -75,7 +75,7 @@ public class TestRegexQuery extends TestCase {
     SpanRegexQuery srq2 = new SpanRegexQuery( newTerm(regex2));
     SpanNearQuery query = new SpanNearQuery( new SpanQuery[]{srq1, srq2}, slop, ordered);
     
-    return searcher.search(query).length();
+    return searcher.search(query, null, 1000).totalHits;
   }
 
   public void testMatchAll() throws Exception {

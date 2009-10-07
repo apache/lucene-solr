@@ -132,22 +132,24 @@ public class ChainedFilterTest extends TestCase {
       
       ChainedFilter chain = getChainedFilter(new Filter[] {dateFilter}, null, old);
   
-      Hits hits = searcher.search(query, chain);
-      assertEquals(MAX, hits.length());
+      int numHits = searcher.search(query, chain, 1000).totalHits;
+      assertEquals(MAX, numHits);
   
       chain = new ChainedFilter(new Filter[] {bobFilter});
-      hits = searcher.search(query, chain);
-      assertEquals(MAX / 2, hits.length());
+      numHits = searcher.search(query, chain, 1000).totalHits;
+      assertEquals(MAX / 2, numHits);
       
       chain = getChainedFilter(new Filter[] {bobFilter}, new int[] {ChainedFilter.AND}, old);
-      hits = searcher.search(query, chain);
-      assertEquals(MAX / 2, hits.length());
-      assertEquals("bob", hits.doc(0).get("owner"));
+      TopDocs hits = searcher.search(query, chain, 1000);
+      numHits = hits.totalHits;
+      assertEquals(MAX / 2, numHits);
+      assertEquals("bob", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
       
       chain = getChainedFilter(new Filter[] {bobFilter}, new int[] {ChainedFilter.ANDNOT}, old);
-      hits = searcher.search(query, chain);
-      assertEquals(MAX / 2, hits.length());
-      assertEquals("sue", hits.doc(0).get("owner"));
+      hits = searcher.search(query, chain, 1000);
+      numHits = hits.totalHits;
+      assertEquals(MAX / 2, numHits);
+      assertEquals("sue", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
     }
   }
 
@@ -157,8 +159,8 @@ public class ChainedFilterTest extends TestCase {
       ChainedFilter chain = getChainedFilter(
         new Filter[] {sueFilter, bobFilter}, null, old);
   
-      Hits hits = searcher.search(query, chain);
-      assertEquals("OR matches all", MAX, hits.length());
+      int numHits = searcher.search(query, chain, 1000).totalHits;
+      assertEquals("OR matches all", MAX, numHits);
     }
   }
 
@@ -168,9 +170,9 @@ public class ChainedFilterTest extends TestCase {
       ChainedFilter chain = getChainedFilter(
         new Filter[] {dateFilter, bobFilter}, ChainedFilter.AND, old);
   
-      Hits hits = searcher.search(query, chain);
-      assertEquals("AND matches just bob", MAX / 2, hits.length());
-      assertEquals("bob", hits.doc(0).get("owner"));
+      TopDocs hits = searcher.search(query, chain, 1000);
+      assertEquals("AND matches just bob", MAX / 2, hits.totalHits);
+      assertEquals("bob", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
     }
   }
 
@@ -180,9 +182,9 @@ public class ChainedFilterTest extends TestCase {
       ChainedFilter chain = getChainedFilter(
         new Filter[]{dateFilter, bobFilter}, ChainedFilter.XOR, old);
   
-      Hits hits = searcher.search(query, chain);
-      assertEquals("XOR matches sue", MAX / 2, hits.length());
-      assertEquals("sue", hits.doc(0).get("owner"));
+      TopDocs hits = searcher.search(query, chain, 1000);
+      assertEquals("XOR matches sue", MAX / 2, hits.totalHits);
+      assertEquals("sue", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
     }
   }
 
@@ -193,19 +195,19 @@ public class ChainedFilterTest extends TestCase {
         new Filter[]{dateFilter, sueFilter},
           new int[] {ChainedFilter.AND, ChainedFilter.ANDNOT}, old);
   
-      Hits hits = searcher.search(query, chain);
+      TopDocs hits = searcher.search(query, chain, 1000);
       assertEquals("ANDNOT matches just bob",
-          MAX / 2, hits.length());
-      assertEquals("bob", hits.doc(0).get("owner"));
+          MAX / 2, hits.totalHits);
+      assertEquals("bob", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
       
       chain = getChainedFilter(
           new Filter[]{bobFilter, bobFilter},
             new int[] {ChainedFilter.ANDNOT, ChainedFilter.ANDNOT}, old);
   
-        hits = searcher.search(query, chain);
+        hits = searcher.search(query, chain, 1000);
         assertEquals("ANDNOT bob ANDNOT bob matches all sues",
-            MAX / 2, hits.length());
-        assertEquals("sue", hits.doc(0).get("owner"));
+            MAX / 2, hits.totalHits);
+        assertEquals("sue", searcher.doc(hits.scoreDocs[0].doc).get("owner"));
     }
   }
 
