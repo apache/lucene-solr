@@ -21,7 +21,6 @@ package org.apache.lucene.search;
  * @see Searcher#search(Query,Filter,int) */
 public class TopDocs implements java.io.Serializable {
   /** Expert: The total number of hits for the query.
-   * @see Hits#length()
   */
   public int totalHits;
   /** Expert: The top hits for the query. */

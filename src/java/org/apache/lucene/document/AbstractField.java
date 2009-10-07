@@ -130,7 +130,7 @@ public abstract class AbstractField implements Fieldable {
    *
    * <p>Note: this value is not stored directly with the document in the index.
    * Documents returned from {@link org.apache.lucene.index.IndexReader#document(int)} and
-   * {@link org.apache.lucene.search.Hits#doc(int)} may thus not have the same value present as when
+   * {@link org.apache.lucene.search.Searcher#doc(int)} may thus not have the same value present as when
    * this field was indexed.
    *
    * @see #setBoost(float)

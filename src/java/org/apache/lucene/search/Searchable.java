@@ -87,7 +87,7 @@ public interface Searchable {
 
   /** Frees resources associated with this Searcher.
    * Be careful not to call this method while you are still using objects
-   * like {@link Hits}.
+   * that reference this Searchable.
    */
   void close() throws IOException;
 
