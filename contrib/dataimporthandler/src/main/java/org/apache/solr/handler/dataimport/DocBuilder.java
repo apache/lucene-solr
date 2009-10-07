@@ -83,11 +83,10 @@ public class DocBuilder {
       VariableResolverImpl resolver = new VariableResolverImpl();
       Map<String, Object> indexerNamespace = new HashMap<String, Object>();
       if (persistedProperties.getProperty(LAST_INDEX_TIME) != null) {
-        indexerNamespace.put(LAST_INDEX_TIME,
-                DataImporter.DATE_TIME_FORMAT.get().parse(persistedProperties.getProperty(LAST_INDEX_TIME)));
+        indexerNamespace.put(LAST_INDEX_TIME, persistedProperties.getProperty(LAST_INDEX_TIME));
       } else  {
         // set epoch
-        indexerNamespace.put(LAST_INDEX_TIME, EPOCH);
+        indexerNamespace.put(LAST_INDEX_TIME, DataImporter.DATE_TIME_FORMAT.get().format(EPOCH));
       }
       indexerNamespace.put(INDEX_START_TIME, dataImporter.getIndexStartTime());
       indexerNamespace.put("request", requestParameters.requestParams);
@@ -98,13 +97,13 @@ public class DocBuilder {
         if (lastIndex != null) {
           indexerNamespace.put(key, lastIndex);
         } else  {
-          indexerNamespace.put(key, EPOCH);
+          indexerNamespace.put(key, DataImporter.DATE_TIME_FORMAT.get().format(EPOCH));
         }
       }
       resolver.addNamespace(DataConfig.IMPORTER_NS_SHORT, indexerNamespace);
       resolver.addNamespace(DataConfig.IMPORTER_NS, indexerNamespace);
       return resolver;
-    } catch (ParseException e) {
+    } catch (Exception e) {
       DataImportHandlerException.wrapAndThrow(DataImportHandlerException.SEVERE, e);
       // unreachable statement
       return null;

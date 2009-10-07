@@ -20,7 +20,8 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.text.ParseException;
 
 /**
  * <p>
@@ -186,6 +187,43 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTest {
     assertQ(req("id:5"), "//*[@numFound='1']");
     assertQ(req("desc:hello"), "//*[@numFound='1']");
   }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testLastIndexTime() throws Exception  {
+    List row = new ArrayList();
+    row.add(createMap("id", 5));
+    MockDataSource.setIterator("select * from x where last_modified > OK", row.iterator());
+    super.runFullImport(dataConfig_LastIndexTime);
+    assertQ(req("id:5"), "//*[@numFound='1']");
+  }
+
+  static class DateFormatValidatingEvaluator extends Evaluator {
+    public String evaluate(String expression, Context context) {
+      List l = EvaluatorBag.parseParams(expression, context.getVariableResolver());
+      Object o = l.get(0);
+      String dateStr = null;
+      if (o instanceof EvaluatorBag.VariableWrapper) {
+        EvaluatorBag.VariableWrapper wrapper = (EvaluatorBag.VariableWrapper) o;
+        o = wrapper.resolve();
+        dateStr = o.toString();
+      }
+      SimpleDateFormat formatter = DataImporter.DATE_TIME_FORMAT.get();
+      try {
+        formatter.parse(dateStr);
+      } catch (ParseException e) {
+        DataImportHandlerException.wrapAndThrow(DataImportHandlerException.SEVERE, e);
+      }
+      return "OK";
+    }
+  }
+
+  private static String dataConfig_LastIndexTime = "<dataConfig>\n" +
+          "\t<function name=\"checkDateFormat\" class=\"org.apache.solr.handler.dataimport.TestSqlEntityProcessor2$DateFormatValidatingEvaluator\"/>\n" +
+          "\t<document>\n" +
+          "\t\t<entity name=\"x\" query=\"select * from x where last_modified > ${dih.functions.checkDateFormat(dih.last_index_time)}\" />\n" +
+          "\t</document>\n" +
+          "</dataConfig>";
 
   private static String dataConfig = "<dataConfig>\n"
           + "       <document>\n"
