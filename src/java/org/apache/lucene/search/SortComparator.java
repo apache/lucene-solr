@@ -44,7 +44,6 @@ import java.io.IOException;
  * Created: Apr 21, 2004 5:08:38 PM
  * 
  * 
- * @version $Id$
  * @since 1.4
  * @deprecated Please use {@link FieldComparatorSource} instead.
  */

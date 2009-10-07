@@ -45,9 +45,6 @@ import java.io.IOException;
  * file. The {directory} that follows has that many entries. Each directory entry
  * contains a long pointer to the start of this file's data section, and a String
  * with that file's name.
- *
- *
- * @version $Id$
  */
 final class CompoundFileWriter {
 

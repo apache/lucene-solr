@@ -36,7 +36,6 @@ import java.io.IOException;
 
 /**
  *
- * @version $Id$
  **/
 
 public class TestBooleanPrefixQuery extends LuceneTestCase {

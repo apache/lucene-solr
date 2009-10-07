@@ -31,9 +31,6 @@ import org.apache.lucene.store.IndexOutput;
   <li>inlinable get() method;</li>
   <li>store and load, as bit set or d-gaps, depending on sparseness;</li> 
   </ul>
-
-
-  @version $Id$
   */
 public final class BitVector implements Cloneable {
 

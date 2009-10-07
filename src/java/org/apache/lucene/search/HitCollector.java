@@ -24,7 +24,6 @@ package org.apache.lucene.search;
  * (on a multi-segment index) API.
  * 
  * @see Searcher#search(Query,HitCollector)
- * @version $Id$
  * @deprecated Please use {@link Collector} instead.
  */
 public abstract class HitCollector {

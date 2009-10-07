@@ -31,8 +31,6 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * not be stemmed at all. The stemmer used can be changed at runtime after the
  * filter object is created (as long as it is a {@link GermanStemmer}).
  * </p>
- *
- * @version   $Id$
  */
 public final class GermanStemFilter extends TokenFilter
 {

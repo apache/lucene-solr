@@ -32,9 +32,6 @@ import java.util.LinkedList;
 
 /**
  * This class tests PhrasePrefixQuery class.
- *
- *
- * @version $Id$
  */
 public class TestPhrasePrefixQuery
     extends LuceneTestCase

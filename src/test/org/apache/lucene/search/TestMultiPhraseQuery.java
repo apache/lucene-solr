@@ -38,7 +38,6 @@ import java.util.LinkedList;
  * This class tests the MultiPhraseQuery class.
  *
  *
- * @version $Id$
  */
 public class TestMultiPhraseQuery extends LuceneTestCase
 {

@@ -27,8 +27,6 @@ import java.io.File;
 /**
  * <code>HighFreqTerms</code> class extracts terms and their frequencies out
  * of an existing Lucene index.
- *
- * @version $Id$
  */
 public class HighFreqTerms {
   

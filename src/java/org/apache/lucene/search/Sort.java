@@ -96,7 +96,6 @@ import java.util.Arrays;
  * <p>Created: Feb 12, 2004 10:53:57 AM
  *
  * @since   lucene 1.4
- * @version $Id$
  */
 public class Sort
 implements Serializable {

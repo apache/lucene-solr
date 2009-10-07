@@ -74,8 +74,6 @@ import java.util.Map;
  synchronization, you should <b>not</b> synchronize on the
  <code>IndexReader</code> instance; use your own
  (non-Lucene) objects instead.
- 
- @version $Id$
 */
 public abstract class IndexReader implements Cloneable {
 

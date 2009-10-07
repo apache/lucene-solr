@@ -33,9 +33,6 @@ import java.io.IOException;
 
 /**
  * TestWildcard tests the '*' and '?' wildcard characters.
- *
- * @version $Id$
- * 
  */
 public class TestWildcard
     extends LuceneTestCase {

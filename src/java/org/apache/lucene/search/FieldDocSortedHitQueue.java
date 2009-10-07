@@ -29,7 +29,6 @@ import java.util.Locale;
  * <p>Created: Feb 11, 2004 2:04:21 PM
  *
  * @since   lucene 1.4
- * @version $Id$
  */
 class FieldDocSortedHitQueue
 extends PriorityQueue {

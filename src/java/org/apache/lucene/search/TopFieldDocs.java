@@ -24,7 +24,6 @@ package org.apache.lucene.search;
  * <p>Created: Feb 12, 2004 8:58:46 AM 
  *
  * @since   lucene 1.4
- * @version $Id$
  * @see Searcher#search(Query,Filter,int,Sort)
  */
 public class TopFieldDocs

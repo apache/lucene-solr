@@ -67,10 +67,6 @@ import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 
-/**
- *
- * @version $Id$
- */
 public class TestIndexWriter extends BaseTokenStreamTestCase {
     public TestIndexWriter(String name) {
       super(name, new HashSet(Arrays.asList(new String[]{

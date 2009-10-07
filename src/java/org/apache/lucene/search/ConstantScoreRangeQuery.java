@@ -35,7 +35,6 @@ import java.text.Collator;
  * @deprecated Use {@link TermRangeQuery} for term ranges or
  * {@link NumericRangeQuery} for numeric ranges instead.
  * This class will be removed in Lucene 3.0.
- * @version $Id$
  */
 public class ConstantScoreRangeQuery extends TermRangeQuery
 {

@@ -31,9 +31,6 @@ import java.io.IOException;
  * Class for accessing a compound stream.
  * This class implements a directory, but is limited to only read operations.
  * Directory methods that would normally modify data throw an exception.
- *
- *
- * @version $Id$
  */
 class CompoundFileReader extends Directory {
 

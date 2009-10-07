@@ -23,9 +23,6 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Removes words that are too long or too short from the stream.
- *
- *
- * @version $Id$
  */
 public final class LengthFilter extends TokenFilter {
 

@@ -25,9 +25,6 @@ import org.apache.lucene.store.RAMDirectory;
 
 /**
  * <code>TestBitVector</code> tests the <code>BitVector</code>, obviously.
- *
- * 
- * @version $Id$
  */
 public class TestBitVector extends LuceneTestCase
 {

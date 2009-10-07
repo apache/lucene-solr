@@ -22,7 +22,6 @@ package org.apache.lucene.search;
  * query.  Results are cached, so that searches after the first on the same
  * index using this filter are much faster.
  *
- * @version $Id$
  * @deprecated use a CachingWrapperFilter with QueryWrapperFilter
  */
 public class QueryFilter extends CachingWrapperFilter {

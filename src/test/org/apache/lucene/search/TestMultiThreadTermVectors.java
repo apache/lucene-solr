@@ -28,10 +28,6 @@ import org.apache.lucene.util.English;
 
 import java.io.IOException;
 
-/**
- *
- * @version $rcs = ' $Id$ ' ;
- */
 public class TestMultiThreadTermVectors extends LuceneTestCase {
   private RAMDirectory directory = new RAMDirectory();
   public int numDocs = 100;

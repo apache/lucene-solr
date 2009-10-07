@@ -30,9 +30,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests {@link Document} class.
- *
- *
- * @version $Id$
  */
 public class TestDocument extends LuceneTestCase
 {

@@ -21,8 +21,6 @@ import java.io.IOException;
 
 /**
  * A memory-resident {@link IndexOutput} implementation.
- * 
- * @version $Id$
  */
 
 public class RAMOutputStream extends IndexOutput {

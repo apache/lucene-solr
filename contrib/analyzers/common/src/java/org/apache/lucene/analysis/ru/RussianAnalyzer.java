@@ -36,8 +36,6 @@ import org.apache.lucene.analysis.Tokenizer;
  * will not be indexed at all).
  * A default set of stopwords is used unless an alternative list is specified.
  * </p>
- *
- * @version $Id$
  */
 public final class RussianAnalyzer extends Analyzer
 {

@@ -31,8 +31,6 @@ import java.io.IOException;
  * "&#x5C;u0001yrtnuoc". This is useful when implementing efficient leading
  * wildcards search.
  * </p>
- * 
- * @version $Id$
  */
 public final class ReverseStringFilter extends TokenFilter {
 

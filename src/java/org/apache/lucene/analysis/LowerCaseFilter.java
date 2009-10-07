@@ -23,8 +23,6 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Normalizes token text to lower case.
- *
- * @version $Id$
  */
 public final class LowerCaseFilter extends TokenFilter {
   public LowerCaseFilter(TokenStream in) {

@@ -19,8 +19,6 @@ package org.apache.lucene.index;
 
 /**
  * Useful constants representing filenames and extensions used by lucene
- *
- * @version $rcs = ' $Id: Exp $ ' ;
  */
 final class IndexFileNames {
 

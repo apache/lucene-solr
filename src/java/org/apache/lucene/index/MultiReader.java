@@ -30,10 +30,8 @@ import org.apache.lucene.index.DirectoryReader.MultiTermEnum;
 import org.apache.lucene.index.DirectoryReader.MultiTermPositions;
 import org.apache.lucene.search.DefaultSimilarity;
 
-/** An IndexReader which reads multiple indexes, appending their content.
- *
- * @version $Id$
- */
+/** An IndexReader which reads multiple indexes, appending
+ * their content. */
 public class MultiReader extends IndexReader implements Cloneable {
   protected IndexReader[] subReaders;
   private int[] starts;                           // 1st docno for each segment

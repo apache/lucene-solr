@@ -48,7 +48,6 @@ import org.apache.lucene.util.LuceneTestCase;
  * <p>Created: Feb 17, 2004 4:55:10 PM
  *
  * @since   lucene 1.4
- * @version $Id$
  */
 
 public class TestSort extends LuceneTestCase implements Serializable {

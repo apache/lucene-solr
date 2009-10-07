@@ -28,8 +28,6 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * Normalizes token text to lower case.
  * @deprecated Use {@link LowerCaseFilter} instead, which has the same
  *  functionality. This filter will be removed in Lucene 3.1
- *
- * @version $Id$
  */
 public final class RussianLowerCaseFilter extends TokenFilter
 {

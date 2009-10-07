@@ -35,7 +35,6 @@ import java.text.DecimalFormat;
  * <p>Created: May 19, 2004 11:13:14 AM
  *
  * @since   lucene 1.4
- * @version $Id$
  * @see org.apache.lucene.util.FieldCacheSanityChecker
  */
 public interface FieldCache {

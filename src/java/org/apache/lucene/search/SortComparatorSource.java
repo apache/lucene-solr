@@ -34,8 +34,6 @@ import java.io.Serializable;
  * instance on every call to the server, so hashCode/equals is very important in
  * that situation.
  * 
- * @version $Id: SortComparatorSource.java 747019 2009-02-23 13:59:50Z
- *          mikemccand $
  * @since 1.4
  * @deprecated Please use {@link FieldComparatorSource} instead.
  */

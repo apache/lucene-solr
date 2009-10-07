@@ -19,9 +19,6 @@ package org.apache.lucene.analysis.ru;
 
 /**
  * Russian stemming algorithm implementation (see http://snowball.sourceforge.net for detailed description).
- *
- *
- * @version $Id$
  */
 class RussianStemmer
 {

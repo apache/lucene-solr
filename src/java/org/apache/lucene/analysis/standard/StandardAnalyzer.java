@@ -39,8 +39,6 @@ import java.util.Set;
  *   <li> As of 2.9, Tokens incorrectly identified as acronyms
  *        are corrected (see <a href="https://issues.apache.org/jira/browse/LUCENE-1068">LUCENE-1608</a>
  * </ul>
- *
- * @version $Id$
  */
 public class StandardAnalyzer extends Analyzer {
   private Set stopSet;

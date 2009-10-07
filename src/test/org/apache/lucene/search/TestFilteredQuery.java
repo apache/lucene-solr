@@ -36,7 +36,6 @@ import java.util.BitSet;
  * <p>Created: Apr 21, 2004 1:21:46 PM
  *
  *
- * @version $Id$
  * @since   1.4
  */
 public class TestFilteredQuery extends LuceneTestCase {

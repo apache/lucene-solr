@@ -37,10 +37,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 
-/** JUnit adaptation of an older test case DocTest.
- *
- * @version $Id$
- */
+/** JUnit adaptation of an older test case DocTest. */
 public class TestDoc extends LuceneTestCase {
 
     /** Main for running test case by itself. */

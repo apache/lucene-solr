@@ -38,8 +38,6 @@ import java.util.Set;
 
 /**
  * Tests {@link MultiSearcher} class.
- *
- * @version $Id$
  */
 public class TestMultiSearcher extends LuceneTestCase
 {

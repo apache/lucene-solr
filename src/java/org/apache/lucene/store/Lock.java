@@ -28,8 +28,6 @@ import java.io.IOException;
  *   }.run();
  * </pre>
  *
- *
- * @version $Id$
  * @see Directory#makeLock(String)
  */
 public abstract class Lock {

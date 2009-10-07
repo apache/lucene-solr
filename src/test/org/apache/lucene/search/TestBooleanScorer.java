@@ -29,10 +29,6 @@ import org.apache.lucene.store.RAMDirectory;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- *
- * @version $rcs = ' $Id$ ' ;
- */
 public class TestBooleanScorer extends LuceneTestCase
 {
 

@@ -32,8 +32,6 @@ import java.io.IOException;
  * The input should be filtered by {@link LowerCaseFilter} before passing it to RussianStemFilter ,
  * because RussianStemFilter only works with lowercase characters.
  * </p>
- *
- * @version   $Id$
  */
 public final class RussianStemFilter extends TokenFilter
 {

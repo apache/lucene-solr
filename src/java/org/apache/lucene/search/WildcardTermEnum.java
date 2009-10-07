@@ -28,8 +28,6 @@ import org.apache.lucene.index.Term;
  * <p>
  * Term enumerations are always ordered by Term.compareTo().  Each term in
  * the enumeration is greater than all that precede it.
- *
- * @version $Id$
  */
 public class WildcardTermEnum extends FilteredTermEnum {
   final Term searchTerm;

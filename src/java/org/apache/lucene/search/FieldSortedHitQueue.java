@@ -31,7 +31,6 @@ import java.util.Locale;
  * <p>Created: Dec 8, 2003 12:56:03 PM
  *
  * @since   lucene 1.4
- * @version $Id$
  * @see Searcher#search(Query,Filter,int,Sort)
  * @see FieldCache
  * @deprecated see {@link FieldValueHitQueue}

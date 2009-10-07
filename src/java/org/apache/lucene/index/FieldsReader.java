@@ -34,8 +34,6 @@ import java.util.zip.DataFormatException;
  * Class responsible for access to stored document fields.
  * <p/>
  * It uses &lt;segment&gt;.fdt and &lt;segment&gt;.fdx; files.
- *
- * @version $Id$
  */
 final class FieldsReader implements Cloneable {
   private final FieldInfos fieldInfos;

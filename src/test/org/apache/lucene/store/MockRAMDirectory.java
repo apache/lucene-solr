@@ -32,7 +32,6 @@ import java.util.Arrays;
 /**
  * This is a subclass of RAMDirectory that adds methods
  * intended to be used only by unit tests.
- * @version $Id: RAMDirectory.java 437897 2006-08-29 01:13:10Z yonik $
  */
 
 public class MockRAMDirectory extends RAMDirectory {

@@ -31,10 +31,6 @@ import org.apache.lucene.store._TestHelper;
 import org.apache.lucene.util._TestUtil;
 
 
-/**
- *
- * @version $Id$
- */
 public class TestCompoundFile extends LuceneTestCase
 {
     /** Main for running test case by itself. */

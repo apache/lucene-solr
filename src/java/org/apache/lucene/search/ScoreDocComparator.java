@@ -24,7 +24,6 @@ package org.apache.lucene.search;
  * <p>Created: Feb 3, 2004 9:00:16 AM 
  *
  * @since   lucene 1.4
- * @version $Id$
  * @deprecated use {@link FieldComparator}
  */
 public interface ScoreDocComparator {

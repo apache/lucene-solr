@@ -32,11 +32,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
-
-/** JUnit adaptation of an older test case DocTest.
- *
- * @version $Id$
- */
 public class TestSearchForDuplicates extends LuceneTestCase {
 
     /** Main for running test case by itself. */

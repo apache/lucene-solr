@@ -24,9 +24,6 @@ import org.apache.lucene.store.IndexInput;
 import java.io.IOException;
 import java.util.Arrays;
 
-/**
- * @version $Id$
- */
 class TermVectorsReader implements Cloneable {
 
   // NOTE: if you make a new format, it must be larger than

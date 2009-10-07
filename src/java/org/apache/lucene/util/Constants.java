@@ -21,9 +21,6 @@ import org.apache.lucene.LucenePackage;
 
 /**
  * Some useful constants.
- *
- *
- * @version $Id$
  **/
 
 public final class Constants {

@@ -43,8 +43,6 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
  * A default set of stopwords is used unless an alternative list is specified, but the
  * exclusion list is empty by default.
  * </p>
- * 
- * @version $Id$
  */
 public class GermanAnalyzer extends Analyzer {
   

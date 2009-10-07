@@ -26,9 +26,6 @@ import org.apache.lucene.store.MockRAMDirectory;
 
 /**
  * Tests {@link Document} class.
- *
- *
- * @version $Id$
  */
 public class TestBinaryDocument extends LuceneTestCase
 {

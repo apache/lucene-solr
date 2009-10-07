@@ -29,10 +29,6 @@ import java.util.Random;
 import java.util.List;
 import java.io.IOException;
 
-/**
- * 
- * @version $Id$
- */
 public class TestThreadSafe extends LuceneTestCase {
   Random r;
   Directory dir1;

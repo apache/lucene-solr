@@ -31,9 +31,6 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * Test case for RussianAnalyzer.
- *
- *
- * @version   $Id$
  */
 
 public class TestRussianAnalyzer extends BaseTokenStreamTestCase

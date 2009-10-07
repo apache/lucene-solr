@@ -32,10 +32,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.queryParser.*;
 
-/** JUnit adaptation of an older test case SearchTest.
- *
- * @version $Id$
- */
+/** JUnit adaptation of an older test case SearchTest. */
 public class TestSearch extends LuceneTestCase {
 
     /** Main for running test case by itself. */

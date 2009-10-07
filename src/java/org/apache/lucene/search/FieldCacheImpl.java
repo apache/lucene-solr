@@ -42,7 +42,6 @@ import org.apache.lucene.util.FieldCacheSanityChecker;
  * <p>Created: May 19, 2004 4:40:36 PM
  *
  * @since   lucene 1.4
- * @version $Id$
  */
  // TODO: change interface to FieldCache in 3.0 when removed
 class FieldCacheImpl implements ExtendedFieldCache {

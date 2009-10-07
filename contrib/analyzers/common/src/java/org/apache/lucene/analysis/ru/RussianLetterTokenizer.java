@@ -26,8 +26,6 @@ import org.apache.lucene.util.AttributeSource;
 /**
  * A RussianLetterTokenizer is a {@link Tokenizer} that extends {@link LetterTokenizer}
  * by also allowing the basic latin digits 0-9. 
- *
- * @version $Id$
  */
 
 public class RussianLetterTokenizer extends CharTokenizer
