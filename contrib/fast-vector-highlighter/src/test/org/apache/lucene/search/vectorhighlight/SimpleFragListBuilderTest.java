@@ -37,6 +37,21 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
     }
   }
   
+  public void testSmallerFragSizeThanTermQuery() throws Exception {
+    SimpleFragListBuilder sflb = new SimpleFragListBuilder();
+    FieldFragList ffl = sflb.createFieldFragList( fpl( "abcdefghijklmnopqrs", "abcdefghijklmnopqrs" ), SimpleFragListBuilder.MIN_FRAG_CHAR_SIZE );
+    assertEquals( 1, ffl.fragInfos.size() );
+    assertEquals( "subInfos=(abcdefghijklmnopqrs((0,19)))/1.0(0,19)", ffl.fragInfos.get( 0 ).toString() );
+  }
+  
+  public void testSmallerFragSizeThanPhraseQuery() throws Exception {
+    SimpleFragListBuilder sflb = new SimpleFragListBuilder();
+    FieldFragList ffl = sflb.createFieldFragList( fpl( "\"abcdefgh jklmnopqrs\"", "abcdefgh   jklmnopqrs" ), SimpleFragListBuilder.MIN_FRAG_CHAR_SIZE );
+    assertEquals( 1, ffl.fragInfos.size() );
+    System.out.println( ffl.fragInfos.get( 0 ).toString() );
+    assertEquals( "subInfos=(abcdefghjklmnopqrs((0,21)))/1.0(0,21)", ffl.fragInfos.get( 0 ).toString() );
+  }
+  
   public void test1TermIndex() throws Exception {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl( "a", "a" ), 100 );

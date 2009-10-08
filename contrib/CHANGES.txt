@@ -26,6 +26,9 @@ Bug fixes
    Iterator#hasNext method on exhausted streams.
    (Patrick Jungermann via Karl Wettin)
 
+ * LUCENE-1953: FastVectorHighlighter: small fragCharSize can cause
+   StringIndexOutOfBoundsException. (Koji Sekiguchi)
+
 New features
 
  * LUCENE-1924: Added BalancedSegmentMergePolicy to contrib/misc,
