@@ -586,7 +586,6 @@ Bug Fixes
     when count > 1.  To fix, the extendedResults format was changed.
     (Uri Boness, yonik)
 
-
 66. SOLR-1381: Fixed improper handling of fields that have only term positions and not term offsets during Highlighting (Thorsten Fischer, gsingers)
 
 67. SOLR-1427: Fixed registry.jsp issue with MBeans (gsingers) 
@@ -599,6 +598,8 @@ Bug Fixes
 
 70. SOLR-1481: Fixed omitHeader parameter for PHP ResponseWriter.  (Jun Ohtani via billa)
 
+71. SOLR-1448: Add weblogic.xml to solr webapp to enable correct operation in
+    WebLogic. (Ilan Rabinovitch via yonik)
 
 Other Changes
 ----------------------
