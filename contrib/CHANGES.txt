@@ -45,7 +45,7 @@ Optimizations
 
  * LUCENE-1965, LUCENE-1962: Arabic-, Persian- and SmartChineseAnalyzer
    loads default stopwords only once if accessed for the first time.
-   Previous versions where loading the stopword files each time a new
+   Previous versions were loading the stopword files each time a new
    instance was created. This might improve performance for applications
    creating lots of instances of these Analyzers. (Simon Willnauer) 
 Documentation
