@@ -72,7 +72,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field.isStoreOffsetWithTermVector() == true);
     assertTrue(field.isStorePositionWithTermVector() == true);
     assertTrue(field.getOmitNorms() == false);
-    assertTrue(field.getOmitTf() == false);
+    assertTrue(field.getOmitTermFreqAndPositions() == false);
 
     field = doc.getField(DocHelper.TEXT_FIELD_3_KEY);
     assertTrue(field != null);
@@ -80,7 +80,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field.isStoreOffsetWithTermVector() == false);
     assertTrue(field.isStorePositionWithTermVector() == false);
     assertTrue(field.getOmitNorms() == true);
-    assertTrue(field.getOmitTf() == false);
+    assertTrue(field.getOmitTermFreqAndPositions() == false);
 
     field = doc.getField(DocHelper.NO_TF_KEY);
     assertTrue(field != null);
@@ -88,7 +88,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(field.isStoreOffsetWithTermVector() == false);
     assertTrue(field.isStorePositionWithTermVector() == false);
     assertTrue(field.getOmitNorms() == false);
-    assertTrue(field.getOmitTf() == true);
+    assertTrue(field.getOmitTermFreqAndPositions() == true);
     reader.close();
   }
 
@@ -134,7 +134,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue("field is null and it shouldn't be", field != null);
     assertTrue("stringValue isn't null for lazy binary field", field.stringValue() == null);
 
-    byte [] bytes = field.binaryValue();
+    byte [] bytes = field.getBinaryValue();
     assertTrue("bytes is null and it shouldn't be", bytes != null);
     assertTrue("", DocHelper.LAZY_FIELD_BINARY_BYTES.length == bytes.length);
     for (int i = 0; i < bytes.length; i++) {
@@ -286,9 +286,9 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(f1.isBinary());
     assertTrue(!f3.isBinary());
     assertTrue(fb.isBinary());
-    assertSizeEquals(2*DocHelper.FIELD_1_TEXT.length(), f1.binaryValue());
+    assertSizeEquals(2*DocHelper.FIELD_1_TEXT.length(), f1.getBinaryValue());
     assertEquals(DocHelper.FIELD_3_TEXT, f3.stringValue());
-    assertSizeEquals(DocHelper.LAZY_FIELD_BINARY_BYTES.length, fb.binaryValue());
+    assertSizeEquals(DocHelper.LAZY_FIELD_BINARY_BYTES.length, fb.getBinaryValue());
     
     reader.close();
   }

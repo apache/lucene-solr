@@ -421,8 +421,8 @@ public class TestSpans extends LuceneTestCase {
   // LUCENE-1404
   private void addDoc(IndexWriter writer, String id, String text) throws IOException {
     final Document doc = new Document();
-    doc.add( new Field("id", id, Field.Store.YES, Field.Index.UN_TOKENIZED) );
-    doc.add( new Field("text", text, Field.Store.YES, Field.Index.TOKENIZED) );
+    doc.add( new Field("id", id, Field.Store.YES, Field.Index.NOT_ANALYZED) );
+    doc.add( new Field("text", text, Field.Store.YES, Field.Index.ANALYZED) );
     writer.addDocument(doc);
   }
 

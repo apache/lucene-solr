@@ -425,16 +425,9 @@ final class FieldsReader implements Cloneable {
       return localFieldsStream;
     }
 
-    /** The value of the field in Binary, or null.  If null, the Reader value,
-     * String value, or TokenStream value is used. Exactly one of stringValue(), 
-     * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
-    public byte[] binaryValue() {
-      return getBinaryValue(null);
-    }
-
     /** The value of the field as a Reader, or null.  If null, the String value,
      * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
-     * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+     * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
     public Reader readerValue() {
       ensureOpen();
       return null;
@@ -442,7 +435,7 @@ final class FieldsReader implements Cloneable {
 
     /** The value of the field as a TokenStream, or null.  If null, the Reader value,
      * String value, or binary value is used. Exactly one of stringValue(), 
-     * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+     * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
     public TokenStream tokenStreamValue() {
       ensureOpen();
       return null;
@@ -450,7 +443,7 @@ final class FieldsReader implements Cloneable {
 
     /** The value of the field as a String, or null.  If null, the Reader value,
      * binary value, or TokenStream value is used.  Exactly one of stringValue(), 
-     * readerValue(), binaryValue(), and tokenStreamValue() must be set. */
+     * readerValue(), getBinaryValue(), and tokenStreamValue() must be set. */
     public String stringValue() {
       ensureOpen();
       if (isBinary)

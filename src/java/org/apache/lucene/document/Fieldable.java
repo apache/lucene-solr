@@ -18,6 +18,8 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInvertState; // for javadocs
+import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.spans.SpanQuery;
 
 import java.io.Reader;
 import java.io.Serializable;
@@ -77,7 +79,7 @@ public interface Fieldable extends Serializable {
   /** The value of the field as a String, or null.
    * <p>
    * For indexing, if isStored()==true, the stringValue() will be used as the stored field value
-   * unless isBinary()==true, in which case binaryValue() will be used.
+   * unless isBinary()==true, in which case getBinaryValue() will be used.
    *
    * If isIndexed()==true and isTokenized()==false, this String value will be indexed as a single token.
    * If isIndexed()==true and isTokenized()==true, then tokenStreamValue() will be used to generate indexed tokens if not null,
@@ -89,11 +91,6 @@ public interface Fieldable extends Serializable {
    * @see #stringValue()
    */
   public Reader readerValue();
-  
-  /** The value of the field in Binary, or null.
-   * @see #stringValue()
-   */
-  public byte[] binaryValue();
   
   /** The TokenStream for this field to be used when indexing, or null.
    * @see #stringValue()
@@ -147,15 +144,9 @@ public interface Fieldable extends Serializable {
    */
   void setOmitNorms(boolean omitNorms);
 
-  /** @deprecated Renamed to {@link AbstractField#setOmitTermFreqAndPositions} */
-  void setOmitTf(boolean omitTf);
-
-  /** @deprecated Renamed to {@link AbstractField#getOmitTermFreqAndPositions} */
-  boolean getOmitTf();
-
   /**
    * Indicates whether a Field is Lazy or not.  The semantics of Lazy loading are such that if a Field is lazily loaded, retrieving
-   * it's values via {@link #stringValue()} or {@link #binaryValue()} is only valid as long as the {@link org.apache.lucene.index.IndexReader} that
+   * it's values via {@link #stringValue()} or {@link #getBinaryValue()} is only valid as long as the {@link org.apache.lucene.index.IndexReader} that
    * retrieved the {@link Document} is still open.
    *  
    * @return true if this field can be loaded lazily
@@ -193,7 +184,7 @@ public interface Fieldable extends Serializable {
    * About reuse: if you pass in the result byte[] and it is
    * used, likely the underlying implementation will hold
    * onto this byte[] and return it in future calls to
-   * {@link #binaryValue()} or {@link #getBinaryValue()}.
+   * {@link #getBinaryValue()}.
    * So if you subsequently re-use the same byte[] elsewhere
    * it will alter this Fieldable's value.
    * @param result  User defined buffer that will be used if
@@ -202,4 +193,20 @@ public interface Fieldable extends Serializable {
    * @return reference to the Field value as byte[].
    */
   abstract byte[] getBinaryValue(byte[] result);
+  
+  /** @see #setOmitTermFreqAndPositions */
+  boolean getOmitTermFreqAndPositions();
+  
+  /** Expert:
+  *
+  * If set, omit term freq, positions and payloads from
+  * postings for this field.
+  *
+  * <p><b>NOTE</b>: While this option reduces storage space
+  * required in the index, it also means any query
+  * requiring positional information, such as {@link
+  * PhraseQuery} or {@link SpanQuery} subclasses will
+  * silently fail to find results.
+  */
+  void setOmitTermFreqAndPositions(boolean omitTermFreqAndPositions);
 }

@@ -660,9 +660,9 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     for (int docnum = 0 ; docnum < words.length ; ++docnum) {   
       Document doc = new Document();
       doc.add(new Field("content", words[docnum], 
-                        Field.Store.YES, Field.Index.UN_TOKENIZED));
+                        Field.Store.YES, Field.Index.NOT_ANALYZED));
       doc.add(new Field("body", "body",
-                        Field.Store.YES, Field.Index.UN_TOKENIZED));
+                        Field.Store.YES, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
     writer.optimize();

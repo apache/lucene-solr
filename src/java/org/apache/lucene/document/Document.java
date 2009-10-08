@@ -164,21 +164,6 @@ public final class Document implements java.io.Serializable {
     return null;
   }
 
-  /** Returns an Enumeration of all the fields in a document.
-   * @deprecated use {@link #getFields()} instead
-   */
-  public final Enumeration<Fieldable> fields() {
-    return new Enumeration<Fieldable>() {
-      final Iterator<Fieldable> iter = fields.iterator();
-      public boolean hasMoreElements() {
-        return iter.hasNext();
-      }
-      public Fieldable nextElement() {
-        return iter.next();
-      }
-    };
-  }
-
   /** Returns a List of all the fields in a document.
    * <p>Note that fields which are <i>not</i> {@link Fieldable#isStored() stored} are
    * <i>not</i> available in documents retrieved from the
@@ -277,7 +262,7 @@ public final class Document implements java.io.Serializable {
     List<byte[]> result = new ArrayList<byte[]>();
     for (Fieldable field : fields) {
       if (field.name().equals(name) && (field.isBinary()))
-        result.add(field.binaryValue());
+        result.add(field.getBinaryValue());
     }
   
     if (result.size() == 0)
@@ -298,7 +283,7 @@ public final class Document implements java.io.Serializable {
   public final byte[] getBinaryValue(String name) {
     for (Fieldable field : fields) {
       if (field.name().equals(name) && (field.isBinary()))
-        return field.binaryValue();
+        return field.getBinaryValue();
     }
     return null;
   }

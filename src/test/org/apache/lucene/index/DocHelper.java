@@ -169,7 +169,7 @@ class DocHelper {
       if (f.isStored()) add(stored,f);
       else add(unstored,f);
       if (f.getOmitNorms()) add(noNorms,f);
-      if (f.getOmitTf()) add(noTf,f);
+      if (f.getOmitTermFreqAndPositions()) add(noTf,f);
       if (f.isLazy()) add(lazy, f);
     }
   }

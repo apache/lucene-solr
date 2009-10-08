@@ -116,7 +116,7 @@ final class FieldInfos {
     while (fieldIterator.hasNext()) {
       Fieldable field = (Fieldable) fieldIterator.next();
       add(field.name(), field.isIndexed(), field.isTermVectorStored(), field.isStorePositionWithTermVector(),
-              field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getOmitTf());
+              field.isStoreOffsetWithTermVector(), field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
     }
   }
 

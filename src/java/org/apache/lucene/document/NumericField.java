@@ -207,11 +207,6 @@ public final class NumericField extends AbstractField {
   }
   
   /** Returns always <code>null</code> for numeric fields */
-  public byte[] binaryValue() {
-    return null;
-  }
-  
-  /** Returns always <code>null</code> for numeric fields */
   @Override
   public byte[] getBinaryValue(byte[] result){
     return null;

@@ -70,17 +70,11 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      * common text. */
     public static final Index ANALYZED = new Index("ANALYZED");
 
-    /** @deprecated this has been renamed to {@link #ANALYZED} */
-    public static final Index TOKENIZED = ANALYZED;
-
     /** Index the field's value without using an Analyzer, so it can be searched.
      * As no analyzer is used the value will be stored as a single term. This is
      * useful for unique Ids like product numbers.
      */
     public static final Index NOT_ANALYZED = new Index("NOT_ANALYZED");
-
-    /** @deprecated This has been renamed to {@link #NOT_ANALYZED} */
-    public static final Index UN_TOKENIZED = NOT_ANALYZED;
 
     /** Expert: Index the field's value without an Analyzer,
      * and also disable the storing of norms.  Note that you
@@ -97,10 +91,6 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      * that field must be indexed with NOT_ANALYZED_NO_NORMS
      * from the beginning. */
     public static final Index NOT_ANALYZED_NO_NORMS = new Index("NOT_ANALYZED_NO_NORMS");
-
-    /** @deprecated This has been renamed to
-     *  {@link #NOT_ANALYZED_NO_NORMS} */
-    public static final Index NO_NORMS = NOT_ANALYZED_NO_NORMS;
 
     /** Expert: Index the tokens produced by running the
      *  field's value through an Analyzer, and also
@@ -159,29 +149,7 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
    * binary value is used.  Exactly one of stringValue(),
    * readerValue(), and getBinaryValue() must be set. */
   public Reader readerValue()   { return fieldsData instanceof Reader ? (Reader)fieldsData : null; }
-  
-  /** The value of the field in Binary, or null.  If null, the Reader value,
-   * or String value is used. Exactly one of stringValue(),
-   * readerValue(), and getBinaryValue() must be set.
-   * @deprecated This method must allocate a new byte[] if
-   * the {@link AbstractField#getBinaryOffset()} is non-zero
-   * or {@link AbstractField#getBinaryLength()} is not the
-   * full length of the byte[]. Please use {@link
-   * AbstractField#getBinaryValue()} instead, which simply
-   * returns the byte[].
-   */ 
-  public byte[] binaryValue() {
-    if (!isBinary)
-      return null;
-    final byte[] data = (byte[]) fieldsData;
-    if (binaryOffset == 0 && data.length == binaryLength)
-      return data; //Optimization
     
-    final byte[] ret = new byte[binaryLength];
-    System.arraycopy(data, binaryOffset, ret, 0, binaryLength);
-    return ret;    
-  }
-  
   /** The TokesStream for this field to be used when indexing, or null.  If null, the Reader value
    * or String value is analyzed to produce the indexed tokens. */
   public TokenStream tokenStreamValue()   { return tokenStream; }
@@ -236,22 +204,8 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     binaryOffset = offset;
   }
   
-  
-  /** Expert: change the value of this field.  See <a href="#setValue(java.lang.String)">setValue(String)</a>.
-   * @deprecated use {@link #setTokenStream} */
-  public void setValue(TokenStream value) {
-    if (isBinary) {
-      throw new IllegalArgumentException("cannot set a TokenStream value on a binary field");
-    }
-    if (isStored) {
-      throw new IllegalArgumentException("cannot set a TokenStream value on a stored field");
-    }
-    fieldsData = null;
-    tokenStream = value;
-  }
-
   /** Expert: sets the token stream to be used for indexing and causes isIndexed() and isTokenized() to return true.
-   *  May be combined with stored values from stringValue() or binaryValue() */
+   *  May be combined with stored values from stringValue() or getBinaryValue() */
   public void setTokenStream(TokenStream tokenStream) {
     this.isIndexed = true;
     this.isTokenized = true;

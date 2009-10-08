@@ -257,9 +257,6 @@ public abstract class AbstractField implements Fieldable {
   /** True if norms are omitted for this indexed field */
   public boolean getOmitNorms() { return omitNorms; }
 
-  /** @deprecated Renamed to {@link #getOmitTermFreqAndPositions} */
-  public boolean getOmitTf() { return omitTermFreqAndPositions; }
-
   /** @see #setOmitTermFreqAndPositions */
   public boolean getOmitTermFreqAndPositions() { return omitTermFreqAndPositions; }
   
@@ -269,9 +266,6 @@ public abstract class AbstractField implements Fieldable {
    * This effectively disables indexing boosts and length normalization for this field.
    */
   public void setOmitNorms(boolean omitNorms) { this.omitNorms=omitNorms; }
-
-  /** @deprecated Renamed to {@link #setOmitTermFreqAndPositions} */
-  public void setOmitTf(boolean omitTermFreqAndPositions) { this.omitTermFreqAndPositions=omitTermFreqAndPositions; }
 
   /** Expert:
    *

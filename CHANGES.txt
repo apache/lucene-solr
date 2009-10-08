@@ -36,6 +36,9 @@ API Changes
 
 * LUCENE-1960: Remove deprecated Field.Store.COMPRESS. (Michael Busch)
 
+* LUCENE-1961: Remove remaining deprecations from document package.
+               (Michael Busch)
+
 Bug fixes
 
 New features

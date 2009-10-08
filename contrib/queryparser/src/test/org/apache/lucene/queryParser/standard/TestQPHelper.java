@@ -595,7 +595,7 @@ public class TestQPHelper extends LocalizedTestCase {
         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
-        Field.Index.UN_TOKENIZED));
+        Field.Index.NOT_ANALYZED));
     iw.addDocument(doc);
     iw.close();
     IndexSearcher is = new IndexSearcher(ramDir, true);

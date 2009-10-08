@@ -190,7 +190,7 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
         // easily add it
         FieldInfo fi = fieldInfos.add(fieldName, field.isIndexed(), field.isTermVectorStored(),
                                       field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                                      field.getOmitNorms(), false, field.getOmitTf());
+                                      field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
 
         fp = new DocFieldProcessorPerField(this, fi);
         fp.next = fieldHash[hashPos];
@@ -202,7 +202,7 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
       } else
         fp.fieldInfo.update(field.isIndexed(), field.isTermVectorStored(),
                             field.isStorePositionWithTermVector(), field.isStoreOffsetWithTermVector(),
-                            field.getOmitNorms(), false, field.getOmitTf());
+                            field.getOmitNorms(), false, field.getOmitTermFreqAndPositions());
 
       if (thisFieldGen != fp.lastGen) {
 

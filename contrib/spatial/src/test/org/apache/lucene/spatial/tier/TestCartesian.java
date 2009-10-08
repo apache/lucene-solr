@@ -96,14 +96,14 @@ public class TestCartesian extends TestCase{
     
     Document doc = new Document();
     
-    doc.add(new Field("name", name,Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("name", name,Field.Store.YES, Field.Index.ANALYZED));
     
     // convert the lat / long to lucene fields
-    doc.add(new Field(latField, NumericUtils.doubleToPrefixCoded(lat),Field.Store.YES, Field.Index.UN_TOKENIZED));
-    doc.add(new Field(lngField, NumericUtils.doubleToPrefixCoded(lng),Field.Store.YES, Field.Index.UN_TOKENIZED));
+    doc.add(new Field(latField, NumericUtils.doubleToPrefixCoded(lat),Field.Store.YES, Field.Index.NOT_ANALYZED));
+    doc.add(new Field(lngField, NumericUtils.doubleToPrefixCoded(lng),Field.Store.YES, Field.Index.NOT_ANALYZED));
     
     // add a default meta field to make searching all documents easy 
-    doc.add(new Field("metafile", "doc",Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("metafile", "doc",Field.Store.YES, Field.Index.ANALYZED));
     
     int ctpsize = ctps.size();
     for (int i =0; i < ctpsize; i++){
@@ -111,11 +111,11 @@ public class TestCartesian extends TestCase{
       doc.add(new Field(ctp.getTierFieldName(), 
           NumericUtils.doubleToPrefixCoded(ctp.getTierBoxId(lat,lng)),
           Field.Store.YES, 
-          Field.Index.NO_NORMS));
+          Field.Index.NOT_ANALYZED_NO_NORMS));
       
       doc.add(new Field(geoHashPrefix, GeoHashUtils.encode(lat,lng), 
     		  Field.Store.YES, 
-    		  Field.Index.NO_NORMS));
+    		  Field.Index.NOT_ANALYZED_NO_NORMS));
     }
     writer.addDocument(doc);
     
