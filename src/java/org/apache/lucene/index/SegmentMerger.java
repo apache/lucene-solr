@@ -24,8 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.store.Directory;
@@ -321,15 +319,6 @@ final class SegmentMerger {
     setMatchingSegmentReaders();
 
     if (mergeDocStores) {
-
-      // for merging we don't want to compress/uncompress the data, so to tell the FieldsReader that we're
-      // in  merge mode, we use this FieldSelector
-      FieldSelector fieldSelectorMerge = new FieldSelector() {
-          public FieldSelectorResult accept(String fieldName) {
-            return FieldSelectorResult.LOAD_FOR_MERGE;
-          }        
-        };
-
       // merge field values
       final FieldsWriter fieldsWriter = new FieldsWriter(directory, segment, fieldInfos);
 
@@ -346,10 +335,10 @@ final class SegmentMerger {
             }
           }
           if (reader.hasDeletions()) {
-            docCount += copyFieldsWithDeletions(fieldSelectorMerge, fieldsWriter,
+            docCount += copyFieldsWithDeletions(fieldsWriter,
                                                 reader, matchingFieldsReader);
           } else {
-            docCount += copyFieldsNoDeletions(fieldSelectorMerge, fieldsWriter,
+            docCount += copyFieldsNoDeletions(fieldsWriter,
                                               reader, matchingFieldsReader);
           }
         }
@@ -379,8 +368,7 @@ final class SegmentMerger {
     return docCount;
   }
 
-  private int copyFieldsWithDeletions(final FieldSelector fieldSelectorMerge,
-                                      final FieldsWriter fieldsWriter, final IndexReader reader,
+  private int copyFieldsWithDeletions(final FieldsWriter fieldsWriter, final IndexReader reader,
                                       final FieldsReader matchingFieldsReader)
     throws IOException, MergeAbortedException, CorruptIndexException {
     int docCount = 0;
@@ -419,7 +407,7 @@ final class SegmentMerger {
         }
         // NOTE: it's very important to first assign to doc then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        Document doc = reader.document(j, fieldSelectorMerge);
+        Document doc = reader.document(j);
         fieldsWriter.addDocument(doc);
         docCount++;
         checkAbort.work(300);
@@ -428,8 +416,7 @@ final class SegmentMerger {
     return docCount;
   }
 
-  private int copyFieldsNoDeletions(FieldSelector fieldSelectorMerge,
-                                    final FieldsWriter fieldsWriter, final IndexReader reader,
+  private int copyFieldsNoDeletions(final FieldsWriter fieldsWriter, final IndexReader reader,
                                     final FieldsReader matchingFieldsReader)
     throws IOException, MergeAbortedException, CorruptIndexException {
     final int maxDoc = reader.maxDoc();
@@ -447,7 +434,7 @@ final class SegmentMerger {
       for (; docCount < maxDoc; docCount++) {
         // NOTE: it's very important to first assign to doc then pass it to
         // termVectorsWriter.addAllDocVectors; see LUCENE-1282
-        Document doc = reader.document(docCount, fieldSelectorMerge);
+        Document doc = reader.document(docCount);
         fieldsWriter.addDocument(doc);
         checkAbort.work(300);
       }

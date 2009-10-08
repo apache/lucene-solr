@@ -37,13 +37,11 @@ public class TestBinaryDocument extends LuceneTestCase
     throws Exception
   {
     Fieldable binaryFldStored = new Field("binaryStored", binaryValStored.getBytes(), Field.Store.YES);
-    Fieldable binaryFldCompressed = new Field("binaryCompressed", binaryValCompressed.getBytes(), Field.Store.COMPRESS);
     Fieldable stringFldStored = new Field("stringStored", binaryValStored, Field.Store.YES, Field.Index.NO, Field.TermVector.NO);
-    Fieldable stringFldCompressed = new Field("stringCompressed", binaryValCompressed, Field.Store.COMPRESS, Field.Index.NO, Field.TermVector.NO);
 
     try {
       // binary fields with store off are not allowed
-      new Field("fail", binaryValCompressed.getBytes(), Field.Store.NO);
+      new Field("fail", binaryValStored.getBytes(), Field.Store.NO);
       fail();
     }
     catch (IllegalArgumentException iae) {
@@ -53,13 +51,11 @@ public class TestBinaryDocument extends LuceneTestCase
     Document doc = new Document();
     
     doc.add(binaryFldStored);
-    doc.add(binaryFldCompressed);
     
     doc.add(stringFldStored);
-    doc.add(stringFldCompressed);
 
     /** test for field count */
-    assertEquals(4, doc.fields.size());
+    assertEquals(2, doc.fields.size());
     
     /** add the doc to a ram index */
     MockRAMDirectory dir = new MockRAMDirectory();
@@ -76,18 +72,10 @@ public class TestBinaryDocument extends LuceneTestCase
     String binaryFldStoredTest = new String(docFromReader.getBinaryValue("binaryStored"));
     assertTrue(binaryFldStoredTest.equals(binaryValStored));
     
-    /** fetch the binary compressed field and compare it's content with the original one */
-    String binaryFldCompressedTest = new String(docFromReader.getBinaryValue("binaryCompressed"));
-    assertTrue(binaryFldCompressedTest.equals(binaryValCompressed));
-    
     /** fetch the string field and compare it's content with the original one */
     String stringFldStoredTest = docFromReader.get("stringStored");
     assertTrue(stringFldStoredTest.equals(binaryValStored));
     
-    /** fetch the compressed string field and compare it's content with the original one */
-    String stringFldCompressedTest = docFromReader.get("stringCompressed");
-    assertTrue(stringFldCompressedTest.equals(binaryValCompressed));
-
     /** delete the document from index */
     reader.deleteDocument(0);
     assertEquals(0, reader.numDocs());

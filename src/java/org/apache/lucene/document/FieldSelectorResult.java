@@ -54,17 +54,6 @@ public final class FieldSelectorResult implements Serializable {
      * {@link Document#add(Fieldable)} should be called by the Reader.
      */
   public transient static final FieldSelectorResult LOAD_AND_BREAK = new FieldSelectorResult(3);
-    /**
-     * Behaves much like {@link #LOAD} but does not uncompress any compressed data.  This is used for internal purposes.
-     * {@link Document#getField(String)} and {@link Document#getFieldable(String)} should not return null.
-     * <p/>
-     * {@link Document#add(Fieldable)} should be called by
-     * the Reader.
-     * @deprecated This is an internal option only, and is
-     *    no longer needed now that {@link CompressionTools}
-     *    is used for field compression.
-     */
-  public transient static final FieldSelectorResult LOAD_FOR_MERGE = new FieldSelectorResult(4);
 
      /** Expert:  Load the size of this {@link Field} rather than its value.
        * Size is measured as number of bytes required to store the field == bytes for a binary or any compressed value, and 2*chars for a String value.

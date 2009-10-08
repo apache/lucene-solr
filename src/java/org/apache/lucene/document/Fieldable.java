@@ -113,9 +113,6 @@ public interface Fieldable extends Serializable {
     Reader-valued. */
   boolean  isTokenized();
 
-  /** True if the value of the field is stored and compressed within the index */
-  boolean  isCompressed();
-
   /** True if the term or terms used to index this field are stored as a term
    *  vector, available from {@link org.apache.lucene.index.IndexReader#getTermFreqVector(int,String)}.
    *  These methods do not provide access to the original content of the field,

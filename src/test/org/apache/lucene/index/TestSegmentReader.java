@@ -200,6 +200,6 @@ public class TestSegmentReader extends LuceneTestCase {
 
     TermFreqVector [] results = reader.getTermFreqVectors(0);
     assertTrue(results != null);
-    assertTrue("We do not have 4 term freq vectors, we have: " + results.length, results.length == 4);      
+    assertTrue("We do not have 3 term freq vectors, we have: " + results.length, results.length == 3);      
   }    
 }

@@ -44,9 +44,6 @@ class FieldSettings implements Serializable {
     if (fieldSetting.stored) {
       setting.stored = true;
     }
-    if (fieldSetting.compressed) {
-      setting.compressed = true;
-    }
 
     if ("b3".equals(fieldSetting.fieldName)) {
       System.currentTimeMillis();

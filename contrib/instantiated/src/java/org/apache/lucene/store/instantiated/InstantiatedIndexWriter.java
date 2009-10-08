@@ -480,9 +480,6 @@ public class InstantiatedIndexWriter {
       if (field.isTokenized()) {
         fieldSetting.tokenized = true;
       }
-      if (field.isCompressed()) {
-        fieldSetting.compressed = true;
-      }
       if (field.isStored()) {
         fieldSetting.stored = true;
       }

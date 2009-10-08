@@ -36,7 +36,6 @@ public abstract class AbstractField implements Fieldable {
   protected boolean isIndexed = true;
   protected boolean isTokenized = true;
   protected boolean isBinary = false;
-  protected boolean isCompressed = false;
   protected boolean lazy = false;
   protected boolean omitTermFreqAndPositions = false;
   protected float boost = 1.0f;
@@ -59,15 +58,9 @@ public abstract class AbstractField implements Fieldable {
 
     if (store == Field.Store.YES){
       this.isStored = true;
-      this.isCompressed = false;
-    }
-    else if (store == Field.Store.COMPRESS) {
-      this.isStored = true;
-      this.isCompressed = true;
     }
     else if (store == Field.Store.NO){
       this.isStored = false;
-      this.isCompressed = false;
     }
     else
       throw new IllegalArgumentException("unknown store parameter " + store);
@@ -189,9 +182,6 @@ public abstract class AbstractField implements Fieldable {
     Reader-valued. */
   public final boolean  isTokenized()   { return isTokenized; }
 
-  /** True if the value of the field is stored and compressed within the index */
-  public final boolean  isCompressed()   { return isCompressed; }
-
   /** True iff the term or terms used to index this field are stored as a term
    *  vector, available from {@link org.apache.lucene.index.IndexReader#getTermFreqVector(int,String)}.
    *  These methods do not provide access to the original content of the field,
@@ -248,10 +238,7 @@ public abstract class AbstractField implements Fieldable {
    */
   public int getBinaryLength() {
     if (isBinary) {
-      if (!isCompressed)
-        return binaryLength;
-      else
-        return ((byte[]) fieldsData).length;
+      return binaryLength;
     } else if (fieldsData instanceof byte[])
       return ((byte[]) fieldsData).length;
     else
@@ -308,10 +295,6 @@ public abstract class AbstractField implements Fieldable {
     StringBuilder result = new StringBuilder();
     if (isStored) {
       result.append("stored");
-      if (isCompressed)
-        result.append("/compressed");
-      else
-        result.append("/uncompressed");
     }
     if (isIndexed) {
       if (result.length() > 0)

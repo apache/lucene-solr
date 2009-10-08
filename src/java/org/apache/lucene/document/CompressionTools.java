@@ -26,9 +26,7 @@ import org.apache.lucene.util.UnicodeUtil;
 /** Simple utility class providing static methods to
  *  compress and decompress binary data for stored fields.
  *  This class uses java.util.zip.Deflater and Inflater
- *  classes to compress and decompress, which is the same
- *  format previously used by the now deprecated
- *  Field.Store.COMPRESS.
+ *  classes to compress and decompress.
  */
 
 public class CompressionTools {

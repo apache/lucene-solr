@@ -34,6 +34,8 @@ API Changes
 * LUCENE-1957: Remove Filter.bits(IndexReader) method and make 
                Filter.getDocIdSet(IndexReader) abstract. (Michael Busch)
 
+* LUCENE-1960: Remove deprecated Field.Store.COMPRESS. (Michael Busch)
+
 Bug fixes
 
 New features

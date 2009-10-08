@@ -21,7 +21,6 @@ import java.util.Iterator;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.store.IndexOutput;
@@ -31,7 +30,6 @@ final class FieldsWriter
 {
   static final byte FIELD_IS_TOKENIZED = 0x1;
   static final byte FIELD_IS_BINARY = 0x2;
-  static final byte FIELD_IS_COMPRESSED = 0x4;
 
   // Original format
   static final int FORMAT = 0;
@@ -172,64 +170,28 @@ final class FieldsWriter
     }
 
     final void writeField(FieldInfo fi, Fieldable field) throws IOException {
-      // if the field as an instanceof FieldsReader.FieldForMerge, we're in merge mode
-      // and field.binaryValue() already returns the compressed value for a field
-      // with isCompressed()==true, so we disable compression in that case
-      boolean disableCompression = (field instanceof FieldsReader.FieldForMerge);
       fieldsStream.writeVInt(fi.number);
       byte bits = 0;
       if (field.isTokenized())
         bits |= FieldsWriter.FIELD_IS_TOKENIZED;
       if (field.isBinary())
         bits |= FieldsWriter.FIELD_IS_BINARY;
-      if (field.isCompressed())
-        bits |= FieldsWriter.FIELD_IS_COMPRESSED;
                 
       fieldsStream.writeByte(bits);
                 
-      if (field.isCompressed()) {
-        // compression is enabled for the current field
+      if (field.isBinary()) {
         final byte[] data;
         final int len;
         final int offset;
-        if (disableCompression) {
-          // optimized case for merging, the data
-          // is already compressed
-          data = field.getBinaryValue();
-          assert data != null;
-          len = field.getBinaryLength();
-          offset = field.getBinaryOffset();  
-        } else {
-          // check if it is a binary field
-          if (field.isBinary()) {
-            data = CompressionTools.compress(field.getBinaryValue(), field.getBinaryOffset(), field.getBinaryLength());
-          } else {
-            byte x[] = field.stringValue().getBytes("UTF-8");
-            data = CompressionTools.compress(x, 0, x.length);
-          }
-          len = data.length;
-          offset = 0;
-        }
-        
+        data = field.getBinaryValue();
+        len = field.getBinaryLength();
+        offset =  field.getBinaryOffset();
+
         fieldsStream.writeVInt(len);
         fieldsStream.writeBytes(data, offset, len);
       }
       else {
-        // compression is disabled for the current field
-        if (field.isBinary()) {
-          final byte[] data;
-          final int len;
-          final int offset;
-          data = field.getBinaryValue();
-          len = field.getBinaryLength();
-          offset =  field.getBinaryOffset();
-
-          fieldsStream.writeVInt(len);
-          fieldsStream.writeBytes(data, offset, len);
-        }
-        else {
-          fieldsStream.writeString(field.stringValue());
-        }
+        fieldsStream.writeString(field.stringValue());
       }
     }
 

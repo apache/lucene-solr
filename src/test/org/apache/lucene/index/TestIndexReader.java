@@ -365,7 +365,6 @@ public class TestIndexReader extends LuceneTestCase
         writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
         Document doc = new Document();
         doc.add(new Field("bin1", bin, Field.Store.YES));
-        doc.add(new Field("bin2", bin, Field.Store.COMPRESS));
         doc.add(new Field("junk", "junk text", Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(doc);
         writer.close();
@@ -377,16 +376,6 @@ public class TestIndexReader extends LuceneTestCase
         Field b1 = fields[0];
         assertTrue(b1.isBinary());
         byte[] data1 = b1.getBinaryValue();
-        assertEquals(bin.length, b1.getBinaryLength());
-        for (int i = 0; i < bin.length; i++) {
-          assertEquals(bin[i], data1[i + b1.getBinaryOffset()]);
-        }
-        fields = doc.getFields("bin2");
-        assertNotNull(fields);
-        assertEquals(1, fields.length);
-        b1 = fields[0];
-        assertTrue(b1.isBinary());
-        data1 = b1.getBinaryValue();
         assertEquals(bin.length, b1.getBinaryLength());
         for (int i = 0; i < bin.length; i++) {
           assertEquals(bin[i], data1[i + b1.getBinaryOffset()]);
@@ -416,16 +405,6 @@ public class TestIndexReader extends LuceneTestCase
         reader = IndexReader.open(dir, false);
         doc = reader.document(reader.maxDoc() - 1);
         fields = doc.getFields("bin1");
-        assertNotNull(fields);
-        assertEquals(1, fields.length);
-        b1 = fields[0];
-        assertTrue(b1.isBinary());
-        data1 = b1.getBinaryValue();
-        assertEquals(bin.length, b1.getBinaryLength());
-        for (int i = 0; i < bin.length; i++) {
-          assertEquals(bin[i], data1[i + b1.getBinaryOffset()]);
-        }
-        fields = doc.getFields("bin2");
         assertNotNull(fields);
         assertEquals(1, fields.length);
         b1 = fields[0];

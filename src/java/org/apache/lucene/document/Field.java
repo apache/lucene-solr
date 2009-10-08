@@ -42,16 +42,6 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
       super(name);
     }
 
-    /** Store the original field value in the index in a compressed form. This is
-     * useful for long documents and for binary valued fields.
-     * @deprecated Please use {@link CompressionTools} instead.
-     * For string fields that were previously indexed and stored using compression,
-     * the new way to achieve this is: First add the field indexed-only (no store)
-     * and additionally using the same field name as a binary, stored field
-     * with {@link CompressionTools#compressString}.
-     */
-    public static final Store COMPRESS = new Store("COMPRESS");
-
     /** Store the original field value in the index. This is useful for short texts
      * like a document's title which should be displayed with the results. The
      * value is stored in its original form, i.e. no analyzer is used before it is
@@ -346,15 +336,9 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
 
     if (store == Store.YES){
       this.isStored = true;
-      this.isCompressed = false;
-    }
-    else if (store == Store.COMPRESS) {
-      this.isStored = true;
-      this.isCompressed = true;
     }
     else if (store == Store.NO){
       this.isStored = false;
-      this.isCompressed = false;
     }
     else
       throw new IllegalArgumentException("unknown store parameter " + store);
@@ -422,7 +406,6 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     this.fieldsData = reader;
     
     this.isStored = false;
-    this.isCompressed = false;
     
     this.isIndexed = true;
     this.isTokenized = true;
@@ -470,7 +453,6 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     this.tokenStream = tokenStream;
 
     this.isStored = false;
-    this.isCompressed = false;
     
     this.isIndexed = true;
     this.isTokenized = true;
@@ -515,11 +497,6 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     
     if (store == Store.YES) {
       isStored = true;
-      isCompressed = false;
-    }
-    else if (store == Store.COMPRESS) {
-      isStored = true;
-      isCompressed = true;
     }
     else if (store == Store.NO)
       throw new IllegalArgumentException("binary values can't be unstored");

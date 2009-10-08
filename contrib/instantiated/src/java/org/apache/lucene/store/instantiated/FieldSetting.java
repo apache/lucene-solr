@@ -33,7 +33,6 @@ class FieldSetting implements Serializable {
   boolean stored = false;
   boolean indexed = false;
   boolean tokenized = false;
-  boolean compressed = false;
 
   FieldSetting() {
   }

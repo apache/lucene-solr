@@ -42,13 +42,6 @@ class DocHelper {
   public static final String TEXT_FIELD_2_KEY = "textField2";
   public static Field textField2 = new Field(TEXT_FIELD_2_KEY, FIELD_2_TEXT, Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
   
-  public static final String FIELD_2_COMPRESSED_TEXT = "field field field two text";
-    //Fields will be lexicographically sorted.  So, the order is: field, text, two
-    public static final int [] COMPRESSED_FIELD_2_FREQS = {3, 1, 1}; 
-    public static final String COMPRESSED_TEXT_FIELD_2_KEY = "compressedTextField2";
-    public static Field compressedTextField2 = new Field(COMPRESSED_TEXT_FIELD_2_KEY, FIELD_2_COMPRESSED_TEXT, Field.Store.COMPRESS, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
-    
-
   public static final String FIELD_3_TEXT = "aaaNoNorms aaaNoNorms bbbNoNorms";
   public static final String TEXT_FIELD_3_KEY = "textField3";
   public static Field textField3 = new Field(TEXT_FIELD_3_KEY, FIELD_3_TEXT, Field.Store.YES, Field.Index.ANALYZED);
@@ -124,7 +117,6 @@ class DocHelper {
     textField1,
     textField2,
     textField3,
-    compressedTextField2,
     keyField,
     noNormsField,
     noTFField,
@@ -193,7 +185,6 @@ class DocHelper {
     nameValues = new HashMap();
     nameValues.put(TEXT_FIELD_1_KEY, FIELD_1_TEXT);
     nameValues.put(TEXT_FIELD_2_KEY, FIELD_2_TEXT);
-    nameValues.put(COMPRESSED_TEXT_FIELD_2_KEY, FIELD_2_COMPRESSED_TEXT);
     nameValues.put(TEXT_FIELD_3_KEY, FIELD_3_TEXT);
     nameValues.put(KEYWORD_FIELD_KEY, KEYWORD_TEXT);
     nameValues.put(NO_NORMS_KEY, NO_NORMS_TEXT);

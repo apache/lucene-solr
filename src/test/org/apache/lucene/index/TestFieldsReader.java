@@ -108,7 +108,6 @@ public class TestFieldsReader extends LuceneTestCase {
     lazyFieldNames.add(DocHelper.LAZY_FIELD_KEY);
     lazyFieldNames.add(DocHelper.LAZY_FIELD_BINARY_KEY);
     lazyFieldNames.add(DocHelper.TEXT_FIELD_UTF2_KEY);
-    lazyFieldNames.add(DocHelper.COMPRESSED_TEXT_FIELD_2_KEY);
     SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(loadFieldNames, lazyFieldNames);
     Document doc = reader.doc(0, fieldSelector);
     assertTrue("doc is null and it shouldn't be", doc != null);
@@ -118,13 +117,6 @@ public class TestFieldsReader extends LuceneTestCase {
     String value = field.stringValue();
     assertTrue("value is null and it shouldn't be", value != null);
     assertTrue(value + " is not equal to " + DocHelper.LAZY_FIELD_TEXT, value.equals(DocHelper.LAZY_FIELD_TEXT) == true);
-    field = doc.getFieldable(DocHelper.COMPRESSED_TEXT_FIELD_2_KEY);
-    assertTrue("field is null and it shouldn't be", field != null);
-    assertTrue("field is not lazy and it should be", field.isLazy());
-    assertTrue("binaryValue isn't null for lazy string field", field.binaryValue() == null);
-    value = field.stringValue();
-    assertTrue("value is null and it shouldn't be", value != null);
-    assertTrue(value + " is not equal to " + DocHelper.FIELD_2_COMPRESSED_TEXT, value.equals(DocHelper.FIELD_2_COMPRESSED_TEXT) == true);
     field = doc.getFieldable(DocHelper.TEXT_FIELD_1_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
     assertTrue("Field is lazy and it should not be", field.isLazy() == false);
@@ -165,7 +157,6 @@ public class TestFieldsReader extends LuceneTestCase {
     lazyFieldNames.add(DocHelper.LAZY_FIELD_KEY);
     lazyFieldNames.add(DocHelper.LAZY_FIELD_BINARY_KEY);
     lazyFieldNames.add(DocHelper.TEXT_FIELD_UTF2_KEY);
-    lazyFieldNames.add(DocHelper.COMPRESSED_TEXT_FIELD_2_KEY);
     SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(loadFieldNames, lazyFieldNames);
     Document doc = reader.doc(0, fieldSelector);
     assertTrue("doc is null and it shouldn't be", doc != null);
@@ -281,7 +272,6 @@ public class TestFieldsReader extends LuceneTestCase {
     doc = reader.doc(0, new FieldSelector(){
       public FieldSelectorResult accept(String fieldName) {
         if (fieldName.equals(DocHelper.TEXT_FIELD_1_KEY) ||
-            fieldName.equals(DocHelper.COMPRESSED_TEXT_FIELD_2_KEY) ||
             fieldName.equals(DocHelper.LAZY_FIELD_BINARY_KEY))
           return FieldSelectorResult.SIZE;
         else if (fieldName.equals(DocHelper.TEXT_FIELD_3_KEY))
