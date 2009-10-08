@@ -41,6 +41,12 @@ API Changes
 
 Bug fixes
 
+* LUCENE-1951: When the text provided to WildcardQuery has no wildcard
+  characters (ie matches a single term), don't lose the boost and
+  rewrite method settings.  Also, rewrite to PrefixQuery if the
+  wildcard is form "foo*", for slightly faster performance. (Robert
+  Muir via Mike McCandless)
+
 New features
 
 * LUCENE-1933: Provide a convenience AttributeFactory that creates a

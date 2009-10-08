@@ -37,16 +37,25 @@ import java.io.IOException;
  * @see WildcardTermEnum */
 public class WildcardQuery extends MultiTermQuery {
   private boolean termContainsWildcard;
+  private boolean termIsPrefix;
   protected Term term;
     
   public WildcardQuery(Term term) {
     super(term); //will be removed in 3.0
     this.term = term;
-    this.termContainsWildcard = (term.text().indexOf('*') != -1) || (term.text().indexOf('?') != -1);
+    String text = term.text();
+    this.termContainsWildcard = (text.indexOf('*') != -1)
+        || (text.indexOf('?') != -1);
+    this.termIsPrefix = termContainsWildcard 
+        && (text.indexOf('?') == -1) 
+        && (text.indexOf('*') == text.length() - 1);
   }
 
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
-    return new WildcardTermEnum(reader, getTerm());
+    if (termContainsWildcard)
+      return new WildcardTermEnum(reader, getTerm());
+    else
+      return new SingleTermEnum(reader, getTerm());
   }
   
   /**
@@ -57,10 +66,15 @@ public class WildcardQuery extends MultiTermQuery {
   }
 
   public Query rewrite(IndexReader reader) throws IOException {
-    if (!termContainsWildcard)
-      return new TermQuery(getTerm());
-    else
+    if (termIsPrefix) {
+      MultiTermQuery rewritten = new PrefixQuery(term.createTerm(term.text()
+          .substring(0, term.text().indexOf('*'))));
+      rewritten.setBoost(getBoost());
+      rewritten.setRewriteMethod(getRewriteMethod());
+      return rewritten;
+    } else {
       return super.rewrite(reader);
+    }
   }
   
   /** Prints a user-readable version of this query. */

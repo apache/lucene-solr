@@ -58,17 +58,91 @@ public class TestWildcard
   
   /**
    * Tests if a WildcardQuery that has no wildcard in the term is rewritten to a single
-   * TermQuery.
+   * TermQuery. The boost should be preserved, and the rewrite should return
+   * a ConstantScoreQuery if the WildcardQuery had a ConstantScore rewriteMethod.
    */
   public void testTermWithoutWildcard() throws IOException {
       RAMDirectory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
       IndexSearcher searcher = new IndexSearcher(indexStore, true);
 
-      Query wq = new WildcardQuery(new Term("field", "nowildcard"));
+      MultiTermQuery wq = new WildcardQuery(new Term("field", "nowildcard"));
       assertMatches(searcher, wq, 1);
 
-      wq = searcher.rewrite(wq);
-      assertTrue(wq instanceof TermQuery);
+      wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+      wq.setBoost(0.1F);
+      Query q = searcher.rewrite(wq);
+      assertTrue(q instanceof TermQuery);
+      assertEquals(q.getBoost(), wq.getBoost());
+      
+      wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
+      wq.setBoost(0.2F);
+      q = searcher.rewrite(wq);
+      assertTrue(q instanceof ConstantScoreQuery);
+      assertEquals(q.getBoost(), wq.getBoost());
+      
+      wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
+      wq.setBoost(0.3F);
+      q = searcher.rewrite(wq);
+      assertTrue(q instanceof ConstantScoreQuery);
+      assertEquals(q.getBoost(), wq.getBoost());
+      
+      wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
+      wq.setBoost(0.4F);
+      q = searcher.rewrite(wq);
+      assertTrue(q instanceof ConstantScoreQuery);
+      assertEquals(q.getBoost(), wq.getBoost());
+  }
+  
+  /**
+   * Tests if a WildcardQuery with an empty term is rewritten to an empty BooleanQuery
+   */
+  public void testEmptyTerm() throws IOException {
+    RAMDirectory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
+    IndexSearcher searcher = new IndexSearcher(indexStore, true);
+
+    MultiTermQuery wq = new WildcardQuery(new Term("field", ""));
+    wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    assertMatches(searcher, wq, 0);
+    BooleanQuery expected = new BooleanQuery();
+    assertEquals(searcher.rewrite(expected), searcher.rewrite(wq));
+  }
+  
+  /**
+   * Tests if a WildcardQuery that has only a trailing * in the term is
+   * rewritten to a single PrefixQuery. The boost and rewriteMethod should be
+   * preserved.
+   */
+  public void testPrefixTerm() throws IOException {
+    RAMDirectory indexStore = getIndexStore("field", new String[]{"prefix", "prefixx"});
+    IndexSearcher searcher = new IndexSearcher(indexStore, true);
+
+    MultiTermQuery wq = new WildcardQuery(new Term("field", "prefix*"));
+    assertMatches(searcher, wq, 2);
+    
+    MultiTermQuery expected = new PrefixQuery(new Term("field", "prefix"));
+    wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    wq.setBoost(0.1F);
+    expected.setRewriteMethod(wq.getRewriteMethod());
+    expected.setBoost(wq.getBoost());
+    assertEquals(searcher.rewrite(expected), searcher.rewrite(wq));
+    
+    wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_FILTER_REWRITE);
+    wq.setBoost(0.2F);
+    expected.setRewriteMethod(wq.getRewriteMethod());
+    expected.setBoost(wq.getBoost());
+    assertEquals(searcher.rewrite(expected), searcher.rewrite(wq));
+    
+    wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
+    wq.setBoost(0.3F);
+    expected.setRewriteMethod(wq.getRewriteMethod());
+    expected.setBoost(wq.getBoost());
+    assertEquals(searcher.rewrite(expected), searcher.rewrite(wq));
+    
+    wq.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
+    wq.setBoost(0.4F);
+    expected.setRewriteMethod(wq.getRewriteMethod());
+    expected.setBoost(wq.getBoost());
+    assertEquals(searcher.rewrite(expected), searcher.rewrite(wq));
   }
 
   /**
