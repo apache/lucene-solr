@@ -149,13 +149,14 @@ public class IndexSplitter {
     // System.out.println("destDir:"+destDir.getAbsolutePath());
   }
 
+  private static final byte[] copyBuffer = new byte[32*1024];
+
   private static void copyFile(File src, File dst) throws IOException {
     InputStream in = new FileInputStream(src);
     OutputStream out = new FileOutputStream(dst);
-    byte[] buf = new byte[32*1024];
     int len;
-    while ((len = in.read(buf)) > 0) {
-      out.write(buf, 0, len);
+    while ((len = in.read(copyBuffer)) > 0) {
+      out.write(copyBuffer, 0, len);
     }
     in.close();
     out.close();
