@@ -99,7 +99,8 @@ public class SolrIndexWriter extends IndexWriter {
       String infoStreamFile = config.infoStreamFile;
       if (infoStreamFile != null) {
         File f = new File(infoStreamFile);
-        f.getParentFile().mkdirs();
+        File parent = f.getParentFile();
+        if (parent != null) parent.mkdirs();
         FileOutputStream fos = new FileOutputStream(f, true);
         infoStream = new TimeLoggingPrintStream(fos, true);
         setInfoStream(infoStream);

@@ -87,10 +87,6 @@
      -->
     <!--<mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler"/>-->
 
-    <!--  To aid in advanced debugging, you may turn on IndexWriter debug logging.
-     Uncommenting this and setting to true will set the file that the underlying
-     Lucene IndexWriter will write its debug infostream to.  -->
-	  <!-- <infoStream file="/path/file">false</infoStream> -->
 	  
     <!--
       This option specifies which Lucene LockFactory implementation to use.
@@ -164,6 +160,11 @@
           <str name="maxCommitAge">1DAY</str>
       -->
     </deletionPolicy>
+
+    <!--  To aid in advanced debugging, you may turn on IndexWriter debug logging.
+      Setting to true will set the file that the underlying Lucene IndexWriter
+      will write its debug infostream to.  -->
+     <infoStream file="INFOSTREAM.txt">false</infoStream> 
 
   </mainIndex>
 
