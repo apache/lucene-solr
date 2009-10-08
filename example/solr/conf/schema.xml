@@ -73,12 +73,12 @@
 
     <!-- boolean type: "true" or "false" -->
     <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true" omitNorms="true"/>
-    <!--Binary data type. The data should be sent/retrieved in as Bas64 encoded Strings -->
+    <!--Binary data type. The data should be sent/retrieved in as Base64 encoded Strings -->
     <fieldtype name="binary" class="solr.BinaryField"/>
 
     <!-- The optional sortMissingLast and sortMissingFirst attributes are
          currently supported on types that are sorted internally as strings.
-	 This includes "string","boolean","sint","slong","sfloat","sdouble","pdate"
+	       This includes "string","boolean","sint","slong","sfloat","sdouble","pdate"
        - If sortMissingLast="true", then a sort on this field will cause documents
          without the field to come after documents with the field,
          regardless of the requested sort order (asc or desc).
@@ -90,8 +90,8 @@
          field first in an ascending sort and last in a descending sort.
     -->    
 
-    <!-- Default numeric field types.  For faster range queries, consider the tint/tfloat/tlong/tdouble types.
-      Note: the statistics component does not yet work with these field types.
+    <!--
+      Default numeric field types. For faster range queries, consider the tint/tfloat/tlong/tdouble types.
     -->
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="float" class="solr.TrieFloatField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
@@ -107,8 +107,6 @@
      Smaller precisionStep values (specified in bits) will lead to more tokens
      indexed per value, slightly larger index size, and faster range queries.
      A precisionStep of 0 disables indexing at different precision levels.
-
-     Note: faceting does not currently work for these fields.
     -->
     <fieldType name="tint" class="solr.TrieIntField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
     <fieldType name="tfloat" class="solr.TrieFloatField" precisionStep="8" omitNorms="true" positionIncrementGap="0"/>
@@ -134,6 +132,8 @@
                       the current day
                       
          Consult the DateField javadocs for more information.
+
+         Note: For faster range queries, consider the tdate type
       -->
     <fieldType name="date" class="solr.TrieDateField" omitNorms="true" precisionStep="0" positionIncrementGap="0"/>
 
@@ -141,11 +141,14 @@
     <fieldType name="tdate" class="solr.TrieDateField" omitNorms="true" precisionStep="6" positionIncrementGap="0"/>
 
 
-    <!-- plain numeric field types that store and index the text
-         value verbatim (and hence don't support range queries, since the
-         lexicographic ordering isn't equal to the numeric ordering)
-         These should only be used for compatibility with existing indexes.
-         Use Trie based fields instead.
+    <!--
+      Note:
+      These should only be used for compatibility with existing indexes (created with older Solr versions)
+      or if "sortMissingFirst" or "sortMissingLast" functionality is needed. Use Trie based fields instead.
+
+      Plain numeric field types that store and index the text
+      value verbatim (and hence don't support range queries, since the
+      lexicographic ordering isn't equal to the numeric ordering)
     -->
     <fieldType name="pint" class="solr.IntField" omitNorms="true"/>
     <fieldType name="plong" class="solr.LongField" omitNorms="true"/>
@@ -155,8 +158,14 @@
 
 
     <!--
-       These types should only be used for back compatibility with existing
-       indexes, or if "sortMissingLast" functionality is needed. Use Trie based fields instead.
+      Note:
+      These should only be used for compatibility with existing indexes (created with older Solr versions)
+      or if "sortMissingFirst" or "sortMissingLast" functionality is needed. Use Trie based fields instead.
+
+      Numeric field types that manipulate the value into
+      a string value that isn't human-readable in its internal form,
+      but with a lexicographic ordering the same as the numeric ordering,
+      so that range queries work correctly.
     -->
     <fieldType name="sint" class="solr.SortableIntField" sortMissingLast="true" omitNorms="true"/>
     <fieldType name="slong" class="solr.SortableLongField" sortMissingLast="true" omitNorms="true"/>
