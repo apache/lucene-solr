@@ -45,14 +45,14 @@ import java.util.regex.Pattern;
  * @version $Id$
  */
 public class QueryParsing {
-  /** the SolrParam used to override the QueryParser "default operator" */
-  public static final String OP = "q.op";
+  public static final String OP = "q.op";  // the SolrParam used to override the QueryParser "default operator"
   public static final String V = "v";      // value of this parameter
   public static final String F = "f";      // field that a query or command pertains to
   public static final String TYPE = "type";// type of this query or command
   public static final String DEFTYPE = "defType"; // default type for any direct subqueries
   public static final String LOCALPARAM_START = "{!";
   public static final char LOCALPARAM_END = '}';
+  public static final String DOCID = "_docid_";
 
   /** 
    * Helper utility for parsing a query using the Lucene QueryParser syntax. 
@@ -266,7 +266,7 @@ public class QueryParsing {
         else {
           lst[i] = new SortField(null, SortField.SCORE, true);
         }
-      } else if ("#".equals(part)) {
+      } else if (DOCID.equals(part)) {
         lst[i] = new SortField(null, SortField.DOC, top);
       }
       else {
