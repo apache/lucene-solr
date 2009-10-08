@@ -59,18 +59,24 @@ public class PersianNormalizer {
   public int normalize(char s[], int len) {
 
     for (int i = 0; i < len; i++) {
-      if (s[i] == FARSI_YEH || s[i] == YEH_BARREE)
+      switch (s[i]) {
+      case FARSI_YEH:
+      case YEH_BARREE:
         s[i] = YEH;
-
-      if (s[i] == KEHEH)
+        break;
+      case KEHEH:
         s[i] = KAF;
-
-      if (s[i] == HEH_YEH || s[i] == HEH_GOAL)
+        break;
+      case HEH_YEH:
+      case HEH_GOAL:
         s[i] = HEH;
-
-      if (s[i] == HAMZA_ABOVE) { // necessary for HEH + HAMZA
+        break;
+      case HAMZA_ABOVE: // necessary for HEH + HAMZA
         len = delete(s, i, len);
         i--;
+        break;
+      default:
+        break;
       }
     }
 
@@ -88,7 +94,7 @@ public class PersianNormalizer {
   protected int delete(char s[], int pos, int len) {
     if (pos < len)
       System.arraycopy(s, pos + 1, s, pos, len - pos - 1);
-
+    
     return len - 1;
   }
 

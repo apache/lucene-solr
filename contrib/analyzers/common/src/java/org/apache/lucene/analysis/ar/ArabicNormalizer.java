@@ -63,21 +63,34 @@ public class ArabicNormalizer {
    * @return length of input buffer after normalization
    */
   public int normalize(char s[], int len) {
- 
+
     for (int i = 0; i < len; i++) {
-      if (s[i] == ALEF_MADDA || s[i] == ALEF_HAMZA_ABOVE || s[i] == ALEF_HAMZA_BELOW)
+      switch (s[i]) {
+      case ALEF_MADDA:
+      case ALEF_HAMZA_ABOVE:
+      case ALEF_HAMZA_BELOW:
         s[i] = ALEF;
-
-      if (s[i] == DOTLESS_YEH)
+        break;
+      case DOTLESS_YEH:
         s[i] = YEH;
-
-      if (s[i] == TEH_MARBUTA)
+        break;
+      case TEH_MARBUTA:
         s[i] = HEH;
-
-      if (s[i] == TATWEEL || s[i] == KASRATAN || s[i] == DAMMATAN || s[i] == FATHATAN ||
-          s[i] == FATHA || s[i] == DAMMA || s[i] == KASRA || s[i] == SHADDA || s[i] == SUKUN) {
+        break;
+      case TATWEEL:
+      case KASRATAN:
+      case DAMMATAN:
+      case FATHATAN:
+      case FATHA:
+      case DAMMA:
+      case KASRA:
+      case SHADDA:
+      case SUKUN:
         len = delete(s, i, len);
         i--;
+        break;
+      default:
+        break;
       }
     }
 

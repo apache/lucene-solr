@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Set;
@@ -58,30 +59,61 @@ public final class PersianAnalyzer extends Analyzer {
   /**
    * Contains the stopwords used with the StopFilter.
    */
-  private Set stoptable = new HashSet();
+  private final Set stoptable;
 
   /**
    * The comment character in the stopwords file. All lines prefixed with this
    * will be ignored
    */
   public static final String STOPWORDS_COMMENT = "#";
+  
+  /**
+   * Returns an unmodifiable instance of the default stop-words set.
+   * @return an unmodifiable instance of the default stop-words set.
+   */
+  public static Set<String> getDefaultStopSet(){
+    return DefaultSetHolder.DEFAULT_STOP_SET;
+  }
+  
+  /**
+   * Atomically loads the DEFAULT_STOP_SET in a lazy fashion once the outer class 
+   * accesses the static final set the first time.;
+   */
+  private static class DefaultSetHolder {
+    static final Set<String> DEFAULT_STOP_SET;
+
+    static {
+      try {
+        DEFAULT_STOP_SET = loadDefaultStopWordSet();
+      } catch (IOException ex) {
+        // default set should always be present as it is part of the
+        // distribution (JAR)
+        throw new RuntimeException("Unable to load default stopword set");
+      }
+    }
+
+    static Set<String> loadDefaultStopWordSet() throws IOException {
+      InputStream stream = PersianAnalyzer.class
+          .getResourceAsStream(DEFAULT_STOPWORD_FILE);
+      try {
+        InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+        // make sure it is unmodifiable as we expose it in the outer class
+        return Collections.unmodifiableSet(WordlistLoader.getWordSet(reader,
+            STOPWORDS_COMMENT));
+      } finally {
+        stream.close();
+      }
+    }
+  }
+
+  
 
   /**
    * Builds an analyzer with the default stop words:
    * {@link #DEFAULT_STOPWORD_FILE}.
    */
   public PersianAnalyzer() {
-    try {
-      InputStream stream = PersianAnalyzer.class
-          .getResourceAsStream(DEFAULT_STOPWORD_FILE);
-      InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
-      stoptable = WordlistLoader.getWordSet(reader, STOPWORDS_COMMENT);
-      reader.close();
-      stream.close();
-    } catch (IOException e) {
-      // TODO: throw IOException
-      throw new RuntimeException(e);
-    }
+    stoptable = DefaultSetHolder.DEFAULT_STOP_SET;
   }
 
   /**
@@ -125,7 +157,7 @@ public final class PersianAnalyzer extends Analyzer {
      * the order here is important: the stopword list is normalized with the
      * above!
      */
-    result = new StopFilter(result, stoptable);
+    result = new StopFilter(false, result, stoptable);
 
     return result;
   }
@@ -158,7 +190,7 @@ public final class PersianAnalyzer extends Analyzer {
        * the order here is important: the stopword list is normalized with the
        * above!
        */
-      streams.result = new StopFilter(streams.result, stoptable);
+      streams.result = new StopFilter(false, streams.result, stoptable);
       setPreviousTokenStream(streams);
     } else {
       streams.source.reset(reader);

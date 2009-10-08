@@ -44,8 +44,7 @@ public final class ArabicNormalizationFilter extends TokenFilter {
       int newlen = normalizer.normalize(termAtt.termBuffer(), termAtt.termLength());
       termAtt.setTermLength(newlen);
       return true;
-    } else {
-      return false;
     }
+    return false;
   }
 }

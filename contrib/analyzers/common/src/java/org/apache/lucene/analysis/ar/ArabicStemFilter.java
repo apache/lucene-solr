@@ -30,8 +30,8 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 public final class ArabicStemFilter extends TokenFilter {
 
-  protected ArabicStemmer stemmer = null;
-  private TermAttribute termAtt;
+  private final ArabicStemmer stemmer;
+  private final TermAttribute termAtt;
   
   public ArabicStemFilter(TokenStream input) {
     super(input);

@@ -32,7 +32,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 public final class PersianNormalizationFilter extends TokenFilter {
 
   private final PersianNormalizer normalizer;
-  private TermAttribute termAtt;
+  private final TermAttribute termAtt;
 
   public PersianNormalizationFilter(TokenStream input) {
     super(input);
@@ -42,12 +42,11 @@ public final class PersianNormalizationFilter extends TokenFilter {
 
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      int newlen = normalizer.normalize(termAtt.termBuffer(), termAtt
+      final int newlen = normalizer.normalize(termAtt.termBuffer(), termAtt
           .termLength());
       termAtt.setTermLength(newlen);
       return true;
-    } else {
-      return false;
-    }
+    } 
+    return false;
   }
 }
