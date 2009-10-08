@@ -79,9 +79,8 @@ import org.apache.lucene.util.Constants;
  * call).  Finally the synchronized "finishDocument" is
  * called to flush changes to the directory.
  *
- * When flush is called by IndexWriter, or, we flush
- * internally when autoCommit=false, we forcefully idle all
- * threads and flush only once they are all idle.  This
+ * When flush is called by IndexWriter we forcefully idle
+ * all threads and flush only once they are all idle.  This
  * means you can call flush with a given thread even while
  * other threads are actively adding/deleting documents.
  *
@@ -349,8 +348,7 @@ final class DocumentsWriter {
   }
 
   /** Returns the current doc store segment we are writing
-   *  to.  This will be the same as segment when autoCommit
-   *  * is true. */
+   *  to. */
   synchronized String getDocStoreSegment() {
     return docStoreSegment;
   }
@@ -441,8 +439,9 @@ final class DocumentsWriter {
   synchronized void abort() throws IOException {
 
     try {
-      if (infoStream != null)
+      if (infoStream != null) {
         message("docWriter: now abort");
+      }
 
       // Forcefully remove waiting ThreadStates from line
       waitQueue.abort();
@@ -491,6 +490,9 @@ final class DocumentsWriter {
     } finally {
       aborting = false;
       notifyAll();
+      if (infoStream != null) {
+        message("docWriter: done abort");
+      }
     }
   }
 

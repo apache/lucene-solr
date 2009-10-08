@@ -22,7 +22,6 @@
 ram.flush.mb=flush:32:40:48:56:32:40:48:56
 compound=cmpnd:true:true:true:true:false:false:false:false
 
-autocommit=false
 analyzer=org.apache.lucene.analysis.standard.StandardAnalyzer
 directory=FSDirectory
 #directory=RamDirectory

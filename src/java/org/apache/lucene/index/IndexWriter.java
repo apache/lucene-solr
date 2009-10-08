@@ -23,14 +23,12 @@ import org.apache.lucene.index.DocumentsWriter.IndexingChain;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.util.Constants;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
@@ -85,55 +83,6 @@ import java.util.Map;
   addDocument calls (see <a href="#mergePolicy">below</a>
   for changing the {@link MergeScheduler}).</p>
 
-  <a name="autoCommit"></a>
-  <p>The optional <code>autoCommit</code> argument to the {@link
-  #IndexWriter(Directory, boolean, Analyzer) constructors}
-  controls visibility of the changes to {@link IndexReader}
-  instances reading the same index.  When this is
-  <code>false</code>, changes are not visible until {@link
-  #close()} or {@link #commit()} is called.  Note that changes will still be
-  flushed to the {@link Directory} as new files, but are 
-  not committed (no new <code>segments_N</code> file is written 
-  referencing the new files, nor are the files sync'd to stable storage)
-  until {@link #close()} or {@link #commit()} is called.  If something
-  goes terribly wrong (for example the JVM crashes), then
-  the index will reflect none of the changes made since the
-  last commit, or the starting state if commit was not called.
-  You can also call {@link #rollback()}, which closes the writer
-  without committing any changes, and removes any index
-  files that had been flushed but are now unreferenced.
-  This mode is useful for preventing readers from refreshing
-  at a bad time (for example after you've done all your
-  deletes but before you've done your adds).  It can also be
-  used to implement simple single-writer transactional
-  semantics ("all or none").  You can do a two-phase commit
-  by calling {@link #prepareCommit()}
-  followed by {@link #commit()}. This is necessary when
-  Lucene is working with an external resource (for example,
-  a database) and both must either commit or rollback the
-  transaction.</p>
-
-  <p>When <code>autoCommit</code> is <code>true</code> then
-  the writer will periodically commit on its own.  [<b>Deprecated</b>: Note that in 3.0, IndexWriter will
-  no longer accept autoCommit=true (it will be hardwired to
-  false).  You can always call {@link #commit()} yourself
-  when needed]. There is
-  no guarantee when exactly an auto commit will occur (it
-  used to be after every flush, but it is now after every
-  completed merge, as of 2.4).  If you want to force a
-  commit, call {@link #commit()}, or, close the writer.  Once
-  a commit has finished, newly opened {@link IndexReader} instances will
-  see the changes to the index as of that commit.  When
-  running in this mode, be careful not to refresh your
-  readers while optimize or segment merges are taking place
-  as this can tie up substantial disk space.</p>
-  
-  <p>Regardless of <code>autoCommit</code>, an {@link
-  IndexReader} or {@link org.apache.lucene.search.IndexSearcher} will only see the
-  index as of the "point in time" that it was opened.  Any
-  changes committed to the index after the reader was opened
-  are not visible until the reader is re-opened.</p>
-
   <p>If an index will not have more documents added for a while and optimal search
   performance is desired, then either the full {@link #optimize() optimize}
   method or partial {@link #optimize(int)} method should be
@@ -183,8 +132,7 @@ import java.util.Map;
   IllegalStateException.  The only course of action is to
   call {@link #close()}, which internally will call {@link
   #rollback()}, to undo any changes to the index since the
-  last commit.  If you opened the writer with autoCommit
-  false you can also just call {@link #rollback()}
+  last commit.  You can also just call {@link #rollback()}
   directly.</p>
 
   <a name="thread-safety"></a><p><b>NOTE</b>: {@link
@@ -199,8 +147,7 @@ import java.util.Map;
 
 /*
  * Clarification: Check Points (and commits)
- * Being able to set autoCommit=false allows IndexWriter to flush and 
- * write new index files to the directory without writing a new segments_N
+ * IndexWriter writes new index files to the directory without writing a new segments_N
  * file which references these new files. It also means that the state of 
  * the in memory SegmentInfos object is different than the most recent
  * segments_N file written to the directory.
@@ -210,9 +157,6 @@ import java.util.Map;
  * If the modified/new SegmentInfos is written to disk - as a new 
  * (generation of) segments_N file - this check point is also an 
  * IndexCommit.
- * 
- * With autoCommit=true, every checkPoint is also a CommitPoint.
- * With autoCommit=false, some checkPoints may not be commits.
  * 
  * A new checkpoint always replaces the previous checkpoint and 
  * becomes the new "front" of the index. This allows the IndexFileDeleter 
@@ -917,10 +861,6 @@ public class IndexWriter {
    * is true, then a new, empty index will be created in
    * <code>d</code>, replacing the index already there, if any.
    *
-   * <p><b>NOTE</b>: autoCommit (see <a
-   * href="#autoCommit">above</a>) is set to false with this
-   * constructor.
-   *
    * @param d the index directory
    * @param a the analyzer to use
    * @param create <code>true</code> to create the index or overwrite
@@ -943,42 +883,10 @@ public class IndexWriter {
   }
 
   /**
-   * Constructs an IndexWriter for the index in <code>d</code>.
-   * Text will be analyzed with <code>a</code>.  If <code>create</code>
-   * is true, then a new, empty index will be created in
-   * <code>d</code>, replacing the index already there, if any.
-   *
-   * @param d the index directory
-   * @param a the analyzer to use
-   * @param create <code>true</code> to create the index or overwrite
-   *  the existing one; <code>false</code> to append to the existing
-   *  index
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if the directory cannot be read/written to, or
-   *  if it does not exist and <code>create</code> is
-   *  <code>false</code> or if there is any other low-level
-   *  IO error
-   * @deprecated This constructor will be removed in the 3.0
-   *  release, and call {@link #commit()} when needed.
-   *  Use {@link #IndexWriter(Directory,Analyzer,boolean,MaxFieldLength)} instead.
-   */
-  public IndexWriter(Directory d, Analyzer a, boolean create)
-       throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, create, null, true, DEFAULT_MAX_FIELD_LENGTH, null, null);
-  }
-
-  /**
    * Constructs an IndexWriter for the index in
    * <code>d</code>, first creating it if it does not
    * already exist.  Text will be analyzed with
    * <code>a</code>.
-   *
-   * <p><b>NOTE</b>: autoCommit (see <a
-   * href="#autoCommit">above</a>) is set to false with this
-   * constructor.
    *
    * @param d the index directory
    * @param a the analyzer to use
@@ -998,95 +906,10 @@ public class IndexWriter {
   }
 
   /**
-   * Constructs an IndexWriter for the index in
-   * <code>d</code>, first creating it if it does not
-   * already exist.  Text will be analyzed with
-   * <code>a</code>.
-   *
-   * @param d the index directory
-   * @param a the analyzer to use
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if the directory cannot be
-   *  read/written to or if there is any other low-level
-   *  IO error
-   * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link
-   *  #IndexWriter(Directory,Analyzer,MaxFieldLength)}
-   *  instead, and call {@link #commit()} when needed.
-   */
-  public IndexWriter(Directory d, Analyzer a)
-    throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, null, true, DEFAULT_MAX_FIELD_LENGTH, null, null);
-  }
-
-  /**
-   * Constructs an IndexWriter for the index in
-   * <code>d</code>, first creating it if it does not
-   * already exist.  Text will be analyzed with
-   * <code>a</code>.
-   *
-   * @param d the index directory
-   * @param autoCommit see <a href="#autoCommit">above</a>
-   * @param a the analyzer to use
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if the directory cannot be
-   *  read/written to or if there is any other low-level
-   *  IO error
-   * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link
-   *  #IndexWriter(Directory,Analyzer,MaxFieldLength)}
-   *  instead, and call {@link #commit()} when needed.
-   */
-  public IndexWriter(Directory d, boolean autoCommit, Analyzer a)
-    throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, null, autoCommit, DEFAULT_MAX_FIELD_LENGTH, null, null);
-  }
-
-  /**
-   * Constructs an IndexWriter for the index in <code>d</code>.
-   * Text will be analyzed with <code>a</code>.  If <code>create</code>
-   * is true, then a new, empty index will be created in
-   * <code>d</code>, replacing the index already there, if any.
-   *
-   * @param d the index directory
-   * @param autoCommit see <a href="#autoCommit">above</a>
-   * @param a the analyzer to use
-   * @param create <code>true</code> to create the index or overwrite
-   *  the existing one; <code>false</code> to append to the existing
-   *  index
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if the directory cannot be read/written to, or
-   *  if it does not exist and <code>create</code> is
-   *  <code>false</code> or if there is any other low-level
-   *  IO error
-   * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link
-   *  #IndexWriter(Directory,Analyzer,boolean,MaxFieldLength)}
-   *  instead, and call {@link #commit()} when needed.
-   */
-  public IndexWriter(Directory d, boolean autoCommit, Analyzer a, boolean create)
-       throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, create, null, autoCommit, DEFAULT_MAX_FIELD_LENGTH, null, null);
-  }
-
-  /**
    * Expert: constructs an IndexWriter with a custom {@link
    * IndexDeletionPolicy}, for the index in <code>d</code>,
    * first creating it if it does not already exist.  Text
    * will be analyzed with <code>a</code>.
-   *
-   * <p><b>NOTE</b>: autoCommit (see <a
-   * href="#autoCommit">above</a>) is set to false with this
-   * constructor.
    *
    * @param d the index directory
    * @param a the analyzer to use
@@ -1107,42 +930,11 @@ public class IndexWriter {
 
   /**
    * Expert: constructs an IndexWriter with a custom {@link
-   * IndexDeletionPolicy}, for the index in <code>d</code>,
-   * first creating it if it does not already exist.  Text
-   * will be analyzed with <code>a</code>.
-   *
-   * @param d the index directory
-   * @param autoCommit see <a href="#autoCommit">above</a>
-   * @param a the analyzer to use
-   * @param deletionPolicy see <a href="#deletionPolicy">above</a>
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if the directory cannot be
-   *  read/written to or if there is any other low-level
-   *  IO error
-   * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link
-   *  #IndexWriter(Directory,Analyzer,IndexDeletionPolicy,MaxFieldLength)}
-   *  instead, and call {@link #commit()} when needed.
-   */
-  public IndexWriter(Directory d, boolean autoCommit, Analyzer a, IndexDeletionPolicy deletionPolicy)
-    throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, deletionPolicy, autoCommit, DEFAULT_MAX_FIELD_LENGTH, null, null);
-  }
-  
-  /**
-   * Expert: constructs an IndexWriter with a custom {@link
    * IndexDeletionPolicy}, for the index in <code>d</code>.
    * Text will be analyzed with <code>a</code>.  If
    * <code>create</code> is true, then a new, empty index
    * will be created in <code>d</code>, replacing the index
    * already there, if any.
-   *
-   * <p><b>NOTE</b>: autoCommit (see <a
-   * href="#autoCommit">above</a>) is set to false with this
-   * constructor.
    *
    * @param d the index directory
    * @param a the analyzer to use
@@ -1174,10 +966,6 @@ public class IndexWriter {
    * will be created in <code>d</code>, replacing the index
    * already there, if any.
    *
-   * <p><b>NOTE</b>: autoCommit (see <a
-   * href="#autoCommit">above</a>) is set to false with this
-   * constructor.
-   *
    * @param d the index directory
    * @param a the analyzer to use
    * @param create <code>true</code> to create the index or overwrite
@@ -1203,39 +991,6 @@ public class IndexWriter {
   }
   
   /**
-   * Expert: constructs an IndexWriter with a custom {@link
-   * IndexDeletionPolicy}, for the index in <code>d</code>.
-   * Text will be analyzed with <code>a</code>.  If
-   * <code>create</code> is true, then a new, empty index
-   * will be created in <code>d</code>, replacing the index
-   * already there, if any.
-   *
-   * @param d the index directory
-   * @param autoCommit see <a href="#autoCommit">above</a>
-   * @param a the analyzer to use
-   * @param create <code>true</code> to create the index or overwrite
-   *  the existing one; <code>false</code> to append to the existing
-   *  index
-   * @param deletionPolicy see <a href="#deletionPolicy">above</a>
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws LockObtainFailedException if another writer
-   *  has this index open (<code>write.lock</code> could not
-   *  be obtained)
-   * @throws IOException if the directory cannot be read/written to, or
-   *  if it does not exist and <code>create</code> is
-   *  <code>false</code> or if there is any other low-level
-   *  IO error
-   * @deprecated This constructor will be removed in the 3.0 release.
-   *  Use {@link
-   *  #IndexWriter(Directory,Analyzer,boolean,IndexDeletionPolicy,MaxFieldLength)}
-   *  instead, and call {@link #commit()} when needed.
-   */
-  public IndexWriter(Directory d, boolean autoCommit, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy)
-          throws CorruptIndexException, LockObtainFailedException, IOException {
-    init(d, a, create, deletionPolicy, autoCommit, DEFAULT_MAX_FIELD_LENGTH, null, null);
-  }
-
-  /**
    * Expert: constructs an IndexWriter on specific commit
    * point, with a custom {@link IndexDeletionPolicy}, for
    * the index in <code>d</code>.  Text will be analyzed
@@ -1252,10 +1007,6 @@ public class IndexWriter {
    * arbitrary commit point from the past, assuming the
    * {@link IndexDeletionPolicy} has preserved past
    * commits.
-   *
-   * <p><b>NOTE</b>: autoCommit (see <a
-   * href="#autoCommit">above</a>) is set to false with this
-   * constructor.
    *
    * @param d the index directory
    * @param a the analyzer to use
@@ -1290,6 +1041,8 @@ public class IndexWriter {
                     IndexDeletionPolicy deletionPolicy, boolean autoCommit, int maxFieldLength,
                     IndexingChain indexingChain, IndexCommit commit)
     throws CorruptIndexException, LockObtainFailedException, IOException {
+
+    assert !autoCommit;
     directory = d;
     analyzer = a;
     setMessageID(defaultInfoStream);
@@ -1706,31 +1459,6 @@ public class IndexWriter {
     return getLogMergePolicy().getMergeFactor();
   }
 
-  /**
-   * Expert: returns max delay inserted before syncing a
-   * commit point.  On Windows, at least, pausing before
-   * syncing can increase net indexing throughput.  The
-   * delay is variable based on size of the segment's files,
-   * and is only inserted when using
-   * ConcurrentMergeScheduler for merges.
-   * @deprecated This will be removed in 3.0, when
-   * autoCommit=true is removed from IndexWriter.
-   */
-  public double getMaxSyncPauseSeconds() {
-    return maxSyncPauseSeconds;
-  }
-
-  /**
-   * Expert: sets the max delay before syncing a commit
-   * point.
-   * @see #getMaxSyncPauseSeconds
-   * @deprecated This will be removed in 3.0, when
-   * autoCommit=true is removed from IndexWriter.
-   */
-  public void setMaxSyncPauseSeconds(double seconds) {
-    maxSyncPauseSeconds = seconds;
-  }
-
   /** If non-null, this will be the default infoStream used
    * by a newly instantiated IndexWriter.
    * @see #setInfoStream
@@ -1763,7 +1491,6 @@ public class IndexWriter {
 
   private void messageState() {
     message("setInfoStream: dir=" + directory +
-            " autoCommit=" + autoCommit +
             " mergePolicy=" + mergePolicy +
             " mergeScheduler=" + mergeScheduler +
             " ramBufferSizeMB=" + docWriter.getRAMBufferSizeMB() +
@@ -2041,6 +1768,7 @@ public class IndexWriter {
           if (infoStream != null)
             message("hit exception building compound file doc store for segment " + docStoreSegment);
           deleter.deleteFile(compoundFileName);
+          docWriter.abort();
         }
       }
 
@@ -3020,12 +2748,8 @@ public class IndexWriter {
    * This removes any temporary files that had been created,
    * after which the state of the index will be the same as
    * it was when commit() was last called or when this
-   * writer was first opened.  This can only be called when
-   * this IndexWriter was opened with
-   * <code>autoCommit=false</code>.  This also clears a
-   * previous call to {@link #prepareCommit}.
-   * @throws IllegalStateException if this is called when
-   *  the writer was opened with <code>autoCommit=true</code>.
+   * writer was first opened.  This also clears a previous
+   * call to {@link #prepareCommit}.
    * @throws IOException if there is a low-level IO error
    */
   public void rollback() throws IOException {
@@ -3768,12 +3492,11 @@ public class IndexWriter {
 
   /** <p>Expert: prepare for commit, specifying
    *  commitUserData Map (String -> String).  This does the
-   *  first phase of 2-phase commit.  You can only call this
-   *  when autoCommit is false.  This method does all steps
-   *  necessary to commit changes since this writer was
-   *  opened: flushes pending added and deleted docs, syncs
-   *  the index files, writes most of next segments_N file.
-   *  After calling this you must call either {@link
+   *  first phase of 2-phase commit. This method does all
+   *  steps necessary to commit changes since this writer
+   *  was opened: flushes pending added and deleted docs,
+   *  syncs the index files, writes most of next segments_N
+   *  file.  After calling this you must call either {@link
    *  #commit()} to finish the commit, or {@link
    *  #rollback()} to revert the commit and undo all changes
    *  done since the writer was opened.</p>
@@ -3790,14 +3513,12 @@ public class IndexWriter {
    *  that's recorded into the segments file in the index,
    *  and retrievable by {@link
    *  IndexReader#getCommitUserData}.  Note that when
-   *  IndexWriter commits itself, for example if open with
-   *  autoCommit=true, or, during {@link #close}, the
+   *  IndexWriter commits itself during {@link #close}, the
    *  commitUserData is unchanged (just carried over from
    *  the prior commit).  If this is null then the previous
    *  commitUserData is kept.  Also, the commitUserData will
    *  only "stick" if there are actually changes in the
-   *  index to commit.  Therefore it's best to use this
-   *  feature only when autoCommit is false.
+   *  index to commit.
    */
   public final void prepareCommit(Map commitUserData) throws CorruptIndexException, IOException {
     prepareCommit(commitUserData, false);
@@ -3991,7 +3712,7 @@ public class IndexWriter {
       flushDocStores |= autoCommit;
       String docStoreSegment = docWriter.getDocStoreSegment();
 
-      assert docStoreSegment != null || numDocs == 0;
+      assert docStoreSegment != null || numDocs == 0: "dss=" + docStoreSegment + " numDocs=" + numDocs;
 
       if (docStoreSegment == null)
         flushDocStores = false;

@@ -49,7 +49,7 @@ public class TestDistance extends TestCase{
   @Override
   protected void setUp() throws IOException {
     directory = new RAMDirectory();
-    writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+    writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
     addData(writer);
     
   }

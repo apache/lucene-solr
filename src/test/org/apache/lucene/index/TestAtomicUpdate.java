@@ -33,8 +33,8 @@ public class TestAtomicUpdate extends LuceneTestCase {
 
   public class MockIndexWriter extends IndexWriter {
 
-    public MockIndexWriter(Directory dir, boolean autoCommit, Analyzer a, boolean create) throws IOException {
-      super(dir, autoCommit, a, create);
+    public MockIndexWriter(Directory dir, Analyzer a, boolean create, IndexWriter.MaxFieldLength mfl) throws IOException {
+      super(dir, a, create, mfl);
     }
 
     boolean testPoint(String name) {
@@ -125,7 +125,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
 
     TimedThread[] threads = new TimedThread[4];
 
-    IndexWriter writer = new MockIndexWriter(directory, true, ANALYZER, true);
+    IndexWriter writer = new MockIndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.setMaxBufferedDocs(7);
     writer.setMergeFactor(3);
 
@@ -134,6 +134,9 @@ public class TestAtomicUpdate extends LuceneTestCase {
       Document d = new Document();
       d.add(new Field("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
       d.add(new Field("contents", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED));
+      if ((i-1)%7 == 0) {
+        writer.commit();
+      }
       writer.addDocument(d);
     }
     writer.commit();

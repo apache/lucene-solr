@@ -81,13 +81,10 @@ public interface IndexDeletionPolicy {
    * by calling method {@link IndexCommit#delete delete()} 
    * of {@link IndexCommit}.</p>
    * 
-   * <p>If writer has <code>autoCommit = true</code> then
-   * this method will in general be called many times during
-   * one instance of {@link IndexWriter}.  If
-   * <code>autoCommit = false</code> then this method is
-   * only called once when {@link IndexWriter#close} is
-   * called, or not at all if the {@link IndexWriter#abort}
-   * is called. 
+   * <p>This method is only called when {@link
+   * IndexWriter#commit} or {@link IndexWriter#close} is
+   * called, or possibly not at all if the {@link
+   * IndexWriter#abort} is called.
    *
    * <p><u>Note:</u> the last CommitPoint is the most recent one,
    * i.e. the "front index state". Be careful not to delete it,

@@ -174,7 +174,7 @@ class LuceneMethods {
 
     public void optimize() throws IOException {
     //open the index writer. False: don't create a new one
-    IndexWriter indexWriter = new IndexWriter(indexName, createAnalyzer(), false);
+    IndexWriter indexWriter = new IndexWriter(indexName, createAnalyzer(), false, IndexWriter.MaxFieldLength.UNLIMITED);
     message("Starting to optimize index.");
     long start = System.currentTimeMillis();
     indexWriter.optimize();

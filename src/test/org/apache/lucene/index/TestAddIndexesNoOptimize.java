@@ -149,6 +149,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.deleteDocuments(q);
 
     writer.optimize();
+    writer.commit();
 
     verifyNumDocs(dir, 1039);
     verifyTermDocs(dir, new Term("content", "aaa"), 1030);
@@ -187,6 +188,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.deleteDocuments(q);
 
     writer.optimize();
+    writer.commit();
 
     verifyNumDocs(dir, 1039);
     verifyTermDocs(dir, new Term("content", "aaa"), 1030);
@@ -225,6 +227,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.addIndexesNoOptimize(new Directory[] {aux});
 
     writer.optimize();
+    writer.commit();
 
     verifyNumDocs(dir, 1039);
     verifyTermDocs(dir, new Term("content", "aaa"), 1030);
@@ -425,7 +428,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
 
   private IndexWriter newWriter(Directory dir, boolean create)
       throws IOException {
-    final IndexWriter writer = new IndexWriter(dir, true, new WhitespaceAnalyzer(), create);
+    final IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), create, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.setMergePolicy(new LogDocMergePolicy(writer));
     return writer;
   }

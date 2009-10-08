@@ -59,7 +59,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    */
   public IndexSearcher setUpSearcher(Analyzer analyzer) throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, analyzer, true);
+    IndexWriter writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
 
     Document doc;
     doc = new Document();

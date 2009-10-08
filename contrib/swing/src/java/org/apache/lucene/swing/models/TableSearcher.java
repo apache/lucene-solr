@@ -163,7 +163,7 @@ public class TableSearcher extends AbstractTableModel {
         try {
             // recreate the RAMDirectory
             directory = new RAMDirectory();
-            IndexWriter writer = new IndexWriter(directory, analyzer, true);
+            IndexWriter writer = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
 
             // iterate through all rows
             for (int row=0; row < tableModel.getRowCount(); row++){

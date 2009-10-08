@@ -115,7 +115,7 @@ public class TestPayloadSpans extends LuceneTestCase {
       throws IOException {
     RAMDirectory directory = new RAMDirectory();
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
-    IndexWriter writer = new IndexWriter(directory, analyzer, true);
+    IndexWriter writer = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.setSimilarity(similarity);
 
     Document doc = new Document();
@@ -308,7 +308,6 @@ public class TestPayloadSpans extends LuceneTestCase {
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       while (spans.next()) {
         Collection payloads = spans.getPayload();
-        int cnt = 0;
         for (Iterator it = payloads.iterator(); it.hasNext();) {
           payloadSet.add(new String((byte[]) it.next()));
         }
@@ -362,7 +361,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   public void testPayloadSpanUtil() throws Exception {
     RAMDirectory directory = new RAMDirectory();
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
-    IndexWriter writer = new IndexWriter(directory, analyzer, true);
+    IndexWriter writer = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.setSimilarity(similarity);
     Document doc = new Document();
     doc.add(new Field(PayloadHelper.FIELD,"xx rr yy mm  pp", Field.Store.YES, Field.Index.ANALYZED));
@@ -425,7 +424,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     RAMDirectory directory = new RAMDirectory();
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
     String[] docs = new String[]{"xx rr yy mm  pp","xx yy mm rr pp", "nopayload qq ss pp np", "one two three four five six seven eight nine ten eleven", "nine one two three four five six seven eight eleven ten"};
-    IndexWriter writer = new IndexWriter(directory, analyzer, true);
+    IndexWriter writer = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
 
     writer.setSimilarity(similarity);
 

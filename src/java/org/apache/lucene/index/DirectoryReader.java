@@ -785,9 +785,9 @@ class DirectoryReader extends IndexReader implements Cloneable {
   /**
    * Check whether this IndexReader is still using the current (i.e., most recently committed) version of the index.  If
    * a writer has committed any changes to the index since this reader was opened, this will return <code>false</code>,
-   * in which case you must open a new IndexReader in order to see the changes.  See the description of the <a
-   * href="IndexWriter.html#autoCommit"><code>autoCommit</code></a> flag which controls when the {@link IndexWriter}
-   * actually commits changes to the index.
+   * in which case you must open a new IndexReader in order
+   * to see the changes.  Use {@link IndexWriter#commit} to
+   * commit changes to the index.
    *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException           if there is a low-level IO error

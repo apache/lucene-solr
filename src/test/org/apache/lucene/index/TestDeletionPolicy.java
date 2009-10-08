@@ -83,8 +83,8 @@ public class TestDeletionPolicy extends LuceneTestCase
   }
 
   /**
-   * This is useful for adding to a big index w/ autoCommit
-   * false when you know readers are not using it.
+   * This is useful for adding to a big index when you know
+   * readers are not using it.
    */
   class KeepNoneOnInitDeletionPolicy implements IndexDeletionPolicy {
     int numOnInit;
@@ -202,12 +202,11 @@ public class TestDeletionPolicy extends LuceneTestCase
 
     final double SECONDS = 2.0;
 
-    boolean autoCommit = false;
     boolean useCompoundFile = true;
 
     Directory dir = new RAMDirectory();
     ExpirationTimeDeletionPolicy policy = new ExpirationTimeDeletionPolicy(dir, SECONDS);
-    IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, policy);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, policy, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.setUseCompoundFile(useCompoundFile);
     writer.close();
 
@@ -216,7 +215,7 @@ public class TestDeletionPolicy extends LuceneTestCase
       // Record last time when writer performed deletes of
       // past commits
       lastDeleteTime = System.currentTimeMillis();
-      writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false, policy);
+      writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, policy, IndexWriter.MaxFieldLength.UNLIMITED);
       writer.setUseCompoundFile(useCompoundFile);
       for(int j=0;j<17;j++) {
         addDoc(writer);
@@ -267,10 +266,9 @@ public class TestDeletionPolicy extends LuceneTestCase
    */
   public void testKeepAllDeletionPolicy() throws IOException {
 
-    for(int pass=0;pass<4;pass++) {
+    for(int pass=0;pass<2;pass++) {
 
-      boolean autoCommit = pass < 2;
-      boolean useCompoundFile = (pass % 2) > 0;
+      boolean useCompoundFile = (pass % 2) != 0;
 
       // Never deletes a commit
       KeepAllDeletionPolicy policy = new KeepAllDeletionPolicy();
@@ -278,37 +276,30 @@ public class TestDeletionPolicy extends LuceneTestCase
       Directory dir = new RAMDirectory();
       policy.dir = dir;
 
-      IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, policy);
+      IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, policy, IndexWriter.MaxFieldLength.UNLIMITED);
       writer.setMaxBufferedDocs(10);
       writer.setUseCompoundFile(useCompoundFile);
       writer.setMergeScheduler(new SerialMergeScheduler());
       for(int i=0;i<107;i++) {
         addDoc(writer);
-        if (autoCommit && i%10 == 0)
-          writer.commit();
       }
       writer.close();
 
-      writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false, policy);
+      writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, policy, IndexWriter.MaxFieldLength.UNLIMITED);
       writer.setUseCompoundFile(useCompoundFile);
       writer.optimize();
       writer.close();
 
       assertEquals(2, policy.numOnInit);
-      if (!autoCommit)
-        // If we are not auto committing then there should
-        // be exactly 2 commits (one per close above):
-        assertEquals(2, policy.numOnCommit);
+
+      // If we are not auto committing then there should
+      // be exactly 2 commits (one per close above):
+      assertEquals(2, policy.numOnCommit);
 
       // Test listCommits
       Collection commits = IndexReader.listCommits(dir);
-      if (!autoCommit)
-        // 1 from opening writer + 2 from closing writer
-        assertEquals(3, commits.size());
-      else
-        // 1 from opening writer + 2 from closing writer +
-        // 11 from calling writer.commit() explicitly above
-        assertEquals(14, commits.size());
+      // 1 from opening writer + 2 from closing writer
+      assertEquals(3, commits.size());
 
       Iterator it = commits.iterator();
       // Make sure we can open a reader on each commit:
@@ -448,21 +439,20 @@ public class TestDeletionPolicy extends LuceneTestCase
 
 
   /* Test keeping NO commit points.  This is a viable and
-   * useful case eg where you want to build a big index with
-   * autoCommit false and you know there are no readers.
+   * useful case eg where you want to build a big index and
+   * you know there are no readers.
    */
   public void testKeepNoneOnInitDeletionPolicy() throws IOException {
 
-    for(int pass=0;pass<4;pass++) {
+    for(int pass=0;pass<2;pass++) {
 
-      boolean autoCommit = pass < 2;
-      boolean useCompoundFile = (pass % 2) > 0;
+      boolean useCompoundFile = (pass % 2) != 0;
 
       KeepNoneOnInitDeletionPolicy policy = new KeepNoneOnInitDeletionPolicy();
 
       Directory dir = new RAMDirectory();
 
-      IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, policy);
+      IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, policy, IndexWriter.MaxFieldLength.UNLIMITED);
       writer.setMaxBufferedDocs(10);
       writer.setUseCompoundFile(useCompoundFile);
       for(int i=0;i<107;i++) {
@@ -470,16 +460,15 @@ public class TestDeletionPolicy extends LuceneTestCase
       }
       writer.close();
 
-      writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false, policy);
+      writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, policy, IndexWriter.MaxFieldLength.UNLIMITED);
       writer.setUseCompoundFile(useCompoundFile);
       writer.optimize();
       writer.close();
 
       assertEquals(2, policy.numOnInit);
-      if (!autoCommit)
-        // If we are not auto committing then there should
-        // be exactly 2 commits (one per close above):
-        assertEquals(2, policy.numOnCommit);
+      // If we are not auto committing then there should
+      // be exactly 2 commits (one per close above):
+      assertEquals(2, policy.numOnCommit);
 
       // Simplistic check: just verify the index is in fact
       // readable:
@@ -497,17 +486,16 @@ public class TestDeletionPolicy extends LuceneTestCase
 
     final int N = 5;
 
-    for(int pass=0;pass<4;pass++) {
+    for(int pass=0;pass<2;pass++) {
 
-      boolean autoCommit = pass < 2;
-      boolean useCompoundFile = (pass % 2) > 0;
+      boolean useCompoundFile = (pass % 2) != 0;
 
       Directory dir = new RAMDirectory();
 
       KeepLastNDeletionPolicy policy = new KeepLastNDeletionPolicy(N);
 
       for(int j=0;j<N+1;j++) {
-        IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, policy);
+        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, policy, IndexWriter.MaxFieldLength.UNLIMITED);
         writer.setMaxBufferedDocs(10);
         writer.setUseCompoundFile(useCompoundFile);
         for(int i=0;i<17;i++) {
@@ -519,11 +507,7 @@ public class TestDeletionPolicy extends LuceneTestCase
 
       assertTrue(policy.numDelete > 0);
       assertEquals(N+1, policy.numOnInit);
-      if (autoCommit) {
-        assertTrue(policy.numOnCommit > 1);
-      } else {
-        assertEquals(N+1, policy.numOnCommit);
-      }
+      assertEquals(N+1, policy.numOnCommit);
 
       // Simplistic check: just verify only the past N segments_N's still
       // exist, and, I can open a reader on each:
@@ -559,27 +543,26 @@ public class TestDeletionPolicy extends LuceneTestCase
 
     final int N = 10;
 
-    for(int pass=0;pass<4;pass++) {
+    for(int pass=0;pass<2;pass++) {
 
-      boolean autoCommit = pass < 2;
-      boolean useCompoundFile = (pass % 2) > 0;
+      boolean useCompoundFile = (pass % 2) != 0;
 
       KeepLastNDeletionPolicy policy = new KeepLastNDeletionPolicy(N);
 
       Directory dir = new RAMDirectory();
-      IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, policy);
+      IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, policy, IndexWriter.MaxFieldLength.UNLIMITED);
       writer.setUseCompoundFile(useCompoundFile);
       writer.close();
       Term searchTerm = new Term("content", "aaa");        
       Query query = new TermQuery(searchTerm);
 
       for(int i=0;i<N+1;i++) {
-        writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false, policy);
+        writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, policy, IndexWriter.MaxFieldLength.UNLIMITED);
         writer.setUseCompoundFile(useCompoundFile);
         for(int j=0;j<17;j++) {
           addDoc(writer);
         }
-        // this is a commit when autoCommit=false:
+        // this is a commit
         writer.close();
         IndexReader reader = IndexReader.open(dir, policy, false);
         reader.deleteDocument(3*i+1);
@@ -587,19 +570,18 @@ public class TestDeletionPolicy extends LuceneTestCase
         IndexSearcher searcher = new IndexSearcher(reader);
         ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
         assertEquals(16*(1+i), hits.length);
-        // this is a commit when autoCommit=false:
+        // this is a commit
         reader.close();
         searcher.close();
       }
-      writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false, policy);
+      writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, policy, IndexWriter.MaxFieldLength.UNLIMITED);
       writer.setUseCompoundFile(useCompoundFile);
       writer.optimize();
-      // this is a commit when autoCommit=false:
+      // this is a commit
       writer.close();
 
       assertEquals(2*(N+2), policy.numOnInit);
-      if (!autoCommit)
-        assertEquals(2*(N+2)-1, policy.numOnCommit);
+      assertEquals(2*(N+2)-1, policy.numOnCommit);
 
       IndexSearcher searcher = new IndexSearcher(dir, false);
       ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -617,21 +599,18 @@ public class TestDeletionPolicy extends LuceneTestCase
           IndexReader reader = IndexReader.open(dir, true);
 
           // Work backwards in commits on what the expected
-          // count should be.  Only check this in the
-          // autoCommit false case:
-          if (!autoCommit) {
-            searcher = new IndexSearcher(reader);
-            hits = searcher.search(query, null, 1000).scoreDocs;
-            if (i > 1) {
-              if (i % 2 == 0) {
-                expectedCount += 1;
-              } else {
-                expectedCount -= 17;
-              }
+          // count should be.
+          searcher = new IndexSearcher(reader);
+          hits = searcher.search(query, null, 1000).scoreDocs;
+          if (i > 1) {
+            if (i % 2 == 0) {
+              expectedCount += 1;
+            } else {
+              expectedCount -= 17;
             }
-            assertEquals(expectedCount, hits.length);
-            searcher.close();
           }
+          assertEquals(expectedCount, hits.length);
+          searcher.close();
           reader.close();
           if (i == N) {
             fail("should have failed on commits before last 5");
@@ -659,15 +638,14 @@ public class TestDeletionPolicy extends LuceneTestCase
 
     final int N = 10;
 
-    for(int pass=0;pass<4;pass++) {
+    for(int pass=0;pass<2;pass++) {
 
-      boolean autoCommit = pass < 2;
-      boolean useCompoundFile = (pass % 2) > 0;
+      boolean useCompoundFile = (pass % 2) != 0;
 
       KeepLastNDeletionPolicy policy = new KeepLastNDeletionPolicy(N);
 
       Directory dir = new RAMDirectory();
-      IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, policy);
+      IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, policy, IndexWriter.MaxFieldLength.UNLIMITED);
       writer.setMaxBufferedDocs(10);
       writer.setUseCompoundFile(useCompoundFile);
       writer.close();
@@ -676,13 +654,13 @@ public class TestDeletionPolicy extends LuceneTestCase
 
       for(int i=0;i<N+1;i++) {
 
-        writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false, policy);
+        writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, policy, IndexWriter.MaxFieldLength.UNLIMITED);
         writer.setMaxBufferedDocs(10);
         writer.setUseCompoundFile(useCompoundFile);
         for(int j=0;j<17;j++) {
           addDoc(writer);
         }
-        // this is a commit when autoCommit=false:
+        // this is a commit
         writer.close();
         IndexReader reader = IndexReader.open(dir, policy, false);
         reader.deleteDocument(3);
@@ -690,19 +668,18 @@ public class TestDeletionPolicy extends LuceneTestCase
         IndexSearcher searcher = new IndexSearcher(reader);
         ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
         assertEquals(16, hits.length);
-        // this is a commit when autoCommit=false:
+        // this is a commit
         reader.close();
         searcher.close();
 
-        writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true, policy);
+        writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, policy, IndexWriter.MaxFieldLength.UNLIMITED);
         // This will not commit: there are no changes
         // pending because we opened for "create":
         writer.close();
       }
 
       assertEquals(1+3*(N+1), policy.numOnInit);
-      if (!autoCommit)
-        assertEquals(3*(N+1), policy.numOnCommit);
+      assertEquals(3*(N+1), policy.numOnCommit);
 
       IndexSearcher searcher = new IndexSearcher(dir, false);
       ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -720,20 +697,17 @@ public class TestDeletionPolicy extends LuceneTestCase
           IndexReader reader = IndexReader.open(dir, true);
 
           // Work backwards in commits on what the expected
-          // count should be.  Only check this in the
-          // autoCommit false case:
-          if (!autoCommit) {
-            searcher = new IndexSearcher(reader);
-            hits = searcher.search(query, null, 1000).scoreDocs;
-            assertEquals(expectedCount, hits.length);
-            searcher.close();
-            if (expectedCount == 0) {
-              expectedCount = 16;
-            } else if (expectedCount == 16) {
-              expectedCount = 17;
-            } else if (expectedCount == 17) {
-              expectedCount = 0;
-            }
+          // count should be.
+          searcher = new IndexSearcher(reader);
+          hits = searcher.search(query, null, 1000).scoreDocs;
+          assertEquals(expectedCount, hits.length);
+          searcher.close();
+          if (expectedCount == 0) {
+            expectedCount = 16;
+          } else if (expectedCount == 16) {
+            expectedCount = 17;
+          } else if (expectedCount == 17) {
+            expectedCount = 0;
           }
           reader.close();
           if (i == N) {

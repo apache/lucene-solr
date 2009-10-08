@@ -75,7 +75,7 @@ public class TestCartesian extends TestCase{
   protected void setUp() throws IOException {
     directory = new RAMDirectory();
 
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
     
     setUpPlotter( 2, 15);
     

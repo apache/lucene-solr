@@ -65,7 +65,7 @@ public class TestIndicesEquals extends TestCase {
     RAMDirectory dir = new RAMDirectory();
 
     // create dir data
-    IndexWriter indexWriter = new IndexWriter(dir, new StandardAnalyzer(), true);
+    IndexWriter indexWriter = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
     for (int i = 0; i < 20; i++) {
       Document document = new Document();
       assembleDocument(document, i);
@@ -89,7 +89,7 @@ public class TestIndicesEquals extends TestCase {
     InstantiatedIndex ii = new InstantiatedIndex();
 
     // create dir data
-    IndexWriter indexWriter = new IndexWriter(dir, new StandardAnalyzer(), true);
+    IndexWriter indexWriter = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
       assembleDocument(document, i);

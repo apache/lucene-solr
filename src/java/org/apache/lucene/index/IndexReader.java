@@ -526,10 +526,9 @@ public abstract class IndexReader implements Cloneable {
    * index.  If a writer has committed any changes to the
    * index since this reader was opened, this will return
    * <code>false</code>, in which case you must open a new
-   * IndexReader in order to see the changes.  See the
-   * description of the <a href="IndexWriter.html#autoCommit"><code>autoCommit</code></a>
-   * flag which controls when the {@link IndexWriter}
-   * actually commits changes to the index.
+   * IndexReader in order to see the changes.  Changes must
+   * be committed using  {@link IndexWriter#commit} to be
+   * visible to readers.
    * 
    * <p>
    * Not implemented in the IndexReader base class.

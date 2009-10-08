@@ -51,9 +51,9 @@ public class TestThreadedOptimize extends LuceneTestCase {
     failed = true;
   }
 
-  public void runTest(Directory directory, boolean autoCommit, MergeScheduler merger) throws Exception {
+  public void runTest(Directory directory, MergeScheduler merger) throws Exception {
 
-    IndexWriter writer = new IndexWriter(directory, autoCommit, ANALYZER, true);
+    IndexWriter writer = new IndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.setMaxBufferedDocs(2);
     if (merger != null)
       writer.setMergeScheduler(merger);
@@ -72,8 +72,6 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
       writer.setMergeFactor(4);
       //writer.setInfoStream(System.out);
-
-      final int docCount = writer.docCount();
 
       Thread[] threads = new Thread[NUM_THREADS];
       
@@ -118,11 +116,9 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
       assertEquals(expectedDocCount, writer.docCount());
 
-      if (!autoCommit) {
-        writer.close();
-        writer = new IndexWriter(directory, autoCommit, ANALYZER, false);
-        writer.setMaxBufferedDocs(2);
-      }
+      writer.close();
+      writer = new IndexWriter(directory, ANALYZER, false, IndexWriter.MaxFieldLength.UNLIMITED);
+      writer.setMaxBufferedDocs(2);
 
       IndexReader reader = IndexReader.open(directory, true);
       assertTrue(reader.isOptimized());
@@ -138,10 +134,8 @@ public class TestThreadedOptimize extends LuceneTestCase {
   */
   public void testThreadedOptimize() throws Exception {
     Directory directory = new MockRAMDirectory();
-    runTest(directory, false, new SerialMergeScheduler());
-    runTest(directory, true, new SerialMergeScheduler());
-    runTest(directory, false, new ConcurrentMergeScheduler());
-    runTest(directory, true, new ConcurrentMergeScheduler());
+    runTest(directory, new SerialMergeScheduler());
+    runTest(directory, new ConcurrentMergeScheduler());
     directory.close();
 
     String tempDir = System.getProperty("tempDir");
@@ -150,10 +144,8 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
     String dirName = tempDir + "/luceneTestThreadedOptimize";
     directory = FSDirectory.open(new File(dirName));
-    runTest(directory, false, new SerialMergeScheduler());
-    runTest(directory, true, new SerialMergeScheduler());
-    runTest(directory, false, new ConcurrentMergeScheduler());
-    runTest(directory, true, new ConcurrentMergeScheduler());
+    runTest(directory, new SerialMergeScheduler());
+    runTest(directory, new ConcurrentMergeScheduler());
     directory.close();
     _TestUtil.rmDir(dirName);
   }

@@ -338,7 +338,6 @@ public class TestPerfTasksLogic extends TestCase {
       "docs.file=" + lineFile.getAbsolutePath().replace('\\', '/'),
       "content.source.forever=false",
       "doc.reuse.fields=false",
-      "autocommit=false",
       "ram.flush.mb=4",
       "# ----- alg ",
       "ResetSystemErase",

@@ -50,10 +50,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
   public static final String INDEX_PATH = "test.snapshots";
 
   public void testSnapshotDeletionPolicy() throws Exception {
-    File dir = new File(System.getProperty("tempDir"), INDEX_PATH);
+    File dir = _TestUtil.getTempDir(INDEX_PATH);
     try {
-      // Sometimes past test leaves the dir
-      _TestUtil.rmDir(dir);
       Directory fsDir = FSDirectory.open(dir);
       runTest(fsDir);
       fsDir.close();
@@ -70,27 +68,35 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     Directory dir = new MockRAMDirectory();
 
     SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
-    IndexWriter writer = new IndexWriter(dir, true,new StandardAnalyzer(), dp);
-    // Force frequent commits
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), dp, IndexWriter.MaxFieldLength.UNLIMITED);
+    // Force frequent flushes
     writer.setMaxBufferedDocs(2);
     Document doc = new Document();
     doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    for(int i=0;i<7;i++)
+    for(int i=0;i<7;i++) {
       writer.addDocument(doc);
+      if (i % 2 == 0) {
+        writer.commit();
+      }
+    }
     IndexCommit cp = (IndexCommit) dp.snapshot();
     copyFiles(dir, cp);
     writer.close();
     copyFiles(dir, cp);
     
-    writer = new IndexWriter(dir, true, new StandardAnalyzer(), dp);
+    writer = new IndexWriter(dir, new StandardAnalyzer(), dp, IndexWriter.MaxFieldLength.UNLIMITED);
     copyFiles(dir, cp);
-    for(int i=0;i<7;i++)
+    for(int i=0;i<7;i++) {
       writer.addDocument(doc);
+      if (i % 2 == 0) {
+        writer.commit();
+      }
+    }
     copyFiles(dir, cp);
     writer.close();
     copyFiles(dir, cp);
     dp.release();
-    writer = new IndexWriter(dir, true, new StandardAnalyzer(), dp);
+    writer = new IndexWriter(dir, new StandardAnalyzer(), dp, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.close();
     try {
       copyFiles(dir, cp);
@@ -106,9 +112,9 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     final long stopTime = System.currentTimeMillis() + 7000;
 
     SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
-    final IndexWriter writer = new IndexWriter(dir, true, new StandardAnalyzer(), dp);
+    final IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), dp, IndexWriter.MaxFieldLength.UNLIMITED);
 
-    // Force frequent commits
+    // Force frequent flushes
     writer.setMaxBufferedDocs(2);
 
     final Thread t = new Thread() {
@@ -122,6 +128,13 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
               } catch (Throwable t) {
                 t.printStackTrace(System.out);
                 fail("addDocument failed");
+              }
+              if (i%2 == 0) {
+                try {
+                  writer.commit();
+                } catch (Exception e) {
+                  throw new RuntimeException(e);
+                }
               }
             }
             try {

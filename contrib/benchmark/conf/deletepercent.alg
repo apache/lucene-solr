@@ -17,7 +17,6 @@
 # -------------------------------------------------------------------------------------
 # multi val params are iterated by NewRound's, added to reports, start with column name.
 
-autocommit=false
 analyzer=org.apache.lucene.analysis.standard.StandardAnalyzer
 directory=FSDirectory
 #directory=RamDirectory

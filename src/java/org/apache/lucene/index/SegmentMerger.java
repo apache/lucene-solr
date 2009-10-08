@@ -276,9 +276,7 @@ final class SegmentMerger {
   private final int mergeFields() throws CorruptIndexException, IOException {
 
     if (!mergeDocStores) {
-      // When we are not merging by doc stores, that means
-      // all segments were written as part of a single
-      // autoCommit=false IndexWriter session, so their field
+      // When we are not merging by doc stores, their field
       // name -> number mapping are the same.  So, we start
       // with the fieldInfos of the last segment in this
       // case, to keep that numbering.

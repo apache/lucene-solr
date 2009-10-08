@@ -33,10 +33,12 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   private static final Analyzer ANALYZER = new SimpleAnalyzer();
 
   private static class FailOnlyOnFlush extends MockRAMDirectory.Failure {
-    boolean doFail = false;
+    boolean doFail;
+    boolean hitExc;
 
     public void setDoFail() {
       this.doFail = true;
+      hitExc = false;
     }
     public void clearDoFail() {
       this.doFail = false;
@@ -47,6 +49,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
           if ("doFlush".equals(trace[i].getMethodName())) {
+            hitExc = true;
             //new RuntimeException().printStackTrace(System.out);
             throw new IOException("now failing during flush");
           }
@@ -63,33 +66,43 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     FailOnlyOnFlush failure = new FailOnlyOnFlush();
     directory.failOn(failure);
 
-    IndexWriter writer = new IndexWriter(directory, true, ANALYZER, true);
+    IndexWriter writer = new IndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.UNLIMITED);
     ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
     writer.setMergeScheduler(cms);
     writer.setMaxBufferedDocs(2);
     Document doc = new Document();
     Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
+    int extraCount = 0;
+
     for(int i=0;i<10;i++) {
       for(int j=0;j<20;j++) {
         idField.setValue(Integer.toString(i*20+j));
         writer.addDocument(doc);
       }
 
-      writer.addDocument(doc);
-
-      failure.setDoFail();
-      try {
-        writer.flush();
-        fail("failed to hit IOException");
-      } catch (IOException ioe) {
-        failure.clearDoFail();
+      // must cycle here because sometimes the merge flushes
+      // the doc we just added and so there's nothing to
+      // flush, and we don't hit the exception
+      while(true) {
+        writer.addDocument(doc);
+        failure.setDoFail();
+        try {
+          writer.flush();
+          if (failure.hitExc) {
+            fail("failed to hit IOException");
+          }
+          extraCount++;
+        } catch (IOException ioe) {
+          failure.clearDoFail();
+          break;
+        }
       }
     }
 
     writer.close();
     IndexReader reader = IndexReader.open(directory, true);
-    assertEquals(200, reader.numDocs());
+    assertEquals(200+extraCount, reader.numDocs());
     reader.close();
     directory.close();
   }
@@ -100,7 +113,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
     RAMDirectory directory = new MockRAMDirectory();
 
-    IndexWriter writer = new IndexWriter(directory, true, ANALYZER, true);
+    IndexWriter writer = new IndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.UNLIMITED);
     ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
     writer.setMergeScheduler(cms);
 
@@ -142,31 +155,27 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
     RAMDirectory directory = new MockRAMDirectory();
 
-    for(int pass=0;pass<2;pass++) {
+    IndexWriter writer = new IndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.UNLIMITED);
 
-      boolean autoCommit = pass==0;
-      IndexWriter writer = new IndexWriter(directory, autoCommit, ANALYZER, true);
+    for(int iter=0;iter<7;iter++) {
+      ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+      writer.setMergeScheduler(cms);
+      writer.setMaxBufferedDocs(2);
 
-      for(int iter=0;iter<7;iter++) {
-        ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
-        writer.setMergeScheduler(cms);
-        writer.setMaxBufferedDocs(2);
-
-        for(int j=0;j<21;j++) {
-          Document doc = new Document();
-          doc.add(new Field("content", "a b c", Field.Store.NO, Field.Index.ANALYZED));
-          writer.addDocument(doc);
-        }
-        
-        writer.close();
-        TestIndexWriter.assertNoUnreferencedFiles(directory, "testNoExtraFiles autoCommit=" + autoCommit);
-
-        // Reopen
-        writer = new IndexWriter(directory, autoCommit, ANALYZER, false);
+      for(int j=0;j<21;j++) {
+        Document doc = new Document();
+        doc.add(new Field("content", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+        writer.addDocument(doc);
       }
-
+        
       writer.close();
+      TestIndexWriter.assertNoUnreferencedFiles(directory, "testNoExtraFiles");
+
+      // Reopen
+      writer = new IndexWriter(directory, ANALYZER, false, IndexWriter.MaxFieldLength.UNLIMITED);
     }
+
+    writer.close();
 
     directory.close();
   }
@@ -178,44 +187,41 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
 
-    for(int pass=0;pass<2;pass++) {
-      boolean autoCommit = pass==0;
-      IndexWriter writer = new IndexWriter(directory, autoCommit, ANALYZER, true);
+    IndexWriter writer = new IndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.UNLIMITED);
 
-      for(int iter=0;iter<10;iter++) {
-        ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
-        writer.setMergeScheduler(cms);
-        writer.setMaxBufferedDocs(2);
-        writer.setMergeFactor(100);
+    for(int iter=0;iter<10;iter++) {
+      ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+      writer.setMergeScheduler(cms);
+      writer.setMaxBufferedDocs(2);
+      writer.setMergeFactor(100);
 
-        for(int j=0;j<201;j++) {
-          idField.setValue(Integer.toString(iter*201+j));
-          writer.addDocument(doc);
-        }
-
-        int delID = iter*201;
-        for(int j=0;j<20;j++) {
-          writer.deleteDocuments(new Term("id", Integer.toString(delID)));
-          delID += 5;
-        }
-
-        // Force a bunch of merge threads to kick off so we
-        // stress out aborting them on close:
-        writer.setMergeFactor(3);
+      for(int j=0;j<201;j++) {
+        idField.setValue(Integer.toString(iter*201+j));
         writer.addDocument(doc);
-        writer.flush();
-
-        writer.close(false);
-
-        IndexReader reader = IndexReader.open(directory, true);
-        assertEquals((1+iter)*182, reader.numDocs());
-        reader.close();
-
-        // Reopen
-        writer = new IndexWriter(directory, autoCommit, ANALYZER, false);
       }
-      writer.close();
+
+      int delID = iter*201;
+      for(int j=0;j<20;j++) {
+        writer.deleteDocuments(new Term("id", Integer.toString(delID)));
+        delID += 5;
+      }
+
+      // Force a bunch of merge threads to kick off so we
+      // stress out aborting them on close:
+      writer.setMergeFactor(3);
+      writer.addDocument(doc);
+      writer.flush();
+
+      writer.close(false);
+
+      IndexReader reader = IndexReader.open(directory, true);
+      assertEquals((1+iter)*182, reader.numDocs());
+      reader.close();
+
+      // Reopen
+      writer = new IndexWriter(directory, ANALYZER, false, IndexWriter.MaxFieldLength.UNLIMITED);
     }
+    writer.close();
 
     directory.close();
   }

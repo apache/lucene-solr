@@ -1210,7 +1210,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testMultiSearcher() throws Exception {
     // setup index 1
     RAMDirectory ramDir1 = new RAMDirectory();
-    IndexWriter writer1 = new IndexWriter(ramDir1, new StandardAnalyzer(), true);
+    IndexWriter writer1 = new IndexWriter(ramDir1, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
     Document d = new Document();
     Field f = new Field(FIELD_NAME, "multiOne", Field.Store.YES, Field.Index.ANALYZED);
     d.add(f);
@@ -1221,7 +1221,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     // setup index 2
     RAMDirectory ramDir2 = new RAMDirectory();
-    IndexWriter writer2 = new IndexWriter(ramDir2, new StandardAnalyzer(), true);
+    IndexWriter writer2 = new IndexWriter(ramDir2, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
     d = new Document();
     f = new Field(FIELD_NAME, "multiTwo", Field.Store.YES, Field.Index.ANALYZED);
     d.add(f);
@@ -1601,7 +1601,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   protected void setUp() throws Exception {
     super.setUp();
     ramDir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(ramDir, new StandardAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(ramDir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
     for (int i = 0; i < texts.length; i++) {
       addDoc(writer, texts[i]);
     }

@@ -32,7 +32,6 @@ public class TestStressIndexing2 extends LuceneTestCase {
   static int maxFields=4;
   static int bigFieldSize=10;
   static boolean sameFieldOrder=false;
-  static boolean autoCommit=false;
   static int mergeFactor=3;
   static int maxBufferedDocs=3;
   static int seed=0;
@@ -41,8 +40,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
   public class MockIndexWriter extends IndexWriter {
 
-    public MockIndexWriter(Directory dir, boolean autoCommit, Analyzer a, boolean create) throws IOException {
-      super(dir, autoCommit, a, create);
+    public MockIndexWriter(Directory dir, Analyzer a, boolean create, IndexWriter.MaxFieldLength mfl) throws IOException {
+      super(dir, a, create, mfl);
     }
 
     boolean testPoint(String name) {
@@ -88,7 +87,6 @@ public class TestStressIndexing2 extends LuceneTestCase {
     r = newRandom();
     for (int i=0; i<100; i++) {  // increase iterations for better testing
       sameFieldOrder=r.nextBoolean();
-      autoCommit=r.nextBoolean();
       mergeFactor=r.nextInt(3)+2;
       maxBufferedDocs=r.nextInt(3)+2;
       seed++;
@@ -124,7 +122,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   
   public DocsAndWriter indexRandomIWReader(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
     Map docs = new HashMap();
-    IndexWriter w = new MockIndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true);
+    IndexWriter w = new MockIndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
     w.setUseCompoundFile(false);
 
     /***
@@ -176,7 +174,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   public Map indexRandom(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
     Map docs = new HashMap();
     for(int iter=0;iter<3;iter++) {
-      IndexWriter w = new MockIndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true);
+      IndexWriter w = new MockIndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
       w.setUseCompoundFile(false);
 
       // force many merges

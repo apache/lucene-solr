@@ -117,7 +117,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         reader.close();
 
         // optimize the index and check that the new doc count is correct
-        writer = new IndexWriter(dir, true, new WhitespaceAnalyzer());
+        writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
         assertEquals(100, writer.maxDoc());
         assertEquals(60, writer.numDocs());
         writer.optimize();
@@ -227,7 +227,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         startDiskUsage += startDir.fileLength(files[i]);
       }
 
-      for(int iter=0;iter<6;iter++) {
+      for(int iter=0;iter<3;iter++) {
 
         if (debug)
           System.out.println("TEST: iter=" + iter);
@@ -235,8 +235,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         // Start with 100 bytes more than we are currently using:
         long diskFree = diskUsage+100;
 
-        boolean autoCommit = iter % 2 == 0;
-        int method = iter/2;
+        int method = iter;
 
         boolean success = false;
         boolean done = false;
@@ -254,7 +253,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
           // Make a new dir that will enforce disk usage:
           MockRAMDirectory dir = new MockRAMDirectory(startDir);
-          writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), false);
+          writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.UNLIMITED);
           IOException err = null;
 
           MergeScheduler ms = writer.getMergeScheduler();
@@ -290,12 +289,12 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
                 rate = 0.0;
               }
               if (debug)
-                testName = "disk full test " + methodName + " with disk full at " + diskFree + " bytes autoCommit=" + autoCommit;
+                testName = "disk full test " + methodName + " with disk full at " + diskFree + " bytes";
             } else {
               thisDiskFree = 0;
               rate = 0.0;
               if (debug)
-                testName = "disk full test " + methodName + " with unlimited disk space autoCommit=" + autoCommit;
+                testName = "disk full test " + methodName + " with unlimited disk space";
             }
 
             if (debug)
@@ -351,29 +350,6 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
             // ConcurrentMergeScheduler are done
             _TestUtil.syncConcurrentMerges(writer);
 
-            if (autoCommit) {
-
-              // Whether we succeeded or failed, check that
-              // all un-referenced files were in fact
-              // deleted (ie, we did not create garbage).
-              // Only check this when autoCommit is true:
-              // when it's false, it's expected that there
-              // are unreferenced files (ie they won't be
-              // referenced until the "commit on close").
-              // Just create a new IndexFileDeleter, have it
-              // delete unreferenced files, then verify that
-              // in fact no files were deleted:
-
-              String successStr;
-              if (success) {
-                successStr = "success";
-              } else {
-                successStr = "IOException";
-              }
-              String message = methodName + " failed to delete unreferenced files after " + successStr + " (" + diskFree + " bytes)";
-              assertNoUnreferencedFiles(dir, message);
-            }
-
             if (debug) {
               System.out.println("  now test readers");
             }
@@ -390,10 +366,8 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
             }
             int result = reader.docFreq(searchTerm);
             if (success) {
-              if (autoCommit && result != END_COUNT) {
-                fail(testName + ": method did not throw exception but docFreq('aaa') is " + result + " instead of expected " + END_COUNT);
-              } else if (!autoCommit && result != START_COUNT) {
-                fail(testName + ": method did not throw exception but docFreq('aaa') is " + result + " instead of expected " + START_COUNT + " [autoCommit = false]");
+              if (result != START_COUNT) {
+                fail(testName + ": method did not throw exception but docFreq('aaa') is " + result + " instead of expected " + START_COUNT);
               }
             } else {
               // On hitting exception we still may have added
@@ -480,18 +454,17 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
       boolean debug = false;
 
-      for(int pass=0;pass<3;pass++) {
+      for(int pass=0;pass<2;pass++) {
         if (debug)
           System.out.println("TEST: pass=" + pass);
-        boolean autoCommit = pass == 0;
-        boolean doAbort = pass == 2;
+        boolean doAbort = pass == 1;
         long diskFree = 200;
         while(true) {
           if (debug)
             System.out.println("TEST: cycle: diskFree=" + diskFree);
           MockRAMDirectory dir = new MockRAMDirectory();
           dir.setMaxSizeInBytes(diskFree);
-          IndexWriter writer = new IndexWriter(dir, autoCommit, new WhitespaceAnalyzer(), true);
+          IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
 
           MergeScheduler ms = writer.getMergeScheduler();
           if (ms instanceof ConcurrentMergeScheduler)
@@ -531,7 +504,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
             _TestUtil.syncConcurrentMerges(ms);
 
-            assertNoUnreferencedFiles(dir, "after disk full during addDocument with autoCommit=" + autoCommit);
+            assertNoUnreferencedFiles(dir, "after disk full during addDocument");
 
             // Make sure reader can open the index:
             IndexReader.open(dir, true).close();
@@ -947,10 +920,9 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     }
 
     /*
-     * Simple test for "commit on close": open writer with
-     * autoCommit=false, so it will only commit on close,
-     * then add a bunch of docs, making sure reader does not
-     * see these docs until writer is closed.
+     * Simple test for "commit on close": open writer then
+     * add a bunch of docs, making sure reader does not see
+     * these docs until writer is closed.
      */
     public void testCommitOnClose() throws IOException {
         Directory dir = new RAMDirectory();      
@@ -975,7 +947,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
           }
           searcher = new IndexSearcher(dir, false);
           hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
-          assertEquals("reader incorrectly sees changes from writer with autoCommit disabled", 14, hits.length);
+          assertEquals("reader incorrectly sees changes from writer", 14, hits.length);
           searcher.close();
           assertTrue("reader should have still been current", reader.isCurrent());
         }
@@ -991,10 +963,9 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     }
 
     /*
-     * Simple test for "commit on close": open writer with
-     * autoCommit=false, so it will only commit on close,
-     * then add a bunch of docs, making sure reader does not
-     * see them until writer has closed.  Then instead of
+     * Simple test for "commit on close": open writer, then
+     * add a bunch of docs, making sure reader does not see
+     * them until writer has closed.  Then instead of
      * closing the writer, call abort and verify reader sees
      * nothing was added.  Then verify we can open the index
      * and add docs to it.
@@ -1024,7 +995,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
       searcher = new IndexSearcher(dir, false);
       hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
-      assertEquals("reader incorrectly sees changes from writer with autoCommit disabled", 14, hits.length);
+      assertEquals("reader incorrectly sees changes from writer", 14, hits.length);
       searcher.close();
 
       // Now, close the writer:
@@ -1052,7 +1023,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         }
         searcher = new IndexSearcher(dir, false);
         hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
-        assertEquals("reader incorrectly sees changes from writer with autoCommit disabled", 14, hits.length);
+        assertEquals("reader incorrectly sees changes from writer", 14, hits.length);
         searcher.close();
       }
 
@@ -1103,9 +1074,9 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       // and it doesn't delete intermediate segments then it
       // will exceed this 100X:
       // System.out.println("start " + startDiskUsage + "; mid " + midDiskUsage + ";end " + endDiskUsage);
-      assertTrue("writer used too much space while adding documents when autoCommit=false: mid=" + midDiskUsage + " start=" + startDiskUsage + " end=" + endDiskUsage,
+      assertTrue("writer used too much space while adding documents: mid=" + midDiskUsage + " start=" + startDiskUsage + " end=" + endDiskUsage,
                  midDiskUsage < 100*startDiskUsage);
-      assertTrue("writer used too much space after close when autoCommit=false endDiskUsage=" + endDiskUsage + " startDiskUsage=" + startDiskUsage,
+      assertTrue("writer used too much space after close: endDiskUsage=" + endDiskUsage + " startDiskUsage=" + startDiskUsage,
                  endDiskUsage < 100*startDiskUsage);
     }
 
@@ -2116,15 +2087,15 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
 
-    for(int pass=0;pass<3;pass++) {
-      boolean autoCommit = pass%2 == 0;
-      IndexWriter writer = new IndexWriter(directory, autoCommit, new WhitespaceAnalyzer(), true);
+    for(int pass=0;pass<2;pass++) {
 
-      //System.out.println("TEST: pass=" + pass + " ac=" + autoCommit + " cms=" + (pass >= 2));
+      IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+
+      //System.out.println("TEST: pass=" + pass + " cms=" + (pass >= 2));
       for(int iter=0;iter<10;iter++) {
         //System.out.println("TEST: iter=" + iter);
         MergeScheduler ms;
-        if (pass >= 2)
+        if (pass == 1)
           ms = new ConcurrentMergeScheduler();
         else
           ms = new SerialMergeScheduler();
@@ -2189,7 +2160,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         reader.close();
 
         // Reopen
-        writer = new IndexWriter(directory, autoCommit, new WhitespaceAnalyzer(), false);
+        writer = new IndexWriter(directory, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.UNLIMITED);
       }
       writer.close();
     }
@@ -2360,7 +2331,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
     for(int iter=0;iter<10;iter++) {
       MockRAMDirectory dir = new MockRAMDirectory();
-      IndexWriter writer = new IndexWriter(dir, true, new WhitespaceAnalyzer());
+      IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
       ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
       // We expect disk full exceptions in the merge threads
       cms.setSuppressExceptions();
@@ -2421,7 +2392,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
   public void _testSingleThreadFailure(MockRAMDirectory.Failure failure) throws IOException {
     MockRAMDirectory dir = new MockRAMDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, true, new WhitespaceAnalyzer());
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
     writer.setMaxBufferedDocs(2);
     final Document doc = new Document();
     doc.add(new Field("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
@@ -2434,6 +2405,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     try {
       writer.addDocument(doc);
       writer.addDocument(doc);
+      writer.commit();
       fail("did not hit exception");
     } catch (IOException ioe) {
     }
@@ -2721,7 +2693,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     FailOnlyInSync failure = new FailOnlyInSync();
     dir.failOn(failure);
 
-    IndexWriter writer  = new IndexWriter(dir, true, new WhitespaceAnalyzer());
+    IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
     failure.setDoFail();
 
     ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
@@ -2731,8 +2703,16 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     writer.setMaxBufferedDocs(2);
     writer.setMergeFactor(5);
 
-    for (int i = 0; i < 23; i++)
+    for (int i = 0; i < 23; i++) {
       addDoc(writer);
+      if ((i-1)%2 == 0) {
+        try {
+          writer.commit();
+        } catch (IOException ioe) {
+          // expected
+        }
+      }
+    }
 
     cms.sync();
     assertTrue(failure.didFail);
@@ -2749,10 +2729,9 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
   public void testTermVectorCorruption() throws IOException {
 
     Directory dir = new MockRAMDirectory();
-    for(int iter=0;iter<4;iter++) {
-      final boolean autoCommit = 1==iter/2;
+    for(int iter=0;iter<2;iter++) {
       IndexWriter writer = new IndexWriter(dir,
-                                           autoCommit, new StandardAnalyzer());
+                                           new StandardAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
       writer.setMaxBufferedDocs(2);
       writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
       writer.setMergeScheduler(new SerialMergeScheduler());
@@ -2785,7 +2764,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       reader.close();
 
       writer = new IndexWriter(dir,
-                               autoCommit, new StandardAnalyzer());
+                               new StandardAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
       writer.setMaxBufferedDocs(2);
       writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
       writer.setMergeScheduler(new SerialMergeScheduler());
@@ -2801,10 +2780,9 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
   // LUCENE-1168
   public void testTermVectorCorruption2() throws IOException {
     Directory dir = new MockRAMDirectory();
-    for(int iter=0;iter<4;iter++) {
-      final boolean autoCommit = 1==iter/2;
+    for(int iter=0;iter<2;iter++) {
       IndexWriter writer = new IndexWriter(dir,
-                                           autoCommit, new StandardAnalyzer());
+                                           new StandardAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
       writer.setMaxBufferedDocs(2);
       writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
       writer.setMergeScheduler(new SerialMergeScheduler());
@@ -3049,7 +3027,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
   // LUCENE-1179
   public void testEmptyFieldName() throws IOException {
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer());
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     doc.add(new Field("", "a b c", Field.Store.NO, Field.Index.ANALYZED));
     writer.addDocument(doc);
@@ -4034,7 +4012,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
     final List thrown = new ArrayList();
 
-    final IndexWriter writer = new IndexWriter(new MockRAMDirectory(), new StandardAnalyzer()) {
+    final IndexWriter writer = new IndexWriter(new MockRAMDirectory(), new StandardAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED) {
         public void message(final String message) {
           if (message.startsWith("now flush at close") && 0 == thrown.size()) {
             thrown.add(null);
@@ -4324,7 +4302,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
   public void testDeadlock() throws Exception {
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, true, new WhitespaceAnalyzer());
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
     writer.setMaxBufferedDocs(2);
     Document doc = new Document();
     doc.add(new Field("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,

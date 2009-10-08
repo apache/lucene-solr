@@ -115,8 +115,8 @@ public class TestStressIndexing extends LuceneTestCase {
     Run one indexer and 2 searchers against single index as
     stress test.
   */
-  public void runStressTest(Directory directory, boolean autoCommit, MergeScheduler mergeScheduler) throws Exception {
-    IndexWriter modifier = new IndexWriter(directory, autoCommit, ANALYZER, true);
+  public void runStressTest(Directory directory, MergeScheduler mergeScheduler) throws Exception {
+    IndexWriter modifier = new IndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.UNLIMITED);
 
     modifier.setMaxBufferedDocs(10);
 
@@ -166,35 +166,15 @@ public class TestStressIndexing extends LuceneTestCase {
   public void testStressIndexAndSearching() throws Exception {
     RANDOM = newRandom();
 
-    // RAMDir
-    Directory directory = new MockRAMDirectory();
-    runStressTest(directory, true, null);
-    directory.close();
-
-    // FSDir
-    File dirPath = _TestUtil.getTempDir("lucene.test.stress");
-    directory = FSDirectory.open(dirPath);
-    runStressTest(directory, true, null);
-    directory.close();
-
     // With ConcurrentMergeScheduler, in RAMDir
-    directory = new MockRAMDirectory();
-    runStressTest(directory, true, new ConcurrentMergeScheduler());
+    Directory directory = new MockRAMDirectory();
+    runStressTest(directory, new ConcurrentMergeScheduler());
     directory.close();
 
     // With ConcurrentMergeScheduler, in FSDir
+    File dirPath = _TestUtil.getTempDir("lucene.test.stress");
     directory = FSDirectory.open(dirPath);
-    runStressTest(directory, true, new ConcurrentMergeScheduler());
-    directory.close();
-
-    // With ConcurrentMergeScheduler and autoCommit=false, in RAMDir
-    directory = new MockRAMDirectory();
-    runStressTest(directory, false, new ConcurrentMergeScheduler());
-    directory.close();
-
-    // With ConcurrentMergeScheduler and autoCommit=false, in FSDir
-    directory = FSDirectory.open(dirPath);
-    runStressTest(directory, false, new ConcurrentMergeScheduler());
+    runStressTest(directory, new ConcurrentMergeScheduler());
     directory.close();
 
     _TestUtil.rmDir(dirPath);

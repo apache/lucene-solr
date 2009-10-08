@@ -108,7 +108,7 @@
 	</sequential>
   </target>
 	
-  <target name="test-tag" depends="download-tag, compile-core, jar-core"
+  <target name="test-tag" depends="compile-core, jar-core"
   	description="Runs tests of a previous Lucene version. Specify tag version like this: -Dtag=branches/lucene_2_9_back_compat_tests">
 	<sequential>
       <available property="tag.available" file="${tags.dir}/${tag}/src/test" />

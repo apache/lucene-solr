@@ -141,7 +141,7 @@ public class TestQueryTemplateManager extends TestCase {
 		
 		//Create an index
 		RAMDirectory dir=new RAMDirectory();
-		IndexWriter w=new IndexWriter(dir,analyzer,true);
+		IndexWriter w=new IndexWriter(dir,analyzer,true, IndexWriter.MaxFieldLength.UNLIMITED);
 		for (int i = 0; i < docFieldValues.length; i++)
 		{
 			w.addDocument(getDocumentFromString(docFieldValues[i]));

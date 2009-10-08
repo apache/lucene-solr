@@ -106,7 +106,7 @@ public class SpellChecker {
   public void setSpellIndex(Directory spellIndex) throws IOException {
     this.spellIndex = spellIndex;
     if (!IndexReader.indexExists(spellIndex)) {
-        IndexWriter writer = new IndexWriter(spellIndex, null, true);
+        IndexWriter writer = new IndexWriter(spellIndex, null, true, IndexWriter.MaxFieldLength.UNLIMITED);
         writer.close();
     }
     // close the old searcher, if there was one
@@ -299,7 +299,7 @@ public class SpellChecker {
    * @throws IOException
    */
   public void clearIndex() throws IOException {
-    IndexWriter writer = new IndexWriter(spellIndex, null, true);
+    IndexWriter writer = new IndexWriter(spellIndex, null, true, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.close();
     
     //close the old searcher
@@ -325,7 +325,7 @@ public class SpellChecker {
    * @throws IOException
    */
   public void indexDictionary(Dictionary dict, int mergeFactor, int ramMB) throws IOException {
-    IndexWriter writer = new IndexWriter(spellIndex, true, new WhitespaceAnalyzer());
+    IndexWriter writer = new IndexWriter(spellIndex, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
     writer.setMergeFactor(mergeFactor);
     writer.setRAMBufferSizeMB(ramMB);
 

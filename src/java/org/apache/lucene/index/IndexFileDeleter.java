@@ -40,13 +40,6 @@ import java.util.Collection;
  * counting to map the live SegmentInfos instances to
  * individual files in the Directory.
  *
- * When autoCommit=true, IndexWriter currently commits only
- * on completion of a merge (though this may change with
- * time: it is not a guarantee).  When autoCommit=false,
- * IndexWriter only commits when it is closed.  Regardless
- * of autoCommit, the user may call IndexWriter.commit() to
- * force a blocking commit.
- * 
  * The same directory file may be referenced by more than
  * one IndexCommit, i.e. more than one SegmentInfos.
  * Therefore we count how many commits reference each file.

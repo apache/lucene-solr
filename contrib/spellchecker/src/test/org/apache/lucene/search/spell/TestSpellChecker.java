@@ -46,7 +46,7 @@ public class TestSpellChecker extends TestCase {
     
     //create a user index
     userindex = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(userindex, new SimpleAnalyzer(), true);
+    IndexWriter writer = new IndexWriter(userindex, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
 
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();

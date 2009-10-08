@@ -57,7 +57,7 @@ public class ChainedFilterTest extends TestCase {
   public void setUp() throws Exception {
     directory = new RAMDirectory();
     IndexWriter writer =
-       new IndexWriter(directory, new WhitespaceAnalyzer(), true);
+       new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
 
     Calendar cal = Calendar.getInstance();
     cal.setTimeInMillis(1041397200000L); // 2003 January 01

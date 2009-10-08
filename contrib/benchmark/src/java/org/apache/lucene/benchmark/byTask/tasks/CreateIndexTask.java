@@ -34,7 +34,7 @@ import java.io.PrintStream;
  * Create an index. <br>
  * Other side effects: index writer object in perfRunData is set. <br>
  * Relevant properties: <code>merge.factor, max.buffered,
- *  max.field.length, ram.flush.mb [default 0], autocommit
+ *  max.field.length, ram.flush.mb [default 0],
  *  [default true]</code>.
  * <p>
  * This task also supports a "writer.info.stream" property with the following
@@ -129,9 +129,9 @@ public class CreateIndexTask extends PerfTask {
     IndexDeletionPolicy indexDeletionPolicy = getIndexDeletionPolicy(config);
     
     IndexWriter writer = new IndexWriter(runData.getDirectory(),
-                                         runData.getConfig().get("autocommit", OpenIndexTask.DEFAULT_AUTO_COMMIT),
                                          runData.getAnalyzer(),
-                                         true, indexDeletionPolicy);
+                                         true, indexDeletionPolicy,
+                                         IndexWriter.MaxFieldLength.LIMITED);
     setIndexWriterConfig(writer, config);
     runData.setIndexWriter(writer);
     return 1;

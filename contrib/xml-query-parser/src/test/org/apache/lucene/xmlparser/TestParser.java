@@ -61,7 +61,7 @@ public class TestParser extends TestCase {
 		{
 			BufferedReader d = new BufferedReader(new InputStreamReader(TestParser.class.getResourceAsStream("reuters21578.txt"))); 
 			dir=new RAMDirectory();
-			IndexWriter writer=new IndexWriter(dir,analyzer,true);
+			IndexWriter writer=new IndexWriter(dir,analyzer,true, IndexWriter.MaxFieldLength.UNLIMITED);
 			String line = d.readLine();		
 			while(line!=null)
 			{
