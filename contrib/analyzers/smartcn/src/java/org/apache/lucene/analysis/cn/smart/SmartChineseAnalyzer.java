@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.util.Collections;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -59,6 +60,48 @@ import org.apache.lucene.analysis.cn.smart.WordTokenFilter;
 public class SmartChineseAnalyzer extends Analyzer {
 
   private final Set stopWords;
+  
+  private static final String DEFAULT_STOPWORD_FILE = "stopwords.txt";
+  
+  private static final String STOPWORD_FILE_COMMENT = "//";
+  
+  /**
+   * Returns an unmodifiable instance of the default stop-words set.
+   * @return an unmodifiable instance of the default stop-words set.
+   */
+  public static Set<String> getDefaultStopSet(){
+    return DefaultSetHolder.DEFAULT_STOP_SET;
+  }
+  
+  /**
+   * Atomically loads the DEFAULT_STOP_SET in a lazy fashion once the outer class 
+   * accesses the static final set the first time.;
+   */
+  private static class DefaultSetHolder {
+    static final Set<String> DEFAULT_STOP_SET;
+
+    static {
+      try {
+        DEFAULT_STOP_SET = loadDefaultStopWordSet();
+      } catch (IOException ex) {
+        // default set should always be present as it is part of the
+        // distribution (JAR)
+        throw new RuntimeException("Unable to load default stopword set");
+      }
+    }
+
+    static Set<String> loadDefaultStopWordSet() throws IOException {
+      InputStream stream = SmartChineseAnalyzer.class
+          .getResourceAsStream(DEFAULT_STOPWORD_FILE);
+      try {
+        InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+        // make sure it is unmodifiable as we expose it in the outer class
+        return Collections.unmodifiableSet(WordlistLoader.getWordSet(reader, STOPWORD_FILE_COMMENT));
+      } finally {
+        stream.close();
+      }
+    }
+  }
 
   /**
    * Create a new SmartChineseAnalyzer, using the default stopword list.
@@ -79,18 +122,8 @@ public class SmartChineseAnalyzer extends Analyzer {
    * @param useDefaultStopWords true to use the default stopword list.
    */
   public SmartChineseAnalyzer(boolean useDefaultStopWords) {
-    if (useDefaultStopWords) {
-      try {
-      InputStream stream = this.getClass().getResourceAsStream("stopwords.txt");
-      InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
-      stopWords = WordlistLoader.getWordSet(reader, "//");
-      } catch (IOException e) {
-        // TODO: throw IOException
-        throw new RuntimeException(e);
-      }
-    }else{
-      stopWords = null;
-    }
+    stopWords = useDefaultStopWords ? DefaultSetHolder.DEFAULT_STOP_SET
+        : Collections.EMPTY_SET;
   }
 
   /**
@@ -103,7 +136,7 @@ public class SmartChineseAnalyzer extends Analyzer {
    * @param stopWords {@link Set} of stopwords to use.
    */
   public SmartChineseAnalyzer(Set stopWords) {
-    this.stopWords = stopWords;
+    this.stopWords = stopWords==null?Collections.EMPTY_SET:stopWords;
   }
 
   public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -113,8 +146,8 @@ public class SmartChineseAnalyzer extends Analyzer {
     // LowerCaseFilter is not needed, as SegTokenFilter lowercases Basic Latin text.
     // The porter stemming is too strict, this is not a bug, this is a feature:)
     result = new PorterStemFilter(result);
-    if (stopWords != null) {
-      result = new StopFilter(result, stopWords, false);
+    if (!stopWords.isEmpty()) {
+      result = new StopFilter(false,result, stopWords, false);
     }
     return result;
   }
@@ -133,8 +166,8 @@ public class SmartChineseAnalyzer extends Analyzer {
       streams.tokenStream = new SentenceTokenizer(reader);
       streams.filteredTokenStream = new WordTokenFilter(streams.tokenStream);
       streams.filteredTokenStream = new PorterStemFilter(streams.filteredTokenStream);
-      if (stopWords != null) {
-        streams.filteredTokenStream = new StopFilter(streams.filteredTokenStream, stopWords, false);
+      if (!stopWords.isEmpty()) {
+        streams.filteredTokenStream = new StopFilter(false, streams.filteredTokenStream, stopWords, false);
       }
     } else {
       streams.tokenStream.reset(reader);

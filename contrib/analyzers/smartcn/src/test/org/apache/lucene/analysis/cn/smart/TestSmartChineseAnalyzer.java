@@ -25,6 +25,7 @@ import java.util.Date;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 
 public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
   
@@ -32,6 +33,9 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
     Analyzer ca = new SmartChineseAnalyzer(); /* will load stopwords */
     String sentence = "我购买了道具和服装。";
     String result[] = { "我", "购买", "了", "道具", "和", "服装" };
+    assertAnalyzesTo(ca, sentence, result);
+    // set stop-words from the outer world - must yield same behavior
+    ca = new SmartChineseAnalyzer(SmartChineseAnalyzer.getDefaultStopSet());
     assertAnalyzesTo(ca, sentence, result);
   }
   
@@ -63,11 +67,16 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
    * if you don't supply (true) to the constructor, or use a different stopwords list,
    * then punctuation is indexed.
    */
-  public void testChineseStopWordsOff() throws Exception {  
-    Analyzer ca = new SmartChineseAnalyzer(false); /* doesnt load stopwords */
+  public void testChineseStopWordsOff() throws Exception {
+    Analyzer[] analyzers = new Analyzer[] {
+        new SmartChineseAnalyzer(false),/* doesn't load stopwords */
+        new SmartChineseAnalyzer(null) /* sets stopwords to empty set */};
     String sentence = "我购买了道具和服装。";
     String result[] = { "我", "购买", "了", "道具", "和", "服装", "," };
-    assertAnalyzesTo(ca, sentence, result);
+    for (Analyzer analyzer : analyzers) {
+      assertAnalyzesTo(analyzer, sentence, result);
+      assertAnalyzesToReuse(analyzer, sentence, result);
+    }
   }
   
   public void testChineseAnalyzer() throws Exception {
