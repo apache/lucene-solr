@@ -33,6 +33,11 @@ New features
    segment merges to give better search performance in a mixed
    indexing/searching environment.  (John Wang via Mike McCandless)
 
+ * LUCENE-1959: Add IndexSplitter tool, to copy specific segments out
+   of the index into a new index.  It can also list the segments in
+   the index, and delete specified segments.  (Jason Rutherglen via
+   Mike McCandless)
+
 Optimizations
 
 Documentation
