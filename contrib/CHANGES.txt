@@ -1,5 +1,14 @@
 Lucene contrib change Log
 
+======================= Trunk (not yet released) =======================
+
+Changes in backwards compatibility policy
+   
+Bug fixes
+
+ * LUCENE-1953: FastVectorHighlighter: small fragCharSize can cause
+   StringIndexOutOfBoundsException. (Koji Sekiguchi)
+
 ======================= Release 2.9.0 2009-09-23 =======================
 
 Changes in runtime behavior

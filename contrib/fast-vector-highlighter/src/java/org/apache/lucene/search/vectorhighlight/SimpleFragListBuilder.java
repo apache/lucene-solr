@@ -59,6 +59,8 @@ public class SimpleFragListBuilder implements FragListBuilder {
       int st = phraseInfo.getStartOffset() - MARGIN < startOffset ?
           startOffset : phraseInfo.getStartOffset() - MARGIN;
       int en = st + fragCharSize;
+      if( phraseInfo.getEndOffset() > en )
+        en = phraseInfo.getEndOffset();
       startOffset = en;
 
       while( true ){
