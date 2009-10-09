@@ -150,22 +150,24 @@ public class FieldAnalysisResponse extends AnalysisResponseBase {
     }
 
     /**
-     * Returns the number of query time analysis phases in this analysis or {@code -1) if query time analysis
-     * doesn't exist.
+     * Returns the number of query time analysis phases in this analysis or 
+     * {@code -1} if query time analysis doesn't exist.
      *
-     * @return Returns the number of query time analysis phases in this analysis or {@code -1) if query time
-     *         analysis doesn't exist.
+     * @return Returns the number of query time analysis phases in this 
+     *         analysis or {@code -1} if query time analysis doesn't exist.
      */
     public int getQueryPhasesCount() {
       return queryPhases == null ? -1 : queryPhases.size();
     }
 
     /**
-     * Returns the query time analysis phases for this analysis or {@code null} if query time analysis doesn't
-     * exist.
+     * Returns the query time analysis phases for this analysis or {@code null}
+     * if query time analysis doesn't exist.
+     * 
      *
-     * @return The query time analysis phases for this analysis or {@code null} if query time analysis doesn't
-     *         exist.
+     * @return The query time analysis phases for this analysis or {@code null}
+     *         if query time analysis doesn't exist.
+     *         
      */
     public Iterable<AnalysisPhase> getQueryPhases() {
       return queryPhases;

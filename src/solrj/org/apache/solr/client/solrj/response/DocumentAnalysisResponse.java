@@ -184,22 +184,22 @@ public class DocumentAnalysisResponse extends AnalysisResponseBase implements It
     }
 
     /**
-     * Returns the number of query time analysis phases or {@code -1) if this field analysis doesn't hold a query
-     * time analysis.
+     * Returns the number of query time analysis phases or {@code -1} if 
+     * this field analysis doesn't hold a query time analysis.
      *
-     * @return Returns the number of query time analysis phases or {@code -1) if this field analysis doesn't hold a
-     *         query time analysis.
+     * @return Returns the number of query time analysis phases or {@code -1} 
+     *         if this field analysis doesn't hold a query time analysis.
      */
     public int getQueryPhasesCount() {
       return queryPhases == null ? -1 : queryPhases.size();
     }
 
     /**
-     * Returns the query time analysis phases for the field or {@code null} if this field doesn't hold a query time
-     * analysis.
+     * Returns the query time analysis phases for the field or {@code null} 
+     * if this field doesn't hold a query time analysis.
      *
-     * @return Returns the query time analysis phases for the field or {@code null} if this field doesn't hold a
-     *         query time analysis.
+     * @return Returns the query time analysis phases for the field or 
+     *         {@code null} if this field doesn't hold a query time analysis.
      */
     public Iterable<AnalysisPhase> getQueryPhases() {
       return queryPhases;

@@ -191,7 +191,7 @@ public class SolrQuery extends ModifiableSolrParams
    * Sets facet missing boolean flag 
    * 
    * @param v flag to indicate the field of  {@link FacetParams#FACET_MISSING} .
-   * @return
+   * @return this
    */
   public SolrQuery setFacetMissing(Boolean v) {
     this.set(FacetParams.FACET_MISSING, v);
@@ -515,11 +515,11 @@ public class SolrQuery extends ModifiableSolrParams
   }
 
   /**
-   * @see org.apache.solr.common.params.ModifiableSolrParams#set(String, String ...)
+   * @see ModifiableSolrParams#set(String,String[])
    * @param name
    * @param values
    *  
-   * @return
+   * @return this
    */
   public SolrQuery setParam(String name, String ... values) {
     this.set(name, values);
@@ -530,7 +530,7 @@ public class SolrQuery extends ModifiableSolrParams
    * @see org.apache.solr.common.params.ModifiableSolrParams#set(String, boolean)
    * @param name
    * @param value
-   * @return
+   * @return this
    */
   public SolrQuery setParam(String name, boolean value) {
     this.set(name, value);

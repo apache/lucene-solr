@@ -192,7 +192,8 @@ public class CommonsHttpSolrServer extends SolrServer
   }
 
   /**
-   * @see {@link #useMultiPartPost}, {@link #_parser}
+   * @see #useMultiPartPost
+   * @see #_parser
    */
   public CommonsHttpSolrServer(URL baseURL, HttpClient client, ResponseParser parser, boolean useMultiPartPost) {
     _baseURL = baseURL.toExternalForm();

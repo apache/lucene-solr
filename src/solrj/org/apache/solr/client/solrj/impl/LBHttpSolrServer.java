@@ -54,7 +54,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * SolrServer lbHttpSolrServer = new LBHttpSolrServer(httpClient,"http://host1:8080/solr/","http://host2:8080/solr","http://host2:8080/solr");
  * </pre></blockquote>
  * This detects if a dead server comes alive automatically. The check is done in fixed intervals in a dedicated thread.
- * This interval can be set using {@see #setAliveCheckInterval} , the default is set to one minute.
+ * This interval can be set using {@link #setAliveCheckInterval} , the default is set to one minute.
  * <p/>
  * <b>When to use this?</b><br/> This can be used as a software load balancer when you do not wish to setup an external
  * load balancer. The code is relatively new and the API is currently experimental. Alternatives to this code are to use
