@@ -23,6 +23,7 @@ import org.apache.lucene.store.Directory;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A wrapper for an IndexDeletionPolicy instance.
@@ -39,6 +40,7 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
   private volatile Map<Long, IndexCommit> solrVersionVsCommits = new ConcurrentHashMap<Long, IndexCommit>();
   private final Map<Long, Long> reserves = new ConcurrentHashMap<Long,Long>();
   private volatile IndexCommit latestCommit;
+  private final ConcurrentHashMap<Long, AtomicInteger> savedCommits = new ConcurrentHashMap<Long, AtomicInteger>();
 
   public IndexDeletionPolicyWrapper(IndexDeletionPolicy deletionPolicy) {
     this.deletionPolicy = deletionPolicy;
@@ -98,6 +100,25 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
     return result;
   }
 
+  /** Permanently prevent this commit point from being deleted.
+   * A counter is used to allow a commit point to be correctly saved and released
+   * multiple times. */
+  public synchronized void saveCommitPoint(Long indexCommitVersion) {
+    AtomicInteger reserveCount = savedCommits.get(indexCommitVersion);
+    if (reserveCount == null) reserveCount = new AtomicInteger();
+    reserveCount.incrementAndGet();
+  }
+
+  /** Release a previously saved commit point */
+  public synchronized void releaseCommmitPoint(Long indexCommitVersion) {
+    AtomicInteger reserveCount = savedCommits.get(indexCommitVersion);
+    if (reserveCount == null) return;// this should not happen
+    if (reserveCount.decrementAndGet() <= 0) {
+      savedCommits.remove(indexCommitVersion);
+    }
+  }
+
+
   /**
    * Internal use for Lucene... do not explicitly call.
    */
@@ -121,55 +142,74 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
   private class IndexCommitWrapper extends IndexCommit {
     IndexCommit delegate;
 
+
     IndexCommitWrapper(IndexCommit delegate) {
       this.delegate = delegate;
     }
 
+    @Override
     public String getSegmentsFileName() {
       return delegate.getSegmentsFileName();
     }
 
+    @Override
     public Collection getFileNames() throws IOException {
       return delegate.getFileNames();
     }
 
+    @Override
     public Directory getDirectory() {
       return delegate.getDirectory();
     }
 
+    @Override
     public void delete() {
-      Long reserve = reserves.get(delegate.getVersion());
+      Long version = delegate.getVersion();
+      Long reserve = reserves.get(version);
       if (reserve != null && System.currentTimeMillis() < reserve) return;
+      if(savedCommits.contains(version)) return;
       delegate.delete();
     }
 
+    @Override
     public boolean isOptimized() {
       return delegate.isOptimized();
     }
 
+    @Override
     public boolean equals(Object o) {
       return delegate.equals(o);
     }
 
+    @Override
     public int hashCode() {
       return delegate.hashCode();
     }
 
+    @Override
     public long getVersion() {
       return delegate.getVersion();
     }
 
+    @Override
     public long getGeneration() {
       return delegate.getGeneration();
     }
 
+    @Override
     public boolean isDeleted() {
       return delegate.isDeleted();
     }
 
+    @Override
     public long getTimestamp() throws IOException {
       return delegate.getTimestamp();
     }
+
+    @Override
+    public Map getUserData() throws IOException {
+      return delegate.getUserData();
+    }    
   }
 
   /**

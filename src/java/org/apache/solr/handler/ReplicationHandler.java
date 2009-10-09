@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
+import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -815,15 +816,32 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         replicateOnStart = true;
         RefCounted<SolrIndexSearcher> s = core.getNewestSearcher(false);
         try {
+          IndexReader reader = s==null ? null : s.get().getReader();
+          if (reader!=null && reader.getIndexCommit() != null && reader.getIndexCommit().getGeneration() != 1L) {
+            try {
+              if(!replicateOnCommit && replicateOnOptimize){
+                Collection<IndexCommit> commits = IndexReader.listCommits(reader.directory());
+                for (IndexCommit ic : commits) {
+                  if(ic.isOptimized()){
+                    if(indexCommitPoint == null || indexCommitPoint.getVersion() < ic.getVersion()) indexCommitPoint = ic;
+                  }
+                }
+              } else{
+                indexCommitPoint = reader.getIndexCommit();
+              }
+            } finally {
+              if(indexCommitPoint != null){
+                core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getVersion());
+              }
+            }
+          }
           if (core.getUpdateHandler() instanceof DirectUpdateHandler2) {
             ((DirectUpdateHandler2) core.getUpdateHandler()).forceOpenWriter();
           } else {
             LOG.warn("The update handler being used is not an instance or sub-class of DirectUpdateHandler2. " +
                     "Replicate on Startup cannot work.");
-          }
-          if (s.get().getReader().getIndexCommit() != null)
-            if (s.get().getReader().getIndexCommit().getGeneration() != 1L)
-              indexCommitPoint = s.get().getReader().getIndexCommit();
+          } 
+
         } catch (IOException e) {
           LOG.warn("Unable to get IndexCommit on startup", e);
         } finally {
@@ -892,13 +910,18 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
        * This refreshes the latest replicateable index commit and optionally can create Snapshots as well
        */
       public void postCommit() {
-        if (getCommit || snapshoot) {
+        if (getCommit) {
+          IndexCommit oldCommitPoint = indexCommitPoint;
           indexCommitPoint = core.getDeletionPolicy().getLatestCommit();
+          core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getVersion());
+          if(oldCommitPoint != null){
+            core.getDeletionPolicy().releaseCommmitPoint(oldCommitPoint.getVersion());
+          }
         }
         if (snapshoot) {
           try {
             SnapShooter snapShooter = new SnapShooter(core, null);
-            snapShooter.createSnapAsync(indexCommitPoint.getFileNames(), ReplicationHandler.this);
+            snapShooter.createSnapAsync(core.getDeletionPolicy().getLatestCommit().getFileNames(), ReplicationHandler.this);
           } catch (Exception e) {
             LOG.error("Exception while snapshooting", e);
           }
