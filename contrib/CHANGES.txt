@@ -10,6 +10,11 @@ Changes in backwards compatibility policy
 
 Changes in runtime behavior
 
+ * LUCENE-1963: ArabicAnalyzer now lowercases before checking the stopword
+   list. This has no effect on Arabic text, but if you are using a custom
+   stopword list that contains some non-Arabic words, you'll need to fully
+   reindex.  (DM Smith via Robert Muir)
+
 API Changes
 
  * LUCENE-1936: Deprecated RussianLowerCaseFilter, because it transforms

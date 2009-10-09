@@ -72,4 +72,13 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(new ArabicAnalyzer(), "English text.", new String[] {
         "english", "text" });
   }
+  
+  /**
+   * Test that custom stopwords work, and are not case-sensitive.
+   */
+  public void testCustomStopwords() throws Exception {
+    ArabicAnalyzer a = new ArabicAnalyzer(new String[] { "the", "and", "a" });
+    assertAnalyzesTo(a, "The quick brown fox.", new String[] { "quick",
+        "brown", "fox" });
+  }
 }
