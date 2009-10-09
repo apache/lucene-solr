@@ -30,12 +30,13 @@ There is a new default faceting algorithm for multiVaued fields that should be
 faster for most cases.  One can revert to the previous algorithm (which has
 also been improved somewhat) by adding facet.method=enum to the request.
 
-New users of Solr 1.4 will have omitTermFreqAndPositions enabled for non-text indexed fields by
-default, which avoids indexing term frequency, positions, and payloads, making
-the index smaller and faster.  If you are upgrading from an earlier Solr
-release and want to enable omitTermFreqAndPositions by default, change the schema version from
-1.1 to 1.2 in schema.xml.  Remove any existing index and restart Solr to ensure that omitTermFreqAndPositions
-completely takes affect.
+New users of Solr 1.4 will have omitTermFreqAndPositions enabled for non-text
+indexed fields by default, which avoids indexing term frequency, positions, and
+payloads, making the index smaller and faster.  If you are upgrading from an
+earlier Solr release and want to enable omitTermFreqAndPositions by default,
+change the schema version from 1.1 to 1.2 in schema.xml.  Remove any existing
+index and restart Solr to ensure that omitTermFreqAndPositions completely takes
+affect.
 
 The default QParserPlugin used by the QueryComponent for parsing the "q" param
 has been changed, to remove support for the deprecated use of ";" as a separator
