@@ -1,34 +1,49 @@
-package org.tartarus.snowball;
+/*
 
-/**
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+Copyright (c) 2001, Dr Martin Porter
+Copyright (c) 2002, Richard Boulton
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+    * this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+    * notice, this list of conditions and the following disclaimer in the
+    * documentation and/or other materials provided with the distribution.
+    * Neither the name of the copyright holders nor the names of its contributors
+    * may be used to endorse or promote products derived from this software
+    * without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
  */
+
+
+package org.tartarus.snowball;
 
 import java.lang.reflect.InvocationTargetException;
 
 /**
  * This is the rev 500 of the Snowball SVN trunk,
  * but modified:
- * made abstract and introduced abstract method stem
- * to avoid expensive 
+ * made abstract and introduced abstract method stem to avoid expensive reflection in filter class.
+ * refactored StringBuffers to StringBuilder
  */
 public abstract class SnowballProgram {
     protected SnowballProgram()
     {
-	current = new StringBuffer();
+	current = new StringBuilder();
 	setCurrent("");
     }
 
@@ -59,12 +74,12 @@ public abstract class SnowballProgram {
         // the buffer size will not decrease, and we will risk wasting a large
         // amount of memory.
         // Thanks to Wolfram Esser for spotting this problem.
-        current = new StringBuffer();
+        current = new StringBuilder();
         return result;
     }
 
     // current string
-    protected StringBuffer current;
+    protected StringBuilder current;
 
     protected int cursor;
     protected int limit;
@@ -194,12 +209,12 @@ public abstract class SnowballProgram {
 	return true;
     }
 
-    protected boolean eq_v(StringBuffer s)
+    protected boolean eq_v(StringBuilder s)
     {
 	return eq_s(s.length(), s.toString());
     }
 
-    protected boolean eq_v_b(StringBuffer s)
+    protected boolean eq_v_b(StringBuilder s)
     {   return eq_s_b(s.length(), s.toString());
     }
 
@@ -380,7 +395,7 @@ public abstract class SnowballProgram {
 	replace_s(bra, ket, s);
     }
 
-    protected void slice_from(StringBuffer s)
+    protected void slice_from(StringBuilder s)
     {
         slice_from(s.toString());
     }
@@ -397,13 +412,13 @@ public abstract class SnowballProgram {
 	if (c_bra <= ket) ket += adjustment;
     }
 
-    protected void insert(int c_bra, int c_ket, StringBuffer s)
+    protected void insert(int c_bra, int c_ket, StringBuilder s)
     {
 	insert(c_bra, c_ket, s.toString());
     }
 
     /* Copy the slice into the supplied StringBuffer */
-    protected StringBuffer slice_to(StringBuffer s)
+    protected StringBuilder slice_to(StringBuilder s)
     {
 	slice_check();
 	int len = ket - bra;
@@ -411,7 +426,7 @@ public abstract class SnowballProgram {
 	return s;
     }
 
-    protected StringBuffer assign_to(StringBuffer s)
+    protected StringBuilder assign_to(StringBuilder s)
     {
 	s.replace(0, s.length(), current.substring(0, limit));
 	return s;

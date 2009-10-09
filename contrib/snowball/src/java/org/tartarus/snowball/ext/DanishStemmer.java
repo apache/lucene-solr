@@ -65,7 +65,7 @@ public class DanishStemmer extends SnowballProgram {
 
         private int I_x;
         private int I_p1;
-        private StringBuffer S_ch = new StringBuffer();
+        private StringBuilder S_ch = new StringBuilder();
 
         private void copy_from(DanishStemmer other) {
             I_x = other.I_x;

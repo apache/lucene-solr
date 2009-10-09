@@ -136,7 +136,7 @@ public class FinnishStemmer extends SnowballProgram {
         private static final char g_particle_end[] = {17, 97, 24, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 32 };
 
         private boolean B_ending_removed;
-        private StringBuffer S_x = new StringBuffer();
+        private StringBuilder S_x = new StringBuilder();
         private int I_p2;
         private int I_p1;
 

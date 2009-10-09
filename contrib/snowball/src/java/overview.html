@@ -26,6 +26,14 @@ based on revision 500 of the Tartarus Snowball repository,
 together with classes integrating them with the Lucene search engine.
 </p>
 <p>
+A few changes has been made to the static Snowball code and compiled stemmers:
+</p>
+<ul>
+  <li>Class SnowballProgram is made abstract and contains new abstract method stem() to avoid reflection in Lucene filter class SnowballFilter.</li>
+  <li>All use of StringBuffers has been refactored to StringBuilder for speed.</li>
+  <li>Snowball BSD license header has been added to the Java classes to avoid having RAT adding ASL headers.</li>
+</ul>
+<p>
 See the Snowball <a href ="http://snowball.tartarus.org/">home page</a> for more information about the algorithms.
 </p>
 

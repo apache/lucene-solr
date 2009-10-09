@@ -125,7 +125,7 @@ public class KpStemmer extends SnowballProgram {
         private int I_p2;
         private int I_p1;
         private int I_x;
-        private StringBuffer S_ch = new StringBuffer();
+        private StringBuilder S_ch = new StringBuilder();
 
         private void copy_from(KpStemmer other) {
             B_GE_removed = other.B_GE_removed;
