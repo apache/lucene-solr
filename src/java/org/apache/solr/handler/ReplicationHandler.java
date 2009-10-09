@@ -65,7 +65,7 @@ import java.util.zip.DeflaterOutputStream;
  */
 public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAware {
   private static final Logger LOG = LoggerFactory.getLogger(ReplicationHandler.class.getName());
-  private SolrCore core;
+  SolrCore core;
 
   private SnapPuller snapPuller;
 
@@ -276,12 +276,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private void doSnapShoot(SolrParams params, SolrQueryResponse rsp, SolrQueryRequest req) {
     try {
-      IndexCommit indexCommit = core.getDeletionPolicy().getLatestCommit();
+      IndexDeletionPolicyWrapper delPolicy = core.getDeletionPolicy();
+      IndexCommit indexCommit = delPolicy.getLatestCommit();
+      // race?
+      delPolicy.setReserveDuration(indexCommit.getVersion(), reserveCommitDuration);
       if(indexCommit == null) {
         indexCommit = req.getSearcher().getReader().getIndexCommit();
       }
       if (indexCommit != null)  {
-        new SnapShooter(core, params.get("location")).createSnapAsync(indexCommit.getFileNames(), this);
+        new SnapShooter(core, params.get("location")).createSnapAsync(indexCommit, this);
       }
     } catch (Exception e) {
       LOG.warn("Exception during creating a snapshot", e);
@@ -687,10 +690,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         details.add("master", master);
       if (isSlave && showSlaveDetails)
         details.add("slave", slave);
-      NamedList snapshotStats = snapShootDetails;
-      if (snapshotStats != null)
-        details.add(CMD_BACKUP, snapshotStats);
+
     }
+    
+    NamedList snapshotStats = snapShootDetails;
+    if (snapshotStats != null)
+      details.add(CMD_BACKUP, snapshotStats);
+    
     return details;
   }
 
@@ -915,13 +921,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           indexCommitPoint = core.getDeletionPolicy().getLatestCommit();
           core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getVersion());
           if(oldCommitPoint != null){
-            core.getDeletionPolicy().releaseCommmitPoint(oldCommitPoint.getVersion());
+            core.getDeletionPolicy().releaseCommitPoint(oldCommitPoint.getVersion());
           }
         }
         if (snapshoot) {
           try {
             SnapShooter snapShooter = new SnapShooter(core, null);
-            snapShooter.createSnapAsync(core.getDeletionPolicy().getLatestCommit().getFileNames(), ReplicationHandler.this);
+            snapShooter.createSnapAsync(core.getDeletionPolicy().getLatestCommit(), ReplicationHandler.this);
           } catch (Exception e) {
             LOG.error("Exception while snapshooting", e);
           }

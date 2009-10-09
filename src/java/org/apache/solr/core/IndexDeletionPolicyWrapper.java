@@ -110,7 +110,7 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
   }
 
   /** Release a previously saved commit point */
-  public synchronized void releaseCommmitPoint(Long indexCommitVersion) {
+  public synchronized void releaseCommitPoint(Long indexCommitVersion) {
     AtomicInteger reserveCount = savedCommits.get(indexCommitVersion);
     if (reserveCount == null) return;// this should not happen
     if (reserveCount.decrementAndGet() <= 0) {

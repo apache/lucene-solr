@@ -16,20 +16,24 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.store.Lock;
-import org.apache.lucene.store.SimpleFSLockFactory;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.common.util.NamedList;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
-import java.util.ArrayList;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.store.Lock;
+import org.apache.lucene.store.SimpleFSLockFactory;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.IndexDeletionPolicyWrapper;
+import org.apache.solr.core.SolrCore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p/> Provides functionality equivalent to the snapshooter script </p>
@@ -42,7 +46,7 @@ public class SnapShooter {
   private String snapDir = null;
   private SolrCore solrCore;
   private SimpleFSLockFactory lockFactory;
-
+  
   public SnapShooter(SolrCore core, String location) throws IOException {
     solrCore = core;
     if (location == null) snapDir = core.getDataDir();
@@ -55,15 +59,17 @@ public class SnapShooter {
     lockFactory = new SimpleFSLockFactory(snapDir);
   }
 
-  void createSnapAsync(final Collection<String> files, final ReplicationHandler replicationHandler) {
+  void createSnapAsync(final IndexCommit indexCommit, final ReplicationHandler replicationHandler) {
+    replicationHandler.core.getDeletionPolicy().saveCommitPoint(indexCommit.getVersion());
+
     new Thread() {
       public void run() {
-        createSnapshot(files, replicationHandler);
+        createSnapshot(indexCommit, replicationHandler);
       }
     }.start();
   }
 
-  void createSnapshot(Collection<String> files, ReplicationHandler replicationHandler) {
+  void createSnapshot(final IndexCommit indexCommit, ReplicationHandler replicationHandler) {
     NamedList details = new NamedList();
     details.add("startTime", new Date().toString());
     File snapShotDir = null;
@@ -79,9 +85,10 @@ public class SnapShooter {
         LOG.warn("Unable to create snapshot directory: " + snapShotDir.getAbsolutePath());
         return;
       }
-      for (String indexFile : files) {
-        FileUtils.copyFileToDirectory(new File(solrCore.getIndexDir(), indexFile), snapShotDir, true);
-      }
+      Collection<String> files = indexCommit.getFileNames();
+      FileCopier fileCopier = new FileCopier(solrCore.getDeletionPolicy(), indexCommit);
+      fileCopier.copyFiles(files, snapShotDir);
+
       details.add("fileCount", files.size());
       details.add("status", "success");
       details.add("snapshotCompletedAt", new Date().toString());
@@ -90,7 +97,8 @@ public class SnapShooter {
       LOG.error("Exception while creating snapshot", e);
       details.add("snapShootException", e.getMessage());
     } finally {
-      replicationHandler.snapShootDetails = details;
+        replicationHandler.core.getDeletionPolicy().releaseCommitPoint(indexCommit.getVersion());   
+        replicationHandler.snapShootDetails = details;
       if (lock != null) {
         try {
           lock.release();
@@ -103,4 +111,89 @@ public class SnapShooter {
 
   public static final String SNAP_DIR = "snapDir";
   public static final String DATE_FMT = "yyyyMMddhhmmss";
+  
+
+  private class FileCopier {
+    private static final int DEFAULT_BUFFER_SIZE = 32768;
+    private byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
+    private IndexCommit indexCommit;
+    private IndexDeletionPolicyWrapper delPolicy;
+    private int reserveTime;
+
+    public FileCopier(IndexDeletionPolicyWrapper delPolicy, IndexCommit commit) {
+      this.delPolicy = delPolicy;
+      this.indexCommit = commit;
+      this.reserveTime = reserveTime;
+    }
+    
+    public void copyFiles(Collection<String> files, File destDir) throws IOException {
+      for (String indexFile : files) {
+        File source = new File(solrCore.getIndexDir(), indexFile);
+        copyFile(source, new File(destDir, source.getName()), true);
+      }
+    }
+    
+    public void copyFile(File source, File destination, boolean preserveFileDate)
+        throws IOException {
+      // check source exists
+      if (!source.exists()) {
+        String message = "File " + source + " does not exist";
+        throw new FileNotFoundException(message);
+      }
+
+      // does destinations directory exist ?
+      if (destination.getParentFile() != null
+          && !destination.getParentFile().exists()) {
+        destination.getParentFile().mkdirs();
+      }
+
+      // make sure we can write to destination
+      if (destination.exists() && !destination.canWrite()) {
+        String message = "Unable to open file " + destination + " for writing.";
+        throw new IOException(message);
+      }
+
+      FileInputStream input = null;
+      FileOutputStream output = null;
+      try {
+        input = new FileInputStream(source);
+        output = new FileOutputStream(destination);
+ 
+        int count = 0;
+        int n = 0;
+        int rcnt = 0;
+        while (-1 != (n = input.read(buffer))) {
+          output.write(buffer, 0, n);
+          count += n;
+          rcnt++;
+          /***
+          // reserve every 4.6875 MB
+          if (rcnt == 150) {
+            rcnt = 0;
+            delPolicy.setReserveDuration(indexCommit.getVersion(), reserveTime);
+          }
+           ***/
+        }
+      } finally {
+        try {
+          IOUtils.closeQuietly(input);
+        } finally {
+          IOUtils.closeQuietly(output);
+        }
+      }
+
+      if (source.length() != destination.length()) {
+        String message = "Failed to copy full contents from " + source + " to "
+            + destination;
+        throw new IOException(message);
+      }
+
+      if (preserveFileDate) {
+        // file copy should preserve file date
+        destination.setLastModified(source.lastModified());
+      }
+    }
+  }
+  
+
 }
