@@ -217,7 +217,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
    * @param req
    * @param rsp
    *
-   * @return persistence flag as necessary.
+   * @return true if a modification has resulted that requires persistance 
+   *         of the CoreContainer configuration.
    *
    * @throws SolrException in case of a configuration error.
    */
@@ -257,7 +258,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
    * @param req
    * @param rsp
    *
-   * @return
+   * @return true if a modification has resulted that requires persistance 
+   *         of the CoreContainer configuration.
    *
    * @throws SolrException
    */
@@ -286,7 +288,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
    * @param req
    * @param rsp
    *
-   * @return
+   * @return true if a modification has resulted that requires persistance 
+   *         of the CoreContainer configuration.
    */
   protected boolean handleAliasAction(SolrQueryRequest req, SolrQueryResponse rsp) {
     SolrParams params = req.getParams();
@@ -312,7 +315,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
    * @param req
    * @param rsp
    *
-   * @return
+   * @return true if a modification has resulted that requires persistance 
+   *         of the CoreContainer configuration.
    */
   protected boolean handleUnloadAction(SolrQueryRequest req, SolrQueryResponse rsp) throws SolrException {
     SolrParams params = req.getParams();
@@ -333,7 +337,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
    * @param req
    * @param rsp
    *
-   * @return
+   * @return true if a modification has resulted that requires persistance 
+   *         of the CoreContainer configuration.
    */
   protected boolean handleStatusAction(SolrQueryRequest req, SolrQueryResponse rsp)
           throws SolrException {
@@ -365,7 +370,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
    * @param req
    * @param rsp
    *
-   * @return
+   * @return true if a modification has resulted that requires persistance 
+   *         of the CoreContainer configuration.
    *
    * @throws SolrException
    */
@@ -393,7 +399,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
    * @param req
    * @param rsp
    *
-   * @return
+   * @return true if a modification has resulted that requires persistance 
+   *         of the CoreContainer configuration.
    */
   protected boolean handleReloadAction(SolrQueryRequest req, SolrQueryResponse rsp) {
     SolrParams params = req.getParams();
@@ -412,7 +419,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
    * @param req
    * @param rsp
    *
-   * @return
+   * @return true if a modification has resulted that requires persistance 
+   *         of the CoreContainer configuration.
    */
   protected boolean handleSwapAction(SolrQueryRequest req, SolrQueryResponse rsp) {
     final SolrParams params = req.getParams();

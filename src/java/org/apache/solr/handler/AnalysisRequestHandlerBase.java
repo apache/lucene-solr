@@ -261,42 +261,47 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     private final Set<String> termsToMatch;
 
     /**
-     * Constructs a new AnalysisContext with a given field tpe, analyzer and termsToMatch. By default the field name in
-     * this context will be {@code null}. During the analysis processs, The produced tokens will be compaired to the
-     * termes in the {@code termsToMatch} set. When found, these tokens will be marked as a match.
+     * Constructs a new AnalysisContext with a given field tpe, analyzer and 
+     * termsToMatch. By default the field name in this context will be 
+     * {@code null}. During the analysis processs, The produced tokens will 
+     * be compaired to the terms in the {@code termsToMatch} set. When found, 
+     * these tokens will be marked as a match.
      *
      * @param fieldType    The type of the field the analysis is performed on.
      * @param analyzer     The analyzer to be used.
-     * @param termsToMatch Holds all the terms that should match during the analysis process.
+     * @param termsToMatch Holds all the terms that should match during the 
+     *                     analysis process.
      */
     public AnalysisContext(FieldType fieldType, Analyzer analyzer, Set<String> termsToMatch) {
       this(null, fieldType, analyzer, termsToMatch);
     }
 
     /**
-     * Constructs an AnalysisContext with a given field name, field type and analyzer. By default this context will hold
-     * no terms to match
+     * Constructs an AnalysisContext with a given field name, field type 
+     * and analyzer. By default this context will hold no terms to match
      *
-     * @param fieldName The name of the field the analysis is performed on (may be {@code nuill}).
+     * @param fieldName The name of the field the analysis is performed on 
+     *                  (may be {@code null}).
      * @param fieldType The type of the field the analysis is performed on.
      * @param analyzer  The analyzer to be used during the analysis process.
      *
-     * @see #AnalysisContext(String, org.apache.solr.schema.FieldType, org.apache.lucene.analysis.Analyzer,
-     *      java.util.Set)
      */
     public AnalysisContext(String fieldName, FieldType fieldType, Analyzer analyzer) {
       this(fieldName, fieldType, analyzer, Collections.EMPTY_SET);
     }
 
     /**
-     * Constructs a new AnalysisContext with a given field tpe, analyzer and termsToMatch. During the analysis processs,
-     * The produced tokens will be compaired to the termes in the {@codce termsToMatch} set. When found, these tokens
-     * will be marked as a match.
+     * Constructs a new AnalysisContext with a given field tpe, analyzer and
+     * termsToMatch. During the analysis processs, The produced tokens will be 
+     * compaired to the termes in the {@code termsToMatch} set. When found, 
+     * these tokens will be marked as a match.
      *
-     * @param fieldName    The name of the field the analysis is performed on (may be {@code null}).
+     * @param fieldName    The name of the field the analysis is performed on 
+     *                     (may be {@code null}).
      * @param fieldType    The type of the field the analysis is performed on.
      * @param analyzer     The analyzer to be used.
-     * @param termsToMatch Holds all the terms that should match during the analysis process.
+     * @param termsToMatch Holds all the terms that should match during the 
+     *                     analysis process.
      */
     public AnalysisContext(String fieldName, FieldType fieldType, Analyzer analyzer, Set<String> termsToMatch) {
       this.fieldName = fieldName;

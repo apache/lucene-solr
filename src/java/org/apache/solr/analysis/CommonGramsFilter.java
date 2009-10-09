@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.TokenStream;
 /**
  * Construct bigrams for frequently occurring terms while indexing. Single terms
  * are still indexed too, with bigrams overlaid. This is achieved through the
- * use of {@link Token#Set<String>PositionIncrement(int)}. Bigrams have a type
+ * use of {@link Token#setPositionIncrement(int)}. Bigrams have a type
  * of "gram" Example
  * <ul>
  * <li>input:"the quick brown fox"</li>

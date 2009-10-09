@@ -414,7 +414,6 @@ public class SolrConfig extends Config {
    * SolrRequestHandler,QParserPlugin, QueryResponseWriter,ValueSourceParser,
    * SearchComponent, QueryConverter, SolrEventListener, DirectoryFactory,
    * IndexDeletionPolicy, IndexReaderFactory
-   * @return
    */
   public List<PluginInfo> getPluginInfos(String  type){
     List<PluginInfo> result = pluginStore.get(type);
