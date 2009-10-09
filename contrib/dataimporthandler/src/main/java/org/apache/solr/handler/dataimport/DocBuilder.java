@@ -332,6 +332,7 @@ public class DocBuilder {
       while (true) {
         if (stop.get())
           return;
+        if(importStatistics.docCount.get() > (requestParameters.start + requestParameters.rows)) break;
         try {
           seenDocCount++;
 
