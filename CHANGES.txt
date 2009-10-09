@@ -30,6 +30,20 @@ There is a new default faceting algorithm for multiVaued fields that should be
 faster for most cases.  One can revert to the previous algorithm (which has
 also been improved somewhat) by adding facet.method=enum to the request.
 
+Searching and sorting is now done on a per-segment basis, meaning that
+the FieldCache entries used for sorting and for function queries are
+created and used per-segment and can be reused for segments that don't
+change between index updates.  While generally beneficial, this can lead
+to increased memory usage over 1.3 in certain scenarios: 
+  1) A single valued field that was used for both sorting and faceting
+in 1.3 would have used the same top level FieldCache entry.  In 1.4, 
+sorting will use entries at the segment level while faceting will still
+use entries at the top reader level, leading to increased memory usage.
+  2) Certain function queries such as ord() and rord() require a top level
+FieldCache instance and can thus lead to increased memory usage.  Consider
+replacing ord() and rord() with alternatives, such as function queries
+based on ms() for date boosting.
+
 If you use custom Tokenizer or TokenFilter components in a chain specified in
 schema.xml, they must support reusability.  If your Tokenizer or TokenFilter
 maintains state, it should implement reset().  If your TokenFilteFactory does
