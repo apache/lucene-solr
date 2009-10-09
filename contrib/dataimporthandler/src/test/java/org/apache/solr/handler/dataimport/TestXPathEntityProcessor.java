@@ -89,6 +89,26 @@ public class TestXPathEntityProcessor {
   }
 
   @Test
+  public void testMultiValuedFlatten() throws Exception  {
+    Map entityAttrs = createMap("name", "e", "url", "testdata.xml",
+            XPathEntityProcessor.FOR_EACH, "/root");
+    List fields = new ArrayList();
+    fields.add(createMap("column", "a", "xpath", "/root/a" ,"flatten","true"));
+    Context c = AbstractDataImportHandlerTest.getContext(null,
+            new VariableResolverImpl(), getDataSource(testXmlFlatten), Context.FULL_DUMP, fields, entityAttrs);
+    XPathEntityProcessor xPathEntityProcessor = new XPathEntityProcessor();
+    xPathEntityProcessor.init(c);
+    Map<String, Object> result = null;
+    while (true) {
+      Map<String, Object> row = xPathEntityProcessor.nextRow();
+      if (row == null)
+        break;
+      result = row;
+    }
+    Assert.assertEquals("1B2", result.get("a"));
+  }
+
+  @Test
   public void withFieldsAndXpathStream() throws Exception {
     Map entityAttrs = createMap("name", "e", "url", "cd.xml",
         XPathEntityProcessor.FOR_EACH, "/catalog/cd", "stream", "true", "batchSize","1");
@@ -204,4 +224,6 @@ public class TestXPathEntityProcessor {
           + "\t\t<year>1982</year>\n" + "\t</cd>\n" + "</catalog>\t";
 
   private static final String testXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root><a>1</a><a>2</a></root>";
+
+  private static final String testXmlFlatten = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><root><a>1<b>B</b>2</a></root>";
 }
