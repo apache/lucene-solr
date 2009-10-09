@@ -30,6 +30,13 @@ There is a new default faceting algorithm for multiVaued fields that should be
 faster for most cases.  One can revert to the previous algorithm (which has
 also been improved somewhat) by adding facet.method=enum to the request.
 
+If you use custom Tokenizer or TokenFilter components in a chain specified in
+schema.xml, they must support reusability.  If your Tokenizer or TokenFilter
+maintains state, it should implement reset().  If your TokenFilteFactory does
+not return a subclass of TokenFilter, then it should implement reset() and call
+reset() on it's input TokenStream.  TokenizerFactory implementations must
+now return a Tokenizer rather than a TokenStream.
+
 New users of Solr 1.4 will have omitTermFreqAndPositions enabled for non-text
 indexed fields by default, which avoids indexing term frequency, positions, and
 payloads, making the index smaller and faster.  If you are upgrading from an
@@ -46,11 +53,6 @@ sort options should explicitly set the defType param to "lucenePlusSort" on all
 requests. (The simplest way to do this is by specifying it as a default param
 for your request handlers in solrconfig.xml, see the example solrconfig.xml for
 sample syntax.) 
-
-The TokenizerFactory API has changed to explicitly return a Tokenizer rather then
-a TokenStream (that may be or may not be a Tokenizer).  This change is required
-to take advantage of the Token reuse improvements in lucene 2.9.  For more 
-information, see SOLR-1377. 
 
 If spellcheck.extendedResults=true, the response format for suggestions
 has changed, see SOLR-1071.
