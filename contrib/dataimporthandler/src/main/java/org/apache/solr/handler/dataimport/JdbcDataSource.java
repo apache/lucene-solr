@@ -187,7 +187,7 @@ public class JdbcDataSource extends
           String holdability = initProps.getProperty("holdability");
           if ("CLOSE_CURSORS_AT_COMMIT".equals(holdability)) {
             c.setHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT);
-          } else {
+          } else if ("HOLD_CURSORS_OVER_COMMIT".equals(holdability)) {
             c.setHoldability(ResultSet.HOLD_CURSORS_OVER_COMMIT);
           }
         }
