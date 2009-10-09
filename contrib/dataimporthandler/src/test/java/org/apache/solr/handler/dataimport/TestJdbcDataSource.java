@@ -82,7 +82,7 @@ public class TestJdbcDataSource {
 
     EasyMock.expect(dataSource.getConnection()).andReturn(connection);
     connection.setAutoCommit(false);
-    connection.setHoldability(1);
+//    connection.setHoldability(1);
 
     mockControl.replay();
 
@@ -101,6 +101,7 @@ public class TestJdbcDataSource {
     props.put(JdbcDataSource.JNDI_NAME, "java:comp/env/jdbc/JndiDB");
     props.put("user", "Fred");
     props.put("password", "4r3d");
+    props.put("holdability", "HOLD_CURSORS_OVER_COMMIT");
 
     EasyMock.expect(dataSource.getConnection("Fred", "4r3d")).andReturn(
             connection);
@@ -129,6 +130,7 @@ public class TestJdbcDataSource {
 
     props.put(JdbcDataSource.DRIVER, driver.getClass().getName());
     props.put(JdbcDataSource.URL, "jdbc:fakedb");
+    props.put("holdability", "HOLD_CURSORS_OVER_COMMIT");
     mockControl.replay();
 
     Connection conn = jdbcDataSource.createConnectionFactory(context, props)
