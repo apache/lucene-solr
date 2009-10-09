@@ -45,7 +45,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     }
 
     public void eval(MockRAMDirectory dir)  throws IOException {
-      if (doFail) {
+      if (doFail && Thread.currentThread().getName().equals("main")) {
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
           if ("doFlush".equals(trace[i].getMethodName())) {
