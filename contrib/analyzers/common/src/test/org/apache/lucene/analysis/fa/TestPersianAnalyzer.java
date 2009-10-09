@@ -213,5 +213,14 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesToReuse(a, "خورده مي شده بوده باشد", new String[] { "خورده" });
     assertAnalyzesToReuse(a, "برگ‌ها", new String[] { "برگ" });
   }
+  
+  /**
+   * Test that custom stopwords work, and are not case-sensitive.
+   */
+  public void testCustomStopwords() throws Exception {
+    PersianAnalyzer a = new PersianAnalyzer(new String[] { "the", "and", "a" });
+    assertAnalyzesTo(a, "The quick brown fox.", new String[] { "quick",
+        "brown", "fox" });
+  }
 
 }
