@@ -100,7 +100,7 @@ public class RegexTransformer extends Transformer {
               }
             }
           }
-          for (Object result : results) row.put(col, result);
+          row.put(col, results);
           if(otherVars != null) row.putAll(otherVars);
         } else {
           String value = tmpVal.toString();

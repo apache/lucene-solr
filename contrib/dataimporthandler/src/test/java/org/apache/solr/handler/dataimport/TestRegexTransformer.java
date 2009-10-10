@@ -20,6 +20,8 @@ import static org.apache.solr.handler.dataimport.RegexTransformer.REGEX;
 import static org.apache.solr.handler.dataimport.RegexTransformer.GROUP_NAMES;
 import static org.apache.solr.handler.dataimport.RegexTransformer.REPLACE_WITH;
 import static org.apache.solr.handler.dataimport.DataImporter.COLUMN;
+import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTest.createMap;
+import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTest.getContext;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -147,6 +149,24 @@ public class TestRegexTransformer {
     Assert.assertEquals("19", result.get("city_mileage"));
     Assert.assertEquals("*** 19 *** mpg City", result.get("hltCityMPG"));
     Assert.assertEquals("Fuel Economy range: 26 mpg Hwy, 19 mpg City", result.get("t3"));
+  }
+
+  @Test
+  public void testMultiValuedRegex(){
+      List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
+//    <field column="participant" sourceColName="person" regex="(.*)" />
+    Map<String, String> fld = getField("participant", null, "(.*)", "person", null);
+    fields.add(fld);
+    Context context = getContext(null, null,
+            null, Context.FULL_DUMP, fields, null);
+
+    ArrayList<String> strings = new ArrayList<String>();
+    strings.add("hello");
+    strings.add("world");
+    Map<String, Object> result = new RegexTransformer().transformRow(createMap("person", strings), context);
+    Assert.assertEquals(strings,result.get("participant"));
+
+
   }
 
   public static List<Map<String, String>> getFields() {
