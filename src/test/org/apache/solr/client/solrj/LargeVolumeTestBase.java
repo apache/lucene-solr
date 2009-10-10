@@ -51,6 +51,10 @@ public abstract class LargeVolumeTestBase extends SolrExampleTestBase
     for (int i=0; i<threadCount; i++) {
       threads[i].join();
     }
+
+    // some of the commits could have failed because maxWarmingSearchers exceeded,
+    // so do a final commit to make sure everything is visible.
+    gserver.commit();
     
     query(threadCount * numdocs);
     System.out.println("done");
