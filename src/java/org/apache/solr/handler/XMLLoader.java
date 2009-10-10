@@ -69,8 +69,7 @@ class XMLLoader extends ContentStreamLoader {
       this.processUpdate(processor, parser);
     }
     catch (XMLStreamException e) {
-      //Hmmm, not quite right
-      throw (IOException) new IOException(e.getMessage()).initCause(e);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
     } finally {
       IOUtils.closeQuietly(reader);
     }
