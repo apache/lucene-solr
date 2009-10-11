@@ -55,7 +55,6 @@ import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.FilteredQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
@@ -557,42 +556,6 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     helper.start();
   }
 
-  public void testGetConstantScoreRangeFragments() throws Exception {
-
-    numHighlights = 0;
-
-    query = new ConstantScoreRangeQuery(FIELD_NAME, "kannedy", "kznnedy", true, true);
-
-    searcher = new IndexSearcher(ramDir, true);
-    // can't rewrite ConstantScoreRangeQuery if you want to highlight it -
-    // it rewrites to ConstantScoreQuery which cannot be highlighted
-    // query = unReWrittenQuery.rewrite(reader);
-    System.out.println("Searching for: " + query.toString(FIELD_NAME));
-    hits = searcher.search(query, null, 1000);
-
-    for (int i = 0; i < hits.totalHits; i++) {
-      String text = searcher.doc(hits.scoreDocs[i].doc).get(HighlighterTest.FIELD_NAME);
-      int maxNumFragmentsRequired = 2;
-      String fragmentSeparator = "...";
-      QueryScorer scorer = null;
-      TokenStream tokenStream = null;
-
-      tokenStream = analyzer.tokenStream(HighlighterTest.FIELD_NAME, new StringReader(text));
-      
-      scorer = new QueryScorer(query, HighlighterTest.FIELD_NAME);
-
-      Highlighter highlighter = new Highlighter(this, scorer);
-
-      highlighter.setTextFragmenter(new SimpleFragmenter(20));
-
-      String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
-          fragmentSeparator);
-      System.out.println("\t" + result);
-    }
-    assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
-        numHighlights == 5);
-  }
-  
   public void testConstantScoreMultiTermQuery() throws Exception {
 
     numHighlights = 0;

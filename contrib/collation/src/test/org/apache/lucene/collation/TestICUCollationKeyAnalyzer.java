@@ -53,8 +53,8 @@ public class TestICUCollationKeyAnalyzer extends CollationTestBase {
                                  secondRangeBeginning, secondRangeEnd);
   }
 
-  public void testFarsiConstantScoreRangeQuery() throws Exception {
-    testFarsiConstantScoreRangeQuery
+  public void testFarsiTermRangeQuery() throws Exception {
+    testFarsiTermRangeQuery
       (analyzer, firstRangeBeginning, firstRangeEnd, 
        secondRangeBeginning, secondRangeEnd);
   }

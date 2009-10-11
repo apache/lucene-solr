@@ -50,6 +50,9 @@ API Changes
 * LUCENE-1753: Make not yet final TokenStreams final to enforce 
   decorator pattern. (Uwe Schindler)
 
+* LUCENE-1971: Remove deprecated RangeQuery, RangeFilter and
+  ConstantScoreRangeQuery. (Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-1951: When the text provided to WildcardQuery has no wildcard

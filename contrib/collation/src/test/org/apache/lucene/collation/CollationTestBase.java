@@ -32,7 +32,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -89,11 +88,11 @@ public class CollationTestBase extends TestCase {
 
     // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
     // orders the U+0698 character before the U+0633 character, so the single
-    // index Term below should NOT be returned by a ConstantScoreRangeQuery
+    // index Term below should NOT be returned by a TermRangeQuery
     // with a Farsi Collator (or an Arabic one for the case when Farsi is not
     // supported).
       
-    // Test ConstantScoreRangeQuery
+    // Test TermRangeQuery
     aqp.setUseOldRangeQuery(false);
     ScoreDoc[] result
       = is.search(aqp.parse("[ \u062F TO \u0698 ]"), null, 1000).scoreDocs;
@@ -174,7 +173,7 @@ public class CollationTestBase extends TestCase {
     searcher.close();
   }
 
-  public void testFarsiConstantScoreRangeQuery
+  public void testFarsiTermRangeQuery
     (Analyzer analyzer, String firstBeg, String firstEnd, 
      String secondBeg, String secondEnd) throws Exception {
 
@@ -194,15 +193,15 @@ public class CollationTestBase extends TestCase {
         
     // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
     // orders the U+0698 character before the U+0633 character, so the single
-    // index Term below should NOT be returned by a ConstantScoreRangeQuery
+    // index Term below should NOT be returned by a TermRangeQuery
     // with a Farsi Collator (or an Arabic one for the case when Farsi is 
     // not supported).
     Query csrq 
-      = new ConstantScoreRangeQuery("content", firstBeg, firstEnd, true, true);
+      = new TermRangeQuery("content", firstBeg, firstEnd, true, true);
     ScoreDoc[] result = search.search(csrq, null, 1000).scoreDocs;
     assertEquals("The index Term should not be included.", 0, result.length);
 
-    csrq = new ConstantScoreRangeQuery
+    csrq = new TermRangeQuery
       ("content", secondBeg, secondEnd, true, true);
     result = search.search(csrq, null, 1000).scoreDocs;
     assertEquals("The index Term should be included.", 1, result.length);
