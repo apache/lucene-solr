@@ -9,11 +9,12 @@ Changes in runtime behavior
 
 API Changes
 
-* LUCENE-1944, ...: Removed (all) deprecated methods/classes left over
-  from Lucene 2.9 [not yet finished].  (Uwe Schindler)
-
 * LUCENE-1257, ...: Port to Java 1.5 [not yet finished].
   (Uwe Schindler, Robert Muir, Karl Wettin, Paul Elschot)
+
+* LUCENE-1944: Remove (all) deprecated methods/constructors taking
+  String/File directory pathes in IndexReader / IndexWriter and others.
+  Also make FSDirectory abstract. (Uwe Schindler)
 
 * LUCENE-1925: Make IndexSearcher's subReaders and docStarts members
   protected; add expert ctor to directly specify reader, subReaders
@@ -44,8 +45,10 @@ API Changes
 * LUCENE-1970: Remove deprecated methods in DocIdSetIterator and make
   new ones abstract. (Michael Busch)
 
+* LUCENE-1946: Remove deprecated old TokenStream API. (Uwe Schindler)
+
 * LUCENE-1753: Make not yet final TokenStreams final to enforce 
-  decorator pattern (Uwe Schindler)
+  decorator pattern. (Uwe Schindler)
 
 Bug fixes
 
