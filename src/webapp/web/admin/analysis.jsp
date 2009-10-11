@@ -483,7 +483,8 @@
     StringBuilder sb = new StringBuilder();
     do {
       len = input.read( buf, 0, BUFFER_SIZE );
-      sb.append(buf, 0, len);
+      if( len > 0 )
+        sb.append(buf, 0, len);
     } while( len == BUFFER_SIZE );
     out.print("<td class=\"debugdata\">");
     XML.escapeCharData(sb.toString(),out);

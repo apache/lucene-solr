@@ -622,6 +622,9 @@ Bug Fixes
 71. SOLR-1448: Add weblogic.xml to solr webapp to enable correct operation in
     WebLogic. (Ilan Rabinovitch via yonik)
 
+72. SOLR-1504: empty char mapping can cause ArrayIndexOutOfBoundsException in analysis.jsp and co.
+    (koji)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)

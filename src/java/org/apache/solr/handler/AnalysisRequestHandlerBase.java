@@ -216,7 +216,8 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
-      sb.append(buf, 0, len);
+      if( len > 0 )
+        sb.append(buf, 0, len);
     } while( len == BUFFER_SIZE );
     out.add( input.getClass().getName(), sb.toString());
     return sb.toString();
