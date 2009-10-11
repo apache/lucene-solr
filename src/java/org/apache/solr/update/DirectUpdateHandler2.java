@@ -678,6 +678,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     lst.add("autocommits", tracker.autoCommitCount);
     lst.add("optimizes", optimizeCommands.get());
     lst.add("rollbacks", rollbackCommands.get());
+    lst.add("expungeDeletes", expungeDeleteCommands.get());
     lst.add("docsPending", numDocsPending.get());
     // pset.size() not synchronized, but it should be fine to access.
     // lst.add("deletesPending", pset.size());
