@@ -42,7 +42,7 @@ import org.apache.lucene.util.NumericUtils; // for javadocs
  * To index and efficiently query numeric values use {@link NumericField}
  * and {@link NumericRangeQuery}.
  * This class is included for use with existing
- * indices and will be removed in a future release.
+ * indices and will be removed in a future release (possibly Lucene 4.0).
  */
 public class NumberTools {
 

@@ -55,7 +55,7 @@ import java.util.Calendar;   // for javadoc
  * @deprecated If you build a new index, use {@link DateTools} or 
  * {@link NumericField} instead.
  * This class is included for use with existing
- * indices and will be removed in a future release.
+ * indices and will be removed in a future release (possibly Lucene 4.0).
  */
 public class DateField {
   
