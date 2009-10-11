@@ -41,7 +41,7 @@ public abstract class PriorityQueue<T> {
    * change the top without attempting to insert any new object.<br>
    * 
    * Those sentinel values should always compare worse than any non-sentinel
-   * value (i.e., {@link #lessThan(T, T)} should always favor the
+   * value (i.e., {@link #lessThan} should always favor the
    * non-sentinel values).<br>
    * 
    * By default, this method returns false, which means the queue will not be
