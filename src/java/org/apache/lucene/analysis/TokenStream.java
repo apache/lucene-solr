@@ -287,6 +287,11 @@ public abstract class TokenStream extends AttributeSource {
    * the next token. Implementing classes must implement this method and update
    * the appropriate {@link AttributeImpl}s with the attributes of the next
    * token.
+   * <P>
+   * The producer must make no assumptions about the attributes after the method
+   * has been returned: the caller may arbitrarily change it. If the producer
+   * needs to preserve the state for subsequent calls, it can use
+   * {@link #captureState} to create a copy of the current attribute state.
    * <p>
    * This method is called for every token of a document, so an efficient
    * implementation is crucial for good performance. To avoid calls to

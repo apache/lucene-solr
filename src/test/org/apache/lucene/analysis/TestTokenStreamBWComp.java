@@ -22,6 +22,8 @@ import java.io.StringReader;
 
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.*;
 
 /** This class tests some special cases of backwards compatibility when using the new TokenStream API with old analyzers */
@@ -241,6 +243,15 @@ public class TestTokenStreamBWComp extends LuceneTestCase {
     }   
   }
   
+  public interface SenselessAttribute extends Attribute {}
+  
+  public static final class SenselessAttributeImpl extends AttributeImpl implements SenselessAttribute {
+    public void copyTo(AttributeImpl target) {}
+    public void clear() {}
+    public boolean equals(Object o) { return (o instanceof SenselessAttributeImpl); }
+    public int hashCode() { return 0; }
+  }
+  
   // test if tokenization fails, if only the new API is allowed and an old TokenStream is in the chain
   public void testOnlyNewAPI() throws IOException {
     TokenStream.setOnlyUseNewAPI(true);
@@ -277,6 +288,8 @@ public class TestTokenStreamBWComp extends LuceneTestCase {
         stream.addAttribute(PositionIncrementAttribute.class) instanceof PositionIncrementAttributeImpl);
       assertTrue("TypeAttribute is not implemented by TypeAttributeImpl",
         stream.addAttribute(TypeAttribute.class) instanceof TypeAttributeImpl);
+      assertTrue("SenselessAttribute is not implemented by SenselessAttributeImpl",
+        stream.addAttribute(SenselessAttribute.class) instanceof SenselessAttributeImpl);
         
       // try to call old API, this should fail
       try {
@@ -314,6 +327,9 @@ public class TestTokenStreamBWComp extends LuceneTestCase {
         stream.addAttribute(PositionIncrementAttribute.class) instanceof TokenWrapper);
       assertTrue("TypeAttribute is not implemented by TokenWrapper",
         stream.addAttribute(TypeAttribute.class) instanceof TokenWrapper);
+      // This one is not implemented by TokenWrapper:
+      assertTrue("SenselessAttribute is not implemented by SenselessAttributeImpl",
+        stream.addAttribute(SenselessAttribute.class) instanceof SenselessAttributeImpl);
       
     } finally {
       TokenStream.setOnlyUseNewAPI(false);
