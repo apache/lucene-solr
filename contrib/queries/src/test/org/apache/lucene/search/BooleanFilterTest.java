@@ -78,7 +78,7 @@ public class BooleanFilterTest extends TestCase
         {
           DocIdSetIterator disi = filt.getDocIdSet(reader).iterator();
           int actual = 0;
-          while (disi.next()) {
+          while (disi.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
             actual++;
           }
           assertEquals(mes, expected, actual);
