@@ -116,8 +116,8 @@ public abstract class PriorityQueue<T> {
   }
 
   /**
-   * insertWithOverflow() is the same as insert() except its
-   * return value: it returns the object (if any) that was
+   * Adds an Object to a PriorityQueue in log(size) time.
+   * It returns the object (if any) that was
    * dropped off the heap because it was full. This can be
    * the given parameter (in case it is smaller than the
    * full heap's minimum, and couldn't be added), or another
