@@ -167,6 +167,15 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(searcher.getIndexReader()));
   }
   
+  public void testOneMatchQuery() throws Exception {
+    NumericRangeQuery<Long> q = NumericRangeQuery.newLongRange("ascfield8", 8, 1000L, 1000L, true, true);
+    assertSame(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE, q.getRewriteMethod());
+    TopDocs topDocs = searcher.search(q, noDocs);
+    ScoreDoc[] sd = topDocs.scoreDocs;
+    assertNotNull(sd);
+    assertEquals("Score doc count", 1, sd.length );
+  }
+  
   private void testLeftOpenRange(int precisionStep) throws Exception {
     String field="field"+precisionStep;
     int count=3000;

@@ -189,6 +189,11 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
         // should never happen
         throw new IllegalArgumentException("valSize must be 32 or 64");
     }
+    
+    // shortcut if upper bound == lower bound
+    if (min != null && min.equals(max)) {
+      setRewriteMethod(CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE);
+    }
   }
   
   /**
