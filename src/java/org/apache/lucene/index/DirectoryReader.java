@@ -980,7 +980,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
         SegmentMergeInfo smi = new SegmentMergeInfo(starts[i], termEnum, reader);
         smi.ord = i;
         if (t == null ? smi.next() : termEnum.term() != null)
-          queue.put(smi);          // initialize queue
+          queue.add(smi);          // initialize queue
         else
           smi.close();
       }
@@ -995,7 +995,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
         SegmentMergeInfo smi = matchingSegments[i];
         if (smi==null) break;
         if (smi.next())
-          queue.put(smi);
+          queue.add(smi);
         else
           smi.close(); // done with segment
       }

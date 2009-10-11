@@ -51,14 +51,12 @@ public class NearSpansUnordered extends Spans {
   private boolean more = true;                    // true iff not done
   private boolean firstTime = true;               // true before first next()
 
-  private class CellQueue extends PriorityQueue {
+  private class CellQueue extends PriorityQueue<SpansCell> {
     public CellQueue(int size) {
       initialize(size);
     }
     
-    protected final boolean lessThan(Object o1, Object o2) {
-      SpansCell spans1 = (SpansCell)o1;
-      SpansCell spans2 = (SpansCell)o2;
+    protected final boolean lessThan(SpansCell spans1, SpansCell spans2) {
       if (spans1.doc() == spans2.doc()) {
         return NearSpansOrdered.docSpansOrdered(spans1, spans2);
       } else {
@@ -147,7 +145,7 @@ public class NearSpansUnordered extends Spans {
       firstTime = false;
     } else if (more) {
       if (min().next()) { // trigger further scanning
-        queue.adjustTop(); // maintain queue
+        queue.updateTop(); // maintain queue
       } else {
         more = false;
       }
@@ -185,7 +183,7 @@ public class NearSpansUnordered extends Spans {
       
       more = min().next();
       if (more) {
-        queue.adjustTop();                      // maintain queue
+        queue.updateTop();                      // maintain queue
       }
     }
     return false;                                 // no more matches
@@ -204,7 +202,7 @@ public class NearSpansUnordered extends Spans {
     } else {                                      // normal case
       while (more && min().doc() < target) {      // skip as needed
         if (min().skipTo(target)) {
-          queue.adjustTop();
+          queue.updateTop();
         } else {
           more = false;
         }
@@ -290,7 +288,7 @@ public class NearSpansUnordered extends Spans {
   private void listToQueue() {
     queue.clear(); // rebuild queue
     for (SpansCell cell = first; cell != null; cell = cell.next) {
-      queue.put(cell);                      // add to queue from list
+      queue.add(cell);                      // add to queue from list
     }
   }
 

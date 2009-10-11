@@ -215,7 +215,7 @@ public class FuzzyLikeThisQuery extends Query
     	                float score=fe.difference();
     	                if(variantsQ.size() < MAX_VARIANTS_PER_TERM || score > minScore){
     	                    ScoreTerm st=new ScoreTerm(possibleMatch,score,startTerm);                    
-    	                    variantsQ.insert(st);
+    	                    variantsQ.insertWithOverflow(st);
     	                    minScore = ((ScoreTerm)variantsQ.top()).score; // maintain minScore
     	                }
                     }
@@ -237,7 +237,7 @@ public class FuzzyLikeThisQuery extends Query
 	                {
 	                  ScoreTerm st = (ScoreTerm) variantsQ.pop();
 	                  st.score=(st.score*st.score)*sim.idf(df,corpusNumDocs);
-	                  q.insert(st);
+	                  q.insertWithOverflow(st);
 	                }                            
                 }
         	}
@@ -326,7 +326,7 @@ public class FuzzyLikeThisQuery extends Query
         }
       }
       
-      private static class ScoreTermQueue extends PriorityQueue {        
+      private static class ScoreTermQueue extends PriorityQueue<ScoreTerm> {        
         public ScoreTermQueue(int size){
           initialize(size);
         }
@@ -334,9 +334,7 @@ public class FuzzyLikeThisQuery extends Query
         /* (non-Javadoc)
          * @see org.apache.lucene.util.PriorityQueue#lessThan(java.lang.Object, java.lang.Object)
          */
-        protected boolean lessThan(Object a, Object b) {
-          ScoreTerm termA = (ScoreTerm)a;
-          ScoreTerm termB = (ScoreTerm)b;
+        protected boolean lessThan(ScoreTerm termA, ScoreTerm termB) {
           if (termA.score== termB.score)
             return termA.term.compareTo(termB.term) > 0;
           else

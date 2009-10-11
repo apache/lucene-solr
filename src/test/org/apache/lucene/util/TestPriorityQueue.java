@@ -47,7 +47,7 @@ public class TestPriorityQueue extends LuceneTestCase {
         {
             int next = gen.nextInt();
             sum += next;
-            pq.put(next);
+            pq.add(next);
         }
 
         //      Date end = new Date();
@@ -75,9 +75,9 @@ public class TestPriorityQueue extends LuceneTestCase {
 
     public void testClear() {
         PriorityQueue<Integer> pq = new IntegerQueue(3);
-        pq.put(2);
-        pq.put(3);
-        pq.put(1);
+        pq.add(2);
+        pq.add(3);
+        pq.add(1);
         assertEquals(3, pq.size());
         pq.clear();
         assertEquals(0, pq.size());
@@ -85,12 +85,12 @@ public class TestPriorityQueue extends LuceneTestCase {
     
     public void testFixedSize() {
         PriorityQueue<Integer> pq = new IntegerQueue(3);
-        pq.insert(2);
-        pq.insert(3);
-        pq.insert(1);
-        pq.insert(5);
-        pq.insert(7);
-        pq.insert(1);
+        pq.insertWithOverflow(2);
+        pq.insertWithOverflow(3);
+        pq.insertWithOverflow(1);
+        pq.insertWithOverflow(5);
+        pq.insertWithOverflow(7);
+        pq.insertWithOverflow(1);
         assertEquals(3, pq.size());
         assertEquals((Integer) 3, pq.top());
     }

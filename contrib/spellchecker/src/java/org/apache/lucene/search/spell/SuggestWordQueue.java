@@ -25,15 +25,13 @@ import org.apache.lucene.util.PriorityQueue;
  * Sorts SuggestWord instances
  *
  */
-final class SuggestWordQueue extends PriorityQueue {
+final class SuggestWordQueue extends PriorityQueue<SuggestWord> {
 
   SuggestWordQueue (int size) {
     initialize(size);
   }
 
-  protected final boolean lessThan (Object a, Object b) {
-    SuggestWord wa = (SuggestWord) a;
-    SuggestWord wb = (SuggestWord) b;
+  protected final boolean lessThan (SuggestWord wa, SuggestWord wb) {
     int val = wa.compareTo(wb);
     return val < 0;
   }

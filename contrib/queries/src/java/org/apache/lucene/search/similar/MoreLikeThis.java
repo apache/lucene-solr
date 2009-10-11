@@ -668,7 +668,7 @@ public final class MoreLikeThis {
             float score = tf * idf;
 
             // only really need 1st 3 entries, other ones are for troubleshooting
-            res.insert(new Object[]{word,                   // the word
+            res.insertWithOverflow(new Object[]{word,                   // the word
                                     topField,               // the top field
                                     Float.valueOf(score),       // overall score
                                     Float.valueOf(idf),         // idf
@@ -953,14 +953,12 @@ public final class MoreLikeThis {
     /**
      * PriorityQueue that orders words by score.
      */
-    private static class FreqQ extends PriorityQueue {
+    private static class FreqQ extends PriorityQueue<Object[]> {
         FreqQ (int s) {
             initialize(s);
         }
 
-        protected boolean lessThan(Object a, Object b) {
-            Object[] aa = (Object[]) a;
-            Object[] bb = (Object[]) b;
+        protected boolean lessThan(Object[] aa, Object[] bb) {
             Float fa = (Float) aa[2];
             Float fb = (Float) bb[2];
             return fa.floatValue() > fb.floatValue();

@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.PriorityQueue;
 
-final class HitQueue extends PriorityQueue {
+final class HitQueue extends PriorityQueue<ScoreDoc> {
 
   private boolean prePopulate;
 
@@ -68,16 +68,14 @@ final class HitQueue extends PriorityQueue {
   }
 
   // Returns null if prePopulate is false.
-  protected Object getSentinelObject() {
+  protected ScoreDoc getSentinelObject() {
     // Always set the doc Id to MAX_VALUE so that it won't be favored by
     // lessThan. This generally should not happen since if score is not NEG_INF,
     // TopScoreDocCollector will always add the object to the queue.
     return !prePopulate ? null : new ScoreDoc(Integer.MAX_VALUE, Float.NEGATIVE_INFINITY);
   }
   
-  protected final boolean lessThan(Object a, Object b) {
-    ScoreDoc hitA = (ScoreDoc)a;
-    ScoreDoc hitB = (ScoreDoc)b;
+  protected final boolean lessThan(ScoreDoc hitA, ScoreDoc hitB) {
     if (hitA.score == hitB.score)
       return hitA.doc > hitB.doc; 
     else

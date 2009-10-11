@@ -32,7 +32,7 @@ import java.util.List;
  */
 public class MultipleTermPositions implements TermPositions {
 
-  private static final class TermPositionsQueue extends PriorityQueue {
+  private static final class TermPositionsQueue extends PriorityQueue<TermPositions> {
     TermPositionsQueue(List termPositions) throws IOException {
       initialize(termPositions.size());
 
@@ -40,7 +40,7 @@ public class MultipleTermPositions implements TermPositions {
       while (i.hasNext()) {
         TermPositions tp = (TermPositions) i.next();
         if (tp.next())
-          put(tp);
+          add(tp);
       }
     }
 
@@ -48,8 +48,8 @@ public class MultipleTermPositions implements TermPositions {
       return (TermPositions) top();
     }
 
-    public final boolean lessThan(Object a, Object b) {
-      return ((TermPositions) a).doc() < ((TermPositions) b).doc();
+    public final boolean lessThan(TermPositions a, TermPositions b) {
+      return a.doc() < b.doc();
     }
   }
 
@@ -126,7 +126,7 @@ public class MultipleTermPositions implements TermPositions {
         _posList.add(tp.nextPosition());
 
       if (tp.next())
-        _termPositionsQueue.adjustTop();
+        _termPositionsQueue.updateTop();
       else {
         _termPositionsQueue.pop();
         tp.close();
@@ -147,7 +147,7 @@ public class MultipleTermPositions implements TermPositions {
     while (_termPositionsQueue.peek() != null && target > _termPositionsQueue.peek().doc()) {
       TermPositions tp = (TermPositions) _termPositionsQueue.pop();
       if (tp.skipTo(target))
-        _termPositionsQueue.put(tp);
+        _termPositionsQueue.add(tp);
       else
         tp.close();
     }

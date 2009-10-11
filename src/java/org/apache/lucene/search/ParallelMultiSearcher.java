@@ -269,7 +269,7 @@ class MultiSearcherThread extends Thread {
         scoreDoc.doc += starts[i]; // convert doc 
         //it would be so nice if we had a thread-safe insert 
         synchronized (hq) {
-          if (!hq.insert(scoreDoc))
+          if (scoreDoc == hq.insertWithOverflow(scoreDoc))
             break;
         } // no more scores > minScore
       }

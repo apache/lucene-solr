@@ -89,21 +89,6 @@ extends PriorityQueue {
     maxscore = Math.max(maxscore, fdoc.score);
   }
   
-  // The signature of this method takes a FieldDoc in order to avoid
-  // the unneeded cast to retrieve the score.
-  // inherit javadoc
-  public boolean insert(FieldDoc fdoc) {
-    updateMaxScore(fdoc);
-    return super.insert(fdoc);
-  }
-
-  // This overrides PriorityQueue.insert() so that insert(FieldDoc) that
-  // keeps track of the score isn't accidentally bypassed.  
-  // inherit javadoc
-  public boolean insert(Object fdoc) {
-    return insert((FieldDoc)fdoc);
-  }
-
   // This overrides PriorityQueue.insertWithOverflow() so that
   // updateMaxScore(FieldDoc) that keeps track of the score isn't accidentally
   // bypassed.

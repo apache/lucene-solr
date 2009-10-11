@@ -39,6 +39,8 @@ API Changes
 * LUCENE-1961: Remove remaining deprecations from document package.
                (Michael Busch)
 
+* LUCENE-1968: Remove deprecated methods in PriorityQueue. (Michael Busch)
+
 Bug fixes
 
 * LUCENE-1951: When the text provided to WildcardQuery has no wildcard

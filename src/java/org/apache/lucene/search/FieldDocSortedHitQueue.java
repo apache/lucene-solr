@@ -31,7 +31,7 @@ import java.util.Locale;
  * @since   lucene 1.4
  */
 class FieldDocSortedHitQueue
-extends PriorityQueue {
+extends PriorityQueue<FieldDoc> {
 
 	// this cannot contain AUTO fields - any AUTO fields should
 	// have been resolved by the time this class is used.
@@ -99,9 +99,7 @@ extends PriorityQueue {
 	 * @param b ScoreDoc
 	 * @return <code>true</code> if document <code>a</code> should be sorted after document <code>b</code>.
 	 */
-	protected final boolean lessThan (final Object a, final Object b) {
-		final FieldDoc docA = (FieldDoc) a;
-		final FieldDoc docB = (FieldDoc) b;
+	protected final boolean lessThan (final FieldDoc docA, final FieldDoc docB) {
 		final int n = fields.length;
 		int c = 0;
 		for (int i=0; i<n && c==0; ++i) {

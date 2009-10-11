@@ -55,13 +55,13 @@ public class HighFreqTerms {
     if (field != null) { 
       while (terms.next()) {
         if (terms.term().field().equals(field)) {
-          tiq.insert(new TermInfo(terms.term(), terms.docFreq()));
+          tiq.insertWithOverflow(new TermInfo(terms.term(), terms.docFreq()));
         }
       }
     }
     else {
       while (terms.next()) {
-        tiq.insert(new TermInfo(terms.term(), terms.docFreq()));
+        tiq.insertWithOverflow(new TermInfo(terms.term(), terms.docFreq()));
       }
     }
     while (tiq.size() != 0) {
@@ -88,13 +88,11 @@ final class TermInfo {
   Term term;
 }
 
-final class TermInfoQueue extends PriorityQueue {
+final class TermInfoQueue extends PriorityQueue<TermInfo> {
   TermInfoQueue(int size) {
     initialize(size);
   }
-  protected final boolean lessThan(Object a, Object b) {
-    TermInfo termInfoA = (TermInfo) a;
-    TermInfo termInfoB = (TermInfo) b;
+  protected final boolean lessThan(TermInfo termInfoA, TermInfo termInfoB) {
     return termInfoA.docFreq < termInfoB.docFreq;
   }
 }

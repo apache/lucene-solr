@@ -83,7 +83,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
 
             if (pp.position > end)
                 end = pp.position;
-            pq.put(pp);               // restore pq
+            pq.add(pp);               // restore pq
         }
 
         return freq;
@@ -101,10 +101,10 @@ final class SloppyPhraseScorer extends PhraseScorer {
       }
       //insert back all but pp2
       for (n--; n>=0; n--) {
-        pq.insert(tmpPos[n]);
+        pq.insertWithOverflow(tmpPos[n]);
       }
       //insert pp back
-      pq.put(pp);
+      pq.add(pp);
       return pp2;
     }
 
@@ -133,7 +133,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
                 pp.firstPosition();
                 if (pp.position > end)
                     end = pp.position;
-                pq.put(pp);         // build pq from list
+                pq.add(pp);         // build pq from list
             }
             return end;
         }
@@ -182,7 +182,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
         for (PhrasePositions pp = first; pp != null; pp = pp.next) {
             if (pp.position > end)
                 end = pp.position;
-            pq.put(pp);         // build pq from list
+            pq.add(pp);         // build pq from list
         }
 
         if (repeats!=null) {

@@ -181,7 +181,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
             Spans spans = ((SpanQuery)i.next()).getSpans(reader);
             if (   ((target == -1) && spans.next())
                 || ((target != -1) && spans.skipTo(target))) {
-              queue.put(spans);
+              queue.add(spans);
             }
           }
           return queue.size() != 0;
@@ -197,7 +197,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
           }
 
           if (top().next()) { // move to next
-            queue.adjustTop();
+            queue.updateTop();
             return true;
           }
 
@@ -215,7 +215,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
           boolean skipCalled = false;
           while (queue.size() != 0 && top().doc() < target) {
             if (top().skipTo(target)) {
-              queue.adjustTop();
+              queue.updateTop();
             } else {
               queue.pop();
             }
@@ -232,7 +232,6 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
         public int start() { return top().start(); }
         public int end() { return top().end(); }
 
-      // TODO: Remove warning after API has been finalized
       public Collection/*<byte[]>*/ getPayload() throws IOException {
         ArrayList result = null;
         Spans theTop = top();
@@ -242,7 +241,6 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
         return result;
       }
 
-      // TODO: Remove warning after API has been finalized
      public boolean isPayloadAvailable() {
         Spans top = top();
         return top != null && top.isPayloadAvailable();

@@ -246,7 +246,7 @@ public class SpellChecker {
           continue;
         }
       }
-      sugQueue.insert(sugWord);
+      sugQueue.insertWithOverflow(sugWord);
       if (sugQueue.size() == numSug) {
         // if queue full, maintain the minScore score
         min = ((SuggestWord) sugQueue.top()).score;

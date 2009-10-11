@@ -84,7 +84,7 @@ public class QualityQueriesFinder {
   }
   
   private String [] bestTerms(String field,int numTerms) throws IOException {
-    PriorityQueue pq = new TermsDfQueue(numTerms);
+    PriorityQueue<TermDf> pq = new TermsDfQueue(numTerms);
     IndexReader ir = IndexReader.open(dir, true);
     try {
       int threshold = ir.maxDoc() / 10; // ignore words too common.
@@ -96,7 +96,7 @@ public class QualityQueriesFinder {
         int df = terms.docFreq();
         if (df<threshold) {
           String ttxt = terms.term().text();
-          pq.insert(new TermDf(ttxt,df));
+          pq.insertWithOverflow(new TermDf(ttxt,df));
         }
       }
     } finally {
@@ -121,13 +121,11 @@ public class QualityQueriesFinder {
     }
   }
   
-  private static class TermsDfQueue extends PriorityQueue {
+  private static class TermsDfQueue extends PriorityQueue<TermDf> {
     TermsDfQueue (int maxSize) {
       initialize(maxSize);
     }
-    protected boolean lessThan(Object a, Object b) {
-      TermDf tf1 = (TermDf) a;
-      TermDf tf2 = (TermDf) b;
+    protected boolean lessThan(TermDf tf1, TermDf tf2) {
       return tf1.df < tf2.df;
     }
   }

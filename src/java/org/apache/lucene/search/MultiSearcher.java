@@ -191,7 +191,7 @@ public class MultiSearcher extends Searcher {
       for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
         ScoreDoc scoreDoc = scoreDocs[j];
         scoreDoc.doc += starts[i];                // convert doc
-        if(!hq.insert(scoreDoc))
+        if(scoreDoc == hq.insertWithOverflow(scoreDoc))
           break;                                // no more scores > minScore
       }
     }
@@ -234,7 +234,7 @@ public class MultiSearcher extends Searcher {
       for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
         ScoreDoc scoreDoc = scoreDocs[j];
         scoreDoc.doc += starts[i];                // convert doc
-        if (!hq.insert (scoreDoc))
+        if (scoreDoc == hq.insertWithOverflow((FieldDoc) scoreDoc))
           break;                                  // no more scores > minScore
       }
     }

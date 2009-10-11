@@ -32,7 +32,7 @@ final class ExactPhraseScorer extends PhraseScorer {
     pq.clear();
     for (PhrasePositions pp = first; pp != null; pp = pp.next) {
       pp.firstPosition();
-      pq.put(pp);				  // build pq from list
+      pq.add(pp);				  // build pq from list
     }
     pqToList();					  // rebuild list from pq
 

@@ -103,20 +103,6 @@ public abstract class PriorityQueue<T> {
 
   /**
    * Adds an Object to a PriorityQueue in log(size) time. If one tries to add
-   * more objects than maxSize from initialize a RuntimeException
-   * (ArrayIndexOutOfBound) is thrown.
-   * 
-   * @deprecated use {@link #add(T)} which returns the new top object,
-   *             saving an additional call to {@link #top()}.
-   */
-  public final void put(T element) {
-    size++;
-    heap[size] = element;
-    upHeap();
-  }
-
-  /**
-   * Adds an Object to a PriorityQueue in log(size) time. If one tries to add
    * more objects than maxSize from initialize an
    * {@link ArrayIndexOutOfBoundsException} is thrown.
    * 
@@ -127,19 +113,6 @@ public abstract class PriorityQueue<T> {
     heap[size] = element;
     upHeap();
     return heap[1];
-  }
-
-  /**
-   * Adds element to the PriorityQueue in log(size) time if either the
-   * PriorityQueue is not full, or not lessThan(element, top()).
-   * 
-   * @param element
-   * @return true if element is added, false otherwise.
-   * @deprecated use {@link #insertWithOverflow(T)} instead, which
-   *             encourages objects reuse.
-   */
-  public boolean insert(T element) {
-    return insertWithOverflow(element) != element;
   }
 
   /**
@@ -154,12 +127,12 @@ public abstract class PriorityQueue<T> {
    */
   public T insertWithOverflow(T element) {
     if (size < maxSize) {
-      put(element);
+      add(element);
       return null;
     } else if (size > 0 && !lessThan(element, heap[1])) {
       T ret = heap[1];
       heap[1] = element;
-      adjustTop();
+      updateTop();
       return ret;
     } else {
       return element;
@@ -186,30 +159,6 @@ public abstract class PriorityQueue<T> {
       return result;
     } else
       return null;
-  }
-
-  /**
-   * Should be called when the Object at top changes values. Still log(n) worst
-   * case, but it's at least twice as fast to
-   * 
-   * <pre>
-   * pq.top().change();
-   * pq.adjustTop();
-   * </pre>
-   * 
-   * instead of
-   * 
-   * <pre>
-   * o = pq.pop();
-   * o.change();
-   * pq.push(o);
-   * </pre>
-   * 
-   * @deprecated use {@link #updateTop()} which returns the new top element and
-   *             saves an additional call to {@link #top()}.
-   */
-  public final void adjustTop() {
-    downHeap();
   }
   
   /**
