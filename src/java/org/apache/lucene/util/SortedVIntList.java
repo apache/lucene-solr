@@ -204,18 +204,10 @@ public class SortedVIntList extends DocIdSet {
         }
       }
       
-      /** @deprecated use {@link #docID()} instead. */
-      public int doc() {return lastInt;}
-      
       public int docID() {
         return doc;
       }
       
-      /** @deprecated use {@link #nextDoc()} instead. */
-      public boolean next() {
-        return nextDoc() != NO_MORE_DOCS;
-      }
-
       public int nextDoc() {
         if (bytePos >= lastBytePos) {
           doc = NO_MORE_DOCS;
@@ -224,11 +216,6 @@ public class SortedVIntList extends DocIdSet {
           doc = lastInt;
         }
         return doc;
-      }
-      
-      /** @deprecated use {@link #advance(int)} instead. */
-      public boolean skipTo(int docNr) {
-        return advance(docNr) != NO_MORE_DOCS;
       }
       
       public int advance(int target) {

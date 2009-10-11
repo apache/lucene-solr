@@ -128,11 +128,6 @@ public class OpenBitSetIterator extends DocIdSetIterator {
   }
   ******/
 
-  /** @deprecated use {@link #nextDoc()} instead. */
-  public boolean next() {
-    return nextDoc() != NO_MORE_DOCS;
-  }
-
   public int nextDoc() {
     if (indexArray == 0) {
       if (word != 0) {
@@ -160,11 +155,6 @@ public class OpenBitSetIterator extends DocIdSetIterator {
     return curDocId = (i<<6) + bitIndex;
   }
   
-  /** @deprecated use {@link #advance(int)} instead. */
-  public boolean skipTo(int target) {
-    return advance(target) != NO_MORE_DOCS;
-  }
-
   public int advance(int target) {
     indexArray = 0;
     i = target >> 6;
@@ -193,11 +183,6 @@ public class OpenBitSetIterator extends DocIdSetIterator {
     // should i<<6 be cached as a separate variable?
     // it would only save one cycle in the best circumstances.
     return curDocId = (i<<6) + bitIndex;
-  }
-
-  /** @deprecated use {@link #docID()} instead. */
-  public int doc() {
-    return curDocId;
   }
 
   public int docID() {

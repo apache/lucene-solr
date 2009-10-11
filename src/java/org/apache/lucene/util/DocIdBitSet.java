@@ -56,20 +56,8 @@ public class DocIdBitSet extends DocIdSet {
       this.docId = -1;
     }
     
-    /** @deprecated use {@link #docID()} instead. */
-    public int doc() {
-      assert docId != -1;
-      return docId;
-    }
-    
     public int docID() {
       return docId;
-    }
-    
-    /** @deprecated use {@link #nextDoc()} instead. */
-    public boolean next() {
-      // (docId + 1) on next line requires -1 initial value for docNr:
-      return nextDoc() != NO_MORE_DOCS;
     }
     
     public int nextDoc() {
@@ -78,11 +66,6 @@ public class DocIdBitSet extends DocIdSet {
       // -1 returned by BitSet.nextSetBit() when exhausted
       docId = d == -1 ? NO_MORE_DOCS : d;
       return docId;
-    }
-  
-    /** @deprecated use {@link #advance(int)} instead. */
-    public boolean skipTo(int skipDocNr) {
-      return advance(skipDocNr) != NO_MORE_DOCS;
     }
   
     public int advance(int target) {
