@@ -41,7 +41,7 @@ import org.apache.lucene.util.AttributeSource;
  * <p>This filter handles position increments > 1 by inserting filler tokens
  * (tokens with termtext "_"). It does not handle a position increment of 0.
  */
-public class ShingleFilter extends TokenFilter {
+public final class ShingleFilter extends TokenFilter {
 
   private LinkedList shingleBuf = new LinkedList();
   private StringBuilder[] shingles;
@@ -326,18 +326,6 @@ public class ShingleFilter extends TokenFilter {
     }
     
     return true;
-  }
-  
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next(final Token reusableToken) throws java.io.IOException {
-    return super.next(reusableToken);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next() throws java.io.IOException {
-    return super.next();
   }
 
   public void reset() throws IOException {

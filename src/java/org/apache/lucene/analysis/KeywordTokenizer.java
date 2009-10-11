@@ -27,7 +27,7 @@ import org.apache.lucene.util.AttributeSource;
 /**
  * Emits the entire input as a single token.
  */
-public class KeywordTokenizer extends Tokenizer {
+public final class KeywordTokenizer extends Tokenizer {
   
   private static final int DEFAULT_BUFFER_SIZE = 256;
 
@@ -86,18 +86,6 @@ public class KeywordTokenizer extends Tokenizer {
   public final void end() {
     // set final offset 
     offsetAtt.setOffset(finalOffset, finalOffset);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next(final Token reusableToken) throws IOException {
-    return super.next(reusableToken);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next() throws IOException {
-    return super.next();
   }
 
   public void reset(Reader input) throws IOException {

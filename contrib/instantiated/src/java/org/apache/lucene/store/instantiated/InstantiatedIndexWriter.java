@@ -45,6 +45,7 @@ import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.AttributeImpl;
 
 /**
  * This class, similar to {@link org.apache.lucene.index.IndexWriter}, has no locking mechanism.
@@ -524,14 +525,27 @@ public class InstantiatedIndexWriter {
           // reset the TokenStream to the first token          
           tokenStream.reset();
 
-          final Token reusableToken = new Token();
-          for (Token nextToken = tokenStream.next(reusableToken); nextToken != null; nextToken = tokenStream.next(reusableToken)) {
-            tokens.add((Token) nextToken.clone()); // the vector will be built on commit.
+          while (tokenStream.incrementToken()) {
+            // TODO: this is a simple workaround to still work with tokens, not very effective, but as far as I know, this writer should get removed soon:
+            final Token token = new Token();
+            for (Iterator<AttributeImpl> atts = tokenStream.getAttributeImplsIterator(); atts.hasNext();) {
+              final AttributeImpl att = atts.next();
+              try {
+                att.copyTo(token);
+              } catch (Exception e) {
+                // ignore unsupported attributes,
+                // this may fail to copy some attributes, if a special combined AttributeImpl is used, that
+                // implements basic attributes supported by Token and also other customized ones in one class.
+              }
+            }
+            tokens.add(token); // the vector will be built on commit.
             fieldSetting.fieldLength++;
             if (fieldSetting.fieldLength > maxFieldLength) {
               break;
             }
           }
+          tokenStream.end();
+          tokenStream.close();
         } else {
           // untokenized
           String fieldVal = field.stringValue();

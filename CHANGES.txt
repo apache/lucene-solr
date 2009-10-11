@@ -32,17 +32,20 @@ API Changes
   (Michael Busch)
 
 * LUCENE-1957: Remove Filter.bits(IndexReader) method and make 
-               Filter.getDocIdSet(IndexReader) abstract. (Michael Busch)
+  Filter.getDocIdSet(IndexReader) abstract. (Michael Busch)
 
 * LUCENE-1960: Remove deprecated Field.Store.COMPRESS. (Michael Busch)
 
 * LUCENE-1961: Remove remaining deprecations from document package.
-               (Michael Busch)
+  (Michael Busch)
 
 * LUCENE-1968: Remove deprecated methods in PriorityQueue. (Michael Busch)
 
 * LUCENE-1970: Remove deprecated methods in DocIdSetIterator and make
-               new ones abstract. (Michael Busch)
+  new ones abstract. (Michael Busch)
+
+* LUCENE-1753: Make not yet final TokenStreams final to enforce 
+  decorator pattern (Uwe Schindler)
 
 Bug fixes
 

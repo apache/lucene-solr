@@ -108,33 +108,6 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     boolean inPhrase = false;
     int savedStart = 0, savedEnd = 0;
 
-    public Token next(Token reusableToken) throws IOException {
-      Token token = reusableToken;
-
-      if (inPhrase) {
-        inPhrase = false;
-        token.setTermBuffer("phrase2");
-        token.setStartOffset(savedStart);
-        token.setEndOffset(savedEnd);
-        return reusableToken;
-      } else
-        while ((token = this.input.next(reusableToken)) != null) {
-          if (token.term().equals("phrase")) {
-            inPhrase = true;
-            savedStart = token.startOffset();
-            savedEnd = token.endOffset();
-            token.setTermBuffer("phrase1");
-            token.setStartOffset(savedStart);
-            token.setEndOffset(savedEnd);
-            return token;
-          } else if (!token.term().equals("stop"))
-            return token;
-        }
-
-      return null;
-
-    }
-
     public boolean incrementToken() throws IOException {
       if (inPhrase) {
         inPhrase = false;

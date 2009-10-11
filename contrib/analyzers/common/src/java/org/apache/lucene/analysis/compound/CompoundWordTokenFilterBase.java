@@ -164,18 +164,6 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     }
   }
   
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next(final Token reusableToken) throws java.io.IOException {
-    return super.next(reusableToken);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next() throws java.io.IOException {
-    return super.next();
-  }
-  
   protected static final void addAllLowerCase(Set target, Collection col) {
     Iterator iter=col.iterator();
     

@@ -26,10 +26,12 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * For instance, '&agrave;' will be replaced by 'a'.
  * <p>
  * 
- * @deprecated in favor of {@link ASCIIFoldingFilter} which covers a superset 
- * of Latin 1. This class will be removed in Lucene 3.0.
+ * @deprecated If you build a new index, use {@link ASCIIFoldingFilter}
+ * which covers a superset of Latin 1.
+ * This class is included for use with existing
+ * indexes and will be removed in a future release (possibly Lucene 4.0).
  */
-public class ISOLatin1AccentFilter extends TokenFilter {
+public final class ISOLatin1AccentFilter extends TokenFilter {
   public ISOLatin1AccentFilter(TokenStream input) {
     super(input);
     termAtt = addAttribute(TermAttribute.class);
@@ -56,18 +58,6 @@ public class ISOLatin1AccentFilter extends TokenFilter {
       return true;
     } else
       return false;
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next(final Token reusableToken) throws java.io.IOException {
-    return super.next(reusableToken);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next() throws java.io.IOException {
-    return super.next();
   }
 
   /**

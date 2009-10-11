@@ -39,7 +39,7 @@ import java.util.*;
  * EXPERIMENTAL !!!!!!!!!
  * NOTE: This Tokenizer is considered experimental and the grammar is subject to change in the trunk and in follow up releases.
  */
-public class WikipediaTokenizer extends Tokenizer {
+public final class WikipediaTokenizer extends Tokenizer {
   public static final String INTERNAL_LINK = "il";
   public static final String EXTERNAL_LINK = "el";
   //The URL part of the link, i.e. the first token
@@ -186,18 +186,6 @@ public class WikipediaTokenizer extends Tokenizer {
     this.posIncrAtt = addAttribute(PositionIncrementAttribute.class);
     this.termAtt = addAttribute(TermAttribute.class);
     this.flagsAtt = addAttribute(FlagsAttribute.class);    
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next(final Token reusableToken) throws java.io.IOException {
-    return super.next(reusableToken);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next() throws java.io.IOException {
-    return super.next();
   }
   
   /*

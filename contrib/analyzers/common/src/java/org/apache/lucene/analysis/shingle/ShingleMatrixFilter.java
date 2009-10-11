@@ -114,7 +114,7 @@ import org.apache.lucene.index.Payload;
  * <b>NOTE:</b> This filter might not behave correctly if used with custom Attributes, i.e. Attributes other than
  * the ones located in org.apache.lucene.analysis.tokenattributes.
  */
-public class ShingleMatrixFilter extends TokenStream {
+public final class ShingleMatrixFilter extends TokenStream {
 
   public static Character defaultSpacerCharacter = new Character('_');
   public static TokenSettingsCodec defaultSettingsCodec = new OneDimensionalNonWeightedTokenSettingsCodec();
@@ -393,16 +393,15 @@ public class ShingleMatrixFilter extends TokenStream {
     return token;
   }
 
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next(final Token reusableToken) throws java.io.IOException {
-    return super.next(reusableToken);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next() throws java.io.IOException {
-    return super.next();
+  private Token getNextToken(Token token) throws IOException {
+    if (!this.incrementToken()) return null;
+    token.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
+    token.setPositionIncrement(posIncrAtt.getPositionIncrement());
+    token.setFlags(flagsAtt.getFlags());
+    token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
+    token.setType(typeAtt.type());
+    token.setPayload(payloadAtt.getPayload());
+    return token;
   }
 
   private static final Token request_next_token = new Token();
@@ -429,7 +428,7 @@ public class ShingleMatrixFilter extends TokenStream {
         if (ignoringSinglePrefixOrSuffixShingle
             && currentShingleLength == 1
             && ((currentPermutationRows.get(currentPermutationTokensStartOffset)).getColumn().isFirst() || (currentPermutationRows.get(currentPermutationTokensStartOffset)).getColumn().isLast())) {
-          return next(reusableToken);
+          return getNextToken(reusableToken);
         }
 
         int termLength = 0;

@@ -39,6 +39,7 @@ import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.*;
 
 /**
 Verifies that Lucene PatternAnalyzer and normal Lucene Analyzers have the same behaviour,
@@ -141,16 +142,30 @@ public class PatternAnalyzerTest extends LuceneTestCase {
               boolean toLowerCase = toLower != 0;
                 
               for (int run=0; run < runs; run++) {
-                List tokens1 = null; List tokens2 = null;
+                TokenStream tokens1 = null; TokenStream tokens2 = null;
                 try {
-                  if (usePattern) tokens1 = getTokens(patternTokenStream(text, lettersOnly, toLowerCase, stopWords));
-                  if (useLucene) tokens2 = getTokens(luceneTokenStream(text, lettersOnly, toLowerCase, stopWords));          
-                  if (usePattern && useLucene) assertEquals(tokens1, tokens2);
+                  if (usePattern) tokens1 = patternTokenStream(text, lettersOnly, toLowerCase, stopWords);
+                  if (useLucene) tokens2 = luceneTokenStream(text, lettersOnly, toLowerCase, stopWords);          
+                  if (usePattern && useLucene) {
+                    final TermAttribute termAtt1 = tokens1.addAttribute(TermAttribute.class),
+                      termAtt2 = tokens2.addAttribute(TermAttribute.class);
+                    final OffsetAttribute offsetAtt1 = tokens1.addAttribute(OffsetAttribute.class),
+                      offsetAtt2 = tokens2.addAttribute(OffsetAttribute.class);
+                    final PositionIncrementAttribute posincrAtt1 = tokens1.addAttribute(PositionIncrementAttribute.class),
+                      posincrAtt2 = tokens2.addAttribute(PositionIncrementAttribute.class);
+                    while (tokens1.incrementToken()) {
+                      assertTrue(tokens2.incrementToken());
+                      assertEquals(termAtt1, termAtt2);
+                      assertEquals(offsetAtt1, offsetAtt2);
+                      assertEquals(posincrAtt1, posincrAtt2);
+                    }
+                    assertFalse(tokens2.incrementToken());
+                    tokens1.end(); tokens1.close();
+                    tokens2.end(); tokens2.close();
+                  }
                 } catch (Throwable t) {
                   if (t instanceof OutOfMemoryError) t.printStackTrace();
                   System.out.println("fatal error at file=" + file + ", letters="+ lettersOnly + ", toLowerCase=" + toLowerCase + ", stopwords=" + (stopWords != null ? "english" : "none"));
-                  System.out.println("\n\ntokens1=" + toString(tokens1));
-                  System.out.println("\n\ntokens2=" + toString(tokens2));
                   throw t;
                 }
               }
@@ -192,50 +207,6 @@ public class PatternAnalyzerTest extends LuceneTestCase {
     if (toLowerCase)  stream = new LowerCaseFilter(stream);
     if (stopWords != null) stream = new StopFilter(stream, stopWords);
     return stream;            
-  }
-  
-  private List getTokens(TokenStream stream) throws IOException {
-    ArrayList tokens = new ArrayList();
-    final Token reusableToken = new Token();
-    for (Token nextToken = stream.next(reusableToken); nextToken != null; nextToken = stream.next(reusableToken)) {
-      tokens.add(nextToken.clone());
-    }
-    return tokens;
-  }
-  
-  private void assertEquals(List tokens1, List tokens2) {
-    int size = Math.min(tokens1.size(), tokens2.size());
-    int i=0;
-    try {
-      for (; i < size; i++) {
-        Token t1 = (Token) tokens1.get(i);
-        Token t2 = (Token) tokens2.get(i);
-        if (!(t1.term().equals(t2.term()))) throw new IllegalStateException("termText");
-        if (t1.startOffset() != t2.startOffset()) throw new IllegalStateException("startOffset");
-        if (t1.endOffset() != t2.endOffset()) throw new IllegalStateException("endOffset");
-        if (!(t1.type().equals(t2.type()))) throw new IllegalStateException("type");
-      }
-      if (tokens1.size() != tokens2.size())   throw new IllegalStateException("size1=" + tokens1.size() + ", size2=" + tokens2.size());
-    }
-
-    catch (IllegalStateException e) {
-      if (size > 0) {
-        System.out.println("i=" + i + ", size=" + size);
-        System.out.println("t1[size]='" + ((Token) tokens1.get(size-1)).term() + "'");
-        System.out.println("t2[size]='" + ((Token) tokens2.get(size-1)).term() + "'");
-      }
-      throw e;
-    }
-  }
-  
-  private String toString(List tokens) {
-    if (tokens == null) return "null";
-    String str = "[";
-    for (int i=0; i < tokens.size(); i++) {
-      Token t1 = (Token) tokens.get(i);
-      str = str + "'" + t1.term() + "', ";
-    }
-    return str + "]";
   }
   
   // trick to detect default platform charset

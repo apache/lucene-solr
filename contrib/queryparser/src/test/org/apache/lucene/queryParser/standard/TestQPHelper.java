@@ -113,33 +113,6 @@ public class TestQPHelper extends LocalizedTestCase {
     boolean inPhrase = false;
     int savedStart = 0, savedEnd = 0;
 
-    public Token next(Token reusableToken) throws IOException {
-      Token token = reusableToken;
-
-      if (inPhrase) {
-        inPhrase = false;
-        token.setTermBuffer("phrase2");
-        token.setStartOffset(savedStart);
-        token.setEndOffset(savedEnd);
-        return reusableToken;
-      } else
-        while ((token = this.input.next(reusableToken)) != null) {
-          if (token.term().equals("phrase")) {
-            inPhrase = true;
-            savedStart = token.startOffset();
-            savedEnd = token.endOffset();
-            token.setTermBuffer("phrase1");
-            token.setStartOffset(savedStart);
-            token.setEndOffset(savedEnd);
-            return token;
-          } else if (!token.term().equals("stop"))
-            return token;
-        }
-
-      return null;
-
-    }
-
     public boolean incrementToken() throws IOException {
       if (inPhrase) {
         inPhrase = false;
@@ -1185,12 +1158,12 @@ public class TestQPHelper extends LocalizedTestCase {
 
   private class CannedTokenStream extends TokenStream {
     private int upto = 0;
+    final PositionIncrementAttribute posIncr = addAttribute(PositionIncrementAttribute.class);
+    final TermAttribute term = addAttribute(TermAttribute.class);
     public boolean incrementToken() {
       if (upto == 4) {
         return false;
       }
-      PositionIncrementAttribute posIncr = addAttribute(PositionIncrementAttribute.class);
-      TermAttribute term = addAttribute(TermAttribute.class);
       if (upto == 0) {
         posIncr.setPositionIncrement(1);
         term.setTermBuffer("a");

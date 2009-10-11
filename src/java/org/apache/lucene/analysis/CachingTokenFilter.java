@@ -33,25 +33,13 @@ import org.apache.lucene.util.AttributeSource;
  * {@link TokenStream#reset()}, which repositions the
  * stream to the first Token. 
  */
-public class CachingTokenFilter extends TokenFilter {
+public final class CachingTokenFilter extends TokenFilter {
   private List cache = null;
   private Iterator iterator = null; 
   private AttributeSource.State finalState;
   
   public CachingTokenFilter(TokenStream input) {
     super(input);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next(final Token reusableToken) throws IOException {
-    return super.next(reusableToken);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next() throws IOException {
-    return super.next();
   }
   
   public final boolean incrementToken() throws IOException {

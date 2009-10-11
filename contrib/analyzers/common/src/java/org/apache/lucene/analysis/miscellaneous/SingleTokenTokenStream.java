@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 /**
  * A {@link TokenStream} containing a single token.
  */
-public class SingleTokenTokenStream extends TokenStream {
+public final class SingleTokenTokenStream extends TokenStream {
 
   private boolean exhausted = false;
   
@@ -42,7 +42,7 @@ public class SingleTokenTokenStream extends TokenStream {
     this.singleToken = (Token) token.clone();
     
     tokenAtt = (AttributeImpl) addAttribute(TermAttribute.class);
-    assert (tokenAtt instanceof Token || tokenAtt.getClass().getName().equals("org.apache.lucene.analysis.TokenWrapper"));
+    assert (tokenAtt instanceof Token);
   }
 
   public final boolean incrementToken() throws IOException {
@@ -54,18 +54,6 @@ public class SingleTokenTokenStream extends TokenStream {
       exhausted = true;
       return true;
     }
-  }
-  
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next(final Token reusableToken) throws java.io.IOException {
-    return super.next(reusableToken);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next() throws java.io.IOException {
-    return super.next();
   }
 
   public void reset() throws IOException {

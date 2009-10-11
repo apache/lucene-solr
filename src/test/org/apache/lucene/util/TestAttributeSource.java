@@ -125,4 +125,20 @@ public class TestAttributeSource extends LuceneTestCase {
     assertEquals("Token should only printed once", "("+tok.toString()+")", src.toString());
   }
   
+  public void testDefaultAttributeFactory() throws Exception {
+    AttributeSource src = new AttributeSource();
+    
+    assertTrue("TermAttribute is not implemented by TermAttributeImpl",
+      src.addAttribute(TermAttribute.class) instanceof TermAttributeImpl);
+    assertTrue("OffsetAttribute is not implemented by OffsetAttributeImpl",
+      src.addAttribute(OffsetAttribute.class) instanceof OffsetAttributeImpl);
+    assertTrue("FlagsAttribute is not implemented by FlagsAttributeImpl",
+      src.addAttribute(FlagsAttribute.class) instanceof FlagsAttributeImpl);
+    assertTrue("PayloadAttribute is not implemented by PayloadAttributeImpl",
+      src.addAttribute(PayloadAttribute.class) instanceof PayloadAttributeImpl);
+    assertTrue("PositionIncrementAttribute is not implemented by PositionIncrementAttributeImpl", 
+      src.addAttribute(PositionIncrementAttribute.class) instanceof PositionIncrementAttributeImpl);
+    assertTrue("TypeAttribute is not implemented by TypeAttributeImpl",
+      src.addAttribute(TypeAttribute.class) instanceof TypeAttributeImpl);
+  }
 }

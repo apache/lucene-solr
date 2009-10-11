@@ -577,7 +577,7 @@
     </delete>
   </target>
 
-  <target name="javacc" depends="clean-javacc,javacc-QueryParser,javacc-HTMLParser,javacc-contrib-queryparser, javacc-contrib-surround"/>
+  <target name="javacc" depends="clean-javacc,javacc-QueryParser,javacc-HTMLParser,javacc-contrib-queryparser, javacc-contrib-surround, javacc-contrib-precedence"/>
 
   <target name="javacc-QueryParser" depends="init,javacc-check" if="javacc.present">
     <invoke-javacc target="src/java/org/apache/lucene/queryParser/QueryParser.jj"
@@ -601,6 +601,13 @@
   <target name="javacc-contrib-surround" depends="init,javacc-check" if="javacc.present">
     <ant target="javacc"
       dir="contrib/surround"
+      antfile="build.xml" 
+    />
+  </target>
+  
+  <target name="javacc-contrib-precedence" depends="init,javacc-check" if="javacc.present">
+    <ant target="javacc"
+      dir="contrib/misc"
       antfile="build.xml" 
     />
   </target>

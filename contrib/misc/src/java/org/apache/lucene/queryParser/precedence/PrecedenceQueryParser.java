@@ -12,6 +12,7 @@ import java.util.Vector;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -25,6 +26,7 @@ import org.apache.lucene.search.RangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.Parameter;
+import org.apache.lucene.util.AttributeSource;
 
 /**
  * Experimental query parser variant designed to handle operator precedence
@@ -70,6 +72,9 @@ import org.apache.lucene.util.Parameter;
  * documentation</a>.
  * </p>
  *
+ * @author Brian Goetz
+ * @author Peter Halacsy
+ * @author Tatu Saloranta
  */
 
 public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
@@ -205,7 +210,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
    * In default mode (<code>OR_OPERATOR</code>) terms without any modifiers
    * are considered optional: for example <code>capital of Hungary</code> is equal to
    * <code>capital OR of OR Hungary</code>.<br/>
-   * In <code>AND_OPERATOR</code> mode terms are considered to be in conjuction: the
+   * In <code>AND_OPERATOR</code> mode terms are considered to be in conjunction: the
    * above mentioned query is parsed as <code>capital AND of AND Hungary</code>
    */
   public void setDefaultOperator(Operator op) {
@@ -314,48 +319,40 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     // PhraseQuery, or nothing based on the term count
 
     TokenStream source = analyzer.tokenStream(field, new StringReader(queryText));
-    List list = new ArrayList();
-    final org.apache.lucene.analysis.Token reusableToken = new org.apache.lucene.analysis.Token();
-    org.apache.lucene.analysis.Token nextToken;
+    List<AttributeSource.State> list = new ArrayList<AttributeSource.State>();
     int positionCount = 0;
     boolean severalTokensAtSamePosition = false;
+    TermAttribute termAtt = source.addAttribute(TermAttribute.class);
+    PositionIncrementAttribute posincrAtt = source.addAttribute(PositionIncrementAttribute.class);
 
-    while (true) {
-      try {
-        nextToken = source.next(reusableToken);
-      }
-      catch (IOException e) {
-        nextToken = null;
-      }
-      if (nextToken == null)
-        break;
-      list.add(nextToken.clone());
-      if (nextToken.getPositionIncrement() == 1)
-        positionCount++;
-      else
-        severalTokensAtSamePosition = true;
-    }
     try {
+      while (source.incrementToken()) {
+        list.add(source.captureState());
+        if (posincrAtt.getPositionIncrement() == 1)
+          positionCount++;
+        else
+          severalTokensAtSamePosition = true;
+      }
+      source.end();
       source.close();
-    }
-    catch (IOException e) {
-      // ignore
+    } catch (IOException e) {
+      // ignore, should never happen for StringReaders
     }
 
     if (list.size() == 0)
       return null;
     else if (list.size() == 1) {
-      nextToken = (org.apache.lucene.analysis.Token) list.get(0);
-      return new TermQuery(new Term(field, nextToken.term()));
+      source.restoreState(list.get(0));
+      return new TermQuery(new Term(field, termAtt.term()));
     } else {
       if (severalTokensAtSamePosition) {
         if (positionCount == 1) {
           // no phrase query:
           BooleanQuery q = new BooleanQuery();
           for (int i = 0; i < list.size(); i++) {
-            nextToken = (org.apache.lucene.analysis.Token) list.get(i);
+            source.restoreState(list.get(i));
             TermQuery currentQuery = new TermQuery(
-                new Term(field, nextToken.term()));
+                new Term(field, termAtt.term()));
             q.add(currentQuery, BooleanClause.Occur.SHOULD);
           }
           return q;
@@ -363,14 +360,14 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
         else {
           // phrase query:
           MultiPhraseQuery mpq = new MultiPhraseQuery();
-          List multiTerms = new ArrayList();
+          List<Term> multiTerms = new ArrayList<Term>();
           for (int i = 0; i < list.size(); i++) {
-            nextToken = (org.apache.lucene.analysis.Token) list.get(i);
-            if (nextToken.getPositionIncrement() == 1 && multiTerms.size() > 0) {
+            source.restoreState(list.get(i));
+            if (posincrAtt.getPositionIncrement() == 1 && multiTerms.size() > 0) {
               mpq.add((Term[])multiTerms.toArray(new Term[0]));
               multiTerms.clear();
             }
-            multiTerms.add(new Term(field, nextToken.term()));
+            multiTerms.add(new Term(field, termAtt.term()));
           }
           mpq.add((Term[])multiTerms.toArray(new Term[0]));
           return mpq;
@@ -380,8 +377,8 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
         PhraseQuery q = new PhraseQuery();
         q.setSlop(phraseSlop);
         for (int i = 0; i < list.size(); i++) {
-          q.add(new Term(field, ((org.apache.lucene.analysis.Token)
-              list.get(i)).term()));
+          source.restoreState(list.get(i));
+          q.add(new Term(field, termAtt.term()));
         }
         return q;
       }
@@ -1093,39 +1090,42 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  final private boolean jj_2_1(int xla) {
+  private boolean jj_2_1(int xla) {
     jj_la = xla; jj_lastpos = jj_scanpos = token;
     try { return !jj_3_1(); }
     catch(LookaheadSuccess ls) { return true; }
     finally { jj_save(0, xla); }
   }
 
-  final private boolean jj_3_1() {
+  private boolean jj_3_1() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
     return false;
   }
 
+  /** Generated Token Manager. */
   public PrecedenceQueryParserTokenManager token_source;
-  public Token token, jj_nt;
+  /** Current token. */
+  public Token token;
+  /** Next token. */
+  public Token jj_nt;
   private int jj_ntk;
   private Token jj_scanpos, jj_lastpos;
   private int jj_la;
-  public boolean lookingAhead = false;
-  private boolean jj_semLA;
   private int jj_gen;
   final private int[] jj_la1 = new int[24];
   static private int[] jj_la1_0;
   static {
-      jj_la1_0();
+      jj_la1_init_0();
    }
-   private static void jj_la1_0() {
+   private static void jj_la1_init_0() {
       jj_la1_0 = new int[] {0x180,0x180,0xe00,0xe00,0xfb1f00,0x100,0x80,0x8000,0xfb1000,0x9a0000,0x40000,0x40000,0x8000,0xc000000,0x1000000,0xc000000,0x8000,0xc0000000,0x10000000,0xc0000000,0x8000,0x40000,0x8000,0xfb0000,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[1];
   private boolean jj_rescan = false;
   private int jj_gc = 0;
 
+  /** Constructor with user supplied CharStream. */
   public PrecedenceQueryParser(CharStream stream) {
     token_source = new PrecedenceQueryParserTokenManager(stream);
     token = new Token();
@@ -1135,6 +1135,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
+  /** Reinitialise. */
   public void ReInit(CharStream stream) {
     token_source.ReInit(stream);
     token = new Token();
@@ -1144,6 +1145,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
+  /** Constructor with generated Token Manager. */
   public PrecedenceQueryParser(PrecedenceQueryParserTokenManager tm) {
     token_source = tm;
     token = new Token();
@@ -1153,6 +1155,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
+  /** Reinitialise. */
   public void ReInit(PrecedenceQueryParserTokenManager tm) {
     token_source = tm;
     token = new Token();
@@ -1162,7 +1165,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
   }
 
-  final private Token jj_consume_token(int kind) throws ParseException {
+  private Token jj_consume_token(int kind) throws ParseException {
     Token oldToken;
     if ((oldToken = token).next != null) token = token.next;
     else token = token.next = token_source.getNextToken();
@@ -1188,7 +1191,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
 
   static private final class LookaheadSuccess extends java.lang.Error { }
   final private LookaheadSuccess jj_ls = new LookaheadSuccess();
-  final private boolean jj_scan_token(int kind) {
+  private boolean jj_scan_token(int kind) {
     if (jj_scanpos == jj_lastpos) {
       jj_la--;
       if (jj_scanpos.next == null) {
@@ -1209,6 +1212,8 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     return false;
   }
 
+
+/** Get the next Token. */
   final public Token getNextToken() {
     if (token.next != null) token = token.next;
     else token = token.next = token_source.getNextToken();
@@ -1217,8 +1222,9 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     return token;
   }
 
+/** Get the specific Token. */
   final public Token getToken(int index) {
-    Token t = lookingAhead ? jj_scanpos : token;
+    Token t = token;
     for (int i = 0; i < index; i++) {
       if (t.next != null) t = t.next;
       else t = t.next = token_source.getNextToken();
@@ -1226,14 +1232,14 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     return t;
   }
 
-  final private int jj_ntk() {
+  private int jj_ntk() {
     if ((jj_nt=token.next) == null)
       return (jj_ntk = (token.next=token_source.getNextToken()).kind);
     else
       return (jj_ntk = jj_nt.kind);
   }
 
-  private java.util.Vector jj_expentries = new java.util.Vector();
+  private java.util.List jj_expentries = new java.util.ArrayList();
   private int[] jj_expentry;
   private int jj_kind = -1;
   private int[] jj_lasttokens = new int[100];
@@ -1248,31 +1254,26 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
       for (int i = 0; i < jj_endpos; i++) {
         jj_expentry[i] = jj_lasttokens[i];
       }
-      boolean exists = false;
-      for (java.util.Enumeration e = jj_expentries.elements(); e.hasMoreElements();) {
-        int[] oldentry = (int[])(e.nextElement());
+      jj_entries_loop: for (java.util.Iterator it = jj_expentries.iterator(); it.hasNext();) {
+        int[] oldentry = (int[])(it.next());
         if (oldentry.length == jj_expentry.length) {
-          exists = true;
           for (int i = 0; i < jj_expentry.length; i++) {
             if (oldentry[i] != jj_expentry[i]) {
-              exists = false;
-              break;
+              continue jj_entries_loop;
             }
           }
-          if (exists) break;
+          jj_expentries.add(jj_expentry);
+          break jj_entries_loop;
         }
       }
-      if (!exists) jj_expentries.addElement(jj_expentry);
       if (pos != 0) jj_lasttokens[(jj_endpos = pos) - 1] = kind;
     }
   }
 
+  /** Generate ParseException. */
   public ParseException generateParseException() {
-    jj_expentries.removeAllElements();
+    jj_expentries.clear();
     boolean[] la1tokens = new boolean[32];
-    for (int i = 0; i < 32; i++) {
-      la1tokens[i] = false;
-    }
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
@@ -1290,7 +1291,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;
-        jj_expentries.addElement(jj_expentry);
+        jj_expentries.add(jj_expentry);
       }
     }
     jj_endpos = 0;
@@ -1298,20 +1299,23 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     jj_add_error_token(0, 0);
     int[][] exptokseq = new int[jj_expentries.size()][];
     for (int i = 0; i < jj_expentries.size(); i++) {
-      exptokseq[i] = (int[])jj_expentries.elementAt(i);
+      exptokseq[i] = (int[])jj_expentries.get(i);
     }
     return new ParseException(token, exptokseq, tokenImage);
   }
 
+  /** Enable tracing. */
   final public void enable_tracing() {
   }
 
+  /** Disable tracing. */
   final public void disable_tracing() {
   }
 
-  final private void jj_rescan_token() {
+  private void jj_rescan_token() {
     jj_rescan = true;
     for (int i = 0; i < 1; i++) {
+    try {
       JJCalls p = jj_2_rtns[i];
       do {
         if (p.gen > jj_gen) {
@@ -1322,11 +1326,12 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
         }
         p = p.next;
       } while (p != null);
+      } catch(LookaheadSuccess ls) { }
     }
     jj_rescan = false;
   }
 
-  final private void jj_save(int index, int xla) {
+  private void jj_save(int index, int xla) {
     JJCalls p = jj_2_rtns[index];
     while (p.gen > jj_gen) {
       if (p.next == null) { p = p.next = new JJCalls(); break; }

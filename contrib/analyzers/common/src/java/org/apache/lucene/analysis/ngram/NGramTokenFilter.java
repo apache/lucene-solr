@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 /**
  * Tokenizes the input into n-grams of the given size(s).
  */
-public class NGramTokenFilter extends TokenFilter {
+public final class NGramTokenFilter extends TokenFilter {
   public static final int DEFAULT_MIN_NGRAM_SIZE = 1;
   public static final int DEFAULT_MAX_NGRAM_SIZE = 2;
 
@@ -96,18 +96,6 @@ public class NGramTokenFilter extends TokenFilter {
       }
       curTermBuffer = null;
     }
-  }
-  
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next(final Token reusableToken) throws java.io.IOException {
-    return super.next(reusableToken);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next() throws java.io.IOException {
-    return super.next();
   }
 
   public void reset() throws IOException {

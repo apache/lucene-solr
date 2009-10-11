@@ -36,6 +36,7 @@ import java.util.Vector;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -49,6 +50,7 @@ import org.apache.lucene.search.RangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.Parameter;
+import org.apache.lucene.util.AttributeSource;
 
 /**
  * Experimental query parser variant designed to handle operator precedence
@@ -341,48 +343,40 @@ public class PrecedenceQueryParser {
     // PhraseQuery, or nothing based on the term count
 
     TokenStream source = analyzer.tokenStream(field, new StringReader(queryText));
-    List list = new ArrayList();
-    final org.apache.lucene.analysis.Token reusableToken = new org.apache.lucene.analysis.Token();
-    org.apache.lucene.analysis.Token nextToken;
+    List<AttributeSource.State> list = new ArrayList<AttributeSource.State>();
     int positionCount = 0;
     boolean severalTokensAtSamePosition = false;
+    TermAttribute termAtt = source.addAttribute(TermAttribute.class);
+    PositionIncrementAttribute posincrAtt = source.addAttribute(PositionIncrementAttribute.class);
 
-    while (true) {
-      try {
-        nextToken = source.next(reusableToken);
-      }
-      catch (IOException e) {
-        nextToken = null;
-      }
-      if (nextToken == null)
-        break;
-      list.add(nextToken.clone());
-      if (nextToken.getPositionIncrement() == 1)
-        positionCount++;
-      else
-        severalTokensAtSamePosition = true;
-    }
     try {
+      while (source.incrementToken()) {
+        list.add(source.captureState());
+        if (posincrAtt.getPositionIncrement() == 1)
+          positionCount++;
+        else
+          severalTokensAtSamePosition = true;
+      }
+      source.end();
       source.close();
-    }
-    catch (IOException e) {
-      // ignore
+    } catch (IOException e) {
+      // ignore, should never happen for StringReaders
     }
 
     if (list.size() == 0)
       return null;
     else if (list.size() == 1) {
-      nextToken = (org.apache.lucene.analysis.Token) list.get(0);
-      return new TermQuery(new Term(field, nextToken.term()));
+      source.restoreState(list.get(0));
+      return new TermQuery(new Term(field, termAtt.term()));
     } else {
       if (severalTokensAtSamePosition) {
         if (positionCount == 1) {
           // no phrase query:
           BooleanQuery q = new BooleanQuery();
           for (int i = 0; i < list.size(); i++) {
-            nextToken = (org.apache.lucene.analysis.Token) list.get(i);
+            source.restoreState(list.get(i));
             TermQuery currentQuery = new TermQuery(
-                new Term(field, nextToken.term()));
+                new Term(field, termAtt.term()));
             q.add(currentQuery, BooleanClause.Occur.SHOULD);
           }
           return q;
@@ -390,14 +384,14 @@ public class PrecedenceQueryParser {
         else {
           // phrase query:
           MultiPhraseQuery mpq = new MultiPhraseQuery();
-          List multiTerms = new ArrayList();
+          List<Term> multiTerms = new ArrayList<Term>();
           for (int i = 0; i < list.size(); i++) {
-            nextToken = (org.apache.lucene.analysis.Token) list.get(i);
-            if (nextToken.getPositionIncrement() == 1 && multiTerms.size() > 0) {
+            source.restoreState(list.get(i));
+            if (posincrAtt.getPositionIncrement() == 1 && multiTerms.size() > 0) {
               mpq.add((Term[])multiTerms.toArray(new Term[0]));
               multiTerms.clear();
             }
-            multiTerms.add(new Term(field, nextToken.term()));
+            multiTerms.add(new Term(field, termAtt.term()));
           }
           mpq.add((Term[])multiTerms.toArray(new Term[0]));
           return mpq;
@@ -407,8 +401,8 @@ public class PrecedenceQueryParser {
         PhraseQuery q = new PhraseQuery();
         q.setSlop(phraseSlop);
         for (int i = 0; i < list.size(); i++) {
-          q.add(new Term(field, ((org.apache.lucene.analysis.Token)
-              list.get(i)).term()));
+          source.restoreState(list.get(i));
+          q.add(new Term(field, termAtt.term()));
         }
         return q;
       }
@@ -700,7 +694,7 @@ PARSER_END(PrecedenceQueryParser)
 }
 
 <DEFAULT, RangeIn, RangeEx> SKIP : {
-  <<_WHITESPACE>>
+  < <_WHITESPACE>>
 }
 
 // OG: to support prefix queries:

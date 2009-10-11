@@ -111,18 +111,6 @@ public class PrefixAwareTokenFilter extends TokenStream {
     return true;
   }
   
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next(final Token reusableToken) throws java.io.IOException {
-    return super.next(reusableToken);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next() throws java.io.IOException {
-    return super.next();
-  }
-  
   private void setCurrentToken(Token token) {
     if (token == null) return;
     termAtt.setTermBuffer(token.termBuffer(), 0, token.termLength());

@@ -22,7 +22,7 @@ import java.io.Reader;
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.ISOLatin1AccentFilter;
+import org.apache.lucene.analysis.ASCIIFoldingFilter;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardFilter;
@@ -111,7 +111,7 @@ class ASCIIAnalyzer extends org.apache.lucene.analysis.Analyzer {
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(reader);
     result = new StandardFilter(result);
-    result = new ISOLatin1AccentFilter(result);
+    result = new ASCIIFoldingFilter(result);
     result = new LowerCaseFilter(result);
     return result;
   }

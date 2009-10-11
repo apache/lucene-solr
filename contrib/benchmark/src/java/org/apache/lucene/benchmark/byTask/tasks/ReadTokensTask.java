@@ -21,7 +21,6 @@ import java.io.Reader;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
@@ -59,8 +58,6 @@ public class ReadTokensTask extends PerfTask {
     super.tearDown();
   }
 
-  Token token = new Token();
-
   public int doLogic() throws Exception {
     List fields = doc.getFields();
     final int numField = fields.size();
@@ -96,7 +93,7 @@ public class ReadTokensTask extends PerfTask {
       // reset the TokenStream to the first token
       stream.reset();
 
-      while(stream.next(token) != null)
+      while(stream.incrementToken())
         tokenCount++;
     }
     totalTokenCount += tokenCount;

@@ -45,7 +45,7 @@ import org.apache.lucene.util.AttributeSource;
  * directory to your project and maintaining your own grammar-based tokenizer.
  */
 
-public class StandardTokenizer extends Tokenizer {
+public final class StandardTokenizer extends Tokenizer {
   /** A private instance of the JFlex-constructed scanner */
   private final StandardTokenizerImpl scanner;
 
@@ -207,18 +207,6 @@ public class StandardTokenizer extends Tokenizer {
     // set final offset
     int finalOffset = correctOffset(scanner.yychar() + scanner.yylength());
     offsetAtt.setOffset(finalOffset, finalOffset);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next(final Token reusableToken) throws IOException {
-    return super.next(reusableToken);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next() throws IOException {
-    return super.next();
   }
 
   /*

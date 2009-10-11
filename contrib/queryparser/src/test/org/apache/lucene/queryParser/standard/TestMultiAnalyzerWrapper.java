@@ -175,48 +175,6 @@ public class TestMultiAnalyzerWrapper extends LuceneTestCase {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.apache.lucene.analysis.TokenStream#next(org.apache.lucene.analysis
-     * .Token)
-     */
-    @Override
-    public Token next(Token reusableToken) throws IOException {
-
-      if (multiToken > 0) {
-        reusableToken.setTermBuffer("multi" + (multiToken + 1));
-        reusableToken.setStartOffset(prevStartOffset);
-        reusableToken.setEndOffset(prevEndOffset);
-        reusableToken.setType(prevType);
-        reusableToken.setPositionIncrement(0);
-        multiToken--;
-        return reusableToken;
-      } else {
-        boolean next = (reusableToken = input.next(token)) != null;
-        if (next == false) {
-          return null;
-        }
-        prevType = reusableToken.type();
-        prevStartOffset = reusableToken.startOffset();
-        prevEndOffset = reusableToken.endOffset();
-        String text = reusableToken.term();
-        if (text.equals("triplemulti")) {
-          multiToken = 2;
-          return reusableToken;
-        } else if (text.equals("multi")) {
-          multiToken = 1;
-          return reusableToken;
-        } else {
-          return reusableToken;
-        }
-      }
-
-    }
-
-    private Token token = new Token();
-
     public final boolean incrementToken() throws java.io.IOException {
       if (multiToken > 0) {
         termAtt.setTermBuffer("multi" + (multiToken + 1));
@@ -274,30 +232,6 @@ public class TestMultiAnalyzerWrapper extends LuceneTestCase {
       super(in);
       termAtt = addAttribute(TermAttribute.class);
       posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-    }
-
-    private Token token = new Token();
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.apache.lucene.analysis.TokenStream#next()
-     */
-    @Override
-    public Token next(Token reusableToken) throws IOException {
-      while (null != (reusableToken = input.next(token))) {
-        String term = reusableToken.term();
-        if (term.equals("the")) {
-          // stopword, do nothing
-        } else if (term.equals("quick")) {
-          reusableToken.setPositionIncrement(2);
-          return reusableToken;
-        } else {
-          reusableToken.setPositionIncrement(1);
-          return reusableToken;
-        }
-      }
-      return null;
     }
 
     public final boolean incrementToken() throws java.io.IOException {

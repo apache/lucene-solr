@@ -114,18 +114,6 @@ public abstract class CharTokenizer extends Tokenizer {
     offsetAtt.setOffset(finalOffset, finalOffset);
   }
 
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next(final Token reusableToken) throws IOException {
-    return super.next(reusableToken);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next() throws IOException {
-    return super.next();
-  }
-
   public void reset(Reader input) throws IOException {
     super.reset(input);
     bufferIndex = 0;

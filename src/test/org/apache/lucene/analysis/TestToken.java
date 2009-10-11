@@ -18,8 +18,12 @@ package org.apache.lucene.analysis;
  */
 
 import org.apache.lucene.index.Payload;
-import org.apache.lucene.analysis.tokenattributes.TestSimpleAttributeImpls;
+import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeImpl;
+
+import java.io.StringReader;
 
 public class TestToken extends LuceneTestCase {
 
@@ -218,5 +222,34 @@ public class TestToken extends LuceneTestCase {
     copy = (Token) TestSimpleAttributeImpls.assertCopyIsEqual(t);
     assertEquals(pl, copy.getPayload());
     assertNotSame(pl, copy.getPayload());
+  }
+  
+  public interface SenselessAttribute extends Attribute {}
+  
+  public static final class SenselessAttributeImpl extends AttributeImpl implements SenselessAttribute {
+    public void copyTo(AttributeImpl target) {}
+    public void clear() {}
+    public boolean equals(Object o) { return (o instanceof SenselessAttributeImpl); }
+    public int hashCode() { return 0; }
+  }
+
+  public void testTokenAttributeFactory() throws Exception {
+    TokenStream ts = new WhitespaceTokenizer(Token.TOKEN_ATTRIBUTE_FACTORY, new StringReader("foo bar"));
+    
+    assertTrue("TypeAttribute is not implemented by SenselessAttributeImpl",
+      ts.addAttribute(SenselessAttribute.class) instanceof SenselessAttributeImpl);
+    
+    assertTrue("TermAttribute is not implemented by Token",
+      ts.addAttribute(TermAttribute.class) instanceof Token);
+    assertTrue("OffsetAttribute is not implemented by Token",
+      ts.addAttribute(OffsetAttribute.class) instanceof Token);
+    assertTrue("FlagsAttribute is not implemented by Token",
+      ts.addAttribute(FlagsAttribute.class) instanceof Token);
+    assertTrue("PayloadAttribute is not implemented by Token",
+      ts.addAttribute(PayloadAttribute.class) instanceof Token);
+    assertTrue("PositionIncrementAttribute is not implemented by Token", 
+      ts.addAttribute(PositionIncrementAttribute.class) instanceof Token);
+    assertTrue("TypeAttribute is not implemented by Token",
+      ts.addAttribute(TypeAttribute.class) instanceof Token);
   }
 }

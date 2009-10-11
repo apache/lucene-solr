@@ -62,18 +62,6 @@ public class PrefixAndSuffixAwareTokenFilter extends TokenStream {
   public final boolean incrementToken() throws IOException {
     return suffix.incrementToken();
   }
-  
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next(final Token reusableToken) throws java.io.IOException {
-    return super.next(reusableToken);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next() throws java.io.IOException {
-    return super.next();
-  }
 
   public void reset() throws IOException {
     suffix.reset();

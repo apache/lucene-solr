@@ -31,7 +31,7 @@ import java.io.IOException;
  * This {@link TokenFilter} create n-grams from the beginning edge or ending edge of a input token.
  * </p>
  */
-public class EdgeNGramTokenFilter extends TokenFilter {
+public final class EdgeNGramTokenFilter extends TokenFilter {
   public static final Side DEFAULT_SIDE = Side.FRONT;
   public static final int DEFAULT_MAX_GRAM_SIZE = 1;
   public static final int DEFAULT_MIN_GRAM_SIZE = 1;
@@ -148,18 +148,6 @@ public class EdgeNGramTokenFilter extends TokenFilter {
       }
       curTermBuffer = null;
     }
-  }
-  
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next(final Token reusableToken) throws java.io.IOException {
-    return super.next(reusableToken);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next() throws java.io.IOException {
-    return super.next();
   }
 
   public void reset() throws IOException {

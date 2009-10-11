@@ -29,7 +29,7 @@ import java.io.Reader;
 /**
  * Tokenizes the input into n-grams of the given size(s).
  */
-public class NGramTokenizer extends Tokenizer {
+public final class NGramTokenizer extends Tokenizer {
   public static final int DEFAULT_MIN_NGRAM_SIZE = 1;
   public static final int DEFAULT_MAX_NGRAM_SIZE = 2;
 
@@ -133,18 +133,6 @@ public class NGramTokenizer extends Tokenizer {
     final int finalOffset = inLen;
     this.offsetAtt.setOffset(finalOffset, finalOffset);
   }    
-  
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next(final Token reusableToken) throws java.io.IOException {
-    return super.next(reusableToken);
-  }
-
-  /** @deprecated Will be removed in Lucene 3.0. This method is final, as it should
-   * not be overridden. Delegates to the backwards compatibility layer. */
-  public final Token next() throws java.io.IOException {
-    return super.next();
-  }
   
   public void reset(Reader input) throws IOException {
     super.reset(input);

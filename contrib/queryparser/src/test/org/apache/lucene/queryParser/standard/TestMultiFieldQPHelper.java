@@ -359,8 +359,8 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     }
 
     private static class EmptyTokenStream extends TokenStream {
-      public Token next(final Token reusableToken) {
-        return null;
+      public boolean incrementToken() {
+        return false;
       }
     }
   }
