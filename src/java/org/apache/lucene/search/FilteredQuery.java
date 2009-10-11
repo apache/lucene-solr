@@ -130,11 +130,6 @@ extends Query {
             return scorerDoc;
           }
 
-          /** @deprecated use {@link #nextDoc()} instead. */
-          public boolean next() throws IOException {
-            return nextDoc() != NO_MORE_DOCS;
-          }
-
           public int nextDoc() throws IOException {
             int scorerDoc, disiDoc;
             return doc = (disiDoc = docIdSetIterator.nextDoc()) != NO_MORE_DOCS
@@ -142,14 +137,7 @@ extends Query {
                 && advanceToCommon(scorerDoc, disiDoc) != NO_MORE_DOCS ? scorer.docID() : NO_MORE_DOCS;
           }
           
-          /** @deprecated use {@link #docID()} instead. */
-          public int doc() { return scorer.doc(); }
           public int docID() { return doc; }
-          
-          /** @deprecated use {@link #advance(int)} instead. */
-          public boolean skipTo(int i) throws IOException {
-            return advance(i) != NO_MORE_DOCS;
-          }
           
           public int advance(int target) throws IOException {
             int disiDoc, scorerDoc;

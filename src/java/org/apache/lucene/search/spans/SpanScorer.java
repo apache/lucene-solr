@@ -55,21 +55,11 @@ public class SpanScorer extends Scorer {
     }
   }
 
-  /** @deprecated use {@link #nextDoc()} instead. */
-  public boolean next() throws IOException {
-    return nextDoc() != NO_MORE_DOCS;
-  }
-
   public int nextDoc() throws IOException {
     if (!setFreqCurrentDoc()) {
       doc = NO_MORE_DOCS;
     }
     return doc;
-  }
-
-  /** @deprecated use {@link #advance(int)} instead. */
-  public boolean skipTo(int target) throws IOException {
-    return advance(target) != NO_MORE_DOCS;
   }
 
   public int advance(int target) throws IOException {
@@ -99,9 +89,6 @@ public class SpanScorer extends Scorer {
     return true;
   }
 
-  /** @deprecated use {@link #docID()} instead. */
-  public int doc() { return doc; }
-  
   public int docID() { return doc; }
 
   public float score() throws IOException {

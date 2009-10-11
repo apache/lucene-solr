@@ -49,20 +49,10 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
    */
   abstract protected boolean match(int doc) throws IOException;
 	
-  /** @deprecated use {@link #docID()} instead. */
-  public final int doc() {
-    return doc;
-  }
-
   public int docID() {
     return doc;
   }
   
-  /** @deprecated use {@link #nextDoc()} instead. */
-  public final boolean next() throws IOException{
-    return nextDoc() != NO_MORE_DOCS;
-  }
-
   public int nextDoc() throws IOException {
     while ((doc = _innerIter.nextDoc()) != NO_MORE_DOCS) {
       if (match(doc)) {
@@ -70,11 +60,6 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
       }
     }
     return doc;
-  }
-  
-  /** @deprecated use {@link #advance(int)} instead. */
-  public final boolean skipTo(int n) throws IOException{
-    return advance(n) != NO_MORE_DOCS;
   }
   
   public int advance(int target) throws IOException {

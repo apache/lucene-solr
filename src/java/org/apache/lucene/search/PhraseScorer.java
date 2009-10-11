@@ -69,15 +69,7 @@ abstract class PhraseScorer extends Scorer {
     first.doc = -1;
   }
 
-  /** @deprecated use {@link #docID()} instead. */
-  public int doc() { return first.doc; }
-  
   public int docID() { return first.doc; }
-
-  /** @deprecated use {@link #nextDoc()} instead. */
-  public boolean next() throws IOException {
-    return nextDoc() != NO_MORE_DOCS;
-  }
 
   public int nextDoc() throws IOException {
     if (firstTime) {
@@ -116,11 +108,6 @@ abstract class PhraseScorer extends Scorer {
     //System.out.println("scoring " + first.doc);
     float raw = getSimilarity().tf(freq) * value; // raw score
     return norms == null ? raw : raw * Similarity.decodeNorm(norms[first.doc]); // normalize
-  }
-
-  /** @deprecated use {@link #advance(int)} instead. */
-  public boolean skipTo(int target) throws IOException {
-    return advance(target) != NO_MORE_DOCS;
   }
 
   public int advance(int target) throws IOException {

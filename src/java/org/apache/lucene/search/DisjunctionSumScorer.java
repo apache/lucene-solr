@@ -161,11 +161,6 @@ class DisjunctionSumScorer extends Scorer {
     return true;
   }
 
-  /** @deprecated use {@link #nextDoc()} instead. */
-  public boolean next() throws IOException {
-    return nextDoc() != NO_MORE_DOCS;
-  }
-
   public int nextDoc() throws IOException {
     if (scorerDocQueue.size() < minimumNrMatchers || !advanceAfterCurrent()) {
       currentDoc = NO_MORE_DOCS;
@@ -222,9 +217,6 @@ class DisjunctionSumScorer extends Scorer {
    */
   public float score() throws IOException { return currentScore; }
    
-  /** @deprecated use {@link #docID()} instead. */
-  public int doc() { return currentDoc; }
-
   public int docID() {
     return currentDoc;
   }
@@ -234,22 +226,6 @@ class DisjunctionSumScorer extends Scorer {
    */
   public int nrMatchers() {
     return nrMatchers;
-  }
-
-  /**
-   * Skips to the first match beyond the current whose document number is
-   * greater than or equal to a given target. <br>
-   * When this method is used the {@link #explain(int)} method should not be
-   * used. <br>
-   * The implementation uses the skipTo() method on the subscorers.
-   * 
-   * @param target
-   *          The target document number.
-   * @return true iff there is such a match.
-   * @deprecated use {@link #advance(int)} instead.
-   */
-  public boolean skipTo(int target) throws IOException {
-    return advance(target) != NO_MORE_DOCS;
   }
 
   /**

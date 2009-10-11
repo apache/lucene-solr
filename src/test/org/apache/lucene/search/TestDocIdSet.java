@@ -48,31 +48,16 @@ public class TestDocIdSet extends LuceneTestCase {
 
             int docid = -1;
             
-            /** @deprecated use {@link #docID()} instead. */
-            public int doc() {
-              return docid;
-            }
-
             public int docID() {
               return docid;
             }
             
-            /** @deprecated use {@link #nextDoc()} instead. */
-            public boolean next() throws IOException {
-              return nextDoc() != NO_MORE_DOCS;
-            }
-
             //@Override
             public int nextDoc() throws IOException {
               docid++;
               return docid < maxdoc ? docid : (docid = NO_MORE_DOCS);
             }
 
-            /** @deprecated use {@link #advance(int)} instead. */
-            public boolean skipTo(int target) throws IOException {
-              return advance(target) != NO_MORE_DOCS;
-            }
-            
             //@Override
             public int advance(int target) throws IOException {
               while (nextDoc() < target) {}

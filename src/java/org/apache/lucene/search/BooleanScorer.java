@@ -116,22 +116,13 @@ final class BooleanScorer extends Scorer {
     
     public int advance(int target) throws IOException { return NO_MORE_DOCS; }
 
-    /** @deprecated use {@link #docID()} instead. */
-    public int doc() { return doc; }
-
     public int docID() { return doc; }
 
     public Explanation explain(int doc) throws IOException { return null; }
     
-    /** @deprecated use {@link #nextDoc()} instead. */
-    public boolean next() throws IOException { return false; }
-
     public int nextDoc() throws IOException { return NO_MORE_DOCS; }
     
     public float score() throws IOException { return score; }
-    
-    /** @deprecated use {@link #advance(int)} instead. */
-    public boolean skipTo(int target) throws IOException { return false; }
     
   }
 
@@ -289,9 +280,6 @@ final class BooleanScorer extends Scorer {
     throw new UnsupportedOperationException();
   }
 
-  /** @deprecated use {@link #docID()} instead. */
-  public int doc() { return current.doc; }
-  
   public int docID() {
     return doc;
   }
@@ -300,11 +288,6 @@ final class BooleanScorer extends Scorer {
     throw new UnsupportedOperationException();
   }
 
-  /** @deprecated use {@link #nextDoc()} instead. */
-  public boolean next() throws IOException {
-    return nextDoc() != NO_MORE_DOCS;
-  }
-  
   public int nextDoc() throws IOException {
     boolean more;
     do {
@@ -351,11 +334,6 @@ final class BooleanScorer extends Scorer {
     score(new HitCollectorWrapper(hc));
   }
   
-  /** @deprecated use {@link #advance(int)} instead. */
-  public boolean skipTo(int target) {
-    throw new UnsupportedOperationException();
-  }
-
   public String toString() {
     StringBuilder buffer = new StringBuilder();
     buffer.append("boolean(");

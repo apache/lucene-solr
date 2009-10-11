@@ -109,20 +109,12 @@ class ConjunctionScorer extends Scorer {
     return lastDoc = doNext();
   }
 
-  /** @deprecated use {@link #docID()} instead. */
-  public int doc() { return lastDoc; }
-
   public int docID() {
     return lastDoc;
   }
   
   public Explanation explain(int doc) {
     throw new UnsupportedOperationException();
-  }
-
-  /** @deprecated use {@link #nextDoc()} instead. */
-  public boolean next() throws IOException {
-    return nextDoc() != NO_MORE_DOCS;
   }
 
   public int nextDoc() throws IOException {
@@ -142,10 +134,4 @@ class ConjunctionScorer extends Scorer {
     }
     return sum * coord;
   }
-
-  /** @deprecated use {@link #advance(int)} instead. */
-  public boolean skipTo(int target) throws IOException {
-    return advance(target) != NO_MORE_DOCS;
-  }
-
 }

@@ -62,16 +62,6 @@ class DisjunctionMaxScorer extends Scorer {
     heapify();
   }
 
-  /**
-   * Generate the next document matching our associated DisjunctionMaxQuery.
-   * 
-   * @return true iff there is a next document
-   * @deprecated use {@link #nextDoc()} instead.
-   */
-  public boolean next() throws IOException {
-    return nextDoc() != NO_MORE_DOCS;
-  }
-
   public int nextDoc() throws IOException {
     if (numScorers == 0) return doc = NO_MORE_DOCS;
     while (subScorers[0].docID() == doc) {
@@ -86,11 +76,6 @@ class DisjunctionMaxScorer extends Scorer {
     }
     
     return doc = subScorers[0].docID();
-  }
-
-  /** @deprecated use {@link #docID()} instead. */
-  public int doc() {
-    return subScorers[0].doc();
   }
 
   public int docID() {
@@ -118,20 +103,6 @@ class DisjunctionMaxScorer extends Scorer {
       scoreAll((root<<1)+1, size, doc, sum, max);
       scoreAll((root<<1)+2, size, doc, sum, max);
     }
-  }
-
-  /**
-   * Advance to the first document beyond the current whose number is greater
-   * than or equal to target.
-   * 
-   * @param target
-   *          the minimum number of the next desired document
-   * @return true iff there is a document to be generated whose number is at
-   *         least target
-   * @deprecated use {@link #advance(int)} instead.
-   */
-  public boolean skipTo(int target) throws IOException {
-    return advance(target) != NO_MORE_DOCS;
   }
 
   public int advance(int target) throws IOException {

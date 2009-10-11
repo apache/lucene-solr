@@ -82,21 +82,12 @@ public class TestBooleanScorer extends LuceneTestCase
       private int doc = -1;
       public Explanation explain(int doc) throws IOException { return null; }
       public float score() throws IOException { return 0; }
-      /** @deprecated delete in 3.0. */
-      public int doc() { return 3000; }
       public int docID() { return doc; }
-      /** @deprecated delete in 3.0 */
-      public boolean next() throws IOException { return nextDoc() != NO_MORE_DOCS; }
       
       public int nextDoc() throws IOException {
         return doc = doc == -1 ? 3000 : NO_MORE_DOCS;
       }
 
-      /** @deprecated delete in 3.0 */
-      public boolean skipTo(int target) throws IOException {
-        return advance(target) != NO_MORE_DOCS;
-      }
-      
       public int advance(int target) throws IOException {
         return doc = target <= 3000 ? 3000 : NO_MORE_DOCS;
       }

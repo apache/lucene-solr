@@ -401,11 +401,6 @@ public class CustomScoreQuery extends Query {
       this.vScores = new float[valSrcScorers.length];
     }
 
-    /** @deprecated use {@link #nextDoc()} instead. */
-    public boolean next() throws IOException {
-      return nextDoc() != NO_MORE_DOCS;
-    }
-
     public int nextDoc() throws IOException {
       int doc = subQueryScorer.nextDoc();
       if (doc != NO_MORE_DOCS) {
@@ -414,11 +409,6 @@ public class CustomScoreQuery extends Query {
         }
       }
       return doc;
-    }
-
-    /** @deprecated use {@link #docID()} instead. */
-    public int doc() {
-      return subQueryScorer.doc();
     }
 
     public int docID() {
@@ -431,11 +421,6 @@ public class CustomScoreQuery extends Query {
         vScores[i] = valSrcScorers[i].score();
       }
       return qWeight * customScore(subQueryScorer.docID(), subQueryScorer.score(), vScores);
-    }
-
-    /** @deprecated use {@link #advance(int)} instead. */
-    public boolean skipTo(int target) throws IOException {
-      return advance(target) != NO_MORE_DOCS;
     }
 
     public int advance(int target) throws IOException {

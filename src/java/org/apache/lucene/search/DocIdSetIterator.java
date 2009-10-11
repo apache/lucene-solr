@@ -28,7 +28,6 @@ import java.io.IOException;
  */
 public abstract class DocIdSetIterator {
   
-  // TODO (3.0): review the javadocs and remove any references to '3.0'.
   private int doc = -1;
   
   /**
@@ -36,16 +35,6 @@ public abstract class DocIdSetIterator {
    * {@link #doc()} it means there are no more docs in the iterator.
    */
   public static final int NO_MORE_DOCS = Integer.MAX_VALUE;
-
-  /**
-   * Unsupported anymore. Call {@link #docID()} instead. This method throws
-   * {@link UnsupportedOperationException} if called.
-   * 
-   * @deprecated use {@link #docID()} instead.
-   */
-  public int doc() {
-    throw new UnsupportedOperationException("Call docID() instead.");
-  }
 
   /**
    * Returns the following:
@@ -56,56 +45,22 @@ public abstract class DocIdSetIterator {
    * <li>Otherwise it should return the doc ID it is currently on.
    * </ul>
    * <p>
-   * <b>NOTE:</b> in 3.0, this method will become abstract.
    * 
    * @since 2.9
    */
-  public int docID() {
-    return doc;
-  }
-
-  /**
-   * Unsupported anymore. Call {@link #nextDoc()} instead. This method throws
-   * {@link UnsupportedOperationException} if called.
-   * 
-   * @deprecated use {@link #nextDoc()} instead. This will be removed in 3.0
-   */
-  public boolean next() throws IOException {
-    throw new UnsupportedOperationException("Call nextDoc() instead.");
-  }
-
-  /**
-   * Unsupported anymore. Call {@link #advance(int)} instead. This method throws
-   * {@link UnsupportedOperationException} if called.
-   * 
-   * @deprecated use {@link #advance(int)} instead. This will be removed in 3.0
-   */
-  public boolean skipTo(int target) throws IOException {
-    throw new UnsupportedOperationException("Call advance() instead.");
-  }
+  public abstract int docID();
 
   /**
    * Advances to the next document in the set and returns the doc it is
    * currently on, or {@link #NO_MORE_DOCS} if there are no more docs in the
    * set.<br>
    * 
-   * <b>NOTE:</b> in 3.0 this method will become abstract, following the removal
-   * of {@link #next()}. For backward compatibility it is implemented as:
-   * 
-   * <pre>
-   * public int nextDoc() throws IOException {
-   *   return next() ? doc() : NO_MORE_DOCS;
-   * }
-   * </pre>
-   * 
    * <b>NOTE:</b> after the iterator has exhausted you should not call this
    * method, as it may result in unpredicted behavior.
    * 
    * @since 2.9
    */
-  public int nextDoc() throws IOException {
-    return doc = next() ? doc() : NO_MORE_DOCS;
-  }
+  public abstract int nextDoc() throws IOException;
 
   /**
    * Advances to the first beyond the current whose document number is greater
@@ -136,16 +91,9 @@ public abstract class DocIdSetIterator {
    * <b>NOTE:</b> after the iterator has exhausted you should not call this
    * method, as it may result in unpredicted behavior.
    * <p>
-   * <b>NOTE:</b> in 3.0 this method will become abstract, following the removal
-   * of {@link #skipTo(int)}.
    * 
    * @since 2.9
    */
-  public int advance(int target) throws IOException {
-    if (target == NO_MORE_DOCS) {
-      return doc = NO_MORE_DOCS;
-    }
-    return doc = skipTo(target) ? doc() : NO_MORE_DOCS;
-  }
+  public abstract int advance(int target) throws IOException;
 
 }

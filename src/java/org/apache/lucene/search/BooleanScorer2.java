@@ -124,23 +124,11 @@ class BooleanScorer2 extends Scorer {
       }
       return lastDocScore;
     }
-    /** @deprecated use {@link #docID()} instead. */
-    public int doc() {
-      return scorer.doc();
-    }
     public int docID() {
       return scorer.docID();
     }
-    /** @deprecated use {@link #nextDoc()} instead. */
-    public boolean next() throws IOException {
-      return scorer.nextDoc() != NO_MORE_DOCS;
-    }
     public int nextDoc() throws IOException {
       return scorer.nextDoc();
-    }
-    /** @deprecated use {@link #advance(int)} instead. */
-    public boolean skipTo(int docNr) throws IOException {
-      return scorer.advance(docNr) != NO_MORE_DOCS;
     }
     public int advance(int target) throws IOException {
       return scorer.advance(target);
@@ -316,18 +304,10 @@ class BooleanScorer2 extends Scorer {
     return doc != NO_MORE_DOCS;
   }
 
-  /** @deprecated use {@link #docID()} instead. */
-  public int doc() { return countingSumScorer.doc(); }
-
   public int docID() {
     return doc;
   }
   
-  /** @deprecated use {@link #nextDoc()} instead. */
-  public boolean next() throws IOException {
-    return nextDoc() != NO_MORE_DOCS;
-  }
-
   public int nextDoc() throws IOException {
     return doc = countingSumScorer.nextDoc();
   }
@@ -336,11 +316,6 @@ class BooleanScorer2 extends Scorer {
     coordinator.nrMatchers = 0;
     float sum = countingSumScorer.score();
     return sum * coordinator.coordFactors[coordinator.nrMatchers];
-  }
-
-  /** @deprecated use {@link #advance(int)} instead. */
-  public boolean skipTo(int target) throws IOException {
-    return advance(target) != NO_MORE_DOCS;
   }
 
   public int advance(int target) throws IOException {

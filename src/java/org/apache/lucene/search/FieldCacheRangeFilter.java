@@ -496,21 +496,6 @@ public abstract class FieldCacheRangeFilter extends Filter {
         return new DocIdSetIterator() {
           private int doc = -1;
           
-          /** @deprecated use {@link #nextDoc()} instead. */
-          public boolean next() throws IOException {
-            return nextDoc() != NO_MORE_DOCS;
-          }
-          
-          /** @deprecated use {@link #advance(int)} instead. */
-          public boolean skipTo(int target) throws IOException {
-            return advance(target) != NO_MORE_DOCS;
-          }
-
-          /** @deprecated use {@link #docID()} instead. */
-          public int doc() {
-            return termDocs.doc();
-          }
-          
           public int docID() {
             return doc;
           }
@@ -539,21 +524,6 @@ public abstract class FieldCacheRangeFilter extends Filter {
         return new DocIdSetIterator() {
           private int doc = -1;
           
-          /** @deprecated use {@link #nextDoc()} instead. */
-          public boolean next() throws IOException {
-            return nextDoc() != NO_MORE_DOCS;
-          }
-          
-          /** @deprecated use {@link #advance(int)} instead. */
-          public boolean skipTo(int target) throws IOException {
-            return advance(target) != NO_MORE_DOCS;
-          }
-
-          /** @deprecated use {@link #docID()} instead. */
-          public int doc() {
-            return doc;
-          }
-
           public int docID() {
             return doc;
           }

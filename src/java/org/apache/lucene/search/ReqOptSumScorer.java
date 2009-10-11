@@ -43,29 +43,14 @@ class ReqOptSumScorer extends Scorer {
     this.optScorer = optScorer;
   }
 
-  /** @deprecated use {@link #nextDoc()} instead. */
-  public boolean next() throws IOException {
-    return reqScorer.next();
-  }
-
   public int nextDoc() throws IOException {
     return reqScorer.nextDoc();
   }
   
-  /** @deprecated use {@link #advance(int)} instead. */
-  public boolean skipTo(int target) throws IOException {
-    return reqScorer.skipTo(target);
-  }
-
   public int advance(int target) throws IOException {
     return reqScorer.advance(target);
   }
   
-  /** @deprecated use {@link #docID()} instead. */
-  public int doc() {
-    return reqScorer.doc();
-  }
-
   public int docID() {
     return reqScorer.docID();
   }

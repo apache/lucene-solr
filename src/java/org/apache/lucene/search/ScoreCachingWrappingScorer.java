@@ -64,18 +64,8 @@ public class ScoreCachingWrappingScorer extends Scorer {
     return curScore;
   }
 
-  /** @deprecated use {@link #docID()} instead. */
-  public int doc() {
-    return scorer.doc();
-  }
-  
   public int docID() {
     return scorer.docID();
-  }
-
-  /** @deprecated use {@link #nextDoc()} instead. */
-  public boolean next() throws IOException {
-    return scorer.next();
   }
 
   public int nextDoc() throws IOException {
@@ -86,11 +76,6 @@ public class ScoreCachingWrappingScorer extends Scorer {
     scorer.score(collector);
   }
   
-  /** @deprecated use {@link #advance(int)} instead. */
-  public boolean skipTo(int target) throws IOException {
-    return scorer.skipTo(target);
-  }
-
   public int advance(int target) throws IOException {
     return scorer.advance(target);
   }

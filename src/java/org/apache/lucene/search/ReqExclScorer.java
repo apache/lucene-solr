@@ -41,11 +41,6 @@ class ReqExclScorer extends Scorer {
     this.exclDisi = exclDisi;
   }
 
-  /** @deprecated use {@link #nextDoc()} instead. */
-  public boolean next() throws IOException {
-    return nextDoc() != NO_MORE_DOCS;
-  }
-
   public int nextDoc() throws IOException {
     if (reqScorer == null) {
       return doc;
@@ -93,11 +88,6 @@ class ReqExclScorer extends Scorer {
     return NO_MORE_DOCS;
   }
 
-  /** @deprecated use {@link #docID()} instead. */
-  public int doc() {
-    return reqScorer.doc(); // reqScorer may be null when next() or skipTo() already return false
-  }
-  
   public int docID() {
     return doc;
   }
@@ -110,11 +100,6 @@ class ReqExclScorer extends Scorer {
     return reqScorer.score(); // reqScorer may be null when next() or skipTo() already return false
   }
   
-  /** @deprecated use {@link #advance(int)} instead. */
-  public boolean skipTo(int target) throws IOException {
-    return advance(target) != NO_MORE_DOCS;
-  }
-
   public int advance(int target) throws IOException {
     if (reqScorer == null) {
       return doc = NO_MORE_DOCS;

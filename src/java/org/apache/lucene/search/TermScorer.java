@@ -100,22 +100,7 @@ final class TermScorer extends Scorer {
     return true;
   }
 
-  /** @deprecated use {@link #docID()} instead. */
-  public int doc() { return doc; }
-  
   public int docID() { return doc; }
-
-  /**
-   * Advances to the next document matching the query. <br>
-   * The iterator over the matching documents is buffered using
-   * {@link TermDocs#read(int[],int[])}.
-   * 
-   * @return true iff there is another document matching the query.
-   * @deprecated use {@link #nextDoc()} instead.
-   */
-  public boolean next() throws IOException {
-    return nextDoc() != NO_MORE_DOCS;
-  }
 
   /**
    * Advances to the next document matching the query. <br>
@@ -148,20 +133,6 @@ final class TermScorer extends Scorer {
       : getSimilarity().tf(f)*weightValue;        // cache miss
 
     return norms == null ? raw : raw * SIM_NORM_DECODER[norms[doc] & 0xFF]; // normalize for field
-  }
-
-  /**
-   * Skips to the first match beyond the current whose document number is
-   * greater than or equal to a given target. <br>
-   * The implementation uses {@link TermDocs#skipTo(int)}.
-   * 
-   * @param target
-   *          The target document number.
-   * @return true iff there is such a match.
-   * @deprecated use {@link #advance(int)} instead.
-   */
-  public boolean skipTo(int target) throws IOException {
-    return advance(target) != NO_MORE_DOCS;
   }
 
   /**
