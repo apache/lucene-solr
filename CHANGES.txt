@@ -155,216 +155,214 @@ New Features
 15. SOLR-822: Add CharFilter so that characters can be filtered (e.g. character normalization)
     before Tokenizer/TokenFilters. (koji)
     
-16. SOLR-868: Adding solrjs as a contrib package: contrib/javascript.
-    (Matthias Epheser via ryan)
-
-17. SOLR-829: Allow slaves to request compressed files from master during replication
+16. SOLR-829: Allow slaves to request compressed files from master during replication
     (Simon Collins, Noble Paul, Akshay Ukey via shalin)
 
-18. SOLR-877: Added TermsComponent for accessing Lucene's TermEnum capabilities.
+17. SOLR-877: Added TermsComponent for accessing Lucene's TermEnum capabilities.
     Useful for auto suggest and possibly distributed search.  Not distributed search compliant.  (gsingers)
     - Added mincount and maxcount options (Khee Chin via gsingers)
 
-19. SOLR-538: Add maxChars attribute for copyField function so that the length limit for destination
+18. SOLR-538: Add maxChars attribute for copyField function so that the length limit for destination
     can be specified.
     (Georgios Stamatis, Lars Kotthoff, Chris Harris via koji)
 
-20. SOLR-284: Added support for extracting content from binary documents like MS Word and PDF using Apache Tika.  See also contrib/extraction/CHANGES.txt (Eric Pugh, Chris Harris, yonik, gsingers)
+19. SOLR-284: Added support for extracting content from binary documents like MS Word and PDF using Apache Tika.  See also contrib/extraction/CHANGES.txt (Eric Pugh, Chris Harris, yonik, gsingers)
 
-21. SOLR-819: Added factories for Arabic support (gsingers)
+20. SOLR-819: Added factories for Arabic support (gsingers)
 
-22. SOLR-781: Distributed search ability to sort field.facet values
+21. SOLR-781: Distributed search ability to sort field.facet values
     lexicographically.  facet.sort values "true" and "false" are
     also deprecated and replaced with "count" and "lex".
     (Lars Kotthoff via yonik)
 
-23. SOLR-821: Add support for replication to copy conf file to slave with a different name. This allows replication
+22. SOLR-821: Add support for replication to copy conf file to slave with a different name. This allows replication
     of solrconfig.xml
     (Noble Paul, Akshay Ukey via shalin)
 
-24. SOLR-911: Add support for multi-select faceting by allowing filters to be
+23. SOLR-911: Add support for multi-select faceting by allowing filters to be
     tagged and facet commands to exclude certain filters.  This patch also
     added the ability to change the output key for facets in the response, and
     optimized distributed faceting refinement by lowering parsing overhead and
     by making requests and responses smaller.
 
-25. SOLR-876: WordDelimiterFilter now supports a splitOnNumerics
+24. SOLR-876: WordDelimiterFilter now supports a splitOnNumerics
     option, as well as a list of protected terms.
     (Dan Rosher via hossman)
 
-26. SOLR-928: SolrDocument and SolrInputDocument now implement the Map<String,?>
+25. SOLR-928: SolrDocument and SolrInputDocument now implement the Map<String,?>
     interface.  This should make plugging into other standard tools easier. (ryan)
 
-27. SOLR-847: Enhance the snappull command in ReplicationHandler to accept masterUrl.
+26. SOLR-847: Enhance the snappull command in ReplicationHandler to accept masterUrl.
     (Noble Paul, Preetam Rao via shalin)
 
-28. SOLR-540: Add support for globbing in field names to highlight.
+27. SOLR-540: Add support for globbing in field names to highlight.
     For example, hl.fl=*_text will highlight all fieldnames ending with
     _text.  (Lars Kotthoff via yonik)
 
-29. SOLR-906: Adding a StreamingUpdateSolrServer that writes update commands to 
+28. SOLR-906: Adding a StreamingUpdateSolrServer that writes update commands to 
     an open HTTP connection.  If you are using solrj for bulk update requests
     you should consider switching to this implementaion.  However, note that
     the error handling is not immediate as it is with the standard SolrServer.
     (ryan)
 
-30. SOLR-865: Adding support for document updates in binary format and corresponding support in Solrj client.
+29. SOLR-865: Adding support for document updates in binary format and corresponding support in Solrj client.
     (Noble Paul via shalin)
 
-31. SOLR-763: Add support for Lucene's PositionFilter (Mck SembWever via shalin)
+30. SOLR-763: Add support for Lucene's PositionFilter (Mck SembWever via shalin)
 
-32. SOLR-966: Enhance the map() function query to take in an optional default value (Noble Paul, shalin)
+31. SOLR-966: Enhance the map() function query to take in an optional default value (Noble Paul, shalin)
 
-33. SOLR-820: Support replication on startup of master with new index. (Noble Paul, Akshay Ukey via shalin)
+32. SOLR-820: Support replication on startup of master with new index. (Noble Paul, Akshay Ukey via shalin)
 
-34. SOLR-943: Make it possible to specify dataDir in solr.xml and accept the dataDir as a request parameter for
+33. SOLR-943: Make it possible to specify dataDir in solr.xml and accept the dataDir as a request parameter for
     the CoreAdmin create command. (Noble Paul via shalin)
 
-35. SOLR-850: Addition of timeouts for distributed searching. Configurable through 'shard-socket-timeout' and
+34. SOLR-850: Addition of timeouts for distributed searching. Configurable through 'shard-socket-timeout' and
     'shard-connection-timeout' parameters in SearchHandler. (Patrick O'Leary via shalin)
 
-36. SOLR-799: Add support for hash based exact/near duplicate document
+35. SOLR-799: Add support for hash based exact/near duplicate document
     handling. (Mark Miller, yonik)
 
-37. SOLR-1026: Add protected words support to SnowballPorterFilterFactory (ehatcher)
+36. SOLR-1026: Add protected words support to SnowballPorterFilterFactory (ehatcher)
 
-38. SOLR-739: Add support for OmitTf (Mark Miller via yonik)
+37. SOLR-739: Add support for OmitTf (Mark Miller via yonik)
 
-39. SOLR-1046: Nested query support for the function query parser
+38. SOLR-1046: Nested query support for the function query parser
     and lucene query parser (the latter existed as an undocumented 
     feature in 1.3) (yonik)
 
-40. SOLR-940: Add support for Lucene's Trie Range Queries by providing new FieldTypes in
+39. SOLR-940: Add support for Lucene's Trie Range Queries by providing new FieldTypes in
     schema for int, float, long, double and date.  Single-valued Trie based
     fields with a precisionStep will index multiple precisions and enable
     faster range queries.  (Uwe Schindler, yonik, shalin)
 
-41. SOLR-1038: Enhance CommonsHttpSolrServer to add docs in batch using an iterator API (Noble Paul via shalin)
+40. SOLR-1038: Enhance CommonsHttpSolrServer to add docs in batch using an iterator API (Noble Paul via shalin)
 
-42. SOLR-844: A SolrServer implementation to front-end multiple solr servers and provides load balancing and failover
+41. SOLR-844: A SolrServer implementation to front-end multiple solr servers and provides load balancing and failover
     support (Noble Paul, Mark Miller, hossman via shalin)
 
-43. SOLR-939: ValueSourceRangeFilter/Query - filter based on values in a FieldCache entry or on any arbitrary function of field values. (yonik)
+42. SOLR-939: ValueSourceRangeFilter/Query - filter based on values in a FieldCache entry or on any arbitrary function of field values. (yonik)
 
-44. SOLR-1095: Fixed performance problem in the StopFilterFactory and simplified code.  Added tests as well.  (gsingers)
+43. SOLR-1095: Fixed performance problem in the StopFilterFactory and simplified code.  Added tests as well.  (gsingers)
 
-45. SOLR-1096: Introduced httpConnTimeout and httpReadTimeout in replication slave configuration to avoid stalled
+44. SOLR-1096: Introduced httpConnTimeout and httpReadTimeout in replication slave configuration to avoid stalled
     replication. (Jeff Newburn, Noble Paul, shalin)
 
-46. SOLR-1115: <bool>on</bool> and <bool>yes</bool> work as expected in solrconfig.xml. (koji)
+45. SOLR-1115: <bool>on</bool> and <bool>yes</bool> work as expected in solrconfig.xml. (koji)
 
-47. SOLR-1099:  A FieldAnalysisRequestHandler which provides the analysis functionality of the web admin page as
+46. SOLR-1099:  A FieldAnalysisRequestHandler which provides the analysis functionality of the web admin page as
     a service. The AnalysisRequestHandler is renamed to DocumentAnalysisRequestHandler which is enhanced with
     query analysis and showMatch support. AnalysisRequestHandler is now deprecated. Support for both
     FieldAnalysisRequestHandler and DocumentAnalysisRequestHandler is also provided in the Solrj client.
     (Uri Boness, shalin)
 
-48. SOLR-1106: Made CoreAdminHandler Actions pluggable so that additional actions may be plugged in or the existing
+47. SOLR-1106: Made CoreAdminHandler Actions pluggable so that additional actions may be plugged in or the existing
     ones can be overridden if needed. (Kay Kay, Noble Paul, shalin)
 
-49. SOLR-1124: Add a top() function query that causes it's argument to
+48. SOLR-1124: Add a top() function query that causes it's argument to
     have it's values derived from the top level IndexReader, even when
     invoked from a sub-reader.  top() is implicitly used for the
     ord() and rord() functions.  (yonik)
 
-50. SOLR-1110: Support sorting on trie fields with Distributed Search. (Mark Miller, Uwe Schindler via shalin)
+49. SOLR-1110: Support sorting on trie fields with Distributed Search. (Mark Miller, Uwe Schindler via shalin)
 
-51. SOLR-1121: CoreAdminhandler should not need a core  . This makes it possible to start a Solr server w/o a core .(noble)
+50. SOLR-1121: CoreAdminhandler should not need a core  . This makes it possible to start a Solr server w/o a core .(noble)
 
-52. SOLR-769: Added support for clustering in contrib/clustering.  See http://wiki.apache.org/solr/ClusteringComponent for more info.  (gsingers, Stanislaw Osinski)
+51. SOLR-769: Added support for clustering in contrib/clustering.  See http://wiki.apache.org/solr/ClusteringComponent for more info.  (gsingers, Stanislaw Osinski)
 
-53. SOLR-1175: disable/enable replication on master side. added two commands 'enableReplication' and 'disableReplication' (noble)
+52. SOLR-1175: disable/enable replication on master side. added two commands 'enableReplication' and 'disableReplication' (noble)
 
-54. SOLR-1179: DocSets can now be used as Lucene Filters via
+53. SOLR-1179: DocSets can now be used as Lucene Filters via
     DocSet.getTopFilter() (yonik)
 
-55. SOLR-1116: Add a Binary FieldType (noble)
+54. SOLR-1116: Add a Binary FieldType (noble)
 
-56. SOLR-1051: Support the merge of multiple indexes as a CoreAdmin and an update command (Ning Li via shalin)
+55. SOLR-1051: Support the merge of multiple indexes as a CoreAdmin and an update command (Ning Li via shalin)
 
-57. SOLR-1152: Snapshoot on ReplicationHandler should accept location as a request parameter (shalin)
+56. SOLR-1152: Snapshoot on ReplicationHandler should accept location as a request parameter (shalin)
 
-58. SOLR-1204: Enhance SpellingQueryConverter to handle UTF-8 instead of ASCII only.
+57. SOLR-1204: Enhance SpellingQueryConverter to handle UTF-8 instead of ASCII only.
     Use the NMTOKEN syntax for matching field names.
     (Michael Ludwig, shalin)
 
-59. SOLR-1189: Support providing username and password for basic HTTP authentication in Java replication
+58. SOLR-1189: Support providing username and password for basic HTTP authentication in Java replication
     (Matthew Gregg, shalin)
     
-60. SOLR-243: Add configurable IndexReaderFactory so that alternate IndexReader implementations 
+59. SOLR-243: Add configurable IndexReaderFactory so that alternate IndexReader implementations 
     can be specified via solrconfig.xml. Note that using a custom IndexReader may be incompatible
     with ReplicationHandler (see comments in SOLR-1366). This should be treated as an experimental feature.
     (Andrzej Bialecki, hossman, Mark Miller, John Wang)
     
-61. SOLR-1214: differentiate between solr home and instanceDir .deprecates the method SolrResourceLoader#locateInstanceDir()
+60. SOLR-1214: differentiate between solr home and instanceDir .deprecates the method SolrResourceLoader#locateInstanceDir()
     and it is renamed to locateSolrHome (noble)
 
-62. SOLR-1216 :  disambiguate the replication command names. 'snappull' becomes 'fetchindex' 'abortsnappull' becomes 'abortfetch' (noble) 
+61. SOLR-1216 :  disambiguate the replication command names. 'snappull' becomes 'fetchindex' 'abortsnappull' becomes 'abortfetch' (noble) 
  
-63. SOLR-1145: Add capability to specify an infoStream log file for the underlying Lucene IndexWriter in solrconfig.xml.
+62. SOLR-1145: Add capability to specify an infoStream log file for the underlying Lucene IndexWriter in solrconfig.xml.
     This is an advanced debug log file that can be used to aid developers in fixing IndexWriter bugs. See the commented
     out example in the example solrconfig.xml under the indexDefaults section. 
-	(Chris Harris, Mark Miller)
+	  (Chris Harris, Mark Miller)
 
-64. SOLR-1256: Show the output of CharFilters in analysis.jsp. (koji)
+63. SOLR-1256: Show the output of CharFilters in analysis.jsp. (koji)
 
-65. SOLR-1266: Added stemEnglishPossessive option (default=true) to WordDelimiterFilter
+64. SOLR-1266: Added stemEnglishPossessive option (default=true) to WordDelimiterFilter
     that allows disabling of english possessive stemming (removal of trailing 's from tokens)
     (Robert Muir via yonik)
 
-66. SOLR-1237: firstSearcher and newSearcher can now be identified via the CommonParams.EVENT (evt) parameter in a request.  This allows a
-  RequestHandler or SearchComponent to know when a newSearcher or firstSearcher event happened.  QuerySenderListender is the only implementation
-  in Solr that implements this, but outside implementations may wish to.  See the AbstractSolrEventListener for a helper method. (gsingers)
+65. SOLR-1237: firstSearcher and newSearcher can now be identified via the CommonParams.EVENT (evt) parameter 
+    in a request.  This allows a RequestHandler or SearchComponent to know when a newSearcher or firstSearcher 
+    event happened.  QuerySenderListender is the only implementation in Solr that implements this, but outside 
+    implementations may wish to.  See the AbstractSolrEventListener for a helper method. (gsingers)
 
-67. SOLR-1343: Added HTMLStripCharFilter and marked HTMLStripReader, HTMLStripWhitespaceTokenizerFactory and
+66. SOLR-1343: Added HTMLStripCharFilter and marked HTMLStripReader, HTMLStripWhitespaceTokenizerFactory and
     HTMLStripStandardTokenizerFactory deprecated. To strip HTML tags, HTMLStripCharFilter can be used
     with an arbitrary Tokenizer. (koji)
 
-68. SOLR-1275: Add expungeDeletes to DirectUpdateHandler2 (noble)
+67. SOLR-1275: Add expungeDeletes to DirectUpdateHandler2 (noble)
 
-69. SOLR-1372: Enhance FieldAnalysisRequestHandler to accept field value from content stream (ehatcher)
+68. SOLR-1372: Enhance FieldAnalysisRequestHandler to accept field value from content stream (ehatcher)
 
-70. SOLR-1370: Show the output of CharFilters in FieldAnalysisRequestHandler (koji)
+69. SOLR-1370: Show the output of CharFilters in FieldAnalysisRequestHandler (koji)
 
-71. SOLR-1373: Add Filter query to admin/form.jsp
+70. SOLR-1373: Add Filter query to admin/form.jsp
     (Jason Rutherglen via hossman)
 
-72. SOLR-1368: Add ms() function query for getting milliseconds from dates and for 
+71. SOLR-1368: Add ms() function query for getting milliseconds from dates and for 
     high precision date subtraction, add sub() for subtracting other arguments.
     (yonik)
 
-73. SOLR-1156: Sort TermsComponent results by frequency (Matt Weber via yonik)
+72. SOLR-1156: Sort TermsComponent results by frequency (Matt Weber via yonik)
 
-74. SOLR-1335 : load core properties from a properties file (noble)
+73. SOLR-1335 : load core properties from a properties file (noble)
 
-75. SOLR-1385 : Add an 'enable' attribute to all plugins  (noble)
+74. SOLR-1385 : Add an 'enable' attribute to all plugins  (noble)
 
-76. SOLR-1414 : implicit core properties are not set for single core  (noble)
+75. SOLR-1414 : implicit core properties are not set for single core  (noble)
 
-77. SOLR-659 : Adds shards.start and shards.rows to distributed search
+76. SOLR-659 : Adds shards.start and shards.rows to distributed search
     to allow more efficient bulk queries (those that retrieve many or all
     documents).  (Brian Whitman via yonik)
 
-78. SOLR-1321: Add better support for efficient wildcard handling (Andrzej Bialecki, Robert Muir, gsingers)
+77. SOLR-1321: Add better support for efficient wildcard handling (Andrzej Bialecki, Robert Muir, gsingers)
 
-79. SOLR-1326 : New interface PluginInfoInitialized for all types of plugin (noble)
+78. SOLR-1326 : New interface PluginInfoInitialized for all types of plugin (noble)
 
-80. SOLR-1447 : Simple property injection. <mergePolicy> & <mergeScheduler> syntaxes are now deprecated
+79. SOLR-1447 : Simple property injection. <mergePolicy> & <mergeScheduler> syntaxes are now deprecated
     (Jason Rutherglen, noble)
 
-82. SOLR-908 : CommonGramsFilterFactory/CommonGramsQueryFilterFactory for
+80. SOLR-908 : CommonGramsFilterFactory/CommonGramsQueryFilterFactory for
     speeding up phrase queries containing common words by indexing
     n-grams and using them at query time. 
     (Tom Burton-West, Jason Rutherglen via yonik)
     
-83. SOLR-1292: Add FieldCache introspection to stats.jsp and JMX Monitoring via
+81. SOLR-1292: Add FieldCache introspection to stats.jsp and JMX Monitoring via
     a new SolrFieldCacheMBean.  (hossman)
 
-84. SOLR-1167: Solr Config now supports XInclude for XML engines that can support it. (Bryan Talbot via gsingers)
+82. SOLR-1167: Solr Config now supports XInclude for XML engines that can support it. (Bryan Talbot via gsingers)
 
-85. SOLR-1478: Enable sort by Lucene docid.  (ehatcher)
+83. SOLR-1478: Enable sort by Lucene docid.  (ehatcher)
 
-86. SOLR-1449: Add <lib> elements to solrconfig.xml to specifying additional
+84. SOLR-1449: Add <lib> elements to solrconfig.xml to specifying additional
     classpath directories and regular expressions. (hossman via yonik)
 
 
