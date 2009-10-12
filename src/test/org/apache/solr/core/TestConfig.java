@@ -30,6 +30,7 @@ import org.w3c.dom.NodeList;
 
 import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
+import java.io.InputStream;
 
 public class TestConfig extends AbstractSolrTestCase {
 
@@ -40,6 +41,31 @@ public class TestConfig extends AbstractSolrTestCase {
   //public String getSolrConfigFile() { return "solrconfig.xml"; }
   public String getSolrConfigFile() {
     return "solrconfig-termindex.xml";
+  }
+
+  public void testLib() throws IOException {
+    SolrResourceLoader loader = h.getCore().getResourceLoader();
+    InputStream data = null;
+    String[] expectedFiles = new String[] { "empty-file-main-lib.txt",
+            "empty-file-a1.txt",
+            "empty-file-a2.txt",
+            "empty-file-b1.txt",
+            "empty-file-b2.txt",
+            "empty-file-c1.txt" };
+    for (String f : expectedFiles) {
+      data = loader.openResource(f);
+      assertNotNull("Should have found file " + f, data);
+      data.close();
+    }
+    String[] unexpectedFiles = new String[] { "empty-file-c2.txt",
+            "empty-file-d2.txt" };
+    for (String f : unexpectedFiles) {
+      data = null;
+      try {
+        data = loader.openResource(f);
+      } catch (Exception e) { /* :NOOP: (un)expected */ }
+      assertNull("should not have been able to find " + f, data);
+    }
   }
 
   public void testJavaProperty() {

@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,6 +43,7 @@ import javax.naming.NoInitialContextException;
 import org.apache.solr.analysis.CharFilterFactory;
 import org.apache.solr.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerFactory;
+import org.apache.solr.common.util.FileUtils;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.SearchComponent;
@@ -63,7 +65,7 @@ public class SolrResourceLoader implements ResourceLoader
   static final String base = "org.apache" + "." + project;
   static final String[] packages = {"","analysis.","schema.","handler.","search.","update.","core.","request.","update.processor.","util.", "spelling.", "handler.component.", "handler.dataimport"};
 
-  private final ClassLoader classLoader;
+  private URLClassLoader classLoader;
   private final String instanceDir;
   private String dataDir;
   
@@ -90,7 +92,10 @@ public class SolrResourceLoader implements ResourceLoader
       this.instanceDir = normalizeDir(instanceDir);
     }
     log.info("Solr home set to '" + this.instanceDir + "'");
-    this.classLoader = createClassLoader(new File(this.instanceDir + "lib/"), parent);
+    
+    this.classLoader = createClassLoader(null, parent);
+    addToClassLoader("./lib/", null);
+    
     this.coreProperties = coreProperties;
   }
 
@@ -106,28 +111,85 @@ public class SolrResourceLoader implements ResourceLoader
   {
     this(instanceDir, parent, null);
   }
-    
-  static ClassLoader createClassLoader(File f, ClassLoader loader) {
-    if( loader == null ) {
-      loader = Thread.currentThread().getContextClassLoader();
-    }
-    if (f.canRead() && f.isDirectory()) {
-      File[] jarFiles = f.listFiles();
-      URL[] jars = new URL[jarFiles.length];
-      try {
-        for (int j = 0; j < jarFiles.length; j++) {
-          jars[j] = jarFiles[j].toURI().toURL();
-          log.info("Adding '" + jars[j].toString() + "' to Solr classloader");
-        }
-        return URLClassLoader.newInstance(jars, loader);
-      } catch (MalformedURLException e) {
-        SolrException.log(log,"Can't construct solr lib class loader", e);
-      }
-    }
-    log.info("Reusing parent classloader");
-    return loader;
-  }
 
+  /**
+   * Adds every file/dir found in the baseDir which passes the specified Filter
+   * to the ClassLoader used by this ResourceLoader.  This method <b>MUST</b>
+   * only be called prior to using this ResourceLoader to get any resources, otherwise
+   * it's behavior will be non-deterministic.
+   *
+   * @param baseDir base directory whose children (either jars or directories of
+   *                classes) will be in the classpath, will be resolved relative
+   *                the instance dir.
+   * @param filter The filter files must satisfy, if null all files will be accepted.
+   */
+  void addToClassLoader(final String baseDir, final FileFilter filter) {
+    File base = FileUtils.resolvePath(new File(getInstanceDir()), baseDir);
+    this.classLoader = replaceClassLoader(classLoader, base, filter);
+  }
+  
+  /**
+   * Adds the specific file/dir specified to the ClassLoader used by this
+   * ResourceLoader.  This method <b>MUST</b>
+   * only be called prior to using this ResourceLoader to get any resources, otherwise
+   * it's behavior will be non-deterministic.
+   *
+   * @param path A jar file (or directory of classes) to be added to the classpath,
+   *             will be resolved relative the instance dir.
+   */
+  void addToClassLoader(final String path) {
+    final File file = FileUtils.resolvePath(new File(getInstanceDir()), path);
+    if (file.canRead()) {
+      this.classLoader = replaceClassLoader(classLoader, file.getParentFile(),
+                                            new FileFilter() {
+                                              public boolean accept(File pathname) {
+                                                return pathname.equals(file);
+                                              }
+                                            });
+    } else {
+      log.error("Can't find (or read) file to add to classloader: " + file);
+    }
+  }
+  
+  private static URLClassLoader replaceClassLoader(final URLClassLoader oldLoader,
+                                                   final File base,
+                                                   final FileFilter filter) {
+    if (null != base && base.canRead() && base.isDirectory()) {
+      File[] files = base.listFiles(filter);
+      
+      if (null == files || 0 == files.length) return oldLoader;
+      
+      URL[] oldElements = oldLoader.getURLs();
+      URL[] elements = new URL[oldElements.length + files.length];
+      System.arraycopy(oldElements, 0, elements, 0, oldElements.length);
+      
+      for (int j = 0; j < files.length; j++) {
+        try {
+          URL element = files[j].toURI().normalize().toURL();
+          log.info("Adding '" + element.toString() + "' to classloader");
+          elements[oldElements.length + j] = element;
+        } catch (MalformedURLException e) {
+          SolrException.log(log, "Can't add element to classloader: " + files[j], e);
+        }
+      }
+      return URLClassLoader.newInstance(elements, oldLoader.getParent());
+    }
+    // are we still here?
+    return oldLoader;
+  }
+  
+  /**
+   * Convenience method for getting a new ClassLoader using all files found
+   * in the specified lib directory.
+   */
+  static URLClassLoader createClassLoader(final File libDir, ClassLoader parent) {
+    if ( null == parent ) {
+      parent = Thread.currentThread().getContextClassLoader();
+    }
+    return replaceClassLoader(URLClassLoader.newInstance(new URL[0], parent),
+                              libDir, null);
+  }
+  
   public SolrResourceLoader( String instanceDir )
   {
     this( instanceDir, null, null );
@@ -553,6 +615,4 @@ public class SolrResourceLoader implements ResourceLoader
     }
     throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, builder.toString() );
   }
-
-
 }

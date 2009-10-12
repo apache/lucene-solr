@@ -48,6 +48,10 @@
   <target name="clean">
     <delete failonerror="false" dir="${dest}"/>
 
+    <!-- example doesn't create this anymore, but clean it up
+         if it's still there from an old build
+      -->
+    <delete dir="example/lib" />
   </target>
   <target name="clean-downloads">
     <delete>
@@ -112,17 +116,11 @@
     </solr-javac>
   </target>
 
-  <target name="example" depends="build">
-    <mkdir dir="${example.local}/lib"/>
-    <copy file="${dest}/${fullnamever}.jar" todir="${example.local}/lib"/>
-    <copy todir="${example.local}/lib">
-      <fileset dir="lib">
-        <include name="*.jar"/>
-      </fileset>
-      <fileset dir="lib/downloads">
-        <include name="*.jar"/>
-      </fileset>
-    </copy>
+  <target name="example" depends="build,dist">
+    <!-- this task use to copy lib's but that's no longer needed because
+         ../lib and ../lib/downloads are now included explicitly by
+         example/conf/solrconfig.xml
+      -->
   </target>
 
 

@@ -37,7 +37,7 @@ public class FileUtils {
    * of "base")
    * </p>
    */
-  public static File resolvePath(File base, String path) throws IOException {
+  public static File resolvePath(File base, String path) {
     File r = new File(path);
     return r.isAbsolute() ? r : new File(base, path);
   }

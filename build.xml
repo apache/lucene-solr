@@ -205,7 +205,7 @@
          <path refid="compile.classpath"/>
          <path refid="compile.classpath.solrj"/>
           <fileset dir="contrib">
-            <include name="**/lib/**.jar"/>
+            <include name="**/lib/**/*.jar"/>
           </fileset>
          <pathelement location="${dest}/client/solrj"/>
       </path>
@@ -374,11 +374,7 @@
         description="Runs the core unit tests."
         depends="test-core, test-contrib" />
 
-  <target name="solr-cell-example" depends="compile">
-    <ant antfile="contrib/extraction/build.xml" inheritall="false" target="example" />
-  </target>
-  
-  <target name="junit" depends="compileTests,solr-cell-example">
+  <target name="junit" depends="compileTests,dist-contrib">
     
     <!-- no description so it doesn't show up in -projecthelp -->  
     <mkdir dir="${junit.output.dir}"/>

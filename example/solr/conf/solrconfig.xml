@@ -32,6 +32,36 @@
      -->
   <abortOnConfigurationError>${solr.abortOnConfigurationError:true}</abortOnConfigurationError>
 
+  <!-- lib directives can be used to instruct Solr to load an Jars identified
+       and use them to resolve any "plugins" specified in your solrconfig.xml or
+       schema.xml (ie: Analyzers, Request Handlers, etc...).
+
+       All directories and paths are resolved relative the instanceDir.
+
+       If a "./lib" directory exists in your instanceDir, all files found in it
+       are included as if you had used the following syntax...
+       
+              <lib dir="./lib" />
+    -->
+  <!-- A dir option by itself adds any files found in the directory to the
+       classpath, this is useful for including all jars in a directory.
+    -->
+  <lib dir="../../contrib/extraction/lib" />
+  <!-- When a regex is specified in addition to a directory, only the files in that
+       directory which completely match the regex (anchored on both ends)
+       will be included.
+    -->
+  <lib dir="../../dist/" regex="apache-solr-cell-(\d|\.)+-.*\.jar" />
+  <!-- If a dir option (with or without a regex) is used and nothing is found
+       that matches, it will be ignored
+    -->
+  <lib dir="/total/crap/dir/ignored" /> 
+  <!-- an exact path can be used to specify a specific file.  This will cause
+       a serious error to be logged if it can't be loaded.
+    -->
+  <lib path="../a-jar-that-does-not-exist.jar" /> 
+
+  
   <!-- Used to specify an alternate directory to hold all index data
        other than the default ./data under the Solr home.
        If replication is in use, this should match the replication configuration. -->

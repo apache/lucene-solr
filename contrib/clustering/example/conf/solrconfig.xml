@@ -26,6 +26,13 @@
      -->
   <abortOnConfigurationError>${solr.abortOnConfigurationError:true}</abortOnConfigurationError>
 
+  <lib dir="../../../dist/" regex="apache-solr-clustering-(\d|\.)+-.*\.jar" />
+  <lib dir="../lib" />
+  <!-- these jars are not inlcuded in the release because of their licenses,
+       they will be downlodded when 'ant example' is run
+    -->
+  <lib dir="../lib/downloads/" />
+  
   <!-- Used to specify an alternate directory to hold all index data
        other than the default ./data under the Solr home.
        If replication is in use, this should match the replication configuration. -->

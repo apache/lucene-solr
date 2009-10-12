@@ -364,6 +364,10 @@ New Features
 
 85. SOLR-1478: Enable sort by Lucene docid.  (ehatcher)
 
+86. SOLR-1449: Add <lib> elements to solrconfig.xml to specifying additional
+    classpath directories and regular expressions. (hossman via yonik)
+
+
 Optimizations
 ----------------------
  1. SOLR-374: Use IndexReader.reopen to save resources by re-using parts of the

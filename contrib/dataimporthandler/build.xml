@@ -73,6 +73,9 @@
     </delete>
     <!-- Clean up examples -->
     <delete failonerror="false">
+      <!-- we no longer copy things into this directory, but we still clean it up
+           the files are still there from a previous checkout
+        -->
       <fileset dir="${example}/example-DIH/solr/mail/lib" includes="*.jar" />
     </delete>
   </target>
@@ -197,14 +200,11 @@
     </sequential>
   </target>
 
-  <target name="example" depends="build">
-    <!-- Copy the jar into example-DIH/solr/mail/lib -->
-    <copy file="target/apache-${ant.project.name}-extras-${version}.jar" todir="${example}/example-DIH/solr/mail/lib"/>
-    <copy todir="${example}/example-DIH/solr/mail/lib">
-      <fileset dir="lib">
-        <include name="**/*.jar"/>
-      </fileset>
-    </copy>
+  <target name="example" depends="build,dist">
+    <!--
+        this target use to copy libs, but that is no longer needed.
+        now we just depend on dist to ensure the extra's jar exists.
+     -->
   </target>
   
 </project>

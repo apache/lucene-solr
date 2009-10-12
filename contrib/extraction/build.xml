@@ -114,13 +114,7 @@
   </target>
 
   <target name="example" depends="build">
-    <!-- Copy the jar into example/solr/lib -->
-    <copy file="${dest}/${fullnamever}.jar" todir="${example}/solr/lib"/>
-    <copy todir="${example}/solr/lib">
-      <fileset dir="lib">
-        <include name="**/*.jar"/>
-      </fileset>
-    </copy>
+    <!-- :NOOP: this use to copy libs but now we can refer to them by path -->
   </target>
 
   <target name="javadoc">

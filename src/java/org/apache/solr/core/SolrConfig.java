@@ -17,6 +17,8 @@
 
 package org.apache.solr.core;
 
+import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.RegexFileFilter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.PingRequestHandler;
 import org.apache.solr.handler.component.SearchComponent;
@@ -49,6 +51,7 @@ import javax.xml.xpath.XPathConstants;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -125,6 +128,7 @@ public class SolrConfig extends Config {
   SolrConfig(SolrResourceLoader loader, String name, InputStream is)
   throws ParserConfigurationException, IOException, SAXException {
     super(loader, name, is, "/config/");
+    initLibs();
     defaultIndexConfig = new SolrIndexConfig(this, null, null);
     mainIndexConfig = new SolrIndexConfig(this, "mainIndex", defaultIndexConfig);
     reopenReaders = getBool("mainIndex/reopenReaders", true);
@@ -424,5 +428,32 @@ public class SolrConfig extends Config {
   public PluginInfo getPluginInfo(String  type){
     List<PluginInfo> result = pluginStore.get(type);
     return result == null || result.isEmpty() ? null: result.get(0);
+  }
+  
+  private void initLibs() {
+    
+    NodeList nodes = (NodeList) evaluate("lib", XPathConstants.NODESET);
+    if (nodes==null || nodes.getLength()==0)
+      return;
+    
+    log.info("Adding specified lib dirs to ClassLoader");
+    
+     for (int i=0; i<nodes.getLength(); i++) {
+       Node node = nodes.item(i);
+
+       String baseDir = DOMUtil.getAttr(node, "dir");
+       String path = DOMUtil.getAttr(node, "path");
+       if (null != baseDir) {
+         // :TODO: add support for a simpler 'glob' mutually eclusive of regex
+         String regex = DOMUtil.getAttr(node, "regex");
+         FileFilter filter = (null == regex) ? null : new RegexFileFilter(regex);
+         getResourceLoader().addToClassLoader(baseDir, filter);
+       } else if (null != path) {
+         getResourceLoader().addToClassLoader(path);
+       } else {
+         throw new RuntimeException
+           ("lib: missing mandatory attributes: 'dir' or 'path'");
+       }
+     }
   }
 }
