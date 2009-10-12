@@ -56,7 +56,7 @@ public abstract class EntityProcessor {
    * would fetch as many rows as needed and gives one 'row' at a time. Only this
    * method is used during a full import
    *
-   * @return A 'row' . The 'key' for the map is the column name and the 'value'
+   * @return A 'row'.  The 'key' for the map is the column name and the 'value'
    *         is the value of that column. If there are no more rows to be
    *         returned, return 'null'
    */
@@ -73,7 +73,7 @@ public abstract class EntityProcessor {
   /**
    * This is used during delta-import. It gives the primary keys of the rows
    * that are deleted from this entity. If this entity is the root entity, solr
-   * document is deleted. If this is a sub-entity, the solr document is
+   * document is deleted. If this is a sub-entity, the Solr document is
    * considered as 'changed' and will be recreated
    *
    * @return the pk vs value of all changed rows
@@ -107,7 +107,7 @@ public abstract class EntityProcessor {
   }
 
   /**
-   * Invoked when the Entity processor is detroyed. towards the end of import.
+   * Invoked when the Entity processor is destroyed towards the end of import.
    *
    * @since solr 1.4
    */
