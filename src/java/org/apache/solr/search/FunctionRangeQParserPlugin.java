@@ -31,7 +31,7 @@ import org.apache.solr.search.function.*;
  * <br><code>l</code>, the lower bound, optional)
  * <br><code>u</code>, the upper bound, optional)
  * <br><code>incl</code>, include the lower bound: true/false, optional, default=true
- * <br><code>incl</code>, include the upper bound: true/false, optional, default=true
+ * <br><code>incu</code>, include the upper bound: true/false, optional, default=true
  * <br>Example: <code>{!frange l=1000 u=50000}myfield</code>
  */
 public class FunctionRangeQParserPlugin extends QParserPlugin {
