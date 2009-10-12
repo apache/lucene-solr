@@ -67,7 +67,7 @@ import java.util.*;
  * <p/>
  * <p/>
  * Like the {@link org.apache.solr.handler.FieldAnalysisRequestHandler}, this handler also supports query analysis by
- * sending either an "analysis.query" or "q" request paraemter that holds the query text to be analyized. It also
+ * sending either an "analysis.query" or "q" request paraemter that holds the query text to be analyzed. It also
  * supports the "analysis.showmatch" parameter which when set to {@code true}, all field tokens that match the query
  * tokens will be marked as a "match".
  *
