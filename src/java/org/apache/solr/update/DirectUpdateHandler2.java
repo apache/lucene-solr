@@ -470,9 +470,12 @@ public class DirectUpdateHandler2 extends UpdateHandler {
     }
     finally {
       iwCommit.unlock();
-      addCommands.set(0);
-      deleteByIdCommands.set(0);
-      deleteByQueryCommands.set(0);
+      addCommandsCumulative.set(
+          addCommandsCumulative.get() - addCommands.getAndSet( 0 ) );
+      deleteByIdCommandsCumulative.set(
+          deleteByIdCommandsCumulative.get() - deleteByIdCommands.getAndSet( 0 ) );
+      deleteByQueryCommandsCumulative.set(
+          deleteByQueryCommandsCumulative.get() - deleteByQueryCommands.getAndSet( 0 ) );
       numErrors.set(error ? 1 : 0);
     }
   }

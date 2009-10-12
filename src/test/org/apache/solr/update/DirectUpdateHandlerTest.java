@@ -176,15 +176,29 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     // commit "A"
     SolrCore core = h.getCore();
     UpdateHandler updater = core.getUpdateHandler();
+    assertTrue( updater instanceof DirectUpdateHandler2 );
+    DirectUpdateHandler2 duh2 = (DirectUpdateHandler2)updater;
     CommitUpdateCommand cmtCmd = new CommitUpdateCommand(false);
     cmtCmd.waitSearcher = true;
+    assertEquals( 1, duh2.addCommands.get() );
+    assertEquals( 1, duh2.addCommandsCumulative.get() );
+    assertEquals( 0, duh2.commitCommands.get() );
     updater.commit(cmtCmd);
+    assertEquals( 0, duh2.addCommands.get() );
+    assertEquals( 1, duh2.addCommandsCumulative.get() );
+    assertEquals( 1, duh2.commitCommands.get() );
 
     addSimpleDoc("B");
 
     // rollback "B"
     RollbackUpdateCommand rbkCmd = new RollbackUpdateCommand();
+    assertEquals( 1, duh2.addCommands.get() );
+    assertEquals( 2, duh2.addCommandsCumulative.get() );
+    assertEquals( 0, duh2.rollbackCommands.get() );
     updater.rollback(rbkCmd);
+    assertEquals( 0, duh2.addCommands.get() );
+    assertEquals( 1, duh2.addCommandsCumulative.get() );
+    assertEquals( 1, duh2.rollbackCommands.get() );
     
     // search - "B" should not be found.
     Map<String,String> args = new HashMap<String, String>();
@@ -213,9 +227,17 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     // commit "A", "B"
     SolrCore core = h.getCore();
     UpdateHandler updater = core.getUpdateHandler();
+    assertTrue( updater instanceof DirectUpdateHandler2 );
+    DirectUpdateHandler2 duh2 = (DirectUpdateHandler2)updater;
     CommitUpdateCommand cmtCmd = new CommitUpdateCommand(false);
     cmtCmd.waitSearcher = true;
+    assertEquals( 2, duh2.addCommands.get() );
+    assertEquals( 2, duh2.addCommandsCumulative.get() );
+    assertEquals( 0, duh2.commitCommands.get() );
     updater.commit(cmtCmd);
+    assertEquals( 0, duh2.addCommands.get() );
+    assertEquals( 2, duh2.addCommandsCumulative.get() );
+    assertEquals( 1, duh2.commitCommands.get() );
 
     // search - "A","B" should be found.
     Map<String,String> args = new HashMap<String, String>();
@@ -240,7 +262,13 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
 
     // rollback "B"
     RollbackUpdateCommand rbkCmd = new RollbackUpdateCommand();
+    assertEquals( 1, duh2.deleteByIdCommands.get() );
+    assertEquals( 1, duh2.deleteByIdCommandsCumulative.get() );
+    assertEquals( 0, duh2.rollbackCommands.get() );
     updater.rollback(rbkCmd);
+    assertEquals( 0, duh2.deleteByIdCommands.get() );
+    assertEquals( 0, duh2.deleteByIdCommandsCumulative.get() );
+    assertEquals( 1, duh2.rollbackCommands.get() );
     
     // search - "B" should be found.
     assertQ("\"B\" should be found.", req
