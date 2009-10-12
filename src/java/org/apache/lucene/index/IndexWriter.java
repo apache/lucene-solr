@@ -312,13 +312,20 @@ public class IndexWriter {
   private volatile boolean poolReaders;
   
   /**
-   * Returns a readonly reader containing all
-   * current updates.  Flush is called automatically.  This
+   * Returns a readonly reader, covering all committed as
+   * well as un-committed changes to the index.  This
    * provides "near real-time" searching, in that changes
-   * made during an IndexWriter session can be made
-   * available for searching without closing the writer.
+   * made during an IndexWriter session can be quickly made
+   * available for searching without closing the writer nor
+   * calling {@link #commit}.
    *
-   * <p>It's near real-time because there is no hard
+   * <p>Note that this is functionally equivalent to calling
+   * {#commit} and then using {@link IndexReader#open} to
+   * open a new reader.  But the turarnound time of this
+   * method should be faster since it avoids the potentially
+   * costly {@link #commit}.<p>
+   *
+   * <p>It's <i>near</i> real-time because there is no hard
    * guarantee on how quickly you can get a new reader after
    * making changes with IndexWriter.  You'll have to
    * experiment in your situation to determine if it's
