@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.ArrayList;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -47,12 +48,6 @@ public class SpanFirstQuery extends SpanQuery implements Cloneable {
 
   public String getField() { return match.getField(); }
 
-  /** Returns a collection of all terms matched by this query.
-   * @deprecated use extractTerms instead
-   * @see #extractTerms(Set)
-   */
-  public Collection getTerms() { return match.getTerms(); }
-
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     buffer.append("spanFirst(");
@@ -70,7 +65,7 @@ public class SpanFirstQuery extends SpanQuery implements Cloneable {
     return spanFirstQuery;
   }
   
-  public void extractTerms(Set terms) {
+  public void extractTerms(Set<Term> terms) {
 	    match.extractTerms(terms);
   }
 

@@ -113,7 +113,7 @@ public class MultiPhraseQuery extends Query {
   }
 
   // inherit javadoc
-  public void extractTerms(Set terms) {
+  public void extractTerms(Set<Term> terms) {
     for (Iterator iter = termArrays.iterator(); iter.hasNext();) {
       Term[] arr = (Term[])iter.next();
       for (int i=0; i<arr.length; i++) {

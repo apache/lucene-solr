@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.search.BooleanClause.Occur;
 
@@ -449,7 +450,7 @@ public class BooleanQuery extends Query {
   }
 
   // inherit javadoc
-  public void extractTerms(Set terms) {
+  public void extractTerms(Set<Term> terms) {
       for (Iterator i = clauses.iterator(); i.hasNext();) {
           BooleanClause clause = (BooleanClause) i.next();
           clause.getQuery().extractTerms(terms);

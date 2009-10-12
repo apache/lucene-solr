@@ -18,6 +18,7 @@ package org.apache.lucene.search.function;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.ToStringUtils;
@@ -58,7 +59,7 @@ public class ValueSourceQuery extends Query {
   }
 
   /*(non-Javadoc) @see org.apache.lucene.search.Query#extractTerms(java.util.Set) */
-  public void extractTerms(Set terms) {
+  public void extractTerms(Set<Term> terms) {
     // no terms involved here
   }
 

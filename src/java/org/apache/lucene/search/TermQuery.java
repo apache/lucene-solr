@@ -146,7 +146,7 @@ public class TermQuery extends Query {
     return new TermWeight(searcher);
   }
 
-  public void extractTerms(Set terms) {
+  public void extractTerms(Set<Term> terms) {
     terms.add(getTerm());
   }
 

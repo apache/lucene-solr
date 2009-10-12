@@ -53,6 +53,9 @@ API Changes
 * LUCENE-1971: Remove deprecated RangeQuery, RangeFilter and
   ConstantScoreRangeQuery. (Uwe Schindler)
 
+* LUCENE-1975: Remove deprecated SpanQuery.getTerms() and generify 
+  Query.extractTerms(Set<Term>) (Michael Busch)
+
 Bug fixes
 
 * LUCENE-1951: When the text provided to WildcardQuery has no wildcard

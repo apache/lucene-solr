@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 
 /** The abstract base class for queries.
     <p>Instantiable subclasses are:
@@ -165,7 +166,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
    * 
    * @throws UnsupportedOperationException if this query is not yet rewritten
    */
-  public void extractTerms(Set terms) {
+  public void extractTerms(Set<Term> terms) {
     // needs to be implemented by query subclasses
     throw new UnsupportedOperationException();
   }

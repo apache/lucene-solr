@@ -251,9 +251,9 @@ public class PhraseQuery extends Query {
   }
 
   /**
-   * @see org.apache.lucene.search.Query#extractTerms(java.util.Set)
+   * @see org.apache.lucene.search.Query#extractTerms(Set)
    */
-  public void extractTerms(Set queryTerms) {
+  public void extractTerms(Set<Term> queryTerms) {
     queryTerms.addAll(terms);
   }
 

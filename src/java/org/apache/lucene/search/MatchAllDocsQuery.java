@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.util.ToStringUtils;
 
@@ -131,7 +132,7 @@ public class MatchAllDocsQuery extends Query {
     return new MatchAllDocsWeight(searcher);
   }
 
-  public void extractTerms(Set terms) {
+  public void extractTerms(Set<Term> terms) {
   }
 
   public String toString(String field) {

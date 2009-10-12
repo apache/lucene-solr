@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 
 /**
  * A query that generates the union of documents produced by its subqueries, and that scores each document with the maximum
@@ -213,7 +214,7 @@ public class DisjunctionMaxQuery extends Query {
   }
 
   // inherit javadoc
-  public void extractTerms(Set terms) {
+  public void extractTerms(Set<Term> terms) {
     for (Iterator iter = disjuncts.iterator(); iter.hasNext();) {
       ((Query) iter.next()).extractTerms(terms);
     }

@@ -77,11 +77,6 @@ final class JustCompileSearchSpans {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    /** @deprecated delete in 3.0. */
-    public Collection getTerms() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
     public String toString(String field) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }

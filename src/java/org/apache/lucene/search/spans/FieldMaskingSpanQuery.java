@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Searcher;
@@ -94,12 +95,7 @@ public class FieldMaskingSpanQuery extends SpanQuery {
     return maskedQuery.getSpans(reader);
   }
 
-  /** @deprecated use {@link #extractTerms(Set)} instead. */
-  public Collection getTerms() {
-    return maskedQuery.getTerms();
-  }
-  
-  public void extractTerms(Set terms) {
+  public void extractTerms(Set<Term> terms) {
     maskedQuery.extractTerms(terms);
   }  
 

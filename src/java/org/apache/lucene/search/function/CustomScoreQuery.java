@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Query;
@@ -98,7 +99,7 @@ public class CustomScoreQuery extends Query {
   }
 
   /*(non-Javadoc) @see org.apache.lucene.search.Query#extractTerms(java.util.Set) */
-  public void extractTerms(Set terms) {
+  public void extractTerms(Set<Term> terms) {
     subQuery.extractTerms(terms);
     for(int i = 0; i < valSrcQueries.length; i++) {
       valSrcQueries[i].extractTerms(terms);

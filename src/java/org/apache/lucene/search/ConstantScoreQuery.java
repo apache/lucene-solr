@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 
 import java.io.IOException;
 import java.util.Set;
@@ -42,7 +43,7 @@ public class ConstantScoreQuery extends Query {
     return this;
   }
 
-  public void extractTerms(Set terms) {
+  public void extractTerms(Set<Term> terms) {
     // OK to not add any terms when used for MultiSearcher,
     // but may not be OK for highlighting
   }

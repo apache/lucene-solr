@@ -38,16 +38,7 @@ public class SpanTermQuery extends SpanQuery {
 
   public String getField() { return term.field(); }
   
-  /** Returns a collection of all terms matched by this query.
-   * @deprecated use extractTerms instead
-   * @see #extractTerms(Set)
-   */
-  public Collection getTerms() {
-    Collection terms = new ArrayList();
-    terms.add(term);
-    return terms;
-  }
-  public void extractTerms(Set terms) {
+  public void extractTerms(Set<Term> terms) {
 	  terms.add(term);
   }
 
