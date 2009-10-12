@@ -123,7 +123,7 @@ public abstract class SolrServer implements Serializable
   }
   
   /**
-   * SolrServer implementations need to implement a how a request is actually processed
+   * SolrServer implementations need to implement how a request is actually processed
    */ 
   public abstract NamedList<Object> request( final SolrRequest request ) throws SolrServerException, IOException;
 
