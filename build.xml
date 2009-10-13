@@ -534,6 +534,8 @@
 
     <solr-jar destfile="${dist}/apache-solr-cell-src-${version}.jar"
               basedir="contrib/extraction/src" />
+    <solr-jar destfile="${dist}/apache-solr-velocity-src-${version}.jar"
+              basedir="contrib/velocity/src" />
     <solr-jar destfile="${dist}/apache-solr-clustering-src-${version}.jar"
               basedir="contrib/clustering/src" />
   </target>
@@ -550,6 +552,8 @@
               basedir="${build.javadoc}/contrib-solr-dataimporthandler" />
     <solr-jar destfile="${dist}/apache-solr-clustering-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-clustering" />
+    <solr-jar destfile="${dist}/apache-solr-velocity-docs-${version}.jar"
+              basedir="${build.javadoc}/contrib-solr-velocity" />
     <solr-jar destfile="${dist}/apache-solr-cell-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-cell" />
   </target>
@@ -737,6 +741,7 @@
     <sign-maven-dependency-artifacts artifact.id="solr-lucene-snowball"/>
     <sign-maven-dependency-artifacts artifact.id="solr-lucene-spellchecker"/>
     <sign-maven-artifacts artifact.id="solr-solrj"/>
+    <sign-maven-artifacts artifact.id="solr-velocity"/>
 
     <!-- Thes are special since there are no jars, just poms -->
     <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${maven_version}/solr-parent-${maven_version}.pom"/>
@@ -818,6 +823,15 @@
       <!-- Clustring specific -->
       <!-- TODO: MORE NEEDED HERE ONCE WE FINALIZE THE LIBS FOR CARROT -->
       <!-- end clustering specific -->
+
+      <m2-deploy pom.xml="contrib/velocity/solr-velocity-pom.xml.template"
+      jar.file="contrib/velocity/src/main/solr/lib/apache-solr-velocity-${version}.jar">
+
+        <artifact-attachments>
+          <attach file="${dist}/apache-solr-velocity-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist}/apache-solr-velocity-docs-${version}.jar" classifier="javadoc"/>
+        </artifact-attachments>
+      </m2-deploy>
 
       <m2-deploy pom.xml="src/maven/solr-core-pom.xml.template"
                  jar.file="${dist}/apache-solr-core-${version}.jar">
