@@ -51,7 +51,7 @@
        directory which completely match the regex (anchored on both ends)
        will be included.
     -->
-  <lib dir="../../dist/" regex="apache-solr-cell-(\d|\.)+-.*\.jar" />
+  <lib dir="../../dist/" regex="apache-solr-cell-.*\.jar" />
   <!-- If a dir option (with or without a regex) is used and nothing is found
        that matches, it will be ignored
     -->
