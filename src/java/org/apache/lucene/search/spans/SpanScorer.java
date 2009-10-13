@@ -33,8 +33,6 @@ public class SpanScorer extends Scorer {
   protected byte[] norms;
   protected float value;
 
-  /** @deprecated not needed anymore */
-  protected boolean firstTime = true;
   protected boolean more = true;
 
   protected int doc;
