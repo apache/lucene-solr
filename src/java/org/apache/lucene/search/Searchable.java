@@ -115,7 +115,6 @@ public interface Searchable {
    * <p>Applications should usually call {@link Searcher#search(Query)} or
    * {@link Searcher#search(Query,Filter)} instead.
    * @throws BooleanQuery.TooManyClauses
-   * @deprecated use {@link #search(Weight, Filter, int)} instead.
    */
   TopDocs search(Weight weight, Filter filter, int n) throws IOException;
 
