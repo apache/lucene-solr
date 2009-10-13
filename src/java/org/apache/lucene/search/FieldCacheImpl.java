@@ -43,8 +43,7 @@ import org.apache.lucene.util.FieldCacheSanityChecker;
  *
  * @since   lucene 1.4
  */
- // TODO: change interface to FieldCache in 3.0 when removed
-class FieldCacheImpl implements ExtendedFieldCache {
+class FieldCacheImpl implements FieldCache {
 	
   private Map caches;
   FieldCacheImpl() {
@@ -60,8 +59,6 @@ class FieldCacheImpl implements ExtendedFieldCache {
     caches.put(Double.TYPE, new DoubleCache(this));
     caches.put(String.class, new StringCache(this));
     caches.put(StringIndex.class, new StringIndexCache(this));
-    caches.put(Comparable.class, new CustomCache(this));
-    caches.put(Object.class, new AutoCache(this));
   }
 
   public void purgeAllCaches() {
@@ -524,12 +521,6 @@ class FieldCacheImpl implements ExtendedFieldCache {
     return (long[]) ((Cache)caches.get(Long.TYPE)).get(reader, new Entry(field, parser));
   }
 
-  /** @deprecated Will be removed in 3.0, this is for binary compatibility only */
-  public long[] getLongs(IndexReader reader, String field, ExtendedFieldCache.LongParser parser)
-      throws IOException {
-    return (long[]) ((Cache)caches.get(Long.TYPE)).get(reader, new Entry(field, parser));
-  }
-
   static final class LongCache extends Cache {
     LongCache(FieldCache wrapper) {
       super(wrapper);
@@ -581,12 +572,6 @@ class FieldCacheImpl implements ExtendedFieldCache {
 
   // inherit javadocs
   public double[] getDoubles(IndexReader reader, String field, FieldCache.DoubleParser parser)
-      throws IOException {
-    return (double[]) ((Cache)caches.get(Double.TYPE)).get(reader, new Entry(field, parser));
-  }
-
-  /** @deprecated Will be removed in 3.0, this is for binary compatibility only */
-  public double[] getDoubles(IndexReader reader, String field, ExtendedFieldCache.DoubleParser parser)
       throws IOException {
     return (double[]) ((Cache)caches.get(Double.TYPE)).get(reader, new Entry(field, parser));
   }
@@ -733,109 +718,6 @@ class FieldCacheImpl implements ExtendedFieldCache {
 
       StringIndex value = new StringIndex (retArray, mterms);
       return value;
-    }
-  };
-
-  /** The pattern used to detect integer values in a field */
-  /** removed for java 1.3 compatibility
-   protected static final Pattern pIntegers = Pattern.compile ("[0-9\\-]+");
-   **/
-
-  /** The pattern used to detect float values in a field */
-  /**
-   * removed for java 1.3 compatibility
-   * protected static final Object pFloats = Pattern.compile ("[0-9+\\-\\.eEfFdD]+");
-   */
-
-	// inherit javadocs
-  public Object getAuto(IndexReader reader, String field) throws IOException {
-    return ((Cache)caches.get(Object.class)).get(reader, new Entry(field, (Parser)null));
-  }
-
-  /**
-   * @deprecated Please specify the exact type, instead.
-   *  Especially, guessing does <b>not</b> work with the new
-   *  {@link NumericField} type.
-   */
-  static final class AutoCache extends Cache {
-    AutoCache(FieldCache wrapper) {
-      super(wrapper);
-    }
-
-    protected Object createValue(IndexReader reader, Entry entryKey)
-        throws IOException {
-      String field = StringHelper.intern((String) entryKey.field);
-      TermEnum enumerator = reader.terms (new Term (field));
-      try {
-        Term term = enumerator.term();
-        if (term == null) {
-          throw new RuntimeException ("no terms in field " + field + " - cannot determine type");
-        }
-        Object ret = null;
-        if (term.field() == field) {
-          String termtext = term.text().trim();
-
-          try {
-            Integer.parseInt (termtext);
-            ret = wrapper.getInts (reader, field);
-          } catch (NumberFormatException nfe1) {
-            try {
-              Long.parseLong(termtext);
-              ret = wrapper.getLongs (reader, field);
-            } catch (NumberFormatException nfe2) {
-              try {
-                Float.parseFloat (termtext);
-                ret = wrapper.getFloats (reader, field);
-              } catch (NumberFormatException nfe3) {
-                ret = wrapper.getStringIndex (reader, field);
-              }
-            }
-          }          
-        } else {
-          throw new RuntimeException ("field \"" + field + "\" does not appear to be indexed");
-        }
-        return ret;
-      } finally {
-        enumerator.close();
-      }
-    }
-  };
-
-  /** @deprecated */
-  public Comparable[] getCustom(IndexReader reader, String field,
-      SortComparator comparator) throws IOException {
-    return (Comparable[]) ((Cache)caches.get(Comparable.class)).get(reader, new Entry(field, comparator));
-  }
-
-  /** @deprecated */
-  static final class CustomCache extends Cache {
-    CustomCache(FieldCache wrapper) {
-      super(wrapper);
-    }
-
-    protected Object createValue(IndexReader reader, Entry entryKey)
-        throws IOException {
-      Entry entry = (Entry) entryKey;
-      String field = entry.field;
-      SortComparator comparator = (SortComparator) entry.custom;
-      final Comparable[] retArray = new Comparable[reader.maxDoc()];
-      TermDocs termDocs = reader.termDocs();
-      TermEnum termEnum = reader.terms (new Term (field));
-      try {
-        do {
-          Term term = termEnum.term();
-          if (term==null || term.field() != field) break;
-          Comparable termval = comparator.getComparable (term.text());
-          termDocs.seek (termEnum);
-          while (termDocs.next()) {
-            retArray[termDocs.doc()] = termval;
-          }
-        } while (termEnum.next());
-      } finally {
-        termDocs.close();
-        termEnum.close();
-      }
-      return retArray;
     }
   };
 

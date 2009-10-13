@@ -483,39 +483,6 @@ public interface FieldCache {
   public StringIndex getStringIndex (IndexReader reader, String field)
   throws IOException;
 
-  /** Checks the internal cache for an appropriate entry, and if
-   * none is found reads <code>field</code> to see if it contains integers, longs, floats
-   * or strings, and then calls one of the other methods in this class to get the
-   * values.  For string values, a StringIndex is returned.  After
-   * calling this method, there is an entry in the cache for both
-   * type <code>AUTO</code> and the actual found type.
-   * @param reader  Used to get field values.
-   * @param field   Which field contains the values.
-   * @return int[], long[], float[] or StringIndex.
-   * @throws IOException  If any error occurs.
-   * @deprecated Please specify the exact type, instead.
-   *  Especially, guessing does <b>not</b> work with the new
-   *  {@link NumericField} type.
-   */
-  public Object getAuto (IndexReader reader, String field)
-  throws IOException;
-
-  /** Checks the internal cache for an appropriate entry, and if none
-   * is found reads the terms out of <code>field</code> and calls the given SortComparator
-   * to get the sort values.  A hit in the cache will happen if <code>reader</code>,
-   * <code>field</code>, and <code>comparator</code> are the same (using <code>equals()</code>)
-   * as a previous call to this method.
-   * @param reader  Used to get field values.
-   * @param field   Which field contains the values.
-   * @param comparator Used to convert terms into something to sort by.
-   * @return Array of sort objects, one for each document.
-   * @throws IOException  If any error occurs.
-   * @deprecated Please implement {@link
-   * FieldComparatorSource} directly, instead.
-   */
-  public Comparable[] getCustom (IndexReader reader, String field, SortComparator comparator)
-  throws IOException;
-
   /**
    * EXPERT: A unique Identifier/Description for each item in the FieldCache. 
    * Can be useful for logging/debugging.

@@ -72,9 +72,7 @@ public class TestDateSort extends LuceneTestCase {
   public void testReverseDateSort() throws Exception {
     IndexSearcher searcher = new IndexSearcher(directory, true);
 
-    // Create a Sort object.  reverse is set to true.
-    // problem occurs only with SortField.AUTO:
-    Sort sort = new Sort(new SortField(DATE_TIME_FIELD, SortField.AUTO, true));
+    Sort sort = new Sort(new SortField(DATE_TIME_FIELD, SortField.STRING, true));
 
     QueryParser queryParser = new QueryParser(TEXT_FIELD, new WhitespaceAnalyzer());
     Query query = queryParser.parse("Document");

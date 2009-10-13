@@ -26,11 +26,6 @@ import org.apache.lucene.util.PriorityQueue;
  * Uses <code>FieldCache.DEFAULT</code> for maintaining
  * internal term lookup tables.
  * 
- * This class will not resolve SortField.AUTO types, and expects the type
- * of all SortFields used for construction to already have been resolved. 
- * {@link SortField#detectFieldType(IndexReader, String)} is a utility method which
- * may be used for field type detection.
- *
  * <b>NOTE:</b> This API is experimental and might change in
  * incompatible ways in the next release.
  *
@@ -74,8 +69,6 @@ public abstract class FieldValueHitQueue extends PriorityQueue {
       }
 
       SortField field = fields[0];
-      // AUTO is resolved before we are called
-      assert field.getType() != SortField.AUTO;
       comparator = field.getComparator(size, 0);
       oneReverseMul = field.reverse ? -1 : 1;
 
@@ -122,9 +115,6 @@ public abstract class FieldValueHitQueue extends PriorityQueue {
       int numComparators = comparators.length;
       for (int i = 0; i < numComparators; ++i) {
         SortField field = fields[i];
-
-        // AUTO is resolved before we are called
-        assert field.getType() != SortField.AUTO;
 
         reverseMul[i] = field.reverse ? -1 : 1;
         comparators[i] = field.getComparator(size, i);

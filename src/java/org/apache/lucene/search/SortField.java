@@ -47,15 +47,7 @@ implements Serializable {
    * values are at the front. */
   public static final int DOC = 1;
 
-  /** Guess type of sort based on field contents.  A regular expression is used
-   * to look at the first term indexed for the field and determine if it
-   * represents an integer number, a floating point number, or just arbitrary
-   * string characters.
-   * @deprecated Please specify the exact type, instead.
-   *  Especially, guessing does <b>not</b> work with the new
-   *  {@link NumericField} type.
-   */
-  public static final int AUTO = 2;
+  // reserved, in Lucene 2.9, there was a constant: AUTO = 2;
 
   /** Sort using term values as Strings.  Sort values are String and lower
    * values are at the front. */
@@ -106,37 +98,15 @@ implements Serializable {
   public static final SortField FIELD_DOC = new SortField (null, DOC);
 
   private String field;
-  private int type = AUTO;  // defaults to determining type dynamically
+  private int type;  // defaults to determining type dynamically
   private Locale locale;    // defaults to "natural order" (no Locale)
   boolean reverse = false;  // defaults to natural order
-  private SortComparatorSource factory;
   private FieldCache.Parser parser;
 
   // Used for CUSTOM sort
   private FieldComparatorSource comparatorSource;
 
   private boolean useLegacy = false; // remove in Lucene 3.0
-
-  /** Creates a sort by terms in the given field where the type of term value
-   * is determined dynamically ({@link #AUTO AUTO}).
-   * @param field Name of field to sort by, cannot be
-   * <code>null</code>.
-   * @deprecated Please specify the exact type instead.
-   */
-  public SortField (String field) {
-    initFieldType(field, AUTO);
-  }
-
-  /** Creates a sort, possibly in reverse, by terms in the given field where
-   * the type of term value is determined dynamically ({@link #AUTO AUTO}).
-   * @param field Name of field to sort by, cannot be <code>null</code>.
-   * @param reverse True if natural order should be reversed.
-   * @deprecated Please specify the exact type instead.
-   */
-  public SortField (String field, boolean reverse) {
-    initFieldType(field, AUTO);
-    this.reverse = reverse;
-  }
 
   /** Creates a sort by terms in the given field with the type of term
    * values explicitly given.
@@ -223,36 +193,12 @@ implements Serializable {
   /** Creates a sort with a custom comparison function.
    * @param field Name of field to sort by; cannot be <code>null</code>.
    * @param comparator Returns a comparator for sorting hits.
-   * @deprecated use SortField (String field, FieldComparatorSource comparator)
-   */
-  public SortField (String field, SortComparatorSource comparator) {
-    initFieldType(field, CUSTOM);
-    setUseLegacySearch(true);
-    this.factory = comparator;
-  }
-  
-  /** Creates a sort with a custom comparison function.
-   * @param field Name of field to sort by; cannot be <code>null</code>.
-   * @param comparator Returns a comparator for sorting hits.
    */
   public SortField (String field, FieldComparatorSource comparator) {
     initFieldType(field, CUSTOM);
     this.comparatorSource = comparator;
   }
 
-  /** Creates a sort, possibly in reverse, with a custom comparison function.
-   * @param field Name of field to sort by; cannot be <code>null</code>.
-   * @param comparator Returns a comparator for sorting hits.
-   * @param reverse True if natural order should be reversed.
-   * @deprecated use SortField (String field, FieldComparatorSource comparator, boolean reverse)
-   */
-  public SortField (String field, SortComparatorSource comparator, boolean reverse) {
-    initFieldType(field, CUSTOM);
-    setUseLegacySearch(true);
-    this.reverse = reverse;
-    this.factory = comparator;
-  }
-  
   /** Creates a sort, possibly in reverse, with a custom comparison function.
    * @param field Name of field to sort by; cannot be <code>null</code>.
    * @param comparator Returns a comparator for sorting hits.
@@ -285,7 +231,7 @@ implements Serializable {
   }
 
   /** Returns the type of contents in the field.
-   * @return One of the constants SCORE, DOC, AUTO, STRING, INT or FLOAT.
+   * @return One of the constants SCORE, DOC, STRING, INT or FLOAT.
    */
   public int getType() {
     return type;
@@ -314,37 +260,6 @@ implements Serializable {
     return reverse;
   }
 
-  /**
-   * @deprecated use {@link #getComparatorSource()}
-   */
-  public SortComparatorSource getFactory() {
-    return factory;
-  }
-  
-  public FieldComparatorSource getComparatorSource() {
-    return comparatorSource;
-  }
-  
-  /**
-   * Use legacy IndexSearch implementation: search with a DirectoryReader rather
-   * than passing a single hit collector to multiple SegmentReaders.
-   * 
-   * @param legacy true for legacy behavior
-   * @deprecated will be removed in Lucene 3.0.
-   */
-  public void setUseLegacySearch(boolean legacy) {
-    this.useLegacy = legacy;
-  }
-  
-  /**
-   * @return if true, IndexSearch will use legacy sorting search implementation.
-   * eg. multiple Priority Queues.
-   * @deprecated will be removed in Lucene 3.0.
-   */
-  public boolean getUseLegacySearch() {
-    return this.useLegacy;
-  }
-
   public String toString() {
     StringBuilder buffer = new StringBuilder();
     switch (type) {
@@ -354,10 +269,6 @@ implements Serializable {
 
       case DOC:
         buffer.append("<doc>");
-        break;
-
-      case AUTO:
-        buffer.append("<auto: \"").append(field).append("\">");
         break;
 
       case STRING:
@@ -393,7 +304,7 @@ implements Serializable {
         break;
 
       case CUSTOM:
-        buffer.append("<custom:\"").append(field).append("\": ").append(factory).append('>');
+        buffer.append("<custom:\"").append(field).append("\": ").append(comparatorSource).append('>');
         break;
 
       default:
@@ -409,7 +320,7 @@ implements Serializable {
   }
 
   /** Returns true if <code>o</code> is equal to this.  If a
-   *  {@link SortComparatorSource} (deprecated) or {@link
+   *  {@link FieldComparatorSource} or {@link
    *  FieldCache.Parser} was provided, it must properly
    *  implement equals (unless a singleton is always used). */
   public boolean equals(Object o) {
@@ -421,14 +332,13 @@ implements Serializable {
       && other.type == this.type
       && other.reverse == this.reverse
       && (other.locale == null ? this.locale == null : other.locale.equals(this.locale))
-      && (other.factory == null ? this.factory == null : other.factory.equals(this.factory))
       && (other.comparatorSource == null ? this.comparatorSource == null : other.comparatorSource.equals(this.comparatorSource))
       && (other.parser == null ? this.parser == null : other.parser.equals(this.parser))
     );
   }
 
   /** Returns true if <code>o</code> is equal to this.  If a
-   *  {@link SortComparatorSource} (deprecated) or {@link
+   *  {@link FieldComparatorSource} or {@link
    *  FieldCache.Parser} was provided, it must properly
    *  implement hashCode (unless a singleton is always
    *  used). */
@@ -436,7 +346,6 @@ implements Serializable {
     int hash=type^0x346565dd + Boolean.valueOf(reverse).hashCode()^0xaf5998bb;
     if (field != null) hash += field.hashCode()^0xff5685dd;
     if (locale != null) hash += locale.hashCode()^0x08150815;
-    if (factory != null) hash += factory.hashCode()^0x34987555;
     if (comparatorSource != null) hash += comparatorSource.hashCode();
     if (parser != null) hash += parser.hashCode()^0x3aaf56ff;
     return hash;
@@ -491,7 +400,7 @@ implements Serializable {
       return new FieldComparator.ShortComparator(numHits, field, parser);
 
     case SortField.CUSTOM:
-      assert factory == null && comparatorSource != null;
+      assert comparatorSource != null;
       return comparatorSource.newComparator(field, numHits, sortPos, reverse);
 
     case SortField.STRING:
@@ -502,47 +411,6 @@ implements Serializable {
         
     default:
       throw new IllegalStateException("Illegal sort type: " + type);
-    }
-  }
-  
-  /**
-   * Attempts to detect the given field type for an IndexReader.
-   * @deprecated
-   */
-  static int detectFieldType(IndexReader reader, String fieldKey) throws IOException {
-    String field = StringHelper.intern(fieldKey);
-    TermEnum enumerator = reader.terms(new Term(field));
-    try {
-      Term term = enumerator.term();
-      if (term == null) {
-        throw new RuntimeException("no terms in field " + field + " - cannot determine sort type");
-      }
-      int ret = 0;
-      if (term.field() == field) {
-        String termtext = term.text().trim();
-
-        try {
-          Integer.parseInt (termtext);
-          ret = SortField.INT;
-        } catch (NumberFormatException nfe1) {
-          try {
-            Long.parseLong(termtext);
-            ret = SortField.LONG;
-          } catch (NumberFormatException nfe2) {
-            try {
-              Float.parseFloat (termtext);
-              ret = SortField.FLOAT;
-            } catch (NumberFormatException nfe3) {
-              ret = SortField.STRING;
-            }
-          }
-        }         
-      } else {
-        throw new RuntimeException("field \"" + field + "\" does not appear to be indexed");
-      }
-      return ret;
-    } finally {
-      enumerator.close();
     }
   }
 }

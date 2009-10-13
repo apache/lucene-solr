@@ -43,8 +43,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocCollector;
-import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.util.AttributeImpl;
 
 /**

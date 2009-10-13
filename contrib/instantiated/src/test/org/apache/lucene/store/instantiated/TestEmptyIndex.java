@@ -23,7 +23,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocCollector;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -39,10 +39,9 @@ public class TestEmptyIndex extends TestCase {
     IndexReader r = new InstantiatedIndexReader(ii);
     IndexSearcher s = new IndexSearcher(r);
 
-    TopDocCollector c = new TopDocCollector(1);
-    s.search(new TermQuery(new Term("foo", "bar")), c);
+    TopDocs td = s.search(new TermQuery(new Term("foo", "bar")), 1);
 
-    assertEquals(0, c.getTotalHits());
+    assertEquals(0, td.totalHits);
 
     s.close();
     r.close();

@@ -173,40 +173,10 @@ public class IndexSearcher extends Searcher {
       throws IOException {
     
     SortField[] fields = sort.fields;
-    boolean legacy = false;
     for(int i = 0; i < fields.length; i++) {
       SortField field = fields[i];
       String fieldname = field.getField();
       int type = field.getType();
-      // Resolve AUTO into its true type
-      if (type == SortField.AUTO) {
-        int autotype = SortField.detectFieldType(reader, fieldname);
-        if (autotype == SortField.STRING) {
-          fields[i] = new SortField (fieldname, field.getLocale(), field.getReverse());
-        } else {
-          fields[i] = new SortField (fieldname, autotype, field.getReverse());
-        }
-      }
-
-      if (field.getUseLegacySearch()) {
-        legacy = true;
-      }
-    }
-    
-    if (legacy) {
-      // Search the single top-level reader
-      TopDocCollector collector = new TopFieldDocCollector(reader, sort, nDocs);
-      HitCollectorWrapper hcw = new HitCollectorWrapper(collector);
-      hcw.setNextReader(reader, 0);
-      if (filter == null) {
-        Scorer scorer = weight.scorer(reader, true, true);
-        if (scorer != null) {
-          scorer.score(hcw);
-        }
-      } else {
-        searchWithFilter(reader, weight, filter, hcw);
-      }
-      return (TopFieldDocs) collector.topDocs();
     }
     
     TopFieldCollector collector = TopFieldCollector.create(sort, nDocs,

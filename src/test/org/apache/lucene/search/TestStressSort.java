@@ -207,46 +207,34 @@ public class TestStressSort extends LuceneTestCase {
       boolean reverse = 1 == r;
 
       sorts[sortCount++] = sort = new Sort();
-      sort.setSort(new SortField[] {new SortField("byte", SortField.BYTE, reverse)});
+      sort.setSort(new SortField("byte", SortField.BYTE, reverse));
       
       sorts[sortCount++] = sort = new Sort();
-      sort.setSort(new SortField[] {new SortField("short", SortField.SHORT, reverse)});
+      sort.setSort(new SortField("short", SortField.SHORT, reverse));
 
       sorts[sortCount++] = sort = new Sort();
-      sort.setSort(new SortField[] {new SortField("int", SortField.INT, reverse)});
+      sort.setSort(new SortField("int", SortField.INT, reverse));
 
       sorts[sortCount++] = sort = new Sort();
-      sort.setSort(new SortField[] {new SortField("long", SortField.LONG, reverse)});
+      sort.setSort(new SortField("long", SortField.LONG, reverse));
 
       sorts[sortCount++] = sort = new Sort();
-      sort.setSort(new SortField[] {new SortField("float", SortField.FLOAT, reverse)});
+      sort.setSort(new SortField("float", SortField.FLOAT, reverse));
 
       sorts[sortCount++] = sort = new Sort();
-      sort.setSort(new SortField[] {new SortField("double", SortField.DOUBLE, reverse)});
+      sort.setSort(new SortField("double", SortField.DOUBLE, reverse));
 
       sorts[sortCount++] = sort = new Sort();
-      sort.setSort(new SortField[] {new SortField("string", SortField.STRING_VAL, reverse)});
+      sort.setSort(new SortField("string", SortField.STRING_VAL, reverse));
 
       sorts[sortCount++] = sort = new Sort();
-      sort.setSort(new SortField[] {new SortField("stringIdx", SortField.STRING, reverse)});
-
-      //sorts[sortCount++] = sort = new Sort();
-      //sort.setSort(new SortField[] {new SortField("string", SortField.STRING_ORD, reverse)});
-
-      //sorts[sortCount++] = sort = new Sort();
-      //sort.setSort(new SortField[] {new SortField("string", SortField.STRING_ORD_VAL, reverse)});
-
-      //sorts[sortCount++] = sort = new Sort();
-      //sort.setSort(new SortField[] {new SortField("string", SortField.STRING_ORD_VAL_DEM, reverse)});
-
-      //sorts[sortCount++] = sort = new Sort();
-      //sort.setSort(new SortField[] {new SortField("string", SortField.STRING_ORD_VAL_DEM2, reverse)});
+      sort.setSort(new SortField("stringIdx", SortField.STRING, reverse));
 
       sorts[sortCount++] = sort = new Sort();
-      sort.setSort(new SortField[] {new SortField(null, SortField.SCORE, reverse)});
+      sort.setSort(new SortField(null, SortField.SCORE, reverse));
 
       sorts[sortCount++] = sort = new Sort();
-      sort.setSort(new SortField[] {new SortField(null, SortField.DOC, reverse)});
+      sort.setSort(new SortField(null, SortField.DOC, reverse));
     }
 
     Query[] queries = new Query[4];
@@ -288,30 +276,8 @@ public class TestStressSort extends LuceneTestCase {
                 // Single field sort
                 sort = sort1;
               } else {
-                sort = new Sort(new SortField[] {sort1.getSort()[0], sorts[s2].getSort()[0]});
+                sort = new Sort(sort1.getSort()[0], sorts[s2].getSort()[0]);
               }
-
-              // Old
-              Sort oldSort = getOldSort(sort);
-
-              if (VERBOSE) {
-                System.out.println("query=" + query);
-                if (sx == 0) {
-                  System.out.println("  single-segment index");
-                } else if (sx == 1) {
-                  System.out.println("  few-segment index");
-                } else {
-                  System.out.println("  many-segment index");
-                }
-                System.out.println("  numHit=" + queueSize);
-                System.out.println("  old=" + oldSort);
-                System.out.println("  new=" + sort);
-              }
-
-              TopDocs newHits = searcher.search(query, null, queueSize, sort);
-              TopDocs oldHits = searcher.search(query, null, queueSize, oldSort);
-
-              compare(oldHits, newHits);
             }
           }
         }
@@ -348,24 +314,6 @@ public class TestStressSort extends LuceneTestCase {
     purgeFieldCache(FieldCache.DEFAULT); // so
 
     close();
-  }
-
-  private Sort getOldSort(Sort sort) {
-    SortField[] fields = sort.getSort();
-    SortField[] oldFields = new SortField[fields.length];
-    for(int i=0;i<fields.length;i++) {
-      int sortType;
-      if (fields[i].getField() != null && fields[i].getField().equals("string")) {
-        sortType = SortField.STRING;
-      } else {
-        sortType = fields[i].getType();
-      }
-      oldFields[i] = new SortField(fields[i].getField(),
-                                   sortType,
-                                   fields[i].getReverse());
-      oldFields[i].setUseLegacySearch(true);
-    }
-    return new Sort(oldFields);
   }
 
   private void compare(TopDocs oldHits, TopDocs newHits) {

@@ -123,90 +123,14 @@ implements Serializable {
     this(SortField.FIELD_SCORE);
   }
 
-  /**
-   * Sorts by the terms in <code>field</code> then by index order (document
-   * number). The type of value in <code>field</code> is determined
-   * automatically.
-   * 
-   * @see SortField#AUTO
-   * @deprecated Please specify the type explicitly by
-   * first creating a {@link SortField} and then use {@link
-   * #Sort(SortField)}
-   */
-  public Sort(String field) {
-    setSort(field, false);
-  }
-
-  /**
-   * Sorts possibly in reverse by the terms in <code>field</code> then by
-   * index order (document number). The type of value in <code>field</code> is
-   * determined automatically.
-   * 
-   * @see SortField#AUTO
-   * @deprecated Please specify the type explicitly by
-   * first creating a {@link SortField} and then use {@link
-   * #Sort(SortField)}
-   */
-  public Sort(String field, boolean reverse) {
-    setSort(field, reverse);
-  }
-
-  /**
-   * Sorts in succession by the terms in each field. The type of value in
-   * <code>field</code> is determined automatically.
-   * 
-   * @see SortField#AUTO
-   * @deprecated Please specify the type explicitly by
-   * first creating {@link SortField}s and then use {@link
-   * #Sort(SortField[])}
-   */
-  public Sort(String[] fields) {
-    setSort(fields);
-  }
-
   /** Sorts by the criteria in the given SortField. */
   public Sort(SortField field) {
     setSort(field);
   }
 
   /** Sorts in succession by the criteria in each SortField. */
-  public Sort(SortField[] fields) {
+  public Sort(SortField... fields) {
     setSort(fields);
-  }
-
-  /**
-   * Sets the sort to the terms in <code>field</code> then by index order
-   * (document number).
-   * @deprecated Please specify the type explicitly by
-   * first creating a {@link SortField} and then use {@link
-   * #setSort(SortField)}
-   */
-  public final void setSort(String field) {
-    setSort(field, false);
-  }
-
-  /**
-   * Sets the sort to the terms in <code>field</code> possibly in reverse,
-   * then by index order (document number).
-   * @deprecated Please specify the type explicitly by
-   * first creating a {@link SortField} and then use {@link
-   * #setSort(SortField)}
-   */
-  public void setSort(String field, boolean reverse) {
-    fields = new SortField[] { new SortField(field, SortField.AUTO, reverse) };
-  }
-
-  /** Sets the sort to the terms in each field in succession.
-   * @deprecated Please specify the type explicitly by
-   * first creating {@link SortField}s and then use {@link
-   * #setSort(SortField[])} */
-  public void setSort(String[] fieldnames) {
-    final int n = fieldnames.length;
-    SortField[] nfields = new SortField[n];
-    for (int i = 0; i < n; ++i) {
-      nfields[i] = new SortField(fieldnames[i], SortField.AUTO);
-    }
-    fields = nfields;
   }
 
   /** Sets the sort to the given criteria. */
@@ -215,7 +139,7 @@ implements Serializable {
   }
 
   /** Sets the sort to the given criteria in succession. */
-  public void setSort(SortField[] fields) {
+  public void setSort(SortField... fields) {
     this.fields = fields;
   }
   

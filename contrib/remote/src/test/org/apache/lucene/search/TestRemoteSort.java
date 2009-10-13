@@ -236,29 +236,6 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
     runMultiSorts(multi, true); // this runs on the full index
   }
 
-  // test custom search when remote
-  /* rewrite with new API
-  public void testRemoteCustomSort() throws Exception {
-    Searchable searcher = getRemote();
-    MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
-    sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource()));
-    assertMatches (multi, queryX, sort, "CAIEG");
-    sort.setSort (new SortField ("custom", SampleComparable.getComparatorSource(), true));
-    assertMatches (multi, queryY, sort, "HJDBF");
-
-    assertSaneFieldCaches(getName() + " ComparatorSource");
-    FieldCache.DEFAULT.purgeAllCaches();
-
-    SortComparator custom = SampleComparable.getComparator();
-    sort.setSort (new SortField ("custom", custom));
-    assertMatches (multi, queryX, sort, "CAIEG");
-    sort.setSort (new SortField ("custom", custom, true));
-    assertMatches (multi, queryY, sort, "HJDBF");
-
-    assertSaneFieldCaches(getName() + " Comparator");
-    FieldCache.DEFAULT.purgeAllCaches();
-  }*/
-
   // test that the relevancy scores are the same even if
   // hits are sorted
   public void testNormalizedScores() throws Exception {
@@ -283,32 +260,32 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
     assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
 
-    sort.setSort ("int");
+    sort.setSort (new SortField("int", SortField.INT));
     assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
 
-    sort.setSort ("float");
+    sort.setSort (new SortField("float", SortField.FLOAT));
     assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
 
-    sort.setSort ("string");
+    sort.setSort (new SortField("string", SortField.STRING));
     assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
 
-    sort.setSort (new String[] {"int","float"});
+    sort.setSort (new SortField("int", SortField.INT), new SortField("float", SortField.FLOAT));
     assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
 
-    sort.setSort (new SortField[] { new SortField ("int", SortField.INT, true), new SortField (null, SortField.DOC, true) });
+    sort.setSort (new SortField ("int", SortField.INT, true), new SortField (null, SortField.DOC, true) );
     assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
 
-    sort.setSort (new String[] {"float","string"});
+    sort.setSort (new SortField("float", SortField.FLOAT), new SortField("string", SortField.STRING));
     assertSameValues (scoresX, getScores (remote.search (queryX, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresY, getScores (remote.search (queryY, null, 1000, sort).scoreDocs, remote));
     assertSameValues (scoresA, getScores (remote.search (queryA, null, 1000, sort).scoreDocs, remote));
@@ -324,52 +301,48 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
     expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
     assertMatches(multi, queryA, sort, expected);
 
-    sort.setSort(new SortField[] {new SortField ("int", SortField.INT), SortField.FIELD_DOC});
+    sort.setSort(new SortField ("int", SortField.INT), SortField.FIELD_DOC);
     expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
     assertMatches(multi, queryA, sort, expected);
 
-    sort.setSort("int");
-    expected = isFull ? "IDHFGJABEC" : "IDHFGJAEBC";
-    assertMatches(multi, queryA, sort, expected);
-
-    sort.setSort(new SortField[] {new SortField ("float", SortField.FLOAT), SortField.FIELD_DOC});
+    sort.setSort(new SortField ("float", SortField.FLOAT), SortField.FIELD_DOC);
     assertMatches(multi, queryA, sort, "GDHJCIEFAB");
 
-    sort.setSort("float");
+    sort.setSort(new SortField("float", SortField.FLOAT));
     assertMatches(multi, queryA, sort, "GDHJCIEFAB");
 
-    sort.setSort("string");
+    sort.setSort(new SortField("string", SortField.STRING));
     assertMatches(multi, queryA, sort, "DJAIHGFEBC");
 
-    sort.setSort("int", true);
+    sort.setSort(new SortField ("int", SortField.INT, true));
     expected = isFull ? "CABEJGFHDI" : "CAEBJGFHDI";
     assertMatches(multi, queryA, sort, expected);
 
-    sort.setSort("float", true);
+    sort.setSort(new SortField ("float", SortField.FLOAT, true));
     assertMatches(multi, queryA, sort, "BAFECIJHDG");
 
-    sort.setSort("string", true);
+    sort.setSort(new SortField ("string", SortField.STRING, true));
     assertMatches(multi, queryA, sort, "CBEFGHIAJD");
 
-    sort.setSort(new String[] {"int","float"});
+    sort.setSort(new SortField ("int", SortField.INT), new SortField ("float", SortField.FLOAT));
     assertMatches(multi, queryA, sort, "IDHFGJEABC");
 
-    sort.setSort(new String[] {"float","string"});
+    sort.setSort(new SortField ("float", SortField.FLOAT), new SortField ("string", SortField.STRING));
     assertMatches(multi, queryA, sort, "GDHJICEFAB");
 
-    sort.setSort("int");
+    sort.setSort(new SortField ("int", SortField.INT));
     assertMatches(multi, queryF, sort, "IZJ");
 
-    sort.setSort("int", true);
+    sort.setSort(new SortField ("int", SortField.INT, true));
     assertMatches(multi, queryF, sort, "JZI");
 
-    sort.setSort("float");
+    sort.setSort(new SortField ("float", SortField.FLOAT));
     assertMatches(multi, queryF, sort, "ZJI");
 
-    sort.setSort("string");
+    sort.setSort(new SortField ("string", SortField.STRING));
     assertMatches(multi, queryF, sort, "ZJI");
 
-    sort.setSort("string", true);
+    sort.setSort(new SortField ("string", SortField.STRING, true));
     assertMatches(multi, queryF, sort, "IJZ");
 
     // up to this point, all of the searches should have "sane" 
@@ -378,10 +351,10 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
     // next we'll check an alternate Locale for string, so purge first
     FieldCache.DEFAULT.purgeAllCaches();
 
-    sort.setSort(new SortField[] { new SortField ("string", Locale.US) });
+    sort.setSort(new SortField ("string", Locale.US) );
     assertMatches(multi, queryA, sort, "DJAIHGFEBC");
 
-    sort.setSort(new SortField[] { new SortField ("string", Locale.US, true)});
+    sort.setSort(new SortField ("string", Locale.US, true));
     assertMatches(multi, queryA, sort, "CBEFGHIAJD");
 
     assertSaneFieldCaches(getName() + " Locale.US");

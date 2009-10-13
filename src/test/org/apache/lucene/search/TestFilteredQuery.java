@@ -105,7 +105,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     assertEquals (1, hits[0].doc);
     QueryUtils.check(filteredquery,searcher);
 
-    hits = searcher.search (filteredquery, null, 1000, new Sort("sorter")).scoreDocs;
+    hits = searcher.search (filteredquery, null, 1000, new Sort(new SortField("sorter", SortField.STRING))).scoreDocs;
     assertEquals (1, hits.length);
     assertEquals (1, hits[0].doc);
 

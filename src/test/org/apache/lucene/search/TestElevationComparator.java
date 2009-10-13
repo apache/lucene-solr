@@ -66,10 +66,10 @@ public class TestElevationComparator extends LuceneTestCase {
     newq.add(query, BooleanClause.Occur.SHOULD);
     newq.add(getElevatedQuery(new String[] {"id", "a", "id", "x"}), BooleanClause.Occur.SHOULD);
 
-    Sort sort = new Sort(new SortField[]{
+    Sort sort = new Sort(
         new SortField("id", new ElevationComparatorSource(priority), false),
         new SortField(null, SortField.SCORE, reversed)
-      });
+      );
 
     TopDocsCollector topCollector = TopFieldCollector.create(sort, 50, false, true, true, true);
     searcher.search(newq, null, topCollector);

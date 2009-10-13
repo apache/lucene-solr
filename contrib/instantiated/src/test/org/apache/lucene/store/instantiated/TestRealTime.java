@@ -17,12 +17,12 @@ package org.apache.lucene.store.instantiated;
 
 import junit.framework.TestCase;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TopDocCollector;
-import org.apache.lucene.search.HitCollector;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexReader;
 
 /**
  * Assert that the content of an index 
@@ -62,9 +62,12 @@ public class TestRealTime extends TestCase {
 
   }
 
-  public static class Collector extends HitCollector {
+  public static class Collector extends org.apache.lucene.search.Collector {
     private int hits = 0;
-    public void collect(int doc, float score) {
+    public void setScorer(Scorer scorer) {}
+    public void setNextReader(IndexReader reader, int docBase) {}
+    public boolean acceptsDocsOutOfOrder() { return true; }
+    public void collect(int doc) {
       hits++;
     }
   }

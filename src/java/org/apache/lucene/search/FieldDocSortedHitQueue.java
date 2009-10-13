@@ -33,8 +33,6 @@ import java.util.Locale;
 class FieldDocSortedHitQueue
 extends PriorityQueue<FieldDoc> {
 
-	// this cannot contain AUTO fields - any AUTO fields should
-	// have been resolved by the time this class is used.
 	volatile SortField[] fields;
 
 	// used in the case where the fields are sorted by locale
@@ -63,10 +61,8 @@ extends PriorityQueue<FieldDoc> {
 	 * @param fields
 	 */
 	synchronized void setFields (SortField[] fields) {
-		if (this.fields == null) {
-			this.fields = fields;
-			this.collators = hasCollators (fields);
-		}
+		this.fields = fields;
+		this.collators = hasCollators (fields);
 	}
 
 
@@ -173,13 +169,6 @@ extends PriorityQueue<FieldDoc> {
         case SortField.CUSTOM:{
 					c = docA.fields[i].compareTo (docB.fields[i]);
 					break;
-        }
-        case SortField.AUTO:{
-					// we cannot handle this - even if we determine the type of object (Float or
-					// Integer), we don't necessarily know how to compare them (both SCORE and
-					// FLOAT contain floats, but are sorted opposite of each other). Before
-					// we get here, each AUTO should have been replaced with its actual value.
-					throw new RuntimeException ("FieldDocSortedHitQueue cannot use an AUTO SortField");
         }
         default:{
 					throw new RuntimeException ("invalid SortField type: "+type);

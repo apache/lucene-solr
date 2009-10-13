@@ -240,9 +240,6 @@ class MultiSearcherThread extends Thread {
       this.ioe = ioe;
     }
     if (ioe == null) {
-      // if we are sorting by fields, we need to tell the field sorted hit queue
-      // the actual type of fields, in case the original list contained AUTO.
-      // if the searchable returns null for fields, we'll have problems.
       if (sort != null) {
         TopFieldDocs docsFields = (TopFieldDocs) docs;
         // If one of the Sort fields is FIELD_DOC, need to fix its values, so that
