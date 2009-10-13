@@ -120,7 +120,7 @@ public abstract class AbstractDataImportHandlerTest extends
     final Context delegate = new ContextImpl(parentEntity, resolver,
             parentDataSource, currProcess,
             new HashMap<String, Object>(), null, null);
-    return new TestContext(entityAttrs, delegate, entityFields);
+    return new TestContext(entityAttrs, delegate, entityFields, parentEntity == null);
   }
 
   /**
@@ -144,12 +144,15 @@ public abstract class AbstractDataImportHandlerTest extends
     private final Map<String, String> entityAttrs;
     private final Context delegate;
     private final List<Map<String, String>> entityFields;
+    private final boolean root;
     String script,scriptlang;
 
-    public TestContext(Map<String, String> entityAttrs, Context delegate, List<Map<String, String>> entityFields) {
+    public TestContext(Map<String, String> entityAttrs, Context delegate,
+                       List<Map<String, String>> entityFields, boolean root) {
       this.entityAttrs = entityAttrs;
       this.delegate = delegate;
       this.entityFields = entityFields;
+      this.root = root;
     }
 
     public String getEntityAttribute(String name) {
@@ -175,7 +178,7 @@ public abstract class AbstractDataImportHandlerTest extends
     }
 
     public boolean isRootEntity() {
-      return false;
+      return root;
     }
 
     public String currentProcess() {
