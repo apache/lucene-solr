@@ -60,7 +60,6 @@ public class FuzzyQuery extends MultiTermQuery {
    * or if prefixLength &lt; 0
    */
   public FuzzyQuery(Term term, float minimumSimilarity, int prefixLength) throws IllegalArgumentException {
-    super(term); // will be removed in 3.0
     this.term = term;
     
     if (minimumSimilarity >= 1.0f)
@@ -125,6 +124,7 @@ public class FuzzyQuery extends MultiTermQuery {
     throw new UnsupportedOperationException("FuzzyQuery cannot change rewrite method");
   }
   
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if(!termLongEnough) {  // can't match
       return new BooleanQuery();
@@ -195,18 +195,14 @@ public class FuzzyQuery extends MultiTermQuery {
     }
   }
   
-  protected static class ScoreTermQueue extends PriorityQueue {
+  protected static class ScoreTermQueue extends PriorityQueue<ScoreTerm> {
     
     public ScoreTermQueue(int size){
       initialize(size);
     }
     
-    /* (non-Javadoc)
-     * @see org.apache.lucene.util.PriorityQueue#lessThan(java.lang.Object, java.lang.Object)
-     */
-    protected boolean lessThan(Object a, Object b) {
-      ScoreTerm termA = (ScoreTerm)a;
-      ScoreTerm termB = (ScoreTerm)b;
+    @Override
+    protected boolean lessThan(ScoreTerm termA, ScoreTerm termB) {
       if (termA.score == termB.score)
         return termA.term.compareTo(termB.term) > 0;
       else
@@ -215,6 +211,7 @@ public class FuzzyQuery extends MultiTermQuery {
     
   }
 
+  @Override
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
@@ -224,6 +221,7 @@ public class FuzzyQuery extends MultiTermQuery {
     return result;
   }
 
+  @Override
   public boolean equals(Object obj) {
     if (this == obj)
       return true;

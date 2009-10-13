@@ -58,8 +58,6 @@ import org.apache.lucene.queryParser.QueryParser; // for javadoc
  * #CONSTANT_SCORE_AUTO_REWRITE_DEFAULT} by default.
  */
 public abstract class MultiTermQuery extends Query {
-  /* @deprecated move to sub class */
-  protected Term term;
   protected RewriteMethod rewriteMethod = CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
   transient int numberOfTerms = 0;
 
@@ -322,28 +320,10 @@ public abstract class MultiTermQuery extends Query {
   };
 
   /**
-   * Constructs a query for terms matching <code>term</code>.
-   * @deprecated check sub class for possible term access - the Term does not
-   * make sense for all MultiTermQuerys and will be removed.
-   */
-  public MultiTermQuery(Term term) {
-    this.term = term;
-  }
-
-  /**
    * Constructs a query matching terms that cannot be represented with a single
    * Term.
    */
   public MultiTermQuery() {
-  }
-
-  /**
-   * Returns the pattern term.
-   * @deprecated check sub class for possible term access - getTerm does not
-   * make sense for all MultiTermQuerys and will be removed.
-   */
-  public Term getTerm() {
-    return term;
   }
 
   /** Construct the enumeration to be used, expanding the pattern term. */
@@ -384,27 +364,6 @@ public abstract class MultiTermQuery extends Query {
 
   public Query rewrite(IndexReader reader) throws IOException {
     return rewriteMethod.rewrite(reader, this);
-  }
-
-
-  /* Prints a user-readable version of this query.
-   * Implemented for back compat in case MultiTermQuery
-   * subclasses do no implement.
-   */
-  @Override
-  public String toString(String field) {
-    StringBuilder buffer = new StringBuilder();
-    if (term != null) {
-      if (!term.field().equals(field)) {
-        buffer.append(term.field());
-        buffer.append(":");
-      }
-      buffer.append(term.text());
-    } else {
-      buffer.append("termPattern:unknown");
-    }
-    buffer.append(ToStringUtils.boost(getBoost()));
-    return buffer.toString();
   }
 
   /**

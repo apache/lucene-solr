@@ -62,6 +62,9 @@ API Changes
   Make new Sort(SortField...) and Sort.setSort(SortField...) varargs-
   enabled. (Uwe Schindler)
 
+* LUCENE-1977: Remove deprecated Term field and accessors in
+  MultiTermQuery. (Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-1951: When the text provided to WildcardQuery has no wildcard

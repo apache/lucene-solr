@@ -276,14 +276,6 @@ final class JustCompileSearch {
     
   }
 
-  static final class JustCompileMultiTermQuery extends MultiTermQuery {
-
-    protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-  }
-
   static final class JustCompilePhraseScorer extends PhraseScorer {
 
     JustCompilePhraseScorer(Weight weight, TermPositions[] tps, int[] offsets,

@@ -34,7 +34,6 @@ public class PrefixQuery extends MultiTermQuery {
 
   /** Constructs a query for terms starting with <code>prefix</code>. */
   public PrefixQuery(Term prefix) {
-    super(prefix); //will be removed in 3.0
     this.prefix = prefix;
   }
 
@@ -46,6 +45,7 @@ public class PrefixQuery extends MultiTermQuery {
   }
 
   /** Prints a user-readable version of this query. */
+  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     if (!prefix.field().equals(field)) {
@@ -58,7 +58,7 @@ public class PrefixQuery extends MultiTermQuery {
     return buffer.toString();
   }
 
-  //@Override
+  @Override
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
@@ -66,7 +66,7 @@ public class PrefixQuery extends MultiTermQuery {
     return result;
   }
 
-  //@Override
+  @Override
   public boolean equals(Object obj) {
     if (this == obj)
       return true;

@@ -41,7 +41,6 @@ public class WildcardQuery extends MultiTermQuery {
   protected Term term;
     
   public WildcardQuery(Term term) {
-    super(term); //will be removed in 3.0
     this.term = term;
     String text = term.text();
     this.termContainsWildcard = (text.indexOf('*') != -1)
@@ -65,6 +64,7 @@ public class WildcardQuery extends MultiTermQuery {
     return term;
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (termIsPrefix) {
       MultiTermQuery rewritten = new PrefixQuery(term.createTerm(term.text()
@@ -78,6 +78,7 @@ public class WildcardQuery extends MultiTermQuery {
   }
   
   /** Prints a user-readable version of this query. */
+  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     if (!term.field().equals(field)) {
@@ -89,7 +90,7 @@ public class WildcardQuery extends MultiTermQuery {
     return buffer.toString();
   }
 
-  //@Override
+  @Override
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
@@ -97,7 +98,7 @@ public class WildcardQuery extends MultiTermQuery {
     return result;
   }
 
-  //@Override
+  @Override
   public boolean equals(Object obj) {
     if (this == obj)
       return true;

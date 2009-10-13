@@ -31,20 +31,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.memory.MemoryIndex;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DisjunctionMaxQuery;
-import org.apache.lucene.search.FilteredQuery;
-import org.apache.lucene.search.FuzzyQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MultiPhraseQuery;
-import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TermRangeQuery;
-import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -141,14 +128,20 @@ public class WeightedSpanTermExtractor {
         mtq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
         query = mtq;
       }
-      String field;
+      String field = null;
       if(mtq instanceof TermRangeQuery) {
         field = ((TermRangeQuery)mtq).getField();
-      } else {
-        field = mtq.getTerm().field();
+      } else if (mtq instanceof PrefixQuery) {
+        field = ((PrefixQuery) mtq).getPrefix().field();
+      } else if (mtq instanceof WildcardQuery) {
+        field = ((WildcardQuery) mtq).getTerm().field();
+      } else if (mtq instanceof FuzzyQuery) {
+        field = ((FuzzyQuery) mtq).getTerm().field();
       }
-      IndexReader ir = getReaderForField(field);
-      extract(query.rewrite(ir), terms);
+      if (field != null) {
+        IndexReader ir = getReaderForField(field);
+        extract(query.rewrite(ir), terms);
+      }
     } else if (query instanceof MultiPhraseQuery) {
       final MultiPhraseQuery mpq = (MultiPhraseQuery) query;
       final List termArrays = mpq.getTermArrays();
@@ -457,11 +450,11 @@ public class WeightedSpanTermExtractor {
       q.setBoost(query.getBoost());
       return new TermRangeQuery(q.getField(), q.getLowerTerm(), q.getUpperTerm(), q.includesLower(), q.includesUpper());
     } else if(query instanceof WildcardQuery) {
-      MultiTermQuery q = new WildcardQuery(query.getTerm());
+      MultiTermQuery q = new WildcardQuery(((WildcardQuery) query).getTerm());
       q.setBoost(query.getBoost());
       return q;
     } else if(query instanceof PrefixQuery) {
-      MultiTermQuery q = new PrefixQuery(query.getTerm());
+      MultiTermQuery q = new PrefixQuery(((PrefixQuery) query).getPrefix());
       q.setBoost(q.getBoost());
       return q;
     } else if(query instanceof FuzzyQuery) {
