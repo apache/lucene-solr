@@ -22,7 +22,8 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
-================== Release 1.4-dev ==================
+
+================== Release 1.4.0 ==================
 Upgrading from Solr 1.3
 -----------------------
 
