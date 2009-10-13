@@ -26,7 +26,7 @@
      -->
   <abortOnConfigurationError>${solr.abortOnConfigurationError:true}</abortOnConfigurationError>
 
-  <lib dir="../../../dist/" regex="apache-solr-clustering-(\d|\.)+-.*\.jar" />
+  <lib dir="../../../dist/" regex="apache-solr-clustering-(nightly|\d).*\.jar" />
   <lib dir="../lib" />
   <!-- these jars are not inlcuded in the release because of their licenses,
        they will be downlodded when 'ant example' is run

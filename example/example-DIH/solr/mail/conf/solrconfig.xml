@@ -27,7 +27,7 @@
   <abortOnConfigurationError>${solr.abortOnConfigurationError:true}</abortOnConfigurationError>
 
   <lib dir="../../../../contrib/dataimporthandler/lib/" regex=".*jar$" />
-  <lib dir="../../../../dist/" regex="apache-solr-dataimporthandler-extras.*jar" />
+  <lib dir="../../../../dist/" regex="apache-solr-dataimporthandler-extras-(nightly|\d).*jar" />
   
   <indexDefaults>
    <!-- Values here affect all index writers and act as a default unless overridden. -->
