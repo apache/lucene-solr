@@ -17,10 +17,14 @@ package org.apache.lucene.queryParser.surround.query;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.HitCollector;
 
 import org.apache.lucene.queryParser.surround.parser.QueryParser;
 
@@ -52,16 +56,32 @@ public class BooleanQueryTst {
   
   public void setVerbose(boolean verbose) {this.verbose = verbose;}
 
-  class TestCollector extends HitCollector { // FIXME: use check hits from Lucene tests
+  class TestCollector extends Collector { // FIXME: use check hits from Lucene tests
     int totalMatched;
     boolean[] encountered;
+    private Scorer scorer = null;
+    private int docBase = 0;
 
     TestCollector() {
       totalMatched = 0;
       encountered = new boolean[expectedDocNrs.length];
     }
 
-    public void collect(int docNr, float score) {
+    public void setScorer(Scorer scorer) throws IOException {
+      this.scorer = scorer;
+    }
+
+    public boolean acceptsDocsOutOfOrder() {
+      return true;
+    }
+
+    public void setNextReader(IndexReader reader, int docBase) throws IOException {
+      this.docBase = docBase;
+    }
+    
+    public void collect(int docNr) throws IOException {
+      float score = scorer.score();
+      docNr += docBase;
       /* System.out.println(docNr + " '" + dBase.getDocs()[docNr] + "': " + score); */
       TestCase.assertTrue(queryText + ": positive score", score > 0.0);
       TestCase.assertTrue(queryText + ": too many hits", totalMatched < expectedDocNrs.length);

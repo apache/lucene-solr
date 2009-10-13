@@ -42,11 +42,13 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.HitCollector;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -424,11 +426,23 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       else 
         searcher = ((MemoryIndex) index).createSearcher();
 
-      final float[] scores = new float[1]; // inits to 0.0f
-      searcher.search(query, new HitCollector() {
-        public void collect(int doc, float score) {
-          scores[0] = score;
+      final float[] scores = new float[1]; // inits to 0.0f (no match)
+      searcher.search(query, new Collector() {
+        private Scorer scorer;
+
+        public void collect(int doc) throws IOException {
+          scores[0] = scorer.score();
         }
+
+        public void setScorer(Scorer scorer) throws IOException {
+          this.scorer = scorer;
+        }
+
+        public boolean acceptsDocsOutOfOrder() {
+          return true;
+        }
+
+        public void setNextReader(IndexReader reader, int docBase) { }
       });
       float score = scores[0];
 //      Hits hits = searcher.search(query);

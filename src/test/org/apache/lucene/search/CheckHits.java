@@ -420,18 +420,9 @@ public class CheckHits {
       checkExplanations(query);
       return super.search(query,filter,n,sort);
     }
-    /** @deprecated use {@link #search(Query, Collector)} instead. */
-    public void search(Query query, HitCollector results) throws IOException {
-      search(query, new HitCollectorWrapper(results));
-    }
     public void search(Query query, Collector results) throws IOException {
       checkExplanations(query);
       super.search(query, results);
-    }
-    /** @deprecated use {@link #search(Query, Filter, Collector)} instead. */
-    public void search(Query query, Filter filter,
-        HitCollector results) throws IOException {
-      search(query, filter, new HitCollectorWrapper(results));
     }
     public void search(Query query, Filter filter, Collector results) throws IOException {
       checkExplanations(query);

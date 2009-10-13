@@ -26,13 +26,6 @@ import org.apache.lucene.index.IndexReader;
  * gather raw results from a search, and implement sorting
  * or custom result filtering, collation, etc. </p>
  *
- * <p>As of 2.9, this class replaces the deprecated
- * HitCollector, and offers an API for efficient collection
- * of hits across sequential {@link IndexReader}s. {@link
- * IndexSearcher} advances the collector through each of the
- * sub readers, in an arbitrary order. This results in a
- * higher performance means of collection.</p>
- *
  * <p>Lucene's core collectors are derived from Collector.
  * Likely your application can use one of these classes, or
  * subclass {@link TopDocsCollector}, instead of
@@ -60,8 +53,7 @@ import org.apache.lucene.index.IndexReader;
  *
  *   <li>{@link TimeLimitingCollector}, which wraps any other
  *   Collector and aborts the search if it's taken too much
- *   time, will subclass Collector in 3.0 (presently it
- *   subclasses the deprecated HitCollector).</li>
+ *   time.</li>
  *
  *   <li>{@link PositiveScoresOnlyCollector} wraps any other
  *   Collector and prevents collection of hits whose score

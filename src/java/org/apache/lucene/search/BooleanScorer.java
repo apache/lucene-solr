@@ -270,11 +270,6 @@ final class BooleanScorer extends Scorer {
 
     return false;
   }
-
-  /** @deprecated use {@link #score(Collector, int, int)} instead. */
-  protected boolean score(HitCollector hc, int max) throws IOException {
-    return score(new HitCollectorWrapper(hc), max, docID());
-  }
   
   public int advance(int target) throws IOException {
     throw new UnsupportedOperationException();
@@ -327,11 +322,6 @@ final class BooleanScorer extends Scorer {
 
   public void score(Collector collector) throws IOException {
     score(collector, Integer.MAX_VALUE, nextDoc());
-  }
-
-  /** @deprecated use {@link #score(Collector)} instead. */
-  public void score(HitCollector hc) throws IOException {
-    score(new HitCollectorWrapper(hc));
   }
   
   public String toString() {

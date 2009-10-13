@@ -25,7 +25,6 @@ import org.apache.lucene.util.ScorerDocQueue;
 
 /** A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>.
  * This Scorer implements {@link Scorer#skipTo(int)} and uses skipTo() on the given Scorers. 
- * TODO: Implement score(HitCollector, int).
  */
 class DisjunctionSumScorer extends Scorer {
   /** The number of subscorers. */ 
@@ -109,16 +108,6 @@ class DisjunctionSumScorer extends Scorer {
   }
 
   /** Scores and collects all matching documents.
-   * @param hc The collector to which all matching documents are passed through
-   * {@link HitCollector#collect(int, float)}.
-   * <br>When this method is used the {@link #explain(int)} method should not be used.
-   * @deprecated use {@link #score(Collector)} instead.
-   */
-  public void score(HitCollector hc) throws IOException {
-    score(new HitCollectorWrapper(hc));
-  }
-  
-  /** Scores and collects all matching documents.
    * @param collector The collector to which all matching documents are passed through.
    * <br>When this method is used the {@link #explain(int)} method should not be used.
    */
@@ -129,19 +118,6 @@ class DisjunctionSumScorer extends Scorer {
     }
   }
 
-  /** Expert: Collects matching documents in a range.  Hook for optimization.
-   * Note that {@link #next()} must be called once before this method is called
-   * for the first time.
-   * @param hc The collector to which all matching documents are passed through
-   * {@link HitCollector#collect(int, float)}.
-   * @param max Do not score documents past this.
-   * @return true if more matching documents may remain.
-   * @deprecated use {@link #score(Collector, int, int)} instead.
-   */
-  protected boolean score(HitCollector hc, int max) throws IOException {
-    return score(new HitCollectorWrapper(hc), max, docID());
-  }
-  
   /** Expert: Collects matching documents in a range.  Hook for optimization.
    * Note that {@link #next()} must be called once before this method is called
    * for the first time.

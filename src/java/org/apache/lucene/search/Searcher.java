@@ -51,26 +51,6 @@ public abstract class Searcher implements Searchable {
   }
 
   /** Lower-level search API.
-   *
-   * <p>{@link HitCollector#collect(int,float)} is called for every matching
-   * document.
-   *
-   * <p>Applications should only use this if they need <i>all</i> of the
-   * matching documents.  The high-level search API ({@link
-   * Searcher#search(Query)}) is usually more efficient, as it skips
-   * non-high-scoring hits.
-   * <p>Note: The <code>score</code> passed to this method is a raw score.
-   * In other words, the score will not necessarily be a float whose value is
-   * between 0 and 1.
-   * @throws BooleanQuery.TooManyClauses
-   * @deprecated use {@link #search(Query, Collector)} instead.
-   */
-  public void search(Query query, HitCollector results)
-    throws IOException {
-    search(createWeight(query), null, new HitCollectorWrapper(results));
-  }
-
-  /** Lower-level search API.
   *
   * <p>{@link Collector#collect(int)} is called for every matching document.
   *
@@ -88,28 +68,6 @@ public abstract class Searcher implements Searchable {
    search(createWeight(query), null, results);
  }
 
-  /** Lower-level search API.
-   *
-   * <p>{@link HitCollector#collect(int,float)} is called for every matching
-   * document.
-   * <br>HitCollector-based access to remote indexes is discouraged.
-   *
-   * <p>Applications should only use this if they need <i>all</i> of the
-   * matching documents.  The high-level search API ({@link
-   * Searcher#search(Query, Filter, int)}) is usually more efficient, as it skips
-   * non-high-scoring hits.
-   *
-   * @param query to match documents
-   * @param filter if non-null, used to permit documents to be collected.
-   * @param results to receive hits
-   * @throws BooleanQuery.TooManyClauses
-   * @deprecated use {@link #search(Query, Filter, Collector)} instead.
-   */
-  public void search(Query query, Filter filter, HitCollector results)
-    throws IOException {
-    search(createWeight(query), filter, new HitCollectorWrapper(results));
-  }
-  
   /** Lower-level search API.
    *
    * <p>{@link Collector#collect(int)} is called for every matching
@@ -199,15 +157,6 @@ public abstract class Searcher implements Searchable {
     return result;
   }
 
-  /* The following abstract methods were added as a workaround for GCJ bug #15411.
-   * http://gcc.gnu.org/bugzilla/show_bug.cgi?id=15411
-   */
-  /**
-   * @deprecated use {@link #search(Weight, Filter, Collector)} instead.
-   */
-  public void search(Weight weight, Filter filter, HitCollector results) throws IOException {
-    search(weight, filter, new HitCollectorWrapper(results));
-  }
   abstract public void search(Weight weight, Filter filter, Collector results) throws IOException;
   abstract public void close() throws IOException;
   abstract public int docFreq(Term term) throws IOException;

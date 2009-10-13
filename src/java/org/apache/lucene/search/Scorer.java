@@ -55,16 +55,6 @@ public abstract class Scorer extends DocIdSetIterator {
   }
 
   /** Scores and collects all matching documents.
-   * @param hc The collector to which all matching documents are passed through
-   * {@link HitCollector#collect(int, float)}.
-   * <br>When this method is used the {@link #explain(int)} method should not be used.
-   * @deprecated use {@link #score(Collector)} instead.
-   */
-  public void score(HitCollector hc) throws IOException {
-    score(new HitCollectorWrapper(hc));
-  }
-  
-  /** Scores and collects all matching documents.
    * @param collector The collector to which all matching documents are passed.
    * <br>When this method is used the {@link #explain(int)} method should not be used.
    */
@@ -76,19 +66,6 @@ public abstract class Scorer extends DocIdSetIterator {
     }
   }
 
-  /** Expert: Collects matching documents in a range.  Hook for optimization.
-   * Note that {@link #next()} must be called once before this method is called
-   * for the first time.
-   * @param hc The collector to which all matching documents are passed through
-   * {@link HitCollector#collect(int, float)}.
-   * @param max Do not score documents past this.
-   * @return true if more matching documents may remain.
-   * @deprecated use {@link #score(Collector, int, int)} instead.
-   */
-  protected boolean score(HitCollector hc, int max) throws IOException {
-    return score(new HitCollectorWrapper(hc), max, docID());
-  }
-  
   /**
    * Expert: Collects matching documents in a range. Hook for optimization.
    * Note, <code>firstDocID</code> is added to ensure that {@link #nextDoc()}

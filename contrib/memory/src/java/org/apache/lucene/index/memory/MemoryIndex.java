@@ -43,10 +43,11 @@ import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.search.HitCollector;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;
 
 /**
@@ -414,10 +415,22 @@ public class MemoryIndex implements Serializable {
     Searcher searcher = createSearcher();
     try {
       final float[] scores = new float[1]; // inits to 0.0f (no match)
-      searcher.search(query, new HitCollector() {
-        public void collect(int doc, float score) {
-          scores[0] = score;
+      searcher.search(query, new Collector() {
+        private Scorer scorer;
+
+        public void collect(int doc) throws IOException {
+          scores[0] = scorer.score();
         }
+
+        public void setScorer(Scorer scorer) throws IOException {
+          this.scorer = scorer;
+        }
+
+        public boolean acceptsDocsOutOfOrder() {
+          return true;
+        }
+
+        public void setNextReader(IndexReader reader, int docBase) { }
       });
       float score = scores[0];
       return score;

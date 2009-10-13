@@ -56,9 +56,9 @@ API Changes
 * LUCENE-1975: Remove deprecated SpanQuery.getTerms() and generify 
   Query.extractTerms(Set<Term>) (Michael Busch)
 
-* LUCENE-1972: Remove deprecated ExtendedFieldCache, custom and auto
-  caches, SortField.AUTO, deprecated custom sort, deprecated sorting
-  HitCollectors, deprecated TopDocs HitCollectors, legacy search.
+* LUCENE-1972, LUCENE-1978: Remove deprecated ExtendedFieldCache,
+  custom and auto caches, SortField.AUTO, deprecated custom sort,
+  deprecated HitCollector, legacy search setting in SortField.
   Make new Sort(SortField...) and Sort.setSort(SortField...) varargs-
   enabled. (Uwe Schindler)
 

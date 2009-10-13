@@ -65,20 +65,10 @@ final class TermScorer extends Scorer {
       scoreCache[i] = getSimilarity().tf(i) * weightValue;
   }
 
-  /** @deprecated use {@link #score(Collector)} instead. */
-  public void score(HitCollector hc) throws IOException {
-    score(new HitCollectorWrapper(hc));
-  }
-
   public void score(Collector c) throws IOException {
     score(c, Integer.MAX_VALUE, nextDoc());
   }
 
-  /** @deprecated use {@link #score(Collector, int, int)} instead. */
-  protected boolean score(HitCollector c, int end) throws IOException {
-    return score(new HitCollectorWrapper(c), end, doc);
-  }
-  
   // firstDocID is ignored since nextDoc() sets 'doc'
   protected boolean score(Collector c, int end, int firstDocID) throws IOException {
     c.setScorer(this);
@@ -166,8 +156,6 @@ final class TermScorer extends Scorer {
   }
   
   /** Returns an explanation of the score for a document.
-   * <br>When this method is used, the {@link #next()} method
-   * and the {@link #score(HitCollector)} method should not be used.
    * @param doc The document number for the explanation.
    */
   public Explanation explain(int doc) throws IOException {

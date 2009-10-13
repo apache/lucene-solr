@@ -261,16 +261,6 @@ class BooleanScorer2 extends Scorer {
   }
 
   /** Scores and collects all matching documents.
-   * @param hc The collector to which all matching documents are passed through
-   * {@link HitCollector#collect(int, float)}.
-   * <br>When this method is used the {@link #explain(int)} method should not be used.
-   * @deprecated use {@link #score(Collector)} instead.
-   */
-  public void score(HitCollector hc) throws IOException {
-    score(new HitCollectorWrapper(hc));
-  }
-
-  /** Scores and collects all matching documents.
    * @param collector The collector to which all matching documents are passed through.
    * <br>When this method is used the {@link #explain(int)} method should not be used.
    */
@@ -279,19 +269,6 @@ class BooleanScorer2 extends Scorer {
     while ((doc = countingSumScorer.nextDoc()) != NO_MORE_DOCS) {
       collector.collect(doc);
     }
-  }
-
-  /** Expert: Collects matching documents in a range.
-   * <br>Note that {@link #next()} must be called once before this method is
-   * called for the first time.
-   * @param hc The collector to which all matching documents are passed through
-   * {@link HitCollector#collect(int, float)}.
-   * @param max Do not score documents past this.
-   * @return true if more matching documents may remain.
-   * @deprecated use {@link #score(Collector, int, int)} instead.
-   */
-  protected boolean score(HitCollector hc, int max) throws IOException {
-    return score(new HitCollectorWrapper(hc), max, docID());
   }
   
   protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
