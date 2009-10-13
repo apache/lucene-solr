@@ -66,19 +66,18 @@ public class TestBoolean2 extends LuceneTestCase {
   public void queriesTest(String queryText, int[] expDocNrs) throws Exception {
 //System.out.println();
 //System.out.println("Query: " + queryText);
-    try {
-      Query query1 = makeQuery(queryText);
-      BooleanQuery.setAllowDocsOutOfOrder(true);
-      ScoreDoc[] hits1 = searcher.search(query1, null, 1000).scoreDocs;
 
-      Query query2 = makeQuery(queryText); // there should be no need to parse again...
-      BooleanQuery.setAllowDocsOutOfOrder(false);
-      ScoreDoc[] hits2 = searcher.search(query2, null, 1000).scoreDocs;
-
-      CheckHits.checkHitsQuery(query2, hits1, hits2, expDocNrs);
-    } finally { // even when a test fails.
-      BooleanQuery.setAllowDocsOutOfOrder(false);
-    }
+    Query query1 = makeQuery(queryText);
+    TopScoreDocCollector collector = TopScoreDocCollector.create(1000, false);
+    searcher.search(query1, null, collector);
+    ScoreDoc[] hits1 = collector.topDocs().scoreDocs;
+    
+    Query query2 = makeQuery(queryText); // there should be no need to parse again...
+    collector = TopScoreDocCollector.create(1000, true);
+    searcher.search(query2, null, collector);
+    ScoreDoc[] hits2 = collector.topDocs().scoreDocs; 
+      
+    CheckHits.checkHitsQuery(query2, hits1, hits2, expDocNrs);
   }
 
   public void testQueries01() throws Exception {
@@ -165,14 +164,19 @@ public class TestBoolean2 extends LuceneTestCase {
         // match up.
         Sort sort = Sort.INDEXORDER;
 
-        BooleanQuery.setAllowDocsOutOfOrder(false);
-
         QueryUtils.check(q1,searcher);
 
-        ScoreDoc[] hits1 = searcher.search(q1,null, 1000, sort).scoreDocs;
+        TopFieldCollector collector = TopFieldCollector.create(sort, 1000,
+            false, true, true, true);
 
-        BooleanQuery.setAllowDocsOutOfOrder(true);
-        ScoreDoc[] hits2 = searcher.search(q1,null, 1000, sort).scoreDocs;
+        searcher.search(q1, null, collector);
+        ScoreDoc[] hits1 = collector.topDocs().scoreDocs;
+
+        collector = TopFieldCollector.create(sort, 1000,
+            false, true, true, false);
+        
+        searcher.search(q1, null, collector);
+        ScoreDoc[] hits2 = collector.topDocs().scoreDocs;
         tot+=hits2.length;
         CheckHits.checkEqual(q1, hits1, hits2);
       }
@@ -181,8 +185,6 @@ public class TestBoolean2 extends LuceneTestCase {
       // For easier debugging
       System.out.println("failed query: " + q1);
       throw e;
-    } finally { // even when a test fails.
-      BooleanQuery.setAllowDocsOutOfOrder(false);
     }
 
     // System.out.println("Total hits:"+tot);

@@ -65,6 +65,8 @@ API Changes
 * LUCENE-1977: Remove deprecated Term field and accessors in
   MultiTermQuery. (Uwe Schindler)
 
+* LUCENE-944: Remove deprecated methods in BooleanQuery. (Michael Busch)
+
 Bug fixes
 
 * LUCENE-1951: When the text provided to WildcardQuery has no wildcard

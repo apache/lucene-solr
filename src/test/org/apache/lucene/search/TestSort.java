@@ -836,11 +836,6 @@ public class TestSort extends LuceneTestCase implements Serializable {
         "OutOfOrderOneComparatorScoringMaxScoreCollector" 
     };
     
-    // Save the original value to set later.
-    boolean origVal = BooleanQuery.getAllowDocsOutOfOrder();
-    
-    BooleanQuery.setAllowDocsOutOfOrder(true);
-    
     BooleanQuery bq = new BooleanQuery();
     // Add a Query with SHOULD, since bw.scorer() returns BooleanScorer2
     // which delegates to BS if there are no mandatory clauses.
@@ -848,28 +843,20 @@ public class TestSort extends LuceneTestCase implements Serializable {
     // Set minNrShouldMatch to 1 so that BQ will not optimize rewrite to return
     // the clause instead of BQ.
     bq.setMinimumNumberShouldMatch(1);
-    try {
-      for (int i = 0; i < sort.length; i++) {
-        for (int j = 0; j < tfcOptions.length; j++) {
-          TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10,
-              tfcOptions[j][0], tfcOptions[j][1], tfcOptions[j][2], false);
+    for (int i = 0; i < sort.length; i++) {
+      for (int j = 0; j < tfcOptions.length; j++) {
+        TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10,
+            tfcOptions[j][0], tfcOptions[j][1], tfcOptions[j][2], false);
 
-          assertTrue(tdc.getClass().getName().endsWith("$"+actualTFCClasses[j]));
-          
-          full.search(bq, tdc);
-          
-          TopDocs td = tdc.topDocs();
-          ScoreDoc[] sd = td.scoreDocs;
-          assertEquals(10, sd.length);
-        }
+        assertTrue(tdc.getClass().getName().endsWith("$"+actualTFCClasses[j]));
+        
+        full.search(bq, tdc);
+        
+        TopDocs td = tdc.topDocs();
+        ScoreDoc[] sd = td.scoreDocs;
+        assertEquals(10, sd.length);
       }
-    } finally {
-      // Whatever happens, reset BooleanQuery.allowDocsOutOfOrder to the
-      // original value. Don't set it to false in case the implementation in BQ
-      // will change some day.
-      BooleanQuery.setAllowDocsOutOfOrder(origVal);
     }
-
   }
   
   public void testSortWithScoreAndMaxScoreTrackingNoResults() throws Exception {

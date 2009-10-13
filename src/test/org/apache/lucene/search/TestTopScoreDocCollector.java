@@ -50,11 +50,6 @@ public class TestTopScoreDocCollector extends LuceneTestCase {
         "InOrderTopScoreDocCollector" 
     };
     
-    // Save the original value to set later.
-    boolean origVal = BooleanQuery.getAllowDocsOutOfOrder();
-
-    BooleanQuery.setAllowDocsOutOfOrder(true);
-
     BooleanQuery bq = new BooleanQuery();
     // Add a Query with SHOULD, since bw.scorer() returns BooleanScorer2
     // which delegates to BS if there are no mandatory clauses.
@@ -62,28 +57,19 @@ public class TestTopScoreDocCollector extends LuceneTestCase {
     // Set minNrShouldMatch to 1 so that BQ will not optimize rewrite to return
     // the clause instead of BQ.
     bq.setMinimumNumberShouldMatch(1);
-    try {
+    IndexSearcher searcher = new IndexSearcher(dir, true);
+    for (int i = 0; i < inOrder.length; i++) {
+      TopDocsCollector tdc = TopScoreDocCollector.create(3, inOrder[i]);
+      assertEquals("org.apache.lucene.search.TopScoreDocCollector$" + actualTSDCClass[i], tdc.getClass().getName());
       
-      IndexSearcher searcher = new IndexSearcher(dir, true);
-      for (int i = 0; i < inOrder.length; i++) {
-        TopDocsCollector tdc = TopScoreDocCollector.create(3, inOrder[i]);
-        assertEquals("org.apache.lucene.search.TopScoreDocCollector$" + actualTSDCClass[i], tdc.getClass().getName());
-        
-        searcher.search(new MatchAllDocsQuery(), tdc);
-        
-        ScoreDoc[] sd = tdc.topDocs().scoreDocs;
-        assertEquals(3, sd.length);
-        for (int j = 0; j < sd.length; j++) {
-          assertEquals("expected doc Id " + j + " found " + sd[j].doc, j, sd[j].doc);
-        }
+      searcher.search(new MatchAllDocsQuery(), tdc);
+      
+      ScoreDoc[] sd = tdc.topDocs().scoreDocs;
+      assertEquals(3, sd.length);
+      for (int j = 0; j < sd.length; j++) {
+        assertEquals("expected doc Id " + j + " found " + sd[j].doc, j, sd[j].doc);
       }
-    } finally {
-      // Whatever happens, reset BooleanQuery.allowDocsOutOfOrder to the
-      // original value. Don't set it to false in case the implementation in BQ
-      // will change some day.
-      BooleanQuery.setAllowDocsOutOfOrder(origVal);
     }
-
   }
   
 }

@@ -257,7 +257,7 @@ public class QueryUtils {
   public static void checkSkipTo(final Query q, final IndexSearcher s) throws IOException {
     //System.out.println("Checking "+q);
     
-    if (BooleanQuery.getAllowDocsOutOfOrder()) return;  // in this case order of skipTo() might differ from that of next().
+    if (q.weight(s).scoresDocsOutOfOrder()) return;  // in this case order of skipTo() might differ from that of next().
 
     final int skip_op = 0;
     final int next_op = 1;
@@ -277,46 +277,46 @@ public class QueryUtils {
         // System.out.print(order[i]==skip_op ? " skip()":" next()");
         // System.out.println();
         final int opidx[] = { 0 };
-
-        final Weight w = q.weight(s);
-        final Scorer scorer = w.scorer(s.getIndexReader(), true, false);
-        if (scorer == null) {
-          continue;
-        }
+        final int lastDoc[] = {-1};
 
         // FUTURE: ensure scorer.doc()==-1
 
-        final int[] sdoc = new int[] { -1 };
         final float maxDiff = 1e-5f;
         s.search(q, new Collector() {
-          private int base = 0;
           private Scorer sc;
+          private IndexReader reader;
+          private Scorer scorer;
 
           public void setScorer(Scorer scorer) throws IOException {
             this.sc = scorer;
           }
 
           public void collect(int doc) throws IOException {
-            doc = doc + base;
             float score = sc.score();
+            lastDoc[0] = doc;
             try {
+              if (scorer == null) {
+                Weight w = q.weight(s);
+                scorer = w.scorer(reader, true, false);
+              }
+              
               int op = order[(opidx[0]++) % order.length];
               // System.out.println(op==skip_op ?
               // "skip("+(sdoc[0]+1)+")":"next()");
-              boolean more = op == skip_op ? scorer.advance(sdoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS
+              boolean more = op == skip_op ? scorer.advance(scorer.docID() + 1) != DocIdSetIterator.NO_MORE_DOCS
                   : scorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS;
-              sdoc[0] = scorer.docID();
+              int scorerDoc = scorer.docID();
               float scorerScore = scorer.score();
               float scorerScore2 = scorer.score();
               float scoreDiff = Math.abs(score - scorerScore);
               float scorerDiff = Math.abs(scorerScore2 - scorerScore);
-              if (!more || doc != sdoc[0] || scoreDiff > maxDiff
+              if (!more || doc != scorerDoc || scoreDiff > maxDiff
                   || scorerDiff > maxDiff) {
                 StringBuilder sbord = new StringBuilder();
                 for (int i = 0; i < order.length; i++)
                   sbord.append(order[i] == skip_op ? " skip()" : " next()");
                 throw new RuntimeException("ERROR matching docs:" + "\n\t"
-                    + (doc != sdoc[0] ? "--> " : "") + "doc=" + sdoc[0]
+                    + (doc != scorerDoc ? "--> " : "") + "doc=" + doc + ", scorerDoc=" + scorerDoc
                     + "\n\t" + (!more ? "--> " : "") + "tscorer.more=" + more
                     + "\n\t" + (scoreDiff > maxDiff ? "--> " : "")
                     + "scorerScore=" + scorerScore + " scoreDiff=" + scoreDiff
@@ -335,7 +335,9 @@ public class QueryUtils {
           }
 
           public void setNextReader(IndexReader reader, int docBase) {
-            base = docBase;
+            this.reader = reader;
+            this.scorer = null;
+            lastDoc[0] = -1;
           }
 
           public boolean acceptsDocsOutOfOrder() {
@@ -343,12 +345,21 @@ public class QueryUtils {
           }
         });
 
-        // make sure next call to scorer is false.
-        int op = order[(opidx[0]++) % order.length];
-        // System.out.println(op==skip_op ? "last: skip()":"last: next()");
-        boolean more = (op == skip_op ? scorer.advance(sdoc[0] + 1) : scorer
-            .nextDoc()) != DocIdSetIterator.NO_MORE_DOCS;
-        Assert.assertFalse(more);
+        List<IndexReader> readerList = new ArrayList<IndexReader>();
+        ReaderUtil.gatherSubReaders(readerList, s.getIndexReader());
+        IndexReader[] readers = (IndexReader[]) readerList.toArray(new IndexReader[0]);
+        for(int i = 0; i < readers.length; i++) {
+          IndexReader reader = readers[i];
+          Weight w = q.weight(s);
+          Scorer scorer = w.scorer(reader, true, false);
+          
+          if (scorer != null) {
+            boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
+      
+            if (more && lastDoc[0] != -1) 
+              Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
+          }
+        }
       }
   }
     
@@ -391,7 +402,7 @@ public class QueryUtils {
       }
     });
     
-    List readerList = new ArrayList();
+    List<IndexReader> readerList = new ArrayList<IndexReader>();
     ReaderUtil.gatherSubReaders(readerList, s.getIndexReader());
     IndexReader[] readers = (IndexReader[]) readerList.toArray(new IndexReader[0]);
     for(int i = 0; i < readers.length; i++) {

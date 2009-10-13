@@ -310,7 +310,6 @@ public class BooleanQuery extends Query {
       }
       
       // Check if we can return a BooleanScorer
-      scoreDocsInOrder |= !allowDocsOutOfOrder; // until it is removed, factor in the static setting.
       if (!scoreDocsInOrder && topScorer && required.size() == 0 && prohibited.size() < 32) {
         return new BooleanScorer(similarity, minNrShouldMatch, optional, prohibited);
       }
@@ -348,68 +347,6 @@ public class BooleanQuery extends Query {
       return true;
     }
     
-  }
-
-  /**
-   * Whether hit docs may be collected out of docid order.
-   * 
-   * @deprecated this will not be needed anymore, as
-   *             {@link Weight#scoresDocsOutOfOrder()} is used.
-   */
-  private static boolean allowDocsOutOfOrder = true;
-
-  /**
-   * Expert: Indicates whether hit docs may be collected out of docid order.
-   * 
-   * <p>
-   * Background: although the contract of the Scorer class requires that
-   * documents be iterated in order of doc id, this was not true in early
-   * versions of Lucene. Many pieces of functionality in the current Lucene code
-   * base have undefined behavior if this contract is not upheld, but in some
-   * specific simple cases may be faster. (For example: disjunction queries with
-   * less than 32 prohibited clauses; This setting has no effect for other
-   * queries.)
-   * </p>
-   * 
-   * <p>
-   * Specifics: By setting this option to true, docid N might be scored for a
-   * single segment before docid N-1. Across multiple segments, docs may be
-   * scored out of order regardless of this setting - it only applies to scoring
-   * a single segment.
-   * 
-   * Being static, this setting is system wide.
-   * </p>
-   * 
-   * @deprecated this is not needed anymore, as
-   *             {@link Weight#scoresDocsOutOfOrder()} is used.
-   */
-  public static void setAllowDocsOutOfOrder(boolean allow) {
-    allowDocsOutOfOrder = allow;
-  }
-
-  /**
-   * Whether hit docs may be collected out of docid order.
-   * 
-   * @see #setAllowDocsOutOfOrder(boolean)
-   * @deprecated this is not needed anymore, as
-   *             {@link Weight#scoresDocsOutOfOrder()} is used.
-   */
-  public static boolean getAllowDocsOutOfOrder() {
-    return allowDocsOutOfOrder;
-  }  
-  
-  /**
-   * @deprecated Use {@link #setAllowDocsOutOfOrder(boolean)} instead. 
-   */
-  public static void setUseScorer14(boolean use14) {
-	setAllowDocsOutOfOrder(use14);
-  }
-  
-  /**
-   * @deprecated Use {@link #getAllowDocsOutOfOrder()} instead.
-   */
-  public static boolean getUseScorer14() {
-	return getAllowDocsOutOfOrder();
   }
 
   public Weight createWeight(Searcher searcher) throws IOException {
