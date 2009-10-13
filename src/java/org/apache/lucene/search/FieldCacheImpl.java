@@ -84,8 +84,7 @@ class FieldCacheImpl implements FieldCache {
             Map.Entry mapEntry = (Map.Entry) entrySetIterator.next();
             Entry entry = (Entry) mapEntry.getKey();
             result.add(new CacheEntryImpl(readerKey, entry.field,
-                                          cacheType, entry.type,
-                                          entry.custom, entry.locale,
+                                          cacheType, entry.custom,
                                           mapEntry.getValue()));
           }
         }
@@ -95,34 +94,19 @@ class FieldCacheImpl implements FieldCache {
   }
   
   private static final class CacheEntryImpl extends CacheEntry {
-    /** 
-     * @deprecated Only needed because of Entry (ab)use by 
-     *             FieldSortedHitQueue, remove when FieldSortedHitQueue 
-     *             is removed
-     */
-    private final int sortFieldType;
-    /** 
-     * @deprecated Only needed because of Entry (ab)use by 
-     *             FieldSortedHitQueue, remove when FieldSortedHitQueue 
-     *             is removed
-     */
-    private final Locale locale;
-
     private final Object readerKey;
     private final String fieldName;
     private final Class cacheType;
     private final Object custom;
     private final Object value;
     CacheEntryImpl(Object readerKey, String fieldName,
-                   Class cacheType, int sortFieldType,
-                   Object custom, Locale locale, 
+                   Class cacheType,
+                   Object custom,
                    Object value) {
         this.readerKey = readerKey;
         this.fieldName = fieldName;
         this.cacheType = cacheType;
-        this.sortFieldType = sortFieldType;
         this.custom = custom;
-        this.locale = locale;
         this.value = value;
 
         // :HACK: for testing.
@@ -136,22 +120,6 @@ class FieldCacheImpl implements FieldCache {
     public Class getCacheType() { return cacheType; }
     public Object getCustom() { return custom; }
     public Object getValue() { return value; }
-    /** 
-     * Adds warning to super.toString if Local or sortFieldType were specified
-     * @deprecated Only needed because of Entry (ab)use by 
-     *             FieldSortedHitQueue, remove when FieldSortedHitQueue 
-     *             is removed
-     */
-    public String toString() {
-      String r = super.toString();
-      if (null != locale) {
-        r = r + "...!!!Locale:" + locale + "???";
-      }
-      if (SortField.CUSTOM != sortFieldType) {
-        r = r + "...!!!SortType:" + sortFieldType + "???";
-      }
-      return r;
-    }
   }
 
   /**
@@ -243,59 +211,23 @@ class FieldCacheImpl implements FieldCache {
   /** Expert: Every composite-key in the internal cache is of this type. */
   static class Entry {
     final String field;        // which Fieldable
-    /** 
-     * @deprecated Only (ab)used by FieldSortedHitQueue, 
-     *             remove when FieldSortedHitQueue is removed
-     */
-    final int type;            // which SortField type
     final Object custom;       // which custom comparator or parser
-    /** 
-     * @deprecated Only (ab)used by FieldSortedHitQueue, 
-     *             remove when FieldSortedHitQueue is removed
-     */
-    final Locale locale;       // the locale we're sorting (if string)
-
-    /** 
-     * @deprecated Only (ab)used by FieldSortedHitQueue, 
-     *             remove when FieldSortedHitQueue is removed
-     */
-    Entry (String field, int type, Locale locale) {
-      this.field = StringHelper.intern(field);
-      this.type = type;
-      this.custom = null;
-      this.locale = locale;
-    }
 
     /** Creates one of these objects for a custom comparator/parser. */
     Entry (String field, Object custom) {
       this.field = StringHelper.intern(field);
-      this.type = SortField.CUSTOM;
       this.custom = custom;
-      this.locale = null;
-    }
-
-    /** 
-     * @deprecated Only (ab)used by FieldSortedHitQueue, 
-     *             remove when FieldSortedHitQueue is removed
-     */
-    Entry (String field, int type, Parser parser) {
-      this.field = StringHelper.intern(field);
-      this.type = type;
-      this.custom = parser;
-      this.locale = null;
     }
 
     /** Two of these are equal iff they reference the same field and type. */
     public boolean equals (Object o) {
       if (o instanceof Entry) {
         Entry other = (Entry) o;
-        if (other.field == field && other.type == type) {
-          if (other.locale == null ? locale == null : other.locale.equals(locale)) {
-            if (other.custom == null) {
-              if (custom == null) return true;
-            } else if (other.custom.equals (custom)) {
-              return true;
-            }
+        if (other.field == field) {
+          if (other.custom == null) {
+            if (custom == null) return true;
+          } else if (other.custom.equals (custom)) {
+            return true;
           }
         }
       }
@@ -304,7 +236,7 @@ class FieldCacheImpl implements FieldCache {
 
     /** Composes a hashcode based on the field and type. */
     public int hashCode() {
-      return field.hashCode() ^ type ^ (custom==null ? 0 : custom.hashCode()) ^ (locale==null ? 0 : locale.hashCode());
+      return field.hashCode() ^ (custom==null ? 0 : custom.hashCode());
     }
   }
 
