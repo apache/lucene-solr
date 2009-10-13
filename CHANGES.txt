@@ -58,8 +58,9 @@ API Changes
 
 * LUCENE-1972: Remove deprecated ExtendedFieldCache, custom and auto
   caches, SortField.AUTO, deprecated custom sort, deprecated sorting
-  HitCollectors, deprecated TopDocs HitCollectors, legacy search
-  (Uwe Schindler)
+  HitCollectors, deprecated TopDocs HitCollectors, legacy search.
+  Make new Sort(SortField...) and Sort.setSort(SortField...) varargs-
+  enabled. (Uwe Schindler)
 
 Bug fixes
 
