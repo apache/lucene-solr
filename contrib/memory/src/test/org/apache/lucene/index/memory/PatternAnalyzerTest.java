@@ -17,239 +17,118 @@ package org.apache.lucene.index.memory;
  * limitations under the License.
  */
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.LetterTokenizer;
-import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.StopAnalyzer;
-import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.*;
 
 /**
-Verifies that Lucene PatternAnalyzer and normal Lucene Analyzers have the same behaviour,
-returning the same results for any given free text.
-Runs a set of texts against a tokenizers/analyzers
-Can also be used as a simple benchmark.
-<p>
-Example usage:
-<pre>
-cd lucene-cvs
-java org.apache.lucene.index.memory.PatternAnalyzerTest 1 1 patluc 1 2 2 *.txt *.xml docs/*.html src/java/org/apache/lucene/index/*.java xdocs/*.xml ../nux/samples/data/*.xml
-</pre>
+ * Verifies the behavior of PatternAnalyzer.
+ */
+public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
 
-with WhitespaceAnalyzer problems can be found; These are not bugs but questionable 
-Lucene features: CharTokenizer.MAX_WORD_LEN = 255.
-Thus the PatternAnalyzer produces correct output, whereas the WhitespaceAnalyzer 
-silently truncates text, and so the comparison results in assertEquals() don't match up. 
+  /**
+   * Test PatternAnalyzer when it is configured with a non-word pattern.
+   * Behavior can be similar to SimpleAnalyzer (depending upon options)
+   */
+  public void testNonWordPattern() throws IOException {
+    // Split on non-letter pattern, do not lowercase, no stopwords
+    PatternAnalyzer a = new PatternAnalyzer(PatternAnalyzer.NON_WORD_PATTERN,
+        false, null);
+    check(a, "The quick brown Fox,the abcd1234 (56.78) dc.", new String[] {
+        "The", "quick", "brown", "Fox", "the", "abcd", "dc" });
 
-TODO: Convert to new TokenStream API!
-*/
-public class PatternAnalyzerTest extends LuceneTestCase {
-  
-  /** Runs the tests and/or benchmark */
-  public static void main(String[] args) throws Throwable {
-    new PatternAnalyzerTest().run(args);    
-  }
-  
-  public void testMany() throws Throwable {
-//    String[] files = MemoryIndexTest.listFiles(new String[] {
-//      "*.txt", "*.html", "*.xml", "xdocs/*.xml", 
-//      "src/test/org/apache/lucene/queryParser/*.java",
-//      "src/org/apache/lucene/index/memory/*.java",
-//    });
-    String[] files = MemoryIndexTest.listFiles(new String[] {
-      "../../*.txt", "../../*.html", "../../*.xml", "../../xdocs/*.xml", 
-      "../../src/test/org/apache/lucene/queryParser/*.java",
-      "src/java/org/apache/lucene/index/memory/*.java",
-    });
-    System.out.println("files = " + java.util.Arrays.asList(files));
-    String[] xargs = new String[] {
-      "1", "1", "patluc", "1", "2", "2",
-    };
-    String[] args = new String[xargs.length + files.length];
-    System.arraycopy(xargs, 0, args, 0, xargs.length);
-    System.arraycopy(files, 0, args, xargs.length, files.length);
-    run(args);
-  }
-  
-  private void run(String[] args) throws Throwable {
-    int k = -1;
-    
-    int iters = 1;
-    if (args.length > ++k) iters = Math.max(1, Integer.parseInt(args[k]));
-    
-    int runs = 1;
-    if (args.length > ++k) runs = Math.max(1, Integer.parseInt(args[k]));
-    
-    String cmd = "patluc";
-    if (args.length > ++k) cmd = args[k];
-    boolean usePattern = cmd.indexOf("pat") >= 0;
-    boolean useLucene  = cmd.indexOf("luc") >= 0;
-    
-    int maxLetters = 1; // = 2: CharTokenizer.MAX_WORD_LEN issue; see class javadoc
-    if (args.length > ++k) maxLetters = Integer.parseInt(args[k]);
-    
-    int maxToLower = 2;
-    if (args.length > ++k) maxToLower = Integer.parseInt(args[k]);
-
-    int maxStops = 2;
-    if (args.length > ++k) maxStops = Integer.parseInt(args[k]);
-    
-    File[] files = new File[] {new File("CHANGES.txt"), new File("LICENSE.txt") };
-    if (args.length > ++k) {
-      files = new File[args.length - k];
-      for (int i=k; i < args.length; i++) {
-        files[i-k] = new File(args[i]);
-      }
-    }
-    
-    for (int iter=0; iter < iters; iter++) {
-      System.out.println("\n########### iteration=" + iter);
-      long start = System.currentTimeMillis();            
-      long bytes = 0;
-      
-      for (int i=0; i < files.length; i++) {
-        File file = files[i];
-        if (!file.exists() || file.isDirectory()) continue; // ignore
-        bytes += file.length();
-        String text = toString(new FileInputStream(file), null);
-        System.out.println("\n*********** FILE=" + file);
-
-        for (int letters=0; letters < maxLetters; letters++) {
-          boolean lettersOnly = letters == 0;
-          
-          for (int stops=0; stops < maxStops; stops++) {
-            Set stopWords = null;
-            if (stops != 0) stopWords = StopAnalyzer.ENGLISH_STOP_WORDS_SET;
-                
-            for (int toLower=0; toLower < maxToLower; toLower++) {
-              boolean toLowerCase = toLower != 0;
-                
-              for (int run=0; run < runs; run++) {
-                TokenStream tokens1 = null; TokenStream tokens2 = null;
-                try {
-                  if (usePattern) tokens1 = patternTokenStream(text, lettersOnly, toLowerCase, stopWords);
-                  if (useLucene) tokens2 = luceneTokenStream(text, lettersOnly, toLowerCase, stopWords);          
-                  if (usePattern && useLucene) {
-                    final TermAttribute termAtt1 = tokens1.addAttribute(TermAttribute.class),
-                      termAtt2 = tokens2.addAttribute(TermAttribute.class);
-                    final OffsetAttribute offsetAtt1 = tokens1.addAttribute(OffsetAttribute.class),
-                      offsetAtt2 = tokens2.addAttribute(OffsetAttribute.class);
-                    final PositionIncrementAttribute posincrAtt1 = tokens1.addAttribute(PositionIncrementAttribute.class),
-                      posincrAtt2 = tokens2.addAttribute(PositionIncrementAttribute.class);
-                    while (tokens1.incrementToken()) {
-                      assertTrue(tokens2.incrementToken());
-                      assertEquals(termAtt1, termAtt2);
-                      assertEquals(offsetAtt1, offsetAtt2);
-                      assertEquals(posincrAtt1, posincrAtt2);
-                    }
-                    assertFalse(tokens2.incrementToken());
-                    tokens1.end(); tokens1.close();
-                    tokens2.end(); tokens2.close();
-                  }
-                } catch (Throwable t) {
-                  if (t instanceof OutOfMemoryError) t.printStackTrace();
-                  System.out.println("fatal error at file=" + file + ", letters="+ lettersOnly + ", toLowerCase=" + toLowerCase + ", stopwords=" + (stopWords != null ? "english" : "none"));
-                  throw t;
-                }
-              }
-            }
-          }
-        }
-        long end = System.currentTimeMillis();
-        System.out.println("\nsecs = " + ((end-start)/1000.0f));
-        System.out.println("files/sec= " + 
-            (1.0f * runs * maxLetters * maxToLower * maxStops * files.length 
-            / ((end-start)/1000.0f)));
-        float mb = (1.0f * bytes * runs * maxLetters * maxToLower * maxStops) / (1024.0f * 1024.0f);
-        System.out.println("MB/sec = " + (mb / ((end-start)/1000.0f)));
-      }
-    }
-    
-    if (usePattern && useLucene) 
-      System.out.println("No bug found. done.");
-    else 
-      System.out.println("Done benchmarking (without checking correctness).");
+    // split on non-letter pattern, lowercase, english stopwords
+    PatternAnalyzer b = new PatternAnalyzer(PatternAnalyzer.NON_WORD_PATTERN,
+        true, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+    check(b, "The quick brown Fox,the abcd1234 (56.78) dc.", new String[] {
+        "quick", "brown", "fox", "abcd", "dc" });
   }
 
-  private TokenStream patternTokenStream(String text, boolean letters, boolean toLowerCase, Set stopWords) {
-    Pattern pattern;
-    if (letters) 
-      pattern = PatternAnalyzer.NON_WORD_PATTERN;
-    else               
-      pattern = PatternAnalyzer.WHITESPACE_PATTERN;
-    PatternAnalyzer analyzer = new PatternAnalyzer(pattern, toLowerCase, stopWords);
-    return analyzer.tokenStream("", text);
-  }
-  
-  private TokenStream luceneTokenStream(String text, boolean letters, boolean toLowerCase, Set stopWords) {
-    TokenStream stream;
-    if (letters) 
-      stream = new LetterTokenizer(new StringReader(text));
-    else
-      stream = new WhitespaceTokenizer(new StringReader(text));
-    if (toLowerCase)  stream = new LowerCaseFilter(stream);
-    if (stopWords != null) stream = new StopFilter(stream, stopWords);
-    return stream;            
-  }
-  
-  // trick to detect default platform charset
-  private static final Charset DEFAULT_PLATFORM_CHARSET = 
-    Charset.forName(new InputStreamReader(new ByteArrayInputStream(new byte[0])).getEncoding());  
-  
-  // the following utility methods below are copied from Apache style Nux library - see http://dsd.lbl.gov/nux
-  private static String toString(InputStream input, Charset charset) throws IOException {
-    if (charset == null) charset = DEFAULT_PLATFORM_CHARSET;      
-    byte[] data = toByteArray(input);
-    return charset.decode(ByteBuffer.wrap(data)).toString();
-  }
-  
-  private static byte[] toByteArray(InputStream input) throws IOException {
-    try {
-      // safe and fast even if input.available() behaves weird or buggy
-      int len = Math.max(256, input.available());
-      byte[] buffer = new byte[len];
-      byte[] output = new byte[len];
-      
-      len = 0;
-      int n;
-      while ((n = input.read(buffer)) >= 0) {
-        if (len + n > output.length) { // grow capacity
-          byte tmp[] = new byte[Math.max(output.length << 1, len + n)];
-          System.arraycopy(output, 0, tmp, 0, len);
-          System.arraycopy(buffer, 0, tmp, len, n);
-          buffer = output; // use larger buffer for future larger bulk reads
-          output = tmp;
-        } else {
-          System.arraycopy(buffer, 0, output, len, n);
-        }
-        len += n;
-      }
+  /**
+   * Test PatternAnalyzer when it is configured with a whitespace pattern.
+   * Behavior can be similar to WhitespaceAnalyzer (depending upon options)
+   */
+  public void testWhitespacePattern() throws IOException {
+    // Split on whitespace patterns, do not lowercase, no stopwords
+    PatternAnalyzer a = new PatternAnalyzer(PatternAnalyzer.WHITESPACE_PATTERN,
+        false, null);
+    check(a, "The quick brown Fox,the abcd1234 (56.78) dc.", new String[] {
+        "The", "quick", "brown", "Fox,the", "abcd1234", "(56.78)", "dc." });
 
-      if (len == output.length) return output;
-      buffer = null; // help gc
-      buffer = new byte[len];
-      System.arraycopy(output, 0, buffer, 0, len);
-      return buffer;
-    } finally {
-      if (input != null) input.close();
-    }
+    // Split on whitespace patterns, lowercase, english stopwords
+    PatternAnalyzer b = new PatternAnalyzer(PatternAnalyzer.WHITESPACE_PATTERN,
+        true, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+    check(b, "The quick brown Fox,the abcd1234 (56.78) dc.", new String[] {
+        "quick", "brown", "fox,the", "abcd1234", "(56.78)", "dc." });
   }
-  
+
+  /**
+   * Test PatternAnalyzer when it is configured with a custom pattern. In this
+   * case, text is tokenized on the comma ","
+   */
+  public void testCustomPattern() throws IOException {
+    // Split on comma, do not lowercase, no stopwords
+    PatternAnalyzer a = new PatternAnalyzer(Pattern.compile(","), false, null);
+    check(a, "Here,Are,some,Comma,separated,words,", new String[] { "Here",
+        "Are", "some", "Comma", "separated", "words" });
+
+    // split on comma, lowercase, english stopwords
+    PatternAnalyzer b = new PatternAnalyzer(Pattern.compile(","), true,
+        StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+    check(b, "Here,Are,some,Comma,separated,words,", new String[] { "here",
+        "some", "comma", "separated", "words" });
+  }
+
+  /**
+   * Test PatternAnalyzer against a large document.
+   */
+  public void testHugeDocument() throws IOException {
+    StringBuilder document = new StringBuilder();
+    // 5000 a's
+    char largeWord[] = new char[5000];
+    Arrays.fill(largeWord, 'a');
+    document.append(largeWord);
+
+    // a space
+    document.append(' ');
+
+    // 2000 b's
+    char largeWord2[] = new char[2000];
+    Arrays.fill(largeWord2, 'b');
+    document.append(largeWord2);
+
+    // Split on whitespace patterns, do not lowercase, no stopwords
+    PatternAnalyzer a = new PatternAnalyzer(PatternAnalyzer.WHITESPACE_PATTERN,
+        false, null);
+    check(a, document.toString(), new String[] { new String(largeWord),
+        new String(largeWord2) });
+  }
+
+  /**
+   * Verify the analyzer analyzes to the expected contents. For PatternAnalyzer,
+   * several methods are verified:
+   * <ul>
+   * <li>Analysis with a normal Reader
+   * <li>Analysis with a FastStringReader
+   * <li>Analysis with a String
+   * </ul>
+   */
+  private void check(PatternAnalyzer analyzer, String document,
+      String expected[]) throws IOException {
+    // ordinary analysis of a Reader
+    assertAnalyzesTo(analyzer, document, expected);
+
+    // analysis with a "FastStringReader"
+    TokenStream ts = analyzer.tokenStream("dummy",
+        new PatternAnalyzer.FastStringReader(document));
+    assertTokenStreamContents(ts, expected);
+
+    // analysis of a String, uses PatternAnalyzer.tokenStream(String, String)
+    TokenStream ts2 = analyzer.tokenStream("dummy", document);
+    assertTokenStreamContents(ts2, expected);
+  }
 }
