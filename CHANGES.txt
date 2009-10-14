@@ -75,6 +75,10 @@ Bug fixes
   wildcard is form "foo*", for slightly faster performance. (Robert
   Muir via Mike McCandless)
 
+* LUCENE-1974: Fixed nasty bug in BooleanQuery (when it used
+  BooleanScorer for scoring), whereby some matching documents fail to
+  be collected.  (Fulin Tang via Mike McCandless)
+
 New features
 
 * LUCENE-1933: Provide a convenience AttributeFactory that creates a
