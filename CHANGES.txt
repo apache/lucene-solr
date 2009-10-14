@@ -1,6 +1,14 @@
 Lucene Change Log
 $Id$
 
+======================= 2.9 branch (not yet released) =======================
+
+Bug fixes
+
+ * LUCENE-1974: Fixed nasty bug in BooleanQuery (when it used
+   BooleanScorer for scoring), whereby some matching documents fail to
+   be collected.  (Fulin Tang via Mike McCandless)
+
 ======================= Release 2.9.0 2009-09-23 =======================
 
 Changes in backwards compatibility policy
