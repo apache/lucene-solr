@@ -110,7 +110,7 @@ public abstract class Scorer extends DocIdSetIterator {
       collector.collect(doc);
       doc = nextDoc();
     }
-    return doc == NO_MORE_DOCS;
+    return doc != NO_MORE_DOCS;
   }
   
   /** Returns the score of the current document matching the query.
