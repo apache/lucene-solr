@@ -561,7 +561,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
     return false;
   }
 
-  private byte[] ones;
   public synchronized byte[] norms(String field) throws IOException {
     ensureOpen();
     byte[] bytes = (byte[])normsCache.get(field);

@@ -121,8 +121,6 @@ public abstract class IndexReader implements Cloneable {
 
   static int DEFAULT_TERMS_INDEX_DIVISOR = 1;
 
-  private boolean disableFakeNorms = false;
-
   /** Expert: returns the current refCount for this reader */
   public synchronized int getRefCount() {
     return refCount;
