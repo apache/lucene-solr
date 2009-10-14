@@ -10,6 +10,10 @@ Changes in backwards compatibility policy
 
 Changes in runtime behavior
 
+ * LUCENE-1966: Modified and cleaned the default Arabic stopwords list used
+   by ArabicAnalyzer. You'll need to fully re-index any previously created 
+   indexes.  (Basem Narmok via Robert Muir)
+
  * LUCENE-1963: ArabicAnalyzer now lowercases before checking the stopword
    list. This has no effect on Arabic text, but if you are using a custom
    stopword list that contains some non-Arabic words, you'll need to fully

@@ -148,6 +148,7 @@ public final class ArabicAnalyzer extends Analyzer {
   public final TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new ArabicLetterTokenizer( reader );
     result = new LowerCaseFilter(result);
+    // the order here is important: the stopword list is not normalized!
     result = new StopFilter( result, stoptable );
     result = new ArabicNormalizationFilter( result );
     result = new ArabicStemFilter( result );
@@ -175,6 +176,7 @@ public final class ArabicAnalyzer extends Analyzer {
       streams = new SavedStreams();
       streams.source = new ArabicLetterTokenizer(reader);
       streams.result = new LowerCaseFilter(streams.source);
+      // the order here is important: the stopword list is not normalized!
       streams.result = new StopFilter(streams.result, stoptable);
       streams.result = new ArabicNormalizationFilter(streams.result);
       streams.result = new ArabicStemFilter(streams.result);
