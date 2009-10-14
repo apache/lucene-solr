@@ -5,6 +5,11 @@ $Id$
 
 Changes in backwards compatibility policy
 
+* LUCENE-1979: Change return type of SnapshotDeletionPolicy#snapshot()
+  from IndexCommitPoint to IndexCommit. Code that uses this method
+  needs to be recompiled against Lucene 3.0 in order to work. The previously
+  deprecated IndexCommitPoint is also removed. (Michael Busch)
+
 Changes in runtime behavior
 
 API Changes
@@ -66,6 +71,9 @@ API Changes
   MultiTermQuery. (Uwe Schindler)
 
 * LUCENE-944: Remove deprecated methods in BooleanQuery. (Michael Busch)
+
+* LUCENE-1979: Remove remaining deprecations from indexer package.
+  (Michael Busch)
 
 Bug fixes
 

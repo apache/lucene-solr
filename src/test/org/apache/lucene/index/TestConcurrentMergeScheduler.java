@@ -88,7 +88,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         writer.addDocument(doc);
         failure.setDoFail();
         try {
-          writer.flush();
+          writer.flush(true, false, true);
           if (failure.hitExc) {
             fail("failed to hit IOException");
           }
@@ -140,7 +140,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         delID += 10;
       }
 
-      writer.flush();
+      writer.commit();
     }
 
     writer.close();
@@ -210,7 +210,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       // stress out aborting them on close:
       writer.setMergeFactor(3);
       writer.addDocument(doc);
-      writer.flush();
+      writer.commit();
 
       writer.close(false);
 

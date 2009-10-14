@@ -152,7 +152,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
       addDoc(modifier, ++id, value);
       assertEquals(0, modifier.getSegmentCount());
-      modifier.flush();
+      modifier.commit();
 
       modifier.commit();
 

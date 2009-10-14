@@ -169,15 +169,15 @@ public class TestDoc extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new Field("contents", new FileReader(file)));
       writer.addDocument(doc);
-      writer.flush();
+      writer.commit();
       return writer.newestSegment();
    }
 
 
    private SegmentInfo merge(SegmentInfo si1, SegmentInfo si2, String merged, boolean useCompoundFile)
    throws Exception {
-      SegmentReader r1 = SegmentReader.get(si1);
-      SegmentReader r2 = SegmentReader.get(si2);
+      SegmentReader r1 = SegmentReader.get(true, si1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+      SegmentReader r2 = SegmentReader.get(true, si2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
 
       SegmentMerger merger = new SegmentMerger(si1.dir, merged);
 
@@ -198,7 +198,7 @@ public class TestDoc extends LuceneTestCase {
 
    private void printSegment(PrintWriter out, SegmentInfo si)
    throws Exception {
-      SegmentReader reader = SegmentReader.get(si);
+      SegmentReader reader = SegmentReader.get(true, si, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
 
       for (int i = 0; i < reader.numDocs(); i++)
         out.println(reader.document(i));

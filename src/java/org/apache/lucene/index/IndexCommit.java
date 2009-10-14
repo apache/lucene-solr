@@ -41,7 +41,7 @@ import org.apache.lucene.store.Directory;
  * may suddenly change. </p>
 */
 
-public abstract class IndexCommit implements IndexCommitPoint {
+public abstract class IndexCommit {
 
   /**
    * Get the segments file (<code>segments_N</code>) associated 

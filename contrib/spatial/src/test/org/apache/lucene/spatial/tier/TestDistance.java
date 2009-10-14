@@ -94,7 +94,7 @@ public class TestDistance extends TestCase{
     addPoint(writer,"Iota Club and Cafe",38.8890000,-77.0923000);
     addPoint(writer,"Hilton Washington Embassy Row",38.9103000,-77.0451000);
     addPoint(writer,"HorseFeathers, Bar & Grill", 39.01220000000001, -77.3942);
-    writer.flush();
+    writer.commit();
   }
 
   public void testLatLongFilterOnDeletedDocs() throws Exception {

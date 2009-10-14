@@ -71,8 +71,7 @@ public class TestEmptyIndex extends TestCase {
   private void testNorms(IndexReader r) throws IOException {
     byte[] norms;
     norms = r.norms("foo");
-    if (!r.getDisableFakeNorms()) {
-      assertNotNull(norms);
+    if (norms != null) {
       assertEquals(0, norms.length);
       norms = new byte[10];
       Arrays.fill(norms, (byte)10);

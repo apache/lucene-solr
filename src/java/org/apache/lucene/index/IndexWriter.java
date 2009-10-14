@@ -611,7 +611,7 @@ public class IndexWriter {
         // TODO: we may want to avoid doing this while
         // synchronized
         // Returns a ref, which we xfer to readerMap:
-        sr = SegmentReader.get(info, readBufferSize, doOpenStores, termsIndexDivisor);
+        sr = SegmentReader.get(false, info.dir, info, readBufferSize, doOpenStores, termsIndexDivisor);
         readerMap.put(info, sr);
       } else {
         if (doOpenStores) {
@@ -3408,30 +3408,6 @@ public class IndexWriter {
   // the change is committed (new segments_N file written).
   void doAfterFlush()
     throws IOException {
-  }
-
-  /**
-   * Flush all in-memory buffered updates (adds and deletes)
-   * to the Directory. 
-   * <p>Note: while this will force buffered docs to be
-   * pushed into the index, it will not make these docs
-   * visible to a reader.  Use {@link #commit()} instead
-   *
-   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
-   * you should immediately close the writer.  See <a
-   * href="#OOME">above</a> for details.</p>
-   *
-   * @deprecated please call {@link #commit()}) instead
-   *
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public final void flush() throws CorruptIndexException, IOException {  
-    if (hitOOM) {
-      throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot flush");
-    }
-
-    flush(true, false, true);
   }
 
   /** Expert: prepare for commit.

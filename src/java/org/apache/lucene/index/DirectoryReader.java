@@ -17,25 +17,25 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
-import java.util.Collections;
-import java.util.ArrayList;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.AlreadyClosedException;
 
 /** 
  * An IndexReader which reads indexes with multiple segments.
@@ -380,7 +380,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
       // the future we could have write make some effort to
       // detect that no changes have occurred
       IndexReader reader = writer.getReader();
-      reader.setDisableFakeNorms(getDisableFakeNorms());
       return reader;
     }
 
@@ -436,7 +435,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
     } else {
       reader = new DirectoryReader(directory, infos, subReaders, starts, normsCache, false, doClone, termInfosIndexDivisor);
     }
-    reader.setDisableFakeNorms(getDisableFakeNorms());
     return reader;
   }
 
@@ -564,18 +562,13 @@ class DirectoryReader extends IndexReader implements Cloneable {
   }
 
   private byte[] ones;
-  private byte[] fakeNorms() {
-    if (ones==null) ones=SegmentReader.createFakeNorms(maxDoc());
-    return ones;
-  }
-
   public synchronized byte[] norms(String field) throws IOException {
     ensureOpen();
     byte[] bytes = (byte[])normsCache.get(field);
     if (bytes != null)
       return bytes;          // cache hit
     if (!hasNorms(field))
-      return getDisableFakeNorms() ? null : fakeNorms();
+      return null;
 
     bytes = new byte[maxDoc()];
     for (int i = 0; i < subReaders.length; i++)
@@ -677,11 +670,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
         }
       }
     }
-  }
-
-  /** @deprecated  */
-  protected void doCommit() throws IOException {
-    doCommit(null);
   }
 
   /**
@@ -830,12 +818,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
   
   public IndexReader[] getSequentialSubReaders() {
     return subReaders;
-  }
-
-  public void setDisableFakeNorms(boolean disableFakeNorms) {
-    super.setDisableFakeNorms(disableFakeNorms);
-    for (int i = 0; i < subReaders.length; i++)
-        subReaders[i].setDisableFakeNorms(disableFakeNorms);
   }
 
   /** Returns the directory this index resides in. */

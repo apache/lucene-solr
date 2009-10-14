@@ -63,11 +63,11 @@ public class TestDocumentWriter extends BaseTokenStreamTestCase {
     Analyzer analyzer = new WhitespaceAnalyzer();
     IndexWriter writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
     writer.addDocument(testDoc);
-    writer.flush();
+    writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
     //After adding the document, we should be able to read it back in
-    SegmentReader reader = SegmentReader.get(info);
+    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
     assertTrue(reader != null);
     Document doc = reader.document(0);
     assertTrue(doc != null);
@@ -123,10 +123,10 @@ public class TestDocumentWriter extends BaseTokenStreamTestCase {
     doc.add(new Field("repeated", "repeated two", Field.Store.YES, Field.Index.ANALYZED));
 
     writer.addDocument(doc);
-    writer.flush();
+    writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = SegmentReader.get(info);
+    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
 
     TermPositions termPositions = reader.termPositions(new Term("repeated", "repeated"));
     assertTrue(termPositions.next());
@@ -183,10 +183,10 @@ public class TestDocumentWriter extends BaseTokenStreamTestCase {
     doc.add(new Field("f1", "a 5 a a", Field.Store.YES, Field.Index.ANALYZED));
 
     writer.addDocument(doc);
-    writer.flush();
+    writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = SegmentReader.get(info);
+    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
 
     TermPositions termPositions = reader.termPositions(new Term("f1", "a"));
     assertTrue(termPositions.next());
@@ -223,10 +223,10 @@ public class TestDocumentWriter extends BaseTokenStreamTestCase {
     }, TermVector.NO));
     
     writer.addDocument(doc);
-    writer.flush();
+    writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
-    SegmentReader reader = SegmentReader.get(info);
+    SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
 
     TermPositions termPositions = reader.termPositions(new Term("preanalyzed", "term1"));
     assertTrue(termPositions.next());

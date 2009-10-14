@@ -98,13 +98,7 @@ public class TestLengthNormModifier extends TestCase {
 
 	// sanity check, norms should all be 1
 	assertTrue("Whoops we have norms?", !r.hasNorms("nonorm"));
-        if (!r.getDisableFakeNorms()) {
-          for (int i = 0; i< norms.length; i++) {
-	    assertEquals(""+i, DEFAULT_NORM, norms[i]);
-          }
-        } else {
-          assertNull(norms);
-        }
+	assertNull(norms);
 
 	r.close();
 	
@@ -120,13 +114,7 @@ public class TestLengthNormModifier extends TestCase {
 	
 	norms = r.norms("nonorm");
 	assertTrue("Whoops we have norms?", !r.hasNorms("nonorm"));
-        if (!r.getDisableFakeNorms()) {
-          for (int i = 0; i< norms.length; i++) {
-	    assertEquals(""+i, DEFAULT_NORM, norms[i]);
-          }
-        } else {
-          assertNull(norms);
-        }
+  assertNull(norms);
 
 	r.close();
 	

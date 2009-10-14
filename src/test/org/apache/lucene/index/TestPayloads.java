@@ -202,7 +202,7 @@ public class TestPayloads extends LuceneTestCase {
         }
         
         // make sure we create more than one segment to test merging
-        writer.flush();
+        writer.commit();
         
         // now we make sure to have different payload lengths next at the next skip point        
         for (int i = 0; i < numDocs; i++) {

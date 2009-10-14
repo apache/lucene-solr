@@ -52,7 +52,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
       d1.add(new Field(term.field(), term.text(), Store.NO, Index.ANALYZED));
       writer.addDocument(d1);
     }
-    writer.flush();
+    writer.commit();
     writer.optimize();
     writer.close();
 

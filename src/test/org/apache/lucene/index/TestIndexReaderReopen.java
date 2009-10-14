@@ -935,7 +935,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     for (int i = 0; i < 100; i++) {
       w.addDocument(createDocument(i, 4));
       if (multiSegment && (i % 10) == 0) {
-        w.flush();
+        w.commit();
       }
     }
     

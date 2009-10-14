@@ -71,8 +71,7 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
    *  you call optimize()) then in the worst case this could
    *  consume an extra 1X of your total index size, until
    *  you release the snapshot. */
-  // TODO 3.0: change this to return IndexCommit instead
-  public synchronized IndexCommitPoint snapshot() {
+  public synchronized IndexCommit snapshot() {
     if (snapshot == null)
       snapshot = lastCommit.getSegmentsFileName();
     else

@@ -238,7 +238,7 @@ class DocHelper {
     writer.setSimilarity(similarity);
     //writer.setUseCompoundFile(false);
     writer.addDocument(doc);
-    writer.flush();
+    writer.commit();
     SegmentInfo info = writer.newestSegment();
     writer.close();
     return info;

@@ -585,27 +585,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
   /**
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @deprecated
-   */
-  public static SegmentReader get(SegmentInfo si) throws CorruptIndexException, IOException {
-    return get(false, si.dir, si, BufferedIndexInput.BUFFER_SIZE, true, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
-  }
-
-  /**
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
    */
   public static SegmentReader get(boolean readOnly, SegmentInfo si, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
     return get(readOnly, si.dir, si, BufferedIndexInput.BUFFER_SIZE, true, termInfosIndexDivisor);
-  }
-
-  /**
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   * @deprecated
-   */
-  static SegmentReader get(SegmentInfo si, int readBufferSize, boolean doOpenStores, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return get(false, si.dir, si, readBufferSize, doOpenStores, termInfosIndexDivisor);
   }
 
   /**
@@ -780,7 +762,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
         }
       }
 
-      clone.setDisableFakeNorms(getDisableFakeNorms());
       clone.norms = new HashMap();
 
       // Clone norms
@@ -1055,11 +1036,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   private byte[] ones;
-  private byte[] fakeNorms() {
-    assert !getDisableFakeNorms();
-    if (ones==null) ones=createFakeNorms(maxDoc());
-    return ones;
-  }
 
   // can return null if norms aren't stored
   protected synchronized byte[] getNorms(String field) throws IOException {
@@ -1072,7 +1048,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
   public synchronized byte[] norms(String field) throws IOException {
     ensureOpen();
     byte[] bytes = getNorms(field);
-    if (bytes==null && !getDisableFakeNorms()) bytes=fakeNorms();
     return bytes;
   }
 

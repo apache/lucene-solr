@@ -111,7 +111,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     //terms
     for(int j=0;j<5;j++)
       writer.addDocument(doc);
-    writer.flush();
+    writer.commit();
     seg = writer.newestSegment().name;
     writer.close();
 

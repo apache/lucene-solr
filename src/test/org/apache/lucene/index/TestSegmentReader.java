@@ -43,7 +43,7 @@ public class TestSegmentReader extends LuceneTestCase {
     super.setUp();
     DocHelper.setupDoc(testDoc);
     SegmentInfo info = DocHelper.writeDoc(dir, testDoc);
-    reader = SegmentReader.get(info);
+    reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
   }
 
   public void test() {
@@ -73,7 +73,7 @@ public class TestSegmentReader extends LuceneTestCase {
     Document docToDelete = new Document();
     DocHelper.setupDoc(docToDelete);
     SegmentInfo info = DocHelper.writeDoc(dir, docToDelete);
-    SegmentReader deleteReader = SegmentReader.get(info);
+    SegmentReader deleteReader = SegmentReader.get(false, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
     assertTrue(deleteReader != null);
     assertTrue(deleteReader.numDocs() == 1);
     deleteReader.deleteDocument(0);
@@ -167,14 +167,7 @@ public class TestSegmentReader extends LuceneTestCase {
           // test for fake norms of 1.0 or null depending on the flag
           byte [] norms = reader.norms(f.name());
           byte norm1 = DefaultSimilarity.encodeNorm(1.0f);
-          if (reader.getDisableFakeNorms())
-            assertNull(norms);
-          else {
-            assertEquals(norms.length,reader.maxDoc());
-            for (int j=0; j<reader.maxDoc(); j++) {
-              assertEquals(norms[j], norm1);
-            }
-          }
+          assertNull(norms);
           norms = new byte[reader.maxDoc()];
           reader.norms(f.name(),norms, 0);
           for (int j=0; j<reader.maxDoc(); j++) {

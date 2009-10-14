@@ -1152,7 +1152,7 @@ public class MemoryIndex implements Serializable {
       throw new UnsupportedOperationException();
     }
   
-    protected void doCommit() {
+    protected void doCommit(Map commitUserData) {
       if (DEBUG) System.err.println("MemoryIndexReader.doCommit");
     }
   

@@ -144,7 +144,7 @@ public class InstantiatedIndexReader extends IndexReader {
     deletedDocuments.clear();
   }
 
-  protected void doCommit() throws IOException {
+  protected void doCommit(Map commitUserData) throws IOException {
     // todo: read/write lock
 
     boolean updated = false;

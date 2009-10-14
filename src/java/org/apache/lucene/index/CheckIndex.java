@@ -289,23 +289,6 @@ public class CheckIndex {
     }
   }
 
-  /** Returns true if index is clean, else false. 
-   *  @deprecated Please instantiate a CheckIndex and then use {@link #checkIndex()} instead */
-  public static boolean check(Directory dir, boolean doFix) throws IOException {
-    return check(dir, doFix, null);
-  }
-
-  /** Returns true if index is clean, else false.
-   *  @deprecated Please instantiate a CheckIndex and then use {@link #checkIndex(List)} instead */
-  public static boolean check(Directory dir, boolean doFix, List onlySegments) throws IOException {
-    CheckIndex checker = new CheckIndex(dir);
-    Status status = checker.checkIndex(onlySegments);
-    if (doFix && !status.clean)
-      checker.fixIndex(status);
-
-    return status.clean;
-  }
-
   /** Returns a {@link Status} instance detailing
    *  the state of the index.
    *
@@ -488,7 +471,7 @@ public class CheckIndex {
         }
         if (infoStream != null)
           infoStream.print("    test: open reader.........");
-        reader = SegmentReader.get(info);
+        reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
 
         segInfoStat.openReaderPassed = true;
 

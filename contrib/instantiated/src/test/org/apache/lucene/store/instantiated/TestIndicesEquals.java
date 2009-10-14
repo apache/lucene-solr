@@ -253,7 +253,7 @@ public class TestIndicesEquals extends TestCase {
       byte[] aprioriNorms = aprioriReader.norms((String) field);
       byte[] testNorms = testReader.norms((String) field);
 
-      if (!aprioriReader.getDisableFakeNorms()) {
+      if (aprioriNorms != null) {
         assertEquals(aprioriNorms.length, testNorms.length);
 
         for (int i = 0; i < aprioriNorms.length; i++) {

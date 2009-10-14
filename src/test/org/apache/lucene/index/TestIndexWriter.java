@@ -1133,7 +1133,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     public void testIndexNoDocuments() throws IOException {
       RAMDirectory dir = new RAMDirectory();      
       IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
-      writer.flush();
+      writer.commit();
       writer.close();
 
       IndexReader reader = IndexReader.open(dir, true);
@@ -1142,7 +1142,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       reader.close();
 
       writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
-      writer.flush();
+      writer.commit();
       writer.close();
 
       reader = IndexReader.open(dir, true);
@@ -1503,7 +1503,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       Document doc = new Document();
       doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
       writer.addDocument(doc);
-      writer.flush();
+      writer.commit();
       writer.addDocument(new Document());
       writer.close();
       _TestUtil.checkIndex(dir);
@@ -1595,13 +1595,13 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
                            Field.TermVector.NO));
     iw.addDocument(document);
     // Make first segment
-    iw.flush();
+    iw.commit();
 
     document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.ANALYZED,
         Field.TermVector.YES));
     iw.addDocument(document);
     // Make 2nd segment
-    iw.flush();
+    iw.commit();
 
     iw.optimize();
     iw.close();
@@ -1616,14 +1616,14 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     document.add(new Field("tvtest", "a b c", Field.Store.NO, Field.Index.ANALYZED,
         Field.TermVector.YES));
     iw.addDocument(document);
-    iw.flush();
+    iw.commit();
 
     document = new Document();
     document.add(new Field("tvtest", "x y z", Field.Store.NO, Field.Index.ANALYZED,
                            Field.TermVector.NO));
     iw.addDocument(document);
     // Make first segment
-    iw.flush();
+    iw.commit();
 
     iw.optimize();
 
@@ -1631,7 +1631,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         Field.TermVector.YES));
     iw.addDocument(document);
     // Make 2nd segment
-    iw.flush();
+    iw.commit();
     iw.optimize();
 
     iw.close();
