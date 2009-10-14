@@ -114,7 +114,7 @@
        The version suffix of the Lucene artifacts checked into "lib" 
        IF YOU CHANGE THIS, SANITY CHECK "javadoc.link.lucene"
   -->
-  <property name="lucene_version" value="2.9.0"/>
+  <property name="lucene_version" value="2.9.1-dev"/>
   <!-- The version number to assign to the Maven artifacts. -->
   <property name="maven_version" value="1.4-SNAPSHOT"/>
 
