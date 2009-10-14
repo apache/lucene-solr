@@ -792,11 +792,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return clone;
   }
 
-  /** @deprecated  */
-  protected void doCommit() throws IOException {
-    doCommit(null);
-  }
-
   protected void doCommit(Map commitUserData) throws IOException {
     if (hasChanges) {
       if (deletedDocsDirty) {               // re-write deleted

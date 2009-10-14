@@ -391,42 +391,6 @@ public class TestIndicesEquals extends TestCase {
       }
     }
 
-    // compare term enumeration seeking
-
-    aprioriTermEnum = aprioriReader.terms();
-
-    TermEnum aprioriTermEnumSeeker = aprioriReader.terms();
-    TermEnum testTermEnumSeeker = testReader.terms();
-
-    while (aprioriTermEnum.next()) {
-      if (aprioriTermEnumSeeker.skipTo(aprioriTermEnum.term())) {
-        assertTrue(testTermEnumSeeker.skipTo(aprioriTermEnum.term()));
-        assertEquals(aprioriTermEnumSeeker.term(), testTermEnumSeeker.term());
-      } else {
-        assertFalse(testTermEnumSeeker.skipTo(aprioriTermEnum.term()));
-      }
-    }
-
-    aprioriTermEnum.close();
-    aprioriTermEnumSeeker.close();
-    testTermEnumSeeker.close();
-
-    // skip to non existing terms
-
-    aprioriTermEnumSeeker = aprioriReader.terms();
-    testTermEnumSeeker = testReader.terms();
-
-    aprioriTermEnum = aprioriReader.terms();
-    aprioriTermEnum.next();
-    Term nonExistingTerm = new Term(aprioriTermEnum.term().field(), "bzzzzoo993djdj380sdf");
-    aprioriTermEnum.close();
-
-    assertEquals(aprioriTermEnumSeeker.skipTo(nonExistingTerm), testTermEnumSeeker.skipTo(nonExistingTerm));
-    assertEquals(aprioriTermEnumSeeker.term(), testTermEnumSeeker.term());
-
-    aprioriTermEnumSeeker.close();
-    testTermEnumSeeker.close();
-
     // compare term vectors and position vectors
 
     for (int documentNumber = 0; documentNumber < aprioriReader.numDocs(); documentNumber++) {

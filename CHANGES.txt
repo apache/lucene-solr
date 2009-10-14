@@ -73,7 +73,7 @@ API Changes
 * LUCENE-944: Remove deprecated methods in BooleanQuery. (Michael Busch)
 
 * LUCENE-1979: Remove remaining deprecations from indexer package.
-  (Michael Busch)
+  (Uwe Schindler, Michael Busch)
 
 Bug fixes
 

@@ -48,11 +48,6 @@ import java.util.Map;
  */
 public class CheckIndex {
 
-  /** Default PrintStream for all CheckIndex instances.
-   *  @deprecated Use {@link #setInfoStream} per instance,
-   *  instead. */
-  public static PrintStream out = null;
-
   private PrintStream infoStream;
   private Directory dir;
 
@@ -257,7 +252,7 @@ public class CheckIndex {
   /** Create a new CheckIndex on the directory. */
   public CheckIndex(Directory dir) {
     this.dir = dir;
-    infoStream = out;
+    infoStream = null;
   }
 
   /** Set infoStream where messages should go.  If null, no

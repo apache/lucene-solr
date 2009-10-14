@@ -435,11 +435,6 @@ public class ParallelReader extends IndexReader {
     return (IndexReader[]) readers.toArray(new IndexReader[readers.size()]);
   }
 
-  /** @deprecated */
-  protected void doCommit() throws IOException {
-    doCommit(null);
-  }
-
   protected void doCommit(Map commitUserData) throws IOException {
     for (int i = 0; i < readers.size(); i++)
       ((IndexReader)readers.get(i)).commit(commitUserData);

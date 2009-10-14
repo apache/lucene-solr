@@ -119,7 +119,8 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
         IndexWriter.MaxFieldLength.LIMITED);
     iw.setMaxBufferedDocs(5);
     iw.setMergeFactor(3);
-    iw.addIndexes(new Directory[] { dir1, dir2 });
+    iw.addIndexesNoOptimize(new Directory[] { dir1, dir2 });
+    iw.optimize();
     iw.close();
 
     norms1.addAll(norms);

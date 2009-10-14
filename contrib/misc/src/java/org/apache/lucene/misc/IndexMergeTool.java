@@ -45,7 +45,7 @@ public class IndexMergeTool {
     }
 
     System.out.println("Merging...");
-    writer.addIndexes(indexes);
+    writer.addIndexesNoOptimize(indexes);
 
     System.out.println("Optimizing...");
     writer.optimize();

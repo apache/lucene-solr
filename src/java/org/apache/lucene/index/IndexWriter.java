@@ -181,12 +181,6 @@ public class IndexWriter {
   public static final String WRITE_LOCK_NAME = "write.lock";
 
   /**
-   * @deprecated
-   * @see LogMergePolicy#DEFAULT_MERGE_FACTOR
-   */
-  public final static int DEFAULT_MERGE_FACTOR = LogMergePolicy.DEFAULT_MERGE_FACTOR;
-
-  /**
    * Value to denote a flush trigger is disabled
    */
   public final static int DISABLE_AUTO_FLUSH = -1;
@@ -208,12 +202,6 @@ public class IndexWriter {
    * by default). Change using {@link #setMaxBufferedDeleteTerms(int)}.
    */
   public final static int DEFAULT_MAX_BUFFERED_DELETE_TERMS = DISABLE_AUTO_FLUSH;
-
-  /**
-   * @deprecated
-   * @see LogDocMergePolicy#DEFAULT_MAX_MERGE_DOCS
-   */
-  public final static int DEFAULT_MAX_MERGE_DOCS = LogDocMergePolicy.DEFAULT_MAX_MERGE_DOCS;
 
   /**
    * Default value is 10,000. Change using {@link #setMaxFieldLength(int)}.
@@ -1790,16 +1778,6 @@ public class IndexWriter {
     return analyzer;
   }
 
-  /** Returns the number of documents currently in this
-   *  index, not counting deletions.
-   * @deprecated Please use {@link #maxDoc()} (same as this
-   * method) or {@link #numDocs()} (also takes deletions
-   * into account), instead. */
-  public synchronized int docCount() {
-    ensureOpen();
-    return maxDoc();
-  }
-
   /** Returns total number of docs in this index, including
    *  docs not yet flushed (still in the RAM buffer),
    *  not counting deletions.
@@ -1994,14 +1972,14 @@ public class IndexWriter {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void deleteDocuments(Term[] terms) throws CorruptIndexException, IOException {
+  public void deleteDocuments(Term... terms) throws CorruptIndexException, IOException {
     ensureOpen();
     try {
       boolean doFlush = docWriter.bufferDeleteTerms(terms);
       if (doFlush)
         flush(true, false, false);
     } catch (OutOfMemoryError oom) {
-      handleOOM(oom, "deleteDocuments(Term[])");
+      handleOOM(oom, "deleteDocuments(Term..)");
     }
   }
 
@@ -2036,7 +2014,7 @@ public class IndexWriter {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void deleteDocuments(Query[] queries) throws CorruptIndexException, IOException {
+  public void deleteDocuments(Query... queries) throws CorruptIndexException, IOException {
     ensureOpen();
     boolean doFlush = docWriter.bufferDeleteQueries(queries);
     if (doFlush)
@@ -2693,13 +2671,6 @@ public class IndexWriter {
   }
 
   /**
-   * @deprecated Please use {@link #rollback} instead.
-   */
-  public void abort() throws IOException {
-    rollback();
-  }
-
-  /**
    * Close the <code>IndexWriter</code> without committing
    * any changes that have occurred since the last commit
    * (or since it was opened, if commit hasn't been called).
@@ -2946,84 +2917,12 @@ public class IndexWriter {
     releaseRead();
   }
 
-  /** Merges all segments from an array of indexes into this index.
-   *
-   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
-   * you should immediately close the writer.  See <a
-   * href="#OOME">above</a> for details.</p>
-   *
-   * @deprecated Use {@link #addIndexesNoOptimize} instead,
-   * then separately call {@link #optimize} afterwards if
-   * you need to.
-   *
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  public void addIndexes(Directory[] dirs)
-    throws CorruptIndexException, IOException {
-
-    ensureOpen();
-    
-    noDupDirs(dirs);
-
-    // Do not allow add docs or deletes while we are running:
-    docWriter.pauseAllThreads();
-
-    try {
-
-      if (infoStream != null)
-        message("flush at addIndexes");
-      flush(true, false, true);
-
-      boolean success = false;
-
-      startTransaction(false);
-
-      try {
-
-        int docCount = 0;
-        synchronized(this) {
-          ensureOpen();
-          for (int i = 0; i < dirs.length; i++) {
-            SegmentInfos sis = new SegmentInfos();	  // read infos from dir
-            sis.read(dirs[i]);
-            for (int j = 0; j < sis.size(); j++) {
-              final SegmentInfo info = sis.info(j);
-              docCount += info.docCount;
-              assert !segmentInfos.contains(info);
-              segmentInfos.add(info);	  // add each info
-            }
-          }
-        }
-
-        // Notify DocumentsWriter that the flushed count just increased
-        docWriter.updateFlushedDocCount(docCount);
-
-        optimize();
-
-        success = true;
-      } finally {
-        if (success) {
-          commitTransaction();
-        } else {
-          rollbackTransaction();
-        }
-      }
-    } catch (OutOfMemoryError oom) {
-      handleOOM(oom, "addIndexes(Directory[])");
-    } finally {
-      if (docWriter != null) {
-        docWriter.resumeAllThreads();
-      }
-    }
-  }
-
   private synchronized void resetMergeExceptions() {
     mergeExceptions = new ArrayList();
     mergeGen++;
   }
 
-  private void noDupDirs(Directory[] dirs) {
+  private void noDupDirs(Directory... dirs) {
     HashSet dups = new HashSet();
     for(int i=0;i<dirs.length;i++) {
       if (dups.contains(dirs[i]))
@@ -3084,7 +2983,7 @@ public class IndexWriter {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void addIndexesNoOptimize(Directory[] dirs)
+  public void addIndexesNoOptimize(Directory... dirs)
       throws CorruptIndexException, IOException {
 
     ensureOpen();
@@ -3247,7 +3146,7 @@ public class IndexWriter {
    * add or delete documents (with another thread) will be
    * paused until this method completes.
    *
-   * <p>See {@link #addIndexesNoOptimize(Directory[])} for
+   * <p>See {@link #addIndexesNoOptimize} for
    * details on transactional semantics, temporary free
    * space required in the Directory, and non-CFS segments
    * on an Exception.</p>
@@ -3259,7 +3158,7 @@ public class IndexWriter {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void addIndexes(IndexReader[] readers)
+  public void addIndexes(IndexReader... readers)
     throws CorruptIndexException, IOException {
 
     ensureOpen();
@@ -3326,7 +3225,7 @@ public class IndexWriter {
             segmentInfos.clear();                      // pop old infos & add new
             info = new SegmentInfo(mergedName, docCount, directory, false, true,
                                    -1, null, false, merger.hasProx());
-            setDiagnostics(info, "addIndexes(IndexReader[])");
+            setDiagnostics(info, "addIndexes(IndexReader...)");
             segmentInfos.add(info);
           }
 
@@ -3395,7 +3294,7 @@ public class IndexWriter {
         }
       }
     } catch (OutOfMemoryError oom) {
-      handleOOM(oom, "addIndexes(IndexReader[])");
+      handleOOM(oom, "addIndexes(IndexReader...)");
     } finally {
       if (docWriter != null) {
         docWriter.resumeAllThreads();
@@ -4928,22 +4827,6 @@ public class IndexWriter {
     }
     hitOOM = true;
     throw oom;
-  }
-
-  // deprecated
-  private boolean allowMinus1Position;
-
-  /** Deprecated: emulates IndexWriter's buggy behavior when
-   *  first token(s) have positionIncrement==0 (ie, prior to
-   *  fixing LUCENE-1542) */
-  public void setAllowMinus1Position() {
-    allowMinus1Position = true;
-    docWriter.setAllowMinus1Position();
-  }
-
-  // deprecated
-  boolean getAllowMinus1Position() {
-    return allowMinus1Position;
   }
 
   // Used only by assert for testing.  Current points:

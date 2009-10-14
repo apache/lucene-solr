@@ -428,7 +428,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
     void doBody(int j, Directory[] dirs) throws Throwable {
       switch (j % 4) {
         case 0:
-          mainWriter.addIndexes(dirs);
+          mainWriter.addIndexesNoOptimize(dirs);
+          mainWriter.optimize();
           break;
         case 1:
           mainWriter.addIndexesNoOptimize(dirs);

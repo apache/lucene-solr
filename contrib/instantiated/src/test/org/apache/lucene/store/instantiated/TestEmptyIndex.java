@@ -105,7 +105,6 @@ public class TestEmptyIndex extends TestCase {
 
     assertNull(terms.term());
     assertFalse(terms.next());
-    assertFalse(terms.skipTo(new Term("foo", "bar")));
 
   }
 

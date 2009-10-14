@@ -29,7 +29,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
 {
 
   /**
-   * Tests that index merging (specifically addIndexes()) doesn't
+   * Tests that index merging (specifically addIndexesNoOptimize()) doesn't
    * change the index order of documents.
    */
   public void testLucene() throws IOException
@@ -59,7 +59,8 @@ public class TestIndexWriterMerging extends LuceneTestCase
     IndexWriter writer = new IndexWriter(merged, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMergeFactor(2);
 
-    writer.addIndexes(new Directory[]{indexA, indexB});
+    writer.addIndexesNoOptimize(new Directory[]{indexA, indexB});
+    writer.optimize();
     writer.close();
 
     fail = verifyIndex(merged, 0);

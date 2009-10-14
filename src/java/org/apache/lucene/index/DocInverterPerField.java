@@ -129,9 +129,6 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
 
           final int startLength = fieldState.length;
           
-          // deprecated
-          final boolean allowMinus1Position = docState.allowMinus1Position;
-
           try {
             int offsetEnd = fieldState.offset-1;
             
@@ -157,7 +154,7 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
               
               final int posIncr = posIncrAttribute.getPositionIncrement();
               fieldState.position += posIncr;
-              if (allowMinus1Position || fieldState.position > 0) {
+              if (fieldState.position > 0) {
                 fieldState.position--;
               }
 

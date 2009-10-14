@@ -172,20 +172,12 @@ public abstract class MergePolicy {
    *  executing a merge. */
   public static class MergeException extends RuntimeException {
     private Directory dir;
-    /** @deprecated
-     *  Use {@link #MergePolicy.MergeException(String,Directory)} instead */
-    public MergeException(String message) {
-      super(message);
-    }
+
     public MergeException(String message, Directory dir) {
       super(message);
       this.dir = dir;
     }
-    /** @deprecated
-     *  Use {@link #MergePolicy.MergeException(Throwable,Directory)} instead */
-    public MergeException(Throwable exc) {
-      super(exc);
-    }
+
     public MergeException(Throwable exc, Directory dir) {
       super(exc);
       this.dir = dir;

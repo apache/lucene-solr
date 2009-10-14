@@ -96,7 +96,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
         for (i = 0; i < 100; i++) {
             addDoc(writer);
         }
-        assertEquals(100, writer.docCount());
+        assertEquals(100, writer.maxDoc());
         writer.close();
 
         // delete 40 documents
@@ -108,7 +108,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
         // test doc count before segments are merged/index is optimized
         writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
-        assertEquals(100, writer.docCount());
+        assertEquals(100, writer.maxDoc());
         writer.close();
 
         reader = IndexReader.open(dir, true);
@@ -156,7 +156,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
     /*
       Test: make sure when we run out of disk space or hit
-      random IOExceptions in any of the addIndexes(*) calls
+      random IOExceptions in any of the addIndexesNoOptimize(*) calls
       that 1) index is not corrupt (searcher can open/search
       it) and 2) transactional semantics are followed:
       either all or none of the incoming documents were in
@@ -171,7 +171,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       boolean debug = false;
 
       // Build up a bunch of dirs that have indexes which we
-      // will then merge together by calling addIndexes(*):
+      // will then merge together by calling addIndexesNoOptimize(*):
       Directory[] dirs = new Directory[NUM_DIR];
       long inputDiskUsage = 0;
       for(int i=0;i<NUM_DIR;i++) {
@@ -188,7 +188,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       }
 
       // Now, build a starting index that has START_COUNT docs.  We
-      // will then try to addIndexes into a copy of this:
+      // will then try to addIndexesNoOptimize into a copy of this:
       RAMDirectory startDir = new RAMDirectory();
       IndexWriter writer = new IndexWriter(startDir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       for(int j=0;j<START_COUNT;j++) {
@@ -209,12 +209,12 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
       // Iterate with larger and larger amounts of free
       // disk space.  With little free disk space,
-      // addIndexes will certainly run out of space &
+      // addIndexesNoOptimize will certainly run out of space &
       // fail.  Verify that when this happens, index is
       // not corrupt and index in fact has added no
       // documents.  Then, we increase disk space by 2000
       // bytes each iteration.  At some point there is
-      // enough free disk space and addIndexes should
+      // enough free disk space and addIndexesNoOptimize should
       // succeed and index should show all documents were
       // added.
 
@@ -242,7 +242,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
         String methodName;
         if (0 == method) {
-          methodName = "addIndexes(Directory[])";
+          methodName = "addIndexes(Directory[]) + optimize()";
         } else if (1 == method) {
           methodName = "addIndexes(IndexReader[])";
         } else {
@@ -306,7 +306,8 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
             try {
 
               if (0 == method) {
-                writer.addIndexes(dirs);
+                writer.addIndexesNoOptimize(dirs);
+                writer.optimize();
               } else if (1 == method) {
                 IndexReader readers[] = new IndexReader[dirs.length];
                 for(int i=0;i<dirs.length;i++) {
@@ -488,7 +489,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
           if (hitError) {
             if (doAbort) {
-              writer.abort();
+              writer.rollback();
             } else {
               try {
                 writer.close();
@@ -739,7 +740,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
           // now open index for create:
           writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
-          assertEquals("should be zero documents", writer.docCount(), 0);
+          assertEquals("should be zero documents", writer.maxDoc(), 0);
           addDoc(writer);
           writer.close();
 
@@ -999,9 +1000,9 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       searcher.close();
 
       // Now, close the writer:
-      writer.abort();
+      writer.rollback();
 
-      assertNoUnreferencedFiles(dir, "unreferenced files remain after abort()");
+      assertNoUnreferencedFiles(dir, "unreferenced files remain after rollback()");
 
       searcher = new IndexSearcher(dir, false);
       hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
@@ -1083,7 +1084,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
     /*
      * Verify that calling optimize when writer is open for
-     * "commit on close" works correctly both for abort()
+     * "commit on close" works correctly both for rollback()
      * and close().
      */
     public void testCommitOnCloseOptimize() throws IOException {
@@ -1107,7 +1108,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       reader.close();
 
       // Abort the writer:
-      writer.abort();
+      writer.rollback();
       assertNoUnreferencedFiles(dir, "aborted writer after optimize");
 
       // Open a reader after aborting writer:
@@ -2473,25 +2474,25 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
   }
 
   // LUCENE-1130: make sure initial IOException, and then 2nd
-  // IOException during abort(), is OK:
+  // IOException during rollback(), is OK:
   public void testIOExceptionDuringAbort() throws IOException {
     _testSingleThreadFailure(new FailOnlyOnAbortOrFlush(false));
   }
 
   // LUCENE-1130: make sure initial IOException, and then 2nd
-  // IOException during abort(), is OK:
+  // IOException during rollback(), is OK:
   public void testIOExceptionDuringAbortOnlyOnce() throws IOException {
     _testSingleThreadFailure(new FailOnlyOnAbortOrFlush(true));
   }
 
   // LUCENE-1130: make sure initial IOException, and then 2nd
-  // IOException during abort(), with multiple threads, is OK:
+  // IOException during rollback(), with multiple threads, is OK:
   public void testIOExceptionDuringAbortWithThreads() throws Exception {
     _testMultipleThreadsFailure(new FailOnlyOnAbortOrFlush(false));
   }
 
   // LUCENE-1130: make sure initial IOException, and then 2nd
-  // IOException during abort(), with multiple threads, is OK:
+  // IOException during rollback(), with multiple threads, is OK:
   public void testIOExceptionDuringAbortWithThreadsOnlyOnce() throws Exception {
     _testMultipleThreadsFailure(new FailOnlyOnAbortOrFlush(true));
   }
@@ -2771,7 +2772,8 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       writer.setMergePolicy(new LogDocMergePolicy(writer));
 
       Directory[] indexDirs = {new MockRAMDirectory(dir)};
-      writer.addIndexes(indexDirs);
+      writer.addIndexesNoOptimize(indexDirs);
+      writer.optimize();
       writer.close();
     }
     dir.close();
@@ -3224,7 +3226,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
       // Expected
     }
     assertTrue(failure.fail1 && failure.fail2);
-    w.abort();
+    w.rollback();
     dir.close();
   }
   
@@ -3713,7 +3715,8 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     void doBody(int j, Directory[] dirs) throws Throwable {
       switch(j%4) {
       case 0:
-        writer2.addIndexes(dirs);
+        writer2.addIndexesNoOptimize(dirs);
+        writer2.optimize();
         break;
       case 1:
         writer2.addIndexesNoOptimize(dirs);
@@ -3799,7 +3802,8 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     void doBody(int j, Directory[] dirs) throws Throwable {
       switch(j%5) {
       case 0:
-        writer2.addIndexes(dirs);
+        writer2.addIndexesNoOptimize(dirs);
+        writer2.optimize();
         break;
       case 1:
         writer2.addIndexesNoOptimize(dirs);

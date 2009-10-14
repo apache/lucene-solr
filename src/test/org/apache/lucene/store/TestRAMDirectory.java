@@ -62,7 +62,7 @@ public class TestRAMDirectory extends LuceneTestCase {
       doc.add(new Field("content", English.intToEnglish(i).trim(), Field.Store.YES, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
-    assertEquals(docsToAdd, writer.docCount());
+    assertEquals(docsToAdd, writer.maxDoc());
     writer.close();
     dir.close();
   }

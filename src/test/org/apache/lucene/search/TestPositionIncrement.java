@@ -231,96 +231,83 @@ public class TestPositionIncrement extends BaseTokenStreamTestCase {
   }
   
   public void testPayloadsPos0() throws Exception {
-    for(int x=0;x<2;x++) {
-      Directory dir = new MockRAMDirectory();
-      IndexWriter writer = new IndexWriter(dir,
-                                           new TestPayloadAnalyzer(), true,
-                                           IndexWriter.MaxFieldLength.LIMITED);
-      if (x == 1) {
-        writer.setAllowMinus1Position();
-      }
-      Document doc = new Document();
-      doc.add(new Field("content",
-                        new StringReader("a a b c d e a f g h i j a b k k")));
-      writer.addDocument(doc);
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir,
+                                         new TestPayloadAnalyzer(), true,
+                                         IndexWriter.MaxFieldLength.LIMITED);
+    Document doc = new Document();
+    doc.add(new Field("content",
+                      new StringReader("a a b c d e a f g h i j a b k k")));
+    writer.addDocument(doc);
 
-      IndexReader r = writer.getReader();
+    IndexReader r = writer.getReader();
 
-      TermPositions tp = r.termPositions(new Term("content", "a"));
-      int count = 0;
-      assertTrue(tp.next());
-      // "a" occurs 4 times
-      assertEquals(4, tp.freq());
-      int expected;
-      if (x == 1) {
-        expected = Integer.MAX_VALUE;
-      } else {
-        expected = 0;
-      }
-      assertEquals(expected, tp.nextPosition());
-      if (x == 1) {
-        continue;
-      }
-      assertEquals(1, tp.nextPosition());
-      assertEquals(3, tp.nextPosition());
-      assertEquals(6, tp.nextPosition());
+    TermPositions tp = r.termPositions(new Term("content", "a"));
+    int count = 0;
+    assertTrue(tp.next());
+    // "a" occurs 4 times
+    assertEquals(4, tp.freq());
+    int expected = 0;
+    assertEquals(expected, tp.nextPosition());
+    assertEquals(1, tp.nextPosition());
+    assertEquals(3, tp.nextPosition());
+    assertEquals(6, tp.nextPosition());
 
-      // only one doc has "a"
-      assertFalse(tp.next());
+    // only one doc has "a"
+    assertFalse(tp.next());
 
-      IndexSearcher is = new IndexSearcher(r);
-    
-      SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
-      SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
-      SpanQuery[] sqs = { stq1, stq2 };
-      SpanNearQuery snq = new SpanNearQuery(sqs, 30, false);
+    IndexSearcher is = new IndexSearcher(r);
+  
+    SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
+    SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
+    SpanQuery[] sqs = { stq1, stq2 };
+    SpanNearQuery snq = new SpanNearQuery(sqs, 30, false);
 
-      count = 0;
-      boolean sawZero = false;
-      //System.out.println("\ngetPayloadSpans test");
-      Spans pspans = snq.getSpans(is.getIndexReader());
-      while (pspans.next()) {
-        //System.out.println(pspans.doc() + " - " + pspans.start() + " - "+ pspans.end());
-        Collection payloads = pspans.getPayload();
-        sawZero |= pspans.start() == 0;
-        for (Iterator it = payloads.iterator(); it.hasNext();) {
-          count++;
-          it.next();
-          //System.out.println(new String((byte[]) it.next()));
-        }
-      }
-      assertEquals(5, count);
-      assertTrue(sawZero);
-
-      //System.out.println("\ngetSpans test");
-      Spans spans = snq.getSpans(is.getIndexReader());
-      count = 0;
-      sawZero = false;
-      while (spans.next()) {
+    count = 0;
+    boolean sawZero = false;
+    //System.out.println("\ngetPayloadSpans test");
+    Spans pspans = snq.getSpans(is.getIndexReader());
+    while (pspans.next()) {
+      //System.out.println(pspans.doc() + " - " + pspans.start() + " - "+ pspans.end());
+      Collection payloads = pspans.getPayload();
+      sawZero |= pspans.start() == 0;
+      for (Iterator it = payloads.iterator(); it.hasNext();) {
         count++;
-        sawZero |= spans.start() == 0;
-        //System.out.println(spans.doc() + " - " + spans.start() + " - " + spans.end());
+        it.next();
+        //System.out.println(new String((byte[]) it.next()));
       }
-      assertEquals(4, count);
-      assertTrue(sawZero);
-		
-      //System.out.println("\nPayloadSpanUtil test");
-
-      sawZero = false;
-      PayloadSpanUtil psu = new PayloadSpanUtil(is.getIndexReader());
-      Collection pls = psu.getPayloadsForQuery(snq);
-      count = pls.size();
-      for (Iterator it = pls.iterator(); it.hasNext();) {
-        String s = new String((byte[]) it.next());
-        //System.out.println(s);
-        sawZero |= s.equals("pos: 0");
-      }
-      assertEquals(5, count);
-      assertTrue(sawZero);
-      writer.close();
-      is.getIndexReader().close();
-      dir.close();
     }
+    assertEquals(5, count);
+    assertTrue(sawZero);
+
+    //System.out.println("\ngetSpans test");
+    Spans spans = snq.getSpans(is.getIndexReader());
+    count = 0;
+    sawZero = false;
+    while (spans.next()) {
+      count++;
+      sawZero |= spans.start() == 0;
+      //System.out.println(spans.doc() + " - " + spans.start() + " - " + spans.end());
+    }
+    assertEquals(4, count);
+    assertTrue(sawZero);
+  
+    //System.out.println("\nPayloadSpanUtil test");
+
+    sawZero = false;
+    PayloadSpanUtil psu = new PayloadSpanUtil(is.getIndexReader());
+    Collection pls = psu.getPayloadsForQuery(snq);
+    count = pls.size();
+    for (Iterator it = pls.iterator(); it.hasNext();) {
+      String s = new String((byte[]) it.next());
+      //System.out.println(s);
+      sawZero |= s.equals("pos: 0");
+    }
+    assertEquals(5, count);
+    assertTrue(sawZero);
+    writer.close();
+    is.getIndexReader().close();
+    dir.close();
   }
 }
 

@@ -99,17 +99,16 @@ public class TermVectorAccessor {
       positions.clear();
     }
 
-    TermEnum termEnum = indexReader.terms();
-    if (termEnum.skipTo(new Term(field, ""))) {
-
+    TermEnum termEnum = indexReader.terms(new Term(field, ""));
+    if (termEnum.term() != null) {
       while (termEnum.term().field() == field) {
         TermPositions termPositions = indexReader.termPositions(termEnum.term());
         if (termPositions.skipTo(documentNumber)) {
-
+  
           frequencies.add(Integer.valueOf(termPositions.freq()));
           tokens.add(termEnum.term().text());
-
-
+  
+  
           if (!mapper.isIgnoringPositions()) {
             int[] positions = new int[termPositions.freq()];
             for (int i = 0; i < positions.length; i++) {
@@ -125,13 +124,11 @@ public class TermVectorAccessor {
           break;
         }
       }
-
       mapper.setDocumentNumber(documentNumber);
       mapper.setExpectations(field, tokens.size(), false, !mapper.isIgnoringPositions());
       for (int i = 0; i < tokens.size(); i++) {
         mapper.map((String) tokens.get(i), ((Integer) frequencies.get(i)).intValue(), (TermVectorOffsetInfo[]) null, (int[]) positions.get(i));
       }
-
     }
     termEnum.close();
 

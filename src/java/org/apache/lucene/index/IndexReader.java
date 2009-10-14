@@ -487,37 +487,6 @@ public abstract class IndexReader implements Cloneable {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
 
-  /**<p>For IndexReader implementations that use
-   * TermInfosReader to read terms, this sets the
-   * indexDivisor to subsample the number of indexed terms
-   * loaded into memory.  This has the same effect as {@link
-   * IndexWriter#setTermIndexInterval} except that setting
-   * must be done at indexing time while this setting can be
-   * set per reader.  When set to N, then one in every
-   * N*termIndexInterval terms in the index is loaded into
-   * memory.  By setting this to a value > 1 you can reduce
-   * memory usage, at the expense of higher latency when
-   * loading a TermInfo.  The default value is 1.</p>
-   *
-   * <b>NOTE:</b> you must call this before the term
-   * index is loaded.  If the index is already loaded, 
-   * an IllegalStateException is thrown.
-   * @throws IllegalStateException if the term index has already been loaded into memory
-   * @deprecated Please use {@link IndexReader#open(Directory, IndexDeletionPolicy, boolean, int)} to specify the required TermInfos index divisor instead.
-   */
-  public void setTermInfosIndexDivisor(int indexDivisor) throws IllegalStateException {
-    throw new UnsupportedOperationException("Please pass termInfosIndexDivisor up-front when opening IndexReader");
-  }
-
-  /** <p>For IndexReader implementations that use
-   *  TermInfosReader to read terms, this returns the
-   *  current indexDivisor as specified when the reader was
-   *  opened.
-   */
-  public int getTermInfosIndexDivisor() {
-    throw new UnsupportedOperationException("This reader does not support this method.");
-  }
-
   /**
    * Check whether this IndexReader is still using the
    * current (i.e., most recently committed) version of the

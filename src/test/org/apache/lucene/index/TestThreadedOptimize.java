@@ -114,7 +114,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
       // System.out.println("TEST: now index=" + writer.segString());
 
-      assertEquals(expectedDocCount, writer.docCount());
+      assertEquals(expectedDocCount, writer.maxDoc());
 
       writer.close();
       writer = new IndexWriter(directory, ANALYZER, false, IndexWriter.MaxFieldLength.UNLIMITED);

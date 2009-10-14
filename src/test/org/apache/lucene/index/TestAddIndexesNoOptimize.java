@@ -43,27 +43,27 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer = newWriter(dir, true);
     // add 100 documents
     addDocs(writer, 100);
-    assertEquals(100, writer.docCount());
+    assertEquals(100, writer.maxDoc());
     writer.close();
 
     writer = newWriter(aux, true);
     writer.setUseCompoundFile(false); // use one without a compound file
     // add 40 documents in separate files
     addDocs(writer, 40);
-    assertEquals(40, writer.docCount());
+    assertEquals(40, writer.maxDoc());
     writer.close();
 
     writer = newWriter(aux2, true);
     // add 40 documents in compound files
     addDocs2(writer, 50);
-    assertEquals(50, writer.docCount());
+    assertEquals(50, writer.maxDoc());
     writer.close();
 
     // test doc count before segments are merged
     writer = newWriter(dir, false);
-    assertEquals(100, writer.docCount());
+    assertEquals(100, writer.maxDoc());
     writer.addIndexesNoOptimize(new Directory[] { aux, aux2 });
-    assertEquals(190, writer.docCount());
+    assertEquals(190, writer.maxDoc());
     writer.close();
 
     // make sure the old index is correct
@@ -77,14 +77,14 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer = newWriter(aux3, true);
     // add 40 documents
     addDocs(writer, 40);
-    assertEquals(40, writer.docCount());
+    assertEquals(40, writer.maxDoc());
     writer.close();
 
     // test doc count before segments are merged/index is optimized
     writer = newWriter(dir, false);
-    assertEquals(190, writer.docCount());
+    assertEquals(190, writer.maxDoc());
     writer.addIndexesNoOptimize(new Directory[] { aux3 });
-    assertEquals(230, writer.docCount());
+    assertEquals(230, writer.maxDoc());
     writer.close();
 
     // make sure the new index is correct
@@ -113,9 +113,9 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.close();
 
     writer = newWriter(dir, false);
-    assertEquals(230, writer.docCount());
+    assertEquals(230, writer.maxDoc());
     writer.addIndexesNoOptimize(new Directory[] { aux4 });
-    assertEquals(231, writer.docCount());
+    assertEquals(231, writer.maxDoc());
     writer.close();
 
     verifyNumDocs(dir, 231);
@@ -250,7 +250,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer = newWriter(dir, true);
     // add 100 documents
     addDocs(writer, 100);
-    assertEquals(100, writer.docCount());
+    assertEquals(100, writer.maxDoc());
     writer.close();
 
     writer = newWriter(aux, true);
@@ -272,7 +272,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
       assertTrue(false);
     }
     catch (IllegalArgumentException e) {
-      assertEquals(100, writer.docCount());
+      assertEquals(100, writer.maxDoc());
     }
     writer.close();
 
@@ -297,7 +297,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     addDocs(writer, 10);
 
     writer.addIndexesNoOptimize(new Directory[] { aux });
-    assertEquals(1040, writer.docCount());
+    assertEquals(1040, writer.maxDoc());
     assertEquals(2, writer.getSegmentCount());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -321,7 +321,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     addDocs(writer, 2);
 
     writer.addIndexesNoOptimize(new Directory[] { aux });
-    assertEquals(1032, writer.docCount());
+    assertEquals(1032, writer.maxDoc());
     assertEquals(2, writer.getSegmentCount());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -344,7 +344,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.setMergeFactor(4);
 
     writer.addIndexesNoOptimize(new Directory[] { aux, new RAMDirectory(aux) });
-    assertEquals(1060, writer.docCount());
+    assertEquals(1060, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
 
@@ -373,7 +373,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.setMergeFactor(4);
 
     writer.addIndexesNoOptimize(new Directory[] { aux, new RAMDirectory(aux) });
-    assertEquals(1020, writer.docCount());
+    assertEquals(1020, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
 
@@ -395,7 +395,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.setMaxBufferedDocs(100);
     writer.setMergeFactor(10);
     writer.addIndexesNoOptimize(new Directory[] { aux });
-    assertEquals(30, writer.docCount());
+    assertEquals(30, writer.maxDoc());
     assertEquals(3, writer.getSegmentCount());
     writer.close();
 
@@ -418,7 +418,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.setMergeFactor(4);
 
     writer.addIndexesNoOptimize(new Directory[] { aux, aux2 });
-    assertEquals(1025, writer.docCount());
+    assertEquals(1025, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
 
@@ -476,7 +476,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.setMaxBufferedDocs(1000);
     // add 1000 documents in 1 segment
     addDocs(writer, 1000);
-    assertEquals(1000, writer.docCount());
+    assertEquals(1000, writer.maxDoc());
     assertEquals(1, writer.getSegmentCount());
     writer.close();
 
@@ -493,7 +493,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
       writer.setMaxBufferedDocs(100);
       writer.setMergeFactor(10);
     }
-    assertEquals(30, writer.docCount());
+    assertEquals(30, writer.maxDoc());
     assertEquals(3, writer.getSegmentCount());
     writer.close();
   }

@@ -198,7 +198,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     ((ConcurrentMergeScheduler) writer.getMergeScheduler()).sync();
     writer.commit();
     checkInvariants(writer);
-    assertEquals(10, writer.docCount());
+    assertEquals(10, writer.maxDoc());
 
     writer.close();
   }

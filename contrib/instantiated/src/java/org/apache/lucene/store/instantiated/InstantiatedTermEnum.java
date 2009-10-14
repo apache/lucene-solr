@@ -77,36 +77,6 @@ public class InstantiatedTermEnum
   public void close() {
   }
 
-
-  public boolean skipTo(Term target) throws IOException {
-
-    // this method is not known to be used by anything
-    // in lucene for many years now, so there is
-    // very to gain by optimizing this method more,
-
-    if (reader.getIndex().getOrderedTerms().length == 0) {
-      return false;
-    }
-
-    InstantiatedTerm term = reader.getIndex().findTerm(target);
-    if (term != null) {
-      this.term = term;
-      nextTermIndex = term.getTermIndex() + 1;
-      return true;
-    } else {
-      int pos = Arrays.binarySearch(reader.getIndex().getOrderedTerms(), target, InstantiatedTerm.termComparator);
-      if (pos < 0) {
-        pos = -1 - pos;
-      }
-
-      if (pos > reader.getIndex().getOrderedTerms().length) {
-        return false;
-      }
-      this.term = reader.getIndex().getOrderedTerms()[pos];
-      nextTermIndex = pos + 1;
-      return true;
-    }
-  }
 }
 
 

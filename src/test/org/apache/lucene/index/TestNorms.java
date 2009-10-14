@@ -36,7 +36,7 @@ import java.util.ArrayList;
 
 /**
  * Test that norms info is preserved during index life - including
- * separate norms, addDocument, addIndexes, optimize.
+ * separate norms, addDocument, addIndexesNoOptimize, optimize.
  */
 public class TestNorms extends LuceneTestCase {
 
@@ -112,7 +112,8 @@ public class TestNorms extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(dir3,anlzr,false, IndexWriter.MaxFieldLength.LIMITED);
     iw.setMaxBufferedDocs(5);
     iw.setMergeFactor(3);
-    iw.addIndexes(new Directory[]{dir1,dir2});
+    iw.addIndexesNoOptimize(new Directory[]{dir1,dir2});
+    iw.optimize();
     iw.close();
     
     norms1.addAll(norms);

@@ -82,7 +82,7 @@ public class TestCrash extends LuceneTestCase {
     MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
     writer.close();
     writer = initIndex(dir);
-    assertEquals(314, writer.docCount());
+    assertEquals(314, writer.maxDoc());
     crash(writer);
 
     /*
