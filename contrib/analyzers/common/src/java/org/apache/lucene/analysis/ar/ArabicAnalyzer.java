@@ -111,13 +111,13 @@ public final class ArabicAnalyzer extends Analyzer {
    * Creates a {@link TokenStream} which tokenizes all the text in the provided {@link Reader}.
    *
    * @return  A {@link TokenStream} built from an {@link ArabicLetterTokenizer} filtered with
-   * 			{@link StopFilter}, {@link LowerCaseFilter}, {@link ArabicNormalizationFilter}
+   * 			{@link LowerCaseFilter}, {@link StopFilter}, {@link ArabicNormalizationFilter}
    *            and {@link ArabicStemFilter}.
    */
   public final TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new ArabicLetterTokenizer( reader );
-    result = new StopFilter( result, stoptable );
     result = new LowerCaseFilter(result);
+    result = new StopFilter( result, stoptable );
     result = new ArabicNormalizationFilter( result );
     result = new ArabicStemFilter( result );
 
@@ -134,7 +134,7 @@ public final class ArabicAnalyzer extends Analyzer {
    * in the provided {@link Reader}.
    *
    * @return  A {@link TokenStream} built from an {@link ArabicLetterTokenizer} filtered with
-   *            {@link StopFilter}, {@link LowerCaseFilter}, {@link ArabicNormalizationFilter}
+   *            {@link LowerCaseFilter}, {@link StopFilter}, {@link ArabicNormalizationFilter}
    *            and {@link ArabicStemFilter}.
    */
   public TokenStream reusableTokenStream(String fieldName, Reader reader)
@@ -143,8 +143,8 @@ public final class ArabicAnalyzer extends Analyzer {
     if (streams == null) {
       streams = new SavedStreams();
       streams.source = new ArabicLetterTokenizer(reader);
-      streams.result = new StopFilter(streams.source, stoptable);
-      streams.result = new LowerCaseFilter(streams.result);
+      streams.result = new LowerCaseFilter(streams.source);
+      streams.result = new StopFilter(streams.result, stoptable);
       streams.result = new ArabicNormalizationFilter(streams.result);
       streams.result = new ArabicStemFilter(streams.result);
       setPreviousTokenStream(streams);
