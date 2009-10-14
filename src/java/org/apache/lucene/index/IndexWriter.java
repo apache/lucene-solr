@@ -312,12 +312,12 @@ public class IndexWriter {
   private volatile boolean poolReaders;
   
   /**
-   * Returns a readonly reader, covering all committed as
-   * well as un-committed changes to the index.  This
-   * provides "near real-time" searching, in that changes
-   * made during an IndexWriter session can be quickly made
-   * available for searching without closing the writer nor
-   * calling {@link #commit}.
+   * Expert: returns a readonly reader, covering all
+   * committed as well as un-committed changes to the index.
+   * This provides "near real-time" searching, in that
+   * changes made during an IndexWriter session can be
+   * quickly made available for searching without closing
+   * the writer nor calling {@link #commit}.
    *
    * <p>Note that this is functionally equivalent to calling
    * {#commit} and then using {@link IndexReader#open} to
