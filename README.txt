@@ -22,7 +22,7 @@ library.
 
 For a complete description of the Solr project, team composition, source
 code repositories, and other details, please see the Solr web site at
-http://lucene.apache.org/solr.html.
+http://lucene.apache.org/solr
 
 
 Getting Started
