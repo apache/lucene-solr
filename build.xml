@@ -890,13 +890,13 @@
   <!-- ===================== Runtime: luke         ============================= -->
   <!-- ========================================================================= -->
 
-  <available file="luke/luke-0.9.1.jar" property="luke.jar.exists" />
+  <available file="luke/luke-0.9.9.jar" property="luke.jar.exists" />
   <target name="luke-download" unless="luke.jar.exists" depends="proxy.setup">
     <mkdir dir="luke"/>
-    <get src="http://www.getopt.org/luke/luke-0.9.1/luke-0.9.1.jar" 
-        dest="luke/luke-0.9.1.jar"/>
-    <get src="http://people.apache.org/repo/m2-snapshot-repository/org/apache/lucene/lucene-misc/2.4-SNAPSHOT/lucene-misc-2.4-SNAPSHOT.jar" 
-        dest="luke/lucene-misc-2.4-SNAPSHOT.jar" />
+    <get src="http://www.getopt.org/luke/luke-0.9.9/luke-0.9.9.jar" 
+        dest="luke/luke-0.9.9.jar"/>
+    <get src="http://people.apache.org/repo/m2-ibiblio-rsync-repository/org/apache/lucene/lucene-misc/2.9.0/lucene-misc-2.9.0.jar" 
+        dest="luke/lucene-misc-2.9.0.jar" />
   </target>
   
   <target name="luke" depends="luke-download">
@@ -909,8 +909,8 @@
           <include name="*.jar" />
         </fileset>
         <fileset dir="luke">
-          <include name="luke-0.9.1.jar"/>
-          <include name="lucene-misc-2.4-SNAPSHOT.jar"/>
+          <include name="luke-0.9.9.jar"/>
+          <include name="lucene-misc-2.9.0.jar"/>
         </fileset>
        </classpath>
     </java>
