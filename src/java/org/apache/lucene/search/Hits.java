@@ -42,14 +42,13 @@ import org.apache.lucene.index.CorruptIndexException;
  * @deprecated
  * see {@link TopScoreDocCollector} and {@link TopDocs} :<br>
  * <pre>
- *   TopScoreDocCollector collector = new TopScoreDocCollector(hitsPerPage);
- *   searcher.search(query, collector);
- *   ScoreDoc[] hits = collector.topDocs().scoreDocs;
- *   for (int i = 0; i < hits.length; i++) {
- *     int docId = hits[i].doc;
+ *   TopScoreDocCollector collector = TopScoreDocCollector.create(hitsPerPage, false);
+ *   searcher.search(new TermQuery(new Term("field", "iterator")), collector);
+ *   ScoreDoc[] docHits = collector.topDocs().scoreDocs;
+ *   for (int i = 0; i < docHits.length; i++) {
+ *     int docId = docHits[i].doc;
  *     Document d = searcher.doc(docId);
- *     // do something with current hit
- *     ...
+ *   }
  * </pre>
  */
 public final class Hits {
