@@ -103,8 +103,8 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     /* Construct the Weight for this Query searched by searcher.  Recursively construct subquery weights. */
     public DisjunctionMaxWeight(Searcher searcher) throws IOException {
       this.similarity = searcher.getSimilarity();
-      for (Iterator<Query> iter = disjuncts.iterator(); iter.hasNext();) {
-        weights.add(((Query) iter.next()).createWeight(searcher));
+      for (Query disjunctQuery : disjuncts) {
+        weights.add(disjunctQuery.createWeight(searcher));
       }
     }
 
@@ -120,8 +120,8 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     @Override
     public float sumOfSquaredWeights() throws IOException {
       float max = 0.0f, sum = 0.0f;
-      for (Iterator<Weight> iter = weights.iterator(); iter.hasNext();) {
-        float sub = ((Weight) iter.next()).sumOfSquaredWeights();
+      for (Weight currentWeight : weights) {
+        float sub = currentWeight.sumOfSquaredWeights();
         sum += sub;
         max = Math.max(max, sub);
         
@@ -134,8 +134,8 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     @Override
     public void normalize(float norm) {
       norm *= getBoost();  // Incorporate our boost
-      for (Iterator<Weight> iter = weights.iterator(); iter.hasNext();) {
-        ((Weight) iter.next()).normalize(norm);
+      for (Weight wt : weights) {
+        wt.normalize(norm);
       }
     }
 
@@ -145,8 +145,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
         boolean topScorer) throws IOException {
       Scorer[] scorers = new Scorer[weights.size()];
       int idx = 0;
-      for (Iterator<Weight> iter = weights.iterator(); iter.hasNext();) {
-        Weight w = (Weight) iter.next();
+      for (Weight w : weights) {
         Scorer subScorer = w.scorer(reader, true, false);
         if (subScorer != null && subScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
           scorers[idx++] = subScorer;
@@ -164,8 +163,8 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
       ComplexExplanation result = new ComplexExplanation();
       float max = 0.0f, sum = 0.0f;
       result.setDescription(tieBreakerMultiplier == 0.0f ? "max of:" : "max plus " + tieBreakerMultiplier + " times others of:");
-      for (Iterator<Weight> iter = weights.iterator(); iter.hasNext();) {
-        Explanation e = ((Weight) iter.next()).explain(reader, doc);
+      for (Weight wt : weights) {
+        Explanation e = wt.explain(reader, doc);
         if (e.isMatch()) {
           result.setMatch(Boolean.TRUE);
           result.addDetail(e);
@@ -225,8 +224,8 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
   // inherit javadoc
   @Override
   public void extractTerms(Set<Term> terms) {
-    for (Iterator iter = disjuncts.iterator(); iter.hasNext();) {
-      ((Query) iter.next()).extractTerms(terms);
+    for (Query query : disjuncts) {
+      query.extractTerms(terms);
     }
   }
 
