@@ -144,11 +144,6 @@ public class PayloadNearQuery extends SpanNearQuery {
       super(query, searcher);
     }
 
-    public Scorer scorer(IndexReader reader) throws IOException {
-      return new PayloadNearSpanScorer(query.getSpans(reader), this,
-          similarity, reader.norms(query.getField()));
-    }
-
     @Override
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder,
         boolean topScorer) throws IOException {
