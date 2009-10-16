@@ -50,6 +50,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
   private final HashSet synced = new HashSet();
   private Lock writeLock;
   private SegmentInfos segmentInfos;
+  private SegmentInfos segmentInfosStart;
   private boolean stale;
   private final int termInfosIndexDivisor;
 
@@ -124,6 +125,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     this.directory = writer.getDirectory();
     this.readOnly = true;
     this.segmentInfos = infos;
+    segmentInfosStart = (SegmentInfos) infos.clone();
     this.termInfosIndexDivisor = termInfosIndexDivisor;
     if (!readOnly) {
       // We assume that this segments_N was previously
@@ -769,19 +771,14 @@ class DirectoryReader extends IndexReader implements Cloneable {
     return segmentInfos.getUserData();
   }
 
-  /**
-   * Check whether this IndexReader is still using the current (i.e., most recently committed) version of the index.  If
-   * a writer has committed any changes to the index since this reader was opened, this will return <code>false</code>,
-   * in which case you must open a new IndexReader in order
-   * to see the changes.  Use {@link IndexWriter#commit} to
-   * commit changes to the index.
-   *
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException           if there is a low-level IO error
-   */
   public boolean isCurrent() throws CorruptIndexException, IOException {
     ensureOpen();
-    return SegmentInfos.readCurrentVersion(directory) == segmentInfos.getVersion();
+    if (writer == null || writer.isClosed()) {
+      // we loaded SegmentInfos from the directory
+      return SegmentInfos.readCurrentVersion(directory) == segmentInfos.getVersion();
+    } else {
+      return writer.nrtIsCurrent(segmentInfosStart);
+    }
   }
 
   protected synchronized void doClose() throws IOException {

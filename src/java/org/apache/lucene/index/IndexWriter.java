@@ -4844,4 +4844,18 @@ public class IndexWriter {
   boolean testPoint(String name) {
     return true;
   }
+
+  synchronized boolean nrtIsCurrent(SegmentInfos infos) {
+    if (!infos.equals(segmentInfos)) {
+      // if any structural changes (new segments), we are
+      // stale
+      return false;
+    } else {
+      return !docWriter.anyChanges();
+    }
+  }
+
+  synchronized boolean isClosed() {
+    return closed;
+  }
 }

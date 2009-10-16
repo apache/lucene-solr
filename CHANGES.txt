@@ -90,6 +90,10 @@ Bug fixes
 * LUCENE-1124: Make sure FuzzyQuery always matches the precise term.
   (stefatwork@gmail.com via Mike McCandless)
 
+* LUCENE-1976: Fix IndexReader.isCurrent() to return the right thing
+  when the reader is a near real-time reader.  (Jake Mannix via Mike
+  McCandless)
+
 New features
 
 * LUCENE-1933: Provide a convenience AttributeFactory that creates a
