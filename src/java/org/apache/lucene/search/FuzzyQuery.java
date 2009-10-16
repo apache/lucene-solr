@@ -126,8 +126,8 @@ public class FuzzyQuery extends MultiTermQuery {
   }
   
   public Query rewrite(IndexReader reader) throws IOException {
-    if(!termLongEnough) {  // can't match
-      return new BooleanQuery();
+    if(!termLongEnough) {  // can only match if it's exact
+      return new TermQuery(term);
     }
 
     FilteredTermEnum enumerator = getEnum(reader);

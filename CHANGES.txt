@@ -9,6 +9,9 @@ Bug fixes
    BooleanScorer for scoring), whereby some matching documents fail to
    be collected.  (Fulin Tang via Mike McCandless)
 
+ * LUCENE-1124: Make sure FuzzyQuery always matches the precise term.
+   (stefatwork@gmail.com via Mike McCandless)
+
 ======================= Release 2.9.0 2009-09-23 =======================
 
 Changes in backwards compatibility policy
