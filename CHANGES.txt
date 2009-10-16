@@ -894,7 +894,7 @@ Optimizations
     using CloseableThreadLocal internally.  (Jason Rutherglen via Mike
     McCandless).
     
- * LUCENE-1224: Short circuit FuzzyQuery.rewrite when input token length 
+ * LUCENE-1124: Short circuit FuzzyQuery.rewrite when input token length 
     is small compared to minSimilarity. (Timo Nentwig, Mark Miller)
 
  * LUCENE-1316: MatchAllDocsQuery now avoids the synchronized
