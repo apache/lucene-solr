@@ -49,9 +49,9 @@ public class HTMLStripCharFilterTest extends TestCase {
     String html = "<div class=\"foo\">this is some text</div> here is a <a href=\"#bar\">link</a> and " +
             "another <a href=\"http://lucene.apache.org/\">link</a>. " +
             "This is an entity: &amp; plus a &lt;.  Here is an &. <!-- is a comment -->";
-    String gold = "                 this is some text       here is a                link     and " +
-            "another                                     link    . " +
-            "This is an entity: &     plus a <   .  Here is an &.                      ";
+    String gold = " this is some text  here is a  link  and " +
+            "another  link . " +
+            "This is an entity: & plus a <.  Here is an &.  ";
     HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new StringReader(html)));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
@@ -87,7 +87,7 @@ public class HTMLStripCharFilterTest extends TestCase {
 
   public void testGamma() throws Exception {
     String test = "&Gamma;";
-    String gold = "\u0393      ";
+    String gold = "\u0393";
     Set<String> set = new HashSet<String>();
     set.add("reserved");
     Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
@@ -103,8 +103,8 @@ public class HTMLStripCharFilterTest extends TestCase {
   }
 
   public void testEntities() throws Exception {
-    String test = "&nbsp; &lt;foo&gt; &#61; &Gamma; bar &#x393;";
-    String gold = "       <   foo>    =     \u0393       bar \u0393     ";
+    String test = "&nbsp; &lt;foo&gt; &Uuml;bermensch &#61; &Gamma; bar &#x393;";
+    String gold = "  <foo> \u00DCbermensch = \u0393 bar \u0393";
     Set<String> set = new HashSet<String>();
     set.add("reserved");
     Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
@@ -121,7 +121,7 @@ public class HTMLStripCharFilterTest extends TestCase {
 
   public void testMoreEntities() throws Exception {
     String test = "&nbsp; &lt;junk/&gt; &nbsp; &#33; &#64; and &#8217;";
-    String gold = "       <   junk/>           !     @     and ’      ";
+    String gold = "  <junk/>   ! @ and ’";
     Set<String> set = new HashSet<String>();
     set.add("reserved");
     Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)), set);
@@ -154,61 +154,19 @@ public class HTMLStripCharFilterTest extends TestCase {
     assertTrue("Other tag should be removed", result.indexOf("other") == -1);
   }
 
-  public void testStrip() throws Exception {
-    String test = "{{aaaaaaaa|aaaaaaaaa|aaa [[aaaaaa aaaaaa]] [[aaaaaaaaa]]|aaaaaaaaa (aaaaaa)}}\n" +
-            "{{aaaaaaaaa}}\n" +
-            "'''aaaaaaaaa''' aa a [[aaaaaaaaa aaaaaaaaaa]] aa aaaaa aa aaaaaaaaa aaa aaaaaaaaa aaaaaaaa aa aaaaaaaaa aa aaa aaaa aa aaaaaaaaaa " +
-            "[[aaaaaaaaaa]] ([[aa.]] \"[[aaaaa]]\"<ttt>aaaa aaaaaaaaaaaaa aaaaaaaaaa aaaa aaaaa: \"a aaaaaaaaaaa aaaa aa aaaaaaaa aa aaa aaaaaaaaa " +
-            "aaaaa aa aaa aaaaaaaaaa aaaaaaa ''aaa aaaaaaaaaa'', aaaaaaaaa aa aaa aaaaa, aaa ''aaaaaaaaaa'', aaaaaaaaa aa aaa aaaaaaaaaaaaaa aa a aaaaaaaaa aaaaaa. aaaaaaaaaa, aaaa aaaaaaaa, " +
-            "aaaa aa aaa aaa aaaa aaaaaaaaaa aa a aaaaaaa aaa aaaaa, aaa aaaa aa aaaaaaaa aa aaaaaaaaa'a ''a aaaaaa'' aaaaaaaaaa aa aaa aaaaa aa aaa aaa aaaaaaa aa aaaaaaaaaa aa aaaa aaa aaa " +
-            "aaaa aa a aaaaaaaaa aaaaa aaaa aaaaaa aaa aaaaaaa aaaaaaaaa, aaa aa aaaaaaaaa, aaa aaaaa aa aaa aaaaaaaa. aaaaaaaaa aaaaaaa aaa aaaa aa aaaaaaa, aaaaaaaaaaa aaaaaaaaa aaaaaaaaa " +
-            "aaa aaaa aaaaaaaa aa aaa aaaaa.\" -aaaaaaa, aaaa. aaaaaaaaa," +
-            " aaaaaaaa aaaaa aaaa, a. aa-aa</ttt>) aaa aaaaaaaaaa aaa aaaaaaaaaaa.<ttt bbbb=bbbbbbbbbbb>''aaaaaaaaa''. aaaaaaaa¾aaa aaaaaaaaaa. aaaa. aaaaaaaa¾aaa aaaaaaaaaa aaaaaaa aaaaaaa. " +
-            "[[aa aaaaaa]] [[aaaa]] <tttb://ccc.cccccccccc.ccc/cc/ccccccc-ccccccc>. aaaaaaaaa aa \"a aaaaaaa aa aaaaaaaaa aaa aaaaaaaaa aaaaaaa aa aaa aaaaaa aaaa aaaaaaaaaa aa aaaa aaaaaaa aaa " +
-            "aaaaaaaaaaa.\"</ttt><ttt dddd=dddddddddddd>''aaaaaaaaa''. aaa aaaaaaa aaaaaaaaa aaaaaaaaaaaa aa aaaaaaaaaa. aaaa. a. aa" +
-            " \"aaaaaaaaa aa aaa aaaa aaaa a aaaaaaa aaaaaaa aaa aaaaa, aa aaaaaaaaaa, aa aaaa aaaaaaaa aaa aaaaaaaaa.\"</ttt> aaa aaaa \"aaaaaaaaa\" " +
-            "aa [[aaaaaaaaa|aaaaaaa aaaa]] aaa [[aaaaa aaaaaaaa|aaaaa]] ''[[aaaaaaaaaa:???????|???????]]'' (\"aaaaaaa [[aaaaaa]]a\" aa \"aaaaaaa aaaaaa\")." +
-            " aaaa \"aaaaaaaaa\", aa aaa aaaa aaaaaaa aaaaaaa, aa aaa aaaaaa aaaa aaa aaaaa aa [[aaaaaaaaa]] (aaa aaaa aaaa [[aaaaaaaaaaa aaaaaaaaa]]) aaa " +
-            "aaaaaaaaaaa aaa aaaaaa aa aaaaaaaaa. \n" +
-            "\n" +
-            "aaaaa aaa a aaaaaaa aa aaaaa aaa aaaaaaaaaa aa aaaaaaaaa aaaa aaaaaaa aaaaaa aa aaaaaaaaaa.<ttt>aaaaaaaaaa, aaaa aaaaaaaaaaa. ''aaaaaaaaa: a " +
-            "aaaaaaaaaa aa aaaaaaaaaaaaa aaaaaaaa'', aaaaaaa aaaaa aaaaaaaaaaaa, aaaa, a.a</ttt><tttt>{{aaaa aaaaaaa|aaaaaa=a.a. aaaaaa|aaaaa=aaa aaaaaaaaa " +
-            "aaaaaaaaa aa aaaaaaaaa aaaaaaa|aaaa=aaaa|aaaaaaa=aaaaaaa aaaaaaaaa aaaaaaaaa|aaaaaa=aa|aaaaa=a|aaaaa=aaa-aaa|aaa=aa.aaaa/aaaaaa}}</ttt> aaaaaaa," +
-            " aaa aaaaaaaaa aaa aaa aaaaaaaaaaaa aaaa aaaaaaaaaaaaa aaa aaa aaa aa aaaa aaa aaaaaaaa aaaaaaaaa.<ttt>aaaaaa, aaaaaaa. aaaaaaaaa. a aaaaaaaaa aa " +
-            "aaaaaaaaaaaa aaaaaaaaa aaaaaaaaaa, aaaaaaa aaaaaaa, aaaaaa a. aaa aaaaaa, aaaaaa. aaaaaaaaa aaaaaaaaaa, aaaa, a.aaa</ttt> aaaaa aaaa aaa aaaaaaaaaaa" +
-            " aaaaa, \"aaaaa aa aa aaaaaa aaaaaaaa aaaaaaaa aaaa aaa aaaaaaaaaa aaaa, aaa aaaaa aaaaaaaaaa aaaaaaaaaa aa aaaa aaaaa a aaaaaaa [[aaaaaa aaaaaaaaaaa]].\"<ttt>aaaaaaaaa. " +
-            "aaa aaaaaa aaaaaaaaa aa aaaaaaaaaa, aaaaaa aaaaaaaaaa aaaaa, aaaa, a. aa</ttt> aaaaaaaaa aaaaaaaa aaaaaaa aaa aaa aa aaa aaaa aaaaa aa aaaaaaaaaaaa aaa aaaaaaaaaa.<ttt>aaaaaaaa, " +
-            "aaaaaa aaaaaaa \"aaaaaaaaa aaaaaaaa aaa aaa aaaaaaa aaaaa aaaaaaaa aa aaaaa, aaaa-aaaa\" [a. aaa]</ttt>\n" +
-            "==aaaaaaa==\n" +
-            "===aaa-aaaaaaaaaa aaaaaaa===\n" +
-            "{{aaaa|aaaaaaa aa aaaaaaaaa}}\n" +
-            "{{aaaaa aa aaaaaaaaaa}}\n" +
-            "aaaaaaaaaa aa aaa aaaaa aaa aaaaaaaaaaaa aaaaaaaaa aaa a aaaa aaaaaaa aaaaa aa aaa aaaaaaaaa aa aaa aaaaaaaaa aaaaaaaa aa aaaaaaaaaa aaaaaaa aaaaaa. aaaa aaaaa aaaa aaaaaaaaa aaaaaa " +
-            "aaa aa aaaaaaaa aa aaaaa aa aaa aa aaaaa aa aaa [[aaaaaa]] aaaa [[aaaaa|aaa aaa]],<ttt eeee=\"eeeeee\">aaaaa aaaaaaaaa, [aaaa://aaaaaaaa.aaaaaa.aaa/aaaaaaaaaaaaaaaaaa/aaaaaaaaa/aaaaaaaaaaaaaaaa.aaaa " +
-            "\"aaaaaaaaa\", aaaa aaa aaaaaaaaaaaaa aaaaaaaaaa, aaaa]</ttt> aaaaaa aaaa aa a aaaaaaaaaaaaa" +
-            " aaaaa.<ttt>{{aaaaaaa|[aaaa://aaa.aaaaaaaaaaaaaaaaa.aaa/aaa/aaaaaa/aaaaa--aaaaaaaaa.aaa]|aa.a&aaaa;[[aaaaaaaa|aaa]]" +
-            "<!-- ggggggggggg/ggg, gggggg ggggg -->}}</aaa> [[aaaa aa aaaaaa]], aaa aaaaaaa aa [[aaaaaaaa]] aaaa aaaaaaaaaa aaaaaa aaaaa aaaaaaa aaaaaaaaa aaaaaa.<ttt ffff=\"ffffff\"/>\n" +
-            "\n" +
-            "aaaaaaaaa aa aaa aaaaaa aaaaa, aaaaaaa, aaa aaa aaaaa aa aaa aaaaaaa aaaaaaaaa aaaaaaa aa aaa [[aaa aa aaaaaaaaaaaaa|aaaaaaaaaaaaa]], aaaaaaaaaaaa [[aaaaaaaa]]'a aaaaaaaaa aaa aaa aaaaa " +
-            "aaaaaaaaaa aa aaaaaaa.<ttt hhhh=hhhhhhh>''aaaaaaaaa'', aaaaaaaaa¨ aaaaaaa¨ aaaaaa aaaaaaaaaaaa aaaa (aa aaaaaaa) aaaa://aa.aaaaaaa.aaa.aaa © aaaa-aaaa aaaaaaaaa aaaaaaaaaaa. aaa aaaaaa aaaaaaaa\n" +
-            "</ttt> aaa aaaa \"aaaaaaaaa\" aaa aaaaaaaaaa aaaa aa a aaaa aa [[aaaaa]], aaa aa aaa [[aaaaaa aaaaaaaaaa]] aaaa aaaaaa aaaa aa aaa ''aaaaaŽa'' aaa aaaaaaa aa aaa aaa aaaa aa a aaaaaaaa " +
-            "aaaaa,<ttt>aaaaaaa, aaaa. ''aaaaaaaaa'', aaaaaa: aaaaaaaa aaaaa aaa., aaaa. aa. aa</ttt> aaaaaa aaa [[aaaaaaa (aaaaaaaa)|aaaaaaa]] aaaaaaa aa a \"aaaaaaaaaaaaa aaaaaaaaaa\" aa aa [[aaaaaaaa]]. " +
-            "aa aaa aa aaaa aaaaaaaaa aaaaaaa aaaa [[aaaaaaa aaaaaa]] aaaaa aaaaaaa aaa aaaaaaaaaa, aaaaa aa aaaaaaaaaa aa aaaa aa aa aaa aaaaa aaaaaaaaaa aa aaaaaa aaaaaaaaa aaaaaaa." +
-            "<ttt>[aaaa://aaaaa.aaaaaaaa.aaa/aaaaaaa/aaaaaa/ aaaaaaa aaaaaa] aaaaaaaa aaaaaaaaaaaa aa aaaaaaaaaa, aaaaa aaaaaaaaa aaa [[aa aaaaaaa]] [[aaaa]]; aaaaaaaaaaa aaaaaaaa aaa [[aaa aa]] [[aaaa]]</ttt>\n" +
-            "\n" +
-            "[[aaaaa aaaaaaaaaa]] aa ''[[aaa aaaaaaaaaaaa aa aaaaaa]]'' (aaaa) aaaa aaa aaaa [[zzzzzzz]] aa aaaaaaaa";
+  public void testMalformedHTML() throws Exception {
+    String test = "a <a hr<ef=aa<a>> </close</a>";
+    String gold = "a <a hr<ef=aa > </close ";
     Reader reader = new HTMLStripCharFilter(CharReader.get(new StringReader(test)));
-    Reader noStrip = new StringReader(test);
-    int ch = 0;
-    int ch2 = 0;
-    int i = 0;
     StringBuilder builder = new StringBuilder();
-    while ((ch = reader.read()) != -1 && (ch2 = noStrip.read()) != -1){
-      //System.out.println("char[" + i + "] = '" + (char)ch + "' NS: '" + (char)ch2 + "'" + ((ch != ch2 && (ch2 != 't' || ch2 != '<' || ch2 != '>')) ? "<<<<<<<<<<<<<<<<<<<<<<<<" : ""));
-      assertTrue(ch + " does not equal: " + "t or < or > ::: String: " + builder.toString(), ch == ch2 || ch == ' '/*&& ch != '<' && ch != '>'*/);
+    int ch = 0;
+    while ((ch = reader.read()) != -1){
       builder.append((char)ch);
-      i++;
     }
+    String result = builder.toString();
+    System.out.println("Resu: " + result + "<EOL>");
+    System.out.println("Gold: " + gold + "<EOL>");
+    assertTrue(result + " is not equal to " + gold + "<EOS>", result.equals(gold) == true);
   }
 
   public void testBufferOverflow() throws Exception {
@@ -264,7 +222,7 @@ public class HTMLStripCharFilterTest extends TestCase {
   public void testComment() throws Exception {
 
     String test = "<!--- three dashes, still a valid comment ---> ";
-    String gold = "                                               ";
+    String gold = "  ";
     Reader reader = new HTMLStripCharFilter(CharReader.get(new BufferedReader(new StringReader(test))));//force the use of BufferedReader
     int ch = 0;
     StringBuilder builder = new StringBuilder();

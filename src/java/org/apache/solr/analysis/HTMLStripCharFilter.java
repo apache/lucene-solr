@@ -38,6 +38,8 @@ public class HTMLStripCharFilter extends BaseCharFilter {
   private int safeReadAheadLimit = readAheadLimit - 3;
   private int numWhitespace = 0;
   private int numRead = 0;
+  private int numEaten = 0;
+  private int numReturned = 0;
   private int lastMark;
   private Set<String> escapedTags;
 
@@ -535,13 +537,13 @@ public class HTMLStripCharFilter extends BaseCharFilter {
 
   private int readName(boolean checkEscaped) throws IOException {
     StringBuilder builder = (checkEscaped && escapedTags!=null) ? new StringBuilder() : null;
-    int ch = read();
+    int ch = next();
     if (builder!=null) builder.append((char)ch);
     if (!isFirstIdChar(ch)) return MISMATCH;
-    ch = read();
+    ch = next();
     if (builder!=null) builder.append((char)ch);
     while(isIdChar(ch)) {
-      ch=read();
+      ch=next();
       if (builder!=null) builder.append((char)ch);
     }
     if (ch!=-1) {
@@ -570,11 +572,11 @@ public class HTMLStripCharFilter extends BaseCharFilter {
     //  <a href="a/<!--#echo "path"-->">
     private int readAttr2() throws IOException {
     if ((numRead - lastMark < safeReadAheadLimit)) {
-      int ch = read();
+      int ch = next();
       if (!isFirstIdChar(ch)) return MISMATCH;
-      ch = read();
+      ch = next();
       while(isIdChar(ch) && ((numRead - lastMark) < safeReadAheadLimit)){
-        ch=read();
+        ch=next();
       }
       if (isSpace(ch)) ch = nextSkipWS();
 
@@ -674,9 +676,11 @@ public class HTMLStripCharFilter extends BaseCharFilter {
     // where do we have to worry about them?
     // <![ CDATA [ unescaped markup ]]>
     if (numWhitespace > 0){
-      numWhitespace--;
-      return ' ';
+      numEaten += numWhitespace;
+      addOffCorrectMap(numReturned, numEaten);
+      numWhitespace = 0;
     }
+    numReturned++;
     //do not limit this one by the READAHEAD
     while(true) {
       int lastNumRead = numRead;

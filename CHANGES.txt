@@ -628,6 +628,9 @@ Bug Fixes
 72. SOLR-1504: empty char mapping can cause ArrayIndexOutOfBoundsException in analysis.jsp and co.
     (koji)
 
+73. SOLR-1394: HTMLStripCharFilter split tokens that contained entities.
+    (Anders Melchiorsen via yonik)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
