@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.util.List;
-import java.util.Iterator;
 import java.io.IOException;
 
 import org.apache.lucene.util.ScorerDocQueue;
@@ -31,7 +30,7 @@ class DisjunctionSumScorer extends Scorer {
   private final int nrScorers;
   
   /** The subscorers. */
-  protected final List subScorers;
+  protected final List<Scorer> subScorers;
   
   /** The minimum number of scorers that should match. */
   private final int minimumNrMatchers;
@@ -68,7 +67,7 @@ class DisjunctionSumScorer extends Scorer {
    * <br>When minimumNrMatchers equals the number of subScorers,
    * it more efficient to use <code>ConjunctionScorer</code>.
    */
-  public DisjunctionSumScorer( List subScorers, int minimumNrMatchers) throws IOException {
+  public DisjunctionSumScorer( List<Scorer> subScorers, int minimumNrMatchers) throws IOException {
     super(null);
     
     nrScorers = subScorers.size();
@@ -89,7 +88,7 @@ class DisjunctionSumScorer extends Scorer {
   /** Construct a <code>DisjunctionScorer</code>, using one as the minimum number
    * of matching subscorers.
    */
-  public DisjunctionSumScorer(List subScorers) throws IOException {
+  public DisjunctionSumScorer(List<Scorer> subScorers) throws IOException {
     this(subScorers, 1);
   }
 
@@ -97,11 +96,9 @@ class DisjunctionSumScorer extends Scorer {
    * initialize <code>scorerDocQueue</code>.
    */
   private void initScorerDocQueue() throws IOException {
-    Iterator si = subScorers.iterator();
     scorerDocQueue = new ScorerDocQueue(nrScorers);
-    while (si.hasNext()) {
-      Scorer se = (Scorer) si.next();
-      if (se.nextDoc() != NO_MORE_DOCS) { // doc() method will be used in scorerDocQueue.
+    for (Scorer se : subScorers) {
+      if (se.nextDoc() != NO_MORE_DOCS) {
         scorerDocQueue.insert(se);
       }
     }
@@ -111,6 +108,7 @@ class DisjunctionSumScorer extends Scorer {
    * @param collector The collector to which all matching documents are passed through.
    * <br>When this method is used the {@link #explain(int)} method should not be used.
    */
+  @Override
   public void score(Collector collector) throws IOException {
     collector.setScorer(this);
     while (nextDoc() != NO_MORE_DOCS) {
@@ -125,6 +123,7 @@ class DisjunctionSumScorer extends Scorer {
    * @param max Do not score documents past this.
    * @return true if more matching documents may remain.
    */
+  @Override
   protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
     // firstDocID is ignored since nextDoc() sets 'currentDoc'
     collector.setScorer(this);
@@ -137,6 +136,7 @@ class DisjunctionSumScorer extends Scorer {
     return true;
   }
 
+  @Override
   public int nextDoc() throws IOException {
     if (scorerDocQueue.size() < minimumNrMatchers || !advanceAfterCurrent()) {
       currentDoc = NO_MORE_DOCS;
@@ -191,8 +191,10 @@ class DisjunctionSumScorer extends Scorer {
   /** Returns the score of the current document matching the query.
    * Initially invalid, until {@link #next()} is called the first time.
    */
+  @Override
   public float score() throws IOException { return currentScore; }
    
+  @Override
   public int docID() {
     return currentDoc;
   }
@@ -216,6 +218,7 @@ class DisjunctionSumScorer extends Scorer {
    * @return the document whose number is greater than or equal to the given
    *         target, or -1 if none exist.
    */
+  @Override
   public int advance(int target) throws IOException {
     if (scorerDocQueue.size() < minimumNrMatchers) {
       return currentDoc = NO_MORE_DOCS;
@@ -235,13 +238,13 @@ class DisjunctionSumScorer extends Scorer {
   }
   
   /** @return An explanation for the score of a given document. */
+  @Override
   public Explanation explain(int doc) throws IOException {
     Explanation res = new Explanation();
-    Iterator ssi = subScorers.iterator();
     float sumScore = 0.0f;
     int nrMatches = 0;
-    while (ssi.hasNext()) {
-      Explanation es = ((Scorer) ssi.next()).explain(doc);
+    for (Scorer se : subScorers) {
+      Explanation es = se.explain(doc);
       if (es.getValue() > 0.0f) { // indicates match
         sumScore += es.getValue();
         nrMatches++;
