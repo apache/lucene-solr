@@ -412,11 +412,6 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
-    /** @deprecated delete in 3.0 */
-    public Scorer scorer(IndexReader reader) throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
     public float sumOfSquaredWeights() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
