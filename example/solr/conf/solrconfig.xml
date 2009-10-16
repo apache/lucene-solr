@@ -497,13 +497,14 @@
 <!--
 <requestHandler name="/replication" class="solr.ReplicationHandler" >
     <lst name="master">
-        <str name="replicateAfter">commit</str>
-         <str name="confFiles">schema.xml,stopwords.txt</str>
+      <str name="replicateAfter">commit</str>
+      <str name="replicateAfter">startup</str>
+      <str name="confFiles">schema.xml,stopwords.txt</str>
     </lst>
     <lst name="slave">
-        <str name="masterUrl">http://localhost:8983/solr/replication</str>
-        <str name="pollInterval">00:00:60</str>
-     </lst>
+      <str name="masterUrl">http://localhost:8983/solr/replication</str>
+      <str name="pollInterval">00:00:60</str>
+    </lst>
 </requestHandler>-->
 
   <!-- DisMaxRequestHandler allows easy searching across multiple fields
