@@ -159,7 +159,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     /* Explain the score we computed for doc */
     @Override
     public Explanation explain(IndexReader reader, int doc) throws IOException {
-      if (disjuncts.size() == 1) return ((Weight) weights.get(0)).explain(reader,doc);
+      if (disjuncts.size() == 1) return weights.get(0).explain(reader,doc);
       ComplexExplanation result = new ComplexExplanation();
       float max = 0.0f, sum = 0.0f;
       result.setDescription(tieBreakerMultiplier == 0.0f ? "max of:" : "max plus " + tieBreakerMultiplier + " times others of:");
@@ -191,7 +191,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
   public Query rewrite(IndexReader reader) throws IOException {
     int numDisjunctions = disjuncts.size();
     if (numDisjunctions == 1) {
-      Query singleton = (Query) disjuncts.get(0);
+      Query singleton = disjuncts.get(0);
       Query result = singleton.rewrite(reader);
       if (getBoost() != 1.0f) {
         if (result == singleton) result = (Query)result.clone();
@@ -201,7 +201,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     }
     DisjunctionMaxQuery clone = null;
     for (int i = 0 ; i < numDisjunctions; i++) {
-      Query clause = (Query) disjuncts.get(i);
+      Query clause = disjuncts.get(i);
       Query rewrite = clause.rewrite(reader);
       if (rewrite != clause) {
         if (clone == null) clone = (DisjunctionMaxQuery)this.clone();
@@ -239,7 +239,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
     buffer.append("(");
     int numDisjunctions = disjuncts.size();
     for (int i = 0 ; i < numDisjunctions; i++) {
-      Query subquery = (Query) disjuncts.get(i);
+      Query subquery = disjuncts.get(i);
       if (subquery instanceof BooleanQuery) {   // wrap sub-bools in parens
         buffer.append("(");
         buffer.append(subquery.toString(field));
