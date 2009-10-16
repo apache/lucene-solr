@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 // TODO: break into separate freq and prox writers as
 // codecs; make separate container (tii/tis/skip/*) that can
 // be configured as any number of files 1..N
-final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implements Comparable {
+final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implements Comparable<FreqProxTermsWriterPerField> {
 
   final FreqProxTermsWriterPerThread perThread;
   final TermsHashPerField termsHashPerField;
@@ -56,8 +56,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
   void skippingLongTerm() throws IOException {}
 
-  public int compareTo(Object other0) {
-    FreqProxTermsWriterPerField other = (FreqProxTermsWriterPerField) other0;
+  public int compareTo(FreqProxTermsWriterPerField other) {
     return fieldInfo.name.compareTo(other.fieldInfo.name);
   }
 

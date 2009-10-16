@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.SortedSet;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -51,13 +52,13 @@ public class TestTermVectorsReader extends LuceneTestCase {
     super(s);
   }
   
-  private class TestToken implements Comparable {
+  private class TestToken implements Comparable<TestToken> {
     String text;
     int pos;
     int startOffset;
     int endOffset;
-    public int compareTo(Object other) {
-      return pos - ((TestToken) other).pos;
+    public int compareTo(TestToken other) {
+      return pos - other.pos;
     }
   }
 

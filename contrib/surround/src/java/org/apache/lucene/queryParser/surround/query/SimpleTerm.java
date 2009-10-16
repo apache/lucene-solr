@@ -27,7 +27,7 @@ import org.apache.lucene.search.Query;
 
 public abstract class SimpleTerm
   extends SrndQuery
-  implements DistanceSubQuery, Comparable
+  implements DistanceSubQuery, Comparable<SimpleTerm>
 {
   public SimpleTerm(boolean q) {quoted = q;}
   
@@ -39,9 +39,8 @@ public abstract class SimpleTerm
   
   public abstract String toStringUnquoted();
   
-  public int compareTo(Object o) {
+  public int compareTo(SimpleTerm ost) {
     /* for ordering terms and prefixes before using an index, not used */
-    SimpleTerm ost = (SimpleTerm) o;
     return this.toStringUnquoted().compareTo( ost.toStringUnquoted());
   }
   

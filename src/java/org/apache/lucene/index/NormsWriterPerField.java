@@ -25,7 +25,7 @@ import org.apache.lucene.search.Similarity;
  *  just look at the length for the field (docState.length)
  *  and record the norm. */
 
-final class NormsWriterPerField extends InvertedDocEndConsumerPerField implements Comparable {
+final class NormsWriterPerField extends InvertedDocEndConsumerPerField implements Comparable<NormsWriterPerField> {
 
   final NormsWriterPerThread perThread;
   final FieldInfo fieldInfo;
@@ -56,8 +56,8 @@ final class NormsWriterPerField extends InvertedDocEndConsumerPerField implement
     upto = 0;
   }
 
-  public int compareTo(Object other) {
-    return fieldInfo.name.compareTo(((NormsWriterPerField) other).fieldInfo.name);
+  public int compareTo(NormsWriterPerField other) {
+    return fieldInfo.name.compareTo(other.fieldInfo.name);
   }
   
   void finish() {

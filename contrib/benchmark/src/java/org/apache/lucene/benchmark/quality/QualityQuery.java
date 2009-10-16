@@ -32,7 +32,7 @@ import java.util.Map;
  * or each pair as its own field, etc., - and this of course must match the way the 
  * searched index was constructed.
  */
-public class QualityQuery implements Comparable {
+public class QualityQuery implements Comparable<QualityQuery> {
   private String queryID;
   private Map nameValPairs;
 
@@ -71,8 +71,7 @@ public class QualityQuery implements Comparable {
 
   /* for a nicer sort of input queries before running them.
    * Try first as ints, fall back to string if not int. */ 
-  public int compareTo(Object o) {
-    QualityQuery other = (QualityQuery) o;
+  public int compareTo(QualityQuery other) {
     try {
       // compare as ints when ids ints
       int n = Integer.parseInt(queryID);
