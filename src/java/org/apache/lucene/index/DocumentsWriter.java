@@ -541,6 +541,13 @@ final class DocumentsWriter {
     return true;
   }
 
+  synchronized boolean anyChanges() {
+    return numDocsInRAM != 0 ||
+      deletesInRAM.numTerms != 0 ||
+      deletesInRAM.docIDs.size() != 0 ||
+      deletesInRAM.queries.size() != 0;
+  }
+
   synchronized private void initFlushState(boolean onlyDocStore) {
     initSegmentName(onlyDocStore);
     flushState = new SegmentWriteState(this, directory, segment, docStoreSegment, numDocsInRAM, numDocsInStore, writer.getTermIndexInterval());

@@ -710,7 +710,27 @@ public abstract class IndexReader implements Cloneable {
   }
 
   /**
-   * Version number when this IndexReader was opened. Not implemented in the IndexReader base class.
+   * Version number when this IndexReader was opened. Not
+   * implemented in the IndexReader base class.
+   *
+   * <p>If this reader is based on a Directory (ie, was
+   * created by calling {@link #open}, or {@link #reopen} on
+   * a reader based on a Directory), then this method
+   * returns the version recorded in the commit that the
+   * reader opened.  This version is advanced every time
+   * {@link IndexWriter#commit} is called.</p>
+   *
+   * <p>If instead this reader is a near real-time reader
+   * (ie, obtained by a call to {@link
+   * IndexWriter#getReader}, or by calling {@link #reopen}
+   * on a near real-time reader), then this method returns
+   * the version of the last commit done by the writer.
+   * Note that even as further changes are made with the
+   * writer, the version will not changed until a commit is
+   * completed.  Thus, you should not rely on this method to
+   * determine when a near real-time reader should be
+   * opened.  Use {@link #isCurrent} instead.</p>
+   *
    * @throws UnsupportedOperationException unless overridden in subclass
    */
   public long getVersion() {
@@ -761,21 +781,30 @@ public abstract class IndexReader implements Cloneable {
   }
 
   /**
-   * Check whether this IndexReader is still using the
-   * current (i.e., most recently committed) version of the
-   * index.  If a writer has committed any changes to the
-   * index since this reader was opened, this will return
-   * <code>false</code>, in which case you must open a new
-   * IndexReader in order to see the changes.  See the
-   * description of the <a href="IndexWriter.html#autoCommit"><code>autoCommit</code></a>
-   * flag which controls when the {@link IndexWriter}
-   * actually commits changes to the index.
-   * 
-   * <p>
-   * Not implemented in the IndexReader base class.
-   * </p>
+   * Check whether any new changes have occurred to the
+   * index since this reader was opened.
+   *
+   * <p>If this reader is based on a Directory (ie, was
+   * created by calling {@link #open}, or {@link #reopen} on
+   * a reader based on a Directory), then this method checks
+   * if any further commits (see {@link IndexWriter#commit}
+   * have occurred in that directory).</p>
+   *
+   * <p>If instead this reader is a near real-time reader
+   * (ie, obtained by a call to {@link
+   * IndexWriter#getReader}, or by calling {@link #reopen}
+   * on a near real-time reader), then this method checks if
+   * either a new commmit has occurred, or any new
+   * uncommitted changes have taken place via the writer.
+   * Note that even if the writer has only performed
+   * merging, this method will still return false.</p>
+   *
+   * <p>In any event, if this returns false, you should call
+   * {@link #reopen} to get a new reader that sees the
+   * changes.</p>
+   *
    * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
+   * @throws IOException           if there is a low-level IO error
    * @throws UnsupportedOperationException unless overridden in subclass
    */
   public boolean isCurrent() throws CorruptIndexException, IOException {
