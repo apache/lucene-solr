@@ -752,11 +752,11 @@ public abstract class Similarity implements Serializable {
     if(supportedMethods.overridesTermIDF) {
       final float idf = idf(term, searcher);
       return new IDFExplanation() {
-        //@Override
+        @Override
         public float getIdf() {
           return idf;
         }
-        //@Override
+        @Override
         public String explain() {
           return "Inexplicable";
         }
@@ -766,12 +766,12 @@ public abstract class Similarity implements Serializable {
     final int max = searcher.maxDoc();
     final float idf = idf(df, max);
     return new IDFExplanation() {
-        //@Override
+        @Override
         public String explain() {
           return "idf(docFreq=" + df +
           ", maxDocs=" + max + ")";
         }
-        //@Override
+        @Override
         public float getIdf() {
           return idf;
         }};
@@ -814,11 +814,11 @@ public abstract class Similarity implements Serializable {
     if(supportedMethods.overridesCollectionIDF) {
       final float idf = idf(terms, searcher);
       return new IDFExplanation() {
-        //@Override
+        @Override
         public float getIdf() {
           return idf;
         }
-        //@Override
+        @Override
         public String explain() {
           return "Inexplicable";
         }
@@ -839,11 +839,11 @@ public abstract class Similarity implements Serializable {
     }
     final float fIdf = idf;
     return new IDFExplanation() {
-      //@Override
+      @Override
       public float getIdf() {
         return fIdf;
       }
-      //@Override
+      @Override
       public String explain() {
         return exp.toString();
       }

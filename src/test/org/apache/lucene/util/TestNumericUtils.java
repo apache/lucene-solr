@@ -179,7 +179,7 @@ public class TestNumericUtils extends LuceneTestCase {
     final OpenBitSet bits=useBitSet ? new OpenBitSet(upper-lower+1) : null;
     
     NumericUtils.splitLongRange(new NumericUtils.LongRangeBuilder() {
-      //@Override
+      @Override
       public void addRange(long min, long max, int shift) {
         assertTrue("min, max should be inside bounds", min>=lower && min<=upper && max>=lower && max<=upper);
         if (useBitSet) for (long l=min; l<=max; l++) {
@@ -261,7 +261,7 @@ public class TestNumericUtils extends LuceneTestCase {
     final OpenBitSet bits=useBitSet ? new OpenBitSet(upper-lower+1) : null;
     
     NumericUtils.splitIntRange(new NumericUtils.IntRangeBuilder() {
-      //@Override
+      @Override
       public void addRange(int min, int max, int shift) {
         assertTrue("min, max should be inside bounds", min>=lower && min<=upper && max>=lower && max<=upper);
         if (useBitSet) for (int i=min; i<=max; i++) {

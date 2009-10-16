@@ -199,7 +199,7 @@ public abstract class LuceneTestCase extends TestCase {
     return new Random(seed);
   }
   
-  // @Override
+  @Override
   public void runBare() throws Throwable {
     try {
       seed = null;

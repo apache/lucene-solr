@@ -478,10 +478,12 @@ public abstract class FieldCacheRangeFilter extends Filter {
     abstract boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException;
     
     /** this DocIdSet is cacheable, if it works solely with FieldCache and no TermDocs */
+    @Override
     public boolean isCacheable() {
       return !(mayUseTermDocs && reader.hasDeletions());
     }
 
+    @Override
     public DocIdSetIterator iterator() throws IOException {
       // Synchronization needed because deleted docs BitVector
       // can change after call to hasDeletions until TermDocs creation.

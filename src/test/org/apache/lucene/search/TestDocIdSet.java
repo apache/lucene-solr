@@ -42,7 +42,7 @@ public class TestDocIdSet extends LuceneTestCase {
     final int maxdoc=10;
     final DocIdSet innerSet = new DocIdSet() {
 
-        // @Override
+        @Override
         public DocIdSetIterator iterator() {
           return new DocIdSetIterator() {
 
@@ -52,13 +52,13 @@ public class TestDocIdSet extends LuceneTestCase {
               return docid;
             }
             
-            //@Override
+            @Override
             public int nextDoc() throws IOException {
               docid++;
               return docid < maxdoc ? docid : (docid = NO_MORE_DOCS);
             }
 
-            //@Override
+            @Override
             public int advance(int target) throws IOException {
               while (nextDoc() < target) {}
               return docid;
@@ -69,7 +69,7 @@ public class TestDocIdSet extends LuceneTestCase {
 	  
 		
     DocIdSet filteredSet = new FilteredDocIdSet(innerSet){
-        // @Override
+        @Override
         protected boolean match(int docid) {
           return docid%2 == 0;  //validate only even docids
         }	

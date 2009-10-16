@@ -65,19 +65,19 @@ public abstract class LocalizedTestCase extends LuceneTestCase {
     this.testWithDifferentLocales = testWithDifferentLocales;
   }
 
-  // @Override
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     Locale.setDefault(locale);
   }
 
-  // @Override
+  @Override
   protected void tearDown() throws Exception {
     Locale.setDefault(defaultLocale);
     super.tearDown();
   }
   
-  // @Override
+  @Override
   public void runBare() throws Throwable {
     // Do the test with the default Locale (default)
     try {

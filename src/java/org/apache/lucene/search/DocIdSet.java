@@ -34,10 +34,12 @@ public abstract class DocIdSet {
       public int nextDoc() throws IOException { return NO_MORE_DOCS; }
     };
     
+    @Override
     public DocIdSetIterator iterator() {
       return iterator;
     }
     
+    @Override
     public boolean isCacheable() {
       return true;
     }

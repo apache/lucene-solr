@@ -50,6 +50,7 @@ public abstract class FilteredDocIdSet extends DocIdSet {
   }
   
   /** This DocIdSet implementation is cacheable if the inner set is cacheable. */
+  @Override
   public boolean isCacheable() {
     return _innerSet.isCacheable();
   }
@@ -66,7 +67,7 @@ public abstract class FilteredDocIdSet extends DocIdSet {
    * @see DocIdSetIterator
    * @see FilteredDocIdSetIterator
    */
-  // @Override
+  @Override
   public DocIdSetIterator iterator() throws IOException {
     return new FilteredDocIdSetIterator(_innerSet.iterator()) {
       protected boolean match(int docid) throws IOException {

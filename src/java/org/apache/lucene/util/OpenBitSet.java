@@ -112,11 +112,13 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
     this.wlen = numWords;
   }
   
+  @Override
   public DocIdSetIterator iterator() {
     return new OpenBitSetIterator(bits, wlen);
   }
 
   /** This DocIdSet implementation is cacheable. */
+  @Override
   public boolean isCacheable() {
     return true;
   }

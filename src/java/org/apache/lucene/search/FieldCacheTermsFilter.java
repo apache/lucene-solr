@@ -126,11 +126,13 @@ public class FieldCacheTermsFilter extends Filter {
       }
     }
 
+    @Override
     public DocIdSetIterator iterator() {
       return new FieldCacheTermsFilterDocIdSetIterator();
     }
 
     /** This DocIdSet implementation is cacheable. */
+    @Override
     public boolean isCacheable() {
       return true;
     }

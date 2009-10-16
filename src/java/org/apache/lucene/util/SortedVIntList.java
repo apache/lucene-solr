@@ -181,6 +181,7 @@ public class SortedVIntList extends DocIdSet {
   }
 
   /** This DocIdSet implementation is cacheable. */
+  @Override
   public boolean isCacheable() {
     return true;
   }
@@ -188,6 +189,7 @@ public class SortedVIntList extends DocIdSet {
   /**
    * @return    An iterator over the sorted integers.
    */
+  @Override
   public DocIdSetIterator iterator() {
     return new DocIdSetIterator() {
       int bytePos = 0;
