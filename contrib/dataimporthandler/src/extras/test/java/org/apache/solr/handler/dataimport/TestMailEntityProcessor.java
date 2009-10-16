@@ -63,7 +63,7 @@ public class TestMailEntityProcessor {
     paramMap.put("recurse", "false");
     paramMap.put("processAttachement", "false");
     DataImporter di = new DataImporter();
-    di.loadDataConfig(getConfigFromMap(paramMap));
+    di.loadAndInit(getConfigFromMap(paramMap));
     DataConfig.Entity ent = di.getConfig().document.entities.get(0);
     ent.isDocRoot = true;
     DataImporter.RequestParams rp = new DataImporter.RequestParams();
@@ -80,7 +80,7 @@ public class TestMailEntityProcessor {
     paramMap.put("recurse", "true");
     paramMap.put("processAttachement", "false");
     DataImporter di = new DataImporter();
-    di.loadDataConfig(getConfigFromMap(paramMap));
+    di.loadAndInit(getConfigFromMap(paramMap));
     DataConfig.Entity ent = di.getConfig().document.entities.get(0);
     ent.isDocRoot = true;
     DataImporter.RequestParams rp = new DataImporter.RequestParams();
@@ -98,7 +98,7 @@ public class TestMailEntityProcessor {
     paramMap.put("processAttachement", "false");
     paramMap.put("exclude", ".*grandchild.*");
     DataImporter di = new DataImporter();
-    di.loadDataConfig(getConfigFromMap(paramMap));
+    di.loadAndInit(getConfigFromMap(paramMap));
     DataConfig.Entity ent = di.getConfig().document.entities.get(0);
     ent.isDocRoot = true;
     DataImporter.RequestParams rp = new DataImporter.RequestParams();
@@ -116,7 +116,7 @@ public class TestMailEntityProcessor {
     paramMap.put("processAttachement", "false");
     paramMap.put("include", ".*grandchild.*");
     DataImporter di = new DataImporter();
-    di.loadDataConfig(getConfigFromMap(paramMap));
+    di.loadAndInit(getConfigFromMap(paramMap));
     DataConfig.Entity ent = di.getConfig().document.entities.get(0);
     ent.isDocRoot = true;
     DataImporter.RequestParams rp = new DataImporter.RequestParams();
@@ -135,7 +135,7 @@ public class TestMailEntityProcessor {
     paramMap.put("exclude", ".*top1.*");
     paramMap.put("include", ".*grandchild.*");
     DataImporter di = new DataImporter();
-    di.loadDataConfig(getConfigFromMap(paramMap));
+    di.loadAndInit(getConfigFromMap(paramMap));
     DataConfig.Entity ent = di.getConfig().document.entities.get(0);
     ent.isDocRoot = true;
     DataImporter.RequestParams rp = new DataImporter.RequestParams();
@@ -153,7 +153,7 @@ public class TestMailEntityProcessor {
     paramMap.put("processAttachement", "false");
     paramMap.put("fetchMailsSince", "2008-12-26 00:00:00");
     DataImporter di = new DataImporter();
-    di.loadDataConfig(getConfigFromMap(paramMap));
+    di.loadAndInit(getConfigFromMap(paramMap));
     DataConfig.Entity ent = di.getConfig().document.entities.get(0);
     ent.isDocRoot = true;
     DataImporter.RequestParams rp = new DataImporter.RequestParams();

@@ -43,7 +43,7 @@ public class TestDocBuilder {
   public void singleEntityNoRows() {
     try {
       DataImporter di = new DataImporter();
-      di.loadDataConfig(dc_singleEntity);
+      di.loadAndInit(dc_singleEntity);
       DataConfig cfg = di.getConfig();
       DataConfig.Entity ent = cfg.document.entities.get(0);
       MockDataSource.setIterator("select * from x", new ArrayList().iterator());
@@ -71,7 +71,7 @@ public class TestDocBuilder {
   public void testDeltaImportNoRows_MustNotCommit() {
     try {
       DataImporter di = new DataImporter();
-      di.loadDataConfig(dc_deltaConfig);
+      di.loadAndInit(dc_deltaConfig);
       DataConfig cfg = di.getConfig();
       DataConfig.Entity ent = cfg.document.entities.get(0);
       MockDataSource.setIterator("select * from x", new ArrayList().iterator());
@@ -96,7 +96,7 @@ public class TestDocBuilder {
   public void singleEntityOneRow() {
     try {
       DataImporter di = new DataImporter();
-      di.loadDataConfig(dc_singleEntity);
+      di.loadAndInit(dc_singleEntity);
       DataConfig cfg = di.getConfig();
       DataConfig.Entity ent = cfg.document.entities.get(0);
       List l = new ArrayList();
@@ -135,7 +135,7 @@ public class TestDocBuilder {
   public void testImportCommand() {
     try {
       DataImporter di = new DataImporter();
-      di.loadDataConfig(dc_singleEntity);
+      di.loadAndInit(dc_singleEntity);
       DataConfig cfg = di.getConfig();
       DataConfig.Entity ent = cfg.document.entities.get(0);
       List l = new ArrayList();
@@ -173,7 +173,7 @@ public class TestDocBuilder {
   public void singleEntityMultipleRows() {
     try {
       DataImporter di = new DataImporter();
-      di.loadDataConfig(dc_singleEntity);
+      di.loadAndInit(dc_singleEntity);
       DataConfig cfg = di.getConfig();
       DataConfig.Entity ent = cfg.document.entities.get(0);
       ent.isDocRoot = true;

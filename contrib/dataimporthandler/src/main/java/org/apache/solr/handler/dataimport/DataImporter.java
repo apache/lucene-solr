@@ -164,7 +164,7 @@ public class DataImporter {
 
   }
 
-  void loadDataConfig(String configFile) {
+  private void loadDataConfig(String configFile) {
 
     try {
       DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
