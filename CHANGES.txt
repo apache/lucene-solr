@@ -87,6 +87,9 @@ Bug fixes
   BooleanScorer for scoring), whereby some matching documents fail to
   be collected.  (Fulin Tang via Mike McCandless)
 
+* LUCENE-1124: Make sure FuzzyQuery always matches the precise term.
+  (stefatwork@gmail.com via Mike McCandless)
+
 New features
 
 * LUCENE-1933: Provide a convenience AttributeFactory that creates a

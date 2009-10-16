@@ -19,13 +19,18 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.queryParser.QueryParser;
 
 /**
  * Tests {@link FuzzyQuery}.
@@ -281,6 +286,43 @@ public class TestFuzzyQuery extends LuceneTestCase {
     assertEquals(0, hits.length);
   }
   
+  public void testGiga() throws Exception {
+
+    StandardAnalyzer analyzer = new StandardAnalyzer();
+
+    Directory index = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(index, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
+
+    addDoc("Lucene in Action", w);
+    addDoc("Lucene for Dummies", w);
+
+    //addDoc("Giga", w);
+    addDoc("Giga byte", w);
+
+    addDoc("ManagingGigabytesManagingGigabyte", w);
+    addDoc("ManagingGigabytesManagingGigabytes", w);
+
+    addDoc("The Art of Computer Science", w);
+    addDoc("J. K. Rowling", w);
+    addDoc("JK Rowling", w);
+    addDoc("Joanne K Roling", w);
+    addDoc("Bruce Willis", w);
+    addDoc("Willis bruce", w);
+    addDoc("Brute willis", w);
+    addDoc("B. willis", w);
+    IndexReader r = w.getReader();
+    w.close();
+
+    Query q = new QueryParser("field", analyzer).parse( "giga~0.9" );
+
+    // 3. search
+    IndexSearcher searcher = new IndexSearcher(r);
+    ScoreDoc[] hits = searcher.search(q, 10).scoreDocs;
+    assertEquals(1, hits.length);
+    assertEquals("Giga byte", searcher.doc(hits[0].doc).get("field"));
+    r.close();
+  }
+
   private void addDoc(String text, IndexWriter writer) throws IOException {
     Document doc = new Document();
     doc.add(new Field("field", text, Field.Store.YES, Field.Index.ANALYZED));
