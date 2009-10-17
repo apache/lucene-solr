@@ -236,4 +236,31 @@ public class HTMLStripCharFilterTest extends TestCase {
     assertTrue(builder.toString() + " is not equal to " + gold + "<EOS>", builder.toString().equals(gold) == true);
   }
 
+
+  public void doTestOffsets(String in) throws Exception {
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new BufferedReader(new StringReader(in))));
+    int ch = 0;
+    int off = 0;     // offset in the reader
+    int strOff = -1; // offset in the original string
+    while ((ch = reader.read()) != -1) {
+      int correctedOff = reader.correctOffset(off);
+
+      if (ch == 'X') {
+        strOff = in.indexOf('X',strOff+1);
+        assertEquals(strOff, correctedOff);
+      }
+
+      off++;
+    }
+  }
+
+  public void testOffsets() throws Exception {
+    doTestOffsets("hello X how X are you");
+    doTestOffsets("hello <p> X<p> how <p>X are you");
+    doTestOffsets("X &amp; X &#40; X &lt; &gt; X");
+
+    // test backtracking
+    doTestOffsets("X < &zz >X &# < X > < &l > &g < X");
+  }
+
 }

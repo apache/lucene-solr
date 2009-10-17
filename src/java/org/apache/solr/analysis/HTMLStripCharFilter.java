@@ -175,6 +175,7 @@ public class HTMLStripCharFilter extends BaseCharFilter {
 
   private int readNumericEntity() throws IOException {
     // "&#" has already been read at this point
+    int eaten = 2;
 
     // is this decimal, hex, or nothing at all.
     int ch = next();
@@ -194,6 +195,7 @@ public class HTMLStripCharFilter extends BaseCharFilter {
         }
       }
     } else if (ch=='x') {
+      eaten++;
       // hex character entity
       base=16;
       sb.setLength(0);
@@ -215,7 +217,8 @@ public class HTMLStripCharFilter extends BaseCharFilter {
     // the entity.
     try {
       if (ch==';' || ch==-1) {
-        numWhitespace = sb.length() + 2;// + 2 accounts for &, #, and ;, then, take away 1 for the fact that we do output a char
+        // do not account for the eaten ";" due to the fact that we do output a char
+        numWhitespace = sb.length() + eaten;
         return Integer.parseInt(sb.toString(), base);
       }
 
@@ -223,7 +226,7 @@ public class HTMLStripCharFilter extends BaseCharFilter {
       // that whitespace on the next call to read().
       if (isSpace(ch)) {
         push(ch);
-        numWhitespace = sb.length() + 2;// + 2 accounts for &, #, and ;, then, take away 1 for the fact that we do output a char
+        numWhitespace = sb.length() + eaten;
         return Integer.parseInt(sb.toString(), base);
       }
     } catch (NumberFormatException e) {
