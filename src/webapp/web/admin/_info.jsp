@@ -61,7 +61,7 @@
   { 
     StringWriter tmp = new StringWriter();
     XML.escapeCharData
-      (solrConfig.get("admin/defaultQuery/text()", null), tmp);
+      (solrConfig.get("admin/defaultQuery/text()", ""), tmp);
     defaultSearch = tmp.toString();
   }
 
