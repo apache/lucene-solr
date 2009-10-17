@@ -224,7 +224,11 @@ public class TestLBHttpSolrServer extends TestCase {
       System.setProperty("solr.solr.home", getHomeDir());
       System.setProperty("solr.data.dir", getDataDir());
       jetty.start();
-      this.port = jetty.getLocalPort();
+      int newPort = jetty.getLocalPort();
+      if (port != 0 && newPort != port) {
+        TestCase.fail("TESTING FAILURE: could not grab requested port.");
+      }
+      this.port = newPort;
 //      System.out.println("waiting.........");
 //      Thread.sleep(5000);
     }
