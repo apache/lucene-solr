@@ -73,7 +73,7 @@ public final class SegmentInfo {
                                                   // and true for newly created merged segments (both
                                                   // compound and non compound).
   
-  private List files;                             // cached list of files that this segment uses
+  private List<String> files;                             // cached list of files that this segment uses
                                                   // in the Directory
 
   long sizeInBytes = -1;                          // total byte size of all of our files (computed on demand)
@@ -583,14 +583,14 @@ public final class SegmentInfo {
    * modify it.
    */
 
-  public List files() throws IOException {
+  public List<String> files() throws IOException {
 
     if (files != null) {
       // Already cached:
       return files;
     }
     
-    files = new ArrayList();
+    files = new ArrayList<String>();
     
     boolean useCompoundFile = getUseCompoundFile();
 

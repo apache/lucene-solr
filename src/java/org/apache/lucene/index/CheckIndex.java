@@ -83,13 +83,13 @@ public class CheckIndex {
 
     /** Empty unless you passed specific segments list to check as optional 3rd argument.
      *  @see CheckIndex#checkIndex(List) */
-    public List/*<String>*/ segmentsChecked = new ArrayList();
+    public List<String> segmentsChecked = new ArrayList<String>();
   
     /** True if the index was created with a newer version of Lucene than the CheckIndex tool. */
     public boolean toolOutOfDate;
 
     /** List of {@link SegmentInfoStatus} instances, detailing status of each segment. */
-    public List/*<SegmentInfoStatus*/ segmentInfos = new ArrayList();
+    public List<SegmentInfoStatus> segmentInfos = new ArrayList<SegmentInfoStatus>();
   
     /** Directory index is in. */
     public Directory dir;
@@ -544,7 +544,7 @@ public class CheckIndex {
       }
 
       // Keeper
-      result.newSegments.add(info.clone());
+      result.newSegments.add((SegmentInfo) info.clone());
     }
 
     if (0 == result.numBadSegments) {

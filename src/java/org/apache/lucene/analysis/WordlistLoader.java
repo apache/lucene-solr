@@ -39,8 +39,8 @@ public class WordlistLoader {
    * @param wordfile File containing the wordlist
    * @return A HashSet with the file's words
    */
-  public static HashSet getWordSet(File wordfile) throws IOException {
-    HashSet result = new HashSet();
+  public static HashSet<String> getWordSet(File wordfile) throws IOException {
+    HashSet<String> result = new HashSet<String>();
     FileReader reader = null;
     try {
       reader = new FileReader(wordfile);
@@ -63,8 +63,8 @@ public class WordlistLoader {
    * @param comment The comment string to ignore
    * @return A HashSet with the file's words
    */
-  public static HashSet getWordSet(File wordfile, String comment) throws IOException {
-    HashSet result = new HashSet();
+  public static HashSet<String> getWordSet(File wordfile, String comment) throws IOException {
+    HashSet<String> result = new HashSet<String>();
     FileReader reader = null;
     try {
       reader = new FileReader(wordfile);
@@ -87,8 +87,8 @@ public class WordlistLoader {
    * @param reader Reader containing the wordlist
    * @return A HashSet with the reader's words
    */
-  public static HashSet getWordSet(Reader reader) throws IOException {
-    HashSet result = new HashSet();
+  public static HashSet<String> getWordSet(Reader reader) throws IOException {
+    HashSet<String> result = new HashSet<String>();
     BufferedReader br = null;
     try {
       if (reader instanceof BufferedReader) {
@@ -118,8 +118,8 @@ public class WordlistLoader {
    * @param comment The string representing a comment.
    * @return A HashSet with the reader's words
    */
-  public static HashSet getWordSet(Reader reader, String comment) throws IOException {
-    HashSet result = new HashSet();
+  public static HashSet<String> getWordSet(Reader reader, String comment) throws IOException {
+    HashSet<String> result = new HashSet<String>();
     BufferedReader br = null;
     try {
       if (reader instanceof BufferedReader) {
@@ -151,10 +151,10 @@ public class WordlistLoader {
    * @return stem dictionary that overrules the stemming algorithm
    * @throws IOException 
    */
-  public static HashMap getStemDict(File wordstemfile) throws IOException {
+  public static HashMap<String, String> getStemDict(File wordstemfile) throws IOException {
     if (wordstemfile == null)
       throw new NullPointerException("wordstemfile may not be null");
-    HashMap result = new HashMap();
+    HashMap<String, String> result = new HashMap<String, String>();
     BufferedReader br = null;
     FileReader fr = null;
     try {

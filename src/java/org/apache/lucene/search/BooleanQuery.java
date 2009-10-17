@@ -29,7 +29,7 @@ import java.util.*;
   * queries, e.g. {@link TermQuery}s, {@link PhraseQuery}s or other
   * BooleanQuerys.
   */
-public class BooleanQuery extends Query {
+public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
   private static int maxClauseCount = 1024;
 
@@ -62,7 +62,7 @@ public class BooleanQuery extends Query {
     BooleanQuery.maxClauseCount = maxClauseCount;
   }
 
-  private ArrayList clauses = new ArrayList();
+  private ArrayList<BooleanClause> clauses = new ArrayList<BooleanClause>();
   private boolean disableCoord;
 
   /** Constructs an empty boolean query. */
@@ -158,11 +158,17 @@ public class BooleanQuery extends Query {
 
   /** Returns the set of clauses in this query. */
   public BooleanClause[] getClauses() {
-    return (BooleanClause[])clauses.toArray(new BooleanClause[clauses.size()]);
+    return clauses.toArray(new BooleanClause[clauses.size()]);
   }
 
   /** Returns the list of clauses in this query. */
-  public List clauses() { return clauses; }
+  public List<BooleanClause> clauses() { return clauses; }
+
+  /** Returns an iterator on the clauses in this query. It implements the {@link Iterable} interface to
+   * make it possible to do:
+   * <pre>for (BooleanClause clause : booleanQuery) {}</pre>
+   */
+  public final Iterator<BooleanClause> iterator() { return clauses().iterator(); }
 
   /**
    * Expert: the Weight for BooleanQuery, used to
@@ -174,21 +180,25 @@ public class BooleanQuery extends Query {
   protected class BooleanWeight extends Weight {
     /** The Similarity implementation. */
     protected Similarity similarity;
-    protected ArrayList weights;
+    protected ArrayList<Weight> weights;
 
     public BooleanWeight(Searcher searcher)
       throws IOException {
       this.similarity = getSimilarity(searcher);
-      weights = new ArrayList(clauses.size());
+      weights = new ArrayList<Weight>(clauses.size());
       for (int i = 0 ; i < clauses.size(); i++) {
         BooleanClause c = (BooleanClause)clauses.get(i);
         weights.add(c.getQuery().createWeight(searcher));
       }
     }
 
+    @Override
     public Query getQuery() { return BooleanQuery.this; }
+
+    @Override
     public float getValue() { return getBoost(); }
 
+    @Override
     public float sumOfSquaredWeights() throws IOException {
       float sum = 0.0f;
       for (int i = 0 ; i < weights.size(); i++) {
@@ -207,15 +217,16 @@ public class BooleanQuery extends Query {
     }
 
 
+    @Override
     public void normalize(float norm) {
       norm *= getBoost();                         // incorporate boost
-      for (Iterator iter = weights.iterator(); iter.hasNext();) {
-        Weight w = (Weight) iter.next();
+      for (Weight w : weights) {
         // normalize all clauses, (even if prohibited in case of side affects)
         w.normalize(norm);
       }
     }
 
+    @Override
     public Explanation explain(IndexReader reader, int doc)
       throws IOException {
       final int minShouldMatch =
@@ -227,9 +238,10 @@ public class BooleanQuery extends Query {
       float sum = 0.0f;
       boolean fail = false;
       int shouldMatchCount = 0;
-      for (Iterator wIter = weights.iterator(), cIter = clauses.iterator(); wIter.hasNext();) {
-        Weight w = (Weight) wIter.next();
-        BooleanClause c = (BooleanClause) cIter.next();
+      Iterator<BooleanClause> cIter = clauses.iterator();
+      for (Iterator<Weight> wIter = weights.iterator(); wIter.hasNext();) {
+        Weight w = wIter.next();
+        BooleanClause c = cIter.next();
         if (w.scorer(reader, true, true) == null) {
           continue;
         }
@@ -287,14 +299,15 @@ public class BooleanQuery extends Query {
       }
     }
 
+    @Override
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer)
         throws IOException {
-      List required = new ArrayList();
-      List prohibited = new ArrayList();
-      List optional = new ArrayList();
-      for (Iterator wIter = weights.iterator(), cIter = clauses.iterator(); wIter.hasNext();) {
-        Weight w = (Weight) wIter.next();
-        BooleanClause c = (BooleanClause) cIter.next();
+      List<Scorer> required = new ArrayList<Scorer>();
+      List<Scorer> prohibited = new ArrayList<Scorer>();
+      List<Scorer> optional = new ArrayList<Scorer>();
+      Iterator<BooleanClause> cIter = clauses.iterator();
+      for (Weight w  : weights) {
+        BooleanClause c =  cIter.next();
         Scorer subScorer = w.scorer(reader, true, false);
         if (subScorer == null) {
           if (c.isRequired()) {
@@ -328,10 +341,10 @@ public class BooleanQuery extends Query {
       return new BooleanScorer2(similarity, minNrShouldMatch, required, prohibited, optional);
     }
     
+    @Override
     public boolean scoresDocsOutOfOrder() {
       int numProhibited = 0;
-      for (Iterator cIter = clauses.iterator(); cIter.hasNext();) {
-        BooleanClause c = (BooleanClause) cIter.next();
+      for (BooleanClause c : clauses) {
         if (c.isRequired()) {
           return false; // BS2 (in-order) will be used by scorer()
         } else if (c.isProhibited()) {
@@ -349,10 +362,12 @@ public class BooleanQuery extends Query {
     
   }
 
+  @Override
   public Weight createWeight(Searcher searcher) throws IOException {
     return new BooleanWeight(searcher);
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (minNrShouldMatch == 0 && clauses.size() == 1) {                    // optimize 1-clause queries
       BooleanClause c = (BooleanClause)clauses.get(0);
@@ -372,7 +387,7 @@ public class BooleanQuery extends Query {
 
     BooleanQuery clone = null;                    // recursively rewrite
     for (int i = 0 ; i < clauses.size(); i++) {
-      BooleanClause c = (BooleanClause)clauses.get(i);
+      BooleanClause c = clauses.get(i);
       Query query = c.getQuery().rewrite(reader);
       if (query != c.getQuery()) {                     // clause rewrote: must clone
         if (clone == null)
@@ -387,20 +402,22 @@ public class BooleanQuery extends Query {
   }
 
   // inherit javadoc
+  @Override
   public void extractTerms(Set<Term> terms) {
-      for (Iterator i = clauses.iterator(); i.hasNext();) {
-          BooleanClause clause = (BooleanClause) i.next();
+      for (BooleanClause clause : clauses) {
           clause.getQuery().extractTerms(terms);
         }
   }
 
+  @Override
   public Object clone() {
     BooleanQuery clone = (BooleanQuery)super.clone();
-    clone.clauses = (ArrayList)this.clauses.clone();
+    clone.clauses = (ArrayList<BooleanClause>)this.clauses.clone();
     return clone;
   }
 
   /** Prints a user-readable version of this query. */
+  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     boolean needParens=(getBoost() != 1.0) || (getMinimumNumberShouldMatch()>0) ;
@@ -409,7 +426,7 @@ public class BooleanQuery extends Query {
     }
 
     for (int i = 0 ; i < clauses.size(); i++) {
-      BooleanClause c = (BooleanClause)clauses.get(i);
+      BooleanClause c = clauses.get(i);
       if (c.isProhibited())
         buffer.append("-");
       else if (c.isRequired())
@@ -450,6 +467,7 @@ public class BooleanQuery extends Query {
   }
 
   /** Returns true iff <code>o</code> is equal to this. */
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof BooleanQuery))
       return false;
@@ -460,6 +478,7 @@ public class BooleanQuery extends Query {
   }
 
   /** Returns a hash code value for this object.*/
+  @Override
   public int hashCode() {
     return Float.floatToIntBits(getBoost()) ^ clauses.hashCode()
            + getMinimumNumberShouldMatch();

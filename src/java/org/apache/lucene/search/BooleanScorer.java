@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
@@ -182,13 +181,12 @@ final class BooleanScorer extends Scorer {
   private int doc = -1;
 
   BooleanScorer(Similarity similarity, int minNrShouldMatch,
-      List optionalScorers, List prohibitedScorers) throws IOException {
+      List<Scorer> optionalScorers, List<Scorer> prohibitedScorers) throws IOException {
     super(similarity);
     this.minNrShouldMatch = minNrShouldMatch;
 
     if (optionalScorers != null && optionalScorers.size() > 0) {
-      for (Iterator si = optionalScorers.iterator(); si.hasNext();) {
-        Scorer scorer = (Scorer) si.next();
+      for (Scorer scorer : optionalScorers) {
         maxCoord++;
         if (scorer.nextDoc() != NO_MORE_DOCS) {
           scorers = new SubScorer(scorer, false, false, bucketTable.newCollector(0), scorers);
@@ -197,8 +195,7 @@ final class BooleanScorer extends Scorer {
     }
     
     if (prohibitedScorers != null && prohibitedScorers.size() > 0) {
-      for (Iterator si = prohibitedScorers.iterator(); si.hasNext();) {
-        Scorer scorer = (Scorer) si.next();
+      for (Scorer scorer : prohibitedScorers) {
         int mask = nextMask;
         nextMask = nextMask << 1;
         prohibitedMask |= mask;                     // update prohibited mask

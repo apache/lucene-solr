@@ -31,9 +31,9 @@ import java.util.List;
  */
 class BooleanScorer2 extends Scorer {
   
-  private final List requiredScorers;
-  private final List optionalScorers;
-  private final List prohibitedScorers;
+  private final List<Scorer> requiredScorers;
+  private final List<Scorer> optionalScorers;
+  private final List<Scorer> prohibitedScorers;
 
   private class Coordinator {
     float[] coordFactors = null;
@@ -81,7 +81,7 @@ class BooleanScorer2 extends Scorer {
    *          the list of optional scorers.
    */
   public BooleanScorer2(Similarity similarity, int minNrShouldMatch,
-      List required, List prohibited, List optional) throws IOException {
+      List<Scorer> required, List<Scorer> prohibited, List<Scorer> optional) throws IOException {
     super(similarity);
     if (minNrShouldMatch < 0) {
       throw new IllegalArgumentException("Minimum number of optional scorers should not be negative");
@@ -138,7 +138,7 @@ class BooleanScorer2 extends Scorer {
     }
   }
 
-  private Scorer countingDisjunctionSumScorer(final List scorers,
+  private Scorer countingDisjunctionSumScorer(final List<Scorer> scorers,
       int minNrShouldMatch) throws IOException {
     // each scorer from the list counted as a single matcher
     return new DisjunctionSumScorer(scorers, minNrShouldMatch) {
@@ -162,7 +162,7 @@ class BooleanScorer2 extends Scorer {
 
   private static final Similarity defaultSimilarity = Similarity.getDefault();
 
-  private Scorer countingConjunctionSumScorer(List requiredScorers) throws IOException {
+  private Scorer countingConjunctionSumScorer(List<Scorer> requiredScorers) throws IOException {
     // each scorer from the list counted as a single matcher
     final int requiredNrMatchers = requiredScorers.size();
     return new ConjunctionScorer(defaultSimilarity, requiredScorers) {
@@ -220,7 +220,7 @@ class BooleanScorer2 extends Scorer {
 
   private Scorer makeCountingSumScorerSomeReq() throws IOException { // At least one required scorer.
     if (optionalScorers.size() == minNrShouldMatch) { // all optional scorers also required.
-      ArrayList allReq = new ArrayList(requiredScorers);
+      ArrayList<Scorer> allReq = new ArrayList<Scorer>(requiredScorers);
       allReq.addAll(optionalScorers);
       return addProhibitedScorers(countingConjunctionSumScorer(allReq));
     } else { // optionalScorers.size() > minNrShouldMatch, and at least one required scorer

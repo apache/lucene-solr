@@ -20,8 +20,9 @@ package org.apache.lucene.index;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Iterator;
 import java.util.Map.Entry;
+
+import org.apache.lucene.search.Query;
 
 /** Holds buffered deletes, by docID, term or query.  We
  *  hold two instances of this class: one for the deletes
@@ -32,9 +33,9 @@ import java.util.Map.Entry;
  *  previously flushed segments. */
 class BufferedDeletes {
   int numTerms;
-  HashMap terms = new HashMap();
-  HashMap queries = new HashMap();
-  List docIDs = new ArrayList();
+  HashMap<Term,Num> terms = new HashMap<Term,Num>();
+  HashMap<Query,Integer> queries = new HashMap<Query,Integer>();
+  List<Integer> docIDs = new ArrayList<Integer>();
   long bytesUsed;
 
   // Number of documents a delete term applies to.
@@ -103,42 +104,38 @@ class BufferedDeletes {
                           MergePolicy.OneMerge merge,
                           int mergeDocCount) {
 
-    final HashMap newDeleteTerms;
+    final HashMap<Term,Num> newDeleteTerms;
 
     // Remap delete-by-term
     if (terms.size() > 0) {
-      newDeleteTerms = new HashMap();
-      Iterator iter = terms.entrySet().iterator();
-      while(iter.hasNext()) {
-        Entry entry = (Entry) iter.next();
-        Num num = (Num) entry.getValue();
+      newDeleteTerms = new HashMap<Term, Num>();
+      for(Entry<Term,Num> entry : terms.entrySet()) {
+        Num num = entry.getValue();
         newDeleteTerms.put(entry.getKey(),
                            new Num(mapper.remap(num.getNum())));
       }
-    } else
+    } else 
       newDeleteTerms = null;
+    
 
     // Remap delete-by-docID
-    final List newDeleteDocIDs;
+    final List<Integer> newDeleteDocIDs;
 
     if (docIDs.size() > 0) {
-      newDeleteDocIDs = new ArrayList(docIDs.size());
-      Iterator iter = docIDs.iterator();
-      while(iter.hasNext()) {
-        Integer num = (Integer) iter.next();
+      newDeleteDocIDs = new ArrayList<Integer>(docIDs.size());
+      for (Integer num : docIDs) {
         newDeleteDocIDs.add(Integer.valueOf(mapper.remap(num.intValue())));
       }
-    } else
+    } else 
       newDeleteDocIDs = null;
+    
 
     // Remap delete-by-query
-    final HashMap newDeleteQueries;
+    final HashMap<Query,Integer> newDeleteQueries;
     
     if (queries.size() > 0) {
-      newDeleteQueries = new HashMap(queries.size());
-      Iterator iter = queries.entrySet().iterator();
-      while(iter.hasNext()) {
-        Entry entry = (Entry) iter.next();
+      newDeleteQueries = new HashMap<Query, Integer>(queries.size());
+      for(Entry<Query,Integer> entry: queries.entrySet()) {
         Integer num = (Integer) entry.getValue();
         newDeleteQueries.put(entry.getKey(),
                              Integer.valueOf(mapper.remap(num.intValue())));

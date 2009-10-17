@@ -26,8 +26,7 @@ import java.util.Map;
  */
 public class NormalizeCharMap {
 
-  //Map<Character, NormalizeMap> submap;
-  Map submap;
+  Map<Character, NormalizeCharMap> submap;
   String normStr;
   int diff;
 
@@ -44,9 +43,9 @@ public class NormalizeCharMap {
     for(int i = 0; i < singleMatch.length(); i++) {
       char c = singleMatch.charAt(i);
       if (currMap.submap == null) {
-        currMap.submap = new HashMap(1);
+        currMap.submap = new HashMap<Character, NormalizeCharMap>(1);
       }
-      NormalizeCharMap map = (NormalizeCharMap) currMap.submap.get(CharacterCache.valueOf(c));
+      NormalizeCharMap map = currMap.submap.get(CharacterCache.valueOf(c));
       if (map == null) {
         map = new NormalizeCharMap();
         currMap.submap.put(new Character(c), map);

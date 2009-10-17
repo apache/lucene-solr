@@ -228,9 +228,8 @@ public abstract class IndexInput implements Cloneable {
     return clone;
   }
 
-  // returns Map<String, String>
-  public Map readStringStringMap() throws IOException {
-    final Map map = new HashMap();
+  public Map<String,String> readStringStringMap() throws IOException {
+    final Map<String,String> map = new HashMap<String,String>();
     final int count = readInt();
     for(int i=0;i<count;i++) {
       final String key = readString();

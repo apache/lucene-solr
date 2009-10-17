@@ -217,7 +217,7 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
   @Override
   public Object clone() {
     DisjunctionMaxQuery clone = (DisjunctionMaxQuery)super.clone();
-    clone.disjuncts = (ArrayList)this.disjuncts.clone();
+    clone.disjuncts = (ArrayList<Query>)this.disjuncts.clone();
     return clone;
   }
 
