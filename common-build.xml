@@ -62,7 +62,7 @@
        By default, this should be set to "X.Y.N-dev" where X.Y.N is
        "1 greater" then the last version released (on this branch).
     -->
-  <property name="version" value="1.5-dev" />
+  <property name="version" value="1.4-dev" />
   
   <!-- Solr Specification Version -->
   <!--
