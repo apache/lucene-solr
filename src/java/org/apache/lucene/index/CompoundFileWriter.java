@@ -22,7 +22,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
 import java.util.LinkedList;
 import java.util.HashSet;
-import java.util.Iterator;
+
 import java.io.IOException;
 
 
@@ -62,8 +62,8 @@ final class CompoundFileWriter {
 
     private Directory directory;
     private String fileName;
-    private HashSet ids;
-    private LinkedList entries;
+    private HashSet<String> ids;
+    private LinkedList<FileEntry> entries;
     private boolean merged = false;
     private SegmentMerger.CheckAbort checkAbort;
 
@@ -83,8 +83,8 @@ final class CompoundFileWriter {
         this.checkAbort = checkAbort;
         directory = dir;
         fileName = name;
-        ids = new HashSet();
-        entries = new LinkedList();
+        ids = new HashSet<String>();
+        entries = new LinkedList<FileEntry>();
     }
 
     /** Returns the directory of the compound file. */
@@ -152,10 +152,8 @@ final class CompoundFileWriter {
             // Write the directory with all offsets at 0.
             // Remember the positions of directory entries so that we can
             // adjust the offsets later
-            Iterator it = entries.iterator();
             long totalSize = 0;
-            while(it.hasNext()) {
-                FileEntry fe = (FileEntry) it.next();
+            for (FileEntry fe : entries) {
                 fe.directoryOffset = os.getFilePointer();
                 os.writeLong(0);    // for now
                 os.writeString(fe.file);
@@ -174,17 +172,13 @@ final class CompoundFileWriter {
             // Open the files and copy their data into the stream.
             // Remember the locations of each file's data section.
             byte buffer[] = new byte[16384];
-            it = entries.iterator();
-            while(it.hasNext()) {
-                FileEntry fe = (FileEntry) it.next();
+            for (FileEntry fe : entries) {
                 fe.dataOffset = os.getFilePointer();
                 copyFile(fe, os, buffer);
             }
 
             // Write the data offsets into the directory of the compound stream
-            it = entries.iterator();
-            while(it.hasNext()) {
-                FileEntry fe = (FileEntry) it.next();
+            for (FileEntry fe : entries) {
                 os.seek(fe.directoryOffset);
                 os.writeLong(fe.dataOffset);
             }

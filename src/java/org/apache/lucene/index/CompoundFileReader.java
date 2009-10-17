@@ -47,7 +47,7 @@ class CompoundFileReader extends Directory {
     private String fileName;
 
     private IndexInput stream;
-    private HashMap entries = new HashMap();
+    private HashMap<String,FileEntry> entries = new HashMap<String,FileEntry>();
 
 
   public CompoundFileReader(Directory dir, String name) throws IOException {

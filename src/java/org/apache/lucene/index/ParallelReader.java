@@ -104,7 +104,7 @@ public class ParallelReader extends IndexReader {
       throw new IllegalArgumentException
         ("All readers must have same numDocs: "+numDocs+"!="+reader.numDocs());
 
-    Collection fields = reader.getFieldNames(IndexReader.FieldOption.ALL);
+    Collection<String> fields = reader.getFieldNames(IndexReader.FieldOption.ALL);
     readerToFields.put(reader, fields);
     Iterator i = fields.iterator();
     while (i.hasNext()) {                         // update fieldToReader map
@@ -435,7 +435,7 @@ public class ParallelReader extends IndexReader {
     return (IndexReader[]) readers.toArray(new IndexReader[readers.size()]);
   }
 
-  protected void doCommit(Map commitUserData) throws IOException {
+  protected void doCommit(Map<String,String> commitUserData) throws IOException {
     for (int i = 0; i < readers.size(); i++)
       ((IndexReader)readers.get(i)).commit(commitUserData);
   }
@@ -450,12 +450,12 @@ public class ParallelReader extends IndexReader {
     }
   }
 
-  public Collection getFieldNames (IndexReader.FieldOption fieldNames) {
+  public Collection<String> getFieldNames (IndexReader.FieldOption fieldNames) {
     ensureOpen();
     Set fieldSet = new HashSet();
     for (int i = 0; i < readers.size(); i++) {
       IndexReader reader = ((IndexReader)readers.get(i));
-      Collection names = reader.getFieldNames(fieldNames);
+      Collection<String> names = reader.getFieldNames(fieldNames);
       fieldSet.addAll(names);
     }
     return fieldSet;

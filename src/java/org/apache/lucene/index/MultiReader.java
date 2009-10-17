@@ -352,7 +352,7 @@ public class MultiReader extends IndexReader implements Cloneable {
     return new MultiTermPositions(this, subReaders, starts);
   }
 
-  protected void doCommit(Map commitUserData) throws IOException {
+  protected void doCommit(Map<String,String> commitUserData) throws IOException {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].commit(commitUserData);
   }
@@ -367,7 +367,7 @@ public class MultiReader extends IndexReader implements Cloneable {
     }
   }
   
-  public Collection getFieldNames (IndexReader.FieldOption fieldNames) {
+  public Collection<String> getFieldNames (IndexReader.FieldOption fieldNames) {
     ensureOpen();
     return DirectoryReader.getFieldNames(fieldNames, this.subReaders);
   }  

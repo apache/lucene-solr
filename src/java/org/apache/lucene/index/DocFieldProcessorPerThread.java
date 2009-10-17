@@ -76,8 +76,8 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
     consumer.abort();
   }
 
-  public Collection fields() {
-    Collection fields = new HashSet();
+  public Collection<DocFieldConsumerPerField> fields() {
+    Collection<DocFieldConsumerPerField> fields = new HashSet<DocFieldConsumerPerField>();
     for(int i=0;i<fieldHash.length;i++) {
       DocFieldProcessorPerField field = fieldHash[i];
       while(field != null) {
@@ -163,7 +163,7 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
     
     final int thisFieldGen = fieldGen++;
 
-    final List docFields = doc.getFields();
+    final List<Fieldable> docFields = doc.getFields();
     final int numDocFields = docFields.size();
 
     // Absorb any new fields first seen in this document.

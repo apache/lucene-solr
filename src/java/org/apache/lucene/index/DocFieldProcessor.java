@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Iterator;
+
 
 /**
  * This is a DocConsumer that gathers all fields under the
@@ -50,12 +50,10 @@ final class DocFieldProcessor extends DocConsumer {
     fieldsWriter.closeDocStore(state);
   }
 
-  public void flush(Collection threads, SegmentWriteState state) throws IOException {
+  public void flush(Collection<DocFieldProcessorPerThread> threads, SegmentWriteState state) throws IOException {
 
-    Map childThreadsAndFields = new HashMap();
-    Iterator it = threads.iterator();
-    while(it.hasNext()) {
-      DocFieldProcessorPerThread perThread = (DocFieldProcessorPerThread) it.next();
+    Map<DocFieldConsumerPerThread, Collection<DocFieldConsumerPerField>> childThreadsAndFields = new HashMap<DocFieldConsumerPerThread, Collection<DocFieldConsumerPerField>>();
+    for ( DocFieldProcessorPerThread perThread : threads) {
       childThreadsAndFields.put(perThread.consumer, perThread.fields());
       perThread.trimFields(state);
     }

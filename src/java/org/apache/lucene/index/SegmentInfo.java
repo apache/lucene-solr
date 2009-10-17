@@ -89,7 +89,7 @@ public final class SegmentInfo {
 
   private boolean hasProx;                        // True if this segment has any fields with omitTermFreqAndPositions==false
 
-  private Map diagnostics;
+  private Map<String,String> diagnostics;
 
   public String toString() {
     return "si: "+dir.toString()+" "+name+" docCount: "+docCount+" delCount: "+delCount+" delFileName: "+getDelFileName();
@@ -152,12 +152,12 @@ public final class SegmentInfo {
   }
 
   // must be Map<String, String>
-  void setDiagnostics(Map diagnostics) {
+  void setDiagnostics(Map<String, String> diagnostics) {
     this.diagnostics = diagnostics;
   }
 
   // returns Map<String, String>
-  public Map getDiagnostics() {
+  public Map<String, String> getDiagnostics() {
     return diagnostics;
   }
 

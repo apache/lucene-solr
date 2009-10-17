@@ -36,7 +36,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   private int mergeThreadPriority = -1;
 
-  protected List mergeThreads = new ArrayList();
+  protected List<MergeThread> mergeThreads = new ArrayList<MergeThread>();
 
   // Max number of threads allowed to be merging at once
   private int maxThreadCount = 3;
@@ -363,7 +363,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       // Make sure all outstanding threads are done so we see
       // any exceptions they may produce:
       for(int i=0;i<count;i++)
-        ((ConcurrentMergeScheduler) allInstances.get(i)).sync();
+        allInstances.get(i).sync();
       boolean v = anyExceptions;
       anyExceptions = false;
       return v;
@@ -382,7 +382,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       final int size = allInstances.size();
       int upto = 0;
       for(int i=0;i<size;i++) {
-        final ConcurrentMergeScheduler other = (ConcurrentMergeScheduler) allInstances.get(i);
+        final ConcurrentMergeScheduler other = allInstances.get(i);
         if (!(other.closed && 0 == other.mergeThreadCount()))
           // Keep this one for now: it still has threads or
           // may spawn new threads
@@ -406,8 +406,8 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   }
 
   /** Used for testing */
-  private static List allInstances;
+  private static List<ConcurrentMergeScheduler> allInstances;
   public static void setTestMode() {
-    allInstances = new ArrayList();
+    allInstances = new ArrayList<ConcurrentMergeScheduler>();
   }
 }

@@ -211,12 +211,12 @@ public class FilterIndexReader extends IndexReader {
 
   protected void doDelete(int n) throws  CorruptIndexException, IOException { in.deleteDocument(n); }
   
-  protected void doCommit(Map commitUserData) throws IOException { in.commit(commitUserData); }
+  protected void doCommit(Map<String,String> commitUserData) throws IOException { in.commit(commitUserData); }
   
   protected void doClose() throws IOException { in.close(); }
 
 
-  public Collection getFieldNames(IndexReader.FieldOption fieldNames) {
+  public Collection<String> getFieldNames(IndexReader.FieldOption fieldNames) {
     ensureOpen();
     return in.getFieldNames(fieldNames);
   }

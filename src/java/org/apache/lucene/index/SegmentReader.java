@@ -792,7 +792,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return clone;
   }
 
-  protected void doCommit(Map commitUserData) throws IOException {
+  protected void doCommit(Map<String,String> commitUserData) throws IOException {
     if (hasChanges) {
       if (deletedDocsDirty) {               // re-write deleted
         si.advanceDelGen();
@@ -971,10 +971,10 @@ public class SegmentReader extends IndexReader implements Cloneable {
   /**
    * @see IndexReader#getFieldNames(IndexReader.FieldOption fldOption)
    */
-  public Collection getFieldNames(IndexReader.FieldOption fieldOption) {
+  public Collection<String> getFieldNames(IndexReader.FieldOption fieldOption) {
     ensureOpen();
 
-    Set fieldSet = new HashSet();
+    Set<String> fieldSet = new HashSet<String>();
     for (int i = 0; i < core.fieldInfos.size(); i++) {
       FieldInfo fi = core.fieldInfos.fieldInfo(i);
       if (fieldOption == IndexReader.FieldOption.ALL) {
