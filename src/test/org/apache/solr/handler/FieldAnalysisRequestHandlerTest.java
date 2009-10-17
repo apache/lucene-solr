@@ -311,11 +311,11 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     NamedList indexPart = textType.get("index");
     assertNotNull("expecting an index token analysis for field type 'charfilthtmlmap'", indexPart);
     
-    assertEquals("            whátëvêr              ", indexPart.get("org.apache.solr.analysis.HTMLStripCharFilter"));
-    assertEquals("            whatever              ", indexPart.get("org.apache.lucene.analysis.MappingCharFilter"));
+    assertEquals("  whátëvêr  ", indexPart.get("org.apache.solr.analysis.HTMLStripCharFilter"));
+    assertEquals("  whatever  ", indexPart.get("org.apache.lucene.analysis.MappingCharFilter"));
 
     List<NamedList> tokenList = (List<NamedList>)indexPart.get("org.apache.lucene.analysis.WhitespaceTokenizer");
-    assertNotNull("Expcting WhitespaceTokenizer analysis breakdown", tokenList);
+    assertNotNull("Expecting WhitespaceTokenizer analysis breakdown", tokenList);
     assertEquals(tokenList.size(), 1);
     assertToken(tokenList.get(0), new TokenInfo("whatever", null, "word", 12, 20, 1, null, false));
   }
