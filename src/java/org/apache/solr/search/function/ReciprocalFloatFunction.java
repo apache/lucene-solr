@@ -25,16 +25,19 @@ import java.util.Map;
 
 /**
  * <code>ReciprocalFloatFunction</code> implements a reciprocal function f(x) = a/(mx+b), based on
- * the float value of a field as exported by {@link org.apache.solr.search.function.ValueSource}.
+ * the float value of a field or function as exported by {@link org.apache.solr.search.function.ValueSource}.
  * <br>
  *
  * When a and b are equal, and x>=0, this function has a maximum value of 1 that drops as x increases.
  * Increasing the value of a and b together results in a movement of the entire function to a flatter part of the curve.
- * <br>These properties make this an idea function for boosting more recent documents.
- * <br>Example:<code>ReciprocalFloatFunction(new ReverseOrdFieldSource("my_date"),1,1000,1000)</code>
+ * <p>These properties make this an idea function for boosting more recent documents.
+ * <p>Example:<code>  recip(ms(NOW,mydatefield),3.16e-11,1,1)</code>
+ * <p>A multiplier of 3.16e-11 changes the units from milliseconds to years (since there are about 3.16e10 milliseconds
+ * per year).  Thus, a very recent date will yield a value close to 1/(0+1) or 1,
+ * a date a year in the past will get a multiplier of about 1/(1+1) or 1/2,
+ * and date two years old will yield 1/(2+1) or 1/3.
  *
  * @see FunctionQuery
- *
  *
  * @version $Id$
  */
