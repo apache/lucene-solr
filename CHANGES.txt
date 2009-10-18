@@ -81,6 +81,10 @@ API Changes
   Un-deprecate some ctors of Token, as they are still useful.
   (Uwe Schindler)
 
+* LUCENE-1945: All public classes that have a close() method now
+  also implement java.io.Closeable (IndexReader, IndexWriter, Directory,...).
+  (Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-1951: When the text provided to WildcardQuery has no wildcard
