@@ -16,6 +16,9 @@ Bug fixes
    when the reader is a near real-time reader.  (Jake Mannix via Mike
    McCandless)
 
+ * LUCENE-1986: Fix NPE when scoring PayloadNearQuery (Peter Keegan,
+   Mark Miller via Mike McCandless)
+
 ======================= Release 2.9.0 2009-09-23 =======================
 
 Changes in backwards compatibility policy

@@ -207,6 +207,9 @@ public class PayloadNearQuery extends SpanNearQuery {
 
     //
     protected boolean setFreqCurrentDoc() throws IOException {
+      if (!more) {
+        return false;
+      }
       Spans[] spansArr = new Spans[1];
       spansArr[0] = spans;
       payloadScore = 0;
