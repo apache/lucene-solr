@@ -21,8 +21,13 @@ Bug fixes
 
 API Changes
 
+ * Un-deprecate search(Weight weight, Filter filter, int n) from
+   Searchable interface (deprecated by accident).  (Uwe Schindler)
+
+ * Un-deprecate o.a.l.util.Version constants.  (Mike McCandless)
+
  * LUCENE-1987: Un-deprecate some ctors of Token, as they will not
-   be removed in 3.0 and are still useful. (Uwe Schindler)
+   be removed in 3.0 and are still useful.  (Uwe Schindler)
 
  ======================= Release 2.9.0 2009-09-23 =======================
 
