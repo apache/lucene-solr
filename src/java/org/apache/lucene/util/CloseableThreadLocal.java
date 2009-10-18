@@ -42,20 +42,20 @@ import java.lang.ref.WeakReference;
  *  references are cleared and then GC is freely able to
  *  reclaim space by objects stored in it. */
 
-public class CloseableThreadLocal {
+public class CloseableThreadLocal<T> {
 
-  private ThreadLocal t = new ThreadLocal();
+  private ThreadLocal<WeakReference<T>> t = new ThreadLocal<WeakReference<T>>();
 
-  private Map hardRefs = new HashMap();
+  private Map<Thread,T> hardRefs = new HashMap<Thread,T>();
   
-  protected Object initialValue() {
+  protected T initialValue() {
     return null;
   }
   
-  public Object get() {
-    WeakReference weakRef = (WeakReference) t.get();
+  public T get() {
+    WeakReference<T> weakRef = t.get();
     if (weakRef == null) {
-      Object iv = initialValue();
+      T iv = initialValue();
       if (iv != null) {
         set(iv);
         return iv;
@@ -66,17 +66,16 @@ public class CloseableThreadLocal {
     }
   }
 
-  public void set(Object object) {
+  public void set(T object) {
 
-    t.set(new WeakReference(object));
+    t.set(new WeakReference<T>(object));
 
     synchronized(hardRefs) {
       hardRefs.put(Thread.currentThread(), object);
 
       // Purge dead threads
-      Iterator it = hardRefs.keySet().iterator();
-      while(it.hasNext()) {
-        Thread t = (Thread) it.next();
+      for (Iterator<Thread> it = hardRefs.keySet().iterator(); it.hasNext();) {
+        final Thread t = it.next();
         if (!t.isAlive())
           it.remove();
       }
