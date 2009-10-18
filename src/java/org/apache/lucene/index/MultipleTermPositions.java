@@ -21,7 +21,7 @@ import org.apache.lucene.util.PriorityQueue;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Iterator;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -33,19 +33,17 @@ import java.util.List;
 public class MultipleTermPositions implements TermPositions {
 
   private static final class TermPositionsQueue extends PriorityQueue<TermPositions> {
-    TermPositionsQueue(List termPositions) throws IOException {
+    TermPositionsQueue(List<TermPositions> termPositions) throws IOException {
       initialize(termPositions.size());
 
-      Iterator i = termPositions.iterator();
-      while (i.hasNext()) {
-        TermPositions tp = (TermPositions) i.next();
+      for (TermPositions tp : termPositions) {
         if (tp.next())
           add(tp);
       }
     }
 
     final TermPositions peek() {
-      return (TermPositions) top();
+      return top();
     }
 
     public final boolean lessThan(TermPositions a, TermPositions b) {
@@ -102,7 +100,7 @@ public class MultipleTermPositions implements TermPositions {
    * @exception IOException
    */
   public MultipleTermPositions(IndexReader indexReader, Term[] terms) throws IOException {
-    List termPositions = new LinkedList();
+    List<TermPositions> termPositions = new LinkedList<TermPositions>();
 
     for (int i = 0; i < terms.length; i++)
       termPositions.add(indexReader.termPositions(terms[i]));

@@ -52,7 +52,7 @@ public abstract class IndexCommit {
   /**
    * Returns all index files referenced by this commit point.
    */
-  public abstract Collection getFileNames() throws IOException;
+  public abstract Collection<String> getFileNames() throws IOException;
 
   /**
    * Returns the {@link Directory} for the index.
@@ -125,7 +125,7 @@ public abstract class IndexCommit {
   /** Returns userData, previously passed to {@link
    *  IndexWriter#commit(Map)} for this commit.  Map is
    *  String -> String. */
-  public Map getUserData() throws IOException {
+  public Map<String,String> getUserData() throws IOException {
     throw new UnsupportedOperationException("This IndexCommit does not support this method.");
   }
 }

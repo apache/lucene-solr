@@ -23,11 +23,9 @@ import java.util.Comparator;
  * the term (case-sensitive)
  *
  **/
-public class TermVectorEntryFreqSortedComparator implements Comparator {
-  public int compare(Object object, Object object1) {
+public class TermVectorEntryFreqSortedComparator implements Comparator<TermVectorEntry> {
+  public int compare(TermVectorEntry entry, TermVectorEntry entry1) {
     int result = 0;
-    TermVectorEntry entry = (TermVectorEntry) object;
-    TermVectorEntry entry1 = (TermVectorEntry) object1;
     result = entry1.getFrequency() - entry.getFrequency();
     if (result == 0)
     {

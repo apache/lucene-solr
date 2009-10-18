@@ -21,10 +21,9 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
+
 import java.util.Map;
 
-import org.apache.lucene.util.AttributeSource;
 
 /** This is a DocFieldConsumer that inverts each field,
  *  separately, from a Document, and accepts a
@@ -46,25 +45,20 @@ final class DocInverter extends DocFieldConsumer {
     endConsumer.setFieldInfos(fieldInfos);
   }
 
-  void flush(Map threadsAndFields, SegmentWriteState state) throws IOException {
+  void flush(Map<DocFieldConsumerPerThread, Collection<DocFieldConsumerPerField>> threadsAndFields, SegmentWriteState state) throws IOException {
 
-    Map childThreadsAndFields = new HashMap();
-    Map endChildThreadsAndFields = new HashMap();
+    Map<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>> childThreadsAndFields = new HashMap<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>>();
+    Map<InvertedDocEndConsumerPerThread,Collection<InvertedDocEndConsumerPerField>> endChildThreadsAndFields = new HashMap<InvertedDocEndConsumerPerThread,Collection<InvertedDocEndConsumerPerField>>();
 
-    Iterator it = threadsAndFields.entrySet().iterator();
-    while(it.hasNext()) {
+    for (Map.Entry<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>> entry : threadsAndFields.entrySet() ) {
 
-      Map.Entry entry = (Map.Entry) it.next();
 
       DocInverterPerThread perThread = (DocInverterPerThread) entry.getKey();
 
-      Collection fields = (Collection) entry.getValue();
-
-      Iterator fieldsIt = fields.iterator();
-      Collection childFields = new HashSet();
-      Collection endChildFields = new HashSet();
-      while(fieldsIt.hasNext()) {
-        DocInverterPerField perField = (DocInverterPerField) fieldsIt.next();
+      Collection<InvertedDocConsumerPerField> childFields = new HashSet<InvertedDocConsumerPerField>();
+      Collection<InvertedDocEndConsumerPerField> endChildFields = new HashSet<InvertedDocEndConsumerPerField>();
+      for (final DocFieldConsumerPerField field: entry.getValue() ) {  
+        DocInverterPerField perField = (DocInverterPerField) field;
         childFields.add(perField.consumer);
         endChildFields.add(perField.endConsumer);
       }

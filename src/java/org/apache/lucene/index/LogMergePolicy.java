@@ -175,7 +175,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     }
   }
   
-  private boolean isOptimized(SegmentInfos infos, int maxNumSegments, Set segmentsToOptimize) throws IOException {
+  private boolean isOptimized(SegmentInfos infos, int maxNumSegments, Set<SegmentInfo> segmentsToOptimize) throws IOException {
     final int numSegments = infos.size();
     int numToOptimize = 0;
     SegmentInfo optimizeInfo = null;
@@ -212,7 +212,7 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  (mergeFactor at a time) so the {@link MergeScheduler}
    *  in use may make use of concurrency. */
   public MergeSpecification findMergesForOptimize(SegmentInfos infos,
-      int maxNumSegments, Set segmentsToOptimize) throws IOException {
+      int maxNumSegments, Set<SegmentInfo> segmentsToOptimize) throws IOException {
     MergeSpecification spec;
 
     assert maxNumSegments > 0;

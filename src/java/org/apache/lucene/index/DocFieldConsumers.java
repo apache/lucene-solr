@@ -44,7 +44,7 @@ final class DocFieldConsumers extends DocFieldConsumer {
     two.setFieldInfos(fieldInfos);
   }
 
-  public void flush(Map threadsAndFields, SegmentWriteState state) throws IOException {
+  public void flush(Map<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>> threadsAndFields, SegmentWriteState state) throws IOException {
 
     Map oneThreadsAndFields = new HashMap();
     Map twoThreadsAndFields = new HashMap();

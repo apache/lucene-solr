@@ -103,7 +103,7 @@ final class TermsHash extends InvertedDocConsumer {
       nextTermsHash.closeDocStore(state);
   }
 
-  synchronized void flush(Map threadsAndFields, final SegmentWriteState state) throws IOException {
+  synchronized void flush(Map<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>> threadsAndFields, final SegmentWriteState state) throws IOException {
     Map childThreadsAndFields = new HashMap();
     Map nextThreadsAndFields;
 

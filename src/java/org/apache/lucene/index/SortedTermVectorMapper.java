@@ -29,8 +29,8 @@ import java.util.*;
 public class SortedTermVectorMapper extends TermVectorMapper{
 
 
-  private SortedSet currentSet;
-  private Map termToTVE = new HashMap();
+  private SortedSet<TermVectorEntry> currentSet;
+  private Map<String,TermVectorEntry> termToTVE = new HashMap<String,TermVectorEntry>();
   private boolean storeOffsets;
   private boolean storePositions;
   /**
@@ -42,14 +42,14 @@ public class SortedTermVectorMapper extends TermVectorMapper{
    *
    * @param comparator A Comparator for sorting {@link TermVectorEntry}s
    */
-  public SortedTermVectorMapper(Comparator comparator) {
+  public SortedTermVectorMapper(Comparator<TermVectorEntry> comparator) {
     this(false, false, comparator);
   }
 
 
-  public SortedTermVectorMapper(boolean ignoringPositions, boolean ignoringOffsets, Comparator comparator) {
+  public SortedTermVectorMapper(boolean ignoringPositions, boolean ignoringOffsets, Comparator<TermVectorEntry> comparator) {
     super(ignoringPositions, ignoringOffsets);
-    currentSet = new TreeSet(comparator);
+    currentSet = new TreeSet<TermVectorEntry>(comparator);
   }
 
   /**
@@ -121,7 +121,7 @@ public class SortedTermVectorMapper extends TermVectorMapper{
    *
    * @return The SortedSet of {@link TermVectorEntry}.
    */
-  public SortedSet getTermVectorEntrySet()
+  public SortedSet<TermVectorEntry> getTermVectorEntrySet()
   {
     return currentSet;
   }

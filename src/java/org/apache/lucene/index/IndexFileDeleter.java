@@ -570,7 +570,7 @@ final class IndexFileDeleter {
   final private static class CommitPoint extends IndexCommit implements Comparable<CommitPoint> {
 
     long gen;
-    Collection files;
+    Collection<String> files;
     String segmentsFileName;
     boolean deleted;
     Directory directory;
@@ -602,7 +602,7 @@ final class IndexFileDeleter {
       return segmentsFileName;
     }
 
-    public Collection getFileNames() throws IOException {
+    public Collection<String> getFileNames() throws IOException {
       return files;
     }
 

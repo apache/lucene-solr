@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Map;
 
 abstract class DocFieldConsumer {
@@ -26,7 +27,7 @@ abstract class DocFieldConsumer {
 
   /** Called when DocumentsWriter decides to create a new
    *  segment */
-  abstract void flush(Map threadsAndFields, SegmentWriteState state) throws IOException;
+  abstract void flush(Map<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>> threadsAndFields, SegmentWriteState state) throws IOException;
 
   /** Called when DocumentsWriter decides to close the doc
    *  stores */

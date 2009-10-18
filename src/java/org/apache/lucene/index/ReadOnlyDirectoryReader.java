@@ -27,7 +27,7 @@ class ReadOnlyDirectoryReader extends DirectoryReader {
     super(directory, sis, deletionPolicy, true, termInfosIndexDivisor);
   }
 
-  ReadOnlyDirectoryReader(Directory directory, SegmentInfos infos, SegmentReader[] oldReaders, int[] oldStarts, Map oldNormsCache, boolean doClone,
+  ReadOnlyDirectoryReader(Directory directory, SegmentInfos infos, SegmentReader[] oldReaders, int[] oldStarts,  Map<String,byte[]> oldNormsCache, boolean doClone,
                           int termInfosIndexDivisor) throws IOException {
     super(directory, infos, oldReaders, oldStarts, oldNormsCache, true, doClone, termInfosIndexDivisor);
   }

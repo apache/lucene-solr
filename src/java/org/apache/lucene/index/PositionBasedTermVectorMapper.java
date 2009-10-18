@@ -27,13 +27,13 @@ import java.util.Map;
  * This is not thread-safe.
  */
 public class PositionBasedTermVectorMapper extends TermVectorMapper{
-  private Map/*<String, Map<Integer, TVPositionInfo>>*/ fieldToTerms;
+  private Map<String, Map<Integer,TVPositionInfo>> fieldToTerms;
 
   private String currentField;
   /**
    * A Map of Integer and TVPositionInfo
    */
-  private Map/*<Integer, TVPositionInfo>*/ currentPositions;
+  private Map<Integer,TVPositionInfo> currentPositions;
   private boolean storeOffsets;
 
   
@@ -95,10 +95,10 @@ public class PositionBasedTermVectorMapper extends TermVectorMapper{
     {
       //ignoring offsets
     }
-    fieldToTerms = new HashMap(numTerms);
+    fieldToTerms = new HashMap<String,Map<Integer,TVPositionInfo>>(numTerms);
     this.storeOffsets = storeOffsets;
     currentField = field;
-    currentPositions = new HashMap();
+    currentPositions = new HashMap<Integer,TVPositionInfo>();
     fieldToTerms.put(currentField, currentPositions);
   }
 
@@ -107,7 +107,7 @@ public class PositionBasedTermVectorMapper extends TermVectorMapper{
    *
    * @return A map between field names and a Map.  The sub-Map key is the position as the integer, the value is {@link org.apache.lucene.index.PositionBasedTermVectorMapper.TVPositionInfo}.
    */
-  public Map getFieldToTerms() {
+  public Map<String, Map<Integer, TVPositionInfo>>  getFieldToTerms() {
     return fieldToTerms;
   }
 
@@ -116,17 +116,17 @@ public class PositionBasedTermVectorMapper extends TermVectorMapper{
    */
   public static class TVPositionInfo{
     private int position;
-    //a list of Strings
-    private List terms;
-    //A list of TermVectorOffsetInfo
-    private List offsets;
+
+    private List<String> terms;
+
+    private List<TermVectorOffsetInfo> offsets;
 
 
     public TVPositionInfo(int position, boolean storeOffsets) {
       this.position = position;
-      terms = new ArrayList();
+      terms = new ArrayList<String>();
       if (storeOffsets) {
-        offsets = new ArrayList();
+        offsets = new ArrayList<TermVectorOffsetInfo>();
       }
     }
 
@@ -150,15 +150,15 @@ public class PositionBasedTermVectorMapper extends TermVectorMapper{
      * Note, there may be multiple terms at the same position
      * @return A List of Strings
      */
-    public List getTerms() {
+    public List<String> getTerms() {
       return terms;
     }
 
     /**
      * Parallel list (to {@link #getTerms()}) of TermVectorOffsetInfo objects.  There may be multiple entries since there may be multiple terms at a position
-     * @return A List of TermVectorOffsetInfo objects, if offsets are store.
+     * @return A List of TermVectorOffsetInfo objects, if offsets are stored.
      */
-    public List getOffsets() {
+    public List<TermVectorOffsetInfo> getOffsets() {
       return offsets;
     }
   }

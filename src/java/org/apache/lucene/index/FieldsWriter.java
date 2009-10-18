@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Iterator;
+import java.util.List;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
@@ -215,17 +215,16 @@ final class FieldsWriter
         indexStream.writeLong(fieldsStream.getFilePointer());
 
         int storedCount = 0;
-        Iterator fieldIterator = doc.getFields().iterator();
-        while (fieldIterator.hasNext()) {
-            Fieldable field = (Fieldable) fieldIterator.next();
+        List<Fieldable> fields = doc.getFields();
+        for (Fieldable field : fields) {
             if (field.isStored())
                 storedCount++;
         }
         fieldsStream.writeVInt(storedCount);
 
-        fieldIterator = doc.getFields().iterator();
-        while (fieldIterator.hasNext()) {
-            Fieldable field = (Fieldable) fieldIterator.next();
+        
+
+        for (Fieldable field : fields) {
             if (field.isStored())
               writeField(fieldInfos.fieldInfo(field.name()), field);
         }

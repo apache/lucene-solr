@@ -218,7 +218,7 @@ public final class SegmentInfo {
       if (format <= SegmentInfos.FORMAT_DIAGNOSTICS) {
         diagnostics = input.readStringStringMap();
       } else {
-        diagnostics = Collections.EMPTY_MAP;
+        diagnostics = Collections.<String,String>emptyMap();
       }
     } else {
       delGen = CHECK_DIR;
@@ -231,7 +231,7 @@ public final class SegmentInfo {
       docStoreSegment = null;
       delCount = -1;
       hasProx = true;
-      diagnostics = Collections.EMPTY_MAP;
+      diagnostics = Collections.<String,String>emptyMap();
     }
   }
   
@@ -260,7 +260,7 @@ public final class SegmentInfo {
    *  this segment. */
   public long sizeInBytes() throws IOException {
     if (sizeInBytes == -1) {
-      List files = files();
+      List<String> files = files();
       final int size = files.size();
       sizeInBytes = 0;
       for(int i=0;i<size;i++) {
@@ -322,7 +322,7 @@ public final class SegmentInfo {
     si.hasProx = hasProx;
     si.preLockless = preLockless;
     si.hasSingleNormFile = hasSingleNormFile;
-    si.diagnostics = new HashMap(diagnostics);
+    si.diagnostics = new HashMap<String, String>(diagnostics);
     if (normGen != null) {
       si.normGen = (long[]) normGen.clone();
     }
@@ -572,7 +572,7 @@ public final class SegmentInfo {
     return hasProx;
   }
 
-  private void addIfExists(List files, String fileName) throws IOException {
+  private void addIfExists(List<String> files, String fileName) throws IOException {
     if (dir.fileExists(fileName))
       files.add(fileName);
   }

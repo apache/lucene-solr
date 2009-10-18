@@ -54,7 +54,7 @@ final class NormsWriter extends InvertedDocEndConsumer {
 
   /** Produce _X.nrm if any document had a field with norms
    *  not disabled */
-  public void flush(Map threadsAndFields, SegmentWriteState state) throws IOException {
+  public void flush(Map<InvertedDocEndConsumerPerThread,Collection<InvertedDocEndConsumerPerField>> threadsAndFields, SegmentWriteState state) throws IOException {
 
     final Map byField = new HashMap();
 

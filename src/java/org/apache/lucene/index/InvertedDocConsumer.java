@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.Collection;
 import java.util.Map;
 import java.io.IOException;
 
@@ -29,7 +30,7 @@ abstract class InvertedDocConsumer {
   abstract void abort();
 
   /** Flush a new segment */
-  abstract void flush(Map threadsAndFields, SegmentWriteState state) throws IOException;
+  abstract void flush(Map<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>> threadsAndFields, SegmentWriteState state) throws IOException;
 
   /** Close doc stores */
   abstract void closeDocStore(SegmentWriteState state) throws IOException;

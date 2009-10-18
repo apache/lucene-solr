@@ -36,7 +36,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   protected IndexReader[] subReaders;
   private int[] starts;                           // 1st docno for each segment
   private boolean[] decrefOnClose;                // remember which subreaders to decRef on close
-  private Map normsCache = new HashMap();
+  private Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
   private int maxDoc = 0;
   private int numDocs = -1;
   private boolean hasDeletions = false;
@@ -284,7 +284,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   
   public synchronized byte[] norms(String field) throws IOException {
     ensureOpen();
-    byte[] bytes = (byte[])normsCache.get(field);
+    byte[] bytes = normsCache.get(field);
     if (bytes != null)
       return bytes;          // cache hit
     if (!hasNorms(field))
@@ -300,7 +300,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   public synchronized void norms(String field, byte[] result, int offset)
     throws IOException {
     ensureOpen();
-    byte[] bytes = (byte[])normsCache.get(field);
+    byte[] bytes = normsCache.get(field);
     for (int i = 0; i < subReaders.length; i++)      // read from segments
       subReaders[i].norms(field, result, offset + starts[i]);
 

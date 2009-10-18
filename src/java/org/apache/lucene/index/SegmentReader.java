@@ -541,7 +541,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
   }
 
-  Map norms = new HashMap();
+  Map<String,Norm> norms = new HashMap<String,Norm>();
   
   /** The class which implements SegmentReader. */
   // @deprecated (LUCENE-1677)
@@ -762,7 +762,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
         }
       }
 
-      clone.norms = new HashMap();
+      clone.norms = new HashMap<String,Norm>();
 
       // Clone norms
       for (int i = 0; i < fieldNormsChanged.length; i++) {
@@ -770,9 +770,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
         // Clone unchanged norms to the cloned reader
         if (doClone || !fieldNormsChanged[i]) {
           final String curField = core.fieldInfos.fieldInfo(i).name;
-          Norm norm = (Norm) this.norms.get(curField);
+          Norm norm = this.norms.get(curField);
           if (norm != null)
-            clone.norms.put(curField, norm.clone());
+            clone.norms.put(curField, (Norm) norm.clone());
         }
       }
 
@@ -811,9 +811,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
       if (normsDirty) {               // re-write norms
         si.setNumFields(core.fieldInfos.size());
-        Iterator it = norms.values().iterator();
-        while (it.hasNext()) {
-          Norm norm = (Norm) it.next();
+        for (final Norm norm : norms.values()) {
           if (norm.dirty) {
             norm.reWrite(si);
           }
@@ -839,9 +837,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
       deletedDocs = null;
     }
 
-    Iterator it = norms.values().iterator();
-    while (it.hasNext()) {
-      ((Norm) it.next()).decRef();
+    for (final Norm norm : norms.values()) {
+      norm.decRef();
     }
     if (core != null) {
       core.decRef();
@@ -901,8 +898,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
   }
 
-  List files() throws IOException {
-    return new ArrayList(si.files());
+  List<String> files() throws IOException {
+    return new ArrayList<String>(si.files());
   }
 
   public TermEnum terms() {
@@ -1134,9 +1131,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     if (singleNormStream != null) {
       return false;
     }
-    Iterator it = norms.values().iterator();
-    while (it.hasNext()) {
-      Norm norm = (Norm) it.next();
+    for (final Norm norm : norms.values()) {
       if (norm.refCount > 0) {
         return false;
       }
@@ -1146,8 +1141,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   // for testing only
   boolean normsClosed(String field) {
-    Norm norm = (Norm) norms.get(field);
-    return norm.refCount == 0;
+    return norms.get(field).refCount == 0;
   }
 
   /**
@@ -1263,9 +1257,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     rollbackDeletedDocsDirty = deletedDocsDirty;
     rollbackNormsDirty = normsDirty;
     rollbackPendingDeleteCount = pendingDeleteCount;
-    Iterator it = norms.values().iterator();
-    while (it.hasNext()) {
-      Norm norm = (Norm) it.next();
+    for (Norm norm : norms.values()) {
       norm.rollbackDirty = norm.dirty;
     }
   }
@@ -1275,9 +1267,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     deletedDocsDirty = rollbackDeletedDocsDirty;
     normsDirty = rollbackNormsDirty;
     pendingDeleteCount = rollbackPendingDeleteCount;
-    Iterator it = norms.values().iterator();
-    while (it.hasNext()) {
-      Norm norm = (Norm) it.next();
+    for (Norm norm : norms.values()) {
       norm.dirty = norm.rollbackDirty;
     }
   }

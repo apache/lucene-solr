@@ -52,14 +52,14 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
     this.primary = primary;
   }
 
-  public synchronized void onInit(List commits) throws IOException {
+  public synchronized void onInit(List<IndexCommit> commits) throws IOException {
     primary.onInit(wrapCommits(commits));
-    lastCommit = (IndexCommit) commits.get(commits.size()-1);
+    lastCommit = commits.get(commits.size()-1);
   }
 
-  public synchronized void onCommit(List commits) throws IOException {
+  public synchronized void onCommit(List<IndexCommit> commits) throws IOException {
     primary.onCommit(wrapCommits(commits));
-    lastCommit = (IndexCommit) commits.get(commits.size()-1);
+    lastCommit = commits.get(commits.size()-1);
   }
 
   /** Take a snapshot of the most recent commit to the
@@ -95,7 +95,7 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
     public String getSegmentsFileName() {
       return cp.getSegmentsFileName();
     }
-    public Collection getFileNames() throws IOException {
+    public Collection<String> getFileNames() throws IOException {
       return cp.getFileNames();
     }
     public Directory getDirectory() {
@@ -118,16 +118,16 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
     public long getGeneration() {
       return cp.getGeneration();
     }
-    public Map getUserData() throws IOException {
+    public Map<String,String> getUserData() throws IOException {
       return cp.getUserData();
     }
   }
 
-  private List wrapCommits(List commits) {
+  private List<IndexCommit> wrapCommits(List<IndexCommit> commits) {
     final int count = commits.size();
-    List myCommits = new ArrayList(count);
+    List<IndexCommit> myCommits = new ArrayList<IndexCommit>(count);
     for(int i=0;i<count;i++)
-      myCommits.add(new MyCommitPoint((IndexCommit) commits.get(i)));
+      myCommits.add(new MyCommitPoint(commits.get(i)));
     return myCommits;
   }
 }

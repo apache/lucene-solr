@@ -44,12 +44,12 @@ import java.util.*;
  * undefined behavior</em>.
  */
 public class ParallelReader extends IndexReader {
-  private List readers = new ArrayList();
-  private List decrefOnClose = new ArrayList(); // remember which subreaders to decRef on close
+  private List<IndexReader> readers = new ArrayList<IndexReader>();
+  private List<Boolean> decrefOnClose = new ArrayList<Boolean>(); // remember which subreaders to decRef on close
   boolean incRefReaders = false;
-  private SortedMap fieldToReader = new TreeMap();
-  private Map readerToFields = new HashMap();
-  private List storedFieldReaders = new ArrayList();
+  private SortedMap<String,IndexReader> fieldToReader = new TreeMap<String,IndexReader>();
+  private Map<IndexReader,Collection<String>> readerToFields = new HashMap<IndexReader,Collection<String>>();
+  private List<IndexReader> storedFieldReaders = new ArrayList<IndexReader>();
 
   private int maxDoc;
   private int numDocs;
@@ -106,9 +106,7 @@ public class ParallelReader extends IndexReader {
 
     Collection<String> fields = reader.getFieldNames(IndexReader.FieldOption.ALL);
     readerToFields.put(reader, fields);
-    Iterator i = fields.iterator();
-    while (i.hasNext()) {                         // update fieldToReader map
-      String field = (String)i.next();
+    for (final String field : fields) {                         // update fieldToReader map
       if (fieldToReader.get(field) == null)
         fieldToReader.put(field, reader);
     }
@@ -158,13 +156,12 @@ public class ParallelReader extends IndexReader {
     ensureOpen();
     
     boolean reopened = false;
-    List newReaders = new ArrayList();
+    List<IndexReader> newReaders = new ArrayList<IndexReader>();
     
     boolean success = false;
     
     try {
-      for (int i = 0; i < readers.size(); i++) {
-        IndexReader oldReader = (IndexReader) readers.get(i);
+      for (final IndexReader oldReader : readers) {
         IndexReader newReader = null;
         if (doClone) {
           newReader = (IndexReader) oldReader.clone();
@@ -182,7 +179,7 @@ public class ParallelReader extends IndexReader {
     } finally {
       if (!success && reopened) {
         for (int i = 0; i < newReaders.size(); i++) {
-          IndexReader r = (IndexReader) newReaders.get(i);
+          IndexReader r = newReaders.get(i);
           if (r != readers.get(i)) {
             try {
               r.close();
@@ -195,7 +192,7 @@ public class ParallelReader extends IndexReader {
     }
 
     if (reopened) {
-      List newDecrefOnClose = new ArrayList();
+      List<Boolean> newDecrefOnClose = new ArrayList<Boolean>();
       ParallelReader pr = new ParallelReader();
       for (int i = 0; i < readers.size(); i++) {
         IndexReader oldReader = (IndexReader) readers.get(i);
@@ -239,22 +236,22 @@ public class ParallelReader extends IndexReader {
   public boolean isDeleted(int n) {
     // Don't call ensureOpen() here (it could affect performance)
     if (readers.size() > 0)
-      return ((IndexReader)readers.get(0)).isDeleted(n);
+      return readers.get(0).isDeleted(n);
     return false;
   }
 
   // delete in all readers
   protected void doDelete(int n) throws CorruptIndexException, IOException {
-    for (int i = 0; i < readers.size(); i++) {
-      ((IndexReader)readers.get(i)).deleteDocument(n);
+    for (final IndexReader reader : readers) {
+      reader.deleteDocument(n);
     }
     hasDeletions = true;
   }
 
   // undeleteAll in all readers
   protected void doUndeleteAll() throws CorruptIndexException, IOException {
-    for (int i = 0; i < readers.size(); i++) {
-      ((IndexReader)readers.get(i)).undeleteAll();
+    for (final IndexReader reader : readers) {
+      reader.undeleteAll();
     }
     hasDeletions = false;
   }
@@ -263,22 +260,21 @@ public class ParallelReader extends IndexReader {
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     ensureOpen();
     Document result = new Document();
-    for (int i = 0; i < storedFieldReaders.size(); i++) {
-      IndexReader reader = (IndexReader)storedFieldReaders.get(i);
+    for (final IndexReader reader: storedFieldReaders) {
 
       boolean include = (fieldSelector==null);
       if (!include) {
-        Iterator it = ((Collection) readerToFields.get(reader)).iterator();
-        while (it.hasNext())
-          if (fieldSelector.accept((String)it.next())!=FieldSelectorResult.NO_LOAD) {
+        Collection<String> fields = readerToFields.get(reader);
+        for (final String field : fields)
+          if (fieldSelector.accept(field) != FieldSelectorResult.NO_LOAD) {
             include = true;
             break;
           }
       }
       if (include) {
-        Iterator fieldIterator = reader.document(n, fieldSelector).getFields().iterator();
-        while (fieldIterator.hasNext()) {
-          result.add((Fieldable)fieldIterator.next());
+        List<Fieldable> fields = reader.document(n, fieldSelector).getFields();
+        for (Fieldable field : fields) {
+          result.add(field);
         }
       }
     }
@@ -288,12 +284,11 @@ public class ParallelReader extends IndexReader {
   // get all vectors
   public TermFreqVector[] getTermFreqVectors(int n) throws IOException {
     ensureOpen();
-    ArrayList results = new ArrayList();
-    Iterator i = fieldToReader.entrySet().iterator();
-    while (i.hasNext()) {
-      Map.Entry e = (Map.Entry)i.next();
-      String field = (String)e.getKey();
-      IndexReader reader = (IndexReader)e.getValue();
+    ArrayList<TermFreqVector> results = new ArrayList<TermFreqVector>();
+    for (final Map.Entry<String,IndexReader> e: fieldToReader.entrySet()) {
+
+      String field = e.getKey();
+      IndexReader reader = e.getValue();
       TermFreqVector vector = reader.getTermFreqVector(n, field);
       if (vector != null)
         results.add(vector);
@@ -305,14 +300,14 @@ public class ParallelReader extends IndexReader {
   public TermFreqVector getTermFreqVector(int n, String field)
     throws IOException {
     ensureOpen();
-    IndexReader reader = ((IndexReader)fieldToReader.get(field));
+    IndexReader reader = fieldToReader.get(field);
     return reader==null ? null : reader.getTermFreqVector(n, field);
   }
 
 
   public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
     ensureOpen();
-    IndexReader reader = ((IndexReader)fieldToReader.get(field));
+    IndexReader reader = fieldToReader.get(field);
     if (reader != null) {
       reader.getTermFreqVector(docNumber, field, mapper); 
     }
@@ -321,11 +316,10 @@ public class ParallelReader extends IndexReader {
   public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
     ensureOpen();
 
-    Iterator i = fieldToReader.entrySet().iterator();
-    while (i.hasNext()) {
-      Map.Entry e = (Map.Entry)i.next();
-      String field = (String)e.getKey();
-      IndexReader reader = (IndexReader)e.getValue();
+    for (final Map.Entry<String,IndexReader> e : fieldToReader.entrySet()) {
+
+      String field = e.getKey();
+      IndexReader reader = e.getValue();
       reader.getTermFreqVector(docNumber, field, mapper);
     }
 
@@ -333,27 +327,27 @@ public class ParallelReader extends IndexReader {
 
   public boolean hasNorms(String field) throws IOException {
     ensureOpen();
-    IndexReader reader = ((IndexReader)fieldToReader.get(field));
+    IndexReader reader = fieldToReader.get(field);
     return reader==null ? false : reader.hasNorms(field);
   }
 
   public byte[] norms(String field) throws IOException {
     ensureOpen();
-    IndexReader reader = ((IndexReader)fieldToReader.get(field));
+    IndexReader reader = fieldToReader.get(field);
     return reader==null ? null : reader.norms(field);
   }
 
   public void norms(String field, byte[] result, int offset)
     throws IOException {
     ensureOpen();
-    IndexReader reader = ((IndexReader)fieldToReader.get(field));
+    IndexReader reader = fieldToReader.get(field);
     if (reader!=null)
       reader.norms(field, result, offset);
   }
 
   protected void doSetNorm(int n, String field, byte value)
     throws CorruptIndexException, IOException {
-    IndexReader reader = ((IndexReader)fieldToReader.get(field));
+    IndexReader reader = fieldToReader.get(field);
     if (reader!=null)
       reader.doSetNorm(n, field, value);
   }
@@ -370,7 +364,7 @@ public class ParallelReader extends IndexReader {
 
   public int docFreq(Term term) throws IOException {
     ensureOpen();
-    IndexReader reader = ((IndexReader)fieldToReader.get(term.field()));
+    IndexReader reader = fieldToReader.get(term.field());
     return reader==null ? 0 : reader.docFreq(term);
   }
 
@@ -398,8 +392,8 @@ public class ParallelReader extends IndexReader {
    * Checks recursively if all subreaders are up to date. 
    */
   public boolean isCurrent() throws CorruptIndexException, IOException {
-    for (int i = 0; i < readers.size(); i++) {
-      if (!((IndexReader)readers.get(i)).isCurrent()) {
+    for (final IndexReader reader : readers) {
+      if (!reader.isCurrent()) {
         return false;
       }
     }
@@ -412,8 +406,8 @@ public class ParallelReader extends IndexReader {
    * Checks recursively if all subindexes are optimized 
    */
   public boolean isOptimized() {
-    for (int i = 0; i < readers.size(); i++) {
-      if (!((IndexReader)readers.get(i)).isOptimized()) {
+    for (final IndexReader reader : readers) {
+      if (!reader.isOptimized()) {
         return false;
       }
     }
@@ -432,29 +426,28 @@ public class ParallelReader extends IndexReader {
 
   // for testing
   IndexReader[] getSubReaders() {
-    return (IndexReader[]) readers.toArray(new IndexReader[readers.size()]);
+    return readers.toArray(new IndexReader[readers.size()]);
   }
 
   protected void doCommit(Map<String,String> commitUserData) throws IOException {
-    for (int i = 0; i < readers.size(); i++)
-      ((IndexReader)readers.get(i)).commit(commitUserData);
+    for (final IndexReader reader : readers)
+      reader.commit(commitUserData);
   }
 
   protected synchronized void doClose() throws IOException {
     for (int i = 0; i < readers.size(); i++) {
-      if (((Boolean) decrefOnClose.get(i)).booleanValue()) {
-        ((IndexReader)readers.get(i)).decRef();
+      if (decrefOnClose.get(i).booleanValue()) {
+        readers.get(i).decRef();
       } else {
-        ((IndexReader)readers.get(i)).close();
+        readers.get(i).close();
       }
     }
   }
 
   public Collection<String> getFieldNames (IndexReader.FieldOption fieldNames) {
     ensureOpen();
-    Set fieldSet = new HashSet();
-    for (int i = 0; i < readers.size(); i++) {
-      IndexReader reader = ((IndexReader)readers.get(i));
+    Set<String> fieldSet = new HashSet<String>();
+    for (final IndexReader reader : readers) {
       Collection<String> names = reader.getFieldNames(fieldNames);
       fieldSet.addAll(names);
     }
@@ -463,23 +456,23 @@ public class ParallelReader extends IndexReader {
 
   private class ParallelTermEnum extends TermEnum {
     private String field;
-    private Iterator fieldIterator;
+    private Iterator<String> fieldIterator;
     private TermEnum termEnum;
 
     public ParallelTermEnum() throws IOException {
       try {
-        field = (String)fieldToReader.firstKey();
+        field = fieldToReader.firstKey();
       } catch(NoSuchElementException e) {
         // No fields, so keep field == null, termEnum == null
         return;
       }
       if (field != null)
-        termEnum = ((IndexReader)fieldToReader.get(field)).terms();
+        termEnum = fieldToReader.get(field).terms();
     }
 
     public ParallelTermEnum(Term term) throws IOException {
       field = term.field();
-      IndexReader reader = ((IndexReader)fieldToReader.get(field));
+      IndexReader reader = fieldToReader.get(field);
       if (reader!=null)
         termEnum = reader.terms(term);
     }
@@ -500,8 +493,8 @@ public class ParallelReader extends IndexReader {
         fieldIterator.next();                     // Skip field to get next one
       }
       while (fieldIterator.hasNext()) {
-        field = (String) fieldIterator.next();
-        termEnum = ((IndexReader)fieldToReader.get(field)).terms(new Term(field));
+        field = fieldIterator.next();
+        termEnum = fieldToReader.get(field).terms(new Term(field));
         Term term = termEnum.term();
         if (term!=null && term.field()==field)
           return true;
@@ -540,7 +533,7 @@ public class ParallelReader extends IndexReader {
     public ParallelTermDocs() {}
     public ParallelTermDocs(Term term) throws IOException {
       if (term == null)
-        termDocs = readers.isEmpty() ? null : ((IndexReader)readers.get(0)).termDocs(null);
+        termDocs = readers.isEmpty() ? null : readers.get(0).termDocs(null);
       else
         seek(term);
     }
@@ -549,7 +542,7 @@ public class ParallelReader extends IndexReader {
     public int freq() { return termDocs.freq(); }
 
     public void seek(Term term) throws IOException {
-      IndexReader reader = ((IndexReader)fieldToReader.get(term.field()));
+      IndexReader reader = fieldToReader.get(term.field());
       termDocs = reader!=null ? reader.termDocs(term) : null;
     }
 
@@ -592,7 +585,7 @@ public class ParallelReader extends IndexReader {
     public ParallelTermPositions(Term term) throws IOException { seek(term); }
 
     public void seek(Term term) throws IOException {
-      IndexReader reader = ((IndexReader)fieldToReader.get(term.field()));
+      IndexReader reader = fieldToReader.get(term.field());
       termDocs = reader!=null ? reader.termPositions(term) : null;
     }
 

@@ -24,21 +24,21 @@ import java.util.*;
  * This is not thread-safe.
  */
 public class FieldSortedTermVectorMapper extends TermVectorMapper{
-  private Map fieldToTerms = new HashMap();
-  private SortedSet currentSet;
+  private Map<String,SortedSet<TermVectorEntry>> fieldToTerms = new HashMap<String,SortedSet<TermVectorEntry>>();
+  private SortedSet<TermVectorEntry> currentSet;
   private String currentField;
-  private Comparator comparator;
+  private Comparator<TermVectorEntry> comparator;
 
   /**
    *
    * @param comparator A Comparator for sorting {@link TermVectorEntry}s
    */
-  public FieldSortedTermVectorMapper(Comparator comparator) {
+  public FieldSortedTermVectorMapper(Comparator<TermVectorEntry> comparator) {
     this(false, false, comparator);
   }
 
 
-  public FieldSortedTermVectorMapper(boolean ignoringPositions, boolean ignoringOffsets, Comparator comparator) {
+  public FieldSortedTermVectorMapper(boolean ignoringPositions, boolean ignoringOffsets, Comparator<TermVectorEntry> comparator) {
     super(ignoringPositions, ignoringOffsets);
     this.comparator = comparator;
   }
@@ -49,7 +49,7 @@ public class FieldSortedTermVectorMapper extends TermVectorMapper{
   }
 
   public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
-    currentSet = new TreeSet(comparator);
+    currentSet = new TreeSet<TermVectorEntry>(comparator);
     currentField = field;
     fieldToTerms.put(field, currentSet);
   }
@@ -59,12 +59,12 @@ public class FieldSortedTermVectorMapper extends TermVectorMapper{
    *
    * @return A map between field names and {@link java.util.SortedSet}s per field.  SortedSet entries are {@link TermVectorEntry}
    */
-  public Map getFieldToTerms() {
+  public Map<String,SortedSet<TermVectorEntry>> getFieldToTerms() {
     return fieldToTerms;
   }
 
 
-  public Comparator getComparator() {
+  public Comparator<TermVectorEntry> getComparator() {
     return comparator;
   }
 }
