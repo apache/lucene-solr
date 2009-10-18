@@ -3,6 +3,7 @@
 package org.apache.lucene.queryParser.precedence;
 
 /** Token Manager Error. */
+@SuppressWarnings("serial")
 public class TokenMgrError extends Error
 {
 
@@ -137,4 +138,4 @@ public class TokenMgrError extends Error
       this(LexicalError(EOFSeen, lexState, errorLine, errorColumn, errorAfter, curChar), reason);
    }
 }
-/* JavaCC - OriginalChecksum=43f834e732189cec173ab002c94ae97f (do not edit this line) */
+/* JavaCC - OriginalChecksum=257b82f2650841e86289a309cb3dae76 (do not edit this line) */

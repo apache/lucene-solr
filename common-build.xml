@@ -575,6 +575,7 @@
           debugParser="${javacc.debug.parser}"
           debuglookahead="${javacc.debug.lookahead}"
           javacchome="${javacc.home}"
+          jdkversion="${javac.source}"
       />
       <fixcrlf srcdir="@{outputDir}" includes="*.java">
         <containsregexp expression="Generated.*By.*JavaCC"/>

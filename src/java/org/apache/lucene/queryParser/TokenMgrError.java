@@ -3,6 +3,7 @@
 package org.apache.lucene.queryParser;
 
 /** Token Manager Error. */
+@SuppressWarnings("serial")
 public class TokenMgrError extends Error
 {
 
@@ -137,4 +138,4 @@ public class TokenMgrError extends Error
       this(LexicalError(EOFSeen, lexState, errorLine, errorColumn, errorAfter, curChar), reason);
    }
 }
-/* JavaCC - OriginalChecksum=55cddb2336a66b376c0bb59d916b326d (do not edit this line) */
+/* JavaCC - OriginalChecksum=1c94e13236c7e0121e49427992341ee3 (do not edit this line) */
