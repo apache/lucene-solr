@@ -4533,7 +4533,7 @@ public class IndexWriter {
 
     // Must note the change to segmentInfos so any commits
     // in-flight don't lose it:
-    changeCount++;
+    checkpoint();
 
     // If the merged segments had pending changes, clear
     // them so that they don't bother writing them to
