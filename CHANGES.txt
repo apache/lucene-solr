@@ -19,7 +19,12 @@ Bug fixes
  * LUCENE-1986: Fix NPE when scoring PayloadNearQuery (Peter Keegan,
    Mark Miller via Mike McCandless)
 
-======================= Release 2.9.0 2009-09-23 =======================
+API Changes
+
+ * LUCENE-1987: Un-deprecate some ctors of Token, as they will not
+   be removed in 3.0 and are still useful. (Uwe Schindler)
+
+ ======================= Release 2.9.0 2009-09-23 =======================
 
 Changes in backwards compatibility policy
 
