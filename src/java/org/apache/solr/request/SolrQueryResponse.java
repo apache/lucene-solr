@@ -50,7 +50,7 @@ import java.util.*;
  *  <li>null</li>
  * </ul>
  * <p>
- * Other data types may be added to the SolrQueryResponse, but there is no garuntee
+ * Other data types may be added to the SolrQueryResponse, but there is no guarantee
  * that QueryResponseWriters will be able to deal with unexpected types.
  * </p>
  *
