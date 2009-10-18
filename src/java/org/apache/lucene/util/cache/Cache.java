@@ -17,11 +17,12 @@ package org.apache.lucene.util.cache;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 
 /**
  * Base class for cache implementations.
  */
-public abstract class Cache<K,V> {
+public abstract class Cache<K,V> implements Closeable {
   
   /**
    * Simple Cache wrapper that synchronizes all

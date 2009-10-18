@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.io.Closeable;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
@@ -41,7 +42,7 @@ import org.apache.lucene.index.Term;
  * expected to be implemented directly, it may be changed unexpectedly between
  * releases.
  */
-public interface Searchable {
+public interface Searchable extends Closeable {
   
   /**
    * Lower-level search API.

@@ -19,6 +19,7 @@ package org.apache.lucene.store.instantiated;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringReader;
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,7 +59,7 @@ import org.apache.lucene.util.AttributeImpl;
  *
  * @see org.apache.lucene.index.IndexWriter 
  */
-public class InstantiatedIndexWriter {
+public class InstantiatedIndexWriter implements Closeable {
 
   private PrintStream infoStream = null;
 

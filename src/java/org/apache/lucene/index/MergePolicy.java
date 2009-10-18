@@ -61,7 +61,7 @@ import java.util.Set;
  * these APIs.
  */
 
-public abstract class MergePolicy {
+public abstract class MergePolicy implements java.io.Closeable {
 
   /** OneMerge provides the information necessary to perform
    *  an individual primitive merge operation, resulting in

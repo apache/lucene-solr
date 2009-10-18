@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.io.Closeable;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -25,7 +26,7 @@ import java.util.HashMap;
  * random-access input stream.  Used for all Lucene index input operations.
  * @see Directory
  */
-public abstract class IndexInput implements Cloneable {
+public abstract class IndexInput implements Cloneable,Closeable {
   private byte[] bytes;                           // used by readString()
   private char[] chars;                           // used by readModifiedUTF8String()
   private boolean preUTF8Strings;                 // true if we are reading old (modified UTF8) string format

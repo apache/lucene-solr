@@ -18,6 +18,7 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.IOException;
+import java.io.Closeable;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -76,7 +77,7 @@ import org.apache.lucene.util.AttributeSource;
  * {@link AttributeSource#captureState} and {@link AttributeSource#restoreState}
  * can be used.
  */
-public abstract class TokenStream extends AttributeSource {
+public abstract class TokenStream extends AttributeSource implements Closeable {
 
   /**
    * A TokenStream using the default attribute factory.

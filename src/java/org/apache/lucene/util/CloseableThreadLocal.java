@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.lang.ref.WeakReference;
+import java.io.Closeable;
 
 /** Java's builtin ThreadLocal has a serious flaw:
  *  it can take an arbitrarily long amount of time to
@@ -42,7 +43,7 @@ import java.lang.ref.WeakReference;
  *  references are cleared and then GC is freely able to
  *  reclaim space by objects stored in it. */
 
-public class CloseableThreadLocal<T> {
+public class CloseableThreadLocal<T> implements Closeable {
 
   private ThreadLocal<WeakReference<T>> t = new ThreadLocal<WeakReference<T>>();
 

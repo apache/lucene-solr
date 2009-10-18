@@ -19,6 +19,7 @@ package org.apache.lucene.analysis;
 
 import java.io.Reader;
 import java.io.IOException;
+import java.io.Closeable;
 import java.lang.reflect.Method;
 
 import org.apache.lucene.util.CloseableThreadLocal;
@@ -33,7 +34,7 @@ import org.apache.lucene.document.Fieldable;
  *  characters from the Reader into raw Tokens.  One or more TokenFilters may
  *  then be applied to the output of the Tokenizer.
  */
-public abstract class Analyzer {
+public abstract class Analyzer implements Closeable {
   /** Creates a TokenStream which tokenizes all the text in the provided
    * Reader.  Must be able to handle null field name for
    * backward compatibility.

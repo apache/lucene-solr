@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.io.Closeable;
 import java.util.Map;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -26,7 +27,7 @@ import org.apache.lucene.util.UnicodeUtil;
  * @see Directory
  * @see IndexInput
  */
-public abstract class IndexOutput {
+public abstract class IndexOutput implements Closeable {
 
   private UnicodeUtil.UTF8Result utf8Result = new UnicodeUtil.UTF8Result();
 

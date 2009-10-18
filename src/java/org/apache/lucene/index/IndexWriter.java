@@ -30,6 +30,7 @@ import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.util.Constants;
 
 import java.io.IOException;
+import java.io.Closeable;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Collection;
@@ -165,7 +166,7 @@ import java.util.Map;
  * referenced by the "front" of the index). For this, IndexFileDeleter 
  * keeps track of the last non commit checkpoint.
  */
-public class IndexWriter {
+public class IndexWriter implements Closeable {
 
   /**
    * Default value for the write lock timeout (1,000).

@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.io.Closeable;
 
 import org.apache.lucene.index.IndexFileNameFilter;
 
@@ -37,7 +38,7 @@ import org.apache.lucene.index.IndexFileNameFilter;
  * instance using {@link #setLockFactory}.
  *
  */
-public abstract class Directory {
+public abstract class Directory implements Closeable {
 
   volatile protected boolean isOpen = true;
 

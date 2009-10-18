@@ -25,6 +25,7 @@ import org.apache.lucene.store.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.Closeable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -75,7 +76,7 @@ import java.util.Map;
  <code>IndexReader</code> instance; use your own
  (non-Lucene) objects instead.
 */
-public abstract class IndexReader implements Cloneable {
+public abstract class IndexReader implements Cloneable,Closeable {
 
   /**
    * Constants describing field properties, for example used for
