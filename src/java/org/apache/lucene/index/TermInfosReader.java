@@ -52,7 +52,7 @@ final class TermInfosReader {
     SegmentTermEnum termEnum;
     
     // Used for caching the least recently looked-up Terms
-    Cache termInfoCache;
+    Cache<Term,TermInfo> termInfoCache;
   }
   
   TermInfosReader(Directory dir, String seg, FieldInfos fis, int readBufferSize, int indexDivisor)
@@ -143,7 +143,7 @@ final class TermInfosReader {
       resources = new ThreadResources();
       resources.termEnum = terms();
       // Cache does not have to be thread-safe, it is only used by one thread at the same time
-      resources.termInfoCache = new SimpleLRUCache(DEFAULT_CACHE_SIZE);
+      resources.termInfoCache = new SimpleLRUCache<Term,TermInfo>(DEFAULT_CACHE_SIZE);
       threadResources.set(resources);
     }
     return resources;
@@ -187,12 +187,12 @@ final class TermInfosReader {
 
     TermInfo ti;
     ThreadResources resources = getThreadResources();
-    Cache cache = null;
+    Cache<Term,TermInfo> cache = null;
     
     if (useCache) {
       cache = resources.termInfoCache;
       // check the cache first if the term was recently looked up
-      ti = (TermInfo) cache.get(term);
+      ti = cache.get(term);
       if (ti != null) {
         return ti;
       }

@@ -244,7 +244,7 @@ public class IndexWriter {
   private long lastCommitChangeCount; // last changeCount that was committed
 
   private SegmentInfos rollbackSegmentInfos;      // segmentInfos we will fallback to if the commit fails
-  private HashMap rollbackSegments;
+  private HashMap<SegmentInfo,Integer> rollbackSegments;
 
   volatile SegmentInfos pendingCommit;            // set when a commit is pending (after prepareCommit() & before commit())
   volatile long pendingCommitChangeCount;
@@ -257,7 +257,7 @@ public class IndexWriter {
   private DocumentsWriter docWriter;
   private IndexFileDeleter deleter;
 
-  private Set segmentsToOptimize = new HashSet();           // used by optimize to note those needing optimization
+  private Set<SegmentInfo> segmentsToOptimize = new HashSet<SegmentInfo>();           // used by optimize to note those needing optimization
 
   private Lock writeLock;
 
@@ -268,13 +268,13 @@ public class IndexWriter {
 
   // Holds all SegmentInfo instances currently involved in
   // merges
-  private HashSet mergingSegments = new HashSet();
+  private HashSet<SegmentInfo> mergingSegments = new HashSet<SegmentInfo>();
 
   private MergePolicy mergePolicy = new LogByteSizeMergePolicy(this);
   private MergeScheduler mergeScheduler = new ConcurrentMergeScheduler();
-  private LinkedList pendingMerges = new LinkedList();
-  private Set runningMerges = new HashSet();
-  private List mergeExceptions = new ArrayList();
+  private LinkedList<MergePolicy.OneMerge> pendingMerges = new LinkedList<MergePolicy.OneMerge>();
+  private Set<MergePolicy.OneMerge> runningMerges = new HashSet<MergePolicy.OneMerge>();
+  private List<MergePolicy.OneMerge> mergeExceptions = new ArrayList<MergePolicy.OneMerge>();
   private long mergeGen;
   private boolean stopMerges;
 
@@ -402,23 +402,19 @@ public class IndexWriter {
 
   class ReaderPool {
 
-    private final Map readerMap = new HashMap();
+    private final Map<SegmentInfo,SegmentReader> readerMap = new HashMap<SegmentInfo,SegmentReader>();
 
     /** Forcefully clear changes for the specified segments,
      *  and remove from the pool.   This is called on successful merge. */
     synchronized void clear(SegmentInfos infos) throws IOException {
       if (infos == null) {
-        Iterator iter = readerMap.entrySet().iterator();
-        while (iter.hasNext()) {
-          Map.Entry ent = (Map.Entry) iter.next();
-          ((SegmentReader) ent.getValue()).hasChanges = false;
+        for (Map.Entry<SegmentInfo,SegmentReader> ent: readerMap.entrySet()) {
+          ent.getValue().hasChanges = false;
         }
       } else {
-        final int numSegments = infos.size();
-        for(int i=0;i<numSegments;i++) {
-          final SegmentInfo info = infos.info(i);
+        for (final SegmentInfo info: infos) {
           if (readerMap.containsKey(info)) {
-            ((SegmentReader) readerMap.get(info)).hasChanges = false;
+            readerMap.get(info).hasChanges = false;
           }
         }     
       }
@@ -435,7 +431,7 @@ public class IndexWriter {
     public synchronized SegmentInfo mapToLive(SegmentInfo info) {
       int idx = segmentInfos.indexOf(info);
       if (idx != -1) {
-        info = (SegmentInfo) segmentInfos.get(idx);
+        info = segmentInfos.get(idx);
       }
       return info;
     }
@@ -497,11 +493,12 @@ public class IndexWriter {
     /** Remove all our references to readers, and commits
      *  any pending changes. */
     synchronized void close() throws IOException {
-      Iterator iter = readerMap.entrySet().iterator();
+      Iterator<Map.Entry<SegmentInfo,SegmentReader>> iter = readerMap.entrySet().iterator();
       while (iter.hasNext()) {
-        Map.Entry ent = (Map.Entry) iter.next();
+        
+        Map.Entry<SegmentInfo,SegmentReader> ent = iter.next();
 
-        SegmentReader sr = (SegmentReader) ent.getValue();
+        SegmentReader sr = ent.getValue();
         if (sr.hasChanges) {
           assert infoIsLive(sr.getSegmentInfo());
           sr.startCommit();
@@ -531,11 +528,9 @@ public class IndexWriter {
      * @throws IOException
      */
     synchronized void commit() throws IOException {
-      Iterator iter = readerMap.entrySet().iterator();
-      while (iter.hasNext()) {
-        Map.Entry ent = (Map.Entry) iter.next();
+      for (Map.Entry<SegmentInfo,SegmentReader> ent : readerMap.entrySet()) {
 
-        SegmentReader sr = (SegmentReader) ent.getValue();
+        SegmentReader sr = ent.getValue();
         if (sr.hasChanges) {
           assert infoIsLive(sr.getSegmentInfo());
           sr.startCommit();
@@ -1125,7 +1120,7 @@ public class IndexWriter {
   private synchronized void setRollbackSegmentInfos(SegmentInfos infos) {
     rollbackSegmentInfos = (SegmentInfos) infos.clone();
     assert !rollbackSegmentInfos.hasExternalSegments(directory);
-    rollbackSegments = new HashMap();
+    rollbackSegments = new HashMap<SegmentInfo,Integer>();
     final int size = rollbackSegmentInfos.size();
     for(int i=0;i<size;i++)
       rollbackSegments.put(rollbackSegmentInfos.info(i), Integer.valueOf(i));
@@ -1731,9 +1726,9 @@ public class IndexWriter {
 
       try {
         CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, compoundFileName);
-        final Iterator it = docWriter.closedFiles().iterator();
-        while(it.hasNext())
-          cfsWriter.addFile((String) it.next());
+        for (final String file :  docWriter.closedFiles() ) {
+          cfsWriter.addFile(file);
+        }
       
         // Perform the merge
         cfsWriter.close();
@@ -1923,7 +1918,7 @@ public class IndexWriter {
             // If docWriter has some aborted files that were
             // never incref'd, then we clean them up here
             if (docWriter != null) {
-              final Collection files = docWriter.abortedFiles();
+              final Collection<String> files = docWriter.abortedFiles();
               if (files != null)
                 deleter.deleteNewFiles(files);
             }
@@ -2079,7 +2074,7 @@ public class IndexWriter {
           synchronized (this) {
             // If docWriter has some aborted files that were
             // never incref'd, then we clean them up here
-            final Collection files = docWriter.abortedFiles();
+            final Collection<String> files = docWriter.abortedFiles();
             if (files != null)
               deleter.deleteNewFiles(files);
           }
@@ -2254,23 +2249,19 @@ public class IndexWriter {
 
     synchronized(this) {
       resetMergeExceptions();
-      segmentsToOptimize = new HashSet();
+      segmentsToOptimize = new HashSet<SegmentInfo>();
       final int numSegments = segmentInfos.size();
       for(int i=0;i<numSegments;i++)
         segmentsToOptimize.add(segmentInfos.info(i));
       
       // Now mark all pending & running merges as optimize
       // merge:
-      Iterator it = pendingMerges.iterator();
-      while(it.hasNext()) {
-        final MergePolicy.OneMerge merge = (MergePolicy.OneMerge) it.next();
+      for(final MergePolicy.OneMerge merge  : pendingMerges) {
         merge.optimize = true;
         merge.maxNumSegmentsOptimize = maxNumSegments;
       }
 
-      it = runningMerges.iterator();
-      while(it.hasNext()) {
-        final MergePolicy.OneMerge merge = (MergePolicy.OneMerge) it.next();
+      for ( final MergePolicy.OneMerge merge: runningMerges ) {
         merge.optimize = true;
         merge.maxNumSegmentsOptimize = maxNumSegments;
       }
@@ -2291,7 +2282,7 @@ public class IndexWriter {
             // threads to the current thread:
             final int size = mergeExceptions.size();
             for(int i=0;i<size;i++) {
-              final MergePolicy.OneMerge merge = (MergePolicy.OneMerge) mergeExceptions.get(0);
+              final MergePolicy.OneMerge merge = mergeExceptions.get(i);
               if (merge.optimize) {
                 IOException err = new IOException("background merge hit exception: " + merge.segString(directory));
                 final Throwable t = merge.getException();
@@ -2324,16 +2315,16 @@ public class IndexWriter {
   /** Returns true if any merges in pendingMerges or
    *  runningMerges are optimization merges. */
   private synchronized boolean optimizeMergesPending() {
-    Iterator it = pendingMerges.iterator();
-    while(it.hasNext())
-      if (((MergePolicy.OneMerge) it.next()).optimize)
+    for (final MergePolicy.OneMerge merge : pendingMerges) {
+      if (merge.optimize)
         return true;
-
-    it = runningMerges.iterator();
-    while(it.hasNext())
-      if (((MergePolicy.OneMerge) it.next()).optimize)
+    }
+    
+    for (final MergePolicy.OneMerge merge : runningMerges) {
+      if (merge.optimize)
         return true;
-
+    }
+    
     return false;
   }
 
@@ -2513,7 +2504,7 @@ public class IndexWriter {
     if (pendingMerges.size() == 0)
       return null;
     else {
-      Iterator it = pendingMerges.iterator();
+      Iterator<MergePolicy.OneMerge> it = pendingMerges.iterator();
       while(it.hasNext()) {
         MergePolicy.OneMerge merge = (MergePolicy.OneMerge) it.next();
         if (merge.isExternal) {
@@ -2810,9 +2801,7 @@ public class IndexWriter {
       stopMerges = true;
 
       // Abort all pending & running merges:
-      Iterator it = pendingMerges.iterator();
-      while(it.hasNext()) {
-        final MergePolicy.OneMerge merge = (MergePolicy.OneMerge) it.next();
+      for (final MergePolicy.OneMerge merge : pendingMerges) {
         if (infoStream != null)
           message("now abort pending merge " + merge.segString(directory));
         merge.abort();
@@ -2820,9 +2809,7 @@ public class IndexWriter {
       }
       pendingMerges.clear();
       
-      it = runningMerges.iterator();
-      while(it.hasNext()) {
-        final MergePolicy.OneMerge merge = (MergePolicy.OneMerge) it.next();
+      for (final MergePolicy.OneMerge merge : runningMerges) {
         if (infoStream != null)
           message("now abort running merge " + merge.segString(directory));
         merge.abort();
@@ -2918,12 +2905,12 @@ public class IndexWriter {
   }
 
   private synchronized void resetMergeExceptions() {
-    mergeExceptions = new ArrayList();
+    mergeExceptions = new ArrayList<MergePolicy.OneMerge>();
     mergeGen++;
   }
 
   private void noDupDirs(Directory... dirs) {
-    HashSet dups = new HashSet();
+    HashSet<Directory> dups = new HashSet<Directory>();
     for(int i=0;i<dirs.length;i++) {
       if (dups.contains(dirs[i]))
         throw new IllegalArgumentException("Directory " + dirs[i] + " appears more than once");
@@ -3251,7 +3238,7 @@ public class IndexWriter {
     
       if (mergePolicy instanceof LogMergePolicy && getUseCompoundFile()) {
 
-        List files = null;
+        List<String> files = null;
 
         synchronized(this) {
           // Must incRef our files so that if another thread
@@ -3351,7 +3338,7 @@ public class IndexWriter {
    *  only "stick" if there are actually changes in the
    *  index to commit.
    */
-  public final void prepareCommit(Map commitUserData) throws CorruptIndexException, IOException {
+  public final void prepareCommit(Map<String,String> commitUserData) throws CorruptIndexException, IOException {
 
     if (hitOOM) {
       throw new IllegalStateException("this writer hit an OutOfMemoryError; cannot commit");
@@ -3416,7 +3403,7 @@ public class IndexWriter {
    * you should immediately close the writer.  See <a
    * href="#OOME">above</a> for details.</p>
    */
-  public final void commit(Map commitUserData) throws CorruptIndexException, IOException {
+  public final void commit(Map<String,String> commitUserData) throws CorruptIndexException, IOException {
 
     ensureOpen();
 
@@ -4115,7 +4102,7 @@ public class IndexWriter {
                                  false);
 
 
-    Map details = new HashMap();
+    Map<String,String> details = new HashMap<String,String>();
     details.put("optimize", merge.optimize+"");
     details.put("mergeFactor", end+"");
     details.put("mergeDocStores", mergeDocStores+"");
@@ -4132,8 +4119,8 @@ public class IndexWriter {
     setDiagnostics(info, source, null);
   }
 
-  private void setDiagnostics(SegmentInfo info, String source, Map details) {
-    Map diagnostics = new HashMap();
+  private void setDiagnostics(SegmentInfo info, String source, Map<String,String> details) {
+    Map<String,String> diagnostics = new HashMap<String,String>();
     diagnostics.put("source", source);
     diagnostics.put("lucene.version", Constants.LUCENE_VERSION);
     diagnostics.put("os", Constants.OS_NAME+"");
@@ -4199,7 +4186,7 @@ public class IndexWriter {
 
     boolean mergeDocStores = false;
 
-    final Set dss = new HashSet();
+    final Set<String> dss = new HashSet<String>();
     
     // This is try/finally to make sure merger's readers are
     // closed:
@@ -4463,12 +4450,12 @@ public class IndexWriter {
   }
 
   // Files that have been sync'd already
-  private HashSet synced = new HashSet();
+  private HashSet<String> synced = new HashSet<String>();
 
   // Files that are now being sync'd
-  private HashSet syncing = new HashSet();
+  private HashSet<String> syncing = new HashSet<String>();
 
-  private boolean startSync(String fileName, Collection pending) {
+  private boolean startSync(String fileName, Collection<String> pending) {
     synchronized(synced) {
       if (!synced.contains(fileName)) {
         if (!syncing.contains(fileName)) {
@@ -4494,11 +4481,11 @@ public class IndexWriter {
   }
 
   /** Blocks until all files in syncing are sync'd */
-  private boolean waitForAllSynced(Collection syncing) throws IOException {
+  private boolean waitForAllSynced(Collection<String> syncing) throws IOException {
     synchronized(synced) {
-      Iterator it = syncing.iterator();
+      Iterator<String> it = syncing.iterator();
       while(it.hasNext()) {
-        final String fileName = (String) it.next();
+        final String fileName = it.next();
         while(!synced.contains(fileName)) {
           if (!syncing.contains(fileName))
             // There was an error because a file that was
@@ -4541,7 +4528,7 @@ public class IndexWriter {
    *  if it wasn't already.  If that succeeds, then we
    *  prepare a new segments_N file but do not fully commit
    *  it. */
-  private void startCommit(long sizeInBytes, Map commitUserData) throws IOException {
+  private void startCommit(long sizeInBytes, Map<String,String> commitUserData) throws IOException {
 
     assert testPoint("startStartCommit");
 
@@ -4597,9 +4584,8 @@ public class IndexWriter {
           deleter.incRef(toSync, false);
           myChangeCount = changeCount;
 
-          Iterator it = toSync.files(directory, false).iterator();
-          while(it.hasNext()) {
-            String fileName = (String) it.next();
+          Collection<String> files = toSync.files(directory, false);
+          for(final String fileName: files) {
             assert directory.fileExists(fileName): "file " + fileName + " does not exist";
           }
 
@@ -4617,11 +4603,11 @@ public class IndexWriter {
         // Loop until all files toSync references are sync'd:
         while(true) {
 
-          final Collection pending = new ArrayList();
+          final Collection<String> pending = new ArrayList<String>();
 
-          Iterator it = toSync.files(directory, false).iterator();
+          Iterator<String> it = toSync.files(directory, false).iterator();
           while(it.hasNext()) {
-            final String fileName = (String) it.next();
+            final String fileName = it.next();
             if (startSync(fileName, pending)) {
               boolean success = false;
               try {

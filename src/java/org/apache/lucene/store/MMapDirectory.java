@@ -148,7 +148,7 @@ public class MMapDirectory extends FSDirectory {
   final void cleanMapping(final ByteBuffer buffer) throws IOException {
     if (useUnmapHack) {
       try {
-        AccessController.doPrivileged(new PrivilegedExceptionAction() {
+        AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
           public Object run() throws Exception {
             final Method getCleanerMethod = buffer.getClass()
               .getMethod("cleaner", NO_PARAM_TYPES);

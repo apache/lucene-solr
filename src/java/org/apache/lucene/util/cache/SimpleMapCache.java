@@ -26,29 +26,33 @@ import java.util.Set;
  * This cache is not synchronized, use {@link Cache#synchronizedCache(Cache)}
  * if needed.
  */
-public class SimpleMapCache extends Cache {
-  Map map;
+public class SimpleMapCache<K,V> extends Cache<K,V> {
+  protected Map<K,V> map;
   
   public SimpleMapCache() {
-    this(new HashMap());
+    this(new HashMap<K,V>());
   }
 
-  public SimpleMapCache(Map map) {
+  public SimpleMapCache(Map<K,V> map) {
     this.map = map;
   }
   
-  public Object get(Object key) {
+  @Override
+  public V get(Object key) {
     return map.get(key);
   }
 
-  public void put(Object key, Object value) {
+  @Override
+  public void put(K key, V value) {
     map.put(key, value);
   }
 
+  @Override
   public void close() {
     // NOOP
   }
 
+  @Override
   public boolean containsKey(Object key) {
     return map.containsKey(key);
   }
@@ -56,44 +60,51 @@ public class SimpleMapCache extends Cache {
   /**
    * Returns a Set containing all keys in this cache.
    */
-  public Set keySet() {
+  public Set<K> keySet() {
     return map.keySet();
   }
   
-  Cache getSynchronizedCache() {
-    return new SynchronizedSimpleMapCache(this);
+  @Override
+  Cache<K,V> getSynchronizedCache() {
+    return new SynchronizedSimpleMapCache<K,V>(this);
   }
   
-  private static class SynchronizedSimpleMapCache extends SimpleMapCache {
-    Object mutex;
-    SimpleMapCache cache;
+  private static class SynchronizedSimpleMapCache<K,V> extends SimpleMapCache<K,V> {
+    private Object mutex;
+    private SimpleMapCache<K,V> cache;
     
-    SynchronizedSimpleMapCache(SimpleMapCache cache) {
+    SynchronizedSimpleMapCache(SimpleMapCache<K,V> cache) {
         this.cache = cache;
         this.mutex = this;
     }
     
-    public void put(Object key, Object value) {
+    @Override
+    public void put(K key, V value) {
         synchronized(mutex) {cache.put(key, value);}
     }
     
-    public Object get(Object key) {
+    @Override
+    public V get(Object key) {
         synchronized(mutex) {return cache.get(key);}
     }
     
+    @Override
     public boolean containsKey(Object key) {
         synchronized(mutex) {return cache.containsKey(key);}
     }
     
+    @Override
     public void close() {
         synchronized(mutex) {cache.close();}
     }
     
-    public Set keySet() {
+    @Override
+    public Set<K> keySet() {
       synchronized(mutex) {return cache.keySet();}
     }
     
-    Cache getSynchronizedCache() {
+    @Override
+    Cache<K,V> getSynchronizedCache() {
       return this;
     }
   }

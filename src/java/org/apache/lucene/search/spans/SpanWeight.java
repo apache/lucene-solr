@@ -18,6 +18,7 @@ package org.apache.lucene.search.spans;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 
@@ -35,7 +36,7 @@ public class SpanWeight extends Weight {
   protected float queryNorm;
   protected float queryWeight;
 
-  protected Set terms;
+  protected Set<Term> terms;
   protected SpanQuery query;
   private IDFExplanation idfExp;
 
@@ -43,8 +44,10 @@ public class SpanWeight extends Weight {
     throws IOException {
     this.similarity = query.getSimilarity(searcher);
     this.query = query;
-    terms=new HashSet();
+    
+    terms=new HashSet<Term>();
     query.extractTerms(terms);
+    
     idfExp = similarity.idfExplain(terms, searcher);
     idf = idfExp.getIdf();
   }

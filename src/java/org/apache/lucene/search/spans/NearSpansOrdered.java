@@ -65,12 +65,12 @@ public class NearSpansOrdered extends Spans {
   private int matchDoc = -1;
   private int matchStart = -1;
   private int matchEnd = -1;
-  private List/*<byte[]>*/ matchPayload;
+  private List<byte[]> matchPayload;
 
   private final Spans[] subSpansByDoc;
-  private final Comparator spanDocComparator = new Comparator() {
-    public int compare(Object o1, Object o2) {
-      return ((Spans)o1).doc() - ((Spans)o2).doc();
+  private final Comparator<Spans> spanDocComparator = new Comparator<Spans>() {
+    public int compare(Spans o1, Spans o2) {
+      return o1.doc() - o2.doc();
     }
   };
   
@@ -91,7 +91,7 @@ public class NearSpansOrdered extends Spans {
     allowedSlop = spanNearQuery.getSlop();
     SpanQuery[] clauses = spanNearQuery.getClauses();
     subSpans = new Spans[clauses.length];
-    matchPayload = new LinkedList();
+    matchPayload = new LinkedList<byte[]>();
     subSpansByDoc = new Spans[clauses.length];
     for (int i = 0; i < clauses.length; i++) {
       subSpans[i] = clauses[i].getSpans(reader);
@@ -115,7 +115,7 @@ public class NearSpansOrdered extends Spans {
 
   // TODO: Remove warning after API has been finalized
   // TODO: Would be nice to be able to lazy load payloads
-  public Collection/*<byte[]>*/ getPayload() throws IOException {
+  public Collection<byte[]> getPayload() throws IOException {
     return matchPayload;
   }
 
@@ -256,12 +256,12 @@ public class NearSpansOrdered extends Spans {
   private boolean shrinkToAfterShortestMatch() throws IOException {
     matchStart = subSpans[subSpans.length - 1].start();
     matchEnd = subSpans[subSpans.length - 1].end();
-    Set possibleMatchPayloads = new HashSet();
+    Set<byte[]> possibleMatchPayloads = new HashSet<byte[]>();
     if (subSpans[subSpans.length - 1].isPayloadAvailable()) {
       possibleMatchPayloads.addAll(subSpans[subSpans.length - 1].getPayload());
     }
 
-    Collection possiblePayload = null;
+    Collection<byte[]> possiblePayload = null;
     
     int matchSlop = 0;
     int lastStart = matchStart;
@@ -269,8 +269,8 @@ public class NearSpansOrdered extends Spans {
     for (int i = subSpans.length - 2; i >= 0; i--) {
       Spans prevSpans = subSpans[i];
       if (collectPayloads && prevSpans.isPayloadAvailable()) {
-        Collection payload = prevSpans.getPayload();
-        possiblePayload = new ArrayList(payload.size());
+        Collection<byte[]> payload = prevSpans.getPayload();
+        possiblePayload = new ArrayList<byte[]>(payload.size());
         possiblePayload.addAll(payload);
       }
       
@@ -293,8 +293,8 @@ public class NearSpansOrdered extends Spans {
             prevStart = ppStart;
             prevEnd = ppEnd;
             if (collectPayloads && prevSpans.isPayloadAvailable()) {
-              Collection payload = prevSpans.getPayload();
-              possiblePayload = new ArrayList(payload.size());
+              Collection<byte[]> payload = prevSpans.getPayload();
+              possiblePayload = new ArrayList<byte[]>(payload.size());
               possiblePayload.addAll(payload);
             }
           }

@@ -112,7 +112,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   private static PrintStream infoStream;
 
   public final SegmentInfo info(int i) {
-    return (SegmentInfo) get(i);
+    return get(i);
   }
 
   /**

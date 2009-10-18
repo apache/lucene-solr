@@ -17,8 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.UnicodeUtil;
 
 import java.io.IOException;
@@ -66,7 +64,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
   // under the same FieldInfo together, up into TermsHash*.
   // Other writers would presumably share alot of this...
 
-  public void flush(Map threadsAndFields, final SegmentWriteState state) throws IOException {
+  public void flush(Map<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>> threadsAndFields, final SegmentWriteState state) throws IOException {
 
     // Gather all FieldData's that have postings, across all
     // ThreadStates
@@ -279,7 +277,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
   final UnicodeUtil.UTF8Result termsUTF8 = new UnicodeUtil.UTF8Result();
 
-  void files(Collection files) {}
+  void files(Collection<String> files) {}
 
   static final class PostingList extends RawPostingList {
     int docFreq;                                    // # times this term occurs in the current doc

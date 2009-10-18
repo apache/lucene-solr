@@ -164,7 +164,7 @@ class NativeFSLock extends Lock {
    * one JVM (each with their own NativeFSLockFactory
    * instance) have set the same lock dir and lock prefix.
    */
-  private static HashSet LOCK_HELD = new HashSet();
+  private static HashSet<String> LOCK_HELD = new HashSet<String>();
 
   public NativeFSLock(File lockDir, String lockFileName) {
     this.lockDir = lockDir;

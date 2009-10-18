@@ -170,7 +170,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     TestIndexReaderReopen.createIndex(dir1, false);
     SegmentReader reader1 = SegmentReader.getOnlySegmentReader(dir1);
     reader1.norms("field1");
-    Norm r1norm = (Norm)reader1.norms.get("field1");
+    Norm r1norm = reader1.norms.get("field1");
     SegmentReader.Ref r1BytesRef = r1norm.bytesRef();
     SegmentReader reader2 = (SegmentReader)reader1.clone();
     assertEquals(2, r1norm.bytesRef().refCount());
@@ -189,14 +189,14 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     IndexReader reader2C = (IndexReader) reader1.clone();
     SegmentReader segmentReader2C = SegmentReader.getOnlySegmentReader(reader2C);
     segmentReader2C.norms("field1"); // load the norms for the field
-    Norm reader2CNorm = (Norm)segmentReader2C.norms.get("field1");
+    Norm reader2CNorm = segmentReader2C.norms.get("field1");
     assertTrue("reader2CNorm.bytesRef()=" + reader2CNorm.bytesRef(), reader2CNorm.bytesRef().refCount() == 2);
     
     
     
     IndexReader reader3C = (IndexReader) reader2C.clone();
     SegmentReader segmentReader3C = SegmentReader.getOnlySegmentReader(reader3C);
-    Norm reader3CCNorm = (Norm)segmentReader3C.norms.get("field1");
+    Norm reader3CCNorm = segmentReader3C.norms.get("field1");
     assertEquals(3, reader3CCNorm.bytesRef().refCount());
     
     // edit a norm and the refcount should be 1
@@ -215,13 +215,13 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     
     // norm values should be different 
     assertTrue(Similarity.decodeNorm(segmentReader3C.norms("field1")[5]) != Similarity.decodeNorm(segmentReader4C.norms("field1")[5]));
-    Norm reader4CCNorm = (Norm)segmentReader4C.norms.get("field1");
+    Norm reader4CCNorm = segmentReader4C.norms.get("field1");
     assertEquals(3, reader3CCNorm.bytesRef().refCount());
     assertEquals(1, reader4CCNorm.bytesRef().refCount());
         
     IndexReader reader5C = (IndexReader) reader4C.clone();
     SegmentReader segmentReader5C = SegmentReader.getOnlySegmentReader(reader5C);
-    Norm reader5CCNorm = (Norm)segmentReader5C.norms.get("field1");
+    Norm reader5CCNorm = segmentReader5C.norms.get("field1");
     reader5C.setNorm(5, "field1", 0.7f);
     assertEquals(1, reader5CCNorm.bytesRef().refCount());    
 

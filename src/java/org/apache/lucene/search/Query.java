@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import java.util.HashSet;
-import java.util.Iterator;
+
 import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
@@ -126,7 +126,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
    * the other queries.
   */
   public Query combine(Query[] queries) {
-    HashSet uniques = new HashSet();
+    HashSet<Query> uniques = new HashSet<Query>();
     for (int i = 0; i < queries.length; i++) {
       Query query = queries[i];
       BooleanClause[] clauses = null;
@@ -152,10 +152,9 @@ public abstract class Query implements java.io.Serializable, Cloneable {
     if(uniques.size() == 1){
         return (Query)uniques.iterator().next();
     }
-    Iterator it = uniques.iterator();
     BooleanQuery result = new BooleanQuery(true);
-    while (it.hasNext())
-      result.add((Query) it.next(), BooleanClause.Occur.SHOULD);
+    for (final Query query : uniques)
+      result.add(query, BooleanClause.Occur.SHOULD);
     return result;
   }
   
@@ -179,20 +178,18 @@ public abstract class Query implements java.io.Serializable, Cloneable {
    *<p>A utility for use by {@link #combine(Query[])} implementations.
    */
   public static Query mergeBooleanQueries(BooleanQuery[] queries) {
-    HashSet allClauses = new HashSet();
-    for (int i = 0; i < queries.length; i++) {
-      BooleanClause[] clauses = queries[i].getClauses();
-      for (int j = 0; j < clauses.length; j++) {
-        allClauses.add(clauses[j]);
+    HashSet<BooleanClause> allClauses = new HashSet<BooleanClause>();
+    for (BooleanQuery booleanQuery : queries) {
+      for (BooleanClause clause : booleanQuery) {
+        allClauses.add(clause);
       }
     }
 
     boolean coordDisabled =
       queries.length==0? false : queries[0].isCoordDisabled();
     BooleanQuery result = new BooleanQuery(coordDisabled);
-    Iterator i = allClauses.iterator();
-    while (i.hasNext()) {
-      result.add((BooleanClause)i.next());
+    for(BooleanClause clause2 : allClauses) {
+      result.add(clause2);
     }
     return result;
   }

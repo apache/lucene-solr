@@ -23,7 +23,7 @@ import org.apache.lucene.util.ArrayUtil;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Iterator;
+
 import java.util.Map;
 
 final class TermVectorsTermsWriter extends TermsHashConsumer {
@@ -51,7 +51,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       postings[i] = new PostingList();
   }
 
-  synchronized void flush(Map threadsAndFields, final SegmentWriteState state) throws IOException {
+  synchronized void flush(Map<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>> threadsAndFields, final SegmentWriteState state) throws IOException {
 
     if (tvx != null) {
 
@@ -65,12 +65,9 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       tvf.flush();
     }
 
-    Iterator it = threadsAndFields.entrySet().iterator();
-    while(it.hasNext()) {
-      Map.Entry entry = (Map.Entry) it.next();
-      Iterator it2 = ((Collection) entry.getValue()).iterator();
-      while(it2.hasNext()) {
-        TermVectorsTermsWriterPerField perField = (TermVectorsTermsWriterPerField) it2.next();
+    for (Map.Entry<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>> entry : threadsAndFields.entrySet()) {
+      for (final TermsHashConsumerPerField field : entry.getValue() ) {
+        TermVectorsTermsWriterPerField perField = (TermVectorsTermsWriterPerField) field;
         perField.termsHashPerField.reset();
         perField.shrinkHash();
       }

@@ -46,7 +46,7 @@ final class NormsWriter extends InvertedDocEndConsumer {
   public void abort() {}
 
   // We only write the _X.nrm file at flush
-  void files(Collection files) {}
+  void files(Collection<String> files) {}
 
   void setFieldInfos(FieldInfos fieldInfos) {
     this.fieldInfos = fieldInfos;

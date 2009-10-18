@@ -69,13 +69,13 @@ public class PayloadSpanUtil {
    * @return payloads Collection
    * @throws IOException
    */
-  public Collection getPayloadsForQuery(Query query) throws IOException {
-    Collection payloads = new ArrayList();
+  public Collection<byte[]> getPayloadsForQuery(Query query) throws IOException {
+    Collection<byte[]> payloads = new ArrayList<byte[]>();
     queryToSpanQuery(query, payloads);
     return payloads;
   }
 
-  private void queryToSpanQuery(Query query, Collection payloads)
+  private void queryToSpanQuery(Query query, Collection<byte[]> payloads)
       throws IOException {
     if (query instanceof BooleanQuery) {
       BooleanClause[] queryClauses = ((BooleanQuery) query).getClauses();
@@ -113,14 +113,14 @@ public class PayloadSpanUtil {
       queryToSpanQuery(((FilteredQuery) query).getQuery(), payloads);
     } else if (query instanceof DisjunctionMaxQuery) {
 
-      for (Iterator iterator = ((DisjunctionMaxQuery) query).iterator(); iterator
+      for (Iterator<Query> iterator = ((DisjunctionMaxQuery) query).iterator(); iterator
           .hasNext();) {
-        queryToSpanQuery((Query) iterator.next(), payloads);
+        queryToSpanQuery(iterator.next(), payloads);
       }
 
     } else if (query instanceof MultiPhraseQuery) {
       final MultiPhraseQuery mpq = (MultiPhraseQuery) query;
-      final List termArrays = mpq.getTermArrays();
+      final List<Term[]> termArrays = mpq.getTermArrays();
       final int[] positions = mpq.getPositions();
       if (positions.length > 0) {
 
@@ -131,19 +131,19 @@ public class PayloadSpanUtil {
           }
         }
 
-        final List[] disjunctLists = new List[maxPosition + 1];
+        final List<Query>[] disjunctLists = new List[maxPosition + 1];
         int distinctPositions = 0;
 
         for (int i = 0; i < termArrays.size(); ++i) {
-          final Term[] termArray = (Term[]) termArrays.get(i);
-          List disjuncts = disjunctLists[positions[i]];
+          final Term[] termArray = termArrays.get(i);
+          List<Query> disjuncts = disjunctLists[positions[i]];
           if (disjuncts == null) {
-            disjuncts = (disjunctLists[positions[i]] = new ArrayList(
+            disjuncts = (disjunctLists[positions[i]] = new ArrayList<Query>(
                 termArray.length));
             ++distinctPositions;
           }
-          for (int j = 0; j < termArray.length; ++j) {
-            disjuncts.add(new SpanTermQuery(termArray[j]));
+          for (final Term term : termArray) {
+            disjuncts.add(new SpanTermQuery(term));
           }
         }
 
@@ -151,9 +151,9 @@ public class PayloadSpanUtil {
         int position = 0;
         final SpanQuery[] clauses = new SpanQuery[distinctPositions];
         for (int i = 0; i < disjunctLists.length; ++i) {
-          List disjuncts = disjunctLists[i];
+          List<Query> disjuncts = disjunctLists[i];
           if (disjuncts != null) {
-            clauses[position++] = new SpanOrQuery((SpanQuery[]) disjuncts
+            clauses[position++] = new SpanOrQuery(disjuncts
                 .toArray(new SpanQuery[disjuncts.size()]));
           } else {
             ++positionGaps;
@@ -171,16 +171,14 @@ public class PayloadSpanUtil {
     }
   }
 
-  private void getPayloads(Collection payloads, SpanQuery query)
+  private void getPayloads(Collection<byte []> payloads, SpanQuery query)
       throws IOException {
     Spans spans = query.getSpans(reader);
 
     while (spans.next() == true) {
       if (spans.isPayloadAvailable()) {
-        Collection payload = spans.getPayload();
-        Iterator it = payload.iterator();
-        while (it.hasNext()) {
-          byte[] bytes = (byte[]) it.next();
+        Collection<byte[]> payload = spans.getPayload();
+        for (byte [] bytes : payload) {
           payloads.add(bytes);
         }
 

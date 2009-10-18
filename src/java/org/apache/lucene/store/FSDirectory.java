@@ -19,14 +19,10 @@ package org.apache.lucene.store;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.lucene.util.Constants;
 

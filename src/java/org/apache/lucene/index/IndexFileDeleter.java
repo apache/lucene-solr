@@ -24,7 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Iterator;
+
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -72,12 +72,12 @@ final class IndexFileDeleter {
   /* Files that we tried to delete but failed (likely
    * because they are open and we are running on Windows),
    * so we will retry them again later: */
-  private List deletable;
+  private List<String> deletable;
 
   /* Reference count for all files in the index.  
    * Counts how many existing commits reference a file.
-   * Maps String to RefCount (class below) instances: */
-  private Map refCounts = new HashMap();
+   **/
+  private Map<String, RefCount> refCounts = new HashMap<String, RefCount>();
 
   /* Holds all commits (segments_N) currently in the index.
    * This will have just 1 commit if you are using the
@@ -88,7 +88,7 @@ final class IndexFileDeleter {
 
   /* Holds files we had incref'd from the previous
    * non-commit checkpoint: */
-  private List lastFiles = new ArrayList();
+  private List<Collection<String>> lastFiles = new ArrayList<Collection<String>>();
 
   /* Commits that the IndexDeletionPolicy have decided to delete: */ 
   private List commitsToDelete = new ArrayList();
@@ -217,10 +217,9 @@ final class IndexFileDeleter {
     // Now delete anything with ref count at 0.  These are
     // presumably abandoned files eg due to crash of
     // IndexWriter.
-    Iterator it = refCounts.keySet().iterator();
-    while(it.hasNext()) {
-      String fileName = (String) it.next();
-      RefCount rc = (RefCount) refCounts.get(fileName);
+    for(Map.Entry<String, RefCount> entry : refCounts.entrySet() ) {  
+      RefCount rc = entry.getValue();
+      final String fileName = entry.getKey();
       if (0 == rc.count) {
         if (infoStream != null) {
           message("init: removing unreferenced file \"" + fileName + "\"");
@@ -259,9 +258,8 @@ final class IndexFileDeleter {
         if (infoStream != null) {
           message("deleteCommits: now decRef commit \"" + commit.getSegmentsFileName() + "\"");
         }
-        Iterator it = commit.files.iterator();
-        while(it.hasNext()) {
-          decRef((String) it.next());
+        for (final String file : commit.files) {
+          decRef(file);
         }
       }
       commitsToDelete.clear();
@@ -333,7 +331,7 @@ final class IndexFileDeleter {
     int size = lastFiles.size();
     if (size > 0) {
       for(int i=0;i<size;i++)
-        decRef((Collection) lastFiles.get(i));
+        decRef(lastFiles.get(i));
       lastFiles.clear();
     }
 
@@ -342,13 +340,13 @@ final class IndexFileDeleter {
 
   private void deletePendingFiles() throws IOException {
     if (deletable != null) {
-      List oldDeletable = deletable;
+      List<String> oldDeletable = deletable;
       deletable = null;
       int size = oldDeletable.size();
       for(int i=0;i<size;i++) {
         if (infoStream != null)
           message("delete pending file " + oldDeletable.get(i));
-        deleteFile((String) oldDeletable.get(i));
+        deleteFile(oldDeletable.get(i));
       }
     }
   }
@@ -397,7 +395,7 @@ final class IndexFileDeleter {
       deleteCommits();
     } else {
 
-      final List docWriterFiles;
+      final List<String> docWriterFiles;
       if (docWriter != null) {
         docWriterFiles = docWriter.openFiles();
         if (docWriterFiles != null)
@@ -412,7 +410,7 @@ final class IndexFileDeleter {
       int size = lastFiles.size();
       if (size > 0) {
         for(int i=0;i<size;i++)
-          decRef((Collection) lastFiles.get(i));
+          decRef(lastFiles.get(i));
         lastFiles.clear();
       }
 
@@ -427,16 +425,14 @@ final class IndexFileDeleter {
   void incRef(SegmentInfos segmentInfos, boolean isCommit) throws IOException {
      // If this is a commit point, also incRef the
      // segments_N file:
-    Iterator it = segmentInfos.files(directory, isCommit).iterator();
-    while(it.hasNext()) {
-      incRef((String) it.next());
+    for( final String fileName: segmentInfos.files(directory, isCommit) ) {
+      incRef(fileName);
     }
   }
 
-  void incRef(List files) throws IOException {
-    int size = files.size();
-    for(int i=0;i<size;i++) {
-      incRef((String) files.get(i));
+  void incRef(List<String> files) throws IOException {
+    for(final String file : files) {
+      incRef(file);
     }
   }
 
@@ -448,10 +444,9 @@ final class IndexFileDeleter {
     rc.IncRef();
   }
 
-  void decRef(Collection files) throws IOException {
-    Iterator it = files.iterator();
-    while(it.hasNext()) {
-      decRef((String) it.next());
+  void decRef(Collection<String> files) throws IOException {
+    for(final String file : files) {
+      decRef(file);
     }
   }
 
@@ -469,9 +464,8 @@ final class IndexFileDeleter {
   }
 
   void decRef(SegmentInfos segmentInfos) throws IOException {
-    Iterator it = segmentInfos.files(directory, false).iterator();
-    while(it.hasNext()) {
-      decRef((String) it.next());
+    for (final String file : segmentInfos.files(directory, false)) {
+      decRef(file);
     }
   }
 
@@ -481,23 +475,20 @@ final class IndexFileDeleter {
       rc = new RefCount(fileName);
       refCounts.put(fileName, rc);
     } else {
-      rc = (RefCount) refCounts.get(fileName);
+      rc = refCounts.get(fileName);
     }
     return rc;
   }
 
-  void deleteFiles(List files) throws IOException {
-    final int size = files.size();
-    for(int i=0;i<size;i++)
-      deleteFile((String) files.get(i));
+  void deleteFiles(List<String> files) throws IOException {
+    for(final String file: files)
+      deleteFile(file);
   }
 
   /** Deletes the specified files, but only if they are new
    *  (have not yet been incref'd). */
-  void deleteNewFiles(Collection files) throws IOException {
-    final Iterator it = files.iterator();
-    while(it.hasNext()) {
-      final String fileName = (String) it.next();
+  void deleteNewFiles(Collection<String> files) throws IOException {
+    for (final String fileName: files) {
       if (!refCounts.containsKey(fileName))
         deleteFile(fileName);
     }
@@ -524,7 +515,7 @@ final class IndexFileDeleter {
           message("IndexFileDeleter: unable to remove file \"" + fileName + "\": " + e.toString() + "; Will re-try later.");
         }
         if (deletable == null) {
-          deletable = new ArrayList();
+          deletable = new ArrayList<String>();
         }
         deletable.add(fileName);                  // add to deletable
       }
@@ -574,13 +565,13 @@ final class IndexFileDeleter {
     String segmentsFileName;
     boolean deleted;
     Directory directory;
-    Collection commitsToDelete;
+    Collection<IndexCommit> commitsToDelete;
     long version;
     long generation;
     final boolean isOptimized;
-    final Map userData;
+    final Map<String,String> userData;
 
-    public CommitPoint(Collection commitsToDelete, Directory directory, SegmentInfos segmentInfos) throws IOException {
+    public CommitPoint(Collection<IndexCommit> commitsToDelete, Directory directory, SegmentInfos segmentInfos) throws IOException {
       this.directory = directory;
       this.commitsToDelete = commitsToDelete;
       userData = segmentInfos.getUserData();
@@ -618,7 +609,7 @@ final class IndexFileDeleter {
       return generation;
     }
 
-    public Map getUserData() {
+    public Map<String,String> getUserData() {
       return userData;
     }
 

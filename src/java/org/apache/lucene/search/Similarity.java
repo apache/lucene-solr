@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.IdentityHashMap;
-import java.util.Iterator;
+
 
 /** 
  * Expert: Scoring API.
@@ -787,11 +787,11 @@ public abstract class Similarity implements Serializable {
    * @return idf score factor
    * @deprecated see {@link #idfExplain(Collection, Searcher)}
    */
-  public float idf(Collection terms, Searcher searcher) throws IOException {
+  public float idf(Collection<Term> terms, Searcher searcher) throws IOException {
     float idf = 0.0f;
-    Iterator i = terms.iterator();
-    while (i.hasNext()) {
-      idf += idf((Term)i.next(), searcher);
+
+    for(final Term term: terms) {
+      idf += idf(term, searcher);
     }
     return idf;
   }
@@ -810,7 +810,7 @@ public abstract class Similarity implements Serializable {
    *         for each term.
    * @throws IOException
    */
-  public IDFExplanation idfExplain(Collection terms, Searcher searcher) throws IOException {
+  public IDFExplanation idfExplain(Collection<Term> terms, Searcher searcher) throws IOException {
     if(supportedMethods.overridesCollectionIDF) {
       final float idf = idf(terms, searcher);
       return new IDFExplanation() {
@@ -827,9 +827,7 @@ public abstract class Similarity implements Serializable {
     final int max = searcher.maxDoc();
     float idf = 0.0f;
     final StringBuilder exp = new StringBuilder();
-    Iterator i = terms.iterator();
-    while (i.hasNext()) {
-      Term term = (Term)i.next();
+    for (final Term term : terms ) {
       final int df = searcher.docFreq(term);
       idf += idf(df, max);
       exp.append(" ");
@@ -955,7 +953,7 @@ public abstract class Similarity implements Serializable {
   }
   
   /** @deprecated Remove this when old API is removed! */
-  private static final IdentityHashMap/*<Class<? extends Similarity>,MethodSupport>*/ knownMethodSupport = new IdentityHashMap();
+  private static final IdentityHashMap<Class<? extends Similarity>,MethodSupport> knownMethodSupport = new IdentityHashMap();
   
   /** @deprecated Remove this when old API is removed! */
   private static MethodSupport getSupportedMethods(Class clazz) {

@@ -26,7 +26,7 @@ import java.util.Map;
  */
 public class AverageGuessMemoryModel extends MemoryModel {
   // best guess primitive sizes
-  private final Map sizes = new IdentityHashMap() {
+  private final Map<Class,Integer> sizes = new IdentityHashMap<Class,Integer>() {
     {
       put(boolean.class, Integer.valueOf(1));
       put(byte.class, Integer.valueOf(1));
@@ -61,7 +61,7 @@ public class AverageGuessMemoryModel extends MemoryModel {
    * @see org.apache.lucene.util.MemoryModel#getPrimitiveSize(java.lang.Class)
    */
   public int getPrimitiveSize(Class clazz) {
-    return ((Integer) sizes.get(clazz)).intValue();
+    return sizes.get(clazz).intValue();
   }
 
   /* (non-Javadoc)

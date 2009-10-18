@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -111,13 +110,13 @@ public final class FieldCacheSanityChecker {
     //
     // maps the (valId) identityhashCode of cache values to 
     // sets of CacheEntry instances
-    final MapOfSets valIdToItems = new MapOfSets(new HashMap(17));
+    final MapOfSets<Integer, CacheEntry> valIdToItems = new MapOfSets<Integer, CacheEntry>(new HashMap<Integer, Set<CacheEntry>>(17));
     // maps ReaderField keys to Sets of ValueIds
-    final MapOfSets readerFieldToValIds = new MapOfSets(new HashMap(17));
+    final MapOfSets<ReaderField, Integer> readerFieldToValIds = new MapOfSets<ReaderField, Integer>(new HashMap<ReaderField, Set<Integer>>(17));
     //
 
     // any keys that we know result in more then one valId
-    final Set valMismatchKeys = new HashSet();
+    final Set<ReaderField> valMismatchKeys = new HashSet<ReaderField>();
 
     // iterate over all the cacheEntries to get the mappings we'll need
     for (int i = 0; i < cacheEntries.length; i++) {
@@ -139,7 +138,7 @@ public final class FieldCacheSanityChecker {
       }
     }
 
-    final List insanity = new ArrayList(valMismatchKeys.size() * 3);
+    final List<Insanity> insanity = new ArrayList<Insanity>(valMismatchKeys.size() * 3);
 
     insanity.addAll(checkValueMismatch(valIdToItems, 
                                        readerFieldToValIds, 
@@ -147,7 +146,7 @@ public final class FieldCacheSanityChecker {
     insanity.addAll(checkSubreaders(valIdToItems, 
                                     readerFieldToValIds));
                     
-    return (Insanity[]) insanity.toArray(new Insanity[insanity.size()]);
+    return insanity.toArray(new Insanity[insanity.size()]);
   }
 
   /** 
@@ -157,31 +156,27 @@ public final class FieldCacheSanityChecker {
    * the Insanity objects. 
    * @see InsanityType#VALUEMISMATCH
    */
-  private Collection checkValueMismatch(MapOfSets valIdToItems,
-                                        MapOfSets readerFieldToValIds,
-                                        Set valMismatchKeys) {
+  private Collection<Insanity> checkValueMismatch(MapOfSets<Integer, CacheEntry> valIdToItems,
+                                        MapOfSets<ReaderField, Integer> readerFieldToValIds,
+                                        Set<ReaderField> valMismatchKeys) {
 
-    final List insanity = new ArrayList(valMismatchKeys.size() * 3);
+    final List<Insanity> insanity = new ArrayList<Insanity>(valMismatchKeys.size() * 3);
 
     if (! valMismatchKeys.isEmpty() ) { 
       // we have multiple values for some ReaderFields
 
-      final Map rfMap = readerFieldToValIds.getMap();
-      final Map valMap = valIdToItems.getMap();
-      final Iterator mismatchIter = valMismatchKeys.iterator();
-      while (mismatchIter.hasNext()) {
-        final ReaderField rf = (ReaderField)mismatchIter.next();
-        final List badEntries = new ArrayList(valMismatchKeys.size() * 2);
-        final Iterator valIter = ((Set)rfMap.get(rf)).iterator();
-        while (valIter.hasNext()) {
-          Iterator entriesIter = ((Set)valMap.get(valIter.next())).iterator();
-          while (entriesIter.hasNext()) {
-            badEntries.add(entriesIter.next());
+      final Map<ReaderField, Set<Integer>> rfMap = readerFieldToValIds.getMap();
+      final Map<Integer, Set<CacheEntry>> valMap = valIdToItems.getMap();
+      for (final ReaderField rf : valMismatchKeys) {
+        final List<CacheEntry> badEntries = new ArrayList<CacheEntry>(valMismatchKeys.size() * 2);
+        for(final Integer value: rfMap.get(rf)) {
+          for (final CacheEntry cacheEntry : valMap.get(value)) {
+            badEntries.add(cacheEntry);
           }
         }
 
         CacheEntry[] badness = new CacheEntry[badEntries.size()];
-        badness = (CacheEntry[]) badEntries.toArray(badness);
+        badness = badEntries.toArray(badness);
 
         insanity.add(new Insanity(InsanityType.VALUEMISMATCH,
                                   "Multiple distinct value objects for " + 
@@ -199,35 +194,33 @@ public final class FieldCacheSanityChecker {
    *
    * @see InsanityType#SUBREADER
    */
-  private Collection checkSubreaders(MapOfSets valIdToItems,
-                                     MapOfSets readerFieldToValIds) {
+  private Collection<Insanity> checkSubreaders( MapOfSets<Integer, CacheEntry>  valIdToItems,
+                                      MapOfSets<ReaderField, Integer> readerFieldToValIds) {
 
-    final List insanity = new ArrayList(23);
+    final List<Insanity> insanity = new ArrayList<Insanity>(23);
 
-    Map badChildren = new HashMap(17);
-    MapOfSets badKids = new MapOfSets(badChildren); // wrapper
+    Map<ReaderField, Set<ReaderField>> badChildren = new HashMap<ReaderField, Set<ReaderField>>(17);
+    MapOfSets<ReaderField, ReaderField> badKids = new MapOfSets<ReaderField, ReaderField>(badChildren); // wrapper
 
-    Map viToItemSets = valIdToItems.getMap();
-    Map rfToValIdSets = readerFieldToValIds.getMap();
+    Map<Integer, Set<CacheEntry>> viToItemSets = valIdToItems.getMap();
+    Map<ReaderField, Set<Integer>> rfToValIdSets = readerFieldToValIds.getMap();
 
-    Set seen = new HashSet(17);
+    Set<ReaderField> seen = new HashSet<ReaderField>(17);
 
-    Set readerFields = rfToValIdSets.keySet();
-    Iterator rfIter = readerFields.iterator();
-    while (rfIter.hasNext()) {
-      ReaderField rf = (ReaderField) rfIter.next();
+    Set<ReaderField> readerFields = rfToValIdSets.keySet();
+    for (final ReaderField rf : readerFields) {
       
       if (seen.contains(rf)) continue;
 
       List kids = getAllDecendentReaderKeys(rf.readerKey);
-      for (int i = 0; i < kids.size(); i++) {
-        ReaderField kid = new ReaderField(kids.get(i), rf.fieldName);
+      for (Object kidKey : kids) {
+        ReaderField kid = new ReaderField(kidKey, rf.fieldName);
         
         if (badChildren.containsKey(kid)) {
           // we've already process this kid as RF and found other problems
           // track those problems as our own
           badKids.put(rf, kid);
-          badKids.putAll(rf, (Collection)badChildren.get(kid));
+          badKids.putAll(rf, badChildren.get(kid));
           badChildren.remove(kid);
           
         } else if (rfToValIdSets.containsKey(kid)) {
@@ -240,33 +233,27 @@ public final class FieldCacheSanityChecker {
     }
 
     // every mapping in badKids represents an Insanity
-    Iterator parentsIter = badChildren.keySet().iterator();
-    while (parentsIter.hasNext()) {
-      ReaderField parent = (ReaderField) parentsIter.next();
-      Set kids = (Set) badChildren.get(parent);
+    for (final ReaderField parent : badChildren.keySet()) {
+      Set<ReaderField> kids = badChildren.get(parent);
 
-      List badEntries = new ArrayList(kids.size() * 2);
+      List<CacheEntry> badEntries = new ArrayList<CacheEntry>(kids.size() * 2);
 
       // put parent entr(ies) in first
       {
-        Iterator valIter =((Set)rfToValIdSets.get(parent)).iterator();
-        while (valIter.hasNext()) {
-          badEntries.addAll((Set)viToItemSets.get(valIter.next()));
+        for (final Integer value  : rfToValIdSets.get(parent)) {
+          badEntries.addAll(viToItemSets.get(value));
         }
       }
 
       // now the entries for the descendants
-      Iterator kidsIter = kids.iterator();
-      while (kidsIter.hasNext()) {
-        ReaderField kid = (ReaderField) kidsIter.next();
-        Iterator valIter =((Set)rfToValIdSets.get(kid)).iterator();
-        while (valIter.hasNext()) {
-          badEntries.addAll((Set)viToItemSets.get(valIter.next()));
+      for (final ReaderField kid : kids) {
+        for (final Integer value : rfToValIdSets.get(kid)) {
+          badEntries.addAll(viToItemSets.get(value));
         }
       }
 
       CacheEntry[] badness = new CacheEntry[badEntries.size()];
-      badness = (CacheEntry[]) badEntries.toArray(badness);
+      badness = badEntries.toArray(badness);
 
       insanity.add(new Insanity(InsanityType.SUBREADER,
                                 "Found caches for decendents of " + 

@@ -19,10 +19,8 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.io.FileNotFoundException;
-import java.io.File;
 import java.io.Serializable;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -34,7 +32,7 @@ public class RAMDirectory extends Directory implements Serializable {
 
   private static final long serialVersionUID = 1l;
 
-  HashMap fileMap = new HashMap();
+  HashMap<String,RAMFile> fileMap = new HashMap<String,RAMFile>();
   long sizeInBytes = 0;
   
   // *****
@@ -73,12 +71,11 @@ public class RAMDirectory extends Directory implements Serializable {
 
   public synchronized final String[] listAll() {
     ensureOpen();
-    Set fileNames = fileMap.keySet();
+    Set<String> fileNames = fileMap.keySet();
     String[] result = new String[fileNames.size()];
     int i = 0;
-    Iterator it = fileNames.iterator();
-    while (it.hasNext())
-      result[i++] = (String)it.next();
+    for(final String fileName: fileNames) 
+      result[i++] = fileName;
     return result;
   }
 
@@ -87,7 +84,7 @@ public class RAMDirectory extends Directory implements Serializable {
     ensureOpen();
     RAMFile file;
     synchronized (this) {
-      file = (RAMFile)fileMap.get(name);
+      file = fileMap.get(name);
     }
     return file != null;
   }
@@ -99,7 +96,7 @@ public class RAMDirectory extends Directory implements Serializable {
     ensureOpen();
     RAMFile file;
     synchronized (this) {
-      file = (RAMFile)fileMap.get(name);
+      file = fileMap.get(name);
     }
     if (file==null)
       throw new FileNotFoundException(name);
@@ -113,7 +110,7 @@ public class RAMDirectory extends Directory implements Serializable {
     ensureOpen();
     RAMFile file;
     synchronized (this) {
-      file = (RAMFile)fileMap.get(name);
+      file = fileMap.get(name);
     }
     if (file==null)
       throw new FileNotFoundException(name);
@@ -141,7 +138,7 @@ public class RAMDirectory extends Directory implements Serializable {
     ensureOpen();
     RAMFile file;
     synchronized (this) {
-      file = (RAMFile)fileMap.get(name);
+      file = fileMap.get(name);
     }
     if (file==null)
       throw new FileNotFoundException(name);
@@ -161,7 +158,7 @@ public class RAMDirectory extends Directory implements Serializable {
    */
   public synchronized void deleteFile(String name) throws IOException {
     ensureOpen();
-    RAMFile file = (RAMFile)fileMap.get(name);
+    RAMFile file = fileMap.get(name);
     if (file!=null) {
         fileMap.remove(name);
         file.directory = null;
@@ -175,7 +172,7 @@ public class RAMDirectory extends Directory implements Serializable {
     ensureOpen();
     RAMFile file = new RAMFile(this);
     synchronized (this) {
-      RAMFile existing = (RAMFile)fileMap.get(name);
+      RAMFile existing = fileMap.get(name);
       if (existing!=null) {
         sizeInBytes -= existing.sizeInBytes;
         existing.directory = null;
@@ -190,7 +187,7 @@ public class RAMDirectory extends Directory implements Serializable {
     ensureOpen();
     RAMFile file;
     synchronized (this) {
-      file = (RAMFile)fileMap.get(name);
+      file = fileMap.get(name);
     }
     if (file == null)
       throw new FileNotFoundException(name);

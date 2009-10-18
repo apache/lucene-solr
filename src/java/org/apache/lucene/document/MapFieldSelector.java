@@ -17,6 +17,7 @@ package org.apache.lucene.document;
  * limitations under the License.
  */
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,39 +28,39 @@ import java.util.Map;
  */
 public class MapFieldSelector implements FieldSelector {
     
-    Map fieldSelections;
+    Map<String,FieldSelectorResult> fieldSelections;
     
     /** Create a a MapFieldSelector
      * @param fieldSelections maps from field names (String) to {@link FieldSelectorResult}s
      */
-    public MapFieldSelector(Map fieldSelections) {
+    public MapFieldSelector(Map<String,FieldSelectorResult> fieldSelections) {
         this.fieldSelections = fieldSelections;
     }
     
     /** Create a a MapFieldSelector
      * @param fields fields to LOAD.  List of Strings.  All other fields are NO_LOAD.
      */
-    public MapFieldSelector(List fields) {
-        fieldSelections = new HashMap(fields.size()*5/3);
-        for (int i=0; i<fields.size(); i++)
-            fieldSelections.put(fields.get(i), FieldSelectorResult.LOAD);
+    public MapFieldSelector(List<String> fields) {
+        fieldSelections = new HashMap<String,FieldSelectorResult>(fields.size()*5/3);
+        for (final String field : fields)
+            fieldSelections.put(field, FieldSelectorResult.LOAD);
     }
     
     /** Create a a MapFieldSelector
      * @param fields fields to LOAD.  All other fields are NO_LOAD.
      */
-    public MapFieldSelector(String[] fields) {
-        fieldSelections = new HashMap(fields.length*5/3);
-        for (int i=0; i<fields.length; i++)
-            fieldSelections.put(fields[i], FieldSelectorResult.LOAD);
+    public MapFieldSelector(String... fields) {
+      this(Arrays.asList(fields));
     }
+
+
     
     /** Load field according to its associated value in fieldSelections
      * @param field a field name
      * @return the fieldSelections value that field maps to or NO_LOAD if none.
      */
     public FieldSelectorResult accept(String field) {
-        FieldSelectorResult selection = (FieldSelectorResult) fieldSelections.get(field);
+        FieldSelectorResult selection = fieldSelections.get(field);
         return selection!=null ? selection : FieldSelectorResult.NO_LOAD;
     }
     

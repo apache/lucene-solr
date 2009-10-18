@@ -75,7 +75,7 @@ public abstract class Spans {
    * @throws java.io.IOException
     */
   // TODO: Remove warning after API has been finalized
-  public abstract Collection/*<byte[]>*/ getPayload() throws IOException;
+  public abstract Collection<byte[]> getPayload() throws IOException;
 
   /**
    * Checks if a payload can be loaded at this position.

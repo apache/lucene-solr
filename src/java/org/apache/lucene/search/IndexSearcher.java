@@ -90,9 +90,9 @@ public class IndexSearcher extends Searcher {
     reader = r;
     this.closeReader = closeReader;
 
-    List subReadersList = new ArrayList();
+    List<IndexReader> subReadersList = new ArrayList<IndexReader>();
     gatherSubReaders(subReadersList, reader);
-    subReaders = (IndexReader[]) subReadersList.toArray(new IndexReader[subReadersList.size()]);
+    subReaders = subReadersList.toArray(new IndexReader[subReadersList.size()]);
     docStarts = new int[subReaders.length];
     int maxDoc = 0;
     for (int i = 0; i < subReaders.length; i++) {
@@ -101,7 +101,7 @@ public class IndexSearcher extends Searcher {
     }
   }
 
-  protected void gatherSubReaders(List allSubReaders, IndexReader r) {
+  protected void gatherSubReaders(List<IndexReader> allSubReaders, IndexReader r) {
     ReaderUtil.gatherSubReaders(allSubReaders, r);
   }
 

@@ -37,7 +37,7 @@ import java.util.*;
 public final class RamUsageEstimator {
   private MemoryModel memoryModel;
 
-  private final Map seen;
+  private final Map<Object,Object> seen;
 
   private int refSize;
   private int arraySize;
@@ -82,7 +82,7 @@ public final class RamUsageEstimator {
     this.checkInterned = checkInterned;
     // Use Map rather than Set so that we can use an IdentityHashMap - not
     // seeing an IdentityHashSet
-    seen = new IdentityHashMap(64);
+    seen = new IdentityHashMap<Object,Object>(64);
     this.refSize = memoryModel.getReferenceSize();
     this.arraySize = memoryModel.getArraySize();
     this.classSize = memoryModel.getClassSize();

@@ -26,21 +26,21 @@ import java.util.Map;
 /**
  * Helper class for keeping Lists of Objects associated with keys. <b>WARNING: THIS CLASS IS NOT THREAD SAFE</b>
  */
-public class MapOfSets {
+public class MapOfSets<K, V> {
 
-  private final Map theMap;
+  private final Map<K, Set<V>> theMap;
 
   /**
    * @param m the backing store for this object
    */
-  public MapOfSets(Map m) {
+  public MapOfSets(Map<K, Set<V>> m) {
     theMap = m;
   }
 
   /**
    * @return direct access to the map backing this object.
    */
-  public Map getMap() {
+  public Map<K, Set<V>> getMap() {
     return theMap;
   }
 
@@ -49,12 +49,12 @@ public class MapOfSets {
    * already in the map, a new Set will first be created.
    * @return the size of the Set associated with key once val is added to it.
    */
-  public int put(Object key, Object val) {
-    final Set theSet;
+  public int put(K key, V val) {
+    final Set<V> theSet;
     if (theMap.containsKey(key)) {
-      theSet = (Set)theMap.get(key);
+      theSet = theMap.get(key);
     } else {
-      theSet = new HashSet(23);
+      theSet = new HashSet<V>(23);
       theMap.put(key, theSet);
     }
     theSet.add(val);
@@ -66,12 +66,12 @@ public class MapOfSets {
    * already in the map, a new Set will first be created.
    * @return the size of the Set associated with key once val is added to it.
    */
-  public int putAll(Object key, Collection vals) {
-    final Set theSet;
+  public int putAll(K key, Collection<? extends V> vals) {
+    final Set<V> theSet;
     if (theMap.containsKey(key)) {
-      theSet = (Set)theMap.get(key);
+      theSet = theMap.get(key);
     } else {
-      theSet = new HashSet(23);
+      theSet = new HashSet<V>(23);
       theMap.put(key, theSet);
     }
     theSet.addAll(vals);

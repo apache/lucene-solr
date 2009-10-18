@@ -1031,7 +1031,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   // can return null if norms aren't stored
   protected synchronized byte[] getNorms(String field) throws IOException {
-    Norm norm = (Norm) norms.get(field);
+    Norm norm = norms.get(field);
     if (norm == null) return null;  // not indexed, or norms not stored
     return norm.bytes();
   }
@@ -1045,7 +1045,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   protected void doSetNorm(int doc, String field, byte value)
           throws IOException {
-    Norm norm = (Norm) norms.get(field);
+    Norm norm = norms.get(field);
     if (norm == null)                             // not an indexed field
       return;
 
@@ -1058,7 +1058,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     throws IOException {
 
     ensureOpen();
-    Norm norm = (Norm) norms.get(field);
+    Norm norm = norms.get(field);
     if (norm == null) {
       Arrays.fill(bytes, offset, bytes.length, DefaultSimilarity.encodeNorm(1.0f));
       return;

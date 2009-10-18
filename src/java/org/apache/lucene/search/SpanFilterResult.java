@@ -16,7 +16,7 @@ package org.apache.lucene.search;
  */
 
 import java.util.ArrayList;
-import java.util.BitSet;
+
 import java.util.List;
 
 
@@ -29,14 +29,14 @@ import java.util.List;
  **/
 public class SpanFilterResult {
   private DocIdSet docIdSet;
-  private List positions;//Spans spans;
+  private List<PositionInfo> positions;//Spans spans;
   
   /**
   *
   * @param docIdSet The DocIdSet for the Filter
   * @param positions A List of {@link org.apache.lucene.search.SpanFilterResult.PositionInfo} objects
   */
-  public SpanFilterResult(DocIdSet docIdSet, List positions) {
+  public SpanFilterResult(DocIdSet docIdSet, List<PositionInfo> positions) {
     this.docIdSet = docIdSet;
     this.positions = positions;
   }
@@ -46,7 +46,7 @@ public class SpanFilterResult {
    * Entries are increasing by document order
    * @return A List of PositionInfo objects
    */
-  public List getPositions() {
+  public List<PositionInfo> getPositions() {
     return positions;
   }
 
@@ -57,12 +57,12 @@ public class SpanFilterResult {
 
   public static class PositionInfo {
     private int doc;
-    private List positions;
+    private List<StartEnd> positions;
 
 
     public PositionInfo(int doc) {
       this.doc = doc;
-      positions = new ArrayList();
+      positions = new ArrayList<StartEnd>();
     }
 
     public void addPosition(int start, int end)
@@ -76,9 +76,9 @@ public class SpanFilterResult {
 
     /**
      *
-     * @return A List of {@link org.apache.lucene.search.SpanFilterResult.StartEnd} objects
+     * @return Positions
      */
-    public List getPositions() {
+    public List<StartEnd> getPositions() {
       return positions;
     }
   }

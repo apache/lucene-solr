@@ -38,8 +38,8 @@ import org.apache.lucene.util.ToStringUtils;
  */
 public class MultiPhraseQuery extends Query {
   private String field;
-  private ArrayList termArrays = new ArrayList();
-  private ArrayList positions = new ArrayList();
+  private ArrayList<Term[]> termArrays = new ArrayList<Term[]>();
+  private ArrayList<Integer> positions = new ArrayList<Integer>();
 
   private int slop = 0;
 
@@ -95,10 +95,10 @@ public class MultiPhraseQuery extends Query {
   }
 
   /**
-   * Returns a List<Term[]> of the terms in the multiphrase.
+   * Returns a List of the terms in the multiphrase.
    * Do not modify the List or its contents.
    */
-  public List getTermArrays() {
+  public List<Term[]> getTermArrays() {
 	  return Collections.unmodifiableList(termArrays);
   }
 
@@ -114,10 +114,9 @@ public class MultiPhraseQuery extends Query {
 
   // inherit javadoc
   public void extractTerms(Set<Term> terms) {
-    for (Iterator iter = termArrays.iterator(); iter.hasNext();) {
-      Term[] arr = (Term[])iter.next();
-      for (int i=0; i<arr.length; i++) {
-        terms.add(arr[i]);
+    for (final Term[] arr : termArrays) {
+      for (final Term term: arr) {
+        terms.add(term);
       }
     }
   }
@@ -135,11 +134,9 @@ public class MultiPhraseQuery extends Query {
       this.similarity = getSimilarity(searcher);
 
       // compute idf
-      Iterator i = termArrays.iterator();
-      while (i.hasNext()) {
-        Term[] terms = (Term[])i.next();
-        for (int j=0; j<terms.length; j++) {
-          idf += getSimilarity(searcher).idf(terms[j], searcher);
+      for(final Term[] terms: termArrays) {
+        for (Term term: terms) {
+          idf += getSimilarity(searcher).idf(term, searcher);
         }
       }
     }
@@ -278,9 +275,9 @@ public class MultiPhraseQuery extends Query {
     }
 
     buffer.append("\"");
-    Iterator i = termArrays.iterator();
+    Iterator<Term[]> i = termArrays.iterator();
     while (i.hasNext()) {
-      Term[] terms = (Term[])i.next();
+      Term[] terms = i.next();
       if (terms.length > 1) {
         buffer.append("(");
         for (int j = 0; j < terms.length; j++) {
@@ -330,9 +327,7 @@ public class MultiPhraseQuery extends Query {
   // Breakout calculation of the termArrays hashcode
   private int termArraysHashCode() {
     int hashCode = 1;
-    Iterator iterator = termArrays.iterator();
-    while (iterator.hasNext()) {
-      Term[] termArray = (Term[]) iterator.next();
+    for (final Term[] termArray: termArrays) {
       hashCode = 31 * hashCode
           + (termArray == null ? 0 : arraysHashCode(termArray));
     }
@@ -354,15 +349,15 @@ public class MultiPhraseQuery extends Query {
   }
 
   // Breakout calculation of the termArrays equals
-  private boolean termArraysEquals(List termArrays1, List termArrays2) {
+  private boolean termArraysEquals(List<Term[]> termArrays1, List<Term[]> termArrays2) {
     if (termArrays1.size() != termArrays2.size()) {
       return false;
     }
-    ListIterator iterator1 = termArrays1.listIterator();
-    ListIterator iterator2 = termArrays2.listIterator();
+    ListIterator<Term[]> iterator1 = termArrays1.listIterator();
+    ListIterator<Term[]> iterator2 = termArrays2.listIterator();
     while (iterator1.hasNext()) {
-      Term[] termArray1 = (Term[]) iterator1.next();
-      Term[] termArray2 = (Term[]) iterator2.next();
+      Term[] termArray1 = iterator1.next();
+      Term[] termArray2 = iterator2.next();
       if (!(termArray1 == null ? termArray2 == null : Arrays.equals(termArray1,
           termArray2))) {
         return false;

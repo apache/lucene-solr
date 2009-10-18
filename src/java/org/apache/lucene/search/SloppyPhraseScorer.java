@@ -146,14 +146,14 @@ final class SloppyPhraseScorer extends PhraseScorer {
         if (!checkedRepeats) {
             checkedRepeats = true;
             // check for repeats
-            HashMap m = null;
+            HashMap<PhrasePositions, Object> m = null;
             for (PhrasePositions pp = first; pp != null; pp = pp.next) {
                 int tpPos = pp.position + pp.offset;
                 for (PhrasePositions pp2 = pp.next; pp2 != null; pp2 = pp2.next) {
                     int tpPos2 = pp2.position + pp2.offset;
                     if (tpPos2 == tpPos) { 
                         if (m == null)
-                            m = new HashMap();
+                            m = new HashMap<PhrasePositions, Object>();
                         pp.repeats = true;
                         pp2.repeats = true;
                         m.put(pp,null);
@@ -162,7 +162,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
                 }
             }
             if (m!=null)
-                repeats = (PhrasePositions[]) m.keySet().toArray(new PhrasePositions[0]);
+                repeats = m.keySet().toArray(new PhrasePositions[0]);
         }
         
         // with repeats must advance some repeating pp's so they all start with differing tp's       

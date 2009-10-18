@@ -33,14 +33,14 @@ import org.apache.lucene.search.Query;
 
 /** Matches the union of its clauses.*/
 public class SpanOrQuery extends SpanQuery implements Cloneable {
-  private List clauses;
+  private List<SpanQuery> clauses;
   private String field;
 
   /** Construct a SpanOrQuery merging the provided clauses. */
   public SpanOrQuery(SpanQuery[] clauses) {
 
     // copy clauses array into an ArrayList
-    this.clauses = new ArrayList(clauses.length);
+    this.clauses = new ArrayList<SpanQuery>(clauses.length);
     for (int i = 0; i < clauses.length; i++) {
       SpanQuery clause = clauses[i];
       if (i == 0) {                               // check field
@@ -60,9 +60,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
   public String getField() { return field; }
 
   public void extractTerms(Set<Term> terms) {
-    Iterator i = clauses.iterator();
-    while (i.hasNext()) {
-      SpanQuery clause = (SpanQuery)i.next();
+    for(final SpanQuery clause: clauses) {
       clause.extractTerms(terms);
     }
   }
@@ -72,8 +70,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
     SpanQuery[] newClauses = new SpanQuery[sz];
 
     for (int i = 0; i < sz; i++) {
-      SpanQuery clause = (SpanQuery) clauses.get(i);
-      newClauses[i] = (SpanQuery) clause.clone();
+      newClauses[i] = (SpanQuery) clauses.get(i).clone();
     }
     SpanOrQuery soq = new SpanOrQuery(newClauses);
     soq.setBoost(getBoost());
@@ -83,7 +80,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
   public Query rewrite(IndexReader reader) throws IOException {
     SpanOrQuery clone = null;
     for (int i = 0 ; i < clauses.size(); i++) {
-      SpanQuery c = (SpanQuery)clauses.get(i);
+      SpanQuery c = clauses.get(i);
       SpanQuery query = (SpanQuery) c.rewrite(reader);
       if (query != c) {                     // clause rewrote: must clone
         if (clone == null)
@@ -101,9 +98,9 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     buffer.append("spanOr([");
-    Iterator i = clauses.iterator();
+    Iterator<SpanQuery> i = clauses.iterator();
     while (i.hasNext()) {
-      SpanQuery clause = (SpanQuery)i.next();
+      SpanQuery clause = i.next();
       buffer.append(clause.toString(field));
       if (i.hasNext()) {
         buffer.append(", ");
@@ -134,14 +131,12 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
   }
 
 
-  private class SpanQueue extends PriorityQueue {
+  private class SpanQueue extends PriorityQueue<Spans> {
     public SpanQueue(int size) {
       initialize(size);
     }
 
-    protected final boolean lessThan(Object o1, Object o2) {
-      Spans spans1 = (Spans)o1;
-      Spans spans2 = (Spans)o2;
+    protected final boolean lessThan(Spans spans1, Spans spans2) {
       if (spans1.doc() == spans2.doc()) {
         if (spans1.start() == spans2.start()) {
           return spans1.end() < spans2.end();
@@ -163,9 +158,9 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
 
         private boolean initSpanQueue(int target) throws IOException {
           queue = new SpanQueue(clauses.size());
-          Iterator i = clauses.iterator();
+          Iterator<SpanQuery> i = clauses.iterator();
           while (i.hasNext()) {
-            Spans spans = ((SpanQuery)i.next()).getSpans(reader);
+            Spans spans = i.next().getSpans(reader);
             if (   ((target == -1) && spans.next())
                 || ((target != -1) && spans.skipTo(target))) {
               queue.add(spans);
@@ -219,11 +214,11 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
         public int start() { return top().start(); }
         public int end() { return top().end(); }
 
-      public Collection/*<byte[]>*/ getPayload() throws IOException {
-        ArrayList result = null;
+      public Collection<byte[]> getPayload() throws IOException {
+        ArrayList<byte[]> result = null;
         Spans theTop = top();
         if (theTop != null && theTop.isPayloadAvailable()) {
-          result = new ArrayList(theTop.getPayload());
+          result = new ArrayList<byte[]>(theTop.getPayload());
         }
         return result;
       }

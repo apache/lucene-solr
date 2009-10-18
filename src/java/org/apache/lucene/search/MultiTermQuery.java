@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
+
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.ToStringUtils;
+
 import org.apache.lucene.queryParser.QueryParser; // for javadoc
 
 /**
@@ -217,7 +217,7 @@ public abstract class MultiTermQuery extends Query {
       // exhaust the enum before hitting either of the
       // cutoffs, we use ConstantBooleanQueryRewrite; else,
       // ConstantFilterRewrite:
-      final Collection pendingTerms = new ArrayList();
+      final Collection<Term> pendingTerms = new ArrayList<Term>();
       final int docCountCutoff = (int) ((docCountPercent / 100.) * reader.maxDoc());
       final int termCountLimit = Math.min(BooleanQuery.getMaxClauseCount(), termCountCutoff);
       int docVisitCount = 0;
@@ -244,10 +244,9 @@ public abstract class MultiTermQuery extends Query {
             // Enumeration is done, and we hit a small
             // enough number of terms & docs -- just make a
             // BooleanQuery, now
-            Iterator it = pendingTerms.iterator();
             BooleanQuery bq = new BooleanQuery(true);
-            while(it.hasNext()) {
-              TermQuery tq = new TermQuery((Term) it.next());
+            for (final Term term: pendingTerms) {
+              TermQuery tq = new TermQuery(term);
               bq.add(tq, BooleanClause.Occur.SHOULD);
             }
             // Strip scores

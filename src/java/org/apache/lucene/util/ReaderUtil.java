@@ -34,7 +34,7 @@ public class ReaderUtil {
    * @param allSubReaders
    * @param reader
    */
-  public static void gatherSubReaders(List allSubReaders, IndexReader reader) {
+  public static void gatherSubReaders(List<IndexReader> allSubReaders, IndexReader reader) {
     IndexReader[] subReaders = reader.getSequentialSubReaders();
     if (subReaders == null) {
       // Add the reader itself, and do not recurse
@@ -54,7 +54,7 @@ public class ReaderUtil {
    * @return sub reader of parent which contains the specified doc id
    */
   public static IndexReader subReader(int doc, IndexReader reader) {
-    List subReadersList = new ArrayList();
+    List<IndexReader> subReadersList = new ArrayList<IndexReader>();
     ReaderUtil.gatherSubReaders(subReadersList, reader);
     IndexReader[] subReaders = (IndexReader[]) subReadersList
         .toArray(new IndexReader[subReadersList.size()]);
@@ -75,7 +75,7 @@ public class ReaderUtil {
    * @return the subreader at subIndex
    */
   public static IndexReader subReader(IndexReader reader, int subIndex) {
-    List subReadersList = new ArrayList();
+    List<IndexReader> subReadersList = new ArrayList<IndexReader>();
     ReaderUtil.gatherSubReaders(subReadersList, reader);
     IndexReader[] subReaders = (IndexReader[]) subReadersList
         .toArray(new IndexReader[subReadersList.size()]);

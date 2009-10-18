@@ -34,8 +34,8 @@ import org.apache.lucene.util.ToStringUtils;
  */
 public class PhraseQuery extends Query {
   private String field;
-  private ArrayList terms = new ArrayList(4);
-  private ArrayList positions = new ArrayList(4);
+  private ArrayList<Term> terms = new ArrayList<Term>(4);
+  private ArrayList<Integer> positions = new ArrayList<Integer>(4);
   private int maxPosition = 0;
   private int slop = 0;
 
@@ -67,7 +67,7 @@ public class PhraseQuery extends Query {
   public void add(Term term) {
     int position = 0;
     if(positions.size() > 0)
-        position = ((Integer) positions.get(positions.size()-1)).intValue() + 1;
+        position = positions.get(positions.size()-1).intValue() + 1;
 
     add(term, position);
   }
@@ -94,7 +94,7 @@ public class PhraseQuery extends Query {
 
   /** Returns the set of terms in this phrase. */
   public Term[] getTerms() {
-    return (Term[])terms.toArray(new Term[0]);
+    return terms.toArray(new Term[0]);
   }
 
   /**
@@ -103,7 +103,7 @@ public class PhraseQuery extends Query {
   public int[] getPositions() {
       int[] result = new int[positions.size()];
       for(int i = 0; i < positions.size(); i++)
-          result[i] = ((Integer) positions.get(i)).intValue();
+          result[i] = positions.get(i).intValue();
       return result;
   }
 
@@ -145,7 +145,7 @@ public class PhraseQuery extends Query {
 
       TermPositions[] tps = new TermPositions[terms.size()];
       for (int i = 0; i < terms.size(); i++) {
-        TermPositions p = reader.termPositions((Term)terms.get(i));
+        TermPositions p = reader.termPositions(terms.get(i));
         if (p == null)
           return null;
         tps[i] = p;
@@ -176,7 +176,7 @@ public class PhraseQuery extends Query {
           query.append(" ");
         }
 
-        Term term = (Term)terms.get(i);
+        Term term = terms.get(i);
 
         query.append(term.text());
       }
@@ -242,7 +242,7 @@ public class PhraseQuery extends Query {
 
   public Weight createWeight(Searcher searcher) throws IOException {
     if (terms.size() == 1) {			  // optimize one-term case
-      Term term = (Term)terms.get(0);
+      Term term = terms.get(0);
       Query termQuery = new TermQuery(term);
       termQuery.setBoost(getBoost());
       return termQuery.createWeight(searcher);
@@ -268,12 +268,12 @@ public class PhraseQuery extends Query {
     buffer.append("\"");
     String[] pieces = new String[maxPosition + 1];
     for (int i = 0; i < terms.size(); i++) {
-      int pos = ((Integer)positions.get(i)).intValue();
+      int pos = positions.get(i).intValue();
       String s = pieces[pos];
       if (s == null) {
-        s = ((Term)terms.get(i)).text();
+        s = (terms.get(i)).text();
       } else {
-        s = s + "|" + ((Term)terms.get(i)).text();
+        s = s + "|" + (terms.get(i)).text();
       }
       pieces[pos] = s;
     }

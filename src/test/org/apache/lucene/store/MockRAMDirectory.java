@@ -43,19 +43,19 @@ public class MockRAMDirectory extends RAMDirectory {
   Random randomState;
   boolean noDeleteOpenFile = true;
   boolean preventDoubleWrite = true;
-  private Set unSyncedFiles;
-  private Set createdFiles;
+  private Set<String> unSyncedFiles;
+  private Set<String> createdFiles;
   volatile boolean crashed;
 
   // NOTE: we cannot initialize the Map here due to the
   // order in which our constructor actually does this
   // member initialization vs when it calls super.  It seems
   // like super is called, then our members are initialized:
-  Map openFiles;
+  Map<String,Integer> openFiles;
 
   private synchronized void init() {
     if (openFiles == null)
-      openFiles = new HashMap();
+      openFiles = new HashMap<String,Integer>();
     if (createdFiles == null)
       createdFiles = new HashSet();
     if (unSyncedFiles == null)
@@ -90,12 +90,12 @@ public class MockRAMDirectory extends RAMDirectory {
   public synchronized void crash() throws IOException {
     crashed = true;
     openFiles = new HashMap();
-    Iterator it = unSyncedFiles.iterator();
+    Iterator<String> it = unSyncedFiles.iterator();
     unSyncedFiles = new HashSet();
     int count = 0;
     while(it.hasNext()) {
-      String name = (String) it.next();
-      RAMFile file = (RAMFile) fileMap.get(name);
+      String name = it.next();
+      RAMFile file = fileMap.get(name);
       if (count % 3 == 0) {
         deleteFile(name, true);
       } else if (count % 3 == 1) {
@@ -204,7 +204,7 @@ public class MockRAMDirectory extends RAMDirectory {
       throw new IOException("cannot createOutput after crash");
     unSyncedFiles.add(name);
     createdFiles.add(name);
-    RAMFile existing = (RAMFile)fileMap.get(name);
+    RAMFile existing = fileMap.get(name);
     // Enforce write once:
     if (existing!=null && !name.equals("segments.gen") && preventDoubleWrite)
       throw new IOException("file " + name + " already exists");
@@ -221,7 +221,7 @@ public class MockRAMDirectory extends RAMDirectory {
   }
 
   public synchronized IndexInput openInput(String name) throws IOException {
-    RAMFile file = (RAMFile)fileMap.get(name);
+    RAMFile file = fileMap.get(name);
     if (file == null)
       throw new FileNotFoundException(name);
     else {
@@ -239,9 +239,9 @@ public class MockRAMDirectory extends RAMDirectory {
   /** Provided for testing purposes.  Use sizeInBytes() instead. */
   public synchronized final long getRecomputedSizeInBytes() {
     long size = 0;
-    Iterator it = fileMap.values().iterator();
-    while (it.hasNext())
-      size += ((RAMFile) it.next()).getSizeInBytes();
+    for(final RAMFile file: fileMap.values()) {
+      size += file.getSizeInBytes();
+    }
     return size;
   }
 
@@ -253,9 +253,8 @@ public class MockRAMDirectory extends RAMDirectory {
 
   public final synchronized long getRecomputedActualSizeInBytes() {
     long size = 0;
-    Iterator it = fileMap.values().iterator();
-    while (it.hasNext())
-      size += ((RAMFile) it.next()).length;
+    for (final RAMFile file : fileMap.values())
+      size += file.length;
     return size;
   }
 

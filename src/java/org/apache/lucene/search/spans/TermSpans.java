@@ -87,7 +87,7 @@ public class TermSpans extends Spans {
   }
 
   // TODO: Remove warning after API has been finalized
-  public Collection/*<byte[]>*/ getPayload() throws IOException {
+  public Collection<byte[]> getPayload() throws IOException {
     byte [] bytes = new byte[positions.getPayloadLength()]; 
     bytes = positions.getPayload(bytes, 0);
     return Collections.singletonList(bytes);

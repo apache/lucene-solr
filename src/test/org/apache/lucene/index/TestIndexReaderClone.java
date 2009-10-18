@@ -335,7 +335,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     origSegmentReader.close();
     assertDelDocsRefCountEquals(1, origSegmentReader);
     // check the norm refs
-    Norm norm = (Norm) clonedSegmentReader.norms.get("field1");
+    Norm norm = clonedSegmentReader.norms.get("field1");
     assertEquals(1, norm.bytesRef().refCount());
     clonedSegmentReader.close();
     dir1.close();

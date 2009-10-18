@@ -26,24 +26,19 @@ import java.util.Map;
  * if needed.
  * 
  */
-public class SimpleLRUCache extends SimpleMapCache {
+public class SimpleLRUCache<K,V> extends SimpleMapCache<K,V> {
   private final static float LOADFACTOR = 0.75f;
-
-  private int cacheSize;
 
   /**
    * Creates a last-recently-used cache with the specified size. 
    */
-  public SimpleLRUCache(int cacheSize) {
-    super(null);
-    this.cacheSize = cacheSize;
-    int capacity = (int) Math.ceil(cacheSize / LOADFACTOR) + 1;
-
-    super.map = new LinkedHashMap(capacity, LOADFACTOR, true) {
-      protected boolean removeEldestEntry(Map.Entry eldest) {
-        return size() > SimpleLRUCache.this.cacheSize;
+  public SimpleLRUCache(final int cacheSize) {
+    super(new LinkedHashMap<K,V>((int) Math.ceil(cacheSize / LOADFACTOR) + 1, LOADFACTOR, true) {
+      @Override
+      protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+        return size() > cacheSize;
       }
-    };
+    });
   }
 
 }

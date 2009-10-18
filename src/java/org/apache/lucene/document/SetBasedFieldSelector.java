@@ -23,18 +23,16 @@ import java.util.Set;
  **/
 public class SetBasedFieldSelector implements FieldSelector {
   
-  private Set fieldsToLoad;
-  private Set lazyFieldsToLoad;
+  private Set<String> fieldsToLoad;
+  private Set<String> lazyFieldsToLoad;
   
-  
-
   /**
    * Pass in the Set of {@link Field} names to load and the Set of {@link Field} names to load lazily.  If both are null, the
    * Document will not have any {@link Field} on it.  
    * @param fieldsToLoad A Set of {@link String} field names to load.  May be empty, but not null
    * @param lazyFieldsToLoad A Set of {@link String} field names to load lazily.  May be empty, but not null  
    */
-  public SetBasedFieldSelector(Set fieldsToLoad, Set lazyFieldsToLoad) {
+  public SetBasedFieldSelector(Set<String> fieldsToLoad, Set<String> lazyFieldsToLoad) {
     this.fieldsToLoad = fieldsToLoad;
     this.lazyFieldsToLoad = lazyFieldsToLoad;
   }

@@ -27,16 +27,16 @@ import java.util.HashSet;
 public class IndexFileNameFilter implements FilenameFilter {
 
   private static IndexFileNameFilter singleton = new IndexFileNameFilter();
-  private HashSet extensions;
-  private HashSet extensionsInCFS;
+  private HashSet<String> extensions;
+  private HashSet<String> extensionsInCFS;
 
   // Prevent instantiation.
   private IndexFileNameFilter() {
-    extensions = new HashSet();
+    extensions = new HashSet<String>();
     for (int i = 0; i < IndexFileNames.INDEX_EXTENSIONS.length; i++) {
       extensions.add(IndexFileNames.INDEX_EXTENSIONS[i]);
     }
-    extensionsInCFS = new HashSet();
+    extensionsInCFS = new HashSet<String>();
     for (int i = 0; i < IndexFileNames.INDEX_EXTENSIONS_IN_COMPOUND_FILE.length; i++) {
       extensionsInCFS.add(IndexFileNames.INDEX_EXTENSIONS_IN_COMPOUND_FILE[i]);
     }

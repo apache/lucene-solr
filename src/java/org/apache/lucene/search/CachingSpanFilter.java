@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader;
 
 import java.io.IOException;
-import java.util.BitSet;
+
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -33,7 +33,7 @@ public class CachingSpanFilter extends SpanFilter {
   /**
    * A transient Filter cache.
    */
-  protected transient Map cache;
+  protected transient Map<IndexReader,SpanFilterResult> cache;
 
   /**
    * @param filter Filter to cache results of
@@ -50,11 +50,11 @@ public class CachingSpanFilter extends SpanFilter {
   private SpanFilterResult getCachedResult(IndexReader reader) throws IOException {
     SpanFilterResult result = null;
     if (cache == null) {
-      cache = new WeakHashMap();
+      cache = new WeakHashMap<IndexReader,SpanFilterResult>();
     }
 
     synchronized (cache) {  // check cache
-      result = (SpanFilterResult) cache.get(reader);
+      result = cache.get(reader);
       if (result == null) {
         result = filter.bitSpans(reader);
         cache.put(reader, result);

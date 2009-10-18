@@ -36,7 +36,7 @@ import java.util.HashSet;
 public class NearSpansUnordered extends Spans {
   private SpanNearQuery query;
 
-  private List ordered = new ArrayList();         // spans in query order
+  private List<SpansCell> ordered = new ArrayList<SpansCell>();         // spans in query order
   private Spans[] subSpans;  
   private int slop;                               // from query
 
@@ -107,8 +107,8 @@ public class NearSpansUnordered extends Spans {
     public int start() { return spans.start(); }
     public int end() { return spans.end(); }
                     // TODO: Remove warning after API has been finalized
-    public Collection/*<byte[]>*/ getPayload() throws IOException {
-      return new ArrayList(spans.getPayload());
+    public Collection<byte[]> getPayload() throws IOException {
+      return new ArrayList<byte[]>(spans.getPayload());
     }
 
     // TODO: Remove warning after API has been finalized
@@ -223,8 +223,8 @@ public class NearSpansUnordered extends Spans {
    * @return Collection of <code>byte[]</code> payloads
    * @throws IOException
    */
-  public Collection/*<byte[]>*/ getPayload() throws IOException {
-    Set/*<byte[]*/ matchPayload = new HashSet();
+  public Collection<byte[]> getPayload() throws IOException {
+    Set<byte[]> matchPayload = new HashSet<byte[]>();
     for (SpansCell cell = first; cell != null; cell = cell.next) {
       if (cell.isPayloadAvailable()) {
         matchPayload.addAll(cell.getPayload());
@@ -253,7 +253,7 @@ public class NearSpansUnordered extends Spans {
 
   private void initList(boolean next) throws IOException {
     for (int i = 0; more && i < ordered.size(); i++) {
-      SpansCell cell = (SpansCell)ordered.get(i);
+      SpansCell cell = ordered.get(i);
       if (next)
         more = cell.next();                       // move to first entry
       if (more) {

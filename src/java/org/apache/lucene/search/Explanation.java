@@ -24,7 +24,7 @@ import java.util.ArrayList;
 public class Explanation implements java.io.Serializable {
   private float value;                            // the value of this node
   private String description;                     // what it represents
-  private ArrayList details;                      // sub-explanations
+  private ArrayList<Explanation> details;                      // sub-explanations
 
   public Explanation() {}
 
@@ -71,13 +71,13 @@ public class Explanation implements java.io.Serializable {
   public Explanation[] getDetails() {
     if (details == null)
       return null;
-    return (Explanation[])details.toArray(new Explanation[0]);
+    return details.toArray(new Explanation[0]);
   }
 
   /** Adds a sub-node to this explanation node. */
   public void addDetail(Explanation detail) {
     if (details == null)
-      details = new ArrayList();
+      details = new ArrayList<Explanation>();
     details.add(detail);
   }
 

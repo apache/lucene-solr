@@ -46,7 +46,7 @@ public class FilterManager {
   protected static final long DEFAULT_CACHE_SLEEP_TIME = 1000 * 60 * 10;
 
   /** The cache itself */
-  protected Map           cache;
+  protected Map<Integer,FilterItem>           cache;
   /** Maximum allowed cache size */
   protected int           cacheCleanSize;
   /** Cache cleaning frequency */
@@ -65,7 +65,7 @@ public class FilterManager {
    * Sets up the FilterManager singleton.
    */
   protected FilterManager() {
-    cache            = new HashMap();
+    cache            = new HashMap<Integer,FilterItem>();
     cacheCleanSize   = DEFAULT_CACHE_CLEAN_SIZE; // Let the cache get to 100 items
     cleanSleepTime   = DEFAULT_CACHE_SLEEP_TIME; // 10 minutes between cleanings
 
@@ -103,7 +103,7 @@ public class FilterManager {
   public Filter getFilter(Filter filter) {
     synchronized(cache) {
       FilterItem fi = null;
-      fi = (FilterItem)cache.get(Integer.valueOf(filter.hashCode()));
+      fi = cache.get(Integer.valueOf(filter.hashCode()));
       if (fi != null) {
         fi.timestamp = new Date().getTime();
         return fi.filter;
@@ -146,14 +146,13 @@ public class FilterManager {
   protected class FilterCleaner implements Runnable  {
 
     private boolean running = true;
-    private TreeSet sortedFilterItems;
+    private TreeSet<Map.Entry<Integer,FilterItem>> sortedFilterItems;
 
     public FilterCleaner() {
-      sortedFilterItems = new TreeSet(new Comparator() {
-        public int compare(Object a, Object b) {
-          if( a instanceof Map.Entry && b instanceof Map.Entry) {
-            FilterItem fia = (FilterItem) ((Map.Entry)a).getValue();
-            FilterItem fib = (FilterItem) ((Map.Entry)b).getValue();
+      sortedFilterItems = new TreeSet<Map.Entry<Integer,FilterItem>>(new Comparator<Map.Entry<Integer,FilterItem>>() {
+        public int compare(Map.Entry<Integer,FilterItem> a, Map.Entry<Integer,FilterItem> b) {
+            FilterItem fia = a.getValue();
+            FilterItem fib = b.getValue();
             if ( fia.timestamp == fib.timestamp ) {
               return 0;
             }
@@ -163,9 +162,7 @@ public class FilterManager {
             }
             // larger timestamp last
             return 1;
-          } else {
-            throw new ClassCastException("Objects are not Map.Entry");
-          }
+          
         }
       });
     }
@@ -180,12 +177,12 @@ public class FilterManager {
           sortedFilterItems.clear();
           synchronized (cache) {
             sortedFilterItems.addAll(cache.entrySet());
-            Iterator it = sortedFilterItems.iterator();
+            Iterator<Map.Entry<Integer,FilterItem>> it = sortedFilterItems.iterator();
             int numToDelete = (int) ((cache.size() - cacheCleanSize) * 1.5);
             int counter = 0;
             // loop over the set and delete all of the cache entries not used in a while
             while (it.hasNext() && counter++ < numToDelete) {
-              Map.Entry entry = (Map.Entry)it.next();
+              Map.Entry<Integer,FilterItem> entry = it.next();
               cache.remove(entry.getKey());
             }
           }

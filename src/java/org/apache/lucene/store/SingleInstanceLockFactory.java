@@ -33,7 +33,7 @@ import java.util.HashSet;
 
 public class SingleInstanceLockFactory extends LockFactory {
 
-  private HashSet locks = new HashSet();
+  private HashSet<String> locks = new HashSet<String>();
 
   public Lock makeLock(String lockName) {
     // We do not use the LockPrefix at all, because the private
@@ -54,9 +54,9 @@ public class SingleInstanceLockFactory extends LockFactory {
 class SingleInstanceLock extends Lock {
 
   String lockName;
-  private HashSet locks;
+  private HashSet<String> locks;
 
-  public SingleInstanceLock(HashSet locks, String lockName) {
+  public SingleInstanceLock(HashSet<String> locks, String lockName) {
     this.locks = locks;
     this.lockName = lockName;
   }

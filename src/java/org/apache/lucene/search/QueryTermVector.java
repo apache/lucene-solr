@@ -22,7 +22,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
+
 import java.util.List;
 import java.util.Map;
 
@@ -56,7 +56,7 @@ public class QueryTermVector implements TermFreqVector {
       TokenStream stream = analyzer.tokenStream("", new StringReader(queryString));
       if (stream != null)
       {
-        List terms = new ArrayList();
+        List<String> terms = new ArrayList<String>();
         try {
           boolean hasMoreTokens = false;
           
@@ -78,30 +78,29 @@ public class QueryTermVector implements TermFreqVector {
   private void processTerms(String[] queryTerms) {
     if (queryTerms != null) {
       Arrays.sort(queryTerms);
-      Map tmpSet = new HashMap(queryTerms.length);
+      Map<String,Integer> tmpSet = new HashMap<String,Integer>(queryTerms.length);
       //filter out duplicates
-      List tmpList = new ArrayList(queryTerms.length);
-      List tmpFreqs = new ArrayList(queryTerms.length);
+      List<String> tmpList = new ArrayList<String>(queryTerms.length);
+      List<Integer> tmpFreqs = new ArrayList<Integer>(queryTerms.length);
       int j = 0;
       for (int i = 0; i < queryTerms.length; i++) {
         String term = queryTerms[i];
-        Integer position = (Integer)tmpSet.get(term);
+        Integer position = tmpSet.get(term);
         if (position == null) {
           tmpSet.put(term, Integer.valueOf(j++));
           tmpList.add(term);
           tmpFreqs.add(Integer.valueOf(1));
         }       
         else {
-          Integer integer = (Integer)tmpFreqs.get(position.intValue());
+          Integer integer = tmpFreqs.get(position.intValue());
           tmpFreqs.set(position.intValue(), Integer.valueOf(integer.intValue() + 1));          
         }
       }
-      terms = (String[])tmpList.toArray(terms);
+      terms = tmpList.toArray(terms);
       //termFreqs = (int[])tmpFreqs.toArray(termFreqs);
       termFreqs = new int[tmpFreqs.size()];
       int i = 0;
-      for (Iterator iter = tmpFreqs.iterator(); iter.hasNext();) {
-        Integer integer = (Integer) iter.next();
+      for (final Integer integer : tmpFreqs) {
         termFreqs[i++] = integer.intValue();
       }
     }

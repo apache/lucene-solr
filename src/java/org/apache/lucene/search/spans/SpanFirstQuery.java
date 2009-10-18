@@ -94,10 +94,10 @@ public class SpanFirstQuery extends SpanQuery implements Cloneable {
         public int end() { return spans.end(); }
 
       // TODO: Remove warning after API has been finalized
-      public Collection/*<byte[]>*/ getPayload() throws IOException {
-        ArrayList result = null;
+      public Collection<byte[]> getPayload() throws IOException {
+        ArrayList<byte[]> result = null;
         if (spans.isPayloadAvailable()) {
-          result = new ArrayList(spans.getPayload());
+          result = new ArrayList<byte[]>(spans.getPayload());
         }
         return result;//TODO: any way to avoid the new construction?
       }

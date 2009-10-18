@@ -63,7 +63,7 @@ public class SpanQueryFilter extends SpanFilter {
 
     final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
     Spans spans = query.getSpans(reader);
-    List tmp = new ArrayList(20);
+    List<SpanFilterResult.PositionInfo> tmp = new ArrayList<SpanFilterResult.PositionInfo>(20);
     int currentDoc = -1;
     SpanFilterResult.PositionInfo currentInfo = null;
     while (spans.next())

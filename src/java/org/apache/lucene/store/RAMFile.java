@@ -24,7 +24,7 @@ class RAMFile implements Serializable {
 
   private static final long serialVersionUID = 1l;
 
-  private ArrayList buffers = new ArrayList();
+  private ArrayList<byte[]> buffers = new ArrayList<byte[]>();
   long length;
   RAMDirectory directory;
   long sizeInBytes;                  // Only maintained if in a directory; updates synchronized on directory

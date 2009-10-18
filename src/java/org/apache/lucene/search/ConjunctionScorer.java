@@ -29,8 +29,8 @@ class ConjunctionScorer extends Scorer {
   private final float coord;
   private int lastDoc = -1;
 
-  public ConjunctionScorer(Similarity similarity, Collection scorers) throws IOException {
-    this(similarity, (Scorer[]) scorers.toArray(new Scorer[scorers.size()]));
+  public ConjunctionScorer(Similarity similarity, Collection<Scorer> scorers) throws IOException {
+    this(similarity, scorers.toArray(new Scorer[scorers.size()]));
   }
 
   public ConjunctionScorer(Similarity similarity, Scorer[] scorers) throws IOException {
@@ -52,9 +52,9 @@ class ConjunctionScorer extends Scorer {
     // it will already start off sorted (all scorers on same doc).
     
     // note that this comparator is not consistent with equals!
-    Arrays.sort(scorers, new Comparator() {         // sort the array
-      public int compare(Object o1, Object o2) {
-        return ((Scorer) o1).docID() - ((Scorer) o2).docID();
+    Arrays.sort(scorers, new Comparator<Scorer>() {         // sort the array
+      public int compare(Scorer o1, Scorer o2) {
+        return o1.docID() - o2.docID();
       }
     });
 

@@ -18,8 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+
 import java.util.Set;
 
 /**
@@ -39,10 +38,10 @@ import java.util.Set;
 public class FileSwitchDirectory extends Directory {
   private final Directory secondaryDir;
   private final Directory primaryDir;
-  private final Set primaryExtensions;
+  private final Set<String> primaryExtensions;
   private boolean doClose;
 
-  public FileSwitchDirectory(Set primaryExtensions, Directory primaryDir, Directory secondaryDir, boolean doClose) {
+  public FileSwitchDirectory(Set<String> primaryExtensions, Directory primaryDir, Directory secondaryDir, boolean doClose) {
     this.primaryExtensions = primaryExtensions;
     this.primaryDir = primaryDir;
     this.secondaryDir = secondaryDir;

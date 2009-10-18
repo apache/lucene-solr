@@ -21,43 +21,48 @@ package org.apache.lucene.util.cache;
 /**
  * Base class for cache implementations.
  */
-public abstract class Cache {
+public abstract class Cache<K,V> {
   
   /**
    * Simple Cache wrapper that synchronizes all
    * calls that access the cache. 
    */
-  static class SynchronizedCache extends Cache {
-    Object mutex;
-    Cache  cache;
+  static class SynchronizedCache<K,V> extends Cache<K,V> {
+    private Object mutex;
+    private Cache<K,V> cache;
     
-    SynchronizedCache(Cache cache) {
+    SynchronizedCache(Cache<K,V> cache) {
       this.cache = cache;
       this.mutex = this;
     }
     
-    SynchronizedCache(Cache cache, Object mutex) {
+    SynchronizedCache(Cache<K,V> cache, Object mutex) {
       this.cache = cache;
       this.mutex = mutex;
     }
     
-    public void put(Object key, Object value) {
+    @Override
+    public void put(K key, V value) {
       synchronized(mutex) {cache.put(key, value);}
     }
     
-    public Object get(Object key) {
+    @Override
+    public V get(Object key) {
       synchronized(mutex) {return cache.get(key);}
     }
     
+    @Override
     public boolean containsKey(Object key) {
       synchronized(mutex) {return cache.containsKey(key);}
     }
     
+    @Override
     public void close() {
       synchronized(mutex) {cache.close();}
     }
     
-    Cache getSynchronizedCache() {
+    @Override
+    Cache<K,V> getSynchronizedCache() {
       return this;
     }
   }
@@ -67,7 +72,7 @@ public abstract class Cache {
    * In order to guarantee thread-safety, all access to the backed cache must
    * be accomplished through the returned cache.
    */
-  public static Cache synchronizedCache(Cache cache) {
+  public static <K,V> Cache<K,V> synchronizedCache(Cache<K,V> cache) {
     return cache.getSynchronizedCache();
   }
 
@@ -78,19 +83,19 @@ public abstract class Cache {
    * e. g. subclasses of {@link SynchronizedCache} or this
    * in case this cache is already synchronized.
    */
-  Cache getSynchronizedCache() {
-    return new SynchronizedCache(this);
+  Cache<K,V> getSynchronizedCache() {
+    return new SynchronizedCache<K,V>(this);
   }
   
   /**
    * Puts a (key, value)-pair into the cache. 
    */
-  public abstract void put(Object key, Object value);
+  public abstract void put(K key, V value);
   
   /**
    * Returns the value for the given key. 
    */
-  public abstract Object get(Object key);
+  public abstract V get(Object key);
   
   /**
    * Returns whether the given key is in this cache. 
