@@ -75,6 +75,12 @@ API Changes
 * LUCENE-1979: Remove remaining deprecations from indexer package.
   (Uwe Schindler, Michael Busch)
 
+* LUCENE-1989: Generify CharArraySet. (Uwe Schindler)
+
+* LUCENE-1987: Rremove deprecations from analysis package and Token.
+  Un-deprecate some ctors of Token, as they are still useful.
+  (Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-1951: When the text provided to WildcardQuery has no wildcard

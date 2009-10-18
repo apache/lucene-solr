@@ -150,7 +150,7 @@ public class TestToken extends LuceneTestCase {
     t.setTermBuffer(b, 0, 5);
     assertEquals("(aloha,0,5)", t.toString());
 
-    t.setTermText("hi there");
+    t.setTermBuffer("hi there");
     assertEquals("(hi there,0,5)", t.toString());
   }
 
@@ -171,20 +171,17 @@ public class TestToken extends LuceneTestCase {
   
   public void testMixedStringArray() throws Exception {
     Token t = new Token("hello", 0, 5);
-    assertEquals(t.termText(), "hello");
     assertEquals(t.termLength(), 5);
     assertEquals(t.term(), "hello");
-    t.setTermText("hello2");
+    t.setTermBuffer("hello2");
     assertEquals(t.termLength(), 6);
     assertEquals(t.term(), "hello2");
     t.setTermBuffer("hello3".toCharArray(), 0, 6);
-    assertEquals(t.termText(), "hello3");
+    assertEquals(t.term(), "hello3");
 
-    // Make sure if we get the buffer and change a character
-    // that termText() reflects the change
     char[] buffer = t.termBuffer();
     buffer[1] = 'o';
-    assertEquals(t.termText(), "hollo3");
+    assertEquals(t.term(), "hollo3");
   }
   
   public void testClone() throws Exception {

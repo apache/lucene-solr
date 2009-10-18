@@ -58,18 +58,6 @@ import org.apache.lucene.util.AttributeImpl;
   to easily switch from the old to the new TokenStream API.
   
   <br><br>
-
-  <p><b>NOTE:</b> As of 2.3, Token stores the term text
-  internally as a malleable char[] termBuffer instead of
-  String termText.  The indexing code and core tokenizers
-  have been changed to re-use a single Token instance, changing
-  its buffer and other fields in-place as the Token is
-  processed.  This provides substantially better indexing
-  performance as it saves the GC cost of new'ing a Token and
-  String for every term.  The APIs that accept String
-  termText are still available but a warning about the
-  associated performance cost has been added (below).  The
-  {@link #termText()} method has been deprecated.</p>
   
   <p>Tokenizers and filters should try to re-use a Token
   instance when possible for best performance, by
@@ -135,61 +123,13 @@ public class Token extends AttributeImpl
 
   private static int MIN_BUFFER_SIZE = 10;
 
-  /** @deprecated We will remove this when we remove the
-   * deprecated APIs */
-  private String termText;
-
-  /**
-   * Characters for the term text.
-   * @deprecated This will be made private. Instead, use:
-   * {@link #termBuffer()}, 
-   * {@link #setTermBuffer(char[], int, int)},
-   * {@link #setTermBuffer(String)}, or
-   * {@link #setTermBuffer(String, int, int)}
-   */
-  char[] termBuffer;
-
-  /**
-   * Length of term text in the buffer.
-   * @deprecated This will be made private. Instead, use:
-   * {@link #termLength()}, or @{link setTermLength(int)}.
-   */
-  int termLength;
-
-  /**
-   * Start in source text.
-   * @deprecated This will be made private. Instead, use:
-   * {@link #startOffset()}, or @{link setStartOffset(int)}.
-   */
-  int startOffset;
-
-  /**
-   * End in source text.
-   * @deprecated This will be made private. Instead, use:
-   * {@link #endOffset()}, or @{link setEndOffset(int)}.
-   */
-  int endOffset;
-
-  /**
-   * The lexical type of the token.
-   * @deprecated This will be made private. Instead, use:
-   * {@link #type()}, or @{link setType(String)}.
-   */
-  String type = DEFAULT_TYPE;
-
+  private char[] termBuffer;
+  private int termLength;
+  private int startOffset,endOffset;
+  private String type = DEFAULT_TYPE;
   private int flags;
-  
-  /**
-   * @deprecated This will be made private. Instead, use:
-   * {@link #getPayload()}, or @{link setPayload(Payload)}.
-   */
-  Payload payload;
-  
-  /**
-   * @deprecated This will be made private. Instead, use:
-   * {@link #getPositionIncrement()}, or @{link setPositionIncrement(String)}.
-   */
-  int positionIncrement = 1;
+  private Payload payload;
+  private int positionIncrement = 1;
 
   /** Constructs a Token will null text. */
   public Token() {
@@ -236,10 +176,9 @@ public class Token extends AttributeImpl
    *  @param text term text
    *  @param start start offset
    *  @param end end offset
-   *  @deprecated Use {@link #Token(char[], int, int, int, int)} instead.
    */
   public Token(String text, int start, int end) {
-    termText = text;
+    setTermBuffer(text);
     startOffset = start;
     endOffset = end;
   }
@@ -252,10 +191,9 @@ public class Token extends AttributeImpl
    *  @param start start offset
    *  @param end end offset
    *  @param typ token type
-   *  @deprecated Use {@link #Token(char[], int, int, int, int)} and {@link #setType(String)} instead.
    */
   public Token(String text, int start, int end, String typ) {
-    termText = text;
+    setTermBuffer(text);
     startOffset = start;
     endOffset = end;
     type = typ;
@@ -270,10 +208,9 @@ public class Token extends AttributeImpl
    * @param start
    * @param end
    * @param flags token type bits
-   * @deprecated Use {@link #Token(char[], int, int, int, int)} and {@link #setFlags(int)} instead.
    */
   public Token(String text, int start, int end, int flags) {
-    termText = text;
+    setTermBuffer(text);
     startOffset = start;
     endOffset = end;
     this.flags = flags;
@@ -335,32 +272,6 @@ public class Token extends AttributeImpl
     return positionIncrement;
   }
 
-  /** Sets the Token's term text.  <b>NOTE:</b> for better
-   *  indexing speed you should instead use the char[]
-   *  termBuffer methods to set the term text.
-   *  @deprecated use {@link #setTermBuffer(char[], int, int)} or
-   *                  {@link #setTermBuffer(String)} or
-   *                  {@link #setTermBuffer(String, int, int)}.
-   */
-  public void setTermText(String text) {
-    termText = text;
-    termBuffer = null;
-  }
-
-  /** Returns the Token's term text.
-   * 
-   * @deprecated This method now has a performance penalty
-   * because the text is stored internally in a char[].  If
-   * possible, use {@link #termBuffer()} and {@link
-   * #termLength()} directly instead.  If you really need a
-   * String, use {@link #term()}</b>
-   */
-  public final String termText() {
-    if (termText == null && termBuffer != null)
-      termText = new String(termBuffer, 0, termLength);
-    return termText;
-  }
-
   /** Returns the Token's term text.
    * 
    * This method has a performance penalty
@@ -371,8 +282,6 @@ public class Token extends AttributeImpl
    * a convenience call to <b>new String(token.termBuffer(), 0, token.termLength())</b>
    */
   public final String term() {
-    if (termText != null)
-      return termText;
     initTermBuffer();
     return new String(termBuffer, 0, termLength);
   }
@@ -384,7 +293,6 @@ public class Token extends AttributeImpl
    *  @param length the number of characters to copy
    */
   public final void setTermBuffer(char[] buffer, int offset, int length) {
-    termText = null;
     growTermBuffer(length);
     System.arraycopy(buffer, offset, termBuffer, 0, length);
     termLength = length;
@@ -394,7 +302,6 @@ public class Token extends AttributeImpl
    *  @param buffer the buffer to copy
    */
   public final void setTermBuffer(String buffer) {
-    termText = null;
     final int length = buffer.length();
     growTermBuffer(length);
     buffer.getChars(0, length, termBuffer, 0);
@@ -410,7 +317,6 @@ public class Token extends AttributeImpl
   public final void setTermBuffer(String buffer, int offset, int length) {
     assert offset <= buffer.length();
     assert offset + length <= buffer.length();
-    termText = null;
     growTermBuffer(length);
     buffer.getChars(offset, offset + length, termBuffer, 0);
     termLength = length;
@@ -441,17 +347,7 @@ public class Token extends AttributeImpl
   public char[] resizeTermBuffer(int newSize) {
     if (termBuffer == null) {
       // The buffer is always at least MIN_BUFFER_SIZE
-      newSize = newSize < MIN_BUFFER_SIZE ? MIN_BUFFER_SIZE : newSize;
-      //Preserve termText 
-      if (termText != null) {
-        final int ttLen = termText.length();
-        newSize = newSize < ttLen ? ttLen : newSize;
-        termBuffer = new char[ArrayUtil.getNextSize(newSize)];
-        termText.getChars(0, termText.length(), termBuffer, 0);
-        termText = null;
-      } else { // no term Text, the first allocation
-        termBuffer = new char[ArrayUtil.getNextSize(newSize)];
-      }    
+      termBuffer = new char[ArrayUtil.getNextSize(newSize < MIN_BUFFER_SIZE ? MIN_BUFFER_SIZE : newSize)]; 
     } else {
       if(termBuffer.length < newSize){
         // Not big enough; create a new array with slight
@@ -481,25 +377,10 @@ public class Token extends AttributeImpl
     } 
   }
   
-
-  // TODO: once we remove the deprecated termText() method
-  // and switch entirely to char[] termBuffer we don't need
-  // to use this method anymore, only for late init of the buffer
   private void initTermBuffer() {
     if (termBuffer == null) {
-      if (termText == null) {
-        termBuffer = new char[ArrayUtil.getNextSize(MIN_BUFFER_SIZE)];
-        termLength = 0;
-      } else {
-        int length = termText.length();
-        if (length < MIN_BUFFER_SIZE) length = MIN_BUFFER_SIZE;
-        termBuffer = new char[ArrayUtil.getNextSize(length)];
-        termLength = termText.length();
-        termText.getChars(0, termText.length(), termBuffer, 0);
-        termText = null;
-      }
-    } else {
-      termText = null;
+      termBuffer = new char[ArrayUtil.getNextSize(MIN_BUFFER_SIZE)];
+      termLength = 0;
     }
   }
 
@@ -528,7 +409,7 @@ public class Token extends AttributeImpl
     corresponding to this token in the source text.
 
     Note that the difference between endOffset() and startOffset() may not be
-    equal to termText.length(), as the term text may have been altered by a
+    equal to {@link #termLength}, as the term text may have been altered by a
     stemmer or some other filter. */
   public final int startOffset() {
     return startOffset;
@@ -630,7 +511,6 @@ public class Token extends AttributeImpl
     payload = null;
     // Leave termBuffer to allow re-use
     termLength = 0;
-    termText = null;
     positionIncrement = 1;
     flags = 0;
     startOffset = endOffset = 0;

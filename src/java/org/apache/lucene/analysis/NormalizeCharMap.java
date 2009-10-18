@@ -45,10 +45,10 @@ public class NormalizeCharMap {
       if (currMap.submap == null) {
         currMap.submap = new HashMap<Character, NormalizeCharMap>(1);
       }
-      NormalizeCharMap map = currMap.submap.get(CharacterCache.valueOf(c));
+      NormalizeCharMap map = currMap.submap.get(Character.valueOf(c));
       if (map == null) {
         map = new NormalizeCharMap();
-        currMap.submap.put(new Character(c), map);
+        currMap.submap.put(Character.valueOf(c), map);
       }
       currMap = map;
     }

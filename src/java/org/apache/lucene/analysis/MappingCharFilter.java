@@ -30,8 +30,7 @@ import java.util.LinkedList;
 public class MappingCharFilter extends BaseCharFilter {
 
   private final NormalizeCharMap normMap;
-  //private LinkedList<Character> buffer;
-  private LinkedList buffer;
+  private LinkedList<Character> buffer;
   private String replacement;
   private int charPointer;
   private int nextCharCounter;
@@ -57,7 +56,7 @@ public class MappingCharFilter extends BaseCharFilter {
       int firstChar = nextChar();
       if (firstChar == -1) return -1;
       NormalizeCharMap nm = normMap.submap != null ?
-        (NormalizeCharMap)normMap.submap.get(CharacterCache.valueOf((char) firstChar)) : null;
+        normMap.submap.get(Character.valueOf((char) firstChar)) : null;
       if (nm == null) return firstChar;
       NormalizeCharMap result = match(nm);
       if (result == null) return firstChar;
@@ -78,7 +77,7 @@ public class MappingCharFilter extends BaseCharFilter {
   private int nextChar() throws IOException {
     nextCharCounter++;
     if (buffer != null && !buffer.isEmpty()) {
-      return ((Character)buffer.removeFirst()).charValue();
+      return buffer.removeFirst().charValue();
     }
     return input.read();
   }
@@ -86,15 +85,15 @@ public class MappingCharFilter extends BaseCharFilter {
   private void pushChar(int c) {
     nextCharCounter--;
     if(buffer == null)
-      buffer = new LinkedList();
-    buffer.addFirst(new Character((char) c));
+      buffer = new LinkedList<Character>();
+    buffer.addFirst(Character.valueOf((char) c));
   }
 
   private void pushLastChar(int c) {
     if (buffer == null) {
-      buffer = new LinkedList();
+      buffer = new LinkedList<Character>();
     }
-    buffer.addLast(new Character((char) c));
+    buffer.addLast(Character.valueOf((char) c));
   }
 
   private NormalizeCharMap match(NormalizeCharMap map) throws IOException {
@@ -102,7 +101,7 @@ public class MappingCharFilter extends BaseCharFilter {
     if (map.submap != null) {
       int chr = nextChar();
       if (chr != -1) {
-        NormalizeCharMap subMap = (NormalizeCharMap) map.submap.get(CharacterCache.valueOf((char) chr));
+        NormalizeCharMap subMap = map.submap.get(Character.valueOf((char) chr));
         if (subMap != null) {
           result = match(subMap);
         }
