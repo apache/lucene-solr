@@ -31,9 +31,18 @@ import java.util.Iterator;
  * etc.  It is designed to be quick to test if a char[]
  * is in the set without the necessity of converting it
  * to a String first.
+ * <P>
+ * <em>Please note:</em> This class implements {@link Set} but
+ * does not behave like it should in all cases. The generic type is
+ * {@code Set<Object>}, because you can add any object to it,
+ * that has a string representation. The add methods will use
+ * {@link Object#toString} and store the result using a {@code char[]}
+ * buffer. The same behaviour have the {@code contains()} methods.
+ * The {@link #iterator()} returns an {@code Iterator<String>}.
+ * For type safety also {@link #stringIterator()} is provided.
  */
 
-public class CharArraySet extends AbstractSet {
+public class CharArraySet extends AbstractSet<Object> {
   private final static int INIT_SIZE = 8;
   private char[][] entries;
   private int count;
@@ -49,11 +58,12 @@ public class CharArraySet extends AbstractSet {
     entries = new char[size][];
   }
 
- /** Create set from a Collection of char[] or String */
-  public CharArraySet(Collection c, boolean ignoreCase) {
+  /** Create set from a Collection of char[] or String */
+  public CharArraySet(Collection<? extends Object> c, boolean ignoreCase) {
     this(c.size(), ignoreCase);
     addAll(c);
   }
+  
   /** Create set from entries */
   private CharArraySet(char[][] entries, boolean ignoreCase, int count){
     this.entries = entries;
@@ -223,7 +233,7 @@ public class CharArraySet extends AbstractSet {
 
   public boolean contains(Object o) {
     if (o instanceof char[]) {
-      char[] text = (char[])o;
+      final char[] text = (char[])o;
       return contains(text, 0, text.length);
     } 
     return contains(o.toString());
@@ -258,7 +268,7 @@ public class CharArraySet extends AbstractSet {
 
   /** The Iterator<String> for this set.  Strings are constructed on the fly, so
    * use <code>nextCharArray</code> for more efficient access. */
-  public class CharArraySetIterator implements Iterator {
+  public class CharArraySetIterator implements Iterator<String> {
     int pos=-1;
     char[] next;
     CharArraySetIterator() {
@@ -284,7 +294,7 @@ public class CharArraySet extends AbstractSet {
 
     /** Returns the next String, as a Set<String> would...
      * use nextCharArray() for better efficiency. */
-    public Object next() {
+    public String next() {
       return new String(nextCharArray());
     }
 
@@ -293,9 +303,15 @@ public class CharArraySet extends AbstractSet {
     }
   }
 
-
-  public Iterator iterator() {
+  /** returns an iterator of new allocated Strings */
+  public Iterator<String> stringIterator() {
     return new CharArraySetIterator();
+  }
+
+  /** returns an iterator of new allocated Strings, this method violates the Set interface */
+  @SuppressWarnings("unchecked")
+  public Iterator<Object> iterator() {
+    return (Iterator) stringIterator();
   }
   
   /**
@@ -316,7 +332,7 @@ public class CharArraySet extends AbstractSet {
       throw new UnsupportedOperationException();
     }
     
-    public boolean addAll(Collection coll) {
+    public boolean addAll(Collection<? extends Object> coll) {
       throw new UnsupportedOperationException();
     }
     
