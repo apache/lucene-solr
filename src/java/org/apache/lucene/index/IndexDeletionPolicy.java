@@ -70,7 +70,7 @@ public interface IndexDeletionPolicy {
    * {@link IndexCommit point-in-time commits},
    *  sorted by age (the 0th one is the oldest commit).
    */
-  public void onInit(List<IndexCommit> commits) throws IOException;
+  public void onInit(List<? extends IndexCommit> commits) throws IOException;
 
   /**
    * <p>This is called each time the writer completed a commit.
@@ -94,5 +94,5 @@ public interface IndexDeletionPolicy {
    * @param commits List of {@link IndexCommit},
    *  sorted by age (the 0th one is the oldest commit).
    */
-  public void onCommit(List<IndexCommit> commits) throws IOException;
+  public void onCommit(List<? extends IndexCommit> commits) throws IOException;
 }

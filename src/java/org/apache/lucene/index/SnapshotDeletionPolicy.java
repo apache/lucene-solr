@@ -52,12 +52,12 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
     this.primary = primary;
   }
 
-  public synchronized void onInit(List<IndexCommit> commits) throws IOException {
+  public synchronized void onInit(List<? extends IndexCommit> commits) throws IOException {
     primary.onInit(wrapCommits(commits));
     lastCommit = commits.get(commits.size()-1);
   }
 
-  public synchronized void onCommit(List<IndexCommit> commits) throws IOException {
+  public synchronized void onCommit(List<? extends IndexCommit> commits) throws IOException {
     primary.onCommit(wrapCommits(commits));
     lastCommit = commits.get(commits.size()-1);
   }
@@ -123,7 +123,7 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
     }
   }
 
-  private List<IndexCommit> wrapCommits(List<IndexCommit> commits) {
+  private List<IndexCommit> wrapCommits(List<? extends IndexCommit> commits) {
     final int count = commits.size();
     List<IndexCommit> myCommits = new ArrayList<IndexCommit>(count);
     for(int i=0;i<count;i++)

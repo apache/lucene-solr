@@ -84,14 +84,14 @@ final class IndexFileDeleter {
    * default delete policy (KeepOnlyLastCommitDeletionPolicy).
    * Other policies may leave commit points live for longer
    * in which case this list would be longer than 1: */
-  private List commits = new ArrayList();
+  private List<CommitPoint> commits = new ArrayList<CommitPoint>();
 
   /* Holds files we had incref'd from the previous
    * non-commit checkpoint: */
   private List<Collection<String>> lastFiles = new ArrayList<Collection<String>>();
 
   /* Commits that the IndexDeletionPolicy have decided to delete: */ 
-  private List commitsToDelete = new ArrayList();
+  private List<CommitPoint> commitsToDelete = new ArrayList<CommitPoint>();
 
   private PrintStream infoStream;
   private Directory directory;
@@ -565,13 +565,13 @@ final class IndexFileDeleter {
     String segmentsFileName;
     boolean deleted;
     Directory directory;
-    Collection<IndexCommit> commitsToDelete;
+    Collection<CommitPoint> commitsToDelete;
     long version;
     long generation;
     final boolean isOptimized;
     final Map<String,String> userData;
 
-    public CommitPoint(Collection<IndexCommit> commitsToDelete, Directory directory, SegmentInfos segmentInfos) throws IOException {
+    public CommitPoint(Collection<CommitPoint> commitsToDelete, Directory directory, SegmentInfos segmentInfos) throws IOException {
       this.directory = directory;
       this.commitsToDelete = commitsToDelete;
       userData = segmentInfos.getUserData();
