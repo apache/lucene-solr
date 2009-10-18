@@ -107,6 +107,9 @@ Bug fixes
 * LUCENE-1986: Fix NPE when scoring PayloadNearQuery (Peter Keegan,
   Mark Miller via Mike McCandless)
 
+* LUCENE-1992: Fix thread hazard if a merge is committing just as an
+  exception occurs during sync (Uwe Schindler, Mike McCandless)
+
 New features
 
 * LUCENE-1933: Provide a convenience AttributeFactory that creates a

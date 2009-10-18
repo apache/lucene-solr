@@ -2698,8 +2698,6 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     failure.setDoFail();
 
     ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
-    // We expect sync exceptions in the merge threads
-    cms.setSuppressExceptions();
     writer.setMergeScheduler(cms);
     writer.setMaxBufferedDocs(2);
     writer.setMergeFactor(5);
