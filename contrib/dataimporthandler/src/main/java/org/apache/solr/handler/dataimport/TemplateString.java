@@ -16,11 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -98,8 +94,8 @@ public class TemplateString {
   }
 
   private String getObjectAsString(Object val) {
-    if (val instanceof java.sql.Date) {
-      java.sql.Date d = (java.sql.Date) val;
+    if (val instanceof Date) {
+      Date d = (Date) val;
       return DataImporter.DATE_TIME_FORMAT.get().format(d);
     }
     return val.toString();
