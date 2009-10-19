@@ -24,13 +24,19 @@ in this directory, and when Solr is started connect to
 
   http://localhost:8983/solr/admin/
 
-To add documents to the index, use the post.sh script in
-the exampledocs subdirectory (while Solr is running),
-for example:
+To add documents to the index, use the post.sh script in the exampledocs
+subdirectory (while Solr is running), for example:
 
   cd exampledocs
   ./post.sh *.xml
 
 See also README.txt in the solr subdirectory, and check
-http://wiki.apache.org/solr/SolrResources for a list of
-tutorials and introductory articles.
+http://wiki.apache.org/solr/SolrResources for a list of tutorials and
+introductory articles.
+
+NOTE: This Solr example server references SolrCell jars outside of the server
+directory with <lib> statements in the solrconfig.xml.  If you make a copy of
+this example server and wish to use the ExtractingRequestHandler (SolrCell),
+you will need to copy the required jars into solr/lib or update the paths to
+the jars in your solrconfig.xml.
+
