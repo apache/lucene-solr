@@ -40,15 +40,16 @@ import org.apache.lucene.index.CorruptIndexException;
  * (but <code>n</code> &lt; {@link #length()}_at_start). 
  * 
  * @deprecated
- * see {@link TopScoreDocCollector} and {@link TopDocs} :<br>
+ * see {@link Searcher#search(Query, int)}, {@link Searcher#search(Query, Filter, int)}
+ * and {@link Searcher#search(Query, Filter, int, Sort)}:<br>
  * <pre>
- *   TopScoreDocCollector collector = TopScoreDocCollector.create(hitsPerPage, false);
- *   searcher.search(new TermQuery(new Term("field", "iterator")), collector);
- *   ScoreDoc[] docHits = collector.topDocs().scoreDocs;
- *   for (int i = 0; i < docHits.length; i++) {
- *     int docId = docHits[i].doc;
+ *   TopDocs topDocs = searcher.search(query, numHits);
+ *   ScoreDoc[] hits = topDocs.scoreDocs;
+ *   for (int i = 0; i < hits.length; i++) {
+ *     int docId = hits[i].doc;
  *     Document d = searcher.doc(docId);
- *   }
+ *     // do something with current hit
+ *     ...
  * </pre>
  */
 public final class Hits {
