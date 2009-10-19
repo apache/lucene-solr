@@ -33,8 +33,7 @@ import java.util.List;
  */
 public abstract class BaseCharFilter extends CharFilter {
 
-  //private List<OffCorrectMap> pcmList;
-  private List pcmList;
+  private List<OffCorrectMap> pcmList;
   
   public BaseCharFilter(CharStream in) {
     super(in);
@@ -64,7 +63,7 @@ public abstract class BaseCharFilter extends CharFilter {
 
   protected void addOffCorrectMap(int off, int cumulativeDiff) {
     if (pcmList == null) {
-      pcmList = new ArrayList();
+      pcmList = new ArrayList<OffCorrectMap>();
     }
     pcmList.add(new OffCorrectMap(off, cumulativeDiff));
   }

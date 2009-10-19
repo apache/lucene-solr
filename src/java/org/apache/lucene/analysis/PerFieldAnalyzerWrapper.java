@@ -44,7 +44,7 @@ import java.util.HashMap;
  */
 public class PerFieldAnalyzerWrapper extends Analyzer {
   private Analyzer defaultAnalyzer;
-  private Map analyzerMap = new HashMap();
+  private Map<String,Analyzer> analyzerMap = new HashMap<String,Analyzer>();
 
 
   /**
@@ -67,7 +67,7 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
    * used for those fields 
    */
   public PerFieldAnalyzerWrapper(Analyzer defaultAnalyzer, 
-      Map /*<String, Analyzer>*/ fieldAnalyzers) {
+      Map<String,Analyzer> fieldAnalyzers) {
     this.defaultAnalyzer = defaultAnalyzer;
     if (fieldAnalyzers != null) {
       analyzerMap.putAll(fieldAnalyzers);
@@ -87,7 +87,7 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
   }
 
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    Analyzer analyzer = (Analyzer) analyzerMap.get(fieldName);
+    Analyzer analyzer = analyzerMap.get(fieldName);
     if (analyzer == null) {
       analyzer = defaultAnalyzer;
     }
@@ -102,7 +102,7 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
       // tokenStream but not reusableTokenStream
       return tokenStream(fieldName, reader);
     }
-    Analyzer analyzer = (Analyzer) analyzerMap.get(fieldName);
+    Analyzer analyzer = analyzerMap.get(fieldName);
     if (analyzer == null)
       analyzer = defaultAnalyzer;
 
@@ -111,7 +111,7 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
   
   /** Return the positionIncrementGap from the analyzer assigned to fieldName */
   public int getPositionIncrementGap(String fieldName) {
-    Analyzer analyzer = (Analyzer) analyzerMap.get(fieldName);
+    Analyzer analyzer = analyzerMap.get(fieldName);
     if (analyzer == null)
       analyzer = defaultAnalyzer;
     return analyzer.getPositionIncrementGap(fieldName);

@@ -33,7 +33,7 @@ final class TermInfosReader {
   private final String segment;
   private final FieldInfos fieldInfos;
 
-  private final CloseableThreadLocal threadResources = new CloseableThreadLocal();
+  private final CloseableThreadLocal<ThreadResources> threadResources = new CloseableThreadLocal<ThreadResources>();
   private final SegmentTermEnum origEnum;
   private final long size;
 
@@ -138,7 +138,7 @@ final class TermInfosReader {
   }
 
   private ThreadResources getThreadResources() {
-    ThreadResources resources = (ThreadResources)threadResources.get();
+    ThreadResources resources = threadResources.get();
     if (resources == null) {
       resources = new ThreadResources();
       resources.termEnum = terms();

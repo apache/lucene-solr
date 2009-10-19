@@ -55,7 +55,7 @@ final class FieldsReader implements Cloneable {
   // file.  This will be 0 if we have our own private file.
   private int docStoreOffset;
 
-  private CloseableThreadLocal fieldsStreamTL = new CloseableThreadLocal();
+  private CloseableThreadLocal<IndexInput> fieldsStreamTL = new CloseableThreadLocal<IndexInput>();
   private boolean isOriginal = false;
 
   /** Returns a cloned FieldsReader that shares open
@@ -417,7 +417,7 @@ final class FieldsReader implements Cloneable {
     }
 
     private IndexInput getFieldStream() {
-      IndexInput localFieldsStream = (IndexInput) fieldsStreamTL.get();
+      IndexInput localFieldsStream = fieldsStreamTL.get();
       if (localFieldsStream == null) {
         localFieldsStream = (IndexInput) cloneableFieldsStream.clone();
         fieldsStreamTL.set(localFieldsStream);

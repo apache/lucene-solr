@@ -52,7 +52,7 @@ public abstract class Analyzer implements Closeable {
     return tokenStream(fieldName, reader);
   }
 
-  private CloseableThreadLocal tokenStreams = new CloseableThreadLocal();
+  private CloseableThreadLocal<Object> tokenStreams = new CloseableThreadLocal<Object>();
 
   /** Used by Analyzers that implement reusableTokenStream
    *  to retrieve previously saved TokenStreams for re-use

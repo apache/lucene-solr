@@ -73,7 +73,7 @@ sink2.consumeAllTokens();
  * <p>Note, the EntityDetect and URLDetect TokenStreams are for the example and do not currently exist in Lucene.
  */
 public final class TeeSinkTokenFilter extends TokenFilter {
-  private final List sinks = new LinkedList();
+  private final List<WeakReference<SinkTokenStream>> sinks = new LinkedList<WeakReference<SinkTokenStream>>();
   
   /**
    * Instantiates a new TeeSinkTokenFilter.
@@ -96,7 +96,7 @@ public final class TeeSinkTokenFilter extends TokenFilter {
    */
   public SinkTokenStream newSinkTokenStream(SinkFilter filter) {
     SinkTokenStream sink = new SinkTokenStream(this.cloneAttributes(), filter);
-    this.sinks.add(new WeakReference(sink));
+    this.sinks.add(new WeakReference<SinkTokenStream>(sink));
     return sink;
   }
   
@@ -111,10 +111,10 @@ public final class TeeSinkTokenFilter extends TokenFilter {
       throw new IllegalArgumentException("The supplied sink is not compatible to this tee");
     }
     // add eventually missing attribute impls to the existing sink
-    for (Iterator it = this.cloneAttributes().getAttributeImplsIterator(); it.hasNext(); ) {
-      sink.addAttributeImpl((AttributeImpl) it.next());
+    for (Iterator<AttributeImpl> it = this.cloneAttributes().getAttributeImplsIterator(); it.hasNext(); ) {
+      sink.addAttributeImpl(it.next());
     }
-    this.sinks.add(new WeakReference(sink));
+    this.sinks.add(new WeakReference<SinkTokenStream>(sink));
   }
   
   /**
@@ -131,8 +131,8 @@ public final class TeeSinkTokenFilter extends TokenFilter {
     if (input.incrementToken()) {
       // capture state lazily - maybe no SinkFilter accepts this state
       AttributeSource.State state = null;
-      for (Iterator it = sinks.iterator(); it.hasNext(); ) {
-        final SinkTokenStream sink = (SinkTokenStream) ((WeakReference) it.next()).get();
+      for (WeakReference<SinkTokenStream> ref : sinks) {
+        final SinkTokenStream sink = ref.get();
         if (sink != null) {
           if (sink.accept(this)) {
             if (state == null) {
@@ -151,8 +151,8 @@ public final class TeeSinkTokenFilter extends TokenFilter {
   public final void end() throws IOException {
     super.end();
     AttributeSource.State finalState = captureState();
-    for (Iterator it = sinks.iterator(); it.hasNext(); ) {
-      final SinkTokenStream sink = (SinkTokenStream) ((WeakReference) it.next()).get();
+    for (WeakReference<SinkTokenStream> ref : sinks) {
+      final SinkTokenStream sink = ref.get();
       if (sink != null) {
         sink.setFinalState(finalState);
       }
@@ -179,9 +179,9 @@ public final class TeeSinkTokenFilter extends TokenFilter {
   }
   
   public static final class SinkTokenStream extends TokenStream {
-    private final List cachedStates = new LinkedList();
+    private final List<AttributeSource.State> cachedStates = new LinkedList<AttributeSource.State>();
     private AttributeSource.State finalState;
-    private Iterator it = null;
+    private Iterator<AttributeSource.State> it = null;
     private SinkFilter filter;
     
     private SinkTokenStream(AttributeSource source, SinkFilter filter) {
@@ -214,7 +214,7 @@ public final class TeeSinkTokenFilter extends TokenFilter {
         return false;
       }
       
-      AttributeSource.State state = (State) it.next();
+      AttributeSource.State state = it.next();
       restoreState(state);
       return true;
     }

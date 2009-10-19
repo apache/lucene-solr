@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -49,8 +49,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
   private SegmentInfo si;
   private int readBufferSize;
 
-  CloseableThreadLocal fieldsReaderLocal = new FieldsReaderLocal();
-  CloseableThreadLocal termVectorsLocal = new CloseableThreadLocal();
+  CloseableThreadLocal<FieldsReader> fieldsReaderLocal = new FieldsReaderLocal();
+  CloseableThreadLocal<TermVectorsReader> termVectorsLocal = new CloseableThreadLocal<TermVectorsReader>();
 
   BitVector deletedDocs = null;
   Ref deletedDocsRef = null;
@@ -292,9 +292,9 @@ public class SegmentReader extends IndexReader implements Cloneable {
   /**
    * Sets the initial value 
    */
-  private class FieldsReaderLocal extends CloseableThreadLocal {
-    protected Object initialValue() {
-      return core.getFieldsReaderOrig().clone();
+  private class FieldsReaderLocal extends CloseableThreadLocal<FieldsReader> {
+    protected FieldsReader initialValue() {
+      return (FieldsReader) core.getFieldsReaderOrig().clone();
     }
   }
   
@@ -824,7 +824,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   FieldsReader getFieldsReader() {
-    return (FieldsReader) fieldsReaderLocal.get();
+    return fieldsReaderLocal.get();
   }
 
   protected void doClose() throws IOException {
@@ -1149,7 +1149,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * @return TermVectorsReader
    */
   TermVectorsReader getTermVectorsReader() {
-    TermVectorsReader tvReader = (TermVectorsReader) termVectorsLocal.get();
+    TermVectorsReader tvReader = termVectorsLocal.get();
     if (tvReader == null) {
       TermVectorsReader orig = core.getTermVectorsReaderOrig();
       if (orig == null) {

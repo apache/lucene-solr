@@ -34,8 +34,8 @@ import org.apache.lucene.util.AttributeSource;
  * stream to the first Token. 
  */
 public final class CachingTokenFilter extends TokenFilter {
-  private List cache = null;
-  private Iterator iterator = null; 
+  private List<AttributeSource.State> cache = null;
+  private Iterator<AttributeSource.State> iterator = null; 
   private AttributeSource.State finalState;
   
   public CachingTokenFilter(TokenStream input) {
@@ -45,7 +45,7 @@ public final class CachingTokenFilter extends TokenFilter {
   public final boolean incrementToken() throws IOException {
     if (cache == null) {
       // fill cache lazily
-      cache = new LinkedList();
+      cache = new LinkedList<AttributeSource.State>();
       fillCache();
       iterator = cache.iterator();
     }
@@ -55,7 +55,7 @@ public final class CachingTokenFilter extends TokenFilter {
       return false;
     }
     // Since the TokenFilter can be reset, the tokens need to be preserved as immutable.
-    restoreState((AttributeSource.State) iterator.next());
+    restoreState(iterator.next());
     return true;
   }
   
