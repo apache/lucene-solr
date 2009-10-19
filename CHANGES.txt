@@ -36,6 +36,9 @@ Documentation
 
  * LUCENE-1955: Fix Hits deprecation notice to point users in right
    direction. (Mike McCandless, Mark Miller)
+   
+ * Fix javadoc about score tracking done by search methods in Searcher 
+   and IndexSearcher.  (Mike McCandless)
 
  ======================= Release 2.9.0 2009-09-23 =======================
 
