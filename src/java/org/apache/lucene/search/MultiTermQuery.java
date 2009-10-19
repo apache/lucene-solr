@@ -68,7 +68,7 @@ public abstract class MultiTermQuery extends Query {
 
   private static final class ConstantScoreFilterRewrite extends RewriteMethod implements Serializable {
     public Query rewrite(IndexReader reader, MultiTermQuery query) {
-      Query result = new ConstantScoreQuery(new MultiTermQueryWrapperFilter(query));
+      Query result = new ConstantScoreQuery(new MultiTermQueryWrapperFilter<MultiTermQuery>(query));
       result.setBoost(query.getBoost());
       return result;
     }
@@ -237,7 +237,7 @@ public abstract class MultiTermQuery extends Query {
 
           if (pendingTerms.size() >= termCountLimit || docVisitCount >= docCountCutoff) {
             // Too many terms -- make a filter.
-            Query result = new ConstantScoreQuery(new MultiTermQueryWrapperFilter(query));
+            Query result = new ConstantScoreQuery(new MultiTermQueryWrapperFilter<MultiTermQuery>(query));
             result.setBoost(query.getBoost());
             return result;
           } else  if (!enumerator.next()) {
