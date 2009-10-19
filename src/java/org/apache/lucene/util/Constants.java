@@ -67,7 +67,7 @@ public final class Constants {
     }
   }
 
-  public static final String LUCENE_MAIN_VERSION = "2.9";
+  public static final String LUCENE_MAIN_VERSION = "2.9.1";
 
   public static final String LUCENE_VERSION;
   static {
