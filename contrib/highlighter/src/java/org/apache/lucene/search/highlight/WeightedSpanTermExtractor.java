@@ -42,6 +42,7 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
@@ -141,12 +142,21 @@ public class WeightedSpanTermExtractor {
         mtq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
         query = mtq;
       }
-      String field;
+      String field = null;
       if(mtq instanceof TermRangeQuery) {
         field = ((TermRangeQuery)mtq).getField();
       } else {
-        field = mtq.getTerm().field();
+        Term term = mtq.getTerm();
+        if(term != null) {
+          field = term.field();
+        }
       }
+      if(field != null) {
+        IndexReader ir = getReaderForField(field);
+        extract(query.rewrite(ir), terms);
+      }
+    } else if (query instanceof RangeQuery) {
+      String field = ((RangeQuery)query).getField();
       IndexReader ir = getReaderForField(field);
       extract(query.rewrite(ir), terms);
     } else if (query instanceof MultiPhraseQuery) {

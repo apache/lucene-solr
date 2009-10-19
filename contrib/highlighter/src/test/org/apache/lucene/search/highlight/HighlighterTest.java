@@ -45,6 +45,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexReader;
@@ -61,8 +62,10 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TopDocs;
@@ -87,6 +90,7 @@ import org.w3c.dom.NodeList;
 public class HighlighterTest extends BaseTokenStreamTestCase implements Formatter {
   private IndexReader reader;
   static final String FIELD_NAME = "contents";
+  private static final String NUMERIC_FIELD_NAME = "nfield";
   private Query query;
   RAMDirectory ramDir;
   public IndexSearcher searcher = null;
@@ -255,6 +259,30 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
         numHighlights == 3);
+  }
+  
+  public void testNumericRangeQuery() throws Exception {
+    // doesn't currently highlight, but make sure it doesn't cause exception either
+    query = NumericRangeQuery.newIntRange(NUMERIC_FIELD_NAME, 2, 6, true, true);
+    searcher = new IndexSearcher(ramDir);
+    hits = searcher.search(query);
+    int maxNumFragmentsRequired = 2;
+
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(this, scorer);
+    
+    for (int i = 0; i < hits.length(); i++) {
+      String text = hits.doc(i).get(NUMERIC_FIELD_NAME);
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+
+      highlighter.setTextFragmenter(new SimpleFragmenter(40));
+
+      String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
+          "...");
+      //System.out.println("\t" + result);
+    }
+
+
   }
 
   public void testSimpleQueryScorerPhraseHighlighting2() throws Exception {
@@ -563,6 +591,42 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     numHighlights = 0;
 
     query = new ConstantScoreRangeQuery(FIELD_NAME, "kannedy", "kznnedy", true, true);
+
+    searcher = new IndexSearcher(ramDir);
+    // can't rewrite ConstantScoreRangeQuery if you want to highlight it -
+    // it rewrites to ConstantScoreQuery which cannot be highlighted
+    // query = unReWrittenQuery.rewrite(reader);
+    System.out.println("Searching for: " + query.toString(FIELD_NAME));
+    hits = searcher.search(query);
+
+    for (int i = 0; i < hits.length(); i++) {
+      String text = hits.doc(i).get(HighlighterTest.FIELD_NAME);
+      int maxNumFragmentsRequired = 2;
+      String fragmentSeparator = "...";
+      QueryScorer scorer = null;
+      TokenStream tokenStream = null;
+
+      tokenStream = analyzer.tokenStream(HighlighterTest.FIELD_NAME, new StringReader(text));
+      
+      scorer = new QueryScorer(query, HighlighterTest.FIELD_NAME);
+
+      Highlighter highlighter = new Highlighter(this, scorer);
+
+      highlighter.setTextFragmenter(new SimpleFragmenter(20));
+
+      String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
+          fragmentSeparator);
+      System.out.println("\t" + result);
+    }
+    assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
+        numHighlights == 5);
+  }
+  
+  public void testRangeQuery() throws Exception {
+
+    numHighlights = 0;
+
+    query = new RangeQuery(new Term(FIELD_NAME, "kannedy"), new Term(FIELD_NAME, "kznnedy"), true);
 
     searcher = new IndexSearcher(ramDir);
     // can't rewrite ConstantScoreRangeQuery if you want to highlight it -
@@ -1606,7 +1670,26 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     for (int i = 0; i < texts.length; i++) {
       addDoc(writer, texts[i]);
     }
-
+    Document doc = new Document();
+    NumericField nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    nfield.setIntValue(1);
+    doc.add(nfield);
+    writer.addDocument(doc, analyzer);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    nfield.setIntValue(3);
+    doc = new Document();
+    doc.add(nfield);
+    writer.addDocument(doc, analyzer);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    nfield.setIntValue(5);
+    doc = new Document();
+    doc.add(nfield);
+    writer.addDocument(doc, analyzer);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    nfield.setIntValue(7);
+    doc = new Document();
+    doc.add(nfield);
+    writer.addDocument(doc, analyzer);
     writer.optimize();
     writer.close();
     reader = IndexReader.open(ramDir);

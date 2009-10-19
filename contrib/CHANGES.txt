@@ -15,6 +15,9 @@ Bug fixes
 
  * LUCENE-1953: FastVectorHighlighter: small fragCharSize can cause
    StringIndexOutOfBoundsException. (Koji Sekiguchi)
+   
+ * LUCENE-1929: Highlighter throws exception on NumericRangeQuery and does not
+   support deprecated RangeQuery.  (Mark Miller)
 
 ======================= Release 2.9.0 2009-09-23 =======================
 
