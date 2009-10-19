@@ -83,7 +83,7 @@ error.  See SOLR-1410 for more information.
 
 Versions of Major Components
 ----------------------------
-Apache Lucene 2.9.1-dev r824987
+Apache Lucene 2.9.1-dev r826563
 Apache Tika 0.4
 Carrot2 3.1.0
 
