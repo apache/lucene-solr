@@ -34,7 +34,7 @@ import org.apache.lucene.util.PriorityQueue;
  * @see Searcher#search(Query,Filter,int,Sort)
  * @see FieldCache
  */
-public abstract class FieldValueHitQueue extends PriorityQueue {
+public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueue.Entry> {
 
   final static class Entry {
     int slot;
@@ -84,9 +84,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue {
      * @param b ScoreDoc
      * @return <code>true</code> if document <code>a</code> should be sorted after document <code>b</code>.
      */
-    protected boolean lessThan(final Object a, final Object b) {
-      final Entry hitA = (Entry) a;
-      final Entry hitB = (Entry) b;
+    protected boolean lessThan(final Entry hitA, final Entry hitB) {
 
       assert hitA != hitB;
       assert hitA.slot != hitB.slot;
@@ -123,9 +121,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue {
       initialize(size);
     }
   
-    protected boolean lessThan(final Object a, final Object b) {
-      final Entry hitA = (Entry) a;
-      final Entry hitB = (Entry) b;
+    protected boolean lessThan(final Entry hitA, final Entry hitB) {
 
       assert hitA != hitB;
       assert hitA.slot != hitB.slot;
@@ -194,7 +190,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue {
   protected final FieldComparator[] comparators;
   protected final int[] reverseMul;
 
-  protected abstract boolean lessThan (final Object a, final Object b);
+  protected abstract boolean lessThan (final Entry a, final Entry b);
 
   /**
    * Given a queue Entry, creates a corresponding FieldDoc

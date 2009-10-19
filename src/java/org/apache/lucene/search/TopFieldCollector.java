@@ -33,7 +33,7 @@ import org.apache.lucene.util.PriorityQueue;
  * <p><b>NOTE:</b> This API is experimental and might change in
  * incompatible ways in the next release.</p>
  */
-public abstract class TopFieldCollector extends TopDocsCollector {
+public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   
   // TODO: one optimization we could do is to pre-fill
   // the queue with sentinel value that guaranteed to
@@ -60,7 +60,7 @@ public abstract class TopFieldCollector extends TopDocsCollector {
     final void updateBottom(int doc) {
       // bottom.score is already set to Float.NaN in add().
       bottom.docID = docBase + doc;
-      bottom = (Entry) pq.updateTop();
+      bottom = pq.updateTop();
     }
 
     public void collect(int doc) throws IOException {
@@ -161,7 +161,7 @@ public abstract class TopFieldCollector extends TopDocsCollector {
     final void updateBottom(int doc, float score) {
       bottom.docID = docBase + doc;
       bottom.score = score;
-      bottom = (Entry) pq.updateTop();
+      bottom = pq.updateTop();
     }
 
     public void collect(int doc) throws IOException {
@@ -273,7 +273,7 @@ public abstract class TopFieldCollector extends TopDocsCollector {
     final void updateBottom(int doc, float score) {
       bottom.docID = docBase + doc;
       bottom.score = score;
-      bottom = (Entry) pq.updateTop();
+      bottom =  pq.updateTop();
     }
 
     public void collect(int doc) throws IOException {
@@ -380,7 +380,7 @@ public abstract class TopFieldCollector extends TopDocsCollector {
     final void updateBottom(int doc) {
       // bottom.score is already set to Float.NaN in add().
       bottom.docID = docBase + doc;
-      bottom = (Entry) pq.updateTop();
+      bottom = pq.updateTop();
     }
 
     public void collect(int doc) throws IOException {
@@ -529,7 +529,7 @@ public abstract class TopFieldCollector extends TopDocsCollector {
     final void updateBottom(int doc, float score) {
       bottom.docID = docBase + doc;
       bottom.score = score;
-      bottom = (Entry) pq.updateTop();
+      bottom =  pq.updateTop();
     }
 
     public void collect(int doc) throws IOException {
@@ -675,7 +675,7 @@ public abstract class TopFieldCollector extends TopDocsCollector {
     final void updateBottom(int doc, float score) {
       bottom.docID = docBase + doc;
       bottom.score = score;
-      bottom = (Entry) pq.updateTop();
+      bottom = pq.updateTop();
     }
 
     public void collect(int doc) throws IOException {
@@ -833,7 +833,7 @@ public abstract class TopFieldCollector extends TopDocsCollector {
   // internal versions. If someone will define a constructor with any other
   // visibility, then anyone will be able to extend the class, which is not what
   // we want.
-  private TopFieldCollector(PriorityQueue pq, int numHits, boolean fillFields) {
+  private TopFieldCollector(PriorityQueue<Entry> pq, int numHits, boolean fillFields) {
     super(pq);
     this.numHits = numHits;
     this.fillFields = fillFields;
@@ -925,7 +925,7 @@ public abstract class TopFieldCollector extends TopDocsCollector {
   }
   
   final void add(int slot, int doc, float score) {
-    bottom = (Entry) pq.add(new Entry(slot, docBase + doc, score));
+    bottom = pq.add(new Entry(slot, docBase + doc, score));
     queueFull = totalHits == numHits;
   }
 
@@ -943,7 +943,7 @@ public abstract class TopFieldCollector extends TopDocsCollector {
       }
     } else {
       for (int i = howMany - 1; i >= 0; i--) {
-        Entry entry = (Entry) pq.pop();
+        Entry entry = pq.pop();
         results[i] = new FieldDoc(entry.docID, entry.score);
       }
     }

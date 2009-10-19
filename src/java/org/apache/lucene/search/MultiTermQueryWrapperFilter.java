@@ -39,14 +39,14 @@ import org.apache.lucene.util.OpenBitSet;
  * {@link MultiTermQuery#CONSTANT_SCORE_FILTER_REWRITE};
  * this is why it is not abstract.
  */
-public class MultiTermQueryWrapperFilter extends Filter {
+public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filter {
     
-  protected final MultiTermQuery query;
+  protected final Q query;
 
   /**
    * Wrap a {@link MultiTermQuery} as a Filter.
    */
-  protected MultiTermQueryWrapperFilter(MultiTermQuery query) {
+  protected MultiTermQueryWrapperFilter(Q query) {
       this.query = query;
   }
   

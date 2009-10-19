@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -27,7 +28,7 @@ import org.apache.lucene.util.PriorityQueue;
  * Extending classes can override {@link #topDocs(int, int)} and
  * {@link #getTotalHits()} in order to provide their own implementation.
  */
-public abstract class TopDocsCollector extends Collector {
+public abstract class TopDocsCollector<T> extends Collector {
 
   // This is used in case topDocs() is called with illegal parameters, or there
   // simply aren't (enough) results.
@@ -39,12 +40,12 @@ public abstract class TopDocsCollector extends Collector {
    * HitQueue for example aggregates the top scoring documents, while other PQ
    * implementations may hold documents sorted by other criteria.
    */
-  protected PriorityQueue pq;
+  protected PriorityQueue<T> pq;
 
   /** The total number of documents that the collector encountered. */
   protected int totalHits;
   
-  protected TopDocsCollector(PriorityQueue pq) {
+  protected TopDocsCollector(PriorityQueue<T> pq) {
     this.pq = pq;
   }
   

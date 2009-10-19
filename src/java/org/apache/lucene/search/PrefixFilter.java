@@ -23,13 +23,13 @@ import org.apache.lucene.index.Term;
  * A Filter that restricts search results to values that have a matching prefix in a given
  * field.
  */
-public class PrefixFilter extends MultiTermQueryWrapperFilter {
+public class PrefixFilter extends MultiTermQueryWrapperFilter<PrefixQuery> {
 
   public PrefixFilter(Term prefix) {
     super(new PrefixQuery(prefix));
   }
 
-  public Term getPrefix() { return ((PrefixQuery)query).getPrefix(); }
+  public Term getPrefix() { return query.getPrefix(); }
 
   /** Prints a user-readable version of this query. */
   public String toString () {

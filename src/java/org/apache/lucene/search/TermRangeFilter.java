@@ -32,7 +32,7 @@ import java.text.Collator;
  * same field, {@link FieldCacheRangeFilter} may have significantly better performance. 
  * @since 2.9
  */
-public class TermRangeFilter extends MultiTermQueryWrapperFilter {
+public class TermRangeFilter extends MultiTermQueryWrapperFilter<TermRangeQuery> {
     
   /**
    * @param fieldName The field this range applies to
@@ -89,20 +89,20 @@ public class TermRangeFilter extends MultiTermQueryWrapperFilter {
   }
 
   /** Returns the field name for this filter */
-  public String getField() { return ((TermRangeQuery) query).getField(); }
+  public String getField() { return query.getField(); }
   
   /** Returns the lower value of this range filter */
-  public String getLowerTerm() { return ((TermRangeQuery) query).getLowerTerm(); }
+  public String getLowerTerm() { return query.getLowerTerm(); }
 
   /** Returns the upper value of this range filter */
-  public String getUpperTerm() { return ((TermRangeQuery) query).getUpperTerm(); }
+  public String getUpperTerm() { return query.getUpperTerm(); }
   
   /** Returns <code>true</code> if the lower endpoint is inclusive */
-  public boolean includesLower() { return ((TermRangeQuery) query).includesLower(); }
+  public boolean includesLower() { return query.includesLower(); }
   
   /** Returns <code>true</code> if the upper endpoint is inclusive */
-  public boolean includesUpper() { return ((TermRangeQuery) query).includesUpper(); }
+  public boolean includesUpper() { return query.includesUpper(); }
 
   /** Returns the collator used to determine range inclusion, if any. */
-  public Collator getCollator() { return ((TermRangeQuery) query).getCollator(); }
+  public Collator getCollator() { return query.getCollator(); }
 }

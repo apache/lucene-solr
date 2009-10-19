@@ -34,7 +34,7 @@ import org.apache.lucene.index.IndexReader;
  * not valid scores.  This collector will not properly
  * collect hits with such scores.
  */
-public abstract class TopScoreDocCollector extends TopDocsCollector {
+public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
   // Assumes docs are scored in order.
   private static class InOrderTopScoreDocCollector extends TopScoreDocCollector {
@@ -53,7 +53,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector {
       }
       pqTop.doc = doc + docBase;
       pqTop.score = score;
-      pqTop = (ScoreDoc) pq.updateTop();
+      pqTop = pq.updateTop();
     }
     
     public boolean acceptsDocsOutOfOrder() {
@@ -76,7 +76,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector {
       }
       pqTop.doc = doc;
       pqTop.score = score;
-      pqTop = (ScoreDoc) pq.updateTop();
+      pqTop = pq.updateTop();
     }
     
     public boolean acceptsDocsOutOfOrder() {
@@ -113,7 +113,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector {
     super(new HitQueue(numHits, true));
     // HitQueue implements getSentinelObject to return a ScoreDoc, so we know
     // that at this point top() is already initialized.
-    pqTop = (ScoreDoc) pq.top();
+    pqTop = pq.top();
   }
 
   protected TopDocs newTopDocs(ScoreDoc[] results, int start) {
@@ -130,7 +130,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector {
       maxScore = results[0].score;
     } else {
       for (int i = pq.size(); i > 1; i--) { pq.pop(); }
-      maxScore = ((ScoreDoc) pq.pop()).score;
+      maxScore = pq.pop().score;
     }
     
     return new TopDocs(totalHits, results, maxScore);

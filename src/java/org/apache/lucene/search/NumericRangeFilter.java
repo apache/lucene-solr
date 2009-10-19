@@ -45,7 +45,7 @@ import org.apache.lucene.util.NumericUtils; // for javadocs
  *
  * @since 2.9
  **/
-public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWrapperFilter {
+public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWrapperFilter<NumericRangeQuery<T>> {
 
   private NumericRangeFilter(final NumericRangeQuery<T> query) {
     super(query);
@@ -172,23 +172,18 @@ public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWr
   }
   
   /** Returns the field name for this filter */
-  @SuppressWarnings("unchecked")
-  public String getField() { return ((NumericRangeQuery<T>)query).getField(); }
+  public String getField() { return query.getField(); }
 
   /** Returns <code>true</code> if the lower endpoint is inclusive */
-  @SuppressWarnings("unchecked")
-  public boolean includesMin() { return ((NumericRangeQuery<T>)query).includesMin(); }
+  public boolean includesMin() { return query.includesMin(); }
   
   /** Returns <code>true</code> if the upper endpoint is inclusive */
-  @SuppressWarnings("unchecked")
-  public boolean includesMax() { return ((NumericRangeQuery<T>)query).includesMax(); }
+  public boolean includesMax() { return query.includesMax(); }
 
   /** Returns the lower value of this range filter */
-  @SuppressWarnings("unchecked")
-  public T getMin() { return ((NumericRangeQuery<T>)query).getMin(); }
+  public T getMin() { return query.getMin(); }
 
   /** Returns the upper value of this range filter */
-  @SuppressWarnings("unchecked")
-  public T getMax() { return ((NumericRangeQuery<T>)query).getMax(); }
+  public T getMax() { return query.getMax(); }
   
 }
