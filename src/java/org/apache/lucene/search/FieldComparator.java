@@ -84,6 +84,85 @@ import org.apache.lucene.search.FieldCache.StringIndex;
  */
 public abstract class FieldComparator {
 
+  /**
+   * Compare hit at slot1 with hit at slot2.
+   * 
+   * @param slot1 first slot to compare
+   * @param slot2 second slot to compare
+   * @return any N < 0 if slot2's value is sorted after
+   * slot1, any N > 0 if the slot2's value is sorted before
+   * slot1 and 0 if they are equal
+   */
+  public abstract int compare(int slot1, int slot2);
+
+  /**
+   * Set the bottom slot, ie the "weakest" (sorted last)
+   * entry in the queue.  When {@link #compareBottom} is
+   * called, you should compare against this slot.  This
+   * will always be called before {@link #compareBottom}.
+   * 
+   * @param slot the currently weakest (sorted last) slot in the queue
+   */
+  public abstract void setBottom(final int slot);
+
+  /**
+   * Compare the bottom of the queue with doc.  This will
+   * only invoked after setBottom has been called.  This
+   * should return the same result as {@link
+   * #compare(int,int)}} as if bottom were slot1 and the new
+   * document were slot 2.
+   *    
+   * <p>For a search that hits many results, this method
+   * will be the hotspot (invoked by far the most
+   * frequently).</p>
+   * 
+   * @param doc that was hit
+   * @return any N < 0 if the doc's value is sorted after
+   * the bottom entry (not competitive), any N > 0 if the
+   * doc's value is sorted before the bottom entry and 0 if
+   * they are equal.
+   */
+  public abstract int compareBottom(int doc) throws IOException;
+
+  /**
+   * This method is called when a new hit is competitive.
+   * You should copy any state associated with this document
+   * that will be required for future comparisons, into the
+   * specified slot.
+   * 
+   * @param slot which slot to copy the hit to
+   * @param doc docID relative to current reader
+   */
+  public abstract void copy(int slot, int doc) throws IOException;
+
+  /**
+   * Set a new Reader. All doc correspond to the current Reader.
+   * 
+   * @param reader current reader
+   * @param docBase docBase of this reader 
+   * @throws IOException
+   * @throws IOException
+   */
+  public abstract void setNextReader(IndexReader reader, int docBase) throws IOException;
+
+  /** Sets the Scorer to use in case a document's score is
+   *  needed.
+   * 
+   * @param scorer Scorer instance that you should use to
+   * obtain the current hit's score, if necessary. */
+  public void setScorer(Scorer scorer) {
+    // Empty implementation since most comparators don't need the score. This
+    // can be overridden by those that need it.
+  }
+  
+  /**
+   * Return the actual value in the slot.
+   *
+   * @param slot the value
+   * @return value in this slot upgraded to Comparable
+   */
+  public abstract Comparable value(int slot);
+
   /** Parses field's values as byte (using {@link
    *  FieldCache#getBytes} and sorts by ascending value */
   public static final class ByteComparator extends FieldComparator {
@@ -789,83 +868,4 @@ public abstract class FieldComparator {
     }
     return -(low + 1);
   }
-
-  /**
-   * Compare hit at slot1 with hit at slot2.
-   * 
-   * @param slot1 first slot to compare
-   * @param slot2 second slot to compare
-   * @return any N < 0 if slot2's value is sorted after
-   * slot1, any N > 0 if the slot2's value is sorted before
-   * slot1 and 0 if they are equal
-   */
-  public abstract int compare(int slot1, int slot2);
-
-  /**
-   * Set the bottom slot, ie the "weakest" (sorted last)
-   * entry in the queue.  When {@link #compareBottom} is
-   * called, you should compare against this slot.  This
-   * will always be called before {@link #compareBottom}.
-   * 
-   * @param slot the currently weakest (sorted last) slot in the queue
-   */
-  public abstract void setBottom(final int slot);
-
-  /**
-   * Compare the bottom of the queue with doc.  This will
-   * only invoked after setBottom has been called.  This
-   * should return the same result as {@link
-   * #compare(int,int)}} as if bottom were slot1 and the new
-   * document were slot 2.
-   *    
-   * <p>For a search that hits many results, this method
-   * will be the hotspot (invoked by far the most
-   * frequently).</p>
-   * 
-   * @param doc that was hit
-   * @return any N < 0 if the doc's value is sorted after
-   * the bottom entry (not competitive), any N > 0 if the
-   * doc's value is sorted before the bottom entry and 0 if
-   * they are equal.
-   */
-  public abstract int compareBottom(int doc) throws IOException;
-
-  /**
-   * This method is called when a new hit is competitive.
-   * You should copy any state associated with this document
-   * that will be required for future comparisons, into the
-   * specified slot.
-   * 
-   * @param slot which slot to copy the hit to
-   * @param doc docID relative to current reader
-   */
-  public abstract void copy(int slot, int doc) throws IOException;
-
-  /**
-   * Set a new Reader. All doc correspond to the current Reader.
-   * 
-   * @param reader current reader
-   * @param docBase docBase of this reader 
-   * @throws IOException
-   * @throws IOException
-   */
-  public abstract void setNextReader(IndexReader reader, int docBase) throws IOException;
-
-  /** Sets the Scorer to use in case a document's score is
-   *  needed.
-   * 
-   * @param scorer Scorer instance that you should use to
-   * obtain the current hit's score, if necessary. */
-  public void setScorer(Scorer scorer) {
-    // Empty implementation since most comparators don't need the score. This
-    // can be overridden by those that need it.
-  }
-  
-  /**
-   * Return the actual value in the slot.
-   *
-   * @param slot the value
-   * @return value in this slot upgraded to Comparable
-   */
-  public abstract Comparable value(int slot);
 }
