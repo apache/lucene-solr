@@ -81,7 +81,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
       }
-      NamedList<List<NamedList>> namedList = new SimpleOrderedMap<List<NamedList>>();
+      NamedList<List<NamedList>> namedList = new NamedList<List<NamedList>>();
       namedList.add(tokenStream.getClass().getName(), convertTokensToNamedLists(analyzeTokenStream(tokenStream), context));
       return namedList;
     }
@@ -91,7 +91,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     TokenizerFactory tfac = tokenizerChain.getTokenizerFactory();
     TokenFilterFactory[] filtfacs = tokenizerChain.getTokenFilterFactories();
 
-    NamedList<List<NamedList>> namedList = new SimpleOrderedMap<List<NamedList>>();
+    NamedList<List<NamedList>> namedList = new NamedList<List<NamedList>>();
 
     if( cfiltfacs != null ){
       String source = value;
