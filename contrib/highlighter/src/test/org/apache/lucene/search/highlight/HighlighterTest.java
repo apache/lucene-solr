@@ -543,7 +543,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         // rather
         // than RangeFilters
         QueryParser parser = new QueryParser(FIELD_NAME, new StandardAnalyzer());
-        parser.setUseOldRangeQuery(true);
+        parser.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
         query = parser.parse(queryString);
         doSearching(query);
 

@@ -93,17 +93,8 @@ public class CollationTestBase extends TestCase {
     // supported).
       
     // Test TermRangeQuery
-    aqp.setUseOldRangeQuery(false);
     ScoreDoc[] result
       = is.search(aqp.parse("[ \u062F TO \u0698 ]"), null, 1000).scoreDocs;
-    assertEquals("The index Term should not be included.", 0, result.length);
-
-    result = is.search(aqp.parse("[ \u0633 TO \u0638 ]"), null, 1000).scoreDocs;
-    assertEquals("The index Term should be included.", 1, result.length);
-
-    // Test TermRangeQuery
-    aqp.setUseOldRangeQuery(true);
-    result = is.search(aqp.parse("[ \u062F TO \u0698 ]"), null, 1000).scoreDocs;
     assertEquals("The index Term should not be included.", 0, result.length);
 
     result = is.search(aqp.parse("[ \u0633 TO \u0638 ]"), null, 1000).scoreDocs;

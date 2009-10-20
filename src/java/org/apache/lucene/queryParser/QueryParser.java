@@ -137,7 +137,7 @@ public class QueryParser implements QueryParserConstants {
   // the default date resolution
   DateTools.Resolution dateResolution = null;
   // maps field names to date resolutions
-  Map fieldToDateResolution = null;
+  Map<String,DateTools.Resolution> fieldToDateResolution = null;
 
   // The collator to use when determining range inclusion,
   // for use when constructing RangeQuerys.
@@ -336,29 +336,6 @@ public class QueryParser implements QueryParserConstants {
   }
 
   /**
-   * @deprecated Please use {@link #setMultiTermRewriteMethod} instead.
-   */
-  public void setUseOldRangeQuery(boolean useOldRangeQuery) {
-    if (useOldRangeQuery) {
-      setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
-    } else {
-      setMultiTermRewriteMethod(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
-    }
-  }
-
-
-  /**
-   * @deprecated Please use {@link #getMultiTermRewriteMethod} instead.
-   */
-  public boolean getUseOldRangeQuery() {
-    if (getMultiTermRewriteMethod() == MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  /**
    * By default QueryParser uses {@link MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}
    * when creating a PrefixQuery, WildcardQuery or RangeQuery. This implementation is generally preferable because it 
    * a) Runs faster b) Does not have the scarcity of terms unduly influence score 
@@ -418,7 +395,7 @@ public class QueryParser implements QueryParserConstants {
 
     if (fieldToDateResolution == null) {
       // lazily initialize HashMap
-      fieldToDateResolution = new HashMap();
+      fieldToDateResolution = new HashMap<String,DateTools.Resolution>();
     }
 
     fieldToDateResolution.put(fieldName, dateResolution);
@@ -473,20 +450,13 @@ public class QueryParser implements QueryParserConstants {
     return rangeCollator;
   }
 
-  /**
-   * @deprecated use {@link #addClause(List, int, int, Query)} instead.
-   */
-  protected void addClause(Vector clauses, int conj, int mods, Query q) {
-    addClause((List) clauses, conj, mods, q);
-  }
-
-  protected void addClause(List clauses, int conj, int mods, Query q) {
+  protected void addClause(List<BooleanClause> clauses, int conj, int mods, Query q) {
     boolean required, prohibited;
 
     // If this term is introduced by AND, make the preceding term required,
     // unless it's already prohibited
     if (clauses.size() > 0 && conj == CONJ_AND) {
-      BooleanClause c = (BooleanClause) clauses.get(clauses.size()-1);
+      BooleanClause c = clauses.get(clauses.size()-1);
       if (!c.isProhibited())
         c.setOccur(BooleanClause.Occur.MUST);
     }
@@ -496,7 +466,7 @@ public class QueryParser implements QueryParserConstants {
       // unless it's prohibited (that means we leave -a OR b but +a OR b-->a OR b)
       // notice if the input is a OR b, first term is parsed as required; without
       // this modification a OR b would parsed as +a OR b
-      BooleanClause c = (BooleanClause) clauses.get(clauses.size()-1);
+      BooleanClause c = clauses.get(clauses.size()-1);
       if (!c.isProhibited())
         c.setOccur(BooleanClause.Occur.SHOULD);
     }
@@ -635,7 +605,7 @@ public class QueryParser implements QueryParserConstants {
           // phrase query:
           MultiPhraseQuery mpq = newMultiPhraseQuery();
           mpq.setSlop(phraseSlop);
-          List multiTerms = new ArrayList();
+          List<Term> multiTerms = new ArrayList<Term>();
           int position = -1;
           for (int i = 0; i < numTokens; i++) {
             String term = null;
@@ -653,9 +623,9 @@ public class QueryParser implements QueryParserConstants {
 
             if (positionIncrement > 0 && multiTerms.size() > 0) {
               if (enablePositionIncrements) {
-                mpq.add((Term[])multiTerms.toArray(new Term[0]),position);
+                mpq.add(multiTerms.toArray(new Term[0]),position);
               } else {
-                mpq.add((Term[])multiTerms.toArray(new Term[0]));
+                mpq.add(multiTerms.toArray(new Term[0]));
               }
               multiTerms.clear();
             }
@@ -663,9 +633,9 @@ public class QueryParser implements QueryParserConstants {
             multiTerms.add(new Term(field, term));
           }
           if (enablePositionIncrements) {
-            mpq.add((Term[])multiTerms.toArray(new Term[0]),position);
+            mpq.add(multiTerms.toArray(new Term[0]),position);
           } else {
-            mpq.add((Term[])multiTerms.toArray(new Term[0]));
+            mpq.add(multiTerms.toArray(new Term[0]));
           }
           return mpq;
         }
@@ -885,26 +855,8 @@ public class QueryParser implements QueryParserConstants {
    *
    * @return Resulting {@link Query} object.
    * @exception ParseException throw in overridden method to disallow
-   * @deprecated use {@link #getBooleanQuery(List)} instead
    */
-  protected Query getBooleanQuery(Vector clauses) throws ParseException {
-    return getBooleanQuery((List) clauses, false);
-  }
-
-  /**
-   * Factory method for generating query, given a set of clauses.
-   * By default creates a boolean query composed of clauses passed in.
-   *
-   * Can be overridden by extending classes, to modify query being
-   * returned.
-   *
-   * @param clauses List that contains {@link BooleanClause} instances
-   *    to join.
-   *
-   * @return Resulting {@link Query} object.
-   * @exception ParseException throw in overridden method to disallow
-   */
-  protected Query getBooleanQuery(List clauses) throws ParseException {
+  protected Query getBooleanQuery(List<BooleanClause> clauses) throws ParseException {
     return getBooleanQuery(clauses, false);
   }
 
@@ -921,37 +873,16 @@ public class QueryParser implements QueryParserConstants {
    *
    * @return Resulting {@link Query} object.
    * @exception ParseException throw in overridden method to disallow
-   * @deprecated use {@link #getBooleanQuery(List, boolean)} instead
    */
-  protected Query getBooleanQuery(Vector clauses, boolean disableCoord)
-    throws ParseException
-  {
-    return getBooleanQuery((List) clauses, disableCoord);
-  }
-
-  /**
-   * Factory method for generating query, given a set of clauses.
-   * By default creates a boolean query composed of clauses passed in.
-   *
-   * Can be overridden by extending classes, to modify query being
-   * returned.
-   *
-   * @param clauses List that contains {@link BooleanClause} instances
-   *    to join.
-   * @param disableCoord true if coord scoring should be disabled.
-   *
-   * @return Resulting {@link Query} object.
-   * @exception ParseException throw in overridden method to disallow
-   */
-  protected Query getBooleanQuery(List clauses, boolean disableCoord)
+  protected Query getBooleanQuery(List<BooleanClause> clauses, boolean disableCoord)
     throws ParseException
   {
     if (clauses.size()==0) {
       return null; // all clause words were filtered away by the analyzer.
     }
     BooleanQuery query = newBooleanQuery(disableCoord);
-    for (int i = 0; i < clauses.size(); i++) {
-      query.add((BooleanClause)clauses.get(i));
+    for(final BooleanClause clause: clauses) {
+      query.add(clause);
     }
     return query;
   }
@@ -1234,7 +1165,7 @@ public class QueryParser implements QueryParserConstants {
   }
 
   final public Query Query(String field) throws ParseException {
-  List clauses = new ArrayList();
+  List<BooleanClause> clauses = new ArrayList<BooleanClause>();
   Query q, firstQuery=null;
   int conj, mods;
     mods = Modifiers();
