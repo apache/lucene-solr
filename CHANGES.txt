@@ -91,9 +91,9 @@ Lucene Information
 ----------------
 
 Since Solr is built on top of Lucene, many people add customizations to Solr
- that are dependent on Lucene.  Please see http://lucene.apache.org/java/2_9_0/,
- especially http://lucene.apache.org/java/2_9_0/changes/Changes.html for more information
- on the version of Lucene used in Solr.
+that are dependent on Lucene.  Please see http://lucene.apache.org/java/2_9_0/,
+especially http://lucene.apache.org/java/2_9_0/changes/Changes.html for more
+information on the version of Lucene used in Solr.
 
 Detailed Change List
 ----------------------
