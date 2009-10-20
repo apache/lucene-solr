@@ -450,9 +450,8 @@ class FieldCacheImpl implements FieldCache {
       super(wrapper);
     }
 
-    protected Object createValue(IndexReader reader, Entry entryKey)
+    protected Object createValue(IndexReader reader, Entry entry)
         throws IOException {
-      Entry entry = (Entry) entryKey;
       String field = entry.field;
       FieldCache.LongParser parser = (FieldCache.LongParser) entry.custom;
       if (parser == null) {
@@ -556,7 +555,7 @@ class FieldCacheImpl implements FieldCache {
 
     protected Object createValue(IndexReader reader, Entry entryKey)
         throws IOException {
-      String field = StringHelper.intern((String) entryKey.field);
+      String field = StringHelper.intern(entryKey.field);
       final String[] retArray = new String[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field));
@@ -591,7 +590,7 @@ class FieldCacheImpl implements FieldCache {
 
     protected Object createValue(IndexReader reader, Entry entryKey)
         throws IOException {
-      String field = StringHelper.intern((String) entryKey.field);
+      String field = StringHelper.intern(entryKey.field);
       final int[] retArray = new int[reader.maxDoc()];
       String[] mterms = new String[reader.maxDoc()+1];
       TermDocs termDocs = reader.termDocs();

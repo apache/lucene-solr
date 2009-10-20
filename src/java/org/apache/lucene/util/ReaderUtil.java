@@ -56,7 +56,7 @@ public class ReaderUtil {
   public static IndexReader subReader(int doc, IndexReader reader) {
     List<IndexReader> subReadersList = new ArrayList<IndexReader>();
     ReaderUtil.gatherSubReaders(subReadersList, reader);
-    IndexReader[] subReaders = (IndexReader[]) subReadersList
+    IndexReader[] subReaders = subReadersList
         .toArray(new IndexReader[subReadersList.size()]);
     int[] docStarts = new int[subReaders.length];
     int maxDoc = 0;
@@ -77,7 +77,7 @@ public class ReaderUtil {
   public static IndexReader subReader(IndexReader reader, int subIndex) {
     List<IndexReader> subReadersList = new ArrayList<IndexReader>();
     ReaderUtil.gatherSubReaders(subReadersList, reader);
-    IndexReader[] subReaders = (IndexReader[]) subReadersList
+    IndexReader[] subReaders = subReadersList
         .toArray(new IndexReader[subReadersList.size()]);
     return subReaders[subIndex];
   }

@@ -71,7 +71,7 @@ class RAMFile implements Serializable {
   }
 
   final synchronized byte[] getBuffer(int index) {
-    return (byte[]) buffers.get(index);
+    return buffers.get(index);
   }
 
   final synchronized int numBuffers() {

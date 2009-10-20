@@ -85,7 +85,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
 
     ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
     for (int i = hq.size() - 1; i >= 0; i--) // put docs in array
-      scoreDocs[i] = (ScoreDoc) hq.pop();
+      scoreDocs[i] = hq.pop();
 
     float maxScore = (totalHits==0) ? Float.NEGATIVE_INFINITY : scoreDocs[0].score;
     
@@ -133,7 +133,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
 
     ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
     for (int i = hq.size() - 1; i >= 0; i--) // put docs in array
-      scoreDocs[i] = (ScoreDoc) hq.pop();
+      scoreDocs[i] = hq.pop();
 
     return new TopFieldDocs(totalHits, scoreDocs, hq.getFields(), maxScore);
   }

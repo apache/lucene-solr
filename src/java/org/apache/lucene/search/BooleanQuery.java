@@ -187,8 +187,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
       this.similarity = getSimilarity(searcher);
       weights = new ArrayList<Weight>(clauses.size());
       for (int i = 0 ; i < clauses.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.get(i);
-        weights.add(c.getQuery().createWeight(searcher));
+        weights.add(clauses.get(i).getQuery().createWeight(searcher));
       }
     }
 
@@ -202,11 +201,9 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
     public float sumOfSquaredWeights() throws IOException {
       float sum = 0.0f;
       for (int i = 0 ; i < weights.size(); i++) {
-        BooleanClause c = (BooleanClause)clauses.get(i);
-        Weight w = (Weight)weights.get(i);
         // call sumOfSquaredWeights for all clauses in case of side effects
-        float s = w.sumOfSquaredWeights();         // sum sub weights
-        if (!c.isProhibited())
+        float s = weights.get(i).sumOfSquaredWeights();         // sum sub weights
+        if (!clauses.get(i).isProhibited())
           // only add to sum for non-prohibited clauses
           sum += s;
       }
@@ -370,7 +367,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     if (minNrShouldMatch == 0 && clauses.size() == 1) {                    // optimize 1-clause queries
-      BooleanClause c = (BooleanClause)clauses.get(0);
+      BooleanClause c = clauses.get(0);
       if (!c.isProhibited()) {			  // just return clause
 
         Query query = c.getQuery().rewrite(reader);    // rewrite first

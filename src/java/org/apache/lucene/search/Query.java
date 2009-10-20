@@ -150,7 +150,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
     }
     // optimization: if we have just one query, just return it
     if(uniques.size() == 1){
-        return (Query)uniques.iterator().next();
+        return uniques.iterator().next();
     }
     BooleanQuery result = new BooleanQuery(true);
     for (final Query query : uniques)

@@ -939,7 +939,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       // avoid casting if unnecessary.
       FieldValueHitQueue queue = (FieldValueHitQueue) pq;
       for (int i = howMany - 1; i >= 0; i--) {
-        results[i] = queue.fillFields((Entry) queue.pop());
+        results[i] = queue.fillFields(queue.pop());
       }
     } else {
       for (int i = howMany - 1; i >= 0; i--) {

@@ -66,7 +66,7 @@ public class MultiPhraseQuery extends Query {
   public void add(Term[] terms) {
     int position = 0;
     if (positions.size() > 0)
-      position = ((Integer) positions.get(positions.size()-1)).intValue() + 1;
+      position = positions.get(positions.size()-1).intValue() + 1;
 
     add(terms, position);
   }
@@ -108,7 +108,7 @@ public class MultiPhraseQuery extends Query {
   public int[] getPositions() {
     int[] result = new int[positions.size()];
     for (int i = 0; i < positions.size(); i++)
-      result[i] = ((Integer) positions.get(i)).intValue();
+      result[i] = positions.get(i).intValue();
     return result;
   }
 
@@ -161,7 +161,7 @@ public class MultiPhraseQuery extends Query {
 
       TermPositions[] tps = new TermPositions[termArrays.size()];
       for (int i=0; i<tps.length; i++) {
-        Term[] terms = (Term[])termArrays.get(i);
+        Term[] terms = termArrays.get(i);
 
         TermPositions p;
         if (terms.length > 1)
@@ -250,7 +250,7 @@ public class MultiPhraseQuery extends Query {
 
   public Query rewrite(IndexReader reader) {
     if (termArrays.size() == 1) {                 // optimize one-term case
-      Term[] terms = (Term[])termArrays.get(0);
+      Term[] terms = termArrays.get(0);
       BooleanQuery boq = new BooleanQuery(true);
       for (int i=0; i<terms.length; i++) {
         boq.add(new TermQuery(terms[i]), BooleanClause.Occur.SHOULD);

@@ -37,7 +37,7 @@ public class DefaultSimilarity extends Similarity {
       numTerms = state.getLength() - state.getNumOverlap();
     else
       numTerms = state.getLength();
-    return (float) (state.getBoost() * lengthNorm(field, numTerms));
+    return (state.getBoost() * lengthNorm(field, numTerms));
   }
   
   /** Implemented as <code>1/sqrt(numTerms)</code>. */

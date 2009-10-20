@@ -54,7 +54,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
 
   /** Return the clauses whose spans are matched. */
   public SpanQuery[] getClauses() {
-    return (SpanQuery[])clauses.toArray(new SpanQuery[clauses.size()]);
+    return clauses.toArray(new SpanQuery[clauses.size()]);
   }
 
   public String getField() { return field; }
@@ -151,7 +151,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
 
   public Spans getSpans(final IndexReader reader) throws IOException {
     if (clauses.size() == 1)                      // optimize 1-clause case
-      return ((SpanQuery)clauses.get(0)).getSpans(reader);
+      return (clauses.get(0)).getSpans(reader);
 
     return new Spans() {
         private SpanQueue queue = null;
@@ -187,7 +187,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
           return queue.size() != 0;
         }
 
-        private Spans top() { return (Spans)queue.top(); }
+        private Spans top() { return queue.top(); }
 
         public boolean skipTo(int target) throws IOException {
           if (queue == null) {

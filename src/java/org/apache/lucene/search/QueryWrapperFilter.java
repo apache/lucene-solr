@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.BitSet;
+
 
 import org.apache.lucene.index.IndexReader;
 

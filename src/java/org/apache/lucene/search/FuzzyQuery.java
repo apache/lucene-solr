@@ -153,7 +153,7 @@ public class FuzzyQuery extends MultiTermQuery {
             continue;
           }
 
-          reusableST = (ScoreTerm) stQueue.insertWithOverflow(reusableST);
+          reusableST = stQueue.insertWithOverflow(reusableST);
         }
       } while (enumerator.next());
     } finally {
@@ -163,7 +163,7 @@ public class FuzzyQuery extends MultiTermQuery {
     BooleanQuery query = new BooleanQuery(true);
     int size = stQueue.size();
     for(int i = 0; i < size; i++){
-      ScoreTerm st = (ScoreTerm) stQueue.pop();
+      ScoreTerm st = stQueue.pop();
       TermQuery tq = new TermQuery(st.term);      // found a match
       tq.setBoost(getBoost() * st.score); // set the boost
       query.add(tq, BooleanClause.Occur.SHOULD);          // add to query

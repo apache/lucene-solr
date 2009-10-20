@@ -211,7 +211,7 @@ public class NearSpansUnordered extends Spans {
     return more && (atMatch() ||  next());
   }
 
-  private SpansCell min() { return (SpansCell)queue.top(); }
+  private SpansCell min() { return queue.top(); }
 
   public int doc() { return min().doc(); }
   public int start() { return min().start(); }
@@ -281,7 +281,7 @@ public class NearSpansUnordered extends Spans {
   private void queueToList() throws IOException {
     last = first = null;
     while (queue.top() != null) {
-      addToList((SpansCell)queue.pop());
+      addToList(queue.pop());
     }
   }
   

@@ -68,7 +68,7 @@ public class QueryTermVector implements TermFreqVector {
             terms.add(termAtt.term());
             hasMoreTokens = stream.incrementToken();
           }
-          processTerms((String[])terms.toArray(new String[terms.size()]));
+          processTerms(terms.toArray(new String[terms.size()]));
         } catch (IOException e) {
         }
       }

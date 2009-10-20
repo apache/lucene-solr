@@ -417,7 +417,7 @@ public class QueryParser implements QueryParserConstants {
       return this.dateResolution;
     }
 
-    DateTools.Resolution resolution = (DateTools.Resolution) fieldToDateResolution.get(fieldName);
+    DateTools.Resolution resolution = fieldToDateResolution.get(fieldName);
     if (resolution == null) {
       // no date resolutions set for the given field; return default date resolution instead
       resolution = this.dateResolution;

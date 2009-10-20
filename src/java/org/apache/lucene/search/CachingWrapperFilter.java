@@ -72,7 +72,7 @@ public class CachingWrapperFilter extends Filter {
     }
 
     if (cached != null) {
-      return (DocIdSet) cached;
+      return cached;
     }
 
     final DocIdSet docIdSet = docIdSetToCache(filter.getDocIdSet(reader), reader);

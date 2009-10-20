@@ -58,9 +58,9 @@ final class SloppyPhraseScorer extends PhraseScorer {
         float freq = 0.0f;
         boolean done = (end<0);
         while (!done) {
-            PhrasePositions pp = (PhrasePositions) pq.pop();
+            PhrasePositions pp = pq.pop();
             int start = pp.position;
-            int next = ((PhrasePositions) pq.top()).position;
+            int next = pq.top().position;
 
             boolean tpsDiffer = true;
             for (int pos = start; pos <= next || !tpsDiffer; pos = pp.position) {
@@ -96,7 +96,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
       int n=0;
       PhrasePositions pp3;
       //pop until finding pp2
-      while ((pp3=(PhrasePositions)pq.pop()) != pp2) {
+      while ((pp3=pq.pop()) != pp2) {
         tmpPos[n++] = pp3;
       }
       //insert back all but pp2

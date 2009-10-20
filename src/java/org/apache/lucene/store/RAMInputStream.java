@@ -92,7 +92,7 @@ class RAMInputStream extends IndexInput implements Cloneable {
         bufferPosition = BUFFER_SIZE;
       }
     } else {
-      currentBuffer = (byte[]) file.getBuffer(currentBufferIndex);
+      currentBuffer = file.getBuffer(currentBufferIndex);
       bufferPosition = 0;
       bufferStart = (long) BUFFER_SIZE * (long) currentBufferIndex;
       long buflen = length - bufferStart;

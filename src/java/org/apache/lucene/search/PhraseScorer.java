@@ -153,7 +153,7 @@ abstract class PhraseScorer extends Scorer {
   protected final void pqToList() {
     last = first = null;
     while (pq.top() != null) {
-      PhrasePositions pp = (PhrasePositions) pq.pop();
+      PhrasePositions pp = pq.pop();
       if (last != null) {			  // add next to end of list
         last.next = pp;
       } else
