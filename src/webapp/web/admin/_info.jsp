@@ -25,6 +25,22 @@
 <%@ page import="org.apache.solr.common.SolrException"%>
 <%@ page import="org.apache.lucene.LucenePackage"%>
 <%@ page import="java.net.UnknownHostException" %>
+
+<%!
+  // only try to figure out the hostname once in a static block so 
+  // we don't have a potentially slow DNS lookup on every admin request
+  static InetAddress addr = null;
+  static String hostname = "unknown";
+  static {
+    try {
+      addr = InetAddress.getLocalHost();
+      hostname = addr.getCanonicalHostName();
+    } catch (UnknownHostException e) {
+      //default to unknown
+    }
+  }
+%>
+
 <%
   // 
   SolrCore  core = (SolrCore) request.getAttribute("org.apache.solr.SolrCore");
@@ -48,14 +64,6 @@
   }
 
   String collectionName = schema!=null ? schema.getName():"unknown";
-  InetAddress addr = null;
-  String hostname = "unknown";
-  try {
-    addr = InetAddress.getLocalHost();
-    hostname = addr.getCanonicalHostName();
-  } catch (UnknownHostException e) {
-    //default to unknown
-  }
 
   String defaultSearch = "";
   { 

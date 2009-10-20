@@ -632,6 +632,11 @@ Bug Fixes
     often calculated offsets incorrectly for entities.
     (Anders Melchiorsen via yonik)
 
+74. SOLR-1517: Admin pages could stall waiting for localhost name resolution
+    if reverse DNS wasn't configured; this was changed so the DNS resolution
+    is attempted only once the first time an admin page is loaded.
+    (hossman)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)
