@@ -53,6 +53,10 @@ New features
    any number of output parts, at the cost of doing multiple passes over
    the input index. (Andrzej Bialecki)
 
+ * LUCENE-1993: Add maxDocFreq setting to MoreLikeThis, to exclude
+   from consideration terms that match more than the specified number
+   of documents.  (Christian Steinert via Mike McCandless)
+
 Optimizations
 
  * LUCENE-1965, LUCENE-1962: Arabic-, Persian- and SmartChineseAnalyzer

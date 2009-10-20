@@ -128,6 +128,8 @@ import org.apache.lucene.util.PriorityQueue;
  * <ul>
  * <li> {@link #setMinTermFreq setMinTermFreq(...)}
  * <li> {@link #setMinDocFreq setMinDocFreq(...)}
+ * <li> {@link #setMaxDocFreq setMaxDocFreq(...)}
+ * <li> {@link #setMaxDocFreqPct setMaxDocFreqPct(...)}
  * <li> {@link #setMinWordLen setMinWordLen(...)}
  * <li> {@link #setMaxWordLen setMaxWordLen(...)}
  * <li> {@link #setMaxQueryTerms setMaxQueryTerms(...)}
@@ -176,6 +178,14 @@ public final class MoreLikeThis {
      */
     public static final int DEFAULT_MIN_DOC_FREQ = 5;
 
+    /**
+     * Ignore words which occur in more than this many docs.
+	 * @see #getMaxDocFreq
+	 * @see #setMaxDocFreq	 
+	 * @see #setMaxDocFreqPct	 
+     */
+    public static final int DEFAULT_MAX_DOC_FREQ = Integer.MAX_VALUE;
+    
     /**
      * Boost terms in query based on score.
 	 * @see #isBoost
@@ -241,6 +251,11 @@ public final class MoreLikeThis {
      */
     private int minDocFreq = DEFAULT_MIN_DOC_FREQ;
 
+	/**
+     * Ignore words which occur in more than this many docs.
+	 */
+	private int maxDocFreq = DEFAULT_MAX_DOC_FREQ;
+    
     /**
      * Should we apply a boost to the Query based on the scores?
      */
@@ -387,6 +402,43 @@ public final class MoreLikeThis {
         this.minDocFreq = minDocFreq;
     }
 
+    /**
+     * Returns the maximum frequency in which words may still appear. 
+     * Words that appear in more than this many docs will be ignored. The default frequency is 
+     * {@link #DEFAULT_MAX_DOC_FREQ}.
+     *
+     * @return get the maximum frequency at which words are still allowed,  
+     * words which occur in more docs than this are ignored.
+     */
+    public int getMaxDocFreq() {
+        return maxDocFreq;
+    }
+
+	/**
+     * Set the maximum frequency in which words may still appear. Words that appear
+     * in more than this many docs will be ignored.
+	 * 
+	 * @param maxFreq
+	 *            the maximum count of documents that a term may appear 
+	 *            in to be still considered relevant
+	 */
+	public void setMaxDocFreq(int maxFreq) {
+		this.maxDocFreq = maxFreq;
+	}
+
+	/**
+     * Set the maximum percentage in which words may still appear. Words that appear
+     * in more than this many percent of all docs will be ignored.
+	 * 
+	 * @param maxPercentage
+	 *            the maximum percentage of documents (0-100) that a term may appear 
+	 *            in to be still considered relevant
+	 */
+	public void setMaxDocFreqPct(int maxPercentage) {
+		this.maxDocFreq = maxPercentage * ir.numDocs() / 100;
+	}
+
+	
     /**
      * Returns whether to boost terms in query based on "score" or not. The default is
      * {@link #DEFAULT_BOOST}.
@@ -658,6 +710,10 @@ public final class MoreLikeThis {
 
             if (minDocFreq > 0 && docFreq < minDocFreq) {
                 continue; // filter out words that don't occur in enough docs
+            }
+
+            if (docFreq > maxDocFreq) {
+                continue; // filter out words that occur in too many docs            	
             }
 
             if (docFreq == 0) {
