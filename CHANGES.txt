@@ -121,6 +121,9 @@ New features
 
 Optimizations
 
+* LUCENE-1183: Optimize Levenshtein Distance computation in
+  FuzzyQuery.  (Cédrik Lime via Mike McCandless)
+
 Documentation
 
 Build
