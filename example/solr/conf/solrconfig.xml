@@ -282,9 +282,10 @@
 
 
   <query>
-    <!-- Maximum number of clauses in a boolean query... can affect
-        range or prefix queries that expand to big boolean
-        queries.  An exception is thrown if exceeded.  -->
+    <!-- Maximum number of clauses in a boolean query... in the past, this affected
+        range or prefix queries that expanded to big boolean queries - built in Solr 
+        query parsers no longer create queries with this limitation. 
+        An exception is thrown if exceeded.  -->
     <maxBooleanClauses>1024</maxBooleanClauses>
 
 
