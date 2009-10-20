@@ -110,6 +110,10 @@ Bug fixes
 * LUCENE-1992: Fix thread hazard if a merge is committing just as an
   exception occurs during sync (Uwe Schindler, Mike McCandless)
 
+* LUCENE-1995: Note in javadocs that IndexWriter.setRAMBufferSizeMB
+  cannot exceed 2048 MB, and throw IllegalArgumentException if it
+  does.  (Aaron McKee, Yonik Seeley, Mike McCandless)
+
 New features
 
 * LUCENE-1933: Provide a convenience AttributeFactory that creates a

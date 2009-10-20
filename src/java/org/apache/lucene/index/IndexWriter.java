@@ -1338,6 +1338,14 @@ public class IndexWriter implements Closeable {
    * instead of RAM usage (each buffered delete Query counts
    * as one).
    *
+   * <p> <b>NOTE</b>: because IndexWriter uses
+   * <code>int</code>s when managing its internal storage,
+   * the absolute maximum value for this setting is somewhat
+   * less than 2048 MB.  The precise limit depends on
+   * various factors, such as how large your documents are,
+   * how many fields have norms, etc., so it's best to set
+   * this value comfortably under 2048.</p>
+   *
    * <p> The default value is {@link #DEFAULT_RAM_BUFFER_SIZE_MB}.</p>
    * 
    * @throws IllegalArgumentException if ramBufferSize is
@@ -1345,6 +1353,9 @@ public class IndexWriter implements Closeable {
    * when maxBufferedDocs is already disabled
    */
   public void setRAMBufferSizeMB(double mb) {
+    if (mb > 2048.0) {
+      throw new IllegalArgumentException("ramBufferSize " + mb + " is too large; should be comfortably less than 2048");
+    }
     if (mb != DISABLE_AUTO_FLUSH && mb <= 0.0)
       throw new IllegalArgumentException(
           "ramBufferSize should be > 0.0 MB when enabled");
