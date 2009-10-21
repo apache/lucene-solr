@@ -148,10 +148,10 @@ public class TestLBHttpSolrServer extends TestCase {
     Assert.assertEquals("solr0", name);
   }
 
-  private class SolrInstance extends AbstractSolrTestCase {
-
+  private class SolrInstance {
     String name;
     File homeDir;
+    File dataDir;
     File confDir;
     int port;
     JettySolrRunner jetty;
@@ -169,7 +169,6 @@ public class TestLBHttpSolrServer extends TestCase {
       return "http://localhost:" + port + "/solr";
     }
 
-    @Override
     public String getSchemaFile() {
       return "." + File.separator + "solr" + File.separator + "conf" + File.separator + "schema-replication1.xml";
     }
@@ -182,7 +181,6 @@ public class TestLBHttpSolrServer extends TestCase {
       return dataDir.toString();
     }
 
-    @Override
     public String getSolrConfigFile() {
       String fname = "";
       fname = "." + File.separator + "solr" + File.separator + "conf" + File.separator + "solrconfig-slave1.xml";
@@ -215,7 +213,6 @@ public class TestLBHttpSolrServer extends TestCase {
         jetty.stop();
       } catch (Exception e) {
       }
-      super.tearDown();
       AbstractSolrTestCase.recurseDelete(homeDir);
     }
 
