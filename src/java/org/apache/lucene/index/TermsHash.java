@@ -36,6 +36,8 @@ import org.apache.lucene.util.ArrayUtil;
  *  under each term.
  */
 
+// TODO: Fix the unchecked collections, I do not understand the whole code here -- Uwe
+@SuppressWarnings("unchecked")
 final class TermsHash extends InvertedDocConsumer {
 
   final TermsHashConsumer consumer;

@@ -49,8 +49,8 @@ public abstract class BaseCharFilter extends CharFilter {
       return currentOff;
     }
     for (int i = pcmList.size() - 1; i >= 0; i--) {
-      if (currentOff >= ((OffCorrectMap) pcmList.get(i)).off) {
-        return currentOff + ((OffCorrectMap) pcmList.get(i)).cumulativeDiff;
+      if (currentOff >=  pcmList.get(i).off) {
+        return currentOff + pcmList.get(i).cumulativeDiff;
       }
     }
     return currentOff;
@@ -58,7 +58,7 @@ public abstract class BaseCharFilter extends CharFilter {
   
   protected int getLastCumulativeDiff() {
     return pcmList == null || pcmList.isEmpty() ?
-      0 : ((OffCorrectMap)pcmList.get(pcmList.size() - 1)).cumulativeDiff;
+      0 : pcmList.get(pcmList.size() - 1).cumulativeDiff;
   }
 
   protected void addOffCorrectMap(int off, int cumulativeDiff) {

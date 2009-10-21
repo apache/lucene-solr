@@ -167,7 +167,9 @@ extends PriorityQueue<FieldDoc> {
 					break;
         }
         case SortField.CUSTOM:{
-					c = docA.fields[i].compareTo (docB.fields[i]);
+          // TODO: Use FieldComparator? This does not make sense!
+					@SuppressWarnings("unchecked") final int temp =
+            c = ((Comparable) docA.fields[i]).compareTo((Comparable) docB.fields[i]);
 					break;
         }
         default:{

@@ -102,7 +102,7 @@ public final class Document implements java.io.Serializable {
   public final void removeField(String name) {
     Iterator<Fieldable> it = fields.iterator();
     while (it.hasNext()) {
-      Fieldable field = (Fieldable)it.next();
+      Fieldable field = it.next();
       if (field.name().equals(name)) {
         it.remove();
         return;
@@ -122,7 +122,7 @@ public final class Document implements java.io.Serializable {
   public final void removeFields(String name) {
     Iterator<Fieldable> it = fields.iterator();
     while (it.hasNext()) {
-      Fieldable field = (Fieldable)it.next();
+      Fieldable field = it.next();
       if (field.name().equals(name)) {
         it.remove();
       }
@@ -196,7 +196,7 @@ public final class Document implements java.io.Serializable {
      if (result.size() == 0)
        return NO_FIELDS;
 
-     return (Field[])result.toArray(new Field[result.size()]);
+     return result.toArray(new Field[result.size()]);
    }
 
 
@@ -221,7 +221,7 @@ public final class Document implements java.io.Serializable {
      if (result.size() == 0)
        return NO_FIELDABLES;
 
-     return (Fieldable[])result.toArray(new Fieldable[result.size()]);
+     return result.toArray(new Fieldable[result.size()]);
    }
 
 
@@ -244,7 +244,7 @@ public final class Document implements java.io.Serializable {
     if (result.size() == 0)
       return NO_STRINGS;
     
-    return (String[])result.toArray(new String[result.size()]);
+    return result.toArray(new String[result.size()]);
   }
 
   private final static byte[][] NO_BYTES = new byte[0][];
@@ -268,7 +268,7 @@ public final class Document implements java.io.Serializable {
     if (result.size() == 0)
       return NO_BYTES;
   
-    return (byte[][])result.toArray(new byte[result.size()][]);
+    return result.toArray(new byte[result.size()][]);
   }
   
   /**

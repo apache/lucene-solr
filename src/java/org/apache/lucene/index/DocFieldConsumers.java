@@ -29,6 +29,8 @@ import org.apache.lucene.util.ArrayUtil;
 /** This is just a "splitter" class: it lets you wrap two
  *  DocFieldConsumer instances as a single consumer. */
 
+// TODO: Fix the unchecked collections, I do not understand the whole code here -- Uwe
+@SuppressWarnings("unchecked")
 final class DocFieldConsumers extends DocFieldConsumer {
   final DocFieldConsumer one;
   final DocFieldConsumer two;

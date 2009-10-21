@@ -199,7 +199,7 @@ class MultiSearcherThread extends Thread {
   private int nDocs;
   private TopDocs docs;
   private int i;
-  private PriorityQueue hq;
+  private PriorityQueue<?> hq;
   private int[] starts;
   private IOException ioe;
   private Sort sort;
@@ -266,7 +266,7 @@ class MultiSearcherThread extends Thread {
         scoreDoc.doc += starts[i]; // convert doc 
         //it would be so nice if we had a thread-safe insert 
         synchronized (hq) {
-          if (scoreDoc == hq.insertWithOverflow(scoreDoc))
+          if (scoreDoc == ((HitQueue) hq).insertWithOverflow(scoreDoc))
             break;
         } // no more scores > minScore
       }

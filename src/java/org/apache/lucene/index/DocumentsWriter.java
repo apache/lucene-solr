@@ -400,10 +400,12 @@ final class DocumentsWriter {
 
   /* Returns Collection of files in use by this instance,
    * including any flushed segments. */
+  @SuppressWarnings("unchecked")
   synchronized List<String> openFiles() {
-    return ( List<String>) ((ArrayList<String>) openFiles).clone();
+    return (List<String>) ((ArrayList<String>) openFiles).clone();
   }
 
+  @SuppressWarnings("unchecked")
   synchronized List<String> closedFiles() {
     return (List<String>) ((ArrayList<String>) closedFiles).clone();
   }

@@ -406,10 +406,10 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         }
   }
 
-  @Override
+  @Override @SuppressWarnings("unchecked")
   public Object clone() {
     BooleanQuery clone = (BooleanQuery)super.clone();
-    clone.clauses = (ArrayList<BooleanClause>)this.clauses.clone();
+    clone.clauses = (ArrayList<BooleanClause>) this.clauses.clone();
     return clone;
   }
 

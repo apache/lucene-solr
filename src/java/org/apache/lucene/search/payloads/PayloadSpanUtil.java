@@ -131,7 +131,7 @@ public class PayloadSpanUtil {
           }
         }
 
-        final List<Query>[] disjunctLists = new List[maxPosition + 1];
+        @SuppressWarnings("unchecked") final List<Query>[] disjunctLists = new List[maxPosition + 1];
         int distinctPositions = 0;
 
         for (int i = 0; i < termArrays.size(); ++i) {

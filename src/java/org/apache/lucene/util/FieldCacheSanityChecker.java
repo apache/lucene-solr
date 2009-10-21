@@ -271,7 +271,7 @@ public final class FieldCacheSanityChecker {
    * returned by obj.getFieldCacheKey()
    */
   private List getAllDecendentReaderKeys(Object seed) {
-    List all = new ArrayList(17); // will grow as we iter
+    List<Object> all = new ArrayList<Object>(17); // will grow as we iter
     all.add(seed);
     for (int i = 0; i < all.size(); i++) {
       Object obj = all.get(i);

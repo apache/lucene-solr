@@ -214,10 +214,10 @@ public class DisjunctionMaxQuery extends Query implements Iterable<Query> {
 
   /** Create a shallow copy of us -- used in rewriting if necessary
    * @return a copy of us (but reuse, don't copy, our subqueries) */
-  @Override
+  @Override @SuppressWarnings("unchecked")
   public Object clone() {
     DisjunctionMaxQuery clone = (DisjunctionMaxQuery)super.clone();
-    clone.disjuncts = (ArrayList<Query>)this.disjuncts.clone();
+    clone.disjuncts = (ArrayList<Query>) this.disjuncts.clone();
     return clone;
   }
 

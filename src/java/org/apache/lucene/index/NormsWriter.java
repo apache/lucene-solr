@@ -35,6 +35,8 @@ import org.apache.lucene.search.Similarity;
  *  merges all of these together into a single _X.nrm file.
  */
 
+// TODO: Fix the unchecked collections, I do not understand the whole code here -- Uwe
+@SuppressWarnings("unchecked")
 final class NormsWriter extends InvertedDocEndConsumer {
 
   private static final byte defaultNorm = Similarity.encodeNorm(1.0f);

@@ -27,6 +27,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Iterator;
 
+// TODO: Fix the unchecked collections, I do not understand the whole code here -- Uwe
+@SuppressWarnings("unchecked")
 final class FreqProxTermsWriter extends TermsHashConsumer {
 
   public TermsHashConsumerPerThread addThread(TermsHashPerThread perThread) {

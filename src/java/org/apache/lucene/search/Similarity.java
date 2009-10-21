@@ -932,12 +932,12 @@ public abstract class Similarity implements Serializable {
   private static final class MethodSupport implements Serializable {
     final boolean overridesCollectionIDF, overridesTermIDF;
 
-    MethodSupport(Class clazz) {
-      overridesCollectionIDF = isMethodOverridden(clazz, "idf", C_IDF_METHOD_PARAMS);
-      overridesTermIDF = isMethodOverridden(clazz, "idf", T_IDF_METHOD_PARAMS);
+    MethodSupport(Class<? extends Similarity> clazz) {
+      overridesCollectionIDF = isMethodOverridden(clazz, "idf", Collection.class, Searcher.class);
+      overridesTermIDF = isMethodOverridden(clazz, "idf", Term.class, Searcher.class);
     }
     
-    private static boolean isMethodOverridden(Class clazz, String name, Class[] params) {
+    private static boolean isMethodOverridden(Class<?> clazz, String name, Class... params) {
       try {
         return clazz.getMethod(name, params).getDeclaringClass() != Similarity.class;
       } catch (NoSuchMethodException e) {
@@ -945,18 +945,14 @@ public abstract class Similarity implements Serializable {
         throw new RuntimeException(e);
       }
     }
-    /** @deprecated Remove this when old API is removed! */
-    private static final Class[] T_IDF_METHOD_PARAMS = new Class[]{Term.class, Searcher.class};
-    
-    /** @deprecated Remove this when old API is removed! */
-    private static final Class[] C_IDF_METHOD_PARAMS = new Class[]{Collection.class, Searcher.class};
   }
   
   /** @deprecated Remove this when old API is removed! */
-  private static final IdentityHashMap<Class<? extends Similarity>,MethodSupport> knownMethodSupport = new IdentityHashMap();
+  private static final IdentityHashMap<Class<? extends Similarity>,MethodSupport> knownMethodSupport
+    = new IdentityHashMap<Class<? extends Similarity>,MethodSupport>();
   
   /** @deprecated Remove this when old API is removed! */
-  private static MethodSupport getSupportedMethods(Class clazz) {
+  private static MethodSupport getSupportedMethods(Class<? extends Similarity> clazz) {
     MethodSupport supportedMethods;
     synchronized(knownMethodSupport) {
       supportedMethods = (MethodSupport) knownMethodSupport.get(clazz);
