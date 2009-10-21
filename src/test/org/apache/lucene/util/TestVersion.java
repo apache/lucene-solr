@@ -17,8 +17,6 @@
 
 package org.apache.lucene.util;
 
-import java.util.EnumSet;
-
 public class TestVersion extends LuceneTestCase {
 
   public void test() {
