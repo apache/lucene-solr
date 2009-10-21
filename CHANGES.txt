@@ -88,6 +88,11 @@ API Changes
   also implement java.io.Closeable (IndexReader, IndexWriter, Directory,...).
   (Uwe Schindler)
 
+* LUCENE-1998: Change all Parameter instances to Java 5 enums. This
+  is no backwards-break, only a change of the super class. Parameter
+  was deprecated and will be removed in a later version.
+  (DM Smith, Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-1951: When the text provided to WildcardQuery has no wildcard

@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.ngram;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -36,28 +35,23 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   public static final int DEFAULT_MAX_GRAM_SIZE = 1;
   public static final int DEFAULT_MIN_GRAM_SIZE = 1;
 
-  // Replace this with an enum when the Java 1.5 upgrade is made, the impl will be simplified
   /** Specifies which side of the input the n-gram should be generated from */
-  public static class Side {
-    private String label;
+  public static enum Side {
 
     /** Get the n-gram from the front of the input */
-    public static Side FRONT = new Side("front");
+    FRONT { public String getLabel() { return "front"; } },
 
     /** Get the n-gram from the end of the input */
-    public static Side BACK = new Side("back");
+    BACK  { public String getLabel() { return "back"; } };
 
-    // Private ctor
-    private Side(String label) { this.label = label; }
-
-    public String getLabel() { return label; }
+    public abstract String getLabel();
 
     // Get the appropriate Side from a string
     public static Side getSide(String sideName) {
       if (FRONT.getLabel().equals(sideName)) {
         return FRONT;
       }
-      else if (BACK.getLabel().equals(sideName)) {
+      if (BACK.getLabel().equals(sideName)) {
         return BACK;
       }
       return null;

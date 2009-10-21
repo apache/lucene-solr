@@ -30,25 +30,12 @@ public class ParametricQueryNode extends FieldQueryNode {
   private CompareOperator operator;
 
   public enum CompareOperator {
-    LE, LT, GE, GT, EQ, NE;
-
-    public String toString() {
-      if (LE.equals(this)) {
-        return "<=";
-      } else if (LT.equals(this)) {
-        return "<";
-      } else if (GE.equals(this)) {
-        return ">=";
-      } else if (GT.equals(this)) {
-        return ">";
-      } else if (EQ.equals(this)) {
-        return "=";
-      } else if (NE.equals(this)) {
-        return "!=";
-      } else {
-        throw new IllegalArgumentException("Unknown operator");
-      }
-    }
+    LE { public String toString() { return "<="; } },
+    LT { public String toString() { return "<";  } },
+    GE { public String toString() { return ">="; } },
+    GT { public String toString() { return ">";  } },
+    EQ { public String toString() { return "=";  } },
+    NE { public String toString() { return "!="; } };
   }
 
   /**

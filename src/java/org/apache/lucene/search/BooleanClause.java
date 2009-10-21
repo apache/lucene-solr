@@ -1,7 +1,5 @@
 package org.apache.lucene.search;
 
-import org.apache.lucene.util.Parameter;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,33 +21,24 @@ import org.apache.lucene.util.Parameter;
 public class BooleanClause implements java.io.Serializable {
   
   /** Specifies how clauses are to occur in matching documents. */
-  public static final class Occur extends Parameter implements java.io.Serializable {
-    
-    private Occur(String name) {
-      // typesafe enum pattern, no public constructor
-      super(name);
-    }
-
-    public String toString() {
-      if (this == MUST) return "+";
-      if (this == MUST_NOT) return "-";
-      return "";
-    }
+  public static enum Occur {
 
     /** Use this operator for clauses that <i>must</i> appear in the matching documents. */
-    public static final Occur MUST = new Occur("MUST");
+    MUST     { public String toString() { return "+"; } },
+
     /** Use this operator for clauses that <i>should</i> appear in the 
      * matching documents. For a BooleanQuery with no <code>MUST</code> 
      * clauses one or more <code>SHOULD</code> clauses must match a document 
      * for the BooleanQuery to match.
      * @see BooleanQuery#setMinimumNumberShouldMatch
      */
-    public static final Occur SHOULD = new Occur("SHOULD");
+    SHOULD   { public String toString() { return "";  } },
+
     /** Use this operator for clauses that <i>must not</i> appear in the matching documents.
      * Note that it is not possible to search for queries that only consist
      * of a <code>MUST_NOT</code> clause. */
-    public static final Occur MUST_NOT = new Occur("MUST_NOT");
-    
+    MUST_NOT { public String toString() { return "-"; } };
+
   }
 
   /** The query whose matching documents are combined by the boolean query.
@@ -85,11 +74,11 @@ public class BooleanClause implements java.io.Serializable {
   }
   
   public boolean isProhibited() {
-    return Occur.MUST_NOT.equals(occur);
+    return Occur.MUST_NOT == occur;
   }
 
   public boolean isRequired() {
-    return Occur.MUST.equals(occur);
+    return Occur.MUST == occur;
   }
 
 
@@ -100,12 +89,12 @@ public class BooleanClause implements java.io.Serializable {
       return false;
     BooleanClause other = (BooleanClause)o;
     return this.query.equals(other.query)
-      && this.occur.equals(other.occur);
+      && this.occur == other.occur;
   }
 
   /** Returns a hash code value for this object.*/
   public int hashCode() {
-    return query.hashCode() ^ (Occur.MUST.equals(occur)?1:0) ^ (Occur.MUST_NOT.equals(occur)?2:0);
+    return query.hashCode() ^ (Occur.MUST == occur?1:0) ^ (Occur.MUST_NOT == occur?2:0);
   }
 
 

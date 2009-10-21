@@ -18,7 +18,12 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.document.*;
+import org.apache.lucene.document.AbstractField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.document.FieldSelectorResult;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -298,8 +303,8 @@ final class FieldsReader implements Cloneable {
       fieldsStream.seek(pointer + toRead);
     } else {
       Field.Store store = Field.Store.YES;
-      Field.Index index = getIndexType(fi, tokenize);
-      Field.TermVector termVector = getTermVectorType(fi);
+      Field.Index index = Field.Index.toIndex(fi.isIndexed, tokenize);
+      Field.TermVector termVector = Field.TermVector.toTermVector(fi.storeTermVector, fi.storeOffsetWithTermVector, fi.storePositionWithTermVector);
 
       AbstractField f;
       int length = fieldsStream.readVInt();
@@ -327,8 +332,8 @@ final class FieldsReader implements Cloneable {
       doc.add(new Field(fi.name, b, Field.Store.YES));
     } else {
       Field.Store store = Field.Store.YES;
-      Field.Index index = getIndexType(fi, tokenize);
-      Field.TermVector termVector = getTermVectorType(fi);
+      Field.Index index = Field.Index.toIndex(fi.isIndexed, tokenize);
+      Field.TermVector termVector = Field.TermVector.toTermVector(fi.storeTermVector, fi.storeOffsetWithTermVector, fi.storePositionWithTermVector);
 
       AbstractField f;
       f = new Field(fi.name,     // name
@@ -355,37 +360,6 @@ final class FieldsReader implements Cloneable {
     sizebytes[3] = (byte)  bytesize      ;
     doc.add(new Field(fi.name, sizebytes, Field.Store.YES));
     return size;
-  }
-
-  private Field.TermVector getTermVectorType(FieldInfo fi) {
-    Field.TermVector termVector = null;
-    if (fi.storeTermVector) {
-      if (fi.storeOffsetWithTermVector) {
-        if (fi.storePositionWithTermVector) {
-          termVector = Field.TermVector.WITH_POSITIONS_OFFSETS;
-        } else {
-          termVector = Field.TermVector.WITH_OFFSETS;
-        }
-      } else if (fi.storePositionWithTermVector) {
-        termVector = Field.TermVector.WITH_POSITIONS;
-      } else {
-        termVector = Field.TermVector.YES;
-      }
-    } else {
-      termVector = Field.TermVector.NO;
-    }
-    return termVector;
-  }
-
-  private Field.Index getIndexType(FieldInfo fi, boolean tokenize) {
-    Field.Index index;
-    if (fi.isIndexed && tokenize)
-      index = Field.Index.ANALYZED;
-    else if (fi.isIndexed && !tokenize)
-      index = Field.Index.NOT_ANALYZED;
-    else
-      index = Field.Index.NO;
-    return index;
   }
 
   /**

@@ -18,15 +18,36 @@ package org.apache.lucene.util;
  */
 
 
-import java.io.Serializable;
-
 /**
  * Use by certain classes to match version compatibility
  * across releases of Lucene.
  */
-public final class Version extends Parameter implements Serializable {
+public enum Version {
 
-  /** Use this to get the latest & greatest settings, bug
+  /** Match settings and bugs in Lucene's 2.0 release. */
+  LUCENE_20,
+
+  /** Match settings and bugs in Lucene's 2.1 release. */
+  LUCENE_21,
+
+  /** Match settings and bugs in Lucene's 2.2 release. */
+  LUCENE_22,
+
+  /** Match settings and bugs in Lucene's 2.3 release. */
+  LUCENE_23,
+
+  /** Match settings and bugs in Lucene's 2.4 release. */
+  LUCENE_24,
+
+  /** Match settings and bugs in Lucene's 2.9 release. */
+  LUCENE_29,
+
+  /** Match settings and bugs in Lucene's 3.0 release. */
+  LUCENE_30,
+  
+  /* Add new constants for later versions **here** to respect order! */
+
+  /** Use this to get the latest &amp; greatest settings, bug
    *  fixes, etc, for Lucene.
    *
    * <p><b>WARNING</b>: if you use this setting, and then
@@ -35,34 +56,9 @@ public final class Version extends Parameter implements Serializable {
    * then you should instead explicitly specify an actual
    * version.
    */
-  public static final Version LUCENE_CURRENT = new Version("LUCENE_CURRENT", 0);
-  
-  /** Match settings and bugs in Lucene's 2.0 release. */
-  public static final Version LUCENE_20 = new Version("LUCENE_20", 2000);
-
-  /** Match settings and bugs in Lucene's 2.1 release. */
-  public static final Version LUCENE_21 = new Version("LUCENE_21", 2100);
-
-  /** Match settings and bugs in Lucene's 2.2 release. */
-  public static final Version LUCENE_22 = new Version("LUCENE_22", 2200);
-
-  /** Match settings and bugs in Lucene's 2.3 release. */
-  public static final Version LUCENE_23 = new Version("LUCENE_23", 2300);
-
-  /** Match settings and bugs in Lucene's 2.4 release. */
-  public static final Version LUCENE_24 = new Version("LUCENE_24", 2400);
-
-  /** Match settings and bugs in Lucene's 2.9 release. */
-  public static final Version LUCENE_29 = new Version("LUCENE_29", 2900);
-
-  private final int v;
-
-  public Version(String name, int v) {
-    super(name);
-    this.v = v;
-  }
+  LUCENE_CURRENT;
 
   public boolean onOrAfter(Version other) {
-    return v == 0 || v >= other.v;
+    return compareTo(other) >= 0;
   }
 }

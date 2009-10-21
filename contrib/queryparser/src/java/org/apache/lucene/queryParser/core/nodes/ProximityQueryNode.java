@@ -36,33 +36,11 @@ public class ProximityQueryNode extends BooleanQueryNode {
   private static final long serialVersionUID = 9018220596680832916L;
 
   public enum Type {
-    PARAGRAPH, SENTENCE, NUMBER;
+    PARAGRAPH { CharSequence toQueryString() { return "WITHIN PARAGRAPH"; } },
+    SENTENCE  { CharSequence toQueryString() { return "WITHIN SENTENCE";  } },
+    NUMBER    { CharSequence toQueryString() { return "WITHIN";           } };
 
-    CharSequence toQueryString() {
-      switch (this) {
-      case PARAGRAPH:
-        return "WITHIN PARAGRAPH";
-      case SENTENCE:
-        return "WITHIN SENTENCE";
-      case NUMBER:
-        return "WITHIN";
-      default:
-        return "WITHIN SENTENCE";
-      }
-    }
-
-    public String toString() {
-      switch (this) {
-      case PARAGRAPH:
-        return "PARAGRAPH";
-      case SENTENCE:
-        return "SENTENCE";
-      case NUMBER:
-        return "NUMBER";
-      default:
-        return "NUMBER";
-      }
-    }
+    abstract CharSequence toQueryString();
   }
 
   // utility class

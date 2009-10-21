@@ -49,7 +49,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.util.Parameter;
 import org.apache.lucene.util.AttributeSource;
 
 /**
@@ -128,13 +127,7 @@ public class PrecedenceQueryParser {
   int fuzzyPrefixLength = FuzzyQuery.defaultPrefixLength;
   Locale locale = Locale.getDefault();
 
-  static final class Operator extends Parameter {
-    private Operator(String name) {
-      super(name);
-    }
-    static final Operator OR = new Operator("OR");
-    static final Operator AND = new Operator("AND");
-  }
+  static enum Operator { OR, AND }
 
   /** Constructs a query parser.
    *  @param f  the default field for query terms.

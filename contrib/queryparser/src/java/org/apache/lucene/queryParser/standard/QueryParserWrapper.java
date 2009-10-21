@@ -52,7 +52,6 @@ import org.apache.lucene.queryParser.standard.processors.StandardQueryNodeProces
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Parameter;
 
 /**
  * This class performs the query parsing using the new query parser
@@ -71,17 +70,7 @@ public class QueryParserWrapper {
    * The default operator for parsing queries. Use
    * {@link QueryParserWrapper#setDefaultOperator} to change it.
    */
-  static public final class Operator extends Parameter {
-    private static final long serialVersionUID = 3550299139196880290L;
-
-    private Operator(String name) {
-      super(name);
-    }
-
-    static public final Operator OR = new Operator("OR");
-
-    static public final Operator AND = new Operator("AND");
-  }
+  static public enum Operator { OR, AND }
 
   // the nested class:
   /** Alternative form of QueryParser.Operator.AND */

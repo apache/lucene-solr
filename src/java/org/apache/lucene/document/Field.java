@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexWriter;   // for javadoc
-import org.apache.lucene.util.Parameter;
 import org.apache.lucene.util.StringHelper;
 
 import java.io.Reader;
@@ -36,45 +35,56 @@ import java.io.Serializable;
 public final class Field extends AbstractField implements Fieldable, Serializable {
   
   /** Specifies whether and how a field should be stored. */
-  public static final class Store extends Parameter implements Serializable {
-
-    private Store(String name) {
-      super(name);
-    }
+  public static enum Store {
 
     /** Store the original field value in the index. This is useful for short texts
      * like a document's title which should be displayed with the results. The
      * value is stored in its original form, i.e. no analyzer is used before it is
      * stored.
      */
-    public static final Store YES = new Store("YES");
+    YES {
+      public boolean isStored() { return true; }
+    },
 
     /** Do not store the field value in the index. */
-    public static final Store NO = new Store("NO");
+    NO
+    {
+      public boolean isStored() { return false; }
+    };
+
+    public abstract boolean isStored();
   }
 
   /** Specifies whether and how a field should be indexed. */
-  public static final class Index extends Parameter implements Serializable {
-
-    private Index(String name) {
-      super(name);
-    }
+  public static enum Index {
 
     /** Do not index the field value. This field can thus not be searched,
      * but one can still access its contents provided it is
      * {@link Field.Store stored}. */
-    public static final Index NO = new Index("NO");
+    NO {
+      public boolean isIndexed()  { return false; }
+      public boolean isAnalyzed() { return false; }
+      public boolean omitNorms()  { return true;  }   
+    },
 
     /** Index the tokens produced by running the field's
      * value through an Analyzer.  This is useful for
      * common text. */
-    public static final Index ANALYZED = new Index("ANALYZED");
+    ANALYZED {
+      public boolean isIndexed()  { return true;  }
+      public boolean isAnalyzed() { return true;  }
+      public boolean omitNorms()  { return false; }   	
+    },
 
     /** Index the field's value without using an Analyzer, so it can be searched.
      * As no analyzer is used the value will be stored as a single term. This is
      * useful for unique Ids like product numbers.
      */
-    public static final Index NOT_ANALYZED = new Index("NOT_ANALYZED");
+    NOT_ANALYZED {
+      public boolean isIndexed()  { return true;  }
+      public boolean isAnalyzed() { return false; }
+      public boolean omitNorms()  { return false; }   	
+    },
 
     /** Expert: Index the field's value without an Analyzer,
      * and also disable the storing of norms.  Note that you
@@ -90,44 +100,96 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      * above described effect on a field, all instances of
      * that field must be indexed with NOT_ANALYZED_NO_NORMS
      * from the beginning. */
-    public static final Index NOT_ANALYZED_NO_NORMS = new Index("NOT_ANALYZED_NO_NORMS");
+    NOT_ANALYZED_NO_NORMS {
+      public boolean isIndexed()  { return true;  }
+      public boolean isAnalyzed() { return false; }
+      public boolean omitNorms()  { return true;  }   	
+    },
 
     /** Expert: Index the tokens produced by running the
      *  field's value through an Analyzer, and also
      *  separately disable the storing of norms.  See
      *  {@link #NOT_ANALYZED_NO_NORMS} for what norms are
      *  and why you may want to disable them. */
-    public static final Index ANALYZED_NO_NORMS = new Index("ANALYZED_NO_NORMS");
+    ANALYZED_NO_NORMS {
+      public boolean isIndexed()  { return true;  }
+      public boolean isAnalyzed() { return true;  }
+      public boolean omitNorms()  { return true;  }   	
+    };
+
+    /** Get the best representation of the index given the flags. */
+    public static Index toIndex(boolean indexed, boolean analyzed) {
+      return toIndex(indexed, analyzed, false);
+    }
+
+    /** Expert: Get the best representation of the index given the flags. */
+    public static Index toIndex(boolean indexed, boolean analyzed, boolean omitNorms) {
+
+      // If it is not indexed nothing else matters
+      if (!indexed) {
+        return Index.NO;
+      }
+
+      // typical, non-expert
+      if (!omitNorms) {
+        if (analyzed) {
+          return Index.ANALYZED;
+        }
+        return Index.NOT_ANALYZED;
+      }
+
+      // Expert: Norms omitted
+      if (analyzed) {
+        return Index.ANALYZED_NO_NORMS;
+      }
+      return Index.NOT_ANALYZED_NO_NORMS;
+    }
+
+    public abstract boolean isIndexed();
+    public abstract boolean isAnalyzed();
+    public abstract boolean omitNorms();  	
   }
 
   /** Specifies whether and how a field should have term vectors. */
-  public static final class TermVector  extends Parameter implements Serializable {
-    
-    private TermVector(String name) {
-      super(name);
-    }
+  public static enum TermVector {
     
     /** Do not store term vectors. 
      */
-    public static final TermVector NO = new TermVector("NO");
+    NO {
+    	public boolean isStored()      { return false; }
+    	public boolean withPositions() { return false; }
+    	public boolean withOffsets()   { return false; }
+    },
     
     /** Store the term vectors of each document. A term vector is a list
      * of the document's terms and their number of occurrences in that document. */
-    public static final TermVector YES = new TermVector("YES");
+    YES {
+    	public boolean isStored()      { return true;  }
+    	public boolean withPositions() { return false; }
+    	public boolean withOffsets()   { return false; }
+    },
     
     /**
      * Store the term vector + token position information
      * 
      * @see #YES
      */ 
-    public static final TermVector WITH_POSITIONS = new TermVector("WITH_POSITIONS");
+    WITH_POSITIONS {
+    	public boolean isStored()      { return true;  }
+    	public boolean withPositions() { return true;  }
+    	public boolean withOffsets()   { return false; }
+    },
     
     /**
      * Store the term vector + Token offset information
      * 
      * @see #YES
      */ 
-    public static final TermVector WITH_OFFSETS = new TermVector("WITH_OFFSETS");
+    WITH_OFFSETS {
+    	public boolean isStored()      { return true;  }
+    	public boolean withPositions() { return false; }
+    	public boolean withOffsets()   { return true;  }
+    },
     
     /**
      * Store the term vector + Token position and offset information
@@ -136,7 +198,36 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      * @see #WITH_POSITIONS
      * @see #WITH_OFFSETS
      */ 
-    public static final TermVector WITH_POSITIONS_OFFSETS = new TermVector("WITH_POSITIONS_OFFSETS");
+    WITH_POSITIONS_OFFSETS {
+    	public boolean isStored()      { return true;  }
+    	public boolean withPositions() { return true;  }
+    	public boolean withOffsets()   { return true;  }
+    };
+
+    /** Get the best representation of a TermVector given the flags. */
+    public static TermVector toTermVector(boolean stored, boolean withOffsets, boolean withPositions) {
+
+      // If it is not stored, nothing else matters.
+      if (!stored) {
+    	return TermVector.NO;
+      }
+
+      if (withOffsets) {
+        if (withPositions) {
+          return Field.TermVector.WITH_POSITIONS_OFFSETS;
+        }
+        return Field.TermVector.WITH_OFFSETS;
+      }
+
+      if (withPositions) {
+        return Field.TermVector.WITH_POSITIONS;
+      }
+      return Field.TermVector.YES;
+    }
+
+    public abstract boolean isStored();
+    public abstract boolean withPositions();
+    public abstract boolean withOffsets();
   }
   
   
@@ -288,38 +379,15 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     
     this.fieldsData = value;
 
-    if (store == Store.YES){
-      this.isStored = true;
-    }
-    else if (store == Store.NO){
-      this.isStored = false;
-    }
-    else
-      throw new IllegalArgumentException("unknown store parameter " + store);
+    this.isStored = store.isStored();
    
+    this.isIndexed = index.isIndexed();
+    this.isTokenized = index.isAnalyzed();
+    this.omitNorms = index.omitNorms();
     if (index == Index.NO) {
-      this.isIndexed = false;
-      this.isTokenized = false;
       this.omitTermFreqAndPositions = false;
-      this.omitNorms = true;
-    } else if (index == Index.ANALYZED) {
-      this.isIndexed = true;
-      this.isTokenized = true;
-    } else if (index == Index.NOT_ANALYZED) {
-      this.isIndexed = true;
-      this.isTokenized = false;
-    } else if (index == Index.NOT_ANALYZED_NO_NORMS) {
-      this.isIndexed = true;
-      this.isTokenized = false;
-      this.omitNorms = true;
-    } else if (index == Index.ANALYZED_NO_NORMS) {
-      this.isIndexed = true;
-      this.isTokenized = true;
-      this.omitNorms = true;
-    } else {
-      throw new IllegalArgumentException("unknown index parameter " + index);
-    }
-    
+    }    
+
     this.isBinary = false;
 
     setStoreTermVector(termVector);
@@ -449,14 +517,10 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     this.name = StringHelper.intern(name);        // field names are interned
     fieldsData = value;
     
-    if (store == Store.YES) {
-      isStored = true;
-    }
-    else if (store == Store.NO)
+    if (store == Store.NO)
       throw new IllegalArgumentException("binary values can't be unstored");
-    else
-      throw new IllegalArgumentException("unknown store parameter " + store);
     
+    isStored = store.isStored();
     isIndexed   = false;
     isTokenized = false;
     omitTermFreqAndPositions = false;

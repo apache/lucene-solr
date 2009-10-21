@@ -25,7 +25,9 @@ import java.util.Map;
 
 /**
  * A serializable Enum class.
+ * @deprecated Use Java 5 enum
  */
+@SuppressWarnings("serial")
 public abstract class Parameter implements Serializable
 {
   static Map<String,Parameter> allParameters = new HashMap<String,Parameter>();

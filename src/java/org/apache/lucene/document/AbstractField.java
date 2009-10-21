@@ -56,35 +56,10 @@ public abstract class AbstractField implements Fieldable {
       throw new NullPointerException("name cannot be null");
     this.name = StringHelper.intern(name);        // field names are interned
 
-    if (store == Field.Store.YES){
-      this.isStored = true;
-    }
-    else if (store == Field.Store.NO){
-      this.isStored = false;
-    }
-    else
-      throw new IllegalArgumentException("unknown store parameter " + store);
-
-    if (index == Field.Index.NO) {
-      this.isIndexed = false;
-      this.isTokenized = false;
-    } else if (index == Field.Index.ANALYZED) {
-      this.isIndexed = true;
-      this.isTokenized = true;
-    } else if (index == Field.Index.NOT_ANALYZED) {
-      this.isIndexed = true;
-      this.isTokenized = false;
-    } else if (index == Field.Index.NOT_ANALYZED_NO_NORMS) {
-      this.isIndexed = true;
-      this.isTokenized = false;
-      this.omitNorms = true;
-    } else if (index == Field.Index.ANALYZED_NO_NORMS) {
-      this.isIndexed = true;
-      this.isTokenized = true;
-      this.omitNorms = true;
-    } else {
-      throw new IllegalArgumentException("unknown index parameter " + index);
-    }
+    this.isStored = store.isStored();
+    this.isIndexed = index.isIndexed();
+    this.isTokenized = index.isAnalyzed();
+    this.omitNorms = index.omitNorms();
 
     this.isBinary = false;
 
@@ -138,34 +113,9 @@ public abstract class AbstractField implements Fieldable {
   public String name()    { return name; }
 
   protected void setStoreTermVector(Field.TermVector termVector) {
-    if (termVector == Field.TermVector.NO) {
-      this.storeTermVector = false;
-      this.storePositionWithTermVector = false;
-      this.storeOffsetWithTermVector = false;
-    }
-    else if (termVector == Field.TermVector.YES) {
-      this.storeTermVector = true;
-      this.storePositionWithTermVector = false;
-      this.storeOffsetWithTermVector = false;
-    }
-    else if (termVector == Field.TermVector.WITH_POSITIONS) {
-      this.storeTermVector = true;
-      this.storePositionWithTermVector = true;
-      this.storeOffsetWithTermVector = false;
-    }
-    else if (termVector == Field.TermVector.WITH_OFFSETS) {
-      this.storeTermVector = true;
-      this.storePositionWithTermVector = false;
-      this.storeOffsetWithTermVector = true;
-    }
-    else if (termVector == Field.TermVector.WITH_POSITIONS_OFFSETS) {
-      this.storeTermVector = true;
-      this.storePositionWithTermVector = true;
-      this.storeOffsetWithTermVector = true;
-    }
-    else {
-      throw new IllegalArgumentException("unknown termVector parameter " + termVector);
-    }
+    this.storeTermVector = termVector.isStored();
+    this.storePositionWithTermVector = termVector.withPositions();
+    this.storeOffsetWithTermVector = termVector.withOffsets();
   }
 
   /** True iff the value of the field is to be stored in the index for return
