@@ -165,8 +165,8 @@ public class Syns2Index
             String num = line.substring(0, comma);
             int q1 = line.indexOf('\'');
             line = line.substring(q1 + 1);
-            int q2 = line.indexOf('\'');
-            String word = line.substring(0, q2).toLowerCase();
+            int q2 = line.lastIndexOf('\'');
+            String word = line.substring(0, q2).toLowerCase().replace("''", "'");
 
             // make sure is a normal word
             if (! isDecent(word))
