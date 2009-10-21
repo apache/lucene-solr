@@ -36,7 +36,7 @@ import java.util.Set;
  * <ul>
  *   <li> As of 2.9, StopFilter preserves position
  *        increments by default
- *   <li> As of 2.9, Tokens incorrectly identified as acronyms
+ *   <li> As of 2.4, Tokens incorrectly identified as acronyms
  *        are corrected (see <a href="https://issues.apache.org/jira/browse/LUCENE-1068">LUCENE-1608</a>
  * </ul>
  *
@@ -258,6 +258,11 @@ public class StandardAnalyzer extends Analyzer {
       enableStopPositionIncrements = true;
     } else {
       useDefaultStopPositionIncrements = true;
+    }
+    if (matchVersion.onOrAfter(Version.LUCENE_24)) {
+      replaceInvalidAcronym = defaultReplaceInvalidAcronym;
+    } else {
+      replaceInvalidAcronym = false;
     }
   }
 
