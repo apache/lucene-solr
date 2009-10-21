@@ -117,7 +117,7 @@ public class MultiSearcher extends Searcher {
   private int maxDoc = 0;
 
   /** Creates a searcher which searches <i>searchers</i>. */
-  public MultiSearcher(Searchable[] searchables) throws IOException {
+  public MultiSearcher(Searchable... searchables) throws IOException {
     this.searchables = searchables;
 
     starts = new int[searchables.length + 1];	  // build starts array

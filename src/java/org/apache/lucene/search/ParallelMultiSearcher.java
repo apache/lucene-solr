@@ -34,7 +34,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
   private int[] starts;
 	
   /** Creates a searchable which searches <i>searchables</i>. */
-  public ParallelMultiSearcher(Searchable[] searchables) throws IOException {
+  public ParallelMultiSearcher(Searchable... searchables) throws IOException {
     super(searchables);
     this.searchables = searchables;
     this.starts = getStarts();
@@ -267,6 +267,8 @@ class MultiSearcherThread extends Thread {
         scoreDoc.doc += starts[i]; // convert doc 
         //it would be so nice if we had a thread-safe insert 
         synchronized (hq) {
+          // this cast is bad, because we assume that the list has correct type.
+          // Because of that we have the @SuppressWarnings :-(
           if (scoreDoc == ((PriorityQueue<ScoreDoc>) hq).insertWithOverflow(scoreDoc))
             break;
         } // no more scores > minScore
