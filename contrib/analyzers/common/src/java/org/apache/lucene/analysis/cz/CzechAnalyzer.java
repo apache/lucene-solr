@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import java.io.*;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Collections;
 
 /**
  * {@link Analyzer} for Czech language. 
@@ -79,7 +80,7 @@ public final class CzechAnalyzer extends Analyzer {
 	/**
 	 * Builds an analyzer with the given stop words.
 	 */
-	public CzechAnalyzer( String[] stopwords ) {
+	public CzechAnalyzer( String... stopwords ) {
 		stoptable = StopFilter.makeStopSet( stopwords );
 	}
 
@@ -107,7 +108,7 @@ public final class CzechAnalyzer extends Analyzer {
         }
         try {
             // clear any previous table (if present)
-            stoptable = new HashSet();
+            stoptable = Collections.emptySet();
 
             InputStreamReader isr;
             if (encoding == null)
@@ -115,16 +116,11 @@ public final class CzechAnalyzer extends Analyzer {
             else
                 isr = new InputStreamReader(wordfile, encoding);
 
-            LineNumberReader lnr = new LineNumberReader(isr);
-            String word;
-            while ( ( word = lnr.readLine() ) != null ) {
-                stoptable.add(word);
-            }
-
+            stoptable = WordlistLoader.getWordSet(isr);
         } catch ( IOException e ) {
           // clear any previous table (if present)
           // TODO: throw IOException
-          stoptable = new HashSet();
+          stoptable = Collections.emptySet();
         }
     }
 
@@ -138,7 +134,7 @@ public final class CzechAnalyzer extends Analyzer {
 		TokenStream result = new StandardTokenizer( reader );
 		result = new StandardFilter( result );
 		result = new LowerCaseFilter( result );
-		result = new StopFilter( result, stoptable );
+		result = new StopFilter(false, result, stoptable );
 		return result;
 	}
 	
@@ -162,7 +158,7 @@ public final class CzechAnalyzer extends Analyzer {
         streams.source = new StandardTokenizer(reader);
         streams.result = new StandardFilter(streams.source);
         streams.result = new LowerCaseFilter(streams.result);
-        streams.result = new StopFilter(streams.result, stoptable);
+        streams.result = new StopFilter(false, streams.result, stoptable);
         setPreviousTokenStream(streams);
       } else {
         streams.source.reset(reader);

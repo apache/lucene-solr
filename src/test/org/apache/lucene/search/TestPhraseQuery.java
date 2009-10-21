@@ -201,7 +201,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testPhraseQueryWithStopAnalyzer() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    StopAnalyzer stopAnalyzer = new StopAnalyzer();
+    StopAnalyzer stopAnalyzer = new StopAnalyzer(false);
     IndexWriter writer = new IndexWriter(directory, stopAnalyzer, true, 
                                          IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
@@ -357,8 +357,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testToString() throws Exception {
-    StopAnalyzer analyzer = new StopAnalyzer();
-    StopFilter.setEnablePositionIncrementsDefault(true);
+    StopAnalyzer analyzer = new StopAnalyzer(true);
     QueryParser qp = new QueryParser("field", analyzer);
     qp.setEnablePositionIncrements(true);
     PhraseQuery q = (PhraseQuery)qp.parse("\"this hi this is a test is\"");

@@ -64,7 +64,7 @@ public final class ArabicAnalyzer extends Analyzer {
   /**
    * Contains the stopwords used with the StopFilter.
    */
-  private Set stoptable = new HashSet();
+  private final Set<?> stoptable;
   /**
    * The comment character in the stopwords file.  All lines prefixed with this will be ignored  
    */
@@ -119,15 +119,15 @@ public final class ArabicAnalyzer extends Analyzer {
   /**
    * Builds an analyzer with the given stop words.
    */
-  public ArabicAnalyzer( String[] stopwords ) {
+  public ArabicAnalyzer( String... stopwords ) {
     stoptable = StopFilter.makeStopSet( stopwords );
   }
 
   /**
    * Builds an analyzer with the given stop words.
    */
-  public ArabicAnalyzer( Hashtable stopwords ) {
-    stoptable = new HashSet(stopwords.keySet());
+  public ArabicAnalyzer( Hashtable<?,?> stopwords ) {
+    stoptable = new HashSet( stopwords.keySet() );
   }
 
   /**
@@ -149,7 +149,7 @@ public final class ArabicAnalyzer extends Analyzer {
     TokenStream result = new ArabicLetterTokenizer( reader );
     result = new LowerCaseFilter(result);
     // the order here is important: the stopword list is not normalized!
-    result = new StopFilter( result, stoptable );
+    result = new StopFilter(false, result, stoptable );
     result = new ArabicNormalizationFilter( result );
     result = new ArabicStemFilter( result );
 
@@ -177,7 +177,7 @@ public final class ArabicAnalyzer extends Analyzer {
       streams.source = new ArabicLetterTokenizer(reader);
       streams.result = new LowerCaseFilter(streams.source);
       // the order here is important: the stopword list is not normalized!
-      streams.result = new StopFilter(streams.result, stoptable);
+      streams.result = new StopFilter(false, streams.result, stoptable);
       streams.result = new ArabicNormalizationFilter(streams.result);
       streams.result = new ArabicStemFilter(streams.result);
       setPreviousTokenStream(streams);

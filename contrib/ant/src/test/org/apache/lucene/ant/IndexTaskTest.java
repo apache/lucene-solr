@@ -69,7 +69,7 @@ public class IndexTaskTest extends TestCase {
 
         dir = FSDirectory.open(indexDir);
         searcher = new IndexSearcher(dir, true);
-        analyzer = new StopAnalyzer();
+        analyzer = new StopAnalyzer(false);
     }
 
 

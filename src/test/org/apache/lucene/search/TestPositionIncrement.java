@@ -21,6 +21,7 @@ import java.io.Reader;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -31,6 +32,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -226,7 +228,7 @@ public class TestPositionIncrement extends BaseTokenStreamTestCase {
     }
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream ts = a.tokenStream(fieldName,reader);
-      return new StopFilter(enablePositionIncrements, ts, new String[]{"stop"});
+      return new StopFilter(enablePositionIncrements, ts, new CharArraySet(Collections.singleton("stop"), true));
     }
   }
   

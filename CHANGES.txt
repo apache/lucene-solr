@@ -77,8 +77,11 @@ API Changes
 
 * LUCENE-1989: Generify CharArraySet. (Uwe Schindler)
 
-* LUCENE-1987: Rremove deprecations from analysis package and Token.
-  Un-deprecate some ctors of Token, as they are still useful.
+* LUCENE-1987: Un-deprecate some ctors of Token, as they will not
+  be removed in 3.0 and are still useful. Also add some missing
+  o.a.l.util.Version constants for enabling invalid acronym
+  settings in StandardAnalyzer to be compatible with the coming
+  Lucene 3.0. Remove the rest of deprecated analysis methods/classes.
   (Uwe Schindler)
 
 * LUCENE-1945: All public classes that have a close() method now

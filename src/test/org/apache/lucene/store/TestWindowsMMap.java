@@ -17,7 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Random;
 import java.io.File;
 
@@ -68,7 +68,7 @@ public class TestWindowsMMap extends LuceneTestCase {
 
 		// plan to add a set of useful stopwords, consider changing some of the
 		// interior filters.
-		StandardAnalyzer analyzer = new StandardAnalyzer(new HashSet());
+		StandardAnalyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT, Collections.emptySet());
 		// TODO: something about lock timeouts and leftover locks.
 		IndexWriter writer = new IndexWriter(storeDirectory, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
 		IndexSearcher searcher = new IndexSearcher(storeDirectory, true);

@@ -37,6 +37,18 @@ public final class Version extends Parameter implements Serializable {
    */
   public static final Version LUCENE_CURRENT = new Version("LUCENE_CURRENT", 0);
   
+  /** Match settings and bugs in Lucene's 2.0 release. */
+  public static final Version LUCENE_20 = new Version("LUCENE_20", 2000);
+
+  /** Match settings and bugs in Lucene's 2.1 release. */
+  public static final Version LUCENE_21 = new Version("LUCENE_21", 2100);
+
+  /** Match settings and bugs in Lucene's 2.2 release. */
+  public static final Version LUCENE_22 = new Version("LUCENE_22", 2200);
+
+  /** Match settings and bugs in Lucene's 2.3 release. */
+  public static final Version LUCENE_23 = new Version("LUCENE_23", 2300);
+
   /** Match settings and bugs in Lucene's 2.4 release. */
   public static final Version LUCENE_24 = new Version("LUCENE_24", 2400);
 

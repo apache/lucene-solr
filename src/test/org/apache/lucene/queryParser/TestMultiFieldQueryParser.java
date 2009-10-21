@@ -70,7 +70,7 @@ public class TestMultiFieldQueryParser extends BaseTokenStreamTestCase {
   
   public void testSimple() throws Exception {
     String[] fields = {"b", "t"};
-    MultiFieldQueryParser mfqp = new MultiFieldQueryParser(fields, new StandardAnalyzer());
+    MultiFieldQueryParser mfqp = new MultiFieldQueryParser(fields, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
     
     Query q = mfqp.parse("one");
     assertEquals("b:one t:one", q.toString());
@@ -133,7 +133,7 @@ public class TestMultiFieldQueryParser extends BaseTokenStreamTestCase {
       boosts.put("b", Float.valueOf(5));
       boosts.put("t", Float.valueOf(10));
       String[] fields = {"b", "t"};
-      MultiFieldQueryParser mfqp = new MultiFieldQueryParser(fields, new StandardAnalyzer(), boosts);
+      MultiFieldQueryParser mfqp = new MultiFieldQueryParser(fields, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), boosts);
       
       
       //Check for simple
@@ -159,24 +159,24 @@ public class TestMultiFieldQueryParser extends BaseTokenStreamTestCase {
   public void testStaticMethod1() throws ParseException {
     String[] fields = {"b", "t"};
     String[] queries = {"one", "two"};
-    Query q = MultiFieldQueryParser.parse(queries, fields, new StandardAnalyzer());
+    Query q = MultiFieldQueryParser.parse(queries, fields, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
     assertEquals("b:one t:two", q.toString());
 
     String[] queries2 = {"+one", "+two"};
-    q = MultiFieldQueryParser.parse(queries2, fields, new StandardAnalyzer());
+    q = MultiFieldQueryParser.parse(queries2, fields, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
     assertEquals("(+b:one) (+t:two)", q.toString());
 
     String[] queries3 = {"one", "+two"};
-    q = MultiFieldQueryParser.parse(queries3, fields, new StandardAnalyzer());
+    q = MultiFieldQueryParser.parse(queries3, fields, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
     assertEquals("b:one (+t:two)", q.toString());
 
     String[] queries4 = {"one +more", "+two"};
-    q = MultiFieldQueryParser.parse(queries4, fields, new StandardAnalyzer());
+    q = MultiFieldQueryParser.parse(queries4, fields, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
     assertEquals("(b:one +b:more) (+t:two)", q.toString());
 
     String[] queries5 = {"blah"};
     try {
-      q = MultiFieldQueryParser.parse(queries5, fields, new StandardAnalyzer());
+      q = MultiFieldQueryParser.parse(queries5, fields, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
       fail();
     } catch(IllegalArgumentException e) {
       // expected exception, array length differs
@@ -198,15 +198,15 @@ public class TestMultiFieldQueryParser extends BaseTokenStreamTestCase {
   public void testStaticMethod2() throws ParseException {
     String[] fields = {"b", "t"};
     BooleanClause.Occur[] flags = {BooleanClause.Occur.MUST, BooleanClause.Occur.MUST_NOT};
-    Query q = MultiFieldQueryParser.parse("one", fields, flags, new StandardAnalyzer());
+    Query q = MultiFieldQueryParser.parse("one", fields, flags, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
     assertEquals("+b:one -t:one", q.toString());
 
-    q = MultiFieldQueryParser.parse("one two", fields, flags, new StandardAnalyzer());
+    q = MultiFieldQueryParser.parse("one two", fields, flags, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
     assertEquals("+(b:one b:two) -(t:one t:two)", q.toString());
 
     try {
       BooleanClause.Occur[] flags2 = {BooleanClause.Occur.MUST};
-      q = MultiFieldQueryParser.parse("blah", fields, flags2, new StandardAnalyzer());
+      q = MultiFieldQueryParser.parse("blah", fields, flags2, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
       fail();
     } catch(IllegalArgumentException e) {
       // expected exception, array length differs
@@ -217,17 +217,17 @@ public class TestMultiFieldQueryParser extends BaseTokenStreamTestCase {
     String[] fields = {"b", "t"};
     //int[] flags = {MultiFieldQueryParser.REQUIRED_FIELD, MultiFieldQueryParser.PROHIBITED_FIELD};
       BooleanClause.Occur[] flags = {BooleanClause.Occur.MUST, BooleanClause.Occur.MUST_NOT};
-      MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, new StandardAnalyzer());
+      MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
 
-    Query q = MultiFieldQueryParser.parse("one", fields, flags, new StandardAnalyzer());//, fields, flags, new StandardAnalyzer());
+    Query q = MultiFieldQueryParser.parse("one", fields, flags, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));//, fields, flags, new StandardAnalyzer());
     assertEquals("+b:one -t:one", q.toString());
 
-    q = MultiFieldQueryParser.parse("one two", fields, flags, new StandardAnalyzer());
+    q = MultiFieldQueryParser.parse("one two", fields, flags, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
     assertEquals("+(b:one b:two) -(t:one t:two)", q.toString());
 
     try {
       BooleanClause.Occur[] flags2 = {BooleanClause.Occur.MUST};
-      q = MultiFieldQueryParser.parse("blah", fields, flags2, new StandardAnalyzer());
+      q = MultiFieldQueryParser.parse("blah", fields, flags2, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
       fail();
     } catch(IllegalArgumentException e) {
       // expected exception, array length differs
@@ -239,12 +239,12 @@ public class TestMultiFieldQueryParser extends BaseTokenStreamTestCase {
     String[] fields = {"f1", "f2", "f3"};
     BooleanClause.Occur[] flags = {BooleanClause.Occur.MUST,
         BooleanClause.Occur.MUST_NOT, BooleanClause.Occur.SHOULD};
-    Query q = MultiFieldQueryParser.parse(queries, fields, flags, new StandardAnalyzer());
+    Query q = MultiFieldQueryParser.parse(queries, fields, flags, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
     assertEquals("+f1:one -f2:two f3:three", q.toString());
 
     try {
       BooleanClause.Occur[] flags2 = {BooleanClause.Occur.MUST};
-      q = MultiFieldQueryParser.parse(queries, fields, flags2, new StandardAnalyzer());
+      q = MultiFieldQueryParser.parse(queries, fields, flags2, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
       fail();
     } catch(IllegalArgumentException e) {
       // expected exception, array length differs
@@ -255,12 +255,12 @@ public class TestMultiFieldQueryParser extends BaseTokenStreamTestCase {
     String[] queries = {"one", "two"};
     String[] fields = {"b", "t"};
       BooleanClause.Occur[] flags = {BooleanClause.Occur.MUST, BooleanClause.Occur.MUST_NOT};
-    Query q = MultiFieldQueryParser.parse(queries, fields, flags, new StandardAnalyzer());
+    Query q = MultiFieldQueryParser.parse(queries, fields, flags, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
     assertEquals("+b:one -t:two", q.toString());
 
     try {
       BooleanClause.Occur[] flags2 = {BooleanClause.Occur.MUST};
-      q = MultiFieldQueryParser.parse(queries, fields, flags2, new StandardAnalyzer());
+      q = MultiFieldQueryParser.parse(queries, fields, flags2, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
       fail();
     } catch(IllegalArgumentException e) {
       // expected exception, array length differs
@@ -282,7 +282,7 @@ public class TestMultiFieldQueryParser extends BaseTokenStreamTestCase {
   }
 
   public void testStopWordSearching() throws Exception {
-    Analyzer analyzer = new StandardAnalyzer();
+    Analyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
     Directory ramDir = new RAMDirectory();
     IndexWriter iw =  new IndexWriter(ramDir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
@@ -304,7 +304,7 @@ public class TestMultiFieldQueryParser extends BaseTokenStreamTestCase {
    * Return empty tokens for field "f1".
    */
   private static class AnalyzerReturningNull extends Analyzer {
-    StandardAnalyzer stdAnalyzer = new StandardAnalyzer();
+    StandardAnalyzer stdAnalyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
 
     public AnalyzerReturningNull() {
     }

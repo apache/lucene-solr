@@ -32,82 +32,11 @@ import org.apache.lucene.queryParser.QueryParser; // for javadoc
 
 public final class StopFilter extends TokenFilter {
 
-  // deprecated
-  private static boolean ENABLE_POSITION_INCREMENTS_DEFAULT = false;
-
   private final CharArraySet stopWords;
-  private boolean enablePositionIncrements = ENABLE_POSITION_INCREMENTS_DEFAULT;
+  private boolean enablePositionIncrements = false;
 
   private TermAttribute termAtt;
   private PositionIncrementAttribute posIncrAtt;
-  
-  /**
-   * Construct a token stream filtering the given input.
-   * @deprecated Use {@link #StopFilter(boolean, TokenStream, String[])} instead
-   */
-  public StopFilter(TokenStream input, String [] stopWords)
-  {
-    this(ENABLE_POSITION_INCREMENTS_DEFAULT, input, stopWords, false);
-  }
-
-  /**
-   * Construct a token stream filtering the given input.
-   * @param enablePositionIncrements true if token positions should record the removed stop words
-   * @param input input TokenStream
-   * @param stopWords array of stop words
-   * @deprecated Use {@link #StopFilter(boolean, TokenStream, Set)} instead.
-   */
-  public StopFilter(boolean enablePositionIncrements, TokenStream input, String [] stopWords)
-  {
-    this(enablePositionIncrements, input, stopWords, false);
-  }
-
-  /**
-   * Constructs a filter which removes words from the input
-   * TokenStream that are named in the array of words.
-   * @deprecated Use {@link #StopFilter(boolean, TokenStream, String[], boolean)} instead
-   */
-  public StopFilter(TokenStream in, String[] stopWords, boolean ignoreCase) {
-    this(ENABLE_POSITION_INCREMENTS_DEFAULT, in, stopWords, ignoreCase);
-  }
-
-  /**
-   * Constructs a filter which removes words from the input
-   * TokenStream that are named in the array of words.
-   * @param enablePositionIncrements true if token positions should record the removed stop words
-   * @param in input TokenStream
-   * @param stopWords array of stop words
-   * @param ignoreCase true if case is ignored
-   * @deprecated Use {@link #StopFilter(boolean, TokenStream, Set, boolean)} instead.
-   */
-  public StopFilter(boolean enablePositionIncrements, TokenStream in, String[] stopWords, boolean ignoreCase) {
-    super(in);
-    this.stopWords = (CharArraySet)makeStopSet(stopWords, ignoreCase);
-    this.enablePositionIncrements = enablePositionIncrements;
-    init();
-  }
-
-
-  /**
-   * Construct a token stream filtering the given input.
-   * If <code>stopWords</code> is an instance of {@link CharArraySet} (true if
-   * <code>makeStopSet()</code> was used to construct the set) it will be directly used
-   * and <code>ignoreCase</code> will be ignored since <code>CharArraySet</code>
-   * directly controls case sensitivity.
-   * <p/>
-   * If <code>stopWords</code> is not an instance of {@link CharArraySet},
-   * a new CharArraySet will be constructed and <code>ignoreCase</code> will be
-   * used to specify the case sensitivity of that set.
-   *
-   * @param input
-   * @param stopWords The set of Stop Words.
-   * @param ignoreCase -Ignore case when stopping.
-   * @deprecated Use {@link #StopFilter(boolean, TokenStream, Set, boolean)} instead
-   */
-  public StopFilter(TokenStream input, Set stopWords, boolean ignoreCase)
-  {
-    this(ENABLE_POSITION_INCREMENTS_DEFAULT, input, stopWords, ignoreCase);
-  }
 
   /**
    * Construct a token stream filtering the given input.
@@ -122,10 +51,11 @@ public final class StopFilter extends TokenFilter {
    *
    * @param enablePositionIncrements true if token positions should record the removed stop words
    * @param input Input TokenStream
-   * @param stopWords The set of Stop Words.
+   * @param stopWords A Set of Strings or char[] or any other toString()-able set representing the stopwords
+   * @param ignoreCase if true, all words are lower cased first
    * @param ignoreCase -Ignore case when stopping.
    */
-  public StopFilter(boolean enablePositionIncrements, TokenStream input, Set stopWords, boolean ignoreCase)
+  public StopFilter(boolean enablePositionIncrements, TokenStream input, Set<?> stopWords, boolean ignoreCase)
   {
     super(input);
     if (stopWords instanceof CharArraySet) {
@@ -135,18 +65,8 @@ public final class StopFilter extends TokenFilter {
       this.stopWords.addAll(stopWords);
     }
     this.enablePositionIncrements = enablePositionIncrements;
-    init();
-  }
-
-  /**
-   * Constructs a filter which removes words from the input
-   * TokenStream that are named in the Set.
-   *
-   * @see #makeStopSet(java.lang.String[])
-   * @deprecated Use {@link #StopFilter(boolean, TokenStream, Set)} instead
-   */
-  public StopFilter(TokenStream in, Set stopWords) {
-    this(ENABLE_POSITION_INCREMENTS_DEFAULT, in, stopWords, false);
+    termAtt = addAttribute(TermAttribute.class);
+    posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   }
 
   /**
@@ -155,16 +75,11 @@ public final class StopFilter extends TokenFilter {
    *
    * @param enablePositionIncrements true if token positions should record the removed stop words
    * @param in Input stream
-   * @param stopWords The set of Stop Words.
+   * @param stopWords A Set of Strings or char[] or any other toString()-able set representing the stopwords
    * @see #makeStopSet(java.lang.String[])
    */
-  public StopFilter(boolean enablePositionIncrements, TokenStream in, Set stopWords) {
+  public StopFilter(boolean enablePositionIncrements, TokenStream in, Set<?> stopWords) {
     this(enablePositionIncrements, in, stopWords, false);
-  }
-  
-  public void init() {
-    termAtt = addAttribute(TermAttribute.class);
-    posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   }
 
   /**
@@ -175,7 +90,7 @@ public final class StopFilter extends TokenFilter {
    * 
    * @see #makeStopSet(java.lang.String[], boolean) passing false to ignoreCase
    */
-  public static final Set makeStopSet(String[] stopWords) {
+  public static final Set<Object> makeStopSet(String... stopWords) {
     return makeStopSet(stopWords, false);
   }
 
@@ -184,10 +99,11 @@ public final class StopFilter extends TokenFilter {
    * appropriate for passing into the StopFilter constructor.
    * This permits this stopWords construction to be cached once when
    * an Analyzer is constructed.
-   *
+   * @param stopWords A List of Strings or char[] or any other toString()-able list representing the stopwords
+   * @return A Set ({@link CharArraySet}) containing the words
    * @see #makeStopSet(java.lang.String[], boolean) passing false to ignoreCase
    */
-  public static final Set makeStopSet(List/*<String>*/ stopWords) {
+  public static final Set<Object> makeStopSet(List<?> stopWords) {
     return makeStopSet(stopWords, false);
   }
     
@@ -197,7 +113,7 @@ public final class StopFilter extends TokenFilter {
    * @param ignoreCase If true, all words are lower cased first.  
    * @return a Set containing the words
    */    
-  public static final Set makeStopSet(String[] stopWords, boolean ignoreCase) {
+  public static final Set<Object> makeStopSet(String[] stopWords, boolean ignoreCase) {
     CharArraySet stopSet = new CharArraySet(stopWords.length, ignoreCase);
     stopSet.addAll(Arrays.asList(stopWords));
     return stopSet;
@@ -205,11 +121,11 @@ public final class StopFilter extends TokenFilter {
 
   /**
    *
-   * @param stopWords A List of Strings representing the stopwords
+   * @param stopWords A List of Strings or char[] or any other toString()-able list representing the stopwords
    * @param ignoreCase if true, all words are lower cased first
-   * @return A Set containing the words
+   * @return A Set ({@link CharArraySet}) containing the words
    */
-  public static final Set makeStopSet(List/*<String>*/ stopWords, boolean ignoreCase){
+  public static final Set<Object> makeStopSet(List<?> stopWords, boolean ignoreCase){
     CharArraySet stopSet = new CharArraySet(stopWords.size(), ignoreCase);
     stopSet.addAll(stopWords);
     return stopSet;
@@ -230,32 +146,8 @@ public final class StopFilter extends TokenFilter {
       }
       skippedPositions += posIncrAtt.getPositionIncrement();
     }
-    // reached EOS -- return null
+    // reached EOS -- return false
     return false;
-  }
-
-  /**
-   * @see #setEnablePositionIncrementsDefault(boolean). 
-   * @deprecated Please specify this when you create the StopFilter
-   */
-  public static boolean getEnablePositionIncrementsDefault() {
-    return ENABLE_POSITION_INCREMENTS_DEFAULT;
-  }
-
-  /**
-   * Set the default position increments behavior of every StopFilter created from now on.
-   * <p>
-   * Note: behavior of a single StopFilter instance can be modified 
-   * with {@link #setEnablePositionIncrements(boolean)}.
-   * This static method allows control over behavior of classes using StopFilters internally, 
-   * for example {@link org.apache.lucene.analysis.standard.StandardAnalyzer StandardAnalyzer}. 
-   * <p>
-   * Default : false.
-   * @see #setEnablePositionIncrements(boolean).
-   * @deprecated Please specify this when you create the StopFilter
-   */
-  public static void setEnablePositionIncrementsDefault(boolean defaultValue) {
-    ENABLE_POSITION_INCREMENTS_DEFAULT = defaultValue;
   }
 
   /**

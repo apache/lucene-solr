@@ -42,6 +42,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
 
 
 /**
@@ -77,7 +78,7 @@ public final class SynExpand {
 		String query = args[1];
 		String field = "contents";
 
-		Query q = expand( query, searcher, new StandardAnalyzer(), field, 0.9f);
+		Query q = expand( query, searcher, new StandardAnalyzer(Version.LUCENE_CURRENT), field, 0.9f);
 		System.out.println( "Query: " + q.toString( field));
 
 
@@ -112,7 +113,7 @@ public final class SynExpand {
 		final Set already = new HashSet(); // avoid dups 
 		List top = new LinkedList(); // needs to be separately listed..
 		final String field = ( f == null) ? "contents" : f;
-		if ( a == null) a = new StandardAnalyzer();
+		if ( a == null) a = new StandardAnalyzer(Version.LUCENE_CURRENT);
 
 		// [1] Parse query into separate words so that when we expand we can avoid dups
 		TokenStream ts = a.tokenStream( field, new StringReader( query));

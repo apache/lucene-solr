@@ -109,14 +109,14 @@ public class TestSpanRegexQuery extends TestCase {
         Field.Index.ANALYZED_NO_NORMS));
 
     // creating first index writer
-    IndexWriter writerA = new IndexWriter(indexStoreA, new StandardAnalyzer(),
+    IndexWriter writerA = new IndexWriter(indexStoreA, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT),
         true, IndexWriter.MaxFieldLength.LIMITED);
     writerA.addDocument(lDoc);
     writerA.optimize();
     writerA.close();
 
     // creating second index writer
-    IndexWriter writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(),
+    IndexWriter writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT),
         true, IndexWriter.MaxFieldLength.LIMITED);
     writerB.addDocument(lDoc2);
     writerB.optimize();

@@ -30,6 +30,7 @@ import org.apache.lucene.benchmark.byTask.tasks.ReadTask;
 import org.apache.lucene.benchmark.byTask.tasks.SearchTask;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.FileUtils;
+import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -76,8 +77,8 @@ public class PerfRunData {
   public PerfRunData (Config config) throws Exception {
     this.config = config;
     // analyzer (default is standard analyzer)
-    analyzer = (Analyzer) Class.forName(config.get("analyzer",
-        "org.apache.lucene.analysis.standard.StandardAnalyzer")).newInstance();
+    analyzer = NewAnalyzerTask.createAnalyzer(config.get("analyzer",
+        "org.apache.lucene.analysis.standard.StandardAnalyzer"));
     // doc maker
     docMaker = (DocMaker) Class.forName(config.get("doc.maker",
         "org.apache.lucene.benchmark.byTask.feeds.DocMaker")).newInstance();

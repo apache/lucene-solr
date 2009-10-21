@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
+import java.lang.reflect.Constructor;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
@@ -43,6 +44,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.DynamicConfigurator;
 import org.apache.tools.ant.Project;
@@ -200,6 +202,17 @@ public class IndexTask extends Task {
     handlerConfig = config;
   }
 
+  private static final Analyzer createAnalyzer(String className) throws Exception{
+    final Class<? extends Analyzer> clazz = Class.forName(className).asSubclass(Analyzer.class);
+    try {
+      // first try to use a ctor with version parameter (needed for many new Analyzers that have no default one anymore
+      Constructor<? extends Analyzer> cnstr = clazz.getConstructor(Version.class);
+      return cnstr.newInstance(Version.LUCENE_CURRENT);
+    } catch (NoSuchMethodException nsme) {
+      // otherwise use default ctor
+      return clazz.newInstance();
+    }
+  }
 
   /**
    *  Begins the indexing
@@ -214,14 +227,9 @@ public class IndexTask extends Task {
       Class clazz = Class.forName(handlerClassName);
       handler = (DocumentHandler) clazz.newInstance();
 
-      clazz = Class.forName(analyzerClassName);
-      analyzer = (Analyzer) clazz.newInstance();
-    } catch (ClassNotFoundException cnfe) {
-      throw new BuildException(cnfe);
-    } catch (InstantiationException ie) {
-      throw new BuildException(ie);
-    } catch (IllegalAccessException iae) {
-      throw new BuildException(iae);
+      analyzer = this.createAnalyzer(analyzerClassName);
+    } catch (Exception e) {
+      throw new BuildException(e);
     }
 
     log("Document handler = " + handler.getClass(), Project.MSG_VERBOSE);

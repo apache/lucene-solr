@@ -39,7 +39,8 @@ public class TestParser extends TestCase {
 
 	CoreParser builder;
 	static Directory dir;
-	Analyzer analyzer=new StandardAnalyzer();
+  // TODO: change to CURRENT and rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
+	Analyzer analyzer=new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_24); 
 	IndexReader reader;
 	private IndexSearcher searcher;
 	

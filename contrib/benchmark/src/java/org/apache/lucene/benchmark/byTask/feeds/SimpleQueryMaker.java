@@ -24,6 +24,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
 
 import java.util.ArrayList;
 
@@ -42,8 +43,8 @@ public class SimpleQueryMaker extends AbstractQueryMaker implements QueryMaker {
    */
   protected Query[] prepareQueries() throws Exception {
     // analyzer (default is standard analyzer)
-    Analyzer anlzr= (Analyzer) Class.forName(config.get("analyzer",
-        "org.apache.lucene.analysis.standard.StandardAnalyzer")).newInstance(); 
+    Analyzer anlzr= NewAnalyzerTask.createAnalyzer(config.get("analyzer",
+        "org.apache.lucene.analysis.standard.StandardAnalyzer")); 
     
     QueryParser qp = new QueryParser(DocMaker.BODY_FIELD,anlzr);
     ArrayList qq = new ArrayList();

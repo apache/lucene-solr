@@ -43,7 +43,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
 
     protected void setUp() throws Exception {
 	directory = new RAMDirectory();
-	IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(),
+	IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT),
 		true, MaxFieldLength.UNLIMITED);
 
 	// Add series of docs with specific information for MoreLikeThis

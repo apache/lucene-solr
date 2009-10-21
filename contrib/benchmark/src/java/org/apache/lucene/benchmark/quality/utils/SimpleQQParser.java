@@ -22,6 +22,7 @@ import org.apache.lucene.benchmark.quality.QualityQueryParser;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Version;
 
 /**
  * Simplistic quality query parser. A Lucene query is created by passing 
@@ -49,7 +50,7 @@ public class SimpleQQParser implements QualityQueryParser {
   public Query parse(QualityQuery qq) throws ParseException {
     QueryParser qp = (QueryParser) queryParser.get();
     if (qp==null) {
-      qp = new QueryParser(indexField, new StandardAnalyzer());
+      qp = new QueryParser(indexField, new StandardAnalyzer(Version.LUCENE_CURRENT));
       queryParser.set(qp);
     }
     return qp.parse(qq.getValue(qqName));

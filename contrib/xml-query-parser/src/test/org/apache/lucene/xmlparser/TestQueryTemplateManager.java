@@ -42,7 +42,7 @@ import org.xml.sax.SAXException;
 public class TestQueryTemplateManager extends TestCase {
 
 	CoreParser builder;
-	Analyzer analyzer=new StandardAnalyzer();
+	Analyzer analyzer=new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
 	private IndexSearcher searcher;
 	
 	//A collection of documents' field values for use in our tests

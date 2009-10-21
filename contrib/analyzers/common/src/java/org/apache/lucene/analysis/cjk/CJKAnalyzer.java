@@ -55,7 +55,7 @@ public class CJKAnalyzer extends Analyzer {
   /**
    * stop word list
    */
-  private Set stopTable;
+  private final Set stopTable;
 
   //~ Constructors -----------------------------------------------------------
 
@@ -71,7 +71,7 @@ public class CJKAnalyzer extends Analyzer {
    *
    * @param stopWords stop word array
    */
-  public CJKAnalyzer(String[] stopWords) {
+  public CJKAnalyzer(String... stopWords) {
     stopTable = StopFilter.makeStopSet(stopWords);
   }
 
@@ -86,7 +86,7 @@ public class CJKAnalyzer extends Analyzer {
    *    {@link StopFilter}
    */
   public final TokenStream tokenStream(String fieldName, Reader reader) {
-    return new StopFilter(new CJKTokenizer(reader), stopTable);
+    return new StopFilter(false, new CJKTokenizer(reader), stopTable);
   }
   
   private class SavedStreams {
@@ -109,7 +109,7 @@ public class CJKAnalyzer extends Analyzer {
     if (streams == null) {
       streams = new SavedStreams();
       streams.source = new CJKTokenizer(reader);
-      streams.result = new StopFilter(streams.source, stopTable);
+      streams.result = new StopFilter(false, streams.source, stopTable);
       setPreviousTokenStream(streams);
     } else {
       streams.source.reset(reader);

@@ -94,7 +94,7 @@ public class DutchAnalyzer extends Analyzer {
    *
    * @param stopwords
    */
-  public DutchAnalyzer(String[] stopwords) {
+  public DutchAnalyzer(String... stopwords) {
     setOverridesTokenStreamMethod(DutchAnalyzer.class);
     stoptable = StopFilter.makeStopSet(stopwords);
   }
@@ -129,7 +129,7 @@ public class DutchAnalyzer extends Analyzer {
    *
    * @param exclusionlist
    */
-  public void setStemExclusionTable(String[] exclusionlist) {
+  public void setStemExclusionTable(String... exclusionlist) {
     excltable = StopFilter.makeStopSet(exclusionlist);
     setPreviousTokenStream(null); // force a new stemmer to be created
   }
@@ -181,7 +181,7 @@ public class DutchAnalyzer extends Analyzer {
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(reader);
     result = new StandardFilter(result);
-    result = new StopFilter(result, stoptable);
+    result = new StopFilter(false, result, stoptable);
     result = new DutchStemFilter(result, excltable, stemdict);
     return result;
   }
@@ -213,7 +213,7 @@ public class DutchAnalyzer extends Analyzer {
       streams = new SavedStreams();
       streams.source = new StandardTokenizer(reader);
       streams.result = new StandardFilter(streams.source);
-      streams.result = new StopFilter(streams.result, stoptable);
+      streams.result = new StopFilter(false, streams.result, stoptable);
       streams.result = new DutchStemFilter(streams.result, excltable, stemdict);
       setPreviousTokenStream(streams);
     } else {

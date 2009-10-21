@@ -6,6 +6,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 import java.util.Collections;
 /*
@@ -29,7 +30,7 @@ public class TestTermVectorAccessor extends TestCase {
   public void test() throws Exception {
 
     Directory dir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(Collections.EMPTY_SET), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(Version.LUCENE_CURRENT, Collections.emptySet()), true, IndexWriter.MaxFieldLength.UNLIMITED);
 
     Document doc;
 

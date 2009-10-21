@@ -216,6 +216,10 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    * subclass that acts just like whitespace analyzer for testing
    */
   private class ShingleWrapperSubclassAnalyzer extends ShingleAnalyzerWrapper {
+    public ShingleWrapperSubclassAnalyzer() {
+      super(org.apache.lucene.util.Version.LUCENE_CURRENT);
+    }
+  
     public TokenStream tokenStream(String fieldName, Reader reader) {
       return new WhitespaceTokenizer(reader);
     }  

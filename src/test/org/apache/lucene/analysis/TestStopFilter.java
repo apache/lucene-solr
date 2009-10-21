@@ -23,7 +23,9 @@ import org.apache.lucene.util.English;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Set;
+import java.util.HashSet;
 
 
 public class TestStopFilter extends BaseTokenStreamTestCase {
@@ -34,8 +36,8 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
 
   public void testExactCase() throws IOException {
     StringReader reader = new StringReader("Now is The Time");
-    String[] stopWords = new String[] { "is", "the", "Time" };
-    TokenStream stream = new StopFilter(false, new WhitespaceTokenizer(reader), stopWords);
+    Set<String> stopWords = new HashSet(Arrays.asList("is", "the", "Time"));
+    TokenStream stream = new StopFilter(false, new WhitespaceTokenizer(reader), stopWords, false);
     final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
     assertTrue(stream.incrementToken());
     assertEquals("Now", termAtt.term());
@@ -46,7 +48,7 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
 
   public void testIgnoreCase() throws IOException {
     StringReader reader = new StringReader("Now is The Time");
-    String[] stopWords = new String[] { "is", "the", "Time" };
+    Set<String> stopWords = new HashSet(Arrays.asList( "is", "the", "Time" ));
     TokenStream stream = new StopFilter(false, new WhitespaceTokenizer(reader), stopWords, true);
     final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
     assertTrue(stream.incrementToken());

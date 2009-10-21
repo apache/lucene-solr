@@ -55,7 +55,7 @@ public class SnowballAnalyzer extends Analyzer {
     result = new StandardFilter(result);
     result = new LowerCaseFilter(result);
     if (stopSet != null)
-      result = new StopFilter(result, stopSet);
+      result = new StopFilter(false, result, stopSet);
     result = new SnowballFilter(result, name);
     return result;
   }
@@ -84,7 +84,7 @@ public class SnowballAnalyzer extends Analyzer {
       streams.result = new StandardFilter(streams.source);
       streams.result = new LowerCaseFilter(streams.result);
       if (stopSet != null)
-        streams.result = new StopFilter(streams.result, stopSet);
+        streams.result = new StopFilter(false, streams.result, stopSet);
       streams.result = new SnowballFilter(streams.result, name);
       setPreviousTokenStream(streams);
     } else {

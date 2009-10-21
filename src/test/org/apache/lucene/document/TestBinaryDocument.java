@@ -59,7 +59,7 @@ public class TestBinaryDocument extends LuceneTestCase
     
     /** add the doc to a ram index */
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.addDocument(doc);
     writer.close();
     
@@ -97,7 +97,7 @@ public class TestBinaryDocument extends LuceneTestCase
     
     /** add the doc to a ram index */
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.addDocument(doc);
     writer.close();
     

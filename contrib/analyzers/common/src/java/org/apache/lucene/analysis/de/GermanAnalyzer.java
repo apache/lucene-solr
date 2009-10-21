@@ -86,7 +86,7 @@ public class GermanAnalyzer extends Analyzer {
   /**
    * Builds an analyzer with the given stop words.
    */
-  public GermanAnalyzer(String[] stopwords) {
+  public GermanAnalyzer(String... stopwords) {
     stopSet = StopFilter.makeStopSet(stopwords);
     setOverridesTokenStreamMethod(GermanAnalyzer.class);
   }
@@ -142,7 +142,7 @@ public class GermanAnalyzer extends Analyzer {
     TokenStream result = new StandardTokenizer(reader);
     result = new StandardFilter(result);
     result = new LowerCaseFilter(result);
-    result = new StopFilter(result, stopSet);
+    result = new StopFilter(false, result, stopSet);
     result = new GermanStemFilter(result, exclusionSet);
     return result;
   }
@@ -174,7 +174,7 @@ public class GermanAnalyzer extends Analyzer {
       streams.source = new StandardTokenizer(reader);
       streams.result = new StandardFilter(streams.source);
       streams.result = new LowerCaseFilter(streams.result);
-      streams.result = new StopFilter(streams.result, stopSet);
+      streams.result = new StopFilter(false, streams.result, stopSet);
       streams.result = new GermanStemFilter(streams.result, exclusionSet);
       setPreviousTokenStream(streams);
     } else {

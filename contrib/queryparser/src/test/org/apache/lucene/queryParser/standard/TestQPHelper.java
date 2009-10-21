@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Collections;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
@@ -77,6 +78,7 @@ import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LocalizedTestCase;
+import org.apache.lucene.util.Version;
 
 /**
  * This test case is a copy of the core Lucene query parser test, it was adapted
@@ -410,7 +412,7 @@ public class TestQPHelper extends LocalizedTestCase {
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
 
-    Analyzer a = new StandardAnalyzer();
+    Analyzer a = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
     assertQueryEquals("3", a, "3");
     assertQueryEquals("term 1.0 1 2", a, "term 1.0 1 2");
     assertQueryEquals("term term1 term2", a, "term term1 term2");
@@ -896,8 +898,7 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   public void testBoost() throws Exception {
-    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(
-        new String[] { "on" });
+    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(Version.LUCENE_CURRENT, Collections.singleton("on"));
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(oneStopAnalyzer);
 
@@ -913,7 +914,7 @@ public class TestQPHelper extends LocalizedTestCase {
     assertNotNull(q);
 
     StandardQueryParser qp2 = new StandardQueryParser();
-    qp2.setAnalyzer(new StandardAnalyzer());
+    qp2.setAnalyzer(new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
 
     q = qp2.parse("the^3", "field");
     // "the" is a stop word so the result is an empty query:
@@ -1069,7 +1070,7 @@ public class TestQPHelper extends LocalizedTestCase {
   public void testStopwords() throws Exception {
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(
-        new StopAnalyzer(new String[] { "the", "foo" }));
+        new StopAnalyzer(StopFilter.makeStopSet("the", "foo" ), true));
 
     Query result = qp.parse("a:the OR a:foo", "a");
     assertNotNull("result is null and it shouldn't be", result);
@@ -1090,31 +1091,24 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   public void testPositionIncrement() throws Exception {
-    boolean dflt = StopFilter.getEnablePositionIncrementsDefault();
-    StopFilter.setEnablePositionIncrementsDefault(true);
-    try {
-      StandardQueryParser qp = new StandardQueryParser();
-      qp.setAnalyzer(
-          new StopAnalyzer(new String[] { "the", "in", "are", "this" }));
+    StandardQueryParser qp = new StandardQueryParser();
+    qp.setAnalyzer(
+        new StopAnalyzer(StopFilter.makeStopSet("the", "in", "are", "this" ), true));
 
-      qp.setEnablePositionIncrements(true);
+    qp.setEnablePositionIncrements(true);
 
-      String qtxt = "\"the words in poisitions pos02578 are stopped in this phrasequery\"";
-      // 0 2 5 7 8
-      int expectedPositions[] = { 1, 3, 4, 6, 9 };
-      PhraseQuery pq = (PhraseQuery) qp.parse(qtxt, "a");
-      // System.out.println("Query text: "+qtxt);
-      // System.out.println("Result: "+pq);
-      Term t[] = pq.getTerms();
-      int pos[] = pq.getPositions();
-      for (int i = 0; i < t.length; i++) {
-        // System.out.println(i+". "+t[i]+"  pos: "+pos[i]);
-        assertEquals("term " + i + " = " + t[i] + " has wrong term-position!",
-            expectedPositions[i], pos[i]);
-      }
-
-    } finally {
-      StopFilter.setEnablePositionIncrementsDefault(dflt);
+    String qtxt = "\"the words in poisitions pos02578 are stopped in this phrasequery\"";
+    // 0 2 5 7 8
+    int expectedPositions[] = { 1, 3, 4, 6, 9 };
+    PhraseQuery pq = (PhraseQuery) qp.parse(qtxt, "a");
+    // System.out.println("Query text: "+qtxt);
+    // System.out.println("Result: "+pq);
+    Term t[] = pq.getTerms();
+    int pos[] = pq.getPositions();
+    for (int i = 0; i < t.length; i++) {
+      // System.out.println(i+". "+t[i]+"  pos: "+pos[i]);
+      assertEquals("term " + i + " = " + t[i] + " has wrong term-position!",
+          expectedPositions[i], pos[i]);
     }
   }
 

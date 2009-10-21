@@ -36,7 +36,7 @@ import org.apache.lucene.store.RAMDirectory;
 
 public class TestComplexPhraseQuery extends TestCase {
 
-  Analyzer analyzer = new StandardAnalyzer();
+  Analyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
 
   DocData docsContent[] = { new DocData("john smith", "1"),
       new DocData("johathon smith", "2"),

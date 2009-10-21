@@ -135,7 +135,7 @@ public class TestBooleanOr extends LuceneTestCase {
 		RAMDirectory rd = new RAMDirectory();
 
 		//
-		IndexWriter writer = new IndexWriter(rd, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+		IndexWriter writer = new IndexWriter(rd, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
 
 		//
 		Document d = new Document();

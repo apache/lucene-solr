@@ -42,7 +42,7 @@ public class DuplicateFilterTest extends TestCase
 	protected void setUp() throws Exception
 	{
 		directory = new RAMDirectory();
-		IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+		IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
 		
 		//Add series of docs with filterable fields : url, text and dates  flags
 		addDoc(writer, "http://lucene.apache.org", "lucene 1.4.3 available", "20040101");

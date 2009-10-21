@@ -68,7 +68,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     Directory dir = new MockRAMDirectory();
 
     SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), dp, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), dp, IndexWriter.MaxFieldLength.UNLIMITED);
     // Force frequent flushes
     writer.setMaxBufferedDocs(2);
     Document doc = new Document();
@@ -84,7 +84,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     writer.close();
     copyFiles(dir, cp);
     
-    writer = new IndexWriter(dir, new StandardAnalyzer(), dp, IndexWriter.MaxFieldLength.UNLIMITED);
+    writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), dp, IndexWriter.MaxFieldLength.UNLIMITED);
     copyFiles(dir, cp);
     for(int i=0;i<7;i++) {
       writer.addDocument(doc);
@@ -96,7 +96,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     writer.close();
     copyFiles(dir, cp);
     dp.release();
-    writer = new IndexWriter(dir, new StandardAnalyzer(), dp, IndexWriter.MaxFieldLength.UNLIMITED);
+    writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), dp, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.close();
     try {
       copyFiles(dir, cp);
@@ -112,7 +112,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     final long stopTime = System.currentTimeMillis() + 7000;
 
     SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
-    final IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), dp, IndexWriter.MaxFieldLength.UNLIMITED);
+    final IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), dp, IndexWriter.MaxFieldLength.UNLIMITED);
 
     // Force frequent flushes
     writer.setMaxBufferedDocs(2);

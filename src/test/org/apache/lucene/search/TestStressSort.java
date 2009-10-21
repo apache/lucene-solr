@@ -72,7 +72,7 @@ public class TestStressSort extends LuceneTestCase {
     // deterministic, but do not commit with a seed (to
     // better test):
     dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(17);
 
     final Document doc = new Document();
@@ -169,13 +169,13 @@ public class TestStressSort extends LuceneTestCase {
     searcherMultiSegment.setDefaultFieldSortScoring(true, true);
 
     dir2 = new MockRAMDirectory(dir);
-    writer = new IndexWriter(dir2, new StandardAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    writer = new IndexWriter(dir2, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     writer.optimize();
     writer.close();
     searcherSingleSegment = new IndexSearcher(dir2, true);
     searcherSingleSegment.setDefaultFieldSortScoring(true, true);
     dir3 = new MockRAMDirectory(dir);
-    writer = new IndexWriter(dir3, new StandardAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    writer = new IndexWriter(dir3, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     writer.optimize(3);
     writer.close();
     searcherFewSegment = new IndexSearcher(dir3, true);

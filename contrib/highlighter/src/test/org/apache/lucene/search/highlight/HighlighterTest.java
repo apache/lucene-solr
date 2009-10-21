@@ -83,13 +83,16 @@ import org.w3c.dom.NodeList;
  *
  */
 public class HighlighterTest extends BaseTokenStreamTestCase implements Formatter {
+  // TODO: change to CURRENT, does not work because posIncr:
+  static final Version TEST_VERSION = Version.LUCENE_24;
+
   private IndexReader reader;
   static final String FIELD_NAME = "contents";
   private Query query;
   RAMDirectory ramDir;
   public IndexSearcher searcher = null;
   int numHighlights = 0;
-  Analyzer analyzer = new StandardAnalyzer();
+  final Analyzer analyzer = new StandardAnalyzer(TEST_VERSION);
   TopDocs hits;
 
   String[] texts = {
@@ -140,7 +143,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     String s1 = "I call our world Flatland, not because we call it so,";
 
-    QueryParser parser = new QueryParser(FIELD_NAME, new StandardAnalyzer(Version.LUCENE_CURRENT));
+    QueryParser parser = new QueryParser(FIELD_NAME, new StandardAnalyzer(TEST_VERSION));
 
     // Verify that a query against the default field results in text being
     // highlighted
@@ -172,7 +175,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
    */
   private static String highlightField(Query query, String fieldName, String text)
       throws IOException, InvalidTokenOffsetsException {
-    TokenStream tokenStream = new StandardAnalyzer(Version.LUCENE_CURRENT).tokenStream(fieldName, new StringReader(text));
+    TokenStream tokenStream = new StandardAnalyzer(TEST_VERSION).tokenStream(fieldName, new StringReader(text));
     // Assuming "<B>", "</B>" used to highlight
     SimpleHTMLFormatter formatter = new SimpleHTMLFormatter();
     QueryScorer scorer = new QueryScorer(query, fieldName, FIELD_NAME);
@@ -542,7 +545,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         // Need to explicitly set the QueryParser property to use TermRangeQuery
         // rather
         // than RangeFilters
-        QueryParser parser = new QueryParser(FIELD_NAME, new StandardAnalyzer());
+        QueryParser parser = new QueryParser(FIELD_NAME, analyzer);
         parser.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
         query = parser.parse(queryString);
         doSearching(query);
@@ -693,7 +696,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         hg.setTextFragmenter(new NullFragmenter());
 
         String match = null;
-        match = hg.getBestFragment(new StandardAnalyzer(), "data", "help me [54-65]");
+        match = hg.getBestFragment(analyzer, "data", "help me [54-65]");
         assertEquals("<B>help</B> me [54-65]", match);
 
       }
@@ -1004,13 +1007,13 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
           sb.append(stopWords.iterator().next());
         }
         SimpleHTMLFormatter fm = new SimpleHTMLFormatter();
-        Highlighter hg = getHighlighter(query, "data", new StandardAnalyzer(stopWords).tokenStream(
+        Highlighter hg = getHighlighter(query, "data", new StandardAnalyzer(TEST_VERSION, stopWords).tokenStream(
             "data", new StringReader(sb.toString())), fm);// new Highlighter(fm,
         // new
         // QueryTermScorer(query));
         hg.setTextFragmenter(new NullFragmenter());
         hg.setMaxDocBytesToAnalyze(100);
-        match = hg.getBestFragment(new StandardAnalyzer(stopWords), "data", sb.toString());
+        match = hg.getBestFragment(new StandardAnalyzer(TEST_VERSION, stopWords), "data", sb.toString());
         assertTrue("Matched text should be no more than 100 chars in length ", match.length() < hg
             .getMaxDocBytesToAnalyze());
 
@@ -1021,7 +1024,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         // + whitespace)
         sb.append(" ");
         sb.append(goodWord);
-        match = hg.getBestFragment(new StandardAnalyzer(stopWords), "data", sb.toString());
+        match = hg.getBestFragment(new StandardAnalyzer(TEST_VERSION, stopWords), "data", sb.toString());
         assertTrue("Matched text should be no more than 100 chars in length ", match.length() < hg
             .getMaxDocBytesToAnalyze());
       }
@@ -1041,11 +1044,11 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
         String text = "this is a text with searchterm in it";
         SimpleHTMLFormatter fm = new SimpleHTMLFormatter();
-        Highlighter hg = getHighlighter(query, "text", new StandardAnalyzer(
+        Highlighter hg = getHighlighter(query, "text", new StandardAnalyzer(TEST_VERSION, 
             stopWords).tokenStream("text", new StringReader(text)), fm);
         hg.setTextFragmenter(new NullFragmenter());
         hg.setMaxDocCharsToAnalyze(36);
-        String match = hg.getBestFragment(new StandardAnalyzer(stopWords), "text", text);
+        String match = hg.getBestFragment(new StandardAnalyzer(TEST_VERSION, stopWords), "text", text);
         assertTrue(
             "Matched text should contain remainder of text after highlighted query ",
             match.endsWith("in it"));
@@ -1061,7 +1064,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         numHighlights = 0;
         // test to show how rewritten query can still be used
         searcher = new IndexSearcher(ramDir, true);
-        Analyzer analyzer = new StandardAnalyzer();
+        Analyzer analyzer = new StandardAnalyzer(TEST_VERSION);
 
         QueryParser parser = new QueryParser(FIELD_NAME, analyzer);
         Query query = parser.parse("JF? or Kenned*");
@@ -1074,7 +1077,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         // highlighted text
         // QueryHighlightExtractor highlighter = new
         // QueryHighlightExtractor(this,
-        // query, new StandardAnalyzer());
+        // query, new StandardAnalyzer(TEST_VERSION));
 
         int maxNumFragmentsRequired = 3;
 
@@ -1173,7 +1176,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testMultiSearcher() throws Exception {
     // setup index 1
     RAMDirectory ramDir1 = new RAMDirectory();
-    IndexWriter writer1 = new IndexWriter(ramDir1, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer1 = new IndexWriter(ramDir1, new StandardAnalyzer(TEST_VERSION), true, IndexWriter.MaxFieldLength.UNLIMITED);
     Document d = new Document();
     Field f = new Field(FIELD_NAME, "multiOne", Field.Store.YES, Field.Index.ANALYZED);
     d.add(f);
@@ -1184,7 +1187,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     // setup index 2
     RAMDirectory ramDir2 = new RAMDirectory();
-    IndexWriter writer2 = new IndexWriter(ramDir2, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer2 = new IndexWriter(ramDir2, new StandardAnalyzer(TEST_VERSION), true, IndexWriter.MaxFieldLength.UNLIMITED);
     d = new Document();
     f = new Field(FIELD_NAME, "multiTwo", Field.Store.YES, Field.Index.ANALYZED);
     d.add(f);
@@ -1197,14 +1200,14 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     searchers[0] = new IndexSearcher(ramDir1, true);
     searchers[1] = new IndexSearcher(ramDir2, true);
     MultiSearcher multiSearcher = new MultiSearcher(searchers);
-    QueryParser parser = new QueryParser(FIELD_NAME, new StandardAnalyzer());
+    QueryParser parser = new QueryParser(FIELD_NAME, new StandardAnalyzer(TEST_VERSION));
     parser.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     query = parser.parse("multi*");
     System.out.println("Searching for: " + query.toString(FIELD_NAME));
     // at this point the multisearcher calls combine(query[])
     hits = multiSearcher.search(query, null, 1000);
 
-    // query = QueryParser.parse("multi*", FIELD_NAME, new StandardAnalyzer());
+    // query = QueryParser.parse("multi*", FIELD_NAME, new StandardAnalyzer(TEST_VERSION));
     Query expandedQueries[] = new Query[2];
     expandedQueries[0] = query.rewrite(reader1);
     expandedQueries[1] = query.rewrite(reader2);
@@ -1527,7 +1530,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
 
   public void doSearching(String queryString) throws Exception {
-    QueryParser parser = new QueryParser(FIELD_NAME, new StandardAnalyzer());
+    QueryParser parser = new QueryParser(FIELD_NAME, analyzer);
     parser.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     query = parser.parse(queryString);
     doSearching(query);
@@ -1564,7 +1567,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   protected void setUp() throws Exception {
     super.setUp();
     ramDir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(ramDir, new StandardAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(ramDir, new StandardAnalyzer(TEST_VERSION), true, IndexWriter.MaxFieldLength.UNLIMITED);
     for (int i = 0; i < texts.length; i++) {
       addDoc(writer, texts[i]);
     }

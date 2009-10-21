@@ -36,6 +36,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
 
 /**
  * Convert the prolog file wn_s.pl from the <a href="http://www.cogsci.princeton.edu/2.0/WNprolog-2.0.tar.gz">WordNet prolog download</a>
@@ -88,7 +89,7 @@ public class Syns2Index
 	/**
 	 *
 	 */
-    private static final Analyzer ana = new StandardAnalyzer();
+    private static final Analyzer ana = new StandardAnalyzer(Version.LUCENE_CURRENT);
 
     /**
      * Takes arg of prolog file name and index directory.

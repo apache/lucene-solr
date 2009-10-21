@@ -40,7 +40,7 @@ public class ThaiAnalyzer extends Analyzer {
 	  TokenStream ts = new StandardTokenizer(reader);
     ts = new StandardFilter(ts);
     ts = new ThaiWordFilter(ts);
-    ts = new StopFilter(ts, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+    ts = new StopFilter(false, ts, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
     return ts;
   }
   
@@ -63,7 +63,7 @@ public class ThaiAnalyzer extends Analyzer {
       streams.source = new StandardTokenizer(reader);
       streams.result = new StandardFilter(streams.source);
       streams.result = new ThaiWordFilter(streams.result);
-      streams.result = new StopFilter(streams.result, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+      streams.result = new StopFilter(false, streams.result, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
       setPreviousTokenStream(streams);
     } else {
       streams.source.reset(reader);

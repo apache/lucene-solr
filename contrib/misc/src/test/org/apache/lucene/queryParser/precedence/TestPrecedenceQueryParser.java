@@ -44,6 +44,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
+import java.util.Collections;
 
 public class TestPrecedenceQueryParser extends LocalizedTestCase {
   
@@ -233,7 +234,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     assertQueryEquals("+title:(dog OR cat) -author:\"bob dole\"", null,
                       "+(title:dog title:cat) -author:\"bob dole\"");
     
-    PrecedenceQueryParser qp = new PrecedenceQueryParser("field", new StandardAnalyzer());
+    PrecedenceQueryParser qp = new PrecedenceQueryParser("field", new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
     // make sure OR is the default:
     assertEquals(PrecedenceQueryParser.OR_OPERATOR, qp.getDefaultOperator());
     qp.setDefaultOperator(PrecedenceQueryParser.AND_OPERATOR);
@@ -267,7 +268,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
 
-    Analyzer a = new StandardAnalyzer();
+    Analyzer a = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
     assertQueryEquals("3", a, "3");
     assertQueryEquals("term 1.0 1 2", a, "term 1.0 1 2");
     assertQueryEquals("term term1 term2", a, "term term1 term2");
@@ -505,7 +506,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
   public void testBoost()
     throws Exception {
-    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(new String[]{"on"});
+    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT, Collections.singleton("on"));
     PrecedenceQueryParser qp = new PrecedenceQueryParser("field", oneStopAnalyzer);
     Query q = qp.parse("on^1.0");
     assertNotNull(q);
@@ -518,7 +519,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     q = qp.parse("\"on\"^1.0");
     assertNotNull(q);
 
-    q = getParser(new StandardAnalyzer()).parse("the^3");
+    q = getParser(new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT)).parse("the^3");
     assertNotNull(q);
   }
 

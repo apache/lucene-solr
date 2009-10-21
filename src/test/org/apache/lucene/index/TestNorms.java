@@ -63,7 +63,7 @@ public class TestNorms extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     similarityOne = new SimilarityOne();
-    anlzr = new StandardAnalyzer();
+    anlzr = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
   }
 
   /**

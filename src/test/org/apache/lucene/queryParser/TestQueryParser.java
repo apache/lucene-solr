@@ -68,11 +68,11 @@ import org.apache.lucene.util.LocalizedTestCase;
 public class TestQueryParser extends LocalizedTestCase {
 
   public TestQueryParser(String name) {
-    super(name, new HashSet(Arrays.asList(new String[]{
+    super(name, new HashSet(Arrays.asList(
       "testLegacyDateRange", "testDateRange",
       "testCJK", "testNumber", "testFarsiRangeCollating",
       "testLocalDateFormat"
-    })));
+    )));
   }
   
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
@@ -291,7 +291,7 @@ public class TestQueryParser extends LocalizedTestCase {
     assertQueryEquals("+title:(dog OR cat) -author:\"bob dole\"", null,
                       "+(title:dog title:cat) -author:\"bob dole\"");
     
-    QueryParser qp = new QueryParser("field", new StandardAnalyzer());
+    QueryParser qp = new QueryParser("field", new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
     // make sure OR is the default:
     assertEquals(QueryParser.OR_OPERATOR, qp.getDefaultOperator());
     qp.setDefaultOperator(QueryParser.AND_OPERATOR);
@@ -321,7 +321,7 @@ public class TestQueryParser extends LocalizedTestCase {
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
 
-    Analyzer a = new StandardAnalyzer();
+    Analyzer a = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
     assertQueryEquals("3", a, "3");
     assertQueryEquals("term 1.0 1 2", a, "term 1.0 1 2");
     assertQueryEquals("term term1 term2", a, "term term1 term2");
@@ -791,7 +791,7 @@ public class TestQueryParser extends LocalizedTestCase {
     throws Exception {
     Set stopWords = new HashSet(1);
     stopWords.add("on");
-    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(stopWords);
+    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT, stopWords);
     QueryParser qp = new QueryParser("field", oneStopAnalyzer);
     Query q = qp.parse("on^1.0");
     assertNotNull(q);
@@ -804,7 +804,7 @@ public class TestQueryParser extends LocalizedTestCase {
     q = qp.parse("\"on\"^1.0");
     assertNotNull(q);
 
-    QueryParser qp2 = new QueryParser("field", new StandardAnalyzer());
+    QueryParser qp2 = new QueryParser("field", new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
     q = qp2.parse("the^3");
     // "the" is a stop word so the result is an empty query:
     assertNotNull(q);
@@ -944,7 +944,7 @@ public class TestQueryParser extends LocalizedTestCase {
   }
 
   public void testStopwords() throws Exception {
-    QueryParser qp = new QueryParser("a", new StopAnalyzer(new String[]{"the", "foo"}));
+    QueryParser qp = new QueryParser("a", new StopAnalyzer(StopFilter.makeStopSet("the", "foo"), true));
     Query result = qp.parse("a:the OR a:foo");
     assertNotNull("result is null and it shouldn't be", result);
     assertTrue("result is not a BooleanQuery", result instanceof BooleanQuery);
@@ -960,25 +960,19 @@ public class TestQueryParser extends LocalizedTestCase {
   }
 
   public void testPositionIncrement() throws Exception {
-    boolean dflt = StopFilter.getEnablePositionIncrementsDefault();
-    StopFilter.setEnablePositionIncrementsDefault(true);
-    try {
-      QueryParser qp = new QueryParser("a", new StopAnalyzer(new String[]{"the", "in", "are", "this"}));
-      qp.setEnablePositionIncrements(true);
-      String qtxt = "\"the words in poisitions pos02578 are stopped in this phrasequery\"";
-      //               0         2                      5           7  8
-      int expectedPositions[] = {1,3,4,6,9};
-      PhraseQuery pq = (PhraseQuery) qp.parse(qtxt);
-      //System.out.println("Query text: "+qtxt);
-      //System.out.println("Result: "+pq);
-      Term t[] = pq.getTerms();
-      int pos[] = pq.getPositions();
-      for (int i = 0; i < t.length; i++) {
-        //System.out.println(i+". "+t[i]+"  pos: "+pos[i]);
-        assertEquals("term "+i+" = "+t[i]+" has wrong term-position!",expectedPositions[i],pos[i]);
-      }
-    } finally {
-      StopFilter.setEnablePositionIncrementsDefault(dflt);
+    QueryParser qp = new QueryParser("a", new StopAnalyzer(StopFilter.makeStopSet("the", "in", "are", "this"), true));
+    qp.setEnablePositionIncrements(true);
+    String qtxt = "\"the words in poisitions pos02578 are stopped in this phrasequery\"";
+    //               0         2                      5           7  8
+    int expectedPositions[] = {1,3,4,6,9};
+    PhraseQuery pq = (PhraseQuery) qp.parse(qtxt);
+    //System.out.println("Query text: "+qtxt);
+    //System.out.println("Result: "+pq);
+    Term t[] = pq.getTerms();
+    int pos[] = pq.getPositions();
+    for (int i = 0; i < t.length; i++) {
+      //System.out.println(i+". "+t[i]+"  pos: "+pos[i]);
+      assertEquals("term "+i+" = "+t[i]+" has wrong term-position!",expectedPositions[i],pos[i]);
     }
   }
 

@@ -175,7 +175,7 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
     }
     HashSet stopWords = (HashSet) stopWordsPerField.get(fieldName);
     if (stopWords != null) {
-      result = new StopFilter(result, stopWords);
+      result = new StopFilter(false, result, stopWords);
     }
     return result;
   }
@@ -217,7 +217,7 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
       /* if there are any stopwords for the field, save the stopfilter */
       HashSet stopWords = (HashSet) stopWordsPerField.get(fieldName);
       if (stopWords != null)
-        streams.withStopFilter = new StopFilter(streams.wrapped, stopWords);
+        streams.withStopFilter = new StopFilter(false, streams.wrapped, stopWords);
       else
         streams.withStopFilter = streams.wrapped;
 
@@ -238,7 +238,7 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
         streams.wrapped = result;
         HashSet stopWords = (HashSet) stopWordsPerField.get(fieldName);
         if (stopWords != null)
-          streams.withStopFilter = new StopFilter(streams.wrapped, stopWords);
+          streams.withStopFilter = new StopFilter(false, streams.wrapped, stopWords);
         else
           streams.withStopFilter = streams.wrapped;
       }

@@ -92,7 +92,7 @@ public final class FrenchAnalyzer extends Analyzer {
   /**
    * Builds an analyzer with the given stop words.
    */
-  public FrenchAnalyzer(String[] stopwords) {
+  public FrenchAnalyzer(String... stopwords) {
     stoptable = StopFilter.makeStopSet(stopwords);
   }
 
@@ -107,7 +107,7 @@ public final class FrenchAnalyzer extends Analyzer {
   /**
    * Builds an exclusionlist from an array of Strings.
    */
-  public void setStemExclusionTable(String[] exclusionlist) {
+  public void setStemExclusionTable(String... exclusionlist) {
     excltable = StopFilter.makeStopSet(exclusionlist);
     setPreviousTokenStream(null); // force a new stemmer to be created
   }
@@ -144,7 +144,7 @@ public final class FrenchAnalyzer extends Analyzer {
 
     TokenStream result = new StandardTokenizer(reader);
     result = new StandardFilter(result);
-    result = new StopFilter(result, stoptable);
+    result = new StopFilter(false, result, stoptable);
     result = new FrenchStemFilter(result, excltable);
     // Convert to lowercase after stemming!
     result = new LowerCaseFilter(result);
@@ -171,7 +171,7 @@ public final class FrenchAnalyzer extends Analyzer {
       streams = new SavedStreams();
       streams.source = new StandardTokenizer(reader);
       streams.result = new StandardFilter(streams.source);
-      streams.result = new StopFilter(streams.result, stoptable);
+      streams.result = new StopFilter(false, streams.result, stoptable);
       streams.result = new FrenchStemFilter(streams.result, excltable);
       // Convert to lowercase after stemming!
       streams.result = new LowerCaseFilter(streams.result);

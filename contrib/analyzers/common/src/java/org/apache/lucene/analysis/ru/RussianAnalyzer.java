@@ -67,7 +67,7 @@ public final class RussianAnalyzer extends Analyzer
     /**
      * Builds an analyzer with the given stop words.
      */
-    public RussianAnalyzer(String[] stopwords)
+    public RussianAnalyzer(String... stopwords)
     {
     	super();
     	stopSet = StopFilter.makeStopSet(stopwords);
@@ -96,7 +96,7 @@ public final class RussianAnalyzer extends Analyzer
     {
         TokenStream result = new RussianLetterTokenizer(reader);
         result = new LowerCaseFilter(result);
-        result = new StopFilter(result, stopSet);
+        result = new StopFilter(false, result, stopSet);
         result = new RussianStemFilter(result);
         return result;
     }
@@ -122,7 +122,7 @@ public final class RussianAnalyzer extends Analyzer
       streams = new SavedStreams();
       streams.source = new RussianLetterTokenizer(reader);
       streams.result = new LowerCaseFilter(streams.source);
-      streams.result = new StopFilter(streams.result, stopSet);
+      streams.result = new StopFilter(false, streams.result, stopSet);
       streams.result = new RussianStemFilter(streams.result);
       setPreviousTokenStream(streams);
     } else {

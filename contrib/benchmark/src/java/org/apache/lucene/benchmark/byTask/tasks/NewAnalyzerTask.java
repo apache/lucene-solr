@@ -17,11 +17,13 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.lang.reflect.Constructor;
 
 /**
  * Create a new {@link org.apache.lucene.analysis.Analyzer} and set it it in the getRunData() for use by all future tasks.
@@ -34,6 +36,18 @@ public class NewAnalyzerTask extends PerfTask {
   public NewAnalyzerTask(PerfRunData runData) {
     super(runData);
     analyzerClassNames = new ArrayList();
+  }
+  
+  public static final Analyzer createAnalyzer(String className) throws Exception{
+    final Class<? extends Analyzer> clazz = Class.forName(className).asSubclass(Analyzer.class);
+    try {
+      // first try to use a ctor with version parameter (needed for many new Analyzers that have no default one anymore
+      Constructor<? extends Analyzer> cnstr = clazz.getConstructor(Version.class);
+      return cnstr.newInstance(Version.LUCENE_CURRENT);
+    } catch (NoSuchMethodException nsme) {
+      // otherwise use default ctor
+      return clazz.newInstance();
+    }
   }
 
   public int doLogic() throws IOException {
@@ -52,7 +66,7 @@ public class NewAnalyzerTask extends PerfTask {
       {
         className = "org.apache.lucene.analysis." + className;
       }
-      getRunData().setAnalyzer((Analyzer) Class.forName(className).newInstance());
+      getRunData().setAnalyzer(createAnalyzer(className));
       System.out.println("Changed Analyzer to: " + className);
     } catch (Exception e) {
       throw new RuntimeException("Error creating Analyzer: " + className, e);

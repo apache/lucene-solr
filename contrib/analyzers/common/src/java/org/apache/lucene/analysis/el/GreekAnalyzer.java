@@ -67,7 +67,7 @@ public final class GreekAnalyzer extends Analyzer
      * Builds an analyzer with the given stop words.
      * @param stopwords Array of stopwords to use.
      */
-    public GreekAnalyzer(String [] stopwords)
+    public GreekAnalyzer(String... stopwords)
     {
         super();
     	stopSet = StopFilter.makeStopSet(stopwords);
@@ -92,7 +92,7 @@ public final class GreekAnalyzer extends Analyzer
     {
     	TokenStream result = new StandardTokenizer(reader);
         result = new GreekLowerCaseFilter(result);
-        result = new StopFilter(result, stopSet);
+        result = new StopFilter(false, result, stopSet);
         return result;
     }
     
@@ -115,7 +115,7 @@ public final class GreekAnalyzer extends Analyzer
         streams = new SavedStreams();
         streams.source = new StandardTokenizer(reader);
         streams.result = new GreekLowerCaseFilter(streams.source);
-        streams.result = new StopFilter(streams.result, stopSet);
+        streams.result = new StopFilter(false, streams.result, stopSet);
         setPreviousTokenStream(streams);
       } else {
         streams.source.reset(reader);

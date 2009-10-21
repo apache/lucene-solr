@@ -23,6 +23,7 @@ import java.io.Reader;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Collections;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -71,12 +72,12 @@ public final class BrazilianAnalyzer extends Analyzer {
 	/**
 	 * Contains the stopwords used with the {@link StopFilter}.
 	 */
-	private Set stoptable = new HashSet();
+	private Set stoptable = Collections.emptySet();
 	
 	/**
 	 * Contains words that should be indexed but not stemmed.
 	 */
-	private Set excltable = new HashSet();
+	private Set excltable = Collections.emptySet();
 
 	/**
 	 * Builds an analyzer with the default stop words ({@link #BRAZILIAN_STOP_WORDS}).
@@ -88,7 +89,7 @@ public final class BrazilianAnalyzer extends Analyzer {
 	/**
 	 * Builds an analyzer with the given stop words.
 	 */
-	public BrazilianAnalyzer( String[] stopwords ) {
+	public BrazilianAnalyzer( String... stopwords ) {
 		stoptable = StopFilter.makeStopSet( stopwords );
 	}
 
@@ -109,7 +110,7 @@ public final class BrazilianAnalyzer extends Analyzer {
 	/**
 	 * Builds an exclusionlist from an array of Strings.
 	 */
-	public void setStemExclusionTable( String[] exclusionlist ) {
+	public void setStemExclusionTable( String... exclusionlist ) {
 		excltable = StopFilter.makeStopSet( exclusionlist );
 		setPreviousTokenStream(null); // force a new stemmer to be created
 	}
@@ -139,7 +140,7 @@ public final class BrazilianAnalyzer extends Analyzer {
 		TokenStream result = new StandardTokenizer( reader );
 		result = new LowerCaseFilter( result );
 		result = new StandardFilter( result );
-		result = new StopFilter( result, stoptable );
+		result = new StopFilter( false, result, stoptable );
 		result = new BrazilianStemFilter( result, excltable );
 		return result;
 	}
@@ -165,7 +166,7 @@ public final class BrazilianAnalyzer extends Analyzer {
         streams.source = new StandardTokenizer(reader);
         streams.result = new LowerCaseFilter(streams.source);
         streams.result = new StandardFilter(streams.result);
-        streams.result = new StopFilter(streams.result, stoptable);
+        streams.result = new StopFilter(false, streams.result, stoptable);
         streams.result = new BrazilianStemFilter(streams.result, excltable);
         setPreviousTokenStream(streams);
       } else {

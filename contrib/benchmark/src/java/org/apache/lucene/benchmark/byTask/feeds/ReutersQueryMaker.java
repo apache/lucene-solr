@@ -26,6 +26,7 @@ import org.apache.lucene.search.spans.SpanFirstQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -102,8 +103,8 @@ public class ReutersQueryMaker extends AbstractQueryMaker implements QueryMaker 
   
   protected Query[] prepareQueries() throws Exception {
     // analyzer (default is standard analyzer)
-    Analyzer anlzr= (Analyzer) Class.forName(config.get("analyzer",
-    "org.apache.lucene.analysis.standard.StandardAnalyzer")).newInstance(); 
+    Analyzer anlzr= NewAnalyzerTask.createAnalyzer(config.get("analyzer",
+    "org.apache.lucene.analysis.standard.StandardAnalyzer")); 
     
     List queryList = new ArrayList(20);
     queryList.addAll(Arrays.asList(STANDARD_QUERIES));

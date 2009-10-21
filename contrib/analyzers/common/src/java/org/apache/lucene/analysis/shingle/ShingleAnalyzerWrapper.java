@@ -23,6 +23,7 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.util.Version;
 
 /**
  * A ShingleAnalyzerWrapper wraps a {@link ShingleFilter} around another {@link Analyzer}.
@@ -50,14 +51,17 @@ public class ShingleAnalyzerWrapper extends Analyzer {
   /**
    * Wraps {@link StandardAnalyzer}. 
    */
-  public ShingleAnalyzerWrapper() {
+  public ShingleAnalyzerWrapper(Version matchVersion) {
     super();
-    this.defaultAnalyzer = new StandardAnalyzer();
+    this.defaultAnalyzer = new StandardAnalyzer(matchVersion);
     setOverridesTokenStreamMethod(ShingleAnalyzerWrapper.class);
   }
 
-  public ShingleAnalyzerWrapper(int nGramSize) {
-    this();
+  /**
+   * Wraps {@link StandardAnalyzer}. 
+   */
+  public ShingleAnalyzerWrapper(Version matchVersion, int nGramSize) {
+    this(matchVersion);
     this.maxShingleSize = nGramSize;
   }
 

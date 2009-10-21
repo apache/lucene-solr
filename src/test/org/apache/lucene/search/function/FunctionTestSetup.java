@@ -86,7 +86,7 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
     // prepare a small index with just a few documents.  
     super.setUp();
     dir = new RAMDirectory();
-    anlzr = new StandardAnalyzer();
+    anlzr = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
     IndexWriter iw = new IndexWriter(dir, anlzr,
                                      IndexWriter.MaxFieldLength.LIMITED);
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores

@@ -84,25 +84,18 @@ public abstract class Analyzer implements Closeable {
     }
   }
 
-  protected boolean overridesTokenStreamMethod;
+  /** @deprecated */
+  protected boolean overridesTokenStreamMethod = false;
 
   /** @deprecated This is only present to preserve
    *  back-compat of classes that subclass a core analyzer
    *  and override tokenStream but not reusableTokenStream */
-  protected void setOverridesTokenStreamMethod(Class baseClass) {
-
-    final Class[] params = new Class[2];
-    params[0] = String.class;
-    params[1] = Reader.class;
-    
+  protected void setOverridesTokenStreamMethod(Class<? extends Analyzer> baseClass) {
     try {
-      Method m = this.getClass().getMethod("tokenStream", params);
-      if (m != null) {
-        overridesTokenStreamMethod = m.getDeclaringClass() != baseClass;
-      } else {
-        overridesTokenStreamMethod = false;
-      }
+      Method m = this.getClass().getMethod("tokenStream", String.class, Reader.class);
+      overridesTokenStreamMethod = m.getDeclaringClass() != baseClass;
     } catch (NoSuchMethodException nsme) {
+      // cannot happen, as baseClass is subclass of Analyzer through generics
       overridesTokenStreamMethod = false;
     }
   }
@@ -121,8 +114,7 @@ public abstract class Analyzer implements Closeable {
    * @param fieldName Fieldable name being indexed.
    * @return position increment gap, added to the next token emitted from {@link #tokenStream(String,Reader)}
    */
-  public int getPositionIncrementGap(String fieldName)
-  {
+  public int getPositionIncrementGap(String fieldName) {
     return 0;
   }
 

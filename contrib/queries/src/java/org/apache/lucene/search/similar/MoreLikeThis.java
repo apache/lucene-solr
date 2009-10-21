@@ -49,6 +49,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.Version;
 
 
 /**
@@ -162,7 +163,7 @@ public final class MoreLikeThis {
      * Default analyzer to parse source doc with.
 	 * @see #getAnalyzer
      */
-    public static final Analyzer DEFAULT_ANALYZER = new StandardAnalyzer();
+    public static final Analyzer DEFAULT_ANALYZER = new StandardAnalyzer(Version.LUCENE_CURRENT);
 
     /**
      * Ignore terms with less than this frequency in the source doc.

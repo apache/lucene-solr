@@ -39,7 +39,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
-import java.util.HashSet;
+import java.util.Collections;
 
 public class TestSpans extends LuceneTestCase {
   private IndexSearcher searcher;
@@ -449,7 +449,7 @@ public class TestSpans extends LuceneTestCase {
   // LUCENE-1404
   public void testNPESpanQuery() throws Throwable {
     final Directory dir = new MockRAMDirectory();
-    final IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(new HashSet(0)), IndexWriter.MaxFieldLength.LIMITED);
+    final IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT, Collections.emptySet()), IndexWriter.MaxFieldLength.LIMITED);
 
     // Add documents
     addDoc(writer, "1", "the big dogs went running to the market");

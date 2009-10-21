@@ -4,6 +4,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -44,8 +45,8 @@ public class FileBasedQueryMaker extends AbstractQueryMaker implements QueryMake
 
   protected Query[] prepareQueries() throws Exception {
 
-    Analyzer anlzr = (Analyzer) Class.forName(config.get("analyzer",
-            "org.apache.lucene.analysis.standard.StandardAnalyzer")).newInstance();
+    Analyzer anlzr = NewAnalyzerTask.createAnalyzer(config.get("analyzer",
+            "org.apache.lucene.analysis.standard.StandardAnalyzer"));
     String defaultField = config.get("file.query.maker.default.field", DocMaker.BODY_FIELD);
     QueryParser qp = new QueryParser(defaultField, anlzr);
 

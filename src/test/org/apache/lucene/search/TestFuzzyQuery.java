@@ -288,7 +288,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   public void testGiga() throws Exception {
 
-    StandardAnalyzer analyzer = new StandardAnalyzer();
+    StandardAnalyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
 
     Directory index = new MockRAMDirectory();
     IndexWriter w = new IndexWriter(index, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);

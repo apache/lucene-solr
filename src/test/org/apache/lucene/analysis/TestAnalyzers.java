@@ -74,7 +74,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   }
 
   public void testStop() throws Exception {
-    Analyzer a = new StopAnalyzer();
+    Analyzer a = new StopAnalyzer(true);
     assertAnalyzesTo(a, "foo bar FOO BAR", 
                      new String[] { "foo", "bar", "foo", "bar" });
     assertAnalyzesTo(a, "foo a bar such FOO THESE BAR", 
@@ -120,6 +120,10 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   }
 
   private static class MyStandardAnalyzer extends StandardAnalyzer {
+    public MyStandardAnalyzer() {
+      super(org.apache.lucene.util.Version.LUCENE_CURRENT);
+    }
+  
     public TokenStream tokenStream(String field, Reader reader) {
       return new WhitespaceAnalyzer().tokenStream(field, reader);
     }

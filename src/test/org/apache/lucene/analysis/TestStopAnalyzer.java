@@ -61,7 +61,7 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
     stopWordsSet.add("good");
     stopWordsSet.add("test");
     stopWordsSet.add("analyzer");
-    StopAnalyzer newStop = new StopAnalyzer((String[])stopWordsSet.toArray(new String[3]));
+    StopAnalyzer newStop = new StopAnalyzer(stopWordsSet, false);
     StringReader reader = new StringReader("This is a good test of the english stop analyzer");
     TokenStream stream = newStop.tokenStream("test", reader);
     assertNotNull(stream);
@@ -76,29 +76,23 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testStopListPositions() throws IOException {
-    boolean defaultEnable = StopFilter.getEnablePositionIncrementsDefault();
-    StopFilter.setEnablePositionIncrementsDefault(true);
-    try {
-      Set stopWordsSet = new HashSet();
-      stopWordsSet.add("good");
-      stopWordsSet.add("test");
-      stopWordsSet.add("analyzer");
-      StopAnalyzer newStop = new StopAnalyzer((String[])stopWordsSet.toArray(new String[3]));
-      StringReader reader = new StringReader("This is a good test of the english stop analyzer with positions");
-      int expectedIncr[] =                  { 1,   1, 1,          3, 1,  1,      1,            2,   1};
-      TokenStream stream = newStop.tokenStream("test", reader);
-      assertNotNull(stream);
-      int i = 0;
-      TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
-      PositionIncrementAttribute posIncrAtt = stream.addAttribute(PositionIncrementAttribute.class);
+    Set stopWordsSet = new HashSet();
+    stopWordsSet.add("good");
+    stopWordsSet.add("test");
+    stopWordsSet.add("analyzer");
+    StopAnalyzer newStop = new StopAnalyzer(stopWordsSet, true);
+    StringReader reader = new StringReader("This is a good test of the english stop analyzer with positions");
+    int expectedIncr[] =                  { 1,   1, 1,          3, 1,  1,      1,            2,   1};
+    TokenStream stream = newStop.tokenStream("test", reader);
+    assertNotNull(stream);
+    int i = 0;
+    TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+    PositionIncrementAttribute posIncrAtt = stream.addAttribute(PositionIncrementAttribute.class);
 
-      while (stream.incrementToken()) {
-        String text = termAtt.term();
-        assertFalse(stopWordsSet.contains(text));
-        assertEquals(expectedIncr[i++],posIncrAtt.getPositionIncrement());
-      }
-    } finally {
-      StopFilter.setEnablePositionIncrementsDefault(defaultEnable);
+    while (stream.incrementToken()) {
+      String text = termAtt.term();
+      assertFalse(stopWordsSet.contains(text));
+      assertEquals(expectedIncr[i++],posIncrAtt.getPositionIncrement());
     }
   }
 
