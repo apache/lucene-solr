@@ -162,10 +162,10 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     
     // if id lists were truncated, show how many more there were
     if (numAdds > maxNumToLog) {
-      adds.add("...(" + (numAdds-adds.size()) + " more)");
+      adds.add("... (" + adds.size() + " added)");
     }
     if (numDeletes > maxNumToLog) {
-      deletes.add("...(" + (numDeletes-deletes.size()) + " more)");
+      deletes.add("... (" + deletes.size() + " removed)");
     }
     long elapsed = rsp.getEndTime() - req.getStartTime();
     log.info( ""+toLog + " 0 " + (elapsed) );
