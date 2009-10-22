@@ -78,8 +78,8 @@ public final class Constants {
     String v = (pkg == null) ? null : pkg.getImplementationVersion();
     if (v == null) {
       v = LUCENE_MAIN_VERSION + "-dev";
-    } else if (v.indexOf(LUCENE_MAIN_VERSION) == -1) {
-      v = v + " [" + LUCENE_MAIN_VERSION + "]";
+    } else if (!v.startsWith(LUCENE_MAIN_VERSION)) {
+      v = LUCENE_MAIN_VERSION + "-dev " + v;
     }
     LUCENE_VERSION = ident(v);
   }
