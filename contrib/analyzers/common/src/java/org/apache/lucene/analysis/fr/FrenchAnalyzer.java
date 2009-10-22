@@ -138,10 +138,6 @@ public final class FrenchAnalyzer extends Analyzer {
    *         {@link FrenchStemFilter} and {@link LowerCaseFilter}
    */
   public final TokenStream tokenStream(String fieldName, Reader reader) {
-
-    if (fieldName == null) throw new IllegalArgumentException("fieldName must not be null");
-    if (reader == null) throw new IllegalArgumentException("reader must not be null");
-
     TokenStream result = new StandardTokenizer(reader);
     result = new StandardFilter(result);
     result = new StopFilter(false, result, stoptable);

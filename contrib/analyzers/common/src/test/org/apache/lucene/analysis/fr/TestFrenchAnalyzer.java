@@ -34,24 +34,6 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
 	public void testAnalyzer() throws Exception {
 		FrenchAnalyzer fa = new FrenchAnalyzer();
 	
-		// test null reader
-		boolean iaeFlag = false;
-		try {
-			fa.tokenStream("dummy", null);
-		} catch (IllegalArgumentException iae) {
-			iaeFlag = true;
-		}
-		assertEquals(iaeFlag, true);
-
-		// test null fieldname
-		iaeFlag = false;
-		try {
-			fa.tokenStream(null, new StringReader("dummy"));
-		} catch (IllegalArgumentException iae) {
-			iaeFlag = true;
-		}
-		assertEquals(iaeFlag, true);
-
 		assertAnalyzesTo(fa, "", new String[] {
 		});
 
