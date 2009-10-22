@@ -45,6 +45,14 @@ public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
         new int[] { 1, 1, 1, 1, 0, 0 });
   }
   
+  public void testSynonymsSingleQuote() throws Exception {
+    SynonymMap map = new SynonymMap(new FileInputStream(testFile));
+    /* all expansions */
+    Analyzer analyzer = new SynonymWhitespaceAnalyzer(map, Integer.MAX_VALUE);
+    assertAnalyzesTo(analyzer, "king",
+        new String[] { "king", "baron" });
+  }
+  
   public void testSynonymsLimitedAmount() throws Exception {
     SynonymMap map = new SynonymMap(new FileInputStream(testFile));
     /* limit to one synonym expansion */
