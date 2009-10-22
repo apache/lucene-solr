@@ -122,6 +122,9 @@ Bug fixes
   cannot exceed 2048 MB, and throw IllegalArgumentException if it
   does.  (Aaron McKee, Yonik Seeley, Mike McCandless)
 
+* LUCENE-2004: Fix Constants.LUCENE_MAIN_VERSION to not be inlined
+  by client code.  (Uwe Schindler)
+
 New features
 
 * LUCENE-1933: Provide a convenience AttributeFactory that creates a
