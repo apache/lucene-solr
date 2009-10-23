@@ -93,7 +93,12 @@ API Changes
   was deprecated and will be removed in a later version.
   (DM Smith, Uwe Schindler)
   
- * LUCENE-1973: Remove deprecated Similarity methods. (Uwe Schindler)
+* LUCENE-1973: Remove deprecated Similarity methods. (Uwe Schindler)
+
+* LUCENE-2002: Add required Version matchVersion argument when
+  constructing QueryParser or MultiFieldQueryParser and, default (as
+  of 2.9) enablePositionIncrements to true to match
+  StandardAnalyzer's 2.9 default (Uwe Schindler, Mike McCandless)
 
 Bug fixes
 
@@ -136,11 +141,6 @@ Optimizations
 
 * LUCENE-1183: Optimize Levenshtein Distance computation in
   FuzzyQuery.  (Cédrik Lime via Mike McCandless)
-
-* LUCENE-2002: Add required Version matchVersion argument when
-  constructing QueryParser or MultiFieldQueryParser and, default (as
-  of 2.9) enablePositionIncrements to true to match
-  StandardAnalyzer's 2.9 default (Uwe Schindler, Mike McCandless)
 
 * LUCENE-2006: Optimization of FieldDocSortedHitQueue to always
   use Comparable<?> interface.  (Uwe Schindler, Mark Miller)
