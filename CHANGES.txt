@@ -243,6 +243,11 @@ Changes in backwards compatibility policy
     abstract rather than an interface) back compat break if you have overridden 
     Query.creatWeight, so we have taken the opportunity to make this change.
     (Tim Smith, Shai Erera via Mark Miller)
+
+ * LUCENE-1708 - IndexReader.document() no longer checks if the document is
+    deleted. You can call IndexReader.isDeleted(n) prior to calling document(n).
+    (Shai Erera via Mike McCandless)
+    
  
 Changes in runtime behavior
 
@@ -293,9 +298,6 @@ Changes in runtime behavior
     rely on this behavior by the 3.0 release of Lucene. (Jonathan
     Mamou, Mark Miller via Mike McCandless)
 
- * LUCENE-1708 - IndexReader.document() no longer checks if the document is 
-    deleted. You can call IndexReader.isDeleted(n) prior to calling document(n).
-    (Shai Erera via Mike McCandless)
 
  * LUCENE-1715: Finalizers have been removed from the 4 core classes
     that still had them, since they will cause GC to take longer, thus
