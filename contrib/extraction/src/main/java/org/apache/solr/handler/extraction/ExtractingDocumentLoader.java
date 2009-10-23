@@ -79,7 +79,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   protected SolrContentHandlerFactory factory;
   //protected Collection<String> dateFormats = DateUtil.DEFAULT_DATE_FORMATS;
 
-  ExtractingDocumentLoader(SolrQueryRequest req, UpdateRequestProcessor processor,
+  public ExtractingDocumentLoader(SolrQueryRequest req, UpdateRequestProcessor processor,
                            TikaConfig config, SolrContentHandlerFactory factory) {
     this.params = req.getParams();
     schema = req.getSchema();
