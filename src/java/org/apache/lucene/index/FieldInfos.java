@@ -102,7 +102,7 @@ final class FieldInfos {
     FieldInfos fis = new FieldInfos();
     final int numField = byNumber.size();
     for(int i=0;i<numField;i++) {
-      FieldInfo fi = (FieldInfo) ((FieldInfo) byNumber.get(i)).clone();
+      FieldInfo fi = (FieldInfo) ( byNumber.get(i)).clone();
       fis.byNumber.add(fi);
       fis.byName.put(fi.name, fi);
     }
@@ -259,7 +259,7 @@ final class FieldInfos {
   }
 
   public FieldInfo fieldInfo(String fieldName) {
-    return (FieldInfo) byName.get(fieldName);
+    return  byName.get(fieldName);
   }
 
   /**

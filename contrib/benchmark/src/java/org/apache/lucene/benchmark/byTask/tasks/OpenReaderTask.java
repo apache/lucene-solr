@@ -19,7 +19,6 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
@@ -59,14 +58,12 @@ public class OpenReaderTask extends PerfTask {
  
   public static IndexReader openCommitPoint(String userData, Directory dir, Config config, boolean readOnly) throws IOException {
     IndexReader r = null;
-    Collection commits = IndexReader.listCommits(dir);
-    Iterator i = commits.iterator();
-    while (i.hasNext()) {
-      IndexCommit ic = (IndexCommit)i.next();
-      Map map = ic.getUserData();
+    Collection<IndexCommit> commits = IndexReader.listCommits(dir);
+    for (final IndexCommit ic : commits) {
+      Map<String,String> map = ic.getUserData();
       String ud = null;
       if (map != null) {
-        ud = (String)map.get(USER_DATA);
+        ud = map.get(USER_DATA);
       }
       if (ud != null && ud.equals(userData)) {
         IndexDeletionPolicy indexDeletionPolicy = CreateIndexTask.getIndexDeletionPolicy(config);

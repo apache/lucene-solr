@@ -136,7 +136,7 @@ class BufferedDeletes {
     if (queries.size() > 0) {
       newDeleteQueries = new HashMap<Query, Integer>(queries.size());
       for(Entry<Query,Integer> entry: queries.entrySet()) {
-        Integer num = (Integer) entry.getValue();
+        Integer num = entry.getValue();
         newDeleteQueries.put(entry.getKey(),
                              Integer.valueOf(mapper.remap(num.intValue())));
       }

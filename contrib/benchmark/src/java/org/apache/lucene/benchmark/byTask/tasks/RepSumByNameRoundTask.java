@@ -17,7 +17,6 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -51,17 +50,16 @@ public class RepSumByNameRoundTask extends ReportTask {
    * Report statistics as a string, aggregate for tasks named the same, and from the same round.
    * @return the report
    */
-  protected Report reportSumByNameRound(List taskStats) {
+  protected Report reportSumByNameRound(List<TaskStats> taskStats) {
     // aggregate by task name and round
-    LinkedHashMap p2 = new LinkedHashMap();
+    LinkedHashMap<String,TaskStats> p2 = new LinkedHashMap<String,TaskStats>();
     int reported = 0;
-    for (Iterator it = taskStats.iterator(); it.hasNext();) {
-      TaskStats stat1 = (TaskStats) it.next();
+    for (final TaskStats stat1 : taskStats) {
       if (stat1.getElapsed()>=0) { // consider only tasks that ended
         reported++;
         String name = stat1.getTask().getName();
         String rname = stat1.getRound()+"."+name; // group by round
-        TaskStats stat2 = (TaskStats) p2.get(rname);
+        TaskStats stat2 = p2.get(rname);
         if (stat2 == null) {
           try {
             stat2 = (TaskStats) stat1.clone();

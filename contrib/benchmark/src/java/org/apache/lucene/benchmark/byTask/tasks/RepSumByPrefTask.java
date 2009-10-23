@@ -21,7 +21,6 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.stats.Report;
 import org.apache.lucene.benchmark.byTask.stats.TaskStats;
 
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 
@@ -49,16 +48,15 @@ public class RepSumByPrefTask extends ReportTask {
     return 0;
   }
 
-  protected Report reportSumByPrefix (List taskStats) {
+  protected Report reportSumByPrefix (List<TaskStats> taskStats) {
     // aggregate by task name
     int reported = 0;
-    LinkedHashMap p2 = new LinkedHashMap();
-    for (Iterator it = taskStats.iterator(); it.hasNext();) {
-      TaskStats stat1 = (TaskStats) it.next();
+    LinkedHashMap<String,TaskStats> p2 = new LinkedHashMap<String,TaskStats>();
+    for (final TaskStats stat1 : taskStats) {
       if (stat1.getElapsed()>=0 && stat1.getTask().getName().startsWith(prefix)) { // only ended tasks with proper name
         reported++;
         String name = stat1.getTask().getName();
-        TaskStats stat2 = (TaskStats) p2.get(name);
+        TaskStats stat2 = p2.get(name);
         if (stat2 == null) {
           try {
             stat2 = (TaskStats) stat1.clone();

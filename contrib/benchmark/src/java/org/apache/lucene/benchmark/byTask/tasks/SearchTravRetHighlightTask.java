@@ -65,7 +65,7 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
   protected int numToHighlight = Integer.MAX_VALUE;
   protected boolean mergeContiguous;
   protected int maxFrags = 2;
-  protected Set paramFields = Collections.EMPTY_SET;
+  protected Set<String> paramFields = Collections.emptySet();
   protected Highlighter highlighter;
   protected int maxDocCharsToAnalyze;
 
@@ -104,8 +104,8 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
     };
   }
 
-  protected Collection/*<String>*/ getFieldsToHighlight(Document document) {
-    Collection result = super.getFieldsToHighlight(document);
+  protected Collection<String> getFieldsToHighlight(Document document) {
+    Collection<String> result = super.getFieldsToHighlight(document);
     //if stored is false, then result will be empty, in which case just get all the param fields
     if (paramFields.isEmpty() == false && result.isEmpty() == false) {
       result.retainAll(paramFields);
@@ -127,7 +127,7 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
       } else if (splits[i].startsWith("mergeContiguous[") == true){
         mergeContiguous = Boolean.valueOf(splits[i].substring("mergeContiguous[".length(),splits[i].length() - 1)).booleanValue();
       } else if (splits[i].startsWith("fields[") == true){
-        paramFields = new HashSet();
+        paramFields = new HashSet<String>();
         String fieldNames = splits[i].substring("fields[".length(), splits[i].length() - 1);
         String [] fieldSplits = fieldNames.split(";");
         for (int j = 0; j < fieldSplits.length; j++) {

@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 
 /**
  * Simple task to test performance of tokenizers.  It just
@@ -59,12 +59,10 @@ public class ReadTokensTask extends PerfTask {
   }
 
   public int doLogic() throws Exception {
-    List fields = doc.getFields();
-    final int numField = fields.size();
+    List<Fieldable> fields = doc.getFields();
     Analyzer analyzer = getRunData().getAnalyzer();
     int tokenCount = 0;
-    for(int i=0;i<numField;i++) {
-      final Field field = (Field) fields.get(i);
+    for(final Fieldable field : fields) {
       final TokenStream stream;
       final TokenStream streamValue = field.tokenStreamValue();
 

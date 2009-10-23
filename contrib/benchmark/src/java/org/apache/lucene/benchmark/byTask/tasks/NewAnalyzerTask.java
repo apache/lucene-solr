@@ -30,12 +30,12 @@ import java.lang.reflect.Constructor;
  *
  */
 public class NewAnalyzerTask extends PerfTask {
-  private List/*<String>*/ analyzerClassNames;
+  private List<String> analyzerClassNames;
   private int current;
 
   public NewAnalyzerTask(PerfRunData runData) {
     super(runData);
-    analyzerClassNames = new ArrayList();
+    analyzerClassNames = new ArrayList<String>();
   }
   
   public static final Analyzer createAnalyzer(String className) throws Exception{
@@ -57,7 +57,7 @@ public class NewAnalyzerTask extends PerfTask {
       {
         current = 0;
       }
-      className = (String) analyzerClassNames.get(current++);
+      className = analyzerClassNames.get(current++);
       if (className == null || className.equals(""))
       {
         className = "org.apache.lucene.analysis.standard.StandardAnalyzer"; 

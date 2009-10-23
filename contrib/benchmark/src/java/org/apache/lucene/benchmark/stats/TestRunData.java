@@ -33,7 +33,7 @@ public class TestRunData {
   /** Start and end time of this test run. */
   private long start = 0L, end = 0L;
 
-  private LinkedHashMap data = new LinkedHashMap();
+  private LinkedHashMap<String,Vector<TimeData>> data = new LinkedHashMap<String,Vector<TimeData>>();
 
   public TestRunData() {}
 
@@ -41,7 +41,7 @@ public class TestRunData {
     this.id = id;
   }
 
-    public LinkedHashMap getData()
+    public LinkedHashMap<String,Vector<TimeData>> getData()
     {
         return data;
     }
@@ -79,29 +79,29 @@ public class TestRunData {
   /** Add a data point. */
   public void addData(TimeData td) {
     td.recordMemUsage();
-    Vector v = (Vector) data.get(td.name);
+    Vector<TimeData> v = data.get(td.name);
     if (v == null) {
-      v = new Vector();
+      v = new Vector<TimeData>();
       data.put(td.name, v);
     }
-    v.add(td.clone());
+    v.add((TimeData)td.clone());
   }
 
   /** Get a list of all available types of data points. */
-  public Collection getLabels() {
+  public Collection<String> getLabels() {
     return data.keySet();
   }
 
   /** Get total values from all data points of a given type. */
   public TimeData getTotals(String label) {
-    Vector v = (Vector) data.get(label);
+    Vector<TimeData> v = data.get(label);
       if (v == null)
       {
           return null;
       }
     TimeData res = new TimeData("TOTAL " + label);
     for (int i = 0; i < v.size(); i++) {
-      TimeData td = (TimeData) v.get(i);
+      TimeData td = v.get(i);
       res.count += td.count;
       res.elapsed += td.elapsed;
     }
@@ -111,12 +111,12 @@ public class TestRunData {
   /** Get total values from all data points of all types.
    * @return a list of TimeData values for all types.
    */
-  public Vector getTotals() {
-    Collection labels = getLabels();
-    Vector v = new Vector();
-    Iterator it = labels.iterator();
+  public Vector<TimeData> getTotals() {
+    Collection<String> labels = getLabels();
+    Vector<TimeData> v = new Vector<TimeData>();
+    Iterator<String> it = labels.iterator();
     while (it.hasNext()) {
-      TimeData td = getTotals((String) it.next());
+      TimeData td = getTotals(it.next());
       v.add(td);
     }
     return v;
@@ -124,7 +124,7 @@ public class TestRunData {
 
   /** Get memory usage stats for a given data type. */
   public MemUsage getMemUsage(String label) {
-    Vector v = (Vector) data.get(label);
+    Vector<TimeData> v = data.get(label);
       if (v == null)
       {
           return null;
@@ -134,7 +134,7 @@ public class TestRunData {
     res.minTotal = Long.MAX_VALUE;
     long avgFree = 0L, avgTotal = 0L;
     for (int i = 0; i < v.size(); i++) {
-      TimeData td = (TimeData) v.get(i);
+      TimeData td = v.get(i);
         if (res.maxFree < td.freeMem)
         {
             res.maxFree = td.freeMem;
@@ -162,10 +162,7 @@ public class TestRunData {
   /** Return a string representation. */
   public String toString() {
     StringBuffer sb = new StringBuffer();
-    Collection labels = getLabels();
-    Iterator it = labels.iterator();
-    while (it.hasNext()) {
-      String label = (String) it.next();
+    for (final String label : getLabels()) {
         sb.append(id).append("-").append(label).append(" ").append(getTotals(label).toString(false)).append(" ");
         sb.append(getMemUsage(label).toScaledString(1024 * 1024, "MB")).append("\n");
     }

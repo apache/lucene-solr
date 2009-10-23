@@ -43,7 +43,7 @@ public class FlushReaderTask extends PerfTask {
   public int doLogic() throws IOException {
     IndexReader reader = getRunData().getIndexReader();
     if (userData != null) {
-      Map map = new HashMap();
+      Map<String,String> map = new HashMap<String,String>();
       map.put(OpenReaderTask.USER_DATA, userData);
       reader.flush(map);
     } else {

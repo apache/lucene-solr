@@ -17,7 +17,6 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
@@ -46,15 +45,14 @@ public class RepSelectByPrefTask extends RepSumByPrefTask {
     return 0;
   }
   
-  protected Report reportSelectByPrefix(List taskStats) {
-    String longestOp = longestOp(taskStats.iterator());
+  protected Report reportSelectByPrefix(List<TaskStats> taskStats) {
+    String longestOp = longestOp(taskStats);
     boolean first = true;
     StringBuffer sb = new StringBuffer();
     sb.append(tableTitle(longestOp));
     sb.append(newline);
     int reported = 0;
-    for (Iterator it = taskStats.iterator(); it.hasNext();) {
-      TaskStats stat = (TaskStats) it.next();
+    for (final TaskStats stat : taskStats) {
       if (stat.getElapsed()>=0 && stat.getTask().getName().startsWith(prefix)) { // only ended tasks with proper name
         reported++;
         if (!first) {

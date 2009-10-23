@@ -19,7 +19,7 @@ package org.apache.lucene.benchmark.stats;
 import java.io.File;
 import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Collection;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -53,7 +53,7 @@ public class TestData
     /**
      * List of results for each test run with these parameters.
      */
-    private Vector runData = new Vector();
+    private Vector<TestRunData> runData = new Vector<TestRunData>();
     private int maxBufferedDocs, mergeFactor;
     /**
      * Directory containing source files.
@@ -132,7 +132,7 @@ public class TestData
         {
             return "# [NO RUN DATA]";
         }
-        HashMap resByTask = new HashMap(); 
+        HashMap<String,LDCounter> resByTask = new HashMap<String,LDCounter>(); 
         StringBuffer sb = new StringBuffer();
         String lineSep = System.getProperty("line.separator");
         sb.append("warm = Warm Index Reader").append(lineSep).append("srch = Search Index").append(lineSep).append("trav = Traverse Hits list, optionally retrieving document").append(lineSep).append(lineSep);
@@ -140,20 +140,17 @@ public class TestData
           sb.append(COLS[i]);
         }
         sb.append("\n");
-        LinkedHashMap mapMem = new LinkedHashMap();
-        LinkedHashMap mapSpeed = new LinkedHashMap();
+        LinkedHashMap<String,TestData.LCounter[]> mapMem = new LinkedHashMap<String,TestData.LCounter[]>();
+        LinkedHashMap<String,DCounter> mapSpeed = new LinkedHashMap<String,DCounter>();
         for (int i = 0; i < runData.size(); i++)
         {
-            TestRunData trd = (TestRunData) runData.get(i);
-            Collection labels = trd.getLabels();
-            Iterator it = labels.iterator();
-            while (it.hasNext())
+            TestRunData trd = runData.get(i);
+            for (final String label : trd.getLabels()) 
             {
-                String label = (String) it.next();
                 MemUsage mem = trd.getMemUsage(label);
                 if (mem != null)
                 {
-                    TestData.LCounter[] tm = (TestData.LCounter[]) mapMem.get(label);
+                    TestData.LCounter[] tm = mapMem.get(label);
                     if (tm == null)
                     {
                         tm = new TestData.LCounter[2];
@@ -169,7 +166,7 @@ public class TestData
                 TimeData td = trd.getTotals(label);
                 if (td != null)
                 {
-                    TestData.DCounter dc = (TestData.DCounter) mapSpeed.get(label);
+                    TestData.DCounter dc = mapSpeed.get(label);
                     if (dc == null)
                     {
                         dc = new TestData.DCounter();
@@ -182,12 +179,12 @@ public class TestData
                 }
             }
         }
-        LinkedHashMap res = new LinkedHashMap();
-        Iterator it = mapSpeed.keySet().iterator();
+        LinkedHashMap<String,String> res = new LinkedHashMap<String,String>();
+        Iterator<String> it = mapSpeed.keySet().iterator();
         while (it.hasNext())
         {
-            String label = (String) it.next();
-            TestData.DCounter dc = (TestData.DCounter) mapSpeed.get(label);
+            String label = it.next();
+            TestData.DCounter dc = mapSpeed.get(label);
             res.put(label, 
                 format(dc.count, RUNCNT) + 
                 format(dc.recordCount / dc.count, RECCNT) +
@@ -197,7 +194,7 @@ public class TestData
             
             // also sum by task
             String task = label.substring(label.lastIndexOf("-")+1);
-            LDCounter ldc = (LDCounter) resByTask.get(task);
+            LDCounter ldc = resByTask.get(task);
             if (ldc==null) {
               ldc = new LDCounter();
               resByTask.put(task,ldc);
@@ -209,9 +206,9 @@ public class TestData
         it = mapMem.keySet().iterator();
         while (it.hasNext())
         {
-            String label = (String) it.next();
-            TestData.LCounter[] lc = (TestData.LCounter[]) mapMem.get(label);
-            String speed = (String) res.get(label);
+            String label = it.next();
+            TestData.LCounter[] lc =  mapMem.get(label);
+            String speed = res.get(label);
             boolean makeSpeed = false;
             if (speed == null)
             {
@@ -227,7 +224,7 @@ public class TestData
             
             // also sum by task
             String task = label.substring(label.lastIndexOf("-")+1);
-            LDCounter ldc = (LDCounter) resByTask.get(task);
+            LDCounter ldc = resByTask.get(task);
             if (ldc==null) {
               ldc = new LDCounter();
               resByTask.put(task,ldc);
@@ -244,7 +241,7 @@ public class TestData
         it = res.keySet().iterator();
         while (it.hasNext())
         {
-            String label = (String) it.next();
+            String label = it.next();
             sb.append(format(prefix, ID));
             sb.append(format(label, OP));
             sb.append(res.get(label)).append("\n");
@@ -258,8 +255,8 @@ public class TestData
         it = resByTask.keySet().iterator();
         while (it.hasNext())
         {
-            String task = (String) it.next();
-            LDCounter ldc = (LDCounter) resByTask.get(task);
+            String task = it.next();
+            LDCounter ldc = resByTask.get(task);
             sb.append(format("    ", ID));
             sb.append(format(task, OP));
             sb.append(format(ldc.Dcount, RUNCNT)); 
@@ -309,7 +306,7 @@ public class TestData
      */
     public static TestData[] getAll(File[] sources, Analyzer[] analyzers)
     {
-        List res = new ArrayList(50);
+        List<TestData> res = new ArrayList<TestData>(50);
         TestData ref = new TestData();
         for (int q = 0; q < analyzers.length; q++)
         {
@@ -332,7 +329,7 @@ public class TestData
                                 ref.optimize = Constants.BOOLEANS[p].booleanValue();
                                 try
                                 {
-                                    res.add(ref.clone());
+                                    res.add((TestData)ref.clone());
                                 }
                                 catch (Exception e)
                                 {
@@ -344,7 +341,7 @@ public class TestData
                 }
             }
         }
-        return (TestData[]) res.toArray(new TestData[0]);
+        return res.toArray(new TestData[0]);
     }
 
     /**
@@ -358,7 +355,7 @@ public class TestData
      */
     public static TestData[] getTestDataMinMaxMergeAndMaxBuffered(File[] sources, Analyzer[] analyzers)
     {
-        List res = new ArrayList(50);
+        List<TestData> res = new ArrayList<TestData>(50);
         TestData ref = new TestData();
         for (int q = 0; q < analyzers.length; q++)
         {
@@ -373,7 +370,7 @@ public class TestData
                 ref.optimize = true;
                 try
                 {
-                    res.add(ref.clone());
+                    res.add((TestData)ref.clone());
                 }
                 catch (Exception e)
                 {
@@ -388,7 +385,7 @@ public class TestData
                 ref.optimize = true;
                 try
                 {
-                    res.add(ref.clone());
+                    res.add((TestData)ref.clone());
                 }
                 catch (Exception e)
                 {
@@ -403,7 +400,7 @@ public class TestData
                 ref.optimize = true;
                 try
                 {
-                    res.add(ref.clone());
+                    res.add((TestData)ref.clone());
                 }
                 catch (Exception e)
                 {
@@ -418,7 +415,7 @@ public class TestData
                 ref.optimize = true;
                 try
                 {
-                    res.add(ref.clone());
+                    res.add((TestData)ref.clone());
                 }
                 catch (Exception e)
                 {
@@ -426,7 +423,7 @@ public class TestData
                 }
             }
         }
-        return (TestData[]) res.toArray(new TestData[0]);
+        return res.toArray(new TestData[0]);
     }
 
     protected Object clone()
@@ -553,12 +550,12 @@ public class TestData
         this.queries = queries;
     }
 
-    public Vector getRunData()
+    public Vector<TestRunData> getRunData()
     {
         return runData;
     }
 
-    public void setRunData(Vector runData)
+    public void setRunData(Vector<TestRunData> runData)
     {
         this.runData = runData;
     }

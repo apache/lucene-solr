@@ -62,11 +62,11 @@ public class TrecTopicsReader {
    * @throws IOException if cannot read the queries.
    */
   public QualityQuery[] readQueries(BufferedReader reader) throws IOException {
-    ArrayList res = new ArrayList();
+    ArrayList<QualityQuery> res = new ArrayList<QualityQuery>();
     StringBuffer sb;
     try {
       while (null!=(sb=read(reader,"<top>",null,false,false))) {
-        HashMap fields = new HashMap();
+        HashMap<String,String> fields = new HashMap<String,String>();
         // id
         sb = read(reader,"<num>",null,true,false);
         int k = sb.indexOf(":");
@@ -91,7 +91,7 @@ public class TrecTopicsReader {
       reader.close();
     }
     // sort result array (by ID) 
-    QualityQuery qq[] = (QualityQuery[]) res.toArray(new QualityQuery[0]);
+    QualityQuery qq[] = res.toArray(new QualityQuery[0]);
     Arrays.sort(qq);
     return qq;
   }

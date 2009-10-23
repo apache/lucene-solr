@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
@@ -50,7 +51,7 @@ public class Config {
   private int roundNumber = 0;
   private Properties props;
   private HashMap valByRound = new HashMap();
-  private HashMap colForValByRound = new HashMap();
+  private HashMap<String,String> colForValByRound = new HashMap<String,String>();
   private String algorithmText;
 
   /**
@@ -60,7 +61,7 @@ public class Config {
    */
   public Config (Reader algReader) throws IOException {
     // read alg file to array of lines
-    ArrayList lines = new ArrayList();
+    ArrayList<String> lines = new ArrayList<String>();
     BufferedReader r = new BufferedReader(algReader);
     int lastConfigLine=0;
     for (String line = r.readLine(); line!=null; line=r.readLine()) {
@@ -112,10 +113,9 @@ public class Config {
 
   private void printProps() {
     System.out.println("------------> config properties:");
-    List propKeys = new ArrayList(props.keySet());
+    List<String> propKeys = new ArrayList(props.keySet());
     Collections.sort(propKeys);
-    for (Iterator it = propKeys.iterator(); it.hasNext();) {
-      String propName = (String) it.next();
+    for (final String propName : propKeys) {
       System.out.println(propName + " = " + props.getProperty(propName));
     }
     System.out.println("-------------------------------");
@@ -283,7 +283,7 @@ public class Config {
       return new int [] { Integer.parseInt(s) };
     }
     
-    ArrayList a = new ArrayList();
+    ArrayList<Integer> a = new ArrayList<Integer>();
     StringTokenizer st = new StringTokenizer(s,":");
     while (st.hasMoreTokens()) {
       String t = st.nextToken();
@@ -291,7 +291,7 @@ public class Config {
     }
     int res[] = new int[a.size()]; 
     for (int i=0; i<a.size(); i++) {
-      res[i] = ((Integer) a.get(i)).intValue();
+      res[i] = a.get(i).intValue();
     }
     return res;
   }
@@ -302,7 +302,7 @@ public class Config {
       return new double [] { Double.parseDouble(s) };
     }
     
-    ArrayList a = new ArrayList();
+    ArrayList<Double> a = new ArrayList<Double>();
     StringTokenizer st = new StringTokenizer(s,":");
     while (st.hasMoreTokens()) {
       String t = st.nextToken();
@@ -310,7 +310,7 @@ public class Config {
     }
     double res[] = new double[a.size()]; 
     for (int i=0; i<a.size(); i++) {
-      res[i] = ((Double) a.get(i)).doubleValue();
+      res[i] = a.get(i).doubleValue();
     }
     return res;
   }
@@ -321,7 +321,7 @@ public class Config {
       return new boolean [] { Boolean.valueOf(s).booleanValue() };
     }
     
-    ArrayList a = new ArrayList();
+    ArrayList<Boolean> a = new ArrayList<Boolean>();
     StringTokenizer st = new StringTokenizer(s,":");
     while (st.hasMoreTokens()) {
       String t = st.nextToken();
@@ -329,7 +329,7 @@ public class Config {
     }
     boolean res[] = new boolean[a.size()]; 
     for (int i=0; i<a.size(); i++) {
-      res[i] = ((Boolean) a.get(i)).booleanValue();
+      res[i] = a.get(i).booleanValue();
     }
     return res;
   }
@@ -342,9 +342,8 @@ public class Config {
       return "";
     }
     StringBuffer sb = new StringBuffer(); 
-    for (Iterator it = colForValByRound.keySet().iterator(); it.hasNext();) {
-      String name = (String) it.next();
-      String colName = (String) colForValByRound.get(name);
+    for (final String name : colForValByRound.keySet()) {
+      String colName = colForValByRound.get(name);
       sb.append(" ").append(colName);
     }
     return sb.toString();
@@ -358,9 +357,8 @@ public class Config {
       return "";
     }
     StringBuffer sb = new StringBuffer(); 
-    for (Iterator it = colForValByRound.keySet().iterator(); it.hasNext();) {
-      String name = (String) it.next();
-      String colName = (String) colForValByRound.get(name);
+    for (final String name  : colForValByRound.keySet()) {
+      String colName = colForValByRound.get(name);
       String template = " "+colName;
       if (roundNum<0) {
         // just append blanks

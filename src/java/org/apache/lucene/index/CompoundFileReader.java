@@ -129,7 +129,7 @@ class CompoundFileReader extends Directory {
         if (stream == null)
             throw new IOException("Stream closed");
 
-        FileEntry entry = (FileEntry) entries.get(id);
+        FileEntry entry = entries.get(id);
         if (entry == null)
             throw new IOException("No sub-file with id " + id + " found");
 
@@ -139,7 +139,7 @@ class CompoundFileReader extends Directory {
     /** Returns an array of strings, one for each file in the directory. */
     public String[] listAll() {
         String res[] = new String[entries.size()];
-        return (String[]) entries.keySet().toArray(res);
+        return entries.keySet().toArray(res);
     }
 
     /** Returns true iff a file with the given name exists. */
@@ -176,7 +176,7 @@ class CompoundFileReader extends Directory {
     public long fileLength(String name)
     throws IOException
     {
-        FileEntry e = (FileEntry) entries.get(name);
+        FileEntry e = entries.get(name);
         if (e == null)
             throw new IOException("File " + name + " does not exist");
         return e.length;

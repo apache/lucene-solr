@@ -34,7 +34,7 @@ public class Points {
   // stat points ordered by their start time. 
   // for now we collect points as TaskStats objects.
   // later might optimize to collect only native data.
-  private ArrayList points = new ArrayList();
+  private ArrayList<TaskStats> points = new ArrayList<TaskStats>();
 
   private int nextTaskRunNum = 0;
 
@@ -50,7 +50,7 @@ public class Points {
    * the actual task stats are returned, so caller should not modify this task stats. 
    * @return current {@link TaskStats}.
    */
-  public List taskStats () {
+  public List<TaskStats> taskStats () {
     return points;
   }
 

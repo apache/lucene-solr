@@ -34,14 +34,14 @@ import java.util.Map;
  */
 public class QualityQuery implements Comparable<QualityQuery> {
   private String queryID;
-  private Map nameValPairs;
+  private Map<String,String> nameValPairs;
 
   /**
    * Create a QualityQuery with given ID and name-value pairs.
    * @param queryID ID of this quality query.
    * @param nameValPairs the contents of this quality query.
    */
-  public QualityQuery(String queryID, Map nameValPairs) {
+  public QualityQuery(String queryID, Map<String,String> nameValPairs) {
     this.queryID = queryID;
     this.nameValPairs = nameValPairs;
   }
@@ -50,7 +50,7 @@ public class QualityQuery implements Comparable<QualityQuery> {
    * Return all the names of name-value-pairs in this QualityQuery.
    */
   public String[] getNames() {
-    return (String[]) nameValPairs.keySet().toArray(new String[0]);
+    return nameValPairs.keySet().toArray(new String[0]);
   }
 
   /**
@@ -58,7 +58,7 @@ public class QualityQuery implements Comparable<QualityQuery> {
    * @param name the name whose value should be returned. 
    */
   public String getValue(String name) {
-    return (String) nameValPairs.get(name);
+    return nameValPairs.get(name);
   }
 
   /**

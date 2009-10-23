@@ -128,7 +128,7 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
   }
 
   private void rehash() {
-    final int newHashSize = (int) (fieldHash.length*2);
+    final int newHashSize = (fieldHash.length*2);
     assert newHashSize > fieldHash.length;
 
     final DocFieldProcessorPerField newHashArray[] = new DocFieldProcessorPerField[newHashSize];
@@ -172,7 +172,7 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
     // vectors, etc.):
 
     for(int i=0;i<numDocFields;i++) {
-      Fieldable field = (Fieldable) docFields.get(i);
+      Fieldable field = docFields.get(i);
       final String fieldName = field.name();
 
       // Make sure we have a PerField allocated

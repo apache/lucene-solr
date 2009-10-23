@@ -58,7 +58,7 @@ public class QualityStats {
     }
   }
   
-  private ArrayList recallPoints;
+  private ArrayList<RecallPoint> recallPoints;
   
   /**
    * Construct a QualityStats object with anticipated maximal number of relevant hits. 
@@ -67,7 +67,7 @@ public class QualityStats {
   public QualityStats(double maxGoodPoints, long searchTime) {
     this.maxGoodPoints = maxGoodPoints;
     this.searchTime = searchTime;
-    this.recallPoints = new ArrayList();
+    this.recallPoints = new ArrayList<RecallPoint>();
     pAt = new double[MAX_POINTS+1]; // pAt[0] unused. 
   }
 
@@ -265,7 +265,7 @@ public class QualityStats {
    * Returns the recallPoints.
    */
   public RecallPoint [] getRecallPoints() {
-    return (RecallPoint[]) recallPoints.toArray(new RecallPoint[0]);
+    return recallPoints.toArray(new RecallPoint[0]);
   }
 
   /**

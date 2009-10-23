@@ -264,7 +264,7 @@ public final class SegmentInfo {
       final int size = files.size();
       sizeInBytes = 0;
       for(int i=0;i<size;i++) {
-        final String fileName = (String) files.get(i);
+        final String fileName = files.get(i);
         // We don't count bytes used by a shared doc store
         // against this segment:
         if (docStoreOffset == -1 || !IndexFileNames.isDocStoreFile(fileName))

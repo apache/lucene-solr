@@ -254,7 +254,7 @@ final class IndexFileDeleter {
       // First decref all files that had been referred to by
       // the now-deleted commits:
       for(int i=0;i<size;i++) {
-        CommitPoint commit = (CommitPoint) commitsToDelete.get(i);
+        CommitPoint commit = commitsToDelete.get(i);
         if (infoStream != null) {
           message("deleteCommits: now decRef commit \"" + commit.getSegmentsFileName() + "\"");
         }
@@ -269,7 +269,7 @@ final class IndexFileDeleter {
       int readFrom = 0;
       int writeTo = 0;
       while(readFrom < size) {
-        CommitPoint commit = (CommitPoint) commits.get(readFrom);
+        CommitPoint commit = commits.get(readFrom);
         if (!commit.deleted) {
           if (writeTo != readFrom) {
             commits.set(writeTo, commits.get(readFrom));

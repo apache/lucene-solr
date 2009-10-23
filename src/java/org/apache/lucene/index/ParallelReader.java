@@ -195,8 +195,8 @@ public class ParallelReader extends IndexReader {
       List<Boolean> newDecrefOnClose = new ArrayList<Boolean>();
       ParallelReader pr = new ParallelReader();
       for (int i = 0; i < readers.size(); i++) {
-        IndexReader oldReader = (IndexReader) readers.get(i);
-        IndexReader newReader = (IndexReader) newReaders.get(i);
+        IndexReader oldReader = readers.get(i);
+        IndexReader newReader = newReaders.get(i);
         if (newReader == oldReader) {
           newDecrefOnClose.add(Boolean.TRUE);
           newReader.incRef();
@@ -293,8 +293,7 @@ public class ParallelReader extends IndexReader {
       if (vector != null)
         results.add(vector);
     }
-    return (TermFreqVector[])
-      results.toArray(new TermFreqVector[results.size()]);
+    return results.toArray(new TermFreqVector[results.size()]);
   }
 
   public TermFreqVector getTermFreqVector(int n, String field)

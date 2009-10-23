@@ -163,7 +163,7 @@ public abstract class MergePolicy implements java.io.Closeable {
       b.append("MergeSpec:\n");
       final int count = merges.size();
       for(int i=0;i<count;i++)
-        b.append("  ").append(1 + i).append(": ").append(((OneMerge) merges.get(i)).segString(dir));
+        b.append("  ").append(1 + i).append(": ").append(merges.get(i).segString(dir));
       return b.toString();
     }
   }

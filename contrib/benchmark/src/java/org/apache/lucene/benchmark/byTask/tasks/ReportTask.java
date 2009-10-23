@@ -1,6 +1,5 @@
 package org.apache.lucene.benchmark.byTask.tasks;
 
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
@@ -96,10 +95,9 @@ public abstract class ReportTask extends PerfTask {
    * @param taskStats completed tasks to be considered.
    * @return the longest op name out of completed tasks.
    */
-  protected String longestOp(Iterator taskStats) {
+  protected String longestOp(Iterable<TaskStats> taskStats) {
     String longest = OP;
-    while (taskStats.hasNext()) {
-      TaskStats stat = (TaskStats) taskStats.next();
+    for (final TaskStats stat : taskStats) {
       if (stat.getElapsed()>=0) { // consider only tasks that ended
         String name = stat.getTask().getName();
         if (name.length() > longest.length()) {
@@ -133,15 +131,14 @@ public abstract class ReportTask extends PerfTask {
     return sb.toString();
   }
 
-  protected Report genPartialReport(int reported, LinkedHashMap partOfTasks, int totalSize) {
-    String longetOp = longestOp(partOfTasks.values().iterator());
+  protected Report genPartialReport(int reported, LinkedHashMap<String,TaskStats> partOfTasks, int totalSize) {
+    String longetOp = longestOp(partOfTasks.values());
     boolean first = true;
     StringBuffer sb = new StringBuffer();
     sb.append(tableTitle(longetOp));
     sb.append(newline);
     int lineNum = 0;
-    for (Iterator it = partOfTasks.values().iterator(); it.hasNext();) {
-      TaskStats stat = (TaskStats) it.next();
+    for (final TaskStats stat : partOfTasks.values()) {
       if (!first) {
         sb.append(newline);
       }

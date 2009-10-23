@@ -35,7 +35,7 @@ final class SegmentMergeQueue extends PriorityQueue<SegmentMergeInfo> {
 
   final void close() throws IOException {
     while (top() != null)
-      ((SegmentMergeInfo)pop()).close();
+      pop().close();
   }
 
 }

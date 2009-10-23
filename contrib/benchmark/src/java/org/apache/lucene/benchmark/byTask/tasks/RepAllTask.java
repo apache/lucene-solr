@@ -17,7 +17,6 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
@@ -48,16 +47,14 @@ public class RepAllTask extends ReportTask {
    * Report detailed statistics as a string
    * @return the report
    */
-  protected Report reportAll(List taskStats) {
-    String longestOp = longestOp(taskStats.iterator());
+  protected Report reportAll(List<TaskStats> taskStats) {
+    String longestOp = longestOp(taskStats);
     boolean first = true;
     StringBuffer sb = new StringBuffer();
     sb.append(tableTitle(longestOp));
     sb.append(newline);
     int reported = 0;
-    Iterator it = taskStats.iterator();
-    while (it.hasNext()) {
-      TaskStats stat = (TaskStats) it.next();
+    for (final TaskStats stat : taskStats) {
       if (stat.getElapsed()>=0) { // consider only tasks that ended
         if (!first) {
           sb.append(newline);

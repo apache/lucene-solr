@@ -18,7 +18,6 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.text.NumberFormat;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
@@ -29,7 +28,7 @@ import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
  */
 public class TaskSequence extends PerfTask {
   public static int REPEAT_EXHAUST = -2; 
-  private ArrayList tasks;
+  private ArrayList<PerfTask> tasks;
   private int repetitions = 1;
   private boolean parallel;
   private TaskSequence parent;
@@ -54,7 +53,7 @@ public class TaskSequence extends PerfTask {
     setSequenceName();
     this.parent = parent;
     this.parallel = parallel;
-    tasks = new ArrayList();
+    tasks = new ArrayList<PerfTask>();
   }
 
   public void close() throws Exception {
@@ -70,7 +69,7 @@ public class TaskSequence extends PerfTask {
       final int numTasks = tasks.size();
       tasksArray = new PerfTask[numTasks];
       for(int k=0;k<numTasks;k++) {
-        tasksArray[k] = (PerfTask) tasks.get(k);
+        tasksArray[k] = tasks.get(k);
         anyExhaustibleTasks |= tasksArray[k] instanceof ResetInputsTask;
         anyExhaustibleTasks |= tasksArray[k] instanceof TaskSequence;
       }
@@ -279,8 +278,7 @@ public class TaskSequence extends PerfTask {
     StringBuffer sb = new StringBuffer(super.toString());
     sb.append(parallel ? " [" : " {");
     sb.append(NEW_LINE);
-    for (Iterator it = tasks.iterator(); it.hasNext();) {
-      PerfTask task = (PerfTask) it.next();
+    for (final PerfTask task : tasks) {
       sb.append(task.toString());
       sb.append(NEW_LINE);
     }
@@ -304,8 +302,7 @@ public class TaskSequence extends PerfTask {
    */
   public void setNoChildReport() {
     letChildReport  = false;
-    for (Iterator it = tasks.iterator(); it.hasNext();) {
-      PerfTask task = (PerfTask) it.next();
+    for (final PerfTask task : tasks) {
       if (task instanceof TaskSequence) {
         ((TaskSequence)task).setNoChildReport();
   }
@@ -352,7 +349,7 @@ public class TaskSequence extends PerfTask {
   /**
    * @return Returns the tasks.
    */
-  public ArrayList getTasks() {
+  public ArrayList<PerfTask> getTasks() {
     return tasks;
   }
 
@@ -361,9 +358,9 @@ public class TaskSequence extends PerfTask {
    */
   protected Object clone() throws CloneNotSupportedException {
     TaskSequence res = (TaskSequence) super.clone();
-    res.tasks = new ArrayList();
+    res.tasks = new ArrayList<PerfTask>();
     for (int i = 0; i < tasks.size(); i++) {
-      res.tasks.add(((PerfTask)tasks.get(i)).clone());
+      res.tasks.add((PerfTask)tasks.get(i).clone());
     }
     return res;
   }

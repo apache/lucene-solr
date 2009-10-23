@@ -46,7 +46,7 @@ public class CommitIndexTask extends PerfTask {
     if (iw != null) {
       if (commitUserData == null) iw.commit();
       else {
-        Map map = new HashMap();
+        Map<String,String> map = new HashMap<String,String>();
         map.put(OpenReaderTask.USER_DATA, commitUserData);
         iw.commit(map);
       }

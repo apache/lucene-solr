@@ -61,7 +61,7 @@ public class SortedTermVectorMapper extends TermVectorMapper{
    */
   //We need to combine any previous mentions of the term
   public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
-    TermVectorEntry entry = (TermVectorEntry) termToTVE.get(term);
+    TermVectorEntry entry =  termToTVE.get(term);
     if (entry == null) {
       entry = new TermVectorEntry(ALL, term, frequency, 
               storeOffsets == true ? offsets : null,

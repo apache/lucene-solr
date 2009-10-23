@@ -115,7 +115,7 @@ final class SegmentMerger {
    * @return The ith reader to be merged
    */
   final IndexReader segmentReader(int i) {
-    return (IndexReader) readers.get(i);
+    return readers.get(i);
   }
 
   /**
@@ -244,7 +244,7 @@ final class SegmentMerger {
     // FieldInfos, then we can do a bulk copy of the
     // stored fields:
     for (int i = 0; i < numReaders; i++) {
-      IndexReader reader = (IndexReader) readers.get(i);
+      IndexReader reader = readers.get(i);
       if (reader instanceof SegmentReader) {
         SegmentReader segmentReader = (SegmentReader) reader;
         boolean same = true;
@@ -576,7 +576,7 @@ final class SegmentMerger {
     int base = 0;
     final int readerCount = readers.size();
     for (int i = 0; i < readerCount; i++) {
-      IndexReader reader = (IndexReader) readers.get(i);
+      IndexReader reader = readers.get(i);
       TermEnum termEnum = reader.terms();
       SegmentMergeInfo smi = new SegmentMergeInfo(base, termEnum, reader);
       int[] docMap  = smi.getDocMap();
@@ -606,13 +606,13 @@ final class SegmentMerger {
 
     while (queue.size() > 0) {
       int matchSize = 0;			  // pop matching terms
-      match[matchSize++] = (SegmentMergeInfo) queue.pop();
+      match[matchSize++] = queue.pop();
       Term term = match[0].term;
-      SegmentMergeInfo top = (SegmentMergeInfo) queue.top();
+      SegmentMergeInfo top = queue.top();
 
       while (top != null && term.compareTo(top.term) == 0) {
-        match[matchSize++] = (SegmentMergeInfo) queue.pop();
-        top = (SegmentMergeInfo) queue.top();
+        match[matchSize++] =  queue.pop();
+        top =  queue.top();
       }
 
       if (currentField != term.field) {

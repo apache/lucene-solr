@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.StringTokenizer;
 
 import org.apache.lucene.benchmark.quality.Judge;
@@ -32,7 +31,7 @@ import org.apache.lucene.benchmark.quality.QualityQuery;
  */
 public class TrecJudge implements Judge {
 
-  HashMap judgements;
+  HashMap<String,QRelJudgement> judgements;
   
   /**
    * Constructor from a reader.
@@ -50,7 +49,7 @@ public class TrecJudge implements Judge {
    * @throws IOException 
    */
   public TrecJudge (BufferedReader reader) throws IOException {
-    judgements = new HashMap();
+    judgements = new HashMap<String,QRelJudgement>();
     QRelJudgement curr = null;
     String zero = "0";
     String line;
@@ -69,7 +68,7 @@ public class TrecJudge implements Judge {
         assert !st.hasMoreTokens() : "wrong format: "+line+"  next: "+st.nextToken();
         if (relevant) { // only keep relevant docs
           if (curr==null || !curr.queryID.equals(queryID)) {
-            curr = (QRelJudgement)judgements.get(queryID);
+            curr = judgements.get(queryID);
             if (curr==null) {
               curr = new QRelJudgement(queryID);
               judgements.put(queryID,curr);
@@ -85,18 +84,18 @@ public class TrecJudge implements Judge {
   
   // inherit javadocs
   public boolean isRelevant(String docName, QualityQuery query) {
-    QRelJudgement qrj = (QRelJudgement) judgements.get(query.getQueryID());
+    QRelJudgement qrj = judgements.get(query.getQueryID());
     return qrj!=null && qrj.isRelevant(docName);
   }
 
   /** single Judgement of a trec quality query */
   private static class QRelJudgement {
     private String queryID;
-    private HashMap relevantDocs;
+    private HashMap<String,String> relevantDocs;
     
     QRelJudgement(String queryID) {
       this.queryID = queryID;
-      relevantDocs = new HashMap();
+      relevantDocs = new HashMap<String,String>();
     }
     
     public void addRelevandDoc(String docName) {
@@ -114,8 +113,8 @@ public class TrecJudge implements Judge {
 
   // inherit javadocs
   public boolean validateData(QualityQuery[] qq, PrintWriter logger) {
-    HashMap missingQueries = (HashMap) judgements.clone();
-    ArrayList missingJudgements = new ArrayList();
+    HashMap<String,QRelJudgement> missingQueries = (HashMap<String, QRelJudgement>) judgements.clone();
+    ArrayList<String> missingJudgements = new ArrayList<String>();
     for (int i=0; i<qq.length; i++) {
       String id = qq[i].getQueryID();
       if (missingQueries.containsKey(id)) {
@@ -130,7 +129,7 @@ public class TrecJudge implements Judge {
       if (logger!=null) {
         logger.println("WARNING: "+missingJudgements.size()+" queries have no judgments! - ");
         for (int i=0; i<missingJudgements.size(); i++) {
-          logger.println("   "+(String)missingJudgements.get(i));
+          logger.println("   "+ missingJudgements.get(i));
         }
       }
     }
@@ -138,8 +137,7 @@ public class TrecJudge implements Judge {
       isValid = false;
       if (logger!=null) {
         logger.println("WARNING: "+missingQueries.size()+" judgments match no query! - ");
-        for (Iterator it = missingQueries.keySet().iterator(); it.hasNext();) {
-          String id = (String) it.next();
+        for (final String id : missingQueries.keySet()) {
           logger.println("   "+id);
         }
       }
@@ -149,7 +147,7 @@ public class TrecJudge implements Judge {
 
   // inherit javadocs
   public int maxRecall(QualityQuery query) {
-    QRelJudgement qrj = (QRelJudgement) judgements.get(query.getQueryID());
+    QRelJudgement qrj = judgements.get(query.getQueryID());
     if (qrj!=null) {
       return qrj.maxRecall();
     }

@@ -47,7 +47,7 @@ public class QueryData {
    * @return The QueryData
    */
   public static QueryData[] getAll(Query[] queries) {
-    Vector vqd = new Vector();
+    Vector<QueryData> vqd = new Vector<QueryData>();
     for (int i = 0; i < queries.length; i++) {
       for (int r = 1; r >= 0; r--) {
         for (int w = 1; w >= 0; w--) {
@@ -63,7 +63,7 @@ public class QueryData {
         }
       }
     }
-    return (QueryData[])vqd.toArray(new QueryData[0]);
+    return vqd.toArray(new QueryData[0]);
   }
 
   /** Short legend for interpreting toString() output. */

@@ -143,7 +143,7 @@ public class MultipleTermPositions implements TermPositions {
 
   public final boolean skipTo(int target) throws IOException {
     while (_termPositionsQueue.peek() != null && target > _termPositionsQueue.peek().doc()) {
-      TermPositions tp = (TermPositions) _termPositionsQueue.pop();
+      TermPositions tp =  _termPositionsQueue.pop();
       if (tp.skipTo(target))
         _termPositionsQueue.add(tp);
       else
@@ -162,7 +162,7 @@ public class MultipleTermPositions implements TermPositions {
 
   public final void close() throws IOException {
     while (_termPositionsQueue.size() > 0)
-      ((TermPositions) _termPositionsQueue.pop()).close();
+      _termPositionsQueue.pop().close();
   }
 
   /**

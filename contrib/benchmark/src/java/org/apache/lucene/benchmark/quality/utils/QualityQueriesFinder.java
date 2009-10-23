@@ -105,7 +105,7 @@ public class QualityQueriesFinder {
     String res[] = new String[pq.size()];
     int i = 0;
     while (pq.size()>0) {
-      TermDf tdf = (TermDf) pq.pop(); 
+      TermDf tdf = pq.pop(); 
       res[i++] = tdf.word;
       System.out.println(i+".   word:  "+tdf.df+"   "+tdf.word);
     }

@@ -55,7 +55,7 @@ public class Trec1MQReader {
    * @throws IOException if cannot read the queries.
    */
   public QualityQuery[] readQueries(BufferedReader reader) throws IOException {
-    ArrayList res = new ArrayList();
+    ArrayList<QualityQuery> res = new ArrayList<QualityQuery>();
     String line;
     try {
       while (null!=(line=reader.readLine())) {
@@ -69,7 +69,7 @@ public class Trec1MQReader {
         // qtext
         String qtext = line.substring(k+1).trim();
         // we got a topic!
-        HashMap fields = new HashMap();
+        HashMap<String,String> fields = new HashMap<String,String>();
         fields.put(name,qtext);
         //System.out.println("id: "+id+" qtext: "+qtext+"  line: "+line);
         QualityQuery topic = new QualityQuery(id,fields);
@@ -79,7 +79,7 @@ public class Trec1MQReader {
       reader.close();
     }
     // sort result array (by ID) 
-    QualityQuery qq[] = (QualityQuery[]) res.toArray(new QualityQuery[0]);
+    QualityQuery qq[] = res.toArray(new QualityQuery[0]);
     Arrays.sort(qq);
     return qq;
   }

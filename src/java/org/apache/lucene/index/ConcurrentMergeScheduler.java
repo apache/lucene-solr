@@ -88,7 +88,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
     final int numThreads = mergeThreadCount();
     for(int i=0;i<numThreads;i++) {
-      MergeThread merge = (MergeThread) mergeThreads.get(i);
+      MergeThread merge = mergeThreads.get(i);
       merge.setThreadPriority(pri);
     }
   }
@@ -123,7 +123,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
       final int count = mergeThreads.size();
       if (verbose()) {
         for(int i=0;i<count;i++)
-          message("    " + i + ": " + ((MergeThread) mergeThreads.get(i)));
+          message("    " + i + ": " + mergeThreads.get(i));
       }
       
       try {
@@ -141,7 +141,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     int count = 0;
     final int numThreads = mergeThreads.size();
     for(int i=0;i<numThreads;i++)
-      if (((MergeThread) mergeThreads.get(i)).isAlive())
+      if (mergeThreads.get(i).isAlive())
         count++;
     return count;
   }

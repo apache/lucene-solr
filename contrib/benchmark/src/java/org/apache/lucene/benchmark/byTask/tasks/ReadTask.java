@@ -20,7 +20,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
+
 import java.util.List;
 import java.util.Set;
 
@@ -128,9 +128,8 @@ public abstract class ReadTask extends PerfTask {
                 Document document = retrieveDoc(ir, id);
                 res += document != null ? 1 : 0;
                 if (numHighlight > 0 && m < numHighlight) {
-                  Collection/*<String>*/ fieldsToHighlight = getFieldsToHighlight(document);
-                  for (Iterator iterator = fieldsToHighlight.iterator(); iterator.hasNext();) {
-                    String field = (String) iterator.next();
+                  Collection<String> fieldsToHighlight = getFieldsToHighlight(document);
+                  for (final String field : fieldsToHighlight) {
                     String text = document.get(field);
                     res += highlighter.doHighlight(ir, id, field, document, analyzer, text);
                   }
@@ -291,11 +290,10 @@ public abstract class ReadTask extends PerfTask {
    * @param document The Document
    * @return A Collection of Field names (Strings)
    */
-  protected Collection/*<String>*/ getFieldsToHighlight(Document document) {
-    List/*<Fieldable>*/ fieldables = document.getFields();
-    Set/*<String>*/ result = new HashSet(fieldables.size());
-    for (Iterator iterator = fieldables.iterator(); iterator.hasNext();) {
-      Fieldable fieldable = (Fieldable) iterator.next();
+  protected Collection<String> getFieldsToHighlight(Document document) {
+    List<Fieldable> fieldables = document.getFields();
+    Set<String> result = new HashSet<String>(fieldables.size());
+    for (final Fieldable fieldable : fieldables) {
       result.add(fieldable.name());
     }
     return result;

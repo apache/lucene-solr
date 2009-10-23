@@ -213,9 +213,9 @@ public class Algorithm {
     
     // remove redundant top level enclosing sequences
     while (sequence.isCollapsable() && sequence.getRepetitions()==1 && sequence.getRate()==0) {
-      ArrayList t = sequence.getTasks();
+      ArrayList<PerfTask> t = sequence.getTasks();
       if (t!=null && t.size()==1) {
-        PerfTask p = (PerfTask) t.get(0);
+        PerfTask p = t.get(0);
         if (p instanceof TaskSequence) {
           sequence = (TaskSequence) p;
           continue;
@@ -252,20 +252,19 @@ public class Algorithm {
    * Expert: for test purposes, return all tasks participating in this algorithm.
    * @return all tasks participating in this algorithm.
    */
-  public ArrayList extractTasks() {
-    ArrayList res = new ArrayList();
+  public ArrayList<PerfTask> extractTasks() {
+    ArrayList<PerfTask> res = new ArrayList<PerfTask>();
     extractTasks(res, sequence);
     return res;
   }
-  private void extractTasks (ArrayList extrct, TaskSequence seq) {
+  private void extractTasks (ArrayList<PerfTask> extrct, TaskSequence seq) {
     if (seq==null) 
       return;
     extrct.add(seq);
-    ArrayList t = sequence.getTasks();
+    ArrayList<PerfTask> t = sequence.getTasks();
     if (t==null) 
       return;
-    for (int i = 0; i < t.size(); i++) {
-      PerfTask p = (PerfTask) t.get(0);
+    for (final PerfTask p : t) {
       if (p instanceof TaskSequence) {
         extractTasks(extrct, (TaskSequence)p);
       } else {

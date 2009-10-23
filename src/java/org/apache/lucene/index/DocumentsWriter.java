@@ -666,7 +666,7 @@ final class DocumentsWriter {
     // First, find a thread state.  If this thread already
     // has affinity to a specific ThreadState, use that one
     // again.
-    DocumentsWriterThreadState state = (DocumentsWriterThreadState) threadBindings.get(Thread.currentThread());
+    DocumentsWriterThreadState state = threadBindings.get(Thread.currentThread());
     if (state == null) {
 
       // First time this thread has called us since last
