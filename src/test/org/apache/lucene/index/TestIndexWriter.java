@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.HashSet;
 import java.util.Random;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.SimpleAnalyzer;
@@ -68,14 +68,9 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.Version;
 
-public class TestIndexWriter extends BaseTokenStreamTestCase {
+public class TestIndexWriter extends LuceneTestCase {
     public TestIndexWriter(String name) {
-      super(name, new HashSet(Arrays.asList(new String[]{
-        "testExceptionFromTokenStream", "testDocumentsWriterExceptions", "testNegativePositions",
-        "testEndOffsetPositionWithCachingTokenFilter", "testEndOffsetPositionWithTeeSinkTokenFilter",
-        "testEndOffsetPositionStandard", "testEndOffsetPositionStandardEmptyField",
-        "testEndOffsetPositionStandardEmptyField2"
-      })));
+      super(name);
     }
 
     public void testDocCount() throws IOException

@@ -38,8 +38,7 @@ import org.apache.lucene.analysis.tokenattributes.*;
 public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
   public TestShingleMatrixFilter(String name) {
-    // use this ctor, because SingleTokenTokenStream only uses next(Token), so exclude it
-    super(name, new HashSet<String>(Arrays.asList("testBehavingAsShingleFilter", "testMatrix", "testIterator")));
+    super(name);
   }
 
   public void testIterator() throws IOException {

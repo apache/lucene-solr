@@ -26,9 +26,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /** 
  * Base class for all Lucene unit tests that use TokenStreams.  
- * <p>
- * This class runs all tests twice, one time with {@link TokenStream#setOnlyUseNewAPI} <code>false</code>
- * and after that one time with <code>true</code>.
  */
 public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
 
@@ -37,16 +34,6 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
 
   public BaseTokenStreamTestCase(String name) {
-    super(name);
-  }
-
-  /** @deprecated */
-  public BaseTokenStreamTestCase(Set testWithNewAPI) {
-    super();
-  }
-
-  /** @deprecated */
-  public BaseTokenStreamTestCase(String name, Set testWithNewAPI) {
     super(name);
   }
   
