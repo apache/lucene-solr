@@ -109,13 +109,32 @@ public class WeightedSpanTermExtractor {
         }
       }
     } else if (query instanceof PhraseQuery) {
-      Term[] phraseQueryTerms = ((PhraseQuery) query).getTerms();
+      PhraseQuery phraseQuery = ((PhraseQuery) query);
+      Term[] phraseQueryTerms = phraseQuery.getTerms();
       SpanQuery[] clauses = new SpanQuery[phraseQueryTerms.length];
       for (int i = 0; i < phraseQueryTerms.length; i++) {
         clauses[i] = new SpanTermQuery(phraseQueryTerms[i]);
       }
+      int slop = phraseQuery.getSlop();
+      int[] positions = phraseQuery.getPositions();
+      // add largest position increment to slop
+      if (positions.length > 0) {
+        int lastPos = positions[0];
+        int largestInc = 0;
+        int sz = positions.length;
+        for (int i = 1; i < sz; i++) {
+          int pos = positions[i];
+          int inc = pos - lastPos;
+          if (inc > largestInc) {
+            largestInc = inc;
+          }
+          lastPos = pos;
+        }
+        if(largestInc > 1) {
+          slop += largestInc;
+        }
+      }
 
-      int slop = ((PhraseQuery) query).getSlop();
       boolean inorder = false;
 
       if (slop == 0) {
