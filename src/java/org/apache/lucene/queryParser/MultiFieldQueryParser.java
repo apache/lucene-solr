@@ -37,7 +37,7 @@ import org.apache.lucene.util.Version;
 public class MultiFieldQueryParser extends QueryParser
 {
   protected String[] fields;
-  protected Map<String,Float>      boosts;
+  protected Map<String,Float> boosts;
 
   /**
    * Creates a MultiFieldQueryParser. 
@@ -66,7 +66,7 @@ public class MultiFieldQueryParser extends QueryParser
    * <p>In other words, all the query's terms must appear, but it doesn't matter in
    * what fields they appear.</p>
    */
-  public MultiFieldQueryParser(Version matchVersion, String[] fields, Analyzer analyzer, Map boosts) {
+  public MultiFieldQueryParser(Version matchVersion, String[] fields, Analyzer analyzer, Map<String,Float> boosts) {
     this(matchVersion, fields, analyzer);
     this.boosts = boosts;
   }
