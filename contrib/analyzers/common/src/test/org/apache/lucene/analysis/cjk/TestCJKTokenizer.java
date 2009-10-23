@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-
+import org.apache.lucene.util.Version;
 
 public class TestCJKTokenizer extends BaseTokenStreamTestCase {
   
@@ -218,7 +218,7 @@ public class TestCJKTokenizer extends BaseTokenStreamTestCase {
   }
   
   public void testTokenStream() throws Exception {
-    Analyzer analyzer = new CJKAnalyzer();
+    Analyzer analyzer = new CJKAnalyzer(Version.LUCENE_CURRENT);
     TokenStream ts = analyzer.tokenStream("dummy", new StringReader("\u4e00\u4e01\u4e02"));
     TermAttribute termAtt = ts.getAttribute(TermAttribute.class);
     assertTrue(ts.incrementToken());
@@ -229,7 +229,7 @@ public class TestCJKTokenizer extends BaseTokenStreamTestCase {
   }
   
   public void testReusableTokenStream() throws Exception {
-    Analyzer analyzer = new CJKAnalyzer();
+    Analyzer analyzer = new CJKAnalyzer(Version.LUCENE_CURRENT);
     String str = "\u3042\u3044\u3046\u3048\u304aabc\u304b\u304d\u304f\u3051\u3053";
     
     TestToken[] out_tokens = { 

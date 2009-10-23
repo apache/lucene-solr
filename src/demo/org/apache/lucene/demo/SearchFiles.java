@@ -127,7 +127,7 @@ public class SearchFiles {
     } else {
       in = new BufferedReader(new InputStreamReader(System.in, "UTF-8"));
     }
-      QueryParser parser = new QueryParser(field, analyzer);
+    QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, field, analyzer);
     while (true) {
       if (queries == null)                        // prompt the user
         System.out.println("Enter query: ");

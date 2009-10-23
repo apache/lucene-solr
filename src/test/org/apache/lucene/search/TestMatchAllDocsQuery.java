@@ -100,7 +100,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     assertEquals(2, hits.length);
     
     // test parsable toString()
-    QueryParser qp = new QueryParser("key", analyzer);
+    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "key", analyzer);
     hits = is.search(qp.parse(new MatchAllDocsQuery().toString()), null, 1000).scoreDocs;
     assertEquals(2, hits.length);
 

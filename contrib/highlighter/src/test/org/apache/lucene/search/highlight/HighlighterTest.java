@@ -113,7 +113,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
   public void testQueryScorerHits() throws Exception {
     Analyzer analyzer = new SimpleAnalyzer();
-    QueryParser qp = new QueryParser(FIELD_NAME, analyzer);
+    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, FIELD_NAME, analyzer);
     query = qp.parse("\"very long\"");
     searcher = new IndexSearcher(ramDir, true);
     TopDocs hits = searcher.search(query, 10);
@@ -143,7 +143,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     String s1 = "I call our world Flatland, not because we call it so,";
 
-    QueryParser parser = new QueryParser(FIELD_NAME, new StandardAnalyzer(TEST_VERSION));
+    QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, FIELD_NAME, new StandardAnalyzer(TEST_VERSION));
 
     // Verify that a query against the default field results in text being
     // highlighted
@@ -221,7 +221,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     String q = "(" + f1c + ph1 + " OR " + f2c + ph1 + ") AND (" + f1c + ph2
         + " OR " + f2c + ph2 + ")";
     Analyzer analyzer = new WhitespaceAnalyzer();
-    QueryParser qp = new QueryParser(f1, analyzer);
+    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, f1, analyzer);
     Query query = qp.parse(q);
 
     QueryScorer scorer = new QueryScorer(query, f1);
@@ -590,7 +590,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         // Need to explicitly set the QueryParser property to use TermRangeQuery
         // rather
         // than RangeFilters
-        QueryParser parser = new QueryParser(FIELD_NAME, analyzer);
+        QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, FIELD_NAME, analyzer);
         parser.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
         query = parser.parse(queryString);
         doSearching(query);
@@ -930,7 +930,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         String srchkey = "football";
 
         String s = "football-soccer in the euro 2004 footie competition";
-        QueryParser parser = new QueryParser("bookid", analyzer);
+        QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, "bookid", analyzer);
         Query query = parser.parse(srchkey);
 
         TokenStream tokenStream = analyzer.tokenStream(null, new StringReader(s));
@@ -1111,7 +1111,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         searcher = new IndexSearcher(ramDir, true);
         Analyzer analyzer = new StandardAnalyzer(TEST_VERSION);
 
-        QueryParser parser = new QueryParser(FIELD_NAME, analyzer);
+        QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, FIELD_NAME, analyzer);
         Query query = parser.parse("JF? or Kenned*");
         System.out.println("Searching with primitive query");
         // forget to set this and...
@@ -1245,7 +1245,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     searchers[0] = new IndexSearcher(ramDir1, true);
     searchers[1] = new IndexSearcher(ramDir2, true);
     MultiSearcher multiSearcher = new MultiSearcher(searchers);
-    QueryParser parser = new QueryParser(FIELD_NAME, new StandardAnalyzer(TEST_VERSION));
+    QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, FIELD_NAME, new StandardAnalyzer(TEST_VERSION));
     parser.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     query = parser.parse("multi*");
     System.out.println("Searching for: " + query.toString(FIELD_NAME));
@@ -1278,7 +1278,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       public void run() throws Exception {
         String docMainText = "fred is one of the people";
-        QueryParser parser = new QueryParser(FIELD_NAME, analyzer);
+        QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, FIELD_NAME, analyzer);
         Query query = parser.parse("fred category:people");
 
         // highlighting respects fieldnames used in query
@@ -1419,64 +1419,64 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         Highlighter highlighter;
         String result;
 
-        query = new QueryParser("text", new WhitespaceAnalyzer()).parse("foo");
+        query = new QueryParser(Version.LUCENE_CURRENT, "text", new WhitespaceAnalyzer()).parse("foo");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("Hi-Speed10 <B>foo</B>", result);
 
-        query = new QueryParser("text", new WhitespaceAnalyzer()).parse("10");
+        query = new QueryParser(Version.LUCENE_CURRENT, "text", new WhitespaceAnalyzer()).parse("10");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("Hi-Speed<B>10</B> foo", result);
 
-        query = new QueryParser("text", new WhitespaceAnalyzer()).parse("hi");
+        query = new QueryParser(Version.LUCENE_CURRENT, "text", new WhitespaceAnalyzer()).parse("hi");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("<B>Hi</B>-Speed10 foo", result);
 
-        query = new QueryParser("text", new WhitespaceAnalyzer()).parse("speed");
+        query = new QueryParser(Version.LUCENE_CURRENT, "text", new WhitespaceAnalyzer()).parse("speed");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("Hi-<B>Speed</B>10 foo", result);
 
-        query = new QueryParser("text", new WhitespaceAnalyzer()).parse("hispeed");
+        query = new QueryParser(Version.LUCENE_CURRENT, "text", new WhitespaceAnalyzer()).parse("hispeed");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
 
-        query = new QueryParser("text", new WhitespaceAnalyzer()).parse("hi speed");
+        query = new QueryParser(Version.LUCENE_CURRENT, "text", new WhitespaceAnalyzer()).parse("hi speed");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
 
         // ///////////////// same tests, just put the bigger overlapping token
         // first
-        query = new QueryParser("text", new WhitespaceAnalyzer()).parse("foo");
+        query = new QueryParser(Version.LUCENE_CURRENT, "text", new WhitespaceAnalyzer()).parse("foo");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("Hi-Speed10 <B>foo</B>", result);
 
-        query = new QueryParser("text", new WhitespaceAnalyzer()).parse("10");
+        query = new QueryParser(Version.LUCENE_CURRENT, "text", new WhitespaceAnalyzer()).parse("10");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("Hi-Speed<B>10</B> foo", result);
 
-        query = new QueryParser("text", new WhitespaceAnalyzer()).parse("hi");
+        query = new QueryParser(Version.LUCENE_CURRENT, "text", new WhitespaceAnalyzer()).parse("hi");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("<B>Hi</B>-Speed10 foo", result);
 
-        query = new QueryParser("text", new WhitespaceAnalyzer()).parse("speed");
+        query = new QueryParser(Version.LUCENE_CURRENT, "text", new WhitespaceAnalyzer()).parse("speed");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("Hi-<B>Speed</B>10 foo", result);
 
-        query = new QueryParser("text", new WhitespaceAnalyzer()).parse("hispeed");
+        query = new QueryParser(Version.LUCENE_CURRENT, "text", new WhitespaceAnalyzer()).parse("hispeed");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
 
-        query = new QueryParser("text", new WhitespaceAnalyzer()).parse("hi speed");
+        query = new QueryParser(Version.LUCENE_CURRENT, "text", new WhitespaceAnalyzer()).parse("hi speed");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
@@ -1521,7 +1521,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   private void searchIndex() throws IOException, ParseException, InvalidTokenOffsetsException {
     String q = "t_text1:random";
-    QueryParser parser = new QueryParser( "t_text1", a );
+    QueryParser parser = new QueryParser(Version.LUCENE_CURRENT,  "t_text1", a );
     Query query = parser.parse( q );
     IndexSearcher searcher = new IndexSearcher( dir, true );
     // This scorer can return negative idf -> null fragment
@@ -1575,7 +1575,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
 
   public void doSearching(String queryString) throws Exception {
-    QueryParser parser = new QueryParser(FIELD_NAME, analyzer);
+    QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, FIELD_NAME, analyzer);
     parser.setEnablePositionIncrements(true);
     parser.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     query = parser.parse(queryString);

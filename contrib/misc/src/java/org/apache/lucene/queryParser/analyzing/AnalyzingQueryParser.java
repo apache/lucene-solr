@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.Version;
 
 /**
  * Overrides Lucene's default QueryParser so that Fuzzy-, Prefix-, Range-, and WildcardQuerys
@@ -49,8 +50,8 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
    * @param field    the default field for query terms.
    * @param analyzer used to find terms in the query text.
    */
-  public AnalyzingQueryParser(String field, Analyzer analyzer) {
-    super(field, analyzer);
+  public AnalyzingQueryParser(Version matchVersion, String field, Analyzer analyzer) {
+    super(matchVersion, field, analyzer);
   }
 
   /**

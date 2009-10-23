@@ -33,6 +33,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 /**
  * Test date sorting, i.e. auto-sorting of fields with type "long".
@@ -74,7 +75,7 @@ public class TestDateSort extends LuceneTestCase {
 
     Sort sort = new Sort(new SortField(DATE_TIME_FIELD, SortField.STRING, true));
 
-    QueryParser queryParser = new QueryParser(TEXT_FIELD, new WhitespaceAnalyzer());
+    QueryParser queryParser = new QueryParser(Version.LUCENE_CURRENT, TEXT_FIELD, new WhitespaceAnalyzer());
     Query query = queryParser.parse("Document");
 
     // Execute the search and process the search results.

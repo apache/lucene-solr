@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
+import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Arabic. 
@@ -109,32 +110,38 @@ public final class ArabicAnalyzer extends Analyzer {
     }
   }
 
+  private final Version matchVersion;
+
   /**
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
    */
-  public ArabicAnalyzer() {
+  public ArabicAnalyzer(Version matchVersion) {
+    this.matchVersion = matchVersion;
     stoptable = DefaultSetHolder.DEFAULT_STOP_SET;
   }
 
   /**
    * Builds an analyzer with the given stop words.
    */
-  public ArabicAnalyzer( String... stopwords ) {
+  public ArabicAnalyzer( Version matchVersion, String... stopwords ) {
     stoptable = StopFilter.makeStopSet( stopwords );
+    this.matchVersion = matchVersion;
   }
 
   /**
    * Builds an analyzer with the given stop words.
    */
-  public ArabicAnalyzer( Hashtable<?,?> stopwords ) {
-    stoptable = new HashSet( stopwords.keySet() );
+  public ArabicAnalyzer( Version matchVersion, Hashtable<?,?> stopwords ) {
+    stoptable = new HashSet(stopwords.keySet());
+    this.matchVersion = matchVersion;
   }
 
   /**
    * Builds an analyzer with the given stop words.  Lines can be commented out using {@link #STOPWORDS_COMMENT}
    */
-  public ArabicAnalyzer( File stopwords ) throws IOException {
+  public ArabicAnalyzer( Version matchVersion, File stopwords ) throws IOException {
     stoptable = WordlistLoader.getWordSet( stopwords, STOPWORDS_COMMENT);
+    this.matchVersion = matchVersion;
   }
 
 
@@ -149,7 +156,8 @@ public final class ArabicAnalyzer extends Analyzer {
     TokenStream result = new ArabicLetterTokenizer( reader );
     result = new LowerCaseFilter(result);
     // the order here is important: the stopword list is not normalized!
-    result = new StopFilter(false, result, stoptable );
+    result = new StopFilter( StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                             result, stoptable );
     result = new ArabicNormalizationFilter( result );
     result = new ArabicStemFilter( result );
 
@@ -177,7 +185,8 @@ public final class ArabicAnalyzer extends Analyzer {
       streams.source = new ArabicLetterTokenizer(reader);
       streams.result = new LowerCaseFilter(streams.source);
       // the order here is important: the stopword list is not normalized!
-      streams.result = new StopFilter(false, streams.result, stoptable);
+      streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                      streams.result, stoptable);
       streams.result = new ArabicNormalizationFilter(streams.result);
       streams.result = new ArabicStemFilter(streams.result);
       setPreviousTokenStream(streams);

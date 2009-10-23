@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.util.Version;
 
 /**
  * Test case for ThaiAnalyzer, modified from TestFrenchAnalyzer
@@ -36,7 +37,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	 * testcase for offsets
 	 */
 	public void testOffsets() throws Exception {
-		assertAnalyzesTo(new ThaiAnalyzer(), "เดอะนิวยอร์กไทมส์", 
+		assertAnalyzesTo(new ThaiAnalyzer(Version.LUCENE_CURRENT), "เดอะนิวยอร์กไทมส์", 
 				new String[] { "เด", "อะนิว", "ยอ", "ร์ก", "ไทมส์"},
 				new int[] { 0, 2, 7, 9, 12 },
 				new int[] { 2, 7, 9, 12, 17});
@@ -54,7 +55,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	 * Instead, allow the definition of alphanum to include relevant categories like nonspacing marks!
 	 */
 	public void testBuggyTokenType() throws Exception {
-		assertAnalyzesTo(new ThaiAnalyzer(), "เดอะนิวยอร์กไทมส์ ๑๒๓", 
+		assertAnalyzesTo(new ThaiAnalyzer(Version.LUCENE_CURRENT), "เดอะนิวยอร์กไทมส์ ๑๒๓", 
 				new String[] { "เด", "อะนิว", "ยอ", "ร์ก", "ไทมส์", "๑๒๓" },
 				new String[] { "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>" });
 	}
@@ -68,7 +69,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	*/
 
 	public void testAnalyzer() throws Exception {
-		ThaiAnalyzer analyzer = new ThaiAnalyzer();
+		ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_CURRENT);
 	
 		assertAnalyzesTo(analyzer, "", new String[] {});
 
@@ -90,7 +91,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	}
 	
 	public void testReusableTokenStream() throws Exception {
-	  ThaiAnalyzer analyzer = new ThaiAnalyzer();
+	  ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_CURRENT);
 	  assertAnalyzesToReuse(analyzer, "", new String[] {});
 
       assertAnalyzesToReuse(
@@ -108,13 +109,16 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	 * subclass that acts just like whitespace analyzer for testing
 	 */
 	private class ThaiSubclassAnalyzer extends ThaiAnalyzer {
+          public ThaiSubclassAnalyzer(Version matchVersion) {
+            super(matchVersion);
+          }
 	  public TokenStream tokenStream(String fieldName, Reader reader) {
 	    return new WhitespaceTokenizer(reader);
 	  }
 	}
 	
 	public void testLUCENE1678BWComp() throws Exception {
-	  ThaiSubclassAnalyzer a = new ThaiSubclassAnalyzer();
+	  ThaiSubclassAnalyzer a = new ThaiSubclassAnalyzer(Version.LUCENE_CURRENT);
 	  assertAnalyzesToReuse(a, "การที่ได้ต้องแสดงว่างานดี", new String[] { "การที่ได้ต้องแสดงว่างานดี" });
 	}
 }

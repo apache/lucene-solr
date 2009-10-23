@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.util.Version;
 
 /**
  * Test the Brazilian Stem Filter, which only modifies the term text.
@@ -123,7 +124,7 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
   }
   
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new BrazilianAnalyzer();
+    Analyzer a = new BrazilianAnalyzer(Version.LUCENE_CURRENT);
     checkReuse(a, "boa", "boa");
     checkReuse(a, "boainain", "boainain");
     checkReuse(a, "boas", "boas");
@@ -131,7 +132,7 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
   }
  
   public void testStemExclusionTable() throws Exception {
-    BrazilianAnalyzer a = new BrazilianAnalyzer();
+    BrazilianAnalyzer a = new BrazilianAnalyzer(Version.LUCENE_CURRENT);
     a.setStemExclusionTable(new String[] { "quintessência" });
     checkReuse(a, "quintessência", "quintessência"); // excluded words will be completely unchanged.
   }
@@ -141,14 +142,14 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
    * when using reusable token streams.
    */
   public void testExclusionTableReuse() throws Exception {
-    BrazilianAnalyzer a = new BrazilianAnalyzer();
+    BrazilianAnalyzer a = new BrazilianAnalyzer(Version.LUCENE_CURRENT);
     checkReuse(a, "quintessência", "quintessente");
     a.setStemExclusionTable(new String[] { "quintessência" });
     checkReuse(a, "quintessência", "quintessência");
   }
   
   private void check(final String input, final String expected) throws Exception {
-    checkOneTerm(new BrazilianAnalyzer(), input, expected);
+    checkOneTerm(new BrazilianAnalyzer(Version.LUCENE_CURRENT), input, expected);
   }
   
   private void checkReuse(Analyzer a, String input, String expected) throws Exception {

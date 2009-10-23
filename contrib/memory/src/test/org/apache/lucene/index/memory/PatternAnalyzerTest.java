@@ -24,6 +24,7 @@ import java.util.regex.Pattern;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.Version;
 
 /**
  * Verifies the behavior of PatternAnalyzer.
@@ -36,13 +37,13 @@ public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
    */
   public void testNonWordPattern() throws IOException {
     // Split on non-letter pattern, do not lowercase, no stopwords
-    PatternAnalyzer a = new PatternAnalyzer(PatternAnalyzer.NON_WORD_PATTERN,
+    PatternAnalyzer a = new PatternAnalyzer(Version.LUCENE_CURRENT, PatternAnalyzer.NON_WORD_PATTERN,
         false, null);
     check(a, "The quick brown Fox,the abcd1234 (56.78) dc.", new String[] {
         "The", "quick", "brown", "Fox", "the", "abcd", "dc" });
 
     // split on non-letter pattern, lowercase, english stopwords
-    PatternAnalyzer b = new PatternAnalyzer(PatternAnalyzer.NON_WORD_PATTERN,
+    PatternAnalyzer b = new PatternAnalyzer(Version.LUCENE_CURRENT, PatternAnalyzer.NON_WORD_PATTERN,
         true, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
     check(b, "The quick brown Fox,the abcd1234 (56.78) dc.", new String[] {
         "quick", "brown", "fox", "abcd", "dc" });
@@ -54,13 +55,13 @@ public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
    */
   public void testWhitespacePattern() throws IOException {
     // Split on whitespace patterns, do not lowercase, no stopwords
-    PatternAnalyzer a = new PatternAnalyzer(PatternAnalyzer.WHITESPACE_PATTERN,
+    PatternAnalyzer a = new PatternAnalyzer(Version.LUCENE_CURRENT, PatternAnalyzer.WHITESPACE_PATTERN,
         false, null);
     check(a, "The quick brown Fox,the abcd1234 (56.78) dc.", new String[] {
         "The", "quick", "brown", "Fox,the", "abcd1234", "(56.78)", "dc." });
 
     // Split on whitespace patterns, lowercase, english stopwords
-    PatternAnalyzer b = new PatternAnalyzer(PatternAnalyzer.WHITESPACE_PATTERN,
+    PatternAnalyzer b = new PatternAnalyzer(Version.LUCENE_CURRENT, PatternAnalyzer.WHITESPACE_PATTERN,
         true, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
     check(b, "The quick brown Fox,the abcd1234 (56.78) dc.", new String[] {
         "quick", "brown", "fox,the", "abcd1234", "(56.78)", "dc." });
@@ -72,12 +73,12 @@ public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
    */
   public void testCustomPattern() throws IOException {
     // Split on comma, do not lowercase, no stopwords
-    PatternAnalyzer a = new PatternAnalyzer(Pattern.compile(","), false, null);
+    PatternAnalyzer a = new PatternAnalyzer(Version.LUCENE_CURRENT, Pattern.compile(","), false, null);
     check(a, "Here,Are,some,Comma,separated,words,", new String[] { "Here",
         "Are", "some", "Comma", "separated", "words" });
 
     // split on comma, lowercase, english stopwords
-    PatternAnalyzer b = new PatternAnalyzer(Pattern.compile(","), true,
+    PatternAnalyzer b = new PatternAnalyzer(Version.LUCENE_CURRENT, Pattern.compile(","), true,
         StopAnalyzer.ENGLISH_STOP_WORDS_SET);
     check(b, "Here,Are,some,Comma,separated,words,", new String[] { "here",
         "some", "comma", "separated", "words" });
@@ -102,7 +103,7 @@ public class PatternAnalyzerTest extends BaseTokenStreamTestCase {
     document.append(largeWord2);
 
     // Split on whitespace patterns, do not lowercase, no stopwords
-    PatternAnalyzer a = new PatternAnalyzer(PatternAnalyzer.WHITESPACE_PATTERN,
+    PatternAnalyzer a = new PatternAnalyzer(Version.LUCENE_CURRENT, PatternAnalyzer.WHITESPACE_PATTERN,
         false, null);
     check(a, document.toString(), new String[] { new String(largeWord),
         new String(largeWord2) });

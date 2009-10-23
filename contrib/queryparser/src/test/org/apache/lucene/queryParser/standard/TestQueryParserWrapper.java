@@ -1048,7 +1048,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   }
 
   public void testStopwords() throws Exception {
-    QueryParserWrapper qp = new QueryParserWrapper("a", new StopAnalyzer(StopFilter.makeStopSet("the", "foo"), false));
+    QueryParserWrapper qp = new QueryParserWrapper("a", new StopAnalyzer(Version.LUCENE_CURRENT, StopFilter.makeStopSet("the", "foo")));
     Query result = qp.parse("a:the OR a:foo");
     assertNotNull("result is null and it shouldn't be", result);
     assertTrue("result is not a BooleanQuery", result instanceof BooleanQuery);
@@ -1067,7 +1067,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   }
 
   public void testPositionIncrement() throws Exception {
-    QueryParserWrapper qp = new QueryParserWrapper("a", new StopAnalyzer(StopFilter.makeStopSet("the", "in", "are", "this"), true));
+    QueryParserWrapper qp = new QueryParserWrapper("a", new StopAnalyzer(Version.LUCENE_CURRENT, StopFilter.makeStopSet("the", "in", "are", "this")));
     qp.setEnablePositionIncrements(true);
     String qtxt = "\"the words in poisitions pos02578 are stopped in this phrasequery\"";
     // 0 2 5 7 8

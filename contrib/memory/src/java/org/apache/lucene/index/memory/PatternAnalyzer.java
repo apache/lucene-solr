@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.util.Version;
 
 /**
  * Efficient Lucene analyzer/tokenizer that preferably operates on a String rather than a
@@ -124,7 +125,7 @@ public class PatternAnalyzer extends Analyzer {
    * freely across threads without harm); global per class loader.
    */
   public static final PatternAnalyzer DEFAULT_ANALYZER = new PatternAnalyzer(
-    NON_WORD_PATTERN, true, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+    Version.LUCENE_CURRENT, NON_WORD_PATTERN, true, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
     
   /**
    * A lower-casing word analyzer with <b>extended </b> English stop words
@@ -134,15 +135,18 @@ public class PatternAnalyzer extends Analyzer {
    * http://thomas.loc.gov/home/all.about.inquery.html
    */
   public static final PatternAnalyzer EXTENDED_ANALYZER = new PatternAnalyzer(
-    NON_WORD_PATTERN, true, EXTENDED_ENGLISH_STOP_WORDS);
+    Version.LUCENE_CURRENT, NON_WORD_PATTERN, true, EXTENDED_ENGLISH_STOP_WORDS);
     
   private final Pattern pattern;
   private final boolean toLowerCase;
   private final Set stopWords;
+
+  private final Version matchVersion;
   
   /**
    * Constructs a new instance with the given parameters.
    * 
+   * @param matchVersion If >= {@link Version#LUCENE_29}, StopFilter.enablePositionIncrement is set to true
    * @param pattern
    *            a regular expression delimiting tokens
    * @param toLowerCase
@@ -158,7 +162,7 @@ public class PatternAnalyzer extends Analyzer {
    *            or <a href="http://www.unine.ch/info/clef/">other stop words
    *            lists </a>.
    */
-  public PatternAnalyzer(Pattern pattern, boolean toLowerCase, Set stopWords) {
+  public PatternAnalyzer(Version matchVersion, Pattern pattern, boolean toLowerCase, Set stopWords) {
     if (pattern == null) 
       throw new IllegalArgumentException("pattern must not be null");
     
@@ -170,6 +174,7 @@ public class PatternAnalyzer extends Analyzer {
     this.pattern = pattern;
     this.toLowerCase = toLowerCase;
     this.stopWords = stopWords;
+    this.matchVersion = matchVersion;
   }
   
   /**
@@ -197,7 +202,7 @@ public class PatternAnalyzer extends Analyzer {
     }
     else {
       stream = new PatternTokenizer(text, pattern, toLowerCase);
-      if (stopWords != null) stream = new StopFilter(false, stream, stopWords);
+      if (stopWords != null) stream = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion), stream, stopWords);
     }
     
     return stream;

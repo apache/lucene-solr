@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.util.Version;
 
 /**
  * Test QueryParser's ability to deal with Analyzers that return more
@@ -44,7 +45,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
 
   public void testMultiAnalyzer() throws ParseException {
     
-    QueryParser qp = new QueryParser("", new MultiAnalyzer());
+    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "", new MultiAnalyzer());
 
     // trivial, no multiple tokens:
     assertEquals("foo", qp.parse("foo").toString());
@@ -117,7 +118,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
   }
     
   public void testPosIncrementAnalyzer() throws ParseException {
-    QueryParser qp = new QueryParser("", new PosIncrementAnalyzer());
+    QueryParser qp = new QueryParser(Version.LUCENE_24, "", new PosIncrementAnalyzer());
     assertEquals("quick brown", qp.parse("the quick brown").toString());
     assertEquals("\"quick brown\"", qp.parse("\"the quick brown\"").toString());
     assertEquals("quick brown fox", qp.parse("the quick brown fox").toString());
@@ -134,7 +135,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     }
 
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new StandardTokenizer(reader);
+      TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
       result = new TestFilter(result);
       result = new LowerCaseFilter(result);
       return result;
@@ -200,7 +201,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     }
 
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new StandardTokenizer(reader);
+      TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
       result = new TestPosIncrementFilter(result);
       result = new LowerCaseFilter(result);
       return result;
@@ -238,7 +239,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     private final static class DumbQueryParser extends QueryParser {
         
         public DumbQueryParser(String f, Analyzer a) {
-            super(f, a);
+            super(Version.LUCENE_CURRENT, f, a);
         }
 
         /** expose super's version */

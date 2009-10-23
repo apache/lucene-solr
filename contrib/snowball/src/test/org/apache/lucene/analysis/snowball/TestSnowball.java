@@ -31,17 +31,18 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.Version;
 
 public class TestSnowball extends BaseTokenStreamTestCase {
 
   public void testEnglish() throws Exception {
-    Analyzer a = new SnowballAnalyzer("English");
+    Analyzer a = new SnowballAnalyzer(Version.LUCENE_CURRENT, "English");
     assertAnalyzesTo(a, "he abhorred accents",
         new String[]{"he", "abhor", "accent"});
   }
 
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new SnowballAnalyzer("English");
+    Analyzer a = new SnowballAnalyzer(Version.LUCENE_CURRENT, "English");
     assertAnalyzesToReuse(a, "he abhorred accents",
         new String[]{"he", "abhor", "accent"});
     assertAnalyzesToReuse(a, "she abhorred him",
@@ -53,7 +54,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
    */
   private class SnowballSubclassAnalyzer extends SnowballAnalyzer {
     public SnowballSubclassAnalyzer(String name) {
-      super(name);
+      super(Version.LUCENE_CURRENT, name);
     }
     
     public TokenStream tokenStream(String fieldName, Reader reader) {

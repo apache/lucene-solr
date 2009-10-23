@@ -25,6 +25,12 @@ API Changes
    text exactly the same as LowerCaseFilter. Please use LowerCaseFilter
    instead, which has the same functionality.  (Robert Muir)
    
+ * LUCENE-2002: Add required Version matchVersion argument when
+   constructing ComplexPhraseQueryParser and default (as of 2.9)
+   enablePositionIncrements to true to match StandardAnalyzer's
+   default.  Also added required matchVersion to most of the analyzers
+   (Uwe Schindler, Mike McCandless)
+
 Bug fixes
 
  * LUCENE-1781: Fixed various issues with the lat/lng bounding box

@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.cn.smart.SentenceTokenizer;
 import org.apache.lucene.analysis.cn.smart.WordTokenFilter;
+import org.apache.lucene.util.Version;
 
 /**
  * <p>
@@ -103,11 +104,13 @@ public class SmartChineseAnalyzer extends Analyzer {
     }
   }
 
+  private final Version matchVersion;
+
   /**
    * Create a new SmartChineseAnalyzer, using the default stopword list.
    */
-  public SmartChineseAnalyzer() {
-    this(true);
+  public SmartChineseAnalyzer(Version matchVersion) {
+    this(matchVersion, true);
   }
 
   /**
@@ -121,9 +124,10 @@ public class SmartChineseAnalyzer extends Analyzer {
    * 
    * @param useDefaultStopWords true to use the default stopword list.
    */
-  public SmartChineseAnalyzer(boolean useDefaultStopWords) {
+  public SmartChineseAnalyzer(Version matchVersion, boolean useDefaultStopWords) {
     stopWords = useDefaultStopWords ? DefaultSetHolder.DEFAULT_STOP_SET
-        : Collections.EMPTY_SET;
+      : Collections.EMPTY_SET;
+    this.matchVersion = matchVersion;
   }
 
   /**
@@ -135,8 +139,9 @@ public class SmartChineseAnalyzer extends Analyzer {
    * </p>
    * @param stopWords {@link Set} of stopwords to use.
    */
-  public SmartChineseAnalyzer(Set stopWords) {
+  public SmartChineseAnalyzer(Version matchVersion, Set stopWords) {
     this.stopWords = stopWords==null?Collections.EMPTY_SET:stopWords;
+    this.matchVersion = matchVersion;
   }
 
   public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -147,7 +152,8 @@ public class SmartChineseAnalyzer extends Analyzer {
     // The porter stemming is too strict, this is not a bug, this is a feature:)
     result = new PorterStemFilter(result);
     if (!stopWords.isEmpty()) {
-      result = new StopFilter(false,result, stopWords, false);
+      result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                              result, stopWords, false);
     }
     return result;
   }
@@ -167,7 +173,8 @@ public class SmartChineseAnalyzer extends Analyzer {
       streams.filteredTokenStream = new WordTokenFilter(streams.tokenStream);
       streams.filteredTokenStream = new PorterStemFilter(streams.filteredTokenStream);
       if (!stopWords.isEmpty()) {
-        streams.filteredTokenStream = new StopFilter(false, streams.filteredTokenStream, stopWords, false);
+        streams.filteredTokenStream = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                                     streams.filteredTokenStream, stopWords, false);
       }
     } else {
       streams.tokenStream.reset(reader);

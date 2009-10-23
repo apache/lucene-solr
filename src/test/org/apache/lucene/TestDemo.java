@@ -63,7 +63,7 @@ public class TestDemo extends LuceneTestCase {
     // Now search the index:
     IndexSearcher isearcher = new IndexSearcher(directory, true); // read-only=true
     // Parse a simple query that searches for "text":
-    QueryParser parser = new QueryParser("fieldname", analyzer);
+    QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, "fieldname", analyzer);
     Query query = parser.parse("text");
     ScoreDoc[] hits = isearcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);

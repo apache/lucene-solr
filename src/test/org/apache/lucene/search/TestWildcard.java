@@ -28,6 +28,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
@@ -238,7 +239,7 @@ public class TestWildcard
   public void testParsingAndSearching() throws Exception {
     String field = "content";
     boolean dbg = false;
-    QueryParser qp = new QueryParser(field, new WhitespaceAnalyzer());
+    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, field, new WhitespaceAnalyzer());
     qp.setAllowLeadingWildcard(true);
     String docs[] = {
         "\\ abcdefg1",

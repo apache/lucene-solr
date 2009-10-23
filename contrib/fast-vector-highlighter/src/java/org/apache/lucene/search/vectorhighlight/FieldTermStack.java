@@ -38,6 +38,7 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 /**
  * <code>FieldTermStack</code> is a stack that keeps query terms in the specified field
@@ -50,7 +51,7 @@ public class FieldTermStack {
   
   public static void main( String[] args ) throws Exception {
     Analyzer analyzer = new WhitespaceAnalyzer();
-    QueryParser parser = new QueryParser( "f", analyzer );
+    QueryParser parser = new QueryParser(Version.LUCENE_CURRENT,  "f", analyzer );
     Query query = parser.parse( "a x:b" );
     FieldQuery fieldQuery = new FieldQuery( query, true, false );
     

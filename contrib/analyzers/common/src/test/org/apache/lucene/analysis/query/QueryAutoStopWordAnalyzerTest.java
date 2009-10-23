@@ -37,6 +37,7 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   String variedFieldValues[] = {"the", "quick", "brown", "fox", "jumped", "over", "the", "lazy", "boring", "dog"};
@@ -62,7 +63,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
     }
     writer.close();
     reader = IndexReader.open(dir, true);
-    protectedAnalyzer = new QueryAutoStopWordAnalyzer(appAnalyzer);
+    protectedAnalyzer = new QueryAutoStopWordAnalyzer(Version.LUCENE_CURRENT, appAnalyzer);
   }
 
   protected void tearDown() throws Exception {
@@ -72,7 +73,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
 
   //Helper method to query
   private int search(Analyzer a, String queryString) throws IOException, ParseException {
-    QueryParser qp = new QueryParser("repetitiveField", a);
+    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "repetitiveField", a);
     Query q = qp.parse(queryString);
     return new IndexSearcher(reader).search(q, null, 1000).totalHits;
   }
@@ -149,8 +150,8 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
    * subclass that acts just like whitespace analyzer for testing
    */
   private class QueryAutoStopWordSubclassAnalyzer extends QueryAutoStopWordAnalyzer {
-    public QueryAutoStopWordSubclassAnalyzer() {
-      super(new WhitespaceAnalyzer());
+    public QueryAutoStopWordSubclassAnalyzer(Version matchVersion) {
+      super(matchVersion, new WhitespaceAnalyzer());
     }
     
     public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -159,7 +160,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   }
   
   public void testLUCENE1678BWComp() throws Exception {
-    QueryAutoStopWordAnalyzer a = new QueryAutoStopWordSubclassAnalyzer();
+    QueryAutoStopWordAnalyzer a = new QueryAutoStopWordSubclassAnalyzer(Version.LUCENE_CURRENT);
     a.addStopWords(reader, "repetitiveField", 10);
     int numHits = search(a, "repetitiveField:boring");
     assertFalse(numHits == 0);
@@ -180,7 +181,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   }
   
   public void testWrappingNonReusableAnalyzer() throws Exception {
-    QueryAutoStopWordAnalyzer a = new QueryAutoStopWordAnalyzer(new NonreusableAnalyzer());
+    QueryAutoStopWordAnalyzer a = new QueryAutoStopWordAnalyzer(Version.LUCENE_CURRENT, new NonreusableAnalyzer());
     a.addStopWords(reader, 10);
     int numHits = search(a, "repetitiveField:boring");
     assertTrue(numHits == 0);
@@ -189,7 +190,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   }
   
   public void testTokenStream() throws Exception {
-    QueryAutoStopWordAnalyzer a = new QueryAutoStopWordAnalyzer(new WhitespaceAnalyzer());
+    QueryAutoStopWordAnalyzer a = new QueryAutoStopWordAnalyzer(Version.LUCENE_CURRENT, new WhitespaceAnalyzer());
     a.addStopWords(reader, 10);
     TokenStream ts = a.tokenStream("repetitiveField", new StringReader("this boring"));
     TermAttribute termAtt = ts.getAttribute(TermAttribute.class);

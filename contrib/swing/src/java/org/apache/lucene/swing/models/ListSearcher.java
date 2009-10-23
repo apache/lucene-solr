@@ -38,6 +38,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 /**
  * See table searcher explanation.
@@ -167,7 +168,7 @@ public class ListSearcher extends AbstractListModel {
             //build a query based on the fields, searchString and cached analyzer
             //NOTE: This is an area for improvement since the MultiFieldQueryParser
             // has some weirdness.
-            MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, analyzer);
+            MultiFieldQueryParser parser = new MultiFieldQueryParser(Version.LUCENE_CURRENT, fields, analyzer);
             Query query =parser.parse(searchString);
             //reset this list model with the new results
             resetSearchResults(is, query);

@@ -25,6 +25,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -201,7 +202,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testPhraseQueryWithStopAnalyzer() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    StopAnalyzer stopAnalyzer = new StopAnalyzer(false);
+    StopAnalyzer stopAnalyzer = new StopAnalyzer(Version.LUCENE_24);
     IndexWriter writer = new IndexWriter(directory, stopAnalyzer, true, 
                                          IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
@@ -220,7 +221,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     QueryUtils.check(query,searcher);
 
 
-    // currently StopAnalyzer does not leave "holes", so this matches.
+    // StopAnalyzer as of 2.4 does not leave "holes", so this matches.
     query = new PhraseQuery();
     query.add(new Term("field", "words"));
     query.add(new Term("field", "here"));
@@ -357,8 +358,8 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testToString() throws Exception {
-    StopAnalyzer analyzer = new StopAnalyzer(true);
-    QueryParser qp = new QueryParser("field", analyzer);
+    StopAnalyzer analyzer = new StopAnalyzer(Version.LUCENE_CURRENT);
+    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "field", analyzer);
     qp.setEnablePositionIncrements(true);
     PhraseQuery q = (PhraseQuery)qp.parse("\"this hi this is a test is\"");
     assertEquals("field:\"? hi ? ? ? test\"", q.toString());

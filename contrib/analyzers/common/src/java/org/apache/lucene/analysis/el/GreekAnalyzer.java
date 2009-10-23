@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -36,6 +37,9 @@ import java.util.Set;
  * that will not be indexed at all).
  * A default set of stopwords is used unless an alternative list is specified.
  * </p>
+ *
+ * <p><b>NOTE</b>: This class uses the same {@link Version}
+ * dependent settings as {@link StandardAnalyzer}.</p>
  */
 public final class GreekAnalyzer extends Analyzer
 {
@@ -59,27 +63,33 @@ public final class GreekAnalyzer extends Analyzer
      */
     private Set stopSet = new HashSet();
 
-    public GreekAnalyzer() {
-        this(GREEK_STOP_WORDS);
+    private final Version matchVersion;
+
+    public GreekAnalyzer(Version matchVersion) {
+      super();
+      stopSet = StopFilter.makeStopSet(GREEK_STOP_WORDS);
+      this.matchVersion = matchVersion;
     }
-    
+
     /**
      * Builds an analyzer with the given stop words.
      * @param stopwords Array of stopwords to use.
      */
-    public GreekAnalyzer(String... stopwords)
+    public GreekAnalyzer(Version matchVersion, String... stopwords)
     {
-        super();
-    	stopSet = StopFilter.makeStopSet(stopwords);
+      super();
+      stopSet = StopFilter.makeStopSet(stopwords);
+      this.matchVersion = matchVersion;
     }
-    
+
     /**
      * Builds an analyzer with the given stop words.
      */
-    public GreekAnalyzer(Map stopwords)
+    public GreekAnalyzer(Version matchVersion, Map stopwords)
     {
-        super();
-    	stopSet = new HashSet(stopwords.keySet());
+      super();
+      stopSet = new HashSet(stopwords.keySet());
+      this.matchVersion = matchVersion;
     }
 
     /**
@@ -90,9 +100,10 @@ public final class GreekAnalyzer extends Analyzer
      */
     public TokenStream tokenStream(String fieldName, Reader reader)
     {
-    	TokenStream result = new StandardTokenizer(reader);
+        TokenStream result = new StandardTokenizer(matchVersion, reader);
         result = new GreekLowerCaseFilter(result);
-        result = new StopFilter(false, result, stopSet);
+        result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                result, stopSet);
         return result;
     }
     
@@ -113,9 +124,10 @@ public final class GreekAnalyzer extends Analyzer
       SavedStreams streams = (SavedStreams) getPreviousTokenStream();
       if (streams == null) {
         streams = new SavedStreams();
-        streams.source = new StandardTokenizer(reader);
+        streams.source = new StandardTokenizer(matchVersion, reader);
         streams.result = new GreekLowerCaseFilter(streams.source);
-        streams.result = new StopFilter(false, streams.result, stopSet);
+        streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                        streams.result, stopSet);
         setPreviousTokenStream(streams);
       } else {
         streams.source.reset(reader);

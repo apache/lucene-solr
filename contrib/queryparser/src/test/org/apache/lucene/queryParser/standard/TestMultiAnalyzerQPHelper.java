@@ -34,6 +34,7 @@ import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.standard.StandardQueryParser;
 import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 /**
  * This test case is a copy of the core Lucene query parser test, it was adapted
@@ -154,7 +155,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
     }
 
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new StandardTokenizer(reader);
+      TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
       result = new TestFilter(result);
       result = new LowerCaseFilter(result);
       return result;
@@ -222,7 +223,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
     }
 
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new StandardTokenizer(reader);
+      TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
       result = new TestPosIncrementFilter(result);
       result = new LowerCaseFilter(result);
       return result;

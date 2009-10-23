@@ -30,6 +30,7 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -101,7 +102,7 @@ public class TestMultiSearcher extends LuceneTestCase
         writerB.close();
 
         // creating the query
-        QueryParser parser = new QueryParser("fulltext", new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
+        QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, "fulltext", new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
         Query query = parser.parse("handle:1");
 
         // building the searchables

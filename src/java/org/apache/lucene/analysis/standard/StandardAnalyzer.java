@@ -35,7 +35,7 @@ import java.util.Set;
  * compatibility when creating StandardAnalyzer:
  * <ul>
  *   <li> As of 2.9, StopFilter preserves position
- *        increments by default
+ *        increments
  *   <li> As of 2.4, Tokens incorrectly identified as acronyms
  *        are corrected (see <a href="https://issues.apache.org/jira/browse/LUCENE-1068">LUCENE-1608</a>
  * </ul>
@@ -52,6 +52,7 @@ public class StandardAnalyzer extends Analyzer {
   /** An unmodifiable set containing some common English words that are usually not
   useful for searching. */
   public static final Set<?> STOP_WORDS_SET = StopAnalyzer.ENGLISH_STOP_WORDS_SET; 
+  private final Version matchVersion;
 
   /** Builds an analyzer with the default stop words ({@link
    * #STOP_WORDS_SET}).
@@ -71,6 +72,7 @@ public class StandardAnalyzer extends Analyzer {
     setOverridesTokenStreamMethod(StandardAnalyzer.class);
     enableStopPositionIncrements = matchVersion.onOrAfter(Version.LUCENE_29);
     replaceInvalidAcronym = matchVersion.onOrAfter(Version.LUCENE_24);
+    this.matchVersion = matchVersion;
   }
 
   /** Builds an analyzer with the stop words from the given file.
@@ -94,11 +96,12 @@ public class StandardAnalyzer extends Analyzer {
   /** Constructs a {@link StandardTokenizer} filtered by a {@link
   StandardFilter}, a {@link LowerCaseFilter} and a {@link StopFilter}. */
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    StandardTokenizer tokenStream = new StandardTokenizer(reader, replaceInvalidAcronym);
+    StandardTokenizer tokenStream = new StandardTokenizer(matchVersion, reader);
     tokenStream.setMaxTokenLength(maxTokenLength);
     TokenStream result = new StandardFilter(tokenStream);
     result = new LowerCaseFilter(result);
-    result = new StopFilter(enableStopPositionIncrements, result, stopSet);
+    result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                            result, stopSet);
     return result;
   }
 
@@ -140,10 +143,11 @@ public class StandardAnalyzer extends Analyzer {
     if (streams == null) {
       streams = new SavedStreams();
       setPreviousTokenStream(streams);
-      streams.tokenStream = new StandardTokenizer(reader);
+      streams.tokenStream = new StandardTokenizer(matchVersion, reader);
       streams.filteredTokenStream = new StandardFilter(streams.tokenStream);
       streams.filteredTokenStream = new LowerCaseFilter(streams.filteredTokenStream);
-      streams.filteredTokenStream = new StopFilter(enableStopPositionIncrements, streams.filteredTokenStream, stopSet);
+      streams.filteredTokenStream = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                                   streams.filteredTokenStream, stopSet);
     } else {
       streams.tokenStream.reset(reader);
     }

@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.util.Version;
 
 /**
  * Test the German stemmer. The stemming algorithm is known to work less 
@@ -61,7 +62,7 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
   }
   
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new GermanAnalyzer();
+    Analyzer a = new GermanAnalyzer(Version.LUCENE_CURRENT);
     checkReuse(a, "Tisch", "tisch");
     checkReuse(a, "Tische", "tisch");
     checkReuse(a, "Tischen", "tisch");
@@ -71,13 +72,17 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
    * subclass that acts just like whitespace analyzer for testing
    */
   private class GermanSubclassAnalyzer extends GermanAnalyzer {
+    public GermanSubclassAnalyzer(Version matchVersion) {
+      super(matchVersion);
+    }
+
     public TokenStream tokenStream(String fieldName, Reader reader) {
       return new WhitespaceTokenizer(reader);
     }
   }
   
   public void testLUCENE1678BWComp() throws Exception {
-    checkReuse(new GermanSubclassAnalyzer(), "Tischen", "Tischen");
+    checkReuse(new GermanSubclassAnalyzer(Version.LUCENE_CURRENT), "Tischen", "Tischen");
   }
 
   /* 
@@ -85,14 +90,14 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
    * when using reusable token streams.
    */
   public void testExclusionTableReuse() throws Exception {
-    GermanAnalyzer a = new GermanAnalyzer();
+    GermanAnalyzer a = new GermanAnalyzer(Version.LUCENE_CURRENT);
     checkReuse(a, "tischen", "tisch");
     a.setStemExclusionTable(new String[] { "tischen" });
     checkReuse(a, "tischen", "tischen");
   }
   
   private void check(final String input, final String expected) throws Exception {
-    checkOneTerm(new GermanAnalyzer(), input, expected);
+    checkOneTerm(new GermanAnalyzer(Version.LUCENE_CURRENT), input, expected);
   }
   
   private void checkReuse(Analyzer a, String input, String expected) throws Exception {

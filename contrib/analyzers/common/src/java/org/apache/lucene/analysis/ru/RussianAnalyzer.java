@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Russian language. 
@@ -60,27 +61,31 @@ public final class RussianAnalyzer extends Analyzer
      */
     private Set stopSet = new HashSet();
 
-    public RussianAnalyzer() {
-        this(RUSSIAN_STOP_WORDS);
+    private final Version matchVersion;
+
+    public RussianAnalyzer(Version matchVersion) {
+      this(matchVersion, RUSSIAN_STOP_WORDS);
     }
   
     /**
      * Builds an analyzer with the given stop words.
      */
-    public RussianAnalyzer(String... stopwords)
+    public RussianAnalyzer(Version matchVersion, String... stopwords)
     {
-    	super();
-    	stopSet = StopFilter.makeStopSet(stopwords);
+      super();
+      stopSet = StopFilter.makeStopSet(stopwords);
+      this.matchVersion = matchVersion;
     }
    
     /**
      * Builds an analyzer with the given stop words.
      * TODO: create a Set version of this ctor
      */
-    public RussianAnalyzer(Map stopwords)
+    public RussianAnalyzer(Version matchVersion, Map stopwords)
     {
-    	super();
-    	stopSet = new HashSet(stopwords.keySet());
+      super();
+      stopSet = new HashSet(stopwords.keySet());
+      this.matchVersion = matchVersion;
     }
 
     /**
@@ -96,7 +101,8 @@ public final class RussianAnalyzer extends Analyzer
     {
         TokenStream result = new RussianLetterTokenizer(reader);
         result = new LowerCaseFilter(result);
-        result = new StopFilter(false, result, stopSet);
+        result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                result, stopSet);
         result = new RussianStemFilter(result);
         return result;
     }
@@ -122,7 +128,8 @@ public final class RussianAnalyzer extends Analyzer
       streams = new SavedStreams();
       streams.source = new RussianLetterTokenizer(reader);
       streams.result = new LowerCaseFilter(streams.source);
-      streams.result = new StopFilter(false, streams.result, stopSet);
+      streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                      streams.result, stopSet);
       streams.result = new RussianStemFilter(streams.result);
       setPreviousTokenStream(streams);
     } else {

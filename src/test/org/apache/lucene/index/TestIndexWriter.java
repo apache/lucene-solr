@@ -66,6 +66,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.Version;
 
 public class TestIndexWriter extends BaseTokenStreamTestCase {
     public TestIndexWriter(String name) {
@@ -1701,7 +1702,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     IndexWriter writer = new IndexWriter(dir, new Analyzer() {
 
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new TokenFilter(new StandardTokenizer(reader)) {
+        return new TokenFilter(new StandardTokenizer(Version.LUCENE_CURRENT, reader)) {
           private int count = 0;
 
           public boolean incrementToken() throws IOException {
@@ -4167,7 +4168,7 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
   // LUCENE-1448
   public void testEndOffsetPositionStopFilter() throws Exception {
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new StopAnalyzer(true), IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter w = new IndexWriter(dir, new StopAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     Field f = new Field("field", "abcd the", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
     doc.add(f);

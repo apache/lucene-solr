@@ -195,7 +195,7 @@ class LuceneMethods {
     for (int ii = 0; ii < arraySize; ii++) {
       indexedArray[ii] = (String) indexedFields.get(ii);
     }
-    MultiFieldQueryParser parser = new MultiFieldQueryParser(indexedArray, analyzer);
+    MultiFieldQueryParser parser = new MultiFieldQueryParser(Version.LUCENE_CURRENT, indexedArray, analyzer);
     query = parser.parse(queryString);
     System.out.println("Searching for: " + query.toString());
     return (query);
@@ -216,7 +216,7 @@ class LuceneMethods {
     for (int ii = 0; ii < arraySize; ii++) {
       fieldsArray[ii] = (String) fields.get(ii);
     }
-    MultiFieldQueryParser parser = new MultiFieldQueryParser(fieldsArray, analyzer);
+    MultiFieldQueryParser parser = new MultiFieldQueryParser(Version.LUCENE_CURRENT, fieldsArray, analyzer);
     query = parser.parse(queryString);
     System.out.println("Searching for: " + query.toString());
   }

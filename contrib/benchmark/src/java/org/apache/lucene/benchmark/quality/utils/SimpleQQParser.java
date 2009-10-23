@@ -50,7 +50,7 @@ public class SimpleQQParser implements QualityQueryParser {
   public Query parse(QualityQuery qq) throws ParseException {
     QueryParser qp = queryParser.get();
     if (qp==null) {
-      qp = new QueryParser(indexField, new StandardAnalyzer(Version.LUCENE_CURRENT));
+      qp = new QueryParser(Version.LUCENE_CURRENT, indexField, new StandardAnalyzer(Version.LUCENE_CURRENT));
       queryParser.set(qp);
     }
     return qp.parse(qq.getValue(qqName));

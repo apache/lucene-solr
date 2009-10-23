@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.Payload;
+import org.apache.lucene.util.Version;
 
 public class TestAnalyzers extends BaseTokenStreamTestCase {
 
@@ -74,7 +75,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   }
 
   public void testStop() throws Exception {
-    Analyzer a = new StopAnalyzer(true);
+    Analyzer a = new StopAnalyzer(Version.LUCENE_CURRENT);
     assertAnalyzesTo(a, "foo bar FOO BAR", 
                      new String[] { "foo", "bar", "foo", "bar" });
     assertAnalyzesTo(a, "foo a bar such FOO THESE BAR", 

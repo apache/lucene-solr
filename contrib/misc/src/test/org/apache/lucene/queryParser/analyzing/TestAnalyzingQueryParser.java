@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.util.Version;
 
 /**
  * @version $Revision$, $Date$
@@ -97,7 +98,7 @@ public class TestAnalyzingQueryParser extends TestCase {
   }
 
   private String parseWithAnalyzingQueryParser(String s, Analyzer a) throws ParseException {
-    AnalyzingQueryParser qp = new AnalyzingQueryParser("field", a);
+    AnalyzingQueryParser qp = new AnalyzingQueryParser(Version.LUCENE_CURRENT, "field", a);
     org.apache.lucene.search.Query q = qp.parse(s);
     return q.toString("field");
   }
@@ -109,7 +110,7 @@ class ASCIIAnalyzer extends org.apache.lucene.analysis.Analyzer {
   }
 
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new StandardTokenizer(reader);
+    TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
     result = new StandardFilter(result);
     result = new ASCIIFoldingFilter(result);
     result = new LowerCaseFilter(result);

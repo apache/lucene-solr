@@ -33,6 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 public class TestComplexPhraseQuery extends TestCase {
 
@@ -71,7 +72,7 @@ public class TestComplexPhraseQuery extends TestCase {
   }
 
   private void checkBadQuery(String qString) {
-    QueryParser qp = new ComplexPhraseQueryParser(defaultFieldName, analyzer);
+    QueryParser qp = new ComplexPhraseQueryParser(Version.LUCENE_CURRENT, defaultFieldName, analyzer);
     Throwable expected = null;
     try {
       qp.parse(qString);
@@ -84,7 +85,7 @@ public class TestComplexPhraseQuery extends TestCase {
 
   private void checkMatches(String qString, String expectedVals)
       throws Exception {
-    QueryParser qp = new ComplexPhraseQueryParser(defaultFieldName, analyzer);
+    QueryParser qp = new ComplexPhraseQueryParser(Version.LUCENE_CURRENT, defaultFieldName, analyzer);
     qp.setFuzzyPrefixLength(1); // usually a good idea
 
     Query q = qp.parse(qString);

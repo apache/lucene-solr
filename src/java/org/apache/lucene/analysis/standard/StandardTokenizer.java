@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.Version;
 
 /** A grammar-based tokenizer constructed with JFlex
  *
@@ -43,6 +44,14 @@ import org.apache.lucene.util.AttributeSource;
  * <p>Many applications have specific tokenizer needs.  If this tokenizer does
  * not suit your application, please consider copying this source code
  * directory to your project and maintaining your own grammar-based tokenizer.
+ *
+ * <a name="version"/>
+ * <p>You must specify the required {@link Version}
+ * compatibility when creating StandardAnalyzer:
+ * <ul>
+ *   <li> As of 2.4, Tokens incorrectly identified as acronyms
+ *        are corrected (see <a href="https://issues.apache.org/jira/browse/LUCENE-1068">LUCENE-1608</a>
+ * </ul>
  */
 
 public final class StandardTokenizer extends Tokenizer {
@@ -105,55 +114,50 @@ public final class StandardTokenizer extends Tokenizer {
   }
 
   /**
-   * Creates a new instance of the {@link StandardTokenizer}. Attaches the
-   * <code>input</code> to a newly created JFlex scanner.
-   */
-  public StandardTokenizer(Reader input) {
-    this(input, false);
-  }
-
-  /**
    * Creates a new instance of the {@link org.apache.lucene.analysis.standard.StandardTokenizer}.  Attaches
    * the <code>input</code> to the newly created JFlex scanner.
    *
    * @param input The input reader
-   * @param replaceInvalidAcronym Set to true to replace mischaracterized acronyms with HOST.
    *
    * See http://issues.apache.org/jira/browse/LUCENE-1068
    */
-  public StandardTokenizer(Reader input, boolean replaceInvalidAcronym) {
+  public StandardTokenizer(Version matchVersion, Reader input) {
     super();
     this.scanner = new StandardTokenizerImpl(input);
-    init(input, replaceInvalidAcronym);
+    init(input, matchVersion);
   }
 
   /**
    * Creates a new StandardTokenizer with a given {@link AttributeSource}. 
    */
-  public StandardTokenizer(AttributeSource source, Reader input, boolean replaceInvalidAcronym) {
+  public StandardTokenizer(Version matchVersion, AttributeSource source, Reader input) {
     super(source);
     this.scanner = new StandardTokenizerImpl(input);
-    init(input, replaceInvalidAcronym);
+    init(input, matchVersion);
   }
 
   /**
    * Creates a new StandardTokenizer with a given {@link org.apache.lucene.util.AttributeSource.AttributeFactory} 
    */
-  public StandardTokenizer(AttributeFactory factory, Reader input, boolean replaceInvalidAcronym) {
+  public StandardTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
     super(factory);
     this.scanner = new StandardTokenizerImpl(input);
-    init(input, replaceInvalidAcronym);
+    init(input, matchVersion);
   }
 
-  private void init(Reader input, boolean replaceInvalidAcronym) {
-    this.replaceInvalidAcronym = replaceInvalidAcronym;
+  private void init(Reader input, Version matchVersion) {
+    if (matchVersion.onOrAfter(Version.LUCENE_24)) {
+      replaceInvalidAcronym = true;
+    } else {
+      replaceInvalidAcronym = false;
+    }
     this.input = input;    
     termAtt = addAttribute(TermAttribute.class);
     offsetAtt = addAttribute(OffsetAttribute.class);
     posIncrAtt = addAttribute(PositionIncrementAttribute.class);
     typeAtt = addAttribute(TypeAttribute.class);
   }
-  
+
   // this tokenizer generates three attributes:
   // offset, positionIncrement and type
   private TermAttribute termAtt;

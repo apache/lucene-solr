@@ -33,6 +33,7 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.benchmark.byTask.tasks.NewAnalyzerTask;
+import org.apache.lucene.util.Version;
 
 /**
  * A QueryMaker that uses common and uncommon actual Wikipedia queries for
@@ -92,7 +93,7 @@ public class EnwikiQueryMaker extends AbstractQueryMaker implements
    * @return array of Lucene queries
    */
   private static Query[] createQueries(List qs, Analyzer a) {
-    QueryParser qp = new QueryParser(DocMaker.BODY_FIELD, a);
+    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, DocMaker.BODY_FIELD, a);
     List queries = new ArrayList();
     for (int i = 0; i < qs.size(); i++) {
       try {

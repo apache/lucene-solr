@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.util.Version;
 
 /**
  * Test case for RussianAnalyzer.
@@ -49,7 +50,7 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
 
     public void testUnicode() throws IOException
     {
-        RussianAnalyzer ra = new RussianAnalyzer();
+        RussianAnalyzer ra = new RussianAnalyzer(Version.LUCENE_CURRENT);
         inWords =
             new InputStreamReader(
                 new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/testUTF8.txt")),
@@ -90,7 +91,7 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
     public void testDigitsInRussianCharset() 
     {
         Reader reader = new StringReader("text 1000");
-        RussianAnalyzer ra = new RussianAnalyzer();
+        RussianAnalyzer ra = new RussianAnalyzer(Version.LUCENE_CURRENT);
         TokenStream stream = ra.tokenStream("", reader);
 
         TermAttribute termText = stream.getAttribute(TermAttribute.class);
@@ -108,7 +109,7 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
     }
     
     public void testReusableTokenStream() throws Exception {
-      Analyzer a = new RussianAnalyzer();
+      Analyzer a = new RussianAnalyzer(Version.LUCENE_CURRENT);
       assertAnalyzesToReuse(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
           new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представлен" });
       assertAnalyzesToReuse(a, "Но знание это хранилось в тайне",

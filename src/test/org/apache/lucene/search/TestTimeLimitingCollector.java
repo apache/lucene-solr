@@ -31,6 +31,7 @@ import org.apache.lucene.search.TimeLimitingCollector.TimeExceededException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 /**
  * Tests the {@link TimeLimitingCollector}.  This test checks (1) search
@@ -85,7 +86,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     for (int i = 0; i < docText.length; i++) {
       qtxt += ' ' + docText[i]; // large query so that search will be longer
     }
-    QueryParser queryParser = new QueryParser(FIELD_NAME, new WhitespaceAnalyzer());
+    QueryParser queryParser = new QueryParser(Version.LUCENE_CURRENT, FIELD_NAME, new WhitespaceAnalyzer());
     query = queryParser.parse(qtxt);
     
     // warm the searcher

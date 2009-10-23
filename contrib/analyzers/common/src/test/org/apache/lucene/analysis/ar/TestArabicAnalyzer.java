@@ -22,6 +22,7 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.util.Version;
 
 /**
  * Test the Arabic Analyzer
@@ -32,14 +33,14 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new ArabicAnalyzer();
+    new ArabicAnalyzer(Version.LUCENE_CURRENT);
   }
   
   /**
    * Some simple tests showing some features of the analyzer, how some regular forms will conflate
    */
   public void testBasicFeatures() throws Exception {
-    ArabicAnalyzer a = new ArabicAnalyzer();
+    ArabicAnalyzer a = new ArabicAnalyzer(Version.LUCENE_CURRENT);
     assertAnalyzesTo(a, "كبير", new String[] { "كبير" });
     assertAnalyzesTo(a, "كبيرة", new String[] { "كبير" }); // feminine marker
     
@@ -60,7 +61,7 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
    * Simple tests to show things are getting reset correctly, etc.
    */
   public void testReusableTokenStream() throws Exception {
-    ArabicAnalyzer a = new ArabicAnalyzer();
+    ArabicAnalyzer a = new ArabicAnalyzer(Version.LUCENE_CURRENT);
     assertAnalyzesToReuse(a, "كبير", new String[] { "كبير" });
     assertAnalyzesToReuse(a, "كبيرة", new String[] { "كبير" }); // feminine marker
   }
@@ -69,7 +70,7 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
    * Non-arabic text gets treated in a similar way as SimpleAnalyzer.
    */
   public void testEnglishInput() throws Exception {
-    assertAnalyzesTo(new ArabicAnalyzer(), "English text.", new String[] {
+    assertAnalyzesTo(new ArabicAnalyzer(Version.LUCENE_CURRENT), "English text.", new String[] {
         "english", "text" });
   }
   
@@ -77,7 +78,7 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
    * Test that custom stopwords work, and are not case-sensitive.
    */
   public void testCustomStopwords() throws Exception {
-    ArabicAnalyzer a = new ArabicAnalyzer(new String[] { "the", "and", "a" });
+    ArabicAnalyzer a = new ArabicAnalyzer(Version.LUCENE_CURRENT, new String[] { "the", "and", "a" });
     assertAnalyzesTo(a, "The quick brown fox.", new String[] { "quick",
         "brown", "fox" });
   }

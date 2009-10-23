@@ -39,6 +39,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.util.IndexableBinaryStringTools;
 import org.apache.lucene.queryParser.analyzing.AnalyzingQueryParser;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.nio.CharBuffer;
@@ -83,7 +84,7 @@ public class CollationTestBase extends TestCase {
     writer.close();
     IndexSearcher is = new IndexSearcher(ramDir, true);
 
-    AnalyzingQueryParser aqp = new AnalyzingQueryParser("content", analyzer);
+    AnalyzingQueryParser aqp = new AnalyzingQueryParser(Version.LUCENE_CURRENT, "content", analyzer);
     aqp.setLowercaseExpandedTerms(false);
 
     // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi

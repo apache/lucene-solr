@@ -27,8 +27,10 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.queryParser.*;
+import org.apache.lucene.util.Version;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
@@ -97,7 +99,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       // try a search without OR
       Searcher searcher = new IndexSearcher(directory, true);
 
-      QueryParser parser = new QueryParser(PRIORITY_FIELD, analyzer);
+      QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, PRIORITY_FIELD, analyzer);
 
       Query query = parser.parse(HIGH_PRIORITY);
       out.println("Query: " + query.toString(PRIORITY_FIELD));
@@ -112,7 +114,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       searcher = new IndexSearcher(directory, true);
       hits = null;
 
-      parser = new QueryParser(PRIORITY_FIELD, analyzer);
+      parser = new QueryParser(Version.LUCENE_CURRENT, PRIORITY_FIELD, analyzer);
 
       query = parser.parse(HIGH_PRIORITY + " OR " + MED_PRIORITY);
       out.println("Query: " + query.toString(PRIORITY_FIELD));

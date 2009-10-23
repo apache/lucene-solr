@@ -32,6 +32,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 /** Test BooleanQuery2 against BooleanQuery by overriding the standard query parser.
  * This also tests the scoring order of BooleanQuery.
@@ -104,7 +105,7 @@ public class TestBoolean2 extends LuceneTestCase {
   };
 
   public Query makeQuery(String queryText) throws ParseException {
-    Query q = (new QueryParser(field, new WhitespaceAnalyzer())).parse(queryText);
+    Query q = (new QueryParser(Version.LUCENE_CURRENT, field, new WhitespaceAnalyzer())).parse(queryText);
     return q;
   }
 

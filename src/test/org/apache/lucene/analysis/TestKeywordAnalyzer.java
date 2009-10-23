@@ -31,6 +31,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
@@ -58,7 +59,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper(new SimpleAnalyzer());
     analyzer.addAnalyzer("partnum", new KeywordAnalyzer());
 
-    QueryParser queryParser = new QueryParser("description", analyzer);
+    QueryParser queryParser = new QueryParser(Version.LUCENE_CURRENT, "description", analyzer);
     Query query = queryParser.parse("partnum:Q36 AND SPACE");
 
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;

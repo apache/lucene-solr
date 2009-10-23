@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.util.Version;
 
 /**
  * 
@@ -37,7 +38,7 @@ public class TestElision extends BaseTokenStreamTestCase {
 
   public void testElision() throws Exception {
     String test = "Plop, juste pour voir l'embrouille avec O'brian. M'enfin.";
-    Tokenizer tokenizer = new StandardTokenizer(new StringReader(test));
+    Tokenizer tokenizer = new StandardTokenizer(Version.LUCENE_CURRENT, new StringReader(test));
     Set articles = new HashSet();
     articles.add("l");
     articles.add("M");

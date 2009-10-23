@@ -31,6 +31,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.util.Version;
 
 /**
  * Tests {@link FuzzyQuery}.
@@ -313,7 +314,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     IndexReader r = w.getReader();
     w.close();
 
-    Query q = new QueryParser("field", analyzer).parse( "giga~0.9" );
+    Query q = new QueryParser(Version.LUCENE_CURRENT, "field", analyzer).parse( "giga~0.9" );
 
     // 3. search
     IndexSearcher searcher = new IndexSearcher(r);

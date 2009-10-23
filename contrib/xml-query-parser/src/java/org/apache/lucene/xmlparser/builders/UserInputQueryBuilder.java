@@ -8,6 +8,7 @@ import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.ParserException;
 import org.apache.lucene.xmlparser.QueryBuilder;
 import org.w3c.dom.Element;
+import org.apache.lucene.util.Version;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -88,7 +89,7 @@ public class UserInputQueryBuilder implements QueryBuilder {
 	 */
 	protected QueryParser createQueryParser(String fieldName, Analyzer analyzer)
 	{
-		return new QueryParser(fieldName,analyzer);
+		return new QueryParser(Version.LUCENE_CURRENT, fieldName,analyzer);
 	}
 
 }

@@ -28,6 +28,7 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.util.Version;
 
 
 /**
@@ -327,7 +328,7 @@ public class TestSimpleExplanations extends TestExplanations {
     writerB.addDocument(lDoc3);
     writerB.close();
 
-    QueryParser parser = new QueryParser("fulltext", new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
+    QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, "fulltext", new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
     Query query = parser.parse("handle:1");
 
     Searcher[] searchers = new Searcher[2];

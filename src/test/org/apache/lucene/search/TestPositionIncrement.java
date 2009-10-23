@@ -51,6 +51,7 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.util.Version;
 
 /**
  * Term position unit test.
@@ -188,7 +189,7 @@ public class TestPositionIncrement extends BaseTokenStreamTestCase {
     assertEquals(0, hits.length);
 
     // should not find "1 2" because there is a gap of 1 in the index
-    QueryParser qp = new QueryParser("field",
+    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "field",
                                      new StopWhitespaceAnalyzer(false));
     q = (PhraseQuery) qp.parse("\"1 2\"");
     hits = searcher.search(q, null, 1000).scoreDocs;
@@ -212,7 +213,7 @@ public class TestPositionIncrement extends BaseTokenStreamTestCase {
     assertEquals(0, hits.length);
       
     // when both qp qnd stopFilter propagate increments, we should find the doc.
-    qp = new QueryParser("field",
+    qp = new QueryParser(Version.LUCENE_CURRENT, "field",
                          new StopWhitespaceAnalyzer(true));
     qp.setEnablePositionIncrements(true);
     q = (PhraseQuery) qp.parse("\"1 stop 2\"");

@@ -31,6 +31,7 @@ import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.types.FileSet;
+import org.apache.lucene.util.Version;
 
 /**
  *  Test cases for index task
@@ -69,12 +70,12 @@ public class IndexTaskTest extends TestCase {
 
         dir = FSDirectory.open(indexDir);
         searcher = new IndexSearcher(dir, true);
-        analyzer = new StopAnalyzer(false);
+        analyzer = new StopAnalyzer(Version.LUCENE_CURRENT);
     }
 
 
     public void testSearch() throws Exception {
-        Query query = new QueryParser("contents",analyzer).parse("test");
+      Query query = new QueryParser(Version.LUCENE_CURRENT, "contents",analyzer).parse("test");
 
         int numHits = searcher.search(query, null, 1000).totalHits;
 

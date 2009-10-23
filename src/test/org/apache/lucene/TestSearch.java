@@ -22,6 +22,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
@@ -107,7 +108,7 @@ public class TestSearch extends LuceneTestCase {
       };
       ScoreDoc[] hits = null;
 
-      QueryParser parser = new QueryParser("contents", analyzer);
+      QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, "contents", analyzer);
       parser.setPhraseSlop(4);
       for (int j = 0; j < queries.length; j++) {
         Query query = parser.parse(queries[j]);

@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -56,14 +57,16 @@ public class CJKAnalyzer extends Analyzer {
    * stop word list
    */
   private final Set stopTable;
+  private final Version matchVersion;
 
   //~ Constructors -----------------------------------------------------------
 
   /**
    * Builds an analyzer which removes words in {@link #STOP_WORDS}.
    */
-  public CJKAnalyzer() {
+  public CJKAnalyzer(Version matchVersion) {
     stopTable = StopFilter.makeStopSet(STOP_WORDS);
+    this.matchVersion = matchVersion;
   }
 
   /**
@@ -71,8 +74,9 @@ public class CJKAnalyzer extends Analyzer {
    *
    * @param stopWords stop word array
    */
-  public CJKAnalyzer(String... stopWords) {
+  public CJKAnalyzer(Version matchVersion, String... stopWords) {
     stopTable = StopFilter.makeStopSet(stopWords);
+    this.matchVersion = matchVersion;
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -86,7 +90,8 @@ public class CJKAnalyzer extends Analyzer {
    *    {@link StopFilter}
    */
   public final TokenStream tokenStream(String fieldName, Reader reader) {
-    return new StopFilter(false, new CJKTokenizer(reader), stopTable);
+    return new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                          new CJKTokenizer(reader), stopTable);
   }
   
   private class SavedStreams {
@@ -109,7 +114,8 @@ public class CJKAnalyzer extends Analyzer {
     if (streams == null) {
       streams = new SavedStreams();
       streams.source = new CJKTokenizer(reader);
-      streams.result = new StopFilter(false, streams.source, stopTable);
+      streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                      streams.source, stopTable);
       setPreviousTokenStream(streams);
     } else {
       streams.source.reset(reader);

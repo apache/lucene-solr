@@ -30,13 +30,14 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 public class TestNearSpansOrdered extends LuceneTestCase {
   protected IndexSearcher searcher;
 
   public static final String FIELD = "field";
   public static final QueryParser qp =
-    new QueryParser(FIELD, new WhitespaceAnalyzer());
+    new QueryParser(Version.LUCENE_CURRENT, FIELD, new WhitespaceAnalyzer());
 
   public void tearDown() throws Exception {
     super.tearDown();

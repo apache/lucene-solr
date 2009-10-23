@@ -26,6 +26,7 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
@@ -87,7 +88,7 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
   private void checkQuery(String queryStr) throws IOException, ParseException {
     // check result hit ranking
     if(verbose) System.out.println("Query: " + queryStr);
-      QueryParser queryParser = new QueryParser(FIELD_NAME, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
+      QueryParser queryParser = new QueryParser(Version.LUCENE_CURRENT, FIELD_NAME, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
     Query query = queryParser.parse(queryStr);
     ScoreDoc[] multiSearcherHits = multiSearcher.search(query, null, 1000).scoreDocs;
     ScoreDoc[] singleSearcherHits = singleSearcher.search(query, null, 1000).scoreDocs;

@@ -45,6 +45,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 public abstract class AbstractTestCase extends TestCase {
 
@@ -78,8 +79,8 @@ public abstract class AbstractTestCase extends TestCase {
   protected void setUp() throws Exception {
     analyzerW = new WhitespaceAnalyzer();
     analyzerB = new BigramAnalyzer();
-    paW = new QueryParser( F, analyzerW );
-    paB = new QueryParser( F, analyzerB );
+    paW = new QueryParser(Version.LUCENE_CURRENT,  F, analyzerW );
+    paB = new QueryParser(Version.LUCENE_CURRENT,  F, analyzerB );
     dir = new RAMDirectory();
   }
   

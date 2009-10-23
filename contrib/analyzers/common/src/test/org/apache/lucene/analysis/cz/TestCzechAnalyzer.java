@@ -25,6 +25,7 @@ import java.io.InputStream;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.Version;
 
 /**
  * Test the CzechAnalyzer
@@ -37,11 +38,11 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
   File customStopFile = new File(dataDir, "org/apache/lucene/analysis/cz/customStopWordFile.txt");
   
   public void testStopWord() throws Exception {
-    assertAnalyzesTo(new CzechAnalyzer(), "Pokud mluvime o volnem", new String[] { "mluvime", "volnem" });
+    assertAnalyzesTo(new CzechAnalyzer(Version.LUCENE_CURRENT), "Pokud mluvime o volnem", new String[] { "mluvime", "volnem" });
   }
     
   public void testReusableTokenStream() throws Exception {
-    Analyzer analyzer = new CzechAnalyzer();
+    Analyzer analyzer = new CzechAnalyzer(Version.LUCENE_CURRENT);
     assertAnalyzesToReuse(analyzer, "Pokud mluvime o volnem", new String[] { "mluvime", "volnem" });
     assertAnalyzesToReuse(analyzer, "Česká Republika", new String[] { "česká", "republika" });
   }
@@ -61,7 +62,7 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
    * this would cause a NPE when it is time to create the StopFilter.
    */
   public void testInvalidStopWordFile() throws Exception {
-    CzechAnalyzer cz = new CzechAnalyzer();
+    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_CURRENT);
     cz.loadStopWords(new UnreliableInputStream(), "UTF-8");
     assertAnalyzesTo(cz, "Pokud mluvime o volnem",
         new String[] { "pokud", "mluvime", "o", "volnem" });
@@ -72,7 +73,7 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
    * when using reusable token streams.
    */
   public void testStopWordFileReuse() throws Exception {
-    CzechAnalyzer cz = new CzechAnalyzer();
+    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_CURRENT);
     assertAnalyzesToReuse(cz, "Česká Republika", 
       new String[] { "česká", "republika" });
     

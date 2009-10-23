@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +43,17 @@ import java.util.Set;
  * A default set of stopwords is used unless an alternative list is specified, but the
  * exclusion list is empty by default.
  * </p>
+ *
+ * <a name="version"/>
+ * <p>You must specify the required {@link Version}
+ * compatibility when creating FrenchAnalyzer:
+ * <ul>
+ *   <li> As of 2.9, StopFilter preserves position
+ *        increments
+ * </ul>
+ *
+ * <p><b>NOTE</b>: This class uses the same {@link Version}
+ * dependent settings as {@link StandardAnalyzer}.</p>
  */
 public final class FrenchAnalyzer extends Analyzer {
 
@@ -82,26 +94,31 @@ public final class FrenchAnalyzer extends Analyzer {
    */
   private Set excltable = new HashSet();
 
+  private final Version matchVersion;
+
   /**
    * Builds an analyzer with the default stop words ({@link #FRENCH_STOP_WORDS}).
    */
-  public FrenchAnalyzer() {
+  public FrenchAnalyzer(Version matchVersion) {
     stoptable = StopFilter.makeStopSet(FRENCH_STOP_WORDS);
+    this.matchVersion = matchVersion;
   }
 
   /**
    * Builds an analyzer with the given stop words.
    */
-  public FrenchAnalyzer(String... stopwords) {
+  public FrenchAnalyzer(Version matchVersion, String... stopwords) {
     stoptable = StopFilter.makeStopSet(stopwords);
+    this.matchVersion = matchVersion;
   }
 
   /**
    * Builds an analyzer with the given stop words.
    * @throws IOException
    */
-  public FrenchAnalyzer(File stopwords) throws IOException {
+  public FrenchAnalyzer(Version matchVersion, File stopwords) throws IOException {
     stoptable = new HashSet(WordlistLoader.getWordSet(stopwords));
+    this.matchVersion = matchVersion;
   }
 
   /**
@@ -138,9 +155,10 @@ public final class FrenchAnalyzer extends Analyzer {
    *         {@link FrenchStemFilter} and {@link LowerCaseFilter}
    */
   public final TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new StandardTokenizer(reader);
+    TokenStream result = new StandardTokenizer(matchVersion, reader);
     result = new StandardFilter(result);
-    result = new StopFilter(false, result, stoptable);
+    result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                            result, stoptable);
     result = new FrenchStemFilter(result, excltable);
     // Convert to lowercase after stemming!
     result = new LowerCaseFilter(result);
@@ -165,9 +183,10 @@ public final class FrenchAnalyzer extends Analyzer {
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();
     if (streams == null) {
       streams = new SavedStreams();
-      streams.source = new StandardTokenizer(reader);
+      streams.source = new StandardTokenizer(matchVersion, reader);
       streams.result = new StandardFilter(streams.source);
-      streams.result = new StopFilter(false, streams.result, stoptable);
+      streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                      streams.result, stoptable);
       streams.result = new FrenchStemFilter(streams.result, excltable);
       // Convert to lowercase after stemming!
       streams.result = new LowerCaseFilter(streams.result);
