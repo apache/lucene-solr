@@ -84,7 +84,7 @@ import org.w3c.dom.NodeList;
  */
 public class HighlighterTest extends BaseTokenStreamTestCase implements Formatter {
   // TODO: change to CURRENT, does not work because posIncr:
-  static final Version TEST_VERSION = Version.LUCENE_24;
+  static final Version TEST_VERSION = Version.LUCENE_29;
 
   private IndexReader reader;
   static final String FIELD_NAME = "contents";
@@ -100,7 +100,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       "This piece of text refers to Kennedy at the beginning then has a longer piece of text that is very long in the middle and finally ends with another reference to Kennedy",
       "JFK has been shot", "John Kennedy has been shot",
       "This text has a typo in referring to Keneddy",
-      "wordx wordy wordz wordx wordy wordx worda wordb wordy wordc", "y z x y z a b" };
+      "wordx wordy wordz wordx wordy wordx worda wordb wordy wordc", "y z x y z a b", "lets is a the lets is a the lets is a the lets" };
 
   /**
    * Constructor for HighlightExtractorTest.
@@ -256,6 +256,51 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
         numHighlights == 3);
+    
+    numHighlights = 0;
+    doSearching("\"This piece of text refers to Kennedy\"");
+
+    maxNumFragmentsRequired = 2;
+
+    scorer = new QueryScorer(query, FIELD_NAME);
+    highlighter = new Highlighter(this, scorer);
+    
+    for (int i = 0; i < hits.totalHits; i++) {
+      String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+
+      highlighter.setTextFragmenter(new SimpleFragmenter(40));
+
+      String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
+          "...");
+      System.out.println("\t" + result);
+    }
+
+    assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
+        numHighlights == 4);
+    
+    numHighlights = 0;
+    doSearching("\"lets is a the lets is a the lets is a the lets\"");
+
+    maxNumFragmentsRequired = 2;
+
+    scorer = new QueryScorer(query, FIELD_NAME);
+    highlighter = new Highlighter(this, scorer);
+    
+    for (int i = 0; i < hits.totalHits; i++) {
+      String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+
+      highlighter.setTextFragmenter(new SimpleFragmenter(40));
+
+      String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
+          "...");
+      System.out.println("\t" + result);
+    }
+
+    assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
+        numHighlights == 4);
+    
   }
 
   public void testSimpleQueryScorerPhraseHighlighting2() throws Exception {
@@ -1531,6 +1576,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
   public void doSearching(String queryString) throws Exception {
     QueryParser parser = new QueryParser(FIELD_NAME, analyzer);
+    parser.setEnablePositionIncrements(true);
     parser.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     query = parser.parse(queryString);
     doSearching(query);
