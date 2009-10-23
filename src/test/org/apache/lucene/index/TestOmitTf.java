@@ -36,22 +36,31 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.search.Explanation.IDFExplanation;
 
 
 public class TestOmitTf extends LuceneTestCase {
     
   public static class SimpleSimilarity extends Similarity {
-    public float lengthNorm(String field, int numTerms) { return 1.0f; }
-    public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
-    
-    public float tf(float freq) { return freq; }
-    
-    public float sloppyFreq(int distance) { return 2.0f; }
-    public float idf(Collection terms, Searcher searcher) { return 1.0f; }
-    public float idf(int docFreq, int numDocs) { return 1.0f; }
-    public float coord(int overlap, int maxOverlap) { return 1.0f; }
+    @Override public float lengthNorm(String field, int numTerms) { return 1.0f; }
+    @Override public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
+    @Override public float tf(float freq) { return freq; }
+    @Override public float sloppyFreq(int distance) { return 2.0f; }
+    @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
+    @Override public float coord(int overlap, int maxOverlap) { return 1.0f; }
+    @Override public IDFExplanation idfExplain(Collection<Term> terms, Searcher searcher) throws IOException {
+      return new IDFExplanation() {
+        @Override
+        public float getIdf() {
+          return 1.0f;
+        }
+        @Override
+        public String explain() {
+          return "Inexplicable";
+        }
+      };
+    }
   }
-
 
   // Tests whether the DocumentWriter correctly enable the
   // omitTermFreqAndPositions bit in the FieldInfo

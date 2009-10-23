@@ -29,6 +29,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.search.Explanation.IDFExplanation;
 
 /** Similarity unit test.
  *
@@ -41,13 +42,24 @@ public class TestSimilarity extends LuceneTestCase {
   }
   
   public static class SimpleSimilarity extends Similarity {
-    public float lengthNorm(String field, int numTerms) { return 1.0f; }
-    public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
-    public float tf(float freq) { return freq; }
-    public float sloppyFreq(int distance) { return 2.0f; }
-    public float idf(Collection terms, Searcher searcher) { return 1.0f; }
-    public float idf(int docFreq, int numDocs) { return 1.0f; }
-    public float coord(int overlap, int maxOverlap) { return 1.0f; }
+    @Override public float lengthNorm(String field, int numTerms) { return 1.0f; }
+    @Override public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
+    @Override public float tf(float freq) { return freq; }
+    @Override public float sloppyFreq(int distance) { return 2.0f; }
+    @Override public float idf(int docFreq, int numDocs) { return 1.0f; }
+    @Override public float coord(int overlap, int maxOverlap) { return 1.0f; }
+    @Override public IDFExplanation idfExplain(Collection<Term> terms, Searcher searcher) throws IOException {
+      return new IDFExplanation() {
+        @Override
+        public float getIdf() {
+          return 1.0f;
+        }
+        @Override
+        public String explain() {
+          return "Inexplicable";
+        }
+      };
+    }
   }
 
   public void testSimilarity() throws Exception {
@@ -80,7 +92,7 @@ public class TestSimilarity extends LuceneTestCase {
            this.scorer = scorer; 
          }
          public final void collect(int doc) throws IOException {
-           assertTrue(scorer.score() == 1.0f);
+           assertEquals(1.0f, scorer.score());
          }
          public void setNextReader(IndexReader reader, int docBase) {}
          public boolean acceptsDocsOutOfOrder() {
@@ -100,7 +112,7 @@ public class TestSimilarity extends LuceneTestCase {
          }
          public final void collect(int doc) throws IOException {
            //System.out.println("Doc=" + doc + " score=" + score);
-           assertTrue(scorer.score() == (float)doc+base+1);
+           assertEquals((float)doc+base+1, scorer.score());
          }
          public void setNextReader(IndexReader reader, int docBase) {
            base = docBase;
@@ -114,8 +126,7 @@ public class TestSimilarity extends LuceneTestCase {
     pq.add(a);
     pq.add(c);
     //System.out.println(pq.toString("field"));
-    searcher.search
-      (pq,
+    searcher.search(pq,
        new Collector() {
         private Scorer scorer;
         public void setScorer(Scorer scorer) throws IOException {
@@ -123,7 +134,7 @@ public class TestSimilarity extends LuceneTestCase {
         }
          public final void collect(int doc) throws IOException {
            //System.out.println("Doc=" + doc + " score=" + score);
-           assertTrue(scorer.score() == 1.0f);
+           assertEquals(1.0f, scorer.score());
          }
          public void setNextReader(IndexReader reader, int docBase) {}
          public boolean acceptsDocsOutOfOrder() {
@@ -140,7 +151,7 @@ public class TestSimilarity extends LuceneTestCase {
         }
          public final void collect(int doc) throws IOException {
            //System.out.println("Doc=" + doc + " score=" + score);
-           assertTrue(scorer.score() == 2.0f);
+           assertEquals(2.0f, scorer.score());
          }
          public void setNextReader(IndexReader reader, int docBase) {}
          public boolean acceptsDocsOutOfOrder() {

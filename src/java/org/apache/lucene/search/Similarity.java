@@ -704,27 +704,6 @@ public abstract class Similarity implements Serializable {
    */
   public abstract float tf(float freq);
 
-  /** Computes a score factor for a simple term.
-   *
-   * <p>The default implementation is:<pre>
-   *   return idf(searcher.docFreq(term), searcher.maxDoc());
-   * </pre>
-   *
-   * Note that {@link Searcher#maxDoc()} is used instead of
-   * {@link org.apache.lucene.index.IndexReader#numDocs() IndexReader#numDocs()} because also 
-   * {@link Searcher#docFreq(Term)} is used, and when the latter 
-   * is inaccurate, so is {@link Searcher#maxDoc()}, and in the same direction.
-   * In addition, {@link Searcher#maxDoc()} is more efficient to compute
-   *
-   * @param term the term in question
-   * @param searcher the document collection being searched
-   * @return a score factor for the term
-   * @deprecated see {@link #idfExplain(Term, Searcher)}
-   */
-  public float idf(Term term, Searcher searcher) throws IOException {
-    return idf(searcher.docFreq(term), searcher.maxDoc());
-  }
-  
   /**
    * Computes a score factor for a simple term and returns an explanation
    * for that score factor.
@@ -749,19 +728,6 @@ public abstract class Similarity implements Serializable {
    * @throws IOException
    */
   public IDFExplanation idfExplain(final Term term, final Searcher searcher) throws IOException {
-    if(supportedMethods.overridesTermIDF) {
-      final float idf = idf(term, searcher);
-      return new IDFExplanation() {
-        @Override
-        public float getIdf() {
-          return idf;
-        }
-        @Override
-        public String explain() {
-          return "Inexplicable";
-        }
-      };
-    }
     final int df = searcher.docFreq(term);
     final int max = searcher.maxDoc();
     final float idf = idf(df, max);
@@ -777,25 +743,6 @@ public abstract class Similarity implements Serializable {
         }};
    }
 
-  /** Computes a score factor for a phrase.
-   *
-   * <p>The default implementation sums the {@link #idf(Term,Searcher)} factor
-   * for each term in the phrase.
-   *
-   * @param terms the terms in the phrase
-   * @param searcher the document collection being searched
-   * @return idf score factor
-   * @deprecated see {@link #idfExplain(Collection, Searcher)}
-   */
-  public float idf(Collection<Term> terms, Searcher searcher) throws IOException {
-    float idf = 0.0f;
-
-    for(final Term term: terms) {
-      idf += idf(term, searcher);
-    }
-    return idf;
-  }
-  
   /**
    * Computes a score factor for a phrase.
    * 
@@ -811,19 +758,6 @@ public abstract class Similarity implements Serializable {
    * @throws IOException
    */
   public IDFExplanation idfExplain(Collection<Term> terms, Searcher searcher) throws IOException {
-    if(supportedMethods.overridesCollectionIDF) {
-      final float idf = idf(terms, searcher);
-      return new IDFExplanation() {
-        @Override
-        public float getIdf() {
-          return idf;
-        }
-        @Override
-        public String explain() {
-          return "Inexplicable";
-        }
-      };
-    }
     final int max = searcher.maxDoc();
     float idf = 0.0f;
     final StringBuilder exp = new StringBuilder();
@@ -877,31 +811,6 @@ public abstract class Similarity implements Serializable {
    */
   public abstract float coord(int overlap, int maxOverlap);
 
-
-
-
-  /**
-   * Calculate a scoring factor based on the data in the payload.  Overriding implementations
-   * are responsible for interpreting what is in the payload.  Lucene makes no assumptions about
-   * what is in the byte array.
-   * <p>
-   * The default implementation returns 1.
-   *
-   * @param fieldName The fieldName of the term this payload belongs to
-   * @param payload The payload byte array to be scored
-   * @param offset The offset into the payload array
-   * @param length The length in the array
-   * @return An implementation dependent float to be used as a scoring factor
-   *
-   * @deprecated See {@link #scorePayload(int, String, int, int, byte[], int, int)}
-   */
-  //TODO: When removing this, set the default value below to return 1.
-  public float scorePayload(String fieldName, byte [] payload, int offset, int length)
-  {
-    //Do nothing
-    return 1;
-  }
-
   /**
    * Calculate a scoring factor based on the data in the payload.  Overriding implementations
    * are responsible for interpreting what is in the payload.  Lucene makes no assumptions about
@@ -921,46 +830,7 @@ public abstract class Similarity implements Serializable {
    */
   public float scorePayload(int docId, String fieldName, int start, int end, byte [] payload, int offset, int length)
   {
-    //TODO: When removing the deprecated scorePayload above, set this to return 1
-    return scorePayload(fieldName, payload, offset, length);
-  }
-  
-  /** @deprecated Remove this when old API is removed! */
-  private final MethodSupport supportedMethods = getSupportedMethods(this.getClass());
-  
-    /** @deprecated Remove this when old API is removed! */
-  private static final class MethodSupport implements Serializable {
-    final boolean overridesCollectionIDF, overridesTermIDF;
-
-    MethodSupport(Class<? extends Similarity> clazz) {
-      overridesCollectionIDF = isMethodOverridden(clazz, "idf", Collection.class, Searcher.class);
-      overridesTermIDF = isMethodOverridden(clazz, "idf", Term.class, Searcher.class);
-    }
-    
-    private static boolean isMethodOverridden(Class<?> clazz, String name, Class... params) {
-      try {
-        return clazz.getMethod(name, params).getDeclaringClass() != Similarity.class;
-      } catch (NoSuchMethodException e) {
-        // should not happen
-        throw new RuntimeException(e);
-      }
-    }
-  }
-  
-  /** @deprecated Remove this when old API is removed! */
-  private static final IdentityHashMap<Class<? extends Similarity>,MethodSupport> knownMethodSupport
-    = new IdentityHashMap<Class<? extends Similarity>,MethodSupport>();
-  
-  /** @deprecated Remove this when old API is removed! */
-  private static MethodSupport getSupportedMethods(Class<? extends Similarity> clazz) {
-    MethodSupport supportedMethods;
-    synchronized(knownMethodSupport) {
-      supportedMethods = (MethodSupport) knownMethodSupport.get(clazz);
-      if (supportedMethods == null) {
-        knownMethodSupport.put(clazz, supportedMethods = new MethodSupport(clazz));
-      }
-    }
-    return supportedMethods;
+    return 1;
   }
   
   /** The Similarity implementation used by default. 

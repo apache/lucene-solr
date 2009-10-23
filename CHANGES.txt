@@ -92,6 +92,8 @@ API Changes
   is no backwards-break, only a change of the super class. Parameter
   was deprecated and will be removed in a later version.
   (DM Smith, Uwe Schindler)
+  
+ * LUCENE-1973: Remove deprecated Similarity methods. (Uwe Schindler)
 
 Bug fixes
 

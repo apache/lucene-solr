@@ -41,6 +41,7 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.search.Explanation.IDFExplanation;
 
 
 public class TestPayloadNearQuery extends LuceneTestCase {
@@ -223,35 +224,45 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   // must be static for weight serialization tests 
   static class BoostingSimilarity extends DefaultSimilarity {
 
-    // TODO: Remove warning after API has been finalized
-    public float scorePayload(int docId, String fieldName, int start, int end, byte[] payload, int offset, int length) {
+    @Override public float scorePayload(int docId, String fieldName, int start, int end, byte[] payload, int offset, int length) {
       //we know it is size 4 here, so ignore the offset/length
       return payload[0];
     }
+    
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    public float lengthNorm(String fieldName, int numTerms) {
-      return 1;
+    @Override public float lengthNorm(String fieldName, int numTerms) {
+      return 1.0f;
     }
 
-    public float queryNorm(float sumOfSquaredWeights) {
-      return 1;
+    @Override public float queryNorm(float sumOfSquaredWeights) {
+      return 1.0f;
     }
 
-    public float sloppyFreq(int distance) {
-      return 1;
+    @Override public float sloppyFreq(int distance) {
+      return 1.0f;
     }
 
-    public float coord(int overlap, int maxOverlap) {
-      return 1;
+    @Override public float coord(int overlap, int maxOverlap) {
+      return 1.0f;
     }
-    public float tf(float freq) {
-      return 1;
+    @Override public float tf(float freq) {
+      return 1.0f;
     }
+    
     // idf used for phrase queries
-    public float idf(Collection terms, Searcher searcher) {
-      return 1;
+    @Override public IDFExplanation idfExplain(Collection<Term> terms, Searcher searcher) throws IOException {
+      return new IDFExplanation() {
+        @Override
+        public float getIdf() {
+          return 1.0f;
+        }
+        @Override
+        public String explain() {
+          return "Inexplicable";
+        }
+      };
     }
   }
 }

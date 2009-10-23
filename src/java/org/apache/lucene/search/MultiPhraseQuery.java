@@ -134,9 +134,10 @@ public class MultiPhraseQuery extends Query {
       this.similarity = getSimilarity(searcher);
 
       // compute idf
+      final int maxDoc = searcher.maxDoc();
       for(final Term[] terms: termArrays) {
         for (Term term: terms) {
-          idf += getSimilarity(searcher).idf(term, searcher);
+          idf += this.similarity.idf(searcher.docFreq(term), maxDoc);
         }
       }
     }
