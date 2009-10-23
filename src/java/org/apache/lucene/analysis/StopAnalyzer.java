@@ -58,7 +58,7 @@ public final class StopAnalyzer extends Analyzer {
   }
   
   /** Builds an analyzer which removes words in
-   *  {@link #ENGLISH_STOP_WORDS}.
+   *  {@link #ENGLISH_STOP_WORDS_SET}.
    * @param matchVersion See <a href="#version">above</a>
    */
   public StopAnalyzer(Version matchVersion) {
