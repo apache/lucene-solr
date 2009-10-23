@@ -43,6 +43,9 @@ Bug fixes
 
  * LUCENE-1359: French analyzer did not support null field names.
    (Andrew Lynch via Robert Muir)
+   
+ * LUCENE-2003: Highlighter doesn't respect position increments other than 1 with 
+   PhraseQuerys. (Uwe Schindler, Mark Miller)
 
 New features
 
