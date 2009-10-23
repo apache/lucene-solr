@@ -62,7 +62,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
    * @param analyzer used to find terms in the query text.
    */
   public AnalyzingQueryParser(Version matchVersion, String field, Analyzer analyzer) {
-    super(machVersion, field, analyzer);
+    super(matchVersion, field, analyzer);
   }
 
   /**
