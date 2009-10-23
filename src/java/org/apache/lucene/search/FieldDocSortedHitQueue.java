@@ -100,80 +100,28 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
     int c = 0;
     for (int i=0; i<n && c==0; ++i) {
       final int type = fields[i].getType();
-      switch (type) {
-        case SortField.SCORE:{
-          float r1 = ((Float)docA.fields[i]).floatValue();
-          float r2 = ((Float)docB.fields[i]).floatValue();
-          if (r1 > r2) c = -1;
-          if (r1 < r2) c = 1;
-          break;
+      if (type == SortField.STRING) {
+        final String s1 = (String) docA.fields[i];
+        final String s2 = (String) docB.fields[i];
+        // null values need to be sorted first, because of how FieldCache.getStringIndex()
+        // works - in that routine, any documents without a value in the given field are
+        // put first.  If both are null, the next SortField is used
+        if (s1 == null) c = (s2==null) ? 0 : -1;
+        else if (s2 == null) c = 1;  // 
+        else if (fields[i].getLocale() == null) {
+          c = s1.compareTo(s2);
+        } else {
+          c = collators[i].compare(s1, s2);
         }
-        case SortField.DOC:
-        case SortField.INT:{
-          int i1 = ((Integer)docA.fields[i]).intValue();
-          int i2 = ((Integer)docB.fields[i]).intValue();
-          if (i1 < i2) c = -1;
-          if (i1 > i2) c = 1;
-          break;
-        }
-        case SortField.LONG:{
-          long l1 = ((Long)docA.fields[i]).longValue();
-          long l2 = ((Long)docB.fields[i]).longValue();
-          if (l1 < l2) c = -1;
-          if (l1 > l2) c = 1;
-          break;
-        }
-        case SortField.STRING:{
-          String s1 = (String) docA.fields[i];
-          String s2 = (String) docB.fields[i];
-          // null values need to be sorted first, because of how FieldCache.getStringIndex()
-          // works - in that routine, any documents without a value in the given field are
-          // put first.  If both are null, the next SortField is used
-          if (s1 == null) c = (s2==null) ? 0 : -1;
-          else if (s2 == null) c = 1;  // 
-          else if (fields[i].getLocale() == null) {
-            c = s1.compareTo(s2);
-          } else {
-            c = collators[i].compare (s1, s2);
-          }
-          break;
-        }
-        case SortField.FLOAT:{
-          float f1 = ((Float)docA.fields[i]).floatValue();
-          float f2 = ((Float)docB.fields[i]).floatValue();
-          if (f1 < f2) c = -1;
-          if (f1 > f2) c = 1;
-          break;
-        }
-        case SortField.DOUBLE:{
-          double d1 = ((Double)docA.fields[i]).doubleValue();
-          double d2 = ((Double)docB.fields[i]).doubleValue();
-          if (d1 < d2) c = -1;
-          if (d1 > d2) c = 1;
-          break;
-        }
-        case SortField.BYTE:{
-          int i1 = ((Byte)docA.fields[i]).byteValue();
-          int i2 = ((Byte)docB.fields[i]).byteValue();
-          if (i1 < i2) c = -1;
-          if (i1 > i2) c = 1;
-          break;
-        }
-        case SortField.SHORT:{
-          int i1 = ((Short)docA.fields[i]).shortValue();
-          int i2 = ((Short)docB.fields[i]).shortValue();
-          if (i1 < i2) c = -1;
-          if (i1 > i2) c = 1;
-          break;
-        }
-        case SortField.CUSTOM:{
-          c = ((Comparable) docA.fields[i]).compareTo((Comparable) docB.fields[i]);
-          break;
-        }
-        default:{
-          throw new RuntimeException ("invalid SortField type: "+type);
+      } else {
+        // the casts are a no-ops, its only there to make the
+        // compiler happy because of unbounded generics:
+        c = ((Comparable) docA.fields[i]).compareTo((Comparable) docB.fields[i]);
+        if (type == SortField.SCORE) {
+          c = -c;
         }
       }
+      // reverse sort
       if (fields[i].getReverse()) {
         c = -c;
       }
