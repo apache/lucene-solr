@@ -191,8 +191,7 @@ public class QueryParser {
   /** Constructs a query parser.
    *  @param f  the default field for query terms.
    *  @param a   used to find terms in the query text.
-   *  @deprecated Use {@link #QueryParser(String, Analyzer,
-   *  Version)} instead.
+   *  @deprecated Use {@link #QueryParser(Version, String, Analyzer)} instead
    */
   public QueryParser(String f, Analyzer a) {
     this(Version.LUCENE_24, f, a);
