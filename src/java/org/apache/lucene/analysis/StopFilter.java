@@ -25,6 +25,7 @@ import java.util.List;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.queryParser.QueryParser; // for javadoc
+import org.apache.lucene.util.Version;
 
 /**
  * Removes stop words from a token stream.
@@ -240,6 +241,21 @@ public final class StopFilter extends TokenFilter {
    */
   public static boolean getEnablePositionIncrementsDefault() {
     return ENABLE_POSITION_INCREMENTS_DEFAULT;
+  }
+
+  /**
+   * Returns version-dependent default for
+   * enablePositionIncrements.  Analyzers that embed
+   * StopFilter use this method when creating the
+   * StopFilter.  Prior to 2.9, this returns false.  On 2.9
+   * or later, it returns true.
+   */
+  public static boolean getEnablePositionIncrementsVersionDefault(Version matchVersion) {
+    if (matchVersion.onOrAfter(Version.LUCENE_29)) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   /**

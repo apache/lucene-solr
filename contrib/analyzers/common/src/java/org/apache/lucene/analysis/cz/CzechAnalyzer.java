@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.util.Version;
 
 import java.io.*;
 import java.util.HashSet;
@@ -37,6 +38,9 @@ import java.util.Set;
  * will not be indexed at all). 
  * A default set of stopwords is used unless an alternative list is specified.
  * </p>
+ *
+ * <p><b>NOTE</b>: This class uses the same {@link Version}
+ * dependent settings as {@link StandardAnalyzer}.</p>
  */
 public final class CzechAnalyzer extends Analyzer {
 
@@ -68,30 +72,68 @@ public final class CzechAnalyzer extends Analyzer {
 	 * Contains the stopwords used with the {@link StopFilter}.
 	 */
 	private Set stoptable;
+        private final Version matchVersion;
 
 	/**
 	 * Builds an analyzer with the default stop words ({@link #CZECH_STOP_WORDS}).
+         *
+         * @deprecated Use {@link #CzechAnalyzer(Version)} instead
 	 */
 	public CzechAnalyzer() {
-		stoptable = StopFilter.makeStopSet( CZECH_STOP_WORDS );
+          this(Version.LUCENE_23);
+	}
+	/**
+	 * Builds an analyzer with the default stop words ({@link #CZECH_STOP_WORDS}).
+	 */
+	public CzechAnalyzer(Version matchVersion) {
+          stoptable = StopFilter.makeStopSet( CZECH_STOP_WORDS );
+          this.matchVersion = matchVersion;
 	}
 
 	/**
 	 * Builds an analyzer with the given stop words.
+         *
+         * @deprecated Use {@link #CzechAnalyzer(Version, String[])} instead
 	 */
 	public CzechAnalyzer( String[] stopwords ) {
-		stoptable = StopFilter.makeStopSet( stopwords );
-	}
-
-	public CzechAnalyzer( HashSet stopwords ) {
-		stoptable = stopwords;
+          this(Version.LUCENE_23, stopwords);
 	}
 
 	/**
 	 * Builds an analyzer with the given stop words.
 	 */
+        public CzechAnalyzer(Version matchVersion, String[] stopwords) {
+          stoptable = StopFilter.makeStopSet( stopwords );
+          this.matchVersion = matchVersion;
+	}
+
+        /**
+         * @deprecated Use {@link #CzechAnalyzer(Version, HashSet)} instead
+         */
+	public CzechAnalyzer( HashSet stopwords ) {
+          this(Version.LUCENE_23, stopwords);
+	}
+
+        public CzechAnalyzer(Version matchVersion, HashSet stopwords) {
+          stoptable = stopwords;
+          this.matchVersion = matchVersion;
+	}
+
+	/**
+	 * Builds an analyzer with the given stop words.
+         *
+         * @deprecated Use {@link #CzechAnalyzer(Version, File)} instead
+	 */
 	public CzechAnalyzer( File stopwords ) throws IOException {
-		stoptable = WordlistLoader.getWordSet( stopwords );
+          this(Version.LUCENE_23, stopwords);
+	}
+
+	/**
+	 * Builds an analyzer with the given stop words.
+	 */
+        public CzechAnalyzer(Version matchVersion, File stopwords ) throws IOException {
+          stoptable = WordlistLoader.getWordSet( stopwords );
+          this.matchVersion = matchVersion;
 	}
 
     /**
@@ -135,10 +177,11 @@ public final class CzechAnalyzer extends Analyzer {
 	 * 			{@link StandardFilter}, {@link LowerCaseFilter}, and {@link StopFilter}
 	 */
 	public final TokenStream tokenStream( String fieldName, Reader reader ) {
-		TokenStream result = new StandardTokenizer( reader );
+                TokenStream result = new StandardTokenizer( matchVersion, reader );
 		result = new StandardFilter( result );
 		result = new LowerCaseFilter( result );
-		result = new StopFilter( result, stoptable );
+		result = new StopFilter( StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                         result, stoptable );
 		return result;
 	}
 	
@@ -159,10 +202,11 @@ public final class CzechAnalyzer extends Analyzer {
       SavedStreams streams = (SavedStreams) getPreviousTokenStream();
       if (streams == null) {
         streams = new SavedStreams();
-        streams.source = new StandardTokenizer(reader);
+        streams.source = new StandardTokenizer(matchVersion, reader);
         streams.result = new StandardFilter(streams.source);
         streams.result = new LowerCaseFilter(streams.result);
-        streams.result = new StopFilter(streams.result, stoptable);
+        streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                        streams.result, stoptable);
         setPreviousTokenStream(streams);
       } else {
         streams.source.reset(reader);

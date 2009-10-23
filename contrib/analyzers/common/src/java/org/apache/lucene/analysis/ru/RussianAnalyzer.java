@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Russian language. 
@@ -193,41 +194,60 @@ public final class RussianAnalyzer extends Analyzer
      * @deprecated Support for non-Unicode encodings will be removed in Lucene 3.0
      */
     private char[] charset;
+    private final Version matchVersion;
 
-
+    /** @deprecated Use {@link #RussianAnalyzer(Version)} instead */
     public RussianAnalyzer() {
+      this(Version.LUCENE_24);
+    }
+
+    public RussianAnalyzer(Version matchVersion) {
         charset = RussianCharsets.UnicodeRussian;
         stopSet = StopFilter.makeStopSet(
                     makeStopWords(RussianCharsets.UnicodeRussian));
+        this.matchVersion = matchVersion;
     }
 
     /**
      * Builds an analyzer.
-     * @deprecated Use {@link #RussianAnalyzer()} instead.
+     * @deprecated Use {@link #RussianAnalyzer(Version)} instead.
      */
     public RussianAnalyzer(char[] charset)
     {
         this.charset = charset;
         stopSet = StopFilter.makeStopSet(makeStopWords(charset));
+        matchVersion = Version.LUCENE_24;
     }
 
     /**
      * Builds an analyzer with the given stop words.
-     * @deprecated Use {@link #RussianAnalyzer(String[])} instead.
+     * @deprecated Use {@link #RussianAnalyzer(Version,String[])} instead.
      */
     public RussianAnalyzer(char[] charset, String[] stopwords)
     {
         this.charset = charset;
         stopSet = StopFilter.makeStopSet(stopwords);
+        matchVersion = Version.LUCENE_24;
     }
     
     /**
      * Builds an analyzer with the given stop words.
+     *
+     * @deprecated Use {@link #RussianAnalyzer(Version,String[])} instead.
      */
     public RussianAnalyzer(String[] stopwords)
     {
+      this(Version.LUCENE_24, stopwords);
+    }
+
+    /**
+     * Builds an analyzer with the given stop words.
+     */
+    public RussianAnalyzer(Version matchVersion, String[] stopwords)
+    {
     	this.charset = RussianCharsets.UnicodeRussian;
     	stopSet = StopFilter.makeStopSet(stopwords);
+        this.matchVersion = matchVersion;
     }
 
     /** Takes russian stop words and translates them to a String array, using
@@ -254,22 +274,36 @@ public final class RussianAnalyzer extends Analyzer
     /**
      * Builds an analyzer with the given stop words.
      * TODO: create a Set version of this ctor
-     * @deprecated Use {@link #RussianAnalyzer(Map)} instead.
+     *
+     * @deprecated Use {@link #RussianAnalyzer(Version, Map)} instead.
      */
     public RussianAnalyzer(char[] charset, Map stopwords)
     {
         this.charset = charset;
         stopSet = new HashSet(stopwords.keySet());
+        matchVersion = Version.LUCENE_24;
     }
     
     /**
      * Builds an analyzer with the given stop words.
      * TODO: create a Set version of this ctor
+     *
+     * @deprecated Use {@link #RussianAnalyzer(Version, Map)} instead.
      */
     public RussianAnalyzer(Map stopwords)
     {
+      this(Version.LUCENE_24, stopwords);
+    }
+
+    /**
+     * Builds an analyzer with the given stop words.
+     * TODO: create a Set version of this ctor
+     */
+    public RussianAnalyzer(Version matchVersion, Map stopwords)
+    {
     	charset = RussianCharsets.UnicodeRussian;
     	stopSet = new HashSet(stopwords.keySet());
+        this.matchVersion = matchVersion;
     }
 
     /**
@@ -285,7 +319,8 @@ public final class RussianAnalyzer extends Analyzer
     {
         TokenStream result = new RussianLetterTokenizer(reader, charset);
         result = new RussianLowerCaseFilter(result, charset);
-        result = new StopFilter(result, stopSet);
+        result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                result, stopSet);
         result = new RussianStemFilter(result, charset);
         return result;
     }
@@ -311,7 +346,8 @@ public final class RussianAnalyzer extends Analyzer
       streams = new SavedStreams();
       streams.source = new RussianLetterTokenizer(reader, charset);
       streams.result = new RussianLowerCaseFilter(streams.source, charset);
-      streams.result = new StopFilter(streams.result, stopSet);
+      streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                      streams.result, stopSet);
       streams.result = new RussianStemFilter(streams.result, charset);
       setPreviousTokenStream(streams);
     } else {

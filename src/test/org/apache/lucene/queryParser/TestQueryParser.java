@@ -47,6 +47,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.FuzzyQuery;
@@ -60,7 +61,10 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LocalizedTestCase;
+import org.apache.lucene.util.Version;
 
 /**
  * Tests QueryParser.
@@ -1012,6 +1016,51 @@ public class TestQueryParser extends LocalizedTestCase {
   public void tearDown() throws Exception {
     super.tearDown();
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
+  }
+
+  // LUCENE-2002: make sure defaults for StandardAnalyzer's
+  // enableStopPositionIncr & QueryParser's enablePosIncr
+  // "match"
+  public void testPositionIncrements() throws Exception {
+    Directory dir = new MockRAMDirectory();
+    Analyzer a = new StandardAnalyzer(Version.LUCENE_CURRENT);
+    IndexWriter w = new IndexWriter(dir, a, IndexWriter.MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new Field("f", "the wizard of ozzy", Field.Store.NO, Field.Index.ANALYZED));
+    w.addDocument(doc);
+    IndexReader r = w.getReader();
+    w.close();
+    IndexSearcher s = new IndexSearcher(r);
+    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "f", a);
+    Query q = qp.parse("\"wizard of ozzy\"");
+    assertEquals(1, s.search(q, 1).totalHits);
+    r.close();
+    dir.close();
+  }
+
+  // LUCENE-2002: when we run javacc to regen QueryParser,
+  // we also run a replaceregexp step to fix 2 of the public
+  // ctors (change them to protected):
+  //
+  //   protected QueryParser(CharStream stream)
+  //
+  //   protected QueryParser(QueryParserTokenManager tm)
+  //
+  // This test is here as a safety, in case that ant step
+  // doesn't work for some reason.
+  public void testProtectedCtors() throws Exception {
+    try {
+      QueryParser.class.getConstructor(new Class[] {CharStream.class});
+      fail("please switch public QueryParser(CharStream) to be protected");
+    } catch (NoSuchMethodException nsme) {
+      // expected
+    }
+    try {
+      QueryParser.class.getConstructor(new Class[] {QueryParserTokenManager.class});
+      fail("please switch public QueryParser(QueryParserTokenManager) to be protected");
+    } catch (NoSuchMethodException nsme) {
+      // expected
+    }
   }
 
 }

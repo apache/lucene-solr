@@ -42,6 +42,11 @@ API Changes
    settings in StandardAnalyzer to be compatible with the coming
    Lucene 3.0.  (Uwe Schindler)
    
+ * LUCENE-2002: Add required Version matchVersion argument when
+   constructing QueryParser or MultiFieldQueryParser and, default (as
+   of 2.9) enablePositionIncrements to true to match
+   StandardAnalyzer's 2.9 default (Uwe Schindler, Mike McCandless)
+
 Documentation
 
  * LUCENE-1955: Fix Hits deprecation notice to point users in right

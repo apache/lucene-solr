@@ -5,6 +5,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.Version;
 
 import java.io.StringReader;
 
@@ -108,15 +109,24 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testDomainNames() throws Exception {
-    // Don't reuse a because we alter its state (setReplaceInvalidAcronym)
-    StandardAnalyzer a2 = new StandardAnalyzer();
+    // Don't reuse a because we alter its state
+    // (setReplaceInvalidAcronym)
+
+    // Current lucene should not show the bug
+    StandardAnalyzer a2 = new StandardAnalyzer(Version.LUCENE_CURRENT);
     // domain names
     assertAnalyzesTo(a2, "www.nutch.org", new String[]{"www.nutch.org"});
     //Notice the trailing .  See https://issues.apache.org/jira/browse/LUCENE-1068.
     // the following should be recognized as HOST:
     assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
-    a2.setReplaceInvalidAcronym(false);
+
+    // 2.3 should show the bug
+    a2 = new StandardAnalyzer(Version.LUCENE_23);
     assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "wwwnutchorg" }, new String[] { "<ACRONYM>" });
+
+    // 2.4 should not show the bug
+    a2 = new StandardAnalyzer(Version.LUCENE_24);
+    assertAnalyzesTo(a2, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
   }
 
   public void testEMailAddresses() throws Exception {

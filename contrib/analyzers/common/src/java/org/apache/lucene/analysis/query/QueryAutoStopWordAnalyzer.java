@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -48,15 +49,27 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
   //The default maximum percentage (40%) of index documents which
   //can contain a term, after which the term is considered to be a stop word.
   public static final float defaultMaxDocFreqPercent = 0.4f;
+  private final Version matchVersion;
+
+  /**
+   * Initializes this analyzer with the Analyzer object that actually produces the tokens
+   *
+   * @param delegate The choice of {@link Analyzer} that is used to produce the token stream which needs filtering
+   * @deprecated Use {@link #QueryAutoStopWordAnalyzer(Version, Analyzer)} instead
+   */
+  public QueryAutoStopWordAnalyzer(Analyzer delegate) {
+    this(Version.LUCENE_24, delegate);
+  }
 
   /**
    * Initializes this analyzer with the Analyzer object that actually produces the tokens
    *
    * @param delegate The choice of {@link Analyzer} that is used to produce the token stream which needs filtering
    */
-  public QueryAutoStopWordAnalyzer(Analyzer delegate) {
+  public QueryAutoStopWordAnalyzer(Version matchVersion, Analyzer delegate) {
     this.delegate = delegate;
     setOverridesTokenStreamMethod(QueryAutoStopWordAnalyzer.class);
+    this.matchVersion = matchVersion;
   }
 
   /**
@@ -175,7 +188,8 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
     }
     HashSet stopWords = (HashSet) stopWordsPerField.get(fieldName);
     if (stopWords != null) {
-      result = new StopFilter(result, stopWords);
+      result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                              result, stopWords);
     }
     return result;
   }
@@ -217,7 +231,8 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
       /* if there are any stopwords for the field, save the stopfilter */
       HashSet stopWords = (HashSet) stopWordsPerField.get(fieldName);
       if (stopWords != null)
-        streams.withStopFilter = new StopFilter(streams.wrapped, stopWords);
+        streams.withStopFilter = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                                streams.wrapped, stopWords);
       else
         streams.withStopFilter = streams.wrapped;
 
@@ -238,7 +253,8 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
         streams.wrapped = result;
         HashSet stopWords = (HashSet) stopWordsPerField.get(fieldName);
         if (stopWords != null)
-          streams.withStopFilter = new StopFilter(streams.wrapped, stopWords);
+          streams.withStopFilter = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                                  streams.wrapped, stopWords);
         else
           streams.withStopFilter = streams.wrapped;
       }

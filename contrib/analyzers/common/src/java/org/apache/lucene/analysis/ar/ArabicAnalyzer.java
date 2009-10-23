@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
+import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Arabic. 
@@ -69,10 +70,22 @@ public final class ArabicAnalyzer extends Analyzer {
    */
   public static final String STOPWORDS_COMMENT = "#";
 
+  private final Version matchVersion;
+
+  /**
+   * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
+   *
+   * @deprecated Use {@link #ArabicAnalyzer(Version)} instead
+   */
+  public ArabicAnalyzer() {
+    this(Version.LUCENE_24);
+  }
+
   /**
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
    */
-  public ArabicAnalyzer() {
+  public ArabicAnalyzer(Version matchVersion) {
+    this.matchVersion = matchVersion;
     try {
       InputStream stream = ArabicAnalyzer.class.getResourceAsStream(DEFAULT_STOPWORD_FILE);
       InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
@@ -87,23 +100,53 @@ public final class ArabicAnalyzer extends Analyzer {
 
   /**
    * Builds an analyzer with the given stop words.
+   *
+   * @deprecated Use {@link #ArabicAnalyzer(Version, String[])} instead
    */
   public ArabicAnalyzer( String[] stopwords ) {
-    stoptable = StopFilter.makeStopSet( stopwords );
+    this(Version.LUCENE_24, stopwords);
   }
 
   /**
    * Builds an analyzer with the given stop words.
    */
+  public ArabicAnalyzer( Version matchVersion, String[] stopwords ) {
+    stoptable = StopFilter.makeStopSet( stopwords );
+    this.matchVersion = matchVersion;
+  }
+
+  /**
+   * Builds an analyzer with the given stop words.
+   *
+   * @deprecated Use {@link #ArabicAnalyzer(Version, Hashtable)} instead
+   */
   public ArabicAnalyzer( Hashtable stopwords ) {
+    this(Version.LUCENE_24, stopwords);
+  }
+
+  /**
+   * Builds an analyzer with the given stop words.
+   */
+  public ArabicAnalyzer( Version matchVersion, Hashtable stopwords ) {
     stoptable = new HashSet(stopwords.keySet());
+    this.matchVersion = matchVersion;
+  }
+
+  /**
+   * Builds an analyzer with the given stop words.  Lines can be commented out using {@link #STOPWORDS_COMMENT}
+   *
+   * @deprecated Use {@link #ArabicAnalyzer(Version, File)} instead
+   */
+  public ArabicAnalyzer( File stopwords ) throws IOException {
+    this(Version.LUCENE_24, stopwords);
   }
 
   /**
    * Builds an analyzer with the given stop words.  Lines can be commented out using {@link #STOPWORDS_COMMENT}
    */
-  public ArabicAnalyzer( File stopwords ) throws IOException {
+  public ArabicAnalyzer( Version matchVersion, File stopwords ) throws IOException {
     stoptable = WordlistLoader.getWordSet( stopwords, STOPWORDS_COMMENT);
+    this.matchVersion = matchVersion;
   }
 
 
@@ -117,7 +160,8 @@ public final class ArabicAnalyzer extends Analyzer {
   public final TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new ArabicLetterTokenizer( reader );
     result = new LowerCaseFilter(result);
-    result = new StopFilter( result, stoptable );
+    result = new StopFilter( StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                             result, stoptable );
     result = new ArabicNormalizationFilter( result );
     result = new ArabicStemFilter( result );
 
@@ -144,7 +188,8 @@ public final class ArabicAnalyzer extends Analyzer {
       streams = new SavedStreams();
       streams.source = new ArabicLetterTokenizer(reader);
       streams.result = new LowerCaseFilter(streams.source);
-      streams.result = new StopFilter(streams.result, stoptable);
+      streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                      streams.result, stoptable);
       streams.result = new ArabicNormalizationFilter(streams.result);
       streams.result = new ArabicStemFilter(streams.result);
       setPreviousTokenStream(streams);

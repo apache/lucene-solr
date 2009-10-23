@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.cn.smart.SentenceTokenizer;
 import org.apache.lucene.analysis.cn.smart.WordTokenFilter;
+import org.apache.lucene.util.Version;
 
 /**
  * <p>
@@ -59,12 +60,39 @@ import org.apache.lucene.analysis.cn.smart.WordTokenFilter;
 public class SmartChineseAnalyzer extends Analyzer {
 
   private final Set stopWords;
+  private final Version matchVersion;
+
+  /**
+   * Create a new SmartChineseAnalyzer, using the default stopword list.
+   *
+   * @deprecated Use {@link #SmartChineseAnalyzer(Version)} instead
+   */
+  public SmartChineseAnalyzer() {
+    this(Version.LUCENE_24, true);
+  }
 
   /**
    * Create a new SmartChineseAnalyzer, using the default stopword list.
    */
-  public SmartChineseAnalyzer() {
-    this(true);
+  public SmartChineseAnalyzer(Version matchVersion) {
+    this(matchVersion, true);
+  }
+
+  /**
+   * <p>
+   * Create a new SmartChineseAnalyzer, optionally using the default stopword list.
+   * </p>
+   * <p>
+   * The included default stopword list is simply a list of punctuation.
+   * If you do not use this list, punctuation will not be removed from the text!
+   * </p>
+   * 
+   * @param useDefaultStopWords true to use the default stopword list.
+   *
+   * @deprecated Use {@link #SmartChineseAnalyzer(Version, boolean)} instead
+   */
+  public SmartChineseAnalyzer(boolean useDefaultStopWords) {
+    this(Version.LUCENE_24, useDefaultStopWords);
   }
 
   /**
@@ -78,7 +106,8 @@ public class SmartChineseAnalyzer extends Analyzer {
    * 
    * @param useDefaultStopWords true to use the default stopword list.
    */
-  public SmartChineseAnalyzer(boolean useDefaultStopWords) {
+  public SmartChineseAnalyzer(Version matchVersion, boolean useDefaultStopWords) {
+    this.matchVersion = matchVersion;
     if (useDefaultStopWords) {
       try {
       InputStream stream = this.getClass().getResourceAsStream("stopwords.txt");
@@ -101,9 +130,25 @@ public class SmartChineseAnalyzer extends Analyzer {
    * Note: the set should include punctuation, unless you want to index punctuation!
    * </p>
    * @param stopWords {@link Set} of stopwords to use.
+   *
+   * @deprecated Use {@link #SmartChineseAnalyzer(Version, Set)} instead
    */
   public SmartChineseAnalyzer(Set stopWords) {
+    this(Version.LUCENE_24, stopWords);
+  }
+
+  /**
+   * <p>
+   * Create a new SmartChineseAnalyzer, using the provided {@link Set} of stopwords.
+   * </p>
+   * <p>
+   * Note: the set should include punctuation, unless you want to index punctuation!
+   * </p>
+   * @param stopWords {@link Set} of stopwords to use.
+   */
+  public SmartChineseAnalyzer(Version matchVersion, Set stopWords) {
     this.stopWords = stopWords;
+    this.matchVersion = matchVersion;
   }
 
   public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -114,7 +159,8 @@ public class SmartChineseAnalyzer extends Analyzer {
     // The porter stemming is too strict, this is not a bug, this is a feature:)
     result = new PorterStemFilter(result);
     if (stopWords != null) {
-      result = new StopFilter(result, stopWords, false);
+      result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                              result, stopWords, false);
     }
     return result;
   }
@@ -134,7 +180,8 @@ public class SmartChineseAnalyzer extends Analyzer {
       streams.filteredTokenStream = new WordTokenFilter(streams.tokenStream);
       streams.filteredTokenStream = new PorterStemFilter(streams.filteredTokenStream);
       if (stopWords != null) {
-        streams.filteredTokenStream = new StopFilter(streams.filteredTokenStream, stopWords, false);
+        streams.filteredTokenStream = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                                     streams.filteredTokenStream, stopWords, false);
       }
     } else {
       streams.tokenStream.reset(reader);

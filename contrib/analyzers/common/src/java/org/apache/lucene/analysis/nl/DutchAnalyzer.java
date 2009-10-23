@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.util.Version;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,6 +43,9 @@ import java.util.Map;
  * A default set of stopwords is used unless an alternative list is specified, but the
  * exclusion list is empty by default.
  * </p>
+ *
+ * <p><b>NOTE</b>: This class uses the same {@link Version}
+ * dependent settings as {@link StandardAnalyzer}.</p>
  */
 public class DutchAnalyzer extends Analyzer {
   /**
@@ -73,40 +77,63 @@ public class DutchAnalyzer extends Analyzer {
   private Set excltable = new HashSet();
 
   private Map stemdict = new HashMap();
+  private final Version matchVersion;
 
+  /**
+   * Builds an analyzer with the default stop words ({@link #DUTCH_STOP_WORDS}) 
+   * and a few default entries for the stem exclusion table.
+   * 
+   * @deprecated Use {@link #DutchAnalyzer(Version)} instead
+   */
+  public DutchAnalyzer() {
+    this(Version.LUCENE_23);
+  }
 
   /**
    * Builds an analyzer with the default stop words ({@link #DUTCH_STOP_WORDS}) 
    * and a few default entries for the stem exclusion table.
    * 
    */
-  public DutchAnalyzer() {
+  public DutchAnalyzer(Version matchVersion) {
     setOverridesTokenStreamMethod(DutchAnalyzer.class);
     stoptable = StopFilter.makeStopSet(DUTCH_STOP_WORDS);
     stemdict.put("fiets", "fiets"); //otherwise fiet
     stemdict.put("bromfiets", "bromfiets"); //otherwise bromfiet
     stemdict.put("ei", "eier");
     stemdict.put("kind", "kinder");
+    this.matchVersion = matchVersion;
   }
 
   /**
    * Builds an analyzer with the given stop words.
    *
    * @param stopwords
+   * @deprecated Use {@link #DutchAnalyzer(Version, String[])} instead
    */
   public DutchAnalyzer(String[] stopwords) {
+    this(Version.LUCENE_23, stopwords);
+  }
+
+  /**
+   * Builds an analyzer with the given stop words.
+   *
+   * @param matchVersion
+   * @param stopwords
+   */
+  public DutchAnalyzer(Version matchVersion, String[] stopwords) {
     setOverridesTokenStreamMethod(DutchAnalyzer.class);
     stoptable = StopFilter.makeStopSet(stopwords);
+    this.matchVersion = matchVersion;
   }
 
   /**
    * Builds an analyzer with the given stop words.
    *
    * @param stopwords
+   * @deprecated Use {@link #DutchAnalyzer(Version, HashSet)} instead
    */
   public DutchAnalyzer(HashSet stopwords) {
-    setOverridesTokenStreamMethod(DutchAnalyzer.class);
-    stoptable = stopwords;
+    this(Version.LUCENE_23, stopwords);
   }
 
   /**
@@ -114,7 +141,28 @@ public class DutchAnalyzer extends Analyzer {
    *
    * @param stopwords
    */
+  public DutchAnalyzer(Version matchVersion, HashSet stopwords) {
+    setOverridesTokenStreamMethod(DutchAnalyzer.class);
+    stoptable = stopwords;
+    this.matchVersion = matchVersion;
+  }
+
+  /**
+   * Builds an analyzer with the given stop words.
+   *
+   * @param stopwords
+   * @deprecated Use {@link #DutchAnalyzer(Version, File)} instead
+   */
   public DutchAnalyzer(File stopwords) {
+    this(Version.LUCENE_23, stopwords);
+  }
+
+  /**
+   * Builds an analyzer with the given stop words.
+   *
+   * @param stopwords
+   */
+  public DutchAnalyzer(Version matchVersion, File stopwords) {
     setOverridesTokenStreamMethod(DutchAnalyzer.class);
     try {
       stoptable = org.apache.lucene.analysis.WordlistLoader.getWordSet(stopwords);
@@ -122,6 +170,7 @@ public class DutchAnalyzer extends Analyzer {
       // TODO: throw IOException
       throw new RuntimeException(e);
     }
+    this.matchVersion = matchVersion;
   }
 
   /**
@@ -179,9 +228,10 @@ public class DutchAnalyzer extends Analyzer {
    *   and {@link DutchStemFilter}
    */
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new StandardTokenizer(reader);
+    TokenStream result = new StandardTokenizer(matchVersion, reader);
     result = new StandardFilter(result);
-    result = new StopFilter(result, stoptable);
+    result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                            result, stoptable);
     result = new DutchStemFilter(result, excltable, stemdict);
     return result;
   }
@@ -211,9 +261,10 @@ public class DutchAnalyzer extends Analyzer {
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();
     if (streams == null) {
       streams = new SavedStreams();
-      streams.source = new StandardTokenizer(reader);
+      streams.source = new StandardTokenizer(matchVersion, reader);
       streams.result = new StandardFilter(streams.source);
-      streams.result = new StopFilter(streams.result, stoptable);
+      streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                      streams.result, stoptable);
       streams.result = new DutchStemFilter(streams.result, excltable, stemdict);
       setPreviousTokenStream(streams);
     } else {

@@ -23,7 +23,18 @@ import java.io.Reader;
 import java.util.Arrays;
 import java.util.Set;
 
-/** Filters {@link LetterTokenizer} with {@link LowerCaseFilter} and {@link StopFilter}. */
+import org.apache.lucene.util.Version;
+
+/** Filters {@link LetterTokenizer} with {@link
+ * LowerCaseFilter} and {@link StopFilter}.
+ *
+ * <a name="version"/>
+ * <p>You must specify the required {@link Version}
+ * compatibility when creating StopAnalyzer:
+ * <ul>
+ *   <li> As of 2.9, position increments are preserved
+ * </ul>
+*/
 
 public final class StopAnalyzer extends Analyzer {
   private final Set/*<String>*/ stopWords;
@@ -61,7 +72,7 @@ public final class StopAnalyzer extends Analyzer {
   
   /** Builds an analyzer which removes words in
    * ENGLISH_STOP_WORDS.
-   * @deprecated Use {@link #StopAnalyzer(boolean)} instead */
+   * @deprecated Use {@link #StopAnalyzer(Version)} instead */
   public StopAnalyzer() {
     stopWords = ENGLISH_STOP_WORDS_SET;
     useDefaultStopPositionIncrement = true;
@@ -69,9 +80,18 @@ public final class StopAnalyzer extends Analyzer {
   }
 
   /** Builds an analyzer which removes words in
+   * ENGLISH_STOP_WORDS.*/
+  public StopAnalyzer(Version matchVersion) {
+    stopWords = ENGLISH_STOP_WORDS_SET;
+    useDefaultStopPositionIncrement = false;
+    enablePositionIncrements = StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion);
+  }
+
+  /** Builds an analyzer which removes words in
    *  ENGLISH_STOP_WORDS.
    * @param enablePositionIncrements See {@link
-   * StopFilter#setEnablePositionIncrements} */
+   * StopFilter#setEnablePositionIncrements} 
+   * @deprecated Use {@link #StopAnalyzer(Version)} instead */
   public StopAnalyzer(boolean enablePositionIncrements) {
     stopWords = ENGLISH_STOP_WORDS_SET;
     this.enablePositionIncrements = enablePositionIncrements;
@@ -79,17 +99,26 @@ public final class StopAnalyzer extends Analyzer {
   }
 
   /** Builds an analyzer with the stop words from the given set.
-   * @deprecated Use {@link #StopAnalyzer(Set, boolean)} instead */
+   * @deprecated Use {@link #StopAnalyzer(Version, Set)} instead */
   public StopAnalyzer(Set stopWords) {
     this.stopWords = stopWords;
     useDefaultStopPositionIncrement = true;
     enablePositionIncrements = false;
   }
 
+  /** Builds an analyzer with the stop words from the given
+   * set. */
+  public StopAnalyzer(Version matchVersion, Set stopWords) {
+    this.stopWords = stopWords;
+    useDefaultStopPositionIncrement = false;
+    enablePositionIncrements = StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion);
+  }
+
   /** Builds an analyzer with the stop words from the given set.
    * @param stopWords Set of stop words
    * @param enablePositionIncrements See {@link
-   * StopFilter#setEnablePositionIncrements} */
+   * StopFilter#setEnablePositionIncrements}
+   * @deprecated Use {@link #StopAnalyzer(Version, Set)} instead */
   public StopAnalyzer(Set stopWords, boolean enablePositionIncrements) {
     this.stopWords = stopWords;
     this.enablePositionIncrements = enablePositionIncrements;
@@ -97,7 +126,7 @@ public final class StopAnalyzer extends Analyzer {
   }
 
   /** Builds an analyzer which removes words in the provided array.
-   * @deprecated Use {@link #StopAnalyzer(Set, boolean)} instead */
+   * @deprecated Use {@link #StopAnalyzer(Version, Set)} instead */
   public StopAnalyzer(String[] stopWords) {
     this.stopWords = StopFilter.makeStopSet(stopWords);
     useDefaultStopPositionIncrement = true;
@@ -108,7 +137,7 @@ public final class StopAnalyzer extends Analyzer {
    * @param stopWords Array of stop words
    * @param enablePositionIncrements See {@link
    * StopFilter#setEnablePositionIncrements} 
-   * @deprecated Use {@link #StopAnalyzer(Set, boolean)} instead*/
+   * @deprecated Use {@link #StopAnalyzer(Version, Set)} instead*/
   public StopAnalyzer(String[] stopWords, boolean enablePositionIncrements) {
     this.stopWords = StopFilter.makeStopSet(stopWords);
     this.enablePositionIncrements = enablePositionIncrements;
@@ -117,7 +146,7 @@ public final class StopAnalyzer extends Analyzer {
   
   /** Builds an analyzer with the stop words from the given file.
    * @see WordlistLoader#getWordSet(File)
-   * @deprecated Use {@link #StopAnalyzer(File, boolean)} instead */
+   * @deprecated Use {@link #StopAnalyzer(Version, File)} instead */
   public StopAnalyzer(File stopwordsFile) throws IOException {
     stopWords = WordlistLoader.getWordSet(stopwordsFile);
     useDefaultStopPositionIncrement = true;
@@ -128,16 +157,27 @@ public final class StopAnalyzer extends Analyzer {
    * @see WordlistLoader#getWordSet(File)
    * @param stopwordsFile File to load stop words from
    * @param enablePositionIncrements See {@link
-   * StopFilter#setEnablePositionIncrements} */
+   * StopFilter#setEnablePositionIncrements}
+   * @deprecated Use {@link #StopAnalyzer(Version, File)} instead */
   public StopAnalyzer(File stopwordsFile, boolean enablePositionIncrements) throws IOException {
     stopWords = WordlistLoader.getWordSet(stopwordsFile);
     this.enablePositionIncrements = enablePositionIncrements;
     useDefaultStopPositionIncrement = false;
   }
 
+  /** Builds an analyzer with the stop words from the given file.
+   * @see WordlistLoader#getWordSet(File)
+   * @param matchVersion See <a href="#version">above</a>
+   * @param stopwordsFile File to load stop words from */
+  public StopAnalyzer(Version matchVersion, File stopwordsFile) throws IOException {
+    stopWords = WordlistLoader.getWordSet(stopwordsFile);
+    this.enablePositionIncrements = StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion);
+    useDefaultStopPositionIncrement = false;
+  }
+
   /** Builds an analyzer with the stop words from the given reader.
    * @see WordlistLoader#getWordSet(Reader)
-   * @deprecated Use {@link #StopAnalyzer(Reader, boolean)} instead
+   * @deprecated Use {@link #StopAnalyzer(Version, Reader)} instead
    */
   public StopAnalyzer(Reader stopwords) throws IOException {
     stopWords = WordlistLoader.getWordSet(stopwords);
@@ -149,10 +189,21 @@ public final class StopAnalyzer extends Analyzer {
    * @see WordlistLoader#getWordSet(Reader)
    * @param stopwords Reader to load stop words from
    * @param enablePositionIncrements See {@link
-   * StopFilter#setEnablePositionIncrements} */
+   * StopFilter#setEnablePositionIncrements}
+   * @deprecated Use {@link #StopAnalyzer(Version, Reader)} instead */
   public StopAnalyzer(Reader stopwords, boolean enablePositionIncrements) throws IOException {
     stopWords = WordlistLoader.getWordSet(stopwords);
     this.enablePositionIncrements = enablePositionIncrements;
+    useDefaultStopPositionIncrement = false;
+  }
+
+  /** Builds an analyzer with the stop words from the given reader.
+   * @see WordlistLoader#getWordSet(Reader)
+   * @param matchVersion See <a href="#version">above</a>
+   * @param stopwords Reader to load stop words from */
+  public StopAnalyzer(Version matchVersion, Reader stopwords) throws IOException {
+    stopWords = WordlistLoader.getWordSet(stopwords);
+    this.enablePositionIncrements = StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion);
     useDefaultStopPositionIncrement = false;
   }
 

@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.ar.ArabicLetterTokenizer;
 import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
+import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Persian.
@@ -66,11 +67,24 @@ public final class PersianAnalyzer extends Analyzer {
    */
   public static final String STOPWORDS_COMMENT = "#";
 
+  private final Version matchVersion;
+
+  /**
+   * Builds an analyzer with the default stop words:
+   * {@link #DEFAULT_STOPWORD_FILE}.
+   *
+   * @deprecated Use {@link #PersianAnalyzer(Version)} instead
+   */
+  public PersianAnalyzer() {
+    this(Version.LUCENE_24);
+  }
+
   /**
    * Builds an analyzer with the default stop words:
    * {@link #DEFAULT_STOPWORD_FILE}.
    */
-  public PersianAnalyzer() {
+  public PersianAnalyzer(Version matchVersion) {
+    this.matchVersion = matchVersion;
     try {
       InputStream stream = PersianAnalyzer.class
           .getResourceAsStream(DEFAULT_STOPWORD_FILE);
@@ -86,24 +100,55 @@ public final class PersianAnalyzer extends Analyzer {
 
   /**
    * Builds an analyzer with the given stop words.
+   *
+   * @deprecated Use {@link #PersianAnalyzer(Version, String[])} instead
    */
   public PersianAnalyzer(String[] stopwords) {
-    stoptable = StopFilter.makeStopSet(stopwords);
+    this(Version.LUCENE_24, stopwords);
   }
 
   /**
    * Builds an analyzer with the given stop words.
    */
+  public PersianAnalyzer(Version matchVersion, String[] stopwords) {
+    stoptable = StopFilter.makeStopSet(stopwords);
+    this.matchVersion = matchVersion;
+  }
+
+  /**
+   * Builds an analyzer with the given stop words.
+   *
+   * @deprecated Use {@link #PersianAnalyzer(Version, Hashtable)} instead
+   */
   public PersianAnalyzer(Hashtable stopwords) {
+    this(Version.LUCENE_24, stopwords);
+  }
+
+  /**
+   * Builds an analyzer with the given stop words.
+   */
+  public PersianAnalyzer(Version matchVersion, Hashtable stopwords) {
     stoptable = new HashSet(stopwords.keySet());
+    this.matchVersion = matchVersion;
+  }
+
+  /**
+   * Builds an analyzer with the given stop words. Lines can be commented out
+   * using {@link #STOPWORDS_COMMENT}
+   *
+   * @deprecated Use {@link #PersianAnalyzer(Version, File)} instead
+   */
+  public PersianAnalyzer(File stopwords) throws IOException {
+    this(Version.LUCENE_24, stopwords);
   }
 
   /**
    * Builds an analyzer with the given stop words. Lines can be commented out
    * using {@link #STOPWORDS_COMMENT}
    */
-  public PersianAnalyzer(File stopwords) throws IOException {
+  public PersianAnalyzer(Version matchVersion, File stopwords) throws IOException {
     stoptable = WordlistLoader.getWordSet(stopwords, STOPWORDS_COMMENT);
+    this.matchVersion = matchVersion;
   }
 
   /**
@@ -125,7 +170,8 @@ public final class PersianAnalyzer extends Analyzer {
      * the order here is important: the stopword list is normalized with the
      * above!
      */
-    result = new StopFilter(result, stoptable);
+    result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                            result, stoptable);
 
     return result;
   }
@@ -158,7 +204,8 @@ public final class PersianAnalyzer extends Analyzer {
        * the order here is important: the stopword list is normalized with the
        * above!
        */
-      streams.result = new StopFilter(streams.result, stoptable);
+      streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                      streams.result, stoptable);
       setPreviousTokenStream(streams);
     } else {
       streams.source.reset(reader);

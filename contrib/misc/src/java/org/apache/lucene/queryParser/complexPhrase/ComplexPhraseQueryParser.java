@@ -38,6 +38,7 @@ import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.util.Version;
 
 /**
  * QueryParser which permits complex phrase query syntax eg "(john jon
@@ -67,8 +68,15 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
   private ComplexPhraseQuery currentPhraseQuery = null;
 
+  /** @deprecated Use {@link
+  #ComplexPhraseQueryParser{Version, String, Analyzer)}
+  instead.*/
   public ComplexPhraseQueryParser(String f, Analyzer a) {
-    super(f, a);
+    this(Version.LUCENE_24, f, a);
+  }
+
+  public ComplexPhraseQueryParser(Version matchVersion, String f, Analyzer a) {
+    super(matchVersion, f, a);
   }
 
   protected Query getFieldQuery(String field, String queryText, int slop) {

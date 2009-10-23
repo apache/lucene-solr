@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for German language. 
@@ -44,6 +45,9 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
  * exclusion list is empty by default.
  * </p>
  * 
+ * <p><b>NOTE</b>: This class uses the same {@link Version}
+ * dependent settings as {@link StandardAnalyzer}.</p>
+ *
  * @version $Id$
  */
 public class GermanAnalyzer extends Analyzer {
@@ -76,37 +80,80 @@ public class GermanAnalyzer extends Analyzer {
    */
   private Set exclusionSet = new HashSet();
 
+  private final Version matchVersion;
+
+  /**
+   * Builds an analyzer with the default stop words:
+   * {@link #GERMAN_STOP_WORDS}.
+   *
+   * @deprecated Use {@link #GermanAnalyzer(Version)} instead
+   */
+  public GermanAnalyzer() {
+    this(Version.LUCENE_23);
+  }
+
   /**
    * Builds an analyzer with the default stop words:
    * {@link #GERMAN_STOP_WORDS}.
    */
-  public GermanAnalyzer() {
+  public GermanAnalyzer(Version matchVersion) {
     stopSet = StopFilter.makeStopSet(GERMAN_STOP_WORDS);
     setOverridesTokenStreamMethod(GermanAnalyzer.class);
+    this.matchVersion = matchVersion;
   }
 
   /**
    * Builds an analyzer with the given stop words.
+   *
+   * @deprecated Use {@link #GermanAnalyzer(Version, String[])} instead
    */
   public GermanAnalyzer(String[] stopwords) {
+    this(Version.LUCENE_23, stopwords);
+  }
+
+  /**
+   * Builds an analyzer with the given stop words.
+   */
+  public GermanAnalyzer(Version matchVersion, String[] stopwords) {
     stopSet = StopFilter.makeStopSet(stopwords);
     setOverridesTokenStreamMethod(GermanAnalyzer.class);
+    this.matchVersion = matchVersion;
   }
 
   /**
    * Builds an analyzer with the given stop words.
+   *
+   * @deprecated Use {@link #GermanAnalyzer(Version, Map)} instead
    */
   public GermanAnalyzer(Map stopwords) {
-    stopSet = new HashSet(stopwords.keySet());
-    setOverridesTokenStreamMethod(GermanAnalyzer.class);
+    this(Version.LUCENE_23, stopwords);
   }
 
   /**
    * Builds an analyzer with the given stop words.
    */
+  public GermanAnalyzer(Version matchVersion, Map stopwords) {
+    stopSet = new HashSet(stopwords.keySet());
+    setOverridesTokenStreamMethod(GermanAnalyzer.class);
+    this.matchVersion = matchVersion;
+  }
+
+  /**
+   * Builds an analyzer with the given stop words.
+   *
+   * @deprecated Use {@link #GermanAnalyzer(Version, File)} instead
+   */
   public GermanAnalyzer(File stopwords) throws IOException {
+    this(Version.LUCENE_23, stopwords);
+  }
+
+  /**
+   * Builds an analyzer with the given stop words.
+   */
+  public GermanAnalyzer(Version matchVersion, File stopwords) throws IOException {
     stopSet = WordlistLoader.getWordSet(stopwords);
     setOverridesTokenStreamMethod(GermanAnalyzer.class);
+    this.matchVersion = matchVersion;
   }
 
   /**
@@ -141,10 +188,11 @@ public class GermanAnalyzer extends Analyzer {
    *         {@link GermanStemFilter}
    */
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new StandardTokenizer(reader);
+    TokenStream result = new StandardTokenizer(matchVersion, reader);
     result = new StandardFilter(result);
     result = new LowerCaseFilter(result);
-    result = new StopFilter(result, stopSet);
+    result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                            result, stopSet);
     result = new GermanStemFilter(result, exclusionSet);
     return result;
   }
@@ -173,10 +221,11 @@ public class GermanAnalyzer extends Analyzer {
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();
     if (streams == null) {
       streams = new SavedStreams();
-      streams.source = new StandardTokenizer(reader);
+      streams.source = new StandardTokenizer(matchVersion, reader);
       streams.result = new StandardFilter(streams.source);
       streams.result = new LowerCaseFilter(streams.result);
-      streams.result = new StopFilter(streams.result, stopSet);
+      streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+                                      streams.result, stopSet);
       streams.result = new GermanStemFilter(streams.result, exclusionSet);
       setPreviousTokenStream(streams);
     } else {
