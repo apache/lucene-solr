@@ -94,8 +94,8 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
    * @param b ScoreDoc
    * @return <code>true</code> if document <code>a</code> should be sorted after document <code>b</code>.
    */
-  @SuppressWarnings("unchecked")
-  protected final boolean lessThan (final FieldDoc docA, final FieldDoc docB) {
+  @SuppressWarnings("unchecked") @Override
+  protected final boolean lessThan(final FieldDoc docA, final FieldDoc docB) {
     final int n = fields.length;
     int c = 0;
     for (int i=0; i<n && c==0; ++i) {
@@ -106,17 +106,17 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
         // null values need to be sorted first, because of how FieldCache.getStringIndex()
         // works - in that routine, any documents without a value in the given field are
         // put first.  If both are null, the next SortField is used
-        if (s1 == null) c = (s2==null) ? 0 : -1;
-        else if (s2 == null) c = 1;  // 
-        else if (fields[i].getLocale() == null) {
+        if (s1 == null) {
+          c = (s2 == null) ? 0 : -1;
+        } else if (s2 == null) {
+          c = 1;
+        } else if (fields[i].getLocale() == null) {
           c = s1.compareTo(s2);
         } else {
           c = collators[i].compare(s1, s2);
         }
       } else {
-        // the casts are a no-ops, its only there to make the
-        // compiler happy because of unbounded generics:
-        c = ((Comparable) docA.fields[i]).compareTo((Comparable) docB.fields[i]);
+        c = docA.fields[i].compareTo(docB.fields[i]);
         if (type == SortField.SCORE) {
           c = -c;
         }

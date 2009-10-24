@@ -45,7 +45,7 @@ public class FieldDoc extends ScoreDoc {
 	 * @see Sort
 	 * @see Searcher#search(Query,Filter,int,Sort)
 	 */
-	public Comparable<?>[] fields;
+	public Comparable[] fields;
 
 	/** Expert: Creates one of these objects with empty sort information. */
 	public FieldDoc (int doc, float score) {
@@ -53,7 +53,7 @@ public class FieldDoc extends ScoreDoc {
 	}
 
 	/** Expert: Creates one of these objects with the given sort information. */
-	public FieldDoc (int doc, float score, Comparable<?>[] fields) {
+	public FieldDoc (int doc, float score, Comparable[] fields) {
 		super (doc, score);
 		this.fields = fields;
 	}
