@@ -12,6 +12,9 @@ Changes in backwards compatibility policy
 
 Changes in runtime behavior
 
+* LUCENE-1677: Remove the system property to set SegmentReader class
+  implementation.  (Uwe Schindler)
+
 API Changes
 
 * LUCENE-1257, LUCENE-1984, LUCENE-1985, ...: Port to Java 1.5 [not yet finished].
