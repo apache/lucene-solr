@@ -20,7 +20,6 @@ package org.apache.lucene.benchmark.byTask;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
@@ -64,8 +63,8 @@ public class PerfRunData {
   private DocMaker docMaker;
   
   // we use separate (identical) instances for each "read" task type, so each can iterate the quries separately.
-  private HashMap readTaskQueryMaker;
-  private Class qmkrClass;
+  private HashMap<Class<? extends ReadTask>,QueryMaker> readTaskQueryMaker;
+  private Class<? extends QueryMaker> qmkrClass;
 
   private IndexReader indexReader;
   private IndexSearcher indexSearcher;
@@ -80,12 +79,12 @@ public class PerfRunData {
     analyzer = NewAnalyzerTask.createAnalyzer(config.get("analyzer",
         "org.apache.lucene.analysis.standard.StandardAnalyzer"));
     // doc maker
-    docMaker = (DocMaker) Class.forName(config.get("doc.maker",
-        "org.apache.lucene.benchmark.byTask.feeds.DocMaker")).newInstance();
+    docMaker = Class.forName(config.get("doc.maker",
+        "org.apache.lucene.benchmark.byTask.feeds.DocMaker")).asSubclass(DocMaker.class).newInstance();
     docMaker.setConfig(config);
     // query makers
-    readTaskQueryMaker = new HashMap();
-    qmkrClass = Class.forName(config.get("query.maker","org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker"));
+    readTaskQueryMaker = new HashMap<Class<? extends ReadTask>,QueryMaker>();
+    qmkrClass = Class.forName(config.get("query.maker","org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker")).asSubclass(QueryMaker.class);
 
     // index stuff
     reinit(false);
@@ -239,9 +238,8 @@ public class PerfRunData {
 
   public void resetInputs() throws IOException {
     docMaker.resetInputs();
-    Iterator it = readTaskQueryMaker.values().iterator();
-    while (it.hasNext()) {
-      ((QueryMaker) it.next()).resetInputs();
+    for (final QueryMaker queryMaker : readTaskQueryMaker.values()) {
+      queryMaker.resetInputs();
     }
   }
 
@@ -251,11 +249,11 @@ public class PerfRunData {
   synchronized public QueryMaker getQueryMaker(ReadTask readTask) {
     // mapping the query maker by task class allows extending/adding new search/read tasks
     // without needing to modify this class.
-    Class readTaskClass = readTask.getClass();
-    QueryMaker qm = (QueryMaker) readTaskQueryMaker.get(readTaskClass);
+    Class<? extends ReadTask> readTaskClass = readTask.getClass();
+    QueryMaker qm = readTaskQueryMaker.get(readTaskClass);
     if (qm == null) {
       try {
-        qm = (QueryMaker) qmkrClass.newInstance();
+        qm = qmkrClass.newInstance();
         qm.setConfig(config);
       } catch (Exception e) {
         throw new RuntimeException(e);

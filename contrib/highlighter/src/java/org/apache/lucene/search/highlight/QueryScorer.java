@@ -41,8 +41,8 @@ import org.apache.lucene.util.StringHelper;
  */
 public class QueryScorer implements Scorer {
   private float totalScore;
-  private Set foundTerms;
-  private Map fieldWeightedSpanTerms;
+  private Set<String> foundTerms;
+  private Map<String,WeightedSpanTerm> fieldWeightedSpanTerms;
   private float maxTermWeight;
   private int position = -1;
   private String defaultField;
@@ -103,10 +103,10 @@ public class QueryScorer implements Scorer {
    * @param weightedTerms an array of pre-created {@link WeightedSpanTerm}s
    */
   public QueryScorer(WeightedSpanTerm[] weightedTerms) {
-    this.fieldWeightedSpanTerms = new HashMap(weightedTerms.length);
+    this.fieldWeightedSpanTerms = new HashMap<String,WeightedSpanTerm>(weightedTerms.length);
 
     for (int i = 0; i < weightedTerms.length; i++) {
-      WeightedSpanTerm existingTerm = (WeightedSpanTerm) fieldWeightedSpanTerms.get(weightedTerms[i].term);
+      WeightedSpanTerm existingTerm = fieldWeightedSpanTerms.get(weightedTerms[i].term);
 
       if ((existingTerm == null) ||
             (existingTerm.weight < weightedTerms[i].weight)) {
@@ -149,7 +149,7 @@ public class QueryScorer implements Scorer {
 
     WeightedSpanTerm weightedSpanTerm;
 
-    if ((weightedSpanTerm = (WeightedSpanTerm) fieldWeightedSpanTerms.get(
+    if ((weightedSpanTerm = fieldWeightedSpanTerms.get(
               termText)) == null) {
       return 0;
     }
@@ -194,7 +194,7 @@ public class QueryScorer implements Scorer {
    * @return WeightedSpanTerm for token
    */
   public WeightedSpanTerm getWeightedSpanTerm(String token) {
-    return (WeightedSpanTerm) fieldWeightedSpanTerms.get(token);
+    return fieldWeightedSpanTerms.get(token);
   }
 
   /**
@@ -232,7 +232,7 @@ public class QueryScorer implements Scorer {
    * @see org.apache.lucene.search.highlight.Scorer#startFragment(org.apache.lucene.search.highlight.TextFragment)
    */
   public void startFragment(TextFragment newFragment) {
-    foundTerms = new HashSet();
+    foundTerms = new HashSet<String>();
     totalScore = 0;
   }
   

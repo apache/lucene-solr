@@ -184,7 +184,7 @@ public class Highlighter
 		TextFragment[] frag =getBestTextFragments(tokenStream,text, true,maxNumFragments);
 
 		//Get text
-		ArrayList fragTexts = new ArrayList();
+		ArrayList<String> fragTexts = new ArrayList<String>();
 		for (int i = 0; i < frag.length; i++)
 		{
 			if ((frag[i] != null) && (frag[i].getScore() > 0))
@@ -192,7 +192,7 @@ public class Highlighter
 				fragTexts.add(frag[i].toString());
 			}
 		}
-		return (String[]) fragTexts.toArray(new String[0]);
+		return fragTexts.toArray(new String[0]);
 	}
 
 
@@ -214,7 +214,7 @@ public class Highlighter
 		int maxNumFragments)
 		throws IOException, InvalidTokenOffsetsException
 	{
-		ArrayList docFrags = new ArrayList();
+		ArrayList<TextFragment> docFrags = new ArrayList<TextFragment>();
 		StringBuilder newText=new StringBuilder();
 		
 	    TermAttribute termAtt = tokenStream.addAttribute(TermAttribute.class);
@@ -320,9 +320,9 @@ public class Highlighter
 			currentFrag.textEndPos = newText.length();
 
 			//sort the most relevant sections of the text
-			for (Iterator i = docFrags.iterator(); i.hasNext();)
+			for (Iterator<TextFragment> i = docFrags.iterator(); i.hasNext();)
 			{
-				currentFrag = (TextFragment) i.next();
+				currentFrag = i.next();
 
 				//If you are running with a version of Lucene before 11th Sept 03
 				// you do not have PriorityQueue.insert() - so uncomment the code below
@@ -349,14 +349,14 @@ public class Highlighter
 			TextFragment frag[] = new TextFragment[fragQueue.size()];
 			for (int i = frag.length - 1; i >= 0; i--)
 			{
-				frag[i] = (TextFragment) fragQueue.pop();
+				frag[i] = fragQueue.pop();
 			}
 
 			//merge any contiguous fragments to improve readability
 			if(mergeContiguousFragments)
 			{
 				mergeContiguousFragments(frag);
-				ArrayList fragTexts = new ArrayList();
+				ArrayList<TextFragment> fragTexts = new ArrayList<TextFragment>();
 				for (int i = 0; i < frag.length; i++)
 				{
 					if ((frag[i] != null) && (frag[i].getScore() > 0))
@@ -364,7 +364,7 @@ public class Highlighter
 						fragTexts.add(frag[i]);
 					}
 				}
-				frag= (TextFragment[]) fragTexts.toArray(new TextFragment[0]);
+				frag= fragTexts.toArray(new TextFragment[0]);
 			}
 
 			return frag;
@@ -567,17 +567,15 @@ public class Highlighter
         this.encoder = encoder;
     }
 }
-class FragmentQueue extends PriorityQueue
+class FragmentQueue extends PriorityQueue<TextFragment>
 {
 	public FragmentQueue(int size)
 	{
 		initialize(size);
 	}
 
-	public final boolean lessThan(Object a, Object b)
+	public final boolean lessThan(TextFragment fragA, TextFragment fragB)
 	{
-		TextFragment fragA = (TextFragment) a;
-		TextFragment fragB = (TextFragment) b;
 		if (fragA.getScore() == fragB.getScore())
 			return fragA.fragNum > fragB.fragNum;
 		else

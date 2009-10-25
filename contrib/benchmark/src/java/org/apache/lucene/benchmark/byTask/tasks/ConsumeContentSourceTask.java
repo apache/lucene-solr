@@ -42,7 +42,7 @@ public class ConsumeContentSourceTask extends PerfTask {
       throw new IllegalArgumentException("content.source must be defined");
     }
     try {
-      source = (ContentSource) Class.forName(sourceClass).newInstance();
+      source = Class.forName(sourceClass).asSubclass(ContentSource.class).newInstance();
       source.setConfig(config);
       source.resetInputs();
     } catch (Exception e) {

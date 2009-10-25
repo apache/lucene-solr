@@ -35,11 +35,11 @@ import org.apache.lucene.search.Query;
 public class QueryTermScorer implements Scorer {
   
   TextFragment currentTextFragment = null;
-  HashSet uniqueTermsInFragment;
+  HashSet<String> uniqueTermsInFragment;
 
   float totalScore = 0;
   float maxTermWeight = 0;
-  private HashMap termsToFind;
+  private HashMap<String,WeightedTerm> termsToFind;
 
   private TermAttribute termAtt;
 
@@ -77,9 +77,9 @@ public class QueryTermScorer implements Scorer {
   }
 
   public QueryTermScorer(WeightedTerm[] weightedTerms) {
-    termsToFind = new HashMap();
+    termsToFind = new HashMap<String,WeightedTerm>();
     for (int i = 0; i < weightedTerms.length; i++) {
-      WeightedTerm existingTerm = (WeightedTerm) termsToFind
+      WeightedTerm existingTerm = termsToFind
           .get(weightedTerms[i].term);
       if ((existingTerm == null)
           || (existingTerm.weight < weightedTerms[i].weight)) {
@@ -107,7 +107,7 @@ public class QueryTermScorer implements Scorer {
    * .lucene.search.highlight.TextFragment)
    */
   public void startFragment(TextFragment newFragment) {
-    uniqueTermsInFragment = new HashSet();
+    uniqueTermsInFragment = new HashSet<String>();
     currentTextFragment = newFragment;
     totalScore = 0;
 
@@ -120,7 +120,7 @@ public class QueryTermScorer implements Scorer {
   public float getTokenScore() {
     String termText = termAtt.term();
 
-    WeightedTerm queryTerm = (WeightedTerm) termsToFind.get(termText);
+    WeightedTerm queryTerm = termsToFind.get(termText);
     if (queryTerm == null) {
       // not a query term - return
       return 0;

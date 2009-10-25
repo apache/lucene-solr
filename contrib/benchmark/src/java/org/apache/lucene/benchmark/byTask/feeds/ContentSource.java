@@ -57,7 +57,7 @@ public abstract class ContentSource {
   
   private static final int BZIP = 0;
   private static final int OTHER = 1;
-  private static final Map extensionToType = new HashMap();
+  private static final Map<String,Integer> extensionToType = new HashMap<String,Integer>();
   static {
     extensionToType.put(".bz2", Integer.valueOf(BZIP));
     extensionToType.put(".bzip", Integer.valueOf(BZIP));
@@ -93,7 +93,7 @@ public abstract class ContentSource {
    * a given directory. The collected {@link File} instances are stored in the
    * given <code>files</code>.
    */
-  protected final void collectFiles(File dir, ArrayList files) {
+  protected final void collectFiles(File dir, ArrayList<File> files) {
     if (!dir.canRead()) {
       return;
     }
@@ -125,7 +125,7 @@ public abstract class ContentSource {
     int idx = fileName.lastIndexOf('.');
     int type = OTHER;
     if (idx != -1) {
-      Integer typeInt = (Integer) extensionToType.get(fileName.substring(idx));
+      Integer typeInt = extensionToType.get(fileName.substring(idx));
       if (typeInt != null) {
         type = typeInt.intValue();
       }

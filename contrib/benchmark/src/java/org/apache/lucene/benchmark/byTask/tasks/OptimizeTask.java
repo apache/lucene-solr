@@ -41,7 +41,7 @@ public class OptimizeTask extends PerfTask {
 
   public void setParams(String params) {
     super.setParams(params);
-    maxNumSegments = (int) Double.valueOf(params).intValue();
+    maxNumSegments = Double.valueOf(params).intValue();
   }
 
   public boolean supportsParams() {

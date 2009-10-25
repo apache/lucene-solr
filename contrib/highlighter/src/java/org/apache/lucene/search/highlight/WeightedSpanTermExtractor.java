@@ -47,7 +47,7 @@ public class WeightedSpanTermExtractor {
 
   private String fieldName;
   private TokenStream tokenStream;
-  private Map readers = new HashMap(10); // Map<String, IndexReader>
+  private Map<String,IndexReader> readers = new HashMap<String,IndexReader>(10); 
   private String defaultField;
   private boolean expandMultiTermQuery;
   private boolean cachedTokenStream;
@@ -63,11 +63,9 @@ public class WeightedSpanTermExtractor {
   }
 
   private void closeReaders() {
-    Collection readerSet = readers.values();
-    Iterator it = readerSet.iterator();
+    Collection<IndexReader> readerSet = readers.values();
 
-    while (it.hasNext()) {
-      IndexReader reader = (IndexReader) it.next();
+    for (final IndexReader reader : readerSet) {
       try {
         reader.close();
       } catch (IOException e) {
@@ -85,7 +83,7 @@ public class WeightedSpanTermExtractor {
    *          Map to place created WeightedSpanTerms in
    * @throws IOException
    */
-  private void extract(Query query, Map terms) throws IOException {
+  private void extract(Query query, Map<String,WeightedSpanTerm> terms) throws IOException {
     if (query instanceof BooleanQuery) {
       BooleanClause[] queryClauses = ((BooleanQuery) query).getClauses();
 
@@ -137,8 +135,8 @@ public class WeightedSpanTermExtractor {
     } else if (query instanceof FilteredQuery) {
       extract(((FilteredQuery) query).getQuery(), terms);
     } else if (query instanceof DisjunctionMaxQuery) {
-      for (Iterator iterator = ((DisjunctionMaxQuery) query).iterator(); iterator.hasNext();) {
-        extract((Query) iterator.next(), terms);
+      for (Iterator<Query> iterator = ((DisjunctionMaxQuery) query).iterator(); iterator.hasNext();) {
+        extract(iterator.next(), terms);
       }
     } else if (query instanceof MultiTermQuery && expandMultiTermQuery) {
       MultiTermQuery mtq = ((MultiTermQuery)query);
@@ -163,7 +161,7 @@ public class WeightedSpanTermExtractor {
       }
     } else if (query instanceof MultiPhraseQuery) {
       final MultiPhraseQuery mpq = (MultiPhraseQuery) query;
-      final List termArrays = mpq.getTermArrays();
+      final List<Term[]> termArrays = mpq.getTermArrays();
       final int[] positions = mpq.getPositions();
       if (positions.length > 0) {
 
@@ -174,14 +172,14 @@ public class WeightedSpanTermExtractor {
           }
         }
 
-        final List[] disjunctLists = new List[maxPosition + 1];
+        final List<SpanQuery>[] disjunctLists = new List[maxPosition + 1];
         int distinctPositions = 0;
 
         for (int i = 0; i < termArrays.size(); ++i) {
-          final Term[] termArray = (Term[]) termArrays.get(i);
-          List disjuncts = disjunctLists[positions[i]];
+          final Term[] termArray = termArrays.get(i);
+          List<SpanQuery> disjuncts = disjunctLists[positions[i]];
           if (disjuncts == null) {
-            disjuncts = (disjunctLists[positions[i]] = new ArrayList(termArray.length));
+            disjuncts = (disjunctLists[positions[i]] = new ArrayList<SpanQuery>(termArray.length));
             ++distinctPositions;
           }
           for (int j = 0; j < termArray.length; ++j) {
@@ -193,9 +191,9 @@ public class WeightedSpanTermExtractor {
         int position = 0;
         final SpanQuery[] clauses = new SpanQuery[distinctPositions];
         for (int i = 0; i < disjunctLists.length; ++i) {
-          List disjuncts = disjunctLists[i];
+          List<SpanQuery> disjuncts = disjunctLists[i];
           if (disjuncts != null) {
-            clauses[position++] = new SpanOrQuery((SpanQuery[]) disjuncts
+            clauses[position++] = new SpanOrQuery(disjuncts
                 .toArray(new SpanQuery[disjuncts.size()]));
           } else {
             ++positionGaps;
@@ -221,20 +219,19 @@ public class WeightedSpanTermExtractor {
    *          SpanQuery to extract Terms from
    * @throws IOException
    */
-  private void extractWeightedSpanTerms(Map terms, SpanQuery spanQuery) throws IOException {
-    Set nonWeightedTerms = new HashSet();
+  private void extractWeightedSpanTerms(Map<String,WeightedSpanTerm> terms, SpanQuery spanQuery) throws IOException {
+    Set<Term> nonWeightedTerms = new HashSet<Term>();
     spanQuery.extractTerms(nonWeightedTerms);
 
-    Set fieldNames;
+    Set<String> fieldNames;
 
     if (fieldName == null) {
-      fieldNames = new HashSet();
-      for (Iterator iter = nonWeightedTerms.iterator(); iter.hasNext();) {
-        Term queryTerm = (Term) iter.next();
+      fieldNames = new HashSet<String>();
+      for (final Term queryTerm : nonWeightedTerms) {
         fieldNames.add(queryTerm.field());
       }
     } else {
-      fieldNames = new HashSet(1);
+      fieldNames = new HashSet<String>(1);
       fieldNames.add(fieldName);
     }
     // To support the use of the default field name
@@ -242,11 +239,9 @@ public class WeightedSpanTermExtractor {
       fieldNames.add(defaultField);
     }
 
-    Iterator it = fieldNames.iterator();
-    List spanPositions = new ArrayList();
+    List<PositionSpan> spanPositions = new ArrayList<PositionSpan>();
 
-    while (it.hasNext()) {
-      String field = (String) it.next();
+    for (final String field : fieldNames) {
 
       IndexReader reader = getReaderForField(field);
       Spans spans = spanQuery.getSpans(reader);
@@ -263,11 +258,10 @@ public class WeightedSpanTermExtractor {
       return;
     }
 
-    for (Iterator iter = nonWeightedTerms.iterator(); iter.hasNext();) {
-      Term queryTerm = (Term) iter.next();
+    for (final Term queryTerm :  nonWeightedTerms) {
 
       if (fieldNameComparator(queryTerm.field())) {
-        WeightedSpanTerm weightedSpanTerm = (WeightedSpanTerm) terms.get(queryTerm.text());
+        WeightedSpanTerm weightedSpanTerm = terms.get(queryTerm.text());
 
         if (weightedSpanTerm == null) {
           weightedSpanTerm = new WeightedSpanTerm(spanQuery.getBoost(), queryTerm.text());
@@ -292,12 +286,11 @@ public class WeightedSpanTermExtractor {
    *          Query to extract Terms from
    * @throws IOException
    */
-  private void extractWeightedTerms(Map terms, Query query) throws IOException {
-    Set nonWeightedTerms = new HashSet();
+  private void extractWeightedTerms(Map<String,WeightedSpanTerm> terms, Query query) throws IOException {
+    Set<Term> nonWeightedTerms = new HashSet<Term>();
     query.extractTerms(nonWeightedTerms);
 
-    for (Iterator iter = nonWeightedTerms.iterator(); iter.hasNext();) {
-      Term queryTerm = (Term) iter.next();
+    for (final Term queryTerm : nonWeightedTerms) {
 
       if (fieldNameComparator(queryTerm.field())) {
         WeightedSpanTerm weightedSpanTerm = new WeightedSpanTerm(query.getBoost(), queryTerm.text());
@@ -320,7 +313,7 @@ public class WeightedSpanTermExtractor {
       tokenStream = new CachingTokenFilter(tokenStream);
       cachedTokenStream = true;
     }
-    IndexReader reader = (IndexReader) readers.get(field);
+    IndexReader reader = readers.get(field);
     if (reader == null) {
       MemoryIndex indexer = new MemoryIndex();
       indexer.addField(field, tokenStream);
@@ -345,7 +338,7 @@ public class WeightedSpanTermExtractor {
    * @return Map containing WeightedSpanTerms
    * @throws IOException
    */
-  public Map getWeightedSpanTerms(Query query, TokenStream tokenStream)
+  public Map<String,WeightedSpanTerm> getWeightedSpanTerms(Query query, TokenStream tokenStream)
       throws IOException {
     return getWeightedSpanTerms(query, tokenStream, null);
   }
@@ -364,7 +357,7 @@ public class WeightedSpanTermExtractor {
    * @return Map containing WeightedSpanTerms
    * @throws IOException
    */
-  public Map getWeightedSpanTerms(Query query, TokenStream tokenStream,
+  public Map<String,WeightedSpanTerm> getWeightedSpanTerms(Query query, TokenStream tokenStream,
       String fieldName) throws IOException {
     if (fieldName != null) {
       this.fieldName = StringHelper.intern(fieldName);
@@ -372,7 +365,7 @@ public class WeightedSpanTermExtractor {
       this.fieldName = null;
     }
 
-    Map terms = new PositionCheckingMap();
+    Map<String,WeightedSpanTerm> terms = new PositionCheckingMap<String>();
     this.tokenStream = tokenStream;
     try {
       extract(query, terms);
@@ -400,7 +393,7 @@ public class WeightedSpanTermExtractor {
    * @return Map of WeightedSpanTerms with quasi tf/idf scores
    * @throws IOException
    */
-  public Map getWeightedSpanTermsWithScores(Query query, TokenStream tokenStream, String fieldName,
+  public Map<String,WeightedSpanTerm> getWeightedSpanTermsWithScores(Query query, TokenStream tokenStream, String fieldName,
       IndexReader reader) throws IOException {
     if (fieldName != null) {
       this.fieldName = StringHelper.intern(fieldName);
@@ -409,16 +402,16 @@ public class WeightedSpanTermExtractor {
     }
     this.tokenStream = tokenStream;
 
-    Map terms = new PositionCheckingMap();
+    Map<String,WeightedSpanTerm> terms = new PositionCheckingMap<String>();
     extract(query, terms);
 
     int totalNumDocs = reader.numDocs();
-    Set weightedTerms = terms.keySet();
-    Iterator it = weightedTerms.iterator();
+    Set<String> weightedTerms = terms.keySet();
+    Iterator<String> it = weightedTerms.iterator();
 
     try {
       while (it.hasNext()) {
-        WeightedSpanTerm weightedSpanTerm = (WeightedSpanTerm) terms.get(it.next());
+        WeightedSpanTerm weightedSpanTerm = terms.get(it.next());
         int docFreq = reader.docFreq(new Term(fieldName, weightedSpanTerm.term));
         // docFreq counts deletes
         if(totalNumDocs < docFreq) {
@@ -440,21 +433,21 @@ public class WeightedSpanTermExtractor {
    * This class makes sure that if both position sensitive and insensitive
    * versions of the same term are added, the position insensitive one wins.
    */
-  static private class PositionCheckingMap extends HashMap {
+  static private class PositionCheckingMap<K> extends HashMap<K,WeightedSpanTerm> {
 
     public void putAll(Map m) {
-      Iterator it = m.entrySet().iterator();
+      Iterator<Map.Entry<K, WeightedSpanTerm>> it = m.entrySet().iterator();
       while (it.hasNext()) {
-        Map.Entry entry = (java.util.Map.Entry) it.next();
+        Map.Entry<K, WeightedSpanTerm> entry = it.next();
         this.put(entry.getKey(), entry.getValue());
       }
     }
 
-    public Object put(Object key, Object value) {
-      Object prev = super.put(key, value);
+    public WeightedSpanTerm put(K key, WeightedSpanTerm value) {
+      WeightedSpanTerm prev = super.put(key, value);
       if (prev == null) return prev;
-      WeightedSpanTerm prevTerm = (WeightedSpanTerm)prev;
-      WeightedSpanTerm newTerm = (WeightedSpanTerm)value;
+      WeightedSpanTerm prevTerm = prev;
+      WeightedSpanTerm newTerm = value;
       if (!prevTerm.positionSensitive) {
         newTerm.positionSensitive = false;
       }

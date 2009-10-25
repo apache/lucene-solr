@@ -28,7 +28,7 @@ import java.util.List;
  */
 public class WeightedSpanTerm extends WeightedTerm{
   boolean positionSensitive;
-  private List positionSpans = new ArrayList();
+  private List<PositionSpan> positionSpans = new ArrayList<PositionSpan>();
 
   /**
    * @param weight
@@ -36,7 +36,7 @@ public class WeightedSpanTerm extends WeightedTerm{
    */
   public WeightedSpanTerm(float weight, String term) {
     super(weight, term);
-    this.positionSpans = new ArrayList();
+    this.positionSpans = new ArrayList<PositionSpan>();
   }
 
   /**
@@ -61,10 +61,10 @@ public class WeightedSpanTerm extends WeightedTerm{
     // where kept in some sort of priority queue - that way this method
     // could
     // bail early without checking each PositionSpan.
-    Iterator positionSpanIt = positionSpans.iterator();
+    Iterator<PositionSpan> positionSpanIt = positionSpans.iterator();
 
     while (positionSpanIt.hasNext()) {
-      PositionSpan posSpan = (PositionSpan) positionSpanIt.next();
+      PositionSpan posSpan = positionSpanIt.next();
 
       if (((position >= posSpan.start) && (position <= posSpan.end))) {
         return true;
@@ -74,7 +74,7 @@ public class WeightedSpanTerm extends WeightedTerm{
     return false;
   }
 
-  public void addPositionSpans(List positionSpans) {
+  public void addPositionSpans(List<PositionSpan> positionSpans) {
     this.positionSpans.addAll(positionSpans);
   }
 
@@ -86,7 +86,7 @@ public class WeightedSpanTerm extends WeightedTerm{
     this.positionSensitive = positionSensitive;
   }
 
-  public List getPositionSpans() {
+  public List<PositionSpan> getPositionSpans() {
     return positionSpans;
   }
 }

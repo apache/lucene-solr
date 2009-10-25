@@ -61,7 +61,7 @@ public class CreateIndexTask extends PerfTask {
     final String mergeScheduler = config.get("merge.scheduler",
                                              "org.apache.lucene.index.ConcurrentMergeScheduler");
     try {
-      writer.setMergeScheduler((MergeScheduler) Class.forName(mergeScheduler).newInstance());
+      writer.setMergeScheduler(Class.forName(mergeScheduler).asSubclass(MergeScheduler.class).newInstance());
     } catch (Exception e) {
       throw new RuntimeException("unable to instantiate class '" + mergeScheduler + "' as merge scheduler", e);
     }
@@ -69,7 +69,7 @@ public class CreateIndexTask extends PerfTask {
     final String mergePolicy = config.get("merge.policy",
                                           "org.apache.lucene.index.LogByteSizeMergePolicy");
     try {
-      writer.setMergePolicy((MergePolicy) Class.forName(mergePolicy).getConstructor(new Class[] { IndexWriter.class }).newInstance(new Object[] { writer }));
+      writer.setMergePolicy(Class.forName(mergePolicy).asSubclass(MergePolicy.class).getConstructor(IndexWriter.class).newInstance(writer));
     } catch (Exception e) {
       throw new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy", e);
     }
@@ -106,7 +106,7 @@ public class CreateIndexTask extends PerfTask {
     IndexDeletionPolicy indexDeletionPolicy = null;
     RuntimeException err = null;
     try {
-      indexDeletionPolicy = ((IndexDeletionPolicy) Class.forName(deletionPolicyName).newInstance());
+      indexDeletionPolicy = Class.forName(deletionPolicyName).asSubclass(IndexDeletionPolicy.class).newInstance();
     } catch (IllegalAccessException iae) {
       err = new RuntimeException("unable to instantiate class '" + deletionPolicyName + "' as IndexDeletionPolicy");
       err.initCause(iae);

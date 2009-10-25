@@ -35,15 +35,15 @@ public class SimpleSloppyPhraseQueryMaker extends SimpleQueryMaker {
   protected Query[] prepareQueries() throws Exception {
     // extract some 100 words from doc text to an array
     String words[];
-    ArrayList w = new ArrayList();
+    ArrayList<String> w = new ArrayList<String>();
     StringTokenizer st = new StringTokenizer(SingleDocSource.DOC_TEXT);
     while (st.hasMoreTokens() && w.size()<100) {
       w.add(st.nextToken());
     }
-    words = (String[]) w.toArray(new String[0]);
+    words = w.toArray(new String[0]);
 
     // create queries (that would find stuff) with varying slops
-    ArrayList queries = new ArrayList(); 
+    ArrayList<Query> queries = new ArrayList<Query>(); 
     for (int slop=0; slop<8; slop++) {
       for (int qlen=2; qlen<6; qlen++) {
         for (int wd=0; wd<words.length-qlen-slop; wd++) {
@@ -76,7 +76,7 @@ public class SimpleSloppyPhraseQueryMaker extends SimpleQueryMaker {
         }
       }
     }
-    return (Query[]) queries.toArray(new Query[0]);
+    return queries.toArray(new Query[0]);
   }
 
 }

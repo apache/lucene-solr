@@ -51,13 +51,12 @@ public class DirContentSource extends ContentSource {
     ParsePosition pos;
   }
   
-  public static class Iterator implements java.util.Iterator {
+  public static class Iterator implements java.util.Iterator<File> {
 
-    static class Comparator implements java.util.Comparator {
-      public int compare(Object _a, Object _b) {
+    static class Comparator implements java.util.Comparator<File> {
+      public int compare(File _a, File _b) {
         String a = _a.toString();
         String b = _b.toString();
-
         int diff = a.length() - b.length();
 
         if (diff > 0) {
@@ -79,7 +78,7 @@ public class DirContentSource extends ContentSource {
 
     int count = 0;
 
-    Stack stack = new Stack();
+    Stack<File> stack = new Stack<File>();
 
     /* this seems silly ... there must be a better way ...
        not that this is good, but can it matter? */
@@ -94,10 +93,10 @@ public class DirContentSource extends ContentSource {
       if (stack.empty()) {
         return;
       }
-      if (!((File)stack.peek()).isDirectory()) {
+      if (!(stack.peek()).isDirectory()) {
         return;
       }
-      File f = (File)stack.pop();
+      File f = stack.pop();
       push(f);
     }
 
@@ -133,10 +132,10 @@ public class DirContentSource extends ContentSource {
       return stack.size() > 0;
     }
     
-    public Object next() {
+    public File next() {
       assert hasNext();
       count++;
-      Object object = stack.pop();
+      File object = stack.pop();
       // System.err.println("pop " + object);
       find();
       return object;
@@ -148,7 +147,7 @@ public class DirContentSource extends ContentSource {
 
   }
   
-  private ThreadLocal dateFormat = new ThreadLocal();
+  private ThreadLocal<DateFormatInfo> dateFormat = new ThreadLocal<DateFormatInfo>();
   private File dataDir = null;
   private int iteration = 0;
   private Iterator inputFiles = null;
@@ -156,7 +155,7 @@ public class DirContentSource extends ContentSource {
   // get/initiate a thread-local simple date format (must do so 
   // because SimpleDateFormat is not thread-safe).
   private DateFormatInfo getDateFormatInfo() {
-    DateFormatInfo dfi = (DateFormatInfo) dateFormat.get();
+    DateFormatInfo dfi = dateFormat.get();
     if (dfi == null) {
       dfi = new DateFormatInfo();
       dfi.pos = new ParsePosition(0);
@@ -191,7 +190,7 @@ public class DirContentSource extends ContentSource {
         inputFiles = new Iterator(dataDir);
         iteration++;
       }
-      f = (File) inputFiles.next();
+      f = inputFiles.next();
       // System.err.println(f);
       name = f.getCanonicalPath()+"_"+iteration;
     }

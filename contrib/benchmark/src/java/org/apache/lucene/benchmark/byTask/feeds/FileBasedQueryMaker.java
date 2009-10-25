@@ -51,7 +51,7 @@ public class FileBasedQueryMaker extends AbstractQueryMaker implements QueryMake
     String defaultField = config.get("file.query.maker.default.field", DocMaker.BODY_FIELD);
     QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, defaultField, anlzr);
 
-    List qq = new ArrayList();
+    List<Query> qq = new ArrayList<Query>();
     String fileName = config.get("file.query.maker.file", null);
     if (fileName != null)
     {
@@ -94,7 +94,6 @@ public class FileBasedQueryMaker extends AbstractQueryMaker implements QueryMake
       }
       
     }
-    Query [] result = (Query[]) qq.toArray(new Query[qq.size()]) ;
-    return result;
+    return qq.toArray(new Query[qq.size()]) ;
   }
 }

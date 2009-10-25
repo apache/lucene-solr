@@ -59,7 +59,7 @@ public class TokenSources
   public static TokenStream getAnyTokenStream(IndexReader reader, int docId, String field, Document doc, Analyzer analyzer) throws IOException{
     TokenStream ts=null;
 
-		TermFreqVector tfv=(TermFreqVector) reader.getTermFreqVector(docId,field);
+		TermFreqVector tfv = reader.getTermFreqVector(docId,field);
 		if(tfv!=null)
 		{
 		    if(tfv instanceof TermPositionVector)
@@ -89,7 +89,7 @@ public class TokenSources
     {
 		TokenStream ts=null;
 
-		TermFreqVector tfv=(TermFreqVector) reader.getTermFreqVector(docId,field);
+		TermFreqVector tfv = reader.getTermFreqVector(docId,field);
 		if(tfv!=null)
 		{
 		    if(tfv instanceof TermPositionVector)
@@ -171,7 +171,7 @@ public class TokenSources
             totalTokens+=freq[t];
         }
         Token tokensInOriginalOrder[]=new Token[totalTokens];
-        ArrayList unsortedTokens = null;
+        ArrayList<Token> unsortedTokens = null;
         for (int t = 0; t < freq.length; t++)
         {
             TermVectorOffsetInfo[] offsets=tpv.getOffsets(t);
@@ -191,7 +191,7 @@ public class TokenSources
                 //tokens NOT stored with positions or not guaranteed contiguous - must add to list and sort later
                 if(unsortedTokens==null)
                 {
-                    unsortedTokens=new ArrayList();
+                    unsortedTokens=new ArrayList<Token>();
                 }
                 for (int tp = 0; tp < offsets.length; tp++)
                 {
@@ -216,14 +216,10 @@ public class TokenSources
             }
         }
         //If the field has been stored without position data we must perform a sort        
-        if(unsortedTokens!=null)
-        {
-            tokensInOriginalOrder=(Token[]) unsortedTokens.toArray(new Token[unsortedTokens.size()]);
-            Arrays.sort(tokensInOriginalOrder, new Comparator(){
-                public int compare(Object o1, Object o2)
-                {
-                    Token t1=(Token) o1;
-                    Token t2=(Token) o2;
+        if(unsortedTokens!=null) {
+            tokensInOriginalOrder= unsortedTokens.toArray(new Token[unsortedTokens.size()]);
+            Arrays.sort(tokensInOriginalOrder, new Comparator<Token>(){
+                public int compare(Token t1, Token t2) {
                     if(t1.startOffset()>t2.endOffset())
                         return 1;
                     if(t1.startOffset()<t2.startOffset())
@@ -236,7 +232,7 @@ public class TokenSources
 
     public static TokenStream getTokenStream(IndexReader reader,int docId, String field) throws IOException
     {
-		TermFreqVector tfv=(TermFreqVector) reader.getTermFreqVector(docId,field);
+		TermFreqVector tfv = reader.getTermFreqVector(docId,field);
 		if(tfv==null)
 		{
 		    throw new IllegalArgumentException(field+" in doc #"+docId

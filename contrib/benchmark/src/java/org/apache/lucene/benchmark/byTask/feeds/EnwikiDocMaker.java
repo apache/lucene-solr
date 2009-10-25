@@ -18,11 +18,6 @@ package org.apache.lucene.benchmark.byTask.feeds;
  */
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
 
 /**
  * A {@link DocMaker} which reads the English Wikipedia dump. Uses

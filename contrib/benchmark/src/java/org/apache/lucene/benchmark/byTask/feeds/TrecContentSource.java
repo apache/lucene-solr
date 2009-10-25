@@ -76,11 +76,11 @@ public class TrecContentSource extends ContentSource {
        "EEE MMM dd kk:mm:ss yyyy",  	  // Tue Dec 09 16:45:08 2003
   };
 
-  private ThreadLocal dateFormats = new ThreadLocal();
-  private ThreadLocal trecDocReader = new ThreadLocal();
-  private ThreadLocal trecDocBuffer = new ThreadLocal();
+  private ThreadLocal<DateFormatInfo> dateFormats = new ThreadLocal<DateFormatInfo>();
+  private ThreadLocal<StringBufferReader> trecDocReader = new ThreadLocal<StringBufferReader>();
+  private ThreadLocal<StringBuffer> trecDocBuffer = new ThreadLocal<StringBuffer>();
   private File dataDir = null;
-  private ArrayList inputFiles = new ArrayList();
+  private ArrayList<File> inputFiles = new ArrayList<File>();
   private int nextFile = 0;
   private int rawDocSize;
 
@@ -93,7 +93,7 @@ public class TrecContentSource extends ContentSource {
   HTMLParser htmlParser;
   
   private DateFormatInfo getDateFormatInfo() {
-    DateFormatInfo dfi = (DateFormatInfo) dateFormats.get();
+    DateFormatInfo dfi = dateFormats.get();
     if (dfi == null) {
       dfi = new DateFormatInfo();
       dfi.dfs = new SimpleDateFormat[DATE_FORMATS.length];
@@ -108,7 +108,7 @@ public class TrecContentSource extends ContentSource {
   }
 
   private StringBuffer getDocBuffer() {
-    StringBuffer sb = (StringBuffer) trecDocBuffer.get();
+    StringBuffer sb = trecDocBuffer.get();
     if (sb == null) {
       sb = new StringBuffer();
       trecDocBuffer.set(sb);
@@ -117,7 +117,7 @@ public class TrecContentSource extends ContentSource {
   }
   
   private Reader getTrecDocReader(StringBuffer docBuffer) {
-    StringBufferReader r = (StringBufferReader) trecDocReader.get();
+    StringBufferReader r = trecDocReader.get();
     if (r == null) {
       r = new StringBufferReader(docBuffer);
       trecDocReader.set(r);
@@ -177,7 +177,7 @@ public class TrecContentSource extends ContentSource {
         nextFile = 0;
         iteration++;
       }
-      File f = (File) inputFiles.get(nextFile++);
+      File f = inputFiles.get(nextFile++);
       if (verbose) {
         System.out.println("opening: " + f + " length: " + f.length());
       }
@@ -330,7 +330,7 @@ public class TrecContentSource extends ContentSource {
     try {
       String parserClassName = config.get("html.parser",
           "org.apache.lucene.benchmark.byTask.feeds.DemoHTMLParser");
-      htmlParser = (HTMLParser) Class.forName(parserClassName).newInstance();
+      htmlParser = Class.forName(parserClassName).asSubclass(HTMLParser.class).newInstance();
     } catch (Exception e) {
       // Should not get here. Throw runtime exception.
       throw new RuntimeException(e);

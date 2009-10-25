@@ -220,7 +220,7 @@ public class EnwikiContentSource extends ContentSource {
     }
   }
 
-  private static final Map ELEMENTS = new HashMap();
+  private static final Map<String,Integer> ELEMENTS = new HashMap<String,Integer>();
   private static final int TITLE = 0;
   private static final int DATE = TITLE + 1;
   private static final int BODY = DATE + 1;
@@ -248,7 +248,7 @@ public class EnwikiContentSource extends ContentSource {
    * the element qualified name over and over.
    */
   private final static int getElementType(String elem) {
-    Integer val = (Integer) ELEMENTS.get(elem);
+    Integer val = ELEMENTS.get(elem);
     return val == null ? -1 : val.intValue();
   }
   

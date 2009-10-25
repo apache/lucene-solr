@@ -73,11 +73,11 @@ public class SimpleSpanFragmenter implements Fragmenter {
     WeightedSpanTerm wSpanTerm = queryScorer.getWeightedSpanTerm(termAtt.term());
 
     if (wSpanTerm != null) {
-      List positionSpans = wSpanTerm.getPositionSpans();
+      List<PositionSpan> positionSpans = wSpanTerm.getPositionSpans();
 
       for (int i = 0; i < positionSpans.size(); i++) {
-        if (((PositionSpan) positionSpans.get(i)).start == position) {
-          waitForPos = ((PositionSpan) positionSpans.get(i)).end + 1;
+        if (positionSpans.get(i).start == position) {
+          waitForPos = positionSpans.get(i).end + 1;
           break;
         }
       }

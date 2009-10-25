@@ -47,9 +47,9 @@ public class ReutersContentSource extends ContentSource {
     ParsePosition pos;
   }
 
-  private ThreadLocal dateFormat = new ThreadLocal();
+  private ThreadLocal<DateFormatInfo> dateFormat = new ThreadLocal<DateFormatInfo>();
   private File dataDir = null;
-  private ArrayList inputFiles = new ArrayList();
+  private ArrayList<File> inputFiles = new ArrayList<File>();
   private int nextFile = 0;
   private int iteration = 0;
   
@@ -69,7 +69,7 @@ public class ReutersContentSource extends ContentSource {
   }
 
   private synchronized DateFormatInfo getDateFormatInfo() {
-    DateFormatInfo dfi = (DateFormatInfo) dateFormat.get();
+    DateFormatInfo dfi = dateFormat.get();
     if (dfi == null) {
       dfi = new DateFormatInfo();
       // date format: 30-MAR-1987 14:22:36.87
@@ -105,7 +105,7 @@ public class ReutersContentSource extends ContentSource {
         nextFile = 0;
         iteration++;
       }
-      f = (File) inputFiles.get(nextFile++);
+      f = inputFiles.get(nextFile++);
       name = f.getCanonicalPath() + "_" + iteration;
     }
 

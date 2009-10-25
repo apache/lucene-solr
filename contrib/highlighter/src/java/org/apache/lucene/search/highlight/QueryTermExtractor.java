@@ -93,13 +93,13 @@ public final class QueryTermExtractor
    */
 	public static final WeightedTerm[] getTerms(Query query, boolean prohibited, String fieldName) 
 	{
-		HashSet terms=new HashSet();
+		HashSet<WeightedTerm> terms=new HashSet<WeightedTerm>();
 		if(fieldName!=null)
 		{
 		    fieldName= StringHelper.intern(fieldName);
 		}
 		getTerms(query,terms,prohibited,fieldName);
-		return (WeightedTerm[]) terms.toArray(new WeightedTerm[0]);
+		return terms.toArray(new WeightedTerm[0]);
 	}
 	
 	/**
@@ -115,7 +115,7 @@ public final class QueryTermExtractor
 	}	
 
 	//fieldname MUST be interned prior to this call
-	private static final void getTerms(Query query, HashSet terms,boolean prohibited, String fieldName) 
+	private static final void getTerms(Query query, HashSet<WeightedTerm> terms,boolean prohibited, String fieldName) 
 	{
        	try
        	{
@@ -126,11 +126,11 @@ public final class QueryTermExtractor
     				getTermsFromFilteredQuery((FilteredQuery)query, terms,prohibited, fieldName);
     			else
     		{
-	       		HashSet nonWeightedTerms=new HashSet();
+	       		HashSet<Term> nonWeightedTerms=new HashSet<Term>();
 	       		query.extractTerms(nonWeightedTerms);
-	       		for (Iterator iter = nonWeightedTerms.iterator(); iter.hasNext();)
+	       		for (Iterator<Term> iter = nonWeightedTerms.iterator(); iter.hasNext();)
 				{
-					Term term = (Term) iter.next();
+					Term term = iter.next();
 				    if((fieldName==null)||(term.field()==fieldName))
 					{
 						terms.add(new WeightedTerm(query.getBoost(),term.text()));
@@ -155,7 +155,7 @@ public final class QueryTermExtractor
 	 * something common which would allow access to child queries so what follows here are query-specific
 	 * implementations for accessing embedded query elements. 
 	 */
-	private static final void getTermsFromBooleanQuery(BooleanQuery query, HashSet terms, boolean prohibited, String fieldName)
+	private static final void getTermsFromBooleanQuery(BooleanQuery query, HashSet<WeightedTerm> terms, boolean prohibited, String fieldName)
 	{
 		BooleanClause[] queryClauses = query.getClauses();
 		for (int i = 0; i < queryClauses.length; i++)
@@ -164,7 +164,7 @@ public final class QueryTermExtractor
 				getTerms(queryClauses[i].getQuery(), terms, prohibited, fieldName);
 		}
 	}	
-	private static void getTermsFromFilteredQuery(FilteredQuery query, HashSet terms, boolean prohibited, String fieldName)
+	private static void getTermsFromFilteredQuery(FilteredQuery query, HashSet<WeightedTerm> terms, boolean prohibited, String fieldName)
 	{
 		getTerms(query.getQuery(),terms,prohibited,fieldName);		
 	}
