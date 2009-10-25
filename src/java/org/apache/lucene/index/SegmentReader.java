@@ -543,45 +543,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
   Map<String,Norm> norms = new HashMap<String,Norm>();
   
-  /** The class which implements SegmentReader. */
-  // @deprecated (LUCENE-1677)
-  private static Class IMPL;
-  static {
-    try {
-      String name =
-        System.getProperty("org.apache.lucene.SegmentReader.class",
-                           SegmentReader.class.getName());
-      IMPL = Class.forName(name);
-    } catch (ClassNotFoundException e) {
-      throw new RuntimeException("cannot load SegmentReader class: " + e, e);
-    } catch (SecurityException se) {
-      try {
-        IMPL = Class.forName(SegmentReader.class.getName());
-      } catch (ClassNotFoundException e) {
-        throw new RuntimeException("cannot load default SegmentReader class: " + e, e);
-      }
-    }
-  }
-
-  // @deprecated (LUCENE-1677)
-  private static Class READONLY_IMPL;
-  static {
-    try {
-      String name =
-        System.getProperty("org.apache.lucene.ReadOnlySegmentReader.class",
-                           ReadOnlySegmentReader.class.getName());
-      READONLY_IMPL = Class.forName(name);
-    } catch (ClassNotFoundException e) {
-      throw new RuntimeException("cannot load ReadOnlySegmentReader class: " + e, e);
-    } catch (SecurityException se) {
-      try {
-        READONLY_IMPL = Class.forName(ReadOnlySegmentReader.class.getName());
-      } catch (ClassNotFoundException e) {
-        throw new RuntimeException("cannot load default ReadOnlySegmentReader class: " + e, e);
-      }
-    }
-  }
-
   /**
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
@@ -601,15 +562,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
                                   boolean doOpenStores,
                                   int termInfosIndexDivisor)
     throws CorruptIndexException, IOException {
-    SegmentReader instance;
-    try {
-      if (readOnly)
-        instance = (SegmentReader)READONLY_IMPL.newInstance();
-      else
-        instance = (SegmentReader)IMPL.newInstance();
-    } catch (Exception e) {
-      throw new RuntimeException("cannot load SegmentReader class: " + e, e);
-    }
+    SegmentReader instance = readOnly ? new ReadOnlySegmentReader() : new SegmentReader();
     instance.readOnly = readOnly;
     instance.si = si;
     instance.readBufferSize = readBufferSize;
@@ -717,15 +670,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     assert !doClone || (normsUpToDate && deletionsUpToDate);
 
     // clone reader
-    SegmentReader clone;
-    try {
-      if (openReadOnly)
-        clone = (SegmentReader) READONLY_IMPL.newInstance();
-      else
-        clone = (SegmentReader) IMPL.newInstance();
-    } catch (Exception e) {
-      throw new RuntimeException("cannot load SegmentReader class: " + e, e);
-    }
+    SegmentReader clone = openReadOnly ? new ReadOnlySegmentReader() : new SegmentReader();
 
     boolean success = false;
     try {

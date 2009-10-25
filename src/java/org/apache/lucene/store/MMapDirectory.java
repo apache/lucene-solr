@@ -91,9 +91,6 @@ public class MMapDirectory extends FSDirectory {
     super(path, null);
   }
 
-  static final Class[] NO_PARAM_TYPES = new Class[0];
-  static final Object[] NO_PARAMS = new Object[0];
-  
   private boolean useUnmapHack = false;
   private int maxBBuf = Constants.JRE_IS_64BIT ? Integer.MAX_VALUE : (256*1024*1024);
   
@@ -106,7 +103,7 @@ public class MMapDirectory extends FSDirectory {
     try {
       Class.forName("sun.misc.Cleaner");
       Class.forName("java.nio.DirectByteBuffer")
-        .getMethod("cleaner", NO_PARAM_TYPES);
+        .getMethod("cleaner");
       v = true;
     } catch (Exception e) {
       v = false;
@@ -151,12 +148,12 @@ public class MMapDirectory extends FSDirectory {
         AccessController.doPrivileged(new PrivilegedExceptionAction<Object>() {
           public Object run() throws Exception {
             final Method getCleanerMethod = buffer.getClass()
-              .getMethod("cleaner", NO_PARAM_TYPES);
+              .getMethod("cleaner");
             getCleanerMethod.setAccessible(true);
-            final Object cleaner = getCleanerMethod.invoke(buffer, NO_PARAMS);
+            final Object cleaner = getCleanerMethod.invoke(buffer);
             if (cleaner != null) {
-              cleaner.getClass().getMethod("clean", NO_PARAM_TYPES)
-                .invoke(cleaner, NO_PARAMS);
+              cleaner.getClass().getMethod("clean")
+                .invoke(cleaner);
             }
             return null;
           }

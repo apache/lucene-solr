@@ -65,30 +65,23 @@ public class LockStressTest {
     final String lockDirName = args[4];
     final int sleepTimeMS = Integer.parseInt(args[5]);
 
-    Class c;
-    try {
-      c = Class.forName(lockFactoryClassName);
-    } catch (ClassNotFoundException e) {
-      throw new IOException("unable to find LockClass " + lockFactoryClassName);
-    }
-
     LockFactory lockFactory;
     try {
-      lockFactory = (LockFactory) c.newInstance();          
+      lockFactory = Class.forName(lockFactoryClassName).asSubclass(LockFactory.class).newInstance();          
     } catch (IllegalAccessException e) {
       throw new IOException("IllegalAccessException when instantiating LockClass " + lockFactoryClassName);
     } catch (InstantiationException e) {
       throw new IOException("InstantiationException when instantiating LockClass " + lockFactoryClassName);
     } catch (ClassCastException e) {
       throw new IOException("unable to cast LockClass " + lockFactoryClassName + " instance to a LockFactory");
+    } catch (ClassNotFoundException e) {
+      throw new IOException("unable to find LockClass " + lockFactoryClassName);
     }
 
     File lockDir = new File(lockDirName);
 
-    if (lockFactory instanceof NativeFSLockFactory) {
-      ((NativeFSLockFactory) lockFactory).setLockDir(lockDir);
-    } else if (lockFactory instanceof SimpleFSLockFactory) {
-      ((SimpleFSLockFactory) lockFactory).setLockDir(lockDir);
+    if (lockFactory instanceof FSLockFactory) {
+      ((FSLockFactory) lockFactory).setLockDir(lockDir);
     }
 
     lockFactory.setLockPrefix("test");
