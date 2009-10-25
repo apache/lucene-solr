@@ -31,14 +31,14 @@ import org.apache.lucene.util.AttributeSource;
  * A <code>TokenStream</code> enumerates the sequence of tokens, either from
  * {@link Field}s of a {@link Document} or from query text.
  * <p>
- * This is an abstract class. Concrete subclasses are:
+ * This is an abstract class; concrete subclasses are:
  * <ul>
  * <li>{@link Tokenizer}, a <code>TokenStream</code> whose input is a Reader; and
  * <li>{@link TokenFilter}, a <code>TokenStream</code> whose input is another
  * <code>TokenStream</code>.
  * </ul>
  * A new <code>TokenStream</code> API has been introduced with Lucene 2.9. This API
- * has moved from being {@link Token} based to {@link Attribute} based. While
+ * has moved from being {@link Token}-based to {@link Attribute}-based. While
  * {@link Token} still exists in 2.9 as a convenience class, the preferred way
  * to store the information of a {@link Token} is to use {@link AttributeImpl}s.
  * <p>
@@ -54,14 +54,14 @@ import org.apache.lucene.util.AttributeSource;
  * <li>Instantiation of <code>TokenStream</code>/{@link TokenFilter}s which add/get
  * attributes to/from the {@link AttributeSource}.
  * <li>The consumer calls {@link TokenStream#reset()}.
- * <li>the consumer retrieves attributes from the stream and stores local
- * references to all attributes it wants to access
- * <li>The consumer calls {@link #incrementToken()} until it returns false and
- * consumes the attributes after each call.
+ * <li>The consumer retrieves attributes from the stream and stores local
+ * references to all attributes it wants to access.
+ * <li>The consumer calls {@link #incrementToken()} until it returns false
+ * consuming the attributes after each call.
  * <li>The consumer calls {@link #end()} so that any end-of-stream operations
  * can be performed.
  * <li>The consumer calls {@link #close()} to release any resource when finished
- * using the <code>TokenStream</code>
+ * using the <code>TokenStream</code>.
  * </ol>
  * To make sure that filters and consumers know which attributes are available,
  * the attributes must be added during instantiation. Filters and consumers are
@@ -72,7 +72,7 @@ import org.apache.lucene.util.AttributeSource;
  * Javadoc.
  * <p>
  * Sometimes it is desirable to capture a current state of a <code>TokenStream</code>,
- * e.g. for buffering purposes (see {@link CachingTokenFilter},
+ * e.g., for buffering purposes (see {@link CachingTokenFilter},
  * {@link TeeSinkTokenFilter}). For this usecase
  * {@link AttributeSource#captureState} and {@link AttributeSource#restoreState}
  * can be used.
@@ -101,7 +101,7 @@ public abstract class TokenStream extends AttributeSource implements Closeable {
   }
   
   /**
-   * Consumers (ie {@link IndexWriter}) use this method to advance the stream to
+   * Consumers (i.e., {@link IndexWriter}) use this method to advance the stream to
    * the next token. Implementing classes must implement this method and update
    * the appropriate {@link AttributeImpl}s with the attributes of the next
    * token.

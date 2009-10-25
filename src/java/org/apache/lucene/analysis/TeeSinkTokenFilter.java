@@ -53,7 +53,7 @@ d.add(new Field("f2", final2));
 d.add(new Field("f3", final3));
 d.add(new Field("f4", final4));
  * </pre>
- * In this example, <code>sink1</code> and <code>sink2<code> will both get tokens from both
+ * In this example, <code>sink1</code> and <code>sink2</code> will both get tokens from both
  * <code>reader1</code> and <code>reader2</code> after whitespace tokenizer
  * and now we can further wrap any of these in extra analysis, and more "sources" can be inserted if desired.
  * It is important, that tees are consumed before sinks (in the above example, the field names must be

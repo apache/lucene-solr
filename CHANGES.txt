@@ -150,6 +150,9 @@ Optimizations
 
 Documentation
 
+* LUCENE-2008: Javadoc improvements for TokenStream/Tokenizer/Token
+  (Luke Nezda via Mike McCandless)
+
 Build
 
 * LUCENE-486: Remove test->demo dependencies. (Michael Busch)

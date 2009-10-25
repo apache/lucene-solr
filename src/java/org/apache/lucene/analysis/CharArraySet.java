@@ -32,7 +32,7 @@ import java.util.Iterator;
  * is in the set without the necessity of converting it
  * to a String first.
  * <P>
- * <em>Please note:</em> This class implements {@link Set} but
+ * <em>Please note:</em> This class implements {@link java.util.Set Set} but
  * does not behave like it should in all cases. The generic type is
  * {@code Set<Object>}, because you can add any object to it,
  * that has a string representation. The add methods will use

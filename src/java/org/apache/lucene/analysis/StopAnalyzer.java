@@ -68,9 +68,7 @@ public final class StopAnalyzer extends Analyzer {
 
   /** Builds an analyzer with the stop words from the given set.
    * @param matchVersion See <a href="#version">above</a>
-   * @param stopWords Set of stop words
-   * @param enablePositionIncrements See {@link
-   * StopFilter#setEnablePositionIncrements} */
+   * @param stopWords Set of stop words */
   public StopAnalyzer(Version matchVersion, Set<?> stopWords) {
     this.stopWords = stopWords;
     enablePositionIncrements = StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion);

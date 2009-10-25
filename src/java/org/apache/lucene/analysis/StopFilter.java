@@ -54,7 +54,6 @@ public final class StopFilter extends TokenFilter {
    * @param input Input TokenStream
    * @param stopWords A Set of Strings or char[] or any other toString()-able set representing the stopwords
    * @param ignoreCase if true, all words are lower cased first
-   * @param ignoreCase -Ignore case when stopping.
    */
   public StopFilter(boolean enablePositionIncrements, TokenStream input, Set<?> stopWords, boolean ignoreCase)
   {

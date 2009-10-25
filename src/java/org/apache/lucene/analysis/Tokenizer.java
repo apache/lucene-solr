@@ -24,20 +24,14 @@ import java.io.IOException;
 
 /** A Tokenizer is a TokenStream whose input is a Reader.
   <p>
-  This is an abstract class.
-  <p>
-  NOTE: subclasses must override 
-  {@link #incrementToken()} if the new TokenStream API is used
-  and {@link #next(Token)} or {@link #next()} if the old
-  TokenStream API is used.
+  This is an abstract class; subclasses must override {@link #incrementToken()}
   <p>
   NOTE: Subclasses overriding {@link #incrementToken()} must
   call {@link AttributeSource#clearAttributes()} before
   setting attributes.
-  Subclasses overriding {@link #next(Token)} must call
+  Subclasses overriding {@link #incrementToken()} must call
   {@link Token#clear()} before setting Token attributes. 
  */
-
 public abstract class Tokenizer extends TokenStream {
   /** The text source for this Tokenizer. */
   protected Reader input;
