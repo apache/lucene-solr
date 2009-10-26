@@ -32,6 +32,7 @@ import java.util.zip.ZipFile;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -510,6 +511,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     doc.add(new Field("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("content2", "here is more content with aaa aaa aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("fie\u2C77ld", "field with non-ascii name", Field.Store.YES, Field.Index.TOKENIZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    if (id % 2 == 0) {
+      doc.add(new Field("compressed", TEXT_TO_COMPRESS, Field.Store.COMPRESS, Field.Index.NOT_ANALYZED));
+      doc.add(new Field("compressedSize", Integer.toString(TEXT_COMPRESSED_LENGTH), Field.Store.YES, Field.Index.NOT_ANALYZED));
+    } else {
+      doc.add(new Field("compressed", BINARY_TO_COMPRESS, Field.Store.COMPRESS));    
+      doc.add(new Field("compressedSize", Integer.toString(BINARY_COMPRESSED_LENGTH), Field.Store.YES, Field.Index.NOT_ANALYZED));
+    }
     writer.addDocument(doc);
   }
 
@@ -540,4 +548,19 @@ public class TestBackwardsCompatibility extends LuceneTestCase
   public static String fullDir(String dirName) throws IOException {
     return new File(System.getProperty("tempDir"), dirName).getCanonicalPath();
   }
+
+  static final String TEXT_TO_COMPRESS = "this is a compressed field and should appear in 3.0 as an uncompressed field after merge";
+  // FieldSelectorResult.SIZE returns compressed size for compressed fields, which are internally handled as binary;
+  // do it in the same way like FieldsWriter, do not use CompressionTools.compressString() for compressed fields:
+  static final int TEXT_COMPRESSED_LENGTH;
+  static {
+    try {
+      TEXT_COMPRESSED_LENGTH = CompressionTools.compress(TEXT_TO_COMPRESS.getBytes("UTF-8")).length;
+    } catch (Exception e) {
+      throw new RuntimeException();
+    }
+  }
+
+  static final byte[] BINARY_TO_COMPRESS = new byte[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20};
+  static final int BINARY_COMPRESSED_LENGTH = CompressionTools.compress(BINARY_TO_COMPRESS).length;
 }
