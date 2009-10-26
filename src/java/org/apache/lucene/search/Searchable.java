@@ -174,7 +174,7 @@ public interface Searchable {
    * <code>sort</code>.
    *
    * <p>Applications should usually call {@link
-   * Searcher#search(Query,Filter,Sort)} instead.
+   * Searcher#search(Query,Filter,int,Sort)} instead.
    * 
    * @throws BooleanQuery.TooManyClauses
    */

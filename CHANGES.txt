@@ -48,6 +48,10 @@ API Changes
    o.a.l.util.Version constants for enabling invalid acronym
    settings in StandardAnalyzer to be compatible with the coming
    Lucene 3.0.  (Uwe Schindler)
+
+ * LUCENE-1973: Un-deprecate IndexSearcher.setDefaultFieldSortScoring,
+   to allow controlling per-IndexSearcher whether scores are computed
+   when sorting by field.  (Uwe Schindler, Mike McCandless)
    
 Documentation
 
