@@ -10,11 +10,6 @@ Changes in backwards compatibility policy
   needs to be recompiled against Lucene 3.0 in order to work. The previously
   deprecated IndexCommitPoint is also removed. (Michael Busch)
 
-* LUCENE-2002: Add required Version matchVersion argument when
-  constructing QueryParser or MultiFieldQueryParser and, default (as
-  of 2.9) enablePositionIncrements to true to match
-  StandardAnalyzer's 2.9 default (Uwe Schindler, Mike McCandless)
-
 Changes in runtime behavior
 
 * LUCENE-1677: Remove the system property to set SegmentReader class
@@ -102,6 +97,11 @@ API Changes
   (DM Smith, Uwe Schindler)
   
 * LUCENE-1973: Remove deprecated Similarity methods. (Uwe Schindler)
+
+* LUCENE-2002: Add required Version matchVersion argument when
+  constructing QueryParser or MultiFieldQueryParser and, default (as
+  of 2.9) enablePositionIncrements to true to match
+  StandardAnalyzer's 2.9 default (Uwe Schindler, Mike McCandless)
 
 Bug fixes
 
