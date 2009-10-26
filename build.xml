@@ -895,7 +895,7 @@
     <mkdir dir="luke"/>
     <get src="http://www.getopt.org/luke/luke-0.9.9/luke-0.9.9.jar" 
         dest="luke/luke-0.9.9.jar"/>
-    <get src="http://people.apache.org/repo/m2-ibiblio-rsync-repository/org/apache/lucene/lucene-misc/2.9.0/lucene-misc-2.9.0.jar" 
+    <get src="http://people.apache.org/repo/m2-ibiblio-rsync-repository/org/apache/lucene/lucene-misc/2.9.1/lucene-misc-2.9.1.jar" 
         dest="luke/lucene-misc-2.9.0.jar" />
   </target>
   
