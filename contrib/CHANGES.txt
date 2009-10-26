@@ -2,6 +2,8 @@ Lucene contrib change Log
 
 ======================= 2.9 Branch (not yet released) =======================
 
+======================= Release 2.9.1 2009-10-30 =======================
+
 Changes in backwards compatibility policy
 
  * LUCENE-2002: Add required Version matchVersion argument when

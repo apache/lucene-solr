@@ -42,7 +42,7 @@ public class SnowballAnalyzer extends Analyzer {
 
   /** Builds the named analyzer with no stop words.
    *
-   * @deprecated Use {@link {#SnowballAnalyzer(Version, String)} instead*/
+   * @deprecated Use {@link #SnowballAnalyzer(Version, String)} instead*/
   public SnowballAnalyzer(String name) {
     this(Version.LUCENE_23, name);
   }
@@ -56,7 +56,7 @@ public class SnowballAnalyzer extends Analyzer {
 
   /** Builds the named analyzer with the given stop words.
    *
-   * @deprecated Use {@link {#SnowballAnalyzer(Version, String, String[])} instead*/
+   * @deprecated Use {@link #SnowballAnalyzer(Version, String, String[])} instead*/
   public SnowballAnalyzer(String name, String[] stopWords) {
     this(Version.LUCENE_23, name, stopWords);
   }

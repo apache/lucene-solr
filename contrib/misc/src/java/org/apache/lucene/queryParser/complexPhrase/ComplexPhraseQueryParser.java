@@ -69,7 +69,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
   private ComplexPhraseQuery currentPhraseQuery = null;
 
   /** @deprecated Use {@link
-  #ComplexPhraseQueryParser{Version, String, Analyzer)}
+  #ComplexPhraseQueryParser(Version, String, Analyzer)}
   instead.*/
   public ComplexPhraseQueryParser(String f, Analyzer a) {
     this(Version.LUCENE_24, f, a);
