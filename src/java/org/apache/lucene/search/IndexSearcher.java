@@ -270,7 +270,18 @@ public class IndexSearcher extends Searcher {
   private boolean fieldSortDoTrackScores;
   private boolean fieldSortDoMaxScore;
 
-  /** @deprecated */
+  /** By default, no scores are computed when sorting by
+   *  field (using {@link #search(Query,Filter,int,Sort)}).
+   *  You can change that, per IndexSearcher instance, by
+   *  calling this method.  Note that this will incur a CPU
+   *  cost.
+   * 
+   *  @param doTrackScores If true, then scores are
+   *  returned for every matching document in {@link
+   *  TopFieldDocs}.
+   *
+   *  @param doMaxScore If true, then the max score for all
+   *  matching docs is computed. */
   public void setDefaultFieldSortScoring(boolean doTrackScores, boolean doMaxScore) {
     fieldSortDoTrackScores = doTrackScores;
     fieldSortDoMaxScore = doMaxScore;

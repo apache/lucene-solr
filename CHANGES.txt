@@ -103,6 +103,10 @@ API Changes
   of 2.9) enablePositionIncrements to true to match
   StandardAnalyzer's 2.9 default (Uwe Schindler, Mike McCandless)
 
+* LUCENE-1973: Un-deprecate IndexSearcher.setDefaultFieldSortScoring,
+  to allow controlling per-IndexSearcher whether scores are computed
+  when sorting by field.  (Uwe Schindler, Mike McCandless)
+   
 Bug fixes
 
 * LUCENE-1951: When the text provided to WildcardQuery has no wildcard
