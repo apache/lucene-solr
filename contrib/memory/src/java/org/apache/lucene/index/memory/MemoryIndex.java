@@ -49,6 +49,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.store.RAMDirectory;
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -56,7 +57,7 @@ import org.apache.lucene.search.Similarity;
  * <h4>Overview</h4>
  * 
  * This class is a replacement/substitute for a large subset of
- * {@link org.apache.lucene.store.RAMDirectory} functionality. It is designed to
+ * {@link RAMDirectory} functionality. It is designed to
  * enable maximum efficiency for on-the-fly matchmaking combining structured and 
  * fuzzy fulltext search in realtime streaming applications such as Nux XQuery based XML 
  * message queues, publish-subscribe systems for Blogs/newsfeeds, text chat, data acquisition and 
