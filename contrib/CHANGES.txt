@@ -4,6 +4,12 @@ Lucene contrib change Log
 
 Changes in backwards compatibility policy
 
+ * LUCENE-2002: Add required Version matchVersion argument when
+   constructing ComplexPhraseQueryParser and default (as of 2.9)
+   enablePositionIncrements to true to match StandardAnalyzer's
+   default.  Also added required matchVersion to most of the analyzers
+   (Uwe Schindler, Mike McCandless)
+
 Changes in runtime behavior
 
  * LUCENE-1963: ArabicAnalyzer now lowercases before checking the stopword
@@ -11,15 +17,6 @@ Changes in runtime behavior
    stopword list that contains some non-Arabic words, you'll need to fully
    reindex.  (DM Smith via Robert Muir)
 
-API Changes:
-
- * LUCENE-2002: Add required Version matchVersion argument when
-   constructing ComplexPhraseQueryParser and default (as of 2.9)
-   enablePositionIncrements to true to match StandardAnalyzer's
-   default.  Also added required matchVersion to most of the analyzers
-   (Uwe Schindler, Mike McCandless)
-
-      
 Bug fixes
 
  * LUCENE-1953: FastVectorHighlighter: small fragCharSize can cause
