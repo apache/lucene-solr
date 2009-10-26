@@ -19,15 +19,10 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 
-/** A TokenFilter is a TokenStream whose input is another token stream.
+/** A TokenFilter is a TokenStream whose input is another TokenStream.
   <p>
-  This is an abstract class.
-  NOTE: subclasses must override 
-  {@link #incrementToken()} if the new TokenStream API is used
-  and {@link #next(Token)} or {@link #next()} if the old
-  TokenStream API is used.
-  <p>
-  See {@link TokenStream}
+  This is an abstract class; subclasses must override {@link #incrementToken()}.
+  @see TokenStream
   */
 public abstract class TokenFilter extends TokenStream {
   /** The source of tokens for this filter. */

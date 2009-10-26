@@ -55,6 +55,9 @@ Documentation
  * Fix javadoc about score tracking done by search methods in Searcher 
    and IndexSearcher.  (Mike McCandless)
 
+ * LUCENE-2008: Javadoc improvements for TokenStream/Tokenizer/Token
+   (Luke Nezda via Mike McCandless)
+
  ======================= Release 2.9.0 2009-09-23 =======================
 
 Changes in backwards compatibility policy

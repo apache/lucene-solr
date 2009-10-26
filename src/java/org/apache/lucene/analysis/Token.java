@@ -36,7 +36,7 @@ import org.apache.lucene.util.AttributeImpl;
   <p>
   The start and end offsets permit applications to re-associate a token with
   its source text, e.g., to display highlighted query terms in a document
-  browser, or to show matching text fragments in a KWIC (KeyWord In Context)
+  browser, or to show matching text fragments in a <abbr title="KeyWord In Context">KWIC</abbr>
   display, etc.
   <p>
   The type is a string, assigned by a lexical analyzer
@@ -70,9 +70,9 @@ import org.apache.lucene.util.AttributeImpl;
   associated performance cost has been added (below).  The
   {@link #termText()} method has been deprecated.</p>
   
-  <p>Tokenizers and filters should try to re-use a Token
+  <p>Tokenizers and TokenFilters should try to re-use a Token
   instance when possible for best performance, by
-  implementing the {@link TokenStream#next(Token)} API.
+  implementing the {@link TokenStream#incrementToken()} API.
   Failing that, to create a new Token you should first use
   one of the constructors that starts with null text.  To load
   the token from a char[] use {@link #setTermBuffer(char[], int, int)}.
@@ -86,30 +86,30 @@ import org.apache.lucene.util.AttributeImpl;
   set the length of the term text.  See <a target="_top"
   href="https://issues.apache.org/jira/browse/LUCENE-969">LUCENE-969</a>
   for details.</p>
-  <p>Typical reuse patterns:
+  <p>Typical Token reuse patterns:
   <ul>
-  <li> Copying text from a string (type is reset to #DEFAULT_TYPE if not specified):<br/>
+  <li> Copying text from a string (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
   <pre>
     return reusableToken.reinit(string, startOffset, endOffset[, type]);
   </pre>
   </li>
-  <li> Copying some text from a string (type is reset to #DEFAULT_TYPE if not specified):<br/>
+  <li> Copying some text from a string (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
   <pre>
     return reusableToken.reinit(string, 0, string.length(), startOffset, endOffset[, type]);
   </pre>
   </li>
   </li>
-  <li> Copying text from char[] buffer (type is reset to #DEFAULT_TYPE if not specified):<br/>
+  <li> Copying text from char[] buffer (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
   <pre>
     return reusableToken.reinit(buffer, 0, buffer.length, startOffset, endOffset[, type]);
   </pre>
   </li>
-  <li> Copying some text from a char[] buffer (type is reset to #DEFAULT_TYPE if not specified):<br/>
+  <li> Copying some text from a char[] buffer (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
   <pre>
     return reusableToken.reinit(buffer, start, end - start, startOffset, endOffset[, type]);
   </pre>
   </li>
-  <li> Copying from one one Token to another (type is reset to #DEFAULT_TYPE if not specified):<br/>
+  <li> Copying from one one Token to another (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
   <pre>
     return reusableToken.reinit(source.termBuffer(), 0, source.termLength(), source.startOffset(), source.endOffset()[, source.type()]);
   </pre>
@@ -119,7 +119,7 @@ import org.apache.lucene.util.AttributeImpl;
   <ul>
   <li>clear() initializes all of the fields to default values. This was changed in contrast to Lucene 2.4, but should affect no one.</li>
   <li>Because <code>TokenStreams</code> can be chained, one cannot assume that the <code>Token's</code> current type is correct.</li>
-  <li>The startOffset and endOffset represent the start and offset in the source text. So be careful in adjusting them.</li>
+  <li>The startOffset and endOffset represent the start and offset in the source text, so be careful in adjusting them.</li>
   <li>When caching a reusable token, clone it. When injecting a cached token into a stream that can be reset, clone it again.</li>
   </ul>
   </p>
