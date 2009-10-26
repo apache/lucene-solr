@@ -335,7 +335,7 @@ in subsequent searches.
     tags.
   </p>
   <p>
-    <a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=video+card&amp;fl=name,id&amp;hl=true&amp;hl.fl=name,features">q=video card&amp;fl=name,id&amp;hl=true&amp;hl.fl=name,features</a>
+    <a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=video+card&amp;fl=name,id&amp;hl=true&amp;hl.fl=name,features">...&amp;q=video card&amp;fl=name,id&amp;hl=true&amp;hl.fl=name,features</a>
   </p>
   <p>
     More request parameters related to controlling highlighting may be found
@@ -357,7 +357,7 @@ in subsequent searches.
     requests counts by the category field <code>cat</code>.
   </p>
   <p>
-    <a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name&amp;facet=true&amp;facet.field=cat">q=*:*&amp;facet=true&amp;facet.field=cat</a>
+    <a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name&amp;facet=true&amp;facet.field=cat">...&amp;q=*:*&amp;facet=true&amp;facet.field=cat</a>
   </p>
   <p>
     Notice that although only the first 10 documents are returned in the results list,
@@ -369,7 +369,7 @@ in subsequent searches.
     boolean <code>inStock</code> field:
   </p>
   <p>
-    <a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name&amp;facet=true&amp;facet.field=cat&amp;facet.field=inStock">q=*:*&amp;facet=true&amp;facet.field=cat&amp;facet.field=inStock</a>
+    <a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name&amp;facet=true&amp;facet.field=cat&amp;facet.field=inStock">...&amp;q=*:*&amp;facet=true&amp;facet.field=cat&amp;facet.field=inStock</a>
   </p>
 
   <p>
@@ -379,7 +379,7 @@ in subsequent searches.
   </p>
 
   <p>
-    <a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=ipod&amp;fl=name&amp;facet=true&amp;facet.query=price:[0+TO+100]&amp;facet.query=price:[100+TO+*]">q=ipod&amp;facet=true&amp;facet.query=price:[0 TO 100]&amp;facet.query=price:[100 TO *]</a>
+    <a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=ipod&amp;fl=name&amp;facet=true&amp;facet.query=price:[0+TO+100]&amp;facet.query=price:[100+TO+*]">...&amp;q=ipod&amp;facet=true&amp;facet.query=price:[0 TO 100]&amp;facet.query=price:[100 TO *]</a>
   </p>
 
   <p>
@@ -387,7 +387,7 @@ in subsequent searches.
   </p>
 
   <p>
-    <a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name,manufacturedate_dt&amp;facet=true&amp;facet.date=manufacturedate_dt&amp;facet.date.start=2004-01-01T00:00:00Z&amp;facet.date.end=2010-01-01T00:00:00Z&amp;facet.date.gap=%2b1YEAR">q=*:*&amp;facet=true&amp;facet.date=manufacturedate_dt&amp;facet.date.start=2004-01-01T00:00:00Z&amp;facet.date.end=2010-01-01T00:00:00Z&amp;facet.date.gap=+1YEAR</a>
+    <a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name,manufacturedate_dt&amp;facet=true&amp;facet.date=manufacturedate_dt&amp;facet.date.start=2004-01-01T00:00:00Z&amp;facet.date.end=2010-01-01T00:00:00Z&amp;facet.date.gap=%2b1YEAR">...&amp;q=*:*&amp;facet=true&amp;facet.date=manufacturedate_dt&amp;facet.date.start=2004-01-01T00:00:00Z&amp;facet.date.end=2010-01-01T00:00:00Z&amp;facet.date.gap=+1YEAR</a>
   </p>
 
   <p>
