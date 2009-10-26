@@ -851,7 +851,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         } catch (IOException e) {
           LOG.warn("Unable to get IndexCommit on startup", e);
         } finally {
-          s.decref();
+          if (s!=null) s.decref();
         }
       }
       String reserve = (String) master.get(RESERVE);
