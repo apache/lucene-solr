@@ -46,6 +46,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexReader;
@@ -60,6 +61,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -88,6 +90,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
   private IndexReader reader;
   static final String FIELD_NAME = "contents";
+  private static final String NUMERIC_FIELD_NAME = "nfield";
   private Query query;
   RAMDirectory ramDir;
   public IndexSearcher searcher = null;
@@ -301,6 +304,30 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
         numHighlights == 4);
     
+  }
+  
+  public void testNumericRangeQuery() throws Exception {
+    // doesn't currently highlight, but make sure it doesn't cause exception either
+    query = NumericRangeQuery.newIntRange(NUMERIC_FIELD_NAME, 2, 6, true, true);
+    searcher = new IndexSearcher(ramDir, true);
+    hits = searcher.search(query, 100);
+    int maxNumFragmentsRequired = 2;
+
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(this, scorer);
+    
+    for (int i = 0; i < hits.totalHits; i++) {
+      String text = searcher.doc(hits.scoreDocs[i].doc).get(NUMERIC_FIELD_NAME);
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+
+      highlighter.setTextFragmenter(new SimpleFragmenter(40));
+
+      String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
+          "...");
+      //System.out.println("\t" + result);
+    }
+
+
   }
 
   public void testSimpleQueryScorerPhraseHighlighting2() throws Exception {
@@ -1617,7 +1644,26 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     for (int i = 0; i < texts.length; i++) {
       addDoc(writer, texts[i]);
     }
-
+    Document doc = new Document();
+    NumericField nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    nfield.setIntValue(1);
+    doc.add(nfield);
+    writer.addDocument(doc, analyzer);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    nfield.setIntValue(3);
+    doc = new Document();
+    doc.add(nfield);
+    writer.addDocument(doc, analyzer);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    nfield.setIntValue(5);
+    doc = new Document();
+    doc.add(nfield);
+    writer.addDocument(doc, analyzer);
+    nfield = new NumericField(NUMERIC_FIELD_NAME, Store.YES, true);
+    nfield.setIntValue(7);
+    doc = new Document();
+    doc.add(nfield);
+    writer.addDocument(doc, analyzer);
     writer.optimize();
     writer.close();
     reader = IndexReader.open(ramDir, true);
