@@ -1,5 +1,4 @@
 Apache Solr Content Extraction Library (Solr Cell)
-                            Version 1.4-dev
                             Release Notes
 
 This file describes changes to the Solr Cell (contrib/extraction) module.  See SOLR-284 for details.
@@ -20,7 +19,7 @@ to your Solr Home lib directory.  See http://wiki.apache.org/solr/ExtractingRequ
 
 
 $Id:$
-================== Release 1.4-dev ==================
+================== Release 1.4.0 ==================
 
 1. SOLR-284:  Added in support for extraction. (Eric Pugh, Chris Harris, gsingers)
 

@@ -1,4 +1,4 @@
-                    Apache Solr - DataImportHandler Version 1.4-dev
+                    Apache Solr - DataImportHandler
                             Release Notes
 
 Introduction
@@ -9,7 +9,8 @@ HTTP data sources quick and easy.
 
 $Id$
 
-================== Release 1.4-dev ==================
+================== Release 1.4.0 ==================
+
 Upgrading from Solr 1.3
 -----------------------
 

@@ -1,6 +1,5 @@
 
-Apache Solr Version 1.4-dev
-                            Release Notes
+                      Apache Solr Release Notes
 
 Introduction
 ------------
@@ -24,6 +23,8 @@ $Id$
 
 
 ================== Release 1.4.0 ==================
+Release Date:  See http://lucene.apache.org/solr for the official release date.
+
 Upgrading from Solr 1.3
 -----------------------
 
