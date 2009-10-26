@@ -45,7 +45,7 @@ Bug fixes
    StringIndexOutOfBoundsException. (Koji Sekiguchi)
    
  * LUCENE-1929: Highlighter throws exception on NumericRangeQuery.
-   (Mark Miller)
+   (Mark Miller, Uwe Schindler)
 
  * LUCENE-2001: Wordnet Syns2Index incorrectly parses synonyms that
    contain a single quote. (Parag H. Dave via Robert Muir)
