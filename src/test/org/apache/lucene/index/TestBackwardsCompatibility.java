@@ -22,21 +22,28 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -127,22 +134,105 @@ public class TestBackwardsCompatibility extends LuceneTestCase
                              "23.nocfs",
                              "24.cfs",
                              "24.nocfs",
+                             "29.cfs",
+                             "29.nocfs",
   };
+  
+  private void assertCompressedFields29(Directory dir, boolean shouldStillBeCompressed) throws IOException {
+    int count = 0;
+    final int TEXT_PLAIN_LENGTH = TEXT_TO_COMPRESS.length() * 2;
+    // FieldSelectorResult.SIZE returns 2*number_of_chars for String fields:
+    final int BINARY_PLAIN_LENGTH = BINARY_TO_COMPRESS.length;
+    
+    IndexReader reader = IndexReader.open(dir, true);
+    try {
+      // look into sub readers and check if raw merge is on/off
+      List<IndexReader> readers = new ArrayList<IndexReader>();
+      ReaderUtil.gatherSubReaders(readers, reader);
+      for (IndexReader ir : readers) {
+        final FieldsReader fr = ((SegmentReader) ir).getFieldsReader();
+        assertTrue("for a 2.9 index, FieldsReader.canReadRawDocs() must be false and other way round for a trunk index",
+          shouldStillBeCompressed != fr.canReadRawDocs());
+      }
+    
+      // test that decompression works correctly
+      for(int i=0; i<reader.maxDoc(); i++) {
+        if (!reader.isDeleted(i)) {
+          Document d = reader.document(i);
+          if (d.get("content3") != null) continue;
+          count++;
+          Fieldable compressed = d.getFieldable("compressed");
+          if (Integer.parseInt(d.get("id")) % 2 == 0) {
+            assertFalse(compressed.isBinary());
+            assertEquals("incorrectly decompressed string", TEXT_TO_COMPRESS, compressed.stringValue());
+          } else {
+            assertTrue(compressed.isBinary());
+            assertTrue("incorrectly decompressed binary", Arrays.equals(BINARY_TO_COMPRESS, compressed.getBinaryValue()));
+          }
+        }
+      }
+      
+      // check if field was decompressed after optimize
+      for(int i=0; i<reader.maxDoc(); i++) {
+        if (!reader.isDeleted(i)) {
+          Document d = reader.document(i, new FieldSelector() {
+            public FieldSelectorResult accept(String fieldName) {
+              return ("compressed".equals(fieldName)) ? FieldSelectorResult.SIZE : FieldSelectorResult.LOAD;
+            }
+          });
+          if (d.get("content3") != null) continue;
+          count++;
+          // read the size from the binary value using DataInputStream (this prevents us from doing the shift ops ourselves):
+          final DataInputStream ds = new DataInputStream(new ByteArrayInputStream(d.getFieldable("compressed").getBinaryValue()));
+          final int actualSize = ds.readInt();
+          ds.close();
+          final int compressedSize = Integer.parseInt(d.get("compressedSize"));
+          final boolean binary = Integer.parseInt(d.get("id")) % 2 > 0;
+          final int shouldSize = shouldStillBeCompressed ?
+            compressedSize :
+            (binary ? BINARY_PLAIN_LENGTH : TEXT_PLAIN_LENGTH);
+          assertEquals("size incorrect", shouldSize, actualSize);
+          if (!shouldStillBeCompressed) {
+            assertFalse("uncompressed field should have another size than recorded in index", compressedSize == actualSize);
+          }
+        }
+      }
+      assertEquals("correct number of tests", 34 * 2, count);
+    } finally {
+      reader.close();
+    }
+  }
 
   public void testOptimizeOldIndex() throws IOException {
+    int hasTested29 = 0;
+    
     for(int i=0;i<oldNames.length;i++) {
       String dirName = "src/test/org/apache/lucene/index/index." + oldNames[i];
       unzip(dirName, oldNames[i]);
       String fullPath = fullDir(oldNames[i]);
       Directory dir = FSDirectory.open(new File(fullPath));
+
+      if (oldNames[i].startsWith("29.")) {
+        assertCompressedFields29(dir, true);
+        hasTested29++;
+      }
+
       IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
       w.optimize();
       w.close();
 
       _TestUtil.checkIndex(dir);
+      
+      if (oldNames[i].startsWith("29.")) {
+        assertCompressedFields29(dir, false);
+        hasTested29++;
+      }
+
       dir.close();
       rmDir(oldNames[i]);
     }
+    
+    assertEquals("test for compressed field should have run 4 times", 4, hasTested29);
   }
 
   public void testSearchOldIndex() throws IOException {
@@ -203,7 +293,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase
             !oldName.startsWith("22.")) {
 
           if (d.getField("content3") == null) {
-            assertEquals(5, fields.size());
+            final int numFields = oldName.startsWith("29.") ? 7 : 5;
+            assertEquals(numFields, fields.size());
             Field f = (Field) d.getField("id");
             assertEquals(""+i, f.stringValue());
 
@@ -497,6 +588,15 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     doc.add(new Field("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("content2", "here is more content with aaa aaa aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("fie\u2C77ld", "field with non-ascii name", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    /* This was used in 2.9 to generate an index with compressed field:
+    if (id % 2 == 0) {
+      doc.add(new Field("compressed", TEXT_TO_COMPRESS, Field.Store.COMPRESS, Field.Index.NOT_ANALYZED));
+      doc.add(new Field("compressedSize", Integer.toString(TEXT_COMPRESSED_LENGTH), Field.Store.YES, Field.Index.NOT_ANALYZED));
+    } else {
+      doc.add(new Field("compressed", BINARY_TO_COMPRESS, Field.Store.COMPRESS));    
+      doc.add(new Field("compressedSize", Integer.toString(BINARY_COMPRESSED_LENGTH), Field.Store.YES, Field.Index.NOT_ANALYZED));
+    }
+    */
     writer.addDocument(doc);
   }
 
@@ -527,4 +627,22 @@ public class TestBackwardsCompatibility extends LuceneTestCase
   public static String fullDir(String dirName) throws IOException {
     return new File(System.getProperty("tempDir"), dirName).getCanonicalPath();
   }
+
+  static final String TEXT_TO_COMPRESS = "this is a compressed field and should appear in 3.0 as an uncompressed field after merge";
+  // FieldSelectorResult.SIZE returns compressed size for compressed fields, which are internally handled as binary;
+  // do it in the same way like FieldsWriter, do not use CompressionTools.compressString() for compressed fields:
+  /* This was used in 2.9 to generate an index with compressed field:
+  static final int TEXT_COMPRESSED_LENGTH;
+  static {
+    try {
+      TEXT_COMPRESSED_LENGTH = CompressionTools.compress(TEXT_TO_COMPRESS.getBytes("UTF-8")).length;
+    } catch (Exception e) {
+      throw new RuntimeException();
+    }
+  }
+  */
+  static final byte[] BINARY_TO_COMPRESS = new byte[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20};
+  /* This was used in 2.9 to generate an index with compressed field:
+  static final int BINARY_COMPRESSED_LENGTH = CompressionTools.compress(BINARY_TO_COMPRESS).length;
+  */
 }

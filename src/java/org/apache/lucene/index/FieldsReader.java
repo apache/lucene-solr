@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.AbstractField;
+import org.apache.lucene.document.CompressionTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldSelector;
@@ -32,6 +33,7 @@ import org.apache.lucene.util.CloseableThreadLocal;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.zip.DataFormatException;
 
 /**
  * Class responsible for access to stored document fields.
@@ -203,7 +205,11 @@ final class FieldsReader implements Cloneable {
   }
 
   boolean canReadRawDocs() {
-    return format >= FieldsWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES;
+    // Disable reading raw docs in 2.x format, because of the removal of compressed
+    // fields in 3.0. We don't want rawDocs() to decode field bits to figure out
+    // if a field was compressed, hence we enforce ordinary (non-raw) stored field merges
+    // for <3.0 indexes.
+    return format >= FieldsWriter.FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS;
   }
 
   final Document doc(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
@@ -219,31 +225,34 @@ final class FieldsReader implements Cloneable {
       FieldSelectorResult acceptField = fieldSelector == null ? FieldSelectorResult.LOAD : fieldSelector.accept(fi.name);
       
       byte bits = fieldsStream.readByte();
-      assert bits <= FieldsWriter.FIELD_IS_TOKENIZED + FieldsWriter.FIELD_IS_BINARY;
+      assert bits <= FieldsWriter.FIELD_IS_COMPRESSED + FieldsWriter.FIELD_IS_TOKENIZED + FieldsWriter.FIELD_IS_BINARY;
 
+      boolean compressed = (bits & FieldsWriter.FIELD_IS_COMPRESSED) != 0;
+      assert (compressed ? (format < FieldsWriter.FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS) : true)
+        : "compressed fields are only allowed in indexes of version <= 2.9";
       boolean tokenize = (bits & FieldsWriter.FIELD_IS_TOKENIZED) != 0;
       boolean binary = (bits & FieldsWriter.FIELD_IS_BINARY) != 0;
       //TODO: Find an alternative approach here if this list continues to grow beyond the
       //list of 5 or 6 currently here.  See Lucene 762 for discussion
       if (acceptField.equals(FieldSelectorResult.LOAD)) {
-        addField(doc, fi, binary, tokenize);
+        addField(doc, fi, binary, compressed, tokenize);
       }
       else if (acceptField.equals(FieldSelectorResult.LOAD_AND_BREAK)){
-        addField(doc, fi, binary, tokenize);
+        addField(doc, fi, binary, compressed, tokenize);
         break;//Get out of this loop
       }
       else if (acceptField.equals(FieldSelectorResult.LAZY_LOAD)) {
-        addFieldLazy(doc, fi, binary, tokenize);
+        addFieldLazy(doc, fi, binary, compressed, tokenize);
       }
       else if (acceptField.equals(FieldSelectorResult.SIZE)){
-        skipField(binary, addFieldSize(doc, fi, binary));
+        skipField(binary, compressed, addFieldSize(doc, fi, binary, compressed));
       }
       else if (acceptField.equals(FieldSelectorResult.SIZE_AND_BREAK)){
-        addFieldSize(doc, fi, binary);
+        addFieldSize(doc, fi, binary, compressed);
         break;
       }
       else {
-        skipField(binary);
+        skipField(binary, compressed);
       }
     }
 
@@ -280,12 +289,12 @@ final class FieldsReader implements Cloneable {
    * Skip the field.  We still have to read some of the information about the field, but can skip past the actual content.
    * This will have the most payoff on large fields.
    */
-  private void skipField(boolean binary) throws IOException {
-    skipField(binary, fieldsStream.readVInt());
+  private void skipField(boolean binary, boolean compressed) throws IOException {
+    skipField(binary, compressed, fieldsStream.readVInt());
   }
   
-  private void skipField(boolean binary, int toRead) throws IOException {
-   if (format >= FieldsWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES || binary) {
+  private void skipField(boolean binary, boolean compressed, int toRead) throws IOException {
+   if (format >= FieldsWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES || binary || compressed) {
      fieldsStream.seek(fieldsStream.getFilePointer() + toRead);
    } else {
      // We need to skip chars.  This will slow us down, but still better
@@ -293,12 +302,12 @@ final class FieldsReader implements Cloneable {
    }
   }
 
-  private void addFieldLazy(Document doc, FieldInfo fi, boolean binary, boolean tokenize) throws IOException {
+  private void addFieldLazy(Document doc, FieldInfo fi, boolean binary, boolean compressed, boolean tokenize) throws IOException {
     if (binary) {
       int toRead = fieldsStream.readVInt();
       long pointer = fieldsStream.getFilePointer();
       //was: doc.add(new Fieldable(fi.name, b, Fieldable.Store.YES));
-      doc.add(new LazyField(fi.name, Field.Store.YES, toRead, pointer, binary));
+      doc.add(new LazyField(fi.name, Field.Store.YES, toRead, pointer, binary, compressed));
       //Need to move the pointer ahead by toRead positions
       fieldsStream.seek(pointer + toRead);
     } else {
@@ -307,43 +316,75 @@ final class FieldsReader implements Cloneable {
       Field.TermVector termVector = Field.TermVector.toTermVector(fi.storeTermVector, fi.storeOffsetWithTermVector, fi.storePositionWithTermVector);
 
       AbstractField f;
-      int length = fieldsStream.readVInt();
-      long pointer = fieldsStream.getFilePointer();
-      //Skip ahead of where we are by the length of what is stored
-      if (format >= FieldsWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES)
-        fieldsStream.seek(pointer+length);
-      else
-        fieldsStream.skipChars(length);
-      f = new LazyField(fi.name, store, index, termVector, length, pointer, binary);
-      f.setOmitNorms(fi.omitNorms);
-      f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
+      if (compressed) {
+        int toRead = fieldsStream.readVInt();
+        long pointer = fieldsStream.getFilePointer();
+        f = new LazyField(fi.name, store, toRead, pointer, binary, compressed);
+        //skip over the part that we aren't loading
+        fieldsStream.seek(pointer + toRead);
+        f.setOmitNorms(fi.omitNorms);
+        f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
+      } else {
+        int length = fieldsStream.readVInt();
+        long pointer = fieldsStream.getFilePointer();
+        //Skip ahead of where we are by the length of what is stored
+        if (format >= FieldsWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES) {
+          fieldsStream.seek(pointer+length);
+        } else {
+          fieldsStream.skipChars(length);
+        }
+        f = new LazyField(fi.name, store, index, termVector, length, pointer, binary, compressed);
+        f.setOmitNorms(fi.omitNorms);
+        f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
+      }
+      
       doc.add(f);
     }
 
   }
 
-  private void addField(Document doc, FieldInfo fi, boolean binary, boolean tokenize) throws CorruptIndexException, IOException {
+  private void addField(Document doc, FieldInfo fi, boolean binary, boolean compressed, boolean tokenize) throws CorruptIndexException, IOException {
 
     //we have a binary stored field, and it may be compressed
     if (binary) {
       int toRead = fieldsStream.readVInt();
       final byte[] b = new byte[toRead];
       fieldsStream.readBytes(b, 0, b.length);
-      doc.add(new Field(fi.name, b, Field.Store.YES));
+      if (compressed) {
+        doc.add(new Field(fi.name, uncompress(b), Field.Store.YES));
+      } else {
+        doc.add(new Field(fi.name, b, Field.Store.YES));
+      }
     } else {
       Field.Store store = Field.Store.YES;
       Field.Index index = Field.Index.toIndex(fi.isIndexed, tokenize);
       Field.TermVector termVector = Field.TermVector.toTermVector(fi.storeTermVector, fi.storeOffsetWithTermVector, fi.storePositionWithTermVector);
 
       AbstractField f;
-      f = new Field(fi.name,     // name
-    		false,
-              fieldsStream.readString(), // read value
-              store,
-              index,
-              termVector);
-      f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
-      f.setOmitNorms(fi.omitNorms);
+      if (compressed) {
+        int toRead = fieldsStream.readVInt();
+
+        final byte[] b = new byte[toRead];
+        fieldsStream.readBytes(b, 0, b.length);
+        f = new Field(fi.name,      // field name
+                false,
+                new String(uncompress(b), "UTF-8"), // uncompress the value and add as string
+                store,
+                index,
+                termVector);
+        f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
+        f.setOmitNorms(fi.omitNorms);
+      } else {
+        f = new Field(fi.name,     // name
+         false,
+                fieldsStream.readString(), // read value
+                store,
+                index,
+                termVector);
+        f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
+        f.setOmitNorms(fi.omitNorms);
+      }
+      
       doc.add(f);
     }
   }
@@ -351,8 +392,8 @@ final class FieldsReader implements Cloneable {
   // Add the size of field as a byte[] containing the 4 bytes of the integer byte size (high order byte first; char = 2 bytes)
   // Read just the size -- caller must skip the field content to continue reading fields
   // Return the size in bytes or chars, depending on field type
-  private int addFieldSize(Document doc, FieldInfo fi, boolean binary) throws IOException {
-    int size = fieldsStream.readVInt(), bytesize = binary ? size : 2*size;
+  private int addFieldSize(Document doc, FieldInfo fi, boolean binary, boolean compressed) throws IOException {
+    int size = fieldsStream.readVInt(), bytesize = binary || compressed ? size : 2*size;
     byte[] sizebytes = new byte[4];
     sizebytes[0] = (byte) (bytesize>>>24);
     sizebytes[1] = (byte) (bytesize>>>16);
@@ -369,8 +410,10 @@ final class FieldsReader implements Cloneable {
   private class LazyField extends AbstractField implements Fieldable {
     private int toRead;
     private long pointer;
+    /** @deprecated Only kept for backward-compatbility with <3.0 indexes. Will be removed in 4.0. */
+    private boolean isCompressed;
 
-    public LazyField(String name, Field.Store store, int toRead, long pointer, boolean isBinary) {
+    public LazyField(String name, Field.Store store, int toRead, long pointer, boolean isBinary, boolean isCompressed) {
       super(name, store, Field.Index.NO, Field.TermVector.NO);
       this.toRead = toRead;
       this.pointer = pointer;
@@ -378,9 +421,10 @@ final class FieldsReader implements Cloneable {
       if (isBinary)
         binaryLength = toRead;
       lazy = true;
+      this.isCompressed = isCompressed;
     }
 
-    public LazyField(String name, Field.Store store, Field.Index index, Field.TermVector termVector, int toRead, long pointer, boolean isBinary) {
+    public LazyField(String name, Field.Store store, Field.Index index, Field.TermVector termVector, int toRead, long pointer, boolean isBinary, boolean isCompressed) {
       super(name, store, index, termVector);
       this.toRead = toRead;
       this.pointer = pointer;
@@ -388,6 +432,7 @@ final class FieldsReader implements Cloneable {
       if (isBinary)
         binaryLength = toRead;
       lazy = true;
+      this.isCompressed = isCompressed;
     }
 
     private IndexInput getFieldStream() {
@@ -427,15 +472,21 @@ final class FieldsReader implements Cloneable {
           IndexInput localFieldsStream = getFieldStream();
           try {
             localFieldsStream.seek(pointer);
-            if (format >= FieldsWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES) {
-              byte[] bytes = new byte[toRead];
-              localFieldsStream.readBytes(bytes, 0, toRead);
-              fieldsData = new String(bytes, "UTF-8");
+            if (isCompressed) {
+              final byte[] b = new byte[toRead];
+              localFieldsStream.readBytes(b, 0, b.length);
+              fieldsData = new String(uncompress(b), "UTF-8");
             } else {
-              //read in chars b/c we already know the length we need to read
-              char[] chars = new char[toRead];
-              localFieldsStream.readChars(chars, 0, toRead);
-              fieldsData = new String(chars);
+              if (format >= FieldsWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES) {
+                byte[] bytes = new byte[toRead];
+                localFieldsStream.readBytes(bytes, 0, toRead);
+                fieldsData = new String(bytes, "UTF-8");
+              } else {
+                //read in chars b/c we already know the length we need to read
+                char[] chars = new char[toRead];
+                localFieldsStream.readChars(chars, 0, toRead);
+                fieldsData = new String(chars);
+              }
             }
           } catch (IOException e) {
             throw new FieldReaderException(e);
@@ -484,7 +535,11 @@ final class FieldsReader implements Cloneable {
           try {
             localFieldsStream.seek(pointer);
             localFieldsStream.readBytes(b, 0, toRead);
-            fieldsData = b;
+            if (isCompressed == true) {
+              fieldsData = uncompress(b);
+            } else {
+              fieldsData = b;
+            }
           } catch (IOException e) {
             throw new FieldReaderException(e);
           }
@@ -496,6 +551,18 @@ final class FieldsReader implements Cloneable {
         return (byte[]) fieldsData;
       } else
         return null;     
+    }
+  }
+
+  private byte[] uncompress(byte[] b)
+          throws CorruptIndexException {
+    try {
+      return CompressionTools.decompress(b);
+    } catch (DataFormatException e) {
+      // this will happen if the field is not compressed
+      CorruptIndexException newException = new CorruptIndexException("field data are in wrong format: " + e.toString());
+      newException.initCause(e);
+      throw newException;
     }
   }
 }

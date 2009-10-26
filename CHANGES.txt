@@ -15,6 +15,25 @@ Changes in runtime behavior
 * LUCENE-1677: Remove the system property to set SegmentReader class
   implementation.  (Uwe Schindler)
 
+* LUCENE-1960: As a consequence of the removal of Field.Store.COMPRESS,
+  support for this type of fields was removed. Lucene 3.0 is still able
+  to read indexes with compressed fields, but as soon as merges occur
+  or the index is optimized, all compressed fields are decompressed
+  and converted to Field.Store.YES. Because of this, indexes with
+  compressed fields can suddenly get larger. Also the first merge with
+  decompression cannot be done in raw mode, it is therefore slower.
+  This change has no effect for code that uses such old indexes,
+  they behave as before (fields are automatically decompressed
+  during read). Indexes converted to Lucene 3.0 format cannot be read
+  anymore with previous versions.
+  It is recommended to optimize your indexes after upgrading to convert
+  to the new format and decompress all fields.
+  If you want compressed fields, you can use CompressionTools, that
+  creates compressed byte[] to be added as binary stored field. This
+  cannot be done automatically, as you also have to decompress such
+  fields when reading. You have to reindex to do that.
+  (Michael Busch, Uwe Schindler)
+
 API Changes
 
 * LUCENE-1257, LUCENE-1984, LUCENE-1985, ...: Port to Java 1.5 [not yet finished].
