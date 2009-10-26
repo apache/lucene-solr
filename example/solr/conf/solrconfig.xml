@@ -71,6 +71,9 @@
   <dataDir>${solr.data.dir:./solr/data}</dataDir>
 
 
+  <!-- WARNING: this <indexDefaults> section only provides defaults for index writers
+       in general. See also the <mainIndex> section after that when changing parameters
+       for Solr's main Lucene index. -->
   <indexDefaults>
    <!-- Values here affect all index writers and act as a default unless overridden. -->
     <useCompoundFile>false</useCompoundFile>
@@ -148,7 +151,8 @@
     <!-- Deprecated -->
     <!--<maxBufferedDocs>1000</maxBufferedDocs>-->
     <!--<maxMergeDocs>2147483647</maxMergeDocs>-->
-    <maxFieldLength>10000</maxFieldLength>
+
+    <!-- inherit from indexDefaults <maxFieldLength>10000</maxFieldLength> -->
 
     <!-- If true, unlock any held write or commit locks on startup. 
          This defeats the locking mechanism that allows multiple
