@@ -100,6 +100,7 @@ class ConjunctionScorer extends Scorer {
     return doc;
   }
   
+  @Override
   public int advance(int target) throws IOException {
     if (lastDoc == NO_MORE_DOCS) {
       return lastDoc;
@@ -109,14 +110,12 @@ class ConjunctionScorer extends Scorer {
     return lastDoc = doNext();
   }
 
+  @Override
   public int docID() {
     return lastDoc;
   }
   
-  public Explanation explain(int doc) {
-    throw new UnsupportedOperationException();
-  }
-
+  @Override
   public int nextDoc() throws IOException {
     if (lastDoc == NO_MORE_DOCS) {
       return lastDoc;
@@ -127,6 +126,7 @@ class ConjunctionScorer extends Scorer {
     return lastDoc = doNext();
   }
   
+  @Override
   public float score() throws IOException {
     float sum = 0.0f;
     for (int i = 0; i < scorers.length; i++) {

@@ -42,18 +42,17 @@ public class ScoreCachingWrappingScorer extends Scorer {
     this.scorer = scorer;
   }
 
+  @Override
   protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
     return scorer.score(collector, max, firstDocID);
   }
 
+  @Override
   public Similarity getSimilarity() {
     return scorer.getSimilarity();
   }
   
-  public Explanation explain(int doc) throws IOException {
-    return scorer.explain(doc);
-  }
-
+  @Override
   public float score() throws IOException {
     int doc = scorer.docID();
     if (doc != curDoc) {
@@ -64,18 +63,22 @@ public class ScoreCachingWrappingScorer extends Scorer {
     return curScore;
   }
 
+  @Override
   public int docID() {
     return scorer.docID();
   }
 
+  @Override
   public int nextDoc() throws IOException {
     return scorer.nextDoc();
   }
   
+  @Override
   public void score(Collector collector) throws IOException {
     scorer.score(collector);
   }
   
+  @Override
   public int advance(int target) throws IOException {
     return scorer.advance(target);
   }

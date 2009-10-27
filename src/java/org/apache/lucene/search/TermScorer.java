@@ -65,11 +65,13 @@ final class TermScorer extends Scorer {
       scoreCache[i] = getSimilarity().tf(i) * weightValue;
   }
 
+  @Override
   public void score(Collector c) throws IOException {
     score(c, Integer.MAX_VALUE, nextDoc());
   }
 
   // firstDocID is ignored since nextDoc() sets 'doc'
+  @Override
   protected boolean score(Collector c, int end, int firstDocID) throws IOException {
     c.setScorer(this);
     while (doc < end) {                           // for docs in window
@@ -90,6 +92,7 @@ final class TermScorer extends Scorer {
     return true;
   }
 
+  @Override
   public int docID() { return doc; }
 
   /**
@@ -99,6 +102,7 @@ final class TermScorer extends Scorer {
    * 
    * @return the document matching the query or -1 if there are no more documents.
    */
+  @Override
   public int nextDoc() throws IOException {
     pointer++;
     if (pointer >= pointerMax) {
@@ -114,6 +118,7 @@ final class TermScorer extends Scorer {
     return doc;
   }
   
+  @Override
   public float score() {
     assert doc != -1;
     int f = freqs[pointer];
@@ -134,6 +139,7 @@ final class TermScorer extends Scorer {
    *          The target document number.
    * @return the matching document or -1 if none exist.
    */
+  @Override
   public int advance(int target) throws IOException {
     // first scan in cache
     for (pointer++; pointer < pointerMax; pointer++) {
@@ -155,34 +161,7 @@ final class TermScorer extends Scorer {
     return doc;
   }
   
-  /** Returns an explanation of the score for a document.
-   * @param doc The document number for the explanation.
-   */
-  public Explanation explain(int doc) throws IOException {
-    TermQuery query = (TermQuery) weight.getQuery();
-    Explanation tfExplanation = new Explanation();
-    int tf = 0;
-    while (pointer < pointerMax) {
-      if (docs[pointer] == doc)
-        tf = freqs[pointer];
-      pointer++;
-    }
-    if (tf == 0) {
-        if (termDocs.skipTo(doc))
-        {
-            if (termDocs.doc() == doc)
-            {
-                tf = termDocs.freq();
-            }
-        }
-    }
-    termDocs.close();
-    tfExplanation.setValue(getSimilarity().tf(tf));
-    tfExplanation.setDescription("tf(termFreq("+query.getTerm()+")="+tf+")");
-    
-    return tfExplanation;
-  }
-
   /** Returns a string representation of this <code>TermScorer</code>. */
+  @Override
   public String toString() { return "scorer(" + weight + ")"; }
 }

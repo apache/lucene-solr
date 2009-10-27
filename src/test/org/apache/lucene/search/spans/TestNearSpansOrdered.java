@@ -169,9 +169,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
    */
   public void testSpanNearScorerExplain() throws Exception {
     SpanNearQuery q = makeQuery();
-    Weight w = q.weight(searcher);
-    Scorer s = w.scorer(searcher.getIndexReader(), true, false);
-    Explanation e = s.explain(1);
+    Explanation e = q.weight(searcher).explain(searcher.getIndexReader(), 1);
     assertTrue("Scorer explanation value for doc#1 isn't positive: "
                + e.toString(),
                0.0f < e.getValue());

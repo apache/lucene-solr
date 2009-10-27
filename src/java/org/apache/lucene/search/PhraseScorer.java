@@ -69,8 +69,10 @@ abstract class PhraseScorer extends Scorer {
     first.doc = -1;
   }
 
+  @Override
   public int docID() { return first.doc; }
 
+  @Override
   public int nextDoc() throws IOException {
     if (firstTime) {
       init();
@@ -104,12 +106,14 @@ abstract class PhraseScorer extends Scorer {
     return false;                                 // no more matches
   }
 
+  @Override
   public float score() throws IOException {
     //System.out.println("scoring " + first.doc);
     float raw = getSimilarity().tf(freq) * value; // raw score
     return norms == null ? raw : raw * Similarity.decodeNorm(norms[first.doc]); // normalize
   }
 
+  @Override
   public int advance(int target) throws IOException {
     firstTime = false;
     for (PhrasePositions pp = first; more && pp != null; pp = pp.next) {
@@ -123,6 +127,11 @@ abstract class PhraseScorer extends Scorer {
     }
     return first.doc;
   }
+  
+  /**
+   * phrase frequency in current doc as computed by phraseFreq().
+   */
+  public final float currentFreq() { return freq; }
   
   /**
    * For a document containing all the phrase query terms, compute the
@@ -170,17 +179,7 @@ abstract class PhraseScorer extends Scorer {
     last.next = null;
   }
 
-  public Explanation explain(final int doc) throws IOException {
-    Explanation tfExplanation = new Explanation();
-
-    int d = advance(doc);
-    float phraseFreq = (d == doc) ? freq : 0.0f;
-    tfExplanation.setValue(getSimilarity().tf(phraseFreq));
-    tfExplanation.setDescription("tf(phraseFreq=" + phraseFreq + ")");
-
-    return tfExplanation;
-  }
-
+  @Override
   public String toString() { return "scorer(" + weight + ")"; }
 
 }

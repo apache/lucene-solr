@@ -80,15 +80,14 @@ public class TestBooleanScorer extends LuceneTestCase
     Similarity sim = Similarity.getDefault();
     Scorer[] scorers = new Scorer[] {new Scorer(sim) {
       private int doc = -1;
-      public Explanation explain(int doc) throws IOException { return null; }
-      public float score() throws IOException { return 0; }
-      public int docID() { return doc; }
+      @Override public float score() throws IOException { return 0; }
+      @Override public int docID() { return doc; }
       
-      public int nextDoc() throws IOException {
+      @Override public int nextDoc() throws IOException {
         return doc = doc == -1 ? 3000 : NO_MORE_DOCS;
       }
 
-      public int advance(int target) throws IOException {
+      @Override public int advance(int target) throws IOException {
         return doc = target <= 3000 ? 3000 : NO_MORE_DOCS;
       }
       

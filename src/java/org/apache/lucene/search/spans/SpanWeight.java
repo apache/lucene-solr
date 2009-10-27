@@ -52,25 +52,32 @@ public class SpanWeight extends Weight {
     idf = idfExp.getIdf();
   }
 
+  @Override
   public Query getQuery() { return query; }
+
+  @Override
   public float getValue() { return value; }
 
+  @Override
   public float sumOfSquaredWeights() throws IOException {
     queryWeight = idf * query.getBoost();         // compute query weight
     return queryWeight * queryWeight;             // square it
   }
 
+  @Override
   public void normalize(float queryNorm) {
     this.queryNorm = queryNorm;
     queryWeight *= queryNorm;                     // normalize query weight
     value = queryWeight * idf;                    // idf for document
   }
 
+  @Override
   public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
     return new SpanScorer(query.getSpans(reader), this, similarity, reader
         .norms(query.getField()));
   }
 
+  @Override
   public Explanation explain(IndexReader reader, int doc)
     throws IOException {
 
@@ -104,7 +111,7 @@ public class SpanWeight extends Weight {
     fieldExpl.setDescription("fieldWeight("+field+":"+query.toString(field)+
                              " in "+doc+"), product of:");
 
-    Explanation tfExpl = scorer(reader, true, false).explain(doc);
+    Explanation tfExpl = ((SpanScorer)scorer(reader, true, false)).explain(doc);
     fieldExpl.addDetail(tfExpl);
     fieldExpl.addDetail(idfExpl);
 

@@ -43,14 +43,17 @@ class ReqOptSumScorer extends Scorer {
     this.optScorer = optScorer;
   }
 
+  @Override
   public int nextDoc() throws IOException {
     return reqScorer.nextDoc();
   }
   
+  @Override
   public int advance(int target) throws IOException {
     return reqScorer.advance(target);
   }
   
+  @Override
   public int docID() {
     return reqScorer.docID();
   }
@@ -60,6 +63,7 @@ class ReqOptSumScorer extends Scorer {
    * @return The score of the required scorer, eventually increased by the score
    * of the optional scorer when it also matches the current document.
    */
+  @Override
   public float score() throws IOException {
     int curDoc = reqScorer.docID();
     float reqScore = reqScorer.score();
@@ -76,16 +80,5 @@ class ReqOptSumScorer extends Scorer {
     return optScorerDoc == curDoc ? reqScore + optScorer.score() : reqScore;
   }
 
-  /** Explain the score of a document.
-   * TODO: Also show the total score.
-   * See BooleanScorer.explain() on how to do this.
-   */
-  public Explanation explain(int doc) throws IOException {
-    Explanation res = new Explanation();
-    res.setDescription("required, optional");
-    res.addDetail(reqScorer.explain(doc));
-    res.addDetail(optScorer.explain(doc));
-    return res;
-  }
 }
 

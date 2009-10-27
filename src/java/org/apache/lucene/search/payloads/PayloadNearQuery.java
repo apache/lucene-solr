@@ -223,7 +223,7 @@ public class PayloadNearQuery extends SpanNearQuery {
     }
 
     @Override
-    public Explanation explain(int doc) throws IOException {
+    protected Explanation explain(int doc) throws IOException {
       Explanation result = new Explanation();
       Explanation nonPayloadExpl = super.explain(doc);
       result.addDetail(nonPayloadExpl);

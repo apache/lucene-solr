@@ -125,6 +125,9 @@ API Changes
 * LUCENE-1973: Un-deprecate IndexSearcher.setDefaultFieldSortScoring,
   to allow controlling per-IndexSearcher whether scores are computed
   when sorting by field.  (Uwe Schindler, Mike McCandless)
+  
+* LUCENE-2011: Remove deprecated Scorer.explain(int).
+  (Uwe Schindler, Mark Miller)
    
 Bug fixes
 

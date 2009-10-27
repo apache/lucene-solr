@@ -32,9 +32,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       super(null);
     }
     
-    public Explanation explain(int doc) throws IOException { return null; }
-
-    public float score() throws IOException {
+    @Override public float score() throws IOException {
       // advance idx on purpose, so that consecutive calls to score will get
       // different results. This is to emulate computation of a score. If
       // ScoreCachingWrappingScorer is used, this should not be called more than
@@ -42,13 +40,13 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       return idx == scores.length ? Float.NaN : scores[idx++];
     }
 
-    public int docID() { return doc; }
+    @Override public int docID() { return doc; }
 
-    public int nextDoc() throws IOException {
+    @Override public int nextDoc() throws IOException {
       return ++doc < scores.length ? doc : NO_MORE_DOCS;
     }
     
-    public int advance(int target) throws IOException {
+    @Override public int advance(int target) throws IOException {
       doc = target;
       return doc < scores.length ? doc : NO_MORE_DOCS;
     }
@@ -65,7 +63,7 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       mscores = new float[numToCollect];
     }
     
-    public void collect(int doc) throws IOException {
+    @Override public void collect(int doc) throws IOException {
       // just a sanity check to avoid IOOB.
       if (idx == mscores.length) {
         return; 
@@ -78,15 +76,15 @@ public class TestScoreCachingWrappingScorer extends LuceneTestCase {
       ++idx;
     }
 
-    public void setNextReader(IndexReader reader, int docBase)
+    @Override public void setNextReader(IndexReader reader, int docBase)
         throws IOException {
     }
 
-    public void setScorer(Scorer scorer) throws IOException {
+    @Override public void setScorer(Scorer scorer) throws IOException {
       this.scorer = new ScoreCachingWrappingScorer(scorer);
     }
     
-    public boolean acceptsDocsOutOfOrder() {
+    @Override public boolean acceptsDocsOutOfOrder() {
       return true;
     }
 

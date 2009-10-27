@@ -41,6 +41,7 @@ class ReqExclScorer extends Scorer {
     this.exclDisi = exclDisi;
   }
 
+  @Override
   public int nextDoc() throws IOException {
     if (reqScorer == null) {
       return doc;
@@ -88,6 +89,7 @@ class ReqExclScorer extends Scorer {
     return NO_MORE_DOCS;
   }
 
+  @Override
   public int docID() {
     return doc;
   }
@@ -96,10 +98,12 @@ class ReqExclScorer extends Scorer {
    * Initially invalid, until {@link #next()} is called the first time.
    * @return The score of the required scorer.
    */
+  @Override
   public float score() throws IOException {
     return reqScorer.score(); // reqScorer may be null when next() or skipTo() already return false
   }
   
+  @Override
   public int advance(int target) throws IOException {
     if (reqScorer == null) {
       return doc = NO_MORE_DOCS;
@@ -112,16 +116,5 @@ class ReqExclScorer extends Scorer {
       return doc = NO_MORE_DOCS;
     }
     return doc = toNonExcluded();
-  }
-  
-  public Explanation explain(int doc) throws IOException {
-    Explanation res = new Explanation();
-    if (exclDisi.advance(doc) == doc) {
-      res.setDescription("excluded");
-    } else {
-      res.setDescription("not excluded");
-      res.addDetail(reqScorer.explain(doc));
-    }
-    return res;
   }
 }

@@ -113,6 +113,8 @@ class BooleanScorer2 extends Scorer {
       super(scorer.getSimilarity());
       this.scorer = scorer;
     }
+
+    @Override
     public float score() throws IOException {
       int doc = docID();
       if (doc >= lastScoredDoc) {
@@ -124,17 +126,20 @@ class BooleanScorer2 extends Scorer {
       }
       return lastDocScore;
     }
+
+    @Override
     public int docID() {
       return scorer.docID();
     }
+
+    @Override
     public int nextDoc() throws IOException {
       return scorer.nextDoc();
     }
+
+    @Override
     public int advance(int target) throws IOException {
       return scorer.advance(target);
-    }
-    public Explanation explain(int docNr) throws IOException {
-      return scorer.explain(docNr);
     }
   }
 
@@ -146,7 +151,7 @@ class BooleanScorer2 extends Scorer {
       // Save the score of lastScoredDoc, so that we don't compute it more than
       // once in score().
       private float lastDocScore = Float.NaN;
-      public float score() throws IOException {
+      @Override public float score() throws IOException {
         int doc = docID();
         if (doc >= lastScoredDoc) {
           if (doc > lastScoredDoc) {
@@ -170,7 +175,7 @@ class BooleanScorer2 extends Scorer {
       // Save the score of lastScoredDoc, so that we don't compute it more than
       // once in score().
       private float lastDocScore = Float.NaN;
-      public float score() throws IOException {
+      @Override public float score() throws IOException {
         int doc = docID();
         if (doc >= lastScoredDoc) {
           if (doc > lastScoredDoc) {
@@ -262,8 +267,8 @@ class BooleanScorer2 extends Scorer {
 
   /** Scores and collects all matching documents.
    * @param collector The collector to which all matching documents are passed through.
-   * <br>When this method is used the {@link #explain(int)} method should not be used.
    */
+  @Override
   public void score(Collector collector) throws IOException {
     collector.setScorer(this);
     while ((doc = countingSumScorer.nextDoc()) != NO_MORE_DOCS) {
@@ -271,6 +276,7 @@ class BooleanScorer2 extends Scorer {
     }
   }
   
+  @Override
   protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
     doc = firstDocID;
     collector.setScorer(this);
@@ -281,35 +287,26 @@ class BooleanScorer2 extends Scorer {
     return doc != NO_MORE_DOCS;
   }
 
+  @Override
   public int docID() {
     return doc;
   }
   
+  @Override
   public int nextDoc() throws IOException {
     return doc = countingSumScorer.nextDoc();
   }
   
+  @Override
   public float score() throws IOException {
     coordinator.nrMatchers = 0;
     float sum = countingSumScorer.score();
     return sum * coordinator.coordFactors[coordinator.nrMatchers];
   }
 
+  @Override
   public int advance(int target) throws IOException {
     return doc = countingSumScorer.advance(target);
-  }
-  
-  /** Throws an UnsupportedOperationException.
-   * TODO: Implement an explanation of the coordination factor.
-   * @param doc The document number for the explanation.
-   * @throws UnsupportedOperationException
-   */
-  public Explanation explain(int doc) {
-    throw new UnsupportedOperationException();
- /* How to explain the coordination factor?
-    initCountingSumScorer();
-    return countingSumScorer.explain(doc); // misses coord factor. 
-  */
   }
 }
 

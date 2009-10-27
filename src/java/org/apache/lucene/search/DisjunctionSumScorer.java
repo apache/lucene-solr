@@ -106,7 +106,6 @@ class DisjunctionSumScorer extends Scorer {
 
   /** Scores and collects all matching documents.
    * @param collector The collector to which all matching documents are passed through.
-   * <br>When this method is used the {@link #explain(int)} method should not be used.
    */
   @Override
   public void score(Collector collector) throws IOException {
@@ -209,8 +208,6 @@ class DisjunctionSumScorer extends Scorer {
   /**
    * Advances to the first match beyond the current whose document number is
    * greater than or equal to a given target. <br>
-   * When this method is used the {@link #explain(int)} method should not be
-   * used. <br>
    * The implementation uses the skipTo() method on the subscorers.
    * 
    * @param target
@@ -235,32 +232,5 @@ class DisjunctionSumScorer extends Scorer {
         }
       }
     } while (true);
-  }
-  
-  /** @return An explanation for the score of a given document. */
-  @Override
-  public Explanation explain(int doc) throws IOException {
-    Explanation res = new Explanation();
-    float sumScore = 0.0f;
-    int nrMatches = 0;
-    for (Scorer se : subScorers) {
-      Explanation es = se.explain(doc);
-      if (es.getValue() > 0.0f) { // indicates match
-        sumScore += es.getValue();
-        nrMatches++;
-      }
-      res.addDetail(es);
-    }
-    if (nrMatchers >= minimumNrMatchers) {
-      res.setValue(sumScore);
-      res.setDescription("sum over at least " + minimumNrMatchers
-                         + " of " + subScorers.size() + ":");
-    } else {
-      res.setValue(0.0f);
-      res.setDescription(nrMatches + " match(es) but at least "
-                         + minimumNrMatchers + " of "
-                         + subScorers.size() + " needed");
-    }
-    return res;
   }
 }

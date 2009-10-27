@@ -66,6 +66,8 @@ final class BooleanScorer extends Scorer {
       this.mask = mask;
       this.bucketTable = bucketTable;
     }
+    
+    @Override
     public final void collect(final int doc) throws IOException {
       final BucketTable table = bucketTable;
       final int i = doc & BucketTable.MASK;
@@ -88,14 +90,17 @@ final class BooleanScorer extends Scorer {
       }
     }
     
+    @Override
     public void setNextReader(IndexReader reader, int docBase) {
       // not needed by this implementation
     }
     
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
     }
     
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
     }
@@ -113,14 +118,16 @@ final class BooleanScorer extends Scorer {
     
     public BucketScorer() { super(null); }
     
+    @Override
     public int advance(int target) throws IOException { return NO_MORE_DOCS; }
 
+    @Override
     public int docID() { return doc; }
 
-    public Explanation explain(int doc) throws IOException { return null; }
-    
+    @Override
     public int nextDoc() throws IOException { return NO_MORE_DOCS; }
     
+    @Override
     public float score() throws IOException { return score; }
     
   }
@@ -213,6 +220,7 @@ final class BooleanScorer extends Scorer {
   }
 
   // firstDocID is ignored since nextDoc() initializes 'current'
+  @Override
   protected boolean score(Collector collector, int max, int firstDocID) throws IOException {
     boolean more;
     Bucket tmp;
@@ -268,18 +276,17 @@ final class BooleanScorer extends Scorer {
     return false;
   }
   
+  @Override
   public int advance(int target) throws IOException {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public int docID() {
     return doc;
   }
 
-  public Explanation explain(int doc) {
-    throw new UnsupportedOperationException();
-  }
-
+  @Override
   public int nextDoc() throws IOException {
     boolean more;
     do {
@@ -313,14 +320,17 @@ final class BooleanScorer extends Scorer {
     return doc = NO_MORE_DOCS;
   }
 
+  @Override
   public float score() {
     return current.score * coordFactors[current.coord];
   }
 
+  @Override
   public void score(Collector collector) throws IOException {
     score(collector, Integer.MAX_VALUE, nextDoc());
   }
   
+  @Override
   public String toString() {
     StringBuilder buffer = new StringBuilder();
     buffer.append("boolean(");

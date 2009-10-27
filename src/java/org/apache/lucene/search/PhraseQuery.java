@@ -123,22 +123,29 @@ public class PhraseQuery extends Query {
       idf = idfExp.getIdf();
     }
 
+    @Override
     public String toString() { return "weight(" + PhraseQuery.this + ")"; }
 
+    @Override
     public Query getQuery() { return PhraseQuery.this; }
+
+    @Override
     public float getValue() { return value; }
 
+    @Override
     public float sumOfSquaredWeights() {
       queryWeight = idf * getBoost();             // compute query weight
       return queryWeight * queryWeight;           // square it
     }
 
+    @Override
     public void normalize(float queryNorm) {
       this.queryNorm = queryNorm;
       queryWeight *= queryNorm;                   // normalize query weight
       value = queryWeight * idf;                  // idf for document 
     }
 
+    @Override
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       if (terms.size() == 0)			  // optimize zero-term case
         return null;
@@ -161,6 +168,7 @@ public class PhraseQuery extends Query {
 
     }
 
+    @Override
     public Explanation explain(IndexReader reader, int doc)
       throws IOException {
 
@@ -208,12 +216,17 @@ public class PhraseQuery extends Query {
       fieldExpl.setDescription("fieldWeight("+field+":"+query+" in "+doc+
                                "), product of:");
 
-      Scorer scorer = scorer(reader, true, false);
+      PhraseScorer scorer = (PhraseScorer) scorer(reader, true, false);
       if (scorer == null) {
         return new Explanation(0.0f, "no matching docs");
       }
-      Explanation tfExpl = scorer.explain(doc);
-      fieldExpl.addDetail(tfExpl);
+      Explanation tfExplanation = new Explanation();
+      int d = scorer.advance(doc);
+      float phraseFreq = (d == doc) ? scorer.currentFreq() : 0.0f;
+      tfExplanation.setValue(similarity.tf(phraseFreq));
+      tfExplanation.setDescription("tf(phraseFreq=" + phraseFreq + ")");
+      
+      fieldExpl.addDetail(tfExplanation);
       fieldExpl.addDetail(idfExpl);
 
       Explanation fieldNormExpl = new Explanation();
@@ -224,7 +237,7 @@ public class PhraseQuery extends Query {
       fieldNormExpl.setDescription("fieldNorm(field="+field+", doc="+doc+")");
       fieldExpl.addDetail(fieldNormExpl);
 
-      fieldExpl.setValue(tfExpl.getValue() *
+      fieldExpl.setValue(tfExplanation.getValue() *
                          idfExpl.getValue() *
                          fieldNormExpl.getValue());
 
@@ -240,6 +253,7 @@ public class PhraseQuery extends Query {
     }
   }
 
+  @Override
   public Weight createWeight(Searcher searcher) throws IOException {
     if (terms.size() == 1) {			  // optimize one-term case
       Term term = terms.get(0);
@@ -253,11 +267,13 @@ public class PhraseQuery extends Query {
   /**
    * @see org.apache.lucene.search.Query#extractTerms(Set)
    */
+  @Override
   public void extractTerms(Set<Term> queryTerms) {
     queryTerms.addAll(terms);
   }
 
   /** Prints a user-readable version of this query. */
+  @Override
   public String toString(String f) {
     StringBuilder buffer = new StringBuilder();
     if (field != null && !field.equals(f)) {
@@ -301,6 +317,7 @@ public class PhraseQuery extends Query {
   }
 
   /** Returns true iff <code>o</code> is equal to this. */
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof PhraseQuery))
       return false;
@@ -312,6 +329,7 @@ public class PhraseQuery extends Query {
   }
 
   /** Returns a hash code value for this object.*/
+  @Override
   public int hashCode() {
     return Float.floatToIntBits(getBoost())
       ^ slop

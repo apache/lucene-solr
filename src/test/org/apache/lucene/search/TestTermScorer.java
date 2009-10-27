@@ -158,49 +158,6 @@ public class TestTermScorer extends LuceneTestCase
         assertTrue("doc should be number 5", ts.docID() == 5);
     }
 
-    public void testExplain() throws Exception
-    {
-        Term allTerm = new Term(FIELD, "all");
-        TermQuery termQuery = new TermQuery(allTerm);
-
-        Weight weight = termQuery.weight(indexSearcher);
-
-        TermScorer ts = new TermScorer(weight,
-                                       indexReader.termDocs(allTerm), indexSearcher.getSimilarity(),
-                                       indexReader.norms(FIELD));
-        Explanation explanation = ts.explain(0);
-        assertTrue("explanation is null and it shouldn't be", explanation != null);
-        //System.out.println("Explanation: " + explanation.toString());
-        //All this Explain does is return the term frequency
-        assertTrue("term frq is not 1", explanation.getValue() == 1);
-        explanation = ts.explain(1);
-        assertTrue("explanation is null and it shouldn't be", explanation != null);
-        //System.out.println("Explanation: " + explanation.toString());
-        //All this Explain does is return the term frequency
-        assertTrue("term frq is not 0", explanation.getValue() == 0);
-
-        Term dogsTerm = new Term(FIELD, "dogs");
-        termQuery = new TermQuery(dogsTerm);
-        weight = termQuery.weight(indexSearcher);
-
-        ts = new TermScorer(weight, indexReader.termDocs(dogsTerm), indexSearcher.getSimilarity(),
-                                       indexReader.norms(FIELD));
-        explanation = ts.explain(1);
-        assertTrue("explanation is null and it shouldn't be", explanation != null);
-        //System.out.println("Explanation: " + explanation.toString());
-        //All this Explain does is return the term frequency
-        float sqrtTwo = (float)Math.sqrt(2.0f);
-        assertTrue("term frq: " + explanation.getValue() + " is not the square root of 2", explanation.getValue() == sqrtTwo);
-
-        explanation = ts.explain(10);//try a doc out of range
-        assertTrue("explanation is null and it shouldn't be", explanation != null);
-        //System.out.println("Explanation: " + explanation.toString());
-        //All this Explain does is return the term frequency
-
-        assertTrue("term frq: " + explanation.getValue() + " is not 0", explanation.getValue() == 0);
-
-    }
-
     private class TestHit {
         public int doc;
         public float score;

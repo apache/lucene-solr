@@ -56,7 +56,6 @@ public abstract class Scorer extends DocIdSetIterator {
 
   /** Scores and collects all matching documents.
    * @param collector The collector to which all matching documents are passed.
-   * <br>When this method is used the {@link #explain(int)} method should not be used.
    */
   public void score(Collector collector) throws IOException {
     collector.setScorer(this);
@@ -96,17 +95,5 @@ public abstract class Scorer extends DocIdSetIterator {
    * {@link Collector#collect}.
    */
   public abstract float score() throws IOException;
-
-  /** Returns an explanation of the score for a document.
-   * <br>When this method is used, the {@link #next()}, {@link #skipTo(int)} and
-   * {@link #score(HitCollector)} methods should not be used.
-   * @param doc The document number for the explanation.
-   *
-   * @deprecated Please use {@link IndexSearcher#explain}
-   * or {@link Weight#explain} instead.
-   */
-  public Explanation explain(int doc) throws IOException {
-    throw new UnsupportedOperationException();
-  }
 
 }

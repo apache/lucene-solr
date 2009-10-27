@@ -47,22 +47,29 @@ public class TermQuery extends Query {
       idf = idfExp.getIdf();
     }
 
+    @Override
     public String toString() { return "weight(" + TermQuery.this + ")"; }
 
+    @Override
     public Query getQuery() { return TermQuery.this; }
+
+    @Override
     public float getValue() { return value; }
 
+    @Override
     public float sumOfSquaredWeights() {
       queryWeight = idf * getBoost();             // compute query weight
       return queryWeight * queryWeight;           // square it
     }
 
+    @Override
     public void normalize(float queryNorm) {
       this.queryNorm = queryNorm;
       queryWeight *= queryNorm;                   // normalize query weight
       value = queryWeight * idf;                  // idf for document
     }
 
+    @Override
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       TermDocs termDocs = reader.termDocs(term);
 
@@ -72,6 +79,7 @@ public class TermQuery extends Query {
       return new TermScorer(this, termDocs, similarity, reader.norms(term.field()));
     }
 
+    @Override
     public Explanation explain(IndexReader reader, int doc)
       throws IOException {
 
@@ -104,8 +112,24 @@ public class TermQuery extends Query {
       fieldExpl.setDescription("fieldWeight("+term+" in "+doc+
                                "), product of:");
 
-      Explanation tfExpl = scorer(reader, true, false).explain(doc);
-      fieldExpl.addDetail(tfExpl);
+      Explanation tfExplanation = new Explanation();
+      int tf = 0;
+      TermDocs termDocs = reader.termDocs(term);
+      if (termDocs != null) {
+        try {
+          if (termDocs.skipTo(doc) && termDocs.doc() == doc) {
+            tf = termDocs.freq();
+          }
+        } finally {
+          termDocs.close();
+        }
+        tfExplanation.setValue(similarity.tf(tf));
+        tfExplanation.setDescription("tf(termFreq("+term+")="+tf+")");
+      } else {
+        tfExplanation.setValue(0.0f);
+        tfExplanation.setDescription("no matching term");
+      }
+      fieldExpl.addDetail(tfExplanation);
       fieldExpl.addDetail(expl);
 
       Explanation fieldNormExpl = new Explanation();
@@ -116,8 +140,8 @@ public class TermQuery extends Query {
       fieldNormExpl.setDescription("fieldNorm(field="+field+", doc="+doc+")");
       fieldExpl.addDetail(fieldNormExpl);
       
-      fieldExpl.setMatch(Boolean.valueOf(tfExpl.isMatch()));
-      fieldExpl.setValue(tfExpl.getValue() *
+      fieldExpl.setMatch(Boolean.valueOf(tfExplanation.isMatch()));
+      fieldExpl.setValue(tfExplanation.getValue() *
                          expl.getValue() *
                          fieldNormExpl.getValue());
 
@@ -142,15 +166,18 @@ public class TermQuery extends Query {
   /** Returns the term of this query. */
   public Term getTerm() { return term; }
 
+  @Override
   public Weight createWeight(Searcher searcher) throws IOException {
     return new TermWeight(searcher);
   }
 
+  @Override
   public void extractTerms(Set<Term> terms) {
     terms.add(getTerm());
   }
 
   /** Prints a user-readable version of this query. */
+  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     if (!term.field().equals(field)) {
@@ -163,6 +190,7 @@ public class TermQuery extends Query {
   }
 
   /** Returns true iff <code>o</code> is equal to this. */
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof TermQuery))
       return false;
@@ -172,6 +200,7 @@ public class TermQuery extends Query {
   }
 
   /** Returns a hash code value for this object.*/
+  @Override
   public int hashCode() {
     return Float.floatToIntBits(getBoost()) ^ term.hashCode();
   }

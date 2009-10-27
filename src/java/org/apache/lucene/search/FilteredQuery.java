@@ -65,14 +65,21 @@ extends Query {
       private float value;
         
       // pass these methods through to enclosed query's weight
+      @Override
       public float getValue() { return value; }
+      
+      @Override
       public float sumOfSquaredWeights() throws IOException { 
         return weight.sumOfSquaredWeights() * getBoost() * getBoost(); 
       }
+
+      @Override
       public void normalize (float v) { 
         weight.normalize(v);
         value = weight.getValue() * getBoost();
       }
+
+      @Override
       public Explanation explain (IndexReader ir, int i) throws IOException {
         Explanation inner = weight.explain (ir, i);
         if (getBoost()!=1) {
@@ -98,9 +105,11 @@ extends Query {
       }
 
       // return this query
+      @Override
       public Query getQuery() { return FilteredQuery.this; }
 
       // return a filtering scorer
+      @Override
       public Scorer scorer(IndexReader indexReader, boolean scoreDocsInOrder, boolean topScorer)
           throws IOException {
         final Scorer scorer = weight.scorer(indexReader, true, false);
@@ -131,6 +140,7 @@ extends Query {
             return scorerDoc;
           }
 
+          @Override
           public int nextDoc() throws IOException {
             int scorerDoc, disiDoc;
             return doc = (disiDoc = docIdSetIterator.nextDoc()) != NO_MORE_DOCS
@@ -138,8 +148,10 @@ extends Query {
                 && advanceToCommon(scorerDoc, disiDoc) != NO_MORE_DOCS ? scorer.docID() : NO_MORE_DOCS;
           }
           
+          @Override
           public int docID() { return doc; }
           
+          @Override
           public int advance(int target) throws IOException {
             int disiDoc, scorerDoc;
             return doc = (disiDoc = docIdSetIterator.advance(target)) != NO_MORE_DOCS
@@ -147,27 +159,15 @@ extends Query {
                 && advanceToCommon(scorerDoc, disiDoc) != NO_MORE_DOCS ? scorer.docID() : NO_MORE_DOCS;
           }
 
+          @Override
           public float score() throws IOException { return getBoost() * scorer.score(); }
-
-          // add an explanation about whether the document was filtered
-          public Explanation explain (int i) throws IOException {
-            Explanation exp = scorer.explain(i);
-            
-            if (docIdSetIterator.advance(i) == i) {
-              exp.setDescription ("allowed by filter: "+exp.getDescription());
-              exp.setValue(getBoost() * exp.getValue());
-            } else {
-              exp.setDescription ("removed by filter: "+exp.getDescription());
-              exp.setValue(0.0f);
-            }
-            return exp;
-          }
         };
       }
     };
   }
 
   /** Rewrites the wrapped query. */
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     Query rewritten = query.rewrite(reader);
     if (rewritten != query) {
@@ -188,11 +188,13 @@ extends Query {
   }
 
   // inherit javadoc
+  @Override
   public void extractTerms(Set<Term> terms) {
       getQuery().extractTerms(terms);
   }
 
   /** Prints a user-readable version of this query. */
+  @Override
   public String toString (String s) {
     StringBuilder buffer = new StringBuilder();
     buffer.append("filtered(");
@@ -204,6 +206,7 @@ extends Query {
   }
 
   /** Returns true iff <code>o</code> is equal to this. */
+  @Override
   public boolean equals(Object o) {
     if (o instanceof FilteredQuery) {
       FilteredQuery fq = (FilteredQuery) o;
@@ -213,6 +216,7 @@ extends Query {
   }
 
   /** Returns a hash code value for this object. */
+  @Override
   public int hashCode() {
     return query.hashCode() ^ filter.hashCode() + Float.floatToRawIntBits(getBoost());
   }

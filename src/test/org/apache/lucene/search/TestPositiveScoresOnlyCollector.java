@@ -30,19 +30,17 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
       super(null);
     }
     
-    public Explanation explain(int doc) throws IOException { return null; }
-
-    public float score() throws IOException {
+    @Override public float score() throws IOException {
       return idx == scores.length ? Float.NaN : scores[idx];
     }
 
-    public int docID() { return idx; }
+    @Override public int docID() { return idx; }
 
-    public int nextDoc() throws IOException {
+    @Override public int nextDoc() throws IOException {
       return ++idx != scores.length ? idx : NO_MORE_DOCS;
     }
     
-    public int advance(int target) throws IOException {
+    @Override public int advance(int target) throws IOException {
       idx = target;
       return idx < scores.length ? idx : NO_MORE_DOCS;
     }

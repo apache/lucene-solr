@@ -308,10 +308,6 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
-    public Explanation explain(int doc) throws IOException {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
     public float score() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }

@@ -62,6 +62,7 @@ class DisjunctionMaxScorer extends Scorer {
     heapify();
   }
 
+  @Override
   public int nextDoc() throws IOException {
     if (numScorers == 0) return doc = NO_MORE_DOCS;
     while (subScorers[0].docID() == doc) {
@@ -78,6 +79,7 @@ class DisjunctionMaxScorer extends Scorer {
     return doc = subScorers[0].docID();
   }
 
+  @Override
   public int docID() {
     return doc;
   }
@@ -85,6 +87,7 @@ class DisjunctionMaxScorer extends Scorer {
   /** Determine the current document score.  Initially invalid, until {@link #next()} is called the first time.
    * @return the score of the current generated document
    */
+  @Override
   public float score() throws IOException {
     int doc = subScorers[0].docID();
     float[] sum = { subScorers[0].score() }, max = { sum[0] };
@@ -105,6 +108,7 @@ class DisjunctionMaxScorer extends Scorer {
     }
   }
 
+  @Override
   public int advance(int target) throws IOException {
     if (numScorers == 0) return doc = NO_MORE_DOCS;
     while (subScorers[0].docID() < target) {
@@ -118,14 +122,6 @@ class DisjunctionMaxScorer extends Scorer {
       }
     }
     return doc = subScorers[0].docID();
-  }
-
-  /** Explain a score that we computed.  UNSUPPORTED -- see explanation capability in DisjunctionMaxQuery.
-   * @param doc the number of a document we scored
-   * @return the Explanation for our score
-   */
-  public Explanation explain(int doc) throws IOException {
-    throw new UnsupportedOperationException();
   }
 
   // Organize subScorers into a min heap with scorers generating the earliest document on top.

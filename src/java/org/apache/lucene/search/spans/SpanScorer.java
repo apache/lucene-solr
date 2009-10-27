@@ -53,6 +53,7 @@ public class SpanScorer extends Scorer {
     }
   }
 
+  @Override
   public int nextDoc() throws IOException {
     if (!setFreqCurrentDoc()) {
       doc = NO_MORE_DOCS;
@@ -60,6 +61,7 @@ public class SpanScorer extends Scorer {
     return doc;
   }
 
+  @Override
   public int advance(int target) throws IOException {
     if (!more) {
       return doc = NO_MORE_DOCS;
@@ -87,14 +89,18 @@ public class SpanScorer extends Scorer {
     return true;
   }
 
+  @Override
   public int docID() { return doc; }
 
+  @Override
   public float score() throws IOException {
     float raw = getSimilarity().tf(freq) * value; // raw score
     return norms == null? raw : raw * Similarity.decodeNorm(norms[doc]); // normalize
   }
 
-  public Explanation explain(final int doc) throws IOException {
+  /** This method is no longer an official member of {@link Scorer},
+   * but it is needed by SpanWeight to build an explanation. */
+  protected Explanation explain(final int doc) throws IOException {
     Explanation tfExplanation = new Explanation();
 
     int expDoc = advance(doc);

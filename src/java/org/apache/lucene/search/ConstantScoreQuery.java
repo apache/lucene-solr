@@ -39,10 +39,12 @@ public class ConstantScoreQuery extends Query {
     return filter;
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     return this;
   }
 
+  @Override
   public void extractTerms(Set<Term> terms) {
     // OK to not add any terms when used for MultiSearcher,
     // but may not be OK for highlighting
@@ -57,28 +59,34 @@ public class ConstantScoreQuery extends Query {
       this.similarity = getSimilarity(searcher);
     }
 
+    @Override
     public Query getQuery() {
       return ConstantScoreQuery.this;
     }
 
+    @Override
     public float getValue() {
       return queryWeight;
     }
 
+    @Override
     public float sumOfSquaredWeights() throws IOException {
       queryWeight = getBoost();
       return queryWeight * queryWeight;
     }
 
+    @Override
     public void normalize(float norm) {
       this.queryNorm = norm;
       queryWeight *= this.queryNorm;
     }
 
+    @Override
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       return new ConstantScorer(similarity, reader, this);
     }
 
+    @Override
     public Explanation explain(IndexReader reader, int doc) throws IOException {
       
       ConstantScorer cs = new ConstantScorer(similarity, reader, this);
@@ -124,38 +132,41 @@ public class ConstantScoreQuery extends Query {
       }
     }
 
+    @Override
     public int nextDoc() throws IOException {
       return docIdSetIterator.nextDoc();
     }
     
+    @Override
     public int docID() {
       return docIdSetIterator.docID();
     }
 
+    @Override
     public float score() throws IOException {
       return theScore;
     }
 
+    @Override
     public int advance(int target) throws IOException {
       return docIdSetIterator.advance(target);
     }
-    
-    public Explanation explain(int doc) throws IOException {
-      throw new UnsupportedOperationException();
-    }
   }
 
+  @Override
   public Weight createWeight(Searcher searcher) {
     return new ConstantScoreQuery.ConstantWeight(searcher);
   }
 
   /** Prints a user-readable version of this query. */
+  @Override
   public String toString(String field) {
     return "ConstantScore(" + filter.toString()
       + (getBoost()==1.0 ? ")" : "^" + getBoost());
   }
 
   /** Returns true if <code>o</code> is equal to this. */
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof ConstantScoreQuery)) return false;
@@ -164,6 +175,7 @@ public class ConstantScoreQuery extends Query {
   }
 
   /** Returns a hash code value for this object. */
+  @Override
   public int hashCode() {
     // Simple add is OK since no existing filter hashcode has a float component.
     return filter.hashCode() + Float.floatToIntBits(getBoost());
