@@ -101,12 +101,15 @@ public class NearSpansOrdered extends Spans {
   }
 
   // inherit javadocs
+  @Override
   public int doc() { return matchDoc; }
 
   // inherit javadocs
+  @Override
   public int start() { return matchStart; }
 
   // inherit javadocs
+  @Override
   public int end() { return matchEnd; }
   
   public Spans[] getSubSpans() {
@@ -115,16 +118,19 @@ public class NearSpansOrdered extends Spans {
 
   // TODO: Remove warning after API has been finalized
   // TODO: Would be nice to be able to lazy load payloads
+  @Override
   public Collection<byte[]> getPayload() throws IOException {
     return matchPayload;
   }
 
   // TODO: Remove warning after API has been finalized
- public boolean isPayloadAvailable() {
+  @Override
+  public boolean isPayloadAvailable() {
     return matchPayload.isEmpty() == false;
   }
 
   // inherit javadocs
+  @Override
   public boolean next() throws IOException {
     if (firstTime) {
       firstTime = false;
@@ -143,6 +149,7 @@ public class NearSpansOrdered extends Spans {
   }
 
   // inherit javadocs
+  @Override
   public boolean skipTo(int target) throws IOException {
     if (firstTime) {
       firstTime = false;
@@ -327,6 +334,7 @@ public class NearSpansOrdered extends Spans {
     return match; // ordered and allowed slop
   }
 
+  @Override
   public String toString() {
     return getClass().getName() + "("+query.toString()+")@"+
       (firstTime?"START":(more?(doc()+":"+start()+"-"+end()):"END"));

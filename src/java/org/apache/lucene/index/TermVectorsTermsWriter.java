@@ -41,16 +41,19 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     this.docWriter = docWriter;
   }
 
+  @Override
   public TermsHashConsumerPerThread addThread(TermsHashPerThread termsHashPerThread) {
     return new TermVectorsTermsWriterPerThread(termsHashPerThread, this);
   }
 
+  @Override
   void createPostings(RawPostingList[] postings, int start, int count) {
     final int end = start + count;
     for(int i=start;i<end;i++)
       postings[i] = new PostingList();
   }
 
+  @Override
   synchronized void flush(Map<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>> threadsAndFields, final SegmentWriteState state) throws IOException {
 
     if (tvx != null) {
@@ -77,6 +80,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     }
   }
 
+  @Override
   synchronized void closeDocStore(final SegmentWriteState state) throws IOException {
     if (tvx != null) {
       // At least one doc in this run had term vectors
@@ -207,6 +211,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     return false;
   }
 
+  @Override
   public void abort() {
     if (tvx != null) {
       try {
@@ -252,6 +257,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       numVectorFields = 0;
     }
 
+    @Override
     void abort() {
       reset();
       free(this);
@@ -267,10 +273,12 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       numVectorFields++;
     }
 
+    @Override
     public long sizeInBytes() {
       return tvf.sizeInBytes();
     }
 
+    @Override
     public void finish() throws IOException {
       finishDocument(this);
     }
@@ -282,6 +290,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     int lastPosition;                               // Last position where this term occurred
   }
 
+  @Override
   int bytesPerPosting() {
     return RawPostingList.BYTES_SIZE + 3 * DocumentsWriter.INT_NUM_BYTE;
   }

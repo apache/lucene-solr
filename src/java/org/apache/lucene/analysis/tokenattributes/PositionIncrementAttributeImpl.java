@@ -67,10 +67,12 @@ public class PositionIncrementAttributeImpl extends AttributeImpl implements Pos
     return positionIncrement;
   }
 
+  @Override
   public void clear() {
     this.positionIncrement = 1;
   }
   
+  @Override
   public boolean equals(Object other) {
     if (other == this) {
       return true;
@@ -83,10 +85,12 @@ public class PositionIncrementAttributeImpl extends AttributeImpl implements Pos
     return false;
   }
 
+  @Override
   public int hashCode() {
     return positionIncrement;
   }
   
+  @Override
   public void copyTo(AttributeImpl target) {
     PositionIncrementAttribute t = (PositionIncrementAttribute) target;
     t.setPositionIncrement(positionIncrement);

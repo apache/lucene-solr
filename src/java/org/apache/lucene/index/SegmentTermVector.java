@@ -39,6 +39,7 @@ class SegmentTermVector implements TermFreqVector {
     return field;
   }
 
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append('{');

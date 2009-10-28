@@ -41,10 +41,12 @@ public class PrefixTermEnum extends FilteredTermEnum {
     setEnum(reader.terms(new Term(prefix.field(), prefix.text())));
   }
 
+  @Override
   public float difference() {
     return 1.0f;
   }
 
+  @Override
   protected boolean endEnum() {
     return endEnum;
   }
@@ -53,6 +55,7 @@ public class PrefixTermEnum extends FilteredTermEnum {
       return prefix;
   }
 
+  @Override
   protected boolean termCompare(Term term) {
     if (term.field() == prefix.field() && term.text().startsWith(prefix.text())) {                                                                              
       return true;

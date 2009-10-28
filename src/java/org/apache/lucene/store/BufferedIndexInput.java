@@ -33,6 +33,7 @@ public abstract class BufferedIndexInput extends IndexInput {
   private int bufferLength = 0;			  // end of valid bytes
   private int bufferPosition = 0;		  // next byte to read
 
+  @Override
   public byte readByte() throws IOException {
     if (bufferPosition >= bufferLength)
       refill();
@@ -88,10 +89,12 @@ public abstract class BufferedIndexInput extends IndexInput {
       throw new IllegalArgumentException("bufferSize must be greater than 0 (got " + bufferSize + ")");
   }
 
+  @Override
   public void readBytes(byte[] b, int offset, int len) throws IOException {
     readBytes(b, offset, len, true);
   }
 
+  @Override
   public void readBytes(byte[] b, int offset, int len, boolean useBuffer) throws IOException {
 
     if(len <= (bufferLength-bufferPosition)){
@@ -169,8 +172,10 @@ public abstract class BufferedIndexInput extends IndexInput {
   protected abstract void readInternal(byte[] b, int offset, int length)
           throws IOException;
 
+  @Override
   public long getFilePointer() { return bufferStart + bufferPosition; }
 
+  @Override
   public void seek(long pos) throws IOException {
     if (pos >= bufferStart && pos < (bufferStart + bufferLength))
       bufferPosition = (int)(pos - bufferStart);  // seek within buffer
@@ -188,6 +193,7 @@ public abstract class BufferedIndexInput extends IndexInput {
    */
   protected abstract void seekInternal(long pos) throws IOException;
 
+  @Override
   public Object clone() {
     BufferedIndexInput clone = (BufferedIndexInput)super.clone();
 

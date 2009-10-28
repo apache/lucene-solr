@@ -56,6 +56,7 @@ public class PositionBasedTermVectorMapper extends TermVectorMapper{
    * Never ignores positions.  This mapper doesn't make much sense unless there are positions
    * @return false
    */
+  @Override
   public boolean isIgnoringPositions() {
     return false;
   }
@@ -67,6 +68,7 @@ public class PositionBasedTermVectorMapper extends TermVectorMapper{
    * @param offsets
    * @param positions
    */
+  @Override
   public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
     for (int i = 0; i < positions.length; i++) {
       Integer posVal = Integer.valueOf(positions[i]);
@@ -86,6 +88,7 @@ public class PositionBasedTermVectorMapper extends TermVectorMapper{
    * @param storeOffsets Whether offsets are available
    * @param storePositions Whether positions are available
    */
+  @Override
   public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
     if (storePositions == false)
     {

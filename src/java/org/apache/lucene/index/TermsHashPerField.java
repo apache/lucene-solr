@@ -100,6 +100,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       nextPerField.reset();
   }
 
+  @Override
   synchronized public void abort() {
     reset();
     if (nextPerField != null)
@@ -248,6 +249,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   private boolean doCall;
   private boolean doNextCall;
 
+  @Override
   void start(Fieldable f) {
     termAtt = fieldState.attributeSource.addAttribute(TermAttribute.class);
     consumer.start(f);
@@ -256,6 +258,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     }
   }
   
+  @Override
   boolean start(Fieldable[] fields, int count) throws IOException {
     doCall = consumer.start(fields, count);
     if (nextPerField != null)
@@ -339,6 +342,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   }
 
   // Primary entry point (for first TermsHash)
+  @Override
   void add() throws IOException {
 
     assert !postingsCompacted;
@@ -505,6 +509,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     writeByte(stream, (byte) i);
   }
 
+  @Override
   void finish() throws IOException {
     consumer.finish();
     if (nextPerField != null)

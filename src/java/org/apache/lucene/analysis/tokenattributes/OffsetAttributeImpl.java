@@ -55,11 +55,13 @@ public class OffsetAttributeImpl extends AttributeImpl implements OffsetAttribut
   }
 
 
+  @Override
   public void clear() {
     startOffset = 0;
     endOffset = 0;
   }
   
+  @Override
   public boolean equals(Object other) {
     if (other == this) {
       return true;
@@ -73,12 +75,14 @@ public class OffsetAttributeImpl extends AttributeImpl implements OffsetAttribut
     return false;
   }
 
+  @Override
   public int hashCode() {
     int code = startOffset;
     code = code * 31 + endOffset;
     return code;
   } 
   
+  @Override
   public void copyTo(AttributeImpl target) {
     OffsetAttribute t = (OffsetAttribute) target;
     t.setOffset(startOffset, endOffset);

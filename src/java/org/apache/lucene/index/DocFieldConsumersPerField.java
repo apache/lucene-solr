@@ -32,11 +32,13 @@ final class DocFieldConsumersPerField extends DocFieldConsumerPerField {
     this.two = two;
   }
 
+  @Override
   public void processFields(Fieldable[] fields, int count) throws IOException {
     one.processFields(fields, count);
     two.processFields(fields, count);
   }
 
+  @Override
   public void abort() {
     try {
       one.abort();

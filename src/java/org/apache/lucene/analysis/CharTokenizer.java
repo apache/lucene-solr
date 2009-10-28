@@ -65,6 +65,7 @@ public abstract class CharTokenizer extends Tokenizer {
     return c;
   }
 
+  @Override
   public final boolean incrementToken() throws IOException {
     clearAttributes();
     int length = 0;
@@ -108,12 +109,14 @@ public abstract class CharTokenizer extends Tokenizer {
     return true;
   }
   
+  @Override
   public final void end() {
     // set final offset
     int finalOffset = correctOffset(offset);
     offsetAtt.setOffset(finalOffset, finalOffset);
   }
 
+  @Override
   public void reset(Reader input) throws IOException {
     super.reset(input);
     bufferIndex = 0;

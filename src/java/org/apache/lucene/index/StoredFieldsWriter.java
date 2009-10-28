@@ -177,15 +177,18 @@ final class StoredFieldsWriter {
       numStoredFields = 0;
     }
 
+    @Override
     void abort() {
       reset();
       free(this);
     }
 
+    @Override
     public long sizeInBytes() {
       return fdt.sizeInBytes();
     }
 
+    @Override
     public void finish() throws IOException {
       finishDocument(this);
     }

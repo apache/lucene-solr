@@ -70,6 +70,7 @@ public class TermVectorOffsetInfo implements Serializable {
    * @param o The comparison Object
    * @return true if both {@link #getStartOffset()} and {@link #getEndOffset()} are the same for both objects.
    */
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof TermVectorOffsetInfo)) return false;
@@ -82,6 +83,7 @@ public class TermVectorOffsetInfo implements Serializable {
     return true;
   }
 
+  @Override
   public int hashCode() {
     int result;
     result = startOffset;

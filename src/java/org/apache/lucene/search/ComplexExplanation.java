@@ -52,11 +52,13 @@ public class ComplexExplanation extends Explanation {
    * </p>
    * @see #getMatch
    */
+  @Override
   public boolean isMatch() {
     Boolean m = getMatch();
     return (null != m ? m.booleanValue() : super.isMatch());
   }
 
+  @Override
   protected String getSummary() {
     if (null == getMatch())
       return super.getSummary();

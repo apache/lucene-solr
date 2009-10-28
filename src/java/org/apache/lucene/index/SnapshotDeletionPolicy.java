@@ -92,15 +92,19 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
     MyCommitPoint(IndexCommit cp) {
       this.cp = cp;
     }
+    @Override
     public String getSegmentsFileName() {
       return cp.getSegmentsFileName();
     }
+    @Override
     public Collection<String> getFileNames() throws IOException {
       return cp.getFileNames();
     }
+    @Override
     public Directory getDirectory() {
       return cp.getDirectory();
     }
+    @Override
     public void delete() {
       synchronized(SnapshotDeletionPolicy.this) {
         // Suppress the delete request if this commit point is
@@ -109,15 +113,19 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
           cp.delete();
       }
     }
+    @Override
     public boolean isDeleted() {
       return cp.isDeleted();
     }
+    @Override
     public long getVersion() {
       return cp.getVersion();
     }
+    @Override
     public long getGeneration() {
       return cp.getGeneration();
     }
+    @Override
     public Map<String,String> getUserData() throws IOException {
       return cp.getUserData();
     }

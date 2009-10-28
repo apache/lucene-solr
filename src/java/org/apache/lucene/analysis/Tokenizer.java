@@ -67,6 +67,7 @@ public abstract class Tokenizer extends TokenStream {
   }
   
   /** By default, closes the input Reader. */
+  @Override
   public void close() throws IOException {
     input.close();
   }

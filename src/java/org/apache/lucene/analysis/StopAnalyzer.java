@@ -93,6 +93,7 @@ public final class StopAnalyzer extends Analyzer {
   }
 
   /** Filters LowerCaseTokenizer with StopFilter. */
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     return new StopFilter(enablePositionIncrements, new LowerCaseTokenizer(reader), stopWords);
   }
@@ -102,6 +103,7 @@ public final class StopAnalyzer extends Analyzer {
     Tokenizer source;
     TokenStream result;
   };
+  @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();
     if (streams == null) {

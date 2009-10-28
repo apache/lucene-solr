@@ -170,6 +170,7 @@ public final class StandardTokenizer extends Tokenizer {
    *
    * @see org.apache.lucene.analysis.TokenStream#next()
    */
+  @Override
   public final boolean incrementToken() throws IOException {
     clearAttributes();
     int posIncr = 1;
@@ -207,6 +208,7 @@ public final class StandardTokenizer extends Tokenizer {
     }
   }
   
+  @Override
   public final void end() {
     // set final offset
     int finalOffset = correctOffset(scanner.yychar() + scanner.yylength());
@@ -218,11 +220,13 @@ public final class StandardTokenizer extends Tokenizer {
    *
    * @see org.apache.lucene.analysis.TokenStream#reset()
    */
+  @Override
   public void reset() throws IOException {
     super.reset();
     scanner.yyreset(input);
   }
 
+  @Override
   public void reset(Reader reader) throws IOException {
     super.reset(reader);
     reset();

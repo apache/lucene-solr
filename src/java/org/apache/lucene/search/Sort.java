@@ -151,6 +151,7 @@ implements Serializable {
     return fields;
   }
 
+  @Override
   public String toString() {
     StringBuilder buffer = new StringBuilder();
 
@@ -164,6 +165,7 @@ implements Serializable {
   }
 
   /** Returns true if <code>o</code> is equal to this. */
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof Sort)) return false;
@@ -172,6 +174,7 @@ implements Serializable {
   }
 
   /** Returns a hash code value for this object. */
+  @Override
   public int hashCode() {
     return 0x45aaf665 + Arrays.hashCode(fields);
   }

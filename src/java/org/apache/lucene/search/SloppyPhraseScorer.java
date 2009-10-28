@@ -52,6 +52,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
      * would get same score as "g f"~2, although "c b"~2 could be matched twice.
      * We may want to fix this in the future (currently not, for performance reasons).
      */
+    @Override
     protected final float phraseFreq() throws IOException {
         int end = initPhrasePositions();
         

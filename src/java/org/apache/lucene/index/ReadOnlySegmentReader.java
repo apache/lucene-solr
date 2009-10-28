@@ -23,11 +23,13 @@ class ReadOnlySegmentReader extends SegmentReader {
     throw new UnsupportedOperationException("This IndexReader cannot make any changes to the index (it was opened with readOnly = true)");
   }
   
+  @Override
   protected void acquireWriteLock() {
     noWrite();
   }
 
   // Not synchronized
+  @Override
   public boolean isDeleted(int n) {
     return deletedDocs != null && deletedDocs.get(n);
   }

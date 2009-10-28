@@ -28,10 +28,12 @@ public class KeywordAnalyzer extends Analyzer {
   public KeywordAnalyzer() {
     setOverridesTokenStreamMethod(KeywordAnalyzer.class);
   }
+  @Override
   public TokenStream tokenStream(String fieldName,
                                  final Reader reader) {
     return new KeywordTokenizer(reader);
   }
+  @Override
   public TokenStream reusableTokenStream(String fieldName,
                                          final Reader reader) throws IOException {
     if (overridesTokenStreamMethod) {

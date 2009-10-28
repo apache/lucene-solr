@@ -106,6 +106,7 @@ public class MultiReader extends IndexReader implements Cloneable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error 
    */
+  @Override
   public synchronized IndexReader reopen() throws CorruptIndexException, IOException {
     return doReopen(false);
   }
@@ -119,6 +120,7 @@ public class MultiReader extends IndexReader implements Cloneable {
    * readers is increased to ensure that the subreaders remain open
    * until the last referring reader is closed.
    */
+  @Override
   public synchronized Object clone() {
     try {
       return doReopen(true);
@@ -185,12 +187,14 @@ public class MultiReader extends IndexReader implements Cloneable {
     }
   }
 
+  @Override
   public TermFreqVector[] getTermFreqVectors(int n) throws IOException {
     ensureOpen();
     int i = readerIndex(n);        // find segment num
     return subReaders[i].getTermFreqVectors(n - starts[i]); // dispatch to segment
   }
 
+  @Override
   public TermFreqVector getTermFreqVector(int n, String field)
       throws IOException {
     ensureOpen();
@@ -199,22 +203,26 @@ public class MultiReader extends IndexReader implements Cloneable {
   }
 
 
+  @Override
   public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
     ensureOpen();
     int i = readerIndex(docNumber);        // find segment num
     subReaders[i].getTermFreqVector(docNumber - starts[i], field, mapper);
   }
 
+  @Override
   public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
     ensureOpen();
     int i = readerIndex(docNumber);        // find segment num
     subReaders[i].getTermFreqVector(docNumber - starts[i], mapper);
   }
 
+  @Override
   public boolean isOptimized() {
     return false;
   }
   
+  @Override
   public synchronized int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)
     if (numDocs == -1) {        // check cache
@@ -226,29 +234,34 @@ public class MultiReader extends IndexReader implements Cloneable {
     return numDocs;
   }
 
+  @Override
   public int maxDoc() {
     // Don't call ensureOpen() here (it could affect performance)
     return maxDoc;
   }
 
   // inherit javadoc
+  @Override
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     ensureOpen();
     int i = readerIndex(n);                          // find segment num
     return subReaders[i].document(n - starts[i], fieldSelector);    // dispatch to segment reader
   }
 
+  @Override
   public boolean isDeleted(int n) {
     // Don't call ensureOpen() here (it could affect performance)
     int i = readerIndex(n);                           // find segment num
     return subReaders[i].isDeleted(n - starts[i]);    // dispatch to segment reader
   }
 
+  @Override
   public boolean hasDeletions() {
     // Don't call ensureOpen() here (it could affect performance)
     return hasDeletions;
   }
 
+  @Override
   protected void doDelete(int n) throws CorruptIndexException, IOException {
     numDocs = -1;                             // invalidate cache
     int i = readerIndex(n);                   // find segment num
@@ -256,6 +269,7 @@ public class MultiReader extends IndexReader implements Cloneable {
     hasDeletions = true;
   }
 
+  @Override
   protected void doUndeleteAll() throws CorruptIndexException, IOException {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].undeleteAll();
@@ -268,6 +282,7 @@ public class MultiReader extends IndexReader implements Cloneable {
     return DirectoryReader.readerIndex(n, this.starts, this.subReaders.length);
   }
   
+  @Override
   public boolean hasNorms(String field) throws IOException {
     ensureOpen();
     for (int i = 0; i < subReaders.length; i++) {
@@ -282,6 +297,7 @@ public class MultiReader extends IndexReader implements Cloneable {
     return ones;
   }
   
+  @Override
   public synchronized byte[] norms(String field) throws IOException {
     ensureOpen();
     byte[] bytes = normsCache.get(field);
@@ -297,6 +313,7 @@ public class MultiReader extends IndexReader implements Cloneable {
     return bytes;
   }
 
+  @Override
   public synchronized void norms(String field, byte[] result, int offset)
     throws IOException {
     ensureOpen();
@@ -315,6 +332,7 @@ public class MultiReader extends IndexReader implements Cloneable {
     }
   }
 
+  @Override
   protected void doSetNorm(int n, String field, byte value)
     throws CorruptIndexException, IOException {
     synchronized (normsCache) {
@@ -324,16 +342,19 @@ public class MultiReader extends IndexReader implements Cloneable {
     subReaders[i].setNorm(n-starts[i], field, value); // dispatch
   }
 
+  @Override
   public TermEnum terms() throws IOException {
     ensureOpen();
     return new MultiTermEnum(this, subReaders, starts, null);
   }
 
+  @Override
   public TermEnum terms(Term term) throws IOException {
     ensureOpen();
     return new MultiTermEnum(this, subReaders, starts, term);
   }
 
+  @Override
   public int docFreq(Term t) throws IOException {
     ensureOpen();
     int total = 0;          // sum freqs in segments
@@ -342,21 +363,25 @@ public class MultiReader extends IndexReader implements Cloneable {
     return total;
   }
 
+  @Override
   public TermDocs termDocs() throws IOException {
     ensureOpen();
     return new MultiTermDocs(this, subReaders, starts);
   }
 
+  @Override
   public TermPositions termPositions() throws IOException {
     ensureOpen();
     return new MultiTermPositions(this, subReaders, starts);
   }
 
+  @Override
   protected void doCommit(Map<String,String> commitUserData) throws IOException {
     for (int i = 0; i < subReaders.length; i++)
       subReaders[i].commit(commitUserData);
   }
 
+  @Override
   protected synchronized void doClose() throws IOException {
     for (int i = 0; i < subReaders.length; i++) {
       if (decrefOnClose[i]) {
@@ -367,6 +392,7 @@ public class MultiReader extends IndexReader implements Cloneable {
     }
   }
   
+  @Override
   public Collection<String> getFieldNames (IndexReader.FieldOption fieldNames) {
     ensureOpen();
     return DirectoryReader.getFieldNames(fieldNames, this.subReaders);
@@ -375,6 +401,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   /**
    * Checks recursively if all subreaders are up to date. 
    */
+  @Override
   public boolean isCurrent() throws CorruptIndexException, IOException {
     for (int i = 0; i < subReaders.length; i++) {
       if (!subReaders[i].isCurrent()) {
@@ -389,10 +416,12 @@ public class MultiReader extends IndexReader implements Cloneable {
   /** Not implemented.
    * @throws UnsupportedOperationException
    */
+  @Override
   public long getVersion() {
     throw new UnsupportedOperationException("MultiReader does not support this method.");
   }
   
+  @Override
   public IndexReader[] getSequentialSubReaders() {
     return subReaders;
   }

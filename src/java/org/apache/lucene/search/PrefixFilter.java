@@ -32,6 +32,7 @@ public class PrefixFilter extends MultiTermQueryWrapperFilter<PrefixQuery> {
   public Term getPrefix() { return query.getPrefix(); }
 
   /** Prints a user-readable version of this query. */
+  @Override
   public String toString () {
     StringBuilder buffer = new StringBuilder();
     buffer.append("PrefixFilter(");

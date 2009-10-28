@@ -50,26 +50,32 @@ public abstract class CharFilter extends CharStream {
    * Chains the corrected offset through the input
    * CharFilter.
    */
+  @Override
   public final int correctOffset(int currentOff) {
     return input.correctOffset(correct(currentOff));
   }
 
+  @Override
   public void close() throws IOException {
     input.close();
   }
 
+  @Override
   public int read(char[] cbuf, int off, int len) throws IOException {
     return input.read(cbuf, off, len);
   }
 
+  @Override
   public boolean markSupported(){
     return input.markSupported();
   }
 
+  @Override
   public void mark( int readAheadLimit ) throws IOException {
     input.mark(readAheadLimit);
   }
 
+  @Override
   public void reset() throws IOException {
     input.reset();
   }

@@ -35,16 +35,19 @@ public class PositiveScoresOnlyCollector extends Collector {
     this.c = c;
   }
   
+  @Override
   public void collect(int doc) throws IOException {
     if (scorer.score() > 0) {
       c.collect(doc);
     }
   }
 
+  @Override
   public void setNextReader(IndexReader reader, int docBase) throws IOException {
     c.setNextReader(reader, docBase);
   }
 
+  @Override
   public void setScorer(Scorer scorer) throws IOException {
     // Set a ScoreCachingWrappingScorer in case the wrapped Collector will call
     // score() also.
@@ -52,6 +55,7 @@ public class PositiveScoresOnlyCollector extends Collector {
     c.setScorer(this.scorer);
   }
 
+  @Override
   public boolean acceptsDocsOutOfOrder() {
     return c.acceptsDocsOutOfOrder();
   }

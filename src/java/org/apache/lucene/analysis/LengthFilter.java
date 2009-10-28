@@ -46,6 +46,7 @@ public final class LengthFilter extends TokenFilter {
   /**
    * Returns the next input Token whose term() is the right len
    */
+  @Override
   public final boolean incrementToken() throws IOException {
     // return the first non-stop word found
     while (input.incrementToken()) {

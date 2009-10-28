@@ -142,6 +142,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
       // else fill into a OpenBitSet
       final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
       new TermGenerator() {
+        @Override
         public void handleDoc(int doc) {
           bitSet.set(doc);
         }

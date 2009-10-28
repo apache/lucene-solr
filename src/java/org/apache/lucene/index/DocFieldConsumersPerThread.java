@@ -34,11 +34,13 @@ final class DocFieldConsumersPerThread extends DocFieldConsumerPerThread {
     docState = docFieldProcessorPerThread.docState;
   }
 
+  @Override
   public void startDocument() throws IOException {
     one.startDocument();
     two.startDocument();
   }
 
+  @Override
   public void abort() {
     try {
       one.abort();
@@ -47,6 +49,7 @@ final class DocFieldConsumersPerThread extends DocFieldConsumerPerThread {
     }
   }
 
+  @Override
   public DocumentsWriter.DocWriter finishDocument() throws IOException {
     final DocumentsWriter.DocWriter oneDoc = one.finishDocument();
     final DocumentsWriter.DocWriter twoDoc = two.finishDocument();
@@ -65,6 +68,7 @@ final class DocFieldConsumersPerThread extends DocFieldConsumerPerThread {
     }
   }
 
+  @Override
   public DocFieldConsumerPerField addField(FieldInfo fi) {
     return new DocFieldConsumersPerField(this, one.addField(fi), two.addField(fi));
   }

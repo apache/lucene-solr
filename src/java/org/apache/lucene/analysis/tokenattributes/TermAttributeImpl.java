@@ -164,6 +164,7 @@ public class TermAttributeImpl extends AttributeImpl implements TermAttribute, C
     termLength = length;
   }
 
+  @Override
   public int hashCode() {
     initTermBuffer();
     int code = termLength;
@@ -171,10 +172,12 @@ public class TermAttributeImpl extends AttributeImpl implements TermAttribute, C
     return code;
   }
 
+  @Override
   public void clear() {
     termLength = 0;    
   }
 
+  @Override
   public Object clone() {
     TermAttributeImpl t = (TermAttributeImpl)super.clone();
     // Do a deep clone
@@ -184,6 +187,7 @@ public class TermAttributeImpl extends AttributeImpl implements TermAttribute, C
     return t;
   }
   
+  @Override
   public boolean equals(Object other) {
     if (other == this) {
       return true;
@@ -207,11 +211,13 @@ public class TermAttributeImpl extends AttributeImpl implements TermAttribute, C
     return false;
   }
 
+  @Override
   public String toString() {
     initTermBuffer();
     return "term=" + new String(termBuffer, 0, termLength);
   }
   
+  @Override
   public void copyTo(AttributeImpl target) {
     initTermBuffer();
     TermAttribute t = (TermAttribute) target;

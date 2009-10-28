@@ -26,6 +26,7 @@ public class SerialMergeScheduler extends MergeScheduler {
   /** Just do the merges in sequence. We do this
    * "synchronized" so that even if the application is using
    * multiple threads, only one merge may run at a time. */
+  @Override
   synchronized public void merge(IndexWriter writer)
     throws CorruptIndexException, IOException {
 
@@ -37,5 +38,6 @@ public class SerialMergeScheduler extends MergeScheduler {
     }
   }
 
+  @Override
   public void close() {}
 }

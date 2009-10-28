@@ -49,10 +49,12 @@ public class FlagsAttributeImpl extends AttributeImpl implements FlagsAttribute,
     this.flags = flags;
   }
   
+  @Override
   public void clear() {
     flags = 0;
   }
 
+  @Override
   public boolean equals(Object other) {
     if (this == other) {
       return true;
@@ -65,10 +67,12 @@ public class FlagsAttributeImpl extends AttributeImpl implements FlagsAttribute,
     return false;
   }
 
+  @Override
   public int hashCode() {
     return flags;
   }
   
+  @Override
   public void copyTo(AttributeImpl target) {
     FlagsAttribute t = (FlagsAttribute) target;
     t.setFlags(flags);

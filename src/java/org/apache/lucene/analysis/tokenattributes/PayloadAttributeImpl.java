@@ -54,10 +54,12 @@ public class PayloadAttributeImpl extends AttributeImpl implements PayloadAttrib
     this.payload = payload;
   }
   
+  @Override
   public void clear() {
     payload = null;
   }
 
+  @Override
   public Object clone()  {
     PayloadAttributeImpl clone = (PayloadAttributeImpl) super.clone();
     if (payload != null) {
@@ -66,6 +68,7 @@ public class PayloadAttributeImpl extends AttributeImpl implements PayloadAttrib
     return clone;
   }
 
+  @Override
   public boolean equals(Object other) {
     if (other == this) {
       return true;
@@ -83,10 +86,12 @@ public class PayloadAttributeImpl extends AttributeImpl implements PayloadAttrib
     return false;
   }
 
+  @Override
   public int hashCode() {
     return (payload == null) ? 0 : payload.hashCode();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     PayloadAttribute t = (PayloadAttribute) target;
     t.setPayload((payload == null) ? null : (Payload) payload.clone());

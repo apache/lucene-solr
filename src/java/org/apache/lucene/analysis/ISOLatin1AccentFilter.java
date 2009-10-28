@@ -41,6 +41,7 @@ public final class ISOLatin1AccentFilter extends TokenFilter {
   private int outputPos;
   private TermAttribute termAtt;
     
+  @Override
   public final boolean incrementToken() throws java.io.IOException {    
     if (input.incrementToken()) {
       final char[] buffer = termAtt.termBuffer();

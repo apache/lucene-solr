@@ -43,6 +43,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     omitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
   }
 
+  @Override
   int getStreamCount() {
     if (fieldInfo.omitTermFreqAndPositions)
       return 1;
@@ -50,10 +51,12 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       return 2;
   }
 
+  @Override
   void finish() {}
 
   boolean hasPayloads;
 
+  @Override
   void skippingLongTerm() throws IOException {}
 
   public int compareTo(FreqProxTermsWriterPerField other) {
@@ -67,6 +70,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     payloadAttribute = null;
   }
 
+  @Override
   boolean start(Fieldable[] fields, int count) {
     for(int i=0;i<count;i++)
       if (fields[i].isIndexed())
@@ -74,6 +78,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     return false;
   }     
   
+  @Override
   void start(Fieldable f) {
     if (fieldState.attributeSource.hasAttribute(PayloadAttribute.class)) {
       payloadAttribute = fieldState.attributeSource.getAttribute(PayloadAttribute.class);
@@ -100,6 +105,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     p.lastPosition = fieldState.position;
   }
 
+  @Override
   final void newTerm(RawPostingList p0) {
     // First time we're seeing this term since the last
     // flush
@@ -115,6 +121,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     }
   }
 
+  @Override
   final void addTerm(RawPostingList p0) {
 
     assert docState.testPoint("FreqProxTermsWriterPerField.addTerm start");

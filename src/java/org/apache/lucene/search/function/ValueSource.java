@@ -54,6 +54,7 @@ public abstract class ValueSource implements Serializable {
   public abstract String description();
 
   /* (non-Javadoc) @see java.lang.Object#toString() */
+  @Override
   public String toString() {
     return description();
   }
@@ -62,12 +63,14 @@ public abstract class ValueSource implements Serializable {
    * Needed for possible caching of query results - used by {@link ValueSourceQuery#equals(Object)}.
    * @see Object#equals(Object)
    */
+  @Override
   public abstract boolean equals(Object o);
 
   /**
    * Needed for possible caching of query results - used by {@link ValueSourceQuery#hashCode()}.
    * @see Object#hashCode()
    */
+  @Override
   public abstract int hashCode();
   
 }

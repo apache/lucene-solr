@@ -134,6 +134,7 @@ public final class StopFilter extends TokenFilter {
   /**
    * Returns the next input Token whose term() is not a stop word.
    */
+  @Override
   public final boolean incrementToken() throws IOException {
     // return the first non-stop word found
     int skippedPositions = 0;

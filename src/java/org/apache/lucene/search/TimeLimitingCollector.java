@@ -70,6 +70,7 @@ public class TimeLimitingCollector extends Collector {
       this.setDaemon( true );
     }
 
+    @Override
     public void run() {
       while (true) {
         // TODO: Use System.nanoTime() when Lucene moves to Java SE 5.
@@ -194,6 +195,7 @@ public class TimeLimitingCollector extends Collector {
    * @throws TimeExceededException
    *           if the time allowed has exceeded.
    */
+  @Override
   public void collect(final int doc) throws IOException {
     long time = TIMER_THREAD.getMilliseconds();
     if (timeout < time) {
@@ -208,14 +210,17 @@ public class TimeLimitingCollector extends Collector {
     collector.collect(doc);
   }
   
+  @Override
   public void setNextReader(IndexReader reader, int base) throws IOException {
     collector.setNextReader(reader, base);
   }
   
+  @Override
   public void setScorer(Scorer scorer) throws IOException {
     collector.setScorer(scorer);
   }
 
+  @Override
   public boolean acceptsDocsOutOfOrder() {
     return collector.acceptsDocsOutOfOrder();
   }

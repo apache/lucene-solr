@@ -102,6 +102,7 @@ public abstract class LogMergePolicy extends MergePolicy {
   }
 
   // Javadoc inherited
+  @Override
   public boolean useCompoundFile(SegmentInfos infos, SegmentInfo info) {
     return useCompoundFile;
   }
@@ -120,6 +121,7 @@ public abstract class LogMergePolicy extends MergePolicy {
   }
 
   // Javadoc inherited
+  @Override
   public boolean useCompoundDocStore(SegmentInfos infos) {
     return useCompoundDocStore;
   }
@@ -151,6 +153,7 @@ public abstract class LogMergePolicy extends MergePolicy {
     return calibrateSizeByDeletes;
   }
 
+  @Override
   public void close() {}
 
   abstract protected long size(SegmentInfo info) throws IOException;
@@ -211,6 +214,7 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  setting is true.  This method returns multiple merges
    *  (mergeFactor at a time) so the {@link MergeScheduler}
    *  in use may make use of concurrency. */
+  @Override
   public MergeSpecification findMergesForOptimize(SegmentInfos infos,
       int maxNumSegments, Set<SegmentInfo> segmentsToOptimize) throws IOException {
     MergeSpecification spec;
@@ -295,6 +299,7 @@ public abstract class LogMergePolicy extends MergePolicy {
    * index.  We simply merge adjacent segments that have
    * deletes, up to mergeFactor at a time.
    */ 
+  @Override
   public MergeSpecification findMergesToExpungeDeletes(SegmentInfos segmentInfos)
       throws CorruptIndexException, IOException {
     final int numSegments = segmentInfos.size();
@@ -347,6 +352,7 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  multiple levels have too many segments, this method
    *  will return multiple merges, allowing the {@link
    *  MergeScheduler} to use concurrency. */
+  @Override
   public MergeSpecification findMerges(SegmentInfos infos) throws IOException {
 
     final int numSegments = infos.size();

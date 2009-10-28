@@ -31,11 +31,13 @@ public class DocIdBitSet extends DocIdSet {
     this.bitSet = bitSet;
   }
 
+  @Override
   public DocIdSetIterator iterator() {
     return new DocIdBitSetIterator(bitSet);
   }
 
   /** This DocIdSet implementation is cacheable. */
+  @Override
   public boolean isCacheable() {
     return true;
   }
@@ -56,10 +58,12 @@ public class DocIdBitSet extends DocIdSet {
       this.docId = -1;
     }
     
+    @Override
     public int docID() {
       return docId;
     }
     
+    @Override
     public int nextDoc() {
       // (docId + 1) on next line requires -1 initial value for docNr:
       int d = bitSet.nextSetBit(docId + 1);
@@ -68,6 +72,7 @@ public class DocIdBitSet extends DocIdSet {
       return docId;
     }
   
+    @Override
     public int advance(int target) {
       int d = bitSet.nextSetBit(target);
       // -1 returned by BitSet.nextSetBit() when exhausted

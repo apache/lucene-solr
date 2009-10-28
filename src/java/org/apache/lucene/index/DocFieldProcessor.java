@@ -45,11 +45,13 @@ final class DocFieldProcessor extends DocConsumer {
     fieldsWriter = new StoredFieldsWriter(docWriter, fieldInfos);
   }
 
+  @Override
   public void closeDocStore(SegmentWriteState state) throws IOException {
     consumer.closeDocStore(state);
     fieldsWriter.closeDocStore(state);
   }
 
+  @Override
   public void flush(Collection<DocConsumerPerThread> threads, SegmentWriteState state) throws IOException {
 
     Map<DocFieldConsumerPerThread, Collection<DocFieldConsumerPerField>> childThreadsAndFields = new HashMap<DocFieldConsumerPerThread, Collection<DocFieldConsumerPerField>>();
@@ -70,15 +72,18 @@ final class DocFieldProcessor extends DocConsumer {
     state.flushedFiles.add(fileName);
   }
 
+  @Override
   public void abort() {
     fieldsWriter.abort();
     consumer.abort();
   }
 
+  @Override
   public boolean freeRAM() {
     return consumer.freeRAM();
   }
 
+  @Override
   public DocConsumerPerThread addThread(DocumentsWriterThreadState threadState) throws IOException {
     return new DocFieldProcessorPerThread(threadState, this);
   }

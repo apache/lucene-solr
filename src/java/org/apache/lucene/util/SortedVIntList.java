@@ -206,10 +206,12 @@ public class SortedVIntList extends DocIdSet {
         }
       }
       
+      @Override
       public int docID() {
         return doc;
       }
       
+      @Override
       public int nextDoc() {
         if (bytePos >= lastBytePos) {
           doc = NO_MORE_DOCS;
@@ -220,6 +222,7 @@ public class SortedVIntList extends DocIdSet {
         return doc;
       }
       
+      @Override
       public int advance(int target) {
         while (bytePos < lastBytePos) {
           advance();

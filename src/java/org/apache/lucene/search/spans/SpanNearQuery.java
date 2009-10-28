@@ -79,8 +79,10 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   /** Return true if matches are required to be in-order.*/
   public boolean isInOrder() { return inOrder; }
 
+  @Override
   public String getField() { return field; }
   
+  @Override
   public void extractTerms(Set<Term> terms) {
 	    for (final SpanQuery clause : clauses) {
 	      clause.extractTerms(terms);
@@ -88,6 +90,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   }  
   
 
+  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     buffer.append("spanNear([");
@@ -108,6 +111,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     return buffer.toString();
   }
 
+  @Override
   public Spans getSpans(final IndexReader reader) throws IOException {
     if (clauses.size() == 0)                      // optimize 0-clause case
       return new SpanOrQuery(getClauses()).getSpans(reader);
@@ -120,6 +124,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
             : (Spans) new NearSpansUnordered(this, reader);
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     SpanNearQuery clone = null;
     for (int i = 0 ; i < clauses.size(); i++) {
@@ -138,6 +143,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     }
   }
   
+  @Override
   public Object clone() {
     int sz = clauses.size();
     SpanQuery[] newClauses = new SpanQuery[sz];
@@ -151,6 +157,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
   }
 
   /** Returns true iff <code>o</code> is equal to this. */
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof SpanNearQuery)) return false;
@@ -164,6 +171,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     return getBoost() == spanNearQuery.getBoost();
   }
 
+  @Override
   public int hashCode() {
     int result;
     result = clauses.hashCode();

@@ -42,6 +42,7 @@ public class CachingSpanFilter extends SpanFilter {
     this.filter = filter;
   }
 
+  @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     SpanFilterResult result = getCachedResult(reader);
     return result != null ? result.getDocIdSet() : null;
@@ -64,19 +65,23 @@ public class CachingSpanFilter extends SpanFilter {
   }
 
 
+  @Override
   public SpanFilterResult bitSpans(IndexReader reader) throws IOException {
     return getCachedResult(reader);
   }
 
+  @Override
   public String toString() {
     return "CachingSpanFilter("+filter+")";
   }
 
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof CachingSpanFilter)) return false;
     return this.filter.equals(((CachingSpanFilter)o).filter);
   }
 
+  @Override
   public int hashCode() {
     return filter.hashCode() ^ 0x1117BF25;
   }

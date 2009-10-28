@@ -79,6 +79,7 @@ public class FieldMaskingSpanQuery extends SpanQuery {
     this.field = maskedField;
   }
 
+  @Override
   public String getField() {
     return field;
   }
@@ -90,22 +91,27 @@ public class FieldMaskingSpanQuery extends SpanQuery {
   // :NOTE: getBoost and setBoost are not proxied to the maskedQuery
   // ...this is done to be more consistent with things like SpanFirstQuery
   
+  @Override
   public Spans getSpans(IndexReader reader) throws IOException {
     return maskedQuery.getSpans(reader);
   }
 
+  @Override
   public void extractTerms(Set<Term> terms) {
     maskedQuery.extractTerms(terms);
   }  
 
+  @Override
   public Weight createWeight(Searcher searcher) throws IOException {
     return maskedQuery.createWeight(searcher);
   }
 
+  @Override
   public Similarity getSimilarity(Searcher searcher) {
     return maskedQuery.getSimilarity(searcher);
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     FieldMaskingSpanQuery clone = null;
 
@@ -122,6 +128,7 @@ public class FieldMaskingSpanQuery extends SpanQuery {
     }
   }
 
+  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     buffer.append("mask(");
@@ -133,6 +140,7 @@ public class FieldMaskingSpanQuery extends SpanQuery {
     return buffer.toString();
   }
   
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof FieldMaskingSpanQuery))
       return false;
@@ -143,6 +151,7 @@ public class FieldMaskingSpanQuery extends SpanQuery {
 
   }
   
+  @Override
   public int hashCode() {
     return getMaskedQuery().hashCode()
       ^ getField().hashCode()

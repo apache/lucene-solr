@@ -76,6 +76,7 @@ final class SegmentMerger {
     directory = dir;
     segment = name;
     checkAbort = new CheckAbort(null, null) {
+      @Override
       public void work(double units) throws MergeAbortedException {
         // do nothing
       }
@@ -89,6 +90,7 @@ final class SegmentMerger {
       checkAbort = new CheckAbort(merge, directory);
     } else {
       checkAbort = new CheckAbort(null, null) {
+        @Override
         public void work(double units) throws MergeAbortedException {
           // do nothing
         }

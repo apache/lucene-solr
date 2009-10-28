@@ -67,6 +67,7 @@ public final class ASCIIFoldingFilter extends TokenFilter {
   private int outputPos;
   private TermAttribute termAtt;
 
+  @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       final char[] buffer = termAtt.termBuffer();

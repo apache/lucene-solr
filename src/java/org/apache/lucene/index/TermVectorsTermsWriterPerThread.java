@@ -39,6 +39,7 @@ final class TermVectorsTermsWriterPerThread extends TermsHashConsumerPerThread {
   final UnicodeUtil.UTF8Result utf8Results[] = {new UnicodeUtil.UTF8Result(),
                                                 new UnicodeUtil.UTF8Result()};
 
+  @Override
   public void startDocument() {
     assert clearLastVectorFieldName();
     if (doc != null) {
@@ -47,6 +48,7 @@ final class TermVectorsTermsWriterPerThread extends TermsHashConsumerPerThread {
     }
   }
 
+  @Override
   public DocumentsWriter.DocWriter finishDocument() {
     try {
       return doc;
@@ -55,10 +57,12 @@ final class TermVectorsTermsWriterPerThread extends TermsHashConsumerPerThread {
     }
   }
 
+  @Override
   public TermsHashConsumerPerField addField(TermsHashPerField termsHashPerField, FieldInfo fieldInfo) {
     return new TermVectorsTermsWriterPerField(termsHashPerField, this, fieldInfo);
   }
 
+  @Override
   public void abort() {
     if (doc != null) {
       doc.abort();

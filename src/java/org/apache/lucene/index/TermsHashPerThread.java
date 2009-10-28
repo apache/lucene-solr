@@ -58,10 +58,12 @@ final class TermsHashPerThread extends InvertedDocConsumerPerThread {
       nextPerThread = null;
   }
 
+  @Override
   InvertedDocConsumerPerField addField(DocInverterPerField docInverterPerField, final FieldInfo fieldInfo) {
     return new TermsHashPerField(docInverterPerField, this, nextPerThread, fieldInfo);
   }
 
+  @Override
   synchronized public void abort() {
     reset(true);
     consumer.abort();
@@ -83,12 +85,14 @@ final class TermsHashPerThread extends InvertedDocConsumerPerThread {
     return true;
   }
 
+  @Override
   public void startDocument() throws IOException {
     consumer.startDocument();
     if (nextPerThread != null)
       nextPerThread.consumer.startDocument();
   }
 
+  @Override
   public DocumentsWriter.DocWriter finishDocument() throws IOException {
     final DocumentsWriter.DocWriter doc = consumer.finishDocument();
 

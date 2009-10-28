@@ -60,12 +60,14 @@ final class FormatPostingsFieldsWriter extends FormatPostingsFieldsConsumer {
   }
 
   /** Add a new field */
+  @Override
   FormatPostingsTermsConsumer addField(FieldInfo field) {
     termsWriter.setField(field);
     return termsWriter;
   }
 
   /** Called when we are done adding everything. */
+  @Override
   void finish() throws IOException {
     termsOut.close();
     termsWriter.close();

@@ -54,11 +54,13 @@ public class SpanQueryFilter extends SpanFilter {
     this.query = query;
   }
 
+  @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     SpanFilterResult result = bitSpans(reader);
     return result.getDocIdSet();
   }
 
+  @Override
   public SpanFilterResult bitSpans(IndexReader reader) throws IOException {
 
     final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
@@ -86,14 +88,17 @@ public class SpanQueryFilter extends SpanFilter {
     return query;
   }
 
+  @Override
   public String toString() {
     return "SpanQueryFilter(" + query + ")";
   }
 
+  @Override
   public boolean equals(Object o) {
     return o instanceof SpanQueryFilter && this.query.equals(((SpanQueryFilter) o).query);
   }
 
+  @Override
   public int hashCode() {
     return query.hashCode() ^ 0x923F64B9;
   }

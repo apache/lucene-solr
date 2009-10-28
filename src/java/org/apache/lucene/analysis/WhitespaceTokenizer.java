@@ -42,6 +42,7 @@ public class WhitespaceTokenizer extends CharTokenizer {
   
   /** Collects only characters which do not satisfy
    * {@link Character#isWhitespace(char)}.*/
+  @Override
   protected boolean isTokenChar(char c) {
     return !Character.isWhitespace(c);
   }

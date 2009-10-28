@@ -52,6 +52,7 @@ public class MultiSearcher extends Searcher {
       setSimilarity(similarity);
     }
 
+    @Override
     public int docFreq(Term term) {
       int df;
       try {
@@ -63,6 +64,7 @@ public class MultiSearcher extends Searcher {
       return df;
     }
 
+    @Override
     public int[] docFreqs(Term[] terms) {
       int[] result = new int[terms.length];
       for (int i = 0; i < terms.length; i++) {
@@ -71,10 +73,12 @@ public class MultiSearcher extends Searcher {
       return result;
     }
 
+    @Override
     public int maxDoc() {
       return maxDoc;
     }
 
+    @Override
     public Query rewrite(Query query) {
       // this is a bit of a hack. We know that a query which
       // creates a Weight based on this Dummy-Searcher is
@@ -83,10 +87,12 @@ public class MultiSearcher extends Searcher {
       return query;
     }
 
+    @Override
     public void close() {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public Document doc(int i) {
       throw new UnsupportedOperationException();
     }
@@ -95,18 +101,22 @@ public class MultiSearcher extends Searcher {
         throw new UnsupportedOperationException();
     }
 
+    @Override
     public Explanation explain(Weight weight,int doc) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public void search(Weight weight, Filter filter, Collector results) {
       throw new UnsupportedOperationException();
     }
     
+    @Override
     public TopDocs search(Weight weight,Filter filter,int n) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public TopFieldDocs search(Weight weight,Filter filter,int n,Sort sort) {
       throw new UnsupportedOperationException();
     }
@@ -138,11 +148,13 @@ public class MultiSearcher extends Searcher {
   }
 
   // inherit javadoc
+  @Override
   public void close() throws IOException {
     for (int i = 0; i < searchables.length; i++)
       searchables[i].close();
   }
 
+  @Override
   public int docFreq(Term term) throws IOException {
     int docFreq = 0;
     for (int i = 0; i < searchables.length; i++)
@@ -151,6 +163,7 @@ public class MultiSearcher extends Searcher {
   }
 
   // inherit javadoc
+  @Override
   public Document doc(int n) throws CorruptIndexException, IOException {
     int i = subSearcher(n);			  // find searcher index
     return searchables[i].doc(n - starts[i]);	  // dispatch to searcher
@@ -174,10 +187,12 @@ public class MultiSearcher extends Searcher {
     return n - starts[subSearcher(n)];
   }
 
+  @Override
   public int maxDoc() throws IOException {
     return maxDoc;
   }
 
+  @Override
   public TopDocs search(Weight weight, Filter filter, int nDocs)
       throws IOException {
 
@@ -205,6 +220,7 @@ public class MultiSearcher extends Searcher {
     return new TopDocs(totalHits, scoreDocs, maxScore);
   }
 
+  @Override
   public TopFieldDocs search (Weight weight, Filter filter, int n, Sort sort)
   throws IOException {
     FieldDocSortedHitQueue hq = null;
@@ -247,6 +263,7 @@ public class MultiSearcher extends Searcher {
   }
 
   // inherit javadoc
+  @Override
   public void search(Weight weight, Filter filter, final Collector collector)
   throws IOException {
     for (int i = 0; i < searchables.length; i++) {
@@ -254,15 +271,19 @@ public class MultiSearcher extends Searcher {
       final int start = starts[i];
       
       final Collector hc = new Collector() {
+        @Override
         public void setScorer(Scorer scorer) throws IOException {
           collector.setScorer(scorer);
         }
+        @Override
         public void collect(int doc) throws IOException {
           collector.collect(doc);
         }
+        @Override
         public void setNextReader(IndexReader reader, int docBase) throws IOException {
           collector.setNextReader(reader, start + docBase);
         }
+        @Override
         public boolean acceptsDocsOutOfOrder() {
           return collector.acceptsDocsOutOfOrder();
         }
@@ -272,6 +293,7 @@ public class MultiSearcher extends Searcher {
     }
   }
 
+  @Override
   public Query rewrite(Query original) throws IOException {
     Query[] queries = new Query[searchables.length];
     for (int i = 0; i < searchables.length; i++) {
@@ -280,6 +302,7 @@ public class MultiSearcher extends Searcher {
     return queries[0].combine(queries);
   }
 
+  @Override
   public Explanation explain(Weight weight, int doc) throws IOException {
     int i = subSearcher(doc);			  // find searcher index
     return searchables[i].explain(weight, doc - starts[i]); // dispatch to searcher
@@ -300,6 +323,7 @@ public class MultiSearcher extends Searcher {
    *
    * @return rewritten queries
    */
+  @Override
   protected Weight createWeight(Query original) throws IOException {
     // step 1
     Query rewrittenQuery = rewrite(original);

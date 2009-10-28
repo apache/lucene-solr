@@ -51,11 +51,13 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
     this.endConsumer = perThread.endConsumer.addField(this, fieldInfo);
   }
 
+  @Override
   void abort() {
     consumer.abort();
     endConsumer.abort();
   }
 
+  @Override
   public void processFields(final Fieldable[] fields,
                             final int count) throws IOException {
 

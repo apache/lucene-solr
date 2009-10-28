@@ -178,26 +178,32 @@ public abstract class FieldComparator {
       this.parser = (ByteParser) parser;
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       return values[slot1] - values[slot2];
     }
 
+    @Override
     public int compareBottom(int doc) {
       return bottom - currentReaderValues[doc];
     }
 
+    @Override
     public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getBytes(reader, field, parser);
     }
     
+    @Override
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
     }
 
+    @Override
     public Comparable value(int slot) {
       return Byte.valueOf(values[slot]);
     }
@@ -213,20 +219,24 @@ public abstract class FieldComparator {
       docIDs = new int[numHits];
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       // No overflow risk because docIDs are non-negative
       return docIDs[slot1] - docIDs[slot2];
     }
 
+    @Override
     public int compareBottom(int doc) {
       // No overflow risk because docIDs are non-negative
       return bottom - (docBase + doc);
     }
 
+    @Override
     public void copy(int slot, int doc) {
       docIDs[slot] = docBase + doc;
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) {
       // TODO: can we "map" our docIDs to the current
       // reader? saves having to then subtract on every
@@ -234,10 +244,12 @@ public abstract class FieldComparator {
       this.docBase = docBase;
     }
     
+    @Override
     public void setBottom(final int bottom) {
       this.bottom = docIDs[bottom];
     }
 
+    @Override
     public Comparable value(int slot) {
       return Integer.valueOf(docIDs[slot]);
     }
@@ -258,6 +270,7 @@ public abstract class FieldComparator {
       this.parser = (DoubleParser) parser;
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       final double v1 = values[slot1];
       final double v2 = values[slot2];
@@ -270,6 +283,7 @@ public abstract class FieldComparator {
       }
     }
 
+    @Override
     public int compareBottom(int doc) {
       final double v2 = currentReaderValues[doc];
       if (bottom > v2) {
@@ -281,18 +295,22 @@ public abstract class FieldComparator {
       }
     }
 
+    @Override
     public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getDoubles(reader, field, parser);
     }
     
+    @Override
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
     }
 
+    @Override
     public Comparable value(int slot) {
       return Double.valueOf(values[slot]);
     }
@@ -313,6 +331,7 @@ public abstract class FieldComparator {
       this.parser = (FloatParser) parser;
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       // TODO: are there sneaky non-branch ways to compute
       // sign of float?
@@ -327,6 +346,7 @@ public abstract class FieldComparator {
       }
     }
 
+    @Override
     public int compareBottom(int doc) {
       // TODO: are there sneaky non-branch ways to compute
       // sign of float?
@@ -340,18 +360,22 @@ public abstract class FieldComparator {
       }
     }
 
+    @Override
     public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getFloats(reader, field, parser);
     }
     
+    @Override
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
     }
 
+    @Override
     public Comparable value(int slot) {
       return Float.valueOf(values[slot]);
     }
@@ -372,6 +396,7 @@ public abstract class FieldComparator {
       this.parser = (IntParser) parser;
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       // TODO: there are sneaky non-branch ways to compute
       // -1/+1/0 sign
@@ -388,6 +413,7 @@ public abstract class FieldComparator {
       }
     }
 
+    @Override
     public int compareBottom(int doc) {
       // TODO: there are sneaky non-branch ways to compute
       // -1/+1/0 sign
@@ -403,18 +429,22 @@ public abstract class FieldComparator {
       }
     }
 
+    @Override
     public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getInts(reader, field, parser);
     }
     
+    @Override
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
     }
 
+    @Override
     public Comparable value(int slot) {
       return Integer.valueOf(values[slot]);
     }
@@ -435,6 +465,7 @@ public abstract class FieldComparator {
       this.parser = (LongParser) parser;
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       // TODO: there are sneaky non-branch ways to compute
       // -1/+1/0 sign
@@ -449,6 +480,7 @@ public abstract class FieldComparator {
       }
     }
 
+    @Override
     public int compareBottom(int doc) {
       // TODO: there are sneaky non-branch ways to compute
       // -1/+1/0 sign
@@ -462,18 +494,22 @@ public abstract class FieldComparator {
       }
     }
 
+    @Override
     public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getLongs(reader, field, parser);
     }
     
+    @Override
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
     }
 
+    @Override
     public Comparable value(int slot) {
       return Long.valueOf(values[slot]);
     }
@@ -494,34 +530,41 @@ public abstract class FieldComparator {
       scores = new float[numHits];
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       final float score1 = scores[slot1];
       final float score2 = scores[slot2];
       return score1 > score2 ? -1 : (score1 < score2 ? 1 : 0);
     }
 
+    @Override
     public int compareBottom(int doc) throws IOException {
       float score = scorer.score();
       return bottom > score ? -1 : (bottom < score ? 1 : 0);
     }
 
+    @Override
     public void copy(int slot, int doc) throws IOException {
       scores[slot] = scorer.score();
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) {
     }
     
+    @Override
     public void setBottom(final int bottom) {
       this.bottom = scores[bottom];
     }
 
+    @Override
     public void setScorer(Scorer scorer) {
       // wrap with a ScoreCachingWrappingScorer so that successive calls to
       // score() will not incur score computation over and over again.
       this.scorer = new ScoreCachingWrappingScorer(scorer);
     }
     
+    @Override
     public Comparable value(int slot) {
       return Float.valueOf(scores[slot]);
     }
@@ -542,26 +585,32 @@ public abstract class FieldComparator {
       this.parser = (ShortParser) parser;
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       return values[slot1] - values[slot2];
     }
 
+    @Override
     public int compareBottom(int doc) {
       return bottom - currentReaderValues[doc];
     }
 
+    @Override
     public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getShorts(reader, field, parser);
     }
     
+    @Override
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
     }
 
+    @Override
     public Comparable value(int slot) {
       return Short.valueOf(values[slot]);
     }
@@ -583,6 +632,7 @@ public abstract class FieldComparator {
       collator = Collator.getInstance(locale);
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       final String val1 = values[slot1];
       final String val2 = values[slot2];
@@ -597,6 +647,7 @@ public abstract class FieldComparator {
       return collator.compare(val1, val2);
     }
 
+    @Override
     public int compareBottom(int doc) {
       final String val2 = currentReaderValues[doc];
       if (bottom == null) {
@@ -610,18 +661,22 @@ public abstract class FieldComparator {
       return collator.compare(bottom, val2);
     }
 
+    @Override
     public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getStrings(reader, field);
     }
     
+    @Override
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
     }
 
+    @Override
     public Comparable value(int slot) {
       return values[slot];
     }
@@ -662,6 +717,7 @@ public abstract class FieldComparator {
       this.field = field;
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       if (readerGen[slot1] == readerGen[slot2]) {
         int cmp = ords[slot1] - ords[slot2];
@@ -683,6 +739,7 @@ public abstract class FieldComparator {
       return val1.compareTo(val2);
     }
 
+    @Override
     public int compareBottom(int doc) {
       assert bottomSlot != -1;
       int order = this.order[doc];
@@ -734,6 +791,7 @@ public abstract class FieldComparator {
       ords[slot] = index;
     }
 
+    @Override
     public void copy(int slot, int doc) {
       final int ord = order[doc];
       ords[slot] = ord;
@@ -742,6 +800,7 @@ public abstract class FieldComparator {
       readerGen[slot] = currentReaderGen;
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       StringIndex currentReaderValues = FieldCache.DEFAULT.getStringIndex(reader, field);
       currentReaderGen++;
@@ -754,6 +813,7 @@ public abstract class FieldComparator {
       }
     }
     
+    @Override
     public void setBottom(final int bottom) {
       bottomSlot = bottom;
       if (readerGen[bottom] != currentReaderGen) {
@@ -765,6 +825,7 @@ public abstract class FieldComparator {
       bottomValue = values[bottom];
     }
 
+    @Override
     public Comparable value(int slot) {
       return values[slot];
     }
@@ -798,6 +859,7 @@ public abstract class FieldComparator {
       this.field = field;
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       final String val1 = values[slot1];
       final String val2 = values[slot2];
@@ -813,6 +875,7 @@ public abstract class FieldComparator {
       return val1.compareTo(val2);
     }
 
+    @Override
     public int compareBottom(int doc) {
       final String val2 = currentReaderValues[doc];
       if (bottom == null) {
@@ -826,18 +889,22 @@ public abstract class FieldComparator {
       return bottom.compareTo(val2);
     }
 
+    @Override
     public void copy(int slot, int doc) {
       values[slot] = currentReaderValues[doc];
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       currentReaderValues = FieldCache.DEFAULT.getStrings(reader, field);
     }
     
+    @Override
     public void setBottom(final int bottom) {
       this.bottom = values[bottom];
     }
 
+    @Override
     public Comparable value(int slot) {
       return values[slot];
     }

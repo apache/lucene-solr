@@ -66,6 +66,7 @@ final class ByteSliceReader extends IndexInput {
     return upto + bufferOffset == endIndex;
   }
 
+  @Override
   public byte readByte() {
     assert !eof();
     assert upto <= limit;
@@ -117,6 +118,7 @@ final class ByteSliceReader extends IndexInput {
     }
   }
 
+  @Override
   public void readBytes(byte[] b, int offset, int len) {
     while(len > 0) {
       final int numLeft = limit-upto;
@@ -135,9 +137,13 @@ final class ByteSliceReader extends IndexInput {
     }
   }
 
+  @Override
   public long getFilePointer() {throw new RuntimeException("not implemented");}
+  @Override
   public long length() {throw new RuntimeException("not implemented");}
+  @Override
   public void seek(long pos) {throw new RuntimeException("not implemented");}
+  @Override
   public void close() {throw new RuntimeException("not implemented");}
 }
 

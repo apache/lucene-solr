@@ -49,10 +49,12 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     fieldState = termsHashPerField.fieldState;
   }
 
+  @Override
   int getStreamCount() {
     return 2;
   }
 
+  @Override
   boolean start(Fieldable[] fields, int count) {
     doVectors = false;
     doVectorPositions = false;
@@ -97,6 +99,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
    *  are enabled, to write the vectors to
    *  RAMOutputStream, which is then quickly flushed to
    *  * the real term vectors files in the Directory. */
+  @Override
   void finish() throws IOException {
 
     assert docState.testPoint("TermVectorsTermsWriterPerField.finish start");
@@ -194,6 +197,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     maxNumPostings = 0;
   }
   
+  @Override
   void start(Fieldable f) {
     if (doVectorOffsets) {
       offsetAttribute = fieldState.attributeSource.addAttribute(OffsetAttribute.class);
@@ -202,6 +206,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     }
   }
 
+  @Override
   void newTerm(RawPostingList p0) {
 
     assert docState.testPoint("TermVectorsTermsWriterPerField.newTerm start");
@@ -225,6 +230,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     }
   }
 
+  @Override
   void addTerm(RawPostingList p0) {
 
     assert docState.testPoint("TermVectorsTermsWriterPerField.addTerm start");
@@ -247,5 +253,6 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     }
   }
 
+  @Override
   void skippingLongTerm() {}
 }

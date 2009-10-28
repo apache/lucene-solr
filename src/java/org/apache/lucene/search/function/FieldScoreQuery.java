@@ -90,6 +90,7 @@ public class FieldScoreQuery extends ValueSourceQuery {
       this.typeName = name;
     }
     /*(non-Javadoc) @see java.lang.Object#toString() */
+    @Override
     public String toString() {
       return getClass().getName()+"::"+typeName;
     }

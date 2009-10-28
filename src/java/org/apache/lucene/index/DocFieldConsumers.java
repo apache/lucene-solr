@@ -40,12 +40,14 @@ final class DocFieldConsumers extends DocFieldConsumer {
     this.two = two;
   }
 
+  @Override
   void setFieldInfos(FieldInfos fieldInfos) {
     super.setFieldInfos(fieldInfos);
     one.setFieldInfos(fieldInfos);
     two.setFieldInfos(fieldInfos);
   }
 
+  @Override
   public void flush(Map<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>> threadsAndFields, SegmentWriteState state) throws IOException {
 
     Map oneThreadsAndFields = new HashMap();
@@ -78,6 +80,7 @@ final class DocFieldConsumers extends DocFieldConsumer {
     two.flush(twoThreadsAndFields, state);
   }
 
+  @Override
   public void closeDocStore(SegmentWriteState state) throws IOException {      
     try {
       one.closeDocStore(state);
@@ -86,6 +89,7 @@ final class DocFieldConsumers extends DocFieldConsumer {
     }
   }
 
+  @Override
   public void abort() {
     try {
       one.abort();
@@ -94,12 +98,14 @@ final class DocFieldConsumers extends DocFieldConsumer {
     }
   }
 
+  @Override
   public boolean freeRAM() {
     boolean any = one.freeRAM();
     any |= two.freeRAM();
     return any;
   }
 
+  @Override
   public DocFieldConsumerPerThread addThread(DocFieldProcessorPerThread docFieldProcessorPerThread) throws IOException {
     return new DocFieldConsumersPerThread(docFieldProcessorPerThread, this, one.addThread(docFieldProcessorPerThread), two.addThread(docFieldProcessorPerThread));
   }
@@ -133,10 +139,12 @@ final class DocFieldConsumers extends DocFieldConsumer {
     DocumentsWriter.DocWriter one;
     DocumentsWriter.DocWriter two;
 
+    @Override
     public long sizeInBytes() {
       return one.sizeInBytes() + two.sizeInBytes();
     }
 
+    @Override
     public void finish() throws IOException {
       try {
         try {
@@ -149,6 +157,7 @@ final class DocFieldConsumers extends DocFieldConsumer {
       }
     }
 
+    @Override
     public void abort() {
       try {
         try {

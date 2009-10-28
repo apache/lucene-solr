@@ -63,6 +63,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       bottom = pq.updateTop();
     }
 
+    @Override
     public void collect(int doc) throws IOException {
       ++totalHits;
       if (queueFull) {
@@ -89,11 +90,13 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
     }
     
+    @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       this.docBase = docBase;
       comparator.setNextReader(reader, docBase);
     }
     
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       comparator.setScorer(scorer);
     }
@@ -113,6 +116,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       super(queue, numHits, fillFields);
     }
     
+    @Override
     public void collect(int doc) throws IOException {
       ++totalHits;
       if (queueFull) {
@@ -138,6 +142,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
     }
     
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
     }
@@ -164,6 +169,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       bottom = pq.updateTop();
     }
 
+    @Override
     public void collect(int doc) throws IOException {
       ++totalHits;
       if (queueFull) {
@@ -196,6 +202,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
     }
     
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
       comparator.setScorer(scorer);
@@ -217,6 +224,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       super(queue, numHits, fillFields);
     }
     
+    @Override
     public void collect(int doc) throws IOException {
       ++totalHits;
       if (queueFull) {
@@ -248,6 +256,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
     }
     
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
     }
@@ -276,6 +285,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       bottom =  pq.updateTop();
     }
 
+    @Override
     public void collect(int doc) throws IOException {
       final float score = scorer.score();
       if (score > maxScore) {
@@ -307,6 +317,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     }
     
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
       super.setScorer(scorer);
@@ -326,6 +337,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       super(queue, numHits, fillFields);
     }
     
+    @Override
     public void collect(int doc) throws IOException {
       final float score = scorer.score();
       if (score > maxScore) {
@@ -355,6 +367,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
     }
     
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
     }
@@ -383,6 +396,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       bottom = pq.updateTop();
     }
 
+    @Override
     public void collect(int doc) throws IOException {
       ++totalHits;
       if (queueFull) {
@@ -429,6 +443,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       this.docBase = docBase;
       for (int i = 0; i < comparators.length; i++) {
@@ -436,6 +451,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
     }
 
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       // set the scorer on all comparators
       for (int i = 0; i < comparators.length; i++) {
@@ -457,6 +473,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       super(queue, numHits, fillFields);
     }
     
+    @Override
     public void collect(int doc) throws IOException {
       ++totalHits;
       if (queueFull) {
@@ -505,6 +522,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
     }
     
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
     }
@@ -532,6 +550,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       bottom =  pq.updateTop();
     }
 
+    @Override
     public void collect(int doc) throws IOException {
       final float score = scorer.score();
       if (score > maxScore) {
@@ -582,6 +601,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
     }
 
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
       super.setScorer(scorer);
@@ -601,6 +621,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       super(queue, numHits, fillFields);
     }
     
+    @Override
     public void collect(int doc) throws IOException {
       final float score = scorer.score();
       if (score > maxScore) {
@@ -653,6 +674,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
     }
     
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
     }
@@ -678,6 +700,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       bottom = pq.updateTop();
     }
 
+    @Override
     public void collect(int doc) throws IOException {
       ++totalHits;
       if (queueFull) {
@@ -729,6 +752,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
     }
 
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
       super.setScorer(scorer);
@@ -749,6 +773,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       super(queue, numHits, fillFields);
     }
     
+    @Override
     public void collect(int doc) throws IOException {
       ++totalHits;
       if (queueFull) {
@@ -802,11 +827,13 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       }
     }
 
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
       super.setScorer(scorer);
     }
     
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
     }
@@ -934,6 +961,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
    * topDocs(int, int) calls them to return the results.
    */
 
+  @Override
   protected void populateResults(ScoreDoc[] results, int howMany) {
     if (fillFields) {
       // avoid casting if unnecessary.
@@ -949,6 +977,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
   }
   
+  @Override
   protected TopDocs newTopDocs(ScoreDoc[] results, int start) {
     if (results == null) {
       results = EMPTY_SCOREDOCS;
@@ -960,6 +989,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     return new TopFieldDocs(totalHits, results, ((FieldValueHitQueue) pq).getFields(), maxScore);
   }
   
+  @Override
   public boolean acceptsDocsOutOfOrder() {
     return false;
   }

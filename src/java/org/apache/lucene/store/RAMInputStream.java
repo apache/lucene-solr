@@ -49,14 +49,17 @@ class RAMInputStream extends IndexInput implements Cloneable {
     currentBuffer = null;
   }
 
+  @Override
   public void close() {
     // nothing to do here
   }
 
+  @Override
   public long length() {
     return length;
   }
 
+  @Override
   public byte readByte() throws IOException {
     if (bufferPosition >= bufferLength) {
       currentBufferIndex++;
@@ -65,6 +68,7 @@ class RAMInputStream extends IndexInput implements Cloneable {
     return currentBuffer[bufferPosition++];
   }
 
+  @Override
   public void readBytes(byte[] b, int offset, int len) throws IOException {
     while (len > 0) {
       if (bufferPosition >= bufferLength) {
@@ -100,10 +104,12 @@ class RAMInputStream extends IndexInput implements Cloneable {
     }
   }
 
+  @Override
   public long getFilePointer() {
     return currentBufferIndex < 0 ? 0 : bufferStart + bufferPosition;
   }
 
+  @Override
   public void seek(long pos) throws IOException {
     if (currentBuffer==null || pos < bufferStart || pos >= bufferStart + BUFFER_SIZE) {
       currentBufferIndex = (int) (pos / BUFFER_SIZE);

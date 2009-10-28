@@ -44,6 +44,7 @@ public class AverageGuessMemoryModel extends MemoryModel {
    * 
    * @see org.apache.lucene.util.MemoryModel#getArraySize()
    */
+  @Override
   public int getArraySize() {
     return 16;
   }
@@ -53,6 +54,7 @@ public class AverageGuessMemoryModel extends MemoryModel {
    * 
    * @see org.apache.lucene.util.MemoryModel#getClassSize()
    */
+  @Override
   public int getClassSize() {
     return 8;
   }
@@ -60,6 +62,7 @@ public class AverageGuessMemoryModel extends MemoryModel {
   /* (non-Javadoc)
    * @see org.apache.lucene.util.MemoryModel#getPrimitiveSize(java.lang.Class)
    */
+  @Override
   public int getPrimitiveSize(Class clazz) {
     return sizes.get(clazz).intValue();
   }
@@ -67,6 +70,7 @@ public class AverageGuessMemoryModel extends MemoryModel {
   /* (non-Javadoc)
    * @see org.apache.lucene.util.MemoryModel#getReferenceSize()
    */
+  @Override
   public int getReferenceSize() {
     return 4;
   }

@@ -47,6 +47,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
       this.score = score;
     }
     
+    @Override
     public String toString() {
       return "slot:" + slot + " docID:" + docID + " score=" + score;
     }
@@ -84,6 +85,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
      * @param b ScoreDoc
      * @return <code>true</code> if document <code>a</code> should be sorted after document <code>b</code>.
      */
+    @Override
     protected boolean lessThan(final Entry hitA, final Entry hitB) {
 
       assert hitA != hitB;
@@ -121,6 +123,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
       initialize(size);
     }
   
+    @Override
     protected boolean lessThan(final Entry hitA, final Entry hitB) {
 
       assert hitA != hitB;
@@ -190,6 +193,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
   protected final FieldComparator[] comparators;
   protected final int[] reverseMul;
 
+  @Override
   protected abstract boolean lessThan (final Entry a, final Entry b);
 
   /**

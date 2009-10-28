@@ -43,11 +43,13 @@ public class FieldSortedTermVectorMapper extends TermVectorMapper{
     this.comparator = comparator;
   }
 
+  @Override
   public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
     TermVectorEntry entry = new TermVectorEntry(currentField, term, frequency, offsets, positions);
     currentSet.add(entry);
   }
 
+  @Override
   public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
     currentSet = new TreeSet<TermVectorEntry>(comparator);
     currentField = field;

@@ -32,6 +32,7 @@ public final class LowerCaseFilter extends TokenFilter {
 
   private TermAttribute termAtt;
   
+  @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
 

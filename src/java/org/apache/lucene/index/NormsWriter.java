@@ -41,21 +41,25 @@ final class NormsWriter extends InvertedDocEndConsumer {
 
   private static final byte defaultNorm = Similarity.encodeNorm(1.0f);
   private FieldInfos fieldInfos;
+  @Override
   public InvertedDocEndConsumerPerThread addThread(DocInverterPerThread docInverterPerThread) {
     return new NormsWriterPerThread(docInverterPerThread, this);
   }
 
+  @Override
   public void abort() {}
 
   // We only write the _X.nrm file at flush
   void files(Collection<String> files) {}
 
+  @Override
   void setFieldInfos(FieldInfos fieldInfos) {
     this.fieldInfos = fieldInfos;
   }
 
   /** Produce _X.nrm if any document had a field with norms
    *  not disabled */
+  @Override
   public void flush(Map<InvertedDocEndConsumerPerThread,Collection<InvertedDocEndConsumerPerField>> threadsAndFields, SegmentWriteState state) throws IOException {
 
     final Map byField = new HashMap();
@@ -173,5 +177,6 @@ final class NormsWriter extends InvertedDocEndConsumer {
     }
   }
 
+  @Override
   void closeDocStore(SegmentWriteState state) {}
 }

@@ -62,6 +62,7 @@ public final class KeywordTokenizer extends Tokenizer {
     termAtt.resizeTermBuffer(bufferSize);    
   }
   
+  @Override
   public final boolean incrementToken() throws IOException {
     if (!done) {
       clearAttributes();
@@ -83,11 +84,13 @@ public final class KeywordTokenizer extends Tokenizer {
     return false;
   }
   
+  @Override
   public final void end() {
     // set final offset 
     offsetAtt.setOffset(finalOffset, finalOffset);
   }
 
+  @Override
   public void reset(Reader input) throws IOException {
     super.reset(input);
     this.done = false;

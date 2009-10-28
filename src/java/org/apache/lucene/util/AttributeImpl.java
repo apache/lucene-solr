@@ -48,6 +48,7 @@ public abstract class AttributeImpl implements Cloneable, Serializable, Attribut
    * 
    * This method may be overridden by subclasses.
    */
+  @Override
   public String toString() {
     StringBuilder buffer = new StringBuilder();
     Class clazz = this.getClass();
@@ -89,6 +90,7 @@ public abstract class AttributeImpl implements Cloneable, Serializable, Attribut
    * 
    * see also {@link #equals(Object)}
    */
+  @Override
   public abstract int hashCode();
   
   /**
@@ -97,6 +99,7 @@ public abstract class AttributeImpl implements Cloneable, Serializable, Attribut
    * 
    * see also {@link Object#equals(Object)}
    */
+  @Override
   public abstract boolean equals(Object other);
   
   /**
@@ -110,6 +113,7 @@ public abstract class AttributeImpl implements Cloneable, Serializable, Attribut
    * Shallow clone. Subclasses must override this if they 
    * need to clone any members deeply,
    */
+  @Override
   public Object clone() {
     Object clone = null;
     try {

@@ -23,10 +23,12 @@ import java.io.IOException;
 /** An Analyzer that uses {@link WhitespaceTokenizer}. */
 
 public final class WhitespaceAnalyzer extends Analyzer {
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     return new WhitespaceTokenizer(reader);
   }
 
+  @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
     Tokenizer tokenizer = (Tokenizer) getPreviousTokenStream();
     if (tokenizer == null) {

@@ -61,12 +61,14 @@ public class NIOFSDirectory extends FSDirectory {
   }
 
   /** Creates an IndexInput for the file with the given name. */
+  @Override
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
     return new NIOFSIndexInput(new File(getFile(), name), bufferSize, getReadChunkSize());
   }
 
   /** Creates an IndexOutput for the file with the given name. */
+  @Override
   public IndexOutput createOutput(String name) throws IOException {
     initOutput(name);
     return new SimpleFSDirectory.SimpleFSIndexOutput(new File(directory, name));
@@ -86,11 +88,13 @@ public class NIOFSDirectory extends FSDirectory {
       channel = file.getChannel();
     }
 
+    @Override
     protected void newBuffer(byte[] newBuffer) {
       super.newBuffer(newBuffer);
       byteBuf = ByteBuffer.wrap(newBuffer);
     }
 
+    @Override
     public void close() throws IOException {
       if (!isClone && file.isOpen) {
         // Close the channel & file
@@ -102,6 +106,7 @@ public class NIOFSDirectory extends FSDirectory {
       }
     }
 
+    @Override
     protected void readInternal(byte[] b, int offset, int len) throws IOException {
 
       final ByteBuffer bb;

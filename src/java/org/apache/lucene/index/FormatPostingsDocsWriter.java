@@ -67,6 +67,7 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer {
 
   /** Adds a new doc in this term.  If this returns null
    *  then we just skip consuming positions/payloads. */
+  @Override
   FormatPostingsPositionsConsumer addDoc(int docID, int termDocFreq) throws IOException {
 
     final int delta = docID - lastDocID;
@@ -99,6 +100,7 @@ final class FormatPostingsDocsWriter extends FormatPostingsDocsConsumer {
   final UnicodeUtil.UTF8Result utf8 = new UnicodeUtil.UTF8Result();
 
   /** Called when we are done adding docs to this term */
+  @Override
   void finish() throws IOException {
     long skipPointer = skipListWriter.writeSkip(out);
 

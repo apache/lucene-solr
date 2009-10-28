@@ -26,16 +26,20 @@ final class FreqProxTermsWriterPerThread extends TermsHashConsumerPerThread {
     termsHashPerThread = perThread;
   }
   
+  @Override
   public TermsHashConsumerPerField addField(TermsHashPerField termsHashPerField, FieldInfo fieldInfo) {
     return new FreqProxTermsWriterPerField(termsHashPerField, this, fieldInfo);
   }
 
+  @Override
   void startDocument() {
   }
 
+  @Override
   DocumentsWriter.DocWriter finishDocument() {
     return null;
   }
 
+  @Override
   public void abort() {}
 }

@@ -58,6 +58,7 @@ extends Query {
    * Returns a Weight that applies the filter to the enclosed query's Weight.
    * This is accomplished by overriding the Scorer returned by the Weight.
    */
+  @Override
   public Weight createWeight(final Searcher searcher) throws IOException {
     final Weight weight = query.createWeight (searcher);
     final Similarity similarity = query.getSimilarity(searcher);

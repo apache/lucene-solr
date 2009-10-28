@@ -32,12 +32,14 @@ public class ChecksumIndexInput extends IndexInput {
     digest = new CRC32();
   }
 
+  @Override
   public byte readByte() throws IOException {
     final byte b = main.readByte();
     digest.update(b);
     return b;
   }
 
+  @Override
   public void readBytes(byte[] b, int offset, int len)
     throws IOException {
     main.readBytes(b, offset, len);
@@ -49,18 +51,22 @@ public class ChecksumIndexInput extends IndexInput {
     return digest.getValue();
   }
 
+  @Override
   public void close() throws IOException {
     main.close();
   }
 
+  @Override
   public long getFilePointer() {
     return main.getFilePointer();
   }
 
+  @Override
   public void seek(long pos) {
     throw new RuntimeException("not allowed");
   }
 
+  @Override
   public long length() {
     return main.length();
   }

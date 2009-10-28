@@ -59,6 +59,7 @@ public class AttributeSource {
       
       private DefaultAttributeFactory() {}
     
+      @Override
       public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
         try {
           return getClassForInterface(attClass).newInstance();
@@ -269,6 +270,7 @@ public class AttributeSource {
     private AttributeImpl attribute;
     private State next;
     
+    @Override
     public Object clone() {
       State clone = new State();
       clone.attribute = (AttributeImpl) attribute.clone();
@@ -352,6 +354,7 @@ public class AttributeSource {
     } while (state != null);
   }
 
+  @Override
   public int hashCode() {
     int code = 0;
     if (hasAttributes()) {
@@ -366,6 +369,7 @@ public class AttributeSource {
     return code;
   }
   
+  @Override
   public boolean equals(Object obj) {
     if (obj == this) {
       return true;
@@ -407,6 +411,7 @@ public class AttributeSource {
       return false;
   }
   
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder().append('(');
     if (hasAttributes()) {

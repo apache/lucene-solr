@@ -27,6 +27,7 @@ final class ExactPhraseScorer extends PhraseScorer {
     super(weight, tps, offsets, similarity, norms);
   }
 
+  @Override
   protected final float phraseFreq() throws IOException {
     // sort list with pq
     pq.clear();

@@ -67,6 +67,7 @@ public abstract class MultiTermQuery extends Query {
   }
 
   private static final class ConstantScoreFilterRewrite extends RewriteMethod implements Serializable {
+    @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) {
       Query result = new ConstantScoreQuery(new MultiTermQueryWrapperFilter<MultiTermQuery>(query));
       result.setBoost(query.getBoost());
@@ -94,6 +95,7 @@ public abstract class MultiTermQuery extends Query {
   public final static RewriteMethod CONSTANT_SCORE_FILTER_REWRITE = new ConstantScoreFilterRewrite();
 
   private static class ScoringBooleanQueryRewrite extends RewriteMethod implements Serializable {
+    @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
 
       FilteredTermEnum enumerator = query.getEnum(reader);
@@ -138,6 +140,7 @@ public abstract class MultiTermQuery extends Query {
   public final static RewriteMethod SCORING_BOOLEAN_QUERY_REWRITE = new ScoringBooleanQueryRewrite();
 
   private static class ConstantScoreBooleanQueryRewrite extends ScoringBooleanQueryRewrite implements Serializable {
+    @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
       // strip the scores off
       Query result = new ConstantScoreQuery(new QueryWrapperFilter(super.rewrite(reader, query)));
@@ -146,6 +149,7 @@ public abstract class MultiTermQuery extends Query {
     }
 
     // Make sure we are still a singleton even after deserializing
+    @Override
     protected Object readResolve() {
       return CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE;
     }
@@ -212,6 +216,7 @@ public abstract class MultiTermQuery extends Query {
       return docCountPercent;
     }
 
+    @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
       // Get the enum and start visiting terms.  If we
       // exhaust the enum before hitting either of the
@@ -361,6 +366,7 @@ public abstract class MultiTermQuery extends Query {
     numberOfTerms += inc;
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     return rewriteMethod.rewrite(reader, this);
   }

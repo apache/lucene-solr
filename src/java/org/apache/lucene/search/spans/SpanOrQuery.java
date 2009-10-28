@@ -57,14 +57,17 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
     return clauses.toArray(new SpanQuery[clauses.size()]);
   }
 
+  @Override
   public String getField() { return field; }
 
+  @Override
   public void extractTerms(Set<Term> terms) {
     for(final SpanQuery clause: clauses) {
       clause.extractTerms(terms);
     }
   }
   
+  @Override
   public Object clone() {
     int sz = clauses.size();
     SpanQuery[] newClauses = new SpanQuery[sz];
@@ -77,6 +80,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
     return soq;
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     SpanOrQuery clone = null;
     for (int i = 0 ; i < clauses.size(); i++) {
@@ -95,6 +99,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
     }
   }
 
+  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     buffer.append("spanOr([");
@@ -111,6 +116,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
     return buffer.toString();
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -123,6 +129,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
     return getBoost() == that.getBoost();
   }
 
+  @Override
   public int hashCode() {
     int h = clauses.hashCode();
     h ^= (h << 10) | (h >>> 23);
@@ -136,6 +143,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
       initialize(size);
     }
 
+    @Override
     protected final boolean lessThan(Spans spans1, Spans spans2) {
       if (spans1.doc() == spans2.doc()) {
         if (spans1.start() == spans2.start()) {
@@ -149,6 +157,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
     }
   }
 
+  @Override
   public Spans getSpans(final IndexReader reader) throws IOException {
     if (clauses.size() == 1)                      // optimize 1-clause case
       return (clauses.get(0)).getSpans(reader);
@@ -169,6 +178,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
           return queue.size() != 0;
         }
 
+        @Override
         public boolean next() throws IOException {
           if (queue == null) {
             return initSpanQueue(-1);
@@ -189,6 +199,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
 
         private Spans top() { return queue.top(); }
 
+        @Override
         public boolean skipTo(int target) throws IOException {
           if (queue == null) {
             return initSpanQueue(target);
@@ -210,10 +221,14 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
           return next();
         }
 
+        @Override
         public int doc() { return top().doc(); }
+        @Override
         public int start() { return top().start(); }
+        @Override
         public int end() { return top().end(); }
 
+      @Override
       public Collection<byte[]> getPayload() throws IOException {
         ArrayList<byte[]> result = null;
         Spans theTop = top();
@@ -223,11 +238,13 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
         return result;
       }
 
-     public boolean isPayloadAvailable() {
+      @Override
+      public boolean isPayloadAvailable() {
         Spans top = top();
         return top != null && top.isPayloadAvailable();
       }
 
+      @Override
       public String toString() {
           return "spans("+SpanOrQuery.this+")@"+
             ((queue == null)?"START"

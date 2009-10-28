@@ -68,11 +68,13 @@ public class ReverseOrdFieldSource extends ValueSource {
   }
 
   /*(non-Javadoc) @see org.apache.lucene.search.function.ValueSource#description() */
+  @Override
   public String description() {
     return "rord("+field+')';
   }
 
   /*(non-Javadoc) @see org.apache.lucene.search.function.ValueSource#getValues(org.apache.lucene.index.IndexReader) */
+  @Override
   public DocValues getValues(IndexReader reader) throws IOException {
     final FieldCache.StringIndex sindex = FieldCache.DEFAULT.getStringIndex(reader, field);
 
@@ -81,23 +83,28 @@ public class ReverseOrdFieldSource extends ValueSource {
 
     return new DocValues() {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#floatVal(int) */
+      @Override
       public float floatVal(int doc) {
         return (float)(end - arr[doc]);
       }
       /* (non-Javadoc) @see org.apache.lucene.search.function.DocValues#intVal(int) */
+      @Override
       public int intVal(int doc) {
         return end - arr[doc];
       }
       /* (non-Javadoc) @see org.apache.lucene.search.function.DocValues#strVal(int) */
+      @Override
       public String strVal(int doc) {
         // the string value of the ordinal, not the string itself
         return Integer.toString(intVal(doc));
       }
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#toString(int) */
+      @Override
       public String toString(int doc) {
         return description() + '=' + strVal(doc);
       }
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#getInnerArray() */
+      @Override
       Object getInnerArray() {
         return arr;
       }
@@ -105,6 +112,7 @@ public class ReverseOrdFieldSource extends ValueSource {
   }
 
   /*(non-Javadoc) @see java.lang.Object#equals(java.lang.Object) */
+  @Override
   public boolean equals(Object o) {
     if (o.getClass() !=  ReverseOrdFieldSource.class) return false;
     ReverseOrdFieldSource other = (ReverseOrdFieldSource)o;
@@ -114,6 +122,7 @@ public class ReverseOrdFieldSource extends ValueSource {
   private static final int hcode = ReverseOrdFieldSource.class.hashCode();
   
   /*(non-Javadoc) @see java.lang.Object#hashCode() */
+  @Override
   public int hashCode() {
     return hcode + field.hashCode();
   }

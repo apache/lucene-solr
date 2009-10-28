@@ -4770,6 +4770,7 @@ public class IndexWriter implements Closeable {
       return limit;
     }
     
+    @Override
     public String toString()
     {
       return name + ":" + limit;

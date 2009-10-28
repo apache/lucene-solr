@@ -74,6 +74,7 @@ class DefaultSkipListWriter extends MultiLevelSkipListWriter {
       this.curProxPointer = proxOutput.getFilePointer();
   }
   
+  @Override
   protected void resetSkip() {
     super.resetSkip();
     Arrays.fill(lastSkipDoc, 0);
@@ -83,6 +84,7 @@ class DefaultSkipListWriter extends MultiLevelSkipListWriter {
       Arrays.fill(lastSkipProxPointer, proxOutput.getFilePointer());
   }
   
+  @Override
   protected void writeSkipData(int level, IndexOutput skipBuffer) throws IOException {
     // To efficiently store payloads in the posting lists we do not store the length of
     // every payload. Instead we omit the length for a payload if the previous payload had

@@ -63,6 +63,7 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
     fieldsWriter = docFieldProcessor.fieldsWriter.addThread(docState);
   }
 
+  @Override
   public void abort() {
     for(int i=0;i<fieldHash.length;i++) {
       DocFieldProcessorPerField field = fieldHash[i];
@@ -150,6 +151,7 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
     hashMask = newHashMask;
   }
 
+  @Override
   public DocumentsWriter.DocWriter processDocument() throws IOException {
 
     consumer.startDocument();
@@ -353,10 +355,12 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
     DocumentsWriter.DocWriter one;
     DocumentsWriter.DocWriter two;
 
+    @Override
     public long sizeInBytes() {
       return one.sizeInBytes() + two.sizeInBytes();
     }
 
+    @Override
     public void finish() throws IOException {
       try {
         try {
@@ -369,6 +373,7 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
       }
     }
 
+    @Override
     public void abort() {
       try {
         try {

@@ -32,7 +32,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
 
   private Searchable[] searchables;
   private int[] starts;
-	
+
   /** Creates a searchable which searches <i>searchables</i>. */
   public ParallelMultiSearcher(Searchable... searchables) throws IOException {
     super(searchables);
@@ -43,6 +43,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
   /**
    * TODO: parallelize this one too
    */
+  @Override
   public int docFreq(Term term) throws IOException {
     return super.docFreq(term);
   }
@@ -52,6 +53,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
    * Searchable, waits for each search to complete and merge
    * the results back together.
    */
+  @Override
   public TopDocs search(Weight weight, Filter filter, int nDocs)
     throws IOException {
     HitQueue hq = new HitQueue(nDocs, false);
@@ -97,6 +99,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
    * Searchable, waits for each search to complete and merges
    * the results back together.
    */
+  @Override
   public TopFieldDocs search(Weight weight, Filter filter, int nDocs, Sort sort)
     throws IOException {
     // don't specify the fields - we'll wait to do this until we get results
@@ -153,6 +156,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
   * 
   * TODO: parallelize this one too
   */
+  @Override
   public void search(Weight weight, Filter filter, final Collector collector)
    throws IOException {
    for (int i = 0; i < searchables.length; i++) {
@@ -160,15 +164,22 @@ public class ParallelMultiSearcher extends MultiSearcher {
      final int start = starts[i];
 
      final Collector hc = new Collector() {
+       @Override
        public void setScorer(Scorer scorer) throws IOException {
          collector.setScorer(scorer);
        }
+       
+       @Override
        public void collect(int doc) throws IOException {
          collector.collect(doc);
        }
+       
+       @Override
        public void setNextReader(IndexReader reader, int docBase) throws IOException {
          collector.setNextReader(reader, start + docBase);
        }
+       
+       @Override
        public boolean acceptsDocsOutOfOrder() {
          return collector.acceptsDocsOutOfOrder();
        }
@@ -176,12 +187,13 @@ public class ParallelMultiSearcher extends MultiSearcher {
      
      searchables[i].search(weight, filter, hc);
    }
- }
+  }
 
   /*
    * TODO: this one could be parallelized too
    * @see org.apache.lucene.search.Searchable#rewrite(org.apache.lucene.search.Query)
    */
+  @Override
   public Query rewrite(Query original) throws IOException {
     return super.rewrite(original);
   }
@@ -230,6 +242,7 @@ class MultiSearcherThread extends Thread {
     this.sort = sort;
   }
 
+  @Override
   @SuppressWarnings ("unchecked")
   public void run() {
     try {

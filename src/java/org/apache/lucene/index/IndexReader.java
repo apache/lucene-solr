@@ -88,6 +88,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     private FieldOption(String option) {
       this.option = option;
     }
+    @Override
     public String toString() {
       return this.option;
     }
@@ -395,6 +396,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
+  @Override
   public synchronized Object clone() {
     throw new UnsupportedOperationException("This reader does not implement clone()");
   }
@@ -430,6 +432,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   public static long lastModified(final Directory directory2) throws CorruptIndexException, IOException {
     return ((Long) new SegmentInfos.FindSegmentsFile(directory2) {
+        @Override
         public Object doBody(String segmentFileName) throws IOException {
           return Long.valueOf(directory2.fileModified(segmentFileName));
         }

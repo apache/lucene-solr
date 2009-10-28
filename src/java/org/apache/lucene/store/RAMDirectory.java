@@ -69,6 +69,7 @@ public class RAMDirectory extends Directory implements Serializable {
     Directory.copy(dir, this, closeDir);
   }
 
+  @Override
   public synchronized final String[] listAll() {
     ensureOpen();
     Set<String> fileNames = fileMap.keySet();
@@ -80,6 +81,7 @@ public class RAMDirectory extends Directory implements Serializable {
   }
 
   /** Returns true iff the named file exists in this directory. */
+  @Override
   public final boolean fileExists(String name) {
     ensureOpen();
     RAMFile file;
@@ -92,6 +94,7 @@ public class RAMDirectory extends Directory implements Serializable {
   /** Returns the time the named file was last modified.
    * @throws IOException if the file does not exist
    */
+  @Override
   public final long fileModified(String name) throws IOException {
     ensureOpen();
     RAMFile file;
@@ -106,6 +109,7 @@ public class RAMDirectory extends Directory implements Serializable {
   /** Set the modified time of an existing file to now.
    * @throws IOException if the file does not exist
    */
+  @Override
   public void touchFile(String name) throws IOException {
     ensureOpen();
     RAMFile file;
@@ -134,6 +138,7 @@ public class RAMDirectory extends Directory implements Serializable {
   /** Returns the length in bytes of a file in the directory.
    * @throws IOException if the file does not exist
    */
+  @Override
   public final long fileLength(String name) throws IOException {
     ensureOpen();
     RAMFile file;
@@ -156,6 +161,7 @@ public class RAMDirectory extends Directory implements Serializable {
   /** Removes an existing file in the directory.
    * @throws IOException if the file does not exist
    */
+  @Override
   public synchronized void deleteFile(String name) throws IOException {
     ensureOpen();
     RAMFile file = fileMap.get(name);
@@ -168,6 +174,7 @@ public class RAMDirectory extends Directory implements Serializable {
   }
 
   /** Creates a new, empty file in the directory with the given name. Returns a stream writing this file. */
+  @Override
   public IndexOutput createOutput(String name) throws IOException {
     ensureOpen();
     RAMFile file = new RAMFile(this);
@@ -183,6 +190,7 @@ public class RAMDirectory extends Directory implements Serializable {
   }
 
   /** Returns a stream reading an existing file. */
+  @Override
   public IndexInput openInput(String name) throws IOException {
     ensureOpen();
     RAMFile file;
@@ -195,6 +203,7 @@ public class RAMDirectory extends Directory implements Serializable {
   }
 
   /** Closes the store to future operations, releasing associated memory. */
+  @Override
   public void close() {
     isOpen = false;
     fileMap = null;

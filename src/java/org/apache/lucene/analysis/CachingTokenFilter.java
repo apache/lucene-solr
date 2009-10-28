@@ -42,6 +42,7 @@ public final class CachingTokenFilter extends TokenFilter {
     super(input);
   }
   
+  @Override
   public final boolean incrementToken() throws IOException {
     if (cache == null) {
       // fill cache lazily
@@ -59,12 +60,14 @@ public final class CachingTokenFilter extends TokenFilter {
     return true;
   }
   
+  @Override
   public final void end() throws IOException {
     if (finalState != null) {
       restoreState(finalState);
     }
   }
 
+  @Override
   public void reset() throws IOException {
     if(cache != null) {
       iterator = cache.iterator();

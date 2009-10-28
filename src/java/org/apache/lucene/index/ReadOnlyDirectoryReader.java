@@ -36,6 +36,7 @@ class ReadOnlyDirectoryReader extends DirectoryReader {
     super(writer, infos, termInfosIndexDivisor);
   }
   
+  @Override
   protected void acquireWriteLock() {
     ReadOnlySegmentReader.noWrite();
   }

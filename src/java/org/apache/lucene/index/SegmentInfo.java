@@ -91,6 +91,7 @@ public final class SegmentInfo {
 
   private Map<String,String> diagnostics;
 
+  @Override
   public String toString() {
     return "si: "+dir.toString()+" "+name+" docCount: "+docCount+" delCount: "+delCount+" delFileName: "+getDelFileName();
   }
@@ -314,6 +315,7 @@ public final class SegmentInfo {
     clearFiles();
   }
 
+  @Override
   public Object clone () {
     SegmentInfo si = new SegmentInfo(name, docCount, dir);
     si.isCompoundFile = isCompoundFile;
@@ -710,6 +712,7 @@ public final class SegmentInfo {
 
   /** We consider another SegmentInfo instance equal if it
    *  has the same dir and same name. */
+  @Override
   public boolean equals(Object obj) {
     SegmentInfo other;
     try {
@@ -720,6 +723,7 @@ public final class SegmentInfo {
     return other.dir == dir && other.name.equals(name);
   }
 
+  @Override
   public int hashCode() {
     return dir.hashCode() + name.hashCode();
   }

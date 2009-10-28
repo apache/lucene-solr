@@ -24,10 +24,12 @@ import java.io.IOException;
  *  with {@link LowerCaseFilter} */
 
 public final class SimpleAnalyzer extends Analyzer {
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     return new LowerCaseTokenizer(reader);
   }
 
+  @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
     Tokenizer tokenizer = (Tokenizer) getPreviousTokenStream();
     if (tokenizer == null) {

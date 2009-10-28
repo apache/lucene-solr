@@ -128,6 +128,7 @@ public class OpenBitSetIterator extends DocIdSetIterator {
   }
   ******/
 
+  @Override
   public int nextDoc() {
     if (indexArray == 0) {
       if (word != 0) {
@@ -155,6 +156,7 @@ public class OpenBitSetIterator extends DocIdSetIterator {
     return curDocId = (i<<6) + bitIndex;
   }
   
+  @Override
   public int advance(int target) {
     indexArray = 0;
     i = target >> 6;
@@ -185,6 +187,7 @@ public class OpenBitSetIterator extends DocIdSetIterator {
     return curDocId = (i<<6) + bitIndex;
   }
 
+  @Override
   public int docID() {
     return curDocId;
   }

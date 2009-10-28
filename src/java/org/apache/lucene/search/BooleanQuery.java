@@ -40,6 +40,7 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
    */
   public static class TooManyClauses extends RuntimeException {
     public TooManyClauses() {}
+    @Override
     public String getMessage() {
       return "maxClauseCount is set to " + maxClauseCount;
     }
@@ -89,10 +90,12 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
   // Implement coord disabling.
   // Inherit javadoc.
+  @Override
   public Similarity getSimilarity(Searcher searcher) {
     Similarity result = super.getSimilarity(searcher);
     if (disableCoord) {                           // disable coord as requested
       result = new SimilarityDelegator(result) {
+          @Override
           public float coord(int overlap, int maxOverlap) {
             return 1.0f;
           }

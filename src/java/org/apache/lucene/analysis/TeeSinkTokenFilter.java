@@ -127,6 +127,7 @@ public final class TeeSinkTokenFilter extends TokenFilter {
     while (incrementToken());
   }
   
+  @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       // capture state lazily - maybe no SinkFilter accepts this state
@@ -148,6 +149,7 @@ public final class TeeSinkTokenFilter extends TokenFilter {
     return false;
   }
   
+  @Override
   public final void end() throws IOException {
     super.end();
     AttributeSource.State finalState = captureState();
@@ -204,6 +206,7 @@ public final class TeeSinkTokenFilter extends TokenFilter {
       this.finalState = finalState;
     }
     
+    @Override
     public final boolean incrementToken() throws IOException {
       // lazy init the iterator
       if (it == null) {
@@ -219,18 +222,21 @@ public final class TeeSinkTokenFilter extends TokenFilter {
       return true;
     }
   
+    @Override
     public final void end() throws IOException {
       if (finalState != null) {
         restoreState(finalState);
       }
     }
     
+    @Override
     public final void reset() {
       it = cachedStates.iterator();
     }
   }
     
   private static final SinkFilter ACCEPT_ALL_FILTER = new SinkFilter() {
+    @Override
     public boolean accept(AttributeSource source) {
       return true;
     }

@@ -49,6 +49,7 @@ public final class PorterStemFilter extends TokenFilter {
     termAtt = addAttribute(TermAttribute.class);
   }
 
+  @Override
   public final boolean incrementToken() throws IOException {
     if (!input.incrementToken())
       return false;

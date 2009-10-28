@@ -26,13 +26,17 @@ final class NormsWriterPerThread extends InvertedDocEndConsumerPerThread {
     docState = docInverterPerThread.docState;
   }
 
+  @Override
   InvertedDocEndConsumerPerField addField(DocInverterPerField docInverterPerField, final FieldInfo fieldInfo) {
     return new NormsWriterPerField(docInverterPerField, this, fieldInfo);
   }
 
+  @Override
   void abort() {}
 
+  @Override
   void startDocument() {}
+  @Override
   void finishDocument() {}
 
   boolean freeRAM() {

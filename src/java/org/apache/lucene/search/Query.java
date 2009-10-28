@@ -78,6 +78,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
   public abstract String toString(String field);
 
   /** Prints a query to a string. */
+  @Override
   public String toString() {
     return toString("");
   }
@@ -204,6 +205,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
   }
 
   /** Returns a clone of this query. */
+  @Override
   public Object clone() {
     try {
       return super.clone();
@@ -212,6 +214,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
     }
   }
 
+  @Override
   public int hashCode() {
     final int prime = 31;
     int result = 1;
@@ -219,6 +222,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
     return result;
   }
 
+  @Override
   public boolean equals(Object obj) {
     if (this == obj)
       return true;

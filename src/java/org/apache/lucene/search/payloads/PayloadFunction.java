@@ -56,8 +56,10 @@ public abstract class PayloadFunction implements Serializable {
    */
   public abstract float docScore(int docId, String field, int numPayloadsSeen, float payloadScore);
   
+  @Override
   public abstract int hashCode();
   
+  @Override
   public abstract boolean equals(Object o);
 
 }

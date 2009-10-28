@@ -85,9 +85,13 @@ public class FilterIndexReader extends IndexReader {
 
     public FilterTermEnum(TermEnum in) { this.in = in; }
 
+    @Override
     public boolean next() throws IOException { return in.next(); }
+    @Override
     public Term term() { return in.term(); }
+    @Override
     public int docFreq() { return in.docFreq(); }
+    @Override
     public void close() throws IOException { in.close(); }
   }
 
@@ -105,16 +109,19 @@ public class FilterIndexReader extends IndexReader {
     this.in = in;
   }
 
+  @Override
   public Directory directory() {
     return in.directory();
   }
   
+  @Override
   public TermFreqVector[] getTermFreqVectors(int docNumber)
           throws IOException {
     ensureOpen();
     return in.getTermFreqVectors(docNumber);
   }
 
+  @Override
   public TermFreqVector getTermFreqVector(int docNumber, String field)
           throws IOException {
     ensureOpen();
@@ -122,120 +129,146 @@ public class FilterIndexReader extends IndexReader {
   }
 
 
+  @Override
   public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
     ensureOpen();
     in.getTermFreqVector(docNumber, field, mapper);
 
   }
 
+  @Override
   public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
     ensureOpen();
     in.getTermFreqVector(docNumber, mapper);
   }
 
+  @Override
   public int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)
     return in.numDocs();
   }
 
+  @Override
   public int maxDoc() {
     // Don't call ensureOpen() here (it could affect performance)
     return in.maxDoc();
   }
 
+  @Override
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     ensureOpen();
     return in.document(n, fieldSelector);
   }
 
+  @Override
   public boolean isDeleted(int n) {
     // Don't call ensureOpen() here (it could affect performance)
     return in.isDeleted(n);
   }
 
+  @Override
   public boolean hasDeletions() {
     // Don't call ensureOpen() here (it could affect performance)
     return in.hasDeletions();
   }
 
+  @Override
   protected void doUndeleteAll() throws CorruptIndexException, IOException {in.undeleteAll();}
 
+  @Override
   public boolean hasNorms(String field) throws IOException {
     ensureOpen();
     return in.hasNorms(field);
   }
 
+  @Override
   public byte[] norms(String f) throws IOException {
     ensureOpen();
     return in.norms(f);
   }
 
+  @Override
   public void norms(String f, byte[] bytes, int offset) throws IOException {
     ensureOpen();
     in.norms(f, bytes, offset);
   }
 
+  @Override
   protected void doSetNorm(int d, String f, byte b) throws CorruptIndexException, IOException {
     in.setNorm(d, f, b);
   }
 
+  @Override
   public TermEnum terms() throws IOException {
     ensureOpen();
     return in.terms();
   }
 
+  @Override
   public TermEnum terms(Term t) throws IOException {
     ensureOpen();
     return in.terms(t);
   }
 
+  @Override
   public int docFreq(Term t) throws IOException {
     ensureOpen();
     return in.docFreq(t);
   }
 
+  @Override
   public TermDocs termDocs() throws IOException {
     ensureOpen();
     return in.termDocs();
   }
 
+  @Override
   public TermDocs termDocs(Term term) throws IOException {
     ensureOpen();
     return in.termDocs(term);
   }
 
+  @Override
   public TermPositions termPositions() throws IOException {
     ensureOpen();
     return in.termPositions();
   }
 
+  @Override
   protected void doDelete(int n) throws  CorruptIndexException, IOException { in.deleteDocument(n); }
   
+  @Override
   protected void doCommit(Map<String,String> commitUserData) throws IOException { in.commit(commitUserData); }
   
+  @Override
   protected void doClose() throws IOException { in.close(); }
 
 
+  @Override
   public Collection<String> getFieldNames(IndexReader.FieldOption fieldNames) {
     ensureOpen();
     return in.getFieldNames(fieldNames);
   }
 
+  @Override
   public long getVersion() {
     ensureOpen();
     return in.getVersion();
   }
 
+  @Override
   public boolean isCurrent() throws CorruptIndexException, IOException {
     ensureOpen();
     return in.isCurrent();
   }
   
+  @Override
   public boolean isOptimized() {
     ensureOpen();
     return in.isOptimized();
   }
   
+  @Override
   public IndexReader[] getSequentialSubReaders() {
     return in.getSequentialSubReaders();
   }

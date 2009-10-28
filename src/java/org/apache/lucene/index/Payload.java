@@ -156,6 +156,7 @@ public class Payload implements Serializable, Cloneable {
    * Clones this payload by creating a copy of the underlying
    * byte array.
    */
+  @Override
   public Object clone() {
     try {
       // Start with a shallow copy of data
@@ -176,6 +177,7 @@ public class Payload implements Serializable, Cloneable {
     }
   }
 
+  @Override
   public boolean equals(Object obj) {
     if (obj == this)
       return true;
@@ -192,6 +194,7 @@ public class Payload implements Serializable, Cloneable {
       return false;
   }
 
+  @Override
   public int hashCode() {
     return ArrayUtil.hashCode(data, offset, offset+length);
   }

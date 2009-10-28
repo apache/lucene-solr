@@ -520,6 +520,7 @@ class TermVectorsReader implements Cloneable {
     }
   }
 
+  @Override
   protected Object clone() throws CloneNotSupportedException {
     
     final TermVectorsReader clone = (TermVectorsReader) super.clone();
@@ -552,6 +553,7 @@ class ParallelArrayTermVectorMapper extends TermVectorMapper
   private boolean storingPositions;
   private String field;
 
+  @Override
   public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
     this.field = field;
     terms = new String[numTerms];
@@ -564,6 +566,7 @@ class ParallelArrayTermVectorMapper extends TermVectorMapper
       this.offsets = new TermVectorOffsetInfo[numTerms][];
   }
 
+  @Override
   public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
     terms[currentPosition] = term;
     termFreqs[currentPosition] = frequency;

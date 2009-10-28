@@ -60,6 +60,7 @@ public class SortedTermVectorMapper extends TermVectorMapper{
    * @param positions Position information, may be null
    */
   //We need to combine any previous mentions of the term
+  @Override
   public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
     TermVectorEntry entry =  termToTVE.get(term);
     if (entry == null) {
@@ -108,6 +109,7 @@ public class SortedTermVectorMapper extends TermVectorMapper{
 
   }
 
+  @Override
   public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
 
     this.storeOffsets = storeOffsets;

@@ -68,6 +68,7 @@ final class TermsHash extends InvertedDocConsumer {
     postingsFreeChunk = (int) (DocumentsWriter.BYTE_BLOCK_SIZE / bytesPerPosting);
   }
 
+  @Override
   InvertedDocConsumerPerThread addThread(DocInverterPerThread docInverterPerThread) {
     return new TermsHashPerThread(docInverterPerThread, this, nextTermsHash, null);
   }
@@ -76,11 +77,13 @@ final class TermsHash extends InvertedDocConsumer {
     return new TermsHashPerThread(docInverterPerThread, this, nextTermsHash, primaryPerThread);
   }
 
+  @Override
   void setFieldInfos(FieldInfos fieldInfos) {
     this.fieldInfos = fieldInfos;
     consumer.setFieldInfos(fieldInfos);
   }
 
+  @Override
   synchronized public void abort() {
     consumer.abort();
     if (nextTermsHash != null)
@@ -99,12 +102,14 @@ final class TermsHash extends InvertedDocConsumer {
     }
   }
 
+  @Override
   synchronized void closeDocStore(SegmentWriteState state) throws IOException {
     consumer.closeDocStore(state);
     if (nextTermsHash != null)
       nextTermsHash.closeDocStore(state);
   }
 
+  @Override
   synchronized void flush(Map<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>> threadsAndFields, final SegmentWriteState state) throws IOException {
     Map childThreadsAndFields = new HashMap();
     Map nextThreadsAndFields;
@@ -152,6 +157,7 @@ final class TermsHash extends InvertedDocConsumer {
       nextTermsHash.flush(nextThreadsAndFields, state);
   }
 
+  @Override
   synchronized public boolean freeRAM() {
 
     if (!trackAllocations)

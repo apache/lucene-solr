@@ -238,12 +238,14 @@ public abstract class FSDirectory extends Directory {
   /** Lists all files (not subdirectories) in the
    * directory.
    * @see #listAll(File) */
+  @Override
   public String[] listAll() throws IOException {
     ensureOpen();
     return listAll(directory);
   }
 
   /** Returns true iff a file with the given name exists. */
+  @Override
   public boolean fileExists(String name) {
     ensureOpen();
     File file = new File(directory, name);
@@ -251,6 +253,7 @@ public abstract class FSDirectory extends Directory {
   }
 
   /** Returns the time the named file was last modified. */
+  @Override
   public long fileModified(String name) {
     ensureOpen();
     File file = new File(directory, name);
@@ -264,6 +267,7 @@ public abstract class FSDirectory extends Directory {
   }
 
   /** Set the modified time of an existing file to now. */
+  @Override
   public void touchFile(String name) {
     ensureOpen();
     File file = new File(directory, name);
@@ -271,6 +275,7 @@ public abstract class FSDirectory extends Directory {
   }
 
   /** Returns the length in bytes of a file in the directory. */
+  @Override
   public long fileLength(String name) {
     ensureOpen();
     File file = new File(directory, name);
@@ -278,6 +283,7 @@ public abstract class FSDirectory extends Directory {
   }
 
   /** Removes an existing file in the directory. */
+  @Override
   public void deleteFile(String name) throws IOException {
     ensureOpen();
     File file = new File(directory, name);
@@ -285,6 +291,7 @@ public abstract class FSDirectory extends Directory {
       throw new IOException("Cannot delete " + file);
   }
 
+  @Override
   public void sync(String name) throws IOException {
     ensureOpen();
     File fullFile = new File(directory, name);
@@ -323,6 +330,7 @@ public abstract class FSDirectory extends Directory {
   }
 
   // Inherit javadoc
+  @Override
   public IndexInput openInput(String name) throws IOException {
     ensureOpen();
     return openInput(name, BufferedIndexInput.BUFFER_SIZE);
@@ -335,6 +343,7 @@ public abstract class FSDirectory extends Directory {
   {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
 
   
+  @Override
   public String getLockID() {
     ensureOpen();
     String dirName;                               // name to be hashed
@@ -360,6 +369,7 @@ public abstract class FSDirectory extends Directory {
   }
 
   /** Closes the store to future operations. */
+  @Override
   public synchronized void close() {
     isOpen = false;
   }
@@ -370,6 +380,7 @@ public abstract class FSDirectory extends Directory {
   }
 
   /** For debug output. */
+  @Override
   public String toString() {
     return this.getClass().getName() + "@" + directory;
   }

@@ -47,6 +47,7 @@ public class MappingCharFilter extends BaseCharFilter {
     this.normMap = normMap;
   }
 
+  @Override
   public int read() throws IOException {
     while(true) {
       if (replacement != null && charPointer < replacement.length()) {
@@ -116,6 +117,7 @@ public class MappingCharFilter extends BaseCharFilter {
     return result;
   }
 
+  @Override
   public int read(char[] cbuf, int off, int len) throws IOException {
     char[] tmp = new char[len];
     int l = input.read(tmp, 0, len);

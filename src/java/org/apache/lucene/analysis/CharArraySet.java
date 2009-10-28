@@ -223,14 +223,17 @@ public class CharArraySet extends AbstractSet<Object> {
   }
 
 
+  @Override
   public int size() {
     return count;
   }
 
+  @Override
   public boolean isEmpty() {
     return count==0;
   }
 
+  @Override
   public boolean contains(Object o) {
     if (o instanceof char[]) {
       final char[] text = (char[])o;
@@ -239,6 +242,7 @@ public class CharArraySet extends AbstractSet<Object> {
     return contains(o.toString());
   }
 
+  @Override
   public boolean add(Object o) {
     if (o instanceof char[]) {
       return add((char[])o);
@@ -309,6 +313,7 @@ public class CharArraySet extends AbstractSet<Object> {
   }
 
   /** returns an iterator of new allocated Strings, this method violates the Set interface */
+  @Override
   @SuppressWarnings("unchecked")
   public Iterator<Object> iterator() {
     return (Iterator) stringIterator();
@@ -328,22 +333,27 @@ public class CharArraySet extends AbstractSet<Object> {
       super(entries, ignoreCase, count);
     }
 
+    @Override
     public boolean add(Object o){
       throw new UnsupportedOperationException();
     }
     
+    @Override
     public boolean addAll(Collection<? extends Object> coll) {
       throw new UnsupportedOperationException();
     }
     
+    @Override
     public boolean add(char[] text) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public boolean add(CharSequence text) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public boolean add(String text) {
       throw new UnsupportedOperationException();
     }

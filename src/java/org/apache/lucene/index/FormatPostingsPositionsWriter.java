@@ -49,6 +49,7 @@ final class FormatPostingsPositionsWriter extends FormatPostingsPositionsConsume
   int lastPosition;
 
   /** Add a new position & payload */
+  @Override
   void addPosition(int position, byte[] payload, int payloadOffset, int payloadLength) throws IOException {
     assert !omitTermFreqAndPositions: "omitTermFreqAndPositions is true";
     assert out != null;
@@ -75,6 +76,7 @@ final class FormatPostingsPositionsWriter extends FormatPostingsPositionsConsume
   }
 
   /** Called when we are done adding positions & payloads */
+  @Override
   void finish() {       
     lastPosition = 0;
     lastPayloadLength = -1;

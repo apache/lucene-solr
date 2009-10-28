@@ -42,6 +42,7 @@ public final class MultiValueSource extends ValueSource {
     this.other = other;
   }
 
+  @Override
   public DocValues getValues(IndexReader reader) throws IOException {
 
     IndexReader[] subReaders = reader.getSequentialSubReaders();
@@ -54,10 +55,12 @@ public final class MultiValueSource extends ValueSource {
     }
   }
 
+  @Override
   public String description() {
     return other.description();
   }
 
+  @Override
   public boolean equals(Object o) {
     if (o instanceof MultiValueSource) {
       return ((MultiValueSource) o).other.equals(other);
@@ -66,6 +69,7 @@ public final class MultiValueSource extends ValueSource {
     }
   }
 
+  @Override
   public int hashCode() {
     return 31 * other.hashCode();
   }
@@ -86,36 +90,43 @@ public final class MultiValueSource extends ValueSource {
       }
     }
     
+    @Override
     public float floatVal(int doc) {
       final int n = ReaderUtil.subIndex(doc, docStarts);
       return docValues[n].floatVal(doc-docStarts[n]);
     }
 
+    @Override
     public int intVal(int doc) {
       final int n = ReaderUtil.subIndex(doc, docStarts);
       return docValues[n].intVal(doc-docStarts[n]);
     }
 
+    @Override
     public long longVal(int doc) {
       final int n = ReaderUtil.subIndex(doc, docStarts);
       return docValues[n].longVal(doc-docStarts[n]);
     }
 
+    @Override
     public double doubleVal(int doc) {
       final int n = ReaderUtil.subIndex(doc, docStarts);
       return docValues[n].doubleVal(doc-docStarts[n]);
     }
 
+    @Override
     public String strVal(int doc) {
       final int n = ReaderUtil.subIndex(doc, docStarts);
       return docValues[n].strVal(doc-docStarts[n]);
     }
 
+    @Override
     public String toString(int doc) {
       final int n = ReaderUtil.subIndex(doc, docStarts);
       return docValues[n].toString(doc-docStarts[n]);
     }
 
+    @Override
     public Explanation explain(int doc) {
       final int n = ReaderUtil.subIndex(doc, docStarts);
       return docValues[n].explain(doc-docStarts[n]);

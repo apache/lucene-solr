@@ -35,6 +35,7 @@ public class SingleInstanceLockFactory extends LockFactory {
 
   private HashSet<String> locks = new HashSet<String>();
 
+  @Override
   public Lock makeLock(String lockName) {
     // We do not use the LockPrefix at all, because the private
     // HashSet instance effectively scopes the locking to this
@@ -42,6 +43,7 @@ public class SingleInstanceLockFactory extends LockFactory {
     return new SingleInstanceLock(locks, lockName);
   }
 
+  @Override
   public void clearLock(String lockName) throws IOException {
     synchronized(locks) {
       if (locks.contains(lockName)) {
@@ -61,24 +63,28 @@ class SingleInstanceLock extends Lock {
     this.lockName = lockName;
   }
 
+  @Override
   public boolean obtain() throws IOException {
     synchronized(locks) {
       return locks.add(lockName);
     }
   }
 
+  @Override
   public void release() {
     synchronized(locks) {
       locks.remove(lockName);
     }
   }
 
+  @Override
   public boolean isLocked() {
     synchronized(locks) {
       return locks.contains(lockName);
     }
   }
 
+  @Override
   public String toString() {
     return super.toString() + ": " + lockName;
   }

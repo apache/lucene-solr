@@ -42,6 +42,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       super(numHits);
     }
     
+    @Override
     public void collect(int doc) throws IOException {
       float score = scorer.score();
       totalHits++;
@@ -56,6 +57,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       pqTop = pq.updateTop();
     }
     
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return false;
     }
@@ -67,6 +69,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       super(numHits);
     }
     
+    @Override
     public void collect(int doc) throws IOException {
       float score = scorer.score();
       totalHits++;
@@ -79,6 +82,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
       pqTop = pq.updateTop();
     }
     
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
     }
@@ -116,6 +120,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     pqTop = pq.top();
   }
 
+  @Override
   protected TopDocs newTopDocs(ScoreDoc[] results, int start) {
     if (results == null) {
       return EMPTY_TOPDOCS;
@@ -136,10 +141,12 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     return new TopDocs(totalHits, results, maxScore);
   }
   
+  @Override
   public void setNextReader(IndexReader reader, int base) {
     docBase = base;
   }
   
+  @Override
   public void setScorer(Scorer scorer) throws IOException {
     this.scorer = scorer;
   }

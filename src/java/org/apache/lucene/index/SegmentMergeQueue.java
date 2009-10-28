@@ -25,6 +25,7 @@ final class SegmentMergeQueue extends PriorityQueue<SegmentMergeInfo> {
     initialize(size);
   }
 
+  @Override
   protected final boolean lessThan(SegmentMergeInfo stiA, SegmentMergeInfo stiB) {
     int comparison = stiA.term.compareTo(stiB.term);
     if (comparison == 0)

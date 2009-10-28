@@ -55,6 +55,7 @@ final class FieldInfo {
     }
   }
 
+  @Override
   public Object clone() {
     return new FieldInfo(name, isIndexed, number, storeTermVector, storePositionWithTermVector,
                          storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);

@@ -49,10 +49,12 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
    */
   abstract protected boolean match(int doc) throws IOException;
 	
+  @Override
   public int docID() {
     return doc;
   }
   
+  @Override
   public int nextDoc() throws IOException {
     while ((doc = _innerIter.nextDoc()) != NO_MORE_DOCS) {
       if (match(doc)) {
@@ -62,6 +64,7 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
     return doc;
   }
   
+  @Override
   public int advance(int target) throws IOException {
     doc = _innerIter.advance(target);
     if (doc != NO_MORE_DOCS) {

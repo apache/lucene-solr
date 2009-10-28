@@ -107,6 +107,7 @@ class CompoundFileReader extends Directory {
         return fileName;
     }
 
+    @Override
     public synchronized void close() throws IOException {
         if (stream == null)
             throw new IOException("Already closed");
@@ -116,6 +117,7 @@ class CompoundFileReader extends Directory {
         stream = null;
     }
 
+    @Override
     public synchronized IndexInput openInput(String id)
     throws IOException
     {
@@ -123,6 +125,7 @@ class CompoundFileReader extends Directory {
       return openInput(id, readBufferSize);
     }
 
+    @Override
     public synchronized IndexInput openInput(String id, int readBufferSize)
     throws IOException
     {
@@ -137,28 +140,33 @@ class CompoundFileReader extends Directory {
     }
 
     /** Returns an array of strings, one for each file in the directory. */
+    @Override
     public String[] listAll() {
         String res[] = new String[entries.size()];
         return entries.keySet().toArray(res);
     }
 
     /** Returns true iff a file with the given name exists. */
+    @Override
     public boolean fileExists(String name) {
         return entries.containsKey(name);
     }
 
     /** Returns the time the compound file was last modified. */
+    @Override
     public long fileModified(String name) throws IOException {
         return directory.fileModified(fileName);
     }
 
     /** Set the modified time of the compound file to now. */
+    @Override
     public void touchFile(String name) throws IOException {
         directory.touchFile(fileName);
     }
 
     /** Not implemented
      * @throws UnsupportedOperationException */
+    @Override
     public void deleteFile(String name)
     {
         throw new UnsupportedOperationException();
@@ -173,6 +181,7 @@ class CompoundFileReader extends Directory {
 
     /** Returns the length of a file in the directory.
      * @throws IOException if the file does not exist */
+    @Override
     public long fileLength(String name)
     throws IOException
     {
@@ -184,6 +193,7 @@ class CompoundFileReader extends Directory {
 
     /** Not implemented
      * @throws UnsupportedOperationException */
+    @Override
     public IndexOutput createOutput(String name)
     {
         throw new UnsupportedOperationException();
@@ -191,6 +201,7 @@ class CompoundFileReader extends Directory {
 
     /** Not implemented
      * @throws UnsupportedOperationException */
+    @Override
     public Lock makeLock(String name)
     {
         throw new UnsupportedOperationException();
@@ -220,6 +231,7 @@ class CompoundFileReader extends Directory {
             this.length = length;
         }
         
+        @Override
         public Object clone() {
           CSIndexInput clone = (CSIndexInput)super.clone();
           clone.base = (IndexInput)base.clone();
@@ -234,6 +246,7 @@ class CompoundFileReader extends Directory {
          * @param offset the offset in the array to start storing bytes
          * @param len the number of bytes to read
          */
+        @Override
         protected void readInternal(byte[] b, int offset, int len)
         throws IOException
         {
@@ -248,13 +261,16 @@ class CompoundFileReader extends Directory {
          *  the next {@link #readInternal(byte[],int,int)} will occur.
          * @see #readInternal(byte[],int,int)
          */
+        @Override
         protected void seekInternal(long pos) {}
 
         /** Closes the stream to further operations. */
+        @Override
         public void close() throws IOException {
           base.close();
         }
 
+        @Override
         public long length() {
           return length;
         }

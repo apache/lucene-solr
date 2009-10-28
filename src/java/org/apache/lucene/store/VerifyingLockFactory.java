@@ -68,6 +68,7 @@ public class VerifyingLockFactory extends LockFactory {
       }
     }
 
+    @Override
     public synchronized boolean obtain(long lockWaitTimeout)
       throws LockObtainFailedException, IOException {
       boolean obtained = lock.obtain(lockWaitTimeout);
@@ -76,15 +77,18 @@ public class VerifyingLockFactory extends LockFactory {
       return obtained;
     }
 
+    @Override
     public synchronized boolean obtain()
       throws LockObtainFailedException, IOException {
       return lock.obtain();
     }
 
+    @Override
     public synchronized boolean isLocked() {
       return lock.isLocked();
     }
 
+    @Override
     public synchronized void release() throws IOException {
       if (isLocked()) {
         verify((byte) 0);
@@ -108,10 +112,12 @@ public class VerifyingLockFactory extends LockFactory {
     this.port = port;
   }
 
+  @Override
   public synchronized Lock makeLock(String lockName) {
     return new CheckedLock(lf.makeLock(lockName));
   }
 
+  @Override
   public synchronized void clearLock(String lockName)
     throws IOException {
     lf.clearLock(lockName);

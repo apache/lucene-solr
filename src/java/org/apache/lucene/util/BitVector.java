@@ -49,6 +49,7 @@ public final class BitVector implements Cloneable {
     this.size = size;
   }
   
+  @Override
   public Object clone() {
     byte[] copyBits = new byte[bits.length];
     System.arraycopy(bits, 0, copyBits, 0, bits.length);

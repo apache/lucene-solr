@@ -52,6 +52,7 @@ final class NormsWriterPerField extends InvertedDocEndConsumerPerField implement
     fieldState = docInverterPerField.fieldState;
   }
 
+  @Override
   void abort() {
     upto = 0;
   }
@@ -60,6 +61,7 @@ final class NormsWriterPerField extends InvertedDocEndConsumerPerField implement
     return fieldInfo.name.compareTo(other.fieldInfo.name);
   }
   
+  @Override
   void finish() {
     assert docIDs.length == norms.length;
     if (fieldInfo.isIndexed && !fieldInfo.omitNorms) {

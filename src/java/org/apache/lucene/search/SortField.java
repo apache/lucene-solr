@@ -260,6 +260,7 @@ implements Serializable {
     return reverse;
   }
 
+  @Override
   public String toString() {
     StringBuilder buffer = new StringBuilder();
     switch (type) {
@@ -323,6 +324,7 @@ implements Serializable {
    *  {@link FieldComparatorSource} or {@link
    *  FieldCache.Parser} was provided, it must properly
    *  implement equals (unless a singleton is always used). */
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof SortField)) return false;
@@ -342,6 +344,7 @@ implements Serializable {
    *  FieldCache.Parser} was provided, it must properly
    *  implement hashCode (unless a singleton is always
    *  used). */
+  @Override
   public int hashCode() {
     int hash=type^0x346565dd + Boolean.valueOf(reverse).hashCode()^0xaf5998bb;
     if (field != null) hash += field.hashCode()^0xff5685dd;

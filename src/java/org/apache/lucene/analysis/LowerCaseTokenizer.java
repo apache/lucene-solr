@@ -49,6 +49,7 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
   
   /** Converts char to lower case
    * {@link Character#toLowerCase(char)}.*/
+  @Override
   protected char normalize(char c) {
     return Character.toLowerCase(c);
   }

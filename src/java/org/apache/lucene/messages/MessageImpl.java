@@ -57,6 +57,7 @@ public class MessageImpl implements Message {
     return NLS.getLocalizedMessage(getKey(), locale, getArguments());
   }
 
+  @Override
   public String toString() {
     Object[] args = getArguments();
     String argsString = "";

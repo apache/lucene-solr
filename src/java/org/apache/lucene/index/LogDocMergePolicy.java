@@ -36,6 +36,7 @@ public class LogDocMergePolicy extends LogMergePolicy {
     // it to Long.MAX_VALUE to disable it
     maxMergeSize = Long.MAX_VALUE;
   }
+  @Override
   protected long size(SegmentInfo info) throws IOException {
     return sizeDocs(info);
   }

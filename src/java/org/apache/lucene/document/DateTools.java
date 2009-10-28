@@ -246,6 +246,7 @@ public class DateTools {
       this.resolution = resolution;
     }
     
+    @Override
     public String toString() {
       return resolution;
     }

@@ -59,6 +59,7 @@ public class FileSwitchDirectory extends Directory {
     return secondaryDir;
   }
   
+  @Override
   public void close() throws IOException {
     if (doClose) {
       try {
@@ -70,6 +71,7 @@ public class FileSwitchDirectory extends Directory {
     }
   }
   
+  @Override
   public String[] listAll() throws IOException {
     String[] primaryFiles = primaryDir.listAll();
     String[] secondaryFiles = secondaryDir.listAll();
@@ -97,34 +99,42 @@ public class FileSwitchDirectory extends Directory {
     }
   }
 
+  @Override
   public boolean fileExists(String name) throws IOException {
     return getDirectory(name).fileExists(name);
   }
 
+  @Override
   public long fileModified(String name) throws IOException {
     return getDirectory(name).fileModified(name);
   }
 
+  @Override
   public void touchFile(String name) throws IOException {
     getDirectory(name).touchFile(name);
   }
 
+  @Override
   public void deleteFile(String name) throws IOException {
     getDirectory(name).deleteFile(name);
   }
 
+  @Override
   public long fileLength(String name) throws IOException {
     return getDirectory(name).fileLength(name);
   }
 
+  @Override
   public IndexOutput createOutput(String name) throws IOException {
     return getDirectory(name).createOutput(name);
   }
 
+  @Override
   public void sync(String name) throws IOException {
     getDirectory(name).sync(name);
   }
 
+  @Override
   public IndexInput openInput(String name) throws IOException {
     return getDirectory(name).openInput(name);
   }

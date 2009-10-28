@@ -61,6 +61,7 @@ public class CachingWrapperFilter extends Filter {
     }
   }
   
+  @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     if (cache == null) {
       cache = new WeakHashMap<IndexReader, DocIdSet>();
@@ -86,15 +87,18 @@ public class CachingWrapperFilter extends Filter {
     return docIdSet;
   }
 
+  @Override
   public String toString() {
     return "CachingWrapperFilter("+filter+")";
   }
 
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof CachingWrapperFilter)) return false;
     return this.filter.equals(((CachingWrapperFilter)o).filter);
   }
 
+  @Override
   public int hashCode() {
     return filter.hashCode() ^ 0x1117BF25;  
   }

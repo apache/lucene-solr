@@ -487,6 +487,7 @@ public class Token extends AttributeImpl
     this.payload = payload;
   }
   
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append('(');
@@ -507,6 +508,7 @@ public class Token extends AttributeImpl
   /** Resets the term text, payload, flags, and positionIncrement,
    * startOffset, endOffset and token type to default.
    */
+  @Override
   public void clear() {
     payload = null;
     // Leave termBuffer to allow re-use
@@ -517,6 +519,7 @@ public class Token extends AttributeImpl
     type = DEFAULT_TYPE;
   }
 
+  @Override
   public Object clone() {
     Token t = (Token)super.clone();
     // Do a deep clone
@@ -544,6 +547,7 @@ public class Token extends AttributeImpl
     return t;
   }
 
+  @Override
   public boolean equals(Object obj) {
     if (obj == this)
       return true;
@@ -578,6 +582,7 @@ public class Token extends AttributeImpl
       return o1.equals(o2);
   }
 
+  @Override
   public int hashCode() {
     initTermBuffer();
     int code = termLength;
@@ -739,6 +744,7 @@ public class Token extends AttributeImpl
     payload =  prototype.payload;
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     if (target instanceof Token) {
       final Token to = (Token) target;
@@ -780,11 +786,13 @@ public class Token extends AttributeImpl
       this.delegate = delegate;
     }
   
+    @Override
     public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
       return attClass.isAssignableFrom(Token.class)
         ? new Token() : delegate.createAttributeInstance(attClass);
     }
     
+    @Override
     public boolean equals(Object other) {
       if (this == other) return true;
       if (other instanceof TokenAttributeFactory) {
@@ -794,6 +802,7 @@ public class Token extends AttributeImpl
       return false;
     }
     
+    @Override
     public int hashCode() {
       return delegate.hashCode() ^ 0x0a45aa31;
     }

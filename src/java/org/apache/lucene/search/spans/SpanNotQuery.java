@@ -48,10 +48,13 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
   /** Return the SpanQuery whose matches must not overlap those returned. */
   public SpanQuery getExclude() { return exclude; }
 
+  @Override
   public String getField() { return include.getField(); }
 
+  @Override
   public void extractTerms(Set<Term> terms) { include.extractTerms(terms); }
 
+  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     buffer.append("spanNot(");
@@ -63,12 +66,14 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
     return buffer.toString();
   }
 
+  @Override
   public Object clone() {
     SpanNotQuery spanNotQuery = new SpanNotQuery((SpanQuery)include.clone(),(SpanQuery) exclude.clone());
     spanNotQuery.setBoost(getBoost());
     return  spanNotQuery;
   }
 
+  @Override
   public Spans getSpans(final IndexReader reader) throws IOException {
     return new Spans() {
         private Spans includeSpans = include.getSpans(reader);
@@ -77,6 +82,7 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
         private Spans excludeSpans = exclude.getSpans(reader);
         private boolean moreExclude = excludeSpans.next();
 
+        @Override
         public boolean next() throws IOException {
           if (moreInclude)                        // move to next include
             moreInclude = includeSpans.next();
@@ -102,6 +108,7 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
           return moreInclude;
         }
 
+        @Override
         public boolean skipTo(int target) throws IOException {
           if (moreInclude)                        // skip include
             moreInclude = includeSpans.skipTo(target);
@@ -127,11 +134,15 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
           return next();                          // scan to next match
         }
 
+        @Override
         public int doc() { return includeSpans.doc(); }
+        @Override
         public int start() { return includeSpans.start(); }
+        @Override
         public int end() { return includeSpans.end(); }
 
       // TODO: Remove warning after API has been finalized
+      @Override
       public Collection<byte[]> getPayload() throws IOException {
         ArrayList<byte[]> result = null;
         if (includeSpans.isPayloadAvailable()) {
@@ -141,10 +152,12 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
       }
 
       // TODO: Remove warning after API has been finalized
-     public boolean isPayloadAvailable() {
+      @Override
+      public boolean isPayloadAvailable() {
         return includeSpans.isPayloadAvailable();
       }
 
+      @Override
       public String toString() {
           return "spans(" + SpanNotQuery.this.toString() + ")";
         }
@@ -152,6 +165,7 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
       };
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     SpanNotQuery clone = null;
 
@@ -174,6 +188,7 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
   }
 
     /** Returns true iff <code>o</code> is equal to this. */
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof SpanNotQuery)) return false;
@@ -184,6 +199,7 @@ public class SpanNotQuery extends SpanQuery implements Cloneable {
             && this.getBoost() == other.getBoost();
   }
 
+  @Override
   public int hashCode() {
     int h = include.hashCode();
     h = (h<<1) | (h >>> 31);  // rotate left

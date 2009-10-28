@@ -33,6 +33,7 @@ public abstract class SpanQuery extends Query {
   /** Returns the name of the field matched by this query.*/
   public abstract String getField();
 
+  @Override
   public Weight createWeight(Searcher searcher) throws IOException {
     return new SpanWeight(this, searcher);
   }

@@ -45,6 +45,7 @@ public final class StandardFilter extends TokenFilter {
    * <p>Removes <tt>'s</tt> from the end of words.
    * <p>Removes dots from acronyms.
    */
+  @Override
   public final boolean incrementToken() throws java.io.IOException {
     if (!input.incrementToken()) {
       return false;

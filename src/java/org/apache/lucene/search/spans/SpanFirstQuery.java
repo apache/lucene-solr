@@ -46,8 +46,10 @@ public class SpanFirstQuery extends SpanQuery implements Cloneable {
   /** Return the maximum end position permitted in a match. */
   public int getEnd() { return end; }
 
+  @Override
   public String getField() { return match.getField(); }
 
+  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     buffer.append("spanFirst(");
@@ -59,20 +61,24 @@ public class SpanFirstQuery extends SpanQuery implements Cloneable {
     return buffer.toString();
   }
   
+  @Override
   public Object clone() {
     SpanFirstQuery spanFirstQuery = new SpanFirstQuery((SpanQuery) match.clone(), end);
     spanFirstQuery.setBoost(getBoost());
     return spanFirstQuery;
   }
   
+  @Override
   public void extractTerms(Set<Term> terms) {
 	    match.extractTerms(terms);
   }
 
+  @Override
   public Spans getSpans(final IndexReader reader) throws IOException {
     return new Spans() {
         private Spans spans = match.getSpans(reader);
 
+        @Override
         public boolean next() throws IOException {
           while (spans.next()) {                  // scan to next match
             if (end() <= end)
@@ -81,6 +87,7 @@ public class SpanFirstQuery extends SpanQuery implements Cloneable {
           return false;
         }
 
+        @Override
         public boolean skipTo(int target) throws IOException {
           if (!spans.skipTo(target))
             return false;
@@ -89,11 +96,15 @@ public class SpanFirstQuery extends SpanQuery implements Cloneable {
 
         }
 
+        @Override
         public int doc() { return spans.doc(); }
+        @Override
         public int start() { return spans.start(); }
+        @Override
         public int end() { return spans.end(); }
 
       // TODO: Remove warning after API has been finalized
+      @Override
       public Collection<byte[]> getPayload() throws IOException {
         ArrayList<byte[]> result = null;
         if (spans.isPayloadAvailable()) {
@@ -103,10 +114,12 @@ public class SpanFirstQuery extends SpanQuery implements Cloneable {
       }
 
       // TODO: Remove warning after API has been finalized
-     public boolean isPayloadAvailable() {
+      @Override
+      public boolean isPayloadAvailable() {
         return spans.isPayloadAvailable();
       }
 
+      @Override
       public String toString() {
           return "spans(" + SpanFirstQuery.this.toString() + ")";
         }
@@ -114,6 +127,7 @@ public class SpanFirstQuery extends SpanQuery implements Cloneable {
       };
   }
 
+  @Override
   public Query rewrite(IndexReader reader) throws IOException {
     SpanFirstQuery clone = null;
 
@@ -130,6 +144,7 @@ public class SpanFirstQuery extends SpanQuery implements Cloneable {
     }
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof SpanFirstQuery)) return false;
@@ -140,6 +155,7 @@ public class SpanFirstQuery extends SpanQuery implements Cloneable {
          && this.getBoost() == other.getBoost();
   }
 
+  @Override
   public int hashCode() {
     int h = match.hashCode();
     h ^= (h << 8) | (h >>> 25);  // reversible

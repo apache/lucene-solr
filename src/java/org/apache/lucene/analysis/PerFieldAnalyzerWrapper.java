@@ -86,6 +86,7 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
     analyzerMap.put(fieldName, analyzer);
   }
 
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     Analyzer analyzer = analyzerMap.get(fieldName);
     if (analyzer == null) {
@@ -95,6 +96,7 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
     return analyzer.tokenStream(fieldName, reader);
   }
   
+  @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
     if (overridesTokenStreamMethod) {
       // LUCENE-1678: force fallback to tokenStream() if we
@@ -110,6 +112,7 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
   }
   
   /** Return the positionIncrementGap from the analyzer assigned to fieldName */
+  @Override
   public int getPositionIncrementGap(String fieldName) {
     Analyzer analyzer = analyzerMap.get(fieldName);
     if (analyzer == null)
@@ -117,6 +120,7 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
     return analyzer.getPositionIncrementGap(fieldName);
   }
   
+  @Override
   public String toString() {
     return "PerFieldAnalyzerWrapper(" + analyzerMap + ", default=" + defaultAnalyzer + ")";
   }

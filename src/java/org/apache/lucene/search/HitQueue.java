@@ -68,6 +68,7 @@ final class HitQueue extends PriorityQueue<ScoreDoc> {
   }
 
   // Returns null if prePopulate is false.
+  @Override
   protected ScoreDoc getSentinelObject() {
     // Always set the doc Id to MAX_VALUE so that it won't be favored by
     // lessThan. This generally should not happen since if score is not NEG_INF,
@@ -75,6 +76,7 @@ final class HitQueue extends PriorityQueue<ScoreDoc> {
     return !prePopulate ? null : new ScoreDoc(Integer.MAX_VALUE, Float.NEGATIVE_INFINITY);
   }
   
+  @Override
   protected final boolean lessThan(ScoreDoc hitA, ScoreDoc hitB) {
     if (hitA.score == hitB.score)
       return hitA.doc > hitB.doc; 

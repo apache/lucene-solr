@@ -60,11 +60,13 @@ public abstract class FieldCacheSource extends ValueSource {
   }
 
   /* (non-Javadoc) @see org.apache.lucene.search.function.ValueSource#getValues(org.apache.lucene.index.IndexReader) */
+  @Override
   public final DocValues getValues(IndexReader reader) throws IOException {
     return getCachedFieldValues(FieldCache.DEFAULT, field, reader);
   }
 
   /* (non-Javadoc) @see org.apache.lucene.search.function.ValueSource#description() */
+  @Override
   public String description() {
     return field;
   }
@@ -78,6 +80,7 @@ public abstract class FieldCacheSource extends ValueSource {
   public abstract DocValues getCachedFieldValues(FieldCache cache, String field, IndexReader reader) throws IOException;
 
   /*(non-Javadoc) @see java.lang.Object#equals(java.lang.Object) */
+  @Override
   public final boolean equals(Object o) {
     if (!(o instanceof FieldCacheSource)) {
       return false;
@@ -89,6 +92,7 @@ public abstract class FieldCacheSource extends ValueSource {
   }
 
   /*(non-Javadoc) @see java.lang.Object#hashCode() */
+  @Override
   public final int hashCode() {
     return 
       field.hashCode() +

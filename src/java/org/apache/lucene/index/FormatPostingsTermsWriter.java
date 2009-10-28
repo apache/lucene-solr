@@ -45,6 +45,7 @@ final class FormatPostingsTermsWriter extends FormatPostingsTermsConsumer {
   long proxStart;
 
   /** Adds a new term in this field */
+  @Override
   FormatPostingsDocsConsumer addTerm(char[] text, int start) {
     currentTerm = text;
     currentTermStart = start;
@@ -62,6 +63,7 @@ final class FormatPostingsTermsWriter extends FormatPostingsTermsConsumer {
   }
 
   /** Called when we are done adding terms to this field */
+  @Override
   void finish() {
   }
 

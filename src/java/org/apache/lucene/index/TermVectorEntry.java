@@ -73,6 +73,7 @@ public class TermVectorEntry {
   }
 
 
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -84,10 +85,12 @@ public class TermVectorEntry {
     return true;
   }
 
+  @Override
   public int hashCode() {
     return (term != null ? term.hashCode() : 0);
   }
 
+  @Override
   public String toString() {
     return "TermVectorEntry{" +
             "field='" + field + '\'' +

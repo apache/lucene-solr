@@ -122,6 +122,7 @@ public class NativeFSLockFactory extends FSLockFactory {
     setLockDir(lockDir);
   }
 
+  @Override
   public synchronized Lock makeLock(String lockName) {
     acquireTestLock();
     if (lockPrefix != null)
@@ -129,6 +130,7 @@ public class NativeFSLockFactory extends FSLockFactory {
     return new NativeFSLock(lockDir, lockName);
   }
 
+  @Override
   public void clearLock(String lockName) throws IOException {
     // Note that this isn't strictly required anymore
     // because the existence of these files does not mean
@@ -175,6 +177,7 @@ class NativeFSLock extends Lock {
     return lock != null;
   }
 
+  @Override
   public synchronized boolean obtain() throws IOException {
 
     if (lockExists()) {
@@ -274,6 +277,7 @@ class NativeFSLock extends Lock {
     return lockExists();
   }
 
+  @Override
   public synchronized void release() throws IOException {
     if (lockExists()) {
       try {
@@ -299,6 +303,7 @@ class NativeFSLock extends Lock {
     }
   }
 
+  @Override
   public synchronized boolean isLocked() {
     // The test for is isLocked is not directly possible with native file locks:
     
@@ -318,6 +323,7 @@ class NativeFSLock extends Lock {
     }    
   }
 
+  @Override
   public String toString() {
     return "NativeFSLock@" + path;
   }

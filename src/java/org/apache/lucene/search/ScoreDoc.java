@@ -35,6 +35,7 @@ public class ScoreDoc implements java.io.Serializable {
   }
   
   // A convenience method for debugging.
+  @Override
   public String toString() {
     return "doc=" + doc + " score=" + score;
   }

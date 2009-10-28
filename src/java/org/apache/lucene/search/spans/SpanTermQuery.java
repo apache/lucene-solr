@@ -34,12 +34,15 @@ public class SpanTermQuery extends SpanQuery {
   /** Return the term whose spans are matched. */
   public Term getTerm() { return term; }
 
+  @Override
   public String getField() { return term.field(); }
   
+  @Override
   public void extractTerms(Set<Term> terms) {
 	  terms.add(term);
   }
 
+  @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     if (term.field().equals(field))
@@ -50,6 +53,7 @@ public class SpanTermQuery extends SpanQuery {
     return buffer.toString();
   }
 
+  @Override
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
@@ -57,6 +61,7 @@ public class SpanTermQuery extends SpanQuery {
     return result;
   }
 
+  @Override
   public boolean equals(Object obj) {
     if (this == obj)
       return true;
@@ -73,6 +78,7 @@ public class SpanTermQuery extends SpanQuery {
     return true;
   }
 
+  @Override
   public Spans getSpans(final IndexReader reader) throws IOException {
     return new TermSpans(reader.termPositions(term), term);
   }

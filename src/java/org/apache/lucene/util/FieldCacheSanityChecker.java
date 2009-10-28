@@ -297,9 +297,11 @@ public final class FieldCacheSanityChecker {
       this.readerKey = readerKey;
       this.fieldName = fieldName;
     }
+    @Override
     public int hashCode() {
       return System.identityHashCode(readerKey) * fieldName.hashCode();
     }
+    @Override
     public boolean equals(Object that) {
       if (! (that instanceof ReaderField)) return false;
 
@@ -307,6 +309,7 @@ public final class FieldCacheSanityChecker {
       return (this.readerKey == other.readerKey &&
               this.fieldName.equals(other.fieldName));
     }
+    @Override
     public String toString() {
       return readerKey.toString() + "+" + fieldName;
     }
@@ -352,6 +355,7 @@ public final class FieldCacheSanityChecker {
      * the Type and Msg, followed by each CacheEntry.toString() on it's 
      * own line prefaced by a tab character
      */
+    @Override
     public String toString() {
       StringBuilder buf = new StringBuilder();
       buf.append(getType()).append(": ");
@@ -383,6 +387,7 @@ public final class FieldCacheSanityChecker {
     private InsanityType(final String label) {
       this.label = label;
     }
+    @Override
     public String toString() { return label; }
 
     /** 

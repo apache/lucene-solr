@@ -80,6 +80,7 @@ public class SimpleFSLockFactory extends FSLockFactory {
     setLockDir(new File(lockDirName));
   }
 
+  @Override
   public Lock makeLock(String lockName) {
     if (lockPrefix != null) {
       lockName = lockPrefix + "-" + lockName;
@@ -87,6 +88,7 @@ public class SimpleFSLockFactory extends FSLockFactory {
     return new SimpleFSLock(lockDir, lockName);
   }
 
+  @Override
   public void clearLock(String lockName) throws IOException {
     if (lockDir.exists()) {
       if (lockPrefix != null) {
@@ -110,6 +112,7 @@ class SimpleFSLock extends Lock {
     lockFile = new File(lockDir, lockFileName);
   }
 
+  @Override
   public boolean obtain() throws IOException {
 
     // Ensure that lockDir exists and is a directory:
@@ -124,15 +127,18 @@ class SimpleFSLock extends Lock {
     return lockFile.createNewFile();
   }
 
+  @Override
   public void release() throws LockReleaseFailedException {
     if (lockFile.exists() && !lockFile.delete())
       throw new LockReleaseFailedException("failed to delete " + lockFile);
   }
 
+  @Override
   public boolean isLocked() {
     return lockFile.exists();
   }
 
+  @Override
   public String toString() {
     return "SimpleFSLock@" + lockFile;
   }

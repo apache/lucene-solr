@@ -203,6 +203,7 @@ public class PayloadNearQuery extends SpanNearQuery {
     }
 
     //
+    @Override
     protected boolean setFreqCurrentDoc() throws IOException {
       if (!more) {
         return false;

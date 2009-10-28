@@ -50,6 +50,7 @@ public class WildcardQuery extends MultiTermQuery {
         && (text.indexOf('*') == text.length() - 1);
   }
 
+  @Override
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
     if (termContainsWildcard)
       return new WildcardTermEnum(reader, getTerm());

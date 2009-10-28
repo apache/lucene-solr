@@ -93,14 +93,17 @@ public class TermRangeTermEnum extends FilteredTermEnum {
     setEnum(reader.terms(new Term(this.field, startTermText)));
   }
 
+  @Override
   public float difference() {
     return 1.0f;
   }
 
+  @Override
   protected boolean endEnum() {
     return endEnum;
   }
 
+  @Override
   protected boolean termCompare(Term term) {
     if (collator == null) {
       // Use Unicode code point ordering

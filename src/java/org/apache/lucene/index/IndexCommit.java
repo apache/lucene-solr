@@ -89,6 +89,7 @@ public abstract class IndexCommit {
   /**
    * Two IndexCommits are equal if both their Directory and versions are equal.
    */
+  @Override
   public boolean equals(Object other) {
     if (other instanceof IndexCommit) {
       IndexCommit otherCommit = (IndexCommit) other;
@@ -97,6 +98,7 @@ public abstract class IndexCommit {
       return false;
   }
 
+  @Override
   public int hashCode() {
     return getDirectory().hashCode() + getSegmentsFileName().hashCode();
   }

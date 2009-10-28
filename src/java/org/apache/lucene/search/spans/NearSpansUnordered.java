@@ -56,6 +56,7 @@ public class NearSpansUnordered extends Spans {
       initialize(size);
     }
     
+    @Override
     protected final boolean lessThan(SpansCell spans1, SpansCell spans2) {
       if (spans1.doc() == spans2.doc()) {
         return NearSpansOrdered.docSpansOrdered(spans1, spans2);
@@ -78,10 +79,12 @@ public class NearSpansUnordered extends Spans {
       this.index = index;
     }
 
+    @Override
     public boolean next() throws IOException {
       return adjust(spans.next());
     }
 
+    @Override
     public boolean skipTo(int target) throws IOException {
       return adjust(spans.skipTo(target));
     }
@@ -103,19 +106,27 @@ public class NearSpansUnordered extends Spans {
       return condition;
     }
 
+    @Override
     public int doc() { return spans.doc(); }
+    
+    @Override
     public int start() { return spans.start(); }
+    
+    @Override
     public int end() { return spans.end(); }
                     // TODO: Remove warning after API has been finalized
+    @Override
     public Collection<byte[]> getPayload() throws IOException {
       return new ArrayList<byte[]>(spans.getPayload());
     }
 
     // TODO: Remove warning after API has been finalized
-   public boolean isPayloadAvailable() {
+    @Override
+    public boolean isPayloadAvailable() {
       return spans.isPayloadAvailable();
     }
 
+    @Override
     public String toString() { return spans.toString() + "#" + index; }
   }
 
@@ -138,6 +149,7 @@ public class NearSpansUnordered extends Spans {
   public Spans[] getSubSpans() {
 	  return subSpans;
   }
+  @Override
   public boolean next() throws IOException {
     if (firstTime) {
       initList(true);
@@ -189,6 +201,7 @@ public class NearSpansUnordered extends Spans {
     return false;                                 // no more matches
   }
 
+  @Override
   public boolean skipTo(int target) throws IOException {
     if (firstTime) {                              // initialize
       initList(false);
@@ -213,8 +226,11 @@ public class NearSpansUnordered extends Spans {
 
   private SpansCell min() { return queue.top(); }
 
+  @Override
   public int doc() { return min().doc(); }
+  @Override
   public int start() { return min().start(); }
+  @Override
   public int end() { return max.end(); }
 
   // TODO: Remove warning after API has been finalized
@@ -223,6 +239,7 @@ public class NearSpansUnordered extends Spans {
    * @return Collection of <code>byte[]</code> payloads
    * @throws IOException
    */
+  @Override
   public Collection<byte[]> getPayload() throws IOException {
     Set<byte[]> matchPayload = new HashSet<byte[]>();
     for (SpansCell cell = first; cell != null; cell = cell.next) {
@@ -234,6 +251,7 @@ public class NearSpansUnordered extends Spans {
   }
 
   // TODO: Remove warning after API has been finalized
+  @Override
   public boolean isPayloadAvailable() {
     SpansCell pointer = min();
     while (pointer != null) {
@@ -246,6 +264,7 @@ public class NearSpansUnordered extends Spans {
     return false;
   }
 
+  @Override
   public String toString() {
     return getClass().getName() + "("+query.toString()+")@"+
       (firstTime?"START":(more?(doc()+":"+start()+"-"+end()):"END"));

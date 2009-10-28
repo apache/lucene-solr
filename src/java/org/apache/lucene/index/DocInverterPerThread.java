@@ -49,6 +49,7 @@ final class DocInverterPerThread extends DocFieldConsumerPerThread {
     }
     
     // this is a dummy, to not throw an UOE because this class does not implement any iteration method
+    @Override
     public boolean incrementToken() {
       throw new UnsupportedOperationException();
     }
@@ -68,11 +69,13 @@ final class DocInverterPerThread extends DocFieldConsumerPerThread {
     endConsumer = docInverter.endConsumer.addThread(this);
   }
 
+  @Override
   public void startDocument() throws IOException {
     consumer.startDocument();
     endConsumer.startDocument();
   }
 
+  @Override
   public DocumentsWriter.DocWriter finishDocument() throws IOException {
     // TODO: allow endConsumer.finishDocument to also return
     // a DocWriter
@@ -80,6 +83,7 @@ final class DocInverterPerThread extends DocFieldConsumerPerThread {
     return consumer.finishDocument();
   }
 
+  @Override
   void abort() {
     try {
       consumer.abort();
@@ -88,6 +92,7 @@ final class DocInverterPerThread extends DocFieldConsumerPerThread {
     }
   }
 
+  @Override
   public DocFieldConsumerPerField addField(FieldInfo fi) {
     return new DocInverterPerField(this, fi);
   }

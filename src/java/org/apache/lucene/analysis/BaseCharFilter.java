@@ -44,6 +44,7 @@ public abstract class BaseCharFilter extends CharFilter {
    *  recently added position, as it's a simple linear
    *  search backwards through all offset corrections added
    *  by {@link #addOffCorrectMap}. */
+  @Override
   protected int correct(int currentOff) {
     if (pcmList == null || pcmList.isEmpty()) {
       return currentOff;
@@ -78,6 +79,7 @@ public abstract class BaseCharFilter extends CharFilter {
       this.cumulativeDiff = cumulativeDiff;
     }
 
+    @Override
     public String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append('(');

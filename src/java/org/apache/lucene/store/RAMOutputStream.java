@@ -77,10 +77,12 @@ public class RAMOutputStream extends IndexOutput {
     file.setLength(0);
   }
 
+  @Override
   public void close() throws IOException {
     flush();
   }
 
+  @Override
   public void seek(long pos) throws IOException {
     // set the file length in case we seek back
     // and flush() has not been called yet
@@ -93,10 +95,12 @@ public class RAMOutputStream extends IndexOutput {
     bufferPosition = (int) (pos % BUFFER_SIZE);
   }
 
+  @Override
   public long length() {
     return file.length;
   }
 
+  @Override
   public void writeByte(byte b) throws IOException {
     if (bufferPosition == bufferLength) {
       currentBufferIndex++;
@@ -105,6 +109,7 @@ public class RAMOutputStream extends IndexOutput {
     currentBuffer[bufferPosition++] = b;
   }
 
+  @Override
   public void writeBytes(byte[] b, int offset, int len) throws IOException {
     assert b != null;
     while (len > 0) {
@@ -140,11 +145,13 @@ public class RAMOutputStream extends IndexOutput {
     }
   }
 
+  @Override
   public void flush() throws IOException {
     file.setLastModified(System.currentTimeMillis());
     setFileLength();
   }
 
+  @Override
   public long getFilePointer() {
     return currentBufferIndex < 0 ? 0 : bufferStart + bufferPosition;
   }

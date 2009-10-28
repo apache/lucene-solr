@@ -293,6 +293,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * Sets the initial value 
    */
   private class FieldsReaderLocal extends CloseableThreadLocal<FieldsReader> {
+    @Override
     protected FieldsReader initialValue() {
       return (FieldsReader) core.getFieldsReaderOrig().clone();
     }
@@ -301,6 +302,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   static class Ref {
     private int refCount = 1;
     
+    @Override
     public String toString() {
       return "refcount: "+refCount;
     }
@@ -491,6 +493,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     
     // Returns a copy of this Norm instance that shares
     // IndexInput & bytes with the original one
+    @Override
     public synchronized Object clone() {
       assert refCount > 0 && (origNorm == null || origNorm.refCount > 0);
         
@@ -633,6 +636,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return (BitVector)bv.clone();
   }
 
+  @Override
   public final synchronized Object clone() {
     try {
       return clone(readOnly); // Preserve current readOnly
@@ -641,6 +645,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
   }
 
+  @Override
   public final synchronized IndexReader clone(boolean openReadOnly) throws CorruptIndexException, IOException {
     return reopenSegment(si, true, openReadOnly);
   }
@@ -737,6 +742,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return clone;
   }
 
+  @Override
   protected void doCommit(Map<String,String> commitUserData) throws IOException {
     if (hasChanges) {
       if (deletedDocsDirty) {               // re-write deleted
@@ -772,6 +778,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return fieldsReaderLocal.get();
   }
 
+  @Override
   protected void doClose() throws IOException {
     termVectorsLocal.close();
     fieldsReaderLocal.close();
@@ -795,6 +802,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return si.hasDeletions();
   }
 
+  @Override
   public boolean hasDeletions() {
     // Don't call ensureOpen() here (it could affect performance)
     return deletedDocs != null;
@@ -808,6 +816,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return si.hasSeparateNorms();
   }
 
+  @Override
   protected void doDelete(int docNum) {
     if (deletedDocs == null) {
       deletedDocs = new BitVector(maxDoc());
@@ -827,6 +836,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
       pendingDeleteCount++;
   }
 
+  @Override
   protected void doUndeleteAll() {
     deletedDocsDirty = false;
     if (deletedDocs != null) {
@@ -847,11 +857,13 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return new ArrayList<String>(si.files());
   }
 
+  @Override
   public TermEnum terms() {
     ensureOpen();
     return core.getTermsReader().terms();
   }
 
+  @Override
   public TermEnum terms(Term t) throws IOException {
     ensureOpen();
     return core.getTermsReader().terms(t);
@@ -861,15 +873,18 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return core.fieldInfos;
   }
 
+  @Override
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     ensureOpen();
     return getFieldsReader().doc(n, fieldSelector);
   }
 
+  @Override
   public synchronized boolean isDeleted(int n) {
     return (deletedDocs != null && deletedDocs.get(n));
   }
 
+  @Override
   public TermDocs termDocs(Term term) throws IOException {
     if (term == null) {
       return new AllTermDocs(this);
@@ -878,16 +893,19 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
   }
 
+  @Override
   public TermDocs termDocs() throws IOException {
     ensureOpen();
     return new SegmentTermDocs(this);
   }
 
+  @Override
   public TermPositions termPositions() throws IOException {
     ensureOpen();
     return new SegmentTermPositions(this);
   }
 
+  @Override
   public int docFreq(Term t) throws IOException {
     ensureOpen();
     TermInfo ti = core.getTermsReader().get(t);
@@ -897,6 +915,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
       return 0;
   }
 
+  @Override
   public int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)
     int n = maxDoc();
@@ -905,6 +924,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return n;
   }
 
+  @Override
   public int maxDoc() {
     // Don't call ensureOpen() here (it could affect performance)
     return si.docCount;
@@ -913,6 +933,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   /**
    * @see IndexReader#getFieldNames(IndexReader.FieldOption fldOption)
    */
+  @Override
   public Collection<String> getFieldNames(IndexReader.FieldOption fieldOption) {
     ensureOpen();
 
@@ -961,6 +982,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
 
+  @Override
   public synchronized boolean hasNorms(String field) {
     ensureOpen();
     return norms.containsKey(field);
@@ -982,12 +1004,14 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   // returns fake norms if norms aren't available
+  @Override
   public synchronized byte[] norms(String field) throws IOException {
     ensureOpen();
     byte[] bytes = getNorms(field);
     return bytes;
   }
 
+  @Override
   protected void doSetNorm(int doc, String field, byte value)
           throws IOException {
     Norm norm = norms.get(field);
@@ -999,6 +1023,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   /** Read norms into a pre-allocated array. */
+  @Override
   public synchronized void norms(String field, byte[] bytes, int offset)
     throws IOException {
 
@@ -1121,6 +1146,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
    *  flag set.  If the flag was not set, the method returns null.
    * @throws IOException
    */
+  @Override
   public TermFreqVector getTermFreqVector(int docNumber, String field) throws IOException {
     // Check if this field is invalid or has no stored term vector
     ensureOpen();
@@ -1136,6 +1162,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
 
+  @Override
   public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
     ensureOpen();
     FieldInfo fi = core.fieldInfos.fieldInfo(field);
@@ -1152,6 +1179,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
 
+  @Override
   public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
     ensureOpen();
 
@@ -1169,6 +1197,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
    *  If no such fields existed, the method returns null.
    * @throws IOException
    */
+  @Override
   public TermFreqVector[] getTermFreqVectors(int docNumber) throws IOException {
     ensureOpen();
     
@@ -1218,6 +1247,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   /** Returns the directory this index resides in. */
+  @Override
   public Directory directory() {
     // Don't ensureOpen here -- in certain cases, when a
     // cloned/reopened reader needs to commit, it may call
@@ -1228,10 +1258,12 @@ public class SegmentReader extends IndexReader implements Cloneable {
   // This is necessary so that cloned SegmentReaders (which
   // share the underlying postings data) will map to the
   // same entry in the FieldCache.  See LUCENE-1579.
+  @Override
   public final Object getFieldCacheKey() {
     return core.freqStream;
   }
 
+  @Override
   public long getUniqueTermCount() {
     return core.getTermsReader().size();
   }

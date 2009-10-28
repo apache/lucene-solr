@@ -274,11 +274,13 @@ public class CheckIndex {
       super(p);
     }
 
+    @Override
     public void seek(Term term) throws IOException {
       super.seek(term);
       delCount = 0;
     }
 
+    @Override
     protected void skippingDoc() throws IOException {
       delCount++;
     }

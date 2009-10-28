@@ -43,12 +43,13 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      * stored.
      */
     YES {
+      @Override
       public boolean isStored() { return true; }
     },
 
     /** Do not store the field value in the index. */
-    NO
-    {
+    NO {
+      @Override
       public boolean isStored() { return false; }
     };
 
@@ -62,8 +63,11 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      * but one can still access its contents provided it is
      * {@link Field.Store stored}. */
     NO {
+      @Override
       public boolean isIndexed()  { return false; }
+      @Override
       public boolean isAnalyzed() { return false; }
+      @Override
       public boolean omitNorms()  { return true;  }   
     },
 
@@ -71,8 +75,11 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      * value through an Analyzer.  This is useful for
      * common text. */
     ANALYZED {
+      @Override
       public boolean isIndexed()  { return true;  }
+      @Override
       public boolean isAnalyzed() { return true;  }
+      @Override
       public boolean omitNorms()  { return false; }   	
     },
 
@@ -81,8 +88,11 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      * useful for unique Ids like product numbers.
      */
     NOT_ANALYZED {
+      @Override
       public boolean isIndexed()  { return true;  }
+      @Override
       public boolean isAnalyzed() { return false; }
+      @Override
       public boolean omitNorms()  { return false; }   	
     },
 
@@ -101,8 +111,11 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      * that field must be indexed with NOT_ANALYZED_NO_NORMS
      * from the beginning. */
     NOT_ANALYZED_NO_NORMS {
+      @Override
       public boolean isIndexed()  { return true;  }
+      @Override
       public boolean isAnalyzed() { return false; }
+      @Override
       public boolean omitNorms()  { return true;  }   	
     },
 
@@ -112,8 +125,11 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      *  {@link #NOT_ANALYZED_NO_NORMS} for what norms are
      *  and why you may want to disable them. */
     ANALYZED_NO_NORMS {
+      @Override
       public boolean isIndexed()  { return true;  }
+      @Override
       public boolean isAnalyzed() { return true;  }
+      @Override
       public boolean omitNorms()  { return true;  }   	
     };
 
@@ -156,17 +172,23 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
     /** Do not store term vectors. 
      */
     NO {
-    	public boolean isStored()      { return false; }
-    	public boolean withPositions() { return false; }
-    	public boolean withOffsets()   { return false; }
+      @Override
+      public boolean isStored()      { return false; }
+      @Override
+      public boolean withPositions() { return false; }
+      @Override
+      public boolean withOffsets()   { return false; }
     },
     
     /** Store the term vectors of each document. A term vector is a list
      * of the document's terms and their number of occurrences in that document. */
     YES {
-    	public boolean isStored()      { return true;  }
-    	public boolean withPositions() { return false; }
-    	public boolean withOffsets()   { return false; }
+      @Override
+      public boolean isStored()      { return true;  }
+      @Override
+      public boolean withPositions() { return false; }
+      @Override
+      public boolean withOffsets()   { return false; }
     },
     
     /**
@@ -175,9 +197,12 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      * @see #YES
      */ 
     WITH_POSITIONS {
-    	public boolean isStored()      { return true;  }
-    	public boolean withPositions() { return true;  }
-    	public boolean withOffsets()   { return false; }
+      @Override
+      public boolean isStored()      { return true;  }
+      @Override
+      public boolean withPositions() { return true;  }
+      @Override
+      public boolean withOffsets()   { return false; }
     },
     
     /**
@@ -186,9 +211,12 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      * @see #YES
      */ 
     WITH_OFFSETS {
-    	public boolean isStored()      { return true;  }
-    	public boolean withPositions() { return false; }
-    	public boolean withOffsets()   { return true;  }
+      @Override
+      public boolean isStored()      { return true;  }
+      @Override
+      public boolean withPositions() { return false; }
+      @Override
+      public boolean withOffsets()   { return true;  }
     },
     
     /**
@@ -199,9 +227,12 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
      * @see #WITH_OFFSETS
      */ 
     WITH_POSITIONS_OFFSETS {
-    	public boolean isStored()      { return true;  }
-    	public boolean withPositions() { return true;  }
-    	public boolean withOffsets()   { return true;  }
+      @Override
+      public boolean isStored()      { return true;  }
+      @Override
+      public boolean withPositions() { return true;  }
+      @Override
+      public boolean withOffsets()   { return true;  }
     };
 
     /** Get the best representation of a TermVector given the flags. */
@@ -209,7 +240,7 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
 
       // If it is not stored, nothing else matters.
       if (!stored) {
-    	return TermVector.NO;
+        return TermVector.NO;
       }
 
       if (withOffsets) {
@@ -337,7 +368,7 @@ public final class Field extends AbstractField implements Fieldable, Serializabl
    * </ul> 
    */ 
   public Field(String name, String value, Store store, Index index, TermVector termVector) {
-	  this(name, true, value, store, index, termVector);
+    this(name, true, value, store, index, termVector);
   }
   
   /**

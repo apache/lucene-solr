@@ -43,6 +43,7 @@ public class TermSpans extends Spans {
     doc = -1;
   }
 
+  @Override
   public boolean next() throws IOException {
     if (count == freq) {
       if (!positions.next()) {
@@ -58,6 +59,7 @@ public class TermSpans extends Spans {
     return true;
   }
 
+  @Override
   public boolean skipTo(int target) throws IOException {
     if (!positions.skipTo(target)) {
       doc = Integer.MAX_VALUE;
@@ -74,19 +76,23 @@ public class TermSpans extends Spans {
     return true;
   }
 
+  @Override
   public int doc() {
     return doc;
   }
 
+  @Override
   public int start() {
     return position;
   }
 
+  @Override
   public int end() {
     return position + 1;
   }
 
   // TODO: Remove warning after API has been finalized
+  @Override
   public Collection<byte[]> getPayload() throws IOException {
     byte [] bytes = new byte[positions.getPayloadLength()]; 
     bytes = positions.getPayload(bytes, 0);
@@ -94,10 +100,12 @@ public class TermSpans extends Spans {
   }
 
   // TODO: Remove warning after API has been finalized
- public boolean isPayloadAvailable() {
+  @Override
+  public boolean isPayloadAvailable() {
     return positions.isPayloadAvailable();
   }
 
+  @Override
   public String toString() {
     return "spans(" + term.toString() + ")@" +
             (doc == -1 ? "START" : (doc == Integer.MAX_VALUE) ? "END" : doc + "-" + position);

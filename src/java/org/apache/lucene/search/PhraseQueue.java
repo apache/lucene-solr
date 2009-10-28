@@ -24,6 +24,7 @@ final class PhraseQueue extends PriorityQueue<PhrasePositions> {
     initialize(size);
   }
 
+  @Override
   protected final boolean lessThan(PhrasePositions pp1, PhrasePositions pp2) {
     if (pp1.doc == pp2.doc) 
       if (pp1.position == pp2.position)

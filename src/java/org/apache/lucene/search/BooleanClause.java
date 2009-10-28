@@ -24,7 +24,7 @@ public class BooleanClause implements java.io.Serializable {
   public static enum Occur {
 
     /** Use this operator for clauses that <i>must</i> appear in the matching documents. */
-    MUST     { public String toString() { return "+"; } },
+    MUST     { @Override public String toString() { return "+"; } },
 
     /** Use this operator for clauses that <i>should</i> appear in the 
      * matching documents. For a BooleanQuery with no <code>MUST</code> 
@@ -32,12 +32,12 @@ public class BooleanClause implements java.io.Serializable {
      * for the BooleanQuery to match.
      * @see BooleanQuery#setMinimumNumberShouldMatch
      */
-    SHOULD   { public String toString() { return "";  } },
+    SHOULD   { @Override public String toString() { return "";  } },
 
     /** Use this operator for clauses that <i>must not</i> appear in the matching documents.
      * Note that it is not possible to search for queries that only consist
      * of a <code>MUST_NOT</code> clause. */
-    MUST_NOT { public String toString() { return "-"; } };
+    MUST_NOT { @Override public String toString() { return "-"; } };
 
   }
 
@@ -84,6 +84,7 @@ public class BooleanClause implements java.io.Serializable {
 
 
   /** Returns true if <code>o</code> is equal to this. */
+  @Override
   public boolean equals(Object o) {
     if (o == null || !(o instanceof BooleanClause))
       return false;
@@ -93,11 +94,13 @@ public class BooleanClause implements java.io.Serializable {
   }
 
   /** Returns a hash code value for this object.*/
+  @Override
   public int hashCode() {
     return query.hashCode() ^ (Occur.MUST == occur?1:0) ^ (Occur.MUST_NOT == occur?2:0);
   }
 
 
+  @Override
   public String toString() {
     return occur.toString() + query.toString();
   }

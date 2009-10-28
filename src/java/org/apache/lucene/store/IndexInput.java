@@ -217,6 +217,7 @@ public abstract class IndexInput implements Cloneable,Closeable {
    * different points in the input from each other and from the stream they
    * were cloned from.
    */
+  @Override
   public Object clone() {
     IndexInput clone = null;
     try {

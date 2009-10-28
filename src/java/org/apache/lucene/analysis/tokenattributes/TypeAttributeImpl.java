@@ -47,10 +47,12 @@ public class TypeAttributeImpl extends AttributeImpl implements TypeAttribute, C
     this.type = type;
   }
 
+  @Override
   public void clear() {
     type = DEFAULT_TYPE;    
   }
 
+  @Override
   public boolean equals(Object other) {
     if (other == this) {
       return true;
@@ -63,10 +65,12 @@ public class TypeAttributeImpl extends AttributeImpl implements TypeAttribute, C
     return false;
   }
 
+  @Override
   public int hashCode() {
     return type.hashCode();
   }
   
+  @Override
   public void copyTo(AttributeImpl target) {
     TypeAttribute t = (TypeAttribute) target;
     t.setType(type);

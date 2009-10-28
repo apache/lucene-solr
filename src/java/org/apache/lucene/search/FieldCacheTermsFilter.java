@@ -106,6 +106,7 @@ public class FieldCacheTermsFilter extends Filter {
     return FieldCache.DEFAULT;
   }
 
+  @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     return new FieldCacheTermsFilterDocIdSet(getFieldCache().getStringIndex(reader, field));
   }
@@ -140,10 +141,12 @@ public class FieldCacheTermsFilter extends Filter {
     protected class FieldCacheTermsFilterDocIdSetIterator extends DocIdSetIterator {
       private int doc = -1;
 
+      @Override
       public int docID() {
         return doc;
       }
 
+      @Override
       public int nextDoc() {
         try {
           while (!openBitSet.fastGet(fcsi.order[++doc])) {}
@@ -153,6 +156,7 @@ public class FieldCacheTermsFilter extends Filter {
         return doc;
       }
 
+      @Override
       public int advance(int target) {
         try {
           doc = target;

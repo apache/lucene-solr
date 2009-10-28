@@ -70,6 +70,7 @@ final class FieldsReader implements Cloneable {
    *  job not to close the original FieldsReader until all
    *  clones are called (eg, currently SegmentReader manages
    *  this logic). */
+  @Override
   public Object clone() {
     ensureOpen();
     return new FieldsReader(fieldInfos, numTotalDocs, size, format, formatSize, docStoreOffset, cloneableFieldsStream, cloneableIndexStream);
@@ -516,6 +517,7 @@ final class FieldsReader implements Cloneable {
       this.toRead = toRead;
     }
 
+    @Override
     public byte[] getBinaryValue(byte[] result) {
       ensureOpen();
 
