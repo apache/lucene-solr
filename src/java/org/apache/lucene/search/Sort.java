@@ -173,9 +173,6 @@ implements Serializable {
 
   /** Returns a hash code value for this object. */
   public int hashCode() {
-    // TODO in Java 1.5: switch to Arrays.hashCode().  The 
-    // Java 1.4 workaround below calculates the same hashCode
-    // as Java 1.5's new Arrays.hashCode()
-    return 0x45aaf665 + Arrays.asList(fields).hashCode();
+    return 0x45aaf665 + Arrays.hashCode(fields);
   }
 }

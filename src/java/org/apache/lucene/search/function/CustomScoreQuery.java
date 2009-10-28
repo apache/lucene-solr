@@ -19,6 +19,7 @@ package org.apache.lucene.search.function;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.Arrays;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -145,22 +146,14 @@ public class CustomScoreQuery extends Query {
         this.valSrcQueries.length != other.valSrcQueries.length) {
       return false;
     }
-    for (int i=0; i<valSrcQueries.length; i++) { //TODO simplify with Arrays.deepEquals() once moving to Java 1.5
-      if (!valSrcQueries[i].equals(other.valSrcQueries[i])) {
-        return false;
-      }
-    }
-    return true;
+    return Arrays.deepEquals(valSrcQueries, other.valSrcQueries);
   }
 
   /** Returns a hash code value for this object. */
   @Override
   public int hashCode() {
-    int valSrcHash = 0;
-    for (int i=0; i<valSrcQueries.length; i++) { //TODO simplify with Arrays.deepHashcode() once moving to Java 1.5
-      valSrcHash += valSrcQueries[i].hashCode();
-    }
-    return (getClass().hashCode() + subQuery.hashCode() + valSrcHash) ^ Float.floatToIntBits(getBoost());
+    return (getClass().hashCode() + subQuery.hashCode() + Arrays.deepHashCode(valSrcQueries))
+      ^ Float.floatToIntBits(getBoost());
   }  
   
   /**

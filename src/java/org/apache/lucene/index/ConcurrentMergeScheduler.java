@@ -149,8 +149,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   public void merge(IndexWriter writer)
     throws CorruptIndexException, IOException {
 
-    // TODO: enable this once we are on JRE 1.5
-    // assert !Thread.holdsLock(writer);
+    assert !Thread.holdsLock(writer);
 
     this.writer = writer;
 
