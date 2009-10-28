@@ -5,8 +5,6 @@ import org.apache.lucene.util.StringHelper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Collection;
-import java.util.Iterator;
 /*
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -68,13 +66,13 @@ public class TermVectorAccessor {
   }
 
   /** Instance reused to save garbage collector some time */
-  private List/*<String>*/ tokens;
+  private List<String> tokens;
 
   /** Instance reused to save garbage collector some time */
-  private List/*<int[]>*/ positions;
+  private List<int[]> positions;
 
   /** Instance reused to save garbage collector some time */
-  private List/*<Integer>*/ frequencies;
+  private List<Integer> frequencies;
 
 
   /**
@@ -90,9 +88,9 @@ public class TermVectorAccessor {
   private void build(IndexReader indexReader, String field, TermVectorMapper mapper, int documentNumber) throws IOException {
 
     if (tokens == null) {
-      tokens = new ArrayList/*<String>*/(500);
-      positions = new ArrayList/*<int[]>*/(500);
-      frequencies = new ArrayList/*<Integer>*/(500);
+      tokens = new ArrayList<String>(500);
+      positions = new ArrayList<int[]>(500);
+      frequencies = new ArrayList<Integer>(500);
     } else {
       tokens.clear();
       frequencies.clear();
@@ -127,7 +125,7 @@ public class TermVectorAccessor {
       mapper.setDocumentNumber(documentNumber);
       mapper.setExpectations(field, tokens.size(), false, !mapper.isIgnoringPositions());
       for (int i = 0; i < tokens.size(); i++) {
-        mapper.map((String) tokens.get(i), ((Integer) frequencies.get(i)).intValue(), (TermVectorOffsetInfo[]) null, (int[]) positions.get(i));
+        mapper.map(tokens.get(i), frequencies.get(i).intValue(), (TermVectorOffsetInfo[]) null, positions.get(i));
       }
     }
     termEnum.close();

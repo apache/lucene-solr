@@ -158,7 +158,7 @@ public class MultiPassIndexSplitter {
     if (indexes.size() == 1) {
       input = indexes.get(0);
     } else {
-      input = new MultiReader((IndexReader[])indexes.toArray(new IndexReader[indexes.size()]));
+      input = new MultiReader(indexes.toArray(new IndexReader[indexes.size()]));
     }
     splitter.split(input, dirs, seq);
   }

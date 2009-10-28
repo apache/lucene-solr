@@ -76,7 +76,7 @@ import java.util.TreeSet;
 public class SynonymMap {
 
   /** the index data; Map<String word, String[] synonyms> */
-  private final HashMap table;
+  private final HashMap<String,String[]> table;
   
   private static final String[] EMPTY = new String[0];
   
@@ -93,7 +93,7 @@ public class SynonymMap {
    *             if an error occured while reading the stream.
    */
   public SynonymMap(InputStream input) throws IOException {
-    this.table = input == null ? new HashMap(0) : read(toByteArray(input));
+    this.table = input == null ? new HashMap<String,String[]>(0) : read(toByteArray(input));
   }
   
   /**
@@ -123,7 +123,7 @@ public class SynonymMap {
    */
   public String toString() {
     StringBuilder buf = new StringBuilder();
-    Iterator iter = new TreeMap(table).keySet().iterator();
+    Iterator<String> iter = new TreeMap<String,String[]>(table).keySet().iterator();
     int count = 0;
     int f0 = 0;
     int f1 = 0;
@@ -131,7 +131,7 @@ public class SynonymMap {
     int f3 = 0;
     
     while (iter.hasNext()) {
-      String word = (String) iter.next();
+      String word = iter.next();
       buf.append(word + ":");
       String[] synonyms = getSynonyms(word);
       buf.append(Arrays.asList(synonyms));
@@ -168,12 +168,12 @@ public class SynonymMap {
     return true;
   }
 
-  private HashMap read(byte[] data) {
+  private HashMap<String,String[]> read(byte[] data) {
     int WORDS  = (int) (76401 / 0.7); // presizing
     int GROUPS = (int) (88022 / 0.7); // presizing
-    HashMap word2Groups = new HashMap(WORDS);  // Map<String word, int[] groups>
-    HashMap group2Words = new HashMap(GROUPS); // Map<int group, String[] words>
-    HashMap internedWords = new HashMap(WORDS);// Map<String word, String word>
+    HashMap<String,ArrayList<Integer>> word2Groups = new HashMap<String,ArrayList<Integer>>(WORDS);  // Map<String word, int[] groups>
+    HashMap<Integer,ArrayList<String>> group2Words = new HashMap<Integer,ArrayList<String>>(GROUPS); // Map<int group, String[] words>
+    HashMap<String,String> internedWords = new HashMap<String,String>(WORDS);// Map<String word, String word>
 
     Charset charset = Charset.forName("UTF-8");
     int lastNum = -1;
@@ -226,7 +226,7 @@ public class SynonymMap {
       /* Part C: Add (group,word) to tables */
       
       // ensure compact string representation, minimizing memory overhead
-      String w = (String) internedWords.get(word);
+      String w = internedWords.get(word);
       if (w == null) {
         word = new String(word); // ensure compact string
         internedWords.put(word, word);
@@ -242,17 +242,17 @@ public class SynonymMap {
       }
       
       // add word --> group
-      ArrayList groups = (ArrayList) word2Groups.get(word);
+      ArrayList<Integer> groups =  word2Groups.get(word);
       if (groups == null) {
-        groups = new ArrayList(1);
+        groups = new ArrayList<Integer>(1);
         word2Groups.put(word, groups);
       }
       groups.add(group);
 
       // add group --> word
-      ArrayList words = (ArrayList) group2Words.get(group);
+      ArrayList<String> words = group2Words.get(group);
       if (words == null) {
-        words = new ArrayList(1);
+        words = new ArrayList<String>(1);
         group2Words.put(group, words);
       } 
       words.add(word);
@@ -265,25 +265,26 @@ public class SynonymMap {
     /* Part E: minimize memory consumption by a factor 3 (or so) */
 //    if (true) return word2Syns;
     word2Groups = null; // help gc
-    group2Words = null; // help gc    
+    //TODO: word2Groups.clear(); would be more appropriate  ? 
+    group2Words = null; // help gc
+    //TODO: group2Words.clear(); would be more appropriate  ? 
+    
     return optimize(word2Syns, internedWords);
   }
   
-  private HashMap createIndex(Map word2Groups, Map group2Words) {
-    HashMap word2Syns = new HashMap();
-    Iterator iter = word2Groups.entrySet().iterator();
+  private HashMap<String,String[]> createIndex(Map<String,ArrayList<Integer>> word2Groups, Map<Integer,ArrayList<String>> group2Words) {
+    HashMap<String,String[]> word2Syns = new HashMap<String,String[]>();
     
-    while (iter.hasNext()) { // for each word
-      Map.Entry entry = (Map.Entry) iter.next();
-      ArrayList group = (ArrayList) entry.getValue();     
-      String word = (String) entry.getKey();
+    for (final Map.Entry<String,ArrayList<Integer>> entry : word2Groups.entrySet()) { // for each word
+      ArrayList<Integer> group = entry.getValue();     
+      String word = entry.getKey();
       
 //      HashSet synonyms = new HashSet();
-      TreeSet synonyms = new TreeSet();
+      TreeSet<String> synonyms = new TreeSet<String>();
       for (int i=group.size(); --i >= 0; ) { // for each groupID of word
-        ArrayList words = (ArrayList) group2Words.get(group.get(i));
+        ArrayList<String> words = group2Words.get(group.get(i));
         for (int j=words.size(); --j >= 0; ) { // add all words       
-          Object synonym = words.get(j); // note that w and word are interned
+          String synonym = words.get(j); // note that w and word are interned
           if (synonym != word) { // a word is implicitly it's own synonym
             synonyms.add(synonym);
           }
@@ -294,7 +295,7 @@ public class SynonymMap {
       if (size > 0) {
         String[] syns = new String[size];
         if (size == 1)  
-          syns[0] = (String) synonyms.first();
+          syns[0] = synonyms.first();
         else
           synonyms.toArray(syns);
 //        if (syns.length > 1) Arrays.sort(syns);
@@ -306,7 +307,7 @@ public class SynonymMap {
     return word2Syns;
   }
 
-  private HashMap optimize(HashMap word2Syns, HashMap internedWords) {
+  private HashMap<String,String[]> optimize(HashMap word2Syns, HashMap<String,String> internedWords) {
     if (DEBUG) {
       System.err.println("before gc");
       for (int i=0; i < 10; i++) System.gc();
@@ -318,11 +319,11 @@ public class SynonymMap {
     int size = word2Syns.size();
     String[][] allSynonyms = new String[size][];
     String[] words = new String[size];
-    Iterator iter = word2Syns.entrySet().iterator();
+    Iterator<Map.Entry<String,String[]>> iter = word2Syns.entrySet().iterator();
     for (int j=0; j < size; j++) {
-      Map.Entry entry = (Map.Entry) iter.next();
-      allSynonyms[j] = (String[]) entry.getValue(); 
-      words[j] = (String) entry.getKey();
+      Map.Entry<String,String[]> entry = iter.next();
+      allSynonyms[j] = entry.getValue(); 
+      words[j] = entry.getKey();
       len += words[j].length();
     }
     
@@ -343,7 +344,7 @@ public class SynonymMap {
     for (int j=0; j < size; j++) {
       String[] syns = allSynonyms[j];
       for (int k=syns.length; --k >= 0; ) {
-        syns[k] = (String) internedWords.get(syns[k]);
+        syns[k] = internedWords.get(syns[k]);
       }
       Object replacement = syns;
       if (syns.length == 1) replacement = syns[0]; // minimize memory consumption some more

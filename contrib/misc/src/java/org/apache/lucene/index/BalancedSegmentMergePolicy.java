@@ -103,7 +103,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy
     }
   }
   
-  private boolean isOptimized(SegmentInfos infos, IndexWriter writer, int maxNumSegments, Set segmentsToOptimize) throws IOException {
+  private boolean isOptimized(SegmentInfos infos, IndexWriter writer, int maxNumSegments, Set<SegmentInfo> segmentsToOptimize) throws IOException {
     final int numSegments = infos.size();
     int numToOptimize = 0;
     SegmentInfo optimizeInfo = null;
@@ -128,7 +128,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy
   }
 
   @Override
-  public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxNumSegments, Set segmentsToOptimize) throws IOException {
+  public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxNumSegments, Set<SegmentInfo> segmentsToOptimize) throws IOException {
     
     assert maxNumSegments > 0;
 

@@ -25,8 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
@@ -50,7 +48,7 @@ public class Config {
 
   private int roundNumber = 0;
   private Properties props;
-  private HashMap valByRound = new HashMap();
+  private HashMap<String,Object> valByRound = new HashMap<String,Object>();
   private HashMap<String,String> colForValByRound = new HashMap<String,String>();
   private String algorithmText;
 
@@ -247,8 +245,7 @@ public class Config {
     // log changes in values
     if (valByRound.size()>0) {
       sb.append(": ");
-      for (Iterator iter = valByRound.keySet().iterator(); iter.hasNext();) {
-        String name = (String) iter.next();
+      for (final String name : valByRound.keySet()) {
         Object a = valByRound.get(name);
         if (a instanceof int[]) {
           int ai[] = (int[]) a;

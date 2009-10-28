@@ -17,7 +17,6 @@
 
 package org.apache.lucene.misc;
 
-import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.index.FieldInvertState;
 
@@ -51,10 +50,10 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
   private int ln_max = 1;
   private float ln_steep = 0.5f;
 
-  private Map ln_mins = new HashMap(7);
-  private Map ln_maxs = new HashMap(7);
-  private Map ln_steeps = new HashMap(7);
-  private Map ln_overlaps = new HashMap(7);
+  private Map<String,Number> ln_maxs = new HashMap<String,Number>(7);
+  private Map<String,Number> ln_mins = new HashMap<String,Number>(7);
+  private Map<String,Float> ln_steeps = new HashMap<String,Float>(7);
+  private Map<String,Boolean> ln_overlaps = new HashMap<String,Boolean>(7);
 
   private float tf_base = 0.0f;
   private float tf_min = 0.0f;
@@ -139,7 +138,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
     final int numTokens;
     boolean overlaps = discountOverlaps;
     if (ln_overlaps.containsKey(fieldName)) {
-      overlaps = ((Boolean)ln_overlaps.get(fieldName)).booleanValue();
+      overlaps = ln_overlaps.get(fieldName).booleanValue();
     }
     if (overlaps)
       numTokens = state.getLength() - state.getNumOverlap();
@@ -173,13 +172,13 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
     float s = ln_steep;
   
     if (ln_mins.containsKey(fieldName)) {
-      l = ((Number)ln_mins.get(fieldName)).intValue();
+      l = ln_mins.get(fieldName).intValue();
     }
     if (ln_maxs.containsKey(fieldName)) {
-      h = ((Number)ln_maxs.get(fieldName)).intValue();
+      h = ln_maxs.get(fieldName).intValue();
     }
     if (ln_steeps.containsKey(fieldName)) {
-      s = ((Number)ln_steeps.get(fieldName)).floatValue();
+      s = ln_steeps.get(fieldName).floatValue();
     }
   
     return (float)

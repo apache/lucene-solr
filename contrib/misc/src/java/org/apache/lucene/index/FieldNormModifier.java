@@ -55,8 +55,7 @@ public class FieldNormModifier {
     Similarity s = null;
     if (!args[1].equals("-n")) {
       try {
-        Class simClass = Class.forName(args[1]);
-        s = (Similarity)simClass.newInstance();
+        s = Class.forName(args[1]).asSubclass(Similarity.class).newInstance();
       } catch (Exception e) {
         System.err.println("Couldn't instantiate similarity with empty constructor: " + args[1]);
         e.printStackTrace(System.err);
@@ -148,7 +147,7 @@ public class FieldNormModifier {
           if (sim == null)
             reader.setNorm(d, fieldName, fakeNorms[0]);
           else
-            reader.setNorm(d, fieldName, sim.encodeNorm(sim.lengthNorm(fieldName, termCounts[d])));
+            reader.setNorm(d, fieldName, Similarity.encodeNorm(sim.lengthNorm(fieldName, termCounts[d])));
         }
       }
       

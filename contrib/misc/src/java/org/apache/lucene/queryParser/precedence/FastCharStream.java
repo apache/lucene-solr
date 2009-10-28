@@ -18,7 +18,6 @@ package org.apache.lucene.queryParser.precedence;
  * limitations under the License.
  */
 
-import org.apache.lucene.queryParser.*;
 
 import java.io.*;
 

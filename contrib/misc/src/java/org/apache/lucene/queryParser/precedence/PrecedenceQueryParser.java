@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Vector;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -247,20 +246,13 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     return locale;
   }
 
-  /**
-   * @deprecated use {@link #addClause(List, int, int, Query)} instead.
-   */
-  protected void addClause(Vector clauses, int conj, int modifier, Query q) {
-    addClause((List) clauses, conj, modifier, q);
-  }
-
-  protected void addClause(List clauses, int conj, int modifier, Query q) {
+  protected void addClause(List<BooleanClause> clauses, int conj, int modifier, Query q) {
     boolean required, prohibited;
 
     // If this term is introduced by AND, make the preceding term required,
     // unless it's already prohibited
     if (clauses.size() > 0 && conj == CONJ_AND) {
-      BooleanClause c = (BooleanClause) clauses.get(clauses.size()-1);
+      BooleanClause c = clauses.get(clauses.size()-1);
       if (!c.isProhibited())
         c.setOccur(BooleanClause.Occur.MUST);
     }
@@ -270,7 +262,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
       // unless it's prohibited (that means we leave -a OR b but +a OR b-->a OR b)
       // notice if the input is a OR b, first term is parsed as required; without
       // this modification a OR b would parsed as +a OR b
-      BooleanClause c = (BooleanClause) clauses.get(clauses.size()-1);
+      BooleanClause c = clauses.get(clauses.size()-1);
       if (!c.isProhibited())
         c.setOccur(BooleanClause.Occur.SHOULD);
     }
@@ -357,12 +349,12 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
           for (int i = 0; i < list.size(); i++) {
             source.restoreState(list.get(i));
             if (posincrAtt.getPositionIncrement() == 1 && multiTerms.size() > 0) {
-              mpq.add((Term[])multiTerms.toArray(new Term[0]));
+              mpq.add(multiTerms.toArray(new Term[0]));
               multiTerms.clear();
             }
             multiTerms.add(new Term(field, termAtt.term()));
           }
-          mpq.add((Term[])multiTerms.toArray(new Term[0]));
+          mpq.add(multiTerms.toArray(new Term[0]));
           return mpq;
         }
       }
@@ -436,27 +428,8 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
    *
    * @return Resulting {@link Query} object.
    * @exception ParseException throw in overridden method to disallow
-   * @deprecated use {@link #getBooleanQuery(List)} instead
    */
-  protected Query getBooleanQuery(Vector clauses) throws ParseException
-  {
-    return getBooleanQuery((List) clauses, false);
-  }
-
-  /**
-   * Factory method for generating query, given a set of clauses.
-   * By default creates a boolean query composed of clauses passed in.
-   *
-   * Can be overridden by extending classes, to modify query being
-   * returned.
-   *
-   * @param clauses List that contains {@link BooleanClause} instances
-   *    to join.
-   *
-   * @return Resulting {@link Query} object.
-   * @exception ParseException throw in overridden method to disallow
-   */
-  protected Query getBooleanQuery(List clauses) throws ParseException
+  protected Query getBooleanQuery(List<BooleanClause> clauses) throws ParseException
   {
     return getBooleanQuery(clauses, false);
   }
@@ -474,36 +447,15 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
    *
    * @return Resulting {@link Query} object.
    * @exception ParseException throw in overridden method to disallow
-   * @deprecated use {@link #getBooleanQuery(List, boolean)} instead
    */
-  protected Query getBooleanQuery(Vector clauses, boolean disableCoord)
-    throws ParseException
-  {
-    return getBooleanQuery((List) clauses, disableCoord);
-  }
-
-  /**
-   * Factory method for generating query, given a set of clauses.
-   * By default creates a boolean query composed of clauses passed in.
-   *
-   * Can be overridden by extending classes, to modify query being
-   * returned.
-   *
-   * @param clauses List that contains {@link BooleanClause} instances
-   *    to join.
-   * @param disableCoord true if coord scoring should be disabled.
-   *
-   * @return Resulting {@link Query} object.
-   * @exception ParseException throw in overridden method to disallow
-   */
-  protected Query getBooleanQuery(List clauses, boolean disableCoord)
+  protected Query getBooleanQuery(List<BooleanClause> clauses, boolean disableCoord)
       throws ParseException {
     if (clauses == null || clauses.size() == 0)
       return null;
 
     BooleanQuery query = new BooleanQuery(disableCoord);
     for (int i = 0; i < clauses.size(); i++) {
-      query.add((BooleanClause)clauses.get(i));
+      query.add(clauses.get(i));
     }
     return query;
   }
@@ -705,7 +657,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
   }
 
   final public Query Query(String field) throws ParseException {
-  List clauses = new ArrayList();
+  List<BooleanClause> clauses = new ArrayList<BooleanClause>();
   Query q, firstQuery=null;
   boolean orPresent = false;
   int modifier;
@@ -757,7 +709,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
   }
 
   final public Query andExpression(String field) throws ParseException {
-  List clauses = new ArrayList();
+  List<BooleanClause> clauses = new ArrayList<BooleanClause>();
   Query q, firstQuery=null;
   int modifier;
     q = Clause(field);

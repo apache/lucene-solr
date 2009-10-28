@@ -65,7 +65,7 @@ public class HighFreqTerms {
       }
     }
     while (tiq.size() != 0) {
-      TermInfo termInfo = (TermInfo) tiq.pop();
+      TermInfo termInfo = tiq.pop();
       System.out.println(termInfo.term + " " + termInfo.docFreq);
     }
 

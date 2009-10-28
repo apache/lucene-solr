@@ -78,14 +78,14 @@ public class IndexSplitter {
       for (int x = 2; x < args.length; x++) {
         segs.add(args[x]);
       }
-      is.remove((String[]) segs.toArray(new String[0]));
+      is.remove(segs.toArray(new String[0]));
     } else {
       File targetDir = new File(args[1]);
       List<String> segs = new ArrayList<String>();
       for (int x = 2; x < args.length; x++) {
         segs.add(args[x]);
       }
-      is.split(targetDir, (String[]) segs.toArray(new String[0]));
+      is.split(targetDir, segs.toArray(new String[0]));
     }
   }
 
@@ -137,9 +137,8 @@ public class IndexSplitter {
       SegmentInfo info = getInfo(n);
       destInfos.add(info);
       // now copy files over
-      List files = info.files();
-      for (int x = 0; x < files.size(); x++) {
-        String srcName = (String) files.get(x);
+      List<String> files = info.files();
+      for (final String srcName : files) {
         File srcFile = new File(dir, srcName);
         File destFile = new File(destDir, srcName);
         copyFile(srcFile, destFile);

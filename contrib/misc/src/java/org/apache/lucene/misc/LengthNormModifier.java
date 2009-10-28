@@ -58,8 +58,7 @@ public class LengthNormModifier {
     
     Similarity s = null;
     try {
-      Class simClass = Class.forName(args[1]);
-      s = (Similarity)simClass.newInstance();
+      s = Class.forName(args[1]).asSubclass(Similarity.class).newInstance();
     } catch (Exception e) {
       System.err.println("Couldn't instantiate similarity with empty constructor: " + args[1]);
       e.printStackTrace(System.err);
@@ -142,7 +141,7 @@ public class LengthNormModifier {
       reader = IndexReader.open(dir, false); 
       for (int d = 0; d < termCounts.length; d++) {
         if (! reader.isDeleted(d)) {
-          byte norm = sim.encodeNorm(sim.lengthNorm(fieldName, termCounts[d]));
+          byte norm = Similarity.encodeNorm(sim.lengthNorm(fieldName, termCounts[d]));
           reader.setNorm(d, fieldName, norm);
         }
       }

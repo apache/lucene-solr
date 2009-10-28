@@ -238,12 +238,12 @@ public class AnalyzerUtil {
 
     return new Analyzer() {
 
-      private final HashMap cache = new HashMap();
+      private final HashMap<String,ArrayList<AttributeSource.State>> cache = new HashMap<String,ArrayList<AttributeSource.State>>();
 
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        final ArrayList tokens = (ArrayList) cache.get(fieldName);
+        final ArrayList<AttributeSource.State> tokens = cache.get(fieldName);
         if (tokens == null) { // not yet cached
-          final ArrayList tokens2 = new ArrayList();
+          final ArrayList<AttributeSource.State> tokens2 = new ArrayList<AttributeSource.State>();
           TokenStream tokenStream = new TokenFilter(child.tokenStream(fieldName, reader)) {
 
             public boolean incrementToken() throws IOException {
@@ -258,11 +258,11 @@ public class AnalyzerUtil {
         } else { // already cached
           return new TokenStream() {
 
-            private Iterator iter = tokens.iterator();
+            private Iterator<AttributeSource.State> iter = tokens.iterator();
 
             public boolean incrementToken() {
               if (!iter.hasNext()) return false;
-              restoreState((AttributeSource.State) iter.next());
+              restoreState(iter.next());
               return true;
             }
           };
@@ -305,12 +305,12 @@ public class AnalyzerUtil {
     if (limit <= 0) limit = Integer.MAX_VALUE;
     
     // compute frequencies of distinct terms
-    HashMap map = new HashMap();
+    HashMap<String,MutableInteger> map = new HashMap<String,MutableInteger>();
     TokenStream stream = analyzer.tokenStream("", new StringReader(text));
     TermAttribute termAtt = stream.addAttribute(TermAttribute.class);
     try {
       while (stream.incrementToken()) {
-        MutableInteger freq = (MutableInteger) map.get(termAtt.term());
+        MutableInteger freq = map.get(termAtt.term());
         if (freq == null) {
           freq = new MutableInteger(1);
           map.put(termAtt.term(), freq);
@@ -329,17 +329,15 @@ public class AnalyzerUtil {
     }
     
     // sort by frequency, text
-    Map.Entry[] entries = new Map.Entry[map.size()];
+    Map.Entry<String,MutableInteger>[] entries = new Map.Entry[map.size()];
     map.entrySet().toArray(entries);
-    Arrays.sort(entries, new Comparator() {
-      public int compare(Object o1, Object o2) {
-        Map.Entry e1 = (Map.Entry) o1;
-        Map.Entry e2 = (Map.Entry) o2;
-        int f1 = ((MutableInteger) e1.getValue()).intValue();
-        int f2 = ((MutableInteger) e2.getValue()).intValue();
+    Arrays.sort(entries, new Comparator<Map.Entry<String,MutableInteger>>() {
+      public int compare(Map.Entry<String,MutableInteger> e1, Map.Entry<String,MutableInteger> e2) {
+        int f1 = e1.getValue().intValue();
+        int f2 = e2.getValue().intValue();
         if (f2 - f1 != 0) return f2 - f1;
-        String s1 = (String) e1.getKey();
-        String s2 = (String) e2.getKey();
+        String s1 = e1.getKey();
+        String s2 = e2.getKey();
         return s1.compareTo(s2);
       }
     });

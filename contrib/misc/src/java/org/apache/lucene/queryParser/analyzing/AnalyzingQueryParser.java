@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.queryParser.ParseException;
@@ -76,8 +75,8 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
    * @throws ParseException
    */
   protected Query getWildcardQuery(String field, String termStr) throws ParseException {
-    List tlist = new ArrayList();
-    List wlist = new ArrayList();
+    List<String> tlist = new ArrayList<String>();
+    List<String> wlist = new ArrayList<String>();
     /* somewhat a hack: find/store wildcard chars
      * in order to put them back after analyzing */
     boolean isWithinToken = (!termStr.startsWith("?") && !termStr.startsWith("*"));
@@ -145,8 +144,8 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
         /* if wlist contains one wildcard, it must be at the end, because:
          * 1) wildcards are not allowed in 1st position of a term by QueryParser
          * 2) if wildcard was *not* in end, there would be *two* or more tokens */
-        return super.getWildcardQuery(field, (String) tlist.get(0)
-            + (((String) wlist.get(0)).toString()));
+        return super.getWildcardQuery(field, tlist.get(0)
+            + wlist.get(0).toString());
       } else {
         /* we should never get here! if so, this method was called
          * with a termStr containing no wildcard ... */
@@ -157,9 +156,9 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
        * with wildcards put back in postion */
       StringBuilder sb = new StringBuilder();
       for (int i = 0; i < tlist.size(); i++) {
-        sb.append((String) tlist.get(i));
+        sb.append( tlist.get(i));
         if (wlist != null && wlist.size() > i) {
-          sb.append((String) wlist.get(i));
+          sb.append(wlist.get(i));
         }
       }
       return super.getWildcardQuery(field, sb.toString());
@@ -188,7 +187,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
   protected Query getPrefixQuery(String field, String termStr) throws ParseException {
     // get Analyzer from superclass and tokenize the term
     TokenStream source = getAnalyzer().tokenStream(field, new StringReader(termStr));
-    List tlist = new ArrayList();
+    List<String> tlist = new ArrayList<String>();
     TermAttribute termAtt = source.addAttribute(TermAttribute.class);
     
     while (true) {
@@ -207,7 +206,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
     }
 
     if (tlist.size() == 1) {
-      return super.getPrefixQuery(field, (String) tlist.get(0));
+      return super.getPrefixQuery(field, tlist.get(0));
     } else {
       /* this means that the analyzer used either added or consumed
        * (common for a stemmer) tokens, and we can't build a PrefixQuery */

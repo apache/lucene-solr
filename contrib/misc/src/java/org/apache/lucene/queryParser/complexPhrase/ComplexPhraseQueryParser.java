@@ -62,7 +62,7 @@ import org.apache.lucene.util.Version;
  * 
  */
 public class ComplexPhraseQueryParser extends QueryParser {
-  private ArrayList/*<ComplexPhraseQuery>*/complexPhrases = null;
+  private ArrayList<ComplexPhraseQuery> complexPhrases = null;
 
   private boolean isPass2ResolvingPhrases;
 
@@ -102,7 +102,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
     // First pass - parse the top-level query recording any PhraseQuerys
     // which will need to be resolved
-    complexPhrases = new ArrayList/*<ComplexPhraseQuery>*/();
+    complexPhrases = new ArrayList<ComplexPhraseQuery>();
     Query q = super.parse(query);
 
     // Perform second pass, using this QueryParser to parse any nested
@@ -110,8 +110,8 @@ public class ComplexPhraseQueryParser extends QueryParser {
     // set of syntax restrictions (i.e. all fields must be same)
     isPass2ResolvingPhrases = true;
     try {
-      for (Iterator iterator = complexPhrases.iterator(); iterator.hasNext();) {
-        currentPhraseQuery = (ComplexPhraseQuery) iterator.next();
+      for (Iterator<ComplexPhraseQuery> iterator = complexPhrases.iterator(); iterator.hasNext();) {
+        currentPhraseQuery = iterator.next();
         // in each phrase, now parse the contents between quotes as a
         // separate parse operation
         currentPhraseQuery.parsePhraseElements(this);
@@ -247,10 +247,10 @@ public class ComplexPhraseQueryParser extends QueryParser {
         }
 
         if (qc instanceof BooleanQuery) {
-          ArrayList sc = new ArrayList();
+          ArrayList<SpanQuery> sc = new ArrayList<SpanQuery>();
           addComplexPhraseClause(sc, (BooleanQuery) qc);
           if (sc.size() > 0) {
-            allSpanClauses[i] = (SpanQuery) sc.get(0);
+            allSpanClauses[i] = sc.get(0);
           } else {
             // Insert fake term e.g. phrase query was for "Fred Smithe*" and
             // there were no "Smithe*" terms - need to
@@ -278,14 +278,14 @@ public class ComplexPhraseQueryParser extends QueryParser {
       // Complex case - we have mixed positives and negatives in the
       // sequence.
       // Need to return a SpanNotQuery
-      ArrayList positiveClauses = new ArrayList();
+      ArrayList<SpanQuery> positiveClauses = new ArrayList<SpanQuery>();
       for (int j = 0; j < allSpanClauses.length; j++) {
         if (!bclauses[j].getOccur().equals(BooleanClause.Occur.MUST_NOT)) {
           positiveClauses.add(allSpanClauses[j]);
         }
       }
 
-      SpanQuery[] includeClauses = (SpanQuery[]) positiveClauses
+      SpanQuery[] includeClauses = positiveClauses
           .toArray(new SpanQuery[positiveClauses.size()]);
 
       SpanQuery include = null;
@@ -304,9 +304,9 @@ public class ComplexPhraseQueryParser extends QueryParser {
       return snot;
     }
 
-    private void addComplexPhraseClause(List spanClauses, BooleanQuery qc) {
-      ArrayList ors = new ArrayList();
-      ArrayList nots = new ArrayList();
+    private void addComplexPhraseClause(List<SpanQuery> spanClauses, BooleanQuery qc) {
+      ArrayList<SpanQuery> ors = new ArrayList<SpanQuery>();
+      ArrayList<SpanQuery> nots = new ArrayList<SpanQuery>();
       BooleanClause[] bclauses = qc.getClauses();
 
       // For all clauses e.g. one* two~
@@ -314,7 +314,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
         Query childQuery = bclauses[i].getQuery();
 
         // select the list to which we will add these options
-        ArrayList chosenList = ors;
+        ArrayList<SpanQuery> chosenList = ors;
         if (bclauses[i].getOccur() == BooleanClause.Occur.MUST_NOT) {
           chosenList = nots;
         }
@@ -336,12 +336,12 @@ public class ComplexPhraseQueryParser extends QueryParser {
       if (ors.size() == 0) {
         return;
       }
-      SpanOrQuery soq = new SpanOrQuery((SpanQuery[]) ors
+      SpanOrQuery soq = new SpanOrQuery(ors
           .toArray(new SpanQuery[ors.size()]));
       if (nots.size() == 0) {
         spanClauses.add(soq);
       } else {
-        SpanOrQuery snqs = new SpanOrQuery((SpanQuery[]) nots
+        SpanOrQuery snqs = new SpanOrQuery(nots
             .toArray(new SpanQuery[nots.size()]));
         SpanNotQuery snq = new SpanNotQuery(soq, snqs);
         spanClauses.add(snq);

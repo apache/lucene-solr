@@ -175,10 +175,10 @@ import org.apache.lucene.store.RAMDirectory;
 public class MemoryIndex implements Serializable {
 
   /** info for each field: Map<String fieldName, Info field> */
-  private final HashMap fields = new HashMap();
+  private final HashMap<String,Info> fields = new HashMap<String,Info>();
   
   /** fields sorted ascending by fieldName; lazily computed on demand */
-  private transient Map.Entry[] sortedFields; 
+  private transient Map.Entry<String,Info>[] sortedFields; 
   
   /** pos: positions[3*i], startOffset: positions[3*i +1], endOffset: positions[3*i +2] */
   private final int stride;
@@ -270,13 +270,13 @@ public class MemoryIndex implements Serializable {
    *            the keywords to generate tokens for
    * @return the corresponding token stream
    */
-  public TokenStream keywordTokenStream(final Collection keywords) {
+  public <T> TokenStream keywordTokenStream(final Collection<T> keywords) {
     // TODO: deprecate & move this method into AnalyzerUtil?
     if (keywords == null)
       throw new IllegalArgumentException("keywords must not be null");
     
     return new TokenStream() {
-      private Iterator iter = keywords.iterator();
+      private Iterator<T> iter = keywords.iterator();
       private int start = 0;
       private TermAttribute termAtt = addAttribute(TermAttribute.class);
       private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
@@ -284,7 +284,7 @@ public class MemoryIndex implements Serializable {
       public boolean incrementToken() {
         if (!iter.hasNext()) return false;
         
-        Object obj = iter.next();
+        T obj = iter.next();
         if (obj == null) 
           throw new IllegalArgumentException("keyword must not be null");
         
@@ -335,7 +335,7 @@ public class MemoryIndex implements Serializable {
       if (fields.get(fieldName) != null)
         throw new IllegalArgumentException("field must not be added more than once");
       
-      HashMap terms = new HashMap();
+      HashMap<String,ArrayIntList> terms = new HashMap<String,ArrayIntList>();
       int numTokens = 0;
       int numOverlapTokens = 0;
       int pos = -1;
@@ -355,7 +355,7 @@ public class MemoryIndex implements Serializable {
           numOverlapTokens++;
         pos += posIncr;
         
-        ArrayIntList positions = (ArrayIntList) terms.get(term);
+        ArrayIntList positions = terms.get(term);
         if (positions == null) { // term not seen before
           positions = new ArrayIntList(stride);
           terms.put(term, positions);
@@ -471,21 +471,19 @@ public class MemoryIndex implements Serializable {
     if (sortedFields != null) size += VM.sizeOfObjectArray(sortedFields.length);
     
     size += VM.sizeOfHashMap(fields.size());
-    Iterator iter = fields.entrySet().iterator();
-    while (iter.hasNext()) { // for each Field Info
-      Map.Entry entry = (Map.Entry) iter.next();      
-      Info info = (Info) entry.getValue();
+    for (Map.Entry<String, Info> entry : fields.entrySet()) { // for each Field Info
+      Info info = entry.getValue();
       size += VM.sizeOfObject(2*INT + 3*PTR); // Info instance vars
       if (info.sortedTerms != null) size += VM.sizeOfObjectArray(info.sortedTerms.length);
       
       int len = info.terms.size();
       size += VM.sizeOfHashMap(len);
-      Iterator iter2 = info.terms.entrySet().iterator();
+      Iterator<Map.Entry<String,ArrayIntList>> iter2 = info.terms.entrySet().iterator();
       while (--len >= 0) { // for each term
-        Map.Entry e = (Map.Entry) iter2.next();
+        Map.Entry<String,ArrayIntList> e = iter2.next();
         size += VM.sizeOfObject(PTR + 3*INT); // assumes substring() memory overlay
 //        size += STR + 2 * ((String) e.getKey()).length();
-        ArrayIntList positions = (ArrayIntList) e.getValue();
+        ArrayIntList positions = e.getValue();
         size += VM.sizeOfArrayIntList(positions.size());
       }
     }
@@ -502,13 +500,13 @@ public class MemoryIndex implements Serializable {
   }
   
   /** returns a view of the given map's entries, sorted ascending by key */
-  private static Map.Entry[] sort(HashMap map) {
+  private static <K,V> Map.Entry<K,V>[] sort(HashMap<K,V> map) {
     int size = map.size();
-    Map.Entry[] entries = new Map.Entry[size];
+    Map.Entry<K,V>[] entries = new Map.Entry[size];
     
-    Iterator iter = map.entrySet().iterator();
+    Iterator<Map.Entry<K,V>> iter = map.entrySet().iterator();
     for (int i=0; i < size; i++) {
-      entries[i] = (Map.Entry) iter.next();
+      entries[i] = iter.next();
     }
     
     if (size > 1) Arrays.sort(entries, termComparator);
@@ -528,18 +526,18 @@ public class MemoryIndex implements Serializable {
     int sumTerms = 0;
     
     for (int i=0; i < sortedFields.length; i++) {
-      Map.Entry entry = sortedFields[i];
-      String fieldName = (String) entry.getKey();
-      Info info = (Info) entry.getValue();
+      Map.Entry<String,Info> entry = sortedFields[i];
+      String fieldName = entry.getKey();
+      Info info = entry.getValue();
       info.sortTerms();
       result.append(fieldName + ":\n");
       
       int numChars = 0;
       int numPositions = 0;
       for (int j=0; j < info.sortedTerms.length; j++) {
-        Map.Entry e = info.sortedTerms[j];
-        String term = (String) e.getKey();
-        ArrayIntList positions = (ArrayIntList) e.getValue();
+        Map.Entry<String,ArrayIntList> e = info.sortedTerms[j];
+        String term = e.getKey();
+        ArrayIntList positions = e.getValue();
         result.append("\t'" + term + "':" + numPositions(positions) + ":");
         result.append(positions.toString(stride)); // ignore offsets
         result.append("\n");
@@ -577,10 +575,10 @@ public class MemoryIndex implements Serializable {
      * Term strings and their positions for this field: Map <String
      * termText, ArrayIntList positions>
      */
-    private final HashMap terms; 
+    private final HashMap<String,ArrayIntList> terms; 
     
     /** Terms sorted ascending by term text; computed on demand */
-    private transient Map.Entry[] sortedTerms;
+    private transient Map.Entry<String,ArrayIntList>[] sortedTerms;
     
     /** Number of added tokens for this field */
     private final int numTokens;
@@ -596,7 +594,7 @@ public class MemoryIndex implements Serializable {
 
     private static final long serialVersionUID = 2882195016849084649L;  
 
-    public Info(HashMap terms, int numTokens, int numOverlapTokens, float boost) {
+    public Info(HashMap<String,ArrayIntList> terms, int numTokens, int numOverlapTokens, float boost) {
       this.terms = terms;
       this.numTokens = numTokens;
       this.numOverlapTokens = numOverlapTokens;
@@ -617,12 +615,12 @@ public class MemoryIndex implements Serializable {
         
     /** note that the frequency can be calculated as numPosition(getPositions(x)) */
     public ArrayIntList getPositions(String term) {
-      return (ArrayIntList) terms.get(term);
+      return terms.get(term);
     }
 
     /** note that the frequency can be calculated as numPosition(getPositions(x)) */
     public ArrayIntList getPositions(int pos) {
-      return (ArrayIntList) sortedTerms[pos].getValue();
+      return sortedTerms[pos].getValue();
     }
     
     public float getBoost() {
@@ -736,11 +734,11 @@ public class MemoryIndex implements Serializable {
     protected void finalize() {}
     
     private Info getInfo(String fieldName) {
-      return (Info) fields.get(fieldName);
+      return fields.get(fieldName);
     }
     
     private Info getInfo(int pos) {
-      return (Info) sortedFields[pos].getValue();
+      return sortedFields[pos].getValue();
     }
     
     public int docFreq(Term term) {
@@ -814,7 +812,7 @@ public class MemoryIndex implements Serializable {
           Info info = getInfo(j);
           if (i >= info.sortedTerms.length) return null;
 //          if (DEBUG) System.err.println("TermEnum.term: " + i + ", " + info.sortedTerms[i].getKey());
-          return createTerm(info, j, (String) info.sortedTerms[i].getKey());
+          return createTerm(info, j, info.sortedTerms[i].getKey());
         }
         
         public int docFreq() {
@@ -834,7 +832,7 @@ public class MemoryIndex implements Serializable {
           // Assertion: sortFields has already been called before
           Term template = info.template;
           if (template == null) { // not yet cached?
-            String fieldName = (String) sortedFields[pos].getKey();
+            String fieldName = sortedFields[pos].getKey();
             template = new Term(fieldName);
             info.template = template;
           }
@@ -949,10 +947,9 @@ public class MemoryIndex implements Serializable {
       if (DEBUG) System.err.println("MemoryIndexReader.getTermFreqVectors");
       TermFreqVector[] vectors = new TermFreqVector[fields.size()];
 //      if (vectors.length == 0) return null;
-      Iterator iter = fields.keySet().iterator();
+      Iterator<String> iter = fields.keySet().iterator();
       for (int i=0; i < vectors.length; i++) {
-        String fieldName = (String) iter.next();
-        vectors[i] = getTermFreqVector(docNumber, fieldName);
+        vectors[i] = getTermFreqVector(docNumber, iter.next());
       }
       return vectors;
     }
@@ -962,9 +959,8 @@ public class MemoryIndex implements Serializable {
           if (DEBUG) System.err.println("MemoryIndexReader.getTermFreqVectors");
 
     //      if (vectors.length == 0) return null;
-          for (Iterator iterator = fields.keySet().iterator(); iterator.hasNext();)
+          for (final String fieldName : fields.keySet())
           {
-            String fieldName = (String) iterator.next();
             getTermFreqVector(docNumber, fieldName, mapper);
           }
       }
@@ -980,7 +976,7 @@ public class MemoryIndex implements Serializable {
           mapper.setExpectations(field, info.sortedTerms.length, stride != 1, true);
           for (int i = info.sortedTerms.length; --i >=0;){
 
-              ArrayIntList positions = (ArrayIntList) info.sortedTerms[i].getValue();
+              ArrayIntList positions = info.sortedTerms[i].getValue();
               int size = positions.size();
               org.apache.lucene.index.TermVectorOffsetInfo[] offsets =
                 new org.apache.lucene.index.TermVectorOffsetInfo[size / stride];
@@ -990,9 +986,9 @@ public class MemoryIndex implements Serializable {
                 int end = positions.get(j+1);
                 offsets[k] = new org.apache.lucene.index.TermVectorOffsetInfo(start, end);
               }
-              mapper.map((String)info.sortedTerms[i].getKey(),
-                         numPositions((ArrayIntList) info.sortedTerms[i].getValue()),
-                         offsets, ((ArrayIntList) info.sortedTerms[i].getValue()).toArray(stride));
+              mapper.map(info.sortedTerms[i].getKey(),
+                         numPositions(info.sortedTerms[i].getValue()),
+                         offsets, (info.sortedTerms[i].getValue()).toArray(stride));
           }
       }
 
@@ -1004,7 +1000,7 @@ public class MemoryIndex implements Serializable {
       
       return new TermPositionVector() { 
   
-        private final Map.Entry[] sortedTerms = info.sortedTerms;
+        private final Map.Entry<String,ArrayIntList>[] sortedTerms = info.sortedTerms;
         
         public String getField() {
           return fieldName;
@@ -1017,7 +1013,7 @@ public class MemoryIndex implements Serializable {
         public String[] getTerms() {
           String[] terms = new String[sortedTerms.length];
           for (int i=sortedTerms.length; --i >= 0; ) {
-            terms[i] = (String) sortedTerms[i].getKey();
+            terms[i] = sortedTerms[i].getKey();
           }
           return terms;
         }
@@ -1025,7 +1021,7 @@ public class MemoryIndex implements Serializable {
         public int[] getTermFrequencies() {
           int[] freqs = new int[sortedTerms.length];
           for (int i=sortedTerms.length; --i >= 0; ) {
-            freqs[i] = numPositions((ArrayIntList) sortedTerms[i].getValue());
+            freqs[i] = numPositions(sortedTerms[i].getValue());
           }
           return freqs;
         }
@@ -1045,14 +1041,14 @@ public class MemoryIndex implements Serializable {
         
         // lucene >= 1.4.3
         public int[] getTermPositions(int index) {
-          return ((ArrayIntList) sortedTerms[index].getValue()).toArray(stride);
+          return sortedTerms[index].getValue().toArray(stride);
         } 
         
         // lucene >= 1.9 (remove this method for lucene-1.4.3)
         public org.apache.lucene.index.TermVectorOffsetInfo[] getOffsets(int index) {
           if (stride == 1) return null; // no offsets stored
           
-          ArrayIntList positions = (ArrayIntList) sortedTerms[index].getValue();
+          ArrayIntList positions = sortedTerms[index].getValue();
           int size = positions.size();
           org.apache.lucene.index.TermVectorOffsetInfo[] offsets = 
             new org.apache.lucene.index.TermVectorOffsetInfo[size / stride];
@@ -1153,7 +1149,7 @@ public class MemoryIndex implements Serializable {
       throw new UnsupportedOperationException();
     }
   
-    protected void doCommit(Map commitUserData) {
+    protected void doCommit(Map<String,String> commitUserData) {
       if (DEBUG) System.err.println("MemoryIndexReader.doCommit");
     }
   
@@ -1162,16 +1158,16 @@ public class MemoryIndex implements Serializable {
     }
     
     // lucene >= 1.9 (remove this method for lucene-1.4.3)
-    public Collection getFieldNames(FieldOption fieldOption) {
+    public Collection<String> getFieldNames(FieldOption fieldOption) {
       if (DEBUG) System.err.println("MemoryIndexReader.getFieldNamesOption");
       if (fieldOption == FieldOption.UNINDEXED) 
-        return Collections.EMPTY_SET;
+        return Collections.<String>emptySet();
       if (fieldOption == FieldOption.INDEXED_NO_TERMVECTOR) 
-        return Collections.EMPTY_SET;
+        return Collections.<String>emptySet();
       if (fieldOption == FieldOption.TERMVECTOR_WITH_OFFSET && stride == 1) 
-        return Collections.EMPTY_SET;
+        return Collections.<String>emptySet();
       if (fieldOption == FieldOption.TERMVECTOR_WITH_POSITION_OFFSET && stride == 1) 
-        return Collections.EMPTY_SET;
+        return Collections.<String>emptySet();
       
       return Collections.unmodifiableSet(fields.keySet());
     }

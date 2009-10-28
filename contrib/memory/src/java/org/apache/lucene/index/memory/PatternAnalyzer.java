@@ -21,13 +21,13 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -72,11 +72,8 @@ public class PatternAnalyzer extends Analyzer {
   /** <code>"\\s+"</code>; Divides text at whitespaces (Character.isWhitespace(c)) */
   public static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
   
-  private static final Set EXTENDED_ENGLISH_STOP_WORDS;
-  static {
-    EXTENDED_ENGLISH_STOP_WORDS = new HashSet();
-  
-    EXTENDED_ENGLISH_STOP_WORDS.addAll(Arrays.asList(new String[] {
+  private static final CharArraySet EXTENDED_ENGLISH_STOP_WORDS =
+    CharArraySet.unmodifiableSet(new CharArraySet(Arrays.asList(
       "a", "about", "above", "across", "adj", "after", "afterwards",
       "again", "against", "albeit", "all", "almost", "alone", "along",
       "already", "also", "although", "always", "among", "amongst", "an",
@@ -117,8 +114,8 @@ public class PatternAnalyzer extends Analyzer {
       "whomever", "whomsoever", "whose", "whosoever", "why", "will",
       "with", "within", "without", "would", "xsubj", "xcal", "xauthor",
       "xother ", "xnote", "yet", "you", "your", "yours", "yourself",
-      "yourselves"}));
-  }
+      "yourselves"
+    ), true));
     
   /**
    * A lower-casing word analyzer with English stop words (can be shared
@@ -139,7 +136,7 @@ public class PatternAnalyzer extends Analyzer {
     
   private final Pattern pattern;
   private final boolean toLowerCase;
-  private final Set stopWords;
+  private final Set<?> stopWords;
 
   private final Version matchVersion;
   
@@ -162,7 +159,7 @@ public class PatternAnalyzer extends Analyzer {
    *            or <a href="http://www.unine.ch/info/clef/">other stop words
    *            lists </a>.
    */
-  public PatternAnalyzer(Version matchVersion, Pattern pattern, boolean toLowerCase, Set stopWords) {
+  public PatternAnalyzer(Version matchVersion, Pattern pattern, boolean toLowerCase, Set<?> stopWords) {
     if (pattern == null) 
       throw new IllegalArgumentException("pattern must not be null");
     
@@ -313,15 +310,7 @@ public class PatternAnalyzer extends Analyzer {
       if (input != null) input.close();
     }
   }
-    
-  /** somewhat oversized to minimize hash collisions */
-  private static Set makeStopSet(Set stopWords) {
-    Set stops = new HashSet(stopWords.size() * 2, 0.3f); 
-    stops.addAll(stopWords);
-    return stops;
-//    return Collections.unmodifiableSet(stops);
-  }
-
+  
   
   ///////////////////////////////////////////////////////////////////////////////
   // Nested classes:
