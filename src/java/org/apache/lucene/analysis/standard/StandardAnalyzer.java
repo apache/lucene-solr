@@ -70,7 +70,7 @@ public class StandardAnalyzer extends Analyzer {
   public StandardAnalyzer(Version matchVersion, Set<?> stopWords) {
     stopSet = stopWords;
     setOverridesTokenStreamMethod(StandardAnalyzer.class);
-    enableStopPositionIncrements = matchVersion.onOrAfter(Version.LUCENE_29);
+    enableStopPositionIncrements = StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion);
     replaceInvalidAcronym = matchVersion.onOrAfter(Version.LUCENE_24);
     this.matchVersion = matchVersion;
   }
@@ -95,13 +95,13 @@ public class StandardAnalyzer extends Analyzer {
 
   /** Constructs a {@link StandardTokenizer} filtered by a {@link
   StandardFilter}, a {@link LowerCaseFilter} and a {@link StopFilter}. */
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     StandardTokenizer tokenStream = new StandardTokenizer(matchVersion, reader);
     tokenStream.setMaxTokenLength(maxTokenLength);
     TokenStream result = new StandardFilter(tokenStream);
     result = new LowerCaseFilter(result);
-    result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                            result, stopSet);
+    result = new StopFilter(enableStopPositionIncrements, result, stopSet);
     return result;
   }
 
@@ -132,6 +132,7 @@ public class StandardAnalyzer extends Analyzer {
     return maxTokenLength;
   }
 
+  @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
     if (overridesTokenStreamMethod) {
       // LUCENE-1678: force fallback to tokenStream() if we
@@ -146,7 +147,7 @@ public class StandardAnalyzer extends Analyzer {
       streams.tokenStream = new StandardTokenizer(matchVersion, reader);
       streams.filteredTokenStream = new StandardFilter(streams.tokenStream);
       streams.filteredTokenStream = new LowerCaseFilter(streams.filteredTokenStream);
-      streams.filteredTokenStream = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+      streams.filteredTokenStream = new StopFilter(enableStopPositionIncrements,
                                                    streams.filteredTokenStream, stopSet);
     } else {
       streams.tokenStream.reset(reader);
