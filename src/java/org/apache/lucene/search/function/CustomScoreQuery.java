@@ -146,13 +146,13 @@ public class CustomScoreQuery extends Query {
         this.valSrcQueries.length != other.valSrcQueries.length) {
       return false;
     }
-    return Arrays.deepEquals(valSrcQueries, other.valSrcQueries);
+    return Arrays.equals(valSrcQueries, other.valSrcQueries);
   }
 
   /** Returns a hash code value for this object. */
   @Override
   public int hashCode() {
-    return (getClass().hashCode() + subQuery.hashCode() + Arrays.deepHashCode(valSrcQueries))
+    return (getClass().hashCode() + subQuery.hashCode() + Arrays.hashCode(valSrcQueries))
       ^ Float.floatToIntBits(getBoost());
   }  
   
