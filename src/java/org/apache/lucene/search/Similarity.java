@@ -526,7 +526,11 @@ import java.util.IdentityHashMap;
  * @see Searcher#setSimilarity(Similarity)
  */
 public abstract class Similarity implements Serializable {
-
+  
+  /**
+   * The Similarity implementation used by default.
+   **/
+  private static Similarity defaultImpl = new DefaultSimilarity();
   public static final int NO_DOC_ID_PROVIDED = -1;
 
   /** Set the default Similarity implementation used by indexing and search
@@ -832,10 +836,5 @@ public abstract class Similarity implements Serializable {
   {
     return 1;
   }
-  
-  /** The Similarity implementation used by default. 
-   *  TODO: move back to top when old API is removed! 
-   **/
-  private static Similarity defaultImpl = new DefaultSimilarity();
 
 }
