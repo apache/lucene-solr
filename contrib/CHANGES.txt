@@ -89,6 +89,9 @@ Documentation
 
 Build
 
+ * LUCENE-1904: Moved wordnet-based synonym support from contrib/memory
+   into contrib/wordnet.  (Robert Muir)
+
 Test Cases
 ======================= Release 2.9.0 2009-09-23 =======================
 

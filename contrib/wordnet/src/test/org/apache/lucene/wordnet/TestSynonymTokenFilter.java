@@ -1,4 +1,4 @@
-package org.apache.lucene.index.memory;
+package org.apache.lucene.wordnet;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -32,7 +32,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 
 public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
   File dataDir = new File(System.getProperty("dataDir", "./bin"));
-  File testFile = new File(dataDir, "org/apache/lucene/index/memory/testSynonyms.txt");
+  File testFile = new File(dataDir, "org/apache/lucene/wordnet/testSynonyms.txt");
   
   public void testSynonyms() throws Exception {
     SynonymMap map = new SynonymMap(new FileInputStream(testFile));

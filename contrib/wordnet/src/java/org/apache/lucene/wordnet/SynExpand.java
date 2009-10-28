@@ -97,7 +97,7 @@ public final class SynExpand {
 	 *
 	 * @param a optional analyzer used to parse the users query else {@link StandardAnalyzer} is used
 	 *
-	 * @param field optional field name to search in or null if you want the default of "contents"
+	 * @param f optional field name to search in or null if you want the default of "contents"
 	 *
 	 * @param boost optional boost applied to synonyms else no boost is applied
 	 *
