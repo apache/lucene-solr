@@ -266,7 +266,7 @@ public class EnwikiContentSource extends ContentSource {
     }
   }
   
-  public DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
+  public synchronized DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
     String[] tuple = parser.next();
     docData.clear();
     docData.setName(tuple[ID]);

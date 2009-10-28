@@ -4,6 +4,11 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+10/28/2009
+  LUCENE-1994: Fix thread safety of EnwikiContentSource and DocMaker
+  when doc.reuse.fields is false.  Also made docs.reuse.fields=true
+  thread safe.  (Mark Miller, Shai Erera, Mike McCandless)
+
 8/4/2009
   LUCENE-1770: Add EnwikiQueryMaker (Mark Miller)
 
