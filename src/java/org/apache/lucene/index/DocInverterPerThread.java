@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
@@ -31,14 +31,13 @@ final class DocInverterPerThread extends DocFieldConsumerPerThread {
   final DocInverter docInverter;
   final InvertedDocConsumerPerThread consumer;
   final InvertedDocEndConsumerPerThread endConsumer;
-  //TODO: change to SingleTokenTokenStream after Token was removed
-  final SingleTokenTokenStream singleTokenTokenStream = new SingleTokenTokenStream();
+  final SingleTokenAttributeSource singleToken = new SingleTokenAttributeSource();
   
-  static class SingleTokenTokenStream extends TokenStream {
-    TermAttribute termAttribute;
-    OffsetAttribute offsetAttribute;
+  static class SingleTokenAttributeSource extends AttributeSource {
+    final TermAttribute termAttribute;
+    final OffsetAttribute offsetAttribute;
     
-    SingleTokenTokenStream() {
+    private SingleTokenAttributeSource() {
       termAttribute = addAttribute(TermAttribute.class);
       offsetAttribute = addAttribute(OffsetAttribute.class);
     }
@@ -46,12 +45,6 @@ final class DocInverterPerThread extends DocFieldConsumerPerThread {
     public void reinit(String stringValue, int startOffset,  int endOffset) {
       termAttribute.setTermBuffer(stringValue);
       offsetAttribute.setOffset(startOffset, endOffset);
-    }
-    
-    // this is a dummy, to not throw an UOE because this class does not implement any iteration method
-    @Override
-    public boolean incrementToken() {
-      throw new UnsupportedOperationException();
     }
   }
   
