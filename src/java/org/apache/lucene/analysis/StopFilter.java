@@ -159,11 +159,7 @@ public final class StopFilter extends TokenFilter {
    * or later, it returns true.
    */
   public static boolean getEnablePositionIncrementsVersionDefault(Version matchVersion) {
-    if (matchVersion.onOrAfter(Version.LUCENE_29)) {
-      return true;
-    } else {
-      return false;
-    }
+    return matchVersion.onOrAfter(Version.LUCENE_29);
   }
 
   /**
