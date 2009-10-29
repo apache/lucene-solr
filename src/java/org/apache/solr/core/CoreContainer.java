@@ -406,9 +406,12 @@ public class CoreContainer
     IndexSchema schema = null;
     if(indexSchemaCache != null){
       //schema sharing is enabled. so check if it already is loaded
-      File schemFile = new File(solrLoader.getInstanceDir() + "conf" + File.separator + dcore.getSchemaName());
-      if(schemFile. exists()){
-        String key = schemFile.getAbsolutePath()+":"+new SimpleDateFormat("yyyyMMddhhmmss").format(new Date(schemFile.lastModified()));
+      File schemaFile = new File(dcore.getSchemaName());
+      if (!schemaFile.isAbsolute()) {
+        schemaFile = new File(solrLoader.getInstanceDir() + "conf" + File.separator + dcore.getSchemaName());
+      }
+      if(schemaFile. exists()){
+        String key = schemaFile.getAbsolutePath()+":"+new SimpleDateFormat("yyyyMMddhhmmss").format(new Date(schemaFile.lastModified()));
         schema = indexSchemaCache.get(key);
         if(schema == null){
           log.info("creating new schema object for core: " + dcore.name);
