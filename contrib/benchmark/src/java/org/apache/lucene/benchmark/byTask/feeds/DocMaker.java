@@ -147,7 +147,6 @@ public class DocMaker {
   
   protected ContentSource source;
   protected boolean reuseFields;
-  protected DocState localDocState;
   protected boolean indexProperties;
   
   private int lastPrintedNumUniqueTexts = 0;
@@ -161,7 +160,7 @@ public class DocMaker {
   // reset the docdata properties so they are not added more than once.
   private Document createDocument(DocData docData, int size, int cnt) throws UnsupportedEncodingException {
 
-    final DocState ds = reuseFields ? getDocState() : localDocState;
+    final DocState ds = getDocState();
     final Document doc = reuseFields ? ds.doc : new Document();
     doc.getFields().clear();
     
@@ -289,7 +288,7 @@ public class DocMaker {
    */
   public Document makeDocument() throws Exception {
     resetLeftovers();
-    DocData docData = source.getNextDocData(reuseFields ? getDocState().docData : localDocState.docData);
+    DocData docData = source.getNextDocData(getDocState().docData);
     Document doc = createDocument(docData, 0, -1);
     return doc;
   }
@@ -304,7 +303,7 @@ public class DocMaker {
         || lvr.docdata.getBody().length() == 0) {
       resetLeftovers();
     }
-    DocData docData = reuseFields ? getDocState().docData : localDocState.docData;
+    DocData docData = getDocState().docData;
     DocData dd = (lvr == null ? source.getNextDocData(docData) : lvr.docdata);
     int cnt = (lvr == null ? 0 : lvr.cnt);
     while (dd.getBody() == null || dd.getBody().length() < size) {
@@ -407,15 +406,12 @@ public class DocMaker {
     storeBytes = config.get("doc.store.body.bytes", false);
     
     reuseFields = config.get("doc.reuse.fields", true);
-    if (!reuseFields) {
-      localDocState = new DocState(false, storeVal, indexVal, bodyIndexVal, termVecVal);
-    } else {
-      // In a multi-rounds run, it is important to reset DocState since settings
-      // of fields may change between rounds, and this is the only way to reset
-      // the cache of all threads.
-      docState = new ThreadLocal();
-    }
-    
+
+    // In a multi-rounds run, it is important to reset DocState since settings
+    // of fields may change between rounds, and this is the only way to reset
+    // the cache of all threads.
+    docState = new ThreadLocal();
+
     indexProperties = config.get("doc.index.props", false);
 
     updateDocIDLimit = config.get("doc.random.id.limit", -1);

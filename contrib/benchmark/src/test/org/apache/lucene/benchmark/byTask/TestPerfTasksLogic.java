@@ -40,6 +40,8 @@ import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.search.FieldCache.StringIndex;
+import org.apache.lucene.search.FieldCache;
 
 import junit.framework.TestCase;
 
@@ -266,6 +268,42 @@ public class TestPerfTasksLogic extends TestCase {
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory());
     assertEquals("1 docs were added to the index, this is what we expect to find!",1,ir.numDocs());
     ir.close();
+  }
+
+  // LUCENE-1994: test thread safety of SortableSingleDocMaker
+  public void testDocMakerThreadSafety() throws Exception {
+    // 1. alg definition (required in every "logic" test)
+    String algLines[] = {
+        "# ----- properties ",
+        "content.source=org.apache.lucene.benchmark.byTask.feeds.SortableSingleDocSource",
+        "doc.term.vector=false",
+        "log.step.AddDoc=10000",
+        "content.source.forever=true",
+        "directory=RAMDirectory",
+        "doc.reuse.fields=false",
+        "doc.stored=false",
+        "doc.tokenized=false",
+        "doc.index.props=true",
+        "# ----- alg ",
+        "CreateIndex",
+        "[ { AddDoc > : 2500 ] : 4",
+        "CloseIndex",
+    };
+    
+    // 2. we test this value later
+    CountingSearchTestTask.numSearches = 0;
+    
+    // 3. execute the algorithm  (required in every "logic" test)
+    Benchmark benchmark = execBenchmark(algLines);
+
+    IndexReader r = IndexReader.open(benchmark.getRunData().getDirectory(), true);
+    StringIndex idx = FieldCache.DEFAULT.getStringIndex(r, "country");
+    final int maxDoc = r.maxDoc();
+    assertEquals(10000, maxDoc);
+    for(int i=0;i<10000;i++) {
+      assertNotNull("doc " + i + " has null country", idx.lookup[idx.order[i]]);
+    }
+    r.close();
   }
 
   /**
