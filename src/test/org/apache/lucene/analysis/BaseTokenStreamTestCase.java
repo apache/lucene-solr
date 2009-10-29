@@ -111,6 +111,13 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     
     ts.reset();
     for (int i = 0; i < output.length; i++) {
+      // extra safety to enforce, that the state is not preserved and also assign bogus values
+      ts.clearAttributes();
+      termAtt.setTermBuffer("bogusTerm");
+      if (offsetAtt != null) offsetAtt.setOffset(14584724,24683243);
+      if (typeAtt != null) typeAtt.setType("bogusType");
+      if (posIncrAtt != null) posIncrAtt.setPositionIncrement(45987657);
+      
       assertTrue("token "+i+" exists", ts.incrementToken());
       assertEquals("term "+i, output[i], termAtt.term());
       if (startOffsets != null)
@@ -123,6 +130,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
         assertEquals("posIncrement "+i, posIncrements[i], posIncrAtt.getPositionIncrement());
     }
     assertFalse("end of stream", ts.incrementToken());
+    ts.end();
     ts.close();
   }
   

@@ -7,6 +7,11 @@ Bug fixes
  * LUCENE-1954: InstantiatedIndexWriter: Fixed ClassCastException with
    NumericField because of incorrect unchecked cast: Document.getFields()
    returns List<Fieldable>.  (Bernd Fondermann via Uwe Schindler)
+   
+ * LUCENE-2014: SmartChineseAnalyzer did not properly clear attributes
+   in WordTokenFilter. If enablePositionIncrements is set for StopFilter,
+   then this could create invalid position increments, causing IndexWriter
+   to crash.  (Robert Muir, Uwe Schindler)
 
 ======================= Release 2.9.1 2009-10-30 =======================
 

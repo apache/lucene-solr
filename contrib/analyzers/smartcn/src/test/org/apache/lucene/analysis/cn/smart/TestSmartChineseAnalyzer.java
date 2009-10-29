@@ -25,6 +25,7 @@ import java.util.Date;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.util.Version;
 
 public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
   
@@ -68,6 +69,20 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
     String sentence = "我购买了道具和服装。";
     String result[] = { "我", "购买", "了", "道具", "和", "服装", "," };
     assertAnalyzesTo(ca, sentence, result);
+  }
+  
+  /*
+   * Check that position increments after stopwords are correct,
+   * when stopfilter is configured with enablePositionIncrements
+   */
+  public void testChineseStopWords2() throws Exception {
+    Analyzer ca = new SmartChineseAnalyzer(Version.LUCENE_CURRENT); /* will load stopwords */
+    String sentence = "Title:San"; // : is a stopword
+    String result[] = { "titl", "san"};
+    int startOffsets[] = { 0, 6 };
+    int endOffsets[] = { 5, 9 };
+    int posIncr[] = { 1, 2 };
+    assertAnalyzesTo(ca, sentence, result, startOffsets, endOffsets, posIncr);
   }
   
   public void testChineseAnalyzer() throws Exception {
