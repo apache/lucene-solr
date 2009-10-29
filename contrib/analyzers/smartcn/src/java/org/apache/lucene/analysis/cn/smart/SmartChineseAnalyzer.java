@@ -60,7 +60,7 @@ import org.apache.lucene.util.Version;
  */
 public class SmartChineseAnalyzer extends Analyzer {
 
-  private final Set stopWords;
+  private final Set<?> stopWords;
   
   private static final String DEFAULT_STOPWORD_FILE = "stopwords.txt";
   

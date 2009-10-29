@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.cn.smart.hhmm;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -39,7 +38,7 @@ class SegGraph {
   /**
    * Map of start offsets to ArrayList of tokens at that position
    */
-  private Map /* <Integer, ArrayList<SegToken>> */ tokenListTable = new HashMap();
+  private Map<Integer,ArrayList<SegToken>> tokenListTable = new HashMap<Integer,ArrayList<SegToken>>();
 
   private int maxStart = -1;
 
@@ -50,7 +49,7 @@ class SegGraph {
    * @return true if there are tokens for the startOffset
    */
   public boolean isStartExist(int s) {
-    return tokenListTable.get(Integer.valueOf(s)) != null;
+    return tokenListTable.get(s) != null;
   }
 
   /**
@@ -59,8 +58,8 @@ class SegGraph {
    * @param s startOffset
    * @return List of tokens at the specified start offset.
    */
-  public List getStartList(int s) {
-    return (List) tokenListTable.get(Integer.valueOf(s));
+  public List<SegToken> getStartList(int s) {
+    return tokenListTable.get(s);
   }
 
   /**
@@ -76,16 +75,15 @@ class SegGraph {
    * Set the {@link SegToken#index} for each token, based upon its order by startOffset. 
    * @return a {@link List} of these ordered tokens.
    */
-  public List makeIndex() {
-    List result = new ArrayList();
+  public List<SegToken> makeIndex() {
+    List<SegToken> result = new ArrayList<SegToken>();
     int s = -1, count = 0, size = tokenListTable.size();
-    List tokenList;
+    List<SegToken> tokenList;
     short index = 0;
     while (count < size) {
       if (isStartExist(s)) {
-        tokenList = (List) tokenListTable.get(Integer.valueOf(s));
-        for (Iterator iter = tokenList.iterator(); iter.hasNext();) {
-          SegToken st = (SegToken) iter.next();
+        tokenList = tokenListTable.get(s);
+        for (SegToken st : tokenList) {
           st.index = index;
           result.add(st);
           index++;
@@ -104,11 +102,11 @@ class SegGraph {
   public void addToken(SegToken token) {
     int s = token.startOffset;
     if (!isStartExist(s)) {
-      ArrayList newlist = new ArrayList();
+      ArrayList<SegToken> newlist = new ArrayList<SegToken>();
       newlist.add(token);
-      tokenListTable.put((Object) (Integer.valueOf(s)), newlist);
+      tokenListTable.put(s, newlist);
     } else {
-      List tokenList = (List) tokenListTable.get((Object) (Integer.valueOf(s)));
+      List<SegToken> tokenList = tokenListTable.get(s);
       tokenList.add(token);
     }
     if (s > maxStart)
@@ -120,16 +118,15 @@ class SegGraph {
    * 
    * @return {@link List} of all tokens in the map.
    */
-  public List toTokenList() {
-    List result = new ArrayList();
+  public List<SegToken> toTokenList() {
+    List<SegToken> result = new ArrayList<SegToken>();
     int s = -1, count = 0, size = tokenListTable.size();
-    List tokenList;
+    List<SegToken> tokenList;
 
     while (count < size) {
       if (isStartExist(s)) {
-        tokenList = (List) tokenListTable.get(Integer.valueOf(s));
-        for (Iterator iter = tokenList.iterator(); iter.hasNext();) {
-          SegToken st = (SegToken) iter.next();
+        tokenList = tokenListTable.get(s);
+        for (SegToken st : tokenList) {
           result.add(st);
         }
         count++;
@@ -140,10 +137,9 @@ class SegGraph {
   }
 
   public String toString() {
-    List tokenList = this.toTokenList();
+    List<SegToken> tokenList = this.toTokenList();
     StringBuilder sb = new StringBuilder();
-    for (Iterator iter = tokenList.iterator(); iter.hasNext();) {
-      SegToken t = (SegToken) iter.next();
+    for (SegToken t : tokenList) {
       sb.append(t + "\n");
     }
     return sb.toString();

@@ -17,7 +17,7 @@
 
 package org.apache.lucene.analysis.cn.smart;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.cn.smart.hhmm.HHMMSegmenter;
@@ -45,18 +45,19 @@ class WordSegmenter {
    * @param startOffset start offset of sentence
    * @return {@link List} of {@link SegToken}
    */
-  public List segmentSentence(String sentence, int startOffset) {
+  public List<SegToken> segmentSentence(String sentence, int startOffset) {
 
-    List segTokenList = hhmmSegmenter.process(sentence);
-
-    List result = new ArrayList();
-
+    List<SegToken> segTokenList = hhmmSegmenter.process(sentence);
     // tokens from sentence, excluding WordType.SENTENCE_BEGIN and WordType.SENTENCE_END
-    for (int i = 1; i < segTokenList.size() - 1; i++) {
-      result.add(convertSegToken((SegToken) segTokenList.get(i), sentence, startOffset));
-    }
+    List<SegToken> result = Collections.emptyList();
+    
+    if (segTokenList.size() > 2) // if its not an empty sentence
+      result = segTokenList.subList(1, segTokenList.size() - 1);
+    
+    for (SegToken st : result)
+      convertSegToken(st, sentence, startOffset);
+    
     return result;
-
   }
 
   /**

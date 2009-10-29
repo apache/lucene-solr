@@ -22,7 +22,7 @@ import java.util.List;
 import org.apache.lucene.analysis.cn.smart.CharType;
 import org.apache.lucene.analysis.cn.smart.Utility;
 import org.apache.lucene.analysis.cn.smart.WordType;
-import org.apache.lucene.analysis.cn.smart.hhmm.PathNode;//javadoc @link
+import org.apache.lucene.analysis.cn.smart.hhmm.SegToken;//javadoc @link
 
 /**
  * Finds the optimal segmentation of a sentence into Chinese words
@@ -196,14 +196,14 @@ public class HHMMSegmenter {
   }
 
   /**
-   * Return a list of {@link PathNode} representing the best segmentation of a sentence
+   * Return a list of {@link SegToken} representing the best segmentation of a sentence
    * @param sentence input sentence
    * @return best segmentation as a {@link List}
    */
-  public List process(String sentence) {
+  public List<SegToken> process(String sentence) {
     SegGraph segGraph = createSegGraph(sentence);
     BiSegGraph biSegGraph = new BiSegGraph(segGraph);
-    List shortPath = biSegGraph.getShortPath();
+    List<SegToken> shortPath = biSegGraph.getShortPath();
     return shortPath;
   }
 }

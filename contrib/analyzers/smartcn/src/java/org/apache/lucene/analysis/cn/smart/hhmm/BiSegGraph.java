@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.cn.smart.hhmm;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -39,9 +38,9 @@ import org.apache.lucene.analysis.cn.smart.Utility;
  */
 class BiSegGraph {
 
-  private Map tokenPairListTable = new HashMap();
+  private Map<Integer,ArrayList<SegTokenPair>> tokenPairListTable = new HashMap<Integer,ArrayList<SegTokenPair>>();
 
-  private List segTokenList;
+  private List<SegToken> segTokenList;
 
   private static BigramDictionary bigramDict = BigramDictionary.getInstance();
 
@@ -65,15 +64,14 @@ class BiSegGraph {
     segTokenList = segGraph.makeIndex();
     // Because the beginning position of startToken is -1, therefore startToken can be obtained when key = -1
     int key = -1;
-    List nextTokens = null;
+    List<SegToken> nextTokens = null;
     while (key < maxStart) {
       if (segGraph.isStartExist(key)) {
 
-        List tokenList = segGraph.getStartList(key);
+        List<SegToken> tokenList = segGraph.getStartList(key);
 
         // Calculate all tokens for a given key.
-        for (Iterator iter = tokenList.iterator(); iter.hasNext();) {
-          SegToken t1 = (SegToken) iter.next();
+        for (SegToken t1 : tokenList) {
           oneWordFreq = t1.weight;
           next = t1.endOffset;
           nextTokens = null;
@@ -91,8 +89,7 @@ class BiSegGraph {
           if (nextTokens == null) {
             break;
           }
-          for (Iterator iter2 = nextTokens.iterator(); iter2.hasNext();) {
-            SegToken t2 = (SegToken) iter2.next();
+          for (SegToken t2 : nextTokens) {
             idBuffer = new char[t1.charArray.length + t2.charArray.length + 1];
             System.arraycopy(t1.charArray, 0, idBuffer, 0, t1.charArray.length);
             idBuffer[t1.charArray.length] = BigramDictionary.WORD_SEGMENT_CHAR;
@@ -139,8 +136,8 @@ class BiSegGraph {
    * @param to index of the second token in the token pair
    * @return {@link List} of token pairs.
    */
-  public List getToList(int to) {
-    return (List) tokenPairListTable.get(Integer.valueOf(to));
+  public List<SegTokenPair> getToList(int to) {
+    return tokenPairListTable.get(to);
   }
 
   /**
@@ -151,11 +148,11 @@ class BiSegGraph {
   public void addSegTokenPair(SegTokenPair tokenPair) {
     int to = tokenPair.to;
     if (!isToExist(to)) {
-      ArrayList newlist = new ArrayList();
+      ArrayList<SegTokenPair> newlist = new ArrayList<SegTokenPair>();
       newlist.add(tokenPair);
-      tokenPairListTable.put(Integer.valueOf(to), newlist);
+      tokenPairListTable.put(to, newlist);
     } else {
-      List tokenPairList = (List) tokenPairListTable.get(Integer.valueOf(to));
+      List<SegTokenPair> tokenPairList = tokenPairListTable.get(to);
       tokenPairList.add(tokenPair);
     }
   }
@@ -172,24 +169,23 @@ class BiSegGraph {
    * Find the shortest path with the Viterbi algorithm.
    * @return {@link List}
    */
-  public List getShortPath() {
+  public List<SegToken> getShortPath() {
     int current;
     int nodeCount = getToCount();
-    List path = new ArrayList();
+    List<PathNode> path = new ArrayList<PathNode>();
     PathNode zeroPath = new PathNode();
     zeroPath.weight = 0;
     zeroPath.preNode = 0;
     path.add(zeroPath);
     for (current = 1; current <= nodeCount; current++) {
       double weight;
-      List edges = getToList(current);
+      List<SegTokenPair> edges = getToList(current);
 
       double minWeight = Double.MAX_VALUE;
       SegTokenPair minEdge = null;
-      for (Iterator iter1 = edges.iterator(); iter1.hasNext();) {
-        SegTokenPair edge = (SegTokenPair) iter1.next();
+      for (SegTokenPair edge : edges) {
         weight = edge.weight;
-        PathNode preNode = (PathNode) path.get(edge.from);
+        PathNode preNode = path.get(edge.from);
         if (preNode.weight + weight < minWeight) {
           minWeight = preNode.weight + weight;
           minEdge = edge;
@@ -205,10 +201,10 @@ class BiSegGraph {
     int preNode, lastNode;
     lastNode = path.size() - 1;
     current = lastNode;
-    List rpath = new ArrayList();
-    List resultPath = new ArrayList();
+    List<Integer> rpath = new ArrayList<Integer>();
+    List<SegToken> resultPath = new ArrayList<SegToken>();
 
-    rpath.add(Integer.valueOf(current));
+    rpath.add(current);
     while (current != 0) {
       PathNode currentPathNode = (PathNode) path.get(current);
       preNode = currentPathNode.preNode;
@@ -218,7 +214,7 @@ class BiSegGraph {
     for (int j = rpath.size() - 1; j >= 0; j--) {
       Integer idInteger = (Integer) rpath.get(j);
       int id = idInteger.intValue();
-      SegToken t = (SegToken) segTokenList.get(id);
+      SegToken t = segTokenList.get(id);
       resultPath.add(t);
     }
     return resultPath;
@@ -227,11 +223,9 @@ class BiSegGraph {
 
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    Collection values = tokenPairListTable.values();
-    for (Iterator iter1 = values.iterator(); iter1.hasNext();) {
-      List segList = (List) iter1.next();
-      for (Iterator iter2 = segList.iterator(); iter2.hasNext();) {
-        SegTokenPair pair = (SegTokenPair) iter2.next();
+    Collection<ArrayList<SegTokenPair>>  values = tokenPairListTable.values();
+    for (ArrayList<SegTokenPair> segList : values) {
+      for (SegTokenPair pair : segList) {
         sb.append(pair + "\n");
       }
     }

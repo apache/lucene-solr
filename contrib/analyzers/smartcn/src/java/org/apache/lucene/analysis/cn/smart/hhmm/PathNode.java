@@ -28,13 +28,12 @@ package org.apache.lucene.analysis.cn.smart.hhmm;
  * supported anymore in such a case.</font>
  * </p>
  */
-class PathNode implements Comparable {
+class PathNode implements Comparable<PathNode> {
   public double weight;
 
   public int preNode;
 
-  public int compareTo(Object p) {
-    PathNode pn = (PathNode) p;
+  public int compareTo(PathNode pn) {
     if (weight < pn.weight)
       return -1;
     else if (weight == pn.weight)
