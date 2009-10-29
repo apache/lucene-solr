@@ -247,11 +247,15 @@ public final class StopFilter extends TokenFilter {
    * Returns version-dependent default for
    * enablePositionIncrements.  Analyzers that embed
    * StopFilter use this method when creating the
-   * StopFilter.  Prior to 2.9, this returns false.  On 2.9
-   * or later, it returns true.
+   * StopFilter.  Prior to 2.9, this returns {@link #getEnablePositionIncrementsDefault}.
+   * On 2.9 or later, it returns true.
    */
   public static boolean getEnablePositionIncrementsVersionDefault(Version matchVersion) {
-    return (matchVersion.onOrAfter(Version.LUCENE_29));
+    if (matchVersion.onOrAfter(Version.LUCENE_29)) {
+      return true;
+    } else {
+      return ENABLE_POSITION_INCREMENTS_DEFAULT;
+    }
   }
 
   /**
@@ -260,7 +264,8 @@ public final class StopFilter extends TokenFilter {
    * Note: behavior of a single StopFilter instance can be modified 
    * with {@link #setEnablePositionIncrements(boolean)}.
    * This static method allows control over behavior of classes using StopFilters internally, 
-   * for example {@link org.apache.lucene.analysis.standard.StandardAnalyzer StandardAnalyzer}. 
+   * for example {@link org.apache.lucene.analysis.standard.StandardAnalyzer StandardAnalyzer}
+   * if used with the no-arg ctor.
    * <p>
    * Default : false.
    * @see #setEnablePositionIncrements(boolean).
