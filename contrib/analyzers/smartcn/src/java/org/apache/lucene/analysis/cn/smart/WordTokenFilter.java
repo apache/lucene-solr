@@ -78,7 +78,8 @@ public final class WordTokenFilter extends TokenFilter {
         return false; // no more sentences, end of stream!
       }
     } 
-    
+    // WordTokenFilter must clear attributes, as it is creating new tokens.
+    clearAttributes();
     // There are remaining tokens from the current sentence, return the next one. 
     SegToken nextWord = (SegToken) tokenIter.next();
     termAtt.setTermBuffer(nextWord.charArray, 0, nextWord.charArray.length);

@@ -80,6 +80,20 @@ public class TestSmartChineseAnalyzer extends BaseTokenStreamTestCase {
     }
   }
   
+  /*
+   * Check that position increments after stopwords are correct,
+   * when stopfilter is configured with enablePositionIncrements
+   */
+  public void testChineseStopWords2() throws Exception {
+    Analyzer ca = new SmartChineseAnalyzer(Version.LUCENE_CURRENT); /* will load stopwords */
+    String sentence = "Title:San"; // : is a stopword
+    String result[] = { "titl", "san"};
+    int startOffsets[] = { 0, 6 };
+    int endOffsets[] = { 5, 9 };
+    int posIncr[] = { 1, 2 };
+    assertAnalyzesTo(ca, sentence, result, startOffsets, endOffsets, posIncr);
+  }
+  
   public void testChineseAnalyzer() throws Exception {
     Analyzer ca = new SmartChineseAnalyzer(Version.LUCENE_CURRENT, true);
     String sentence = "我购买了道具和服装。";

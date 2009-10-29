@@ -55,6 +55,11 @@ Bug fixes
    
  * LUCENE-2003: Highlighter doesn't respect position increments other than 1 with 
    PhraseQuerys. (Uwe Schindler, Mark Miller)
+   
+ * LUCENE-2014: SmartChineseAnalyzer did not properly clear attributes
+   in WordTokenFilter. If enablePositionIncrements is set for StopFilter,
+   then this could create invalid position increments, causing IndexWriter
+   to crash.  (Robert Muir, Uwe Schindler)
 
 New features
 
