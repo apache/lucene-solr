@@ -160,6 +160,9 @@ Bug fixes
 
 * LUCENE-2004: Fix Constants.LUCENE_MAIN_VERSION to not be inlined
   by client code.  (Uwe Schindler)
+  
+* LUCENE-2013: SpanRegexQuery does not work with QueryScorer.
+  (Benjamin Keil via Mark Miller)
 
 New features
 
