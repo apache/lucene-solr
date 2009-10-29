@@ -164,6 +164,10 @@ Bug fixes
 * LUCENE-2013: SpanRegexQuery does not work with QueryScorer.
   (Benjamin Keil via Mark Miller)
 
+* LUCENE-2016: Replace illegal U+FFFF character with the replacement
+  char (U+FFFD) during indexing, to prevent silent index corruption.
+  (Peter Keegan, Mike McCandless)
+
 New features
 
 * LUCENE-1933: Provide a convenience AttributeFactory that creates a

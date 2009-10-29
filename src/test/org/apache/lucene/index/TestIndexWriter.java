@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.HashSet;
 import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -4521,6 +4520,22 @@ public class TestIndexWriter extends LuceneTestCase {
     assertFalse(it.hasNext());
     r.close();
     w.close();
+    d.close();
+  }
+
+  public void testEmbeddedFFFF() throws Throwable {
+
+    Directory d = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(d, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new Field("field", "a a\uffffb", Field.Store.NO, Field.Index.ANALYZED));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(new Field("field", "a", Field.Store.NO, Field.Index.ANALYZED));
+    w.addDocument(doc);
+    w.close();
+
+    _TestUtil.checkIndex(d);
     d.close();
   }
 }
