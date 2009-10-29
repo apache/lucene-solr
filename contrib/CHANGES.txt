@@ -39,6 +39,9 @@ Bug fixes
    in WordTokenFilter. If enablePositionIncrements is set for StopFilter,
    then this could create invalid position increments, causing IndexWriter
    to crash.  (Robert Muir, Uwe Schindler)
+   
+ * LUCENE-2013: SpanRegexQuery does not work with QueryScorer.
+   (Benjamin Keil via Mark Miller)
 
 ======================= Release 2.9.0 2009-09-23 =======================
 
