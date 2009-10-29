@@ -36,6 +36,10 @@ Bug fixes
  * LUCENE-2004: Fix Constants.LUCENE_MAIN_VERSION to not be inlined
    by client code.  (Uwe Schindler)
 
+ * LUCENE-2016: Replace illegal U+FFFF character with the replacement
+   char (U+FFFD) during indexing, to prevent silent index corruption.
+   (Peter Keegan, Mike McCandless)
+
 API Changes
 
  * Un-deprecate search(Weight weight, Filter filter, int n) from

@@ -4655,4 +4655,20 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
     w.close();
     d.close();
   }
+
+  public void testEmbeddedFFFF() throws Throwable {
+
+    Directory d = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(d, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new Field("field", "a a\uffffb", Field.Store.NO, Field.Index.ANALYZED));
+    w.addDocument(doc);
+    doc = new Document();
+    doc.add(new Field("field", "a", Field.Store.NO, Field.Index.ANALYZED));
+    w.addDocument(doc);
+    w.close();
+
+    _TestUtil.checkIndex(d);
+    d.close();
+  }
 }
