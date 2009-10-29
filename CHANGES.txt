@@ -638,6 +638,10 @@ Bug Fixes
     is attempted only once the first time an admin page is loaded.
     (hossman)
 
+75. SOLR-1529: More than 8 deleteByQuery commands in a single request
+    caused an error to be returned, although the deletes were
+    still executed.  (asmodean via yonik)
+
 Other Changes
 ----------------------
  1. Upgraded to Lucene 2.4.0 (yonik)

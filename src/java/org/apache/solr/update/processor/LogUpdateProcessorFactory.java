@@ -161,10 +161,10 @@ class LogUpdateProcessor extends UpdateRequestProcessor {
     // be logged by SolrCore
     
     // if id lists were truncated, show how many more there were
-    if (numAdds > maxNumToLog) {
+    if (adds != null && numAdds > maxNumToLog) {
       adds.add("... (" + adds.size() + " added)");
     }
-    if (numDeletes > maxNumToLog) {
+    if (deletes != null && numDeletes > maxNumToLog) {
       deletes.add("... (" + deletes.size() + " removed)");
     }
     long elapsed = rsp.getEndTime() - req.getStartTime();
