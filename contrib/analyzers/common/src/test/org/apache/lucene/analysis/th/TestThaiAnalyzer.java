@@ -90,6 +90,26 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 			new String[] { "ประโยค", "ว่า", "quick", "brown", "fox", "jumped", "over", "lazy", "dogs" });
 	}
 	
+	/*
+	 * Test that position increments are adjusted correctly for stopwords.
+	 */
+	public void testPositionIncrements() throws Exception {
+	  ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_CURRENT);
+
+	  assertAnalyzesTo(analyzer, "ประโยคว่า the ประโยคว่า",
+	          new String[] { "ประโยค", "ว่า", "ประโยค", "ว่า" },
+	          new int[] { 0, 6, 14, 20 },
+	          new int[] { 6, 9, 20, 23 },
+	          new int[] { 1, 1, 2, 1 });
+	 
+	  // case that a stopword is adjacent to thai text, with no whitespace
+	  assertAnalyzesTo(analyzer, "ประโยคว่าtheประโยคว่า",
+	      new String[] { "ประโยค", "ว่า", "ประโยค", "ว่า" },
+	      new int[] { 0, 6, 12, 18 },
+	      new int[] { 6, 9, 18, 21 },
+	      new int[] { 1, 1, 2, 1 });
+	}
+	
 	public void testReusableTokenStream() throws Exception {
 	  ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_CURRENT);
 	  assertAnalyzesToReuse(analyzer, "", new String[] {});
