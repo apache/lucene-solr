@@ -19,11 +19,9 @@ package org.apache.lucene.analysis.fr;
 
 import java.io.IOException;
 import java.util.Set;
-import java.util.HashSet;
 import java.util.Arrays;
-import java.util.Iterator;
 import org.apache.lucene.analysis.standard.StandardTokenizer; // for javadocs
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
@@ -37,17 +35,16 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * @see <a href="http://fr.wikipedia.org/wiki/%C3%89lision">Elision in Wikipedia</a>
  */
 public final class ElisionFilter extends TokenFilter {
-  private Set articles = null;
+  private CharArraySet articles = null;
   private TermAttribute termAtt;
   
   private static char[] apostrophes = {'\'', '’'};
 
-  public void setArticles(Set articles) {
-    this.articles = new HashSet();
-    Iterator iter = articles.iterator();
-    while (iter.hasNext()) {
-      this.articles.add(((String) iter.next()).toLowerCase());
-    }
+  public void setArticles(Set<?> articles) {
+    if (articles instanceof CharArraySet)
+      this.articles = (CharArraySet) articles;
+    else
+      this.articles = new CharArraySet(articles, true);
   }
 
   /**
@@ -55,15 +52,15 @@ public final class ElisionFilter extends TokenFilter {
    */
   protected ElisionFilter(TokenStream input) {
     super(input);
-    this.articles = new HashSet(Arrays.asList(new String[] { "l", "m", "t",
-        "qu", "n", "s", "j" }));
+    this.articles = new CharArraySet(Arrays.asList(
+        "l", "m", "t", "qu", "n", "s", "j"), true);
     termAtt = addAttribute(TermAttribute.class);
   }
 
   /**
    * Constructs an elision filter with a Set of stop words
    */
-  public ElisionFilter(TokenStream input, Set articles) {
+  public ElisionFilter(TokenStream input, Set<?> articles) {
     super(input);
     setArticles(articles);
     termAtt = addAttribute(TermAttribute.class);
@@ -74,7 +71,7 @@ public final class ElisionFilter extends TokenFilter {
    */
   public ElisionFilter(TokenStream input, String[] articles) {
     super(input);
-    setArticles(new HashSet(Arrays.asList(articles)));
+    this.articles = new CharArraySet(Arrays.asList(articles), true);
     termAtt = addAttribute(TermAttribute.class);
   }
 
@@ -100,7 +97,7 @@ public final class ElisionFilter extends TokenFilter {
 
       // An apostrophe has been found. If the prefix is an article strip it off.
       if (minPoz != Integer.MAX_VALUE
-          && articles.contains(new String(termAtt.termBuffer(), 0, minPoz).toLowerCase())) {
+          && articles.contains(termAtt.termBuffer(), 0, minPoz)) {
         termAtt.setTermBuffer(termAtt.termBuffer(), minPoz + 1, termAtt.termLength() - (minPoz + 1));
       }
 
