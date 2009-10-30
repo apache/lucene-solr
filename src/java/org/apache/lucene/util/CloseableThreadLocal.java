@@ -17,11 +17,11 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.util.Map;
+import java.io.Closeable;
+import java.lang.ref.WeakReference;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.lang.ref.WeakReference;
-import java.io.Closeable;
+import java.util.Map;
 
 /** Java's builtin ThreadLocal has a serious flaw:
  *  it can take an arbitrarily long amount of time to
@@ -41,7 +41,14 @@ import java.io.Closeable;
  *  separately holding a hard reference to each stored
  *  value.  When you call {@link #close}, these hard
  *  references are cleared and then GC is freely able to
- *  reclaim space by objects stored in it. */
+ *  reclaim space by objects stored in it.
+ *
+ *  We can not rely on {@link ThreadLocal#remove()} as it
+ *  only removes the value for the caller thread, whereas
+ *  {@link #close} takes care of all
+ *  threads.  You should not call {@link #close} until all
+ *  threads are done using the instance.
+ */
 
 public class CloseableThreadLocal<T> implements Closeable {
 
@@ -88,6 +95,11 @@ public class CloseableThreadLocal<T> implements Closeable {
     // all values we were storing are weak (unless somewhere
     // else is still using them) and so GC may reclaim them:
     hardRefs = null;
+    // Take care of the current thread right now; others will be
+    // taken care of via the WeakReferences.
+    if (t != null) {
+      t.remove();
+    }
     t = null;
   }
 }
