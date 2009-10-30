@@ -24,7 +24,6 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.analysis.TrieTokenizerFactory;
 import org.apache.solr.search.function.*;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.SolrQueryWrapper;
 import org.apache.solr.request.XMLWriter;
 import org.apache.solr.request.TextResponseWriter;
 import org.apache.lucene.document.Fieldable;
@@ -205,9 +204,6 @@ public class TrieDateField extends DateField {
               max == null ? null : max.getTime(),
               minInclusive, maxInclusive);
 
-    // NumericRangeQuery extends MultiTermQuery but returns null for getTerm() which currently breaks
-    // the span based highlighter in Lucene 2.9.0.  Wrapping the query prevents the highlighter
-    // from calling getTerm()
-    return new SolrQueryWrapper(query);
+    return query;
   }
 }

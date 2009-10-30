@@ -29,7 +29,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.SolrQueryWrapper;
 import org.apache.solr.search.function.FunctionQuery;
 
 import java.io.IOException;
@@ -441,9 +440,6 @@ public class QueryParsing {
     } else if (query instanceof ConstantScoreQuery) {
       out.append(query.toString());
       writeBoost=false;
-    } else if (query instanceof SolrQueryWrapper) {
-      toString(((SolrQueryWrapper)query).getWrappedQuery(), schema, out, flags);
-      return;
     } else {
       out.append(query.getClass().getSimpleName()
               + '(' + query.toString() + ')' );
