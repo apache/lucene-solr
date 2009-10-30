@@ -93,8 +93,6 @@ public final class WikipediaTokenizer extends Tokenizer {
     EXTERNAL_LINK_URL
   };
 
-  /** @deprecated Please use {@link #TOKEN_TYPES} instead */
-  public static final String [] tokenImage = TOKEN_TYPES;
   /**
    * Only output tokens
    */
