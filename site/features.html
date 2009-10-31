@@ -224,7 +224,7 @@ document.write("Last Published: " + document.lastModified);
     
 <li> Optimized for High Volume Web Traffic </li>
     
-<li> Standards Based Open Interfaces - XML and HTTP </li>
+<li> Standards Based Open Interfaces - XML,JSON and HTTP </li>
     
 <li> Comprehensive HTML Administration Interfaces </li>
     
@@ -249,7 +249,7 @@ document.write("Last Published: " + document.lastModified);
     
 <li> Powerful Extensions to the Lucene Query Language </li>
     
-<li> Support for Dynamic Faceted Browsing and Filtering </li>
+<li> Faceted Search and Filtering </li>
     
 <li> Advanced, Configurable Text Analysis </li>
     
@@ -263,13 +263,15 @@ document.write("Last Published: " + document.lastModified);
     
 <li> Monitorable Logging </li>
     
-<li> Fast Incremental Updates and Snapshot Distribution </li>
+<li> Fast Incremental Updates and Index Replication </li>
     
-<li> Distributed search with sharded index on multiple hosts </li>
+<li> Highly Scalable Distributed search with sharded index across multiple hosts </li>
     
-<li> XML and CSV/delimited-text update formats </li>
+<li> XML, CSV/delimited-text, and binary update formats </li>
     
 <li> Easy ways to pull in data from databases and XML files from local disk and HTTP sources </li>
+    
+<li> Rich Document Parsing and Indexing (PDF, Word, HTML, etc) using Apache Tika </li>
     
 <li> Multiple search indices </li>
   
@@ -277,10 +279,10 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
 
-<a name="N10066"></a><a name="Detailed+Features"></a>
+<a name="N10069"></a><a name="Detailed+Features"></a>
 <h2 class="boxed">Detailed Features</h2>
 <div class="section">
-<a name="N1006C"></a><a name="Schema"></a>
+<a name="N1006F"></a><a name="Schema"></a>
 <h3 class="boxed">Schema</h3>
 <ul>
       
@@ -301,11 +303,11 @@ document.write("Last Published: " + document.lastModified);
 <li>Many additional text analysis components including word splitting, regex and sounds-like filters</li>
     
 </ul>
-<a name="N1008D"></a><a name="Query"></a>
+<a name="N10090"></a><a name="Query"></a>
 <h3 class="boxed">Query</h3>
 <ul>
       
-<li>HTTP interface with configurable response formats (XML/XSLT, JSON, Python, Ruby)</li>
+<li>HTTP interface with configurable response formats (XML/XSLT, JSON, Python, Ruby, PHP, Velocity, binary)</li>
       
 <li>Sort by any number of fields</li>
       
@@ -313,49 +315,66 @@ document.write("Last Published: " + document.lastModified);
       
 <li>Highlighted context snippets</li>
       
-<li>Faceted Searching based on unique field values and explicit queries</li>
+<li>Faceted Searching based on unique field values, explicit queries, or date ranges</li>
+      
+<li>Multi-Select Faceting by tagging and selectively excluding filters</li>
       
 <li>Spelling suggestions for user queries</li>
       
 <li>More Like This suggestions for given document</li>
       
-<li>Constant scoring range and prefix queries - no idf, coord, or lengthNorm factors, and no restriction on the number of terms the query matches.</li>
+<li>Function Query - influence the score by user specified complex functions of
+	     numeric fields or query relevancy scores.</li>
       
-<li>Function Query - influence the score by a function of a field's numeric value or ordinal</li>
+<li>Range filter over Function Query results</li>
       
 <li>Date Math - specify dates relative to "NOW" in queries and updates</li>
+      
+<li>Dynamic search results clustering using Carrot2</li>
+      
+<li>Numeric field statistics such as min, max, average, standard deviation </li>
+      
+<li>Combine queries derived from different syntaxes</li>
+      
+<li>Auto-suggest functionality</li>
+      
+<li>Allow configuration of top results for a query, overriding normal scoring and sorting</li>
       
 <li>Performance Optimizations</li>
     
 </ul>
-<a name="N100B7"></a><a name="Core"></a>
+<a name="N100CC"></a><a name="Core"></a>
 <h3 class="boxed">Core</h3>
 <ul>
       
+<li>Dynamically create and delete document collections without restarting</li>
+      
 <li>Pluggable query handlers and extensible XML data format</li>
+      
+<li>Pluggable user functions for Function Query</li>
+      
+<li>Customizable component based request handler with distributed search support</li>
       
 <li>Document uniqueness enforcement based on unique key field</li>
       
-<li>Batches updates and deletes for high performance</li>
+<li>Duplicate document detection, including fuzzy near duplicates</li>
+      
+<li>Custom index processing chains, allowing document manipulation before indexing</li>
       
 <li>User configurable commands triggered on index changes</li>
-      
-<li>Searcher concurrency control</li>
-      
-<li>Correct handling of numeric types for both sorting and range queries</li>
       
 <li>Ability to control where docs with the sort field missing will be placed</li>
       
 <li>"Luke" request handler for corpus information</li>
     
 </ul>
-<a name="N100D8"></a><a name="Caching"></a>
+<a name="N100F3"></a><a name="Caching"></a>
 <h3 class="boxed">Caching</h3>
 <ul>
       
 <li>Configurable Query Result, Filter, and Document cache instances</li>
       
-<li>Pluggable Cache implementations</li>
+<li>Pluggable Cache implementations, including a lock free, high concurrency implementation</li>
       
 <li>Cache warming in background
         <ul>
@@ -371,7 +390,7 @@ document.write("Last Published: " + document.lastModified);
         <ul>
           
 <li>The most recently accessed items in the caches of the current
-            searcher are re-populated in the new searcher, enabing high cache hit
+            searcher are re-populated in the new searcher, enabling high cache hit
             rates across index/searcher changes.</li>
         
 </ul>
@@ -383,22 +402,30 @@ document.write("Last Published: " + document.lastModified);
 <li>User level caching with autowarming support</li>
     
 </ul>
-<a name="N100FD"></a><a name="Replication"></a>
+<a name="N10118"></a><a name="Replication"></a>
 <h3 class="boxed">Replication</h3>
 <ul>
       
-<li>Efficient distribution of index parts that have changed via rsync transport</li>
+<li>Efficient distribution of index parts that have changed</li>
       
 <li>Pull strategy allows for easy addition of searchers</li>
       
 <li>Configurable distribution interval allows tradeoff between timeliness and cache utilization</li>
+      
+<li>Replication and automatic reloading of configuration files</li>
     
 </ul>
-<a name="N1010F"></a><a name="Admin+Interface"></a>
+<a name="N1012D"></a><a name="Admin+Interface"></a>
 <h3 class="boxed">Admin Interface</h3>
 <ul>
       
 <li>Comprehensive statistics on cache utilization, updates, and queries</li>
+      
+<li>Interactive schema browser that includes index statistics</li>
+      
+<li>Replication monitoring</li>
+      
+<li>Full logging control</li>
       
 <li>Text analysis debugger, showing result of every stage in an analyzer</li>
       
