@@ -84,7 +84,7 @@ public class VerifyingLockFactory extends LockFactory {
     }
 
     @Override
-    public synchronized boolean isLocked() {
+    public synchronized boolean isLocked() throws IOException {
       return lock.isLocked();
     }
 

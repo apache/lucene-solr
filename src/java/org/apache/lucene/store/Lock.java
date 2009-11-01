@@ -104,7 +104,7 @@ public abstract class Lock {
 
   /** Returns true if the resource is currently locked.  Note that one must
    * still call {@link #obtain()} before using the resource. */
-  public abstract boolean isLocked();
+  public abstract boolean isLocked() throws IOException;
 
 
   /** Utility class for executing code with exclusive access. */
