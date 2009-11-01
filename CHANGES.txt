@@ -10,6 +10,8 @@ Changes in backwards compatibility policy
   needs to be recompiled against Lucene 3.0 in order to work. The previously
   deprecated IndexCommitPoint is also removed. (Michael Busch)
 
+* oal.Lock.isLocked is now allowed to throw an IOException
+
 Changes in runtime behavior
 
 * LUCENE-1677: Remove the system property to set SegmentReader class
