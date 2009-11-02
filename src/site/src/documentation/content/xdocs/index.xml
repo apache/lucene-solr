@@ -23,18 +23,36 @@
   <body> 
     <section id="intro">
       <title>What Is Solr?</title>
-      <p>
-        Solr is an open source enterprise search server based on the
-        <a href="http://lucene.apache.org/java/">Lucene Java</a> search library, with XML/HTTP and JSON APIs,
-        hit highlighting, faceted search, caching, replication, a web administration interface and many more features.
-        It runs in a Java servlet container such as <a href="http://tomcat.apache.org">Tomcat</a>.
-      </p>
+
+<p>
+Solr is the popular, blazing fast open source enterprise search
+platform from the Apache Lucene project.  Its major features include
+powerful full-text search, hit highlighting, faceted search, dynamic
+clustering, database integration, and rich document (e.g., Word, PDF)
+handling.  Solr is highly scalable, providing distributed search and
+index replication, and it powers the search and navigation features of
+many of the world's largest internet sites.
+</p>
+<p>
+Solr is written in Java and runs as a standalone full-text search server
+within a servlet container such as <a href="http://tomcat.apache.org">Tomcat</a>.
+Solr uses the <a href="http://lucene.apache.org/java/">Lucene Java</a>
+search library at it's core for full-text indexing and search, and has
+REST-like HTTP/XML and JSON APIs that make it easy to use from virtually
+any programming language.  Solr's powerful external configuration allow it to
+be tailored to almost any type of application without Java coding, and
+it has an extensive plugin architecture when more advanced
+customization is required.
+</p>
+
       <p>
         See the complete <a href="features.html">feature list</a> for more details.
       </p>
+
       <p>
         For more information about Solr, please see the <a href="http://wiki.apache.org/solr">Solr wiki</a>.
       </p>
+
     </section>
     <section id="getstarted">
       <title>Get Started</title>
@@ -49,12 +67,30 @@
     <section id="news">
       <title>News</title>
       <section>
-   <title>30 October 2009 - Solr 1.4.0 Released</title>
-   <p>Solr 1.4.0 is available for public download.  This version contains many enhancements and bug fixes,
-			Lucene 2.9.x performance improvements and many others.
-		</p>
-		<p>See the <a href="http://svn.apache.org/repos/asf/lucene/solr/tags/release-1.4.0/CHANGES.txt">release notes</a> for more details.  Download is
-    available from a <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">Apache Mirror</a>.</p>
+   <title>3 November 2009 - Solr 1.4 Released</title>
+   <p>
+     Solr 1.4 has been released and is now available for public <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">download</a>!
+     
+   New Solr 1.4 features include
+ </p>
+  <ul>
+    <li>Major performance enhancements in indexing, searching, and faceting</li>
+    <li>Revamped all-Java index replication that's simple to configure and
+        can replicate config files</li>
+    <li>Greatly improved database integration via the DataImportHandler</li>
+    <li>Rich document processing (Word, PDF, HTML) via Apache Tika</li>
+    <li>Dynamic search results clustering via Carrot2</li>
+    <li>Multi-select faceting (support for multiple items in a single
+        category to be selected)</li>
+    <li>Many powerful query enhancements, including ranges over arbitrary
+        functions, nested queries of different syntaxes</li>
+    <li>Many other plugins including Terms for auto-suggest, Statistics,
+        TermVectors, Deduplication</li>
+  </ul>
+     
+	<p>See the <a href="http://svn.apache.org/repos/asf/lucene/solr/tags/release-1.4.0/CHANGES.txt">release notes</a> for more details.
+ </p>
+
 </section>
 <section>
    <title>20 August 2009 - Solr's first book is published!</title>
