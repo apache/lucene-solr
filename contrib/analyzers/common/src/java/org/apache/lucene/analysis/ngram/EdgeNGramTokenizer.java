@@ -180,8 +180,8 @@ public final class EdgeNGramTokenizer extends Tokenizer {
     if (!started) {
       started = true;
       char[] chars = new char[1024];
-      input.read(chars);
-      inStr = new String(chars).trim();  // remove any leading or trailing spaces
+      int charsRead = input.read(chars);
+      inStr = new String(chars, 0, charsRead).trim();  // remove any leading or trailing spaces
       inLen = inStr.length();
       gramSize = minGram;
     }
