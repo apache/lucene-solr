@@ -1,6 +1,6 @@
 Lucene contrib change Log
 
-======================= Release 2.9.1 2009-11-03 =======================
+======================= Release 2.9.1 2009-11-06 =======================
 
 Changes in backwards compatibility policy
 
