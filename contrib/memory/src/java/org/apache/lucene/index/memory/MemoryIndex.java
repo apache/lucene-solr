@@ -730,9 +730,6 @@ public class MemoryIndex implements Serializable {
       super(); // avoid as much superclass baggage as possible
     }
     
-    // lucene >= 1.9 or lucene-1.4.3 with patch removing "final" in superclass
-    protected void finalize() {}
-    
     private Info getInfo(String fieldName) {
       return fields.get(fieldName);
     }
@@ -1197,20 +1194,8 @@ public class MemoryIndex implements Serializable {
      * Object header of any heap allocated Java object. 
      * ptr to class, info for monitor, gc, hash, etc.
      */
-//	private static final int OBJECT_HEADER = 2*4; // even on 64 bit VMs?
     private static final int OBJECT_HEADER = 2*PTR; 
 
-    /**
-	 * Modern VMs tend to trade space for time, allocating memory on word
-	 * boundaries. For example, on a 64 bit VM, the variables of a class with
-	 * one 32 bit integer and one Java char really consume 8 bytes instead of 6
-	 * bytes. 2 bytes are spent on padding. Similary, on a 64 bit VM a
-	 * java.lang.Integer consumes OBJECT_HEADER + 8 bytes rather than
-	 * OBJECT_HEADER + 4 bytes.
-	 */ 
-    private static final boolean IS_WORD_ALIGNED_VM = true;
-    
-    
     private VM() {} // not instantiable
 
     //  assumes n > 0
@@ -1219,10 +1204,7 @@ public class MemoryIndex implements Serializable {
     //    1..8  --> 1*PTR
     //    9..16 --> 2*PTR
     private static int sizeOf(int n) {
-        return IS_WORD_ALIGNED_VM ?
-//              ((n-1)/PTR + 1) * PTR :               // slow version
-                (((n-1) >> LOG_PTR) + 1) << LOG_PTR : // fast version
-                n;
+        return (((n-1) >> LOG_PTR) + 1) << LOG_PTR;
     }
     
     public static int sizeOfObject(int n) {
