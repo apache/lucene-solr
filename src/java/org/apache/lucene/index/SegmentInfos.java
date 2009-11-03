@@ -28,6 +28,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Vector;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -648,14 +649,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
           
           if (gen == -1) {
             // Neither approach found a generation
-            String s;
-            if (files != null) {
-              s = "";
-              for(int i=0;i<files.length;i++)
-                s += " " + files[i];
-            } else
-              s = " null";
-            throw new FileNotFoundException("no segments* file found in " + directory + ": files:" + s);
+            throw new FileNotFoundException("no segments* file found in " + directory + ": files: " + Arrays.toString(files));
           }
         }
 

@@ -60,13 +60,13 @@ public class MessageImpl implements Message {
   @Override
   public String toString() {
     Object[] args = getArguments();
-    String argsString = "";
+    StringBuilder sb = new StringBuilder(getKey());
     if (args != null) {
       for (int i = 0; i < args.length; i++) {
-        argsString += args[i] + (i < args.length ? "" : ", ");
+        sb.append(i == 0 ? " " : ", ").append(args[i]);
       }
     }
-    return getKey() + " " + argsString;
+    return sb.toString();
   }
 
 }
