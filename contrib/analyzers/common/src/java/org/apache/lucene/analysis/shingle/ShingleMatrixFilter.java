@@ -116,7 +116,7 @@ import org.apache.lucene.index.Payload;
  */
 public final class ShingleMatrixFilter extends TokenStream {
 
-  public static Character defaultSpacerCharacter = new Character('_');
+  public static Character defaultSpacerCharacter = Character.valueOf('_');
   public static TokenSettingsCodec defaultSettingsCodec = new OneDimensionalNonWeightedTokenSettingsCodec();
   public static boolean ignoringSinglePrefixOrSuffixShingleByDefault = false;
 
