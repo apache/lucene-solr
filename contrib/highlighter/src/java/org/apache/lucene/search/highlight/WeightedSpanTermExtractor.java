@@ -486,7 +486,7 @@ public class WeightedSpanTermExtractor {
     } else if (spanQuery instanceof SpanNotQuery) {
       collectSpanQueryFields(((SpanNotQuery)spanQuery).getInclude(), fieldNames);
     } else if (spanQuery instanceof SpanOrQuery) {
-      SpanQuery[] clauses = ((SpanNearQuery)spanQuery).getClauses();
+      SpanQuery[] clauses = ((SpanOrQuery)spanQuery).getClauses();
       for(int i = 0; i < clauses.length; i++) {
         collectSpanQueryFields(clauses[i], fieldNames);
       }

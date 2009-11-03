@@ -270,7 +270,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     hits = searcher.search(query);
     int maxNumFragmentsRequired = 2;
 
-    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    QueryScorer scorer = new QueryScorer(query, null);
     Highlighter highlighter = new Highlighter(this, scorer);
     
     for (int i = 0; i < hits.length(); i++) {
