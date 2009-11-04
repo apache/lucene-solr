@@ -1,4 +1,4 @@
-package org.apache.lucene.index.memory;
+package org.apache.lucene.analysis.miscellaneous;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

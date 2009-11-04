@@ -19,6 +19,7 @@ package org.apache.lucene.index.memory;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -249,13 +250,9 @@ public class MemoryIndex implements Serializable {
     if (analyzer == null)
       throw new IllegalArgumentException("analyzer must not be null");
     
-    TokenStream stream;
-    if (analyzer instanceof PatternAnalyzer) {
-      stream = ((PatternAnalyzer) analyzer).tokenStream(fieldName, text);
-    } else {
-      stream = analyzer.tokenStream(fieldName, 
-          new PatternAnalyzer.FastStringReader(text));
-    }
+    TokenStream stream = analyzer.tokenStream(fieldName, 
+    		new StringReader(text));
+
     addField(fieldName, stream);
   }
   

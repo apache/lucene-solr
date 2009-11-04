@@ -280,7 +280,6 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
         new SimpleAnalyzer(),
         new StopAnalyzer(Version.LUCENE_CURRENT),
         new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT),
-        PatternAnalyzer.DEFAULT_ANALYZER,
 //        new WhitespaceAnalyzer(),
 //        new PatternAnalyzer(PatternAnalyzer.NON_WORD_PATTERN, false, null),
 //        new PatternAnalyzer(PatternAnalyzer.NON_WORD_PATTERN, true, stopWords),        
