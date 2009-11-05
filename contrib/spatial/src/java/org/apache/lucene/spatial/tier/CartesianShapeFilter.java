@@ -36,12 +36,13 @@ import org.apache.lucene.util.OpenBitSet;
  */
 public class CartesianShapeFilter extends Filter {
 
+  private static final Logger log = Logger.getLogger(CartesianShapeFilter.class.getName());
+
   /**
    * 
    */
   private static final long serialVersionUID = 1L;
   private Shape shape;
-  private Logger log = Logger.getLogger(getClass().getName());
   private String fieldName;
   
   CartesianShapeFilter(Shape shape, String fieldName){

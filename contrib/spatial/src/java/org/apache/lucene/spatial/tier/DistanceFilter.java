@@ -19,6 +19,8 @@ package org.apache.lucene.spatial.tier;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.HashMap;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.tier.DistanceHandler.Precision;
@@ -36,7 +38,7 @@ public abstract class DistanceFilter extends Filter {
   protected double distance;
 
   protected int nextDocBase; 
-  protected final WeakHashMap<String,Double> distanceLookupCache;
+  protected transient WeakHashMap<String,Double> distanceLookupCache;
 
   /** Filters the startingFilter by precise distance
    *  checking filter */
@@ -58,6 +60,12 @@ public abstract class DistanceFilter extends Filter {
     // create an intermediate cache to avoid recomputing
     //   distances for the same point 
     //   TODO: Why is this a WeakHashMap? 
+    distanceLookupCache = new WeakHashMap<String,Double>();
+  }
+
+  /** needed for deserialization, because the cache is transient */
+  private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+    stream.defaultReadObject();
     distanceLookupCache = new WeakHashMap<String,Double>();
   }
 
