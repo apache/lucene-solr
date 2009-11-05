@@ -14,40 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.spatial.tier;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.NotSerializableException;
+import java.io.ObjectOutputStream;
 
+import junit.framework.TestCase;
 /**
- * <p><font color="red"><b>NOTE:</b> This API is still in
- * flux and might change in incompatible ways in the next
- * release.</font>
+ * 
+ * Test for {@link CartesianShapeFilter}
+ *
  */
-public class Shape implements Serializable{
+public class TestCartesianShapeFilter extends TestCase {
 
-  private List<Double> area = new ArrayList<Double>();
-  private String tierId;
-  
-  public Shape (String tierId){
-    this.tierId = tierId;
+  public void testSerializable() throws IOException {
+    CartesianShapeFilter filter = new CartesianShapeFilter(new Shape("1"),
+        "test");
+    try {
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      ObjectOutputStream oos = new ObjectOutputStream(bos);
+      oos.writeObject(filter);
+    } catch (NotSerializableException e) {
+      fail("Filter should be serializable but raised a NotSerializableException ["+e.getMessage()+"]");
+    }
   }
 
-  public void addBox(double  boxId){
-    area.add(boxId);
-  }
-  
-  public List<Double> getArea(){
-    return area;
-  }
-  
-  public String getTierId(){
-    return tierId;
-  }
-  
-  public boolean isInside(double boxId){
-    return area.contains(boxId);
-  }
 }

@@ -35,48 +35,32 @@ import org.apache.lucene.util.OpenBitSet;
  * release.</font>
  */
 public class CartesianShapeFilter extends Filter {
-
-  private static final Logger log = Logger.getLogger(CartesianShapeFilter.class.getName());
-
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 1L;
-  private Shape shape;
-  private String fieldName;
+ 
+  private final Shape shape;
+  private final String fieldName;
   
-  CartesianShapeFilter(Shape shape, String fieldName){
+  CartesianShapeFilter(final Shape shape, final String fieldName){
     this.shape = shape;
     this.fieldName = fieldName;
   }
   
   @Override
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    long start = System.currentTimeMillis();
-      
-    OpenBitSet bits = new OpenBitSet(reader.maxDoc());
-
-    TermDocs termDocs = reader.termDocs();
-    List<Double> area = shape.getArea();
+  public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
+    final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
+    final TermDocs termDocs = reader.termDocs();
+    final List<Double> area = shape.getArea();
     int sz = area.size();
-    log.fine("Area size "+ sz);
-
+    
+    final Term term = new Term(fieldName);
     // iterate through each boxid
     for (int i =0; i< sz; i++) {
       double boxId = area.get(i).doubleValue();
-      termDocs.seek(new Term(fieldName,
-          NumericUtils.doubleToPrefixCoded(boxId)));
-      
+      termDocs.seek(term.createTerm(NumericUtils.doubleToPrefixCoded(boxId)));
       // iterate through all documents
       // which have this boxId
       while (termDocs.next()) {
         bits.fastSet(termDocs.doc());
       }
-    }
-    
-    long end = System.currentTimeMillis();
-    if(log.isLoggable(Level.FINE)) {
-      log.fine("BoundaryBox Time Taken: "+ (end - start) + " found: "+bits.cardinality()+" candidates");
     }
     return bits;
   }

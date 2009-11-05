@@ -19,11 +19,8 @@ package org.apache.lucene.spatial.tier;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.apache.lucene.search.Filter;
-import org.apache.lucene.spatial.geometry.shape.Rectangle;
 import org.apache.lucene.spatial.tier.projections.CartesianTierPlotter;
 import org.apache.lucene.spatial.tier.projections.IProjector;
 import org.apache.lucene.spatial.tier.projections.SinusoidalProjector;
@@ -46,8 +43,6 @@ public class CartesianPolyFilterBuilder {
   public static final double MILES_FLOOR = 1.0;
 
   private IProjector projector = new SinusoidalProjector();
-  private Logger log = Logger.getLogger(getClass().getName());
-  
   private final String tierPrefix;
   
   public CartesianPolyFilterBuilder( String tierPrefix ) {
@@ -59,7 +54,6 @@ public class CartesianPolyFilterBuilder {
     if (miles < MILES_FLOOR) {
       miles = MILES_FLOOR;
     }
-    Rectangle box = DistanceUtils.getInstance().getBoundary(latitude, longitude, miles);
     LLRect box1 = LLRect.createBox( new FloatLatLng( latitude, longitude ), miles, miles );
     LatLng ll = box1.getLowerLeft();
     LatLng ur = box1.getUpperRight();
@@ -84,7 +78,6 @@ public class CartesianPolyFilterBuilder {
     CartesianTierPlotter ctp = new CartesianTierPlotter(2, projector,tierPrefix);
     int bestFit = ctp.bestFit(miles);
     
-    log.info("Best Fit is : " + bestFit);
     ctp = new CartesianTierPlotter(bestFit, projector,tierPrefix);
     Shape shape = new Shape(ctp.getTierFieldName());
     
@@ -133,9 +126,6 @@ public class CartesianPolyFilterBuilder {
     int scale = (int)Math.log10(tierVert);
     endY = new BigDecimal(endY).setScale(scale, RoundingMode.HALF_EVEN).doubleValue();
     startY = new BigDecimal(startY).setScale(scale, RoundingMode.HALF_EVEN).doubleValue();
-    if(log.isLoggable(Level.FINE)) {
-      log.fine("scale "+scale+" startX "+ startX + " endX "+endX +" startY "+ startY + " endY "+ endY +" tierVert "+ tierVert);
-    }
     double xInc = 1.0d / tierVert;
     xInc = new BigDecimal(xInc).setScale(scale, RoundingMode.HALF_EVEN).doubleValue();
     
