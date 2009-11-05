@@ -365,8 +365,14 @@ public final class NumericRangeQuery extends MultiTermQuery {
       (Boolean.valueOf(maxInclusive).hashCode()^0x733fa5fe);
   }
   
+  // field must be interned after reading from stream
+  private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
+    in.defaultReadObject();
+    field = StringHelper.intern(field);
+  }
+
   // members (package private, to be also fast accessible by NumericRangeTermEnum)
-  final String field;
+  String field;
   final int precisionStep, valSize;
   final Number min, max;
   final boolean minInclusive,maxInclusive;
