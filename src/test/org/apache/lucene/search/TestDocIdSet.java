@@ -48,6 +48,7 @@ public class TestDocIdSet extends LuceneTestCase {
 
             int docid = -1;
             
+            @Override
             public int docID() {
               return docid;
             }
@@ -116,6 +117,7 @@ public class TestDocIdSet extends LuceneTestCase {
     
     // Now search w/ a Filter which returns a null DocIdSet
     Filter f = new Filter() {
+      @Override
       public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
         return null;
       }

@@ -36,6 +36,7 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
     super(s);
   }
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     

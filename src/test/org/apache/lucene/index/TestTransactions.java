@@ -30,6 +30,7 @@ public class TestTransactions extends LuceneTestCase
   private static volatile boolean doFail;
 
   private class RandomFailure extends MockRAMDirectory.Failure {
+    @Override
     public void eval(MockRAMDirectory dir) throws IOException {
       if (TestTransactions.doFail && RANDOM.nextInt() % 10 <= 3)
         throw new IOException("now failing randomly but on purpose");
@@ -47,6 +48,7 @@ public class TestTransactions extends LuceneTestCase
       this.allThreads = threads;
     }
 
+    @Override
     public void run() {
       final long stopTime = System.currentTimeMillis() + 1000*RUN_TIME_SEC;
 
@@ -81,6 +83,7 @@ public class TestTransactions extends LuceneTestCase
       this.dir2 = dir2;
     }
 
+    @Override
     public void doWork() throws Throwable {
 
       IndexWriter writer1 = new IndexWriter(dir1, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
@@ -158,6 +161,7 @@ public class TestTransactions extends LuceneTestCase
       this.dir2 = dir2;
     }
 
+    @Override
     public void doWork() throws Throwable {
       IndexReader r1, r2;
       synchronized(lock) {

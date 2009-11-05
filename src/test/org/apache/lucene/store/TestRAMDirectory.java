@@ -46,6 +46,7 @@ public class TestRAMDirectory extends LuceneTestCase {
   private final int docsToAdd = 500;
   
   // setup the index
+  @Override
   public void setUp () throws Exception {
     super.setUp();
     String tempDir = System.getProperty("java.io.tmpdir");
@@ -114,6 +115,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     for (int i=0; i<numThreads; i++) {
       final int num = i;
       threads[i] = new Thread(){
+        @Override
         public void run() {
           for (int j=1; j<docsPerThread; j++) {
             Document doc = new Document();
@@ -153,6 +155,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     assertTrue("contains more then just header", headerSize < bos.size());
   } 
 
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
     // cleanup 

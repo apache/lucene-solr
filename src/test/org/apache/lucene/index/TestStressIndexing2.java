@@ -44,6 +44,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       super(dir, a, create, mfl);
     }
 
+    @Override
     boolean testPoint(String name) {
       //      if (name.equals("startCommit")) {
       if (r.nextInt(4) == 2)
@@ -627,6 +628,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       docs.remove(idString);
     }
 
+    @Override
     public void run() {
       try {
         r = new Random(base+range+seed);

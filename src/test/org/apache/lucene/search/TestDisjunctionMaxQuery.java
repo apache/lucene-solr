@@ -53,13 +53,16 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
 
         public TestSimilarity() {
         }
+        @Override
         public float tf(float freq) {
             if (freq > 0.0f) return 1.0f;
             else return 0.0f;
         }
+        @Override
         public float lengthNorm(String fieldName, int numTerms) {
             return 1.0f;
         }
+        @Override
         public float idf(int docFreq, int numDocs) {
             return 1.0f;
         }
@@ -70,6 +73,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
     public IndexReader r;
     public IndexSearcher s;
 
+    @Override
     public void setUp() throws Exception {
         super.setUp();
 

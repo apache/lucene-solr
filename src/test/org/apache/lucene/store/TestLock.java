@@ -38,13 +38,16 @@ public class TestLock extends LuceneTestCase {
     private class LockMock extends Lock {
         public int lockAttempts;
 
+        @Override
         public boolean obtain() {
             lockAttempts++;
             return false;
         }
+        @Override
         public void release() {
             // do nothing
         }
+        @Override
         public boolean isLocked() {
             return false;
         }

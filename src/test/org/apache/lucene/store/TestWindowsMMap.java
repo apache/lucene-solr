@@ -30,60 +30,61 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 
 public class TestWindowsMMap extends LuceneTestCase {
-	
-	private final static String alphabet = "abcdefghijklmnopqrstuvwzyz";
-	private Random random;
-	
-	public void setUp() throws Exception {
-		super.setUp();
-		random = newRandom();
-	}
-	
-	private String randomToken() {
-		int tl = 1 + random.nextInt(7);
-		StringBuilder sb = new StringBuilder();
-		for(int cx = 0; cx < tl; cx ++) {
-			int c = random.nextInt(25);
-			sb.append(alphabet.substring(c, c+1));
-		}
-		return sb.toString();
-	}
-	
-	private String randomField() {
-		int fl = 1 + random.nextInt(3);
-		StringBuilder fb = new StringBuilder();
-		for(int fx = 0; fx < fl; fx ++) {
-			fb.append(randomToken());
-			fb.append(" ");
-		}
-		return fb.toString();
-	}
-	
-	private final static String storePathname = 
+  
+  private final static String alphabet = "abcdefghijklmnopqrstuvwzyz";
+  private Random random;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    random = newRandom();
+  }
+  
+  private String randomToken() {
+    int tl = 1 + random.nextInt(7);
+    StringBuilder sb = new StringBuilder();
+    for(int cx = 0; cx < tl; cx ++) {
+      int c = random.nextInt(25);
+      sb.append(alphabet.substring(c, c+1));
+    }
+    return sb.toString();
+  }
+  
+  private String randomField() {
+    int fl = 1 + random.nextInt(3);
+    StringBuilder fb = new StringBuilder();
+    for(int fx = 0; fx < fl; fx ++) {
+      fb.append(randomToken());
+      fb.append(" ");
+    }
+    return fb.toString();
+  }
+  
+  private final static String storePathname = 
     new File(System.getProperty("tempDir"),"testLuceneMmap").getAbsolutePath();
 
-	public void testMmapIndex() throws Exception {
-		FSDirectory storeDirectory;
-		storeDirectory = new MMapDirectory(new File(storePathname), null);
+  public void testMmapIndex() throws Exception {
+    FSDirectory storeDirectory;
+    storeDirectory = new MMapDirectory(new File(storePathname), null);
 
-		// plan to add a set of useful stopwords, consider changing some of the
-		// interior filters.
-		StandardAnalyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT, Collections.emptySet());
-		// TODO: something about lock timeouts and leftover locks.
-		IndexWriter writer = new IndexWriter(storeDirectory, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
-		IndexSearcher searcher = new IndexSearcher(storeDirectory, true);
-		
-		for(int dx = 0; dx < 1000; dx ++) {
-			String f = randomField();
-			Document doc = new Document();
-			doc.add(new Field("data", f, Field.Store.YES, Field.Index.ANALYZED));	
-			writer.addDocument(doc);
-		}
-		
-		searcher.close();
-		writer.close();
+    // plan to add a set of useful stopwords, consider changing some of the
+    // interior filters.
+    StandardAnalyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT, Collections.emptySet());
+    // TODO: something about lock timeouts and leftover locks.
+    IndexWriter writer = new IndexWriter(storeDirectory, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexSearcher searcher = new IndexSearcher(storeDirectory, true);
+    
+    for(int dx = 0; dx < 1000; dx ++) {
+      String f = randomField();
+      Document doc = new Document();
+      doc.add(new Field("data", f, Field.Store.YES, Field.Index.ANALYZED));	
+      writer.addDocument(doc);
+    }
+    
+    searcher.close();
+    writer.close();
                 rmDir(new File(storePathname));
-	}
+  }
 
         private void rmDir(File dir) {
           File[] files = dir.listFiles();

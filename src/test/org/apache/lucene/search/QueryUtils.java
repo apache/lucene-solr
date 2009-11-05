@@ -56,6 +56,7 @@ public class QueryUtils {
     // test that a class check is done so that no exception is thrown
     // in the implementation of equals()
     Query whacky = new Query() {
+      @Override
       public String toString(String field) {
         return "My Whacky Query";
       }
@@ -287,10 +288,12 @@ public class QueryUtils {
           private IndexReader reader;
           private Scorer scorer;
 
+          @Override
           public void setScorer(Scorer scorer) throws IOException {
             this.sc = scorer;
           }
 
+          @Override
           public void collect(int doc) throws IOException {
             float score = sc.score();
             lastDoc[0] = doc;
@@ -334,12 +337,14 @@ public class QueryUtils {
             }
           }
 
+          @Override
           public void setNextReader(IndexReader reader, int docBase) {
             this.reader = reader;
             this.scorer = null;
             lastDoc[0] = -1;
           }
 
+          @Override
           public boolean acceptsDocsOutOfOrder() {
             return true;
           }
@@ -371,9 +376,11 @@ public class QueryUtils {
     s.search(q,new Collector() {
       private Scorer scorer;
       private IndexReader reader;
+      @Override
       public void setScorer(Scorer scorer) throws IOException {
         this.scorer = scorer;
       }
+      @Override
       public void collect(int doc) throws IOException {
         //System.out.println("doc="+doc);
         float score = scorer.score();
@@ -393,10 +400,12 @@ public class QueryUtils {
           throw new RuntimeException(e);
         }
       }
+      @Override
       public void setNextReader(IndexReader reader, int docBase) {
         this.reader = reader;
         lastDoc[0] = -1;
       }
+      @Override
       public boolean acceptsDocsOutOfOrder() {
         return false;
       }

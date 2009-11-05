@@ -49,6 +49,7 @@ public class TestCharFilter extends LuceneTestCase {
       super(in);
     }
 
+    @Override
     protected int correct(int currentOff) {
       return currentOff + 1;
     }
@@ -60,6 +61,7 @@ public class TestCharFilter extends LuceneTestCase {
       super(in);
     }
 
+    @Override
     protected int correct(int currentOff) {
       return currentOff + 2;
     }

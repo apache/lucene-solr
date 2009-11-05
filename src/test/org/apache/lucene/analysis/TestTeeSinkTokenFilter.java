@@ -43,6 +43,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     super(s);
   }
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     tokens1 = new String[]{"The", "quick", "Burgundy", "Fox", "jumped", "over", "the", "lazy", "Red", "Dogs"};
@@ -59,6 +60,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
   }
 
   static final TeeSinkTokenFilter.SinkFilter theFilter = new TeeSinkTokenFilter.SinkFilter() {
+    @Override
     public boolean accept(AttributeSource a) {
       TermAttribute termAtt = a.getAttribute(TermAttribute.class);
       return termAtt.term().equalsIgnoreCase("The");
@@ -66,6 +68,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
   };
 
   static final TeeSinkTokenFilter.SinkFilter dogFilter = new TeeSinkTokenFilter.SinkFilter() {
+    @Override
     public boolean accept(AttributeSource a) {
       TermAttribute termAtt = a.getAttribute(TermAttribute.class);
       return termAtt.term().equalsIgnoreCase("Dogs");
@@ -236,6 +239,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     int count = 0;
 
     //return every 100 tokens
+    @Override
     public boolean incrementToken() throws IOException {
       boolean hasNext;
       for (hasNext = input.incrementToken();
@@ -256,6 +260,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
       modCount = mc;
     }
 
+    @Override
     public boolean accept(AttributeSource a) {
       boolean b = (a != null && count % modCount == 0);
       count++;

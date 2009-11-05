@@ -24,6 +24,7 @@ import java.util.BitSet;
 public class MockFilter extends Filter {
   private boolean wasCalled;
 
+  @Override
   public DocIdSet getDocIdSet(IndexReader reader) {
     wasCalled = true;
     return new DocIdBitSet(new BitSet());

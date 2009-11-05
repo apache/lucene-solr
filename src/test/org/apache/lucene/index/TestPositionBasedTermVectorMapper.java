@@ -33,6 +33,7 @@ public class TestPositionBasedTermVectorMapper extends LuceneTestCase {
     super(s);
   }
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     tokens = new String[]{"here", "is", "some", "text", "to", "test", "extra"};

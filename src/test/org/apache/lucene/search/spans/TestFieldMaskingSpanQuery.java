@@ -49,6 +49,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
 
   protected IndexSearcher searcher;
   
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
@@ -114,6 +115,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     searcher = new IndexSearcher(directory, true);
   }
 
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
     searcher.close();
@@ -140,6 +142,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     // mask an anon SpanQuery class that rewrites to something else.
     SpanQuery q = new FieldMaskingSpanQuery
       (new SpanTermQuery(new Term("last", "sally")) {
+          @Override
           public Query rewrite(IndexReader reader) {
             return new SpanOrQuery(new SpanQuery[] {
               new SpanTermQuery(new Term("first", "sally")),

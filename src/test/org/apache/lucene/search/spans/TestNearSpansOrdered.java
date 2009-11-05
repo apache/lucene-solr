@@ -39,11 +39,13 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   public static final QueryParser qp =
     new QueryParser(Version.LUCENE_CURRENT, FIELD, new WhitespaceAnalyzer());
 
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
     searcher.close();
   }
   
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();

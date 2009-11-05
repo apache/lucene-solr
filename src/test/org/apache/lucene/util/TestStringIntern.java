@@ -57,6 +57,7 @@ public class TestStringIntern extends LuceneTestCase {
     for (int i=0; i<nThreads; i++) {
       final int seed = i;
       threads[i] = new Thread() {
+        @Override
         public void run() {
           Random rand = new Random(seed);
           String[] myInterned = new String[testStrings.length];

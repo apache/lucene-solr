@@ -79,6 +79,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
         final int iFinal = i;
         final IndexWriter writerFinal = writer;
         threads[i] = new Thread() {
+          @Override
           public void run() {
             try {
               for(int j=0;j<NUM_ITER2;j++) {

@@ -39,6 +39,7 @@ public class TestSegmentReader extends LuceneTestCase {
   }
   
   //TODO: Setup the reader w/ multiple documents
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     DocHelper.setupDoc(testDoc);

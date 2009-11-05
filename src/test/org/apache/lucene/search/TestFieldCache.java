@@ -36,6 +36,7 @@ public class TestFieldCache extends LuceneTestCase {
     super(s);
   }
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();

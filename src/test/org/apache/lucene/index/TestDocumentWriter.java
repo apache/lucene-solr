@@ -48,6 +48,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     super(s);
   }
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     dir = new RAMDirectory();
@@ -107,10 +108,12 @@ public class TestDocumentWriter extends LuceneTestCase {
 
   public void testPositionIncrementGap() throws IOException {
     Analyzer analyzer = new Analyzer() {
+      @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new WhitespaceTokenizer(reader);
       }
 
+      @Override
       public int getPositionIncrementGap(String fieldName) {
         return 500;
       }
@@ -138,11 +141,13 @@ public class TestDocumentWriter extends LuceneTestCase {
 
   public void testTokenReuse() throws IOException {
     Analyzer analyzer = new Analyzer() {
+      @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new TokenFilter(new WhitespaceTokenizer(reader)) {
           boolean first=true;
           AttributeSource.State state;
 
+          @Override
           public boolean incrementToken() throws IOException {
             if (state != null) {
               restoreState(state);
@@ -211,6 +216,7 @@ public class TestDocumentWriter extends LuceneTestCase {
       
       private TermAttribute termAtt = addAttribute(TermAttribute.class);
       
+      @Override
       public boolean incrementToken() throws IOException {
         if (index == tokens.length) {
           return false;

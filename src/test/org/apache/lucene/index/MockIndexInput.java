@@ -29,6 +29,7 @@ public class MockIndexInput extends BufferedIndexInput {
         length = bytes.length;
     }
 
+    @Override
     protected void readInternal(byte[] dest, int destOffset, int len) {
         int remainder = len;
         int start = pointer;
@@ -45,14 +46,17 @@ public class MockIndexInput extends BufferedIndexInput {
         pointer += len;
     }
 
+    @Override
     public void close() {
         // ignore
     }
 
+    @Override
     protected void seekInternal(long pos) {
         pointer = (int) pos;
     }
 
+    @Override
     public long length() {
       return length;
     }

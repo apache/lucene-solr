@@ -45,6 +45,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       this.writer = writer;
     }
 
+    @Override
     public void run() {
 
       final Document doc = new Document();
@@ -117,6 +118,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       super(dir, a, create, mfl);
     }
 
+    @Override
     boolean testPoint(String name) {
       if (doFail.get() != null && !name.equals("startDoFlush") && r.nextInt(20) == 17) {
         if (DEBUG) {

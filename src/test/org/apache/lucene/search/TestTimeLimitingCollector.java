@@ -61,6 +61,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   /**
    * initializes searcher with a document set
    */
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     final String docText[] = {
@@ -94,6 +95,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
 
   }
 
+  @Override
   public void tearDown() throws Exception {
     searcher.close();
     super.tearDown();
@@ -269,6 +271,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     for( int i = 0; i < threadArray.length; ++i ) {
       final int num = i;
       threadArray[num] = new Thread() {
+          @Override
           public void run() {
             if (withTimeout) {
               doTestTimeout(true,true);
@@ -312,10 +315,12 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
       return lastDocCollected;
     }
 
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       // scorer is not needed
     }
     
+    @Override
     public void collect(final int doc) throws IOException {
       int docId = doc + docBase;
       if( slowdown > 0 ) {
@@ -331,10 +336,12 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
       lastDocCollected = docId;
     }
     
+    @Override
     public void setNextReader(IndexReader reader, int base) {
       docBase = base;
     }
     
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return false;
     }

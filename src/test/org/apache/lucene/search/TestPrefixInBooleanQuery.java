@@ -41,6 +41,7 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
   private static final String FIELD = "name";
   private RAMDirectory directory = new RAMDirectory();
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     

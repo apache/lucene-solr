@@ -36,14 +36,17 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     boolean doFail;
     boolean hitExc;
 
+    @Override
     public void setDoFail() {
       this.doFail = true;
       hitExc = false;
     }
+    @Override
     public void clearDoFail() {
       this.doFail = false;
     }
 
+    @Override
     public void eval(MockRAMDirectory dir)  throws IOException {
       if (doFail && Thread.currentThread().getName().equals("main")) {
         StackTraceElement[] trace = new Exception().getStackTrace();

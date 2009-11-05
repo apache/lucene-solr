@@ -224,9 +224,13 @@ public class TestToken extends LuceneTestCase {
   public interface SenselessAttribute extends Attribute {}
   
   public static final class SenselessAttributeImpl extends AttributeImpl implements SenselessAttribute {
+    @Override
     public void copyTo(AttributeImpl target) {}
+    @Override
     public void clear() {}
+    @Override
     public boolean equals(Object o) { return (o instanceof SenselessAttributeImpl); }
+    @Override
     public int hashCode() { return 0; }
   }
 

@@ -84,6 +84,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     assertDocIdSetCacheable(reader, FieldCacheRangeFilter.newIntRange("test", Integer.valueOf(10), Integer.valueOf(20), true, true), true);
     // a openbitset filter is always cacheable
     assertDocIdSetCacheable(reader, new Filter() {
+      @Override
       public DocIdSet getDocIdSet(IndexReader reader) {
         return new OpenBitSet();
       }

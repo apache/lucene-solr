@@ -44,14 +44,17 @@ public class TestPhraseQuery extends LuceneTestCase {
   private PhraseQuery query;
   private RAMDirectory directory;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
     Analyzer analyzer = new Analyzer() {
+      @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new WhitespaceTokenizer(reader);
       }
 
+      @Override
       public int getPositionIncrementGap(String fieldName) {
         return 100;
       }
@@ -82,6 +85,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query = new PhraseQuery();
   }
 
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
     searcher.close();

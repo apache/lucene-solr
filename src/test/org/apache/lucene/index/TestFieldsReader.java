@@ -44,6 +44,7 @@ public class TestFieldsReader extends LuceneTestCase {
     super(s);
   }
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     fieldInfos = new FieldInfos();
@@ -307,30 +308,39 @@ public class TestFieldsReader extends LuceneTestCase {
       fsDir = FSDirectory.open(dir);
       lockFactory = fsDir.getLockFactory();
     }
+    @Override
     public IndexInput openInput(String name) throws IOException {
       return new FaultyIndexInput(fsDir.openInput(name));
     }
+    @Override
     public String[] listAll() throws IOException {
       return fsDir.listAll();
     }
+    @Override
     public boolean fileExists(String name) throws IOException {
       return fsDir.fileExists(name);
     }
+    @Override
     public long fileModified(String name) throws IOException {
       return fsDir.fileModified(name);
     }
+    @Override
     public void touchFile(String name) throws IOException {
       fsDir.touchFile(name);
     }
+    @Override
     public void deleteFile(String name) throws IOException {
       fsDir.deleteFile(name);
     }
+    @Override
     public long fileLength(String name) throws IOException {
       return fsDir.fileLength(name);
     }
+    @Override
     public IndexOutput createOutput(String name) throws IOException {
       return fsDir.createOutput(name);
     }
+    @Override
     public void close() throws IOException {
       fsDir.close();
     }
@@ -348,20 +358,25 @@ public class TestFieldsReader extends LuceneTestCase {
         throw new IOException("Simulated network outage");
       }
     }
+    @Override
     public void readInternal(byte[] b, int offset, int length) throws IOException {
       simOutage();
       delegate.readBytes(b, offset, length);
     }
+    @Override
     public void seekInternal(long pos) throws IOException {
       //simOutage();
       delegate.seek(pos);
     }
+    @Override
     public long length() {
       return delegate.length();
     }
+    @Override
     public void close() throws IOException {
       delegate.close();
     }
+    @Override
     public Object clone() {
       return new FaultyIndexInput((IndexInput) delegate.clone());
     }

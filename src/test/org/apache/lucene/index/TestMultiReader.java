@@ -24,6 +24,7 @@ public class TestMultiReader extends TestDirectoryReader {
     super(s);
   }
 
+  @Override
   protected IndexReader openReader() throws IOException {
     IndexReader reader;
 

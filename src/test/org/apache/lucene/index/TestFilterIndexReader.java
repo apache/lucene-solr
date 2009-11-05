@@ -41,6 +41,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
       }
 
       /** Scan for terms containing the letter 'e'.*/
+      @Override
       public boolean next() throws IOException {
         while (in.next()) {
           if (in.term().text().indexOf('e') != -1)
@@ -57,6 +58,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
       }
 
       /** Scan for odd numbered documents. */
+      @Override
       public boolean next() throws IOException {
         while (in.next()) {
           if ((in.doc() % 2) == 1)
@@ -71,11 +73,13 @@ public class TestFilterIndexReader extends LuceneTestCase {
     }
 
     /** Filter terms with TestTermEnum. */
+    @Override
     public TermEnum terms() throws IOException {
       return new TestTermEnum(in.terms());
     }
 
     /** Filter positions with TestTermPositions. */
+    @Override
     public TermPositions termPositions() throws IOException {
       return new TestTermPositions(in.termPositions());
     }

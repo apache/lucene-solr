@@ -121,6 +121,7 @@ public class TestTransactionRollback extends LuceneTestCase {
   }
   */
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     dir = new MockRAMDirectory();

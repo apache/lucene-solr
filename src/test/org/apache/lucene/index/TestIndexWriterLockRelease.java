@@ -35,6 +35,7 @@ import org.apache.lucene.store.FSDirectory;
 public class TestIndexWriterLockRelease extends LuceneTestCase {
     private java.io.File __test_dir;
 
+    @Override
     public void setUp() throws Exception {
         super.setUp();
         if (this.__test_dir == null) {
@@ -52,6 +53,7 @@ public class TestIndexWriterLockRelease extends LuceneTestCase {
         }
     }
 
+    @Override
     public void tearDown() throws Exception {
         super.tearDown();
         if (this.__test_dir != null) {

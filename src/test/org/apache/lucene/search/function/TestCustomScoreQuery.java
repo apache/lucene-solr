@@ -77,14 +77,17 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       super(q,qValSrc);
     }
     /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#name() */
+    @Override
     public String name() {
       return "customAdd";
     }
     /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#customScore(int, float, float) */
+    @Override
     public float customScore(int doc, float subQueryScore, float valSrcScore) {
       return subQueryScore + valSrcScore;
     }
     /* (non-Javadoc)@see org.apache.lucene.search.function.CustomScoreQuery#customExplain(int, org.apache.lucene.search.Explanation, org.apache.lucene.search.Explanation)*/
+    @Override
     public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpl) {
       float valSrcScore = valSrcExpl==null ? 0 : valSrcExpl.getValue();
       Explanation exp = new Explanation( valSrcScore + subQueryExpl.getValue(), "custom score: sum of:");
@@ -103,10 +106,12 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       super(q,new ValueSourceQuery[]{qValSrc1,qValSrc2});
     }
     /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#name() */
+    @Override
     public String name() {
       return "customMulAdd";
     }
     /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#customScore(int, float, float) */
+    @Override
     public float customScore(int doc, float subQueryScore, float valSrcScores[]) {
       if (valSrcScores.length == 0) {
         return subQueryScore;
@@ -117,6 +122,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       return (subQueryScore + valSrcScores[0]) * valSrcScores[1]; // we know there are two
     } 
     /* (non-Javadoc)@see org.apache.lucene.search.function.CustomScoreQuery#customExplain(int, org.apache.lucene.search.Explanation, org.apache.lucene.search.Explanation)*/
+    @Override
     public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpls[]) {
       if (valSrcExpls.length == 0) {
         return subQueryExpl;

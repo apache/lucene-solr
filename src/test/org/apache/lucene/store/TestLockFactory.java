@@ -242,6 +242,7 @@ public class TestLockFactory extends LuceneTestCase {
             this.numIteration = numIteration;
             this.dir = dir;
         }
+        @Override
         public void run() {
             WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer();
             IndexWriter writer = null;
@@ -299,6 +300,7 @@ public class TestLockFactory extends LuceneTestCase {
             this.numIteration = numIteration;
             this.dir = dir;
         }
+        @Override
         public void run() {
             IndexSearcher searcher = null;
             Query query = new TermQuery(new Term("content", "aaa"));
@@ -342,11 +344,13 @@ public class TestLockFactory extends LuceneTestCase {
         public Map locksCreated = Collections.synchronizedMap(new HashMap());
         public int makeLockCount = 0;
 
+        @Override
         public void setLockPrefix(String lockPrefix) {    
             super.setLockPrefix(lockPrefix);
             lockPrefixSet = true;
         }
 
+        @Override
         synchronized public Lock makeLock(String lockName) {
             Lock lock = new MockLock();
             locksCreated.put(lockName, lock);
@@ -354,18 +358,22 @@ public class TestLockFactory extends LuceneTestCase {
             return lock;
         }
 
+        @Override
         public void clearLock(String specificLockName) {}
 
         public class MockLock extends Lock {
             public int lockAttempts;
 
+            @Override
             public boolean obtain() {
                 lockAttempts++;
                 return true;
             }
+            @Override
             public void release() {
                 // do nothing
             }
+            @Override
             public boolean isLocked() {
                 return false;
             }

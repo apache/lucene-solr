@@ -33,6 +33,7 @@ public class TestSpanExplanationsOfNonMatches
    *
    * @see CheckHits#checkNoMatchExplanations
    */
+  @Override
   public void qtest(Query q, int[] expDocNrs) throws Exception {
     CheckHits.checkNoMatchExplanations(q, FIELD, searcher, expDocNrs);
   }

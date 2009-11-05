@@ -101,8 +101,10 @@ public class TestScorerPerf extends LuceneTestCase {
     int sum=0;
     protected int docBase = 0;
 
+    @Override
     public void setScorer(Scorer scorer) throws IOException {}
     
+    @Override
     public void collect(int doc) {
       count++;
       sum += docBase + doc;  // use it to avoid any possibility of being optimized away
@@ -111,9 +113,11 @@ public class TestScorerPerf extends LuceneTestCase {
     public int getCount() { return count; }
     public int getSum() { return sum; }
 
+    @Override
     public void setNextReader(IndexReader reader, int base) {
       docBase = base;
     }
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
     }
@@ -141,6 +145,7 @@ public class TestScorerPerf extends LuceneTestCase {
   BitSet addClause(BooleanQuery bq, BitSet result) {
     final BitSet rnd = sets[r.nextInt(sets.length)];
     Query q = new ConstantScoreQuery(new Filter() {
+      @Override
       public DocIdSet getDocIdSet(IndexReader reader) {
         return new DocIdBitSet(rnd);
       };

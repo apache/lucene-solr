@@ -64,6 +64,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   TestToken[] tokens = new TestToken[testTerms.length * TERM_FREQ];
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     /*
@@ -132,6 +133,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       offsetAtt = addAttribute(OffsetAttribute.class);
     }
     
+    @Override
     public boolean incrementToken() {
       if (tokenUpto >= tokens.length)
         return false;
@@ -150,6 +152,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
 
   private class MyAnalyzer extends Analyzer {
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       return new MyTokenStream();
     }
@@ -412,12 +415,14 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
     private int documentNumber = -1;
 
+    @Override
     public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
       if (documentNumber == -1) {
         throw new RuntimeException("Documentnumber should be set at this point!");
       }
     }
 
+    @Override
     public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
       if (documentNumber == -1) {
         throw new RuntimeException("Documentnumber should be set at this point!");
@@ -428,6 +433,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       return documentNumber;
     }
 
+    @Override
     public void setDocumentNumber(int documentNumber) {
       this.documentNumber = documentNumber;
     }

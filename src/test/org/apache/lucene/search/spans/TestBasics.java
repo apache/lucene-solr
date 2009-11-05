@@ -51,6 +51,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestBasics extends LuceneTestCase {
   private IndexSearcher searcher;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();

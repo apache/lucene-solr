@@ -55,6 +55,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
       }
     }
 
+    @Override
     protected MergeThread getMergeThread(IndexWriter writer, MergePolicy.OneMerge merge) throws IOException {
       MergeThread thread = new MyMergeThread(writer, merge);
       thread.setThreadPriority(getMergeThreadPriority());
@@ -63,10 +64,12 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
       return thread;
     }
 
+    @Override
     protected void handleMergeException(Throwable t) {
       excCalled = true;
     }
 
+    @Override
     protected void doMerge(MergePolicy.OneMerge merge) throws IOException {
       mergeCalled = true;
       super.doMerge(merge);
@@ -74,6 +77,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   }
 
   private static class FailOnlyOnMerge extends MockRAMDirectory.Failure {
+    @Override
     public void eval(MockRAMDirectory dir)  throws IOException {
       StackTraceElement[] trace = new Exception().getStackTrace();
       for (int i = 0; i < trace.length; i++) {

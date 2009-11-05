@@ -39,6 +39,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     super(s);
   }
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     dir = new RAMDirectory();

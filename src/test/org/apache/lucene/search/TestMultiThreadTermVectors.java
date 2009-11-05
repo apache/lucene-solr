@@ -37,6 +37,7 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
     super(s);
   }
   
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     IndexWriter writer

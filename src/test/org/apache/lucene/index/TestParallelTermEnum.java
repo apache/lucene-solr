@@ -32,6 +32,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
     private IndexReader ir1;
     private IndexReader ir2;
 
+    @Override
     protected void setUp() throws Exception {
         super.setUp();
         Document doc;
@@ -65,6 +66,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
         this.ir2 = IndexReader.open(rd2, true);
     }
 
+    @Override
     protected void tearDown() throws Exception {
         super.tearDown();
 

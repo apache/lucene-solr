@@ -24,13 +24,14 @@ import java.io.IOException;
  */
 public class TestParallelMultiSearcher extends TestMultiSearcher {
 
-	public TestParallelMultiSearcher(String name) {
-		super(name);
-	}
+  public TestParallelMultiSearcher(String name) {
+    super(name);
+  }
 
-	protected MultiSearcher getMultiSearcherInstance(Searcher[] searchers)
-		throws IOException {
-		return new ParallelMultiSearcher(searchers);
-	}
+  @Override
+  protected MultiSearcher getMultiSearcherInstance(Searcher[] searchers)
+    throws IOException {
+    return new ParallelMultiSearcher(searchers);
+  }
 
 }

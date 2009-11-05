@@ -54,6 +54,7 @@ public class TestDoc extends LuceneTestCase {
     /** Set the test case. This test case needs
      *  a few text files created in the current working directory.
      */
+    @Override
     public void setUp() throws Exception {
         super.setUp();
         workDir = new File(System.getProperty("tempDir"),"TestDoc");

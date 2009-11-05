@@ -74,6 +74,7 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
   }
 
   /* @override */
+  @Override
   protected void tearDown() throws Exception {
     super.tearDown();
     dir = null;
@@ -81,6 +82,7 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
   }
 
   /* @override */
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     // prepare a small index with just a few documents.  

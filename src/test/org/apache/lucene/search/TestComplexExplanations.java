@@ -31,6 +31,7 @@ public class TestComplexExplanations extends TestExplanations {
    * Override the Similarity used in our searcher with one that plays
    * nice with boosts of 0.0
    */
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     searcher.setSimilarity(createQnorm1Similarity());
@@ -39,6 +40,7 @@ public class TestComplexExplanations extends TestExplanations {
   // must be static for weight serialization tests 
   private static DefaultSimilarity createQnorm1Similarity() {
     return new DefaultSimilarity() {
+        @Override
         public float queryNorm(float sumOfSquaredWeights) {
           return 1.0f; // / (float) Math.sqrt(1.0f + sumOfSquaredWeights);
         }

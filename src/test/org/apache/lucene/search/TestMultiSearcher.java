@@ -367,11 +367,17 @@ public class TestMultiSearcher extends LuceneTestCase
         
         Similarity customSimilarity = new DefaultSimilarity() {
             // overide all
+            @Override
             public float idf(int docFreq, int numDocs) { return 100.0f; }
+            @Override
             public float coord(int overlap, int maxOverlap) { return 1.0f; }
+            @Override
             public float lengthNorm(String fieldName, int numTokens) { return 1.0f; }
+            @Override
             public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
+            @Override
             public float sloppyFreq(int distance) { return 1.0f; }
+            @Override
             public float tf(float freq) { return 1.0f; }
         };
         

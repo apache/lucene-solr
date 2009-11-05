@@ -44,6 +44,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
       private TermAttribute termAtt = addAttribute(TermAttribute.class);
       private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
       
+      @Override
       public boolean incrementToken() throws IOException {
         if (index == tokens.length) {
           return false;

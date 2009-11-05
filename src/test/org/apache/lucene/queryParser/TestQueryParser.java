@@ -98,6 +98,7 @@ public class TestQueryParser extends LocalizedTestCase {
     boolean inPhrase = false;
     int savedStart = 0, savedEnd = 0;
 
+    @Override
     public boolean incrementToken() throws IOException {
       if (inPhrase) {
         inPhrase = false;
@@ -124,6 +125,7 @@ public class TestQueryParser extends LocalizedTestCase {
   public static class QPTestAnalyzer extends Analyzer {
 
     /** Filters LowerCaseTokenizer with StopFilter. */
+    @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
       return new QPTestFilter(new LowerCaseTokenizer(reader));
     }
@@ -134,10 +136,12 @@ public class TestQueryParser extends LocalizedTestCase {
       super(Version.LUCENE_CURRENT, f, a);
     }
 
+    @Override
     protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException {
       throw new ParseException("Fuzzy queries not allowed");
     }
 
+    @Override
     protected Query getWildcardQuery(String field, String termStr) throws ParseException {
       throw new ParseException("Wildcard queries not allowed");
     }
@@ -145,6 +149,7 @@ public class TestQueryParser extends LocalizedTestCase {
 
   private int originalMaxClauses;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
@@ -893,17 +898,20 @@ public class TestQueryParser extends LocalizedTestCase {
   public void testStarParsing() throws Exception {
     final int[] type = new int[1];
     QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "field", new WhitespaceAnalyzer()) {
+      @Override
       protected Query getWildcardQuery(String field, String termStr) throws ParseException {
         // override error checking of superclass
         type[0]=1;
         return new TermQuery(new Term(field,termStr));
       }
+      @Override
       protected Query getPrefixQuery(String field, String termStr) throws ParseException {
         // override error checking of superclass
         type[0]=2;        
         return new TermQuery(new Term(field,termStr));
       }
 
+      @Override
       protected Query getFieldQuery(String field, String queryText) throws ParseException {
         type[0]=3;
         return super.getFieldQuery(field, queryText);
@@ -1007,6 +1015,7 @@ public class TestQueryParser extends LocalizedTestCase {
     iw.addDocument(d);
   }
 
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
     BooleanQuery.setMaxClauseCount(originalMaxClauses);

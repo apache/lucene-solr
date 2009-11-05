@@ -45,6 +45,7 @@ public class TestTermScorer extends LuceneTestCase
         super(s);
     }
 
+    @Override
     protected void setUp() throws Exception {
         super.setUp();
         directory = new RAMDirectory();
@@ -82,10 +83,12 @@ public class TestTermScorer extends LuceneTestCase
         ts.score(new Collector() {
             private int base = 0;
             private Scorer scorer;
+            @Override
             public void setScorer(Scorer scorer) throws IOException {
               this.scorer = scorer; 
             }
 
+            @Override
             public void collect(int doc) throws IOException {
               float score = scorer.score();
               doc = doc + base;
@@ -94,9 +97,11 @@ public class TestTermScorer extends LuceneTestCase
               assertTrue("Doc: " + doc + " does not equal 0 or doc does not equal 5",
                             doc == 0 || doc == 5);
             }
+            @Override
             public void setNextReader(IndexReader reader, int docBase) {
               base = docBase;
             }
+            @Override
             public boolean acceptsDocsOutOfOrder() {
               return true;
             }
@@ -167,6 +172,7 @@ public class TestTermScorer extends LuceneTestCase
             this.score = score;
         }
 
+        @Override
         public String toString() {
             return "TestHit{" + "doc=" + doc + ", score=" + score + "}";
         }

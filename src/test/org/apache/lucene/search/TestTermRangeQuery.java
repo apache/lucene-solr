@@ -40,6 +40,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
   private int docCount = 0;
   private RAMDirectory dir;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     dir = new RAMDirectory();
@@ -230,6 +231,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
         termAtt = addAttribute(TermAttribute.class);
       }
 
+      @Override
       public boolean incrementToken() throws IOException {
         int count = input.read(buffer);
         if (done)
@@ -245,12 +247,14 @@ public class TestTermRangeQuery extends LuceneTestCase {
         }
       }
 
+      @Override
       public final void reset(Reader reader) throws IOException {
         super.reset(reader);
         done = false;
       }
     }
 
+    @Override
     public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
       Tokenizer tokenizer = (Tokenizer) getPreviousTokenStream();
       if (tokenizer == null) {
@@ -261,6 +265,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
       return tokenizer;
     }
 
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       return new SingleCharTokenizer(reader);
     }

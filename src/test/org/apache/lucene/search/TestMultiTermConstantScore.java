@@ -56,6 +56,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     Assert.assertEquals(m, e, a);
   }
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
 
@@ -185,15 +186,19 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     search.search(q, null, new Collector() {
       private int base = 0;
       private Scorer scorer;
+      @Override
       public void setScorer(Scorer scorer) throws IOException {
         this.scorer = scorer;
       }
+      @Override
       public void collect(int doc) throws IOException {
         assertEquals("score for doc " + (doc + base) + " was not correct", 1.0f, scorer.score());
       }
+      @Override
       public void setNextReader(IndexReader reader, int docBase) {
         base = docBase;
       }
+      @Override
       public boolean acceptsDocsOutOfOrder() {
         return true;
       }

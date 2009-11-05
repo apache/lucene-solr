@@ -35,6 +35,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
     /**
      * Initializes the tests by adding documents to the index.
      */
+    @Override
     protected void setUp() throws Exception {
         super.setUp();
 
@@ -99,6 +100,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
      *
      * @throws IOException
      */
+    @Override
     public void testBooleanQueryWithSpanQueries() throws IOException {
 
         doTestBooleanQueryWithSpanQueries(searcher2, 0.73500174f);

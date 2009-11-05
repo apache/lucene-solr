@@ -36,6 +36,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     super(s);
   }
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     DocHelper.setupDoc(testDoc);

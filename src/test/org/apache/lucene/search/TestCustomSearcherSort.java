@@ -53,105 +53,106 @@ implements Serializable {
     // reduced from 20000 to 2000 to speed up test...
     private final static int INDEX_SIZE = 2000;
 
-	public TestCustomSearcherSort (String name) {
-		super (name);
-	}
+  public TestCustomSearcherSort (String name) {
+    super (name);
+  }
 
-	public static void main (String[] argv) {
-	    TestRunner.run (suite());
-	}
+  public static void main (String[] argv) {
+      TestRunner.run (suite());
+  }
 
-	public static Test suite() {
-		return new TestSuite (TestCustomSearcherSort.class);
-	}
+  public static Test suite() {
+    return new TestSuite (TestCustomSearcherSort.class);
+  }
 
 
-	// create an index for testing
-	private Directory getIndex()
-	throws IOException {
-	        RAMDirectory indexStore = new RAMDirectory ();
-	        IndexWriter writer = new IndexWriter (indexStore, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
-	        RandomGen random = new RandomGen(newRandom());
-	        for (int i=0; i<INDEX_SIZE; ++i) { // don't decrease; if to low the problem doesn't show up
-	        Document doc = new Document();
-	            if((i%5)!=0) { // some documents must not have an entry in the first sort field
-	                doc.add (new Field("publicationDate_", random.getLuceneDate(), Field.Store.YES, Field.Index.NOT_ANALYZED));
-	            }
-	            if((i%7)==0) { // some documents to match the query (see below) 
-	                doc.add (new Field("content", "test", Field.Store.YES, Field.Index.ANALYZED));
-	            }
-	            // every document has a defined 'mandant' field
-	            doc.add(new Field("mandant", Integer.toString(i%3), Field.Store.YES, Field.Index.NOT_ANALYZED));
-	            writer.addDocument (doc);
-	        }
-	        writer.optimize ();
-	        writer.close ();
-	    return indexStore;
-	}
+  // create an index for testing
+  private Directory getIndex()
+  throws IOException {
+          RAMDirectory indexStore = new RAMDirectory ();
+          IndexWriter writer = new IndexWriter (indexStore, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+          RandomGen random = new RandomGen(newRandom());
+          for (int i=0; i<INDEX_SIZE; ++i) { // don't decrease; if to low the problem doesn't show up
+          Document doc = new Document();
+              if((i%5)!=0) { // some documents must not have an entry in the first sort field
+                  doc.add (new Field("publicationDate_", random.getLuceneDate(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+              }
+              if((i%7)==0) { // some documents to match the query (see below) 
+                  doc.add (new Field("content", "test", Field.Store.YES, Field.Index.ANALYZED));
+              }
+              // every document has a defined 'mandant' field
+              doc.add(new Field("mandant", Integer.toString(i%3), Field.Store.YES, Field.Index.NOT_ANALYZED));
+              writer.addDocument (doc);
+          }
+          writer.optimize ();
+          writer.close ();
+      return indexStore;
+  }
 
-	/**
-	 * Create index and query for test cases. 
-	 */
-	public void setUp() throws Exception {
+  /**
+   * Create index and query for test cases. 
+   */
+  @Override
+  public void setUp() throws Exception {
           super.setUp();
           index = getIndex();
           query = new TermQuery( new Term("content", "test"));
-	}
+  }
 
-	/**
-	 * Run the test using two CustomSearcher instances. 
-	 */
-	public void testFieldSortCustomSearcher() throws Exception {
-	  // log("Run testFieldSortCustomSearcher");
-		// define the sort criteria
-	    Sort custSort = new Sort(
-	            new SortField("publicationDate_", SortField.STRING), 
-	            SortField.FIELD_SCORE
-	    );
-	    Searcher searcher = new CustomSearcher (index, 2);
-	    // search and check hits
-		matchHits(searcher, custSort);
-	}
-	/**
-	 * Run the test using one CustomSearcher wrapped by a MultiSearcher. 
-	 */
-	public void testFieldSortSingleSearcher() throws Exception {
-	  // log("Run testFieldSortSingleSearcher");
-		// define the sort criteria
-	    Sort custSort = new Sort(
-	            new SortField("publicationDate_", SortField.STRING), 
-	            SortField.FIELD_SCORE
-	    );
-	    Searcher searcher = new MultiSearcher(new Searcher[] { new CustomSearcher(
+  /**
+   * Run the test using two CustomSearcher instances. 
+   */
+  public void testFieldSortCustomSearcher() throws Exception {
+    // log("Run testFieldSortCustomSearcher");
+    // define the sort criteria
+      Sort custSort = new Sort(
+              new SortField("publicationDate_", SortField.STRING), 
+              SortField.FIELD_SCORE
+      );
+      Searcher searcher = new CustomSearcher (index, 2);
+      // search and check hits
+    matchHits(searcher, custSort);
+  }
+  /**
+   * Run the test using one CustomSearcher wrapped by a MultiSearcher. 
+   */
+  public void testFieldSortSingleSearcher() throws Exception {
+    // log("Run testFieldSortSingleSearcher");
+    // define the sort criteria
+      Sort custSort = new Sort(
+              new SortField("publicationDate_", SortField.STRING), 
+              SortField.FIELD_SCORE
+      );
+      Searcher searcher = new MultiSearcher(new Searcher[] { new CustomSearcher(
         index, 2) });
-	    // search and check hits
-		matchHits(searcher, custSort);
-	}
-	/**
-	 * Run the test using two CustomSearcher instances. 
-	 */
-	public void testFieldSortMultiCustomSearcher() throws Exception {
-	  // log("Run testFieldSortMultiCustomSearcher");
-		// define the sort criteria
-	    Sort custSort = new Sort(
-	            new SortField("publicationDate_", SortField.STRING), 
-	            SortField.FIELD_SCORE
-	    );
-	    Searcher searcher = 
-	        new MultiSearcher(new Searchable[] {
-	                new CustomSearcher (index, 0),
-	                new CustomSearcher (index, 2)});
-	    // search and check hits
-		matchHits(searcher, custSort);
-	}
+      // search and check hits
+    matchHits(searcher, custSort);
+  }
+  /**
+   * Run the test using two CustomSearcher instances. 
+   */
+  public void testFieldSortMultiCustomSearcher() throws Exception {
+    // log("Run testFieldSortMultiCustomSearcher");
+    // define the sort criteria
+      Sort custSort = new Sort(
+              new SortField("publicationDate_", SortField.STRING), 
+              SortField.FIELD_SCORE
+      );
+      Searcher searcher = 
+          new MultiSearcher(new Searchable[] {
+                  new CustomSearcher (index, 0),
+                  new CustomSearcher (index, 2)});
+      // search and check hits
+    matchHits(searcher, custSort);
+  }
 
 
-	// make sure the documents returned by the search match the expected list
-	private void matchHits (Searcher searcher, Sort sort)
-	throws IOException {
-	    // make a query without sorting first
+  // make sure the documents returned by the search match the expected list
+  private void matchHits (Searcher searcher, Sort sort)
+  throws IOException {
+      // make a query without sorting first
     ScoreDoc[] hitsByRank = searcher.search(query, null, 1000).scoreDocs;
-		checkHits(hitsByRank, "Sort by rank: "); // check for duplicates
+    checkHits(hitsByRank, "Sort by rank: "); // check for duplicates
         Map resultMap = new TreeMap();
         // store hits in TreeMap - TreeMap does not allow duplicates; existing entries are silently overwritten
         for(int hitid=0;hitid<hitsByRank.length; ++hitid) {
@@ -162,8 +163,8 @@ implements Serializable {
         
         // now make a query using the sort criteria
     ScoreDoc[] resultSort = searcher.search (query, null, 1000, sort).scoreDocs;
-		checkHits(resultSort, "Sort by custom criteria: "); // check for duplicates
-		
+    checkHits(resultSort, "Sort by custom criteria: "); // check for duplicates
+    
         // besides the sorting both sets of hits must be identical
         for(int hitid=0;hitid<resultSort.length; ++hitid) {
             Integer idHitDate = Integer.valueOf(resultSort[hitid].doc); // document ID from sorted search
@@ -181,12 +182,12 @@ implements Serializable {
         log("Couldn't match "+resultMap.size()+" hits.");
         }
         assertEquals(resultMap.size(), 0);
-	}
+  }
 
-	/**
-	 * Check the hits for duplicates.
-	 * @param hits
-	 */
+  /**
+   * Check the hits for duplicates.
+   * @param hits
+   */
     private void checkHits(ScoreDoc[] hits, String prefix) {
         if(hits!=null) {
             Map idMap = new TreeMap();
@@ -235,6 +236,7 @@ implements Serializable {
         /* (non-Javadoc)
          * @see org.apache.lucene.search.Searchable#search(org.apache.lucene.search.Query, org.apache.lucene.search.Filter, int, org.apache.lucene.search.Sort)
          */
+        @Override
         public TopFieldDocs search(Query query, Filter filter, int nDocs,
                 Sort sort) throws IOException {
             BooleanQuery bq = new BooleanQuery();
@@ -245,6 +247,7 @@ implements Serializable {
         /* (non-Javadoc)
          * @see org.apache.lucene.search.Searchable#search(org.apache.lucene.search.Query, org.apache.lucene.search.Filter, int)
          */
+        @Override
         public TopDocs search(Query query, Filter filter, int nDocs)
         throws IOException {
             BooleanQuery bq = new BooleanQuery();

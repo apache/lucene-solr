@@ -77,6 +77,7 @@ public class MockRAMDirectory extends RAMDirectory {
     preventDoubleWrite = value;
   }
 
+  @Override
   public synchronized void sync(String name) throws IOException {
     maybeThrowDeterministicException();
     if (crashed)
@@ -170,6 +171,7 @@ public class MockRAMDirectory extends RAMDirectory {
     }
   }
 
+  @Override
   public synchronized void deleteFile(String name) throws IOException {
     deleteFile(name, false);
   }
@@ -191,6 +193,7 @@ public class MockRAMDirectory extends RAMDirectory {
     super.deleteFile(name);
   }
 
+  @Override
   public synchronized IndexOutput createOutput(String name) throws IOException {
     if (crashed)
       throw new IOException("cannot createOutput after crash");
@@ -220,6 +223,7 @@ public class MockRAMDirectory extends RAMDirectory {
     return new MockRAMOutputStream(this, file, name);
   }
 
+  @Override
   public synchronized IndexInput openInput(String name) throws IOException {
     RAMFile file = fileMap.get(name);
     if (file == null)
@@ -258,6 +262,7 @@ public class MockRAMDirectory extends RAMDirectory {
     return size;
   }
 
+  @Override
   public synchronized void close() {
     if (openFiles == null) {
       openFiles = new HashMap();

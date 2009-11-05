@@ -122,13 +122,17 @@ public class CheckHits {
       this.bag = bag;
     }
     private int base = 0;
+    @Override
     public void setScorer(Scorer scorer) throws IOException {}
+    @Override
     public void collect(int doc) {
       bag.add(Integer.valueOf(doc + base));
     }
+    @Override
     public void setNextReader(IndexReader reader, int docBase) {
       base = docBase;
     }
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
     }
@@ -412,6 +416,7 @@ public class CheckHits {
                    new ExplanationAsserter
                    (q, null, this));
     }
+    @Override
     public TopFieldDocs search(Query query,
                                Filter filter,
                                int n,
@@ -420,14 +425,17 @@ public class CheckHits {
       checkExplanations(query);
       return super.search(query,filter,n,sort);
     }
+    @Override
     public void search(Query query, Collector results) throws IOException {
       checkExplanations(query);
       super.search(query, results);
     }
+    @Override
     public void search(Query query, Filter filter, Collector results) throws IOException {
       checkExplanations(query);
       super.search(query, filter, results);
     }
+    @Override
     public TopDocs search(Query query, Filter filter,
                           int n) throws IOException {
 
@@ -472,10 +480,12 @@ public class CheckHits {
       this.deep=deep;
     }      
     
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;     
     }
     
+    @Override
     public void collect(int doc) throws IOException {
       Explanation exp = null;
       doc = doc + base;
@@ -489,9 +499,11 @@ public class CheckHits {
       Assert.assertNotNull("Explanation of [["+d+"]] for #"+doc+" is null", exp);
       verifyExplanation(d,doc,scorer.score(),deep,exp);
     }
+    @Override
     public void setNextReader(IndexReader reader, int docBase) {
       base = docBase;
     }
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
     }

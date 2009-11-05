@@ -88,14 +88,18 @@ public class TestSimilarity extends LuceneTestCase {
 
     searcher.search(new TermQuery(b), new Collector() {
          private Scorer scorer;
-         public void setScorer(Scorer scorer) throws IOException {
+         @Override
+        public void setScorer(Scorer scorer) throws IOException {
            this.scorer = scorer; 
          }
-         public final void collect(int doc) throws IOException {
+         @Override
+        public final void collect(int doc) throws IOException {
            assertEquals(1.0f, scorer.score());
          }
-         public void setNextReader(IndexReader reader, int docBase) {}
-         public boolean acceptsDocsOutOfOrder() {
+         @Override
+        public void setNextReader(IndexReader reader, int docBase) {}
+         @Override
+        public boolean acceptsDocsOutOfOrder() {
            return true;
          }
        });
@@ -107,17 +111,21 @@ public class TestSimilarity extends LuceneTestCase {
     searcher.search(bq, new Collector() {
          private int base = 0;
          private Scorer scorer;
-         public void setScorer(Scorer scorer) throws IOException {
+         @Override
+        public void setScorer(Scorer scorer) throws IOException {
            this.scorer = scorer; 
          }
-         public final void collect(int doc) throws IOException {
+         @Override
+        public final void collect(int doc) throws IOException {
            //System.out.println("Doc=" + doc + " score=" + score);
            assertEquals((float)doc+base+1, scorer.score());
          }
-         public void setNextReader(IndexReader reader, int docBase) {
+         @Override
+        public void setNextReader(IndexReader reader, int docBase) {
            base = docBase;
          }
-         public boolean acceptsDocsOutOfOrder() {
+         @Override
+        public boolean acceptsDocsOutOfOrder() {
            return true;
          }
        });
@@ -128,15 +136,19 @@ public class TestSimilarity extends LuceneTestCase {
     //System.out.println(pq.toString("field"));
     searcher.search(pq,
        new Collector() {
-        private Scorer scorer;
-        public void setScorer(Scorer scorer) throws IOException {
+         private Scorer scorer;
+         @Override
+         public void setScorer(Scorer scorer) throws IOException {
           this.scorer = scorer; 
-        }
+         }
+         @Override
          public final void collect(int doc) throws IOException {
            //System.out.println("Doc=" + doc + " score=" + score);
            assertEquals(1.0f, scorer.score());
          }
+         @Override
          public void setNextReader(IndexReader reader, int docBase) {}
+         @Override
          public boolean acceptsDocsOutOfOrder() {
            return true;
          }
@@ -145,18 +157,22 @@ public class TestSimilarity extends LuceneTestCase {
     pq.setSlop(2);
     //System.out.println(pq.toString("field"));
     searcher.search(pq, new Collector() {
-        private Scorer scorer;
-        public void setScorer(Scorer scorer) throws IOException {
-          this.scorer = scorer; 
-        }
-         public final void collect(int doc) throws IOException {
-           //System.out.println("Doc=" + doc + " score=" + score);
-           assertEquals(2.0f, scorer.score());
-         }
-         public void setNextReader(IndexReader reader, int docBase) {}
-         public boolean acceptsDocsOutOfOrder() {
-           return true;
-         }
-       });
+      private Scorer scorer;
+      @Override
+      public void setScorer(Scorer scorer) throws IOException {
+        this.scorer = scorer; 
+      }
+      @Override
+      public final void collect(int doc) throws IOException {
+        //System.out.println("Doc=" + doc + " score=" + score);
+        assertEquals(2.0f, scorer.score());
+      }
+      @Override
+      public void setNextReader(IndexReader reader, int docBase) {}
+      @Override
+      public boolean acceptsDocsOutOfOrder() {
+        return true;
+      }
+    });
   }
 }

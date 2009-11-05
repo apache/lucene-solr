@@ -55,6 +55,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   }
 
   private class PayloadAnalyzer extends Analyzer {
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new LowerCaseTokenizer(reader);
       result = new PayloadFilter(result, fieldName);
@@ -73,6 +74,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
       payAtt = addAttribute(PayloadAttribute.class);
     }
 
+    @Override
     public boolean incrementToken() throws IOException {
       boolean result = false;
       if (input.incrementToken() == true){
@@ -98,6 +100,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     return new PayloadNearQuery(clauses, 0, inOrder);
   }
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();

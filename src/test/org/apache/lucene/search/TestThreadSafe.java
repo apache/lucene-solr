@@ -49,6 +49,7 @@ public class TestThreadSafe extends LuceneTestCase {
       this.rand = rand;
     }
 
+    @Override
     public void run() {
       try {
         for (int i=0; i<iter; i++) {

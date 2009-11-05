@@ -176,31 +176,31 @@ public class TestBufferedIndexInput extends LuceneTestCase {
    // reads up to the EOF will succeed. The EOF is determined by the
    // BufferedIndexInput's arbitrary length() value.
    public void testEOF() throws Exception {
-	   MyBufferedIndexInput input = new MyBufferedIndexInput(1024);
-	   // see that we can read all the bytes at one go:
-	   checkReadBytes(input, (int)input.length(), 0);  
-	   // go back and see that we can't read more than that, for small and
-	   // large overflows:
-	   int pos = (int)input.length()-10;
-	   input.seek(pos);
-	   checkReadBytes(input, 10, pos);  
-	   input.seek(pos);
-	   try {
-		   checkReadBytes(input, 11, pos);
+     MyBufferedIndexInput input = new MyBufferedIndexInput(1024);
+     // see that we can read all the bytes at one go:
+     checkReadBytes(input, (int)input.length(), 0);  
+     // go back and see that we can't read more than that, for small and
+     // large overflows:
+     int pos = (int)input.length()-10;
+     input.seek(pos);
+     checkReadBytes(input, 10, pos);  
+     input.seek(pos);
+     try {
+       checkReadBytes(input, 11, pos);
            fail("Block read past end of file");
        } catch (IOException e) {
            /* success */
        }
-	   input.seek(pos);
-	   try {
-		   checkReadBytes(input, 50, pos);
+     input.seek(pos);
+     try {
+       checkReadBytes(input, 50, pos);
            fail("Block read past end of file");
        } catch (IOException e) {
            /* success */
        }
-	   input.seek(pos);
-	   try {
-		   checkReadBytes(input, 100000, pos);
+     input.seek(pos);
+     try {
+       checkReadBytes(input, 100000, pos);
            fail("Block read past end of file");
        } catch (IOException e) {
            /* success */
@@ -210,34 +210,38 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     // byten emulates a file - byten(n) returns the n'th byte in that file.
     // MyBufferedIndexInput reads this "file".
     private static byte byten(long n){
-    	return (byte)(n*n%256);
+      return (byte)(n*n%256);
     }
     private static class MyBufferedIndexInput extends BufferedIndexInput {
-    	private long pos;
-    	private long len;
-    	public MyBufferedIndexInput(long len){
-    		this.len = len;
-    		this.pos = 0;
-    	}
-    	public MyBufferedIndexInput(){
-    		// an infinite file
-    		this(Long.MAX_VALUE);
-    	}
-		protected void readInternal(byte[] b, int offset, int length) throws IOException {
-			for(int i=offset; i<offset+length; i++)
-				b[i] = byten(pos++);
-		}
+      private long pos;
+      private long len;
+      public MyBufferedIndexInput(long len){
+        this.len = len;
+        this.pos = 0;
+      }
+      public MyBufferedIndexInput(){
+        // an infinite file
+        this(Long.MAX_VALUE);
+      }
+    @Override
+    protected void readInternal(byte[] b, int offset, int length) throws IOException {
+      for(int i=offset; i<offset+length; i++)
+        b[i] = byten(pos++);
+    }
 
-		protected void seekInternal(long pos) throws IOException {
-			this.pos = pos;
-		}
+    @Override
+    protected void seekInternal(long pos) throws IOException {
+      this.pos = pos;
+    }
 
-		public void close() throws IOException {
-		}
+    @Override
+    public void close() throws IOException {
+    }
 
-		public long length() {
-			return len;
-		}
+    @Override
+    public long length() {
+      return len;
+    }
     }
 
     public void testSetBufferSize() throws IOException {
@@ -300,6 +304,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         dir = new SimpleFSDirectory(path, null);
       }
 
+      @Override
       public IndexInput openInput(String name) throws IOException {
         return openInput(name, BufferedIndexInput.BUFFER_SIZE);
       }
@@ -316,6 +321,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         //System.out.println("tweak'd " + count + " buffer sizes");
       }
       
+      @Override
       public IndexInput openInput(String name, int bufferSize) throws IOException {
         // Make random changes to buffer size
         bufferSize = 1+(int) Math.abs(rand.nextInt() % 10);
@@ -324,40 +330,48 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         return f;
       }
 
+      @Override
       public IndexOutput createOutput(String name) throws IOException {
         return dir.createOutput(name);
       }
 
+      @Override
       public void close() throws IOException {
         dir.close();
       }
 
+      @Override
       public void deleteFile(String name)
         throws IOException
       {
         dir.deleteFile(name);
       }
+      @Override
       public void touchFile(String name)
         throws IOException
       {
         dir.touchFile(name);
       }
+      @Override
       public long fileModified(String name)
         throws IOException
       {
         return dir.fileModified(name);
       }
+      @Override
       public boolean fileExists(String name)
         throws IOException
       {
         return dir.fileExists(name);
       }
+      @Override
       public String[] listAll()
         throws IOException
       {
         return dir.listAll();
       }
 
+      @Override
       public long fileLength(String name) throws IOException {
         return dir.fileLength(name);
       }

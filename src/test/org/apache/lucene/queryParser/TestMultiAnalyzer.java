@@ -134,6 +134,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     public MultiAnalyzer() {
     }
 
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
       result = new TestFilter(result);
@@ -161,6 +162,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
       typeAtt = addAttribute(TypeAttribute.class);
     }
 
+    @Override
     public final boolean incrementToken() throws java.io.IOException {
       if (multiToken > 0) {
         termAtt.setTermBuffer("multi"+(multiToken+1));
@@ -200,6 +202,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     public PosIncrementAnalyzer() {
     }
 
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
       result = new TestPosIncrementFilter(result);
@@ -219,6 +222,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
       posIncrAtt = addAttribute(PositionIncrementAttribute.class);
     }
 
+    @Override
     public final boolean incrementToken () throws java.io.IOException {
       while(input.incrementToken()) {
         if (termAtt.term().equals("the")) {
@@ -248,6 +252,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
             return super.getFieldQuery(f,t);
         }
         /** wrap super's version */
+        @Override
         protected Query getFieldQuery(String f, String t)
             throws ParseException {
             return new DumbQueryWrapper(getSuperFieldQuery(f,t));
@@ -265,6 +270,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
             super();
             this.q = q;
         }
+        @Override
         public String toString(String f) {
             return q.toString(f);
         }

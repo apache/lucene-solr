@@ -30,6 +30,7 @@ public class SingleDocTestFilter extends Filter {
     this.doc = doc;
   }
 
+  @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     BitSet bits = new BitSet(reader.maxDoc());
     bits.set(doc);

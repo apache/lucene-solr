@@ -40,6 +40,7 @@ public class MockRAMOutputStream extends RAMOutputStream {
     this.name = name;
   }
 
+  @Override
   public void close() throws IOException {
     super.close();
 
@@ -51,16 +52,19 @@ public class MockRAMOutputStream extends RAMOutputStream {
     }
   }
 
+  @Override
   public void flush() throws IOException {
     dir.maybeThrowDeterministicException();
     super.flush();
   }
 
+  @Override
   public void writeByte(byte b) throws IOException {
     singleByte[0] = b;
     writeBytes(singleByte, 0, 1);
   }
   
+  @Override
   public void writeBytes(byte[] b, int offset, int len) throws IOException {
     long freeSpace = dir.maxSize - dir.sizeInBytes();
     long realUsage = 0;

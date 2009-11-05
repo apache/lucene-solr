@@ -125,6 +125,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
       super(org.apache.lucene.util.Version.LUCENE_CURRENT);
     }
   
+    @Override
     public TokenStream tokenStream(String field, Reader reader) {
       return new WhitespaceAnalyzer().tokenStream(field, reader);
     }
@@ -150,6 +151,7 @@ class PayloadSetter extends TokenFilter {
   byte[] data = new byte[1];
   Payload p = new Payload(data,0,1);
 
+  @Override
   public boolean incrementToken() throws IOException {
     boolean hasNext = input.incrementToken();
     if (!hasNext) return false;

@@ -46,6 +46,7 @@ public class TestSpans extends LuceneTestCase {
 
   public static final String field = "field";
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
@@ -393,6 +394,7 @@ public class TestSpans extends LuceneTestCase {
     int slop = 1;
 
     final Similarity sim = new DefaultSimilarity() {
+      @Override
       public float sloppyFreq(int distance) {
         return 0.0f;
       }
@@ -404,6 +406,7 @@ public class TestSpans extends LuceneTestCase {
                                 makeSpanTermQuery("t2") },
                               slop,
                               ordered) {
+      @Override
       public Similarity getSimilarity(Searcher s) {
         return sim;
       }

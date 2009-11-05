@@ -392,6 +392,7 @@ public class TestPayloads extends LuceneTestCase {
             fieldToData.put(field, new PayloadData(numFieldInstancesToSkip, data, offset, length));
         }
         
+        @Override
         public TokenStream tokenStream(String fieldName, Reader reader) {
             PayloadData payload = (PayloadData) fieldToData.get(fieldName);
             TokenStream ts = new WhitespaceTokenizer(reader);
@@ -439,6 +440,7 @@ public class TestPayloads extends LuceneTestCase {
             payloadAtt = addAttribute(PayloadAttribute.class);
         }
         
+        @Override
         public boolean incrementToken() throws IOException {
             boolean hasNext = input.incrementToken();
             if (hasNext) {
@@ -472,6 +474,7 @@ public class TestPayloads extends LuceneTestCase {
         Thread[] ingesters = new Thread[numThreads];
         for (int i = 0; i < numThreads; i++) {
             ingesters[i] = new Thread() {
+                @Override
                 public void run() {
                     try {
                         for (int j = 0; j < numDocs; j++) {
@@ -530,6 +533,7 @@ public class TestPayloads extends LuceneTestCase {
             termAtt = addAttribute(TermAttribute.class);
         }
         
+        @Override
         public boolean incrementToken() throws IOException {
             if (!first) return false;
             first = false;
@@ -538,6 +542,7 @@ public class TestPayloads extends LuceneTestCase {
             return true;
         }
         
+        @Override
         public void close() throws IOException {
             pool.release(payload);
         }

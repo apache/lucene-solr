@@ -89,6 +89,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
   }
 
   private static class PayloadAnalyzer extends Analyzer {
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       return new PayloadFilter(new LowerCaseTokenizer(reader));
     }
@@ -105,6 +106,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
       payloadAtt = addAttribute(PayloadAttribute.class);
     }
 
+    @Override
     public boolean incrementToken() throws IOException {
       boolean hasNext = input.incrementToken();
       if (hasNext) {
@@ -126,32 +128,39 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
       this.input = input;
     }
 
+    @Override
     public byte readByte() throws IOException {
       TestMultiLevelSkipList.this.counter++;
       return this.input.readByte();
     }
 
+    @Override
     public void readBytes(byte[] b, int offset, int len) throws IOException {
       TestMultiLevelSkipList.this.counter += len;
       this.input.readBytes(b, offset, len);
     }
 
+    @Override
     public void close() throws IOException {
       this.input.close();
     }
 
+    @Override
     public long getFilePointer() {
       return this.input.getFilePointer();
     }
 
+    @Override
     public void seek(long pos) throws IOException {
       this.input.seek(pos);
     }
 
+    @Override
     public long length() {
       return this.input.length();
     }
 
+    @Override
     public Object clone() {
       return new CountingStream((IndexInput) this.input.clone());
     }

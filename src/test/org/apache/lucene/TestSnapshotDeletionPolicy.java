@@ -118,6 +118,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     writer.setMaxBufferedDocs(2);
 
     final Thread t = new Thread() {
+        @Override
         public void run() {
           Document doc = new Document();
           doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));

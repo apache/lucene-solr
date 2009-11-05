@@ -292,9 +292,11 @@ public class TestOmitTf extends LuceneTestCase {
     searcher.search(q1,
                     new CountingHitCollector() {
                       private Scorer scorer;
+                      @Override
                       public final void setScorer(Scorer scorer) {
                         this.scorer = scorer;
                       }
+                      @Override
                       public final void collect(int doc) throws IOException {
                         //System.out.println("Q1: Doc=" + doc + " score=" + score);
                         float score = scorer.score();
@@ -308,9 +310,11 @@ public class TestOmitTf extends LuceneTestCase {
     searcher.search(q2,
                     new CountingHitCollector() {
                       private Scorer scorer;
+                      @Override
                       public final void setScorer(Scorer scorer) {
                         this.scorer = scorer;
                       }
+                      @Override
                       public final void collect(int doc) throws IOException {
                         //System.out.println("Q2: Doc=" + doc + " score=" + score);
                         float score = scorer.score();
@@ -327,9 +331,11 @@ public class TestOmitTf extends LuceneTestCase {
     searcher.search(q3,
                     new CountingHitCollector() {
                       private Scorer scorer;
+                      @Override
                       public final void setScorer(Scorer scorer) {
                         this.scorer = scorer;
                       }
+                      @Override
                       public final void collect(int doc) throws IOException {
                         //System.out.println("Q1: Doc=" + doc + " score=" + score);
                         float score = scorer.score();
@@ -344,9 +350,11 @@ public class TestOmitTf extends LuceneTestCase {
     searcher.search(q4,
                     new CountingHitCollector() {
                       private Scorer scorer;
+                      @Override
                       public final void setScorer(Scorer scorer) {
                         this.scorer = scorer;
                       }
+                      @Override
                       public final void collect(int doc) throws IOException {
                         float score = scorer.score();
                         //System.out.println("Q1: Doc=" + doc + " score=" + score);
@@ -365,6 +373,7 @@ public class TestOmitTf extends LuceneTestCase {
         
     searcher.search(bq,
                     new CountingHitCollector() {
+                      @Override
                       public final void collect(int doc) throws IOException {
                         //System.out.println("BQ: Doc=" + doc + " score=" + score);
                         super.collect(doc);
@@ -381,7 +390,9 @@ public class TestOmitTf extends LuceneTestCase {
     static int sum=0;
     private int docBase = -1;
     CountingHitCollector(){count=0;sum=0;}
+    @Override
     public void setScorer(Scorer scorer) throws IOException {}
+    @Override
     public void collect(int doc) throws IOException {
       count++;
       sum += doc + docBase;  // use it to avoid any possibility of being optimized away
@@ -390,9 +401,11 @@ public class TestOmitTf extends LuceneTestCase {
     public static int getCount() { return count; }
     public static int getSum() { return sum; }
     
+    @Override
     public void setNextReader(IndexReader reader, int docBase) {
       this.docBase = docBase;
     }
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
     }

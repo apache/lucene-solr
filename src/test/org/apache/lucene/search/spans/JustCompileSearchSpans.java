@@ -37,30 +37,37 @@ final class JustCompileSearchSpans {
 
   static final class JustCompileSpans extends Spans {
 
+    @Override
     public int doc() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
     public int end() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
     public boolean next() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
     public boolean skipTo(int target) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
     public int start() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
     public Collection getPayload() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
     public boolean isPayloadAvailable() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -69,14 +76,17 @@ final class JustCompileSearchSpans {
 
   static final class JustCompileSpanQuery extends SpanQuery {
 
+    @Override
     public String getField() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
     public Spans getSpans(IndexReader reader) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
     public String toString(String field) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -85,30 +95,37 @@ final class JustCompileSearchSpans {
 
   static final class JustCompilePayloadSpans extends Spans {
 
+    @Override
     public Collection getPayload() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
     public boolean isPayloadAvailable() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
     public int doc() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
     public int end() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
     public boolean next() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
     public boolean skipTo(int target) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
     public int start() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
@@ -122,6 +139,7 @@ final class JustCompileSearchSpans {
       super(spans, weight, similarity, norms);
     }
 
+    @Override
     protected boolean setFreqCurrentDoc() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }

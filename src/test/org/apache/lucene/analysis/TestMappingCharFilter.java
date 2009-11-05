@@ -24,6 +24,7 @@ public class TestMappingCharFilter extends BaseTokenStreamTestCase {
 
   NormalizeCharMap normMap;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     normMap = new NormalizeCharMap();

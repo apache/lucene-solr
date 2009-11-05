@@ -39,6 +39,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
       super(new HitQueue(size, false));
     }
     
+    @Override
     protected TopDocs newTopDocs(ScoreDoc[] results, int start) {
       if (results == null) {
         return EMPTY_TOPDOCS;
@@ -55,20 +56,24 @@ public class TestTopDocsCollector extends LuceneTestCase {
       return new TopDocs(totalHits, results, maxScore);
     }
     
+    @Override
     public void collect(int doc) throws IOException {
       ++totalHits;
       pq.insertWithOverflow(new ScoreDoc(doc + base, scores[idx++]));
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase)
         throws IOException {
       base = docBase;
     }
 
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       // Don't do anything. Assign scores in random
     }
     
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
     }
@@ -98,6 +103,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     return tdc;
   }
   
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     
@@ -110,6 +116,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     writer.close();
   }
   
+  @Override
   protected void tearDown() throws Exception {
     dir.close();
     dir = null;

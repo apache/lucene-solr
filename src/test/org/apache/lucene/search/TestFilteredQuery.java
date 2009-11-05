@@ -45,6 +45,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   private Query query;
   private Filter filter;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
@@ -81,6 +82,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   // must be static for serialization tests
   private static Filter newStaticFilterB() {
     return new Filter() {
+      @Override
       public DocIdSet getDocIdSet (IndexReader reader) {
         BitSet bitset = new BitSet(5);
         bitset.set (1);
@@ -90,6 +92,7 @@ public class TestFilteredQuery extends LuceneTestCase {
     };
   }
 
+  @Override
   public void tearDown()
   throws Exception {
     searcher.close();
@@ -150,6 +153,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   // must be static for serialization tests 
   private static Filter newStaticFilterA() {
     return new Filter() {
+      @Override
       public DocIdSet getDocIdSet (IndexReader reader) {
         BitSet bitset = new BitSet(5);
         bitset.set(0, 5);

@@ -45,6 +45,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     private String term3 = "zz";
 
     private class SeekCountingDirectory extends RAMDirectory {
+      @Override
       public IndexInput openInput(String name) throws IOException {
         IndexInput ii = super.openInput(name);
         if (name.endsWith(".prx")) {
@@ -154,31 +155,38 @@ public class TestLazyProxSkipping extends LuceneTestCase {
               this.input = input;
           }      
                 
+          @Override
           public byte readByte() throws IOException {
               return this.input.readByte();
           }
     
+          @Override
           public void readBytes(byte[] b, int offset, int len) throws IOException {
               this.input.readBytes(b, offset, len);        
           }
     
+          @Override
           public void close() throws IOException {
               this.input.close();
           }
     
+          @Override
           public long getFilePointer() {
               return this.input.getFilePointer();
           }
     
+          @Override
           public void seek(long pos) throws IOException {
               TestLazyProxSkipping.this.seeksCounter++;
               this.input.seek(pos);
           }
     
+          @Override
           public long length() {
               return this.input.length();
           }
           
+          @Override
           public Object clone() {
               return new SeeksCountingStream((IndexInput) this.input.clone());
           }

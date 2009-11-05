@@ -206,6 +206,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     return getIndex (false, false);
   }
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     full = getFullIndex();
@@ -415,22 +416,27 @@ public class TestSort extends LuceneTestCase implements Serializable {
       slotValues = new int[numHits];
     }
 
+    @Override
     public void copy(int slot, int doc) {
       slotValues[slot] = docValues[doc];
     }
 
+    @Override
     public int compare(int slot1, int slot2) {
       return slotValues[slot1] - slotValues[slot2];
     }
 
+    @Override
     public int compareBottom(int doc) {
       return bottomValue - docValues[doc];
     }
 
+    @Override
     public void setBottom(int bottom) {
       bottomValue = slotValues[bottom];
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       docValues = FieldCache.DEFAULT.getInts(reader, "parser", new FieldCache.IntParser() {
           public final int parseInt(final String val) {
@@ -439,12 +445,14 @@ public class TestSort extends LuceneTestCase implements Serializable {
         });
     }
 
+    @Override
     public Comparable value(int slot) {
       return Integer.valueOf(slotValues[slot]);
     }
   }
 
   static class MyFieldComparatorSource extends FieldComparatorSource {
+    @Override
     public FieldComparator newComparator(String fieldname, int numHits, int sortPos, boolean reversed) {
       return new MyFieldComparator(numHits);
     }
@@ -715,6 +723,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
 
     // a filter that only allows through the first hit
     Filter filt = new Filter() {
+      @Override
       public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
         BitSet bs = new BitSet(reader.maxDoc());
         bs.set(0, reader.maxDoc());

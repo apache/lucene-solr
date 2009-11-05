@@ -64,6 +64,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   private class PayloadAnalyzer extends Analyzer {
 
 
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new LowerCaseTokenizer(reader);
       result = new PayloadFilter(result, fieldName);
@@ -83,6 +84,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       payloadAtt = addAttribute(PayloadAttribute.class);
     }
     
+    @Override
     public boolean incrementToken() throws IOException {
       boolean hasNext = input.incrementToken();
       if (hasNext) {
@@ -103,6 +105,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     }
   }
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
@@ -279,6 +282,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   static class BoostingSimilarity extends DefaultSimilarity {
 
     // TODO: Remove warning after API has been finalized
+    @Override
     public float scorePayload(int docId, String fieldName, int start, int end, byte[] payload, int offset, int length) {
       //we know it is size 4 here, so ignore the offset/length
       return payload[0];
@@ -287,26 +291,32 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     //Make everything else 1 so we see the effect of the payload
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    @Override
     public float lengthNorm(String fieldName, int numTerms) {
       return 1;
     }
 
+    @Override
     public float queryNorm(float sumOfSquaredWeights) {
       return 1;
     }
 
+    @Override
     public float sloppyFreq(int distance) {
       return 1;
     }
 
+    @Override
     public float coord(int overlap, int maxOverlap) {
       return 1;
     }
 
+    @Override
     public float idf(int docFreq, int numDocs) {
       return 1;
     }
 
+    @Override
     public float tf(float freq) {
       return freq == 0 ? 0 : 1;
     }

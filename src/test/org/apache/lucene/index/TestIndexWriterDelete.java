@@ -609,11 +609,13 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     MockRAMDirectory.Failure failure = new MockRAMDirectory.Failure() {
         boolean sawMaybe = false;
         boolean failed = false;
+        @Override
         public MockRAMDirectory.Failure reset() {
           sawMaybe = false;
           failed = false;
           return this;
         }
+        @Override
         public void eval(MockRAMDirectory dir)  throws IOException {
           if (sawMaybe && !failed) {
             boolean seen = false;
@@ -737,10 +739,12 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     
     MockRAMDirectory.Failure failure = new MockRAMDirectory.Failure() {
         boolean failed = false;
+        @Override
         public MockRAMDirectory.Failure reset() {
           failed = false;
           return this;
         }
+        @Override
         public void eval(MockRAMDirectory dir)  throws IOException {
           if (!failed) {
             failed = true;

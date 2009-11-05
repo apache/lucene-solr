@@ -57,10 +57,12 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     createIndex(dir1, false);
     performDefaultTests(new TestReopen() {
 
+      @Override
       protected void modifyIndex(int i) throws IOException {
         TestIndexReaderReopen.modifyIndex(i, dir1);
       }
 
+      @Override
       protected IndexReader openReader() throws IOException {
         return IndexReader.open(dir1, false);
       }
@@ -73,10 +75,12 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     createIndex(dir2, true);
     performDefaultTests(new TestReopen() {
 
+      @Override
       protected void modifyIndex(int i) throws IOException {
         TestIndexReaderReopen.modifyIndex(i, dir2);
       }
 
+      @Override
       protected IndexReader openReader() throws IOException {
         return IndexReader.open(dir2, false);
       }
@@ -93,11 +97,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     
     performDefaultTests(new TestReopen() {
 
+      @Override
       protected void modifyIndex(int i) throws IOException {
         TestIndexReaderReopen.modifyIndex(i, dir1);
         TestIndexReaderReopen.modifyIndex(i, dir2);
       }
 
+      @Override
       protected IndexReader openReader() throws IOException {
         ParallelReader pr = new ParallelReader();
         pr.add(IndexReader.open(dir1, false));
@@ -116,11 +122,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
     performTestsWithExceptionInReopen(new TestReopen() {
 
+      @Override
       protected void modifyIndex(int i) throws IOException {
         TestIndexReaderReopen.modifyIndex(i, dir3);
         TestIndexReaderReopen.modifyIndex(i, dir4);
       }
 
+      @Override
       protected IndexReader openReader() throws IOException {
         ParallelReader pr = new ParallelReader();
         pr.add(IndexReader.open(dir3, false));
@@ -213,11 +221,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
     performDefaultTests(new TestReopen() {
 
+      @Override
       protected void modifyIndex(int i) throws IOException {
         TestIndexReaderReopen.modifyIndex(i, dir1);
         TestIndexReaderReopen.modifyIndex(i, dir2);
       }
 
+      @Override
       protected IndexReader openReader() throws IOException {
         return new MultiReader(new IndexReader[] 
                         {IndexReader.open(dir1, false), 
@@ -237,11 +247,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
     performTestsWithExceptionInReopen(new TestReopen() {
 
+      @Override
       protected void modifyIndex(int i) throws IOException {
         TestIndexReaderReopen.modifyIndex(i, dir3);
         TestIndexReaderReopen.modifyIndex(i, dir4);
       }
 
+      @Override
       protected IndexReader openReader() throws IOException {
         return new MultiReader(new IndexReader[] 
                         {IndexReader.open(dir3, false), 
@@ -270,6 +282,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     
     performDefaultTests(new TestReopen() {
 
+      @Override
       protected void modifyIndex(int i) throws IOException {
         // only change norms in this index to maintain the same number of docs for each of ParallelReader's subreaders
         if (i == 1) TestIndexReaderReopen.modifyIndex(i, dir1);  
@@ -278,6 +291,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         TestIndexReaderReopen.modifyIndex(i, dir5);
       }
 
+      @Override
       protected IndexReader openReader() throws IOException {
         ParallelReader pr = new ParallelReader();
         pr.add(IndexReader.open(dir1, false));
@@ -695,6 +709,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     writer.close();
 
     final TestReopen test = new TestReopen() {      
+      @Override
       protected void modifyIndex(int i) throws IOException {
         if (i % 3 == 0) {
           IndexReader modifier = IndexReader.open(dir, false);
@@ -711,6 +726,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         }
       }
 
+      @Override
       protected IndexReader openReader() throws IOException {
         return IndexReader.open(dir, false);
       }      
@@ -741,6 +757,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       if (i < 20 ||( i >=50 && i < 70) || i > 90) {
         task = new ReaderThreadTask() {
           
+          @Override
           public void run() throws Exception {
             while (!stopped) {
               if (index % 2 == 0) {
@@ -784,6 +801,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         };
       } else {
         task = new ReaderThreadTask() {
+          @Override
           public void run() throws Exception {
             while (!stopped) {
               int numReaders = readers.size();
@@ -878,6 +896,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       this.task.stop();
     }
     
+    @Override
     public void run() {
       try {
         this.task.run();
@@ -1073,6 +1092,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
 
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     String tempDir = System.getProperty("java.io.tmpdir");

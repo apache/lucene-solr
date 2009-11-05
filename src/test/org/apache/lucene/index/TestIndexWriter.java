@@ -1451,6 +1451,7 @@ public class TestIndexWriter extends LuceneTestCase {
           lockFactory = null;
           myLockFactory = new SingleInstanceLockFactory();
         }
+        @Override
         public Lock makeLock(String name) {
           return myLockFactory.makeLock(name);
         }
@@ -1658,6 +1659,7 @@ public class TestIndexWriter extends LuceneTestCase {
   // Just intercepts all merges & verifies that we are never
   // merging a segment with >= 20 (maxMergeDocs) docs
   private class MyMergeScheduler extends MergeScheduler {
+    @Override
     synchronized public void merge(IndexWriter writer)
       throws CorruptIndexException, IOException {
 
@@ -1671,6 +1673,7 @@ public class TestIndexWriter extends LuceneTestCase {
       }
     }
 
+    @Override
     public void close() {}
   }
 
@@ -1695,10 +1698,12 @@ public class TestIndexWriter extends LuceneTestCase {
     RAMDirectory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new Analyzer() {
 
+      @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new TokenFilter(new StandardTokenizer(Version.LUCENE_CURRENT, reader)) {
           private int count = 0;
 
+          @Override
           public boolean incrementToken() throws IOException {
             if (count++ == 5) {
               throw new IOException();
@@ -1755,13 +1760,16 @@ public class TestIndexWriter extends LuceneTestCase {
     boolean doFail = false;
     int count;
 
+    @Override
     public void setDoFail() {
       this.doFail = true;
     }
+    @Override
     public void clearDoFail() {
       this.doFail = false;
     }
 
+    @Override
     public void eval(MockRAMDirectory dir)  throws IOException {
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
@@ -1822,12 +1830,14 @@ public class TestIndexWriter extends LuceneTestCase {
       this.fieldName = fieldName;
     }
 
+    @Override
     public boolean incrementToken() throws IOException {
       if (this.fieldName.equals("crash") && count++ >= 4)
         throw new IOException("I'm experiencing problems");
       return input.incrementToken();
     }
 
+    @Override
     public void reset() throws IOException {
       super.reset();
       count = 0;
@@ -1836,6 +1846,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
   public void testDocumentsWriterExceptions() throws IOException {
     Analyzer analyzer = new Analyzer() {
+      @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new CrashingFilter(fieldName, new WhitespaceTokenizer(reader));
       }
@@ -1918,6 +1929,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
   public void testDocumentsWriterExceptionThreads() throws Exception {
     Analyzer analyzer = new Analyzer() {
+      @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new CrashingFilter(fieldName, new WhitespaceTokenizer(reader));
       }
@@ -1937,6 +1949,7 @@ public class TestIndexWriter extends LuceneTestCase {
         Thread[] threads = new Thread[NUM_THREAD];
         for(int t=0;t<NUM_THREAD;t++) {
           threads[t] = new Thread() {
+              @Override
               public void run() {
                 try {
                   for(int iter=0;iter<NUM_ITER;iter++) {
@@ -2118,6 +2131,7 @@ public class TestIndexWriter extends LuceneTestCase {
         final IndexWriter finalWriter = writer;
         final ArrayList failure = new ArrayList();
         Thread t1 = new Thread() {
+            @Override
             public void run() {
               boolean done = false;
               while(!done) {
@@ -2179,6 +2193,7 @@ public class TestIndexWriter extends LuceneTestCase {
       this.noErrors = noErrors;
     }
 
+    @Override
     public void run() {
 
       final Document doc = new Document();
@@ -2366,6 +2381,7 @@ public class TestIndexWriter extends LuceneTestCase {
     public FailOnlyOnAbortOrFlush(boolean onlyOnce) {
       this.onlyOnce = onlyOnce;
     }
+    @Override
     public void eval(MockRAMDirectory dir)  throws IOException {
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
@@ -2498,6 +2514,7 @@ public class TestIndexWriter extends LuceneTestCase {
     public FailOnlyInCloseDocStore(boolean onlyOnce) {
       this.onlyOnce = onlyOnce;
     }
+    @Override
     public void eval(MockRAMDirectory dir)  throws IOException {
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
@@ -2538,6 +2555,7 @@ public class TestIndexWriter extends LuceneTestCase {
     public FailOnlyInWriteSegment(boolean onlyOnce) {
       this.onlyOnce = onlyOnce;
     }
+    @Override
     public void eval(MockRAMDirectory dir)  throws IOException {
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
@@ -2670,6 +2688,7 @@ public class TestIndexWriter extends LuceneTestCase {
   // Throws IOException during MockRAMDirectory.sync
   private static class FailOnlyInSync extends MockRAMDirectory.Failure {
     boolean didFail;
+    @Override
     public void eval(MockRAMDirectory dir)  throws IOException {
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
@@ -3038,6 +3057,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     boolean doFail;
 
+    @Override
     boolean testPoint(String name) {
       if (doFail && name.equals("DocumentsWriter.ThreadState.init start"))
         throw new RuntimeException("intentionally failing");
@@ -3075,6 +3095,7 @@ public class TestIndexWriter extends LuceneTestCase {
     w.addDocument(doc);
 
     Analyzer analyzer = new Analyzer() {
+      @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new CrashingFilter(fieldName, new WhitespaceTokenizer(reader));
       }
@@ -3103,6 +3124,7 @@ public class TestIndexWriter extends LuceneTestCase {
     boolean doFail;
     boolean failed;
 
+    @Override
     boolean testPoint(String name) {
       if (doFail && name.equals("startMergeInit")) {
         failed = true;
@@ -3144,6 +3166,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     boolean wasCalled;
 
+    @Override
     public void doAfterFlush() {
       wasCalled = true;
     }
@@ -3177,6 +3200,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     boolean fail1, fail2;
 
+    @Override
     public void eval(MockRAMDirectory dir)  throws IOException {
       StackTraceElement[] trace = new Exception().getStackTrace();
       boolean isCommit = false;
@@ -3453,6 +3477,7 @@ public class TestIndexWriter extends LuceneTestCase {
       final Iterator tokens = Arrays.asList(new String[]{"a","b","c"}).iterator();
       boolean first = true;
       
+      @Override
       public boolean incrementToken() {
         if (!tokens.hasNext()) return false;
         clearAttributes();
@@ -3647,6 +3672,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
       for(int i=0;i<NUM_THREADS;i++) {
         threads[i] = new Thread() {
+            @Override
             public void run() {
               try {
 
@@ -3698,6 +3724,7 @@ public class TestIndexWriter extends LuceneTestCase {
       super(numCopy);
     }
 
+    @Override
     void handle(Throwable t) {
       t.printStackTrace(System.out);
       synchronized(failures) {
@@ -3705,6 +3732,7 @@ public class TestIndexWriter extends LuceneTestCase {
       }
     }
 
+    @Override
     void doBody(int j, Directory[] dirs) throws Throwable {
       switch(j%4) {
       case 0:
@@ -3757,6 +3785,7 @@ public class TestIndexWriter extends LuceneTestCase {
       super(numCopy);
     }
 
+    @Override
     void handle(Throwable t) {
       if (!(t instanceof AlreadyClosedException) && !(t instanceof NullPointerException)) {
         t.printStackTrace(System.out);
@@ -3792,6 +3821,7 @@ public class TestIndexWriter extends LuceneTestCase {
       super(numCopy);
     }
 
+    @Override
     void doBody(int j, Directory[] dirs) throws Throwable {
       switch(j%5) {
       case 0:
@@ -3811,6 +3841,7 @@ public class TestIndexWriter extends LuceneTestCase {
       }
     }
 
+    @Override
     void handle(Throwable t) {
       boolean report = true;
 
@@ -3883,6 +3914,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     boolean doFail;
 
+    @Override
     boolean testPoint(String name) {
       if (doFail && name.equals("rollback before checkpoint"))
         throw new RuntimeException("intentionally failing");
@@ -4010,6 +4042,7 @@ public class TestIndexWriter extends LuceneTestCase {
     final List thrown = new ArrayList();
 
     final IndexWriter writer = new IndexWriter(new MockRAMDirectory(), new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED) {
+        @Override
         public void message(final String message) {
           if (message.startsWith("now flush at close") && 0 == thrown.size()) {
             thrown.add(null);
@@ -4334,6 +4367,7 @@ public class TestIndexWriter extends LuceneTestCase {
   private class IndexerThreadInterrupt extends Thread {
     volatile boolean failed;
     volatile boolean finish;
+    @Override
     public void run() {
       RAMDirectory dir = new RAMDirectory();
       IndexWriter w = null;

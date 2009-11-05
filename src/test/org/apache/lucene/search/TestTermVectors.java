@@ -39,6 +39,7 @@ public class TestTermVectors extends LuceneTestCase {
     super(s);
   }
 
+  @Override
   public void setUp() throws Exception {                  
     super.setUp();
     IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true,

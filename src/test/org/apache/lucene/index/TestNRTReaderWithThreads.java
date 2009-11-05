@@ -80,6 +80,7 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
       this.writer = writer;
     }
 
+    @Override
     public void run() {
       try {
         while (run) {

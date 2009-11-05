@@ -43,6 +43,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     super(s);
   }
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     DocHelper.setupDoc(doc1);

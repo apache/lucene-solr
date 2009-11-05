@@ -30,6 +30,7 @@ public class TestPriorityQueue extends LuceneTestCase {
             initialize(count);
         }
 
+        @Override
         protected boolean lessThan(Integer a, Integer b) {
             return (a < b);
         }

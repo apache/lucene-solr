@@ -47,6 +47,7 @@ public class TestBoolean2 extends LuceneTestCase {
   private Directory dir2;
   private int mulFactor;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
@@ -92,6 +93,7 @@ public class TestBoolean2 extends LuceneTestCase {
     bigSearcher = new IndexSearcher(reader);
   }
 
+  @Override
   public void tearDown() throws Exception {
     reader.close();
     dir2.close();
@@ -187,6 +189,7 @@ public class TestBoolean2 extends LuceneTestCase {
     String queryText = "+w3 +xx +w2 zz";
     int[] expDocNrs = {2, 3};
     searcher.setSimilarity(new DefaultSimilarity(){
+      @Override
       public float coord(int overlap, int maxOverlap) {
         return overlap / ((float)maxOverlap - 1);
       }

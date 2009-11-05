@@ -42,6 +42,7 @@ public class TestStressIndexing extends LuceneTestCase {
       this.allThreads = threads;
     }
 
+    @Override
     public void run() {
       final long stopTime = System.currentTimeMillis() + 1000*RUN_TIME_SEC;
 
@@ -77,6 +78,7 @@ public class TestStressIndexing extends LuceneTestCase {
       this.writer = writer;
     }
 
+    @Override
     public void doWork() throws Exception {
       // Add 10 docs:
       for(int j=0; j<10; j++) {
@@ -104,6 +106,7 @@ public class TestStressIndexing extends LuceneTestCase {
       this.directory = directory;
     }
 
+    @Override
     public void doWork() throws Throwable {
       for (int i=0; i<100; i++)
         (new IndexSearcher(directory, true)).close();

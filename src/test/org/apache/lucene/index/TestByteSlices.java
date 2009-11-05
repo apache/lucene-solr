@@ -24,6 +24,7 @@ public class TestByteSlices extends LuceneTestCase {
     ArrayList freeByteBlocks = new ArrayList();
     
     /* Allocate another byte[] from the shared pool */
+    @Override
     synchronized byte[] getByteBlock(boolean trackAllocations) {
       final int size = freeByteBlocks.size();
       final byte[] b;
@@ -35,6 +36,7 @@ public class TestByteSlices extends LuceneTestCase {
     }
 
     /* Return a byte[] to the pool */
+    @Override
     synchronized void recycleByteBlocks(byte[][] blocks, int start, int end) {
       for(int i=start;i<end;i++)
         freeByteBlocks.add(blocks[i]);

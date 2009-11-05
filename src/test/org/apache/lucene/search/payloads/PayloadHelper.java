@@ -48,6 +48,7 @@ public class PayloadHelper {
 
 
 
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new LowerCaseTokenizer(reader);
       result = new PayloadFilter(result, fieldName);
@@ -66,6 +67,7 @@ public class PayloadHelper {
       payloadAtt = addAttribute(PayloadAttribute.class);
     }
 
+    @Override
     public boolean incrementToken() throws IOException {
       
       if (input.incrementToken()) {

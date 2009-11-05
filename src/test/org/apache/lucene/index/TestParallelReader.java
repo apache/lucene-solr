@@ -42,6 +42,7 @@ public class TestParallelReader extends LuceneTestCase {
   private Searcher parallel;
   private Searcher single;
   
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     single = single();

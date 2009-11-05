@@ -332,6 +332,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     void launchThreads(final int numIter) {
       for (int i = 0; i < NUM_THREADS; i++) {
         threads[i] = new Thread() {
+          @Override
           public void run() {
             try {
               Term term = getDeleteTerm();
@@ -426,6 +427,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     void launchThreads(final int numIter) {
       for (int i = 0; i < NUM_THREADS; i++) {
         threads[i] = new Thread() {
+          @Override
           public void run() {
             try {
               final Directory[] dirs = new Directory[numDirs];
@@ -593,6 +595,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
   private static class MyWarmer extends IndexWriter.IndexReaderWarmer {
     int warmCount;
+    @Override
     public void warm(IndexReader reader) throws IOException {
       warmCount++;
     }
@@ -724,6 +727,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     final Thread[] threads = new Thread[NUM_THREAD];
     for(int i=0;i<NUM_THREAD;i++) {
       threads[i] = new Thread() {
+          @Override
           public void run() {
             while(System.currentTimeMillis() < endTime) {
               try {
@@ -787,6 +791,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     final Thread[] threads = new Thread[NUM_THREAD];
     for(int i=0;i<NUM_THREAD;i++) {
       threads[i] = new Thread() {
+          @Override
           public void run() {
             int count = 0;
             final Random r = new Random();

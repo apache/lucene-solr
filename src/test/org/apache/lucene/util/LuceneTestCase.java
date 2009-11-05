@@ -58,6 +58,7 @@ public abstract class LuceneTestCase extends TestCase {
     super(name);
   }
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     ConcurrentMergeScheduler.setTestMode();
@@ -81,6 +82,7 @@ public abstract class LuceneTestCase extends TestCase {
     return getClass().getName() + "." + getName();
   }
 
+  @Override
   protected void tearDown() throws Exception {
     try {
       // this isn't as useful as calling directly from the scope where the 

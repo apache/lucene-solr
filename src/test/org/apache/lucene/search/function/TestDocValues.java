@@ -99,6 +99,7 @@ public class TestDocValues extends LuceneTestCase {
      * @see org.apache.lucene.search.function.DocValues#floatVal(int)
      */
     /* @Override */
+    @Override
     public float floatVal(int doc) {
       return innerArray[doc];
     }
@@ -107,6 +108,7 @@ public class TestDocValues extends LuceneTestCase {
      * @see org.apache.lucene.search.function.DocValues#toString(int)
      */
     /* @Override */
+    @Override
     public String toString(int doc) {
       return Integer.toString(doc);
     }

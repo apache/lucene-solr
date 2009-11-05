@@ -84,6 +84,7 @@ public class TestFilteredSearch extends LuceneTestCase {
       
     }
 
+    @Override
     public DocIdSet getDocIdSet(IndexReader reader) {
       return bits;
     }

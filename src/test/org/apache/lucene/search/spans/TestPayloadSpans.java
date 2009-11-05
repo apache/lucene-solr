@@ -59,6 +59,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     super(s);
   }
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     PayloadHelper helper = new PayloadHelper();
@@ -472,6 +473,7 @@ public class TestPayloadSpans extends LuceneTestCase {
 
   class PayloadAnalyzer extends Analyzer {
 
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new LowerCaseTokenizer(reader);
       result = new PayloadFilter(result, fieldName);
@@ -502,6 +504,7 @@ public class TestPayloadSpans extends LuceneTestCase {
       payloadAtt = addAttribute(PayloadAttribute.class);
     }
 
+    @Override
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
         String token = new String(termAtt.termBuffer(), 0, termAtt.termLength());
@@ -522,6 +525,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   
   public class TestPayloadAnalyzer extends Analyzer {
 
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new LowerCaseTokenizer(reader);
       result = new PayloadFilter(result, fieldName);

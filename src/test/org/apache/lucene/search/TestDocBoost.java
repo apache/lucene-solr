@@ -71,15 +71,19 @@ public class TestDocBoost extends LuceneTestCase {
        new Collector() {
          private int base = 0;
          private Scorer scorer;
+         @Override
          public void setScorer(Scorer scorer) throws IOException {
           this.scorer = scorer;
          }
+         @Override
          public final void collect(int doc) throws IOException {
            scores[doc + base] = scorer.score();
          }
+         @Override
          public void setNextReader(IndexReader reader, int docBase) {
            base = docBase;
          }
+         @Override
          public boolean acceptsDocsOutOfOrder() {
            return true;
          }

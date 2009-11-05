@@ -44,6 +44,7 @@ class RepeatingTokenStream extends TokenStream {
      this.termAtt = addAttribute(TermAttribute.class);
    }
 
+   @Override
    public boolean incrementToken() throws IOException {
      num--;
      if (num >= 0) {
@@ -62,6 +63,7 @@ public class TestTermdocPerf extends LuceneTestCase {
     final RepeatingTokenStream ts = new RepeatingTokenStream(val);
 
     Analyzer analyzer = new Analyzer() {
+      @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         if (random.nextFloat() < percentDocs) ts.num = random.nextInt(maxTF)+1;
         else ts.num=0;
