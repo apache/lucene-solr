@@ -17,6 +17,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Arrays;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -76,6 +79,23 @@ public class TestFuzzyQuery extends LuceneTestCase {
     query = new FuzzyQuery(new Term("field", "aaaaa"), FuzzyQuery.defaultMinSimilarity, 6);   
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
+    
+    // test BooleanQuery.maxClauseCount
+    int savedClauseCount = BooleanQuery.getMaxClauseCount();
+    try {
+      BooleanQuery.setMaxClauseCount(2);
+      // This query would normally return 3 documents, because 3 terms match:
+      query = new FuzzyQuery(new Term("field", "aaaab"), FuzzyQuery.defaultMinSimilarity, 3);   
+      hits = searcher.search(query, null, 1000).scoreDocs;
+      assertEquals("only 2 documents should match", 2, hits.length);
+      Set<String> possibleTerms = new HashSet<String>(Arrays.asList("aaaaa","aaaab"));
+      for (int i = 0; i < hits.length; i++) {
+        final String term = searcher.doc(hits[i].doc).get("field");
+        assertTrue("term '" + term + "' should not appear in results", possibleTerms.contains(term));
+      }
+    } finally {
+      BooleanQuery.setMaxClauseCount(savedClauseCount);
+    }
 
     // not similar enough:
     query = new FuzzyQuery(new Term("field", "xxxxx"), FuzzyQuery.defaultMinSimilarity, 0);  	

@@ -19,10 +19,10 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
+import java.util.PriorityQueue;
 
 /** Implements the fuzzy search query. The similarity measurement
  * is based on the Levenshtein (edit distance) algorithm.
@@ -132,40 +132,40 @@ public class FuzzyQuery extends MultiTermQuery {
       return new TermQuery(term);
     }
 
+    int maxSize = BooleanQuery.getMaxClauseCount();
+    PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<ScoreTerm>(1024);
     FilteredTermEnum enumerator = getEnum(reader);
-    int maxClauseCount = BooleanQuery.getMaxClauseCount();
-    ScoreTermQueue stQueue = new ScoreTermQueue(maxClauseCount);
-    ScoreTerm reusableST = null;
-
     try {
+      ScoreTerm bottomSt = null;
       do {
-        float score = 0.0f;
-        Term t = enumerator.term();
-        if (t != null) {
-          score = enumerator.difference();
-          if (reusableST == null) {
-            reusableST = new ScoreTerm(t, score);
-          } else if (score >= reusableST.score) {
-            // reusableST holds the last "rejected" entry, so, if
-            // this new score is not better than that, there's no
-            // need to try inserting it
-            reusableST.score = score;
-            reusableST.term = t;
-          } else {
-            continue;
+        final Term t = enumerator.term();
+        if (t == null) break;
+        ScoreTerm st = new ScoreTerm(t, enumerator.difference());
+        if (stQueue.size() < maxSize) {
+          // record the current bottom item
+          if (bottomSt == null || st.compareTo(bottomSt) > 0) {
+            bottomSt = st;
           }
-
-          reusableST = stQueue.insertWithOverflow(reusableST);
+          // add to PQ, as it is not yet filled up
+          stQueue.offer(st);
+        } else {
+          assert bottomSt != null;
+          // only add to PQ, if the ScoreTerm is greater than the current bottom,
+          // as all entries will be enqueued after the current bottom and will never be visible
+          if (st.compareTo(bottomSt) < 0) {
+            stQueue.offer(st);
+          }
         }
+        //System.out.println("current: "+st.term+"("+st.score+"), bottom: "+bottomSt.term+"("+bottomSt.score+")");
       } while (enumerator.next());
     } finally {
       enumerator.close();
     }
     
     BooleanQuery query = new BooleanQuery(true);
-    int size = stQueue.size();
+    int size = Math.min(stQueue.size(), maxSize);
     for(int i = 0; i < size; i++){
-      ScoreTerm st = stQueue.pop();
+      ScoreTerm st = stQueue.poll();
       TermQuery tq = new TermQuery(st.term);      // found a match
       tq.setBoost(getBoost() * st.score); // set the boost
       query.add(tq, BooleanClause.Occur.SHOULD);          // add to query
@@ -173,10 +173,28 @@ public class FuzzyQuery extends MultiTermQuery {
 
     return query;
   }
+  
+  protected static class ScoreTerm implements Comparable<ScoreTerm> {
+    public Term term;
+    public float score;
+    
+    public ScoreTerm(Term term, float score){
+      this.term = term;
+      this.score = score;
+    }
+    
+    public int compareTo(ScoreTerm other) {
+      if (this.score == other.score)
+        return this.term.compareTo(other.term);
+      else
+        // inverse ordering!!!
+        return Float.compare(other.score, this.score);
+    }
+  }
     
   @Override
   public String toString(String field) {
-    StringBuilder buffer = new StringBuilder();
+    final StringBuilder buffer = new StringBuilder();
     if (!term.field().equals(field)) {
         buffer.append(term.field());
         buffer.append(":");
@@ -188,32 +206,6 @@ public class FuzzyQuery extends MultiTermQuery {
     return buffer.toString();
   }
   
-  protected static class ScoreTerm {
-    public Term term;
-    public float score;
-    
-    public ScoreTerm(Term term, float score){
-      this.term = term;
-      this.score = score;
-    }
-  }
-  
-  protected static class ScoreTermQueue extends PriorityQueue<ScoreTerm> {
-    
-    public ScoreTermQueue(int size){
-      initialize(size);
-    }
-    
-    @Override
-    protected boolean lessThan(ScoreTerm termA, ScoreTerm termB) {
-      if (termA.score == termB.score)
-        return termA.term.compareTo(termB.term) > 0;
-      else
-        return termA.score < termB.score;
-    }
-    
-  }
-
   @Override
   public int hashCode() {
     final int prime = 31;
