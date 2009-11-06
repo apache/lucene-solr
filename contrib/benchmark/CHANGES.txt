@@ -4,6 +4,10 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+11/04/2009
+  LUCENE-2029: Added doc.body.stored and doc.body.tokenized; each
+  falls back to the non-body variant as its default.  (Mike McCandless)
+
 10/28/2009
   LUCENE-1994: Fix thread safety of EnwikiContentSource and DocMaker
   when doc.reuse.fields is false.  Also made docs.reuse.fields=true

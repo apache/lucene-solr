@@ -40,8 +40,12 @@ import org.apache.lucene.document.Field.TermVector;
  * (default <b>SingleDocSource</b>).
  * <li><b>doc.stored</b> - specifies whether fields should be stored (default
  * <b>false</b>).
+ * <li><b>doc.body.stored</b> - specifies whether the body field should be stored (default
+ * = <b>doc.stored</b>).
  * <li><b>doc.tokenized</b> - specifies whether fields should be tokenized
  * (default <b>true</b>).
+ * <li><b>doc.body.tokenized</b> - specifies whether the
+ * body field should be tokenized (default = <b>doc.tokenized</b>).
  * <li><b>doc.tokenized.norms</b> - specifies whether norms should be stored in
  * the index or not. (default <b>false</b>).
  * <li><b>doc.body.tokenized.norms</b> - specifies whether norms should be
@@ -82,7 +86,7 @@ public class DocMaker {
     final Document doc;
     DocData docData = new DocData();
     
-    public DocState(boolean reuseFields, Store store, Index index, Index bodyIndex, TermVector termVector) {
+    public DocState(boolean reuseFields, Store store, Store bodyStore, Index index, Index bodyIndex, TermVector termVector) {
 
       this.reuseFields = reuseFields;
       
@@ -90,7 +94,7 @@ public class DocMaker {
         fields =  new HashMap<String,Field>();
         
         // Initialize the map with the default fields.
-        fields.put(BODY_FIELD, new Field(BODY_FIELD, "", store, bodyIndex, termVector));
+        fields.put(BODY_FIELD, new Field(BODY_FIELD, "", bodyStore, bodyIndex, termVector));
         fields.put(TITLE_FIELD, new Field(TITLE_FIELD, "", store, index, termVector));
         fields.put(DATE_FIELD, new Field(DATE_FIELD, "", store, index, termVector));
         fields.put(ID_FIELD, new Field(ID_FIELD, "", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
@@ -139,6 +143,7 @@ public class DocMaker {
   protected Config config;
 
   protected Store storeVal = Store.NO;
+  protected Store bodyStoreVal = Store.NO;
   protected Index indexVal = Index.ANALYZED_NO_NORMS;
   protected Index bodyIndexVal = Index.ANALYZED;
   protected TermVector termVecVal = TermVector.NO;
@@ -207,7 +212,7 @@ public class DocMaker {
         bdy = body.substring(0, size); // use part
         docData.setBody(body.substring(size)); // some left
       }
-      Field bodyField = ds.getField(BODY_FIELD, storeVal, bodyIndexVal, termVecVal);
+      Field bodyField = ds.getField(BODY_FIELD, bodyStoreVal, bodyIndexVal, termVecVal);
       bodyField.setValue(bdy);
       doc.add(bodyField);
       
@@ -241,7 +246,7 @@ public class DocMaker {
   protected DocState getDocState() {
     DocState ds = docState.get();
     if (ds == null) {
-      ds = new DocState(reuseFields, storeVal, indexVal, bodyIndexVal, termVecVal);
+      ds = new DocState(reuseFields, storeVal, bodyStoreVal, indexVal, bodyIndexVal, termVecVal);
       docState.set(ds);
     }
     return ds;
@@ -375,18 +380,26 @@ public class DocMaker {
     }
 
     boolean stored = config.get("doc.stored", false);
+    boolean bodyStored = config.get("doc.body.stored", stored);
     boolean tokenized = config.get("doc.tokenized", true);
+    boolean bodyTokenized = config.get("doc.body.tokenized", tokenized);
     boolean norms = config.get("doc.tokenized.norms", false);
     boolean bodyNorms = config.get("doc.body.tokenized.norms", true);
     boolean termVec = config.get("doc.term.vector", false);
     storeVal = (stored ? Field.Store.YES : Field.Store.NO);
+    bodyStoreVal = (bodyStored ? Field.Store.YES : Field.Store.NO);
     if (tokenized) {
       indexVal = norms ? Index.ANALYZED : Index.ANALYZED_NO_NORMS;
-      bodyIndexVal = bodyNorms ? Index.ANALYZED : Index.ANALYZED_NO_NORMS;
     } else {
       indexVal = norms ? Index.NOT_ANALYZED : Index.NOT_ANALYZED_NO_NORMS;
+    }
+
+    if (bodyTokenized) {
+      bodyIndexVal = bodyNorms ? Index.ANALYZED : Index.ANALYZED_NO_NORMS;
+    } else {
       bodyIndexVal = bodyNorms ? Index.NOT_ANALYZED : Index.NOT_ANALYZED_NO_NORMS;
     }
+
     boolean termVecPositions = config.get("doc.term.vector.positions", false);
     boolean termVecOffsets = config.get("doc.term.vector.offsets", false);
     if (termVecPositions && termVecOffsets) {
