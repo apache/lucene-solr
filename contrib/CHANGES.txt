@@ -14,23 +14,12 @@ Changes in runtime behavior
    by ArabicAnalyzer. You'll need to fully re-index any previously created 
    indexes.  (Basem Narmok via Robert Muir)
 
- * LUCENE-1963: ArabicAnalyzer now lowercases before checking the stopword
-   list. This has no effect on Arabic text, but if you are using a custom
-   stopword list that contains some non-Arabic words, you'll need to fully
-   reindex.  (DM Smith via Robert Muir)
-
 API Changes
 
  * LUCENE-1936: Deprecated RussianLowerCaseFilter, because it transforms
    text exactly the same as LowerCaseFilter. Please use LowerCaseFilter
    instead, which has the same functionality.  (Robert Muir)
    
- * LUCENE-2002: Add required Version matchVersion argument when
-   constructing ComplexPhraseQueryParser and default (as of 2.9)
-   enablePositionIncrements to true to match StandardAnalyzer's
-   default.  Also added required matchVersion to most of the analyzers
-   (Uwe Schindler, Mike McCandless)
-
 Bug fixes
 
  * LUCENE-1781: Fixed various issues with the lat/lng bounding box
@@ -41,26 +30,9 @@ Bug fixes
    Iterator#hasNext method on exhausted streams.
    (Patrick Jungermann via Karl Wettin)
 
- * LUCENE-1953: FastVectorHighlighter: small fragCharSize can cause
-   StringIndexOutOfBoundsException. (Koji Sekiguchi)
-   
- * LUCENE-1929: Highlighter throws exception on NumericRangeQuery.
-   (Mark Miller, Uwe Schindler)
-
- * LUCENE-2001: Wordnet Syns2Index incorrectly parses synonyms that
-   contain a single quote. (Parag H. Dave via Robert Muir)
-
  * LUCENE-1359: French analyzer did not support null field names.
    (Andrew Lynch via Robert Muir)
    
- * LUCENE-2003: Highlighter doesn't respect position increments other than 1 with 
-   PhraseQuerys. (Uwe Schindler, Mark Miller)
-   
- * LUCENE-2014: SmartChineseAnalyzer did not properly clear attributes
-   in WordTokenFilter. If enablePositionIncrements is set for StopFilter,
-   then this could create invalid position increments, causing IndexWriter
-   to crash.  (Robert Muir, Uwe Schindler)
-
 New features
 
  * LUCENE-1924: Added BalancedSegmentMergePolicy to contrib/misc,
@@ -101,6 +73,49 @@ Build
    contrib/analyzers/common, under miscellaneous.  (Robert Muir)
    
 Test Cases
+======================= Release 2.9.1 2009-11-06 =======================
+
+Changes in backwards compatibility policy
+
+ * LUCENE-2002: Add required Version matchVersion argument when
+   constructing ComplexPhraseQueryParser and default (as of 2.9)
+   enablePositionIncrements to true to match StandardAnalyzer's
+   default.  Also added required matchVersion to most of the analyzers
+   (Uwe Schindler, Mike McCandless)
+
+Changes in runtime behavior
+
+ * LUCENE-1963: ArabicAnalyzer now lowercases before checking the stopword
+   list. This has no effect on Arabic text, but if you are using a custom
+   stopword list that contains some non-Arabic words, you'll need to fully
+   reindex.  (DM Smith via Robert Muir)
+
+Bug fixes
+
+ * LUCENE-1953: FastVectorHighlighter: small fragCharSize can cause
+   StringIndexOutOfBoundsException. (Koji Sekiguchi)
+   
+ * LUCENE-1929: Highlighter throws exception on NumericRangeQuery and does not
+   support deprecated RangeQuery.  (Mark Miller)
+   
+ * LUCENE-2001: Wordnet Syns2Index incorrectly parses synonyms that
+   contain a single quote. (Parag H. Dave via Robert Muir)
+   
+ * LUCENE-2003: Highlighter doesn't respect position increments other than 1 with 
+   PhraseQuerys. (Uwe Schindler, Mark Miller)
+
+ * LUCENE-1954: InstantiatedIndexWriter: Fixed ClassCastException with
+   NumericField because of incorrect unchecked cast: Document.getFields()
+   returns List<Fieldable>.  (Bernd Fondermann via Uwe Schindler)
+   
+ * LUCENE-2014: SmartChineseAnalyzer did not properly clear attributes
+   in WordTokenFilter. If enablePositionIncrements is set for StopFilter,
+   then this could create invalid position increments, causing IndexWriter
+   to crash.  (Robert Muir, Uwe Schindler)
+   
+ * LUCENE-2013: SpanRegexQuery does not work with QueryScorer.
+   (Benjamin Keil via Mark Miller)
+
 ======================= Release 2.9.0 2009-09-23 =======================
 
 Changes in runtime behavior
