@@ -446,7 +446,8 @@ implements Serializable {
   // field must be interned after reading from stream
   private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, ClassNotFoundException {
     in.defaultReadObject();
-    field = StringHelper.intern(field);
+    if (field != null)
+      field = StringHelper.intern(field);
   }
 
   /** Returns the {@link FieldComparator} to use for
