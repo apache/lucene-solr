@@ -101,13 +101,6 @@ API Changes
 
 * LUCENE-1989: Generify CharArraySet. (Uwe Schindler)
 
-* LUCENE-1987: Un-deprecate some ctors of Token, as they will not
-  be removed in 3.0 and are still useful. Also add some missing
-  o.a.l.util.Version constants for enabling invalid acronym
-  settings in StandardAnalyzer to be compatible with the coming
-  Lucene 3.0. Remove the rest of deprecated analysis methods/classes.
-  (Uwe Schindler)
-
 * LUCENE-1945: All public classes that have a close() method now
   also implement java.io.Closeable (IndexReader, IndexWriter, Directory,...).
   (Uwe Schindler)
@@ -119,15 +112,6 @@ API Changes
   
 * LUCENE-1973: Remove deprecated Similarity methods. (Uwe Schindler)
 
-* LUCENE-2002: Add required Version matchVersion argument when
-  constructing QueryParser or MultiFieldQueryParser and, default (as
-  of 2.9) enablePositionIncrements to true to match
-  StandardAnalyzer's 2.9 default (Uwe Schindler, Mike McCandless)
-
-* LUCENE-1973: Un-deprecate IndexSearcher.setDefaultFieldSortScoring,
-  to allow controlling per-IndexSearcher whether scores are computed
-  when sorting by field.  (Uwe Schindler, Mike McCandless)
-  
 * LUCENE-2011: Remove deprecated Scorer.explain(int).
   (Uwe Schindler, Mark Miller)
    
@@ -139,36 +123,8 @@ Bug fixes
   wildcard is form "foo*", for slightly faster performance. (Robert
   Muir via Mike McCandless)
 
-* LUCENE-1974: Fixed nasty bug in BooleanQuery (when it used
-  BooleanScorer for scoring), whereby some matching documents fail to
-  be collected.  (Fulin Tang via Mike McCandless)
-
-* LUCENE-1124: Make sure FuzzyQuery always matches the precise term.
-  (stefatwork@gmail.com via Mike McCandless)
-
-* LUCENE-1976: Fix IndexReader.isCurrent() to return the right thing
-  when the reader is a near real-time reader.  (Jake Mannix via Mike
-  McCandless)
-
-* LUCENE-1986: Fix NPE when scoring PayloadNearQuery (Peter Keegan,
-  Mark Miller via Mike McCandless)
-
-* LUCENE-1992: Fix thread hazard if a merge is committing just as an
-  exception occurs during sync (Uwe Schindler, Mike McCandless)
-
-* LUCENE-1995: Note in javadocs that IndexWriter.setRAMBufferSizeMB
-  cannot exceed 2048 MB, and throw IllegalArgumentException if it
-  does.  (Aaron McKee, Yonik Seeley, Mike McCandless)
-
-* LUCENE-2004: Fix Constants.LUCENE_MAIN_VERSION to not be inlined
-  by client code.  (Uwe Schindler)
-  
 * LUCENE-2013: SpanRegexQuery does not work with QueryScorer.
   (Benjamin Keil via Mark Miller)
-
-* LUCENE-2016: Replace illegal U+FFFF character with the replacement
-  char (U+FFFD) during indexing, to prevent silent index corruption.
-  (Peter Keegan, Mike McCandless)
 
 New features
 
@@ -183,16 +139,78 @@ Optimizations
 * LUCENE-2006: Optimization of FieldDocSortedHitQueue to always
   use Comparable<?> interface.  (Uwe Schindler, Mark Miller)
 
-Documentation
-
-* LUCENE-2008: Javadoc improvements for TokenStream/Tokenizer/Token
-  (Luke Nezda via Mike McCandless)
-
 Build
 
 * LUCENE-486: Remove test->demo dependencies. (Michael Busch)
 
 Test Cases
+
+======================= Release 2.9.1 2009-11-06 =======================
+
+Changes in backwards compatibility policy
+
+ * LUCENE-2002: Add required Version matchVersion argument when
+   constructing QueryParser or MultiFieldQueryParser and, default (as
+   of 2.9) enablePositionIncrements to true to match
+   StandardAnalyzer's 2.9 default (Uwe Schindler, Mike McCandless)
+
+Bug fixes
+
+ * LUCENE-1974: Fixed nasty bug in BooleanQuery (when it used
+   BooleanScorer for scoring), whereby some matching documents fail to
+   be collected.  (Fulin Tang via Mike McCandless)
+
+ * LUCENE-1124: Make sure FuzzyQuery always matches the precise term.
+   (stefatwork@gmail.com via Mike McCandless)
+
+ * LUCENE-1976: Fix IndexReader.isCurrent() to return the right thing
+   when the reader is a near real-time reader.  (Jake Mannix via Mike
+   McCandless)
+
+ * LUCENE-1986: Fix NPE when scoring PayloadNearQuery (Peter Keegan,
+   Mark Miller via Mike McCandless)
+
+ * LUCENE-1992: Fix thread hazard if a merge is committing just as an
+   exception occurs during sync (Uwe Schindler, Mike McCandless)
+
+ * LUCENE-1995: Note in javadocs that IndexWriter.setRAMBufferSizeMB
+   cannot exceed 2048 MB, and throw IllegalArgumentException if it
+   does.  (Aaron McKee, Yonik Seeley, Mike McCandless)
+
+ * LUCENE-2004: Fix Constants.LUCENE_MAIN_VERSION to not be inlined
+   by client code.  (Uwe Schindler)
+
+ * LUCENE-2016: Replace illegal U+FFFF character with the replacement
+   char (U+FFFD) during indexing, to prevent silent index corruption.
+   (Peter Keegan, Mike McCandless)
+
+API Changes
+
+ * Un-deprecate search(Weight weight, Filter filter, int n) from
+   Searchable interface (deprecated by accident).  (Uwe Schindler)
+
+ * Un-deprecate o.a.l.util.Version constants.  (Mike McCandless)
+
+ * LUCENE-1987: Un-deprecate some ctors of Token, as they will not
+   be removed in 3.0 and are still useful. Also add some missing
+   o.a.l.util.Version constants for enabling invalid acronym
+   settings in StandardAnalyzer to be compatible with the coming
+   Lucene 3.0.  (Uwe Schindler)
+
+ * LUCENE-1973: Un-deprecate IndexSearcher.setDefaultFieldSortScoring,
+   to allow controlling per-IndexSearcher whether scores are computed
+   when sorting by field.  (Uwe Schindler, Mike McCandless)
+   
+Documentation
+
+ * LUCENE-1955: Fix Hits deprecation notice to point users in right
+   direction. (Mike McCandless, Mark Miller)
+   
+ * Fix javadoc about score tracking done by search methods in Searcher 
+   and IndexSearcher.  (Mike McCandless)
+
+ * LUCENE-2008: Javadoc improvements for TokenStream/Tokenizer/Token
+   (Luke Nezda via Mike McCandless)
 
 ======================= Release 2.9.0 2009-09-23 =======================
 
