@@ -21,14 +21,15 @@ import java.util.Map;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 
 /**
  * Commits the IndexWriter.
  *
  */
 public class CommitIndexTask extends PerfTask {
-  String commitUserData = null;
-  
+  Map<String,String> commitUserData;
+
   public CommitIndexTask(PerfRunData runData) {
     super(runData);
   }
@@ -38,17 +39,20 @@ public class CommitIndexTask extends PerfTask {
   }
   
   public void setParams(String params) {
-    commitUserData = params;
+    commitUserData = new HashMap<String,String>();
+    commitUserData.put(OpenReaderTask.USER_DATA, params);
   }
   
   public int doLogic() throws Exception {
     IndexWriter iw = getRunData().getIndexWriter();
     if (iw != null) {
-      if (commitUserData == null) iw.commit();
-      else {
-        Map<String,String> map = new HashMap<String,String>();
-        map.put(OpenReaderTask.USER_DATA, commitUserData);
-        iw.commit(map);
+      iw.commit(commitUserData);
+    } else {
+      IndexReader r = getRunData().getIndexReader();
+      if (r != null) {
+        r.commit(commitUserData);
+      } else {
+        throw new IllegalStateException("neither IndexWriter nor IndexReader is currently open");
       }
     }
     

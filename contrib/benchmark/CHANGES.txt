@@ -5,6 +5,10 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 $Id:$
 
 11/07/2009
+  LUCENE-2043: Fix CommitIndexTask to also commit pending IndexReader
+  changes (Mike McCandless)
+
+11/07/2009
   LUCENE-2042: Added print.hits.field, to print each hit from the
   Search* tasks.  (Mike McCandless)
 
