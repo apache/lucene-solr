@@ -32,6 +32,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.IndexSearcher;
@@ -114,6 +115,9 @@ public abstract class ReadTask extends PerfTask {
         final String printHitsField = getRunData().getConfig().get("print.hits.field", null);
         if (printHitsField != null && printHitsField.length() > 0) {
           final IndexReader r = searcher.getIndexReader();
+          if (q instanceof MultiTermQuery) {
+            System.out.println("MultiTermQuery term count = " + ((MultiTermQuery) q).getTotalNumberOfTerms());
+          }
           System.out.println("totalHits = " + hits.totalHits);
           System.out.println("maxDoc()  = " + r.maxDoc());
           System.out.println("numDocs() = " + r.numDocs());
