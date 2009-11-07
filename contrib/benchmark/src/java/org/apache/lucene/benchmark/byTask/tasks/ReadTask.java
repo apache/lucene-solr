@@ -51,7 +51,10 @@ import org.apache.lucene.store.Directory;
  * Otherwise a reader is opened at start and closed at the end.
  * <p>
  * The <code>search.num.hits</code> config parameter sets
- * the top number of hits to collect during searching.
+ * the top number of hits to collect during searching.  If
+ * <code>print.hits.field</code> is set, then each hit is
+ * printed along with the value of that field.</p>
+ *
  * <p>Other side effects: none.
  */
 public abstract class ReadTask extends PerfTask {
@@ -107,6 +110,20 @@ public abstract class ReadTask extends PerfTask {
         } else {
           hits = searcher.search(q, numHits);
         }
+
+        final String printHitsField = getRunData().getConfig().get("print.hits.field", null);
+        if (printHitsField != null && printHitsField.length() > 0) {
+          final IndexReader r = searcher.getIndexReader();
+          System.out.println("totalHits = " + hits.totalHits);
+          System.out.println("maxDoc()  = " + r.maxDoc());
+          System.out.println("numDocs() = " + r.numDocs());
+          for(int i=0;i<hits.scoreDocs.length;i++) {
+            final int docID = hits.scoreDocs[i].doc;
+            final Document doc = r.document(docID);
+            System.out.println("  " + i + ": doc=" + docID + " score=" + hits.scoreDocs[i].score + " " + printHitsField + " =" + doc.get(printHitsField));
+          }
+        }
+
         //System.out.println("q=" + q + ":" + hits.totalHits + " total hits"); 
 
         if (withTraverse()) {
