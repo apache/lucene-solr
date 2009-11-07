@@ -975,7 +975,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * (transactional semantics).
    * @throws IOException if there is a low-level IO error
    */
-  protected final synchronized void commit(Map<String, String> commitUserData) throws IOException {
+  public final synchronized void commit(Map<String, String> commitUserData) throws IOException {
     if (hasChanges) {
       doCommit(commitUserData);
     }
