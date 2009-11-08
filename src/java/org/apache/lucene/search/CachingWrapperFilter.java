@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.OpenBitSetDISI;
@@ -29,12 +30,14 @@ import org.apache.lucene.util.OpenBitSetDISI;
  * filters to simply filter, and then wrap with this class to add caching.
  */
 public class CachingWrapperFilter extends Filter {
-  protected Filter filter;
+  Filter filter;
 
   /**
-   * A transient Filter cache.
+   * A transient Filter cache (package private because of test)
    */
-  protected transient Map<IndexReader, DocIdSet> cache;
+  transient Map<IndexReader, DocIdSet> cache;
+  
+  private final ReentrantLock lock = new ReentrantLock();
 
   /**
    * @param filter Filter to cache results of
@@ -63,27 +66,28 @@ public class CachingWrapperFilter extends Filter {
   
   @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    if (cache == null) {
-      cache = new WeakHashMap<IndexReader, DocIdSet>();
-    }
+    lock.lock();
+    try {
+      if (cache == null) {
+        cache = new WeakHashMap<IndexReader,DocIdSet>();
+      }
 
-    DocIdSet cached = null;
-    synchronized (cache) {  // check cache
-      cached = cache.get(reader);
-    }
-
-    if (cached != null) {
-      return cached;
+      final DocIdSet cached = cache.get(reader);
+      if (cached != null) return cached;
+    } finally {
+      lock.unlock();
     }
 
     final DocIdSet docIdSet = docIdSetToCache(filter.getDocIdSet(reader), reader);
-
     if (docIdSet != null) {
-      synchronized (cache) {  // update cache
+      lock.lock();
+      try {
         cache.put(reader, docIdSet);
+      } finally {
+        lock.unlock();
       }
     }
-
+    
     return docIdSet;
   }
 

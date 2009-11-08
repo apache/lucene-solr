@@ -19,21 +19,23 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader;
 
 import java.io.IOException;
-
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Wraps another SpanFilter's result and caches it.  The purpose is to allow
  * filters to simply filter, and then wrap with this class to add caching.
  */
 public class CachingSpanFilter extends SpanFilter {
-  protected SpanFilter filter;
+  private SpanFilter filter;
 
   /**
-   * A transient Filter cache.
+   * A transient Filter cache (package private because of test)
    */
-  protected transient Map<IndexReader,SpanFilterResult> cache;
+  private transient Map<IndexReader,SpanFilterResult> cache;
+
+  private final ReentrantLock lock = new ReentrantLock();
 
   /**
    * @param filter Filter to cache results of
@@ -49,18 +51,25 @@ public class CachingSpanFilter extends SpanFilter {
   }
   
   private SpanFilterResult getCachedResult(IndexReader reader) throws IOException {
-    SpanFilterResult result = null;
-    if (cache == null) {
-      cache = new WeakHashMap<IndexReader,SpanFilterResult>();
-    }
-
-    synchronized (cache) {  // check cache
-      result = cache.get(reader);
-      if (result == null) {
-        result = filter.bitSpans(reader);
-        cache.put(reader, result);
+    lock.lock();
+    try {
+      if (cache == null) {
+        cache = new WeakHashMap<IndexReader,SpanFilterResult>();
       }
+      final SpanFilterResult cached = cache.get(reader);
+      if (cached != null) return cached;
+    } finally {
+      lock.unlock();
     }
+    
+    final SpanFilterResult result = filter.bitSpans(reader);
+    lock.lock();
+    try {
+      cache.put(reader, result);
+    } finally {
+      lock.unlock();
+    }
+    
     return result;
   }
 

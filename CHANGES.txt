@@ -12,6 +12,10 @@ Changes in backwards compatibility policy
 
 * oal.Lock.isLocked is now allowed to throw an IOException
 
+* LUCENE-2030: CachingWrapperFilter and CachingSpanFilter now hide
+  the internal cache implementation for thread safety, before it was
+  declared protected.  (Peter Lenahan, Uwe Schindler, Simon Willnauer)
+
 Changes in runtime behavior
 
 * LUCENE-1677: Remove the system property to set SegmentReader class
