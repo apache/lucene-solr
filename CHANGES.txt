@@ -184,6 +184,10 @@ Bug fixes
    char (U+FFFD) during indexing, to prevent silent index corruption.
    (Peter Keegan, Mike McCandless)
 
+ * LUCENE-2045: Fix silly FileNotFoundException hit if you enable
+   infoStream on IndexWriter and then add an empty document and commit
+   (Shai Erera via Mike McCandless)
+
 API Changes
 
  * Un-deprecate search(Weight weight, Filter filter, int n) from

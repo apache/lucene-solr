@@ -4572,4 +4572,17 @@ public class TestIndexWriter extends LuceneTestCase {
     _TestUtil.checkIndex(d);
     d.close();
   }
+
+  public void testNoDocsIndex() throws Throwable {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    writer.setUseCompoundFile(false);
+    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+    writer.setInfoStream(new PrintStream(bos));
+    writer.addDocument(new Document());
+    writer.close();
+
+    _TestUtil.checkIndex(dir);
+    dir.close();
+  }
 }

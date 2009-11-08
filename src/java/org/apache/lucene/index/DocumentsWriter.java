@@ -584,7 +584,8 @@ final class DocumentsWriter {
       consumer.flush(threads, flushState);
 
       if (infoStream != null) {
-        final long newSegmentSize = segmentSize(flushState.segmentName);
+        SegmentInfo si = new SegmentInfo(flushState.segmentName, flushState.numDocs, directory);
+        final long newSegmentSize = si.sizeInBytes();
         String message = "  oldRAMSize=" + numBytesUsed +
           " newFlushedSize=" + newSegmentSize +
           " docs/MB=" + nf.format(numDocsInRAM/(newSegmentSize/1024./1024.)) +
@@ -1137,24 +1138,6 @@ final class DocumentsWriter {
   long numBytesUsed;
 
   NumberFormat nf = NumberFormat.getInstance();
-
-  // TODO FI: this is not flexible -- we can't hardwire
-  // extensions in here:
-  private long segmentSize(String segmentName) throws IOException {
-    // Used only when infoStream != null
-    assert infoStream != null;
-    
-    long size = directory.fileLength(segmentName + ".tii") +
-      directory.fileLength(segmentName + ".tis") +
-      directory.fileLength(segmentName + ".frq") +
-      directory.fileLength(segmentName + ".prx");
-
-    final String normFileName = segmentName + ".nrm";
-    if (directory.fileExists(normFileName))
-      size += directory.fileLength(normFileName);
-
-    return size;
-  }
 
   // Coarse estimates used to measure RAM usage of buffered deletes
   final static int OBJECT_HEADER_BYTES = 8;
