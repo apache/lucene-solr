@@ -59,14 +59,17 @@ public class FuzzyAttributeImpl extends AttributeImpl
     return this.minSimilarity;
   }
 
+  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean equals(Object other) {
 
     if (other instanceof FuzzyAttributeImpl && other != null
@@ -80,10 +83,12 @@ public class FuzzyAttributeImpl extends AttributeImpl
 
   }
 
+  @Override
   public int hashCode() {
     return Integer.valueOf(this.prefixLength).hashCode();
   }
 
+  @Override
   public String toString() {
     return "<fuzzyAttribute prefixLength=" + this.prefixLength + "/>";
   }

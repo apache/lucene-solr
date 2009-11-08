@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 public class NGramTokenizerTest extends BaseTokenStreamTestCase {
     private StringReader input;
     
+    @Override
     public void setUp() throws Exception {
         super.setUp();
         input = new StringReader("abcde");

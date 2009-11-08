@@ -103,10 +103,12 @@ public class EnwikiContentSource extends ContentSource {
       return buffer.toString();
     }
     
+    @Override
     public void characters(char[] ch, int start, int length) {
       contents.append(ch, start, length);
     }
 
+    @Override
     public void endElement(String namespace, String simple, String qualified)
       throws SAXException {
       int elemType = getElementType(qualified);
@@ -197,6 +199,7 @@ public class EnwikiContentSource extends ContentSource {
       }
     }
 
+    @Override
     public void startElement(String namespace, String simple, String qualified,
                              Attributes attributes) {
       int elemType = getElementType(qualified);
@@ -257,6 +260,7 @@ public class EnwikiContentSource extends ContentSource {
   private InputStream is;
   private Parser parser = new Parser();
   
+  @Override
   public void close() throws IOException {
     synchronized (EnwikiContentSource.this) {
       if (is != null) {
@@ -266,6 +270,7 @@ public class EnwikiContentSource extends ContentSource {
     }
   }
   
+  @Override
   public synchronized DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
     String[] tuple = parser.next();
     docData.clear();
@@ -276,11 +281,13 @@ public class EnwikiContentSource extends ContentSource {
     return docData;
   }
 
+  @Override
   public void resetInputs() throws IOException {
     super.resetInputs();
     is = getInputStream(file);
   }
   
+  @Override
   public void setConfig(Config config) {
     super.setConfig(config);
     keepImages = config.get("keep.image.only.docs", true);

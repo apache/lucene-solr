@@ -32,6 +32,7 @@ public class SimpleSloppyPhraseQueryMaker extends SimpleQueryMaker {
   /* (non-Javadoc)
    * @see org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker#prepareQueries()
    */
+  @Override
   protected Query[] prepareQueries() throws Exception {
     // extract some 100 words from doc text to an array
     String words[];

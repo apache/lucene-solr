@@ -153,6 +153,7 @@ public class FieldPhraseList {
       return false;
     }
     
+    @Override
     public String toString(){
       StringBuilder sb = new StringBuilder();
       sb.append( text ).append( '(' ).append( boost ).append( ")(" );
@@ -173,6 +174,7 @@ public class FieldPhraseList {
       void setEndOffset( int endOffset ){
         this.endOffset = endOffset;
       }
+      @Override
       public String toString(){
         StringBuilder sb = new StringBuilder();
         sb.append( '(' ).append( startOffset ).append( ',' ).append( endOffset ).append( ')' );

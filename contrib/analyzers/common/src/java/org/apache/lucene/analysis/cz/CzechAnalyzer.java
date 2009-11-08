@@ -140,6 +140,7 @@ public final class CzechAnalyzer extends Analyzer {
 	 * @return  A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
 	 * 			{@link StandardFilter}, {@link LowerCaseFilter}, and {@link StopFilter}
 	 */
+	@Override
 	public final TokenStream tokenStream( String fieldName, Reader reader ) {
                 TokenStream result = new StandardTokenizer( matchVersion, reader );
 		result = new StandardFilter( result );
@@ -161,6 +162,7 @@ public final class CzechAnalyzer extends Analyzer {
      * @return  A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
      *          {@link StandardFilter}, {@link LowerCaseFilter}, and {@link StopFilter}
      */
+	@Override
 	public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {
       SavedStreams streams = (SavedStreams) getPreviousTokenStream();

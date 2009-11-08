@@ -52,6 +52,7 @@ public class RegexTermEnum extends FilteredTermEnum {
     setEnum(reader.terms(new Term(term.field(), pre)));
   }
 
+  @Override
   protected final boolean termCompare(Term term) {
     if (field == term.field()) {
       String searchText = term.text();
@@ -63,15 +64,18 @@ public class RegexTermEnum extends FilteredTermEnum {
     return false;
   }
 
+  @Override
   public final float difference() {
 // TODO: adjust difference based on distance of searchTerm.text() and term().text()
     return 1.0f;
   }
 
+  @Override
   public final boolean endEnum() {
     return endEnum;
   }
 
+  @Override
   public void close() throws IOException {
     super.close();
     field = null;

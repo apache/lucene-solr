@@ -25,6 +25,7 @@ public class TestUpdatingTable extends TestCase {
 
     RestaurantInfo infoToAdd1, infoToAdd2;
 
+    @Override
     protected void setUp() throws Exception {
         baseTableModel = new BaseTableModel(DataStore.getRestaurants());
         tableSearcher = new TableSearcher(baseTableModel);

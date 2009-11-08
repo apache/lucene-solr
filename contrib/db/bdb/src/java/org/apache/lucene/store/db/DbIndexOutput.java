@@ -55,6 +55,7 @@ public class DbIndexOutput extends IndexOutput {
         directory.openFiles.add(this);
     }
 
+    @Override
     public void close()
         throws IOException
     {
@@ -64,6 +65,7 @@ public class DbIndexOutput extends IndexOutput {
         directory.openFiles.remove(this);
     }
 
+    @Override
     public void flush()
         throws IOException
     {
@@ -71,6 +73,7 @@ public class DbIndexOutput extends IndexOutput {
             block.put(directory);
     }
 
+    @Override
     public void writeByte(byte b)
         throws IOException
     {
@@ -89,6 +92,7 @@ public class DbIndexOutput extends IndexOutput {
             length = position;
     }
 
+    @Override
     public void writeBytes(byte[] b, int offset, int len)
         throws IOException
     {
@@ -119,12 +123,14 @@ public class DbIndexOutput extends IndexOutput {
             length = position;
     }
 
+    @Override
     public long length()
         throws IOException
     {
         return length;
     }
 
+    @Override
     public void seek(long pos)
         throws IOException
     {
@@ -142,6 +148,7 @@ public class DbIndexOutput extends IndexOutput {
         }
     }
 
+    @Override
     public long getFilePointer()
     {
         return position;

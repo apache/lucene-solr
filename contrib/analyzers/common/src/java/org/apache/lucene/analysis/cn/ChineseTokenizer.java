@@ -111,6 +111,7 @@ public final class ChineseTokenizer extends Tokenizer {
             return false;
     }
 
+    @Override
     public boolean incrementToken() throws IOException {
         clearAttributes();
 
@@ -158,17 +159,20 @@ public final class ChineseTokenizer extends Tokenizer {
         }
     }
     
+    @Override
     public final void end() {
       // set final offset
       final int finalOffset = offset;
       this.offsetAtt.setOffset(finalOffset, finalOffset);
     }
 
+    @Override
     public void reset() throws IOException {
       super.reset();
       offset = bufferIndex = dataLen = 0;
     }
     
+    @Override
     public void reset(Reader input) throws IOException {
       super.reset(input);
       reset();

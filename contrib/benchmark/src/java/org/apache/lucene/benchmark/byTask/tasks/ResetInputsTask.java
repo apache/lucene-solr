@@ -31,6 +31,7 @@ public class ResetInputsTask extends PerfTask {
     super(runData);
   }
 
+  @Override
   public int doLogic() throws Exception {
     getRunData().resetInputs();
     return 0;
@@ -40,6 +41,7 @@ public class ResetInputsTask extends PerfTask {
    * (non-Javadoc)
    * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#shouldNotRecordStats()
    */
+  @Override
   protected boolean shouldNotRecordStats() {
     return true;
   }

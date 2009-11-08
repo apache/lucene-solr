@@ -48,14 +48,17 @@ public class DefaultPhraseSlopAttributeImpl extends AttributeImpl
     return this.defaultPhraseSlop;
   }
 
+  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean equals(Object other) {
 
     if (other instanceof DefaultPhraseSlopAttributeImpl
@@ -70,10 +73,12 @@ public class DefaultPhraseSlopAttributeImpl extends AttributeImpl
 
   }
 
+  @Override
   public int hashCode() {
     return Integer.valueOf(this.defaultPhraseSlop).hashCode();
   }
 
+  @Override
   public String toString() {
     return "<defaultPhraseSlop defaultPhraseSlop=" + this.defaultPhraseSlop
         + "/>";

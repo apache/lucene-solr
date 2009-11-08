@@ -51,6 +51,7 @@ public class RemoteCachingWrapperFilter extends Filter {
    * @param reader the index reader for the Filter
    * @return the DocIdSet
    */
+  @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     Filter cachedFilter = FilterManager.getInstance().getFilter(filter);
     return cachedFilter.getDocIdSet(reader);

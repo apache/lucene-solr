@@ -221,6 +221,7 @@ class BiSegGraph {
 
   }
 
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     Collection<ArrayList<SegTokenPair>>  values = tokenPairListTable.values();

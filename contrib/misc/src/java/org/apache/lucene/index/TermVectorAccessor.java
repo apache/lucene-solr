@@ -138,25 +138,30 @@ public class TermVectorAccessor {
 
     private TermVectorMapper decorated;
 
+    @Override
     public boolean isIgnoringPositions() {
       return decorated.isIgnoringPositions();
     }
 
+    @Override
     public boolean isIgnoringOffsets() {
       return decorated.isIgnoringOffsets();
     }
 
     private boolean termVectorStored = false;
 
+    @Override
     public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
       decorated.setExpectations(field, numTerms, storeOffsets, storePositions);
       termVectorStored = true;
     }
 
+    @Override
     public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
       decorated.map(term, frequency, offsets, positions);
     }
 
+    @Override
     public void setDocumentNumber(int documentNumber) {
       decorated.setDocumentNumber(documentNumber);
     }

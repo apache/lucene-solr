@@ -43,6 +43,7 @@ public class OrQueryNode extends BooleanQueryNode {
     }
   }
 
+  @Override
   public String toString() {
     if (getChildren() == null || getChildren().size() == 0)
       return "<boolean operation='or'/>";
@@ -57,6 +58,7 @@ public class OrQueryNode extends BooleanQueryNode {
     return sb.toString();
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     if (getChildren() == null || getChildren().size() == 0)
       return "";

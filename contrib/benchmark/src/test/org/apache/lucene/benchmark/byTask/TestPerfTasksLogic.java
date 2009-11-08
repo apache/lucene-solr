@@ -518,6 +518,7 @@ public class TestPerfTasksLogic extends TestCase {
   public static class Reuters20ContentSource extends ReutersContentSource {
     private int nDocs = 0;
 
+    @Override
     public synchronized DocData getNextDocData(DocData docData)
         throws NoMoreDataException, IOException {
       if (nDocs >= 20 && !forever) {
@@ -527,6 +528,7 @@ public class TestPerfTasksLogic extends TestCase {
       return super.getNextDocData(docData);
     }
 
+    @Override
     public synchronized void resetInputs() throws IOException {
       super.resetInputs();
       nDocs = 0;

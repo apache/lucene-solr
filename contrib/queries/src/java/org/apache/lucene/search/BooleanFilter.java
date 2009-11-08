@@ -52,6 +52,7 @@ public class BooleanFilter extends Filter
    * Returns the a DocIdSetIterator representing the Boolean composition
    * of the filters that have been added.
    */
+  @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException
   {
     OpenBitSetDISI res = null;
@@ -156,6 +157,7 @@ public class BooleanFilter extends Filter
               ((filters1 != null) && filters1.equals(filters2));
   }
   
+  @Override
   public boolean equals(Object obj)
   {
     if (this == obj)
@@ -170,6 +172,7 @@ public class BooleanFilter extends Filter
         && equalFilters(shouldFilters, other.shouldFilters);
   }
 
+  @Override
   public int hashCode()
   {
     int hash=7;
@@ -180,6 +183,7 @@ public class BooleanFilter extends Filter
   }
   
   /** Prints a user-readable version of this query. */
+  @Override
   public String toString()
   {
     StringBuilder buffer = new StringBuilder();

@@ -503,6 +503,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         mode = QUERY;
         doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this);
@@ -545,6 +546,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     doSearching(bquery);
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         mode = QUERY;
         doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this);
@@ -563,6 +565,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         new Term(FIELD_NAME, "john"))));
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         mode = QUERY;
         doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this);
@@ -577,6 +580,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testGetBestFragmentsSimpleQuery() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         numHighlights = 0;
         doSearching("Kennedy");
@@ -592,6 +596,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testGetFuzzyFragments() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         numHighlights = 0;
         doSearching("Kinnedy~");
@@ -607,6 +612,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testGetWildCardFragments() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         numHighlights = 0;
         doSearching("K?nnedy");
@@ -622,6 +628,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testGetMidWildCardFragments() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         numHighlights = 0;
         doSearching("K*dy");
@@ -637,6 +644,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testGetRangeFragments() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         numHighlights = 0;
         String queryString = FIELD_NAME + ":[kannedy TO kznnedy]";
@@ -753,6 +761,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testGetBestFragmentsPhrase() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         numHighlights = 0;
         doSearching("\"John Kennedy\"");
@@ -769,6 +778,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testGetBestFragmentsQueryScorer() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         numHighlights = 0;
         SpanQuery clauses[] = { new SpanTermQuery(new Term("contents", "john")),
@@ -789,6 +799,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testOffByOne() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         TermQuery query = new TermQuery(new Term("data", "help"));
         Highlighter hg = new Highlighter(new SimpleHTMLFormatter(), new QueryTermScorer(query));
@@ -807,6 +818,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testGetBestFragmentsFilteredQuery() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         numHighlights = 0;
         TermRangeFilter rf = new TermRangeFilter("contents", "john", "john", true, true);
@@ -829,6 +841,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testGetBestFragmentsFilteredPhraseQuery() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         numHighlights = 0;
         TermRangeFilter rf = new TermRangeFilter("contents", "john", "john", true, true);
@@ -851,6 +864,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testGetBestFragmentsMultiTerm() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         numHighlights = 0;
         doSearching("John Kenn*");
@@ -866,6 +880,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testGetBestFragmentsWithOr() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         numHighlights = 0;
         doSearching("JFK OR Kennedy");
@@ -881,6 +896,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         doSearching("Kennedy");
         numHighlights = 0;
@@ -932,6 +948,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         WeightedSpanTerm[] wTerms = new WeightedSpanTerm[2];
         wTerms[0] = new WeightedSpanTerm(10f, "hello");
@@ -977,6 +994,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testOverlapAnalyzer() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         HashMap synonyms = new HashMap();
         synonyms.put("football", "soccer,footie");
@@ -1009,6 +1027,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testGetSimpleHighlight() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         numHighlights = 0;
         doSearching("Kennedy");
@@ -1032,6 +1051,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testGetTextFragments() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
 
         doSearching("Kennedy");
@@ -1068,6 +1088,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testMaxSizeHighlight() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         numHighlights = 0;
         doSearching("meat");
@@ -1090,6 +1111,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testMaxSizeHighlightTruncates() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         String goodWord = "goodtoken";
         Set stopWords = new HashSet(1);
@@ -1135,6 +1157,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   public void testMaxSizeEndHighlight() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
+      @Override
       public void run() throws Exception {
         Set stopWords = new HashSet();
         stopWords.add("in");
@@ -1159,6 +1182,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testUnRewrittenQuery() throws Exception {
     final TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         numHighlights = 0;
         // test to show how rewritten query can still be used
@@ -1206,6 +1230,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testNoFragments() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         doSearching("AnInvalidQueryWhichShouldYieldNoResults");
 
@@ -1330,6 +1355,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testFieldSpecificHighlighting() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         String docMainText = "fred is one of the people";
         QueryParser parser = new QueryParser(TEST_VERSION, FIELD_NAME, analyzer);
@@ -1403,6 +1429,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         iter = lst.iterator();
       }
 
+      @Override
       public boolean incrementToken() throws IOException {
         if(iter.hasNext()) {
           Token token = (Token) iter.next();
@@ -1450,6 +1477,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         iter = lst.iterator();
       }
 
+      @Override
       public boolean incrementToken() throws IOException {
         if(iter.hasNext()) {
           Token token = (Token) iter.next();
@@ -1466,6 +1494,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testOverlapAnalyzer2() throws Exception {
     TestHighlightRunner helper = new TestHighlightRunner() {
 
+      @Override
       public void run() throws Exception {
         String s = "Hi-Speed10 foo";
 
@@ -1664,6 +1693,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     }
   }
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     ramDir = new RAMDirectory();
@@ -1705,6 +1735,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
   }
 
+  @Override
   protected void tearDown() throws Exception {
     super.tearDown();
   }
@@ -1741,6 +1772,7 @@ class SynonymAnalyzer extends Analyzer {
    * @see org.apache.lucene.analysis.Analyzer#tokenStream(java.lang.String,
    *      java.io.Reader)
    */
+  @Override
   public TokenStream tokenStream(String arg0, Reader arg1) {
     LowerCaseTokenizer stream = new LowerCaseTokenizer(arg1);
     stream.addAttribute(TermAttribute.class);
@@ -1779,6 +1811,7 @@ class SynonymTokenizer extends TokenStream {
     offsetAtt = addAttribute(OffsetAttribute.class);
   }
 
+  @Override
   public boolean incrementToken() throws IOException {
 
     if (currentRealToken == null) {

@@ -76,6 +76,7 @@ public abstract class AbstractTestCase extends TestCase {
     "\nWhen you talk about processing speed, the"
   };
 
+  @Override
   protected void setUp() throws Exception {
     analyzerW = new WhitespaceAnalyzer();
     analyzerB = new BigramAnalyzer();
@@ -84,6 +85,7 @@ public abstract class AbstractTestCase extends TestCase {
     dir = new RAMDirectory();
   }
   
+  @Override
   protected void tearDown() throws Exception {
     if( reader != null ){
       reader.close();
@@ -147,6 +149,7 @@ public abstract class AbstractTestCase extends TestCase {
   }
 
   static class BigramAnalyzer extends Analyzer {
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       return new BasicNGramTokenizer( reader );
     }
@@ -198,6 +201,7 @@ public abstract class AbstractTestCase extends TestCase {
 
     TermAttribute termAtt = addAttribute(TermAttribute.class);
     OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+    @Override
     public boolean incrementToken() throws IOException {
       if( !getNextPartialSnippet() )
         return false;
@@ -211,6 +215,7 @@ public abstract class AbstractTestCase extends TestCase {
       return nextStartOffset;
     }
     
+    @Override
     public final void end(){
       offsetAtt.setOffset(getFinalOffset(),getFinalOffset());
     }

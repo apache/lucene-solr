@@ -42,6 +42,7 @@ public class BooleanSingleChildOptimizationQueryNodeProcessor extends
     // empty constructor
   }
 
+  @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
     if (node instanceof BooleanQueryNode) {
@@ -72,12 +73,14 @@ public class BooleanSingleChildOptimizationQueryNodeProcessor extends
 
   }
 
+  @Override
   protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
 
     return node;
 
   }
 
+  @Override
   protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
       throws QueryNodeException {
 

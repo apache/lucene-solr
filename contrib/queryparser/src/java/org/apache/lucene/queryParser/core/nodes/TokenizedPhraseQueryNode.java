@@ -35,6 +35,7 @@ public class TokenizedPhraseQueryNode extends QueryNodeImpl implements
     allocate();
   }
 
+  @Override
   public String toString() {
     if (getChildren() == null || getChildren().size() == 0)
       return "<tokenizedphrase/>";
@@ -63,6 +64,7 @@ public class TokenizedPhraseQueryNode extends QueryNodeImpl implements
     return "[TP[" + sb.toString() + "]]";
   }
 
+  @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
     TokenizedPhraseQueryNode clone = (TokenizedPhraseQueryNode) super
         .cloneTree();

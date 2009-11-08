@@ -42,6 +42,7 @@ class FieldSetting implements Serializable {
     this.fieldName = fieldName;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this == o)
       return true;
@@ -54,6 +55,7 @@ class FieldSetting implements Serializable {
 
   }
 
+  @Override
   public int hashCode() {
     return fieldName.hashCode();
   }

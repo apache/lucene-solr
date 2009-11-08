@@ -51,14 +51,17 @@ public class RangeCollatorAttributeImpl extends AttributeImpl
     return this.rangeCollator;
   }
 
+  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean equals(Object other) {
 
     if (other instanceof RangeCollatorAttributeImpl) {
@@ -77,10 +80,12 @@ public class RangeCollatorAttributeImpl extends AttributeImpl
 
   }
 
+  @Override
   public int hashCode() {
     return (this.rangeCollator == null) ? 0 : this.rangeCollator.hashCode();
   }
 
+  @Override
   public String toString() {
     return "<rangeCollatorAttribute rangeCollator='" + this.rangeCollator
         + "'/>";

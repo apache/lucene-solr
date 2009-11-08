@@ -25,6 +25,7 @@ public class TestSearchingTable extends TestCase {
     private TableModel baseTableModel;
     private TableSearcher tableSearcher;
 
+    @Override
     protected void setUp() throws Exception {
         baseTableModel = new BaseTableModel(DataStore.getRestaurants());
         tableSearcher = new TableSearcher(baseTableModel);

@@ -49,6 +49,7 @@ public class DateRecognizerSinkFilter extends SinkFilter {
     this.dateFormat = dateFormat; 
   }
 
+  @Override
   public boolean accept(AttributeSource source) {
     if (termAtt == null) {
       termAtt = source.addAttribute(TermAttribute.class);

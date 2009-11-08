@@ -73,6 +73,7 @@ public final class SentenceTokenizer extends Tokenizer {
     typeAtt = addAttribute(TypeAttribute.class);    
   }
   
+  @Override
   public boolean incrementToken() throws IOException {
     clearAttributes();
     buffer.setLength(0);
@@ -122,11 +123,13 @@ public final class SentenceTokenizer extends Tokenizer {
     }
   }
 
+  @Override
   public void reset() throws IOException {
     super.reset();
     tokenStart = tokenEnd = 0;
   }
 
+  @Override
   public void reset(Reader input) throws IOException {
     super.reset(input);
     reset();

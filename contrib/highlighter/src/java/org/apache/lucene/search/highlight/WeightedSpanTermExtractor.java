@@ -504,6 +504,7 @@ public class WeightedSpanTermExtractor {
    */
   static private class PositionCheckingMap<K> extends HashMap<K,WeightedSpanTerm> {
 
+    @Override
     public void putAll(Map m) {
       Iterator<Map.Entry<K, WeightedSpanTerm>> it = m.entrySet().iterator();
       while (it.hasNext()) {
@@ -512,6 +513,7 @@ public class WeightedSpanTermExtractor {
       }
     }
 
+    @Override
     public WeightedSpanTerm put(K key, WeightedSpanTerm value) {
       WeightedSpanTerm prev = super.put(key, value);
       if (prev == null) return prev;

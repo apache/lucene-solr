@@ -37,10 +37,12 @@ public class DeletedQueryNode extends QueryNodeImpl {
     return "[DELETEDCHILD]";
   }
 
+  @Override
   public String toString() {
     return "<deleted/>";
   }
 
+  @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
     DeletedQueryNode clone = (DeletedQueryNode) super.cloneTree();
 

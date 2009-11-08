@@ -31,15 +31,18 @@ public class FlushReaderTask extends PerfTask {
     super(runData);
   }
   
+  @Override
   public boolean supportsParams() {
     return true;
   }
   
+  @Override
   public void setParams(String params) {
     super.setParams(params);
     userData = params;
   }
   
+  @Override
   public int doLogic() throws IOException {
     IndexReader reader = getRunData().getIndexReader();
     if (userData != null) {

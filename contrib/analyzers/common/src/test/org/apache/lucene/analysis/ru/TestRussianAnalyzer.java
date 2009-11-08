@@ -42,6 +42,7 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
 
     private File dataDir;
 
+    @Override
     protected void setUp() throws Exception
     {
       super.setUp();

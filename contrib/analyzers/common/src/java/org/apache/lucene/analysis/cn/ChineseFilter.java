@@ -67,6 +67,7 @@ public final class ChineseFilter extends TokenFilter {
         termAtt = addAttribute(TermAttribute.class);
     }
 
+    @Override
     public boolean incrementToken() throws IOException {
 
         while (input.incrementToken()) {

@@ -70,6 +70,7 @@ public class FieldFragList {
       }
     }
     
+    @Override
     public String toString(){
       StringBuilder sb = new StringBuilder();
       sb.append( "subInfos=(" );
@@ -90,6 +91,7 @@ public class FieldFragList {
         this.seqnum = seqnum;
       }
       
+      @Override
       public String toString(){
         StringBuilder sb = new StringBuilder();
         sb.append( text ).append( '(' );

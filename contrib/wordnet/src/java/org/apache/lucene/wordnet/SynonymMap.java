@@ -121,6 +121,7 @@ public class SynonymMap {
    * 
    * @return a String representation
    */
+  @Override
   public String toString() {
     StringBuilder buf = new StringBuilder();
     Iterator<String> iter = new TreeMap<String,String[]>(table).keySet().iterator();

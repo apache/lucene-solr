@@ -56,6 +56,7 @@ public class TaskSequence extends PerfTask {
     tasks = new ArrayList<PerfTask>();
   }
 
+  @Override
   public void close() throws Exception {
     initTasksArray();
     for(int i=0;i<tasksArray.length;i++) {
@@ -124,6 +125,7 @@ public class TaskSequence extends PerfTask {
    * (non-Javadoc)
    * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#doLogic()
    */
+  @Override
   public int doLogic() throws Exception {
     exhausted = resetExhausted = false;
     return ( parallel ? doParallelTasks() : doSerialTasks());
@@ -212,6 +214,7 @@ public class TaskSequence extends PerfTask {
       for (int i = 0; i < tasksArray.length; i++) {
         final PerfTask task = (PerfTask) tasksArray[i].clone();
         t[indx++] = new Thread() {
+          @Override
           public void run() {
             try {
               int n = task.runAndMaybeStats(letChildReport);
@@ -273,6 +276,7 @@ public class TaskSequence extends PerfTask {
   /* (non-Javadoc)
    * @see java.lang.Object#toString()
    */
+  @Override
   public String toString() {
     String padd = getPadding();
     StringBuffer sb = new StringBuffer(super.toString());
@@ -342,6 +346,7 @@ public class TaskSequence extends PerfTask {
     }
   }
 
+  @Override
   public String getName() {
     return seqName; // override to include more info 
   }
@@ -356,6 +361,7 @@ public class TaskSequence extends PerfTask {
   /* (non-Javadoc)
    * @see java.lang.Object#clone()
    */
+  @Override
   protected Object clone() throws CloneNotSupportedException {
     TaskSequence res = (TaskSequence) super.clone();
     res.tasks = new ArrayList<PerfTask>();

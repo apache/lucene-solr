@@ -39,6 +39,7 @@ public class SpanGradientFormatter
 	
 
 	
+	@Override
 	public String highlightTerm(String originalText, TokenGroup tokenGroup)
     {
         if (tokenGroup.getTotalScore() == 0)

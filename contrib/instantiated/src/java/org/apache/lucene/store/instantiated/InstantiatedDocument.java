@@ -73,6 +73,7 @@ public class InstantiatedDocument
   }
 
 
+  @Override
   public String toString() {
     return document.toString();
   }

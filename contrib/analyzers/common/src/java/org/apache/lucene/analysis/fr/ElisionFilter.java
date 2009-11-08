@@ -78,6 +78,7 @@ public final class ElisionFilter extends TokenFilter {
   /**
    * Increments the {@link TokenStream} with a {@link TermAttribute} without elisioned start
    */
+  @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       char[] termBuffer = termAtt.termBuffer();

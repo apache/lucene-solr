@@ -43,6 +43,7 @@ public class TokenOffsetPayloadTokenFilter extends TokenFilter {
     payAtt = addAttribute(PayloadAttribute.class);
   }
 
+  @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       byte[] data = new byte[8];

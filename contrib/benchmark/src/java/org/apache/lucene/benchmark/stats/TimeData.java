@@ -64,6 +64,7 @@ public class TimeData {
     delta = elapsed;
   }
 
+  @Override
   protected Object clone() {
     TimeData td = new TimeData(name);
     td.name = name;
@@ -86,6 +87,7 @@ public class TimeData {
     return "# count\telapsed\trec/s\tfreeMem\ttotalMem";
   }
 
+  @Override
   public String toString() { return toString(true); }
   /**
    * Return a tab-separated string containing this data.

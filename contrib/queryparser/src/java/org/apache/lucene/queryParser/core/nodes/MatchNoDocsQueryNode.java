@@ -30,6 +30,7 @@ public class MatchNoDocsQueryNode extends DeletedQueryNode {
     // empty constructor
   }
 
+  @Override
   public String toString() {
     return "<matchNoDocsQueryNode/>";
   }

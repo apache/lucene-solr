@@ -49,14 +49,17 @@ public class MultiFieldAttributeImpl extends AttributeImpl
     return this.fields;
   }
 
+  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean equals(Object other) {
 
     if (other instanceof MultiFieldAttributeImpl) {
@@ -70,10 +73,12 @@ public class MultiFieldAttributeImpl extends AttributeImpl
 
   }
 
+  @Override
   public int hashCode() {
     return Arrays.hashCode(this.fields);
   }
 
+  @Override
   public String toString() {
     return "<fieldsAttribute fields=" + Arrays.toString(this.fields) + "/>";
   }

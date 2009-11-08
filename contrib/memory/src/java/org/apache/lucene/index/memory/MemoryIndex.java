@@ -278,6 +278,7 @@ public class MemoryIndex implements Serializable {
       private TermAttribute termAtt = addAttribute(TermAttribute.class);
       private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
       
+      @Override
       public boolean incrementToken() {
         if (!iter.hasNext()) return false;
         
@@ -416,18 +417,22 @@ public class MemoryIndex implements Serializable {
       searcher.search(query, new Collector() {
         private Scorer scorer;
 
+        @Override
         public void collect(int doc) throws IOException {
           scores[0] = scorer.score();
         }
 
+        @Override
         public void setScorer(Scorer scorer) throws IOException {
           this.scorer = scorer;
         }
 
+        @Override
         public boolean acceptsDocsOutOfOrder() {
           return true;
         }
 
+        @Override
         public void setNextReader(IndexReader reader, int docBase) { }
       });
       float score = scores[0];
@@ -515,6 +520,7 @@ public class MemoryIndex implements Serializable {
    * 
    * @return the string representation
    */
+  @Override
   public String toString() {
     StringBuilder result = new StringBuilder(256);    
     sortFields();   
@@ -735,6 +741,7 @@ public class MemoryIndex implements Serializable {
       return sortedFields[pos].getValue();
     }
     
+    @Override
     public int docFreq(Term term) {
       Info info = getInfo(term.field());
       int freq = 0;
@@ -743,11 +750,13 @@ public class MemoryIndex implements Serializable {
       return freq;
     }
   
+    @Override
     public TermEnum terms() {
       if (DEBUG) System.err.println("MemoryIndexReader.terms()");
       return terms(MATCH_ALL_TERM);
     }
     
+    @Override
     public TermEnum terms(Term term) {
       if (DEBUG) System.err.println("MemoryIndexReader.terms: " + term);
   
@@ -786,6 +795,7 @@ public class MemoryIndex implements Serializable {
         private int i = ix; // index into info.sortedTerms
         private int j = jx; // index into sortedFields
           
+        @Override
         public boolean next() {
           if (DEBUG) System.err.println("TermEnum.next");
           if (j >= sortedFields.length) return false;
@@ -800,6 +810,7 @@ public class MemoryIndex implements Serializable {
           return true;
         }
   
+        @Override
         public Term term() {
           if (DEBUG) System.err.println("TermEnum.term: " + i);
           if (j >= sortedFields.length) return null;
@@ -809,6 +820,7 @@ public class MemoryIndex implements Serializable {
           return createTerm(info, j, info.sortedTerms[i].getKey());
         }
         
+        @Override
         public int docFreq() {
           if (DEBUG) System.err.println("TermEnum.docFreq");
           if (j >= sortedFields.length) return 0;
@@ -817,6 +829,7 @@ public class MemoryIndex implements Serializable {
           return numPositions(info.getPositions(i));
         }
   
+        @Override
         public void close() {
           if (DEBUG) System.err.println("TermEnum.close");
         }
@@ -837,6 +850,7 @@ public class MemoryIndex implements Serializable {
       };
     }
   
+    @Override
     public TermPositions termPositions() {
       if (DEBUG) System.err.println("MemoryIndexReader.termPositions");
       
@@ -932,11 +946,13 @@ public class MemoryIndex implements Serializable {
       };
     }
   
+    @Override
     public TermDocs termDocs() {
       if (DEBUG) System.err.println("MemoryIndexReader.termDocs");
       return termPositions();
     }
   
+    @Override
     public TermFreqVector[] getTermFreqVectors(int docNumber) {
       if (DEBUG) System.err.println("MemoryIndexReader.getTermFreqVectors");
       TermFreqVector[] vectors = new TermFreqVector[fields.size()];
@@ -948,6 +964,7 @@ public class MemoryIndex implements Serializable {
       return vectors;
     }
 
+      @Override
       public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException
       {
           if (DEBUG) System.err.println("MemoryIndexReader.getTermFreqVectors");
@@ -959,6 +976,7 @@ public class MemoryIndex implements Serializable {
           }
       }
 
+      @Override
       public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException
       {
         if (DEBUG) System.err.println("MemoryIndexReader.getTermFreqVector");
@@ -986,6 +1004,7 @@ public class MemoryIndex implements Serializable {
           }
       }
 
+      @Override
       public TermFreqVector getTermFreqVector(int docNumber, final String fieldName) {
       if (DEBUG) System.err.println("MemoryIndexReader.getTermFreqVector");
       final Info info = getInfo(fieldName);
@@ -1072,6 +1091,7 @@ public class MemoryIndex implements Serializable {
     private String cachedFieldName;
     private Similarity cachedSimilarity;
     
+    @Override
     public byte[] norms(String fieldName) {
       byte[] norms = cachedNorms;
       Similarity sim = getSimilarity();
@@ -1094,64 +1114,77 @@ public class MemoryIndex implements Serializable {
       return norms;
     }
   
+    @Override
     public void norms(String fieldName, byte[] bytes, int offset) {
       if (DEBUG) System.err.println("MemoryIndexReader.norms*: " + fieldName);
       byte[] norms = norms(fieldName);
       System.arraycopy(norms, 0, bytes, offset, norms.length);
     }
   
+    @Override
     protected void doSetNorm(int doc, String fieldName, byte value) {
       throw new UnsupportedOperationException();
     }
   
+    @Override
     public int numDocs() {
       if (DEBUG) System.err.println("MemoryIndexReader.numDocs");
       return fields.size() > 0 ? 1 : 0;
     }
   
+    @Override
     public int maxDoc() {
       if (DEBUG) System.err.println("MemoryIndexReader.maxDoc");
       return 1;
     }
   
+    @Override
     public Document document(int n) {
       if (DEBUG) System.err.println("MemoryIndexReader.document");
       return new Document(); // there are no stored fields
     }
 
     //When we convert to JDK 1.5 make this Set<String>
+    @Override
     public Document document(int n, FieldSelector fieldSelector) throws IOException {
       if (DEBUG) System.err.println("MemoryIndexReader.document");
       return new Document(); // there are no stored fields
     }
 
+    @Override
     public boolean isDeleted(int n) {
       if (DEBUG) System.err.println("MemoryIndexReader.isDeleted");
       return false;
     }
   
+    @Override
     public boolean hasDeletions() {
       if (DEBUG) System.err.println("MemoryIndexReader.hasDeletions");
       return false;
     }
   
+    @Override
     protected void doDelete(int docNum) {
       throw new UnsupportedOperationException();
     }
   
+    @Override
     protected void doUndeleteAll() {
       throw new UnsupportedOperationException();
     }
   
+    @Override
     protected void doCommit(Map<String,String> commitUserData) {
       if (DEBUG) System.err.println("MemoryIndexReader.doCommit");
     }
   
+    @Override
     protected void doClose() {
       if (DEBUG) System.err.println("MemoryIndexReader.doClose");
     }
     
     // lucene >= 1.9 (remove this method for lucene-1.4.3)
+    @Override
     public Collection<String> getFieldNames(FieldOption fieldOption) {
       if (DEBUG) System.err.println("MemoryIndexReader.getFieldNamesOption");
       if (fieldOption == FieldOption.UNINDEXED) 

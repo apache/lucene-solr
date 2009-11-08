@@ -49,6 +49,7 @@ public class RangeQueryNode extends ParametricRangeQueryNode {
 
   }
 
+  @Override
   public String toString() {
     StringBuilder sb = new StringBuilder("<range>\n\t");
     sb.append(this.getUpperBound()).append("\n\t");

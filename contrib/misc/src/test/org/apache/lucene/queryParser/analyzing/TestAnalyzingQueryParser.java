@@ -46,6 +46,7 @@ public class TestAnalyzingQueryParser extends TestCase {
   private String[] fuzzyInput;
   private String[] fuzzyExpected;
 
+  @Override
   public void setUp() {
     wildcardInput = new String[] { "übersetzung über*ung",
         "Mötley Cr\u00fce Mötl?* Crü?", "Renée Zellweger Ren?? Zellw?ger" };
@@ -109,6 +110,7 @@ class ASCIIAnalyzer extends org.apache.lucene.analysis.Analyzer {
   public ASCIIAnalyzer() {
   }
 
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
     result = new StandardFilter(result);

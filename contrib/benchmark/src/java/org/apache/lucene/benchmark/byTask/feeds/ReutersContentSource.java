@@ -53,6 +53,7 @@ public class ReutersContentSource extends ContentSource {
   private int nextFile = 0;
   private int iteration = 0;
   
+  @Override
   public void setConfig(Config config) {
     super.setConfig(config);
     File workDir = new File(config.get("work.dir", "work"));
@@ -89,10 +90,12 @@ public class ReutersContentSource extends ContentSource {
   }
 
 
+  @Override
   public void close() throws IOException {
     // TODO implement?
   }
   
+  @Override
   public DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
     File f = null;
     String name = null;
@@ -138,6 +141,7 @@ public class ReutersContentSource extends ContentSource {
     }
   }
 
+  @Override
   public synchronized void resetInputs() throws IOException {
     super.resetInputs();
     nextFile = 0;

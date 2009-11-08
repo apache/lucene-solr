@@ -53,10 +53,12 @@ public class DocumentHandlerException extends Exception {
         return cause;
     }
 
+    @Override
     public void printStackTrace() {
         printStackTrace(System.err);
     }
 
+    @Override
     public void printStackTrace(PrintStream ps) {
         synchronized (ps) {
             super.printStackTrace(ps);
@@ -67,6 +69,7 @@ public class DocumentHandlerException extends Exception {
         }
     }
 
+    @Override
     public void printStackTrace(PrintWriter pw) {
         synchronized (pw) {
             super.printStackTrace(pw);

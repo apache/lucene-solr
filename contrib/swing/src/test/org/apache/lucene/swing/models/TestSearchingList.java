@@ -26,6 +26,7 @@ public class TestSearchingList extends TestCase {
     private ListModel baseListModel;
     private ListSearcher listSearcher;
 
+    @Override
     protected void setUp() throws Exception {
         baseListModel = new BaseListModel(DataStore.getRestaurants());
         listSearcher = new ListSearcher(baseListModel);

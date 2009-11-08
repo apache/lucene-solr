@@ -131,6 +131,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
     return clone;
   }
 
+  @Override
   public Object clone() throws CloneNotSupportedException {
     return cloneTree();
   }
@@ -209,6 +210,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
    * 
    * @see org.apache.lucene.queryParser.core.nodes.QueryNode#toString()
    */
+  @Override
   public String toString() {
     return super.toString();
   }

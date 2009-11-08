@@ -79,6 +79,7 @@ public class TextFragment
 
 	/* Returns the marked-up text for this text fragment 
 	 */
+	@Override
 	public String toString() {
 		return markedUpText.subSequence(textStartPos, textEndPos).toString();
 	}

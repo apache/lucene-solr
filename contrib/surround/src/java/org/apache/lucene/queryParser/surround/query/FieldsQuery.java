@@ -41,6 +41,7 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
     this.fieldOp = fieldOp;
   }
   
+  @Override
   public boolean isFieldsSubQueryAcceptable() {
     return false;
   }
@@ -65,6 +66,7 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
     }
   }
 
+  @Override
   public Query makeLuceneQueryFieldNoBoost(String fieldName, BasicQueryFactory qf) {
     return makeLuceneQueryNoBoost(qf); /* use this.fieldNames instead of fieldName */
   }
@@ -74,6 +76,7 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
 
   public char getFieldOperator() { return fieldOp;}
   
+  @Override
   public String toString() {
     StringBuilder r = new StringBuilder();
     r.append("(");

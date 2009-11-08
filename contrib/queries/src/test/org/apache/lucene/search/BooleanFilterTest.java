@@ -34,6 +34,7 @@ public class BooleanFilterTest extends TestCase
 	private RAMDirectory directory;
 	private IndexReader reader;
 
+	@Override
 	protected void setUp() throws Exception
 	{
 		directory = new RAMDirectory();

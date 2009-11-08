@@ -54,6 +54,7 @@ public class GroupQueryNode extends QueryNodeImpl {
     return getChildren().get(0);
   }
 
+  @Override
   public String toString() {
     return "<group>" + "\n" + getChild().toString() + "\n</group>";
   }
@@ -65,6 +66,7 @@ public class GroupQueryNode extends QueryNodeImpl {
     return "( " + getChild().toQueryString(escapeSyntaxParser) + " )";
   }
 
+  @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
     GroupQueryNode clone = (GroupQueryNode) super.cloneTree();
 

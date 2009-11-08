@@ -38,6 +38,7 @@ public class PositionFilterTest extends BaseTokenStreamTestCase {
       termAtt = addAttribute(TermAttribute.class);
     }
 
+    @Override
     public final boolean incrementToken() throws IOException {
       clearAttributes();
       if (index < testToken.length) {
@@ -47,6 +48,7 @@ public class PositionFilterTest extends BaseTokenStreamTestCase {
         return false;
       }
     }
+    @Override
     public void reset() {
       index = 0;
     }

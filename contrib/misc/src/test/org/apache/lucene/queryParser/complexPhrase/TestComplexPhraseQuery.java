@@ -111,6 +111,7 @@ public class TestComplexPhraseQuery extends TestCase {
 
   }
 
+  @Override
   protected void setUp() throws Exception {
     RAMDirectory rd = new RAMDirectory();
     IndexWriter w = new IndexWriter(rd, analyzer, MaxFieldLength.UNLIMITED);
@@ -126,6 +127,7 @@ public class TestComplexPhraseQuery extends TestCase {
     searcher = new IndexSearcher(rd, true);
   }
 
+  @Override
   protected void tearDown() throws Exception {
     searcher.close();
   }

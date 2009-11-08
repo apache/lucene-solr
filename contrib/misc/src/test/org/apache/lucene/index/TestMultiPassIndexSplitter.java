@@ -29,6 +29,7 @@ public class TestMultiPassIndexSplitter extends TestCase {
   IndexReader input;
   int NUM_DOCS = 11;
 
+  @Override
   public void setUp() throws Exception {
     RAMDirectory dir = new RAMDirectory();
     IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), true,

@@ -60,6 +60,7 @@ public class FuzzyLikeThisQuery extends Query
     boolean ignoreTF=false;
     private int maxNumTerms;
 
+    @Override
     public int hashCode() {
       final int prime = 31;
       int result = 1;
@@ -71,6 +72,7 @@ public class FuzzyLikeThisQuery extends Query
       return result;
     }
 
+    @Override
     public boolean equals(Object obj) {
       if (this == obj)
         return true;
@@ -123,6 +125,7 @@ public class FuzzyLikeThisQuery extends Query
 			this.queryString = queryString;
 		}
 
+    @Override
     public int hashCode() {
       final int prime = 31;
       int result = 1;
@@ -135,6 +138,7 @@ public class FuzzyLikeThisQuery extends Query
       return result;
     }
 
+    @Override
     public boolean equals(Object obj) {
       if (this == obj)
         return true;
@@ -244,6 +248,7 @@ public class FuzzyLikeThisQuery extends Query
         }     
     }
             
+    @Override
     public Query rewrite(IndexReader reader) throws IOException
     {
         if(rewrittenQuery!=null)
@@ -334,6 +339,7 @@ public class FuzzyLikeThisQuery extends Query
         /* (non-Javadoc)
          * @see org.apache.lucene.util.PriorityQueue#lessThan(java.lang.Object, java.lang.Object)
          */
+        @Override
         protected boolean lessThan(ScoreTerm termA, ScoreTerm termB) {
           if (termA.score== termB.score)
             return termA.term.compareTo(termB.term) > 0;
@@ -352,11 +358,13 @@ public class FuzzyLikeThisQuery extends Query
         	  super(t);
         	  this.ignoreTF=ignoreTF;
           }
+          @Override
           public Similarity getSimilarity(Searcher searcher)
           {            
               Similarity result = super.getSimilarity(searcher);
               result = new SimilarityDelegator(result) {
                   
+                  @Override
                   public float tf(float freq)
                   {
                 	  if(ignoreTF)
@@ -365,6 +373,7 @@ public class FuzzyLikeThisQuery extends Query
                 	  }
             		  return super.tf(freq);
                   }
+                  @Override
                   public float idf(int docFreq, int numDocs)
                   {
                       //IDF is already factored into individual term boosts
@@ -380,6 +389,7 @@ public class FuzzyLikeThisQuery extends Query
     /* (non-Javadoc)
      * @see org.apache.lucene.search.Query#toString(java.lang.String)
      */
+    @Override
     public String toString(String field)
     {
         return null;

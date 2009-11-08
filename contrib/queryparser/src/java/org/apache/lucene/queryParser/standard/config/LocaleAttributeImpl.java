@@ -49,14 +49,17 @@ public class LocaleAttributeImpl extends AttributeImpl
     return this.locale;
   }
 
+  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean equals(Object other) {
 
     if (other instanceof LocaleAttributeImpl) {
@@ -76,10 +79,12 @@ public class LocaleAttributeImpl extends AttributeImpl
 
   }
 
+  @Override
   public int hashCode() {
     return (this.locale == null) ? 0 : this.locale.hashCode();
   }
 
+  @Override
   public String toString() {
     return "<localeAttribute locale=" + this.locale + "/>";
   }

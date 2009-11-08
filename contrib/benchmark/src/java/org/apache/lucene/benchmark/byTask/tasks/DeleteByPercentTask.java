@@ -49,19 +49,23 @@ public class DeleteByPercentTask extends PerfTask {
     random = new Random(runData.getConfig().get("delete.percent.rand.seed", 1717));
   }
   
+  @Override
   public void setup() throws Exception {
     super.setup();
   }
 
+  @Override
   public void setParams(String params) {
     super.setParams(params);
     percent = Double.parseDouble(params)/100;
   }
 
+  @Override
   public boolean supportsParams() {
     return true;
   }
 
+  @Override
   public int doLogic() throws Exception {
     IndexReader r = getRunData().getIndexReader();
     int maxDoc = r.maxDoc();

@@ -74,6 +74,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
    * @return Resulting {@link Query} built for the term
    * @throws ParseException
    */
+  @Override
   protected Query getWildcardQuery(String field, String termStr) throws ParseException {
     List<String> tlist = new ArrayList<String>();
     List<String> wlist = new ArrayList<String>();
@@ -184,6 +185,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
    * @return Resulting {@link Query} built for the term
    * @throws ParseException
    */
+  @Override
   protected Query getPrefixQuery(String field, String termStr) throws ParseException {
     // get Analyzer from superclass and tokenize the term
     TokenStream source = getAnalyzer().tokenStream(field, new StringReader(termStr));
@@ -230,6 +232,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
    * @return Resulting {@link Query} built for the term
    * @exception ParseException
    */
+  @Override
   protected Query getFuzzyQuery(String field, String termStr, float minSimilarity)
       throws ParseException {
     // get Analyzer from superclass and tokenize the term
@@ -265,6 +268,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
    * Overrides super class, by passing terms through analyzer.
    * @exception ParseException
    */
+  @Override
   protected Query getRangeQuery(String field, String part1, String part2, boolean inclusive)
       throws ParseException {
     // get Analyzer from superclass and tokenize the terms

@@ -53,6 +53,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
 	private IndexSearcher searcher;
 	private Analyzer analyzer=new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
 
+	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
 		try {
@@ -74,6 +75,7 @@ public class FormBasedXmlQueryDemo extends HttpServlet {
 		}
 	}
 
+	@Override
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 		//Take all completed form fields and add to a Properties object
 		Properties completedFormFields=new Properties();

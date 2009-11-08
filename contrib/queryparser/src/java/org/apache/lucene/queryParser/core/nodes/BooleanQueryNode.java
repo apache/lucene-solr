@@ -40,6 +40,7 @@ public class BooleanQueryNode extends QueryNodeImpl {
     set(clauses);
   }
 
+  @Override
   public String toString() {
     if (getChildren() == null || getChildren().size() == 0)
       return "<boolean operation='default'/>";
@@ -72,6 +73,7 @@ public class BooleanQueryNode extends QueryNodeImpl {
       return "( " + sb.toString() + " )";
   }
 
+  @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
     BooleanQueryNode clone = (BooleanQueryNode) super.cloneTree();
 

@@ -348,6 +348,7 @@ public class TernaryTree implements Cloneable, Serializable {
     return length;
   }
 
+  @Override
   public Object clone() {
     TernaryTree t = new TernaryTree();
     t.lo = (char[]) this.lo.clone();
@@ -483,6 +484,7 @@ public class TernaryTree implements Cloneable, Serializable {
         child = c;
       }
 
+      @Override
       public Object clone() {
         return new Item(parent, child);
       }

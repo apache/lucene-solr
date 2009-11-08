@@ -30,6 +30,7 @@ public class NewRoundTask extends PerfTask {
     super(runData);
   }
 
+  @Override
   public int doLogic() throws Exception {
     getRunData().getConfig().newRound();
     return 0;
@@ -38,6 +39,7 @@ public class NewRoundTask extends PerfTask {
   /* (non-Javadoc)
    * @see PerfTask#shouldNotRecordStats()
    */
+  @Override
   protected boolean shouldNotRecordStats() {
     return true;
   }

@@ -40,10 +40,13 @@ public class SrndPrefixQuery extends SimpleTerm {
     return new Term(fieldName, getPrefix());
   }
   
+  @Override
   public String toStringUnquoted() {return getPrefix();}
   
+  @Override
   protected void suffixToString(StringBuilder r) {r.append(getSuffixOperator());}
   
+  @Override
   public void visitMatchingTerms(
     IndexReader reader,
     String fieldName,

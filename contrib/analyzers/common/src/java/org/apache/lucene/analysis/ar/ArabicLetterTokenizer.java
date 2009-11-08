@@ -47,6 +47,7 @@ public class ArabicLetterTokenizer extends LetterTokenizer {
    * Allows for Letter category or NonspacingMark category
    * @see org.apache.lucene.analysis.LetterTokenizer#isTokenChar(char)
    */
+  @Override
   protected boolean isTokenChar(char c) {
     return super.isTokenChar(c) || Character.getType(c) == Character.NON_SPACING_MARK;
   }

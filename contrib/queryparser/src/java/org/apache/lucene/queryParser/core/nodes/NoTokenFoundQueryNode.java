@@ -31,14 +31,17 @@ public class NoTokenFoundQueryNode extends DeletedQueryNode {
     super();
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escaper) {
     return "[NTF]";
   }
 
+  @Override
   public String toString() {
     return "<notokenfound/>";
   }
 
+  @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
     NoTokenFoundQueryNode clone = (NoTokenFoundQueryNode) super.cloneTree();
 

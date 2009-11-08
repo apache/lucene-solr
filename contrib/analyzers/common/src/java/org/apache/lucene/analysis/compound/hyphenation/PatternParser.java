@@ -266,6 +266,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
   //
   // EntityResolver methods
   //
+  @Override
   public InputSource resolveEntity(String publicId, String systemId) {
     return HyphenationDTDGenerator.generateDTD();
   }
@@ -278,6 +279,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
    * @see org.xml.sax.ContentHandler#startElement(java.lang.String,
    *      java.lang.String, java.lang.String, org.xml.sax.Attributes)
    */
+  @Override
   public void startElement(String uri, String local, String raw,
       Attributes attrs) {
     if (local.equals("hyphen-char")) {
@@ -307,6 +309,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
    * @see org.xml.sax.ContentHandler#endElement(java.lang.String,
    *      java.lang.String, java.lang.String)
    */
+  @Override
   public void endElement(String uri, String local, String raw) {
 
     if (token.length() > 0) {
@@ -343,6 +346,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
   /**
    * @see org.xml.sax.ContentHandler#characters(char[], int, int)
    */
+  @Override
   public void characters(char ch[], int start, int length) {
     StringBuffer chars = new StringBuffer(length);
     chars.append(ch, start, length);
@@ -376,6 +380,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
   /**
    * @see org.xml.sax.ErrorHandler#warning(org.xml.sax.SAXParseException)
    */
+  @Override
   public void warning(SAXParseException ex) {
     errMsg = "[Warning] " + getLocationString(ex) + ": " + ex.getMessage();
   }
@@ -383,6 +388,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
   /**
    * @see org.xml.sax.ErrorHandler#error(org.xml.sax.SAXParseException)
    */
+  @Override
   public void error(SAXParseException ex) {
     errMsg = "[Error] " + getLocationString(ex) + ": " + ex.getMessage();
   }
@@ -390,6 +396,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
   /**
    * @see org.xml.sax.ErrorHandler#fatalError(org.xml.sax.SAXParseException)
    */
+  @Override
   public void fatalError(SAXParseException ex) throws SAXException {
     errMsg = "[Fatal Error] " + getLocationString(ex) + ": " + ex.getMessage();
     throw ex;

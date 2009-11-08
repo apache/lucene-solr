@@ -42,6 +42,7 @@ public class QuotedFieldQueryNode extends FieldQueryNode {
     super(field, text, begin, end);
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escaper) {
     if (isDefaultField(this.field)) {
       return "\"" + getTermEscapeQuoted(escaper) + "\"";
@@ -50,11 +51,13 @@ public class QuotedFieldQueryNode extends FieldQueryNode {
     }
   }
 
+  @Override
   public String toString() {
     return "<quotedfield start='" + this.begin + "' end='" + this.end
         + "' field='" + this.field + "' term='" + this.text + "'/>";
   }
 
+  @Override
   public QuotedFieldQueryNode cloneTree() throws CloneNotSupportedException {
     QuotedFieldQueryNode clone = (QuotedFieldQueryNode) super.cloneTree();
     // nothing to do here

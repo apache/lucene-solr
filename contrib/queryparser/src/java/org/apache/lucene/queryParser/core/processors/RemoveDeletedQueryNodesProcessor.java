@@ -37,6 +37,7 @@ public class RemoveDeletedQueryNodesProcessor extends QueryNodeProcessorImpl {
     // empty constructor
   }
 
+  @Override
   public QueryNode process(QueryNode queryTree) throws QueryNodeException {
     queryTree = super.process(queryTree);
 
@@ -51,6 +52,7 @@ public class RemoveDeletedQueryNodesProcessor extends QueryNodeProcessorImpl {
 
   }
 
+  @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
     if (!node.isLeaf()) {
@@ -85,6 +87,7 @@ public class RemoveDeletedQueryNodesProcessor extends QueryNodeProcessorImpl {
 
   }
 
+  @Override
   protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
       throws QueryNodeException {
 
@@ -100,6 +103,7 @@ public class RemoveDeletedQueryNodesProcessor extends QueryNodeProcessorImpl {
 
   }
 
+  @Override
   protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
 
     return node;

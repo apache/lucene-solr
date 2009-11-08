@@ -51,6 +51,7 @@ public class JEIndexInput extends IndexInput {
         block.get(directory);
     }
 
+    @Override
     public Object clone() {
         try {
             JEIndexInput clone = (JEIndexInput) super.clone();
@@ -65,13 +66,16 @@ public class JEIndexInput extends IndexInput {
         }
     }
 
+    @Override
     public void close() throws IOException {
     }
 
+    @Override
     public long length() {
         return length;
     }
 
+    @Override
     public byte readByte() throws IOException {
         if (position + 1 > length)
             throw new IOException(file.getName() + ": Reading past end of file");
@@ -87,6 +91,7 @@ public class JEIndexInput extends IndexInput {
         return b;
     }
 
+    @Override
     public void readBytes(byte[] b, int offset, int len) throws IOException {
         if (position + len > length)
             throw new IOException("Reading past end of file");
@@ -116,6 +121,7 @@ public class JEIndexInput extends IndexInput {
         }
     }
 
+    @Override
     public void seek(long pos) throws IOException {
         if (pos > length)
             throw new IOException("seeking past end of file");
@@ -128,6 +134,7 @@ public class JEIndexInput extends IndexInput {
         position = pos;
     }
 
+    @Override
     public long getFilePointer() {
         return position;
     }

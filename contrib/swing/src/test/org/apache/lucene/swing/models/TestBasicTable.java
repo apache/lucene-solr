@@ -29,6 +29,7 @@ public class TestBasicTable extends TestCase {
     private TableSearcher tableSearcher;
     private List list;
 
+    @Override
     protected void setUp() throws Exception {
         list = new ArrayList();
         list.add(DataStore.canolis);

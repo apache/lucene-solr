@@ -88,6 +88,7 @@ public final class ReverseStringFilter extends TokenFilter {
     termAtt = addAttribute(TermAttribute.class);
   }
 
+  @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       int len = termAtt.termLength();

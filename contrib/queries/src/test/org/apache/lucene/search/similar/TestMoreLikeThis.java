@@ -41,6 +41,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     private IndexReader reader;
     private IndexSearcher searcher;
 
+    @Override
     protected void setUp() throws Exception {
 	directory = new RAMDirectory();
 	IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT),
@@ -56,6 +57,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
 
     }
 
+    @Override
     protected void tearDown() throws Exception {
 	reader.close();
 	searcher.close();

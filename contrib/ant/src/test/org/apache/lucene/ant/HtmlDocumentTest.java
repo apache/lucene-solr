@@ -30,6 +30,7 @@ public class HtmlDocumentTest extends DocumentTestCase
     
     HtmlDocument doc;
     
+    @Override
     public void setUp() throws IOException {
         doc = new HtmlDocument(getFile("test.html"));
     }
@@ -39,6 +40,7 @@ public class HtmlDocumentTest extends DocumentTestCase
         assertTrue("Body", doc.getBody().startsWith("This is some test"));
     }
     
+    @Override
     public void tearDown() {
         doc = null;
     }

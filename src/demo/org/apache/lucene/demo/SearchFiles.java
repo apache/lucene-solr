@@ -56,6 +56,7 @@ public class SearchFiles {
       this.field = field;
     }
 
+    @Override
     public byte[] norms(String field) throws IOException {
       return in.norms(this.field);
     }
@@ -176,19 +177,23 @@ public class SearchFiles {
       private int docBase;
       
       // simply print docId and score of every matching document
+      @Override
       public void collect(int doc) throws IOException {
         System.out.println("doc=" + doc + docBase + " score=" + scorer.score());
       }
 
+      @Override
       public boolean acceptsDocsOutOfOrder() {
         return true;
       }
 
+      @Override
       public void setNextReader(IndexReader reader, int docBase)
           throws IOException {
         this.docBase = docBase;
       }
 
+      @Override
       public void setScorer(Scorer scorer) throws IOException {
         this.scorer = scorer;
       }

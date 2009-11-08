@@ -122,6 +122,7 @@ public class CreateIndexTask extends PerfTask {
     return indexDeletionPolicy;
   }
   
+  @Override
   public int doLogic() throws IOException {
     PerfRunData runData = getRunData();
     Config config = runData.getConfig();

@@ -37,6 +37,7 @@ public class TokenRangeSinkFilter extends SinkFilter {
   }
 
   
+  @Override
   public boolean accept(AttributeSource source) {
     try {
       if (count >= lower && count < upper){
@@ -48,6 +49,7 @@ public class TokenRangeSinkFilter extends SinkFilter {
     }
   }
 
+  @Override
   public void reset() throws IOException {
     count = 0;
   }

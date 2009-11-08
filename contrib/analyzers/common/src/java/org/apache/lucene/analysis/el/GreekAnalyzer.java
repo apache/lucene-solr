@@ -99,6 +99,7 @@ public final class GreekAnalyzer extends Analyzer
      * @return  A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
      *                  {@link GreekLowerCaseFilter} and {@link StopFilter}
      */
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader)
     {
         TokenStream result = new StandardTokenizer(matchVersion, reader);
@@ -120,6 +121,7 @@ public final class GreekAnalyzer extends Analyzer
      * @return  A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
      *                  {@link GreekLowerCaseFilter} and {@link StopFilter}
      */
+    @Override
     public TokenStream reusableTokenStream(String fieldName, Reader reader) 
       throws IOException {
       SavedStreams streams = (SavedStreams) getPreviousTokenStream();

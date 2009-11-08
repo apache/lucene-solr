@@ -61,6 +61,7 @@ public class LineDocSource extends ContentSource {
     }
   }
 
+  @Override
   public void close() throws IOException {
     if (reader != null) {
       reader.close();
@@ -68,6 +69,7 @@ public class LineDocSource extends ContentSource {
     }
   }
   
+  @Override
   public DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
     String line;
     synchronized(this) {
@@ -100,11 +102,13 @@ public class LineDocSource extends ContentSource {
     return docData;
   }
 
+  @Override
   public void resetInputs() throws IOException {
     super.resetInputs();
     openFile();
   }
   
+  @Override
   public void setConfig(Config config) {
     super.setConfig(config);
     String fileName = config.get("docs.file", null);

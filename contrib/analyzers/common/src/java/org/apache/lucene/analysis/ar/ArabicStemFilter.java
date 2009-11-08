@@ -39,6 +39,7 @@ public final class ArabicStemFilter extends TokenFilter {
     termAtt = addAttribute(TermAttribute.class);
   }
 
+  @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       int newlen = stemmer.stem(termAtt.termBuffer(), termAtt.termLength());

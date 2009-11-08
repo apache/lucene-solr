@@ -49,6 +49,7 @@ public class DefaultPhraseSlopQueryNodeProcessor extends QueryNodeProcessorImpl 
     // empty constructor
   }
 
+  @Override
   public QueryNode process(QueryNode queryTree) throws QueryNodeException {
     QueryConfigHandler queryConfig = getQueryConfigHandler();
 
@@ -68,6 +69,7 @@ public class DefaultPhraseSlopQueryNodeProcessor extends QueryNodeProcessorImpl 
 
   }
 
+  @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
     if (node instanceof TokenizedPhraseQueryNode
@@ -81,6 +83,7 @@ public class DefaultPhraseSlopQueryNodeProcessor extends QueryNodeProcessorImpl 
 
   }
 
+  @Override
   protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
 
     if (node instanceof SlopQueryNode) {
@@ -92,6 +95,7 @@ public class DefaultPhraseSlopQueryNodeProcessor extends QueryNodeProcessorImpl 
 
   }
 
+  @Override
   protected void processChildren(QueryNode queryTree) throws QueryNodeException {
 
     if (this.processChildren) {

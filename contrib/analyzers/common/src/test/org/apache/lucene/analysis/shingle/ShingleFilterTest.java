@@ -48,6 +48,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
       this.typeAtt = addAttribute(TypeAttribute.class);
     }
 
+    @Override
     public final boolean incrementToken() throws IOException {
       clearAttributes();
       if (index < testToken.length) {
@@ -201,6 +202,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
   };
 
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     testTokenWithHoles = new Token[] {

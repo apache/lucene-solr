@@ -47,6 +47,7 @@ public class DbIndexInput extends IndexInput {
         block.get(directory);
     }
 
+    @Override
     public Object clone()
     {
         try {
@@ -62,16 +63,19 @@ public class DbIndexInput extends IndexInput {
         }
     }
 
+    @Override
     public void close()
         throws IOException
     {
     }
 
+    @Override
     public long length()
     {
         return length;
     }
 
+    @Override
     public byte readByte()
         throws IOException
     {
@@ -90,6 +94,7 @@ public class DbIndexInput extends IndexInput {
         return b;
     }
 
+    @Override
     public void readBytes(byte[] b, int offset, int len)
         throws IOException
     {
@@ -122,6 +127,7 @@ public class DbIndexInput extends IndexInput {
         }
     }
 
+    @Override
     public void seek(long pos)
         throws IOException
     {
@@ -138,6 +144,7 @@ public class DbIndexInput extends IndexInput {
         position = pos;
     }
 
+    @Override
     public long getFilePointer()
     {
         return position;

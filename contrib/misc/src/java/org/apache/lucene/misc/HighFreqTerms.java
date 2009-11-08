@@ -92,6 +92,7 @@ final class TermInfoQueue extends PriorityQueue<TermInfo> {
   TermInfoQueue(int size) {
     initialize(size);
   }
+  @Override
   protected final boolean lessThan(TermInfo termInfoA, TermInfo termInfoB) {
     return termInfoA.docFreq < termInfoB.docFreq;
   }

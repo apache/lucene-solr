@@ -345,6 +345,7 @@ public final class ShingleMatrixFilter extends TokenStream {
   private Set<List<Token>> shinglesSeen = new HashSet<List<Token>>();
 
 
+  @Override
   public void reset() throws IOException {
     permutations = null;
     shinglesSeen.clear();
@@ -355,6 +356,7 @@ public final class ShingleMatrixFilter extends TokenStream {
 
   private Token reusableToken = new Token();
 
+  @Override
   public final boolean incrementToken() throws IOException {
     if (matrix == null) {
       matrix = new Matrix();
@@ -743,6 +745,7 @@ public final class ShingleMatrixFilter extends TokenStream {
         return Matrix.this.columns.indexOf(this);
       }
 
+      @Override
       public String toString() {
         return "Column{" +
             "first=" + first +
@@ -807,6 +810,7 @@ public final class ShingleMatrixFilter extends TokenStream {
 //          return ret;
 //        }
 
+        @Override
         public String toString() {
           return "Row{" +
               "index=" + getIndex() +
@@ -863,6 +867,7 @@ public final class ShingleMatrixFilter extends TokenStream {
       };
     }
 
+    @Override
     public String toString() {
       return "Matrix{" +
           "columns=" + columns +
@@ -920,17 +925,21 @@ public final class ShingleMatrixFilter extends TokenStream {
    */
   public static class OneDimensionalNonWeightedTokenSettingsCodec extends TokenSettingsCodec {
 
+    @Override
     public TokenPositioner getTokenPositioner(Token token) throws IOException {
       return TokenPositioner.newColumn;
     }
 
+    @Override
     public void setTokenPositioner(Token token, TokenPositioner tokenPositioner) {
     }
 
+    @Override
     public float getWeight(Token token) {
       return 1f;
     }
 
+    @Override
     public void setWeight(Token token, float weight) {
     }
 
@@ -944,6 +953,7 @@ public final class ShingleMatrixFilter extends TokenStream {
    */
   public static class TwoDimensionalNonWeightedSynonymTokenSettingsCodec extends TokenSettingsCodec {
 
+    @Override
     public TokenPositioner getTokenPositioner(Token token) throws IOException {
       if (token.getPositionIncrement() == 0) {
         return TokenPositioner.newRow;
@@ -952,14 +962,17 @@ public final class ShingleMatrixFilter extends TokenStream {
       }
     }
 
+    @Override
     public void setTokenPositioner(Token token, TokenPositioner tokenPositioner) {
       throw new UnsupportedOperationException();
     }
 
+    @Override
     public float getWeight(Token token) {
       return 1f;
     }
 
+    @Override
     public void setWeight(Token token, float weight) {
     }
 
@@ -981,6 +994,7 @@ public final class ShingleMatrixFilter extends TokenStream {
      * @return the token flags int value as TokenPosition
      * @throws IOException
      */
+    @Override
     public TokenPositioner getTokenPositioner(Token token) throws IOException {
       switch (token.getFlags()) {
         case 0:
@@ -999,6 +1013,7 @@ public final class ShingleMatrixFilter extends TokenStream {
      * @param token
      * @param tokenPositioner
      */
+    @Override
     public void setTokenPositioner(Token token, TokenPositioner tokenPositioner) {
       token.setFlags(tokenPositioner.getIndex());
     }
@@ -1009,6 +1024,7 @@ public final class ShingleMatrixFilter extends TokenStream {
      * @param token
      * @return 32 bit float
      */
+    @Override
     public float getWeight(Token token) {
       if (token.getPayload() == null || token.getPayload().getData() == null) {
         return 1f;
@@ -1022,6 +1038,7 @@ public final class ShingleMatrixFilter extends TokenStream {
      * @param token
      * @param weight
      */
+    @Override
     public void setWeight(Token token, float weight) {
       if (weight == 1f) {
         token.setPayload(null);

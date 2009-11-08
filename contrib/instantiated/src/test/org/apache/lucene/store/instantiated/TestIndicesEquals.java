@@ -179,6 +179,7 @@ public class TestIndicesEquals extends TestCase {
                 final AttributeImpl reusableToken = (AttributeImpl) addAttribute(TermAttribute.class);
                 Iterator<Token> it = tokens.iterator();
                 
+                @Override
                 public final boolean incrementToken() throws IOException {
                   if (!it.hasNext()) {
                     return false;
@@ -188,6 +189,7 @@ public class TestIndicesEquals extends TestCase {
                   return true;
                 }
 
+                @Override
                 public void reset() throws IOException {
                   it = tokens.iterator();
                 }

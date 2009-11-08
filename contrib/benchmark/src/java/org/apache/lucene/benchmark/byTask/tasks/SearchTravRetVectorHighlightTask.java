@@ -66,6 +66,7 @@ public class SearchTravRetVectorHighlightTask extends SearchTravTask {
     super(runData);
   }
 
+  @Override
   public void setup() throws Exception {
     super.setup();
     //check to make sure either the doc is being stored
@@ -81,18 +82,22 @@ public class SearchTravRetVectorHighlightTask extends SearchTravTask {
     }
   }
 
+  @Override
   public boolean withRetrieve() {
     return true;
   }
 
+  @Override
   public int numToHighlight() {
     return numToHighlight;
   }
   
+  @Override
   protected BenchmarkHighlighter getBenchmarkHighlighter(Query q){
     highlighter = new FastVectorHighlighter( false, false );
     final FieldQuery fq = highlighter.getFieldQuery( q );
     return new BenchmarkHighlighter(){
+      @Override
       public int doHighlight(IndexReader reader, int doc, String field,
           Document document, Analyzer analyzer, String text) throws Exception {
         String[] fragments = highlighter.getBestFragments(fq, reader, doc, field, fragSize, maxFrags);
@@ -101,6 +106,7 @@ public class SearchTravRetVectorHighlightTask extends SearchTravTask {
     };
   }
 
+  @Override
   protected Collection<String> getFieldsToHighlight(Document document) {
     Collection<String> result = super.getFieldsToHighlight(document);
     //if stored is false, then result will be empty, in which case just get all the param fields
@@ -112,6 +118,7 @@ public class SearchTravRetVectorHighlightTask extends SearchTravTask {
     return result;
   }
 
+  @Override
   public void setParams(String params) {
     String [] splits = params.split(",");
     for (int i = 0; i < splits.length; i++) {

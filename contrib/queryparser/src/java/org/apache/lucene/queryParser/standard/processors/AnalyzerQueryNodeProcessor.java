@@ -76,6 +76,7 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
     // empty constructor
   }
 
+  @Override
   public QueryNode process(QueryNode queryTree) throws QueryNodeException {
 
     if (getQueryConfigHandler().hasAttribute(AnalyzerAttribute.class)) {
@@ -323,12 +324,14 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
 
   }
 
+  @Override
   protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
 
     return node;
 
   }
 
+  @Override
   protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
       throws QueryNodeException {
 

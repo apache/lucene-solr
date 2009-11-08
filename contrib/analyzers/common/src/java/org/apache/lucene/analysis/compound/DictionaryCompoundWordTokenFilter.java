@@ -81,6 +81,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
     super(input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
   }
 
+  @Override
   protected void decomposeInternal(final Token token) {
     // Only words longer than minWordSize get processed
     if (token.termLength() < this.minWordSize) {

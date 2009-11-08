@@ -537,6 +537,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
     private Iterator iterator;
 
+    @Override
     public boolean incrementToken() throws IOException {
       if (iterator == null) {
         iterator = tokens.iterator();
@@ -556,6 +557,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
     }
 
 
+    @Override
     public void reset() throws IOException {
       iterator = null;
     }

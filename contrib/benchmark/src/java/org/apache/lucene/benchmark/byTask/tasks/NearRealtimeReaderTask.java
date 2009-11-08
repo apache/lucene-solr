@@ -59,6 +59,7 @@ public class NearRealtimeReaderTask extends PerfTask {
       setDaemon(true);
     }
 
+    @Override
     public void run() {
 
       IndexReader reader = null;
@@ -106,6 +107,7 @@ public class NearRealtimeReaderTask extends PerfTask {
     super(runData);
   }
 
+  @Override
   public int doLogic() throws IOException {
     if (t == null) {
       IndexWriter w = getRunData().getIndexWriter();
@@ -115,16 +117,19 @@ public class NearRealtimeReaderTask extends PerfTask {
     return 1;
   }
 
+  @Override
   public void setParams(String params) {
     super.setParams(params);
     pauseSec = Float.parseFloat(params);
   }
 
+  @Override
   public boolean supportsParams() {
     return true;
   }
 
   // Close the thread
+  @Override
   public void close() throws InterruptedException {
     if (t != null) {
       t.done = true;

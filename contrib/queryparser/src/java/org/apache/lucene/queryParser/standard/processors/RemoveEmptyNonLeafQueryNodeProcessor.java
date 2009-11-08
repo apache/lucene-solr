@@ -48,6 +48,7 @@ public class RemoveEmptyNonLeafQueryNodeProcessor extends
     // empty constructor
   }
 
+  @Override
   public QueryNode process(QueryNode queryTree) throws QueryNodeException {
     queryTree = super.process(queryTree);
 
@@ -65,18 +66,21 @@ public class RemoveEmptyNonLeafQueryNodeProcessor extends
 
   }
 
+  @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
     return node;
 
   }
 
+  @Override
   protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
 
     return node;
 
   }
 
+  @Override
   protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
       throws QueryNodeException {
 

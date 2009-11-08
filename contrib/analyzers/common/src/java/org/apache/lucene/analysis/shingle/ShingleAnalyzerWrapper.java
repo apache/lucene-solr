@@ -98,6 +98,7 @@ public class ShingleAnalyzerWrapper extends Analyzer {
     this.outputUnigrams = outputUnigrams;
   }
 
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream wrapped;
     try {
@@ -116,6 +117,7 @@ public class ShingleAnalyzerWrapper extends Analyzer {
     ShingleFilter shingle;
   };
   
+  @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
     if (overridesTokenStreamMethod) {
       // LUCENE-1678: force fallback to tokenStream() if we

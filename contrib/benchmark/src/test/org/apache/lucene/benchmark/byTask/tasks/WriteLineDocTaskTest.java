@@ -40,6 +40,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   // class has to be public so that Class.forName.newInstance() will work
   public static final class WriteLineDocMaker extends DocMaker {
   
+    @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
       doc.add(new Field(BODY_FIELD, "body", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
@@ -53,6 +54,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   // class has to be public so that Class.forName.newInstance() will work
   public static final class NewLinesDocMaker extends DocMaker {
   
+    @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
       doc.add(new Field(BODY_FIELD, "body\r\ntext\ttwo", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
@@ -65,6 +67,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   
   // class has to be public so that Class.forName.newInstance() will work
   public static final class NoBodyDocMaker extends DocMaker {
+    @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
       doc.add(new Field(TITLE_FIELD, "title", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
@@ -75,6 +78,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   
   // class has to be public so that Class.forName.newInstance() will work
   public static final class NoTitleDocMaker extends DocMaker {
+    @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
       doc.add(new Field(BODY_FIELD, "body", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
@@ -85,6 +89,7 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
   
   // class has to be public so that Class.forName.newInstance() will work
   public static final class JustDateDocMaker extends DocMaker {
+    @Override
     public Document makeDocument() throws Exception {
       Document doc = new Document();
       doc.add(new Field(DATE_FIELD, "date", Store.NO, Index.NOT_ANALYZED_NO_NORMS));

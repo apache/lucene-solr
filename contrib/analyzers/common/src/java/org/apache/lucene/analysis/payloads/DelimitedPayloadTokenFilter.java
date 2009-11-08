@@ -59,6 +59,7 @@ public final class DelimitedPayloadTokenFilter extends TokenFilter {
     this.encoder = encoder;
   }
 
+  @Override
   public boolean incrementToken() throws IOException {
     boolean result = false;
     if (input.incrementToken()) {

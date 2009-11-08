@@ -68,6 +68,7 @@ public class GeoHashDistanceFilter extends DistanceFilter {
     nextDocBase += reader.maxDoc();
 
     return new FilteredDocIdSet(startingFilter.getDocIdSet(reader)) {
+      @Override
       public boolean match(int doc) {
         
         String geoHash = geoHashValues[doc];

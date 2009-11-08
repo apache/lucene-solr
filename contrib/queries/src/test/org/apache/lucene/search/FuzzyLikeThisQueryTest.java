@@ -37,6 +37,7 @@ public class FuzzyLikeThisQueryTest extends TestCase
 	private IndexSearcher searcher;
 	private Analyzer analyzer=new WhitespaceAnalyzer();
 
+	@Override
 	protected void setUp() throws Exception
 	{
 		directory = new RAMDirectory();

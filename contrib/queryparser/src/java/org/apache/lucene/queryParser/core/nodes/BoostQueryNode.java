@@ -99,6 +99,7 @@ public class BoostQueryNode extends QueryNodeImpl {
 
   }
 
+  @Override
   public String toString() {
     return "<boost value='" + getValueString() + "'>" + "\n"
         + getChild().toString() + "\n</boost>";
@@ -111,6 +112,7 @@ public class BoostQueryNode extends QueryNodeImpl {
         + getValueString();
   }
 
+  @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
     BoostQueryNode clone = (BoostQueryNode) super.cloneTree();
 

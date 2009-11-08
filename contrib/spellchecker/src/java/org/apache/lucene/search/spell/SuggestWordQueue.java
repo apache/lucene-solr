@@ -31,6 +31,7 @@ final class SuggestWordQueue extends PriorityQueue<SuggestWord> {
     initialize(size);
   }
 
+  @Override
   protected final boolean lessThan (SuggestWord wa, SuggestWord wb) {
     int val = wa.compareTo(wb);
     return val < 0;

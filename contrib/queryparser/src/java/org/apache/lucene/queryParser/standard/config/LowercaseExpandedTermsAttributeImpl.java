@@ -49,14 +49,17 @@ public class LowercaseExpandedTermsAttributeImpl extends AttributeImpl
     return this.lowercaseExpandedTerms;
   }
 
+  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean equals(Object other) {
 
     if (other instanceof LowercaseExpandedTermsAttributeImpl
@@ -70,10 +73,12 @@ public class LowercaseExpandedTermsAttributeImpl extends AttributeImpl
 
   }
 
+  @Override
   public int hashCode() {
     return this.lowercaseExpandedTerms ? -1 : Integer.MAX_VALUE;
   }
 
+  @Override
   public String toString() {
     return "<lowercaseExpandedTerms lowercaseExpandedTerms="
         + this.lowercaseExpandedTerms + "/>";

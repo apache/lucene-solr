@@ -26,6 +26,7 @@ public class AndQuery extends ComposedQuery {
     super(queries, inf, opName);
   }
   
+  @Override
   public Query makeLuceneQueryFieldNoBoost(String fieldName, BasicQueryFactory qf) {
     return SrndBooleanQuery.makeBooleanQuery( /* subqueries can be individually boosted */
       makeLuceneSubQueriesField(fieldName, qf), BooleanClause.Occur.MUST);

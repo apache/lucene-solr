@@ -102,6 +102,7 @@ public class ReutersQueryMaker extends AbstractQueryMaker implements QueryMaker 
     return queries.toArray(new Query[0]);
   }
   
+  @Override
   protected Query[] prepareQueries() throws Exception {
     // analyzer (default is standard analyzer)
     Analyzer anlzr= NewAnalyzerTask.createAnalyzer(config.get("analyzer",

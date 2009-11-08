@@ -53,14 +53,17 @@ public class FieldBoostMapAttributeImpl extends AttributeImpl
     return this.boosts;
   }
 
+  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean equals(Object other) {
 
     if (other instanceof FieldBoostMapAttributeImpl && other != null
@@ -74,6 +77,7 @@ public class FieldBoostMapAttributeImpl extends AttributeImpl
 
   }
 
+  @Override
   public int hashCode() {
     final int prime = 97;
     if (this.boosts != null) 
@@ -82,6 +86,7 @@ public class FieldBoostMapAttributeImpl extends AttributeImpl
       return Float.valueOf(prime).hashCode();
   }
 
+  @Override
   public String toString() {
     return "<fieldBoostMapAttribute map=" + this.boosts + "/>";
   }

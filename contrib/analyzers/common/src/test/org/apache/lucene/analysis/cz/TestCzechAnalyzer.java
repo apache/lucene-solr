@@ -51,6 +51,7 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
    * An input stream that always throws IOException for testing.
    */
   private class UnreliableInputStream extends InputStream {
+    @Override
     public int read() throws IOException {
       throw new IOException();
     }

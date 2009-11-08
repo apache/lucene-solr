@@ -44,6 +44,7 @@ public class SpansQueryTreeBuilder extends QueryTreeBuilder implements
 
   }
 
+  @Override
   public SpanQuery build(QueryNode queryTree) throws QueryNodeException {
     return (SpanQuery) super.build(queryTree);
   }

@@ -134,6 +134,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    * numTokens does not count overlap tokens if
    * discountOverlaps is true by default or true for this
    * specific field. */
+  @Override
   public float computeNorm(String fieldName, FieldInvertState state) {
     final int numTokens;
     boolean overlaps = discountOverlaps;
@@ -166,6 +167,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    *
    * @see #setLengthNormFactors
    */
+  @Override
   public float lengthNorm(String fieldName, int numTerms) {
     int l = ln_min;
     int h = ln_max;
@@ -199,6 +201,7 @@ public class SweetSpotSimilarity extends DefaultSimilarity {
    *
    * @see #baselineTf
    */
+  @Override
   public float tf(int freq) {
     return baselineTf(freq);
   }

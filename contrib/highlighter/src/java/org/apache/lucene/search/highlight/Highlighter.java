@@ -574,6 +574,7 @@ class FragmentQueue extends PriorityQueue<TextFragment>
 		initialize(size);
 	}
 
+	@Override
 	public final boolean lessThan(TextFragment fragA, TextFragment fragB)
 	{
 		if (fragA.getScore() == fragB.getScore())

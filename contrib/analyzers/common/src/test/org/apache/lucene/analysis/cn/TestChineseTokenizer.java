@@ -65,6 +65,7 @@ public class TestChineseTokenizer extends BaseTokenStreamTestCase
      * convenience to show the behavior of the tokenizer
      */
     private class JustChineseTokenizerAnalyzer extends Analyzer {
+      @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new ChineseTokenizer(reader);
       }   
@@ -75,6 +76,7 @@ public class TestChineseTokenizer extends BaseTokenStreamTestCase
      * convenience to show the behavior of the filter.
      */
     private class JustChineseFilterAnalyzer extends Analyzer {
+      @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new ChineseFilter(new WhitespaceTokenizer(reader));
       }

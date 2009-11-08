@@ -29,6 +29,7 @@ import java.io.StringReader;
 public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   private TokenStream input;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     input = new WhitespaceTokenizer(new StringReader("abcde"));

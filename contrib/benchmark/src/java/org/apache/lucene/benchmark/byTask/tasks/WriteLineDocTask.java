@@ -89,10 +89,12 @@ public class WriteLineDocTask extends PerfTask {
     docMaker = runData.getDocMaker();
   }
 
+  @Override
   protected String getLogMessage(int recsCount) {
     return "Wrote " + recsCount + " line docs";
   }
   
+  @Override
   public int doLogic() throws Exception {
     Document doc = docSize > 0 ? docMaker.makeDocument(docSize) : docMaker.makeDocument();
 
@@ -117,6 +119,7 @@ public class WriteLineDocTask extends PerfTask {
     return 1;
   }
 
+  @Override
   public void close() throws Exception {
     lineFileOut.close();
     super.close();
@@ -126,6 +129,7 @@ public class WriteLineDocTask extends PerfTask {
    * Set the params (docSize only)
    * @param params docSize, or 0 for no limit.
    */
+  @Override
   public void setParams(String params) {
     if (super.supportsParams()) {
       super.setParams(params);
@@ -133,6 +137,7 @@ public class WriteLineDocTask extends PerfTask {
     docSize = (int) Float.parseFloat(params); 
   }
 
+  @Override
   public boolean supportsParams() {
     return true;
   }

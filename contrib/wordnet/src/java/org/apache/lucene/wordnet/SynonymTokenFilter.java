@@ -78,6 +78,7 @@ public class SynonymTokenFilter extends TokenFilter {
   }
   
   /** Returns the next token in the stream, or null at EOS. */
+  @Override
   public final boolean incrementToken() throws IOException {
     while (todo > 0 && index < stack.length) { // pop from stack
       if (createToken(stack[index++], current)) {
@@ -140,6 +141,7 @@ public class SynonymTokenFilter extends TokenFilter {
     }   
   }
 
+  @Override
   public void reset() throws IOException {
     super.reset();
     stack = null;

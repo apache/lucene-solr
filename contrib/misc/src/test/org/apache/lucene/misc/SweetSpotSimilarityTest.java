@@ -182,6 +182,7 @@ public class SweetSpotSimilarityTest extends TestCase {
   public void testHyperbolicSweetSpot() {
   
     SweetSpotSimilarity ss = new SweetSpotSimilarity() {
+        @Override
         public float tf(int freq) {
           return hyperbolicTf(freq);
         }

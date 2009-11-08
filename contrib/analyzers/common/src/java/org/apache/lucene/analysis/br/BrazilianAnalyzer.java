@@ -146,6 +146,7 @@ public final class BrazilianAnalyzer extends Analyzer {
 	 * 			{@link LowerCaseFilter}, {@link StandardFilter}, {@link StopFilter}, and 
 	 *          {@link BrazilianStemFilter}.
 	 */
+	@Override
 	public final TokenStream tokenStream(String fieldName, Reader reader) {
                 TokenStream result = new StandardTokenizer( matchVersion, reader );
 		result = new LowerCaseFilter( result );
@@ -169,6 +170,7 @@ public final class BrazilianAnalyzer extends Analyzer {
      *          {@link LowerCaseFilter}, {@link StandardFilter}, {@link StopFilter}, and 
      *          {@link BrazilianStemFilter}.
      */
+    @Override
     public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {
       SavedStreams streams = (SavedStreams) getPreviousTokenStream();

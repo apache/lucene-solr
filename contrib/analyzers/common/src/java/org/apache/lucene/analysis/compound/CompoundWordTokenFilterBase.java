@@ -137,6 +137,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     payloadAtt.setPayload(token.getPayload());
   }
   
+  @Override
   public final boolean incrementToken() throws IOException {
     if (tokens.size() > 0) {
       setToken((Token)tokens.removeFirst());
@@ -205,6 +206,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   
   protected abstract void decomposeInternal(final Token token);
 
+  @Override
   public void reset() throws IOException {
     super.reset();
     tokens.clear();

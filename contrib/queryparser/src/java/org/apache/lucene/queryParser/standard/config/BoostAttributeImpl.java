@@ -49,14 +49,17 @@ public class BoostAttributeImpl extends AttributeImpl
     return this.boost;
   }
 
+  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean equals(Object other) {
 
     if (other instanceof BoostAttributeImpl && other != null
@@ -70,10 +73,12 @@ public class BoostAttributeImpl extends AttributeImpl
 
   }
 
+  @Override
   public int hashCode() {
     return Float.valueOf(this.boost).hashCode();
   }
 
+  @Override
   public String toString() {
     return "<boostAttribute boost=" + this.boost + "/>";
   }

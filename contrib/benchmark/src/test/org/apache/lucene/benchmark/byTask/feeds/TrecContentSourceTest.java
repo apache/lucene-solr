@@ -40,6 +40,7 @@ public class TrecContentSourceTest extends TestCase {
       this.forever = forever;
     }
     
+    @Override
     void openNextFile() throws NoMoreDataException, IOException {
       if (reader != null) {
         if (!forever) {
@@ -51,6 +52,7 @@ public class TrecContentSourceTest extends TestCase {
       reader = new BufferedReader(new StringReader(docs));
     }
     
+    @Override
     public void setConfig(Config config) {
       htmlParser = new DemoHTMLParser();
     }

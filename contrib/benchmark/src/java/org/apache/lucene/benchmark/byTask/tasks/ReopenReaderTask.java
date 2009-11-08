@@ -31,6 +31,7 @@ public class ReopenReaderTask extends PerfTask {
     super(runData);
   }
 
+  @Override
   public int doLogic() throws IOException {
     IndexReader ir = getRunData().getIndexReader();
     IndexReader or = ir;

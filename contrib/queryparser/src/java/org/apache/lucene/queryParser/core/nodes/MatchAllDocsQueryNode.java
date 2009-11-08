@@ -31,6 +31,7 @@ public class MatchAllDocsQueryNode extends QueryNodeImpl {
     // empty constructor
   }
 
+  @Override
   public String toString() {
     return "<matchAllDocs field='*' term='*'>";
   }
@@ -39,6 +40,7 @@ public class MatchAllDocsQueryNode extends QueryNodeImpl {
     return "*:*";
   }
 
+  @Override
   public MatchAllDocsQueryNode cloneTree() throws CloneNotSupportedException {
     MatchAllDocsQueryNode clone = (MatchAllDocsQueryNode) super.cloneTree();
 

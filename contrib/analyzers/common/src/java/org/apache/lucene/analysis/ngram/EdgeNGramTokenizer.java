@@ -44,10 +44,16 @@ public final class EdgeNGramTokenizer extends Tokenizer {
   public static enum Side {
 
     /** Get the n-gram from the front of the input */
-    FRONT { public String getLabel() { return "front"; } },
+    FRONT {
+      @Override
+      public String getLabel() { return "front"; }
+    },
 
     /** Get the n-gram from the end of the input */
-    BACK  { public String getLabel() { return "back"; } };
+    BACK  {
+      @Override
+      public String getLabel() { return "back"; }
+    };
 
     public abstract String getLabel();
 
@@ -174,6 +180,7 @@ public final class EdgeNGramTokenizer extends Tokenizer {
   }
 
   /** Returns the next token in the stream, or null at EOS. */
+  @Override
   public final boolean incrementToken() throws IOException {
     clearAttributes();
     // if we are just starting, read the whole input
@@ -205,17 +212,20 @@ public final class EdgeNGramTokenizer extends Tokenizer {
     return true;
   }
   
+  @Override
   public final void end() {
     // set final offset
     final int finalOffset = inLen;
     this.offsetAtt.setOffset(finalOffset, finalOffset);
   }    
 
+  @Override
   public void reset(Reader input) throws IOException {
     super.reset(input);
     reset();
   }
 
+  @Override
   public void reset() throws IOException {
     super.reset();
     started = false;

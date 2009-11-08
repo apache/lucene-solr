@@ -69,6 +69,7 @@ public class NumericPayloadTokenFilterTest extends BaseTokenStreamTestCase {
       typeAtt = addAttribute(TypeAttribute.class);
     }
     
+    @Override
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
         if (termAtt.term().equals("dogs"))

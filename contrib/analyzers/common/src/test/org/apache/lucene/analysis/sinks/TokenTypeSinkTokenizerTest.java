@@ -76,6 +76,7 @@ public class TokenTypeSinkTokenizerTest extends BaseTokenStreamTestCase {
       typeAtt = addAttribute(TypeAttribute.class);
     }
 
+    @Override
     public final boolean incrementToken() throws IOException {
       if (!input.incrementToken()) return false;
       

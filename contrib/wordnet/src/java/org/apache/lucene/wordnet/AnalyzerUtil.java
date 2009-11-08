@@ -72,6 +72,7 @@ public class AnalyzerUtil {
       throw new IllegalArgumentException("logStream must not be null");
 
     return new Analyzer() {
+      @Override
       public TokenStream tokenStream(final String fieldName, Reader reader) {
         return new TokenFilter(child.tokenStream(fieldName, reader)) {
           private int position = -1;
@@ -80,6 +81,7 @@ public class AnalyzerUtil {
           private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
           private TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
          
+          @Override
           public boolean incrementToken() throws IOException {
             boolean hasNext = input.incrementToken();
             log.println(toString(hasNext));
@@ -124,10 +126,12 @@ public class AnalyzerUtil {
       return child; // no need to wrap
   
     return new Analyzer() {
+      @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new TokenFilter(child.tokenStream(fieldName, reader)) {
           private int todo = maxTokens;
           
+          @Override
           public boolean incrementToken() throws IOException {
             return --todo >= 0 ? input.incrementToken() : false;
           }
@@ -163,6 +167,7 @@ public class AnalyzerUtil {
       throw new IllegalArgumentException("child analyzer must not be null");
   
     return new Analyzer() {
+      @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new PorterStemFilter(
             child.tokenStream(fieldName, reader));
@@ -201,6 +206,7 @@ public class AnalyzerUtil {
       return child; // no need to wrap
   
     return new Analyzer() {
+      @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         return new SynonymTokenFilter(
           child.tokenStream(fieldName, reader), synonyms, maxSynonyms);
@@ -240,12 +246,14 @@ public class AnalyzerUtil {
 
       private final HashMap<String,ArrayList<AttributeSource.State>> cache = new HashMap<String,ArrayList<AttributeSource.State>>();
 
+      @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
         final ArrayList<AttributeSource.State> tokens = cache.get(fieldName);
         if (tokens == null) { // not yet cached
           final ArrayList<AttributeSource.State> tokens2 = new ArrayList<AttributeSource.State>();
           TokenStream tokenStream = new TokenFilter(child.tokenStream(fieldName, reader)) {
 
+            @Override
             public boolean incrementToken() throws IOException {
               boolean hasNext = input.incrementToken();
               if (hasNext) tokens2.add(captureState());
@@ -260,6 +268,7 @@ public class AnalyzerUtil {
 
             private Iterator<AttributeSource.State> iter = tokens.iterator();
 
+            @Override
             public boolean incrementToken() {
               if (!iter.hasNext()) return false;
               restoreState(iter.next());
@@ -356,6 +365,7 @@ public class AnalyzerUtil {
     public MutableInteger(int value) { this.value = value; }
     public int intValue() { return value; }
     public void setValue(int value) { this.value = value; }
+    @Override
     public String toString() { return String.valueOf(value); }
   };
   

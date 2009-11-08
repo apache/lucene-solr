@@ -45,6 +45,7 @@ public final class SingleTokenTokenStream extends TokenStream {
     assert (tokenAtt instanceof Token);
   }
 
+  @Override
   public final boolean incrementToken() throws IOException {
     if (exhausted) {
       return false;
@@ -56,6 +57,7 @@ public final class SingleTokenTokenStream extends TokenStream {
     }
   }
 
+  @Override
   public void reset() throws IOException {
     exhausted = false;
   }

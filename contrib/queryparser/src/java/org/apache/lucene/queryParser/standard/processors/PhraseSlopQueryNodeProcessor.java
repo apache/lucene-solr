@@ -39,6 +39,7 @@ public class PhraseSlopQueryNodeProcessor extends QueryNodeProcessorImpl {
     // empty constructor
   }
 
+  @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
     if (node instanceof SlopQueryNode) {
@@ -55,12 +56,14 @@ public class PhraseSlopQueryNodeProcessor extends QueryNodeProcessorImpl {
 
   }
 
+  @Override
   protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
 
     return node;
 
   }
 
+  @Override
   protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
       throws QueryNodeException {
 

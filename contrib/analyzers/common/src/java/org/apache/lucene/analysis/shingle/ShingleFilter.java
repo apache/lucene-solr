@@ -163,6 +163,7 @@ public final class ShingleFilter extends TokenFilter {
   /* (non-Javadoc)
    * @see org.apache.lucene.analysis.TokenStream#next()
    */
+  @Override
   public final boolean incrementToken() throws IOException {
     while (true) {
       if (nextToken == null) {
@@ -328,6 +329,7 @@ public final class ShingleFilter extends TokenFilter {
     return true;
   }
 
+  @Override
   public void reset() throws IOException {
     super.reset();
     nextToken = null;

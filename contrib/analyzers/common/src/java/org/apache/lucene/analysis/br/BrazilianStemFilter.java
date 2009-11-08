@@ -48,6 +48,7 @@ public final class BrazilianStemFilter extends TokenFilter {
     this.exclusions = exclusiontable;
   }
 
+  @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       String term = termAtt.term();

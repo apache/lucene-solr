@@ -88,9 +88,11 @@ public abstract class DistanceFilter extends Filter {
   }
 
   /** Returns true if <code>o</code> is equal to this. */
+  @Override
   public abstract boolean equals(Object o);
 
   /** Returns a hash code value for this object.*/
+  @Override
   public abstract int hashCode();
 
   /*

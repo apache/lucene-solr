@@ -53,10 +53,12 @@ public abstract class SrndQuery implements Cloneable {
   
   public abstract Query makeLuceneQueryFieldNoBoost(String fieldName, BasicQueryFactory qf);
   
+  @Override
   public abstract String toString();
   
   public boolean isFieldsSubQueryAcceptable() {return true;}
     
+  @Override
   public Object clone() {
     try {
       return super.clone();
@@ -67,12 +69,15 @@ public abstract class SrndQuery implements Cloneable {
   
 /* An empty Lucene query */
   public final static Query theEmptyLcnQuery = new BooleanQuery() { /* no changes allowed */
+    @Override
     public void setBoost(float boost) {
       throw new UnsupportedOperationException();
     }
+    @Override
     public void add(BooleanClause clause) {
       throw new UnsupportedOperationException();
     }
+    @Override
     public void add(Query query, BooleanClause.Occur occur) {
       throw new UnsupportedOperationException();
     }

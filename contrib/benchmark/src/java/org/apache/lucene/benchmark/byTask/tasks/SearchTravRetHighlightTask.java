@@ -73,6 +73,7 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
     super(runData);
   }
 
+  @Override
   public void setup() throws Exception {
     super.setup();
     //check to make sure either the doc is being stored
@@ -83,18 +84,22 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
     maxDocCharsToAnalyze = data.getConfig().get("highlighter.maxDocCharsToAnalyze", Highlighter.DEFAULT_MAX_CHARS_TO_ANALYZE);
   }
 
+  @Override
   public boolean withRetrieve() {
     return true;
   }
 
+  @Override
   public int numToHighlight() {
     return numToHighlight;
   }
   
+  @Override
   protected BenchmarkHighlighter getBenchmarkHighlighter(Query q){
     highlighter = new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(q));
     highlighter.setMaxDocCharsToAnalyze(maxDocCharsToAnalyze);
     return new BenchmarkHighlighter(){
+      @Override
       public int doHighlight(IndexReader reader, int doc, String field,
           Document document, Analyzer analyzer, String text) throws Exception {
         TokenStream ts = TokenSources.getAnyTokenStream(reader, doc, field, document, analyzer);
@@ -104,6 +109,7 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
     };
   }
 
+  @Override
   protected Collection<String> getFieldsToHighlight(Document document) {
     Collection<String> result = super.getFieldsToHighlight(document);
     //if stored is false, then result will be empty, in which case just get all the param fields
@@ -115,6 +121,7 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
     return result;
   }
 
+  @Override
   public void setParams(String params) {
     String [] splits = params.split(",");
     for (int i = 0; i < splits.length; i++) {

@@ -50,6 +50,7 @@ public class NewAnalyzerTask extends PerfTask {
     }
   }
 
+  @Override
   public int doLogic() throws IOException {
     String className = null;
     try {
@@ -81,6 +82,7 @@ public class NewAnalyzerTask extends PerfTask {
    * Example Declaration: {"NewAnalyzer" NewAnalyzer(WhitespaceAnalyzer, SimpleAnalyzer, StopAnalyzer, standard.StandardAnalyzer) >
    * @param params analyzerClassName, or empty for the StandardAnalyzer
    */
+  @Override
   public void setParams(String params) {
     super.setParams(params);
     for (StringTokenizer tokenizer = new StringTokenizer(params, ","); tokenizer.hasMoreTokens();) {
@@ -92,6 +94,7 @@ public class NewAnalyzerTask extends PerfTask {
   /* (non-Javadoc)
    * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#supportsParams()
    */
+  @Override
   public boolean supportsParams() {
     return true;
   }

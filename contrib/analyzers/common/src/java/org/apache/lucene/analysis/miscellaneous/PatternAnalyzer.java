@@ -216,6 +216,7 @@ public class PatternAnalyzer extends Analyzer {
    *            the reader delivering the text
    * @return a new token stream
    */
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     if (reader instanceof FastStringReader) { // fast path
       return tokenStream(fieldName, ((FastStringReader)reader).getString());
@@ -236,6 +237,7 @@ public class PatternAnalyzer extends Analyzer {
    *            the reference object with which to compare.
    * @return true if equal, false otherwise
    */
+  @Override
   public boolean equals(Object other) {
     if (this  == other) return true;
     if (this  == DEFAULT_ANALYZER && other == EXTENDED_ANALYZER) return false;
@@ -256,6 +258,7 @@ public class PatternAnalyzer extends Analyzer {
    * 
    * @return the hash code.
    */
+  @Override
   public int hashCode() {
     if (this == DEFAULT_ANALYZER) return -1218418418; // fast path
     if (this == EXTENDED_ANALYZER) return 1303507063; // fast path
@@ -335,6 +338,7 @@ public class PatternAnalyzer extends Analyzer {
       this.toLowerCase = toLowerCase;
     }
 
+    @Override
     public final boolean incrementToken() {
       if (matcher == null) return false;
       clearAttributes();
@@ -361,6 +365,7 @@ public class PatternAnalyzer extends Analyzer {
       }
     }
     
+    @Override
     public final void end() {
       // set final offset
       final int finalOffset = str.length();
@@ -394,6 +399,7 @@ public class PatternAnalyzer extends Analyzer {
       this.stopWords = stopWords;
     }
 
+    @Override
     public boolean incrementToken() {
       clearAttributes();
       // cache loop instance vars (performance)
@@ -442,6 +448,7 @@ public class PatternAnalyzer extends Analyzer {
       return true;
     }
     
+    @Override
     public final void end() {
       // set final offset
       final int finalOffset = str.length();

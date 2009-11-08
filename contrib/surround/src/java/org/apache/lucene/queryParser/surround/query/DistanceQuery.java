@@ -71,13 +71,16 @@ public class DistanceQuery extends ComposedQuery implements DistanceSubQuery {
     sncf.addSpanNearQuery(snq);
   }
 
+  @Override
   public Query makeLuceneQueryFieldNoBoost(final String fieldName, final BasicQueryFactory qf) {
     return new Query () {
       
+      @Override
       public String toString(String fn) {
         return getClass().toString() + " " + fieldName + " (" + fn + "?)";
       }
       
+      @Override
       public Query rewrite(IndexReader reader) throws IOException {
         return getSpanNearQuery(reader, fieldName, getBoost(), qf);
       }

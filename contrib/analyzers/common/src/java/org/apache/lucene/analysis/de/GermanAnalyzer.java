@@ -149,6 +149,7 @@ public class GermanAnalyzer extends Analyzer {
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}, and
    *         {@link GermanStemFilter}
    */
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(matchVersion, reader);
     result = new StandardFilter(result);
@@ -172,6 +173,7 @@ public class GermanAnalyzer extends Analyzer {
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}, and
    *         {@link GermanStemFilter}
    */
+  @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
     if (overridesTokenStreamMethod) {
       // LUCENE-1678: force fallback to tokenStream() if we

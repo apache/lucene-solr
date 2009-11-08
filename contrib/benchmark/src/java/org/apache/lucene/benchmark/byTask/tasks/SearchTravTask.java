@@ -38,32 +38,39 @@ public class SearchTravTask extends ReadTask {
     super(runData);
   }
 
+  @Override
   public boolean withRetrieve() {
     return false;
   }
 
+  @Override
   public boolean withSearch() {
     return true;
   }
 
+  @Override
   public boolean withTraverse() {
     return true;
   }
 
+  @Override
   public boolean withWarm() {
     return false;
   }
 
   
 
+  @Override
   public QueryMaker getQueryMaker() {
     return getRunData().getQueryMaker(this);
   }
 
+  @Override
   public int traversalSize() {
     return traversalSize;
   }
 
+  @Override
   public void setParams(String params) {
     super.setParams(params);
     traversalSize = (int)Float.parseFloat(params);
@@ -72,6 +79,7 @@ public class SearchTravTask extends ReadTask {
   /* (non-Javadoc)
    * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#supportsParams()
    */
+  @Override
   public boolean supportsParams() {
     return true;
   }

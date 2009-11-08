@@ -154,6 +154,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
     public MultiAnalyzer() {
     }
 
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
       result = new TestFilter(result);
@@ -182,6 +183,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
 
     }
 
+    @Override
     public final boolean incrementToken() throws java.io.IOException {
       if (multiToken > 0) {
         termAtt.setTermBuffer("multi" + (multiToken + 1));
@@ -222,6 +224,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
     public PosIncrementAnalyzer() {
     }
 
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
       result = new TestPosIncrementFilter(result);
@@ -241,6 +244,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
       posIncrAtt = addAttribute(PositionIncrementAttribute.class);
     }
 
+    @Override
     public final boolean incrementToken() throws java.io.IOException {
       while (input.incrementToken()) {
         if (termAtt.term().equals("the")) {

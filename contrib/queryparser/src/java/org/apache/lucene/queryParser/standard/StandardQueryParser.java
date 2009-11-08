@@ -150,6 +150,7 @@ public class StandardQueryParser extends QueryParserHelper {
     this.setAnalyzer(analyzer);
   }
   
+  @Override
   public String toString(){
     return "<StandardQueryParser config=\"" + this.getQueryConfigHandler() + "\"/>";
   }

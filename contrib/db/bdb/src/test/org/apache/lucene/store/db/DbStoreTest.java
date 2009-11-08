@@ -47,6 +47,7 @@ public class DbStoreTest extends LuceneTestCase {
     protected Environment env;
     protected Database index, blocks;
     
+    @Override
     public void setUp()
         throws Exception
     {
@@ -99,6 +100,7 @@ public class DbStoreTest extends LuceneTestCase {
         }
     }
 
+    @Override
     public void tearDown()
         throws Exception
     {

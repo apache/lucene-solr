@@ -58,6 +58,7 @@ public class InstantiatedIndexReader extends IndexReader {
   /**
    * @return always true.
    */
+  @Override
   public boolean isOptimized() {
     return true;
   }
@@ -68,10 +69,12 @@ public class InstantiatedIndexReader extends IndexReader {
    * 
    * @return output from {@link InstantiatedIndex#getVersion()} in associated instantiated index.
    */
+  @Override
   public long getVersion() {
     return index.getVersion();
   }
 
+  @Override
   public Directory directory() {
     throw new UnsupportedOperationException();
   }
@@ -93,6 +96,7 @@ public class InstantiatedIndexReader extends IndexReader {
    * @throws IOException if there is a low-level IO error
    * @throws UnsupportedOperationException unless overridden in subclass
    */
+  @Override
   public boolean isCurrent() throws IOException {
     return true;
   }
@@ -115,22 +119,27 @@ public class InstantiatedIndexReader extends IndexReader {
     }
   }
 
+  @Override
   public int numDocs() {
     return getIndex().getDocumentsByNumber().length - index.getDeletedDocuments().size() - deletedDocuments.size();
   }
 
+  @Override
   public int maxDoc() {
     return getIndex().getDocumentsByNumber().length;
   }
 
+  @Override
   public boolean isDeleted(int n) {
     return getIndex().getDeletedDocuments().contains(n) || deletedDocumentNumbers.contains(n);
   }
 
+  @Override
   public boolean hasDeletions() {
     return getIndex().getDeletedDocuments().size() > 0 || deletedDocumentNumbers.size() > 0;
   }
 
+  @Override
   protected void doDelete(int docNum) throws IOException {
     if (!getIndex().getDeletedDocuments().contains(docNum)) {
       if (deletedDocumentNumbers.add(docNum)) {
@@ -139,11 +148,13 @@ public class InstantiatedIndexReader extends IndexReader {
     }
   }
 
+  @Override
   protected void doUndeleteAll() throws IOException {
     deletedDocumentNumbers.clear();
     deletedDocuments.clear();
   }
 
+  @Override
   protected void doCommit(Map commitUserData) throws IOException {
     // todo: read/write lock
 
@@ -177,11 +188,13 @@ public class InstantiatedIndexReader extends IndexReader {
     // todo unlock read/writelock
   }
 
+  @Override
   protected void doClose() throws IOException {
     // ignored
     // todo perhaps release all associated instances?
   }
 
+  @Override
   public Collection getFieldNames(FieldOption fieldOption) {
     Set<String> fieldSet = new HashSet<String>();
     for (FieldSetting fi : index.getFieldSettings().values()) {
@@ -245,6 +258,7 @@ public class InstantiatedIndexReader extends IndexReader {
    * @see org.apache.lucene.document.SetBasedFieldSelector
    * @see org.apache.lucene.document.LoadFirstFieldSelector
    */
+  @Override
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     return document(n);
   }
@@ -270,6 +284,7 @@ public class InstantiatedIndexReader extends IndexReader {
    * @throws IOException if there is a low-level IO error
    */
 
+  @Override
   public Document document(int n) throws IOException {
     return isDeleted(n) ? null : getIndex().getDocumentsByNumber()[n].getDocument();
   }
@@ -278,6 +293,7 @@ public class InstantiatedIndexReader extends IndexReader {
    * never ever touch these values. it is the true values, unless norms have
    * been touched.
    */
+  @Override
   public byte[] norms(String field) throws IOException {
     byte[] norms = getIndex().getNormsByFieldNameAndDocumentNumber().get(field);
     if (norms == null) {
@@ -295,6 +311,7 @@ public class InstantiatedIndexReader extends IndexReader {
     return norms;
   }
 
+  @Override
   public void norms(String field, byte[] bytes, int offset) throws IOException {
     byte[] norms = getIndex().getNormsByFieldNameAndDocumentNumber().get(field);
     if (norms == null) {
@@ -303,6 +320,7 @@ public class InstantiatedIndexReader extends IndexReader {
     System.arraycopy(norms, 0, bytes, offset, norms.length);
   }
 
+  @Override
   protected void doSetNorm(int doc, String field, byte value) throws IOException {
     if (updatedNormsByFieldNameAndDocumentNumber == null) {
       updatedNormsByFieldNameAndDocumentNumber = new HashMap<String,List<NormUpdate>>(getIndex().getNormsByFieldNameAndDocumentNumber().size());
@@ -315,6 +333,7 @@ public class InstantiatedIndexReader extends IndexReader {
     list.add(new NormUpdate(doc, value));
   }
 
+  @Override
   public int docFreq(Term t) throws IOException {
     InstantiatedTerm term = getIndex().findTerm(t);
     if (term == null) {
@@ -324,10 +343,12 @@ public class InstantiatedIndexReader extends IndexReader {
     }
   }
 
+  @Override
   public TermEnum terms() throws IOException {
     return new InstantiatedTermEnum(this);
   }
 
+  @Override
   public TermEnum terms(Term t) throws IOException {
     InstantiatedTerm it = getIndex().findTerm(t);
     if (it != null) {
@@ -341,14 +362,17 @@ public class InstantiatedIndexReader extends IndexReader {
     }
   }
 
+  @Override
   public TermDocs termDocs() throws IOException {
     return new InstantiatedTermDocs(this);
   }
 
+  @Override
   public TermPositions termPositions() throws IOException {
     return new InstantiatedTermPositions(this);
   }
 
+  @Override
   public TermFreqVector[] getTermFreqVectors(int docNumber) throws IOException {
     InstantiatedDocument doc = getIndex().getDocumentsByNumber()[docNumber];
     if (doc.getVectorSpace() == null) {
@@ -362,6 +386,7 @@ public class InstantiatedIndexReader extends IndexReader {
     return ret;
   }
 
+  @Override
   public TermFreqVector getTermFreqVector(int docNumber, String field) throws IOException {
     InstantiatedDocument doc = getIndex().getDocumentsByNumber()[docNumber];
     if (doc.getVectorSpace() == null || doc.getVectorSpace().get(field) == null) {
@@ -371,6 +396,7 @@ public class InstantiatedIndexReader extends IndexReader {
     }
   }
 
+  @Override
   public void getTermFreqVector(int docNumber, String field, TermVectorMapper mapper) throws IOException {
     InstantiatedDocument doc = getIndex().getDocumentsByNumber()[docNumber];
     if (doc.getVectorSpace() != null && doc.getVectorSpace().get(field) == null) {
@@ -382,6 +408,7 @@ public class InstantiatedIndexReader extends IndexReader {
     }
   }
 
+  @Override
   public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
     InstantiatedDocument doc = getIndex().getDocumentsByNumber()[docNumber];
     for (Map.Entry<String,List<InstantiatedTermDocumentInformation>> e : doc.getVectorSpace().entrySet()) {

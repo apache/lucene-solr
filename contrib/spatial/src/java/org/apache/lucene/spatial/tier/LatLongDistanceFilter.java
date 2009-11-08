@@ -72,6 +72,7 @@ public class LatLongDistanceFilter extends DistanceFilter {
     nextDocBase += reader.maxDoc();
 
     return new FilteredDocIdSet(startingFilter.getDocIdSet(reader)) {
+      @Override
       protected boolean match(int doc) {
         double x = latIndex[doc];
         double y = lngIndex[doc];

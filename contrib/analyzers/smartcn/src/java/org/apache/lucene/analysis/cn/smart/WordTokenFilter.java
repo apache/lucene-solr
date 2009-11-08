@@ -61,6 +61,7 @@ public final class WordTokenFilter extends TokenFilter {
     typeAtt = addAttribute(TypeAttribute.class);
   }
   
+  @Override
   public boolean incrementToken() throws IOException {   
     if (tokenIter == null || !tokenIter.hasNext()) {
       // there are no remaining tokens from the current sentence... are there more sentences?
@@ -88,6 +89,7 @@ public final class WordTokenFilter extends TokenFilter {
     return true;
   }
 
+  @Override
   public void reset() throws IOException {
     super.reset();
     tokenIter = null;

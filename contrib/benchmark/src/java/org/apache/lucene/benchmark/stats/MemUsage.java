@@ -24,6 +24,7 @@ public class MemUsage {
 
   public long maxTotal, minTotal, avgTotal;
 
+  @Override
   public String toString() {
     return toScaledString(1, "B");
   }

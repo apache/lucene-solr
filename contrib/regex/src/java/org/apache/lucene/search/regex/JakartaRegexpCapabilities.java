@@ -72,6 +72,7 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
     return prefix == null ? null : new String(prefix);
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -83,6 +84,7 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
     return true;
   }
 
+  @Override
   public int hashCode() {
     return (regexp != null ? regexp.hashCode() : 0);
   }

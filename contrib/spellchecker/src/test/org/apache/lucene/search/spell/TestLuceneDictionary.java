@@ -45,6 +45,7 @@ public class TestLuceneDictionary extends TestCase {
   private LuceneDictionary ld;
   private Iterator it;
 
+  @Override
   public void setUp() throws Exception {
 
     IndexWriter writer = new IndexWriter(store, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);

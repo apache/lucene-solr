@@ -50,8 +50,10 @@ public class SingleDocSource extends ContentSource {
     return docID++;
   }
 
+  @Override
   public void close() throws IOException {}
   
+  @Override
   public DocData getNextDocData(DocData docData) throws NoMoreDataException {
     int id = newdocid();
     addBytes(DOC_TEXT.length());
@@ -61,6 +63,7 @@ public class SingleDocSource extends ContentSource {
     return docData;
   }
 
+  @Override
   public synchronized void resetInputs() throws IOException {
     super.resetInputs();
     docID = 0;

@@ -41,6 +41,7 @@ public class TestSpellChecker extends TestCase {
   private SpellChecker spellChecker;
   private Directory userindex, spellindex;
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     

@@ -59,6 +59,7 @@ public final class FrenchStemFilter extends TokenFilter {
 	/**
 	 * @return  Returns true for the next token in the stream, or false at EOS
 	 */
+	@Override
 	public boolean incrementToken() throws IOException {
 	  if (input.incrementToken()) {
 	    String term = termAtt.term();

@@ -47,15 +47,18 @@ public class SearchTravRetLoadFieldSelectorTask extends SearchTravTask {
     
   }
 
+  @Override
   public boolean withRetrieve() {
     return true;
   }
 
 
+  @Override
   protected Document retrieveDoc(IndexReader ir, int id) throws IOException {
     return ir.document(id, fieldSelector);
   }
 
+  @Override
   public void setParams(String params) {
     this.params = params; // cannot just call super.setParams(), b/c it's params differ.
     Set<String> fieldsToLoad = new HashSet<String>();
@@ -70,6 +73,7 @@ public class SearchTravRetLoadFieldSelectorTask extends SearchTravTask {
   /* (non-Javadoc)
   * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#supportsParams()
   */
+  @Override
   public boolean supportsParams() {
     return true;
   }

@@ -310,14 +310,17 @@ public class TableSearcher extends AbstractTableModel {
         return (tableModel == null) ? 0 : tableModel.getColumnCount();
     }
 
+    @Override
     public String getColumnName(int column) {
         return tableModel.getColumnName(column);
     }
 
+    @Override
     public Class getColumnClass(int column) {
         return tableModel.getColumnClass(column);
     }
 
+    @Override
     public boolean isCellEditable(int row, int column) {
         return tableModel.isCellEditable(getModelRow(row), column);
     }
@@ -326,6 +329,7 @@ public class TableSearcher extends AbstractTableModel {
         return tableModel.getValueAt(getModelRow(row), column);
     }
 
+    @Override
     public void setValueAt(Object aValue, int row, int column) {
         tableModel.setValueAt(aValue, getModelRow(row), column);
     }

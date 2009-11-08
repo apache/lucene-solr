@@ -37,6 +37,7 @@ public final class GreekLowerCaseFilter extends TokenFilter
     	termAtt = addAttribute(TermAttribute.class);
     }
 
+    @Override
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
         char[] chArray = termAtt.termBuffer();

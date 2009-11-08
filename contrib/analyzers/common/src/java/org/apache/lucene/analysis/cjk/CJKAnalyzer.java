@@ -89,6 +89,7 @@ public class CJKAnalyzer extends Analyzer {
    * @return A {@link TokenStream} built from {@link CJKTokenizer}, filtered with
    *    {@link StopFilter}
    */
+  @Override
   public final TokenStream tokenStream(String fieldName, Reader reader) {
     return new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
                           new CJKTokenizer(reader), stopTable);
@@ -108,6 +109,7 @@ public class CJKAnalyzer extends Analyzer {
    * @return A {@link TokenStream} built from {@link CJKTokenizer}, filtered with
    *    {@link StopFilter}
    */
+  @Override
   public final TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
     /* tokenStream() is final, no back compat issue */
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();

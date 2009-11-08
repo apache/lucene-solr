@@ -152,6 +152,7 @@ public final class PersianAnalyzer extends Analyzer {
    *         {@link ArabicNormalizationFilter},
    *         {@link PersianNormalizationFilter} and Persian Stop words
    */
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new ArabicLetterTokenizer(reader);
     result = new LowerCaseFilter(result);
@@ -181,6 +182,7 @@ public final class PersianAnalyzer extends Analyzer {
    *         {@link ArabicNormalizationFilter},
    *         {@link PersianNormalizationFilter} and Persian Stop words
    */
+  @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();

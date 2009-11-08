@@ -54,6 +54,7 @@ public class IndexTaskTest extends TestCase {
      *
      *@exception  IOException  Description of Exception
      */
+    @Override
     public void setUp() throws Exception {
         Project project = new Project();
 
@@ -86,6 +87,7 @@ public class IndexTaskTest extends TestCase {
      *  The teardown method for JUnit
      * TODO: remove indexDir?
      */
+    @Override
     public void tearDown() throws IOException {
         searcher.close();
         dir.close();

@@ -40,6 +40,7 @@ public class ChineseAnalyzer extends Analyzer {
     * @return  A {@link TokenStream} built from a {@link ChineseTokenizer} 
     *   filtered with {@link ChineseFilter}.
     */
+    @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
         TokenStream result = new ChineseTokenizer(reader);
         result = new ChineseFilter(result);
@@ -58,6 +59,7 @@ public class ChineseAnalyzer extends Analyzer {
     * @return A {@link TokenStream} built from a {@link ChineseTokenizer} 
     *   filtered with {@link ChineseFilter}.
     */
+    @Override
     public final TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {
       /* tokenStream() is final, no back compat issue */

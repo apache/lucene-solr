@@ -47,6 +47,7 @@ public class InstantiatedTermEnum
   /**
    * Increments the enumeration to the next element.  True if one exists.
    */
+  @Override
   public boolean next() {
     if (reader.getIndex().getOrderedTerms().length <= nextTermIndex) {
       return false;
@@ -60,6 +61,7 @@ public class InstantiatedTermEnum
   /**
    * Returns the current Term in the enumeration.
    */
+  @Override
   public Term term() {
     return term == null ? null : term.getTerm();
   }
@@ -67,6 +69,7 @@ public class InstantiatedTermEnum
   /**
    * Returns the docFreq of the current Term in the enumeration.
    */
+  @Override
   public int docFreq() {
     return term.getAssociatedDocuments().length;
   }
@@ -74,6 +77,7 @@ public class InstantiatedTermEnum
   /**
    * Closes the enumeration to further activity, freeing resources.
    */
+  @Override
   public void close() {
   }
 

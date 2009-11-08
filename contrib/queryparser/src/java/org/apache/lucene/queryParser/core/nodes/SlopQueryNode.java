@@ -73,6 +73,7 @@ public class SlopQueryNode extends QueryNodeImpl implements FieldableNode {
 
   }
 
+  @Override
   public String toString() {
     return "<slop value='" + getValueString() + "'>" + "\n"
         + getChild().toString() + "\n</slop>";
@@ -85,6 +86,7 @@ public class SlopQueryNode extends QueryNodeImpl implements FieldableNode {
         + getValueString();
   }
 
+  @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
     SlopQueryNode clone = (SlopQueryNode) super.cloneTree();
 

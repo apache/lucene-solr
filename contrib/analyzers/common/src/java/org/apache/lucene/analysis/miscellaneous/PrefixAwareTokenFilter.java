@@ -84,6 +84,7 @@ public class PrefixAwareTokenFilter extends TokenStream {
 
   private boolean prefixExhausted;
 
+  @Override
   public final boolean incrementToken() throws IOException {
     if (!prefixExhausted) {
       Token nextToken = getNextPrefixInputToken(reusableToken);
@@ -156,11 +157,13 @@ public class PrefixAwareTokenFilter extends TokenStream {
     return suffixToken;
   }
 
+  @Override
   public void close() throws IOException {
     prefix.close();
     suffix.close();
   }
 
+  @Override
   public void reset() throws IOException {
     super.reset();
     if (prefix != null) {

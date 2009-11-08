@@ -54,14 +54,17 @@ public class DefaultOperatorAttributeImpl extends AttributeImpl
     return this.operator;
   }
 
+  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean equals(Object other) {
 
     if (other instanceof DefaultOperatorAttributeImpl) {
@@ -78,10 +81,12 @@ public class DefaultOperatorAttributeImpl extends AttributeImpl
 
   }
 
+  @Override
   public int hashCode() {
     return getOperator().hashCode() * 31;
   }
 
+  @Override
   public String toString() {
     return "<defaultOperatorAttribute operator=" + this.operator.name() + "/>";
   }

@@ -28,6 +28,7 @@ public class OrQuery extends ComposedQuery implements DistanceSubQuery {
     super(queries, infix, opName);
   }
   
+  @Override
   public Query makeLuceneQueryFieldNoBoost(String fieldName, BasicQueryFactory qf) {
     return SrndBooleanQuery.makeBooleanQuery(
       /* subqueries can be individually boosted */

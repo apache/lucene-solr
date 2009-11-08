@@ -136,6 +136,7 @@ class SegGraph {
     return result;
   }
 
+  @Override
   public String toString() {
     List<SegToken> tokenList = this.toTokenList();
     StringBuilder sb = new StringBuilder();

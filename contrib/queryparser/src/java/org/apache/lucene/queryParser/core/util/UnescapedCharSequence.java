@@ -85,6 +85,7 @@ public final class UnescapedCharSequence implements CharSequence {
         newLength);
   }
 
+  @Override
   public String toString() {
     return new String(this.chars);
   }

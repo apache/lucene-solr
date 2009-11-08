@@ -43,21 +43,25 @@ public class ReadTokensTask extends PerfTask {
   // volatile data passed between setup(), doLogic(), tearDown().
   private Document doc = null;
   
+  @Override
   public void setup() throws Exception {
     super.setup();
     DocMaker docMaker = getRunData().getDocMaker();
     doc = docMaker.makeDocument();
   }
 
+  @Override
   protected String getLogMessage(int recsCount) {
     return "read " + recsCount + " docs; " + totalTokenCount + " tokens";
   }
   
+  @Override
   public void tearDown() throws Exception {
     doc = null;
     super.tearDown();
   }
 
+  @Override
   public int doLogic() throws Exception {
     List<Fieldable> fields = doc.getFields();
     Analyzer analyzer = getRunData().getAnalyzer();
@@ -112,9 +116,11 @@ public class ReadTokensTask extends PerfTask {
       left = s.length();
       this.upto = 0;
     }
+    @Override
     public int read(char[] c) {
       return read(c, 0, c.length);
     }
+    @Override
     public int read(char[] c, int off, int len) {
       if (left > len) {
         s.getChars(upto, upto+len, c, off);
@@ -131,6 +137,7 @@ public class ReadTokensTask extends PerfTask {
         return r;
       }
     }
+    @Override
     public void close() {};
   }
 }

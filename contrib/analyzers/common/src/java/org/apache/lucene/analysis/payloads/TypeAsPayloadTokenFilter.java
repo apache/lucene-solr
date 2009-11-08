@@ -44,6 +44,7 @@ public class TypeAsPayloadTokenFilter extends TokenFilter {
   }
 
 
+  @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       String type = typeAtt.type();

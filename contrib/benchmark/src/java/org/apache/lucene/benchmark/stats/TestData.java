@@ -426,6 +426,7 @@ public class TestData
         return res.toArray(new TestData[0]);
     }
 
+    @Override
     protected Object clone()
     {
         TestData cl = new TestData();
@@ -442,6 +443,7 @@ public class TestData
         return cl;
     }
 
+    @Override
     public String toString()
     {
         StringBuffer res = new StringBuffer();

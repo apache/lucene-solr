@@ -30,6 +30,7 @@ public class TextDocumentTest extends DocumentTestCase
     
     TextDocument doc;
     
+    @Override
     public void setUp() throws IOException {
         doc = new TextDocument(getFile("test.txt"));
     }
@@ -38,6 +39,7 @@ public class TextDocumentTest extends DocumentTestCase
         assertEquals("Contents", "Test Contents", doc.getContents());
     }
     
+    @Override
     public void tearDown() {
         doc = null;
     }

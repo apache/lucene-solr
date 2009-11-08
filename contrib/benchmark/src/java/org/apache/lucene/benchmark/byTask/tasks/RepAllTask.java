@@ -33,6 +33,7 @@ public class RepAllTask extends ReportTask {
     super(runData);
    }
 
+  @Override
   public int doLogic() throws Exception {
     Report rp = reportAll(getRunData().getPoints().taskStats());
     

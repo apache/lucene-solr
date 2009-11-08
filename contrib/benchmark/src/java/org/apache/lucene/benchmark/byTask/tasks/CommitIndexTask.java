@@ -34,15 +34,18 @@ public class CommitIndexTask extends PerfTask {
     super(runData);
   }
   
+  @Override
   public boolean supportsParams() {
     return true;
   }
   
+  @Override
   public void setParams(String params) {
     commitUserData = new HashMap<String,String>();
     commitUserData.put(OpenReaderTask.USER_DATA, params);
   }
   
+  @Override
   public int doLogic() throws Exception {
     IndexWriter iw = getRunData().getIndexWriter();
     if (iw != null) {

@@ -49,14 +49,17 @@ public class DateResolutionAttributeImpl extends AttributeImpl
     return this.dateResolution;
   }
 
+  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean equals(Object other) {
 
     if (other instanceof DateResolutionAttributeImpl) {
@@ -75,10 +78,12 @@ public class DateResolutionAttributeImpl extends AttributeImpl
 
   }
 
+  @Override
   public int hashCode() {
     return (this.dateResolution == null) ? 0 : this.dateResolution.hashCode();
   }
 
+  @Override
   public String toString() {
     return "<dateResolutionAttribute dateResolution='" + this.dateResolution
         + "'/>";

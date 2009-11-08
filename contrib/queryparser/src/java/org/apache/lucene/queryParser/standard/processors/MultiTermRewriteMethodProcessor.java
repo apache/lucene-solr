@@ -34,6 +34,7 @@ import org.apache.lucene.search.MultiTermQuery;
  */
 public class MultiTermRewriteMethodProcessor extends QueryNodeProcessorImpl {
 
+  @Override
   protected QueryNode postProcessNode(QueryNode node) {
 
     // set setMultiTermRewriteMethod for WildcardQueryNode and
@@ -61,10 +62,12 @@ public class MultiTermRewriteMethodProcessor extends QueryNodeProcessorImpl {
     return node;
   }
 
+  @Override
   protected QueryNode preProcessNode(QueryNode node) {
     return node;
   }
 
+  @Override
   protected List<QueryNode> setChildrenOrder(List<QueryNode> children) {
     return children;
   }

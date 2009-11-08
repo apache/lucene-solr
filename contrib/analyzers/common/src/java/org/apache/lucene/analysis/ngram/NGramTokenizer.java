@@ -101,6 +101,7 @@ public final class NGramTokenizer extends Tokenizer {
   }
 
   /** Returns the next token in the stream, or null at EOS. */
+  @Override
   public final boolean incrementToken() throws IOException {
     clearAttributes();
     if (!started) {
@@ -128,17 +129,20 @@ public final class NGramTokenizer extends Tokenizer {
     return true;
   }
   
+  @Override
   public final void end() {
     // set final offset
     final int finalOffset = inLen;
     this.offsetAtt.setOffset(finalOffset, finalOffset);
   }    
   
+  @Override
   public void reset(Reader input) throws IOException {
     super.reset(input);
     reset();
   }
 
+  @Override
   public void reset() throws IOException {
     super.reset();
     started = false;

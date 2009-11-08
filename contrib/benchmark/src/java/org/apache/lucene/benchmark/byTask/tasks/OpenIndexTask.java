@@ -42,6 +42,7 @@ public class OpenIndexTask extends PerfTask {
     super(runData);
   }
 
+  @Override
   public int doLogic() throws IOException {
     PerfRunData runData = getRunData();
     Config config = runData.getConfig();

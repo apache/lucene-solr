@@ -134,6 +134,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
     public DutchSubclassAnalyzer(Version matchVersion) {
       super(matchVersion);
     }
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       return new WhitespaceTokenizer(reader);
     }

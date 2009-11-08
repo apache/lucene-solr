@@ -152,7 +152,9 @@ public abstract class LatLng {
    */
   public abstract LatLng calculateMidpoint(LatLng other);
   
+  @Override
   public abstract int hashCode();
 
+  @Override
   public abstract boolean equals(Object obj);
 }

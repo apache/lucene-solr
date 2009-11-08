@@ -50,15 +50,18 @@ public class ConsumeContentSourceTask extends PerfTask {
     }
   }
 
+  @Override
   protected String getLogMessage(int recsCount) {
     return "read " + recsCount + " documents from the content source";
   }
   
+  @Override
   public void close() throws Exception {
     source.close();
     super.close();
   }
 
+  @Override
   public int doLogic() throws Exception {
     dd = source.getNextDocData(dd);
     return 1;

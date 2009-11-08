@@ -152,6 +152,7 @@ public final class ArabicAnalyzer extends Analyzer {
    * 			{@link LowerCaseFilter}, {@link StopFilter}, {@link ArabicNormalizationFilter}
    *            and {@link ArabicStemFilter}.
    */
+  @Override
   public final TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new ArabicLetterTokenizer( reader );
     result = new LowerCaseFilter(result);
@@ -177,6 +178,7 @@ public final class ArabicAnalyzer extends Analyzer {
    *            {@link LowerCaseFilter}, {@link StopFilter}, {@link ArabicNormalizationFilter}
    *            and {@link ArabicStemFilter}.
    */
+  @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();

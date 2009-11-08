@@ -41,9 +41,11 @@ public class DocMakerTest extends BenchmarkTestCase {
 
     private boolean finish = false;
     
+    @Override
     public void close() throws IOException {
     }
 
+    @Override
     public DocData getNextDocData(DocData docData) throws NoMoreDataException,
         IOException {
       if (finish) {

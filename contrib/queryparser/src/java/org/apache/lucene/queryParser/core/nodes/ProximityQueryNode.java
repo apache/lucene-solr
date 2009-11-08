@@ -36,9 +36,18 @@ public class ProximityQueryNode extends BooleanQueryNode {
   private static final long serialVersionUID = 9018220596680832916L;
 
   public enum Type {
-    PARAGRAPH { CharSequence toQueryString() { return "WITHIN PARAGRAPH"; } },
-    SENTENCE  { CharSequence toQueryString() { return "WITHIN SENTENCE";  } },
-    NUMBER    { CharSequence toQueryString() { return "WITHIN";           } };
+    PARAGRAPH {
+      @Override
+      CharSequence toQueryString() { return "WITHIN PARAGRAPH"; } 
+    },
+    SENTENCE  { 
+      @Override
+      CharSequence toQueryString() { return "WITHIN SENTENCE";  }
+    },
+    NUMBER    {
+      @Override
+      CharSequence toQueryString() { return "WITHIN";           }
+    };
 
     abstract CharSequence toQueryString();
   }
@@ -131,6 +140,7 @@ public class ProximityQueryNode extends BooleanQueryNode {
     return this.proximityType;
   }
 
+  @Override
   public String toString() {
     String distanceSTR = ((this.distance == -1) ? ("")
         : (" distance='" + this.distance) + "'");
@@ -150,6 +160,7 @@ public class ProximityQueryNode extends BooleanQueryNode {
     return sb.toString();
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     String withinSTR = this.proximityType.toQueryString()
         + ((this.distance == -1) ? ("") : (" " + this.distance))
@@ -173,6 +184,7 @@ public class ProximityQueryNode extends BooleanQueryNode {
     }
   }
 
+  @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
     ProximityQueryNode clone = (ProximityQueryNode) super.cloneTree();
 

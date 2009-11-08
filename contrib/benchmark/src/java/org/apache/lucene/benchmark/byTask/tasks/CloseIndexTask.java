@@ -36,6 +36,7 @@ public class CloseIndexTask extends PerfTask {
 
   boolean doWait = true;
 
+  @Override
   public int doLogic() throws IOException {
     IndexWriter iw = getRunData().getIndexWriter();
     if (iw != null) {
@@ -51,11 +52,13 @@ public class CloseIndexTask extends PerfTask {
     return 1;
   }
 
+  @Override
   public void setParams(String params) {
     super.setParams(params);
     doWait = Boolean.valueOf(params).booleanValue();
   }
 
+  @Override
   public boolean supportsParams() {
     return true;
   }

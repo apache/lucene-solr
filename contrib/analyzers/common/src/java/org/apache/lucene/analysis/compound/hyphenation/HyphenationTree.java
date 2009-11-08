@@ -466,6 +466,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer,
     insert(pattern, (char) k);
   }
 
+  @Override
   public void printStats() {
     System.out.println("Value space size = "
         + Integer.toString(vspace.length()));

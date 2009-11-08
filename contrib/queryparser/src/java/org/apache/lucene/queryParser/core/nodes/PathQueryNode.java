@@ -70,6 +70,7 @@ public class PathQueryNode extends QueryNodeImpl {
       this.end = end;
     }
 
+    @Override
     public QueryText clone() throws CloneNotSupportedException {
       QueryText clone = (QueryText) super.clone();
       clone.value = this.value;
@@ -99,6 +100,7 @@ public class PathQueryNode extends QueryNodeImpl {
       return end;
     }
 
+    @Override
     public String toString() {
       return value + ", " + begin + ", " + end;
     }
@@ -191,6 +193,7 @@ public class PathQueryNode extends QueryNodeImpl {
     return path.toString();
   }
 
+  @Override
   public String toString() {
     QueryText text = this.values.get(0);
 
@@ -198,6 +201,7 @@ public class PathQueryNode extends QueryNodeImpl {
         + getPathString() + "'/>";
   }
 
+  @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
     PathQueryNode clone = (PathQueryNode) super.cloneTree();
 

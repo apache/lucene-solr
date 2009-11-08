@@ -48,6 +48,7 @@ public class ScoreOrderFragmentsBuilder extends BaseFragmentsBuilder {
   /**
    * Sort by score the list of WeightedFragInfo
    */
+  @Override
   public List<WeightedFragInfo> getWeightedFragInfoList( List<WeightedFragInfo> src ) {
     Collections.sort( src, new ScoreComparator() );
     return src;

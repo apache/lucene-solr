@@ -43,6 +43,7 @@ public class ThaiAnalyzer extends Analyzer {
     this.matchVersion = matchVersion;
   }
   
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream ts = new StandardTokenizer(matchVersion, reader);
     ts = new StandardFilter(ts);
@@ -57,6 +58,7 @@ public class ThaiAnalyzer extends Analyzer {
     TokenStream result;
   };
   
+  @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
     if (overridesTokenStreamMethod) {
       // LUCENE-1678: force fallback to tokenStream() if we

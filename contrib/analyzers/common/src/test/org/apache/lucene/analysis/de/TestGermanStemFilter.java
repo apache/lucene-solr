@@ -76,6 +76,7 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
       super(matchVersion);
     }
 
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       return new WhitespaceTokenizer(reader);
     }

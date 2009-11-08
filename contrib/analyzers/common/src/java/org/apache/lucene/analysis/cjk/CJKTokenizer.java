@@ -145,6 +145,7 @@ public final class CJKTokenizer extends Tokenizer {
      *         happened in the InputStream
      *
      */
+    @Override
     public boolean incrementToken() throws IOException {
         clearAttributes();
         /** how many character(s) has been stored in buffer */
@@ -297,12 +298,14 @@ public final class CJKTokenizer extends Tokenizer {
       }
     }
     
+    @Override
     public final void end() {
       // set final offset
       final int finalOffset = offset;
       this.offsetAtt.setOffset(finalOffset, finalOffset);
     }
     
+    @Override
     public void reset() throws IOException {
       super.reset();
       offset = bufferIndex = dataLen = 0;
@@ -310,6 +313,7 @@ public final class CJKTokenizer extends Tokenizer {
       tokenType = WORD_TYPE;
     }
     
+    @Override
     public void reset(Reader reader) throws IOException {
       super.reset(reader);
       reset();

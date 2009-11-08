@@ -41,6 +41,7 @@ public class MultiPhraseQueryNode extends QueryNodeImpl implements
 
   }
 
+  @Override
   public String toString() {
     if (getChildren() == null || getChildren().size() == 0)
       return "<multiPhrase/>";
@@ -68,6 +69,7 @@ public class MultiPhraseQueryNode extends QueryNodeImpl implements
     return "[MTP[" + sb.toString() + "]]";
   }
 
+  @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
     MultiPhraseQueryNode clone = (MultiPhraseQueryNode) super.cloneTree();
 

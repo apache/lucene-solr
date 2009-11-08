@@ -46,6 +46,7 @@ public class OpaqueQueryNode extends QueryNodeImpl {
 
   }
 
+  @Override
   public String toString() {
     return "<opaque schema='" + this.schema + "' value='" + this.value + "'/>";
   }
@@ -54,6 +55,7 @@ public class OpaqueQueryNode extends QueryNodeImpl {
     return "@" + this.schema + ":'" + this.value + "'";
   }
 
+  @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
     OpaqueQueryNode clone = (OpaqueQueryNode) super.cloneTree();
 

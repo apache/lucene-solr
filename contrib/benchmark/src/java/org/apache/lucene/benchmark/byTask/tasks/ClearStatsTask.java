@@ -29,6 +29,7 @@ public class ClearStatsTask extends PerfTask {
     super(runData);
   }
 
+  @Override
   public int doLogic() throws Exception {
     getRunData().getPoints().clearData();
     return 0;
@@ -37,6 +38,7 @@ public class ClearStatsTask extends PerfTask {
   /* (non-Javadoc)
    * @see PerfTask#shouldNotRecordStats()
    */
+  @Override
   protected boolean shouldNotRecordStats() {
     return true;
   }

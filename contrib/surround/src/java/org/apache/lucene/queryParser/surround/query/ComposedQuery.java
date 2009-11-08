@@ -56,6 +56,7 @@ public abstract class ComposedQuery extends SrndQuery {
     return luceneSubQueries;
   }
 
+  @Override
   public String toString() {
     StringBuilder r = new StringBuilder();
     if (isOperatorInfix()) {
@@ -103,6 +104,7 @@ public abstract class ComposedQuery extends SrndQuery {
   }
   
   
+  @Override
   public boolean isFieldsSubQueryAcceptable() {
     /* at least one subquery should be acceptable */
     Iterator sqi = getSubQueriesIterator();

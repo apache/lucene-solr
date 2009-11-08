@@ -151,6 +151,7 @@ public class TokenSources
             offsetAtt = addAttribute(OffsetAttribute.class);
           }
     
+          @Override
           public boolean incrementToken() throws IOException {
             if (currentToken >= tokens.length) {
               return false;

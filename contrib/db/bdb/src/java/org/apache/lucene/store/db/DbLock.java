@@ -34,16 +34,19 @@ public class DbLock extends Lock {
     {
     }
 
+    @Override
     public boolean obtain()
     {
         return (isLocked = true);
     }
 
+    @Override
     public void release()
     {
         isLocked = false;
     }
 
+    @Override
     public boolean isLocked()
     {
         return isLocked;

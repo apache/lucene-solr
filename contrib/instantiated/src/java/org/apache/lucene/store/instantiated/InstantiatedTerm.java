@@ -235,6 +235,7 @@ public class InstantiatedTerm
     return term.text();
   }
 
+  @Override
   public String toString() {
     return term.toString();
   }

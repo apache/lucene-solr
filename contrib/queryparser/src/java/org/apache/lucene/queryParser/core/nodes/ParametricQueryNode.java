@@ -30,12 +30,30 @@ public class ParametricQueryNode extends FieldQueryNode {
   private CompareOperator operator;
 
   public enum CompareOperator {
-    LE { public String toString() { return "<="; } },
-    LT { public String toString() { return "<";  } },
-    GE { public String toString() { return ">="; } },
-    GT { public String toString() { return ">";  } },
-    EQ { public String toString() { return "=";  } },
-    NE { public String toString() { return "!="; } };
+    LE { 
+      @Override
+      public String toString() { return "<="; }
+    },
+    LT {
+      @Override
+      public String toString() { return "<";  }
+    },
+    GE {
+      @Override
+      public String toString() { return ">="; }
+    },
+    GT {
+      @Override
+      public String toString() { return ">";  }
+    },
+    EQ {
+      @Override
+      public String toString() { return "=";  }
+    },
+    NE {
+      @Override
+      public String toString() { return "!="; }
+    };
   }
 
   /**
@@ -61,15 +79,18 @@ public class ParametricQueryNode extends FieldQueryNode {
     return getText();
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     return this.field + "" + this.operator.toString() + "\"" + this.text + "\"";
   }
 
+  @Override
   public String toString() {
     return "<parametric field='" + this.field + "' operator='"
         + this.operator.toString() + "' text='" + this.text + "'/>";
   }
 
+  @Override
   public ParametricQueryNode cloneTree() throws CloneNotSupportedException {
     ParametricQueryNode clone = (ParametricQueryNode) super.cloneTree();
 

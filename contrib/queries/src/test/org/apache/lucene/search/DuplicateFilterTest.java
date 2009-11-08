@@ -39,6 +39,7 @@ public class DuplicateFilterTest extends TestCase
 	TermQuery tq=new TermQuery(new Term("text","lucene"));
 	private IndexSearcher searcher;
 
+	@Override
 	protected void setUp() throws Exception
 	{
 		directory = new RAMDirectory();
@@ -60,6 +61,7 @@ public class DuplicateFilterTest extends TestCase
 		
 	}
 	
+	@Override
 	protected void tearDown() throws Exception
 	{
 		reader.close();

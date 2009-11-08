@@ -34,6 +34,7 @@ public class RepSumByPrefRoundTask extends RepSumByPrefTask {
     super(runData);
   }
 
+  @Override
   public int doLogic() throws Exception {
     Report rp = reportSumByPrefixRound(getRunData().getPoints().taskStats());
     

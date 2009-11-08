@@ -51,12 +51,14 @@ public class MultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
     // empty constructor
   }
 
+  @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
     return node;
 
   }
 
+  @Override
   protected void processChildren(QueryNode queryTree) throws QueryNodeException {
 
     if (this.processChildren) {
@@ -68,6 +70,7 @@ public class MultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 
   }
 
+  @Override
   protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
 
     if (node instanceof FieldableNode) {
@@ -121,6 +124,7 @@ public class MultiFieldQueryNodeProcessor extends QueryNodeProcessorImpl {
 
   }
 
+  @Override
   protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
       throws QueryNodeException {
 

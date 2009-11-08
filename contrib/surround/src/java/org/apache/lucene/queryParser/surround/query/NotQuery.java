@@ -24,6 +24,7 @@ import org.apache.lucene.search.BooleanClause;
 public class NotQuery extends ComposedQuery { 
   public NotQuery(List queries, String opName) { super(queries, true /* infix */, opName); }
   
+  @Override
   public Query makeLuceneQueryFieldNoBoost(String fieldName, BasicQueryFactory qf) {
     List luceneSubQueries = makeLuceneSubQueriesField(fieldName, qf);
     BooleanQuery bq = new BooleanQuery();

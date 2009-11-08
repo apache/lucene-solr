@@ -350,6 +350,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     public AnalyzerReturningNull() {
     }
 
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       if ("f1".equals(fieldName)) {
         return new EmptyTokenStream();
@@ -359,6 +360,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     }
 
     private static class EmptyTokenStream extends TokenStream {
+      @Override
       public boolean incrementToken() {
         return false;
       }

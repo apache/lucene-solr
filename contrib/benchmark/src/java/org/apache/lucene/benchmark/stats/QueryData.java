@@ -71,6 +71,7 @@ public class QueryData {
     return "# Query data: R-reopen, W-warmup, T-retrieve, N-no";
   }
 
+  @Override
   public String toString() {
     return id + " " + (reopen ? "R" : "NR") + " " + (warmup ? "W" : "NW") +
       " " + (retrieve ? "T" : "NT") + " [" + q.toString() + "]";

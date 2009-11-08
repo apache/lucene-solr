@@ -188,6 +188,7 @@ public class DutchAnalyzer extends Analyzer {
    *   filtered with {@link StandardFilter}, {@link StopFilter}, 
    *   and {@link DutchStemFilter}
    */
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(matchVersion, reader);
     result = new StandardFilter(result);
@@ -210,6 +211,7 @@ public class DutchAnalyzer extends Analyzer {
    *   filtered with {@link StandardFilter}, {@link StopFilter}, 
    *   and {@link DutchStemFilter}
    */
+  @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {
     if (overridesTokenStreamMethod) {

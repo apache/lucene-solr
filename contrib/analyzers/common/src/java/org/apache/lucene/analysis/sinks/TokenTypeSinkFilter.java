@@ -29,6 +29,7 @@ public class TokenTypeSinkFilter extends SinkFilter {
     this.typeToMatch = typeToMatch;
   }
 
+  @Override
   public boolean accept(AttributeSource source) {
     if (typeAtt == null) {
       typeAtt = source.addAttribute(TypeAttribute.class);

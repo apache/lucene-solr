@@ -65,6 +65,7 @@ public class TypeAsPayloadTokenFilterTest extends BaseTokenStreamTestCase {
       typeAtt = addAttribute(TypeAttribute.class);
     }
 
+    @Override
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
         typeAtt.setType(String.valueOf(Character.toUpperCase(termAtt.termBuffer()[0])));

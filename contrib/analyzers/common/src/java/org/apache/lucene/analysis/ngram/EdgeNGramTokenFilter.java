@@ -39,10 +39,16 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   public static enum Side {
 
     /** Get the n-gram from the front of the input */
-    FRONT { public String getLabel() { return "front"; } },
+    FRONT {
+      @Override
+      public String getLabel() { return "front"; }
+    },
 
     /** Get the n-gram from the end of the input */
-    BACK  { public String getLabel() { return "back"; } };
+    BACK  {
+      @Override
+      public String getLabel() { return "back"; }
+    };
 
     public abstract String getLabel();
 
@@ -117,6 +123,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
     this(input, Side.getSide(sideLabel), minGram, maxGram);
   }
 
+  @Override
   public final boolean incrementToken() throws IOException {
     while (true) {
       if (curTermBuffer == null) {
@@ -144,6 +151,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
     }
   }
 
+  @Override
   public void reset() throws IOException {
     super.reset();
     curTermBuffer = null;

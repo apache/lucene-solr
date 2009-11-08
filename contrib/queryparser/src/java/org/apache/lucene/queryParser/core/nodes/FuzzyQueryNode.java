@@ -64,6 +64,7 @@ public class FuzzyQueryNode extends FieldQueryNode {
     return this.prefixLength;
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escaper) {
     if (isDefaultField(this.field)) {
       return getTermEscaped(escaper) + "~" + this.similarity;
@@ -72,6 +73,7 @@ public class FuzzyQueryNode extends FieldQueryNode {
     }
   }
 
+  @Override
   public String toString() {
     return "<fuzzy field='" + this.field + "' similarity='" + this.similarity
         + "' term='" + this.text + "'/>";
@@ -81,6 +83,7 @@ public class FuzzyQueryNode extends FieldQueryNode {
     this.similarity = similarity;
   }
 
+  @Override
   public FuzzyQueryNode cloneTree() throws CloneNotSupportedException {
     FuzzyQueryNode clone = (FuzzyQueryNode) super.cloneTree();
 

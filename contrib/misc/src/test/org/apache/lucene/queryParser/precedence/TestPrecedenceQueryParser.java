@@ -71,6 +71,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     TermAttribute termAtt = addAttribute(TermAttribute.class);
     OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
+    @Override
     public boolean incrementToken() throws IOException {
       if (inPhrase) {
         inPhrase = false;
@@ -95,6 +96,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   public static class QPTestAnalyzer extends Analyzer {
 
     /** Filters LowerCaseTokenizer with StopFilter. */
+    @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
       return new QPTestFilter(new LowerCaseTokenizer(reader));
     }
@@ -105,10 +107,12 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
       super(f, a);
     }
 
+    @Override
     protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException {
       throw new ParseException("Fuzzy queries not allowed");
     }
 
+    @Override
     protected Query getWildcardQuery(String field, String termStr) throws ParseException {
       throw new ParseException("Wildcard queries not allowed");
     }
@@ -116,6 +120,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
   private int originalMaxClauses;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
@@ -593,6 +598,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   }
 
 
+  @Override
   public void tearDown() {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
   }

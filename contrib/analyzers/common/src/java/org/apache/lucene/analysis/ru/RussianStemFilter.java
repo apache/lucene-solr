@@ -51,6 +51,7 @@ public final class RussianStemFilter extends TokenFilter
     /**
      * Returns the next token in the stream, or null at EOS
      */
+    @Override
     public final boolean incrementToken() throws IOException
     {
       if (input.incrementToken()) {

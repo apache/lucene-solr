@@ -119,6 +119,7 @@ public class CachedFilterBuilder implements FilterBuilder {
 
 	    protected int maxsize;
 
+	    @Override
 	    protected boolean removeEldestEntry(Entry eldest)
 	    {
 	        return size() > maxsize;

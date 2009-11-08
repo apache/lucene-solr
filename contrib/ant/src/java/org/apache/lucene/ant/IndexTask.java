@@ -220,6 +220,7 @@ public class IndexTask extends Task {
    *@exception  BuildException  If an error occurs indexing the
    *      fileset
    */
+  @Override
   public void execute() throws BuildException {
 
     // construct handler and analyzer dynamically
@@ -426,6 +427,7 @@ public class IndexTask extends Task {
     /**
      * @see EnumeratedAttribute#getValues
      */
+    @Override
     public String[] getValues() {
       Set keys = analyzerLookup.keySet();
       return (String[]) keys.toArray(new String[0]);

@@ -37,6 +37,7 @@ public class AddDocTask extends PerfTask {
   // volatile data passed between setup(), doLogic(), tearDown().
   private Document doc = null;
   
+  @Override
   public void setup() throws Exception {
     super.setup();
     DocMaker docMaker = getRunData().getDocMaker();
@@ -47,15 +48,18 @@ public class AddDocTask extends PerfTask {
     }
   }
 
+  @Override
   public void tearDown() throws Exception {
     doc = null;
     super.tearDown();
   }
 
+  @Override
   protected String getLogMessage(int recsCount) {
     return "added " + recsCount + " docs";
   }
   
+  @Override
   public int doLogic() throws Exception {
     getRunData().getIndexWriter().addDocument(doc);
     return 1;
@@ -65,6 +69,7 @@ public class AddDocTask extends PerfTask {
    * Set the params (docSize only)
    * @param params docSize, or 0 for no limit.
    */
+  @Override
   public void setParams(String params) {
     super.setParams(params);
     docSize = (int) Float.parseFloat(params); 
@@ -73,6 +78,7 @@ public class AddDocTask extends PerfTask {
   /* (non-Javadoc)
    * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#supportsParams()
    */
+  @Override
   public boolean supportsParams() {
     return true;
   }

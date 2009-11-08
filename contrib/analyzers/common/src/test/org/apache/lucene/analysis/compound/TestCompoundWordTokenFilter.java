@@ -51,6 +51,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
 
   private static byte[] patternsFileContent;
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     getHyphenationPatternFileContents();

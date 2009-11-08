@@ -50,14 +50,17 @@ public class MultiTermRewriteMethodAttributeImpl extends AttributeImpl
     return multiTermRewriteMethod;
   }
 
+  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean equals(Object other) {
 
     if (other instanceof MultiTermRewriteMethodAttributeImpl
@@ -71,10 +74,12 @@ public class MultiTermRewriteMethodAttributeImpl extends AttributeImpl
 
   }
 
+  @Override
   public int hashCode() {
     return multiTermRewriteMethod.hashCode();
   }
 
+  @Override
   public String toString() {
     return "<multiTermRewriteMethod multiTermRewriteMethod="
         + this.multiTermRewriteMethod + "/>";

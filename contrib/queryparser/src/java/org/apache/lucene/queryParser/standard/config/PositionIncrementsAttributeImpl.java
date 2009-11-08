@@ -47,14 +47,17 @@ public class PositionIncrementsAttributeImpl extends AttributeImpl
     return this.positionIncrementsEnabled;
   }
 
+  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean equals(Object other) {
 
     if (other instanceof PositionIncrementsAttributeImpl
@@ -69,10 +72,12 @@ public class PositionIncrementsAttributeImpl extends AttributeImpl
 
   }
 
+  @Override
   public int hashCode() {
     return this.positionIncrementsEnabled ? -1 : Integer.MAX_VALUE;
   }
 
+  @Override
   public String toString() {
     return "<positionIncrements positionIncrementsEnabled="
         + this.positionIncrementsEnabled + "/>";

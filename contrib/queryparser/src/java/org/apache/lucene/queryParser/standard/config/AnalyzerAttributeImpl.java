@@ -49,14 +49,17 @@ public class AnalyzerAttributeImpl extends AttributeImpl
     return this.analyzer;
   }
 
+  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean equals(Object other) {
 
     if (other instanceof AnalyzerAttributeImpl) {
@@ -76,10 +79,12 @@ public class AnalyzerAttributeImpl extends AttributeImpl
 
   }
 
+  @Override
   public int hashCode() {
     return (this.analyzer == null) ? 0 : this.analyzer.hashCode();
   }
 
+  @Override
   public String toString() {
     return "<analyzerAttribute analyzer='" + this.analyzer + "'/>";
   }

@@ -32,22 +32,27 @@ public class SearchTask extends ReadTask {
     super(runData);
   }
 
+  @Override
   public boolean withRetrieve() {
     return false;
   }
 
+  @Override
   public boolean withSearch() {
     return true;
   }
 
+  @Override
   public boolean withTraverse() {
     return false;
   }
 
+  @Override
   public boolean withWarm() {
     return false;
   }
 
+  @Override
   public QueryMaker getQueryMaker() {
     return getRunData().getQueryMaker(this);
   }

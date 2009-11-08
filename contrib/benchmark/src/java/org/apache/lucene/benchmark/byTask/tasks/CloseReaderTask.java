@@ -33,6 +33,7 @@ public class CloseReaderTask extends PerfTask {
     super(runData);
   }
 
+  @Override
   public int doLogic() throws IOException {
     IndexReader reader= getRunData().getIndexReader();
     if (reader!=null) {

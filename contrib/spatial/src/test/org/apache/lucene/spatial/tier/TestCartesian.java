@@ -72,6 +72,7 @@ public class TestCartesian extends TestCase{
   
 
 
+  @Override
   protected void setUp() throws IOException {
     directory = new RAMDirectory();
 

@@ -41,6 +41,7 @@ public class AndQueryNode extends BooleanQueryNode {
     }
   }
 
+  @Override
   public String toString() {
     if (getChildren() == null || getChildren().size() == 0)
       return "<boolean operation='and'/>";
@@ -55,6 +56,7 @@ public class AndQueryNode extends BooleanQueryNode {
     return sb.toString();
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     if (getChildren() == null || getChildren().size() == 0)
       return "";

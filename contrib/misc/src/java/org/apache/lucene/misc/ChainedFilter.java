@@ -96,6 +96,7 @@ public class ChainedFilter extends Filter
     /**
      * {@link Filter#getDocIdSet}.
      */
+    @Override
     public DocIdSet getDocIdSet(IndexReader reader) throws IOException
     {
         int[] index = new int[1]; // use array as reference to modifiable int; 
@@ -199,6 +200,7 @@ public class ChainedFilter extends Filter
         return finalResult(result, reader.maxDoc());
     }
 
+    @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();

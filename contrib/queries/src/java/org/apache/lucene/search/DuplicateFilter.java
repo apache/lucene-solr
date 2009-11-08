@@ -67,6 +67,7 @@ public class DuplicateFilter extends Filter
 		this.processingMode = processingMode;
 	}
 
+  @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException
 	{
 		if(processingMode==PM_FAST_INVALIDATION)
@@ -186,6 +187,7 @@ public class DuplicateFilter extends Filter
 	}
 
 
+	@Override
 	public boolean equals(Object obj)
 	{
 		if(this == obj)
@@ -200,6 +202,7 @@ public class DuplicateFilter extends Filter
 
 
 
+	@Override
 	public int hashCode()
 	{
 		int hash = 217;

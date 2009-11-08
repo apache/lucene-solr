@@ -57,6 +57,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
       super(Version.LUCENE_CURRENT, name);
     }
     
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       return new WhitespaceTokenizer(reader);
     }
@@ -106,6 +107,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
       flagsAtt = addAttribute(FlagsAttribute.class);
     }
     
+    @Override
     public boolean incrementToken() {
       termAtt.setTermBuffer("accents");
       offsetAtt.setOffset(2, 7);

@@ -50,14 +50,17 @@ public class FieldDateResolutionMapAttributeImpl extends AttributeImpl
     return this.dateRes;
   }
 
+  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean equals(Object other) {
 
     if (other instanceof FieldDateResolutionMapAttributeImpl && other != null
@@ -71,6 +74,7 @@ public class FieldDateResolutionMapAttributeImpl extends AttributeImpl
 
   }
 
+  @Override
   public int hashCode() {
     final int prime = 97;
     if (this.dateRes != null) 
@@ -79,6 +83,7 @@ public class FieldDateResolutionMapAttributeImpl extends AttributeImpl
       return Float.valueOf(prime).hashCode();
   }
 
+  @Override
   public String toString() {
     return "<fieldDateResolutionMapAttribute map=" + this.dateRes + "/>";
   }

@@ -41,6 +41,7 @@ public class ModifierQueryNode extends QueryNodeImpl {
   public enum Modifier {
     MOD_NONE, MOD_NOT, MOD_REQ;
 
+    @Override
     public String toString() {
       switch (this) {
       case MOD_NONE:
@@ -111,6 +112,7 @@ public class ModifierQueryNode extends QueryNodeImpl {
     return this.modifier;
   }
 
+  @Override
   public String toString() {
     return "<modifier operation='" + this.modifier.toString() + "'>" + "\n"
         + getChild().toString() + "\n</modifier>";
@@ -137,6 +139,7 @@ public class ModifierQueryNode extends QueryNodeImpl {
     }
   }
 
+  @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
     ModifierQueryNode clone = (ModifierQueryNode) super.cloneTree();
 

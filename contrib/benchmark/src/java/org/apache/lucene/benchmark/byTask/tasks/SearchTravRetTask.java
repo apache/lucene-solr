@@ -37,6 +37,7 @@ public class SearchTravRetTask extends SearchTravTask {
     super(runData);
   }
 
+  @Override
   public boolean withRetrieve() {
     return true;
   }

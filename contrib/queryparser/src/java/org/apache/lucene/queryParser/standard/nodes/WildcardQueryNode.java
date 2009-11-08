@@ -46,6 +46,7 @@ public class WildcardQueryNode extends FieldQueryNode {
     this(fqn.getField(), fqn.getText(), fqn.getBegin(), fqn.getEnd());
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escaper) {
     if (isDefaultField(this.field)) {
       return getTermEscaped(escaper);
@@ -54,10 +55,12 @@ public class WildcardQueryNode extends FieldQueryNode {
     }
   }
 
+  @Override
   public String toString() {
     return "<wildcard field='" + this.field + "' term='" + this.text + "'/>";
   }
 
+  @Override
   public WildcardQueryNode cloneTree() throws CloneNotSupportedException {
     WildcardQueryNode clone = (WildcardQueryNode) super.cloneTree();
 

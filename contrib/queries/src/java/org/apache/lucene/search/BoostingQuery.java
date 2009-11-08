@@ -53,12 +53,15 @@ public class BoostingQuery extends Query {
       this.context.setBoost(0.0f);                      // ignore context-only matches
     }
 
+    @Override
     public Query rewrite(IndexReader reader) throws IOException {
       BooleanQuery result = new BooleanQuery() {
 
+        @Override
         public Similarity getSimilarity(Searcher searcher) {
           return new DefaultSimilarity() {
 
+            @Override
             public float coord(int overlap, int max) {
               switch (overlap) {
 
@@ -83,6 +86,7 @@ public class BoostingQuery extends Query {
       return result;
     }
 
+    @Override
     public int hashCode() {
       final int prime = 31;
       int result = 1;
@@ -92,6 +96,7 @@ public class BoostingQuery extends Query {
       return result;
     }
 
+    @Override
     public boolean equals(Object obj) {
       if (this == obj)
         return true;
@@ -115,6 +120,7 @@ public class BoostingQuery extends Query {
       return true;
     }
 
+    @Override
     public String toString(String field) {
       return match.toString(field) + "/" + context.toString(field);
     }

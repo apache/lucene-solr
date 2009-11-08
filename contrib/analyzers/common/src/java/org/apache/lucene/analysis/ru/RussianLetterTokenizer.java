@@ -49,6 +49,7 @@ public class RussianLetterTokenizer extends CharTokenizer
      * Collects only characters which satisfy
      * {@link Character#isLetter(char)}.
      */
+    @Override
     protected boolean isTokenChar(char c)
     {
         if (Character.isLetter(c) || (c >= '0' && c <= '9'))

@@ -155,6 +155,7 @@ public final class FrenchAnalyzer extends Analyzer {
    *         filtered with {@link StandardFilter}, {@link StopFilter}, 
    *         {@link FrenchStemFilter} and {@link LowerCaseFilter}
    */
+  @Override
   public final TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(matchVersion, reader);
     result = new StandardFilter(result);
@@ -179,6 +180,7 @@ public final class FrenchAnalyzer extends Analyzer {
    *         filtered with {@link StandardFilter}, {@link StopFilter}, 
    *         {@link FrenchStemFilter} and {@link LowerCaseFilter}
    */
+  @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();

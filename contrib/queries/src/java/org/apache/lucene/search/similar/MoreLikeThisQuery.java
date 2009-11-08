@@ -60,6 +60,7 @@ public class MoreLikeThisQuery extends Query
         this.analyzer=analyzer;
     }
     
+    @Override
     public Query rewrite(IndexReader reader) throws IOException
     {
         MoreLikeThis mlt=new MoreLikeThis(reader);
@@ -82,6 +83,7 @@ public class MoreLikeThisQuery extends Query
     /* (non-Javadoc)
      * @see org.apache.lucene.search.Query#toString(java.lang.String)
      */
+    @Override
     public String toString(String field)
     {       
         return "like:"+likeText;

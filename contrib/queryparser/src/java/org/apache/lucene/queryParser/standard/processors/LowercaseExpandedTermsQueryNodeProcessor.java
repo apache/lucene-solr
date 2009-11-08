@@ -47,6 +47,7 @@ public class LowercaseExpandedTermsQueryNodeProcessor extends
     // empty constructor
   }
 
+  @Override
   public QueryNode process(QueryNode queryTree) throws QueryNodeException {
 
     if (getQueryConfigHandler().hasAttribute(
@@ -65,6 +66,7 @@ public class LowercaseExpandedTermsQueryNodeProcessor extends
 
   }
 
+  @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
     if (node instanceof WildcardQueryNode || node instanceof FuzzyQueryNode
@@ -78,12 +80,14 @@ public class LowercaseExpandedTermsQueryNodeProcessor extends
 
   }
 
+  @Override
   protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
 
     return node;
 
   }
 
+  @Override
   protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
       throws QueryNodeException {
 

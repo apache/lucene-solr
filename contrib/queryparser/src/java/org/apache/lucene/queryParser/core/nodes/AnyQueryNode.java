@@ -95,6 +95,7 @@ public class AnyQueryNode extends AndQueryNode {
     this.field = field;
   }
 
+  @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
     AnyQueryNode clone = (AnyQueryNode) super.cloneTree();
 
@@ -104,6 +105,7 @@ public class AnyQueryNode extends AndQueryNode {
     return clone;
   }
 
+  @Override
   public String toString() {
     if (getChildren() == null || getChildren().size() == 0)
       return "<any field='" + this.field + "'  matchelements="
@@ -119,6 +121,7 @@ public class AnyQueryNode extends AndQueryNode {
     return sb.toString();
   }
 
+  @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
     String anySTR = "ANY " + this.minimumMatchingmElements;
 

@@ -36,22 +36,27 @@ public class WarmTask extends ReadTask {
     super(runData);
   }
 
+  @Override
   public boolean withRetrieve() {
     return false;
   }
 
+  @Override
   public boolean withSearch() {
     return false;
   }
 
+  @Override
   public boolean withTraverse() {
     return false;
   }
 
+  @Override
   public boolean withWarm() {
     return true;
   }
 
+  @Override
   public QueryMaker getQueryMaker() {
     return null; // not required for this task.
   }

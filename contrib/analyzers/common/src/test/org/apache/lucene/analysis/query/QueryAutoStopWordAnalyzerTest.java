@@ -47,6 +47,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   IndexReader reader;
   QueryAutoStopWordAnalyzer protectedAnalyzer;
 
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     dir = new RAMDirectory();
@@ -66,6 +67,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
     protectedAnalyzer = new QueryAutoStopWordAnalyzer(Version.LUCENE_CURRENT, appAnalyzer);
   }
 
+  @Override
   protected void tearDown() throws Exception {
     reader.close();
     super.tearDown();
@@ -154,6 +156,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
       super(matchVersion, new WhitespaceAnalyzer());
     }
     
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       return new WhitespaceTokenizer(reader);
     }    
@@ -172,6 +175,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
    */
   private class NonreusableAnalyzer extends Analyzer {
     int invocationCount = 0;
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       if (++invocationCount % 2 == 0)
         return new WhitespaceTokenizer(reader);

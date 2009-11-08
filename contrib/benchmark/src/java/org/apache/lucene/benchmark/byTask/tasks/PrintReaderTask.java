@@ -29,15 +29,18 @@ public class PrintReaderTask extends PerfTask {
     super(runData);
   }
   
+  @Override
   public void setParams(String params) {
     super.setParams(params);
     userData = params;
   }
   
+  @Override
   public boolean supportsParams() {
     return true;
   }
   
+  @Override
   public int doLogic() throws Exception {
     Directory dir = getRunData().getDirectory();
     Config config = getRunData().getConfig();

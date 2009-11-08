@@ -97,6 +97,7 @@ public final class RussianAnalyzer extends Analyzer
      *   {@link RussianLowerCaseFilter}, {@link StopFilter}, 
      *   and {@link RussianStemFilter}
      */
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader)
     {
         TokenStream result = new RussianLetterTokenizer(reader);
@@ -121,6 +122,7 @@ public final class RussianAnalyzer extends Analyzer
      *   {@link RussianLowerCaseFilter}, {@link StopFilter}, 
      *   and {@link RussianStemFilter}
      */
+    @Override
     public TokenStream reusableTokenStream(String fieldName, Reader reader) 
       throws IOException {
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();

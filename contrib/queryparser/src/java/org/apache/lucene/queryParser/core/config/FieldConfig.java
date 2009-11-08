@@ -57,6 +57,7 @@ public class FieldConfig extends AttributeSource {
     return this.fieldName;
   }
   
+  @Override
   public String toString(){
     return "<fieldconfig name=\"" + this.fieldName + "\" attributes=\"" + super.toString() + "\"/>";
   }

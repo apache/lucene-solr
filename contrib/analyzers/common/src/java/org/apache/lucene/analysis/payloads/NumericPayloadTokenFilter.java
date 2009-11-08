@@ -48,6 +48,7 @@ public class NumericPayloadTokenFilter extends TokenFilter {
     typeAtt = addAttribute(TypeAttribute.class);
   }
 
+  @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       if (typeAtt.type().equals(typeMatch))

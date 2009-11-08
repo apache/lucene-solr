@@ -159,6 +159,7 @@ public class FieldTermStack {
     public int getEndOffset(){ return endOffset; }
     public int getPosition(){ return position; }
     
+    @Override
     public String toString(){
       StringBuilder sb = new StringBuilder();
       sb.append( text ).append( '(' ).append(startOffset).append( ',' ).append( endOffset ).append( ',' ).append( position ).append( ')' );

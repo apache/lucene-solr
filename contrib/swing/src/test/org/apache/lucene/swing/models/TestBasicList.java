@@ -30,6 +30,7 @@ public class TestBasicList extends TestCase {
     private ListSearcher listSearcher;
     private List list;
 
+    @Override
     protected void setUp() throws Exception {
         list = new ArrayList();
         list.add(DataStore.canolis);

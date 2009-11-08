@@ -216,6 +216,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
 
   /* all files will be open relative to this */
   public String fileDir;
+  @Override
   protected void setUp() throws Exception {
     super.setUp();
     fileDir = System.getProperty("lucene.common.dir", null);
@@ -430,18 +431,22 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       searcher.search(query, new Collector() {
         private Scorer scorer;
 
+        @Override
         public void collect(int doc) throws IOException {
           scores[0] = scorer.score();
         }
 
+        @Override
         public void setScorer(Scorer scorer) throws IOException {
           this.scorer = scorer;
         }
 
+        @Override
         public boolean acceptsDocsOutOfOrder() {
           return true;
         }
 
+        @Override
         public void setNextReader(IndexReader reader, int docBase) { }
       });
       float score = scores[0];

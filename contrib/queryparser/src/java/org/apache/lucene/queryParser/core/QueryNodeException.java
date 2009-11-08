@@ -68,10 +68,12 @@ public class QueryNodeException extends Exception implements NLSException {
     return this.message;
   }
 
+  @Override
   public String getMessage() {
     return getLocalizedMessage();
   }
 
+  @Override
   public String getLocalizedMessage() {
     return getLocalizedMessage(Locale.getDefault());
   }
@@ -80,6 +82,7 @@ public class QueryNodeException extends Exception implements NLSException {
     return this.message.getLocalizedMessage(locale);
   }
 
+  @Override
   public String toString() {
     return this.message.getKey() + ": " + getLocalizedMessage();
   }

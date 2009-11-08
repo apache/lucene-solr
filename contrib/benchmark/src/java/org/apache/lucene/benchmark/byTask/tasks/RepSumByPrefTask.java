@@ -36,6 +36,7 @@ public class RepSumByPrefTask extends ReportTask {
 
   protected String prefix;
 
+  @Override
   public int doLogic() throws Exception {
     Report rp = reportSumByPrefix(getRunData().getPoints().taskStats());
     
@@ -81,6 +82,7 @@ public class RepSumByPrefTask extends ReportTask {
   /* (non-Javadoc)
    * @see PerfTask#toString()
    */
+  @Override
   public String toString() {
     return super.toString()+" "+prefix;
   }

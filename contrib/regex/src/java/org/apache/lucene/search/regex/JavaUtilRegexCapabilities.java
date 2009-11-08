@@ -78,6 +78,7 @@ public class JavaUtilRegexCapabilities implements RegexCapabilities {
     return null;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
@@ -89,6 +90,7 @@ public class JavaUtilRegexCapabilities implements RegexCapabilities {
     return true;
   }
 
+  @Override
   public int hashCode() {
     return (pattern != null ? pattern.hashCode() : 0);
   }

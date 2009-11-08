@@ -93,6 +93,7 @@ public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
       this.maxSynonyms = maxSynonyms;
     }
     
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream ts = new WhitespaceTokenizer(reader);
       ts = new LowerCaseFilter(ts);
@@ -105,6 +106,7 @@ public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
       TokenStream result;
     };
     
+    @Override
     public TokenStream reusableTokenStream(String fieldName, Reader reader)
         throws IOException {
       SavedStreams streams = (SavedStreams) getPreviousTokenStream();

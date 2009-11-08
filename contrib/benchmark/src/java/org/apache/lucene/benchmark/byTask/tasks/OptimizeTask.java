@@ -32,6 +32,7 @@ public class OptimizeTask extends PerfTask {
 
   int maxNumSegments = 1;
 
+  @Override
   public int doLogic() throws Exception {
     IndexWriter iw = getRunData().getIndexWriter();
     iw.optimize(maxNumSegments);
@@ -39,11 +40,13 @@ public class OptimizeTask extends PerfTask {
     return 1;
   }
 
+  @Override
   public void setParams(String params) {
     super.setParams(params);
     maxNumSegments = Double.valueOf(params).intValue();
   }
 
+  @Override
   public boolean supportsParams() {
     return true;
   }

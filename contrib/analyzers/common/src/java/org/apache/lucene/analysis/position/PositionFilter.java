@@ -62,6 +62,7 @@ public final class PositionFilter extends TokenFilter {
     this.positionIncrement = positionIncrement;
   }
 
+  @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       if (firstTokenPositioned) {
@@ -75,6 +76,7 @@ public final class PositionFilter extends TokenFilter {
     }
   }
 
+  @Override
   public void reset() throws IOException {
     super.reset();
     firstTokenPositioned = false;

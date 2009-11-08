@@ -117,6 +117,7 @@ public abstract class PerfTask implements Cloneable {
     checkObsoleteSettings(config);
   }
   
+  @Override
   protected Object clone() throws CloneNotSupportedException {
     // tasks having non primitive data structures should override this.
     // otherwise parallel running of a task sequence might not run correctly. 
@@ -208,6 +209,7 @@ public abstract class PerfTask implements Cloneable {
   /* (non-Javadoc)
    * @see java.lang.Object#toString()
    */
+  @Override
   public String toString() {
     String padd = getPadding();
     StringBuffer sb = new StringBuffer(padd);

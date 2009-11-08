@@ -97,6 +97,7 @@ public class DbDirectory extends Directory {
         this(txn, files, blocks, 0);
     }
 
+    @Override
     public void close()
         throws IOException
     {
@@ -118,24 +119,28 @@ public class DbDirectory extends Directory {
             ((IndexOutput) iterator.next()).flush();
     }
 
+    @Override
     public IndexOutput createOutput(String name)
         throws IOException
     {
         return new DbIndexOutput(this, name, true);
     }
 
+    @Override
     public void deleteFile(String name)
         throws IOException
     {
         new File(name).delete(this);
     }
 
+    @Override
     public boolean fileExists(String name)
         throws IOException
     {
         return new File(name).exists(this);
     }
 
+    @Override
     public long fileLength(String name)
         throws IOException
     {
@@ -147,6 +152,7 @@ public class DbDirectory extends Directory {
         throw new IOException("File does not exist: " + name);
     }
     
+    @Override
     public long fileModified(String name)
         throws IOException
     {
@@ -158,6 +164,7 @@ public class DbDirectory extends Directory {
         throw new IOException("File does not exist: " + name);
     }
 
+    @Override
     public String[] listAll()
         throws IOException
     {
@@ -205,17 +212,20 @@ public class DbDirectory extends Directory {
         return (String[]) list.toArray(new String[list.size()]);
     }
 
+    @Override
     public IndexInput openInput(String name)
         throws IOException
     {
         return new DbIndexInput(this, name);
     }
 
+    @Override
     public Lock makeLock(String name)
     {
         return new DbLock();
     }
 
+    @Override
     public void touchFile(String name)
         throws IOException
     {

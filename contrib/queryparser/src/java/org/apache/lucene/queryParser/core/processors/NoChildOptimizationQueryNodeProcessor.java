@@ -46,6 +46,7 @@ public class NoChildOptimizationQueryNodeProcessor extends
     // empty constructor
   }
 
+  @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
     if (node instanceof BooleanQueryNode || node instanceof BoostQueryNode
@@ -74,12 +75,14 @@ public class NoChildOptimizationQueryNodeProcessor extends
 
   }
 
+  @Override
   protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
 
     return node;
 
   }
 
+  @Override
   protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
       throws QueryNodeException {
 

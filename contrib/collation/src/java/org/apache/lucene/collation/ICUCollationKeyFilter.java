@@ -86,6 +86,7 @@ public final class ICUCollationKeyFilter extends TokenFilter {
     termAtt = addAttribute(TermAttribute.class);
   }
 
+  @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       char[] termBuffer = termAtt.termBuffer();

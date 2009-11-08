@@ -36,6 +36,7 @@ public abstract class ReportTask extends PerfTask {
   /* (non-Javadoc)
    * @see PerfTask#shouldNeverLogAtStart()
    */
+  @Override
   protected boolean shouldNeverLogAtStart() {
     return true;
   }
@@ -43,6 +44,7 @@ public abstract class ReportTask extends PerfTask {
   /* (non-Javadoc)
    * @see PerfTask#shouldNotRecordStats()
    */
+  @Override
   protected boolean shouldNotRecordStats() {
     return true;
   }

@@ -72,6 +72,7 @@ public final class NGramTokenFilter extends TokenFilter {
   }
 
   /** Returns the next token in the stream, or null at EOS. */
+  @Override
   public final boolean incrementToken() throws IOException {
     while (true) {
       if (curTermBuffer == null) {
@@ -98,6 +99,7 @@ public final class NGramTokenFilter extends TokenFilter {
     }
   }
 
+  @Override
   public void reset() throws IOException {
     super.reset();
     curTermBuffer = null;

@@ -48,6 +48,7 @@ public class WildcardQueryNodeProcessor extends QueryNodeProcessorImpl {
     // empty constructor
   }
 
+  @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
     // the old Lucene Parser ignores FuzzyQueryNode that are also PrefixWildcardQueryNode or WildcardQueryNode
@@ -120,12 +121,14 @@ public class WildcardQueryNodeProcessor extends QueryNodeProcessorImpl {
     return false;
   }
 
+  @Override
   protected QueryNode preProcessNode(QueryNode node) throws QueryNodeException {
 
     return node;
 
   }
 
+  @Override
   protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
       throws QueryNodeException {
 

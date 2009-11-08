@@ -56,6 +56,7 @@ public class SnowballAnalyzer extends Analyzer {
   /** Constructs a {@link StandardTokenizer} filtered by a {@link
       StandardFilter}, a {@link LowerCaseFilter}, a {@link StopFilter},
       and a {@link SnowballFilter} */
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(matchVersion, reader);
     result = new StandardFilter(result);
@@ -75,6 +76,7 @@ public class SnowballAnalyzer extends Analyzer {
   /** Returns a (possibly reused) {@link StandardTokenizer} filtered by a 
    * {@link StandardFilter}, a {@link LowerCaseFilter}, 
    * a {@link StopFilter}, and a {@link SnowballFilter} */
+  @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {
     if (overridesTokenStreamMethod) {

@@ -39,6 +39,7 @@ public final class RussianLowerCaseFilter extends TokenFilter
         termAtt = addAttribute(TermAttribute.class);
     }
 
+    @Override
     public final boolean incrementToken() throws IOException
     {
       if (input.incrementToken()) {

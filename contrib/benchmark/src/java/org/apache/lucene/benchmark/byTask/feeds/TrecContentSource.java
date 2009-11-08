@@ -216,6 +216,7 @@ public class TrecContentSource extends ContentSource {
     return null; 
   }
   
+  @Override
   public void close() throws IOException {
     if (reader == null) {
       return;
@@ -232,6 +233,7 @@ public class TrecContentSource extends ContentSource {
     reader = null;
   }
 
+  @Override
   public DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
     String dateStr = null, name = null;
     Reader r = null;
@@ -306,6 +308,7 @@ public class TrecContentSource extends ContentSource {
     return docData;
   }
 
+  @Override
   public void resetInputs() throws IOException {
     synchronized (lock) {
       super.resetInputs();
@@ -315,6 +318,7 @@ public class TrecContentSource extends ContentSource {
     }
   }
 
+  @Override
   public void setConfig(Config config) {
     super.setConfig(config);
     File workDir = new File(config.get("work.dir", "work"));

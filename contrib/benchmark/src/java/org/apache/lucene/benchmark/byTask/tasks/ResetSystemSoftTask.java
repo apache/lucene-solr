@@ -34,6 +34,7 @@ public class ResetSystemSoftTask extends ResetInputsTask {
     super(runData);
   }
 
+  @Override
   public int doLogic() throws Exception {
     getRunData().reinit(false);
     return 0;

@@ -33,6 +33,7 @@ public class RepSelectByPrefTask extends RepSumByPrefTask {
     super(runData);
   }
 
+  @Override
   public int doLogic() throws Exception {
     Report rp = reportSelectByPrefix(getRunData().getPoints().taskStats());
     

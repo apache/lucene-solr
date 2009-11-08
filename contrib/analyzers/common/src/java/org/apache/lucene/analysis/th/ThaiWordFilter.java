@@ -48,6 +48,7 @@ public final class ThaiWordFilter extends TokenFilter {
     offsetAtt = addAttribute(OffsetAttribute.class);
   }
   
+  @Override
   public final boolean incrementToken() throws IOException {
     if (thaiState != null) {
       int start = breaker.current();
@@ -82,6 +83,7 @@ public final class ThaiWordFilter extends TokenFilter {
     return false;
   }
   
+  @Override
   public void reset() throws IOException {
     super.reset();
     thaiState = null;

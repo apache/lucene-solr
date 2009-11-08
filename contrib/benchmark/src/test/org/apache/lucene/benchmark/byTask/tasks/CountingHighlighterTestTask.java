@@ -43,6 +43,7 @@ public class CountingHighlighterTestTask extends SearchTravRetHighlightTask {
     super(runData);
   }
 
+  @Override
   protected Document retrieveDoc(IndexReader ir, int id) throws IOException {
     Document document = ir.document(id);
     if (document != null) {
@@ -51,9 +52,11 @@ public class CountingHighlighterTestTask extends SearchTravRetHighlightTask {
     return document;
   }
 
+  @Override
   public BenchmarkHighlighter getBenchmarkHighlighter(Query q) {
     highlighter = new Highlighter(new SimpleHTMLFormatter(), new QueryScorer(q));
     return new BenchmarkHighlighter() {
+      @Override
       public int doHighlight(IndexReader reader, int doc, String field, Document document, Analyzer analyzer, String text) throws Exception {
         TokenStream ts = TokenSources.getAnyTokenStream(reader, doc, field, document, analyzer);
         TextFragment[] frag = highlighter.getBestTextFragments(ts, text, mergeContiguous, maxFrags);

@@ -89,6 +89,7 @@ public class JEDirectory extends Directory {
         this(txn, files, blocks, 0);
     }
 
+    @Override
     public void close() throws IOException {
         flush();
     }
@@ -110,18 +111,22 @@ public class JEDirectory extends Directory {
         }
     }
 
+    @Override
     public IndexOutput createOutput(String name) throws IOException {
         return new JEIndexOutput(this, name, true);
     }
 
+    @Override
     public void deleteFile(String name) throws IOException {
         new File(name).delete(this);
     }
 
+    @Override
     public boolean fileExists(String name) throws IOException {
         return new File(name).exists(this);
     }
 
+    @Override
     public long fileLength(String name) throws IOException {
         File file = new File(name);
 
@@ -131,6 +136,7 @@ public class JEDirectory extends Directory {
         throw new IOException("File does not exist: " + name);
     }
 
+    @Override
     public long fileModified(String name) throws IOException {
         File file = new File(name);
 
@@ -140,6 +146,7 @@ public class JEDirectory extends Directory {
         throw new IOException("File does not exist: " + name);
     }
 
+    @Override
     public String[] listAll() throws IOException {
         Cursor cursor = null;
         List list = new ArrayList();
@@ -182,14 +189,17 @@ public class JEDirectory extends Directory {
         return (String[]) list.toArray(new String[list.size()]);
     }
 
+    @Override
     public IndexInput openInput(String name) throws IOException {
         return new JEIndexInput(this, name);
     }
 
+    @Override
     public Lock makeLock(String name) {
         return new JELock();
     }
 
+    @Override
     public void touchFile(String name) throws IOException {
         File file = new File(name);
         long length = 0L;

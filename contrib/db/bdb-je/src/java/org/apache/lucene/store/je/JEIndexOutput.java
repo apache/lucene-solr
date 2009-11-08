@@ -62,6 +62,7 @@ public class JEIndexOutput extends IndexOutput {
         directory.openFiles.add(this);
     }
 
+    @Override
     public void close() throws IOException {
         flush();
         file.modify(directory, length, System.currentTimeMillis());
@@ -69,11 +70,13 @@ public class JEIndexOutput extends IndexOutput {
         directory.openFiles.remove(this);
     }
 
+    @Override
     public void flush() throws IOException {
         if (length > 0)
             block.put(directory);
     }
 
+    @Override
     public void writeByte(byte b) throws IOException {
         int blockPos = (int) (position++ & BLOCK_MASK);
 
@@ -89,6 +92,7 @@ public class JEIndexOutput extends IndexOutput {
             length = position;
     }
 
+    @Override
     public void writeBytes(byte[] b, int offset, int len) throws IOException {
         int blockPos = (int) (position & BLOCK_MASK);
 
@@ -116,10 +120,12 @@ public class JEIndexOutput extends IndexOutput {
             length = position;
     }
 
+    @Override
     public long length() throws IOException {
         return length;
     }
 
+    @Override
     public void seek(long pos) throws IOException {
         if (pos > length)
             throw new IOException("seeking past end of file");
@@ -134,6 +140,7 @@ public class JEIndexOutput extends IndexOutput {
         }
     }
 
+    @Override
     public long getFilePointer() {
         return position;
     }

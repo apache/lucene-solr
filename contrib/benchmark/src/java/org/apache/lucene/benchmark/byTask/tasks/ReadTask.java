@@ -63,6 +63,7 @@ public abstract class ReadTask extends PerfTask {
   public ReadTask(PerfRunData runData) {
     super(runData);
   }
+  @Override
   public int doLogic() throws Exception {
     int res = 0;
     boolean closeReader = false;
@@ -224,6 +225,7 @@ public abstract class ReadTask extends PerfTask {
   static final int DEFAULT_SEARCH_NUM_HITS = 10;
   private int numHits;
 
+  @Override
   public void setup() throws Exception {
     super.setup();
     numHits = getRunData().getConfig().get("search.num.hits", DEFAULT_SEARCH_NUM_HITS);

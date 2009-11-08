@@ -76,6 +76,7 @@ public class ICUCollationKeyAnalyzer extends Analyzer {
     this.collator = collator;
   }
 
+  @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new KeywordTokenizer(reader);
     result = new ICUCollationKeyFilter(result, collator);
@@ -87,6 +88,7 @@ public class ICUCollationKeyAnalyzer extends Analyzer {
     TokenStream result;
   }
   
+  @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) 
     throws IOException {
     

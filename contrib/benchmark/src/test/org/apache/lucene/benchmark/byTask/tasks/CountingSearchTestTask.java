@@ -33,6 +33,7 @@ public class CountingSearchTestTask extends SearchTask {
     super(runData);
   }
 
+  @Override
   public int doLogic() throws Exception {
     int res = super.doLogic();
     incrNumSearches();

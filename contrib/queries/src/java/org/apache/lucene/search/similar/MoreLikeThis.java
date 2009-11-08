@@ -1015,6 +1015,7 @@ public final class MoreLikeThis {
             initialize(s);
         }
 
+        @Override
         protected boolean lessThan(Object[] aa, Object[] bb) {
             Float fa = (Float) aa[2];
             Float fb = (Float) bb[2];

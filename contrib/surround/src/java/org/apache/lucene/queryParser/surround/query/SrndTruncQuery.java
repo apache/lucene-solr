@@ -45,6 +45,7 @@ public class SrndTruncQuery extends SimpleTerm {
   
   public String getTruncated() {return truncated;}
   
+  @Override
   public String toStringUnquoted() {return getTruncated();}
 
   
@@ -76,6 +77,7 @@ public class SrndTruncQuery extends SimpleTerm {
     pattern = Pattern.compile(re.toString());
   }
   
+  @Override
   public void visitMatchingTerms(
     IndexReader reader,
     String fieldName,

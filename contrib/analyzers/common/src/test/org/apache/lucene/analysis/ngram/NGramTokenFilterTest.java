@@ -30,6 +30,7 @@ import java.io.StringReader;
 public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
     private TokenStream input;
     
+    @Override
     public void setUp() throws Exception {
         super.setUp();
         input = new WhitespaceTokenizer(new StringReader("abcde"));

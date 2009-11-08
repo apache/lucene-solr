@@ -32,6 +32,7 @@ public class PerfTaskTest extends BenchmarkTestCase {
       super(runData);
     }
 
+    @Override
     public int doLogic() throws Exception {
       return 0;
     }

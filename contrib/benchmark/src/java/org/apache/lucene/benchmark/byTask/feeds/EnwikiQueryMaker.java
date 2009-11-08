@@ -122,6 +122,7 @@ public class EnwikiQueryMaker extends AbstractQueryMaker implements
     return queries.toArray(new Query[0]);
   }
 
+  @Override
   protected Query[] prepareQueries() throws Exception {
     // analyzer (default is standard analyzer)
     Analyzer anlzr = NewAnalyzerTask.createAnalyzer(config.get("analyzer", StandardAnalyzer.class.getName()));

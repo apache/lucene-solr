@@ -78,6 +78,7 @@ public class SortableSingleDocSource extends SingleDocSource {
   private int sortRange;
   private Random r;
 
+  @Override
   public DocData getNextDocData(DocData docData) throws NoMoreDataException {
     docData = super.getNextDocData(docData);
     Properties props = new Properties();
@@ -103,6 +104,7 @@ public class SortableSingleDocSource extends SingleDocSource {
     return start + r.nextInt(end - start);
   }
 
+  @Override
   public void setConfig(Config config) {
     super.setConfig(config);
     sortRange = config.get("sort.rng", 20000);

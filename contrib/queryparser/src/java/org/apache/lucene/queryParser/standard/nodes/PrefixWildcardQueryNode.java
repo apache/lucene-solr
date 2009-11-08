@@ -48,11 +48,13 @@ public class PrefixWildcardQueryNode extends WildcardQueryNode {
     this(fqn.getField(), fqn.getText(), fqn.getBegin(), fqn.getEnd());
   }
 
+  @Override
   public String toString() {
     return "<prefixWildcard field='" + this.field + "' term='" + this.text
         + "'/>";
   }
 
+  @Override
   public PrefixWildcardQueryNode cloneTree() throws CloneNotSupportedException {
     PrefixWildcardQueryNode clone = (PrefixWildcardQueryNode) super.cloneTree();
 

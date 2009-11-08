@@ -51,6 +51,7 @@ public class Hyphen implements Serializable {
     postBreak = null;
   }
 
+  @Override
   public String toString() {
     if (noBreak == null && postBreak == null && preBreak != null
         && preBreak.equals("-")) {

@@ -91,6 +91,7 @@ public class ParametricRangeQueryNode extends QueryNodeImpl implements
 
   }
 
+  @Override
   public ParametricRangeQueryNode cloneTree() throws CloneNotSupportedException {
     ParametricRangeQueryNode clone = (ParametricRangeQueryNode) super
         .cloneTree();

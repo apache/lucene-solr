@@ -72,6 +72,7 @@ public class StringBufferReader extends Reader {
     }
   }
 
+  @Override
   public void close() {
     synchronized (lock) {
       sb = null;
@@ -89,6 +90,7 @@ public class StringBufferReader extends Reader {
    * @exception IllegalArgumentException If readAheadLimit is < 0
    * @exception IOException If an I/O error occurs
    */
+  @Override
   public void mark(int readAheadLimit) throws IOException {
     if (readAheadLimit < 0){
       throw new IllegalArgumentException("Read-ahead limit cannpt be negative: " + readAheadLimit);
@@ -99,10 +101,12 @@ public class StringBufferReader extends Reader {
     }
   }
 
+  @Override
   public boolean markSupported() {
     return true;
   }
 
+  @Override
   public int read() throws IOException {
     synchronized (lock) {
       ensureOpen();
@@ -110,6 +114,7 @@ public class StringBufferReader extends Reader {
     }
   }
 
+  @Override
   public int read(char cbuf[], int off, int len) throws IOException {
     synchronized (lock) {
       ensureOpen();
@@ -134,6 +139,7 @@ public class StringBufferReader extends Reader {
     }
   }
 
+  @Override
   public boolean ready() throws IOException {
     synchronized (lock) {
       ensureOpen();
@@ -141,6 +147,7 @@ public class StringBufferReader extends Reader {
     }
   }
 
+  @Override
   public void reset() throws IOException {
     synchronized (lock) {
       ensureOpen();
@@ -155,6 +162,7 @@ public class StringBufferReader extends Reader {
       length = sb.length();
     }
   }
+  @Override
   public long skip(long ns) throws IOException {
     synchronized (lock) {
       ensureOpen();

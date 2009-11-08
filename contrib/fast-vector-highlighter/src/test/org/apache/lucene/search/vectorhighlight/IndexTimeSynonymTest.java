@@ -298,11 +298,13 @@ public class IndexTimeSynonymTest extends AbstractTestCase {
       this.tokens = tokens;
     }
     
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {      
       TokenStream ts = new TokenStream(Token.TOKEN_ATTRIBUTE_FACTORY) {
         final AttributeImpl reusableToken = (AttributeImpl) addAttribute(TermAttribute.class);
         int p = 0;
         
+        @Override
         public boolean incrementToken() throws IOException {
           if( p >= tokens.length ) return false;
           clearAttributes();

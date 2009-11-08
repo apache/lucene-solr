@@ -66,6 +66,7 @@ public class PhraseSlopQueryNode extends QueryNodeImpl implements FieldableNode 
 
   }
 
+  @Override
   public String toString() {
     return "<phraseslop value='" + getValueString() + "'>" + "\n"
         + getChild().toString() + "\n</phraseslop>";
@@ -78,6 +79,7 @@ public class PhraseSlopQueryNode extends QueryNodeImpl implements FieldableNode 
         + getValueString();
   }
 
+  @Override
   public QueryNode cloneTree() throws CloneNotSupportedException {
     PhraseSlopQueryNode clone = (PhraseSlopQueryNode) super.cloneTree();
 

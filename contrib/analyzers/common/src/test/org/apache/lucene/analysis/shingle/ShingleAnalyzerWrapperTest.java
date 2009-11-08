@@ -221,6 +221,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
       super(org.apache.lucene.util.Version.LUCENE_CURRENT);
     }
   
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       return new WhitespaceTokenizer(reader);
     }  
@@ -240,6 +241,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    */
   private class NonreusableAnalyzer extends Analyzer {
     int invocationCount = 0;
+    @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       if (++invocationCount % 2 == 0)
         return new WhitespaceTokenizer(reader);

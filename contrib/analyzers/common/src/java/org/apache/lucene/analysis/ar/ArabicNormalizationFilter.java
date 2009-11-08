@@ -39,6 +39,7 @@ public final class ArabicNormalizationFilter extends TokenFilter {
     termAtt = addAttribute(TermAttribute.class);
   }
 
+  @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       int newlen = normalizer.normalize(termAtt.termBuffer(), termAtt.termLength());

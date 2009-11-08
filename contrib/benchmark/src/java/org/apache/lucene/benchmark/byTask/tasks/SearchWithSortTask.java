@@ -46,6 +46,7 @@ public class SearchWithSortTask extends ReadTask {
    * name:string,page:int,subject:string
    * 
    */
+  @Override
   public void setParams(String sortField) {
     super.setParams(sortField);
     String[] fields = sortField.split(",");
@@ -112,38 +113,47 @@ public class SearchWithSortTask extends ReadTask {
     return type;
   }
 
+  @Override
   public boolean supportsParams() {
     return true;
   }
 
+  @Override
   public QueryMaker getQueryMaker() {
     return getRunData().getQueryMaker(this);
   }
 
+  @Override
   public boolean withRetrieve() {
     return false;
   }
 
+  @Override
   public boolean withSearch() {
     return true;
   }
 
+  @Override
   public boolean withTraverse() {
     return false;
   }
 
+  @Override
   public boolean withWarm() {
     return false;
   }
 
+  @Override
   public boolean withScore() {
     return doScore;
   }
 
+  @Override
   public boolean withMaxScore() {
     return doMaxScore;
   }
   
+  @Override
   public Sort getSort() {
     if (sort == null) {
       throw new IllegalStateException("No sort field was set");

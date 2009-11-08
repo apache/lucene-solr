@@ -69,6 +69,7 @@ public final class DutchStemFilter extends TokenFilter {
   /**
    * Returns the next token in the stream, or null at EOS
    */
+  @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       String term = termAtt.term();

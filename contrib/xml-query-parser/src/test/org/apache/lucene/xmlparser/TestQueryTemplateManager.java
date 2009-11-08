@@ -135,6 +135,7 @@ public class TestQueryTemplateManager extends TestCase {
 	/*
 	 * @see TestCase#setUp()
 	 */
+	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 		
@@ -156,6 +157,7 @@ public class TestQueryTemplateManager extends TestCase {
 	}
 	
 	
+	@Override
 	protected void tearDown() throws Exception {
 		searcher.close();
 	}

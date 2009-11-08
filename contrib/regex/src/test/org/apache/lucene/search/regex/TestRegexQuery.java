@@ -35,6 +35,7 @@ public class TestRegexQuery extends TestCase {
   private final String FN = "field";
 
 
+  @Override
   public void setUp() {
     RAMDirectory directory = new RAMDirectory();
     try {
@@ -51,6 +52,7 @@ public class TestRegexQuery extends TestCase {
     }
   }
 
+  @Override
   public void tearDown() {
     try {
       searcher.close();

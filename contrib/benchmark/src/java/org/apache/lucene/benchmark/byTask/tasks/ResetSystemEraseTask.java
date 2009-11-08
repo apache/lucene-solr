@@ -34,6 +34,7 @@ public class ResetSystemEraseTask extends ResetSystemSoftTask {
     super(runData);
   }
 
+  @Override
   public int doLogic() throws Exception {
     getRunData().reinit(true);
     return 0;

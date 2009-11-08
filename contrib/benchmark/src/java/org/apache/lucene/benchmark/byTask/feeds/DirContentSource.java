@@ -174,10 +174,12 @@ public class DirContentSource extends ContentSource {
     return dfi.df.parse(dateStr.trim(), dfi.pos);
   }
 
+  @Override
   public void close() throws IOException {
     inputFiles = null;
   }
   
+  @Override
   public DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
     File f = null;
     String name = null;
@@ -219,12 +221,14 @@ public class DirContentSource extends ContentSource {
     return docData;
   }
   
+  @Override
   public synchronized void resetInputs() throws IOException {
     super.resetInputs();
     inputFiles = new Iterator(dataDir);
     iteration = 0;
   }
 
+  @Override
   public void setConfig(Config config) {
     super.setConfig(config);
     

@@ -71,6 +71,7 @@ public class StandardQueryTreeBuilder extends QueryTreeBuilder implements
 
   }
 
+  @Override
   public Query build(QueryNode queryNode) throws QueryNodeException {
     return (Query) super.build(queryNode);
   }

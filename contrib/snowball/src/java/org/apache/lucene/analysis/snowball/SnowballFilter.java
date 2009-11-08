@@ -64,6 +64,7 @@ public final class SnowballFilter extends TokenFilter {
   }
 
   /** Returns the next input Token, after being stemmed */
+  @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       String originalTerm = termAtt.term();

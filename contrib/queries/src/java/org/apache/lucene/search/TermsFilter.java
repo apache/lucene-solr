@@ -52,6 +52,7 @@ public class TermsFilter extends Filter
 /* (non-Javadoc)
    * @see org.apache.lucene.search.Filter#getDocIdSet(org.apache.lucene.index.IndexReader)
 	 */
+  @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException
 	{
     OpenBitSet result=new OpenBitSet(reader.maxDoc());
@@ -75,6 +76,7 @@ public class TermsFilter extends Filter
         return result;
 	}
 	
+	@Override
 	public boolean equals(Object obj)
 	{
 		if(this == obj)
@@ -86,6 +88,7 @@ public class TermsFilter extends Filter
 					 (terms != null && terms.equals(test.terms)));
 	}
 
+	@Override
 	public int hashCode()
 	{
 		int hash=9;

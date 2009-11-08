@@ -25,6 +25,7 @@ public class TestUpdatingList extends TestCase {
 
     RestaurantInfo infoToAdd1, infoToAdd2;
 
+    @Override
     protected void setUp() throws Exception {
         baseListModel = new BaseListModel(DataStore.getRestaurants());
         listSearcher = new ListSearcher(baseListModel);

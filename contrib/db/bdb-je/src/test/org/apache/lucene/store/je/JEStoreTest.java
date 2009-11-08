@@ -52,6 +52,7 @@ public class JEStoreTest extends LuceneTestCase {
 
     protected Database index, blocks;
 
+    @Override
     public void setUp() throws Exception {
 
         if (!dbHome.exists())
@@ -97,6 +98,7 @@ public class JEStoreTest extends LuceneTestCase {
         }
     }
 
+    @Override
     public void tearDown() throws Exception {
 
         if (index != null)

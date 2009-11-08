@@ -72,6 +72,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
     super(matchVersion, f, a);
   }
 
+  @Override
   protected Query getFieldQuery(String field, String queryText, int slop) {
     ComplexPhraseQuery cpq = new ComplexPhraseQuery(field, queryText, slop);
     complexPhrases.add(cpq); // add to list of phrases to be parsed once
@@ -80,6 +81,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
     return cpq;
   }
 
+  @Override
   public Query parse(String query) throws ParseException {
     if (isPass2ResolvingPhrases) {
       MultiTermQuery.RewriteMethod oldMethod = getMultiTermRewriteMethod();
@@ -126,6 +128,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
   // unfortunately need
   // to throw a runtime exception here if a term for another field is embedded
   // in phrase query
+  @Override
   protected Query newTermQuery(Term term) {
     if (isPass2ResolvingPhrases) {
       try {
@@ -147,6 +150,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
     }
   }
 
+  @Override
   protected Query getWildcardQuery(String field, String termStr)
       throws ParseException {
     if (isPass2ResolvingPhrases) {
@@ -155,6 +159,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
     return super.getWildcardQuery(field, termStr);
   }
 
+  @Override
   protected Query getRangeQuery(String field, String part1, String part2,
       boolean inclusive) throws ParseException {
     if (isPass2ResolvingPhrases) {
@@ -163,6 +168,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
     return super.getRangeQuery(field, part1, part2, inclusive);
   }
 
+  @Override
   protected Query newRangeQuery(String field, String part1, String part2,
       boolean inclusive) {
     if (isPass2ResolvingPhrases) {
@@ -176,6 +182,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
     return super.newRangeQuery(field, part1, part2, inclusive);
   }
 
+  @Override
   protected Query getFuzzyQuery(String field, String termStr,
       float minSimilarity) throws ParseException {
     if (isPass2ResolvingPhrases) {
@@ -218,6 +225,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
       contents = qp.parse(phrasedQueryStringContents);
     }
 
+    @Override
     public Query rewrite(IndexReader reader) throws IOException {
       // ArrayList spanClauses = new ArrayList();
       if (contents instanceof TermQuery) {
@@ -348,10 +356,12 @@ public class ComplexPhraseQueryParser extends QueryParser {
       }
     }
 
+    @Override
     public String toString(String field) {
       return "\"" + phrasedQueryStringContents + "\"";
     }
 
+    @Override
     public int hashCode() {
       final int prime = 31;
       int result = 1;
@@ -364,6 +374,7 @@ public class ComplexPhraseQueryParser extends QueryParser {
       return result;
     }
 
+    @Override
     public boolean equals(Object obj) {
       if (this == obj)
         return true;

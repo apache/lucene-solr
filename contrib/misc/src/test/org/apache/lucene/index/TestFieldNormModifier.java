@@ -53,11 +53,13 @@ public class TestFieldNormModifier extends TestCase {
   
   /** inverts the normal notion of lengthNorm */
   public static Similarity s = new DefaultSimilarity() {
+    @Override
     public float lengthNorm(String fieldName, int numTokens) {
       return numTokens;
     }
   };
   
+  @Override
   public void setUp() throws Exception {
     IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true, MaxFieldLength.UNLIMITED);
     
@@ -125,15 +127,19 @@ public class TestFieldNormModifier extends TestCase {
       private int docBase = 0;
       private Scorer scorer;
       
+      @Override
       public final void collect(int doc) throws IOException {
         scores[doc + docBase] = scorer.score();
       }
+      @Override
       public void setNextReader(IndexReader reader, int docBase) {
         this.docBase = docBase;
       }
+      @Override
       public void setScorer(Scorer scorer) throws IOException {
         this.scorer = scorer;
       }
+      @Override
       public boolean acceptsDocsOutOfOrder() {
         return true;
       }
@@ -156,15 +162,19 @@ public class TestFieldNormModifier extends TestCase {
     searcher.search(new TermQuery(new Term("field", "word")),  new Collector() {
       private int docBase = 0;
       private Scorer scorer;
+      @Override
       public final void collect(int doc) throws IOException {
         scores[doc + docBase] = scorer.score();
       }
+      @Override
       public void setNextReader(IndexReader reader, int docBase) {
         this.docBase = docBase;
       }
+      @Override
       public void setScorer(Scorer scorer) throws IOException {
         this.scorer = scorer;
       }
+      @Override
       public boolean acceptsDocsOutOfOrder() {
         return true;
       }
@@ -204,15 +214,19 @@ public class TestFieldNormModifier extends TestCase {
     searcher.search(new TermQuery(new Term("untokfield", "20061212")), new Collector() {
       private int docBase = 0;
       private Scorer scorer;
+      @Override
       public final void collect(int doc) throws IOException {
         scores[doc + docBase] = scorer.score();
       }
+      @Override
       public void setNextReader(IndexReader reader, int docBase) {
         this.docBase = docBase;
       }
+      @Override
       public void setScorer(Scorer scorer) throws IOException {
         this.scorer = scorer;
       }
+      @Override
       public boolean acceptsDocsOutOfOrder() {
         return true;
       }

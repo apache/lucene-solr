@@ -37,6 +37,7 @@ public class SetPropTask extends PerfTask {
   private String name;
   private String value;
   
+  @Override
   public int doLogic() throws Exception {
     if (name==null || value==null) {
       throw new Exception(getName()+" - undefined name or value: name="+name+" value="+value);
@@ -49,6 +50,7 @@ public class SetPropTask extends PerfTask {
    * Set the params (property name and value).
    * @param params property name and value separated by ','.
    */
+  @Override
   public void setParams(String params) {
     super.setParams(params);
     int k = params.indexOf(",");
@@ -59,6 +61,7 @@ public class SetPropTask extends PerfTask {
   /* (non-Javadoc)
    * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#supportsParams()
    */
+  @Override
   public boolean supportsParams() {
     return true;
   }

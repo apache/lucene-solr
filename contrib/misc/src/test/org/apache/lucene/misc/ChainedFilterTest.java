@@ -54,6 +54,7 @@ public class ChainedFilterTest extends TestCase {
   private QueryWrapperFilter bobFilter;
   private QueryWrapperFilter sueFilter;
 
+  @Override
   public void setUp() throws Exception {
     directory = new RAMDirectory();
     IndexWriter writer =

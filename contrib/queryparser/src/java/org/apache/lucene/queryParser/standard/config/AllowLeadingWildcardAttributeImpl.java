@@ -43,14 +43,17 @@ public class AllowLeadingWildcardAttributeImpl extends AttributeImpl
     return this.allowLeadingWildcard;
   }
 
+  @Override
   public void clear() {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public void copyTo(AttributeImpl target) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   public boolean equals(Object other) {
 
     if (other instanceof AllowLeadingWildcardAttributeImpl
@@ -64,10 +67,12 @@ public class AllowLeadingWildcardAttributeImpl extends AttributeImpl
 
   }
 
+  @Override
   public int hashCode() {
     return this.allowLeadingWildcard ? -1 : Integer.MAX_VALUE;
   }
 
+  @Override
   public String toString() {
     return "<allowLeadingWildcard allowLeadingWildcard="
         + this.allowLeadingWildcard + "/>";

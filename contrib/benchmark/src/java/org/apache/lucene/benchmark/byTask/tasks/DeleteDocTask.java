@@ -40,6 +40,7 @@ public class DeleteDocTask extends PerfTask {
   private int docid = -1;
   private boolean byStep = true;
   
+  @Override
   public int doLogic() throws Exception {
     getRunData().getIndexReader().deleteDocument(docid);
     lastDeleted = docid;
@@ -49,6 +50,7 @@ public class DeleteDocTask extends PerfTask {
   /* (non-Javadoc)
    * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#setup()
    */
+  @Override
   public void setup() throws Exception {
     super.setup();
     if (deleteStep<0) {
@@ -58,6 +60,7 @@ public class DeleteDocTask extends PerfTask {
     docid = (byStep ? lastDeleted + deleteStep : docid);
   }
 
+  @Override
   protected String getLogMessage(int recsCount) {
     return "deleted " + recsCount + " docs, last deleted: " + lastDeleted;
   }
@@ -66,6 +69,7 @@ public class DeleteDocTask extends PerfTask {
    * Set the params (docid only)
    * @param params docid to delete, or -1 for deleting by delete gap settings.
    */
+  @Override
   public void setParams(String params) {
     super.setParams(params);
     docid = (int) Float.parseFloat(params);
@@ -75,6 +79,7 @@ public class DeleteDocTask extends PerfTask {
   /* (non-Javadoc)
    * @see org.apache.lucene.benchmark.byTask.tasks.PerfTask#supportsParams()
    */
+  @Override
   public boolean supportsParams() {
     return true;
   }

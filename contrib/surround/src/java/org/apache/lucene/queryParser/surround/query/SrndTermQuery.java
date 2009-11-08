@@ -36,8 +36,10 @@ public class SrndTermQuery extends SimpleTerm {
     return new Term(fieldName, getTermText());
   }
   
+  @Override
   public String toStringUnquoted() {return getTermText();}
   
+  @Override
   public void visitMatchingTerms(
     IndexReader reader,
     String fieldName,

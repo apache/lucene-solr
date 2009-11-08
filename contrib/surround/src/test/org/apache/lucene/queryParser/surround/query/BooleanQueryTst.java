@@ -67,18 +67,22 @@ public class BooleanQueryTst {
       encountered = new boolean[expectedDocNrs.length];
     }
 
+    @Override
     public void setScorer(Scorer scorer) throws IOException {
       this.scorer = scorer;
     }
 
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       this.docBase = docBase;
     }
     
+    @Override
     public void collect(int docNr) throws IOException {
       float score = scorer.score();
       docNr += docBase;

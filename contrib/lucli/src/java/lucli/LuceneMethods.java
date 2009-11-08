@@ -224,12 +224,16 @@ class LuceneMethods {
   final static class CountingCollector extends Collector {
     public int numHits = 0;
     
+    @Override
     public void setScorer(Scorer scorer) throws IOException {}
+    @Override
     public void collect(int doc) throws IOException {
       numHits++;
     }
 
+    @Override
     public void setNextReader(IndexReader reader, int docBase) {}
+    @Override
     public boolean acceptsDocsOutOfOrder() {
       return true;
     }    

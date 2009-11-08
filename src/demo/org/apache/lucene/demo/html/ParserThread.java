@@ -26,6 +26,7 @@ class ParserThread extends Thread {
     parser = p;
   }
 
+  @Override
   public void run() {				  // convert pipeOut to pipeIn
     try {
       try {					  // parse document to pipeOut

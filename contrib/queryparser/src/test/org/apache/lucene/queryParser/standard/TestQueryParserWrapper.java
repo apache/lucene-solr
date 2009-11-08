@@ -110,6 +110,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     boolean inPhrase = false;
     int savedStart = 0, savedEnd = 0;
 
+    @Override
     public boolean incrementToken() throws IOException {
       if (inPhrase) {
         inPhrase = false;
@@ -135,6 +136,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   public static class QPTestAnalyzer extends Analyzer {
 
     /** Filters LowerCaseTokenizer with StopFilter. */
+    @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
       return new QPTestFilter(new LowerCaseTokenizer(reader));
     }
@@ -154,11 +156,13 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
     }
 
+    @Override
     protected Query getFuzzyQuery(String field, String termStr,
         float minSimilarity) throws ParseException {
       throw new ParseException("Fuzzy queries not allowed");
     }
 
+    @Override
     protected Query getWildcardQuery(String field, String termStr)
         throws ParseException {
       throw new ParseException("Wildcard queries not allowed");
@@ -167,6 +171,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     private static class QPTestParserQueryNodeProcessor extends
         QueryNodeProcessorImpl {
 
+      @Override
       protected QueryNode postProcessNode(QueryNode node)
           throws QueryNodeException {
 
@@ -174,6 +179,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
       }
 
+      @Override
       protected QueryNode preProcessNode(QueryNode node)
           throws QueryNodeException {
 
@@ -188,6 +194,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
       }
 
+      @Override
       protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
           throws QueryNodeException {
 
@@ -201,6 +208,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
   private int originalMaxClauses;
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
@@ -1115,6 +1123,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     iw.addDocument(d);
   }
 
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
     BooleanQuery.setMaxClauseCount(originalMaxClauses);

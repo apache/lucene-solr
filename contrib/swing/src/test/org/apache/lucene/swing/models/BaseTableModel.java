@@ -60,10 +60,12 @@ public class BaseTableModel extends AbstractTableModel {
         fireTableDataChanged();
     }
 
+    @Override
     public boolean isCellEditable(int rowIndex, int columnIndex) {
         return false;
     }
 
+    @Override
     public Class getColumnClass(int columnIndex) {
         return String.class;
     }
@@ -89,10 +91,12 @@ public class BaseTableModel extends AbstractTableModel {
         }
     }
 
+    @Override
     public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
         //no op
     }
 
+    @Override
     public String getColumnName(int columnIndex) {
         return columnNames.get(columnIndex).toString();
     }

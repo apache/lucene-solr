@@ -41,6 +41,7 @@ public class RemoteCachingWrapperFilterHelper extends RemoteCachingWrapperFilter
     this.shouldHaveCache = shouldHaveCache;
   }
 
+  @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     Filter cachedFilter = FilterManager.getInstance().getFilter(filter);
     

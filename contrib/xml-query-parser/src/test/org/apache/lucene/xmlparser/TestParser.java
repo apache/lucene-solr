@@ -51,6 +51,7 @@ public class TestParser extends TestCase {
 	/*
 	 * @see TestCase#setUp()
 	 */
+	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
 		
@@ -86,6 +87,7 @@ public class TestParser extends TestCase {
 	
 	
 	
+	@Override
 	protected void tearDown() throws Exception {
 		reader.close();
 		searcher.close();

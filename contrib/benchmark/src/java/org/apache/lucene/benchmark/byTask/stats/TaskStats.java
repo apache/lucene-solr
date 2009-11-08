@@ -102,6 +102,7 @@ public class TaskStats implements Cloneable {
   /* (non-Javadoc)
    * @see java.lang.Object#toString()
    */
+  @Override
   public String toString() {
     StringBuffer res = new StringBuffer(task.getName());
     res.append(" ");
@@ -178,6 +179,7 @@ public class TaskStats implements Cloneable {
   /* (non-Javadoc)
    * @see java.lang.Object#clone()
    */
+  @Override
   public Object clone() throws CloneNotSupportedException {
     return super.clone();
   }

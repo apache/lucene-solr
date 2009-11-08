@@ -91,6 +91,7 @@ public class FieldQueryNode extends QueryNodeImpl implements TextableQueryNode,
     }
   }
 
+  @Override
   public String toString() {
     return "<field start='" + this.begin + "' end='" + this.end + "' field='"
         + this.field + "' text='" + this.text + "'/>";

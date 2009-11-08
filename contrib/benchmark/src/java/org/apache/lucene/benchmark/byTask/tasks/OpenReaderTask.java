@@ -42,6 +42,7 @@ public class OpenReaderTask extends PerfTask {
     super(runData);
   }
 
+  @Override
   public int doLogic() throws IOException {
     Directory dir = getRunData().getDirectory();
     Config config = getRunData().getConfig();
@@ -75,6 +76,7 @@ public class OpenReaderTask extends PerfTask {
     return r;
   }
   
+  @Override
   public void setParams(String params) {
     super.setParams(params);
     if (params != null) {
@@ -88,6 +90,7 @@ public class OpenReaderTask extends PerfTask {
     }
   }
 
+  @Override
   public boolean supportsParams() {
     return true;
   }

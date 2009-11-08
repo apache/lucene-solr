@@ -40,6 +40,7 @@ public final class PersianNormalizationFilter extends TokenFilter {
     termAtt = addAttribute(TermAttribute.class);
   }
 
+  @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       final int newlen = normalizer.normalize(termAtt.termBuffer(), termAtt
