@@ -32,14 +32,21 @@ import org.apache.lucene.index.TermDocs;
  * <p><b>NOTE</b>: the param is an absolute percentage of
  * maxDoc().  This means if you delete 50%, and then delete
  * 50% again, the 2nd delete will do nothing.
+ *
+ * <p> Parameters:
+ * <ul>
+ * <li> delete.percent.rand.seed - defines the seed to
+ * initialize Random (default 1717)
+ * </ul>
  */
 public class DeleteByPercentTask extends PerfTask {
   double percent;
   int numDeleted = 0;
-  Random random = new Random(System.currentTimeMillis());
+  final Random random;
 
   public DeleteByPercentTask(PerfRunData runData) {
     super(runData);
+    random = new Random(runData.getConfig().get("delete.percent.rand.seed", 1717));
   }
   
   public void setup() throws Exception {
