@@ -192,6 +192,10 @@ Bug fixes
    infoStream on IndexWriter and then add an empty document and commit
    (Shai Erera via Mike McCandless)
 
+ * LUCENE-2046: IndexReader should not see the index as changed, after
+   IndexWriter.prepareCommit has been called but before
+   IndexWriter.commit is called. (Peter Keegan via Mike McCandless)
+
 API Changes
 
  * Un-deprecate search(Weight weight, Filter filter, int n) from

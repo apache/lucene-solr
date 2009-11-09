@@ -1778,4 +1778,24 @@ public class TestIndexReader extends LuceneTestCase
     r2.close();
     dir.close();
   }
+
+  // LUCENE-2046
+  public void testPrepareCommitIsCurrent() throws Throwable {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    IndexReader r = IndexReader.open(dir, true);
+    assertTrue(r.isCurrent());
+    writer.addDocument(doc);
+    writer.prepareCommit();
+    assertTrue(r.isCurrent());
+    IndexReader r2 = r.reopen();
+    assertTrue(r == r2);
+    writer.commit();
+    assertFalse(r.isCurrent());
+    writer.close();
+    r.close();
+    dir.close();
+  }
 }
