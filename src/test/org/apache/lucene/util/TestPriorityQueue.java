@@ -61,7 +61,7 @@ public class TestPriorityQueue extends LuceneTestCase {
         int last = Integer.MIN_VALUE;
         for (int i = 0; i < count; i++)
         {
-            Integer next = (Integer)pq.pop();
+            Integer next = pq.pop();
             assertTrue(next.intValue() >= last);
             last = next.intValue();
             sum2 += last;
