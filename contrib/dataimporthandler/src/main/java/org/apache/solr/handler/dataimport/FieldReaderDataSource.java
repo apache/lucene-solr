@@ -36,7 +36,7 @@ import java.util.Properties;
  * <p/>
  * <datasource name="f1" type="FieldReaderDataSource" />
  * <p/>
- * The enity which uses this datasource must keep the url value as the varaible name url="field-name"
+ * The enity which uses this datasource must keep the url value as the variable name url="field-name"
  * <p/>
  * The fieldname must be resolvable from VariableResolver
  * <p/>
