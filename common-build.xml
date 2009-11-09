@@ -62,7 +62,7 @@
        By default, this should be set to "X.Y.N-dev" where X.Y.N is
        "1 greater" then the last version released (on this branch).
     -->
-  <property name="version" value="1.4-dev" />
+  <property name="version" value="1.5-dev" />
   
   <!-- Solr Specification Version -->
   <!--
@@ -116,7 +116,7 @@
   -->
   <property name="lucene_version" value="2.9.1"/>
   <!-- The version number to assign to the Maven artifacts. -->
-  <property name="maven_version" value="1.4-SNAPSHOT"/>
+  <property name="maven_version" value="1.5-SNAPSHOT"/>
 
   <!-- By default, "deploy" to a temporary directory (as well as installing
        into your local repository).  If you wish to deploy to a remote
