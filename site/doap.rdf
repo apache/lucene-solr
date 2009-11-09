@@ -39,6 +39,14 @@
     <wiki rdf:resource="http://wiki.apache.org/solr/"/>
     <release>
       <Version>
+        <branch>branch-1.4</branch>
+        <name>solr-1.4.0</name>
+        <created>2009-11-10</created>
+        <revision>1.4.0</revision>
+      </Version>
+    </release>
+    <release>
+      <Version>
         <branch>branch-1.3</branch>
         <name>solr-1.3.0</name>
         <created>2008-09-16</created>
