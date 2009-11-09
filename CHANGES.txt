@@ -21,6 +21,33 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
+==================  1.5.0-dev ==================
+Upgrading from Solr 1.4
+----------------------
+
+Versions of Major Components
+---------------------
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+Optimizations
+----------------------
+
+Bug Fixes
+----------------------
+
+Other Changes
+----------------------
+
+Build
+----------------------
+
+Documentation
+----------------------
 
 ================== Release 1.4.0 ==================
 Release Date:  See http://lucene.apache.org/solr for the official release date.
