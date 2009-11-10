@@ -69,25 +69,6 @@ public abstract class PerfTask implements Cloneable {
       name = name.substring(0, name.length() - 4);
     }
   }
-
-  /**
-   * @deprecated will be removed in 3.0. checks if there are any obsolete
-   *             settings, like doc.add.log.step and doc.delete.log.step and
-   *             alerts the user.
-   */
-  private void checkObsoleteSettings(Config config) {
-    if (config.get("doc.add.log.step", null) != null) {
-      throw new RuntimeException("doc.add.log.step is not supported anymore. " +
-      		"Use log.step.AddDoc and refer to CHANGES to read on the recent " +
-      		"API changes done to Benchmark's DocMaker and Task-based logging.");
-    }
-    
-    if (config.get("doc.delete.log.step", null) != null) {
-      throw new RuntimeException("doc.delete.log.step is not supported anymore. " +
-          "Use log.step.DeleteDoc and refer to CHANGES to read on the recent " +
-          "API changes done to Benchmark's DocMaker and Task-based logging.");
-    }
-  }
   
   public PerfTask(PerfRunData runData) {
     this();
@@ -114,7 +95,6 @@ public abstract class PerfTask implements Cloneable {
     if (logStep <= 0) {
       logStep = Integer.MAX_VALUE;
     }
-    checkObsoleteSettings(config);
   }
   
   @Override

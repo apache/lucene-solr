@@ -256,52 +256,11 @@ public abstract class ReadTask extends PerfTask {
   }
 
   /**
-   * @deprecated Use {@link #getBenchmarkHighlighter(Query)}
-   */
-  final Highlighter getHighlighter(Query q) {
-    // not called
-    return null;
-  }
-  
-  /**
    * Return an appropriate highlighter to be used with
    * highlighting tasks
    */
   protected BenchmarkHighlighter getBenchmarkHighlighter(Query q){
     return null;
-  }
-
-  /**
-   * @return the maximum number of highlighter fragments
-   * @deprecated Please define getBenchmarkHighlighter instead
-   */
-  final int maxNumFragments(){
-    // not called -- we switched this method to final to
-    // force any external subclasses to cutover to
-    // getBenchmarkHighlighter instead
-    return 10;
-  }
-
-  /**
-   *
-   * @return true if the highlighter should merge contiguous fragments
-   * @deprecated Please define getBenchmarkHighlighter instead
-   */
-  final boolean isMergeContiguousFragments(){
-    // not called -- we switched this method to final to
-    // force any external subclasses to cutover to
-    // getBenchmarkHighlighter instead
-    return false;
-  }
-
-  /**
-   * @deprecated Please define getBenchmarkHighlighter instead
-   */
-  final int doHighlight(TokenStream ts, String text,  Highlighter highlighter, boolean mergeContiguous, int maxFragments) throws IOException, InvalidTokenOffsetsException {
-    // not called -- we switched this method to final to
-    // force any external subclasses to cutover to
-    // getBenchmarkHighlighter instead
-    return 0;
   }
   
   protected Sort getSort() {

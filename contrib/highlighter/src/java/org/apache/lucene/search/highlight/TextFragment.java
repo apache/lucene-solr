@@ -37,7 +37,10 @@ public class TextFragment
 		this.textStartPos = textStartPos;
 		this.fragNum = fragNum;
 	}
-  /** @deprecated */
+  /** 
+   * @deprecated Use {@link #TextFragment(CharSequence, int, int)} instead.
+   * This constructor will be removed in Lucene 4.0
+   */
 	public TextFragment(StringBuffer markedUpText,int textStartPos, int fragNum)
 	{
 		this.markedUpText=markedUpText;

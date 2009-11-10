@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Properties;
 
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
-import org.apache.lucene.benchmark.byTask.feeds.EnwikiDocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.document.Document;
@@ -125,16 +124,16 @@ public class ExtractWikipedia {
       }
 
     }
-    DocMaker docMaker = new EnwikiDocMaker();
+    DocMaker docMaker = new DocMaker();
     Properties properties = new Properties();
-
+    properties.setProperty("content.source", "org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource");
     properties.setProperty("docs.file", wikipedia.getAbsolutePath());
     properties.setProperty("content.source.forever", "false");
     properties.setProperty("keep.image.only.docs", String.valueOf(keepImageOnlyDocs));
     docMaker.setConfig(new Config(properties));
     docMaker.resetInputs();
     if (wikipedia != null && wikipedia.exists()) {
-      System.out.println("Extracting Wikipedia to: " + outputDir + " using EnwikiDocMaker");
+      System.out.println("Extracting Wikipedia to: " + outputDir + " using EnwikiContentSource");
       outputDir.mkdirs();
       ExtractWikipedia extractor = new ExtractWikipedia(docMaker, outputDir);
       extractor.extract();
@@ -145,9 +144,8 @@ public class ExtractWikipedia {
 
   private static void printUsage() {
     System.err.println("Usage: java -cp <...> org.apache.lucene.benchmark.utils.ExtractWikipedia --input|-i <Path to Wikipedia XML file> " +
-            "[--output|-o <Output Path>] [--discardImageOnlyDocs|-d] [--useLineDocMaker|-l]");
+            "[--output|-o <Output Path>] [--discardImageOnlyDocs|-d]");
     System.err.println("--discardImageOnlyDocs tells the extractor to skip Wiki docs that contain only images");
-    System.err.println("--useLineDocMaker uses the LineDocMaker.  Default is EnwikiDocMaker");
   }
 
 }

@@ -1096,7 +1096,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         Highlighter highlighter = getHighlighter(query, FIELD_NAME, tokenStream,
             HighlighterTest.this);// new Highlighter(this, new
         // QueryTermScorer(query));
-        highlighter.setMaxDocBytesToAnalyze(30);
+        highlighter.setMaxDocCharsToAnalyze(30);
 
         highlighter.getBestFragment(tokenStream, texts[0]);
         assertTrue("Setting MaxDocBytesToAnalyze should have prevented "
@@ -1133,10 +1133,10 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         // new
         // QueryTermScorer(query));
         hg.setTextFragmenter(new NullFragmenter());
-        hg.setMaxDocBytesToAnalyze(100);
+        hg.setMaxDocCharsToAnalyze(100);
         match = hg.getBestFragment(new StandardAnalyzer(TEST_VERSION, stopWords), "data", sb.toString());
         assertTrue("Matched text should be no more than 100 chars in length ", match.length() < hg
-            .getMaxDocBytesToAnalyze());
+            .getMaxDocCharsToAnalyze());
 
         // add another tokenized word to the overrall length - but set way
         // beyond
@@ -1147,7 +1147,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         sb.append(goodWord);
         match = hg.getBestFragment(new StandardAnalyzer(TEST_VERSION, stopWords), "data", sb.toString());
         assertTrue("Matched text should be no more than 100 chars in length ", match.length() < hg
-            .getMaxDocBytesToAnalyze());
+            .getMaxDocCharsToAnalyze());
       }
     };
 

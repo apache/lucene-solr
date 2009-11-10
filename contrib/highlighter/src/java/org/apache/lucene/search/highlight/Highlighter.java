@@ -36,10 +36,7 @@ import org.apache.lucene.util.PriorityQueue;
 public class Highlighter
 {
   public static final int DEFAULT_MAX_CHARS_TO_ANALYZE = 50*1024;
-  /**
-   * @deprecated See {@link #DEFAULT_MAX_CHARS_TO_ANALYZE}
-   */
-	public static final  int DEFAULT_MAX_DOC_BYTES_TO_ANALYZE=DEFAULT_MAX_CHARS_TO_ANALYZE;
+
   private int maxDocCharsToAnalyze = DEFAULT_MAX_CHARS_TO_ANALYZE;
 	private Formatter formatter;
 	private Encoder encoder;
@@ -112,29 +109,6 @@ public class Highlighter
 		return null;
 	}
 
-	/**
-	 * Highlights chosen terms in a text, extracting the most relevant sections.
-	 * This is a convenience method that calls
-	 * {@link #getBestFragments(TokenStream, String, int)}
-	 *
-	 * @param analyzer   the analyzer that will be used to split <code>text</code>
-	 * into chunks
-	 * @param text        	text to highlight terms in
-	 * @param maxNumFragments  the maximum number of fragments.
-	 * @deprecated This method incorrectly hardcodes the choice of fieldname. Use the
-	 * method of the same name that takes a fieldname.
-	 * @return highlighted text fragments (between 0 and maxNumFragments number of fragments)
-	 * @throws InvalidTokenOffsetsException  thrown if any token's endOffset exceeds the provided text's length
-	 */
-	public final String[] getBestFragments(
-		Analyzer analyzer,
-		String text,
-		int maxNumFragments)
-		throws IOException, InvalidTokenOffsetsException
-	{
-		TokenStream tokenStream = analyzer.tokenStream("field", new StringReader(text));
-		return getBestFragments(tokenStream, text, maxNumFragments);
-	}
 	/**
 	 * Highlights chosen terms in a text, extracting the most relevant sections.
 	 * This is a convenience method that calls
@@ -496,27 +470,6 @@ public class Highlighter
 			result.append(sections[i]);
 		}
 		return result.toString();
-	}
-
-	/**
-	 * @return the maximum number of bytes to be tokenized per doc
-   *
-   * @deprecated See {@link #getMaxDocCharsToAnalyze()}, since this value has always counted on chars.  They both set the same internal value, however
-	 */
-	public int getMaxDocBytesToAnalyze()
-	{
-		return maxDocCharsToAnalyze;
-	}
-
-	/**
-	 * @param byteCount the maximum number of bytes to be tokenized per doc
-	 * (This can improve performance with large documents)
-   *
-   * @deprecated See {@link #setMaxDocCharsToAnalyze(int)}, since this value has always counted chars
-	 */
-	public void setMaxDocBytesToAnalyze(int byteCount)
-	{
-		maxDocCharsToAnalyze = byteCount;
 	}
 
   public int getMaxDocCharsToAnalyze() {

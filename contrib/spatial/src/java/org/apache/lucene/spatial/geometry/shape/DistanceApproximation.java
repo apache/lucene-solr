@@ -25,7 +25,7 @@ package org.apache.lucene.spatial.geometry.shape;
  * release.</font>
  *
  * @deprecated This has been replaced with more accurate
- * math in {@link LLRect}.
+ * math in {@link LLRect}. This class will be removed in a future release.
  */
 public class DistanceApproximation
 {
