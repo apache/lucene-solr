@@ -35,8 +35,8 @@ import java.util.concurrent.locks.Lock;
 
 /** Implements search over a set of <code>Searchables</code>.
  *
- * <p>Applications usually need only call the inherited {@link #search(Query)}
- * or {@link #search(Query,Filter)} methods.
+ * <p>Applications usually need only call the inherited {@link #search(Query,int)}
+ * or {@link #search(Query,Filter,int)} methods.
  */
 public class MultiSearcher extends Searcher {
   

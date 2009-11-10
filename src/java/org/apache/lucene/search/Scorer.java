@@ -36,8 +36,6 @@ import java.io.IOException;
  * not valid scores.  Certain collectors (eg {@link
  * TopScoreDocCollector}) will not properly collect hits
  * with these scores.
- *
- * @see BooleanQuery#setAllowDocsOutOfOrder
  */
 public abstract class Scorer extends DocIdSetIterator {
   private Similarity similarity;
@@ -90,7 +88,7 @@ public abstract class Scorer extends DocIdSetIterator {
   }
   
   /** Returns the score of the current document matching the query.
-   * Initially invalid, until {@link #next()} or {@link #skipTo(int)}
+   * Initially invalid, until {@link #nextDoc()} or {@link #advance(int)}
    * is called the first time, or when called from within
    * {@link Collector#collect}.
    */

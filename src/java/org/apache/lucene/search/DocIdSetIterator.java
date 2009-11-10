@@ -32,7 +32,7 @@ public abstract class DocIdSetIterator {
   
   /**
    * When returned by {@link #nextDoc()}, {@link #advance(int)} and
-   * {@link #doc()} it means there are no more docs in the iterator.
+   * {@link #docID()} it means there are no more docs in the iterator.
    */
   public static final int NO_MORE_DOCS = Integer.MAX_VALUE;
 

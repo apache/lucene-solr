@@ -36,7 +36,7 @@ import java.util.Map;
 
  <p> Concrete subclasses of IndexReader are usually constructed with a call to
  one of the static <code>open()</code> methods, e.g. {@link
- #open(String, boolean)}.
+ #open(Directory, boolean)}.
 
  <p> For efficiency, in this API documents are often referred to via
  <i>document numbers</i>, non-negative integers which each name a unique
@@ -1109,7 +1109,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  one commit point.  But if you're using a custom {@link
    *  IndexDeletionPolicy} then there could be many commits.
    *  Once you have a given commit, you can open a reader on
-   *  it by calling {@link IndexReader#open(IndexCommit)}
+   *  it by calling {@link IndexReader#open(IndexCommit,boolean)}
    *  There must be at least one commit in
    *  the Directory, else this method throws {@link
    *  java.io.IOException}.  Note that if a commit is in

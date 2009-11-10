@@ -84,7 +84,7 @@ public interface IndexDeletionPolicy {
    * <p>This method is only called when {@link
    * IndexWriter#commit} or {@link IndexWriter#close} is
    * called, or possibly not at all if the {@link
-   * IndexWriter#abort} is called.
+   * IndexWriter#rollback} is called.
    *
    * <p><u>Note:</u> the last CommitPoint is the most recent one,
    * i.e. the "front index state". Be careful not to delete it,

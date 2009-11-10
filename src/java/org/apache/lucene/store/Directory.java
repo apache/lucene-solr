@@ -47,9 +47,8 @@ public abstract class Directory implements Closeable {
   protected LockFactory lockFactory;
 
   /** Returns an array of strings, one for each file in the
-   *  directory.  Unlike {@link #list} this method does no
-   *  filtering of the contents in a directory, and it will
-   *  never return null (throws IOException instead).
+   *  directory.
+   * @throws IOException
    */
   public abstract String[] listAll() throws IOException;
 

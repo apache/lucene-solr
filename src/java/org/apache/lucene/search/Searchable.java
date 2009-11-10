@@ -53,7 +53,7 @@ public interface Searchable extends Closeable {
    * 
    * <p>
    * Applications should only use this if they need <i>all</i> of the matching
-   * documents. The high-level search API ({@link Searcher#search(Query)}) is
+   * documents. The high-level search API ({@link Searcher#search(Query,int)}) is
    * usually more efficient, as it skips non-high-scoring hits.
    * 
    * @param weight
@@ -93,8 +93,8 @@ public interface Searchable extends Closeable {
   /** Expert: Low-level search implementation.  Finds the top <code>n</code>
    * hits for <code>query</code>, applying <code>filter</code> if non-null.
    *
-   * <p>Applications should usually call {@link Searcher#search(Query)} or
-   * {@link Searcher#search(Query,Filter)} instead.
+   * <p>Applications should usually call {@link Searcher#search(Query,int)} or
+   * {@link Searcher#search(Query,Filter,int)} instead.
    * @throws BooleanQuery.TooManyClauses
    */
   TopDocs search(Weight weight, Filter filter, int n) throws IOException;

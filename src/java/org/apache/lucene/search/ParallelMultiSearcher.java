@@ -36,8 +36,8 @@ import org.apache.lucene.util.PriorityQueue;
 
 /** Implements parallel search over a set of <code>Searchables</code>.
  *
- * <p>Applications usually need only call the inherited {@link #search(Query)}
- * or {@link #search(Query,Filter)} methods.
+ * <p>Applications usually need only call the inherited {@link #search(Query,int)}
+ * or {@link #search(Query,Filter,int)} methods.
  */
 public class ParallelMultiSearcher extends MultiSearcher {
   
@@ -131,7 +131,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
   *
   * <p>Applications should only use this if they need <i>all</i> of the
   * matching documents.  The high-level search API ({@link
-  * Searcher#search(Query)}) is usually more efficient, as it skips
+  * Searcher#search(Query,int)}) is usually more efficient, as it skips
   * non-high-scoring hits.
   * 
   * <p>This method cannot be parallelized, because {@link Collector}

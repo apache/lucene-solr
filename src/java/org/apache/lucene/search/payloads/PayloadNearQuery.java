@@ -43,13 +43,12 @@ import java.util.Iterator;
  * {@link org.apache.lucene.search.spans.TermSpans} occurs.
  * <p/>
  * In order to take advantage of this, you must override
- * {@link org.apache.lucene.search.Similarity#scorePayload(String, byte[],int,int)}
+ * {@link org.apache.lucene.search.Similarity#scorePayload}
  * which returns 1 by default.
  * <p/>
  * Payload scores are aggregated using a pluggable {@link PayloadFunction}.
  * 
- * @see org.apache.lucene.search.Similarity#scorePayload(String, byte[], int,
- *      int)
+ * @see org.apache.lucene.search.Similarity#scorePayload
  */
 public class PayloadNearQuery extends SpanNearQuery {
   protected String fieldName;

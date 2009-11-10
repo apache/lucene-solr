@@ -46,13 +46,13 @@ import java.util.Map;
   An <code>IndexWriter</code> creates and maintains an index.
 
   <p>The <code>create</code> argument to the {@link
-  #IndexWriter(Directory, Analyzer, boolean) constructor} determines 
+  #IndexWriter(Directory, Analyzer, boolean, MaxFieldLength) constructor} determines 
   whether a new index is created, or whether an existing index is
   opened.  Note that you can open an index with <code>create=true</code>
   even while readers are using the index.  The old readers will 
   continue to search the "point in time" snapshot they had opened, 
   and won't see the newly created index until they re-open.  There are
-  also {@link #IndexWriter(Directory, Analyzer) constructors}
+  also {@link #IndexWriter(Directory, Analyzer, MaxFieldLength) constructors}
   with no <code>create</code> argument which will create a new index
   if there is not already an index at the provided path and otherwise 
   open the existing index.</p>

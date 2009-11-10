@@ -118,13 +118,8 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
    * any specific clauses are required (or prohibited).  This number will
    * only be compared against the number of matching optional clauses.
    * </p>
-   * <p>
-   * EXPERT NOTE: Using this method may force collecting docs in order,
-   * regardless of whether setAllowDocsOutOfOrder(true) has been called.
-   * </p>
    *
    * @param min the number of optional clauses that must match
-   * @see #setAllowDocsOutOfOrder
    */
   public void setMinimumNumberShouldMatch(int min) {
     this.minNrShouldMatch = min;
