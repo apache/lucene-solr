@@ -140,6 +140,7 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
     public Document doc(int n, FieldSelector fieldSelector)
         throws CorruptIndexException, IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
