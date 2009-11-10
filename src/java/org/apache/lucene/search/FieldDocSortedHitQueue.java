@@ -32,11 +32,11 @@ import java.util.Locale;
  */
 class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
 
-  volatile SortField[] fields;
+  volatile SortField[] fields = null;
 
   // used in the case where the fields are sorted by locale
   // based strings
-  volatile Collator[] collators;
+  volatile Collator[] collators = null;
 
 
   /**
@@ -44,9 +44,7 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
    * @param fields Fieldable names, in priority order (highest priority first).
    * @param size  The number of hits to retain.  Must be greater than zero.
    */
-  FieldDocSortedHitQueue (SortField[] fields, int size) {
-    this.fields = fields;
-    this.collators = hasCollators (fields);
+  FieldDocSortedHitQueue (int size) {
     initialize (size);
   }
 
@@ -56,10 +54,10 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
    * This is to handle the case using ParallelMultiSearcher where the
    * original list contains AUTO and we don't know the actual sort
    * type until the values come back.  The fields can only be set once.
-   * This method is thread safe.
+   * This method should be synchronized external like all other PQ methods.
    * @param fields
    */
-  synchronized void setFields (SortField[] fields) {
+  void setFields (SortField[] fields) {
     this.fields = fields;
     this.collators = hasCollators (fields);
   }

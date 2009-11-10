@@ -135,6 +135,10 @@ New features
 * LUCENE-1933: Provide a convenience AttributeFactory that creates a
   Token instance for all basic attributes.  (Uwe Schindler)
 
+* LUCENE-2041: Parallelize the rest of ParallelMultiSearcher. Lot's of
+  code refactoring and Java 5 concurrent support in MultiSearcher.
+  (Joey Surls, Simon Willnauer via Uwe Schindler)
+
 Optimizations
 
 * LUCENE-1183: Optimize Levenshtein Distance computation in

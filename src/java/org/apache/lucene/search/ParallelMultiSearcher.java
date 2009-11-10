@@ -18,9 +18,20 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.Callable;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.PriorityQueue;
 
 /** Implements parallel search over a set of <code>Searchables</code>.
@@ -29,69 +40,62 @@ import org.apache.lucene.util.PriorityQueue;
  * or {@link #search(Query,Filter)} methods.
  */
 public class ParallelMultiSearcher extends MultiSearcher {
+  
+  private final ExecutorService executor;
+  private final Searchable[] searchables;
+  private final int[] starts;
 
-  private Searchable[] searchables;
-  private int[] starts;
-
-  /** Creates a searchable which searches <i>searchables</i>. */
+  /** Creates a {@link Searchable} which searches <i>searchables</i>. */
   public ParallelMultiSearcher(Searchable... searchables) throws IOException {
     super(searchables);
     this.searchables = searchables;
     this.starts = getStarts();
+    executor = Executors.newCachedThreadPool(new NamedThreadFactory(this.getClass().getSimpleName())); 
   }
 
   /**
-   * TODO: parallelize this one too
-   */
-  @Override
-  public int docFreq(Term term) throws IOException {
-    return super.docFreq(term);
-  }
-
-  /**
-   * A search implementation which spans a new thread for each
-   * Searchable, waits for each search to complete and merge
+   * Executes each {@link Searchable}'s docFreq() in its own thread and waits for each search to complete and merge
    * the results back together.
    */
   @Override
-  public TopDocs search(Weight weight, Filter filter, int nDocs)
-    throws IOException {
-    HitQueue hq = new HitQueue(nDocs, false);
-    int totalHits = 0;
-    MultiSearcherThread[] msta =
-      new MultiSearcherThread[searchables.length];
+  public int docFreq(final Term term) throws IOException {
+    @SuppressWarnings("unchecked") final Future<Integer>[] searchThreads = new Future[searchables.length];
     for (int i = 0; i < searchables.length; i++) { // search each searchable
-      // Assume not too many searchables and cost of creating a thread is by far inferior to a search
-      msta[i] = new MultiSearcherThread(searchables[i], weight, filter, nDocs,
-          hq, i, starts, "MultiSearcher thread #" + (i + 1));
-      msta[i].start();
+      final Searchable searchable = searchables[i];
+      searchThreads[i] = executor.submit(new Callable<Integer>() {
+        public Integer call() throws IOException {
+          return Integer.valueOf(searchable.docFreq(term));
+        }
+      });
+    }
+    final CountDocFreq func = new CountDocFreq();
+    foreach(func, Arrays.asList(searchThreads));
+    return func.docFreq;
+  }
+
+  /**
+   * A search implementation which executes each 
+   * {@link Searchable} in its own thread and waits for each search to complete and merge
+   * the results back together.
+   */
+  @Override
+  public TopDocs search(Weight weight, Filter filter, int nDocs) throws IOException {
+    final HitQueue hq = new HitQueue(nDocs, false);
+    final Lock lock = new ReentrantLock();
+    @SuppressWarnings("unchecked") final Future<TopDocs>[] searchThreads = new Future[searchables.length];
+    for (int i = 0; i < searchables.length; i++) { // search each searchable
+      searchThreads[i] = executor.submit(
+          new MultiSearcherCallableNoSort(lock, searchables[i], weight, filter, nDocs, hq, i, starts));
     }
 
-    for (int i = 0; i < searchables.length; i++) {
-      try {
-        msta[i].join();
-      } catch (InterruptedException ie) {
-        // In 3.0 we will change this to throw
-        // InterruptedException instead
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(ie);
-      }
-      IOException ioe = msta[i].getIOException();
-      if (ioe == null) {
-        totalHits += msta[i].hits();
-      } else {
-        // if one search produced an IOException, rethrow it
-        throw ioe;
-      }
-    }
+    final CountTotalHits<TopDocs> func = new CountTotalHits<TopDocs>();
+    foreach(func, Arrays.asList(searchThreads));
 
-    ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
+    final ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
     for (int i = hq.size() - 1; i >= 0; i--) // put docs in array
       scoreDocs[i] = hq.pop();
 
-    float maxScore = (totalHits==0) ? Float.NEGATIVE_INFINITY : scoreDocs[0].score;
-    
-    return new TopDocs(totalHits, scoreDocs, maxScore);
+    return new TopDocs(func.totalHits, scoreDocs, func.maxScore);
   }
 
   /**
@@ -100,45 +104,25 @@ public class ParallelMultiSearcher extends MultiSearcher {
    * the results back together.
    */
   @Override
-  public TopFieldDocs search(Weight weight, Filter filter, int nDocs, Sort sort)
-    throws IOException {
-    // don't specify the fields - we'll wait to do this until we get results
-    FieldDocSortedHitQueue hq = new FieldDocSortedHitQueue (null, nDocs);
-    int totalHits = 0;
-    MultiSearcherThread[] msta = new MultiSearcherThread[searchables.length];
+  public TopFieldDocs search(Weight weight, Filter filter, int nDocs, Sort sort) throws IOException {
+    if (sort == null) throw new NullPointerException();
+
+    final FieldDocSortedHitQueue hq = new FieldDocSortedHitQueue(nDocs);
+    final Lock lock = new ReentrantLock();
+    @SuppressWarnings("unchecked") final Future<TopFieldDocs>[] searchThreads = new Future[searchables.length];
     for (int i = 0; i < searchables.length; i++) { // search each searchable
-      // Assume not too many searchables and cost of creating a thread is by far inferior to a search
-      msta[i] = new MultiSearcherThread(searchables[i], weight, filter, nDocs,
-          hq, sort, i, starts, "MultiSearcher thread #" + (i + 1));
-      msta[i].start();
+      searchThreads[i] = executor.submit(
+          new MultiSearcherCallableWithSort(lock, searchables[i], weight, filter, nDocs, hq, sort, i, starts));
     }
 
-    float maxScore=Float.NEGATIVE_INFINITY;
-    
-    for (int i = 0; i < searchables.length; i++) {
-      try {
-        msta[i].join();
-      } catch (InterruptedException ie) {
-        // In 3.0 we will change this to throw
-        // InterruptedException instead
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(ie);
-      }
-      IOException ioe = msta[i].getIOException();
-      if (ioe == null) {
-        totalHits += msta[i].hits();
-        maxScore=Math.max(maxScore, msta[i].getMaxScore());
-      } else {
-        // if one search produced an IOException, rethrow it
-        throw ioe;
-      }
-    }
+    final CountTotalHits<TopFieldDocs> func = new CountTotalHits<TopFieldDocs>();
+    foreach(func, Arrays.asList(searchThreads));
 
-    ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
+    final ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
     for (int i = hq.size() - 1; i >= 0; i--) // put docs in array
       scoreDocs[i] = hq.pop();
 
-    return new TopFieldDocs(totalHits, scoreDocs, hq.getFields(), maxScore);
+    return new TopFieldDocs(func.totalHits, scoreDocs, hq.getFields(), func.maxScore);
   }
 
   /** Lower-level search API.
@@ -149,15 +133,16 @@ public class ParallelMultiSearcher extends MultiSearcher {
   * matching documents.  The high-level search API ({@link
   * Searcher#search(Query)}) is usually more efficient, as it skips
   * non-high-scoring hits.
+  * 
+  * <p>This method cannot be parallelized, because {@link Collector}
+  * supports no concurrent access.
   *
   * @param weight to match documents
   * @param filter if non-null, a bitset used to eliminate some documents
   * @param collector to receive hits
-  * 
-  * TODO: parallelize this one too
   */
   @Override
-  public void search(Weight weight, Filter filter, final Collector collector)
+  public void search(final Weight weight, final Filter filter, final Collector collector)
    throws IOException {
    for (int i = 0; i < searchables.length; i++) {
 
@@ -165,17 +150,17 @@ public class ParallelMultiSearcher extends MultiSearcher {
 
      final Collector hc = new Collector() {
        @Override
-       public void setScorer(Scorer scorer) throws IOException {
+       public void setScorer(final Scorer scorer) throws IOException {
          collector.setScorer(scorer);
        }
        
        @Override
-       public void collect(int doc) throws IOException {
+       public void collect(final int doc) throws IOException {
          collector.collect(doc);
        }
        
        @Override
-       public void setNextReader(IndexReader reader, int docBase) throws IOException {
+       public void setNextReader(final IndexReader reader, final int docBase) throws IOException {
          collector.setNextReader(reader, start + docBase);
        }
        
@@ -188,117 +173,60 @@ public class ParallelMultiSearcher extends MultiSearcher {
      searchables[i].search(weight, filter, hc);
    }
   }
-
-  /*
-   * TODO: this one could be parallelized too
-   * @see org.apache.lucene.search.Searchable#rewrite(org.apache.lucene.search.Query)
-   */
-  @Override
-  public Query rewrite(Query original) throws IOException {
-    return super.rewrite(original);
-  }
-
-}
-
-/**
- * A thread subclass for searching a single searchable 
- */
-class MultiSearcherThread extends Thread {
-
-  private Searchable searchable;
-  private Weight weight;
-  private Filter filter;
-  private int nDocs;
-  private TopDocs docs;
-  private int i;
-  private PriorityQueue<? extends ScoreDoc> hq;
-  private int[] starts;
-  private IOException ioe;
-  private Sort sort;
-
-  public MultiSearcherThread(Searchable searchable, Weight weight, Filter filter,
-      int nDocs, HitQueue hq, int i, int[] starts, String name) {
-    super(name);
-    this.searchable = searchable;
-    this.weight = weight;
-    this.filter = filter;
-    this.nDocs = nDocs;
-    this.hq = hq;
-    this.i = i;
-    this.starts = starts;
-  }
-
-  public MultiSearcherThread(Searchable searchable, Weight weight,
-      Filter filter, int nDocs, FieldDocSortedHitQueue hq, Sort sort, int i,
-      int[] starts, String name) {
-    super(name);
-    this.searchable = searchable;
-    this.weight = weight;
-    this.filter = filter;
-    this.nDocs = nDocs;
-    this.hq = hq;
-    this.i = i;
-    this.starts = starts;
-    this.sort = sort;
-  }
-
-  @Override
-  @SuppressWarnings ("unchecked")
-  public void run() {
-    try {
-      docs = (sort == null) ? searchable.search (weight, filter, nDocs)
-        : searchable.search (weight, filter, nDocs, sort);
-    }
-    // Store the IOException for later use by the caller of this thread
-    catch (IOException ioe) {
-      this.ioe = ioe;
-    }
-    if (ioe == null) {
-      if (sort != null) {
-        TopFieldDocs docsFields = (TopFieldDocs) docs;
-        // If one of the Sort fields is FIELD_DOC, need to fix its values, so that
-        // it will break ties by doc Id properly. Otherwise, it will compare to
-        // 'relative' doc Ids, that belong to two different searchables.
-        for (int j = 0; j < docsFields.fields.length; j++) {
-          if (docsFields.fields[j].getType() == SortField.DOC) {
-            // iterate over the score docs and change their fields value
-            for (int j2 = 0; j2 < docs.scoreDocs.length; j2++) {
-              FieldDoc fd = (FieldDoc) docs.scoreDocs[j2];
-              fd.fields[j] = Integer.valueOf(((Integer) fd.fields[j]).intValue() + starts[i]);
-            }
-            break;
-          }
-        }
-
-        ((FieldDocSortedHitQueue) hq).setFields(docsFields.fields);
-      }
-      ScoreDoc[] scoreDocs = docs.scoreDocs;
-      for (int j = 0;
-           j < scoreDocs.length;
-           j++) { // merge scoreDocs into hq
-        ScoreDoc scoreDoc = scoreDocs[j];
-        scoreDoc.doc += starts[i]; // convert doc 
-        //it would be so nice if we had a thread-safe insert 
-        synchronized (hq) {
-          // this cast is bad, because we assume that the list has correct type.
-          // Because of that we have the @SuppressWarnings :-(
-          if (scoreDoc == ((PriorityQueue<ScoreDoc>) hq).insertWithOverflow(scoreDoc))
-            break;
-        } // no more scores > minScore
-      }
-    }
-  }
-
-  public int hits() {
-    return docs.totalHits;
-  }
-
-  public float getMaxScore() {
-      return docs.getMaxScore();
-  }
   
-  public IOException getIOException() {
-    return ioe;
+  /*
+   * apply the function to each element of the list. This method encapsulates the logic how 
+   * to wait for concurrently executed searchables.  
+   */
+  private <T> void foreach(Function<T> func, List<Future<T>> list) throws IOException{
+    for (Future<T> future : list) {
+      try{
+        func.apply(future.get());
+      } catch (ExecutionException e) {
+        if (e.getCause() instanceof IOException)
+          throw (IOException) e.getCause();
+        throw new RuntimeException(e.getCause());
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        // In 3.0 we will change this to throw
+        // InterruptedException instead
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  // Both functions could be reduced to Int as other values of TopDocs
+  // are not needed. Using sep. functions is more self documenting.
+  /**
+   * A function with one argument
+   * @param <T> the argument type
+   */
+  private static interface Function<T> {
+    abstract void apply(T t);
+  }
+
+  /**
+   * Counts the total number of hits for all {@link TopDocs} instances
+   * provided. 
+   */
+  private static final class CountTotalHits<T extends TopDocs> implements Function<T> {
+    int totalHits = 0;
+    float maxScore = Float.NEGATIVE_INFINITY;
+    
+    public void apply(T t) {
+      totalHits += t.totalHits;
+      maxScore = Math.max(maxScore, t.getMaxScore());
+    }
+  }
+  /**
+   * Accumulates the document frequency for a term.
+   */
+  private static final class CountDocFreq implements Function<Integer>{
+    int docFreq = 0;
+    
+    public void apply(Integer t) {
+      docFreq += t.intValue();
+    }
   }
 
 }

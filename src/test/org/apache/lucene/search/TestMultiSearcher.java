@@ -396,6 +396,19 @@ public class TestMultiSearcher extends LuceneTestCase
         
         // The scores from the IndexSearcher and Multisearcher should be the same
         // if the same similarity is used.
-        assertEquals("MultiSearcher score must be equal to single esrcher score!", score1, scoreN, 1e-6);
+        assertEquals("MultiSearcher score must be equal to single searcher score!", score1, scoreN, 1e-6);
+    }
+    
+    public void testDocFreq() throws IOException{
+      RAMDirectory dir1 = new RAMDirectory();
+      RAMDirectory dir2 = new RAMDirectory();
+
+      initIndex(dir1, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
+      initIndex(dir2, 5, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
+      IndexSearcher searcher1 = new IndexSearcher(dir1, true);
+      IndexSearcher searcher2 = new IndexSearcher(dir2, true);
+      
+      MultiSearcher multiSearcher = getMultiSearcherInstance(new Searcher[]{searcher1, searcher2});
+      assertEquals(15, multiSearcher.docFreq(new Term("contents","x")));
     }
 }

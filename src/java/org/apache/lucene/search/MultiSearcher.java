@@ -23,12 +23,15 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.DummyConcurrentLock;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.locks.Lock;
 
 /** Implements search over a set of <code>Searchables</code>.
  *
@@ -43,8 +46,8 @@ public class MultiSearcher extends Searcher {
    * initialize Weights.
    */
   private static class CachedDfSource extends Searcher {
-    private Map<Term,Integer> dfMap; // Map from Terms to corresponding doc freqs
-    private int maxDoc; // document count
+    private final Map<Term,Integer> dfMap; // Map from Terms to corresponding doc freqs
+    private final int maxDoc; // document count
 
     public CachedDfSource(Map<Term,Integer> dfMap, int maxDoc, Similarity similarity) {
       this.dfMap = dfMap;
@@ -66,7 +69,7 @@ public class MultiSearcher extends Searcher {
 
     @Override
     public int[] docFreqs(Term[] terms) {
-      int[] result = new int[terms.length];
+      final int[] result = new int[terms.length];
       for (int i = 0; i < terms.length; i++) {
         result[i] = docFreq(terms[i]);
       }
@@ -97,8 +100,9 @@ public class MultiSearcher extends Searcher {
       throw new UnsupportedOperationException();
     }
     
+    @Override
     public Document doc(int i, FieldSelector fieldSelector) {
-        throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException();
     }
 
     @Override
@@ -197,22 +201,16 @@ public class MultiSearcher extends Searcher {
   public TopDocs search(Weight weight, Filter filter, int nDocs)
       throws IOException {
 
-    HitQueue hq = new HitQueue(nDocs, false);
+    final HitQueue hq = new HitQueue(nDocs, false);
     int totalHits = 0;
 
     for (int i = 0; i < searchables.length; i++) { // search each searcher
-      TopDocs docs = searchables[i].search(weight, filter, nDocs);
-      totalHits += docs.totalHits;		  // update totalHits
-      ScoreDoc[] scoreDocs = docs.scoreDocs;
-      for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
-        ScoreDoc scoreDoc = scoreDocs[j];
-        scoreDoc.doc += starts[i];                // convert doc
-        if(scoreDoc == hq.insertWithOverflow(scoreDoc))
-          break;                                // no more scores > minScore
-      }
+      final TopDocs docs = new MultiSearcherCallableNoSort(DummyConcurrentLock.INSTANCE,
+        searchables[i], weight, filter, nDocs, hq, i, starts).call();
+      totalHits += docs.totalHits; // update totalHits
     }
 
-    ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
+    final ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
     for (int i = hq.size()-1; i >= 0; i--)	  // put docs in array
       scoreDocs[i] = hq.pop();
     
@@ -222,41 +220,20 @@ public class MultiSearcher extends Searcher {
   }
 
   @Override
-  public TopFieldDocs search (Weight weight, Filter filter, int n, Sort sort)
-  throws IOException {
-    FieldDocSortedHitQueue hq = null;
+  public TopFieldDocs search (Weight weight, Filter filter, int n, Sort sort) throws IOException {
+    FieldDocSortedHitQueue hq = new FieldDocSortedHitQueue(n);
     int totalHits = 0;
 
     float maxScore=Float.NEGATIVE_INFINITY;
     
     for (int i = 0; i < searchables.length; i++) { // search each searcher
-      TopFieldDocs docs = searchables[i].search (weight, filter, n, sort);
-      // If one of the Sort fields is FIELD_DOC, need to fix its values, so that
-      // it will break ties by doc Id properly. Otherwise, it will compare to
-      // 'relative' doc Ids, that belong to two different searchers.
-      for (int j = 0; j < docs.fields.length; j++) {
-        if (docs.fields[j].getType() == SortField.DOC) {
-          // iterate over the score docs and change their fields value
-          for (int j2 = 0; j2 < docs.scoreDocs.length; j2++) {
-            FieldDoc fd = (FieldDoc) docs.scoreDocs[j2];
-            fd.fields[j] = Integer.valueOf(((Integer) fd.fields[j]).intValue() + starts[i]);
-          }
-          break;
-        }
-      }
-      if (hq == null) hq = new FieldDocSortedHitQueue (docs.fields, n);
-      totalHits += docs.totalHits;		  // update totalHits
+      final TopFieldDocs docs = new MultiSearcherCallableWithSort(DummyConcurrentLock.INSTANCE,
+        searchables[i], weight, filter, n, hq, sort, i, starts).call();
+      totalHits += docs.totalHits; // update totalHits
       maxScore = Math.max(maxScore, docs.getMaxScore());
-      ScoreDoc[] scoreDocs = docs.scoreDocs;
-      for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
-        ScoreDoc scoreDoc = scoreDocs[j];
-        scoreDoc.doc += starts[i];                // convert doc
-        if (scoreDoc == hq.insertWithOverflow((FieldDoc) scoreDoc))
-          break;                                  // no more scores > minScore
-      }
     }
 
-    ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
+    final ScoreDoc[] scoreDocs = new ScoreDoc[hq.size()];
     for (int i = hq.size() - 1; i >= 0; i--)	  // put docs in array
       scoreDocs[i] =  hq.pop();
 
@@ -296,7 +273,7 @@ public class MultiSearcher extends Searcher {
 
   @Override
   public Query rewrite(Query original) throws IOException {
-    Query[] queries = new Query[searchables.length];
+    final Query[] queries = new Query[searchables.length];
     for (int i = 0; i < searchables.length; i++) {
       queries[i] = searchables[i].rewrite(original);
     }
@@ -305,7 +282,7 @@ public class MultiSearcher extends Searcher {
 
   @Override
   public Explanation explain(Weight weight, int doc) throws IOException {
-    int i = subSearcher(doc);			  // find searcher index
+    final int i = subSearcher(doc);			  // find searcher index
     return searchables[i].explain(weight, doc - starts[i]); // dispatch to searcher
   }
 
@@ -327,14 +304,14 @@ public class MultiSearcher extends Searcher {
   @Override
   protected Weight createWeight(Query original) throws IOException {
     // step 1
-    Query rewrittenQuery = rewrite(original);
+    final Query rewrittenQuery = rewrite(original);
 
     // step 2
-    Set<Term> terms = new HashSet<Term>();
+    final Set<Term> terms = new HashSet<Term>();
     rewrittenQuery.extractTerms(terms);
 
     // step3
-    Term[] allTermsArray = new Term[terms.size()];
+    final Term[] allTermsArray = new Term[terms.size()];
     terms.toArray(allTermsArray);
     int[] aggregatedDfs = new int[terms.size()];
     for (int i = 0; i < searchables.length; i++) {
@@ -344,16 +321,129 @@ public class MultiSearcher extends Searcher {
       }
     }
 
-    HashMap<Term,Integer> dfMap = new HashMap<Term,Integer>();
+    final HashMap<Term,Integer> dfMap = new HashMap<Term,Integer>();
     for(int i=0; i<allTermsArray.length; i++) {
       dfMap.put(allTermsArray[i], Integer.valueOf(aggregatedDfs[i]));
     }
 
     // step4
-    int numDocs = maxDoc();
-    CachedDfSource cacheSim = new CachedDfSource(dfMap, numDocs, getSimilarity());
+    final int numDocs = maxDoc();
+    final CachedDfSource cacheSim = new CachedDfSource(dfMap, numDocs, getSimilarity());
 
     return rewrittenQuery.weight(cacheSim);
+  }
+
+  /**
+   * A thread subclass for searching a single searchable 
+   */
+  static class MultiSearcherCallableNoSort implements Callable<TopDocs> {
+
+    private final Lock lock;
+    private final Searchable searchable;
+    private final Weight weight;
+    private final Filter filter;
+    private final int nDocs;
+    private final int i;
+    private final HitQueue hq;
+    private final int[] starts;
+
+    public MultiSearcherCallableNoSort(Lock lock, Searchable searchable, Weight weight,
+        Filter filter, int nDocs, HitQueue hq, int i, int[] starts) {
+      this.lock = lock;
+      this.searchable = searchable;
+      this.weight = weight;
+      this.filter = filter;
+      this.nDocs = nDocs;
+      this.hq = hq;
+      this.i = i;
+      this.starts = starts;
+    }
+
+    public TopDocs call() throws IOException {
+      final TopDocs docs = searchable.search (weight, filter, nDocs);
+      final ScoreDoc[] scoreDocs = docs.scoreDocs;
+      for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
+        final ScoreDoc scoreDoc = scoreDocs[j];
+        scoreDoc.doc += starts[i]; // convert doc 
+        //it would be so nice if we had a thread-safe insert 
+        lock.lock();
+        try {
+          if (scoreDoc == hq.insertWithOverflow(scoreDoc))
+            break;
+        } finally {
+          lock.unlock();
+        }
+      }
+      return docs;
+    }
+  }
+
+  /**
+   * A thread subclass for searching a single searchable 
+   */
+  static class MultiSearcherCallableWithSort implements Callable<TopFieldDocs> {
+
+    private final Lock lock;
+    private final Searchable searchable;
+    private final Weight weight;
+    private final Filter filter;
+    private final int nDocs;
+    private final int i;
+    private final FieldDocSortedHitQueue hq;
+    private final int[] starts;
+    private final Sort sort;
+
+    public MultiSearcherCallableWithSort(Lock lock, Searchable searchable, Weight weight,
+        Filter filter, int nDocs, FieldDocSortedHitQueue hq, Sort sort, int i, int[] starts) {
+      this.lock = lock;
+      this.searchable = searchable;
+      this.weight = weight;
+      this.filter = filter;
+      this.nDocs = nDocs;
+      this.hq = hq;
+      this.i = i;
+      this.starts = starts;
+      this.sort = sort;
+    }
+
+    public TopFieldDocs call() throws IOException {
+      final TopFieldDocs docs = searchable.search (weight, filter, nDocs, sort);
+      // If one of the Sort fields is FIELD_DOC, need to fix its values, so that
+      // it will break ties by doc Id properly. Otherwise, it will compare to
+      // 'relative' doc Ids, that belong to two different searchables.
+      for (int j = 0; j < docs.fields.length; j++) {
+        if (docs.fields[j].getType() == SortField.DOC) {
+          // iterate over the score docs and change their fields value
+          for (int j2 = 0; j2 < docs.scoreDocs.length; j2++) {
+            FieldDoc fd = (FieldDoc) docs.scoreDocs[j2];
+            fd.fields[j] = Integer.valueOf(((Integer) fd.fields[j]).intValue() + starts[i]);
+          }
+          break;
+        }
+      }
+
+      lock.lock();
+      try {
+        hq.setFields(docs.fields);
+      } finally {
+        lock.unlock();
+      }
+
+      final ScoreDoc[] scoreDocs = docs.scoreDocs;
+      for (int j = 0; j < scoreDocs.length; j++) { // merge scoreDocs into hq
+        final FieldDoc fieldDoc = (FieldDoc) scoreDocs[j];
+        fieldDoc.doc += starts[i]; // convert doc 
+        //it would be so nice if we had a thread-safe insert 
+        lock.lock();
+        try {
+          if (fieldDoc == hq.insertWithOverflow(fieldDoc))
+            break;
+        } finally {
+          lock.unlock();
+        }
+      }
+      return docs;
+    }
   }
 
 }
