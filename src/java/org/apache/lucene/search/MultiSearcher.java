@@ -170,6 +170,7 @@ public class MultiSearcher extends Searcher {
   }
 
   // inherit javadoc
+  @Override
   public Document doc(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     int i = subSearcher(n);			  // find searcher index
     return searchables[i].doc(n - starts[i], fieldSelector);	  // dispatch to searcher

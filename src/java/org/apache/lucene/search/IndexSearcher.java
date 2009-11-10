@@ -135,6 +135,7 @@ public class IndexSearcher extends Searcher {
   }
   
   // inherit javadoc
+  @Override
   public Document doc(int i, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
 	    return reader.document(i, fieldSelector);
   }
