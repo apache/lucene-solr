@@ -29,10 +29,10 @@ import org.w3c.dom.Element;
  */
 public class QueryBuilderFactory implements QueryBuilder {
 
-	HashMap builders=new HashMap();
+	HashMap<String,QueryBuilder> builders=new HashMap<String,QueryBuilder>();
 	
 	public Query getQuery(Element n) throws ParserException {
-		QueryBuilder builder=(QueryBuilder) builders.get(n.getNodeName());
+		QueryBuilder builder= builders.get(n.getNodeName());
 		if(builder==null)
 		{
 			throw new ParserException("No QueryObjectBuilder defined for node "+n.getNodeName()); 
@@ -45,7 +45,7 @@ public class QueryBuilderFactory implements QueryBuilder {
 	}
 	public QueryBuilder getQueryBuilder(String nodeName)
 	{
-		return (QueryBuilder) builders.get(nodeName);		
+		return builders.get(nodeName);		
 	}
 	
 }

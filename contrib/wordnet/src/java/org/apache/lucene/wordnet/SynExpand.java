@@ -110,8 +110,8 @@ public final class SynExpand {
 								final float boost)
 		throws IOException
 	{
-		final Set already = new HashSet(); // avoid dups 
-		List top = new LinkedList(); // needs to be separately listed..
+		final Set<String> already = new HashSet<String>(); // avoid dups 
+		List<String> top = new LinkedList<String>(); // needs to be separately listed..
 		final String field = ( f == null) ? "contents" : f;
 		if ( a == null) a = new StandardAnalyzer(Version.LUCENE_CURRENT);
 
@@ -127,7 +127,7 @@ public final class SynExpand {
 		final BooleanQuery tmp = new BooleanQuery();
 		
 		// [2] form query
-		Iterator it = top.iterator();
+		Iterator<String> it = top.iterator();
 		while ( it.hasNext())
 		{
 			// [2a] add to level words in

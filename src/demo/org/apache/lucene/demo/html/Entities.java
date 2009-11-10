@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Entities {
-  static final Map decoder = new HashMap(300);
+  static final Map<String,String> decoder = new HashMap<String,String>(300);
   static final String[]  encoder = new String[0x100];
 
   static final String decode(String entity) {

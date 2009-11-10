@@ -53,7 +53,7 @@ public class CachedFilterBuilder implements FilterBuilder {
 	private QueryBuilderFactory queryFactory;
 	private FilterBuilderFactory filterFactory;
 	
-    private  LRUCache filterCache = null;
+    private  LRUCache<Object,Filter> filterCache = null;
 
 	private int cacheSize;
 
@@ -72,7 +72,7 @@ public class CachedFilterBuilder implements FilterBuilder {
 
 		if (filterCache == null)
 		{
-			filterCache = new LRUCache(cacheSize);
+			filterCache = new LRUCache<Object,Filter>(cacheSize);
 		}
 
 		// Test to see if child Element is a query or filter that needs to be
@@ -90,7 +90,7 @@ public class CachedFilterBuilder implements FilterBuilder {
 			f = filterFactory.getFilter(childElement);
 			cacheKey = f;
 		}
-		Filter cachedFilter = (Filter) filterCache.get(cacheKey);
+		Filter cachedFilter = filterCache.get(cacheKey);
 		if (cachedFilter != null)
 		{
 			return cachedFilter; // cache hit
@@ -109,7 +109,7 @@ public class CachedFilterBuilder implements FilterBuilder {
 		return cachedFilter;
 	}
 	
-	static class LRUCache extends java.util.LinkedHashMap
+	static class LRUCache<K,V> extends java.util.LinkedHashMap<K,V>
 	{
 	    public LRUCache(int maxsize)
 	    {
@@ -120,7 +120,7 @@ public class CachedFilterBuilder implements FilterBuilder {
 	    protected int maxsize;
 
 	    @Override
-	    protected boolean removeEldestEntry(Entry eldest)
+	    protected boolean removeEldestEntry(Entry<K,V> eldest)
 	    {
 	        return size() > maxsize;
 	    }

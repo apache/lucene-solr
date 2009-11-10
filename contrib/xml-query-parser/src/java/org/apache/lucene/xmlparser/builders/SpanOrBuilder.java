@@ -41,7 +41,7 @@ public class SpanOrBuilder extends SpanBuilderBase
     
 	public SpanQuery getSpanQuery(Element e) throws ParserException
 	{
-	    ArrayList clausesList=new ArrayList();
+	    ArrayList<SpanQuery> clausesList=new ArrayList<SpanQuery>();
 		for (Node kid = e.getFirstChild(); kid != null; kid = kid.getNextSibling())
 		{
 			if (kid.getNodeType() == Node.ELEMENT_NODE) 
@@ -50,7 +50,7 @@ public class SpanOrBuilder extends SpanBuilderBase
 				clausesList.add(clause);				
 			}
 		}	    
-		SpanQuery[] clauses=(SpanQuery[]) clausesList.toArray(new SpanQuery[clausesList.size()]);
+		SpanQuery[] clauses= clausesList.toArray(new SpanQuery[clausesList.size()]);
 		SpanOrQuery soq = new SpanOrQuery(clauses);		
 		soq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
 		return soq;

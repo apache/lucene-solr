@@ -41,7 +41,7 @@ public class SpanNearBuilder extends SpanBuilderBase
  		String slopString=DOMUtils.getAttributeOrFail(e,"slop");
   		int slop=Integer.parseInt(slopString);
 		boolean inOrder=DOMUtils.getAttribute(e,"inOrder",false);
-		ArrayList spans=new ArrayList();
+		ArrayList<SpanQuery> spans=new ArrayList<SpanQuery>();
 		for (Node kid = e.getFirstChild(); kid != null; kid = kid.getNextSibling())
 		{
 				if (kid.getNodeType() == Node.ELEMENT_NODE) 
@@ -49,7 +49,7 @@ public class SpanNearBuilder extends SpanBuilderBase
 					spans.add(factory.getSpanQuery((Element) kid));
 				}
 		}
-		SpanQuery[] spanQueries=(SpanQuery[]) spans.toArray(new SpanQuery[spans.size()]);
+		SpanQuery[] spanQueries= spans.toArray(new SpanQuery[spans.size()]);
 		SpanNearQuery snq=new SpanNearQuery(spanQueries,slop,inOrder);
 		return snq;
 	}

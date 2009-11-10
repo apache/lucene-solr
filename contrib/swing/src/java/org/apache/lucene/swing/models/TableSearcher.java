@@ -82,7 +82,7 @@ public class TableSearcher extends AbstractTableModel {
      * these keeps reference to the decorated table model for data
      * only rows that match the search criteria are linked
      */
-    private ArrayList rowToModelIndex = new ArrayList();
+    private ArrayList<Integer> rowToModelIndex = new ArrayList<Integer>();
 
 
     //Lucene stuff.
@@ -285,7 +285,7 @@ public class TableSearcher extends AbstractTableModel {
     }
 
     private int getModelRow(int row){
-        return ((Integer) rowToModelIndex.get(row)).intValue();
+        return rowToModelIndex.get(row);
     }
 
     /**
@@ -297,7 +297,7 @@ public class TableSearcher extends AbstractTableModel {
         searchString = null;
         rowToModelIndex.clear();
         for (int t=0; t<tableModel.getRowCount(); t++){
-            rowToModelIndex.add(Integer.valueOf(t));
+            rowToModelIndex.add(t);
         }
     }
 
@@ -316,7 +316,7 @@ public class TableSearcher extends AbstractTableModel {
     }
 
     @Override
-    public Class getColumnClass(int column) {
+    public Class<?> getColumnClass(int column) {
         return tableModel.getColumnClass(column);
     }
 

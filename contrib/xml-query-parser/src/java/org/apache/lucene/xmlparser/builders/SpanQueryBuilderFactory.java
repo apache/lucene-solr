@@ -28,7 +28,7 @@ import org.w3c.dom.Element;
  */
 public class SpanQueryBuilderFactory implements SpanQueryBuilder {
 
-	HashMap builders=new HashMap();
+	HashMap<String,SpanQueryBuilder> builders=new HashMap<String,SpanQueryBuilder>();
 	
 	public Query getQuery(Element e) throws ParserException {
 		return getSpanQuery(e);
@@ -39,7 +39,7 @@ public class SpanQueryBuilderFactory implements SpanQueryBuilder {
 	}
 	public SpanQuery getSpanQuery(Element e) throws ParserException
 	{
-		SpanQueryBuilder builder=(SpanQueryBuilder) builders.get(e.getNodeName());
+		SpanQueryBuilder builder= builders.get(e.getNodeName());
 		if(builder==null)
 		{
 			throw new ParserException("No SpanQueryObjectBuilder defined for node "+e.getNodeName()); 

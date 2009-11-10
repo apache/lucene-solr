@@ -70,10 +70,10 @@ public class LikeThisQueryBuilder implements QueryBuilder {
 		//TODO MoreLikeThis needs to ideally have per-field stopWords lists - until then 
 		//I use all analyzers/fields to generate multi-field compatible stop list
 		String stopWords=e.getAttribute("stopWords");
-		Set stopWordsSet=null;
+		Set<String> stopWordsSet=null;
 		if((stopWords!=null)&&(fields!=null))
 		{
-		    stopWordsSet=new HashSet();
+		    stopWordsSet=new HashSet<String>();
 		    for (int i = 0; i < fields.length; i++)
             {
                 TokenStream ts = analyzer.tokenStream(fields[i],new StringReader(stopWords));

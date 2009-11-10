@@ -51,7 +51,7 @@ public class ListSearcher extends AbstractListModel {
      * The reference links between the decorated ListModel
      * and this list model based on search criteria
      */
-    private ArrayList rowToModelIndex = new ArrayList();
+    private ArrayList<Integer> rowToModelIndex = new ArrayList<Integer>();
 
     /**
      * In memory lucene index
@@ -256,12 +256,12 @@ public class ListSearcher extends AbstractListModel {
         searchString = null;
         rowToModelIndex.clear();
         for (int t=0; t<listModel.getSize(); t++){
-            rowToModelIndex.add(Integer.valueOf(t));
+            rowToModelIndex.add(t);
         }
     }
 
     private int getModelRow(int row){
-        return ((Integer) rowToModelIndex.get(row)).intValue();
+        return rowToModelIndex.get(row);
     }
 
     public int getSize() {

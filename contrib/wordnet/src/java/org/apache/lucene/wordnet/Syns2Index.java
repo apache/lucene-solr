@@ -131,9 +131,9 @@ public class Syns2Index
         String line;
 
         // maps a word to all the "groups" it's in
-        final Map word2Nums = new TreeMap();
+        final Map<String,List<String>> word2Nums = new TreeMap<String,List<String>>();
         // maps a group to all the words in it
-        final Map num2Words = new TreeMap();
+        final Map<String,List<String>> num2Words = new TreeMap<String,List<String>>();
         // number of rejected words
         int ndecent = 0;
 
@@ -177,10 +177,10 @@ public class Syns2Index
 
             // 1/2: word2Nums map
             // append to entry or add new one
-            List lis =(List) word2Nums.get(word);
+            List<String> lis = word2Nums.get(word);
             if (lis == null)
             {
-                lis = new LinkedList();
+                lis = new LinkedList<String>();
                 lis.add(num);
                 word2Nums.put(word, lis);
             }
@@ -188,10 +188,10 @@ public class Syns2Index
                 lis.add(num);
 
             // 2/2: num2Words map
-            lis = (List) num2Words.get(num);
+            lis = num2Words.get(num);
             if (lis == null)
             {
-                lis = new LinkedList();
+                lis = new LinkedList<String>();
                 lis.add(word);
                 num2Words.put(num, lis);
             }
@@ -236,7 +236,7 @@ public class Syns2Index
      * @param word2Nums
      * @param num2Words
      */
-    private static void index(String indexDir, Map word2Nums, Map num2Words)
+    private static void index(String indexDir, Map<String,List<String>> word2Nums, Map<String,List<String>> num2Words)
         throws Throwable
     {
         int row = 0;
@@ -247,10 +247,10 @@ public class Syns2Index
           // override the specific index if it already exists
           IndexWriter writer = new IndexWriter(dir, ana, true, IndexWriter.MaxFieldLength.LIMITED);
           writer.setUseCompoundFile(true); // why?
-          Iterator i1 = word2Nums.keySet().iterator();
+          Iterator<String> i1 = word2Nums.keySet().iterator();
           while (i1.hasNext()) // for each word
           {
-              String g = (String) i1.next();
+              String g = i1.next();
               Document doc = new Document();
 
               int n = index(word2Nums, num2Words, g, doc);
@@ -276,25 +276,25 @@ public class Syns2Index
     /**
      * Given the 2 maps fills a document for 1 word.
      */
-    private static int index(Map word2Nums, Map num2Words, String g, Document doc)
+    private static int index(Map<String,List<String>> word2Nums, Map<String,List<String>> num2Words, String g, Document doc)
         throws Throwable
     {
-        List keys = (List) word2Nums.get(g); // get list of key#'s
-        Iterator i2 = keys.iterator();
+        List<String> keys = word2Nums.get(g); // get list of key#'s
+        Iterator<String> i2 = keys.iterator();
 
-        Set already = new TreeSet(); // keep them sorted
+        Set<String> already = new TreeSet<String>(); // keep them sorted
 
         // pass 1: fill up 'already' with all words
         while (i2.hasNext()) // for each key#
         {
-            already.addAll((List) num2Words.get(i2.next())); // get list of words
+            already.addAll(num2Words.get(i2.next())); // get list of words
         }
         int num = 0;
         already.remove(g); // of course a word is it's own syn
-        Iterator it = already.iterator();
+        Iterator<String> it = already.iterator();
         while (it.hasNext())
         {
-            String cur = (String) it.next();
+            String cur = it.next();
             // don't store things like 'pit bull' -> 'american pit bull'
             if (!isDecent(cur))
             {

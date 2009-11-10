@@ -29,10 +29,10 @@ import org.w3c.dom.Element;
  */
 public class FilterBuilderFactory implements FilterBuilder {
 
-	HashMap builders=new HashMap();
+	HashMap<String,FilterBuilder> builders=new HashMap<String,FilterBuilder>();
 	
 	public Filter getFilter(Element n) throws ParserException {
-		FilterBuilder builder=(FilterBuilder) builders.get(n.getNodeName());
+		FilterBuilder builder= builders.get(n.getNodeName());
 		if(builder==null)
 		{
 			throw new ParserException("No FilterBuilder defined for node "+n.getNodeName()); 
@@ -45,6 +45,6 @@ public class FilterBuilderFactory implements FilterBuilder {
 	}
 	public FilterBuilder getFilterBuilder(String nodeName)
 	{
-		return (FilterBuilder) builders.get(nodeName);		
+		return builders.get(nodeName);		
 	}	
 }

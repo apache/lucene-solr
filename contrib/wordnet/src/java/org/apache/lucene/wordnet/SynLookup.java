@@ -120,8 +120,8 @@ public class SynLookup {
 								final float boost)
 		throws IOException
 	{
-		final Set already = new HashSet(); // avoid dups		
-		List top = new LinkedList(); // needs to be separately listed..
+		final Set<String> already = new HashSet<String>(); // avoid dups		
+		List<String> top = new LinkedList<String>(); // needs to be separately listed..
 
 		// [1] Parse query into separate words so that when we expand we can avoid dups
 		TokenStream ts = a.tokenStream( field, new StringReader( query));
@@ -135,11 +135,11 @@ public class SynLookup {
 		final BooleanQuery tmp = new BooleanQuery();
 		
 		// [2] form query
-		Iterator it = top.iterator();
+		Iterator<String> it = top.iterator();
 		while ( it.hasNext())
 		{
 			// [2a] add to level words in
-			String word = (String) it.next();
+			String word = it.next();
 			TermQuery tq = new TermQuery( new Term( field, word));
 			tmp.add( tq, BooleanClause.Occur.SHOULD);
 

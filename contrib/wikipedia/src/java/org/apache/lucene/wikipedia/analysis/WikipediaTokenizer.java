@@ -115,8 +115,8 @@ public final class WikipediaTokenizer extends Tokenizer {
   private final WikipediaTokenizerImpl scanner;
 
   private int tokenOutput = TOKENS_ONLY;
-  private Set untokenizedTypes = Collections.EMPTY_SET;
-  private Iterator tokens = null;
+  private Set<String> untokenizedTypes = Collections.emptySet();
+  private Iterator<AttributeSource.State> tokens = null;
   
   private OffsetAttribute offsetAtt;
   private TypeAttribute typeAtt;
@@ -131,7 +131,7 @@ public final class WikipediaTokenizer extends Tokenizer {
    * @param input The Input Reader
    */
   public WikipediaTokenizer(Reader input) {
-    this(input, TOKENS_ONLY, Collections.EMPTY_SET);
+    this(input, TOKENS_ONLY, Collections.<String>emptySet());
   }
 
   /**
@@ -142,7 +142,7 @@ public final class WikipediaTokenizer extends Tokenizer {
    * @param tokenOutput One of {@link #TOKENS_ONLY}, {@link #UNTOKENIZED_ONLY}, {@link #BOTH}
    * @param untokenizedTypes
    */
-  public WikipediaTokenizer(Reader input, int tokenOutput, Set untokenizedTypes) {
+  public WikipediaTokenizer(Reader input, int tokenOutput, Set<String> untokenizedTypes) {
     super(input);
     this.scanner = new WikipediaTokenizerImpl(input);
     init(tokenOutput, untokenizedTypes);
@@ -156,7 +156,7 @@ public final class WikipediaTokenizer extends Tokenizer {
    * @param tokenOutput One of {@link #TOKENS_ONLY}, {@link #UNTOKENIZED_ONLY}, {@link #BOTH}
    * @param untokenizedTypes
    */
-  public WikipediaTokenizer(AttributeFactory factory, Reader input, int tokenOutput, Set untokenizedTypes) {
+  public WikipediaTokenizer(AttributeFactory factory, Reader input, int tokenOutput, Set<String> untokenizedTypes) {
     super(factory, input);
     this.scanner = new WikipediaTokenizerImpl(input);
     init(tokenOutput, untokenizedTypes);
@@ -170,13 +170,13 @@ public final class WikipediaTokenizer extends Tokenizer {
    * @param tokenOutput One of {@link #TOKENS_ONLY}, {@link #UNTOKENIZED_ONLY}, {@link #BOTH}
    * @param untokenizedTypes
    */
-  public WikipediaTokenizer(AttributeSource source, Reader input, int tokenOutput, Set untokenizedTypes) {
+  public WikipediaTokenizer(AttributeSource source, Reader input, int tokenOutput, Set<String> untokenizedTypes) {
     super(source, input);
     this.scanner = new WikipediaTokenizerImpl(input);
     init(tokenOutput, untokenizedTypes);
   }
   
-  private void init(int tokenOutput, Set untokenizedTypes) {
+  private void init(int tokenOutput, Set<String> untokenizedTypes) {
     this.tokenOutput = tokenOutput;
     this.untokenizedTypes = untokenizedTypes;
     this.offsetAtt = addAttribute(OffsetAttribute.class);
@@ -194,7 +194,7 @@ public final class WikipediaTokenizer extends Tokenizer {
   @Override
   public final boolean incrementToken() throws IOException {
     if (tokens != null && tokens.hasNext()){
-      AttributeSource.State state = (AttributeSource.State) tokens.next();
+      AttributeSource.State state = tokens.next();
       restoreState(state);
       return true;
     }
@@ -230,7 +230,7 @@ public final class WikipediaTokenizer extends Tokenizer {
     int lastPos = theStart + numAdded;
     int tmpTokType;
     int numSeen = 0;
-    List tmp = new ArrayList();
+    List<AttributeSource.State> tmp = new ArrayList<AttributeSource.State>();
     setupSavedToken(0, type);
     tmp.add(captureState());
     //while we can get a token and that token is the same type and we have not transitioned to a new wiki-item of the same type

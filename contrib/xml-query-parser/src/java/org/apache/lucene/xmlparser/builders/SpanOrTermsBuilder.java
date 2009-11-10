@@ -54,7 +54,7 @@ public class SpanOrTermsBuilder extends SpanBuilderBase
 		
 		try
 		{
-			ArrayList clausesList=new ArrayList();
+			ArrayList<SpanQuery> clausesList=new ArrayList<SpanQuery>();
 			TokenStream ts=analyzer.tokenStream(fieldName,new StringReader(value));
 			TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
 			
@@ -62,7 +62,7 @@ public class SpanOrTermsBuilder extends SpanBuilderBase
 			    SpanTermQuery stq=new SpanTermQuery(new Term(fieldName, termAtt.term()));
 			    clausesList.add(stq);
 			}
-			SpanOrQuery soq=new SpanOrQuery((SpanQuery[]) clausesList.toArray(new SpanQuery[clausesList.size()]));
+			SpanOrQuery soq=new SpanOrQuery(clausesList.toArray(new SpanQuery[clausesList.size()]));
 			soq.setBoost(DOMUtils.getAttribute(e,"boost",1.0f));
 			return soq;
 		}

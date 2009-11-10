@@ -106,11 +106,8 @@ public class SynonymMap {
    *         <code>Character.isLetter()</code>.
    */
   public String[] getSynonyms(String word) {
-    Object syns = table.get(word);
-    if (syns == null) return EMPTY;
-    if (syns instanceof String) return new String[] {(String) syns};
-    
-    String[] synonyms = (String[]) syns;
+    String[] synonyms = table.get(word);
+    if (synonyms == null) return EMPTY;
     String[] copy = new String[synonyms.length]; // copy for guaranteed immutability
     System.arraycopy(synonyms, 0, copy, 0, synonyms.length);
     return copy;
@@ -261,7 +258,7 @@ public class SynonymMap {
     
     
     /* Part D: compute index data structure */
-    HashMap word2Syns = createIndex(word2Groups, group2Words);    
+    HashMap<String,String[]> word2Syns = createIndex(word2Groups, group2Words);    
         
     /* Part E: minimize memory consumption by a factor 3 (or so) */
 //    if (true) return word2Syns;
@@ -308,7 +305,7 @@ public class SynonymMap {
     return word2Syns;
   }
 
-  private HashMap<String,String[]> optimize(HashMap word2Syns, HashMap<String,String> internedWords) {
+  private HashMap<String,String[]> optimize(HashMap<String,String[]> word2Syns, HashMap<String,String> internedWords) {
     if (DEBUG) {
       System.err.println("before gc");
       for (int i=0; i < 10; i++) System.gc();
@@ -347,10 +344,8 @@ public class SynonymMap {
       for (int k=syns.length; --k >= 0; ) {
         syns[k] = internedWords.get(syns[k]);
       }
-      Object replacement = syns;
-      if (syns.length == 1) replacement = syns[0]; // minimize memory consumption some more
       word2Syns.remove(words[j]);
-      word2Syns.put(internedWords.get(words[j]), replacement);
+      word2Syns.put(internedWords.get(words[j]), syns);
     }
     
     if (DEBUG) {

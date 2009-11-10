@@ -55,7 +55,7 @@ public class QueryTemplateManager
 	static DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance ();
 	static TransformerFactory tFactory = TransformerFactory.newInstance();
 
-	HashMap compiledTemplatesCache=new HashMap();
+	HashMap<String,Templates> compiledTemplatesCache=new HashMap<String,Templates>();
 	Templates defaultCompiledTemplates=null;
 
 	
@@ -77,13 +77,13 @@ public class QueryTemplateManager
 	}
 	public String getQueryAsXmlString(Properties formProperties,String queryTemplateName) throws SAXException, IOException, ParserConfigurationException, TransformerException
 	{
-		Templates ts=(Templates) compiledTemplatesCache.get(queryTemplateName);
+		Templates ts= compiledTemplatesCache.get(queryTemplateName);
 		return getQueryAsXmlString(formProperties, ts);
 	}
 	
 	public Document getQueryAsDOM(Properties formProperties,String queryTemplateName) throws SAXException, IOException, ParserConfigurationException, TransformerException
 	{
-		Templates ts=(Templates) compiledTemplatesCache.get(queryTemplateName);
+		Templates ts= compiledTemplatesCache.get(queryTemplateName);
 		return getQueryAsDOM(formProperties, ts);
 	}
 	public String getQueryAsXmlString(Properties formProperties) throws SAXException, IOException, ParserConfigurationException, TransformerException
