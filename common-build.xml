@@ -283,14 +283,16 @@
   <macrodef name="sign-artifact" description="Signs the artifact">
     <attribute name="input.file"/>
     <attribute name="output.file" default="@{input.file}.asc"/>
-    <!--<attribute name="password.file" default="${user.home}/.pwd.txt"/>-->
+    <attribute name="gpg.passphrase"/>
     <sequential>
-      <echo >Signing @{input.file} Sig File: @{output.file}</echo><!--Pass: @{password.file}-->
+      <echo >Signing @{input.file} Sig File: @{output.file}</echo>
 
-      <exec executable="gpg" > <!--input="@{password.file}"-->
+      <exec executable="gpg" >
         <arg value="--armor"/>
         <arg value="--output"/>
         <arg value="@{output.file}"/>
+        <arg value="--passphrase"/>
+        <arg value="@{gpg.passphrase}"/>
         <arg value="--detach-sig"/>
         <arg value="@{input.file}"/>
       </exec>
@@ -308,11 +310,12 @@
     <attribute name="artifact.id"/>
     <attribute name="prefix.dir" default="${maven.dist.prefix}"/>
     <attribute name="maven.version" default="${maven_version}"/>
+    <attribute name="gpg.passphrase"/>
     <sequential>
-      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.jar"/>
-      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}-javadoc.jar"/>
-      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}-sources.jar"/>
-      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.pom"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.jar" gpg.passphrase="@{gpg.passphrase}"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}-javadoc.jar" gpg.passphrase="@{gpg.passphrase}"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}-sources.jar" gpg.passphrase="@{gpg.passphrase}"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.pom" gpg.passphrase="@{gpg.passphrase}"/>
     </sequential>
   </macrodef>
 
@@ -320,8 +323,9 @@
     <attribute name="artifact.id"/>
     <attribute name="prefix.dir" default="${maven.dist.prefix}"/>
     <attribute name="maven.version" default="${maven_version}"/>
+    <attribute name="gpg.passphrase"/>
     <sequential>
-      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.jar"/>
+      <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.jar"  gpg.passphrase="@{gpg.passphrase}"/>
     </sequential>
   </macrodef>
 

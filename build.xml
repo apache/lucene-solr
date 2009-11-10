@@ -722,35 +722,34 @@
     </delete>
   </target>
   <target name="sign-artifacts" depends="clean-dist-signatures">
-    <!--<input message="Enter signature passphrase" addproperty="passphrase"/>
-    <touch file="${user.home}/.pwd.txt"/>
-    <chmod file="${user.home}/.pwd.txt" perm="600"/>
-    <echo file="${user.home}/.pwd.txt">${passphrase}</echo>-->
-    <sign-artifact input.file="${dist}/${fullnamever}.tgz" output.file="${dist}/${fullnamever}.tgz.asc"/>
-    <sign-artifact input.file="${dist}/${fullnamever}.zip" output.file="${dist}/${fullnamever}.zip.asc"/>
+    <!--<property file="${user.home}/.solr/build.properties" />-->
+    <input message="password:>" addproperty="gpg.passphrase">
+      <handler classname="org.apache.tools.ant.input.SecureInputHandler" />
+    </input>
+    <sign-artifact input.file="${dist}/${fullnamever}.tgz" output.file="${dist}/${fullnamever}.tgz.asc" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-artifact input.file="${dist}/${fullnamever}.zip" output.file="${dist}/${fullnamever}.zip.asc" gpg.passphrase="${gpg.passphrase}"/>
 
     <!-- Maven artifacts -->
-    <sign-maven-dependency-artifacts artifact.id="solr-commons-csv"/>
-    <sign-maven-artifacts artifact.id="solr-core"/>
-    <sign-maven-artifacts artifact.id="solr-dataimporthandler"/>
-    <sign-maven-artifacts artifact.id="solr-dataimporthandler-extras"/>
-    <sign-maven-artifacts artifact.id="solr-clustering"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-commons-csv" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-artifacts artifact.id="solr-core" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-artifacts artifact.id="solr-dataimporthandler" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-artifacts artifact.id="solr-dataimporthandler-extras" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-artifacts artifact.id="solr-clustering" gpg.passphrase="${gpg.passphrase}"/>
 
-    <sign-maven-artifacts artifact.id="solr-cell"/>
-    <sign-maven-dependency-artifacts artifact.id="solr-lucene-analyzers"/>
-    <sign-maven-dependency-artifacts artifact.id="solr-lucene-core"/>
-    <sign-maven-dependency-artifacts artifact.id="solr-lucene-highlighter"/>
-    <sign-maven-dependency-artifacts artifact.id="solr-lucene-queries"/>
-    <sign-maven-dependency-artifacts artifact.id="solr-lucene-snowball"/>
-    <sign-maven-dependency-artifacts artifact.id="solr-lucene-spellchecker"/>
-    <sign-maven-artifacts artifact.id="solr-solrj"/>
-    <sign-maven-artifacts artifact.id="solr-velocity"/>
+    <sign-maven-artifacts artifact.id="solr-cell" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-lucene-analyzers" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-lucene-core" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-lucene-highlighter" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-lucene-queries" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-lucene-snowball" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-dependency-artifacts artifact.id="solr-lucene-spellchecker" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-artifacts artifact.id="solr-solrj" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-artifacts artifact.id="solr-velocity" gpg.passphrase="${gpg.passphrase}"/>
 
     <!-- Thes are special since there are no jars, just poms -->
-    <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${maven_version}/solr-parent-${maven_version}.pom"/>
-    <sign-artifact input.file="${maven.dist.prefix}/solr-lucene-contrib/${maven_version}/solr-lucene-contrib-${maven_version}.pom"/>
+    <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${maven_version}/solr-parent-${maven_version}.pom" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-artifact input.file="${maven.dist.prefix}/solr-lucene-contrib/${maven_version}/solr-lucene-contrib-${maven_version}.pom" gpg.passphrase="${gpg.passphrase}"/>
 
-    <!--<delete file="${user.home}/.pwd.txt"/>-->
   </target>
 
 

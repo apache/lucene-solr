@@ -46,6 +46,8 @@ Other Changes
 Build
 ----------------------
 
+1. SOLR-1522: Automated release signing process. (gsingers)
+
 Documentation
 ----------------------
 
