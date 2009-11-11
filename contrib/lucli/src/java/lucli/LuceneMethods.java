@@ -30,18 +30,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.Map.Entry;
 
 import jline.ConsoleReader;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -66,10 +64,9 @@ import org.apache.lucene.util.Version;
 class LuceneMethods {
 
   private int numDocs;
-  private FSDirectory indexName; //directory of this index
-  private java.util.Iterator fieldIterator;
-  private List fields; //Fields as a vector
-  private List indexedFields; //Fields as a vector
+  private final FSDirectory indexName; //directory of this index
+  private List<String> fields; //Fields as a vector
+  private List<String> indexedFields; //Fields as a vector
   private String fieldsArray[]; //Fields as an array
   private Searcher searcher;
   private Query query; //current query string
@@ -83,13 +80,10 @@ class LuceneMethods {
     private Analyzer createAnalyzer() {
         if (analyzerClassFQN == null) return new StandardAnalyzer(Version.LUCENE_CURRENT);
         try {
-            Class aClass = Class.forName(analyzerClassFQN);
-            Object obj = aClass.newInstance();
-            if (!(obj instanceof Analyzer)) {
-                message("Given class is not an Analyzer: " + analyzerClassFQN);
-                return new StandardAnalyzer(Version.LUCENE_CURRENT);
-            }
-            return (Analyzer)obj;
+            return Class.forName(analyzerClassFQN).asSubclass(Analyzer.class).newInstance();
+        } catch (ClassCastException cce) {
+            message("Given class is not an Analyzer: " + analyzerClassFQN);
+            return new StandardAnalyzer(Version.LUCENE_CURRENT);
         } catch (Exception e) {
             message("Unable to use Analyzer " + analyzerClassFQN);
             return new StandardAnalyzer(Version.LUCENE_CURRENT);
@@ -121,7 +115,7 @@ class LuceneMethods {
   		throws java.io.IOException, org.apache.lucene.queryParser.ParseException {
     initSearch(queryString);
     int numHits = computeCount(query);
-    System.out.println(numHits + " total matching documents");
+    message(numHits + " total matching documents");
     if (explain) {
       query = explainQuery(queryString);
     }
@@ -193,11 +187,11 @@ class LuceneMethods {
     int arraySize = indexedFields.size();
     String indexedArray[] = new String[arraySize];
     for (int ii = 0; ii < arraySize; ii++) {
-      indexedArray[ii] = (String) indexedFields.get(ii);
+      indexedArray[ii] = indexedFields.get(ii);
     }
     MultiFieldQueryParser parser = new MultiFieldQueryParser(Version.LUCENE_CURRENT, indexedArray, analyzer);
     query = parser.parse(queryString);
-    System.out.println("Searching for: " + query.toString());
+    message("Searching for: " + query.toString());
     return (query);
 
   }
@@ -214,7 +208,7 @@ class LuceneMethods {
     int arraySize = fields.size();
     fieldsArray = new String[arraySize];
     for (int ii = 0; ii < arraySize; ii++) {
-      fieldsArray[ii] = (String) fields.get(ii);
+      fieldsArray[ii] = fields.get(ii);
     }
     MultiFieldQueryParser parser = new MultiFieldQueryParser(Version.LUCENE_CURRENT, fieldsArray, analyzer);
     query = parser.parse(queryString);
@@ -248,7 +242,7 @@ class LuceneMethods {
 
   public void count(String queryString) throws java.io.IOException, ParseException {
     initSearch(queryString);
-    System.out.println(computeCount(query) + " total documents");
+    message(computeCount(query) + " total documents");
     searcher.close();
   }
   
@@ -262,21 +256,17 @@ class LuceneMethods {
 
   private void getFieldInfo() throws IOException {
     IndexReader indexReader = IndexReader.open(indexName, true);
-    fields = new ArrayList();
-    indexedFields = new ArrayList();
+    fields = new ArrayList<String>();
+    indexedFields = new ArrayList<String>();
 
     //get the list of all field names
-    fieldIterator = indexReader.getFieldNames(FieldOption.ALL).iterator();
-    while (fieldIterator.hasNext()) {
-      Object field = fieldIterator.next();
+    for(String field : indexReader.getFieldNames(FieldOption.ALL)) {
       if (field != null && !field.equals(""))
         fields.add(field.toString());
     }
     //
     //get the list of indexed field names
-    fieldIterator = indexReader.getFieldNames(FieldOption.INDEXED).iterator();
-    while (fieldIterator.hasNext()) {
-      Object field = fieldIterator.next();
+    for(String field : indexReader.getFieldNames(FieldOption.INDEXED)) {
       if (field != null && !field.equals(""))
         indexedFields.add(field.toString());
     }
@@ -289,17 +279,12 @@ class LuceneMethods {
   private void invertDocument(Document doc)
     throws IOException {
 
-    Map tokenMap = new HashMap();
+    Map<String,Integer> tokenMap = new HashMap<String,Integer>();
     final int maxFieldLength = 10000;
 
     Analyzer analyzer = createAnalyzer();
-    Iterator fields = doc.getFields().iterator();
-    final Token reusableToken = new Token();
-    while (fields.hasNext()) {
-      Field field = (Field) fields.next();
+    for (Fieldable field : doc.getFields()) {
       String fieldName = field.name();
-
-
       if (field.isIndexed()) {
         if (field.isTokenized()) {     // un-tokenized field
           Reader reader;        // find or make Reader
@@ -322,7 +307,7 @@ class LuceneMethods {
               position += (posIncrAtt.getPositionIncrement() - 1);
               position++;
               String name = termAtt.term();
-              Integer Count = (Integer) tokenMap.get(name);
+              Integer Count = tokenMap.get(name);
               if (Count == null) { // not in there yet
                 tokenMap.put(name, Integer.valueOf(1)); //first one
               } else {
@@ -338,9 +323,9 @@ class LuceneMethods {
 
       }
     }
-    Entry[] sortedHash = getSortedMapEntries(tokenMap);
+    Map.Entry<String,Integer>[] sortedHash = getSortedMapEntries(tokenMap);
     for (int ii = 0; ii < sortedHash.length && ii < 10; ii++) {
-      Entry currentEntry = sortedHash[ii];
+      Map.Entry<String,Integer> currentEntry = sortedHash[ii];
       message((ii + 1) + ":" + currentEntry.getKey() + " " + currentEntry.getValue());
     }
   }
@@ -351,7 +336,7 @@ class LuceneMethods {
    * @param field  - the name of the command or null for all of them.
    */
   public void terms(String field) throws IOException {
-    TreeMap termMap = new TreeMap();
+    TreeMap<String,Integer> termMap = new TreeMap<String,Integer>();
     IndexReader indexReader = IndexReader.open(indexName, true);
     TermEnum terms = indexReader.terms();
     while (terms.next()) {
@@ -362,10 +347,10 @@ class LuceneMethods {
         termMap.put(term.field() + ":" + term.text(), Integer.valueOf((terms.docFreq())));
     }
 
-    Iterator termIterator = termMap.keySet().iterator();
+    Iterator<String> termIterator = termMap.keySet().iterator();
     for (int ii = 0; termIterator.hasNext() && ii < 100; ii++) {
-      String termDetails = (String) termIterator.next();
-      Integer termFreq = (Integer) termMap.get(termDetails);
+      String termDetails = termIterator.next();
+      Integer termFreq = termMap.get(termDetails);
       message(termDetails + ": " + termFreq);
     }
     indexReader.close();
@@ -375,17 +360,17 @@ class LuceneMethods {
    * @param m the map we're sorting
    * from http://developer.java.sun.com/developer/qow/archive/170/index.jsp
    */
-  public static Entry[]
-    getSortedMapEntries(Map m) {
-    Set set = m.entrySet();
-    Entry[] entries =
-      (Entry[]) set.toArray(
-          new Entry[set.size()]);
-    Arrays.sort(entries, new Comparator() {
-      public int compare(Object o1, Object o2) {
-        Object v1 = ((Entry) o1).getValue();
-        Object v2 = ((Entry) o2).getValue();
-        return ((Comparable) v2).compareTo(v1); //descending order
+  @SuppressWarnings("unchecked")
+  public static <K,V extends Comparable<V>> Map.Entry<K,V>[]
+    getSortedMapEntries(Map<K,V> m) {
+    Set<Map.Entry<K, V>> set = m.entrySet();
+    Map.Entry<K,V>[] entries =
+       set.toArray(new Map.Entry[set.size()]);
+    Arrays.sort(entries, new Comparator<Map.Entry<K,V>>() {
+      public int compare(Map.Entry<K,V> o1, Map.Entry<K,V> o2) {
+        V v1 = o1.getValue();
+        V v2 = o2.getValue();
+        return v2.compareTo(v1); //descending order
       }
     });
     return entries;

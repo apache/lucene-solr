@@ -61,7 +61,7 @@ public class Lucli {
 	final static int ANALYZER = 10;
 
 	String historyFile;
-	TreeMap commandMap = new TreeMap();
+	TreeMap<String,Command> commandMap = new TreeMap<String,Command>();
 	LuceneMethods luceneMethods; //current cli class we're using
 	boolean enableReadline; //false: use plain java. True: shared library readline
 
@@ -126,11 +126,11 @@ public class Lucli {
 	}
 
 	private String[] getCommandsAsArray() {
-		Set commandSet = commandMap.keySet();
+		Set<String> commandSet = commandMap.keySet();
 		String[] commands = new String[commandMap.size()];
 		int i = 0;
-		for (Iterator iter = commandSet.iterator(); iter.hasNext();) {
-			String	cmd = (String) iter.next();
+		for (Iterator<String> iter = commandSet.iterator(); iter.hasNext();) {
+			String	cmd = iter.next();
 			commands[i++] = cmd;
 		}
 		return commands;
@@ -252,7 +252,7 @@ public class Lucli {
 
 	private int getCommandId(String name, int params) {
 		name = name.toLowerCase(); //treat uppercase and lower case commands the same
-		Command command = (Command) commandMap.get(name);
+		Command command = commandMap.get(name);
 		if (command == null) {
 			return(UNKOWN);
 		}
@@ -266,9 +266,9 @@ public class Lucli {
 	}
 
 	private void help() {
-		Iterator commands = commandMap.keySet().iterator();
+		Iterator<String> commands = commandMap.keySet().iterator();
 		while (commands.hasNext()) {
-			Command command = (Command) commandMap.get(commands.next());
+			Command command = commandMap.get(commands.next());
 			System.out.println("\t" + command.name + ": " + command.help);
 
 		}
@@ -300,7 +300,6 @@ public class Lucli {
 	private class Command {
 		String name;
 		int id;
-		int numberArgs;
 		String help;
 		int params;
 
