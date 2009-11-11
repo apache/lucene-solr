@@ -69,8 +69,7 @@ public final class StandardTokenizer extends Tokenizer {
 
   /**
    * @deprecated this solves a bug where HOSTs that end with '.' are identified
-   *             as ACRONYMs. It is deprecated and will be removed in the next
-   *             release.
+   *             as ACRONYMs.
    */
   public static final int ACRONYM_DEP       = 8;
 
@@ -87,17 +86,6 @@ public final class StandardTokenizer extends Tokenizer {
     "<ACRONYM_DEP>"
   };
 
-  /** @deprecated Please use {@link #TOKEN_TYPES} instead */
-  public static final String [] tokenImage = TOKEN_TYPES;
-
-  /**
-   * Specifies whether deprecated acronyms should be replaced with HOST type.
-   * This is false by default to support backward compatibility.
-   *<p/>
-   * See http://issues.apache.org/jira/browse/LUCENE-1068
-   * 
-   * @deprecated this should be removed in the next release (3.0).
-   */
   private boolean replaceInvalidAcronym;
     
   private int maxTokenLength = StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;
