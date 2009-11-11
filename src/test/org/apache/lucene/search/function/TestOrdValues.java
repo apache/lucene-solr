@@ -58,9 +58,9 @@ public class TestOrdValues extends FunctionTestSetup {
     IndexSearcher s = new IndexSearcher(dir, true);
     ValueSource vs;
     if (inOrder) {
-      vs = new MultiValueSource(new OrdFieldSource(field));
+      vs = new OrdFieldSource(field);
     } else {
-      vs = new MultiValueSource(new ReverseOrdFieldSource(field));
+      vs = new ReverseOrdFieldSource(field);
     }
         
     Query q = new ValueSourceQuery(vs);

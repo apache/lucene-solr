@@ -114,7 +114,8 @@ API Changes
   was deprecated and will be removed in a later version.
   (DM Smith, Uwe Schindler)
   
-* LUCENE-1973: Remove deprecated Similarity methods. (Uwe Schindler)
+* LUCENE-1973: Remove deprecated Similarity methods. Remove deprecated
+  BoostingTermQuery and MultiValueSource.  (Uwe Schindler)
 
 * LUCENE-2011: Remove deprecated Scorer.explain(int).
   (Uwe Schindler, Mark Miller)
