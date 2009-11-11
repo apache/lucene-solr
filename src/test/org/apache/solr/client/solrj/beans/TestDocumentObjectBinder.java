@@ -106,12 +106,17 @@ public class TestDocumentObjectBinder extends TestCase
     SolrDocumentList docs = new SolrDocumentList();
     docs.add( ClientUtils.toSolrDocument(doc) );
     Item out = binder.getBeans( Item.class, docs ).get( 0 );
-
+    Item singleOut = binder.getBean(Item.class, ClientUtils.toSolrDocument(doc));
+    
     // make sure it came out the same
     Assert.assertEquals( item.id, out.id );
     Assert.assertEquals( item.inStock, out.inStock );
     Assert.assertEquals( item.categories.length, out.categories.length );
     Assert.assertEquals( item.features, out.features );
+    Assert.assertEquals( item.id, singleOut.id );
+    Assert.assertEquals( item.inStock, singleOut.inStock );
+    Assert.assertEquals( item.categories.length, singleOut.categories.length );
+    Assert.assertEquals( item.features, singleOut.features );
   }
 
   public static class Item {

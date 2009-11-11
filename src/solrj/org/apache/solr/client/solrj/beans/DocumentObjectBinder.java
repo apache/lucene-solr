@@ -43,20 +43,29 @@ public class DocumentObjectBinder {
 
     for(int j=0;j<solrDocList.size();j++) {
       SolrDocument sdoc = solrDocList.get(j);
-
-      T obj = null;
-      try {
-        obj = clazz.newInstance();
-      } catch (Exception e) {
-        throw new RuntimeException("Could not instantiate object of " + clazz,e);
-      }
-      for (int i = 0; i < fields.size(); i++) {
-        DocField docField = fields.get(i);
-        docField.inject(obj, sdoc);
-      }
-      result.add(obj);
+	  result.add(getBean(clazz, fields, sdoc));
     }
     return result;
+  }
+  public <T> T getBean(Class<T> clazz, SolrDocument solrDoc) {
+    return getBean(clazz, null,solrDoc);
+  }
+  
+  private <T> T getBean(Class<T> clazz, List<DocField> fields, SolrDocument solrDoc) {
+    if (fields == null) {
+      fields = getDocFields(clazz);
+    }
+    T obj = null;
+    try {
+      obj = clazz.newInstance();
+    } catch (Exception e) {
+      throw new RuntimeException("Could not instantiate object of " + clazz, e);
+    }
+    for (int i = 0; i < fields.size(); i++) {
+      DocField docField = fields.get(i);
+      docField.inject(obj, solrDoc);
+    }
+    return obj;
   }
   
   public SolrInputDocument toSolrInputDocument( Object obj )
