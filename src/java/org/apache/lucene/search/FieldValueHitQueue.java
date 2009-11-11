@@ -36,20 +36,17 @@ import org.apache.lucene.util.PriorityQueue;
  */
 public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueue.Entry> {
 
-  final static class Entry {
+  final static class Entry extends ScoreDoc {
     int slot;
-    int docID;
-    float score;
 
-    Entry(int slot, int docID, float score) {
+    Entry(int slot, int doc, float score) {
+      super(doc, score);
       this.slot = slot;
-      this.docID = docID;
-      this.score = score;
     }
     
     @Override
     public String toString() {
-      return "slot:" + slot + " docID:" + docID + " score=" + score;
+      return "slot:" + slot + " " + super.toString();
     }
   }
 
@@ -97,7 +94,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
       }
 
       // avoid random sort order that could lead to duplicates (bug #31241):
-      return hitA.docID > hitB.docID;
+      return hitA.doc > hitB.doc;
     }
 
   }
@@ -139,7 +136,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
       }
 
       // avoid random sort order that could lead to duplicates (bug #31241):
-      return hitA.docID > hitB.docID;
+      return hitA.doc > hitB.doc;
     }
     
   }
@@ -214,7 +211,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
       fields[i] = comparators[i].value(entry.slot);
     }
     //if (maxscore > 1.0f) doc.score /= maxscore;   // normalize scores
-    return new FieldDoc(entry.docID, entry.score, fields);
+    return new FieldDoc(entry.doc, entry.score, fields);
   }
 
   /** Returns the SortFields being used by this hit queue. */

@@ -59,7 +59,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     
     final void updateBottom(int doc) {
       // bottom.score is already set to Float.NaN in add().
-      bottom.docID = docBase + doc;
+      bottom.doc = docBase + doc;
       bottom = pq.updateTop();
     }
 
@@ -122,7 +122,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       if (queueFull) {
         // Fastmatch: return if this hit is not competitive
         final int cmp = reverseMul * comparator.compareBottom(doc);
-        if (cmp < 0 || (cmp == 0 && doc + docBase > bottom.docID)) {
+        if (cmp < 0 || (cmp == 0 && doc + docBase > bottom.doc)) {
           return;
         }
         
@@ -164,7 +164,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
     
     final void updateBottom(int doc, float score) {
-      bottom.docID = docBase + doc;
+      bottom.doc = docBase + doc;
       bottom.score = score;
       bottom = pq.updateTop();
     }
@@ -230,7 +230,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       if (queueFull) {
         // Fastmatch: return if this hit is not competitive
         final int cmp = reverseMul * comparator.compareBottom(doc);
-        if (cmp < 0 || (cmp == 0 && doc + docBase > bottom.docID)) {
+        if (cmp < 0 || (cmp == 0 && doc + docBase > bottom.doc)) {
           return;
         }
         
@@ -280,7 +280,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
     
     final void updateBottom(int doc, float score) {
-      bottom.docID = docBase + doc;
+      bottom.doc = docBase + doc;
       bottom.score = score;
       bottom =  pq.updateTop();
     }
@@ -347,7 +347,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       if (queueFull) {
         // Fastmatch: return if this hit is not competitive
         final int cmp = reverseMul * comparator.compareBottom(doc);
-        if (cmp < 0 || (cmp == 0 && doc + docBase > bottom.docID)) {
+        if (cmp < 0 || (cmp == 0 && doc + docBase > bottom.doc)) {
           return;
         }
         
@@ -392,7 +392,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     
     final void updateBottom(int doc) {
       // bottom.score is already set to Float.NaN in add().
-      bottom.docID = docBase + doc;
+      bottom.doc = docBase + doc;
       bottom = pq.updateTop();
     }
 
@@ -488,7 +488,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             break;
           } else if (i == comparators.length - 1) {
             // This is the equals case.
-            if (doc + docBase > bottom.docID) {
+            if (doc + docBase > bottom.doc) {
               // Definitely not competitive
               return;
             }
@@ -545,7 +545,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
     
     final void updateBottom(int doc, float score) {
-      bottom.docID = docBase + doc;
+      bottom.doc = docBase + doc;
       bottom.score = score;
       bottom =  pq.updateTop();
     }
@@ -640,7 +640,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             break;
           } else if (i == comparators.length - 1) {
             // This is the equals case.
-            if (doc + docBase > bottom.docID) {
+            if (doc + docBase > bottom.doc) {
               // Definitely not competitive
               return;
             }
@@ -695,7 +695,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     }
     
     final void updateBottom(int doc, float score) {
-      bottom.docID = docBase + doc;
+      bottom.doc = docBase + doc;
       bottom.score = score;
       bottom = pq.updateTop();
     }
@@ -788,7 +788,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             break;
           } else if (i == comparators.length - 1) {
             // This is the equals case.
-            if (doc + docBase > bottom.docID) {
+            if (doc + docBase > bottom.doc) {
               // Definitely not competitive
               return;
             }
@@ -972,7 +972,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     } else {
       for (int i = howMany - 1; i >= 0; i--) {
         Entry entry = pq.pop();
-        results[i] = new FieldDoc(entry.docID, entry.score);
+        results[i] = new FieldDoc(entry.doc, entry.score);
       }
     }
   }

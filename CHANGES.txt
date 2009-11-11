@@ -42,8 +42,9 @@ Changes in runtime behavior
 
 API Changes
 
-* LUCENE-1257, LUCENE-1984, LUCENE-1985, ...: Port to Java 1.5 [not yet finished].
-  (Uwe Schindler, Robert Muir, Karl Wettin, Paul Elschot, Kay Kay)
+* LUCENE-1257, LUCENE-1984, LUCENE-1985, LUCENE-2057,...: Port to Java 1.5
+  [not yet finished].  (Uwe Schindler, Robert Muir, Karl Wettin, Paul Elschot,
+  Kay Kay, Shai Erera)
 
 * LUCENE-1944: Remove (all) deprecated methods/constructors taking
   String/File directory pathes in IndexReader / IndexWriter and others.
