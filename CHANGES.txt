@@ -3,6 +3,12 @@ $Id$
 
 ======================= 2.9 branch (not yet released) =======================
 
+Bug fixes
+
+ * LUCENE-2045: Fix silly FileNotFoundException hit if you enable
+   infoStream on IndexWriter and then add an empty document and commit
+   (Shai Erera via Mike McCandless)
+
 ======================= Release 2.9.1 2009-11-06 =======================
 
 Changes in backwards compatibility policy
