@@ -29,7 +29,7 @@ import org.apache.lucene.search.spans.SpanQuery;
 
 public class DistanceQuery extends ComposedQuery implements DistanceSubQuery {
   public DistanceQuery(
-      List queries,
+      List<SrndQuery> queries,
       boolean infix,
       int opDistance,
       String opName,

@@ -51,7 +51,7 @@ import com.sleepycat.je.Transaction;
 
 public class JEDirectory extends Directory {
 
-    protected Set openFiles = Collections.synchronizedSet(new HashSet());
+    protected Set<JEIndexOutput> openFiles = Collections.synchronizedSet(new HashSet<JEIndexOutput>());
 
     protected Database files, blocks;
 
@@ -102,11 +102,11 @@ public class JEDirectory extends Directory {
      * @see #setTransaction
      */
     public void flush() throws IOException {
-        Iterator iterator = openFiles.iterator();
+        Iterator<JEIndexOutput> iterator = openFiles.iterator();
 
         while (iterator.hasNext()) {
             System.out
-                    .println(((JEIndexOutput) iterator.next()).file.getName());
+                    .println(iterator.next().file.getName());
             // ((IndexOutput) iterator.next()).flush();
         }
     }
@@ -149,7 +149,7 @@ public class JEDirectory extends Directory {
     @Override
     public String[] listAll() throws IOException {
         Cursor cursor = null;
-        List list = new ArrayList();
+        List<String> list = new ArrayList<String>();
 
         try {
             try {
@@ -186,7 +186,7 @@ public class JEDirectory extends Directory {
             throw new IOException(e.getMessage());
         }
 
-        return (String[]) list.toArray(new String[list.size()]);
+        return list.toArray(new String[list.size()]);
     }
 
     @Override

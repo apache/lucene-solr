@@ -24,7 +24,7 @@ import org.apache.lucene.search.BooleanClause;
 import java.io.IOException;
 
 public class OrQuery extends ComposedQuery implements DistanceSubQuery { 
-  public OrQuery(List queries, boolean infix, String opName) {
+  public OrQuery(List<SrndQuery> queries, boolean infix, String opName) {
     super(queries, infix, opName);
   }
   

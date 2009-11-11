@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import org.apache.lucene.search.Query;
+
 public abstract class ComposedQuery extends SrndQuery { 
   
   public ComposedQuery(List qs, boolean operatorInfix, String opName) {
@@ -47,8 +49,8 @@ public abstract class ComposedQuery extends SrndQuery {
   private boolean operatorInfix; 
   public boolean isOperatorInfix() { return operatorInfix; } /* else prefix operator */
   
-  public List makeLuceneSubQueriesField(String fn, BasicQueryFactory qf) {
-    List luceneSubQueries = new ArrayList();
+  public List<Query> makeLuceneSubQueriesField(String fn, BasicQueryFactory qf) {
+    List<Query> luceneSubQueries = new ArrayList<Query>();
     Iterator sqi = getSubQueriesIterator();
     while (sqi.hasNext()) {
       luceneSubQueries.add( ((SrndQuery) sqi.next()).makeLuceneQueryField(fn, qf));

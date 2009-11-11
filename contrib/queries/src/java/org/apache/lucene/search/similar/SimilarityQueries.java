@@ -82,14 +82,14 @@ public final class SimilarityQueries
     public static Query formSimilarQuery( String body,
 										  Analyzer a,
 										  String field,
-										  Set stop)
+										  Set<?> stop)
 										  throws IOException
 	{	
 		TokenStream ts = a.tokenStream( field, new StringReader( body));
 		TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
 		
 		BooleanQuery tmp = new BooleanQuery();
-		Set already = new HashSet(); // ignore dups
+		Set<String> already = new HashSet<String>(); // ignore dups
 		while (ts.incrementToken()) {
 		  String word = termAtt.term();
 			// ignore opt stop words

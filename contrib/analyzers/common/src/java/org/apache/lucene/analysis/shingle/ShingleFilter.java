@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.AttributeSource.State;
 
 /**
  * <p>A ShingleFilter constructs shingles (token n-grams) from a token stream.
@@ -43,7 +44,7 @@ import org.apache.lucene.util.AttributeSource;
  */
 public final class ShingleFilter extends TokenFilter {
 
-  private LinkedList shingleBuf = new LinkedList();
+  private LinkedList<State> shingleBuf = new LinkedList<State>();
   private StringBuilder[] shingles;
   private String tokenType = "shingle";
 
@@ -172,7 +173,7 @@ public final class ShingleFilter extends TokenFilter {
         }
       }
       
-      nextToken = (AttributeSource.State) shingleBuf.getFirst();
+      nextToken = shingleBuf.getFirst();
       
       if (outputUnigrams) {
         if (shingleBufferPosition == 0) {
@@ -313,8 +314,8 @@ public final class ShingleFilter extends TokenFilter {
     }
 
     int i = 0;
-    for (Iterator it = shingleBuf.iterator(); it.hasNext(); ) {
-      restoreState((AttributeSource.State) it.next());
+    for (Iterator<State> it = shingleBuf.iterator(); it.hasNext(); ) {
+      restoreState(it.next());
       for (int j = i; j < shingles.length; j++) {
         if (shingles[j].length() != 0) {
           shingles[j].append(TOKEN_SEPARATOR);

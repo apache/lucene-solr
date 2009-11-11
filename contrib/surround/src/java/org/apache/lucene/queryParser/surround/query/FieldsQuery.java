@@ -24,11 +24,11 @@ import org.apache.lucene.search.Query;
 
 public class FieldsQuery extends SrndQuery { /* mostly untested */
   private SrndQuery q;
-  private List fieldNames;
+  private List<String> fieldNames;
   private final char fieldOp;
   private final String OrOperatorName = "OR"; /* for expanded queries, not normally visible */
   
-  public FieldsQuery(SrndQuery q, List fieldNames, char fieldOp) {
+  public FieldsQuery(SrndQuery q, List<String> fieldNames, char fieldOp) {
     this.q = q;
     this.fieldNames = fieldNames;
     this.fieldOp = fieldOp;
@@ -36,7 +36,7 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
   
   public FieldsQuery(SrndQuery q, String fieldName, char fieldOp) {
     this.q = q;
-    fieldNames = new ArrayList();
+    fieldNames = new ArrayList<String>();
     fieldNames.add(fieldName);
     this.fieldOp = fieldOp;
   }
@@ -48,14 +48,14 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
   
   public Query makeLuceneQueryNoBoost(BasicQueryFactory qf) {
     if (fieldNames.size() == 1) { /* single field name: no new queries needed */
-      return q.makeLuceneQueryFieldNoBoost((String) fieldNames.get(0), qf);
+      return q.makeLuceneQueryFieldNoBoost(fieldNames.get(0), qf);
     } else { /* OR query over the fields */
-      List queries = new ArrayList();
-      Iterator fni = getFieldNames().listIterator();
+      List<SrndQuery> queries = new ArrayList<SrndQuery>();
+      Iterator<String> fni = getFieldNames().listIterator();
       SrndQuery qc;
       while (fni.hasNext()) {
         qc = (SrndQuery) q.clone();
-        queries.add( new FieldsQuery( qc, (String) fni.next(), fieldOp));
+        queries.add( new FieldsQuery( qc, fni.next(), fieldOp));
       }
       boolean infix = true;
       OrQuery oq = new OrQuery(queries,
@@ -72,7 +72,7 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
   }
 
   
-  public List getFieldNames() {return fieldNames;}
+  public List<String> getFieldNames() {return fieldNames;}
 
   public char getFieldOperator() { return fieldOp;}
   
@@ -87,9 +87,9 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
   }
   
   protected void fieldNamesToString(StringBuilder r) {
-    Iterator fni = getFieldNames().listIterator();
+    Iterator<String> fni = getFieldNames().listIterator();
     while (fni.hasNext()) {
-      r.append((String) fni.next());
+      r.append(fni.next());
       r.append(getFieldOperator());
     }
   }

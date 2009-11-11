@@ -24,7 +24,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetDISI;
-import org.apache.lucene.util.SortedVIntList;
 
 /**
  * A container Filter that allows Boolean composition of Filters.
@@ -62,7 +61,7 @@ public class BooleanFilter extends Filter
         if (res == null) {
           res = new OpenBitSetDISI(getDISI(shouldFilters, i, reader), reader.maxDoc());
         } else { 
-          DocIdSet dis = ((Filter)shouldFilters.get(i)).getDocIdSet(reader);
+          DocIdSet dis = shouldFilters.get(i).getDocIdSet(reader);
           if(dis instanceof OpenBitSet) {
             // optimized case for OpenBitSets
             res.or((OpenBitSet) dis);

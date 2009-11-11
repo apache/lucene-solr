@@ -25,15 +25,15 @@ import org.apache.lucene.search.BooleanClause;
 class SrndBooleanQuery {
   public static void addQueriesToBoolean(
           BooleanQuery bq,
-          List queries,
+          List<Query> queries,
           BooleanClause.Occur occur) {
     for (int i = 0; i < queries.size(); i++) {
-      bq.add( (Query) queries.get(i), occur);
+      bq.add( queries.get(i), occur);
     }
   }
   
   public static Query makeBooleanQuery(
-          List queries,
+          List<Query> queries,
           BooleanClause.Occur occur) {
     if (queries.size() <= 1) {
       throw new AssertionError("Too few subqueries: " + queries.size());

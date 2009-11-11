@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.BitSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
@@ -38,7 +37,7 @@ import org.apache.lucene.util.OpenBitSet;
  */
 public class TermsFilter extends Filter
 {
-	Set terms=new TreeSet();
+	Set<Term> terms=new TreeSet<Term>();
 	
 	/**
 	 * Adds a term to the list of acceptable terms   
@@ -59,9 +58,9 @@ public class TermsFilter extends Filter
         TermDocs td = reader.termDocs();
         try
         {
-            for (Iterator iter = terms.iterator(); iter.hasNext();)
+            for (Iterator<Term> iter = terms.iterator(); iter.hasNext();)
             {
-                Term term = (Term) iter.next();
+                Term term = iter.next();
                 td.seek(term);
                 while (td.next())
                 {
@@ -92,9 +91,9 @@ public class TermsFilter extends Filter
 	public int hashCode()
 	{
 		int hash=9;
-		for (Iterator iter = terms.iterator(); iter.hasNext();)
+		for (Iterator<Term> iter = terms.iterator(); iter.hasNext();)
 		{
-			Term term = (Term) iter.next();
+			Term term = iter.next();
 			hash = 31 * hash + term.hashCode();			
 		}
 		return hash;

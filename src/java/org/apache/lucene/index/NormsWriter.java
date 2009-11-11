@@ -35,8 +35,6 @@ import org.apache.lucene.search.Similarity;
  *  merges all of these together into a single _X.nrm file.
  */
 
-// TODO: Fix the unchecked collections, I do not understand the whole code here -- Uwe
-@SuppressWarnings("unchecked")
 final class NormsWriter extends InvertedDocEndConsumer {
 
   private static final byte defaultNorm = Similarity.encodeNorm(1.0f);
@@ -62,27 +60,24 @@ final class NormsWriter extends InvertedDocEndConsumer {
   @Override
   public void flush(Map<InvertedDocEndConsumerPerThread,Collection<InvertedDocEndConsumerPerField>> threadsAndFields, SegmentWriteState state) throws IOException {
 
-    final Map byField = new HashMap();
+    final Map<FieldInfo,List<NormsWriterPerField>> byField = new HashMap<FieldInfo,List<NormsWriterPerField>>();
 
     // Typically, each thread will have encountered the same
     // field.  So first we collate by field, ie, all
     // per-thread field instances that correspond to the
     // same FieldInfo
-    final Iterator it = threadsAndFields.entrySet().iterator();
-    while(it.hasNext()) {
-      Map.Entry entry = (Map.Entry) it.next();
+    for (final Map.Entry<InvertedDocEndConsumerPerThread,Collection<InvertedDocEndConsumerPerField>> entry : threadsAndFields.entrySet()) {
+      final Collection<InvertedDocEndConsumerPerField> fields = entry.getValue();
+      final Iterator<InvertedDocEndConsumerPerField> fieldsIt = fields.iterator();
 
-      Collection fields = (Collection) entry.getValue();
-      Iterator fieldsIt = fields.iterator();
-
-      while(fieldsIt.hasNext()) {
-        NormsWriterPerField perField = (NormsWriterPerField) fieldsIt.next();
+      while (fieldsIt.hasNext()) {
+        final NormsWriterPerField perField = (NormsWriterPerField) fieldsIt.next();
 
         if (perField.upto > 0) {
           // It has some norms
-          List l = (List) byField.get(perField.fieldInfo);
+          List<NormsWriterPerField> l = byField.get(perField.fieldInfo);
           if (l == null) {
-            l = new ArrayList();
+            l = new ArrayList<NormsWriterPerField>();
             byField.put(perField.fieldInfo, l);
           }
           l.add(perField);
@@ -108,7 +103,7 @@ final class NormsWriter extends InvertedDocEndConsumer {
 
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldNumber);
 
-        List toMerge = (List) byField.get(fieldInfo);
+        List<NormsWriterPerField> toMerge = byField.get(fieldInfo);
         int upto = 0;
         if (toMerge != null) {
 
@@ -120,7 +115,7 @@ final class NormsWriter extends InvertedDocEndConsumer {
           int[] uptos = new int[numFields];
 
           for(int j=0;j<numFields;j++)
-            fields[j] = (NormsWriterPerField) toMerge.get(j);
+            fields[j] = toMerge.get(j);
 
           int numLeft = numFields;
               

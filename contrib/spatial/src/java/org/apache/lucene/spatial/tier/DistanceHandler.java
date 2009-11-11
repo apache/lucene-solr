@@ -98,7 +98,7 @@ public class DistanceHandler {
   
   
   public static void main(String args[]){ 
-    DistanceHandler db = new DistanceHandler(new HashMap(), new HashMap(), Precision.TWOHUNDREDFEET);
+    DistanceHandler db = new DistanceHandler(new HashMap<Integer,Double>(), new HashMap<String,Double>(), Precision.TWOHUNDREDFEET);
     System.out.println(DistanceHandler.getPrecision(-1234.123456789, db.getPrecision()));
   }
 }

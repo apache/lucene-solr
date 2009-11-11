@@ -16,7 +16,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.BitSet;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;

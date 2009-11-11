@@ -51,12 +51,12 @@ public class PlainTextDictionary implements Dictionary {
     in = new BufferedReader(reader);
   }
 
-  public Iterator getWordsIterator() {
+  public Iterator<String> getWordsIterator() {
     return new fileIterator();
   }
 
-  final class fileIterator implements Iterator {
-    public Object next() {
+  final class fileIterator implements Iterator<String> {
+    public String next() {
       if (!hasNextCalled) {
         hasNext();
       }

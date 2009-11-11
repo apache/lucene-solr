@@ -35,9 +35,6 @@ import org.apache.lucene.util.ArrayUtil;
  *  TermVectorsTermsWriter}, write their own byte streams
  *  under each term.
  */
-
-// TODO: Fix the unchecked collections, I do not understand the whole code here -- Uwe
-@SuppressWarnings("unchecked")
 final class TermsHash extends InvertedDocConsumer {
 
   final TermsHashConsumer consumer;
@@ -45,8 +42,6 @@ final class TermsHash extends InvertedDocConsumer {
   final int bytesPerPosting;
   final int postingsFreeChunk;
   final DocumentsWriter docWriter;
-  
-  private TermsHash primaryTermsHash;
 
   private RawPostingList[] postingsFreeList = new RawPostingList[1];
   private int postingsFreeCount;
@@ -90,7 +85,7 @@ final class TermsHash extends InvertedDocConsumer {
       nextTermsHash.abort();
   }
 
-  void shrinkFreePostings(Map threadsAndFields, SegmentWriteState state) {
+  void shrinkFreePostings(Map<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>> threadsAndFields, SegmentWriteState state) {
 
     assert postingsFreeCount == postingsAllocCount: Thread.currentThread().getName() + ": postingsFreeCount=" + postingsFreeCount + " postingsAllocCount=" + postingsAllocCount + " consumer=" + consumer;
 
@@ -111,29 +106,26 @@ final class TermsHash extends InvertedDocConsumer {
 
   @Override
   synchronized void flush(Map<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>> threadsAndFields, final SegmentWriteState state) throws IOException {
-    Map childThreadsAndFields = new HashMap();
-    Map nextThreadsAndFields;
+    Map<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>> childThreadsAndFields = new HashMap<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>>();
+    Map<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>> nextThreadsAndFields;
 
     if (nextTermsHash != null)
-      nextThreadsAndFields = new HashMap();
+      nextThreadsAndFields = new HashMap<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>>();
     else
       nextThreadsAndFields = null;
 
-    Iterator it = threadsAndFields.entrySet().iterator();
-    while(it.hasNext()) {
-
-      Map.Entry entry = (Map.Entry) it.next();
+    for (final Map.Entry<InvertedDocConsumerPerThread,Collection<InvertedDocConsumerPerField>> entry : threadsAndFields.entrySet()) {
 
       TermsHashPerThread perThread = (TermsHashPerThread) entry.getKey();
 
-      Collection fields = (Collection) entry.getValue();
+      Collection<InvertedDocConsumerPerField> fields = entry.getValue();
 
-      Iterator fieldsIt = fields.iterator();
-      Collection childFields = new HashSet();
-      Collection nextChildFields;
+      Iterator<InvertedDocConsumerPerField> fieldsIt = fields.iterator();
+      Collection<TermsHashConsumerPerField> childFields = new HashSet<TermsHashConsumerPerField>();
+      Collection<InvertedDocConsumerPerField> nextChildFields;
 
       if (nextTermsHash != null)
-        nextChildFields = new HashSet();
+        nextChildFields = new HashSet<InvertedDocConsumerPerField>();
       else
         nextChildFields = null;
 

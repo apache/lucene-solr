@@ -82,8 +82,8 @@ public class SpanRegexQuery extends SpanQuery implements RegexQueryCapable {
     return term.field();
   }
 
-  public Collection getTerms() {
-    Collection terms = new ArrayList();
+  public Collection<Term> getTerms() {
+    Collection<Term> terms = new ArrayList<Term>();
     terms.add(term);
     return terms;
   }

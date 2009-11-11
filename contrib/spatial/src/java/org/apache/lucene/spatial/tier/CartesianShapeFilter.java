@@ -18,8 +18,6 @@ package org.apache.lucene.spatial.tier;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;

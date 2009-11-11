@@ -29,8 +29,6 @@ import org.apache.lucene.util.ArrayUtil;
 /** This is just a "splitter" class: it lets you wrap two
  *  DocFieldConsumer instances as a single consumer. */
 
-// TODO: Fix the unchecked collections, I do not understand the whole code here -- Uwe
-@SuppressWarnings("unchecked")
 final class DocFieldConsumers extends DocFieldConsumer {
   final DocFieldConsumer one;
   final DocFieldConsumer two;
@@ -50,21 +48,18 @@ final class DocFieldConsumers extends DocFieldConsumer {
   @Override
   public void flush(Map<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>> threadsAndFields, SegmentWriteState state) throws IOException {
 
-    Map oneThreadsAndFields = new HashMap();
-    Map twoThreadsAndFields = new HashMap();
+    Map<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>> oneThreadsAndFields = new HashMap<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>>();
+    Map<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>> twoThreadsAndFields = new HashMap<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>>();
 
-    Iterator it = threadsAndFields.entrySet().iterator();
-    while(it.hasNext()) {
+    for (Map.Entry<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>> entry : threadsAndFields.entrySet()) {
 
-      Map.Entry entry = (Map.Entry) it.next();
+      final DocFieldConsumersPerThread perThread = (DocFieldConsumersPerThread) entry.getKey();
 
-      DocFieldConsumersPerThread perThread = (DocFieldConsumersPerThread) entry.getKey();
+      final Collection<DocFieldConsumerPerField> fields = entry.getValue();
 
-      Collection fields = (Collection) entry.getValue();
-
-      Iterator fieldsIt = fields.iterator();
-      Collection oneFields = new HashSet();
-      Collection twoFields = new HashSet();
+      Iterator<DocFieldConsumerPerField> fieldsIt = fields.iterator();
+      Collection<DocFieldConsumerPerField> oneFields = new HashSet<DocFieldConsumerPerField>();
+      Collection<DocFieldConsumerPerField> twoFields = new HashSet<DocFieldConsumerPerField>();
       while(fieldsIt.hasNext()) {
         DocFieldConsumersPerField perField = (DocFieldConsumersPerField) fieldsIt.next();
         oneFields.add(perField.one);

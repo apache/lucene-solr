@@ -22,13 +22,13 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause;
 
 public class NotQuery extends ComposedQuery { 
-  public NotQuery(List queries, String opName) { super(queries, true /* infix */, opName); }
+  public NotQuery(List<SrndQuery> queries, String opName) { super(queries, true /* infix */, opName); }
   
   @Override
   public Query makeLuceneQueryFieldNoBoost(String fieldName, BasicQueryFactory qf) {
-    List luceneSubQueries = makeLuceneSubQueriesField(fieldName, qf);
+    List<Query> luceneSubQueries = makeLuceneSubQueriesField(fieldName, qf);
     BooleanQuery bq = new BooleanQuery();
-    bq.add( (Query) luceneSubQueries.get(0), BooleanClause.Occur.MUST);
+    bq.add( luceneSubQueries.get(0), BooleanClause.Occur.MUST);
     SrndBooleanQuery.addQueriesToBoolean(bq,
             // FIXME: do not allow weights on prohibited subqueries.
             luceneSubQueries.subList(1, luceneSubQueries.size()),

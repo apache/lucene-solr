@@ -76,12 +76,12 @@ public class SpanNearClauseFactory {
   public SpanNearClauseFactory(IndexReader reader, String fieldName, BasicQueryFactory qf) {
     this.reader = reader;
     this.fieldName = fieldName;
-    this.weightBySpanQuery = new HashMap(); 
+    this.weightBySpanQuery = new HashMap<SpanQuery, Float>(); 
     this.qf = qf;
   }
   private IndexReader reader;
   private String fieldName;
-  private HashMap weightBySpanQuery;
+  private HashMap<SpanQuery, Float> weightBySpanQuery;
   private BasicQueryFactory qf;
   
   public IndexReader getIndexReader() {return reader;}
@@ -99,7 +99,7 @@ public class SpanNearClauseFactory {
   public void clear() {weightBySpanQuery.clear();}
 
   protected void addSpanQueryWeighted(SpanQuery sq, float weight) {
-    Float w = (Float) weightBySpanQuery.get(sq);
+    Float w = weightBySpanQuery.get(sq);
     if (w != null)
       w = Float.valueOf(w.floatValue() + weight);
     else
@@ -124,11 +124,11 @@ public class SpanNearClauseFactory {
   
   public SpanQuery makeSpanNearClause() {
     SpanQuery [] spanQueries = new SpanQuery[size()];
-    Iterator sqi = weightBySpanQuery.keySet().iterator();
+    Iterator<SpanQuery> sqi = weightBySpanQuery.keySet().iterator();
     int i = 0;
     while (sqi.hasNext()) {
-      SpanQuery sq = (SpanQuery) sqi.next();
-      sq.setBoost(((Float)weightBySpanQuery.get(sq)).floatValue());
+      SpanQuery sq = sqi.next();
+      sq.setBoost(weightBySpanQuery.get(sq).floatValue());
       spanQueries[i++] = sq;
     }
     

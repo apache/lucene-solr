@@ -31,5 +31,5 @@ public interface Dictionary {
    * Return all words present in the dictionary
    * @return Iterator
    */
-  Iterator getWordsIterator();
+  Iterator<String> getWordsIterator();
 }

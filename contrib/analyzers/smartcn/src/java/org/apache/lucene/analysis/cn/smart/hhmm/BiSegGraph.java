@@ -206,7 +206,7 @@ class BiSegGraph {
 
     rpath.add(current);
     while (current != 0) {
-      PathNode currentPathNode = (PathNode) path.get(current);
+      PathNode currentPathNode = path.get(current);
       preNode = currentPathNode.preNode;
       rpath.add(Integer.valueOf(preNode));
       current = preNode;

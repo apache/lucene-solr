@@ -249,7 +249,7 @@ public class SpellChecker {
       sugQueue.insertWithOverflow(sugWord);
       if (sugQueue.size() == numSug) {
         // if queue full, maintain the minScore score
-        min = ((SuggestWord) sugQueue.top()).score;
+        min = sugQueue.top().score;
       }
       sugWord = new SuggestWord();
     }
@@ -257,7 +257,7 @@ public class SpellChecker {
     // convert to array string
     String[] list = new String[sugQueue.size()];
     for (int i = sugQueue.size() - 1; i >= 0; i--) {
-      list[i] = ((SuggestWord) sugQueue.pop()).string;
+      list[i] = sugQueue.pop().string;
     }
 
     return list;
@@ -329,9 +329,9 @@ public class SpellChecker {
     writer.setMergeFactor(mergeFactor);
     writer.setRAMBufferSizeMB(ramMB);
 
-    Iterator iter = dict.getWordsIterator();
+    Iterator<String> iter = dict.getWordsIterator();
     while (iter.hasNext()) {
-      String word = (String) iter.next();
+      String word = iter.next();
 
       int len = word.length();
       if (len < 3) {

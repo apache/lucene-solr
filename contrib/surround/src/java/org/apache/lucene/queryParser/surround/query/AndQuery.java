@@ -22,7 +22,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanClause;
 
 public class AndQuery extends ComposedQuery { 
-  public AndQuery(List queries, boolean inf, String opName) { 
+  public AndQuery(List<SrndQuery> queries, boolean inf, String opName) { 
     super(queries, inf, opName);
   }
   

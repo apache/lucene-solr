@@ -46,12 +46,12 @@ public class LuceneDictionary implements Dictionary {
     this.field = StringHelper.intern(field);
   }
 
-  public final Iterator getWordsIterator() {
+  public final Iterator<String> getWordsIterator() {
     return new LuceneIterator();
   }
 
 
-  final class LuceneIterator implements Iterator {
+  final class LuceneIterator implements Iterator<String> {
     private TermEnum termEnum;
     private Term actualTerm;
     private boolean hasNextCalled;
@@ -64,7 +64,7 @@ public class LuceneDictionary implements Dictionary {
       }
     }
 
-    public Object next() {
+    public String next() {
       if (!hasNextCalled) {
         hasNext();
       }

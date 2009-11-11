@@ -54,7 +54,7 @@ import com.sleepycat.db.DbHandleExtractor;
 
 public class DbDirectory extends Directory {
 
-    protected Set openFiles = Collections.synchronizedSet(new HashSet());
+    protected Set<DbIndexOutput> openFiles = Collections.synchronizedSet(new HashSet<DbIndexOutput>());
     protected Db files, blocks;
     protected DbTxn txn;
     protected int flags;
@@ -113,10 +113,10 @@ public class DbDirectory extends Directory {
     public void flush()
         throws IOException
     {
-        Iterator iterator = openFiles.iterator();
+        Iterator<DbIndexOutput> iterator = openFiles.iterator();
         
         while (iterator.hasNext())
-            ((IndexOutput) iterator.next()).flush();
+            iterator.next().flush();
     }
 
     @Override
@@ -169,7 +169,7 @@ public class DbDirectory extends Directory {
         throws IOException
     {
         Dbc cursor = null;
-        List list = new ArrayList();
+        List<String> list = new ArrayList<String>();
 
         try {
             try {
@@ -209,7 +209,7 @@ public class DbDirectory extends Directory {
             throw new IOException(e.getMessage());
         }
 
-        return (String[]) list.toArray(new String[list.size()]);
+        return list.toArray(new String[list.size()]);
     }
 
     @Override

@@ -37,7 +37,7 @@ import java.util.Set;
  */
 public class SnowballAnalyzer extends Analyzer {
   private String name;
-  private Set stopSet;
+  private Set<?> stopSet;
   private final Version matchVersion;
 
   /** Builds the named analyzer with no stop words. */

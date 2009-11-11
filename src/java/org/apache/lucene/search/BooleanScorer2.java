@@ -261,7 +261,7 @@ class BooleanScorer2 extends Scorer {
           ? requiredCountingSumScorer // no prohibited
           : new ReqExclScorer(requiredCountingSumScorer,
                               ((prohibitedScorers.size() == 1)
-                                ? (Scorer) prohibitedScorers.get(0)
+                                ? prohibitedScorers.get(0)
                                 : new DisjunctionSumScorer(prohibitedScorers)));
   }
 

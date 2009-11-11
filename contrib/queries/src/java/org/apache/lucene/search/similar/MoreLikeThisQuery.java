@@ -46,7 +46,7 @@ public class MoreLikeThisQuery extends Query
     float percentTermsToMatch=0.3f;
     int minTermFrequency=1;
     int maxQueryTerms=5;
-    Set stopWords=null;
+    Set<?> stopWords=null;
 	int minDocFreq=-1;
     
     
@@ -145,11 +145,11 @@ public class MoreLikeThisQuery extends Query
 	{
 		this.moreLikeFields = moreLikeFields;
 	}
-    public Set getStopWords()
+    public Set<?> getStopWords()
     {
         return stopWords;
     }
-    public void setStopWords(Set stopWords)
+    public void setStopWords(Set<?> stopWords)
     {
         this.stopWords = stopWords;
     }

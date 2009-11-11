@@ -63,7 +63,7 @@ public class IndexTask extends Task {
   /**
    *  resources
    */
-  protected Vector rcs = new Vector();
+  protected Vector<ResourceCollection> rcs = new Vector<ResourceCollection>();
 
   /**
    *  overwrite index?
@@ -225,10 +225,9 @@ public class IndexTask extends Task {
 
     // construct handler and analyzer dynamically
     try {
-      Class clazz = Class.forName(handlerClassName);
-      handler = (DocumentHandler) clazz.newInstance();
+      handler = Class.forName(handlerClassName).asSubclass(DocumentHandler.class).newInstance();
 
-      analyzer = this.createAnalyzer(analyzerClassName);
+      analyzer = IndexTask.createAnalyzer(analyzerClassName);
     } catch (Exception e) {
       throw new BuildException(e);
     }
@@ -292,7 +291,7 @@ public class IndexTask extends Task {
         writer.setMergeFactor(mergeFactor);
 
         for (int i = 0; i < rcs.size(); i++) {
-          ResourceCollection rc = (ResourceCollection) rcs.elementAt(i);
+          ResourceCollection rc = rcs.elementAt(i);
           if (rc.isFilesystemOnly()) {
             Iterator resources = rc.iterator();
             while (resources.hasNext()) {
@@ -415,7 +414,7 @@ public class IndexTask extends Task {
   }
 
  public static class AnalyzerType extends EnumeratedAttribute {
-    private static Map analyzerLookup = new HashMap();
+    private static Map<String,String> analyzerLookup = new HashMap<String,String>();
 
     static {
       analyzerLookup.put("simple", SimpleAnalyzer.class.getName());
@@ -429,12 +428,12 @@ public class IndexTask extends Task {
      */
     @Override
     public String[] getValues() {
-      Set keys = analyzerLookup.keySet();
-      return (String[]) keys.toArray(new String[0]);
+      Set<String> keys = analyzerLookup.keySet();
+      return keys.toArray(new String[0]);
     }
 
     public String getClassname() {
-      return (String) analyzerLookup.get(getValue());
+      return analyzerLookup.get(getValue());
     }
   }
 }

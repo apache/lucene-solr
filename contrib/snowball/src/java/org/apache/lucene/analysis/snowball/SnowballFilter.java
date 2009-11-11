@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.snowball;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
@@ -55,7 +54,7 @@ public final class SnowballFilter extends TokenFilter {
   public SnowballFilter(TokenStream in, String name) {
     super(in);
     try {      
-      Class stemClass = Class.forName("org.tartarus.snowball.ext." + name + "Stemmer");
+      Class<?> stemClass = Class.forName("org.tartarus.snowball.ext." + name + "Stemmer");
       stemmer = (SnowballProgram) stemClass.newInstance();
     } catch (Exception e) {
       throw new RuntimeException(e.toString());

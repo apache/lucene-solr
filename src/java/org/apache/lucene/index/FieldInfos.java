@@ -282,7 +282,7 @@ final class FieldInfos {
    * doesn't exist.
    */  
   public FieldInfo fieldInfo(int fieldNumber) {
-	return (fieldNumber >= 0) ? (FieldInfo) byNumber.get(fieldNumber) : null;
+	return (fieldNumber >= 0) ? byNumber.get(fieldNumber) : null;
   }
 
   public int size() {
