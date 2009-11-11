@@ -147,16 +147,12 @@
                 control finally passes to the <a href="api/core/org/apache/lucene/search/Weight.html">Weight</a> implementation and its
                     <a href="api/core/org/apache/lucene/search/Scorer.html">Scorer</a> instance.  In the case of any type of
                     <a href="api/core/org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a>, scoring is handled by the
-                    <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/BooleanQuery.java?view=log">BooleanWeight2</a> (link goes to ViewVC BooleanQuery java code which contains the BooleanWeight2 inner class),
-                    unless 
-                    <a href="api/core/org/apache/lucene/search/Weight.html#scoresDocsOutOfOrder()">
-                        Weight#scoresDocsOutOfOrder()</a> method is set to true,
-                in which case the
+                    <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/BooleanQuery.java?view=log">BooleanWeight2</a>
+                    (link goes to ViewVC BooleanQuery java code which contains the BooleanWeight2 inner class) or
                     <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/BooleanQuery.java?view=log">BooleanWeight</a>
-                    (link goes to ViewVC BooleanQuery java code, which contains the BooleanWeight inner class) from the 1.4 version of Lucene is used by default.
-                    See <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/CHANGES.txt">CHANGES.txt</a> under release 1.9 RC1 for more information on choosing which Scorer to use.
+                    (link goes to ViewVC BooleanQuery java code, which contains the BooleanWeight inner class).
                 </p>
-                <p>ry#setUseScorer14(boolean)
+                <p>
                     Assuming the use of the BooleanWeight2, a
                     BooleanScorer2 is created by bringing together
                     all of the

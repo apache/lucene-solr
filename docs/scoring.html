@@ -72,7 +72,7 @@
 <a class="unselected" href="http://wiki.apache.org/lucene-java">Wiki</a>
 </li>
 <li class="current">
-<a class="selected" href="index.html">Lucene 2.9 Documentation</a>
+<a class="selected" href="index.html">Lucene 3.0 Documentation</a>
 </li>
 </ul>
 <!--+
@@ -448,16 +448,12 @@ document.write("Last Published: " + document.lastModified);
                 control finally passes to the <a href="api/core/org/apache/lucene/search/Weight.html">Weight</a> implementation and its
                     <a href="api/core/org/apache/lucene/search/Scorer.html">Scorer</a> instance.  In the case of any type of
                     <a href="api/core/org/apache/lucene/search/BooleanQuery.html">BooleanQuery</a>, scoring is handled by the
-                    <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/BooleanQuery.java?view=log">BooleanWeight2</a> (link goes to ViewVC BooleanQuery java code which contains the BooleanWeight2 inner class),
-                    unless 
-                    <a href="api/core/org/apache/lucene/search/Weight.html#scoresDocsOutOfOrder()">
-                        Weight#scoresDocsOutOfOrder()</a> method is set to true,
-                in which case the
+                    <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/BooleanQuery.java?view=log">BooleanWeight2</a>
+                    (link goes to ViewVC BooleanQuery java code which contains the BooleanWeight2 inner class) or
                     <a href="http://svn.apache.org/viewvc/lucene/java/trunk/src/java/org/apache/lucene/search/BooleanQuery.java?view=log">BooleanWeight</a>
-                    (link goes to ViewVC BooleanQuery java code, which contains the BooleanWeight inner class) from the 1.4 version of Lucene is used by default.
-                    See <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/CHANGES.txt">CHANGES.txt</a> under release 1.9 RC1 for more information on choosing which Scorer to use.
+                    (link goes to ViewVC BooleanQuery java code, which contains the BooleanWeight inner class).
                 </p>
-<p>ry#setUseScorer14(boolean)
+<p>
                     Assuming the use of the BooleanWeight2, a
                     BooleanScorer2 is created by bringing together
                     all of the
@@ -467,13 +463,13 @@ document.write("Last Published: " + document.lastModified);
                     provided by each scorer while factoring in the coord() score.
                     <!-- Do we want to fill in the details of the counting sum scorer, disjunction scorer, etc.? -->
                 </p>
-<a name="N1011A"></a><a name="Query Classes"></a>
+<a name="N10112"></a><a name="Query Classes"></a>
 <h3 class="boxed">Query Classes</h3>
 <p>For information on the Query Classes, refer to the
                     <a href="api/core/org/apache/lucene/search/package-summary.html#query">search package javadocs</a>
                 
 </p>
-<a name="N10127"></a><a name="Changing Similarity"></a>
+<a name="N1011F"></a><a name="Changing Similarity"></a>
 <h3 class="boxed">Changing Similarity</h3>
 <p>One of the ways of changing the scoring characteristics of Lucene is to change the similarity factors.  For information on
                 how to do this, see the
@@ -481,7 +477,7 @@ document.write("Last Published: " + document.lastModified);
 </p>
 </div>
         
-<a name="N10134"></a><a name="Changing your Scoring -- Expert Level"></a>
+<a name="N1012C"></a><a name="Changing your Scoring -- Expert Level"></a>
 <h2 class="boxed">Changing your Scoring -- Expert Level</h2>
 <div class="section">
 <p>At a much deeper level, one can affect scoring by implementing their own Query classes (and related scoring classes.)  To learn more
@@ -492,10 +488,10 @@ document.write("Last Published: " + document.lastModified);
 </div>
 
         
-<a name="N10141"></a><a name="Appendix"></a>
+<a name="N10139"></a><a name="Appendix"></a>
 <h2 class="boxed">Appendix</h2>
 <div class="section">
-<a name="N10146"></a><a name="Algorithm"></a>
+<a name="N1013E"></a><a name="Algorithm"></a>
 <h3 class="boxed">Algorithm</h3>
 <p>This section is mostly notes on stepping through the Scoring process and serves as
                     fertilizer for the earlier sections.</p>
