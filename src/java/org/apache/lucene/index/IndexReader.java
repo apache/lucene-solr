@@ -58,14 +58,11 @@ import java.util.Map;
  <p>
 
  <b>NOTE</b>: as of 2.4, it's possible to open a read-only
- IndexReader using one of the static open methods that
- accepts the boolean readOnly parameter.  Such a reader has
- better concurrency as it's not necessary to synchronize on
- the isDeleted method.  Currently the default for readOnly
- is false, meaning if not specified you will get a
- read/write IndexReader.  But in 3.0 this default will
- change to true, meaning you must explicitly specify false
- if you want to make changes with the resulting IndexReader.
+ IndexReader using the static open methods that accept the 
+ boolean readOnly parameter.  Such a reader has better 
+ concurrency as it's not necessary to synchronize on the 
+ isDeleted method.  You must specify false if you want to 
+ make changes with the resulting IndexReader.
  </p>
 
  <a name="thread-safety"></a><p><b>NOTE</b>: {@link
