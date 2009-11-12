@@ -988,14 +988,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return norms.containsKey(field);
   }
 
-  static byte[] createFakeNorms(int size) {
-    byte[] ones = new byte[size];
-    Arrays.fill(ones, DefaultSimilarity.encodeNorm(1.0f));
-    return ones;
-  }
-
-  private byte[] ones;
-
   // can return null if norms aren't stored
   protected synchronized byte[] getNorms(String field) throws IOException {
     Norm norm = norms.get(field);

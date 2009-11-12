@@ -105,7 +105,6 @@ public class FieldNormModifier {
   public void reSetNorms(String field) throws IOException {
     String fieldName = StringHelper.intern(field);
     int[] termCounts = new int[0];
-    byte[] fakeNorms = new byte[0];
     
     IndexReader reader = null;
     TermEnum termEnum = null;
@@ -113,9 +112,6 @@ public class FieldNormModifier {
     try {
       reader = IndexReader.open(dir, true);
       termCounts = new int[reader.maxDoc()];
-      // if we are killing norms, get fake ones
-      if (sim == null)
-        fakeNorms = SegmentReader.createFakeNorms(reader.maxDoc());
       try {
         termEnum = reader.terms(new Term(field));
         try {
@@ -145,7 +141,7 @@ public class FieldNormModifier {
       for (int d = 0; d < termCounts.length; d++) {
         if (! reader.isDeleted(d)) {
           if (sim == null)
-            reader.setNorm(d, fieldName, fakeNorms[0]);
+            reader.setNorm(d, fieldName, Similarity.encodeNorm(1.0f));
           else
             reader.setNorm(d, fieldName, Similarity.encodeNorm(sim.lengthNorm(fieldName, termCounts[d])));
         }

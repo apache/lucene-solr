@@ -290,12 +290,6 @@ public class MultiReader extends IndexReader implements Cloneable {
     }
     return false;
   }
-
-  private byte[] ones;
-  private byte[] fakeNorms() {
-    if (ones==null) ones=SegmentReader.createFakeNorms(maxDoc());
-    return ones;
-  }
   
   @Override
   public synchronized byte[] norms(String field) throws IOException {
