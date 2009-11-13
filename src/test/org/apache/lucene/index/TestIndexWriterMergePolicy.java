@@ -231,7 +231,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
         numSegments++;
       } else {
         if (upperBound * mergeFactor <= maxMergeDocs) {
-          assertTrue("numSegments=" + numSegments + " vs mergeFactor=" + mergeFactor, numSegments < mergeFactor);
+          assertTrue("maxMergeDocs=" + maxMergeDocs + "; numSegments=" + numSegments + "; upperBound=" + upperBound + "; mergeFactor=" + mergeFactor, numSegments < mergeFactor);
         }
 
         do {
