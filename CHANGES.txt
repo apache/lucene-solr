@@ -43,6 +43,8 @@ Bug Fixes
 Other Changes
 ----------------------
 
+1. SOLR-1561: Added Lucene 2.9.1 spatial contrib jar to lib. (gsingers)
+
 Build
 ----------------------
 
