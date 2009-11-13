@@ -38,10 +38,18 @@ import java.io.PrintWriter;
  **/
 public class QueryDriver {
   public static void main(String[] args) throws Exception {
-
+    if (args.length != 4) {
+      System.err.println("Usage: QueryDriver <topicsFile> <qrelsFile> <submissionFile> <indexDir>");
+      System.err.println("topicsFile: input file containing queries");
+      System.err.println("qrelsFile: input file containing relevance judgements");
+      System.err.println("submissionFile: output submission file for trec_eval");
+      System.err.println("indexDir: index directory");
+      System.exit(1);
+    }
     
     File topicsFile = new File(args[0]);
     File qrelsFile = new File(args[1]);
+    SubmissionReport submitLog = new SubmissionReport(new PrintWriter(args[2]), "lucene");
     FSDirectory dir = FSDirectory.open(new File(args[3]));
     Searcher searcher = new IndexSearcher(dir, true);
 
@@ -66,7 +74,6 @@ public class QueryDriver {
     // run the benchmark
     QualityBenchmark qrun = new QualityBenchmark(qqs, qqParser, searcher, docNameField);
     qrun.setMaxResults(maxResults);
-    SubmissionReport submitLog = null;
     QualityStats stats[] = qrun.execute(judge, submitLog, logger);
 
     // print an avarage sum of the results

@@ -4,6 +4,11 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+11/12/2009
+  LUCENE-2058: specify trec_eval submission output from the command line.
+  Previously, 4 arguments were required, but the third was unused. The 
+  third argument is now the desired location of submission.txt  (Robert Muir)
+
 11/08/2009
   LUCENE-2044: Added delete.percent.rand.seed to seed the Random instance
   used by DeleteByPercentTask.  (Mike McCandless)
