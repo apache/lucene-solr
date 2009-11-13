@@ -153,7 +153,10 @@ Build
 
 * LUCENE-486: Remove test->demo dependencies. (Michael Busch)
 
-Test Cases
+Build
+
+ * LUCENE-2024: Raise build requirements to Java 1.5 and ANT 1.7.0
+   (Uwe Schindler, Mike McCandless)
 
 ======================= Release 2.9.1 2009-11-06 =======================
 
