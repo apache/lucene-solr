@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.document.Document;
@@ -35,11 +34,10 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.highlight.Highlighter;
-import org.apache.lucene.search.highlight.InvalidTokenOffsetsException;
 import org.apache.lucene.store.Directory;
 
 
@@ -60,29 +58,44 @@ import org.apache.lucene.store.Directory;
  */
 public abstract class ReadTask extends PerfTask {
 
+  private final QueryMaker queryMaker;
+
   public ReadTask(PerfRunData runData) {
     super(runData);
+    if (withSearch()) {
+      queryMaker = getQueryMaker();
+    } else {
+      queryMaker = null;
+    }
   }
   @Override
   public int doLogic() throws Exception {
     int res = 0;
-    boolean closeReader = false;
 
     // open reader or use existing one
-    IndexReader ir = getRunData().getIndexReader();
-    if (ir == null) {
+    IndexSearcher searcher = getRunData().getIndexSearcher();
+
+    IndexReader reader;
+
+    final boolean closeSearcher;
+    if (searcher == null) {
+      // open our own reader
       Directory dir = getRunData().getDirectory();
-      ir = IndexReader.open(dir, true);
-      closeReader = true;
-      //res++; //this is confusing, comment it out
+      reader = IndexReader.open(dir, true);
+      searcher = new IndexSearcher(reader);
+      closeSearcher = true;
+    } else {
+      // use existing one; this passes +1 ref to us
+      reader = searcher.getIndexReader();
+      closeSearcher = false;
     }
 
     // optionally warm and add num docs traversed to count
     if (withWarm()) {
       Document doc = null;
-      for (int m = 0; m < ir.maxDoc(); m++) {
-        if (!ir.isDeleted(m)) {
-          doc = ir.document(m);
+      for (int m = 0; m < reader.maxDoc(); m++) {
+        if (!reader.isDeleted(m)) {
+          doc = reader.document(m);
           res += (doc == null ? 0 : 1);
         }
       }
@@ -90,24 +103,18 @@ public abstract class ReadTask extends PerfTask {
 
     if (withSearch()) {
       res++;
-      final IndexSearcher searcher;
-      if (closeReader) {
-        searcher = new IndexSearcher(ir);
-      } else {
-        searcher = getRunData().getIndexSearcher();
-      }
-      QueryMaker queryMaker = getQueryMaker();
       Query q = queryMaker.makeQuery();
       Sort sort = getSort();
       TopDocs hits;
       final int numHits = numHits();
       if (numHits > 0) {
         if (sort != null) {
-          // TODO: change the following to create TFC with in/out-of order
-          // according to whether the query's Scorer.
+          Weight w = q.weight(searcher);
           TopFieldCollector collector = TopFieldCollector.create(sort, numHits,
-              true, withScore(), withMaxScore(), false);
-          searcher.search(q, collector);
+                                                                 true, withScore(),
+                                                                 withMaxScore(),
+                                                                 !w.scoresDocsOutOfOrder());
+          searcher.search(w, null, collector);
           hits = collector.topDocs();
         } else {
           hits = searcher.search(q, numHits);
@@ -115,21 +122,18 @@ public abstract class ReadTask extends PerfTask {
 
         final String printHitsField = getRunData().getConfig().get("print.hits.field", null);
         if (printHitsField != null && printHitsField.length() > 0) {
-          final IndexReader r = searcher.getIndexReader();
           if (q instanceof MultiTermQuery) {
             System.out.println("MultiTermQuery term count = " + ((MultiTermQuery) q).getTotalNumberOfTerms());
           }
           System.out.println("totalHits = " + hits.totalHits);
-          System.out.println("maxDoc()  = " + r.maxDoc());
-          System.out.println("numDocs() = " + r.numDocs());
+          System.out.println("maxDoc()  = " + reader.maxDoc());
+          System.out.println("numDocs() = " + reader.numDocs());
           for(int i=0;i<hits.scoreDocs.length;i++) {
             final int docID = hits.scoreDocs[i].doc;
-            final Document doc = r.document(docID);
+            final Document doc = reader.document(docID);
             System.out.println("  " + i + ": doc=" + docID + " score=" + hits.scoreDocs[i].score + " " + printHitsField + " =" + doc.get(printHitsField));
           }
         }
-
-        //System.out.println("q=" + q + ":" + hits.totalHits + " total hits"); 
 
         if (withTraverse()) {
           final ScoreDoc[] scoreDocs = hits.scoreDocs;
@@ -147,13 +151,13 @@ public abstract class ReadTask extends PerfTask {
               int id = scoreDocs[m].doc;
               res++;
               if (retrieve) {
-                Document document = retrieveDoc(ir, id);
+                Document document = retrieveDoc(reader, id);
                 res += document != null ? 1 : 0;
                 if (numHighlight > 0 && m < numHighlight) {
                   Collection<String> fieldsToHighlight = getFieldsToHighlight(document);
                   for (final String field : fieldsToHighlight) {
                     String text = document.get(field);
-                    res += highlighter.doHighlight(ir, id, field, document, analyzer, text);
+                    res += highlighter.doHighlight(reader, id, field, document, analyzer, text);
                   }
                 }
               }
@@ -161,12 +165,13 @@ public abstract class ReadTask extends PerfTask {
           }
         }
       }
-
-      searcher.close();
     }
 
-    if (closeReader) {
-      ir.close();
+    if (closeSearcher) {
+      searcher.close();
+    } else {
+      // Release our +1 ref from above
+      reader.decRef();
     }
     return res;
   }

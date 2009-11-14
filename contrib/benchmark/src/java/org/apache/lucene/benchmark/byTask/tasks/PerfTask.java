@@ -59,7 +59,9 @@ public abstract class PerfTask implements Cloneable {
   private int maxDepthLogStart = 0;
   private boolean disableCounting = false;
   protected String params = null;
-  
+
+  private boolean runInBackground;
+
   protected static final String NEW_LINE = System.getProperty("line.separator");
 
   /** Should not be used externally */
@@ -69,7 +71,21 @@ public abstract class PerfTask implements Cloneable {
       name = name.substring(0, name.length() - 4);
     }
   }
-  
+
+  public void setRunInBackground() {
+    runInBackground = true;
+  }
+
+  public boolean getRunInBackground() {
+    return runInBackground;
+  }
+
+  protected volatile boolean stopNow;
+
+  public void stopNow() {
+    stopNow = true;
+  }
+
   public PerfTask(PerfRunData runData) {
     this();
     this.runData = runData;
@@ -112,9 +128,7 @@ public abstract class PerfTask implements Cloneable {
    * @return number of work items done by this task.
    */
   public final int runAndMaybeStats(boolean reportStats) throws Exception {
-    if (reportStats && depth <= maxDepthLogStart && !shouldNeverLogAtStart()) {
-      System.out.println("------------> starting task: " + getName());
-    }
+    stopNow = false;
     if (!reportStats || shouldNotRecordStats()) {
       setup();
       int count = doLogic();
@@ -122,9 +136,12 @@ public abstract class PerfTask implements Cloneable {
       tearDown();
       return count;
     }
+    if (reportStats && depth <= maxDepthLogStart && !shouldNeverLogAtStart()) {
+      System.out.println("------------> starting task: " + getName());
+    }
     setup();
     Points pnts = runData.getPoints();
-    TaskStats ts = pnts.markTaskStart(this,runData.getConfig().getRoundNumber());
+    TaskStats ts = pnts.markTaskStart(this, runData.getConfig().getRoundNumber());
     int count = doLogic();
     count = disableCounting ? 0 : count;
     pnts.markTaskEnd(ts, count);
@@ -197,6 +214,9 @@ public abstract class PerfTask implements Cloneable {
       sb.append('-');
     }
     sb.append(getName());
+    if (getRunInBackground()) {
+      sb.append(" &");
+    }
     return sb.toString();
   }
 

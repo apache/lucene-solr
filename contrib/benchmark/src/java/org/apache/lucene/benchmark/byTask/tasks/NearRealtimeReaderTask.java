@@ -17,18 +17,9 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TopFieldDocs;
-import org.apache.lucene.index.Term;
 
 /**
  * Spawns a BG thread that periodically (defaults to 3.0
@@ -43,97 +34,67 @@ import org.apache.lucene.index.Term;
  */
 public class NearRealtimeReaderTask extends PerfTask {
 
-  ReopenThread t;
-  float pauseSec = 3.0f;
-
-  private static class ReopenThread extends Thread {
-
-    final IndexWriter writer;
-    final int pauseMsec;
-
-    public volatile boolean done;
-
-    ReopenThread(IndexWriter writer, float pauseSec) {
-      this.writer = writer;
-      this.pauseMsec = (int) (1000*pauseSec);
-      setDaemon(true);
-    }
-
-    @Override
-    public void run() {
-
-      IndexReader reader = null;
-
-      final Query query = new TermQuery(new Term("body", "1"));
-      final SortField sf = new SortField("docdate", SortField.LONG);
-      final Sort sort = new Sort(sf);
-
-      try {
-        while(!done) {
-          final long t0 = System.currentTimeMillis();
-          if (reader == null) {
-            reader = writer.getReader();
-          } else {
-            final IndexReader newReader = reader.reopen();
-            if (reader != newReader) {
-              reader.close();
-              reader = newReader;
-            }
-          }
-
-          final long t1 = System.currentTimeMillis();
-          final TopFieldDocs hits = new IndexSearcher(reader).search(query, null, 10, sort);
-          final long t2 = System.currentTimeMillis();
-          System.out.println("nrt: open " + (t1-t0) + " msec; search " + (t2-t1) + " msec, " + hits.totalHits +
-                             " results; " + reader.numDocs() + " docs");
-
-          final long t4 = System.currentTimeMillis();
-          final int delay = (int) (pauseMsec - (t4-t0));
-          if (delay > 0) {
-            try {
-              Thread.sleep(delay);
-            } catch (InterruptedException ie) {
-              throw new RuntimeException(ie);
-            }
-          }
-        }
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    }
-  }
+  long pauseMSec = 3000L;
 
   public NearRealtimeReaderTask(PerfRunData runData) {
     super(runData);
   }
 
   @Override
-  public int doLogic() throws IOException {
-    if (t == null) {
-      IndexWriter w = getRunData().getIndexWriter();
-      t = new ReopenThread(w, pauseSec);
-      t.start();
+  public int doLogic() throws Exception {
+
+    final PerfRunData runData = getRunData();
+
+    // Get initial reader
+    IndexWriter w = runData.getIndexWriter();
+    if (w == null) {
+      throw new RuntimeException("please open the writer before invoking NearRealtimeReader");
     }
-    return 1;
+
+    if (runData.getIndexReader() != null) {
+      throw new RuntimeException("please close the existing reader before invoking NearRealtimeReader");
+    }
+    
+    long t = System.currentTimeMillis();
+    IndexReader r = w.getReader();
+    runData.setIndexReader(r);
+    // Transfer our reference to runData
+    r.decRef();
+
+    // TODO: gather basic metrics for reporting -- eg mean,
+    // stddev, min/max reopen latencies
+
+    // Parent sequence sets stopNow
+    int reopenCount = 0;
+    while(!stopNow) {
+      long waitForMsec = (long) (pauseMSec - (System.currentTimeMillis() - t));
+      if (waitForMsec > 0) {
+        Thread.sleep(waitForMsec);
+      }
+
+      t = System.currentTimeMillis();
+      final IndexReader newReader = r.reopen();
+      if (r != newReader) {
+        // TODO: somehow we need to enable warming, here
+        runData.setIndexReader(newReader);
+        // Transfer our reference to runData
+        newReader.decRef();
+        r = newReader;
+        reopenCount++;
+      }
+    }
+
+    return reopenCount;
   }
 
   @Override
   public void setParams(String params) {
     super.setParams(params);
-    pauseSec = Float.parseFloat(params);
+    pauseMSec = (long) (1000.0*Float.parseFloat(params));
   }
 
   @Override
   public boolean supportsParams() {
     return true;
-  }
-
-  // Close the thread
-  @Override
-  public void close() throws InterruptedException {
-    if (t != null) {
-      t.done = true;
-      t.join();
-    }
   }
 }

@@ -52,6 +52,7 @@ public class FlushReaderTask extends PerfTask {
     } else {
       reader.flush();
     }
+    reader.decRef();
     return 1;
   }
 }

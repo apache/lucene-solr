@@ -127,11 +127,10 @@ public class CreateIndexTask extends PerfTask {
     PerfRunData runData = getRunData();
     Config config = runData.getConfig();
     
-    IndexDeletionPolicy indexDeletionPolicy = getIndexDeletionPolicy(config);
-    
     IndexWriter writer = new IndexWriter(runData.getDirectory(),
                                          runData.getAnalyzer(),
-                                         true, indexDeletionPolicy,
+                                         true,
+                                         getIndexDeletionPolicy(config),
                                          IndexWriter.MaxFieldLength.LIMITED);
     setIndexWriterConfig(writer, config);
     runData.setIndexWriter(writer);

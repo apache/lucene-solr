@@ -18,6 +18,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import java.util.ArrayList;
+import java.util.List;
 import java.text.NumberFormat;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
@@ -131,6 +132,33 @@ public class TaskSequence extends PerfTask {
     return ( parallel ? doParallelTasks() : doSerialTasks());
   }
 
+  private static class RunBackgroundTask extends Thread {
+    private final PerfTask task;
+    private final boolean letChildReport;
+    private volatile int count;
+
+    public RunBackgroundTask(PerfTask task, boolean letChildReport) {
+      this.task = task;
+      this.letChildReport = letChildReport;
+    }
+
+    public void stopNow() throws InterruptedException {
+      task.stopNow();
+    }
+
+    public int getCount() {
+      return count;
+    }
+
+    public void run() {
+      try {
+        count = task.runAndMaybeStats(letChildReport);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
   private int doSerialTasks() throws Exception {
     if (rate > 0) {
       return doSerialTasksWithRate();
@@ -142,20 +170,44 @@ public class TaskSequence extends PerfTask {
     final long t0 = System.currentTimeMillis();
 
     final long runTime = (long) (runTimeSec*1000);
+    List<RunBackgroundTask> bgTasks = null;
 
     for (int k=0; fixedTime || (repetitions==REPEAT_EXHAUST && !exhausted) || k<repetitions; k++) {
-      for(int l=0;l<tasksArray.length;l++)
-        try {
-          final PerfTask task = tasksArray[l];
-          count += task.runAndMaybeStats(letChildReport);
-          if (anyExhaustibleTasks)
-            updateExhausted(task);
-        } catch (NoMoreDataException e) {
-          exhausted = true;
+      if (stopNow) {
+        break;
+      }
+      for(int l=0;l<tasksArray.length;l++) {
+        final PerfTask task = tasksArray[l];
+        if (task.getRunInBackground()) {
+          if (bgTasks == null) {
+            bgTasks = new ArrayList<RunBackgroundTask>();
+          }
+          RunBackgroundTask bgTask = new RunBackgroundTask(task, letChildReport);
+          bgTask.start();
+          bgTasks.add(bgTask);
+        } else {
+          try {
+            count += task.runAndMaybeStats(letChildReport);
+            if (anyExhaustibleTasks)
+              updateExhausted(task);
+          } catch (NoMoreDataException e) {
+            exhausted = true;
+          }
         }
+      }
       if (fixedTime && System.currentTimeMillis()-t0 > runTime) {
         repetitions = k+1;
         break;
+      }
+    }
+
+    if (bgTasks != null) {
+      for(RunBackgroundTask bgTask : bgTasks) {
+        bgTask.stopNow();
+      }
+      for(RunBackgroundTask bgTask : bgTasks) {
+        bgTask.join();
+        count += bgTask.getCount();
       }
     }
     return count;
@@ -167,12 +219,22 @@ public class TaskSequence extends PerfTask {
     long nextStartTime = System.currentTimeMillis();
     int count = 0;
     for (int k=0; (repetitions==REPEAT_EXHAUST && !exhausted) || k<repetitions; k++) {
+      if (stopNow) {
+        break;
+      }
       for (int l=0;l<tasksArray.length;l++) {
         final PerfTask task = tasksArray[l];
-        long waitMore = nextStartTime - System.currentTimeMillis();
-        if (waitMore > 0) {
-          //System.out.println("wait: "+waitMore+" for rate: "+ratePerMin+" (delayStep="+delayStep+")");
-          Thread.sleep(waitMore);
+        while(!stopNow) {
+          long waitMore = nextStartTime - System.currentTimeMillis();
+          if (waitMore > 0) {
+            // TODO: better to use condition to notify
+            Thread.sleep(1);
+          } else {
+            break;
+          }
+        }
+        if (stopNow) {
+          break;
         }
         nextStartTime += delayStep; // this aims at avarage rate. 
         try {
@@ -204,46 +266,71 @@ public class TaskSequence extends PerfTask {
     }
   }
 
+  private class ParallelTask extends Thread {
+
+    public int count;
+    public final PerfTask task;
+
+    public ParallelTask(PerfTask task) {
+      this.task = task;
+    }
+
+    @Override
+    public void run() {
+      try {
+        int n = task.runAndMaybeStats(letChildReport);
+        if (anyExhaustibleTasks) {
+          updateExhausted(task);
+        }
+        count += n;
+      } catch (NoMoreDataException e) {
+        exhausted = true;
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  @Override
+  public void stopNow() {
+    super.stopNow();
+    // Forwards top request to children
+    if (runningParallelTasks != null) {
+      for(ParallelTask t : runningParallelTasks) {
+        t.task.stopNow();
+      }
+    }
+  }
+
+  ParallelTask[] runningParallelTasks;
+
   private int doParallelTasks() throws Exception {
     initTasksArray();
-    final int count [] = {0};
-    Thread t[] = new Thread [repetitions * tasks.size()];
+    ParallelTask t[] = runningParallelTasks = new ParallelTask[repetitions * tasks.size()];
     // prepare threads
-    int indx = 0;
+    int index = 0;
     for (int k=0; k<repetitions; k++) {
       for (int i = 0; i < tasksArray.length; i++) {
         final PerfTask task = (PerfTask) tasksArray[i].clone();
-        t[indx++] = new Thread() {
-          @Override
-          public void run() {
-            try {
-              int n = task.runAndMaybeStats(letChildReport);
-              if (anyExhaustibleTasks)
-                updateExhausted(task);
-              synchronized (count) {
-                count[0] += n;
-              }
-            } catch (NoMoreDataException e) {
-              exhausted = true;
-            } catch (Exception e) {
-              throw new RuntimeException(e);
-            }
-          }
-        };
+        t[index++] = new ParallelTask(task);
       }
     }
     // run threads
     startThreads(t);
+
     // wait for all threads to complete
+    int count = 0;
     for (int i = 0; i < t.length; i++) {
       t[i].join();
+      count += t[i].count;
     }
+
     // return total count
-    return count[0];
+    return count;
   }
 
   // run threads
-  private void startThreads(Thread[] t) throws InterruptedException {
+  private void startThreads(ParallelTask[] t) throws InterruptedException {
     if (rate > 0) {
       startlThreadsWithRate(t);
       return;
@@ -254,13 +341,12 @@ public class TaskSequence extends PerfTask {
   }
 
   // run threads with rate
-  private void startlThreadsWithRate(Thread[] t) throws InterruptedException {
+  private void startlThreadsWithRate(ParallelTask[] t) throws InterruptedException {
     long delayStep = (perMin ? 60000 : 1000) /rate;
     long nextStartTime = System.currentTimeMillis();
     for (int i = 0; i < t.length; i++) {
       long waitMore = nextStartTime - System.currentTimeMillis();
       if (waitMore > 0) {
-        //System.out.println("thread wait: "+waitMore+" for rate: "+ratePerMin+" (delayStep="+delayStep+")");
         Thread.sleep(waitMore);
       }
       nextStartTime += delayStep; // this aims at average rate of starting threads. 
@@ -297,6 +383,9 @@ public class TaskSequence extends PerfTask {
     }
     if (rate>0) {
       sb.append(",  rate: " + rate+"/"+(perMin?"min":"sec"));
+    }
+    if (getRunInBackground()) {
+      sb.append(" &");
     }
     return sb.toString();
   }

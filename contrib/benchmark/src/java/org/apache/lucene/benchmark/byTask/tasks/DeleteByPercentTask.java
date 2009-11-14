@@ -88,6 +88,7 @@ public class DeleteByPercentTask extends PerfTask {
       termDocs.close();
     }
     System.out.println("--> processed (delete) " + numDeleted + " docs");
+    r.decRef();
     return numDeleted;
   }
 }

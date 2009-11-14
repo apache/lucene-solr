@@ -18,6 +18,7 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.index.IndexReader;
 
 /**
  * Delete a document by docid. If no docid param is supplied, deletes doc with
@@ -42,8 +43,10 @@ public class DeleteDocTask extends PerfTask {
   
   @Override
   public int doLogic() throws Exception {
-    getRunData().getIndexReader().deleteDocument(docid);
+    IndexReader r = getRunData().getIndexReader();
+    r.deleteDocument(docid);
     lastDeleted = docid;
+    r.decRef();
     return 1; // one work item done here
   }
 

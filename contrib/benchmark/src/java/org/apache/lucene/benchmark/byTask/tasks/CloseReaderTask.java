@@ -35,11 +35,12 @@ public class CloseReaderTask extends PerfTask {
 
   @Override
   public int doLogic() throws IOException {
-    IndexReader reader= getRunData().getIndexReader();
-    if (reader!=null) {
-      reader.close();
-    }
+    IndexReader reader = getRunData().getIndexReader();
     getRunData().setIndexReader(null);
+    if (reader.getRefCount() != 1) {
+      System.out.println("WARNING: CloseReader: reference count is currently " + reader.getRefCount());
+    }
+    reader.decRef();
     return 1;
   }
 

@@ -21,6 +21,7 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexWriter;
 
 /**
  * Update a document, using IndexWriter.updateDocument,
@@ -62,7 +63,8 @@ public class UpdateDocTask extends PerfTask {
     if (docID == null) {
       throw new IllegalStateException("document must define the docid field");
     }
-    getRunData().getIndexWriter().updateDocument(new Term(DocMaker.ID_FIELD, docID), doc);
+    final IndexWriter iw = getRunData().getIndexWriter();
+    iw.updateDocument(new Term(DocMaker.ID_FIELD, docID), doc);
     return 1;
   }
 

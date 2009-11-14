@@ -173,25 +173,41 @@ public class PerfRunData {
   }
 
   /**
-   * @return Returns the indexReader.
+   * @return Returns the indexReader.  NOTE: this returns a
+   * reference.  You must call IndexReader.decRef() when
+   * you're done.
    */
-  public IndexReader getIndexReader() {
+  public synchronized IndexReader getIndexReader() {
+    if (indexReader != null) {
+      indexReader.incRef();
+    }
     return indexReader;
   }
 
   /**
-   * @return Returns the indexSearcher.
+   * @return Returns the indexSearcher.  NOTE: this returns
+   * a reference to the underlying IndexReader.  You must
+   * call IndexReader.decRef() when you're done.
    */
-  public IndexSearcher getIndexSearcher() {
+  public synchronized IndexSearcher getIndexSearcher() {
+    if (indexReader != null) {
+      indexReader.incRef();
+    }
     return indexSearcher;
   }
 
   /**
    * @param indexReader The indexReader to set.
    */
-  public void setIndexReader(IndexReader indexReader) {
+  public synchronized void setIndexReader(IndexReader indexReader) throws IOException {
+    if (this.indexReader != null) {
+      // Release current IR
+      this.indexReader.decRef();
+    }
     this.indexReader = indexReader;
     if (indexReader != null) {
+      // Hold reference to new IR
+      indexReader.incRef();
       indexSearcher = new IndexSearcher(indexReader);
     } else {
       indexSearcher = null;

@@ -1,4 +1,5 @@
 package org.apache.lucene.benchmark.byTask.tasks;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,30 +17,36 @@ package org.apache.lucene.benchmark.byTask.tasks;
  * limitations under the License.
  */
 
-
 import java.io.IOException;
+import java.io.PrintStream;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 
 /**
-* Reopens IndexReader and closes old IndexReader.
-*
-*/
-public class ReopenReaderTask extends PerfTask {
-  public ReopenReaderTask(PerfRunData runData) {
+ * Rollback the index writer.
+ */
+public class RollbackIndexTask extends PerfTask {
+
+  public RollbackIndexTask(PerfRunData runData) {
     super(runData);
   }
 
+  boolean doWait = true;
+
   @Override
   public int doLogic() throws IOException {
-    IndexReader r = getRunData().getIndexReader();
-    IndexReader nr = r.reopen();
-    if (nr != r) {
-      getRunData().setIndexReader(nr);
-      nr.decRef();
+    IndexWriter iw = getRunData().getIndexWriter();
+    if (iw != null) {
+      // If infoStream was set to output to a file, close it.
+      PrintStream infoStream = iw.getInfoStream();
+      if (infoStream != null && infoStream != System.out
+          && infoStream != System.err) {
+        infoStream.close();
+      }
+      iw.rollback();
+      getRunData().setIndexWriter(null);
     }
-    r.decRef();
     return 1;
   }
 }

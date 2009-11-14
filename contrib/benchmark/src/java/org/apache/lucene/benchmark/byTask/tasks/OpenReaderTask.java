@@ -47,35 +47,27 @@ public class OpenReaderTask extends PerfTask {
     Directory dir = getRunData().getDirectory();
     Config config = getRunData().getConfig();
     IndexReader r = null;
-    if (commitUserData != null) {
-      r = openCommitPoint(commitUserData, dir, config, readOnly);
+    final IndexDeletionPolicy deletionPolicy;
+    if (readOnly) {
+      deletionPolicy = null;
     } else {
-      IndexDeletionPolicy indexDeletionPolicy = CreateIndexTask.getIndexDeletionPolicy(config);
-      r = IndexReader.open(dir, indexDeletionPolicy, readOnly); 
+      deletionPolicy = CreateIndexTask.getIndexDeletionPolicy(config);
+    }
+    if (commitUserData != null) {
+      r = IndexReader.open(OpenReaderTask.findIndexCommit(dir, commitUserData),
+                           deletionPolicy,
+                           readOnly); 
+    } else {
+      r = IndexReader.open(dir,
+                           deletionPolicy,
+                           readOnly); 
     }
     getRunData().setIndexReader(r);
+    // We transfer reference to the run data
+    r.decRef();
     return 1;
   }
  
-  public static IndexReader openCommitPoint(String userData, Directory dir, Config config, boolean readOnly) throws IOException {
-    IndexReader r = null;
-    Collection<IndexCommit> commits = IndexReader.listCommits(dir);
-    for (final IndexCommit ic : commits) {
-      Map<String,String> map = ic.getUserData();
-      String ud = null;
-      if (map != null) {
-        ud = map.get(USER_DATA);
-      }
-      if (ud != null && ud.equals(userData)) {
-        IndexDeletionPolicy indexDeletionPolicy = CreateIndexTask.getIndexDeletionPolicy(config);
-        r = IndexReader.open(ic, indexDeletionPolicy, readOnly);
-        break;
-      }
-    }
-    if (r == null) throw new IOException("cannot find commitPoint userData:"+userData);
-    return r;
-  }
-  
   @Override
   public void setParams(String params) {
     super.setParams(params);
@@ -93,5 +85,21 @@ public class OpenReaderTask extends PerfTask {
   @Override
   public boolean supportsParams() {
     return true;
+  }
+
+  public static IndexCommit findIndexCommit(Directory dir, String userData) throws IOException {
+    Collection<IndexCommit> commits = IndexReader.listCommits(dir);
+    for (final IndexCommit ic : commits) {
+      Map<String,String> map = ic.getUserData();
+      String ud = null;
+      if (map != null) {
+        ud = map.get(USER_DATA);
+      }
+      if (ud != null && ud.equals(userData)) {
+        return ic;
+      }
+    }
+
+    throw new IOException("index does not contain commit with userData: " + userData);
   }
 }

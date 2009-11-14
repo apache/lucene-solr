@@ -4,6 +4,16 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+11/13/2009
+  LUCENE-2050: Added ability to run tasks within a serial sequence in
+  the background, by appending "&".  The tasks are stopped & joined at
+  the end of the sequence.  Also added Wait and RollbackIndex tasks.
+  Genericized NearRealTimeReaderTask to only reopen the reader
+  (previously it spawned its own thread, and also did searching).
+  Also changed the API of PerfRunData.getIndexReader: it now returns a
+  reference, and it's your job to decRef the reader when you're done
+  using it.  (Mike McCandless)
+
 11/12/2009
   LUCENE-2059: allow TrecContentSource not to change the docname.
   Previously, it would always append the iteration # to the docname.

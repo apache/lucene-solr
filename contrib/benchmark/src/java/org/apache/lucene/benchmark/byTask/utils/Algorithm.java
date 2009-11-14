@@ -186,6 +186,19 @@ public class Algorithm {
               currSequence = seq2;
               colonOk = false;
               break;
+
+            case '&' :
+              if (currSequence.isParallel()) {
+                throw new Exception("Can only create background tasks within a serial task");
+              }
+              if (prevTask == null) {
+                throw new Exception("& was unexpected");
+              } else if (prevTask.getRunInBackground()) {
+                throw new Exception("double & was unexpected");
+              } else {
+                prevTask.setRunInBackground();
+              }
+              break;
     
             case '>' :
               currSequence.setNoChildReport();

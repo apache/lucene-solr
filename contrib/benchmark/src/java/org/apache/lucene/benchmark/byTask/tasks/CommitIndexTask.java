@@ -54,6 +54,7 @@ public class CommitIndexTask extends PerfTask {
       IndexReader r = getRunData().getIndexReader();
       if (r != null) {
         r.commit(commitUserData);
+        r.decRef();
       } else {
         throw new IllegalStateException("neither IndexWriter nor IndexReader is currently open");
       }
