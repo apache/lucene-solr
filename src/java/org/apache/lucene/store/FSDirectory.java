@@ -24,6 +24,7 @@ import java.io.RandomAccessFile;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Constants;
 
 /**
@@ -317,10 +318,7 @@ public abstract class FSDirectory extends Directory {
           // Pause 5 msec
           Thread.sleep(5);
         } catch (InterruptedException ie) {
-          // In 3.0 we will change this to throw
-          // InterruptedException instead
-          Thread.currentThread().interrupt();
-          throw new RuntimeException(ie);
+          throw new ThreadInterruptedException(ie);
         }
       }
     }

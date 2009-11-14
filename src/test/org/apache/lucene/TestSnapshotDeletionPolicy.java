@@ -36,7 +36,7 @@ import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.TestIndexWriter;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
-
+import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -141,8 +141,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
             try {
               Thread.sleep(1);
             } catch (InterruptedException ie) {
-              Thread.currentThread().interrupt();
-              throw new RuntimeException(ie);
+              throw new ThreadInterruptedException(ie);
             }
           }
         }

@@ -66,6 +66,7 @@ import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 public class TestIndexWriter extends LuceneTestCase {
     public TestIndexWriter(String name) {
@@ -2216,8 +2217,7 @@ public class TestIndexWriter extends LuceneTestCase {
             try {
               Thread.sleep(1);
             } catch (InterruptedException ie) {
-              Thread.currentThread().interrupt();
-              throw new RuntimeException(ie);
+              throw new ThreadInterruptedException(ie);
             }
             if (fullCount++ >= 5)
               break;
@@ -4385,18 +4385,13 @@ public class TestIndexWriter extends LuceneTestCase {
             w.addDocument(doc);
             w.commit();
           }
-        } catch (RuntimeException re) {
+        } catch (ThreadInterruptedException re) {
           Throwable e = re.getCause();
-          if (e instanceof InterruptedException) {
-            // Make sure IW restored interrupted bit
-            if (!interrupted()) {
-              System.out.println("FAILED; InterruptedException hit but thread.interrupted() was false");
-              e.printStackTrace(System.out);
-              failed = true;
-              break;
-            }
-          } else {
-            System.out.println("FAILED; unexpected exception");
+          assertTrue(e instanceof InterruptedException);
+          
+          // Make sure IW cleared the interrupted bit
+          if (interrupted()) {
+            System.out.println("FAILED; InterruptedException hit but thread.interrupted() was true");
             e.printStackTrace(System.out);
             failed = true;
             break;

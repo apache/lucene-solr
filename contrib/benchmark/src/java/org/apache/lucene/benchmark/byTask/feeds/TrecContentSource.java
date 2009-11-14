@@ -33,6 +33,7 @@ import java.util.zip.GZIPInputStream;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.StringBufferReader;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * Implements a {@link ContentSource} over the TREC collection.
@@ -302,10 +303,8 @@ public class TrecContentSource extends ContentSource {
     try {
       docData = htmlParser.parse(docData, name, date, r, null);
       addDoc();
-    } catch (InterruptedException e) {
-      IOException ex = new IOException(e.getMessage());
-      ex.initCause(e);
-      throw ex;
+    } catch (InterruptedException ie) {
+      throw new ThreadInterruptedException(ie);
     }
 
     return docData;

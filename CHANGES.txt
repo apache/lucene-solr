@@ -16,6 +16,14 @@ Changes in backwards compatibility policy
   the internal cache implementation for thread safety, before it was
   declared protected.  (Peter Lenahan, Uwe Schindler, Simon Willnauer)
 
+* LUCENE-2053: If you call Thread.interrupt() on a thread inside
+  Lucene, Lucene will do its best to interrupt the thread.  However,
+  instead of throwing InterruptedException (which is a checked
+  exception), you'll get an oal.util.ThreadInterruptedException (an
+  unchecked exception, subclassing RuntimeException).  The interrupt
+  status on the thread is cleared when this exception is thrown.
+  (Mike McCandless)
+
 Changes in runtime behavior
 
 * LUCENE-1677: Remove the system property to set SegmentReader class

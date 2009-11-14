@@ -33,6 +33,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /** Implements parallel search over a set of <code>Searchables</code>.
  *
@@ -186,11 +187,8 @@ public class ParallelMultiSearcher extends MultiSearcher {
         if (e.getCause() instanceof IOException)
           throw (IOException) e.getCause();
         throw new RuntimeException(e.getCause());
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        // In 3.0 we will change this to throw
-        // InterruptedException instead
-        throw new RuntimeException(e);
+      } catch (InterruptedException ie) {
+        throw new ThreadInterruptedException(ie);
       }
     }
   }

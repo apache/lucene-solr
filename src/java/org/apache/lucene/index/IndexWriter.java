@@ -28,6 +28,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 import java.io.IOException;
 import java.io.Closeable;
@@ -144,6 +145,13 @@ import java.util.Map;
   synchronize on the <code>IndexWriter</code> instance as
   this may cause deadlock; use your own (non-Lucene) objects
   instead. </p>
+  
+  <p><b>NOTE</b>: If you call
+  <code>Thread.interrupt()</code> on a thread that's within
+  IndexWriter, IndexWriter will try to catch this (eg, if
+  it's in a wait() or Thread.sleep()), and will then throw
+  the unchecked exception {@link ThreadInterruptedException}
+  and <b>clear</b> the interrupt status on the thread.</p>
 */
 
 /*
@@ -4506,10 +4514,7 @@ public class IndexWriter implements Closeable {
             try {
               synced.wait();
             } catch (InterruptedException ie) {
-              // In 3.0 we will change this to throw
-              // InterruptedException instead
-              Thread.currentThread().interrupt();
-              throw new RuntimeException(ie);
+              throw new ThreadInterruptedException(ie);
             }
         }
       }
@@ -4527,10 +4532,7 @@ public class IndexWriter implements Closeable {
     try {
       wait(1000);
     } catch (InterruptedException ie) {
-      // In 3.0 we will change this to throw
-      // InterruptedException instead
-      Thread.currentThread().interrupt();
-      throw new RuntimeException(ie);
+      throw new ThreadInterruptedException(ie);
     }
   }
 

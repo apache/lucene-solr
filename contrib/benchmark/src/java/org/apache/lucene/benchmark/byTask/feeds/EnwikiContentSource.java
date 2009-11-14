@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.util.ThreadInterruptedException;
 import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
@@ -66,6 +67,7 @@ public class EnwikiContentSource extends ContentSource {
           try {
             wait();
           } catch (InterruptedException ie) {
+            throw new ThreadInterruptedException(ie);
           }
         }
         if (nmde != null) {
@@ -127,6 +129,7 @@ public class EnwikiContentSource extends ContentSource {
                 try {
                   wait();
                 } catch (InterruptedException ie) {
+                  throw new ThreadInterruptedException(ie);
                 }
               }
               tuple = tmpTuple;

@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * The {@link TimeLimitingCollector} is used to timeout search requests that
@@ -78,8 +79,7 @@ public class TimeLimitingCollector extends Collector {
         try {
           Thread.sleep( resolution );
         } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-          throw new RuntimeException(ie);
+          throw new ThreadInterruptedException(ie);
         }
       }
     }

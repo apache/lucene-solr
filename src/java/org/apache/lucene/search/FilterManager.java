@@ -24,6 +24,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeSet;
 
+import org.apache.lucene.util.ThreadInterruptedException;
+
 /**
  * Filter caching singleton.  It can be used 
  * to save filters locally for reuse.
@@ -193,8 +195,7 @@ public class FilterManager {
         try {
           Thread.sleep(cleanSleepTime);
         } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-          throw new RuntimeException(ie);
+          throw new ThreadInterruptedException(ie);
         }
       }
     }

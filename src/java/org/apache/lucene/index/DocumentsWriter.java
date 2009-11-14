@@ -38,6 +38,7 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * This class accepts multiple added documents and directly
@@ -513,10 +514,7 @@ final class DocumentsWriter {
       try {
         wait();
       } catch (InterruptedException ie) {
-        // In 3.0 we will change this to throw
-        // InterruptedException instead
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(ie);
+        throw new ThreadInterruptedException(ie);
       }
     }
 
@@ -851,10 +849,7 @@ final class DocumentsWriter {
       try {
         wait();
       } catch (InterruptedException ie) {
-        // In 3.0 we will change this to throw
-        // InterruptedException instead
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(ie);
+        throw new ThreadInterruptedException(ie);
       }
     }
 
@@ -1108,10 +1103,7 @@ final class DocumentsWriter {
       try {
         wait();
       } catch (InterruptedException ie) {
-        // In 3.0 we will change this to throw
-        // InterruptedException instead
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(ie);
+        throw new ThreadInterruptedException(ie);
       }
     } while (!waitQueue.doResume());
   }

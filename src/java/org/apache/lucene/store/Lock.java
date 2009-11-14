@@ -17,6 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.ThreadInterruptedException;
 import java.io.IOException;
 
 /** An interprocess mutex lock.
@@ -88,11 +89,8 @@ public abstract class Lock {
       }
       try {
         Thread.sleep(LOCK_POLL_INTERVAL);
-      } catch (InterruptedException e) {
-        // In 3.0 we will change this to throw
-        // InterruptedException instead
-        Thread.currentThread().interrupt();
-        throw new IOException(e.toString());
+      } catch (InterruptedException ie) {
+        throw new ThreadInterruptedException(ie);
       }
       locked = obtain();
     }

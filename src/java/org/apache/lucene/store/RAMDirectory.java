@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Set;
+import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
  * A memory-resident {@link Directory} implementation.  Locking
@@ -124,10 +125,7 @@ public class RAMDirectory extends Directory implements Serializable {
       try {
         Thread.sleep(0, 1);
       } catch (InterruptedException ie) {
-        // In 3.0 we will change this to throw
-        // InterruptedException instead
-        Thread.currentThread().interrupt();
-        throw new RuntimeException(ie);
+        throw new ThreadInterruptedException(ie);
       }
       ts2 = System.currentTimeMillis();
     } while(ts1 == ts2);
