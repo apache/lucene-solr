@@ -327,4 +327,20 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     assertQ(req("fl","*,score","q", q, "qq","text:batman", "fq",fq), "//float[@name='score']<'1.0'");
     assertQ(req("fl","*,score","q", q, "qq","text:superman", "fq",fq), "//float[@name='score']>'1.0'");
   }
+
+  public void testDegreeRads() throws Exception {
+    assertU(adoc("id", "1", "x_td", "0", "y_td", "0"));
+    assertU(adoc("id", "2", "x_td", "90", "y_td", String.valueOf(Math.PI / 2)));
+    assertU(adoc("id", "3", "x_td", "45", "y_td", String.valueOf(Math.PI / 4)));
+
+
+    assertU(commit());
+    assertQ(req("fl", "*,score", "q", "{!func}rad(x_td)", "fq", "id:1"), "//float[@name='score']='0.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}rad(x_td)", "fq", "id:2"), "//float[@name='score']='" + (float) (Math.PI / 2) + "'");
+    assertQ(req("fl", "*,score", "q", "{!func}rad(x_td)", "fq", "id:3"), "//float[@name='score']='" + (float) (Math.PI / 4) + "'");
+
+    assertQ(req("fl", "*,score", "q", "{!func}deg(y_td)", "fq", "id:1"), "//float[@name='score']='0.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}deg(y_td)", "fq", "id:2"), "//float[@name='score']='90.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}deg(y_td)", "fq", "id:3"), "//float[@name='score']='45.0'");
+  }
 }

@@ -557,6 +557,46 @@ public class QueryParsing {
       return Float.parseFloat(new String(arr,0,i));
     }
 
+    double getDouble() throws ParseException {
+      eatws();
+      char[] arr = new char[end-pos];
+      int i;
+      for (i=0; i<arr.length; i++) {
+        char ch = val.charAt(pos);
+        if ( (ch>='0' && ch<='9')
+             || ch=='+' || ch=='-'
+             || ch=='.' || ch=='e' || ch=='E'
+        ) {
+          pos++;
+          arr[i]=ch;
+        } else {
+          break;
+        }
+      }
+
+      return Double.parseDouble(new String(arr,0,i));
+    }
+
+    int getInt() throws ParseException {
+      eatws();
+      char[] arr = new char[end-pos];
+      int i;
+      for (i=0; i<arr.length; i++) {
+        char ch = val.charAt(pos);
+        if ( (ch>='0' && ch<='9')
+             || ch=='+' || ch=='-'
+        ) {
+          pos++;
+          arr[i]=ch;
+        } else {
+          break;
+        }
+      }
+
+      return Integer.parseInt(new String(arr,0,i));
+    }
+
+
     String getId() throws ParseException {
       eatws();
       int id_start=pos;

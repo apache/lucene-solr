@@ -87,6 +87,28 @@ public class FunctionQParser extends QParser {
     return value;
   }
 
+  /**
+   * Parse a Double
+   * @return double
+   * @throws ParseException
+   */
+  public double parseDouble() throws ParseException {
+    double value = sp.getDouble();
+    consumeArgumentDelimiter();
+    return value;
+  }
+
+  /**
+   * Parse an integer
+   * @return An int
+   * @throws ParseException
+   */
+  public int parseInt() throws ParseException {
+    int value = sp.getInt();
+    consumeArgumentDelimiter();
+    return value;
+  }
+
   public String parseArg() throws ParseException {
     sp.eatws();
     char ch = sp.peek();

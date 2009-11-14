@@ -1,3 +1,4 @@
+package org.apache.solr.search.function.distance;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,33 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.search.function;
-
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Searcher;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Map;
 
 /**
- * <code>SumFloatFunction</code> returns the sum of it's components.
- */
-public class SumFloatFunction extends MultiFloatFunction {
-  public SumFloatFunction(ValueSource[] sources) {
-    super(sources);
-  }
-
-  @Override  
-  protected String name() {
-    return "sum";
-  }
-
-  protected float func(int doc, DocValues[] valsArr) {
-    float val = 0.0f;
-    for (DocValues vals : valsArr) {
-      val += vals.floatVal(doc);
-    }
-    return val;
-  }
+ *
+ *
+ **/
+public interface Constants {
+  public static final double EARTH_RADIUS_KM = 6378.160187;
+  public static final double EARTH_RADIUS_MI = 3963.205;
 }

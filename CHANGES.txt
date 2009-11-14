@@ -34,6 +34,9 @@ Detailed Change List
 New Features
 ----------------------
 
+1. SOLR-1302: Added several new distance based functions, including Great Circle (haversine), Manhattan and Euclidean.
+  Also added deg() and rad() convenience functions. (gsingers)
+
 Optimizations
 ----------------------
 
