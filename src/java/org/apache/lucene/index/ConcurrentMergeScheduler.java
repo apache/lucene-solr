@@ -39,7 +39,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   protected List<MergeThread> mergeThreads = new ArrayList<MergeThread>();
 
   // Max number of threads allowed to be merging at once
-  private int maxThreadCount = 3;
+  private int maxThreadCount = 1;
 
   protected Directory dir;
 
