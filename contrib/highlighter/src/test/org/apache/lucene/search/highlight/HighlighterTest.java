@@ -70,6 +70,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.highlight.SynonymTokenizer.TestHighlightRunner;
+import org.apache.lucene.search.regex.RegexQuery;
 import org.apache.lucene.search.regex.SpanRegexQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
@@ -311,6 +312,30 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   public void testSpanRegexQuery() throws Exception {
     query = new SpanOrQuery(new SpanQuery [] {
         new SpanRegexQuery(new Term(FIELD_NAME, "ken.*")) });
+    searcher = new IndexSearcher(ramDir, true);
+    hits = searcher.search(query, 100);
+    int maxNumFragmentsRequired = 2;
+
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(this, scorer);
+    
+    for (int i = 0; i < hits.totalHits; i++) {
+      String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
+      TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
+
+      highlighter.setTextFragmenter(new SimpleFragmenter(40));
+
+      String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
+          "...");
+      System.out.println("\t" + result);
+    }
+    
+    assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
+        numHighlights == 5);
+  }
+  
+  public void testRegexQuery() throws Exception {
+    query = new RegexQuery(new Term(FIELD_NAME, "ken.*"));
     searcher = new IndexSearcher(ramDir, true);
     hits = searcher.search(query, 100);
     int maxNumFragmentsRequired = 2;
