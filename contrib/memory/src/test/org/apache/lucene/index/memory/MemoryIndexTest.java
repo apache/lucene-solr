@@ -41,6 +41,7 @@ import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.ParseException;
@@ -391,9 +392,9 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   
   private MemoryIndex createMemoryIndex(Document doc) {
     MemoryIndex index = new MemoryIndex();
-    Iterator iter = doc.getFields().iterator();
+    Iterator<Fieldable> iter = doc.getFields().iterator();
     while (iter.hasNext()) {
-      Field field = (Field) iter.next();
+      Fieldable field = iter.next();
       index.addField(field.name(), field.stringValue(), analyzer);
     }
     return index;
