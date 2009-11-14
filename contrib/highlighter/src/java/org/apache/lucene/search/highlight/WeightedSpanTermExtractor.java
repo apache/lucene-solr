@@ -567,30 +567,13 @@ public class WeightedSpanTermExtractor {
     }
 
     @Override
-    public TermEnum terms(Term t) throws IOException {
-      field = t.field();
-      return new TermEnum() {
-
-        @Override
-        public Term term() {
-          return null;
-        }
-
-        @Override
-        public boolean next() throws IOException {
-          return false;
-        }
-
-        @Override
-        public int docFreq() {
-          return 0;
-        }
-
-        @Override
-        public void close() throws IOException {
-        }
-      };
+    public TermEnum terms(final Term t) throws IOException {
+      // only set first fieldname, maybe use a Set?
+      if (t != null && field == null)
+        field = t.field();
+      return super.terms(t);
     }
+
 
   }
 
