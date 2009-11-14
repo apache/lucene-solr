@@ -178,7 +178,7 @@ public abstract class Query implements java.io.Serializable, Cloneable {
    *
    *<p>A utility for use by {@link #combine(Query[])} implementations.
    */
-  public static Query mergeBooleanQueries(BooleanQuery[] queries) {
+  public static Query mergeBooleanQueries(BooleanQuery... queries) {
     HashSet<BooleanClause> allClauses = new HashSet<BooleanClause>();
     for (BooleanQuery booleanQuery : queries) {
       for (BooleanClause clause : booleanQuery) {

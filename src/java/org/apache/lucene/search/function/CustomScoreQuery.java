@@ -82,7 +82,7 @@ public class CustomScoreQuery extends Query {
    * {@link org.apache.lucene.search.function.FieldScoreQuery FieldScoreQueries}.
    * This parameter is optional - it can be null or even an empty array.
    */
-  public CustomScoreQuery(Query subQuery, ValueSourceQuery valSrcQueries[]) {
+  public CustomScoreQuery(Query subQuery, ValueSourceQuery... valSrcQueries) {
     super();
     this.subQuery = subQuery;
     this.valSrcQueries = valSrcQueries!=null?

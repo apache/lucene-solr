@@ -33,7 +33,7 @@ class ConjunctionScorer extends Scorer {
     this(similarity, scorers.toArray(new Scorer[scorers.size()]));
   }
 
-  public ConjunctionScorer(Similarity similarity, Scorer[] scorers) throws IOException {
+  public ConjunctionScorer(Similarity similarity, Scorer... scorers) throws IOException {
     super(similarity);
     this.scorers = scorers;
     coord = similarity.coord(scorers.length, scorers.length);

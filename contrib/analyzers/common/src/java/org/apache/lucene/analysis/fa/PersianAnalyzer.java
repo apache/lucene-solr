@@ -121,7 +121,7 @@ public final class PersianAnalyzer extends Analyzer {
   /**
    * Builds an analyzer with the given stop words.
    */
-  public PersianAnalyzer(Version matchVersion, String[] stopwords) {
+  public PersianAnalyzer(Version matchVersion, String... stopwords) {
     stoptable = StopFilter.makeStopSet(stopwords);
     this.matchVersion = matchVersion;
   }

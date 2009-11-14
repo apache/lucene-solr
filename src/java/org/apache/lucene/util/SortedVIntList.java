@@ -50,7 +50,7 @@ public class SortedVIntList extends DocIdSet {
    *
    * @param  sortedInts  A sorted array of non negative integers.
    */
-  public SortedVIntList(int[] sortedInts) {
+  public SortedVIntList(int... sortedInts) {
     this(sortedInts, sortedInts.length);
   }
 

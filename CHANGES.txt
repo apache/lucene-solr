@@ -24,6 +24,12 @@ Changes in backwards compatibility policy
   status on the thread is cleared when this exception is thrown.
   (Mike McCandless)
 
+* LUCENE-2052: Some methods in Lucene core were changed to accept
+  Java 5 varargs. This is not a backwards compatibility problem as
+  long as you not try to override such a method. We left common
+  overridden methods unchanged and added varargs to constructors,
+  static, or final methods (MultiSearcher,...).  (Uwe Schindler)
+
 Changes in runtime behavior
 
 * LUCENE-1677: Remove the system property to set SegmentReader class

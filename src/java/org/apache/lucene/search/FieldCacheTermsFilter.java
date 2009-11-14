@@ -97,7 +97,7 @@ public class FieldCacheTermsFilter extends Filter {
   private String field;
   private String[] terms;
 
-  public FieldCacheTermsFilter(String field, String[] terms) {
+  public FieldCacheTermsFilter(String field, String... terms) {
     this.field = field;
     this.terms = terms;
   }

@@ -78,10 +78,10 @@ public final class FieldCacheSanityChecker {
 
   /** 
    * Quick and dirty convenience method that instantiates an instance with 
-   * "good defaults" and uses it to test the CacheEntry[]
+   * "good defaults" and uses it to test the CacheEntrys
    * @see #check
    */
-  public static Insanity[] checkSanity(CacheEntry[] cacheEntries) {
+  public static Insanity[] checkSanity(CacheEntry... cacheEntries) {
     FieldCacheSanityChecker sanityChecker = new FieldCacheSanityChecker();
     // doesn't check for interned
     sanityChecker.setRamUsageEstimator(new RamUsageEstimator(false));
@@ -96,7 +96,7 @@ public final class FieldCacheSanityChecker {
    * (:TODO: is this a bad idea? are we masking a real problem?)
    * </p>
    */
-  public Insanity[] check(CacheEntry[] cacheEntries) {
+  public Insanity[] check(CacheEntry... cacheEntries) {
     if (null == cacheEntries || 0 == cacheEntries.length) 
       return new Insanity[0];
 
@@ -324,7 +324,7 @@ public final class FieldCacheSanityChecker {
     private final InsanityType type;
     private final String msg;
     private final CacheEntry[] entries;
-    public Insanity(InsanityType type, String msg, CacheEntry[] entries) {
+    public Insanity(InsanityType type, String msg, CacheEntry... entries) {
       if (null == type) {
         throw new IllegalArgumentException
           ("Insanity requires non-null InsanityType");

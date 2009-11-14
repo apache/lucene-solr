@@ -37,7 +37,7 @@ public class SpanOrQuery extends SpanQuery implements Cloneable {
   private String field;
 
   /** Construct a SpanOrQuery merging the provided clauses. */
-  public SpanOrQuery(SpanQuery[] clauses) {
+  public SpanOrQuery(SpanQuery... clauses) {
 
     // copy clauses array into an ArrayList
     this.clauses = new ArrayList<SpanQuery>(clauses.length);
