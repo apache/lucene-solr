@@ -28,8 +28,10 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.index.FilterIndexReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.spans.FieldMaskingSpanQuery;
@@ -144,22 +146,14 @@ public class WeightedSpanTermExtractor {
     } else if (query instanceof MultiTermQuery && expandMultiTermQuery) {
       MultiTermQuery mtq = ((MultiTermQuery)query);
       if(mtq.getRewriteMethod() != MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE) {
-        mtq = copyMultiTermQuery(mtq);
+        mtq = (MultiTermQuery) mtq.clone();
         mtq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
         query = mtq;
       }
-      String field = null;
-      if(mtq instanceof TermRangeQuery) {
-        field = ((TermRangeQuery)mtq).getField();
-      } else if (mtq instanceof PrefixQuery) {
-        field = ((PrefixQuery) mtq).getPrefix().field();
-      } else if (mtq instanceof WildcardQuery) {
-        field = ((WildcardQuery) mtq).getTerm().field();
-      } else if (mtq instanceof FuzzyQuery) {
-        field = ((FuzzyQuery) mtq).getTerm().field();
-      }
-      if (field != null) {
-        IndexReader ir = getReaderForField(field);
+      FakeReader fReader = new FakeReader();
+      MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE.rewrite(fReader, mtq);
+      if (fReader.field != null) {
+        IndexReader ir = getReaderForField(fReader.field);
         extract(query.rewrite(ir), terms);
       }
     } else if (query instanceof MultiPhraseQuery) {
@@ -527,29 +521,6 @@ public class WeightedSpanTermExtractor {
     
   }
   
-  private MultiTermQuery copyMultiTermQuery(MultiTermQuery query) {
-    if(query instanceof TermRangeQuery) {
-      TermRangeQuery q = (TermRangeQuery)query;
-      q.setBoost(query.getBoost());
-      return new TermRangeQuery(q.getField(), q.getLowerTerm(), q.getUpperTerm(), q.includesLower(), q.includesUpper());
-    } else if(query instanceof WildcardQuery) {
-      MultiTermQuery q = new WildcardQuery(((WildcardQuery) query).getTerm());
-      q.setBoost(query.getBoost());
-      return q;
-    } else if(query instanceof PrefixQuery) {
-      MultiTermQuery q = new PrefixQuery(((PrefixQuery) query).getPrefix());
-      q.setBoost(q.getBoost());
-      return q;
-    } else if(query instanceof FuzzyQuery) {
-      FuzzyQuery q = (FuzzyQuery)query;
-      q.setBoost(q.getBoost());
-      return new FuzzyQuery(q.getTerm(), q.getMinSimilarity(), q.getPrefixLength());
-    }
-    
-    return query;
-  }
-  
-  
   public boolean getExpandMultiTermQuery() {
     return expandMultiTermQuery;
   }
@@ -578,4 +549,49 @@ public class WeightedSpanTermExtractor {
   public void setWrapIfNotCachingTokenFilter(boolean wrap) {
     this.wrapToCaching = wrap;
   }
+  
+  /**
+   * 
+   * A fake IndexReader class to extract the field from a MultiTermQuery
+   * 
+   */
+  static final class FakeReader extends FilterIndexReader {
+
+    private static final IndexReader EMPTY_MEMORY_INDEX_READER =
+      new MemoryIndex().createSearcher().getIndexReader();
+    
+    String field;
+
+    FakeReader() {
+      super(EMPTY_MEMORY_INDEX_READER);
+    }
+
+    @Override
+    public TermEnum terms(Term t) throws IOException {
+      field = t.field();
+      return new TermEnum() {
+
+        @Override
+        public Term term() {
+          return null;
+        }
+
+        @Override
+        public boolean next() throws IOException {
+          return false;
+        }
+
+        @Override
+        public int docFreq() {
+          return 0;
+        }
+
+        @Override
+        public void close() throws IOException {
+        }
+      };
+    }
+
+  }
+
 }
