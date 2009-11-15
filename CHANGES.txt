@@ -54,10 +54,10 @@ Changes in runtime behavior
   fields when reading. You have to reindex to do that.
   (Michael Busch, Uwe Schindler)
 
- * LUCENE-2060: Chagned ConcurrentMergeScheduler's default for
+ * LUCENE-2060: Changed ConcurrentMergeScheduler's default for
    maxNumThreads from 3 to 1, because in practice we get the most
-   gains from running a single merge in the backround.  More than one
-   concurrent merge causes alot of thrashing (though it's possible on
+   gains from running a single merge in the background.  More than one
+   concurrent merge causes a lot of thrashing (though it's possible on
    SSD storage that there would be net gains).  (Jason Rutherglen,
    Mike McCandless)
 
@@ -68,7 +68,7 @@ API Changes
   Kay Kay, Shai Erera)
 
 * LUCENE-1944: Remove (all) deprecated methods/constructors taking
-  String/File directory pathes in IndexReader / IndexWriter and others.
+  String/File directory paths in IndexReader / IndexWriter and others.
   Also make FSDirectory abstract. (Uwe Schindler)
 
 * LUCENE-1925: Make IndexSearcher's subReaders and docStarts members
@@ -158,7 +158,7 @@ New features
 * LUCENE-1933: Provide a convenience AttributeFactory that creates a
   Token instance for all basic attributes.  (Uwe Schindler)
 
-* LUCENE-2041: Parallelize the rest of ParallelMultiSearcher. Lot's of
+* LUCENE-2041: Parallelize the rest of ParallelMultiSearcher. Lots of
   code refactoring and Java 5 concurrent support in MultiSearcher.
   (Joey Surls, Simon Willnauer via Uwe Schindler)
 
