@@ -178,6 +178,16 @@ public abstract class IndexReader implements Cloneable,Closeable {
     }
   }
   
+  /** Returns a IndexReader reading the index in the given
+   *  Directory, with readOnly=true.
+   * @param directory the index directory
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
+    return open(directory, null, null, true, DEFAULT_TERMS_INDEX_DIVISOR);
+  }
+
   /** Returns an IndexReader reading the index in the given
    *  Directory.  You should pass readOnly=true, since it
    *  gives much better concurrent performance, unless you

@@ -54,6 +54,16 @@ public class IndexSearcher extends Searcher {
   protected int[] docStarts;
 
   /** Creates a searcher searching the index in the named
+   *  directory, with readOnly=true
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   * @param path directory where IndexReader will be opened
+   */
+  public IndexSearcher(Directory path) throws CorruptIndexException, IOException {
+    this(IndexReader.open(path, true), true);
+  }
+
+  /** Creates a searcher searching the index in the named
    *  directory.  You should pass readOnly=true, since it
    *  gives much better concurrent performance, unless you
    *  intend to do write operations (delete documents or
@@ -179,14 +189,6 @@ public class IndexSearcher extends Searcher {
   public TopFieldDocs search(Weight weight, Filter filter, final int nDocs,
                              Sort sort, boolean fillFields)
       throws IOException {
-    
-    SortField[] fields = sort.fields;
-    for(int i = 0; i < fields.length; i++) {
-      SortField field = fields[i];
-      String fieldname = field.getField();
-      int type = field.getType();
-    }
-    
     TopFieldCollector collector = TopFieldCollector.create(sort, nDocs,
         fillFields, fieldSortDoTrackScores, fieldSortDoMaxScore, !weight.scoresDocsOutOfOrder());
     search(weight, filter, collector);

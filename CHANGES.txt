@@ -30,6 +30,11 @@ Changes in backwards compatibility policy
   overridden methods unchanged and added varargs to constructors,
   static, or final methods (MultiSearcher,...).  (Uwe Schindler)
 
+* LUCENE-1558: IndexReader.open(Directory) now opens a readOnly=true
+  reader, and new IndexSearcher(Directory) does the same.  Note that
+  this is a change in the default from 2.9, when these methods were
+  previously deprecated.  (Mike McCandless)
+
 Changes in runtime behavior
 
 * LUCENE-1677: Remove the system property to set SegmentReader class
