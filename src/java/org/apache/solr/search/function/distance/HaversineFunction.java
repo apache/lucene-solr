@@ -73,15 +73,7 @@ public class HaversineFunction extends ValueSource {
     double y2 = y2DV.doubleVal(doc);
 
     //make sure they aren't all the same, as then we can just return 0
-    if ((x1 != x2) || (y1 != y2)) {
-      double diffX = x1 - x2;
-      double diffY = y1 - y2;
-      double hsinX = Math.sin(diffX / 2);
-      double hsinY = Math.sin(diffY / 2);
-      double h = hsinX * hsinX +
-              (Math.cos(x1) * Math.cos(x2) * hsinY * hsinY);
-      result = (radius * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)));
-    }
+    result = DistanceUtils.haversine(x1, y1, x2, y2, radius);
 
     return result;
   }
