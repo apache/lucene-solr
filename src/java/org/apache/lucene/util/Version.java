@@ -44,6 +44,9 @@ public enum Version {
 
   /** Match settings and bugs in Lucene's 3.0 release. */
   LUCENE_30,
+
+  /** Match settings and bugs in Lucene's 3.1 release. */
+  LUCENE_31,
   
   /* Add new constants for later versions **here** to respect order! */
 

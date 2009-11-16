@@ -70,7 +70,7 @@ public final class Constants {
     return s.toString();
   }
   
-  public static final String LUCENE_MAIN_VERSION = ident("3.0");
+  public static final String LUCENE_MAIN_VERSION = ident("3.1");
 
   public static final String LUCENE_VERSION;
   static {

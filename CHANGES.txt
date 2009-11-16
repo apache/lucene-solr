@@ -1,7 +1,9 @@
 Lucene Change Log
 $Id$
 
-======================= Trunk (not yet released) =======================
+======================= Trunk (not yet released) =========================
+
+======================= Release 3.0.0 (2009-11-25) =======================
 
 Changes in backwards compatibility policy
 
