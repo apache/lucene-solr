@@ -64,7 +64,7 @@ public final class FrenchAnalyzer extends Analyzer {
    * Extended list of typical French stopwords.
    * @deprecated use {@link #getDefaultStopSet()} instead
    */
-  // TODO make this final in 3.1
+  // TODO make this private in 3.1
   public final static String[] FRENCH_STOP_WORDS = {
     "a", "afin", "ai", "ainsi", "après", "attendu", "au", "aujourd", "auquel", "aussi",
     "autre", "autres", "aux", "auxquelles", "auxquels", "avait", "avant", "avec", "avoir",
@@ -126,7 +126,7 @@ public final class FrenchAnalyzer extends Analyzer {
   /**
    * Builds an analyzer with the given stop words
    * 
-   * @param matchversion
+   * @param matchVersion
    *          lucene compatibility version
    * @param stopwords
    *          a stopword set
@@ -138,7 +138,7 @@ public final class FrenchAnalyzer extends Analyzer {
   /**
    * Builds an analyzer with the given stop words
    * 
-   * @param matchversion
+   * @param matchVersion
    *          lucene compatibility version
    * @param stopwords
    *          a stopword set

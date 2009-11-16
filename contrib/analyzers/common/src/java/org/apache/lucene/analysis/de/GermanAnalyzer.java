@@ -111,7 +111,7 @@ public class GermanAnalyzer extends Analyzer {
   /**
    * Builds an analyzer with the given stop words 
    * 
-   * @param matchversion
+   * @param matchVersion
    *          lucene compatibility version
    * @param stopwords
    *          a stopword set
@@ -123,11 +123,11 @@ public class GermanAnalyzer extends Analyzer {
   /**
    * Builds an analyzer with the given stop words
    * 
-   * @param matchversion
+   * @param matchVersion
    *          lucene compatibility version
    * @param stopwords
    *          a stopword set
-   * @param stemExclutionSet
+   * @param stemExclusionSet
    *          a stemming exclusion set
    */
   public GermanAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionSet) {

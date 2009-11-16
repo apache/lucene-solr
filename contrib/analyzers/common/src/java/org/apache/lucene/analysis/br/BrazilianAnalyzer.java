@@ -131,12 +131,10 @@ public final class BrazilianAnalyzer extends Analyzer {
    *          lucene compatibility version
    * @param stopwords
    *          a stopword set
-   * @param stemExclutionSet
-   *          a stemming exclusion set
    */
-  public BrazilianAnalyzer(Version matchVersion, Set<?> stopset,
+  public BrazilianAnalyzer(Version matchVersion, Set<?> stopwords,
       Set<?> stemExclusionSet) {
-    this(matchVersion, stopset);
+    this(matchVersion, stopwords);
     excltable = CharArraySet.unmodifiableSet(CharArraySet
         .copy(stemExclusionSet));
   }

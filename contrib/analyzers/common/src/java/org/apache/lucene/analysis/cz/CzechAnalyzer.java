@@ -104,7 +104,7 @@ public final class CzechAnalyzer extends Analyzer {
 	/**
    * Builds an analyzer with the given stop words and stemming exclusion words
    * 
-   * @param matchversion
+   * @param matchVersion
    *          lucene compatibility version
    * @param stopwords
    *          a stopword set

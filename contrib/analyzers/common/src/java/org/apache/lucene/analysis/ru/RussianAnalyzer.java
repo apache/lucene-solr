@@ -85,7 +85,7 @@ public final class RussianAnalyzer extends Analyzer
     /**
      * Builds an analyzer with the given stop words
      * 
-     * @param matchversion
+     * @param matchVersion
      *          lucene compatibility version
      * @param stopwords
      *          a stopword set
