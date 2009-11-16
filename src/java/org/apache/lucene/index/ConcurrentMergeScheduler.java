@@ -81,7 +81,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     return mergeThreadPriority;
   }
 
-  /** Return the priority that merge threads run at. */
+  /** Set the priority that merge threads run at. */
   public synchronized void setMergeThreadPriority(int pri) {
     if (pri > Thread.MAX_PRIORITY || pri < Thread.MIN_PRIORITY)
       throw new IllegalArgumentException("priority must be in range " + Thread.MIN_PRIORITY + " .. " + Thread.MAX_PRIORITY + " inclusive");
