@@ -30,7 +30,7 @@ import org.apache.lucene.queryParser.standard.processors.ParametricRangeQueryNod
  * 
  * @see ParametricRangeQueryNodeProcessor
  * @see RangeCollatorAttribute
- * @see org.apache.lucene.search.RangeQuery
+ * @see org.apache.lucene.search.TermRangeQuery
  */
 public class RangeQueryNode extends ParametricRangeQueryNode {
 

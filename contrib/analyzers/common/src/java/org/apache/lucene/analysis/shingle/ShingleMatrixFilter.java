@@ -215,7 +215,7 @@ public final class ShingleMatrixFilter extends TokenStream {
    * The filter /will/ delete columns from the input matrix! You will not be able to reset the filter if you used this constructor.
    * todo: don't touch the matrix! use a boolean, set the input stream to null or something, and keep track of where in the matrix we are at.
    *
-   * @param matrix the input based for creating shingles. Does not need to contain any information until {@link org.apache.lucene.analysis.shingle.ShingleMatrixFilter#next(org.apache.lucene.analysis.Token)} is called the first time.
+   * @param matrix the input based for creating shingles. Does not need to contain any information until {@link #incrementToken()} is called the first time.
    * @param minimumShingleSize minimum number of tokens in any shingle.
    * @param maximumShingleSize maximum number of tokens in any shingle.
    * @param spacerCharacter character to use between texts of the token parts in a shingle. null for none.
@@ -341,7 +341,7 @@ public final class ShingleMatrixFilter extends TokenStream {
   private int currentShingleLength;
 
   /**
-   * a set containing shingles that has been the result of a call to next(Token),
+   * a set containing shingles that has been the result of a call to {@link #incrementToken()},
    * used to avoid producing the same shingle more than once.
    */
   private Set<List<Token>> shinglesSeen = new HashSet<List<Token>>();
@@ -569,7 +569,7 @@ public final class ShingleMatrixFilter extends TokenStream {
   }
 
   /**
-   * Final touch of a shingle token before it is passed on to the consumer from method {@link #next(org.apache.lucene.analysis.Token)}.
+   * Final touch of a shingle token before it is passed on to the consumer from method {@link #incrementToken()}.
    *
    * Calculates and sets type, flags, position increment, start/end offsets and weight.
    *

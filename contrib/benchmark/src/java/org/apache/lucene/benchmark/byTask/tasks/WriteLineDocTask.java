@@ -36,7 +36,7 @@ import org.apache.lucene.document.Field;
  * A task which writes documents, one line per document. Each line is in the
  * following format: title &lt;TAB&gt; date &lt;TAB&gt; body. The output of this
  * task can be consumed by
- * {@link org.apache.lucene.benchmark.byTask.feeds.LineDocMaker} and is intended
+ * {@link org.apache.lucene.benchmark.byTask.feeds.LineDocSource} and is intended
  * to save the IO overhead of opening a file per document to be indexed.<br>
  * Supports the following parameters:
  * <ul>
