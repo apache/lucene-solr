@@ -11,7 +11,8 @@ Changes in backwards compatibility policy
   previously deprecated IndexCommitPoint is also removed.
   (Michael Busch)
 
-* oal.Lock.isLocked is now allowed to throw an IOException
+* o.a.l.Lock.isLocked() is now allowed to throw an IOException.
+  (Mike McCandless)
 
 * LUCENE-2030: CachingWrapperFilter and CachingSpanFilter now hide
   the internal cache implementation for thread safety, before it was
@@ -60,12 +61,12 @@ Changes in runtime behavior
   fields when reading. You have to reindex to do that.
   (Michael Busch, Uwe Schindler)
 
- * LUCENE-2060: Changed ConcurrentMergeScheduler's default for
-   maxNumThreads from 3 to 1, because in practice we get the most
-   gains from running a single merge in the background.  More than one
-   concurrent merge causes a lot of thrashing (though it's possible on
-   SSD storage that there would be net gains).  (Jason Rutherglen,
-   Mike McCandless)
+* LUCENE-2060: Changed ConcurrentMergeScheduler's default for
+  maxNumThreads from 3 to 1, because in practice we get the most
+  gains from running a single merge in the background.  More than one
+  concurrent merge causes a lot of thrashing (though it's possible on
+  SSD storage that there would be net gains).  (Jason Rutherglen,
+  Mike McCandless)
 
 API Changes
 
@@ -73,12 +74,13 @@ API Changes
   (Uwe Schindler, Robert Muir, Karl Wettin, Paul Elschot, Kay Kay, Shai Erera)
 
 * Generify Lucene API:
+  <code>
   - TokenStream/AttributeSource: Now addAttribute()/getAttribute() return an
     instance of the requested attribute interface and no cast needed anymore.
   - NumericRangeQuery, NumericRangeFilter, and FieldCacheRangeFilter
     now have Integer, Long, Float, Double as type param.
   - Document.getFields() returns List<Fieldable>
-  - Query.extractTerms(Set<Term>).
+  - Query.extractTerms(Set<Term>)
   - CharArraySet and stop word sets in core/contrib
   - PriorityQueue
   - TopDocCollector
@@ -87,12 +89,14 @@ API Changes
   - MapOfSets
   - o.a.l.util.cache package
   - lot's of internal APIs of IndexWriter
+ </code>
  (Uwe Schindler, Michael Busch, Kay Kay, Robert Muir, Adriano Crestani)
   
 * LUCENE-1944, LUCENE-1856, LUCENE-1957, LUCENE-1960, LUCENE-1961,
   LUCENE-1968, LUCENE-1970, LUCENE-1946, LUCENE-1971, LUCENE-1975,
   LUCENE-1972, LUCENE-1978, LUCENE-944, LUCENE-1979, LUCENE-1973, LUCENE-2011:
   Remove deprecated methods/constructors/classes:
+  <code>
   - All String/File directory paths in IndexReader /
     IndexSearcher / IndexWriter.
   - Remove FSDirectory.getDirectory()
@@ -117,6 +121,7 @@ API Changes
   - Remove BoostingTermQuery.
   - Remove MultiValueSource.
   - Remove Scorer.explain(int).
+  </code>
   ...and some other minor ones (Uwe Schindler, Michael Busch, Mark Miller)
   
 * LUCENE-1925: Make IndexSearcher's subReaders and docStarts members
