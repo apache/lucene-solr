@@ -18,9 +18,11 @@ package org.apache.lucene.analysis.nl;
  */
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
@@ -29,6 +31,8 @@ import org.apache.lucene.util.Version;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -51,6 +55,7 @@ import java.util.Map;
 public class DutchAnalyzer extends Analyzer {
   /**
    * List of typical Dutch stopwords.
+   * @deprecated use {@link #getDefaultStopSet()} instead
    */
   public final static String[] DUTCH_STOP_WORDS =
       {
@@ -65,19 +70,32 @@ public class DutchAnalyzer extends Analyzer {
         "wezen", "kunnen", "ons", "zelf", "tegen", "na", "reeds", "wil", "kon", "niets",
         "uw", "iemand", "geweest", "andere"
       };
+  /**
+   * Returns an unmodifiable instance of the default stop-words set.
+   * @return an unmodifiable instance of the default stop-words set.
+   */
+  public static Set<?> getDefaultStopSet(){
+    return DefaultSetHolder.DEFAULT_STOP_SET;
+  }
+  
+  private static class DefaultSetHolder {
+    static final Set<?> DEFAULT_STOP_SET = CharArraySet
+        .unmodifiableSet(new CharArraySet(Arrays.asList(DUTCH_STOP_WORDS),
+            false));
+  }
 
 
   /**
    * Contains the stopwords used with the StopFilter.
    */
-  private Set stoptable = new HashSet();
+  private final Set<?> stoptable;
 
   /**
    * Contains words that should be indexed but not stemmed.
    */
-  private Set excltable = new HashSet();
+  private Set<?> excltable = Collections.emptySet();
 
-  private Map stemdict = new HashMap();
+  private Map<String, String> stemdict = new HashMap<String, String>();
   private final Version matchVersion;
 
   /**
@@ -86,13 +104,22 @@ public class DutchAnalyzer extends Analyzer {
    * 
    */
   public DutchAnalyzer(Version matchVersion) {
-    setOverridesTokenStreamMethod(DutchAnalyzer.class);
-    stoptable = StopFilter.makeStopSet(DUTCH_STOP_WORDS);
+    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
     stemdict.put("fiets", "fiets"); //otherwise fiet
     stemdict.put("bromfiets", "bromfiets"); //otherwise bromfiet
     stemdict.put("ei", "eier");
     stemdict.put("kind", "kinder");
+  }
+  
+  public DutchAnalyzer(Version matchVersion, Set<?> stopwords){
+    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
+  }
+  
+  public DutchAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionTable){
+    stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
+    excltable = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionTable));
     this.matchVersion = matchVersion;
+    setOverridesTokenStreamMethod(DutchAnalyzer.class);
   }
 
   /**
@@ -100,30 +127,30 @@ public class DutchAnalyzer extends Analyzer {
    *
    * @param matchVersion
    * @param stopwords
+   * @deprecated use {@link #DutchAnalyzer(Version, Set)} instead
    */
   public DutchAnalyzer(Version matchVersion, String... stopwords) {
-    setOverridesTokenStreamMethod(DutchAnalyzer.class);
-    stoptable = StopFilter.makeStopSet(stopwords);
-    this.matchVersion = matchVersion;
+    this(matchVersion, StopFilter.makeStopSet(stopwords));
   }
 
   /**
    * Builds an analyzer with the given stop words.
    *
    * @param stopwords
+   * @deprecated use {@link #DutchAnalyzer(Version, Set)} instead
    */
-  public DutchAnalyzer(Version matchVersion, HashSet stopwords) {
-    setOverridesTokenStreamMethod(DutchAnalyzer.class);
-    stoptable = stopwords;
-    this.matchVersion = matchVersion;
+  public DutchAnalyzer(Version matchVersion, HashSet<?> stopwords) {
+    this(matchVersion, (Set<?>)stopwords);
   }
 
   /**
    * Builds an analyzer with the given stop words.
    *
    * @param stopwords
+   * @deprecated use {@link #DutchAnalyzer(Version, Set)} instead
    */
   public DutchAnalyzer(Version matchVersion, File stopwords) {
+    // this is completely broken!
     setOverridesTokenStreamMethod(DutchAnalyzer.class);
     try {
       stoptable = org.apache.lucene.analysis.WordlistLoader.getWordSet(stopwords);
@@ -138,6 +165,7 @@ public class DutchAnalyzer extends Analyzer {
    * Builds an exclusionlist from an array of Strings.
    *
    * @param exclusionlist
+   * @deprecated use {@link #DutchAnalyzer(Version, Set, Set)} instead
    */
   public void setStemExclusionTable(String... exclusionlist) {
     excltable = StopFilter.makeStopSet(exclusionlist);
@@ -146,14 +174,16 @@ public class DutchAnalyzer extends Analyzer {
 
   /**
    * Builds an exclusionlist from a Hashtable.
+   * @deprecated use {@link #DutchAnalyzer(Version, Set, Set)} instead
    */
-  public void setStemExclusionTable(HashSet exclusionlist) {
+  public void setStemExclusionTable(HashSet<?> exclusionlist) {
     excltable = exclusionlist;
     setPreviousTokenStream(null); // force a new stemmer to be created
   }
 
   /**
    * Builds an exclusionlist from the words contained in the given file.
+   * @deprecated use {@link #DutchAnalyzer(Version, Set, Set)} instead
    */
   public void setStemExclusionTable(File exclusionlist) {
     try {
@@ -172,7 +202,7 @@ public class DutchAnalyzer extends Analyzer {
    */
   public void setStemDictionary(File stemdictFile) {
     try {
-      stemdict = org.apache.lucene.analysis.WordlistLoader.getStemDict(stemdictFile);
+      stemdict = WordlistLoader.getStemDict(stemdictFile);
       setPreviousTokenStream(null); // force a new stemmer to be created
     } catch (IOException e) {
       // TODO: throw IOException

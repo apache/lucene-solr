@@ -23,11 +23,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -67,7 +67,8 @@ public final class ArabicAnalyzer extends Analyzer {
    */
   private final Set<?> stoptable;
   /**
-   * The comment character in the stopwords file.  All lines prefixed with this will be ignored  
+   * The comment character in the stopwords file.  All lines prefixed with this will be ignored
+   * @deprecated use {@link WordlistLoader#getWordSet(File, String)} directly  
    */
   public static final String STOPWORDS_COMMENT = "#";
   
@@ -116,32 +117,44 @@ public final class ArabicAnalyzer extends Analyzer {
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
    */
   public ArabicAnalyzer(Version matchVersion) {
+    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
+  }
+  
+  /**
+   * Builds an analyzer with the given stop words
+   * 
+   * @param matchVersion
+   *          lucene compatibility version
+   * @param stopwords
+   *          a stopword set
+   */
+  public ArabicAnalyzer(Version matchVersion, Set<?> stopwords){
+    stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
     this.matchVersion = matchVersion;
-    stoptable = DefaultSetHolder.DEFAULT_STOP_SET;
   }
 
   /**
    * Builds an analyzer with the given stop words.
+   * @deprecated use {@link #ArabicAnalyzer(Version, Set)} instead
    */
   public ArabicAnalyzer( Version matchVersion, String... stopwords ) {
-    stoptable = StopFilter.makeStopSet( stopwords );
-    this.matchVersion = matchVersion;
+    this(matchVersion, StopFilter.makeStopSet( stopwords ));
   }
 
   /**
    * Builds an analyzer with the given stop words.
+   * @deprecated use {@link #ArabicAnalyzer(Version, Set)} instead
    */
   public ArabicAnalyzer( Version matchVersion, Hashtable<?,?> stopwords ) {
-    stoptable = new HashSet(stopwords.keySet());
-    this.matchVersion = matchVersion;
+    this(matchVersion, stopwords.keySet());
   }
 
   /**
    * Builds an analyzer with the given stop words.  Lines can be commented out using {@link #STOPWORDS_COMMENT}
+   * @deprecated use {@link #ArabicAnalyzer(Version, Set)} instead
    */
   public ArabicAnalyzer( Version matchVersion, File stopwords ) throws IOException {
-    stoptable = WordlistLoader.getWordSet( stopwords, STOPWORDS_COMMENT);
-    this.matchVersion = matchVersion;
+    this(matchVersion, WordlistLoader.getWordSet( stopwords, STOPWORDS_COMMENT));
   }
 
 

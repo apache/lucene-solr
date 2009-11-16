@@ -20,6 +20,10 @@ API Changes
    text exactly the same as LowerCaseFilter. Please use LowerCaseFilter
    instead, which has the same functionality.  (Robert Muir)
    
+ * LUCENE-2051: Contrib Analyzer setters were deprecated and replaced
+   with ctor arguments / Version number.  Also stop word lists
+   were unified.  (Simon Willnauer)
+
 Bug fixes
 
  * LUCENE-1781: Fixed various issues with the lat/lng bounding box
@@ -59,6 +63,7 @@ Optimizations
    Previous versions were loading the stopword files each time a new
    instance was created. This might improve performance for applications
    creating lots of instances of these Analyzers. (Simon Willnauer) 
+
 Documentation
 
  * LUCENE-1916: Translated documentation in the smartcn hhmm package.
@@ -72,7 +77,6 @@ Build
  * LUCENE-2031: Moved PatternAnalyzer from contrib/memory into
    contrib/analyzers/common, under miscellaneous.  (Robert Muir)
    
-Test Cases
 ======================= Release 2.9.1 2009-11-06 =======================
 
 Changes in backwards compatibility policy

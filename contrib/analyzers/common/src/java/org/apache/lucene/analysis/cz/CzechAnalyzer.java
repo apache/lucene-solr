@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.cz;
  */
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -29,6 +30,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
 import org.apache.lucene.util.Version;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Collections;
@@ -48,7 +50,9 @@ public final class CzechAnalyzer extends Analyzer {
 
 	/**
 	 * List of typical stopwords.
+	 * @deprecated use {@link #getDefaultStopSet()} instead
 	 */
+  // TODO make this private in 3.1
 	public final static String[] CZECH_STOP_WORDS = {
         "a","s","k","o","i","u","v","z","dnes","cz","t\u00edmto","bude\u0161","budem",
         "byli","jse\u0161","m\u016fj","sv\u00fdm","ta","tomto","tohle","tuto","tyto",
@@ -69,51 +73,84 @@ public final class CzechAnalyzer extends Analyzer {
         "j\u00ed","ji","m\u011b","mne","jemu","tomu","t\u011bm","t\u011bmu","n\u011bmu","n\u011bmu\u017e",
         "jeho\u017e","j\u00ed\u017e","jeliko\u017e","je\u017e","jako\u017e","na\u010de\u017e",
     };
+	
+	/**
+	 * Returns a set of default Czech-stopwords 
+	 * @return a set of default Czech-stopwords 
+	 */
+	public static final Set<?> getDefaultStopSet(){
+	  return DefaultSetHolder.DEFAULT_SET;
+	}
+	
+	private static class DefaultSetHolder {
+	  private static final Set<?> DEFAULT_SET = CharArraySet.unmodifiableSet(new CharArraySet(
+	      Arrays.asList(CZECH_STOP_WORDS), false));
+	}
 
 	/**
 	 * Contains the stopwords used with the {@link StopFilter}.
 	 */
-	private Set stoptable;
-        private final Version matchVersion;
+	// TODO make this final in 3.1
+	private Set<?> stoptable;
+  private final Version matchVersion;
 
 	/**
 	 * Builds an analyzer with the default stop words ({@link #CZECH_STOP_WORDS}).
 	 */
 	public CzechAnalyzer(Version matchVersion) {
-          stoptable = StopFilter.makeStopSet( CZECH_STOP_WORDS );
-          this.matchVersion = matchVersion;
+    this(matchVersion, DefaultSetHolder.DEFAULT_SET);
+	}
+	
+	/**
+   * Builds an analyzer with the given stop words and stemming exclusion words
+   * 
+   * @param matchversion
+   *          lucene compatibility version
+   * @param stopwords
+   *          a stopword set
+   */
+  public CzechAnalyzer(Version matchVersion, Set<?> stopwords) {
+    this.matchVersion = matchVersion;
+    this.stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
+  }
+
+
+	/**
+	 * Builds an analyzer with the given stop words.
+	 * @deprecated use {@link #CzechAnalyzer(Version, Set)} instead
+	 */
+  public CzechAnalyzer(Version matchVersion, String... stopwords) {
+    this(matchVersion, StopFilter.makeStopSet( stopwords ));
+	}
+
+  /**
+   * Builds an analyzer with the given stop words.
+   * 
+   * @deprecated use {@link #CzechAnalyzer(Version, Set)} instead
+   */
+  public CzechAnalyzer(Version matchVersion, HashSet<?> stopwords) {
+    this(matchVersion, (Set<?>)stopwords);
 	}
 
 	/**
 	 * Builds an analyzer with the given stop words.
+	 * @deprecated use {@link #CzechAnalyzer(Version, Set)} instead
 	 */
-        public CzechAnalyzer(Version matchVersion, String... stopwords) {
-          stoptable = StopFilter.makeStopSet( stopwords );
-          this.matchVersion = matchVersion;
-	}
-
-        public CzechAnalyzer(Version matchVersion, HashSet stopwords) {
-          stoptable = stopwords;
-          this.matchVersion = matchVersion;
-	}
-
-	/**
-	 * Builds an analyzer with the given stop words.
-	 */
-        public CzechAnalyzer(Version matchVersion, File stopwords ) throws IOException {
-          stoptable = WordlistLoader.getWordSet( stopwords );
-          this.matchVersion = matchVersion;
+  public CzechAnalyzer(Version matchVersion, File stopwords ) throws IOException {
+    this(matchVersion, (Set<?>)WordlistLoader.getWordSet( stopwords ));
 	}
 
     /**
      * Loads stopwords hash from resource stream (file, database...).
      * @param   wordfile    File containing the wordlist
      * @param   encoding    Encoding used (win-1250, iso-8859-2, ...), null for default system encoding
+     * @deprecated use {@link WordlistLoader#getWordSet(Reader, String) }
+     *             and {@link #CzechAnalyzer(Version, Set)} instead
      */
     public void loadStopWords( InputStream wordfile, String encoding ) {
         setPreviousTokenStream(null); // force a new stopfilter to be created
         if ( wordfile == null ) {
-            stoptable = new HashSet();
+            stoptable = Collections.emptySet();
             return;
         }
         try {

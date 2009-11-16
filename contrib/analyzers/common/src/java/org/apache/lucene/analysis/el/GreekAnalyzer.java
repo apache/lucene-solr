@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.el;
 
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -27,7 +28,7 @@ import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.HashSet;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
@@ -58,39 +59,61 @@ public final class GreekAnalyzer extends Analyzer
       "εκεινοι", "εκεινεσ", "εκεινα", "εκεινων", "εκεινουσ", "οπωσ", "ομωσ",
       "ισωσ", "οσο", "οτι"
     };
+    
+    /**
+     * Returns a set of default Greek-stopwords 
+     * @return a set of default Greek-stopwords 
+     */
+    public static final Set<?> getDefaultStopSet(){
+      return DefaultSetHolder.DEFAULT_SET;
+    }
+    
+    private static class DefaultSetHolder {
+      private static final Set<?> DEFAULT_SET = CharArraySet.unmodifiableSet(new CharArraySet(
+          Arrays.asList(GREEK_STOP_WORDS), false));
+    }
 
     /**
      * Contains the stopwords used with the {@link StopFilter}.
      */
-    private Set stopSet = new HashSet();
+    private final Set<?> stopSet;
 
     private final Version matchVersion;
 
     public GreekAnalyzer(Version matchVersion) {
-      super();
-      stopSet = StopFilter.makeStopSet(GREEK_STOP_WORDS);
+      this(matchVersion, DefaultSetHolder.DEFAULT_SET);
+    }
+    
+    /**
+     * Builds an analyzer with the given stop words 
+     * 
+     * @param matchversion
+     *          lucene compatibility version
+     * @param stopwords
+     *          a stopword set
+     */
+    public GreekAnalyzer(Version matchVersion, Set<?> stopwords) {
+      stopSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
       this.matchVersion = matchVersion;
     }
 
     /**
      * Builds an analyzer with the given stop words.
      * @param stopwords Array of stopwords to use.
+     * @deprecated use {@link #GreekAnalyzer(Version, Set)} instead
      */
     public GreekAnalyzer(Version matchVersion, String... stopwords)
     {
-      super();
-      stopSet = StopFilter.makeStopSet(stopwords);
-      this.matchVersion = matchVersion;
+      this(matchVersion, StopFilter.makeStopSet(stopwords));
     }
 
     /**
      * Builds an analyzer with the given stop words.
+     * @deprecated use {@link #GreekAnalyzer(Version, Set)} instead
      */
-    public GreekAnalyzer(Version matchVersion, Map stopwords)
+    public GreekAnalyzer(Version matchVersion, Map<?,?> stopwords)
     {
-      super();
-      stopSet = new HashSet(stopwords.keySet());
-      this.matchVersion = matchVersion;
+      this(matchVersion, stopwords.keySet());
     }
 
     /**

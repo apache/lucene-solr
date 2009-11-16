@@ -4,6 +4,7 @@ import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Set;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -47,6 +48,7 @@ public class CharArraySet extends AbstractSet<Object> {
   private char[][] entries;
   private int count;
   private final boolean ignoreCase;
+  public static final CharArraySet EMPTY_SET = CharArraySet.unmodifiableSet(new CharArraySet(0, false));
 
   /** Create set with enough capacity to hold startSize
    *  terms */
@@ -263,12 +265,38 @@ public class CharArraySet extends AbstractSet<Object> {
   public static CharArraySet unmodifiableSet(CharArraySet set) {
     if (set == null)
       throw new NullPointerException("Given set is null");
+    if (set == EMPTY_SET)
+      return EMPTY_SET;
+    if (set instanceof UnmodifiableCharArraySet)
+      return set;
+
     /*
      * Instead of delegating calls to the given set copy the low-level values to
      * the unmodifiable Subclass
      */
     return new UnmodifiableCharArraySet(set.entries, set.ignoreCase, set.count);
   }
+
+  /**
+   * Returns a copy of the given set as a {@link CharArraySet}. If the given set
+   * is a {@link CharArraySet} the ignoreCase property will be preserved.
+   * 
+   * @param set
+   *          a set to copy
+   * @return a copy of the given set as a {@link CharArraySet}. If the given set
+   *         is a {@link CharArraySet} the ignoreCase property will be
+   *         preserved.
+   */
+  public static CharArraySet copy(Set<?> set) {
+    if (set == null)
+      throw new NullPointerException("Given set is null");
+    if(set == EMPTY_SET)
+      return EMPTY_SET;
+    final boolean ignoreCase = set instanceof CharArraySet ? ((CharArraySet) set).ignoreCase
+        : false;
+    return new CharArraySet(set, ignoreCase);
+  }
+  
 
   /** The Iterator<String> for this set.  Strings are constructed on the fly, so
    * use <code>nextCharArray</code> for more efficient access. */

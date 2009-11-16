@@ -20,12 +20,14 @@ package org.apache.lucene.analysis.br;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.Collections;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -51,7 +53,9 @@ public final class BrazilianAnalyzer extends Analyzer {
 
 	/**
 	 * List of typical Brazilian Portuguese stopwords.
+	 * @deprecated use {@link #getDefaultStopSet()} instead
 	 */
+  // TODO make this private in 3.1
 	public final static String[] BRAZILIAN_STOP_WORDS = {
       "a","ainda","alem","ambas","ambos","antes",
       "ao","aonde","aos","apos","aquele","aqueles",
@@ -73,52 +77,98 @@ public final class BrazilianAnalyzer extends Analyzer {
       "suas","tal","tambem","teu","teus","toda","todas","todo",
       "todos","tua","tuas","tudo","um","uma","umas","uns"};
 
+	/**
+   * Returns an unmodifiable instance of the default stop-words set.
+   * @return an unmodifiable instance of the default stop-words set.
+   */
+  public static Set<?> getDefaultStopSet(){
+    return DefaultSetHolder.DEFAULT_STOP_SET;
+  }
+  
+  private static class DefaultSetHolder {
+    static final Set<?> DEFAULT_STOP_SET = CharArraySet
+        .unmodifiableSet(new CharArraySet(Arrays.asList(BRAZILIAN_STOP_WORDS),
+            false));
+  }
 
 	/**
 	 * Contains the stopwords used with the {@link StopFilter}.
 	 */
-	private Set stoptable = Collections.emptySet();
+	private final Set<?> stoptable;
 	
 	/**
 	 * Contains words that should be indexed but not stemmed.
 	 */
-	private Set excltable = Collections.emptySet();
-        private final Version matchVersion;
+	// TODO make this private in 3.1
+	private Set<?> excltable = Collections.emptySet();
+	
+  private final Version matchVersion;
 
 	/**
 	 * Builds an analyzer with the default stop words ({@link #BRAZILIAN_STOP_WORDS}).
 	 */
 	public BrazilianAnalyzer(Version matchVersion) {
-          stoptable = StopFilter.makeStopSet( BRAZILIAN_STOP_WORDS );
-          this.matchVersion = matchVersion;
+    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
 	}
+	
+	/**
+   * Builds an analyzer with the given stop words
+   * 
+   * @param matchVersion
+   *          lucene compatibility version
+   * @param stopwords
+   *          a stopword set
+   */
+  public BrazilianAnalyzer(Version matchVersion, Set<?> stopwords) {
+    stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
+    this.matchVersion = matchVersion;
+  }
+
+  /**
+   * Builds an analyzer with the given stop words and stemming exclusion words
+   * 
+   * @param matchVersion
+   *          lucene compatibility version
+   * @param stopwords
+   *          a stopword set
+   * @param stemExclutionSet
+   *          a stemming exclusion set
+   */
+  public BrazilianAnalyzer(Version matchVersion, Set<?> stopset,
+      Set<?> stemExclusionSet) {
+    this(matchVersion, stopset);
+    excltable = CharArraySet.unmodifiableSet(CharArraySet
+        .copy(stemExclusionSet));
+  }
 
 	/**
 	 * Builds an analyzer with the given stop words.
+	 * @deprecated use {@link #BrazilianAnalyzer(Version, Set)} instead
 	 */
-        public BrazilianAnalyzer( Version matchVersion, String... stopwords ) {
-          stoptable = StopFilter.makeStopSet( stopwords );
-          this.matchVersion = matchVersion;
-	}
+  public BrazilianAnalyzer(Version matchVersion, String... stopwords) {
+    this(matchVersion, StopFilter.makeStopSet(stopwords));
+  }
 
-	/**
-	 * Builds an analyzer with the given stop words.
-	 */
-        public BrazilianAnalyzer( Version matchVersion, Map stopwords ) {
-          stoptable = new HashSet(stopwords.keySet());
-          this.matchVersion = matchVersion;
-	}
+  /**
+   * Builds an analyzer with the given stop words. 
+   * @deprecated use {@link #BrazilianAnalyzer(Version, Set)} instead
+   */
+  public BrazilianAnalyzer(Version matchVersion, Map<?,?> stopwords) {
+    this(matchVersion, stopwords.keySet());
+  }
 
-	/**
-	 * Builds an analyzer with the given stop words.
-	 */
-        public BrazilianAnalyzer( Version matchVersion, File stopwords ) throws IOException {
-          stoptable = WordlistLoader.getWordSet( stopwords );
-          this.matchVersion = matchVersion;
-	}
+  /**
+   * Builds an analyzer with the given stop words.
+   * @deprecated use {@link #BrazilianAnalyzer(Version, Set)} instead
+   */
+  public BrazilianAnalyzer(Version matchVersion, File stopwords)
+      throws IOException {
+    this(matchVersion, WordlistLoader.getWordSet(stopwords));
+  }
 
 	/**
 	 * Builds an exclusionlist from an array of Strings.
+	 * @deprecated use {@link #BrazilianAnalyzer(Version, Set, Set)} instead
 	 */
 	public void setStemExclusionTable( String... exclusionlist ) {
 		excltable = StopFilter.makeStopSet( exclusionlist );
@@ -126,13 +176,15 @@ public final class BrazilianAnalyzer extends Analyzer {
 	}
 	/**
 	 * Builds an exclusionlist from a {@link Map}.
+	 * @deprecated use {@link #BrazilianAnalyzer(Version, Set, Set)} instead
 	 */
-	public void setStemExclusionTable( Map exclusionlist ) {
-		excltable = new HashSet(exclusionlist.keySet());
+	public void setStemExclusionTable( Map<?,?> exclusionlist ) {
+		excltable = new HashSet<Object>(exclusionlist.keySet());
 		setPreviousTokenStream(null); // force a new stemmer to be created
 	}
 	/**
 	 * Builds an exclusionlist from the words contained in the given file.
+	 * @deprecated use {@link #BrazilianAnalyzer(Version, Set, Set)} instead
 	 */
 	public void setStemExclusionTable( File exclusionlist ) throws IOException {
 		excltable = WordlistLoader.getWordSet( exclusionlist );

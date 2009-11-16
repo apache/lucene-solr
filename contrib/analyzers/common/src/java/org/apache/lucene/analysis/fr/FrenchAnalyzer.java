@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.fr;
  */
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -31,6 +32,7 @@ import org.apache.lucene.util.Version;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -60,7 +62,9 @@ public final class FrenchAnalyzer extends Analyzer {
 
   /**
    * Extended list of typical French stopwords.
+   * @deprecated use {@link #getDefaultStopSet()} instead
    */
+  // TODO make this final in 3.1
   public final static String[] FRENCH_STOP_WORDS = {
     "a", "afin", "ai", "ainsi", "après", "attendu", "au", "aujourd", "auquel", "aussi",
     "autre", "autres", "aux", "auxquelles", "auxquels", "avait", "avant", "avec", "avoir",
@@ -89,41 +93,87 @@ public final class FrenchAnalyzer extends Analyzer {
   /**
    * Contains the stopwords used with the {@link StopFilter}.
    */
-  private Set stoptable = new HashSet();
+  private final Set<?> stoptable;
   /**
    * Contains words that should be indexed but not stemmed.
    */
-  private Set excltable = new HashSet();
+  //TODO make this final in 3.0
+  private Set<?> excltable = new HashSet();
 
   private final Version matchVersion;
+  
+  /**
+   * Returns an unmodifiable instance of the default stop-words set.
+   * @return an unmodifiable instance of the default stop-words set.
+   */
+  public static Set<?> getDefaultStopSet(){
+    return DefaultSetHolder.DEFAULT_STOP_SET;
+  }
+  
+  private static class DefaultSetHolder {
+    static final Set<?> DEFAULT_STOP_SET = CharArraySet
+        .unmodifiableSet(new CharArraySet(Arrays.asList(FRENCH_STOP_WORDS),
+            false));
+  }
 
   /**
    * Builds an analyzer with the default stop words ({@link #FRENCH_STOP_WORDS}).
    */
   public FrenchAnalyzer(Version matchVersion) {
-    stoptable = StopFilter.makeStopSet(FRENCH_STOP_WORDS);
-    this.matchVersion = matchVersion;
+    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
   }
+  
+  /**
+   * Builds an analyzer with the given stop words
+   * 
+   * @param matchversion
+   *          lucene compatibility version
+   * @param stopwords
+   *          a stopword set
+   */
+  public FrenchAnalyzer(Version matchVersion, Set<?> stopwords){
+    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
+  }
+  
+  /**
+   * Builds an analyzer with the given stop words
+   * 
+   * @param matchversion
+   *          lucene compatibility version
+   * @param stopwords
+   *          a stopword set
+   * @param stemExclutionSet
+   *          a stemming exclusion set
+   */
+  public FrenchAnalyzer(Version matchVersion, Set<?> stopwords,
+      Set<?> stemExclutionSet) {
+    this.matchVersion = matchVersion;
+    this.stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
+    this.excltable = CharArraySet.unmodifiableSet(CharArraySet
+        .copy(stemExclutionSet));
+  }
+ 
 
   /**
    * Builds an analyzer with the given stop words.
+   * @deprecated use {@link #FrenchAnalyzer(Version, Set)} instead
    */
   public FrenchAnalyzer(Version matchVersion, String... stopwords) {
-    stoptable = StopFilter.makeStopSet(stopwords);
-    this.matchVersion = matchVersion;
+    this(matchVersion, StopFilter.makeStopSet(stopwords));
   }
 
   /**
    * Builds an analyzer with the given stop words.
    * @throws IOException
+   * @deprecated use {@link #FrenchAnalyzer(Version, Set)} instead
    */
   public FrenchAnalyzer(Version matchVersion, File stopwords) throws IOException {
-    stoptable = new HashSet(WordlistLoader.getWordSet(stopwords));
-    this.matchVersion = matchVersion;
+    this(matchVersion, WordlistLoader.getWordSet(stopwords));
   }
 
   /**
    * Builds an exclusionlist from an array of Strings.
+   * @deprecated use {@link #FrenchAnalyzer(Version, Set, Set)} instead
    */
   public void setStemExclusionTable(String... exclusionlist) {
     excltable = StopFilter.makeStopSet(exclusionlist);
@@ -132,6 +182,7 @@ public final class FrenchAnalyzer extends Analyzer {
 
   /**
    * Builds an exclusionlist from a Map.
+   * @deprecated use {@link #FrenchAnalyzer(Version, Set, Set)} instead
    */
   public void setStemExclusionTable(Map exclusionlist) {
     excltable = new HashSet(exclusionlist.keySet());
@@ -141,6 +192,7 @@ public final class FrenchAnalyzer extends Analyzer {
   /**
    * Builds an exclusionlist from the words contained in the given file.
    * @throws IOException
+   * @deprecated use {@link #FrenchAnalyzer(Version, Set, Set)} instead
    */
   public void setStemExclusionTable(File exclusionlist) throws IOException {
     excltable = new HashSet(WordlistLoader.getWordSet(exclusionlist));

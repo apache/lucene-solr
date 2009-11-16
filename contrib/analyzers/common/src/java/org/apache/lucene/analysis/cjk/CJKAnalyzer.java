@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.cjk;
  */
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -25,6 +26,7 @@ import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Arrays;
 import java.util.Set;
 
 
@@ -39,7 +41,10 @@ public class CJKAnalyzer extends Analyzer {
   /**
    * An array containing some common English words that are not usually
    * useful for searching and some double-byte interpunctions.
+   * @deprecated use {@link #getDefaultStopSet()} instead
    */
+  // TODO make this final in 3.1 -
+  // this might be revised and merged with StopFilter stop words too
   public final static String[] STOP_WORDS = {
     "a", "and", "are", "as", "at", "be",
     "but", "by", "for", "if", "in",
@@ -54,9 +59,22 @@ public class CJKAnalyzer extends Analyzer {
   //~ Instance fields --------------------------------------------------------
 
   /**
+   * Returns an unmodifiable instance of the default stop-words set.
+   * @return an unmodifiable instance of the default stop-words set.
+   */
+  public static Set<?> getDefaultStopSet(){
+    return DefaultSetHolder.DEFAULT_STOP_SET;
+  }
+  
+  private static class DefaultSetHolder {
+    static final Set<?> DEFAULT_STOP_SET = CharArraySet
+        .unmodifiableSet(new CharArraySet(Arrays.asList(STOP_WORDS),
+            false));
+  }
+  /**
    * stop word list
    */
-  private final Set stopTable;
+  private final Set<?> stopTable;
   private final Version matchVersion;
 
   //~ Constructors -----------------------------------------------------------
@@ -65,7 +83,19 @@ public class CJKAnalyzer extends Analyzer {
    * Builds an analyzer which removes words in {@link #STOP_WORDS}.
    */
   public CJKAnalyzer(Version matchVersion) {
-    stopTable = StopFilter.makeStopSet(STOP_WORDS);
+    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
+  }
+  
+  /**
+   * Builds an analyzer with the given stop words
+   * 
+   * @param matchVersion
+   *          lucene compatibility version
+   * @param stopwords
+   *          a stopword set
+   */
+  public CJKAnalyzer(Version matchVersion, Set<?> stopwords){
+    stopTable = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
     this.matchVersion = matchVersion;
   }
 
@@ -73,6 +103,7 @@ public class CJKAnalyzer extends Analyzer {
    * Builds an analyzer which removes words in the provided array.
    *
    * @param stopWords stop word array
+   * @deprecated use {@link #CJKAnalyzer(Version, Set)} instead
    */
   public CJKAnalyzer(Version matchVersion, String... stopWords) {
     stopTable = StopFilter.makeStopSet(stopWords);

@@ -21,11 +21,13 @@ package org.apache.lucene.analysis.de;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -53,7 +55,9 @@ public class GermanAnalyzer extends Analyzer {
   
   /**
    * List of typical german stopwords.
+   * @deprecated use {@link #getDefaultStopSet()} instead
    */
+  //TODO make this private in 3.1
   public final static String[] GERMAN_STOP_WORDS = {
     "einer", "eine", "eines", "einem", "einen",
     "der", "die", "das", "dass", "daß",
@@ -68,58 +72,99 @@ public class GermanAnalyzer extends Analyzer {
     "mein", "sein", "kein",
     "durch", "wegen", "wird"
   };
+  
+  /**
+   * Returns a set of default German-stopwords 
+   * @return a set of default German-stopwords 
+   */
+  public static final Set<?> getDefaultStopSet(){
+    return DefaultSetHolder.DEFAULT_SET;
+  }
+  
+  private static class DefaultSetHolder {
+    private static final Set<?> DEFAULT_SET = CharArraySet.unmodifiableSet(new CharArraySet(
+        Arrays.asList(GERMAN_STOP_WORDS), false));
+  }
 
   /**
    * Contains the stopwords used with the {@link StopFilter}.
    */
-  private Set stopSet = new HashSet();
+  //TODO make this final in 3.1
+  private Set<?> stopSet;
 
   /**
    * Contains words that should be indexed but not stemmed.
    */
-  private Set exclusionSet = new HashSet();
+  // TODO make this final in 3.1
+  private Set<?> exclusionSet;
 
   private final Version matchVersion;
 
   /**
    * Builds an analyzer with the default stop words:
-   * {@link #GERMAN_STOP_WORDS}.
+   * {@link #getDefaultStopSet()}.
    */
   public GermanAnalyzer(Version matchVersion) {
-    stopSet = StopFilter.makeStopSet(GERMAN_STOP_WORDS);
+    this(matchVersion, DefaultSetHolder.DEFAULT_SET);
+  }
+  
+  /**
+   * Builds an analyzer with the given stop words 
+   * 
+   * @param matchversion
+   *          lucene compatibility version
+   * @param stopwords
+   *          a stopword set
+   */
+  public GermanAnalyzer(Version matchVersion, Set<?> stopwords) {
+    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
+  }
+  
+  /**
+   * Builds an analyzer with the given stop words
+   * 
+   * @param matchversion
+   *          lucene compatibility version
+   * @param stopwords
+   *          a stopword set
+   * @param stemExclutionSet
+   *          a stemming exclusion set
+   */
+  public GermanAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionSet) {
+    stopSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
+    exclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
     setOverridesTokenStreamMethod(GermanAnalyzer.class);
     this.matchVersion = matchVersion;
   }
 
   /**
    * Builds an analyzer with the given stop words.
+   * @deprecated use {@link #GermanAnalyzer(Version, Set)}
    */
   public GermanAnalyzer(Version matchVersion, String... stopwords) {
-    stopSet = StopFilter.makeStopSet(stopwords);
-    setOverridesTokenStreamMethod(GermanAnalyzer.class);
-    this.matchVersion = matchVersion;
+    this(matchVersion, StopFilter.makeStopSet(stopwords));
   }
 
   /**
    * Builds an analyzer with the given stop words.
+   * @deprecated use {@link #GermanAnalyzer(Version, Set)}
    */
-  public GermanAnalyzer(Version matchVersion, Map stopwords) {
-    stopSet = new HashSet(stopwords.keySet());
-    setOverridesTokenStreamMethod(GermanAnalyzer.class);
-    this.matchVersion = matchVersion;
+  public GermanAnalyzer(Version matchVersion, Map<?,?> stopwords) {
+    this(matchVersion, stopwords.keySet());
+    
   }
 
   /**
    * Builds an analyzer with the given stop words.
+   * @deprecated use {@link #GermanAnalyzer(Version, Set)}
    */
   public GermanAnalyzer(Version matchVersion, File stopwords) throws IOException {
-    stopSet = WordlistLoader.getWordSet(stopwords);
-    setOverridesTokenStreamMethod(GermanAnalyzer.class);
-    this.matchVersion = matchVersion;
+    this(matchVersion, WordlistLoader.getWordSet(stopwords));
   }
 
   /**
    * Builds an exclusionlist from an array of Strings.
+   * @deprecated use {@link #GermanAnalyzer(Version, Set, Set)} instead
    */
   public void setStemExclusionTable(String[] exclusionlist) {
     exclusionSet = StopFilter.makeStopSet(exclusionlist);
@@ -128,6 +173,7 @@ public class GermanAnalyzer extends Analyzer {
 
   /**
    * Builds an exclusionlist from a {@link Map}
+   * @deprecated use {@link #GermanAnalyzer(Version, Set, Set)} instead
    */
   public void setStemExclusionTable(Map exclusionlist) {
     exclusionSet = new HashSet(exclusionlist.keySet());
@@ -136,6 +182,7 @@ public class GermanAnalyzer extends Analyzer {
 
   /**
    * Builds an exclusionlist from the words contained in the given file.
+   * @deprecated use {@link #GermanAnalyzer(Version, Set, Set)} instead
    */
   public void setStemExclusionTable(File exclusionlist) throws IOException {
     exclusionSet = WordlistLoader.getWordSet(exclusionlist);

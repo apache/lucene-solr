@@ -23,11 +23,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -60,7 +60,7 @@ public final class PersianAnalyzer extends Analyzer {
   /**
    * Contains the stopwords used with the StopFilter.
    */
-  private final Set stoptable;
+  private final Set<?> stoptable;
 
   /**
    * The comment character in the stopwords file. All lines prefixed with this
@@ -72,7 +72,7 @@ public final class PersianAnalyzer extends Analyzer {
    * Returns an unmodifiable instance of the default stop-words set.
    * @return an unmodifiable instance of the default stop-words set.
    */
-  public static Set<String> getDefaultStopSet(){
+  public static Set<?> getDefaultStopSet(){
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
   
@@ -81,7 +81,7 @@ public final class PersianAnalyzer extends Analyzer {
    * accesses the static final set the first time.;
    */
   private static class DefaultSetHolder {
-    static final Set<String> DEFAULT_STOP_SET;
+    static final Set<?> DEFAULT_STOP_SET;
 
     static {
       try {
@@ -114,33 +114,45 @@ public final class PersianAnalyzer extends Analyzer {
    * {@link #DEFAULT_STOPWORD_FILE}.
    */
   public PersianAnalyzer(Version matchVersion) {
-    stoptable = DefaultSetHolder.DEFAULT_STOP_SET;
+    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
+  }
+  
+  /**
+   * Builds an analyzer with the given stop words 
+   * 
+   * @param matchversion
+   *          lucene compatibility version
+   * @param stopwords
+   *          a stopword set
+   */
+  public PersianAnalyzer(Version matchVersion, Set<?> stopwords){
+    stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
     this.matchVersion = matchVersion;
   }
 
   /**
    * Builds an analyzer with the given stop words.
+   * @deprecated use {@link #PersianAnalyzer(Version, Set)} instead
    */
   public PersianAnalyzer(Version matchVersion, String... stopwords) {
-    stoptable = StopFilter.makeStopSet(stopwords);
-    this.matchVersion = matchVersion;
+    this(matchVersion, StopFilter.makeStopSet(stopwords));
   }
 
   /**
    * Builds an analyzer with the given stop words.
+   * @deprecated use {@link #PersianAnalyzer(Version, Set)} instead
    */
-  public PersianAnalyzer(Version matchVersion, Hashtable stopwords) {
-    stoptable = new HashSet(stopwords.keySet());
-    this.matchVersion = matchVersion;
+  public PersianAnalyzer(Version matchVersion, Hashtable<?, ?> stopwords) {
+    this(matchVersion, stopwords.keySet());
   }
 
   /**
    * Builds an analyzer with the given stop words. Lines can be commented out
    * using {@link #STOPWORDS_COMMENT}
+   * @deprecated use {@link #PersianAnalyzer(Version, Set)} instead
    */
   public PersianAnalyzer(Version matchVersion, File stopwords) throws IOException {
-    stoptable = WordlistLoader.getWordSet(stopwords, STOPWORDS_COMMENT);
-    this.matchVersion = matchVersion;
+    this(matchVersion, WordlistLoader.getWordSet(stopwords, STOPWORDS_COMMENT));
   }
 
   /**

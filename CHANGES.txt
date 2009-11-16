@@ -154,6 +154,10 @@ New features
 * LUCENE-2041: Parallelize the rest of ParallelMultiSearcher. Lots of
   code refactoring and Java 5 concurrent support in MultiSearcher.
   (Joey Surls, Simon Willnauer via Uwe Schindler)
+  
+* LUCENE-2051: Add CharArraySet.copy() as a simple method to copy
+  any Set<?> to a CharArraySet that is optimized, if Set<?> is already
+  an CharArraySet.
 
 Optimizations
 

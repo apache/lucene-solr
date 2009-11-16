@@ -19,11 +19,12 @@ package org.apache.lucene.analysis.ru;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.util.HashSet;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -55,37 +56,53 @@ public final class RussianAnalyzer extends Analyzer
       "тоже", "той", "только", "том", "ты", "у", "уже", "хотя", "чего", "чей", 
       "чем", "что", "чтобы", "чье", "чья", "эта", "эти", "это", "я"
     };
+    
+    private static class DefaultSetHolder {
+      static final Set<?> DEFAULT_STOP_SET = CharArraySet
+          .unmodifiableSet(new CharArraySet(Arrays.asList(RUSSIAN_STOP_WORDS),
+              false));
+    }
 
     /**
      * Contains the stopwords used with the StopFilter.
      */
-    private Set stopSet = new HashSet();
+    private final Set<?> stopSet;
 
     private final Version matchVersion;
 
     public RussianAnalyzer(Version matchVersion) {
-      this(matchVersion, RUSSIAN_STOP_WORDS);
+      this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
     }
   
     /**
      * Builds an analyzer with the given stop words.
+     * @deprecated use {@link #RussianAnalyzer(Version, Set)} instead
      */
-    public RussianAnalyzer(Version matchVersion, String... stopwords)
-    {
-      super();
-      stopSet = StopFilter.makeStopSet(stopwords);
+    public RussianAnalyzer(Version matchVersion, String... stopwords) {
+      this(matchVersion, StopFilter.makeStopSet(stopwords));
+    }
+    
+    /**
+     * Builds an analyzer with the given stop words
+     * 
+     * @param matchversion
+     *          lucene compatibility version
+     * @param stopwords
+     *          a stopword set
+     */
+    public RussianAnalyzer(Version matchVersion, Set<?> stopwords){
+      stopSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
       this.matchVersion = matchVersion;
     }
    
     /**
      * Builds an analyzer with the given stop words.
      * TODO: create a Set version of this ctor
+     * @deprecated use {@link #RussianAnalyzer(Version, Set)} instead
      */
-    public RussianAnalyzer(Version matchVersion, Map stopwords)
+    public RussianAnalyzer(Version matchVersion, Map<?,?> stopwords)
     {
-      super();
-      stopSet = new HashSet(stopwords.keySet());
-      this.matchVersion = matchVersion;
+      this(matchVersion, stopwords.keySet());
     }
 
     /**
