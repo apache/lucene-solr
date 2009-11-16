@@ -12,7 +12,7 @@
 
             <p>
                 This document defines the index file formats used
-                in Lucene version 2.9. If you are using a different
+                in Lucene version 3.1. If you are using a different
                 version of Lucene, please consult the copy of
                 <code>docs/fileformats.html</code>
                 that was distributed
@@ -27,7 +27,7 @@
                 languages</a>.  If these versions are to remain compatible with Apache
                 Lucene, then a language-independent definition of the Lucene index
                 format is required.  This document thus attempts to provide a
-                complete and independent definition of the Apache Lucene 2.9 file
+                complete and independent definition of the Apache Lucene 3.1 file
                 formats.
             </p>
 
@@ -1259,7 +1259,8 @@
                                 <li>low order bit is one for tokenized fields</li>
                                 <li>second bit is one for fields containing binary data</li>
                                 <li>third bit is one for fields with compression option enabled
-                                    (if compression is enabled, the algorithm used is ZLIB)</li>
+                                    (if compression is enabled, the algorithm used is ZLIB),
+                                    only available for indexes until Lucene version 2.9.x</li>
                             </ul>
                         </p>
                         <p>Value --&gt;
