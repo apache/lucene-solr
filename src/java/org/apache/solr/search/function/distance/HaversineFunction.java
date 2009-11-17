@@ -133,12 +133,21 @@ public class HaversineFunction extends ValueSource {
             && x1.equals(other.x1) &&
             y1.equals(other.y1) &&
             x2.equals(other.x2) &&
-            y2.equals(other.y2);
+            y2.equals(other.y2) && radius == other.radius;
   }
 
+  @Override
   public int hashCode() {
-
-    return x1.hashCode() + x2.hashCode() + y1.hashCode() + y2.hashCode() + name().hashCode();
+    int result;
+    long temp;
+    result = x1.hashCode();
+    result = 31 * result + y1.hashCode();
+    result = 31 * result + x2.hashCode();
+    result = 31 * result + y2.hashCode();
+    result = 31 * result + name().hashCode();
+    temp = radius != +0.0d ? Double.doubleToLongBits(radius) : 0L;
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    return result;
   }
 
   public String description() {
