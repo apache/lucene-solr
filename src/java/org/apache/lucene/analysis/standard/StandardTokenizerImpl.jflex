@@ -19,12 +19,13 @@ package org.apache.lucene.analysis.standard;
 
 /*
 
-NOTE: if you change StandardTokenizerImpl.jflex and need to regenerate
-      the tokenizer, remember to use JRE 1.4 to run jflex (before
-      Lucene 3.0).  This grammar now uses constructs (eg :digit:,
-      :letter:) whose meaning can vary according to the JRE used to
-      run jflex.  See
+WARNING: if you change StandardTokenizerImpl.jflex and need to regenerate
+      the tokenizer, only use Java 1.4 !!!
+      This grammar currently uses constructs (eg :digit:, :letter:) whose 
+      meaning can vary according to the JRE used to run jflex.  See
       https://issues.apache.org/jira/browse/LUCENE-1126 for details.
+      For current backwards compatibility it is needed to support
+      only Java 1.4 - this will change in Lucene 3.1.
 
 */
 
