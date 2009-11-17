@@ -4,10 +4,9 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.function.ConstValueSource;
 import org.apache.solr.search.function.FunctionQuery;
 import org.apache.solr.search.function.LiteralValueSource;
-import org.apache.solr.search.function.ConstValueSource;
-import org.apache.solr.search.function.DocValues;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 import java.util.HashMap;
