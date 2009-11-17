@@ -219,8 +219,12 @@ print<<"__HTML_HEADER__";
 
     function collapseAll() {
       var unorderedLists = document.getElementsByTagName("ul");
-      for (var i = 0; i < unorderedLists.length; i++)
-        unorderedLists[i].style.display = "none";
+      for (var i = 0; i < unorderedLists.length; i++) {
+        if (unorderedLists[i].className != 'bulleted-list')
+          unorderedLists[i].style.display = "none";
+        else
+          unorderedLists[i].style.display = "block";
+      }
       var orderedLists = document.getElementsByTagName("ol");
       for (var i = 0; i < orderedLists.length; i++)
         orderedLists[i].style.display = "none"; 
@@ -285,6 +289,7 @@ print<<"__HTML_HEADER__";
          */
         if (list.id != '$first_relid.list' 
             && list.id != '$second_relid.list'
+            && list.className != 'bulleted-list'
             && (currentAnchor == ''
                 || ! shouldExpand(currentList, currentAnchor, list.id))) {
           list.style.display = "none";
@@ -392,7 +397,7 @@ for my $rel (@releases) {
       # Put attributions on their own lines.
       # Check for trailing parenthesized attribution with no following period.
       # Exclude things like "(see #3 above)" and "(use the bug number instead of xxxx)" 
-      unless ($item =~ s:\s*(\((?!see #|use the bug number)[^)"]+?\))\s*$:<br /><span class="attrib">$1</span>:) {
+      unless ($item =~ s:\s*(\((?!see #|use the bug number)[^)"]+?\))\s*$:\n<br /><span class="attrib">$1</span>:) {
         # If attribution is not found, then look for attribution with a
         # trailing period, but try not to include trailing parenthesized things
         # that are not attributions.
@@ -412,12 +417,45 @@ for my $rel (@releases) {
                       my ($no_parens) = $parenthetical =~ /^\((.*)\)$/s;
                       my @words = grep {/\S/} split /\s+/, $no_parens;
                       if ($no_parens =~ /\b(?:via|updates\s+from)\b/i || scalar(@words) <= 3) {
-                        $subst = "<br /><span class=\"attrib\">$parenthetical</span>";
+                        $subst = "\n<br /><span class=\"attrib\">$parenthetical</span>";
                       }
                     }
                     $subst . $trailing_period_and_or_issue;
                   }ex;
       }
+
+      $item =~ s{(.*?)(<code><pre>.*?</pre></code>)|(.*)}
+                {
+                  my $uncode = undef;
+                  if (defined($2)) {
+                    $uncode = $1 || '';
+                    $uncode =~ s{((?<=\n)[ ]*-.*\n(?:.*\n)*)}
+                                {
+                                  my $bulleted_list = $1;
+                                  $bulleted_list 
+                                    =~ s{(?:(?<=\n)|\A)[ ]*-[ ]*(.*(?:\n|\z)(?:[ ]+[^ -].*(?:\n|\z))*)}
+                                        {<li class="bulleted-list">\n$1</li>\n}g;
+                                  $bulleted_list
+                                    =~ s!(<li.*</li>\n)!<ul class="bulleted-list">\n$1</ul>\n!s;
+                                  $bulleted_list;
+                                }ge;
+                    "$uncode$2";
+                  } else {
+                    $uncode = $3 || '';
+                    $uncode =~ s{((?<=\n)[ ]*-.*\n(?:.*\n)*)}
+                                {
+                                  my $bulleted_list = $1;
+                                  $bulleted_list 
+                                    =~ s{(?:(?<=\n)|\A)[ ]*-[ ]*(.*(?:\n|\z)(?:[ ]+[^ -].*(?:\n|\z))*)}
+                                        {<li class="bulleted-list">\n$1</li>\n}g;
+                                  $bulleted_list
+                                    =~ s!(<li.*</li>\n)!<ul class="bulleted-list">\n$1</ul>\n!s;
+                                  $bulleted_list;
+                                }ge;
+                    $uncode;
+                  }
+                }sge;
+
       $item =~ s:\n{2,}:\n<p/>\n:g;                   # Keep paragraph breaks
       # Link LUCENE-XXX, SOLR-XXX and INFRA-XXX to JIRA
       $item =~ s{(?:${jira_url_prefix})?((?:LUCENE|SOLR|INFRA)-\d+)}
