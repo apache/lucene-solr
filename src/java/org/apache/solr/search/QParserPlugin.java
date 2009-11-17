@@ -32,6 +32,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin {
     PrefixQParserPlugin.NAME, PrefixQParserPlugin.class,
     BoostQParserPlugin.NAME, BoostQParserPlugin.class,
     DisMaxQParserPlugin.NAME, DisMaxQParserPlugin.class,
+    ExtendedDismaxQParserPlugin.NAME, ExtendedDismaxQParserPlugin.class,
     FieldQParserPlugin.NAME, FieldQParserPlugin.class,
     RawQParserPlugin.NAME, RawQParserPlugin.class,
     NestedQParserPlugin.NAME, NestedQParserPlugin.class,

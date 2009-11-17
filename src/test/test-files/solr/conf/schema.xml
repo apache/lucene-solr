@@ -339,7 +339,7 @@
     <fieldtype name="syn" class="solr.TextField">
       <analyzer>
           <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-          <filter name="syn" class="solr.SynonymFilterFactory" synonyms="synonyms.txt"/>
+          <filter name="syn" class="solr.SynonymFilterFactory" synonyms="old_synonyms.txt"/>
       </analyzer>
     </fieldtype>
     
@@ -350,7 +350,7 @@
       <analyzer>
           <tokenizer class="solr.WhitespaceTokenizerFactory"/>
           <filter class="solr.SynonymFilterFactory"
-                  synonyms="synonyms.txt" expand="true" />
+                  synonyms="old_synonyms.txt" expand="true" />
           <filter class="solr.EnglishPorterFilterFactory"/>
           <filter class="solr.RemoveDuplicatesTokenFilterFactory" />
       </analyzer>
