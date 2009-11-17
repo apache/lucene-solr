@@ -43,6 +43,8 @@ Optimizations
 Bug Fixes
 ----------------------
 
+1. SOLR-1569: Allow functions to take in literal strings by modifying the FunctionQParser and adding LiteeralValueSource (gsingers)
+
 Other Changes
 ----------------------
 

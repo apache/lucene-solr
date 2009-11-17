@@ -233,8 +233,11 @@ public class FunctionQParser extends QParser {
     int ch = sp.peek();
     if (ch>='0' && ch<='9'  || ch=='.' || ch=='+' || ch=='-') {
       valueSource = new ConstValueSource(sp.getFloat());
+    } else if (ch == '"' || ch == '\''){
+      valueSource = new LiteralValueSource(sp.getQuotedString());
     }
     else {
+
       String id = sp.getId();
       if (sp.opt("(")) {
         // a function... look it up.
