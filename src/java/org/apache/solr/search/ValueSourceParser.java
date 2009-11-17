@@ -25,27 +25,7 @@ import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.LegacyDateField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
-import org.apache.solr.search.function.BoostedQuery;
-import org.apache.solr.search.function.DegreeFunction;
-import org.apache.solr.search.function.DivFloatFunction;
-import org.apache.solr.search.function.DocValues;
-import org.apache.solr.search.function.DualFloatFunction;
-import org.apache.solr.search.function.LinearFloatFunction;
-import org.apache.solr.search.function.MaxFloatFunction;
-import org.apache.solr.search.function.OrdFieldSource;
-import org.apache.solr.search.function.PowFloatFunction;
-import org.apache.solr.search.function.ProductFloatFunction;
-import org.apache.solr.search.function.QueryValueSource;
-import org.apache.solr.search.function.RadianFunction;
-import org.apache.solr.search.function.RangeMapFloatFunction;
-import org.apache.solr.search.function.ReciprocalFloatFunction;
-import org.apache.solr.search.function.ReverseOrdFieldSource;
-import org.apache.solr.search.function.ScaleFloatFunction;
-import org.apache.solr.search.function.SimpleFloatFunction;
-import org.apache.solr.search.function.SumFloatFunction;
-import org.apache.solr.search.function.TopValueSource;
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.LiteralValueSource;
+import org.apache.solr.search.function.*;
 
 import org.apache.solr.search.function.distance.HaversineFunction;
 
@@ -71,7 +51,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   /**
    * Initialize the plugin.
    */
-  public abstract void init(NamedList args);
+  public void init(NamedList args) {}
+
 
   /**
    * Parse the user input into a ValueSource.
@@ -84,71 +65,55 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   /* standard functions */
   public static Map<String, ValueSourceParser> standardValueSourceParsers = new HashMap<String, ValueSourceParser>();
 
+  /** Adds a new parser for the name and returns any existing one that was overriden.
+   *  This is not thread safe.
+   */
+  public static ValueSourceParser addParser(String name, ValueSourceParser p) {
+    return standardValueSourceParsers.put(name, p);
+  }
+
   static {
-    standardValueSourceParsers.put("ord", new ValueSourceParser() {
+    addParser("ord", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         String field = fp.parseId();
         return new TopValueSource(new OrdFieldSource(field));
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("literal", new ValueSourceParser() {
+    addParser("literal", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         return new LiteralValueSource(fp.getString());
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("rord", new ValueSourceParser() {
+    addParser("rord", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         String field = fp.parseId();
         return new TopValueSource(new ReverseOrdFieldSource(field));
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("top", new ValueSourceParser() {
+    addParser("top", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource source = fp.parseValueSource();
         // nested top is redundant, and ord and rord get automatically wrapped
         if (source instanceof TopValueSource) return source;
         return new TopValueSource(source);
       }
-
-      public void init(NamedList args) {
-      }
     });
-    standardValueSourceParsers.put("linear", new ValueSourceParser() {
+    addParser("linear", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource source = fp.parseValueSource();
         float slope = fp.parseFloat();
         float intercept = fp.parseFloat();
         return new LinearFloatFunction(source, slope, intercept);
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("max", new ValueSourceParser() {
+    addParser("max", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource source = fp.parseValueSource();
         float val = fp.parseFloat();
         return new MaxFloatFunction(source, val);
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("recip", new ValueSourceParser() {
+    addParser("recip", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource source = fp.parseValueSource();
         float m = fp.parseFloat();
@@ -156,46 +121,30 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         float b = fp.parseFloat();
         return new ReciprocalFloatFunction(source, m, a, b);
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("scale", new ValueSourceParser() {
+    addParser("scale", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource source = fp.parseValueSource();
         float min = fp.parseFloat();
         float max = fp.parseFloat();
         return new TopValueSource(new ScaleFloatFunction(source, min, max));
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("pow", new ValueSourceParser() {
+    addParser("pow", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource a = fp.parseValueSource();
         ValueSource b = fp.parseValueSource();
         return new PowFloatFunction(a, b);
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("div", new ValueSourceParser() {
+    addParser("div", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource a = fp.parseValueSource();
         ValueSource b = fp.parseValueSource();
         return new DivFloatFunction(a, b);
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("map", new ValueSourceParser() {
+    addParser("map", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource source = fp.parseValueSource();
         float min = fp.parseFloat();
@@ -204,12 +153,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         Float def = fp.hasMoreArguments() ? fp.parseFloat() : null;
         return new RangeMapFloatFunction(source, min, max, target, def);
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("sqrt", new ValueSourceParser() {
+    addParser("sqrt", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource source = fp.parseValueSource();
         return new SimpleFloatFunction(source) {
@@ -222,11 +167,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           }
         };
       }
-
-      public void init(NamedList args) {
-      }
     });
-    standardValueSourceParsers.put("log", new ValueSourceParser() {
+    addParser("log", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource source = fp.parseValueSource();
         return new SimpleFloatFunction(source) {
@@ -239,12 +181,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           }
         };
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("abs", new ValueSourceParser() {
+    addParser("abs", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource source = fp.parseValueSource();
         return new SimpleFloatFunction(source) {
@@ -257,32 +195,20 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           }
         };
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("sum", new ValueSourceParser() {
+    addParser("sum", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         List<ValueSource> sources = fp.parseValueSourceList();
         return new SumFloatFunction(sources.toArray(new ValueSource[sources.size()]));
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("product", new ValueSourceParser() {
+    addParser("product", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         List<ValueSource> sources = fp.parseValueSourceList();
         return new ProductFloatFunction(sources.toArray(new ValueSource[sources.size()]));
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("sub", new ValueSourceParser() {
+    addParser("sub", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         ValueSource a = fp.parseValueSource();
         ValueSource b = fp.parseValueSource();
@@ -296,12 +222,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           }
         };
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("query", new ValueSourceParser() {
+    addParser("query", new ValueSourceParser() {
       // boost(query($q),rating)
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         Query q = fp.parseNestedQuery();
@@ -311,24 +233,16 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         }
         return new QueryValueSource(q, defVal);
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("boost", new ValueSourceParser() {
+    addParser("boost", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         Query q = fp.parseNestedQuery();
         ValueSource vs = fp.parseValueSource();
         BoostedQuery bq = new BoostedQuery(q, vs);
         return new QueryValueSource(bq, 0.0f);
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("hsin", new ValueSourceParser() {
+    addParser("hsin", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
 
         ValueSource x1 = fp.parseValueSource();
@@ -339,13 +253,9 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
         return new HaversineFunction(x1, y1, x2, y2, radius);
       }
-
-      public void init(NamedList args) {
-      }
-
     });
 
-    standardValueSourceParsers.put("ghhsin", new ValueSourceParser() {
+    addParser("ghhsin", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
 
         ValueSource gh1 = fp.parseValueSource();
@@ -354,13 +264,9 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
         return new GeohashHaversineFunction(gh1, gh2, radius);
       }
-
-      public void init(NamedList args) {
-      }
-
     });
 
-    standardValueSourceParsers.put("geohash", new ValueSourceParser() {
+    addParser("geohash", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
 
         ValueSource lat = fp.parseValueSource();
@@ -368,34 +274,22 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
         return new GeohashFunction(lat, lon);
       }
-
-      public void init(NamedList args) {
-      }
-
     });
 
 
-    standardValueSourceParsers.put("rad", new ValueSourceParser() {
+    addParser("rad", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         return new RadianFunction(fp.parseValueSource());
       }
-
-      public void init(NamedList args) {
-      }
-
     });
 
-    standardValueSourceParsers.put("deg", new ValueSourceParser() {
+    addParser("deg", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         return new DegreeFunction(fp.parseValueSource());
       }
-
-      public void init(NamedList args) {
-      }
-
     });
 
-    standardValueSourceParsers.put("sqedist", new ValueSourceParser() {
+    addParser("sqedist", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         List<ValueSource> sources = fp.parseValueSourceList();
         if (sources.size() % 2 != 0) {
@@ -408,13 +302,9 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         splitSources(dim, sources, sources1, sources2);
         return new SquaredEuclideanFunction(sources1, sources2);
       }
-
-      public void init(NamedList args) {
-      }
-
     });
 
-    standardValueSourceParsers.put("dist", new ValueSourceParser() {
+    addParser("dist", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         float power = fp.parseFloat();
         List<ValueSource> sources = fp.parseValueSourceList();
@@ -427,12 +317,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         splitSources(dim, sources, sources1, sources2);
         return new VectorDistanceFunction(power, sources1, sources2);
       }
-
-      public void init(NamedList args) {
-      }
-
     });
-    standardValueSourceParsers.put("ms", new DateValueSourceParser());
+    addParser("ms", new DateValueSourceParser());
   }
 
   protected void splitSources(int dim, List<ValueSource> sources, List<ValueSource> dest1, List<ValueSource> dest2) {
