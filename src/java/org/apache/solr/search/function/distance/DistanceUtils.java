@@ -25,12 +25,12 @@ public class DistanceUtils {
   /**
    * @see org.apache.solr.search.function.distance.HaversineFunction
    * 
-   * @param x1
-   * @param y1
-   * @param x2
-   * @param y2
-   * @param radius
-   * @return
+   * @param x1 The x coordinate of the first point
+   * @param y1 The y coordinate of the first point
+   * @param x2 The x coordinate of the second point
+   * @param y2 The y coordinate of the second point
+   * @param radius The radius of the sphere
+   * @return The distance between the two points, as determined by the Haversine formula.
    */
   public static double haversine(double x1, double y1, double x2, double y2, double radius){
     double result = 0;
