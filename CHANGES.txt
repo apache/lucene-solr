@@ -35,7 +35,7 @@ New Features
 ----------------------
 
 1. SOLR-1302: Added several new distance based functions, including Great Circle (haversine), Manhattan and Euclidean.
-  Also added deg() and rad() convenience functions. (gsingers)
+  Also added geohash(), deg() and rad() convenience functions. See http://wiki.apache.org/solr/FunctionQuery. (gsingers)
 
 Optimizations
 ----------------------

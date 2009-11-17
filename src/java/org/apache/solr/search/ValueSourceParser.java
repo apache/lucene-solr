@@ -45,11 +45,14 @@ import org.apache.solr.search.function.SimpleFloatFunction;
 import org.apache.solr.search.function.SumFloatFunction;
 import org.apache.solr.search.function.TopValueSource;
 import org.apache.solr.search.function.ValueSource;
+import org.apache.solr.search.function.LiteralValueSource;
 
 import org.apache.solr.search.function.distance.HaversineFunction;
 
 import org.apache.solr.search.function.distance.SquaredEuclideanFunction;
 import org.apache.solr.search.function.distance.VectorDistanceFunction;
+import org.apache.solr.search.function.distance.GeohashHaversineFunction;
+import org.apache.solr.search.function.distance.GeohashFunction;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 import java.io.IOException;
@@ -86,6 +89,15 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         String field = fp.parseId();
         return new TopValueSource(new OrdFieldSource(field));
+      }
+
+      public void init(NamedList args) {
+      }
+
+    });
+    standardValueSourceParsers.put("literal", new ValueSourceParser() {
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        return new LiteralValueSource(fp.getString());
       }
 
       public void init(NamedList args) {
@@ -332,6 +344,36 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
 
     });
+
+    standardValueSourceParsers.put("ghhsin", new ValueSourceParser() {
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+
+        ValueSource gh1 = fp.parseValueSource();
+        ValueSource gh2 = fp.parseValueSource();
+        double radius = fp.parseDouble();
+
+        return new GeohashHaversineFunction(gh1, gh2, radius);
+      }
+
+      public void init(NamedList args) {
+      }
+
+    });
+
+    standardValueSourceParsers.put("geohash", new ValueSourceParser() {
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+
+        ValueSource lat = fp.parseValueSource();
+        ValueSource lon = fp.parseValueSource();
+
+        return new GeohashFunction(lat, lon);
+      }
+
+      public void init(NamedList args) {
+      }
+
+    });
+
 
     standardValueSourceParsers.put("rad", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {

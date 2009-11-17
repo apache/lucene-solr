@@ -180,6 +180,29 @@ public abstract class SolrParams implements Serializable {
     }
   }
 
+  /** Returns the Float value of the param, or null if not set */
+  public Double getDouble(String param) {
+    String val = get(param);
+    try {
+      return val==null ? null : Double.valueOf(val);
+    }
+    catch( Exception ex ) {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
+    }
+  }
+
+  /** Returns the float value of the param, or def if not set */
+  public double getDouble(String param, double def) {
+    String val = get(param);
+    try {
+      return val==null ? def : Double.parseDouble(val);
+    }
+    catch( Exception ex ) {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
+    }
+  }
+
+
   /** Returns the float value of the field param. */
   public Float getFieldFloat(String field, String param) {
     String val = getFieldParam(field, param);
@@ -202,6 +225,30 @@ public abstract class SolrParams implements Serializable {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
     }
   }
+
+  /** Returns the float value of the field param. */
+  public Double getFieldDouble(String field, String param) {
+    String val = getFieldParam(field, param);
+    try {
+      return val==null ? null : Double.valueOf(val);
+    }
+    catch( Exception ex ) {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
+    }
+  }
+
+  /** Returns the float value of the field param,
+  or the value for param, or def if neither is set. */
+  public double getFieldDouble(String field, String param, double def) {
+    String val = getFieldParam(field, param);
+    try {
+      return val==null ? def : Double.parseDouble(val);
+    }
+    catch( Exception ex ) {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, ex.getMessage(), ex );
+    }
+  }
+
   
   /** how to transform a String into a boolean... more flexible than
    * Boolean.parseBoolean() to enable easier integration with html forms.
