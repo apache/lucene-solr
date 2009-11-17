@@ -126,6 +126,7 @@ public class HaversineFunction extends ValueSource {
     y2.createWeight(context, searcher);
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
     HaversineFunction other = (HaversineFunction) o;
@@ -145,7 +146,7 @@ public class HaversineFunction extends ValueSource {
     result = 31 * result + x2.hashCode();
     result = 31 * result + y2.hashCode();
     result = 31 * result + name().hashCode();
-    temp = radius != +0.0d ? Double.doubleToLongBits(radius) : 0L;
+    temp = Double.doubleToRawLongBits(radius);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     return result;
   }

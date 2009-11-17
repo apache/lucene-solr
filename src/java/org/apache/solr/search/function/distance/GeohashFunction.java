@@ -85,11 +85,11 @@ public class GeohashFunction extends ValueSource {
   @Override
   public int hashCode() {
     int result = lat.hashCode();
-    result = 31 * result + lon.hashCode();
-    result = 31 * name().hashCode();
+    result = 29 * result - lon.hashCode();
     return result;
   }
 
+  @Override  
   public String description() {
     StringBuilder sb = new StringBuilder();
     sb.append(name()).append('(');

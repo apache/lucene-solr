@@ -57,7 +57,7 @@ public class VectorDistanceFunction extends ValueSource {
 
   protected String name() {
     return "dist";
-  };
+  }
 
   /**
    * Calculate the distance
@@ -129,7 +129,7 @@ public class VectorDistanceFunction extends ValueSource {
       }
 
       public double doubleVal(int doc) {
-        return (double) distance(doc, valsArr1, valsArr2);
+        return distance(doc, valsArr1, valsArr2);
       }
 
       public String strVal(int doc) {
@@ -187,10 +187,11 @@ public class VectorDistanceFunction extends ValueSource {
   public int hashCode() {
     int result = sources1.hashCode();
     result = 31 * result + sources2.hashCode();
-    result = 31 * result + (power != +0.0f ? Float.floatToIntBits(power) : 0);
+    result = 31 * result + Float.floatToRawIntBits(power);
     return result;
   }
 
+  @Override
   public String description() {
     StringBuilder sb = new StringBuilder();
     sb.append(name()).append('(').append(power).append(',');

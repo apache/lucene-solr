@@ -108,6 +108,7 @@ public class GeohashHaversineFunction extends ValueSource {
     geoHash2.createWeight(context, searcher);
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this.getClass() != o.getClass()) return false;
     GeohashHaversineFunction other = (GeohashHaversineFunction) o;
@@ -120,15 +121,15 @@ public class GeohashHaversineFunction extends ValueSource {
   @Override
   public int hashCode() {
     int result;
-    long temp;
     result = geoHash1.hashCode();
     result = 31 * result + geoHash2.hashCode();
     result = 31 * result + name().hashCode();
-    temp = radius != +0.0d ? Double.doubleToLongBits(radius) : 0L;
+    long temp =Double.doubleToRawLongBits(radius);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     return result;
   }
 
+  @Override
   public String description() {
     StringBuilder sb = new StringBuilder();
     sb.append(name()).append('(');
