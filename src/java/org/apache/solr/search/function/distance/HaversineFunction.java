@@ -143,7 +143,7 @@ public class HaversineFunction extends ValueSource {
 
   public String description() {
     StringBuilder sb = new StringBuilder();
-    sb.append(name() + '(');
+    sb.append(name()).append('(');
     sb.append(x1).append(',').append(y1).append(',').append(x2).append(',').append(y2);
     sb.append(')');
     return sb.toString();
