@@ -27,13 +27,14 @@ import java.io.IOException;
  *
  **/
 public class LiteralValueSource extends ValueSource {
-  protected String string;
+  protected final String string;
   public LiteralValueSource(String string) {
     this.string = string;
   }
 
-  protected String name() {
-    return "literal";
+  /** returns the literal value */
+  public String getValue() {
+    return string;
   }
 
   @Override
@@ -52,6 +53,7 @@ public class LiteralValueSource extends ValueSource {
     };
   }
 
+  @Override
   public String description() {
     return "literal(" + string + ")";
   }
