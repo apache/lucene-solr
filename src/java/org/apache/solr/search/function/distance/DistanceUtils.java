@@ -37,8 +37,8 @@ public class DistanceUtils {
     if ((x1 != x2) || (y1 != y2)) {
       double diffX = x1 - x2;
       double diffY = y1 - y2;
-      double hsinX = Math.sin(diffX / 2);
-      double hsinY = Math.sin(diffY / 2);
+      double hsinX = Math.sin(diffX * 0.5);
+      double hsinY = Math.sin(diffY * 0.5);
       double h = hsinX * hsinX +
               (Math.cos(x1) * Math.cos(x2) * hsinY * hsinY);
       result = (radius * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h)));
