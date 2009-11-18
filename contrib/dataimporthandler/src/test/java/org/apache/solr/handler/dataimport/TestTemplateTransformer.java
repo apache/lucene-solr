@@ -22,6 +22,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Arrays;
 
 /**
  * <p>
@@ -43,14 +44,20 @@ public class TestTemplateTransformer {
     fields.add(AbstractDataImportHandlerTest.createMap("column", "name",
             TemplateTransformer.TEMPLATE,
             "${e.lastName}, ${e.firstName} ${e.middleName}"));
+    fields.add(AbstractDataImportHandlerTest.createMap("column", "emails",
+            TemplateTransformer.TEMPLATE,
+            "${e.mail}"));
+
     // test reuse of template output in another template 
     fields.add(AbstractDataImportHandlerTest.createMap("column", "mrname",
             TemplateTransformer.TEMPLATE,"Mr ${e.name}"));
-            
+
+    List<String> mails = Arrays.asList(new String[]{"a@b.com", "c@d.com"});
     Map row = AbstractDataImportHandlerTest.createMap(
             "firstName", "Shalin",
             "middleName", "Shekhar", 
-            "lastName", "Mangar");
+            "lastName", "Mangar",
+            "mail", mails);
 
     VariableResolverImpl resolver = new VariableResolverImpl();
     resolver.addNamespace("e", row);
@@ -62,6 +69,7 @@ public class TestTemplateTransformer {
     new TemplateTransformer().transformRow(row, context);
     Assert.assertEquals("Mangar, Shalin Shekhar", row.get("name"));
     Assert.assertEquals("Mr Mangar, Shalin Shekhar", row.get("mrname"));
+    Assert.assertEquals(mails,row.get("emails"));
   }
 
 }
