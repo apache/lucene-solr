@@ -80,7 +80,9 @@ public class DocBuilder {
 
   public VariableResolverImpl getVariableResolver() {
     try {
-      VariableResolverImpl resolver = new VariableResolverImpl();
+      VariableResolverImpl resolver = null;
+      if(dataImporter != null && dataImporter.getCore() != null) resolver =  new VariableResolverImpl(dataImporter.getCore().getResourceLoader().getCoreProperties());
+      else resolver = new VariableResolverImpl();
       Map<String, Object> indexerNamespace = new HashMap<String, Object>();
       if (persistedProperties.getProperty(LAST_INDEX_TIME) != null) {
         indexerNamespace.put(LAST_INDEX_TIME, persistedProperties.getProperty(LAST_INDEX_TIME));

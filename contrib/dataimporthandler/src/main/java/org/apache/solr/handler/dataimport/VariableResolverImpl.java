@@ -18,6 +18,7 @@ package org.apache.solr.handler.dataimport;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Collections;
 import java.util.regex.Pattern;
 
 /**
@@ -41,7 +42,14 @@ public class VariableResolverImpl extends VariableResolver {
 
   private final TemplateString templateString = new TemplateString();
 
+  private final Map defaults ;
+
   public VariableResolverImpl() {
+    defaults = Collections.emptyMap();
+  }
+
+  public VariableResolverImpl(Map defaults) {
+    this.defaults = defaults;
   }
 
   /**
@@ -100,23 +108,30 @@ public class VariableResolverImpl extends VariableResolver {
       for (int i = 0; i < parts.length; i++) {
         String thePart = parts[i];
         if (i == parts.length - 1) {
-          return namespace.get(thePart);
+          Object val = namespace.get(thePart);
+          return val == null ? getDefault(name): val ;
         }
         Object temp = namespace.get(thePart);
         if (temp == null) {
-          return namespace.get(mergeAll(parts, i));
+          Object val = namespace.get(mergeAll(parts, i));
+          return val == null ? getDefault(name): val ;
         } else {
           if (temp instanceof Map) {
             namespace = (Map) temp;
           } else {
-            return null;
+            return getDefault(name);
           }
         }
       }
     } finally {
-      CURRENT_VARIABLE_RESOLVER.set(null);
+      CURRENT_VARIABLE_RESOLVER.remove();
     }
-    return null;
+    return getDefault(name);
+  }
+
+  private Object getDefault(String name) {
+    Object val = defaults.get(name);
+    return val == null? System.getProperty(name) : val;
   }
 
   private String mergeAll(String[] parts, int i) {
