@@ -106,8 +106,11 @@ public class ConcurrentLRUCache<K,V> {
     if (val == null) return null;
     CacheEntry e = new CacheEntry(key, val, stats.accessCounter.incrementAndGet());
     CacheEntry oldCacheEntry = map.put(key, e);
+    int currentSize;
     if (oldCacheEntry == null) {
-      stats.size.incrementAndGet();
+      currentSize = stats.size.incrementAndGet();
+    } else {
+      currentSize = stats.size.get();
     }
     if (islive) {
       stats.putCounter.incrementAndGet();
@@ -125,7 +128,7 @@ public class ConcurrentLRUCache<K,V> {
     //
     // Thread safety note: isCleaning read is piggybacked (comes after) other volatile reads
     // in this method.
-    if (stats.size.get() > upperWaterMark && !isCleaning) {
+    if (currentSize > upperWaterMark && !isCleaning) {
       if (newThreadForCleanup) {
         new Thread() {
           public void run() {
@@ -174,7 +177,7 @@ public class ConcurrentLRUCache<K,V> {
       int numKept = 0;
       long newestEntry = timeCurrent;
       long newNewestEntry = -1;
-      long newOldestEntry = Integer.MAX_VALUE;
+      long newOldestEntry = Long.MAX_VALUE;
 
       int wantToKeep = lowerWaterMark;
       int wantToRemove = sz - lowerWaterMark;
@@ -222,8 +225,8 @@ public class ConcurrentLRUCache<K,V> {
       // over the values we collected, with updated min and max values.
       while (sz - numRemoved > acceptableWaterMark && --numPasses>=0) {
 
-        oldestEntry = newOldestEntry == Integer.MAX_VALUE ? oldestEntry : newOldestEntry;
-        newOldestEntry = Integer.MAX_VALUE;
+        oldestEntry = newOldestEntry == Long.MAX_VALUE ? oldestEntry : newOldestEntry;
+        newOldestEntry = Long.MAX_VALUE;
         newestEntry = newNewestEntry;
         newNewestEntry = -1;
         wantToKeep = lowerWaterMark - numKept;
@@ -270,8 +273,8 @@ public class ConcurrentLRUCache<K,V> {
       // inserting into a priority queue
       if (sz - numRemoved > acceptableWaterMark) {
 
-        oldestEntry = newOldestEntry == Integer.MAX_VALUE ? oldestEntry : newOldestEntry;
-        newOldestEntry = Integer.MAX_VALUE;
+        oldestEntry = newOldestEntry == Long.MAX_VALUE ? oldestEntry : newOldestEntry;
+        newOldestEntry = Long.MAX_VALUE;
         newestEntry = newNewestEntry;
         newNewestEntry = -1;
         wantToKeep = lowerWaterMark - numKept;
@@ -338,7 +341,7 @@ public class ConcurrentLRUCache<K,V> {
         // System.out.println("items removed:" + numRemoved + " numKept=" + numKept + " initialQueueSize="+ wantToRemove + " finalQueueSize=" + queue.size() + " sz-numRemoved=" + (sz-numRemoved));
       }
 
-      oldestEntry = newOldestEntry == Integer.MAX_VALUE ? oldestEntry : newOldestEntry;
+      oldestEntry = newOldestEntry == Long.MAX_VALUE ? oldestEntry : newOldestEntry;
       this.oldestEntry = oldestEntry;
     } finally {
       isCleaning = false;  // set before markAndSweep.unlock() for visibility
