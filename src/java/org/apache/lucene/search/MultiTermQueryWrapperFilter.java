@@ -93,9 +93,20 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
   public void clearTotalNumberOfTerms() {
     query.clearTotalNumberOfTerms();
   }
-
-  abstract class TermGenerator {
-    public void generate(IndexReader reader, TermEnum enumerator) throws IOException {
+  
+  /**
+   * Returns a DocIdSet with documents that should be
+   * permitted in search results.
+   */
+  @Override
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
+    final TermEnum enumerator = query.getEnum(reader);
+    try {
+      // if current term in enum is null, the enum is empty -> shortcut
+      if (enumerator.term() == null)
+        return DocIdSet.EMPTY_DOCIDSET;
+      // else fill into a OpenBitSet
+      final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
       final int[] docs = new int[32];
       final int[] freqs = new int[32];
       TermDocs termDocs = reader.termDocs();
@@ -111,7 +122,7 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
             final int count = termDocs.read(docs, freqs);
             if (count != 0) {
               for(int i=0;i<count;i++) {
-                handleDoc(docs[i]);
+                bitSet.set(docs[i]);
               }
             } else {
               break;
@@ -124,29 +135,6 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
       } finally {
         termDocs.close();
       }
-    }
-    abstract public void handleDoc(int doc);
-  }
-  
-  /**
-   * Returns a DocIdSet with documents that should be
-   * permitted in search results.
-   */
-  @Override
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    final TermEnum enumerator = query.getEnum(reader);
-    try {
-      // if current term in enum is null, the enum is empty -> shortcut
-      if (enumerator.term() == null)
-        return DocIdSet.EMPTY_DOCIDSET;
-      // else fill into a OpenBitSet
-      final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
-      new TermGenerator() {
-        @Override
-        public void handleDoc(int doc) {
-          bitSet.set(doc);
-        }
-      }.generate(reader, enumerator);
       return bitSet;
     } finally {
       enumerator.close();
