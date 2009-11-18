@@ -66,16 +66,12 @@ public class HaversineFunction extends ValueSource {
    * @return The haversine distance formula
    */
   protected double distance(int doc, DocValues x1DV, DocValues y1DV, DocValues x2DV, DocValues y2DV) {
-    double result = 0;
     double x1 = x1DV.doubleVal(doc); //in radians
     double y1 = y1DV.doubleVal(doc);
     double x2 = x2DV.doubleVal(doc);
     double y2 = y2DV.doubleVal(doc);
 
-    //make sure they aren't all the same, as then we can just return 0
-    result = DistanceUtils.haversine(x1, y1, x2, y2, radius);
-
-    return result;
+    return DistanceUtils.haversine(x1, y1, x2, y2, radius);
   }
 
 

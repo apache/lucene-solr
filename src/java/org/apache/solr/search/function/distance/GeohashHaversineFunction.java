@@ -93,11 +93,13 @@ public class GeohashHaversineFunction extends ValueSource {
     double result = 0;
     String h1 = gh1DV.strVal(doc);
     String h2 = gh2DV.strVal(doc);
-    if (h1.equals(h2) == false){
+    if (h1 != null && h2 != null && h1.equals(h2) == false){
       double[] h1Pair = GeoHashUtils.decode(h1);
       double[] h2Pair = GeoHashUtils.decode(h2);
       result = DistanceUtils.haversine(Math.toRadians(h1Pair[0]), Math.toRadians(h1Pair[1]),
               Math.toRadians(h2Pair[0]), Math.toRadians(h2Pair[1]), radius);
+    } else if (h1 == null || h2 == null){
+      result = Double.MAX_VALUE;
     }
     return result;
   }

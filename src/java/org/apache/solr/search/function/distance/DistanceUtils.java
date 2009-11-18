@@ -34,6 +34,7 @@ public class DistanceUtils {
    */
   public static double haversine(double x1, double y1, double x2, double y2, double radius){
     double result = 0;
+    //make sure they aren't all the same, as then we can just return 0
     if ((x1 != x2) || (y1 != y2)) {
       double diffX = x1 - x2;
       double diffY = y1 - y2;
