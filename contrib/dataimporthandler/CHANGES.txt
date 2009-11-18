@@ -8,6 +8,39 @@ HTTP data sources quick and easy.
 
 
 $Id$
+==================  1.5.0-dev ==================
+Upgrading from Solr 1.4
+----------------------
+
+Versions of Major Components
+---------------------
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+* SOLR-1525 allow DIH to refer to core properties (noble)
+
+Optimizations
+----------------------
+
+Bug Fixes
+----------------------
+
+
+
+Other Changes
+----------------------
+
+
+Build
+----------------------
+
+
+Documentation
+----------------------
 
 ================== Release 1.4.0 ==================
 
