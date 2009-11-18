@@ -44,7 +44,7 @@ public abstract class ValueSource implements Serializable {
    * passed to createWeight()
    */
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    return null;
+    return getValues(reader);
   }
 
   public abstract boolean equals(Object o);
