@@ -41,7 +41,13 @@ public abstract class QParser {
 
   protected Query query;
 
-
+  /**
+   * Constructor for the QParser
+   * @param qstr The whole query string
+   * @param localParams The set of parameters that are specific to this QParser.  See http://wiki.apache.org/solr/LocalParams
+   * @param params The rest of the {@link org.apache.solr.common.params.SolrParams}
+   * @param req The original {@link org.apache.solr.request.SolrQueryRequest}.
+   */
   public QParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     this.qstr = qstr;
     this.localParams = localParams;
