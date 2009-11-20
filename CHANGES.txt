@@ -2,6 +2,22 @@ Lucene Change Log
 $Id$
 
 ======================= Trunk (not yet released) =======================
+Changes in backwards compatibility policy
+
+Changes in runtime behavior
+
+API Changes
+
+* LUCENE-2076: Rename FSDirectory.getFile -> getDirectory.  (George
+  Aroush via Mike McCandless)
+
+Bug fixes
+
+New features
+
+Optimizations
+
+Build
 
 ======================= Release 3.0.0 2009-11-25 =======================
 

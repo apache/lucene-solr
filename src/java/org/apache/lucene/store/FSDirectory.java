@@ -372,7 +372,13 @@ public abstract class FSDirectory extends Directory {
     isOpen = false;
   }
 
+  /** @deprecated Use {@link #getDirectory} instead. */
   public File getFile() {
+    return getDirectory();
+  }
+
+  /** @return the underlying filesystem directory */
+  public File getDirectory() {
     ensureOpen();
     return directory;
   }
