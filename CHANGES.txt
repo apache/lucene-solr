@@ -50,7 +50,7 @@ Optimizations
 Bug Fixes
 ----------------------
 
-* SOLR-1569: Allow functions to take in literal strings by modifying the FunctionQParser and adding LiteeralValueSource (gsingers)
+* SOLR-1569: Allow functions to take in literal strings by modifying the FunctionQParser and adding LiteralValueSource (gsingers)
 
 * SOLR-1432: Make the new ValueSource.getValues(context,reader) delegate
   to the original ValueSource.getValues(reader) so custom sources
