@@ -278,7 +278,7 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     }
   }
 
-  public void testGeneral() {
+  public void testGeneral() throws Exception {
     assertU(adoc("id","1", "a_tdt","2009-08-31T12:10:10.123Z", "b_tdt","2009-08-31T12:10:10.124Z"));
     assertU(adoc("id","2"));
     assertU(commit()); // create more than one segment
@@ -326,9 +326,12 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     q ="{!func}sub(div(sum(0.0,product(1,query($qq))),1),0)";
     assertQ(req("fl","*,score","q", q, "qq","text:batman", "fq",fq), "//float[@name='score']<'1.0'");
     assertQ(req("fl","*,score","q", q, "qq","text:superman", "fq",fq), "//float[@name='score']>'1.0'");
+
+    doTestDegreeRads();
+    doTestFuncs();
   }
 
-  public void testDegreeRads() throws Exception {
+  public void doTestDegreeRads() throws Exception {
     assertU(adoc("id", "1", "x_td", "0", "y_td", "0"));
     assertU(adoc("id", "2", "x_td", "90", "y_td", String.valueOf(Math.PI / 2)));
     assertU(adoc("id", "3", "x_td", "45", "y_td", String.valueOf(Math.PI / 4)));
@@ -343,4 +346,47 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     assertQ(req("fl", "*,score", "q", "{!func}deg(y_td)", "fq", "id:2"), "//float[@name='score']='90.0'");
     assertQ(req("fl", "*,score", "q", "{!func}deg(y_td)", "fq", "id:3"), "//float[@name='score']='45.0'");
   }
+
+  public void dofunc(String func, double val) throws Exception {
+    // String sval = Double.toString(val);
+    String sval = Float.toString((float)val);
+
+    assertQ(req("fl", "*,score", "defType","func", "fq","id:1", "q",func),
+            "//float[@name='score']='" + sval + "'");
+  }
+
+  public void doTestFuncs() throws Exception {
+    assertU(adoc("id", "1", "foo_d", "9"));
+    assertU(commit());    
+
+    dofunc("1.0", 1.0);
+    dofunc("e()", Math.E);
+    dofunc("pi()", Math.PI);
+    dofunc("add(2,3)", 2+3);
+    dofunc("mul(2,3)", 2*3);
+    dofunc("rad(45)", Math.toRadians(45));
+    dofunc("deg(.5)", Math.toDegrees(.5));
+    dofunc("sqrt(9)", Math.sqrt(9));
+    dofunc("cbrt(8)", Math.cbrt(8));
+    dofunc("log(100)", Math.log10(100));
+    dofunc("ln(3)", Math.log(3));
+    dofunc("exp(1)", Math.exp(1));
+    dofunc("sin(.5)", Math.sin(.5));
+    dofunc("cos(.5)", Math.cos(.5));
+    dofunc("tan(.5)", Math.tan(.5));
+    dofunc("asin(.5)", Math.asin(.5));
+    dofunc("acos(.5)", Math.acos(.5));
+    dofunc("atan(.5)", Math.atan(.5));
+    dofunc("sinh(.5)", Math.sinh(.5));
+    dofunc("cosh(.5)", Math.cosh(.5));
+    dofunc("tanh(.5)", Math.tanh(.5));
+    dofunc("ceil(2.3)", Math.ceil(2.3));
+    dofunc("floor(2.3)", Math.floor(2.3));
+    dofunc("rint(2.3)", Math.rint(2.3));
+    dofunc("pow(2,0.5)", Math.pow(2,0.5));
+    dofunc("hypot(3,4)", Math.hypot(3,4));
+    dofunc("atan2(.25,.5)", Math.atan2(.25,.5));
+  }
+
+
 }
