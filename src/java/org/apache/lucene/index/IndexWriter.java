@@ -3889,6 +3889,8 @@ public class IndexWriter implements Closeable {
 
     boolean success = false;
 
+    final long t0 = System.currentTimeMillis();
+
     try {
       try {
         try {
@@ -3923,6 +3925,9 @@ public class IndexWriter implements Closeable {
       }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "merge");
+    }
+    if (infoStream != null) {
+      message("merge time " + (System.currentTimeMillis()-t0) + " msec");
     }
   }
 

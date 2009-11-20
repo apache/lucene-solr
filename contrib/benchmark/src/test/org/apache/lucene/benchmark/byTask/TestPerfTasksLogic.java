@@ -123,6 +123,28 @@ public class TestPerfTasksLogic extends TestCase {
     assertTrue("elapsed time was " + elapsed + " msec", elapsed <= 1500);
   }
 
+  public void testBGSearchTaskThreads() throws Exception {
+    String algLines[] = {
+        "log.time.step.msec = 100",
+        "ResetSystemErase",
+        "CreateIndex",
+        "{ AddDoc } : 1000",
+        "Optimize",
+        "CloseIndex",
+        "OpenReader",
+        "{",
+        "  [ \"XSearch\" { CountingSearchTest > : * ] : 2 &-1",
+        "  Wait(1.0)",
+        "}",
+        "CloseReader",
+        "RepSumByPref X"
+    };
+
+    CountingSearchTestTask.numSearches = 0;
+    execBenchmark(algLines);
+    assertTrue(CountingSearchTestTask.numSearches > 0);
+  }
+
   public void testHighlighting() throws Exception {
     // 1. alg definition (required in every "logic" test)
     String algLines[] = {

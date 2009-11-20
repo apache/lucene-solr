@@ -3,6 +3,11 @@ Lucene Benchmark Contrib Change Log
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
 $Id:$
+11/17/2009
+  LUCENE-2079: Allow specifying delta thread priority after the "&";
+  added log.time.step.msec to print per-time-period counts; fixed
+  NearRealTimeTask to print reopen times (in msec) of each reopen, at
+  the end.  (Mike McCandless)
 
 11/13/2009
   LUCENE-2050: Added ability to run tasks within a serial sequence in

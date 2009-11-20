@@ -91,6 +91,22 @@ public class TaskStats implements Cloneable {
     this.numParallelTasks = numParallelTasks;
     this.count = count;
   }
+  
+  private int[] countsByTime;
+  private long countsByTimeStepMSec;
+
+  public void setCountsByTime(int[] counts, long msecStep) {
+    countsByTime = counts;
+    countsByTimeStepMSec = msecStep;
+  }
+
+  public int[] getCountsByTime() {
+    return countsByTime;
+  }
+
+  public long getCountsByTimeStepMSec() {
+    return countsByTimeStepMSec;
+  }
 
   /**
    * @return the taskRunNum.
@@ -174,6 +190,18 @@ public class TaskStats implements Cloneable {
     if (round != stat2.round) {
       round = -1; // no meaning if aggregating tasks of different round. 
     }
+
+    if (countsByTime != null && stat2.countsByTime != null) {
+      if (countsByTimeStepMSec != stat2.countsByTimeStepMSec) {
+        throw new IllegalStateException("different by-time msec step");
+      }
+      if (countsByTime.length != stat2.countsByTime.length) {
+        throw new IllegalStateException("different by-time msec count");
+      }
+      for(int i=0;i<stat2.countsByTime.length;i++) {
+        countsByTime[i] += stat2.countsByTime[i];
+      }
+    }
   }
 
   /* (non-Javadoc)
@@ -181,7 +209,11 @@ public class TaskStats implements Cloneable {
    */
   @Override
   public Object clone() throws CloneNotSupportedException {
-    return super.clone();
+    TaskStats c = (TaskStats) super.clone();
+    if (c.countsByTime != null) {
+      c.countsByTime = (int[]) c.countsByTime.clone();
+    }
+    return c;
   }
 
   /**

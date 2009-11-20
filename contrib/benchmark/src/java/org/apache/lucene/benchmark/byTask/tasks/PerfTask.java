@@ -61,6 +61,7 @@ public abstract class PerfTask implements Cloneable {
   protected String params = null;
 
   private boolean runInBackground;
+  private int deltaPri;
 
   protected static final String NEW_LINE = System.getProperty("line.separator");
 
@@ -72,12 +73,17 @@ public abstract class PerfTask implements Cloneable {
     }
   }
 
-  public void setRunInBackground() {
+  public void setRunInBackground(int deltaPri) {
     runInBackground = true;
+    this.deltaPri = deltaPri;
   }
 
   public boolean getRunInBackground() {
     return runInBackground;
+  }
+
+  public int getBackgroundDeltaPriority() {
+    return deltaPri;
   }
 
   protected volatile boolean stopNow;
@@ -216,6 +222,10 @@ public abstract class PerfTask implements Cloneable {
     sb.append(getName());
     if (getRunInBackground()) {
       sb.append(" &");
+      int x = getBackgroundDeltaPriority();
+      if (x != 0) {
+        sb.append(x);
+      }
     }
     return sb.toString();
   }

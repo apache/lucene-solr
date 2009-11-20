@@ -191,12 +191,22 @@ public class Algorithm {
               if (currSequence.isParallel()) {
                 throw new Exception("Can only create background tasks within a serial task");
               }
+              stok.nextToken();
+              final int deltaPri;
+              if (stok.ttype != StreamTokenizer.TT_NUMBER) {
+                stok.pushBack();
+                deltaPri = 0;
+              } else {
+                // priority
+                deltaPri = (int) stok.nval;
+              }
+
               if (prevTask == null) {
                 throw new Exception("& was unexpected");
               } else if (prevTask.getRunInBackground()) {
                 throw new Exception("double & was unexpected");
               } else {
-                prevTask.setRunInBackground();
+                prevTask.setRunInBackground(deltaPri);
               }
               break;
     

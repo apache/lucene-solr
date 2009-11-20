@@ -23,6 +23,8 @@ import java.text.NumberFormat;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.NoMoreDataException;
+import org.apache.lucene.benchmark.byTask.stats.TaskStats;
+import org.apache.lucene.util.ArrayUtil;
 
 /**
  * Sequence of parallel or sequential tasks.
@@ -45,6 +47,7 @@ public class TaskSequence extends PerfTask {
   
   private boolean fixedTime;                      // true if we run for fixed time
   private double runTimeSec;                      // how long to run for
+  private final long logByTimeMsec;
 
   public TaskSequence (PerfRunData runData, String name, TaskSequence parent, boolean parallel) {
     super(runData);
@@ -55,6 +58,7 @@ public class TaskSequence extends PerfTask {
     this.parent = parent;
     this.parallel = parallel;
     tasks = new ArrayList<PerfTask>();
+    logByTimeMsec = runData.getConfig().get("report.time.step.msec", 0);
   }
 
   @Override
@@ -76,6 +80,9 @@ public class TaskSequence extends PerfTask {
         anyExhaustibleTasks |= tasksArray[k] instanceof TaskSequence;
       }
     }
+    if (!parallel && logByTimeMsec != 0 && !letChildReport) {
+      countsByTime = new int[1];
+    }
   }
 
   /**
@@ -92,6 +99,8 @@ public class TaskSequence extends PerfTask {
     return repetitions;
   }
 
+  private int[] countsByTime;
+
   public void setRunTime(double sec) throws Exception {
     runTimeSec = sec;
     fixedTime = true;
@@ -107,9 +116,6 @@ public class TaskSequence extends PerfTask {
     if (repetitions==REPEAT_EXHAUST) {
       if (isParallel()) {
         throw new Exception("REPEAT_EXHAUST is not allowed for parallel tasks");
-      }
-      if (getRunData().getConfig().get("content.source.forever",true)) {
-        throw new Exception("REPEAT_EXHAUST requires setting content.source.forever=false");
       }
     }
     setSequenceName();
@@ -167,11 +173,10 @@ public class TaskSequence extends PerfTask {
     initTasksArray();
     int count = 0;
 
-    final long t0 = System.currentTimeMillis();
-
     final long runTime = (long) (runTimeSec*1000);
     List<RunBackgroundTask> bgTasks = null;
 
+    final long t0 = System.currentTimeMillis();
     for (int k=0; fixedTime || (repetitions==REPEAT_EXHAUST && !exhausted) || k<repetitions; k++) {
       if (stopNow) {
         break;
@@ -183,11 +188,20 @@ public class TaskSequence extends PerfTask {
             bgTasks = new ArrayList<RunBackgroundTask>();
           }
           RunBackgroundTask bgTask = new RunBackgroundTask(task, letChildReport);
+          bgTask.setPriority(getBackgroundDeltaPriority() + Thread.currentThread().getPriority());
           bgTask.start();
           bgTasks.add(bgTask);
         } else {
           try {
-            count += task.runAndMaybeStats(letChildReport);
+            final int inc = task.runAndMaybeStats(letChildReport);
+            count += inc;
+            if (countsByTime != null) {
+              final int slot = (int) ((System.currentTimeMillis()-t0)/logByTimeMsec);
+              if (slot >= countsByTime.length) {
+                countsByTime = ArrayUtil.grow(countsByTime, 1+slot);
+              }
+              countsByTime[slot] += inc;
+            }
             if (anyExhaustibleTasks)
               updateExhausted(task);
           } catch (NoMoreDataException e) {
@@ -210,6 +224,11 @@ public class TaskSequence extends PerfTask {
         count += bgTask.getCount();
       }
     }
+
+    if (countsByTime != null) {
+      getRunData().getPoints().getCurrentStats().setCountsByTime(countsByTime, logByTimeMsec);
+    }
+
     return count;
   }
 
@@ -218,6 +237,7 @@ public class TaskSequence extends PerfTask {
     long delayStep = (perMin ? 60000 : 1000) /rate;
     long nextStartTime = System.currentTimeMillis();
     int count = 0;
+    final long t0 = System.currentTimeMillis();
     for (int k=0; (repetitions==REPEAT_EXHAUST && !exhausted) || k<repetitions; k++) {
       if (stopNow) {
         break;
@@ -238,7 +258,16 @@ public class TaskSequence extends PerfTask {
         }
         nextStartTime += delayStep; // this aims at avarage rate. 
         try {
-          count += task.runAndMaybeStats(letChildReport);
+          final int inc = task.runAndMaybeStats(letChildReport);
+          count += inc;
+          if (countsByTime != null) {
+            final int slot = (int) ((System.currentTimeMillis()-t0)/logByTimeMsec);
+            if (slot >= countsByTime.length) {
+              countsByTime = ArrayUtil.grow(countsByTime, 1+slot);
+            }
+            countsByTime[slot] += inc;
+          }
+
           if (anyExhaustibleTasks)
             updateExhausted(task);
         } catch (NoMoreDataException e) {
@@ -305,6 +334,9 @@ public class TaskSequence extends PerfTask {
   ParallelTask[] runningParallelTasks;
 
   private int doParallelTasks() throws Exception {
+
+    final TaskStats stats = getRunData().getPoints().getCurrentStats();
+
     initTasksArray();
     ParallelTask t[] = runningParallelTasks = new ParallelTask[repetitions * tasks.size()];
     // prepare threads
@@ -323,6 +355,23 @@ public class TaskSequence extends PerfTask {
     for (int i = 0; i < t.length; i++) {
       t[i].join();
       count += t[i].count;
+      if (t[i].task instanceof TaskSequence) {
+        TaskSequence sub = (TaskSequence) t[i].task;
+        if (sub.countsByTime != null) {
+          if (countsByTime == null) {
+            countsByTime = new int[sub.countsByTime.length];
+          } else if (countsByTime.length < sub.countsByTime.length) {
+            countsByTime = ArrayUtil.grow(countsByTime, sub.countsByTime.length);
+          }
+          for(int j=0;j<sub.countsByTime.length;j++) {
+            countsByTime[j] += sub.countsByTime[j];
+          }
+        }
+      }
+    }
+
+    if (countsByTime != null) {
+      stats.setCountsByTime(countsByTime, logByTimeMsec);
     }
 
     // return total count
@@ -386,6 +435,10 @@ public class TaskSequence extends PerfTask {
     }
     if (getRunInBackground()) {
       sb.append(" &");
+      int x = getBackgroundDeltaPriority();
+      if (x != 0) {
+        sb.append(x);
+      }
     }
     return sb.toString();
   }

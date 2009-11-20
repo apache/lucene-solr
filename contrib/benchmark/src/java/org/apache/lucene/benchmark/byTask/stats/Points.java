@@ -38,6 +38,8 @@ public class Points {
 
   private int nextTaskRunNum = 0;
 
+  private TaskStats currentStats;
+
   /**
    * Create a Points statistics object. 
    */
@@ -62,8 +64,13 @@ public class Points {
    */
   public synchronized TaskStats markTaskStart (PerfTask task, int round) {
     TaskStats stats = new TaskStats(task, nextTaskRunNum(), round);
+    this.currentStats = stats;
     points.add(stats);
     return stats;
+  }
+
+  public TaskStats getCurrentStats() {
+    return currentStats;
   }
   
   // return next task num

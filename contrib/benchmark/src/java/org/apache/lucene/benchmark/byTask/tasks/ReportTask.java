@@ -151,11 +151,26 @@ public abstract class ReportTask extends PerfTask {
         line = line.replaceAll("   "," - ");
       }
       sb.append(line);
+      int[] byTime = stat.getCountsByTime();
+      if (byTime != null) {
+        sb.append(newline);
+        int end = -1;
+        for(int i=byTime.length-1;i>=0;i--) {
+          if (byTime[i] != 0) {
+            end = i;
+            break;
+          }
+        }
+        if (end != -1) {
+          sb.append("  by time:");
+          for(int i=0;i<end;i++) {
+            sb.append(' ').append(byTime[i]);
+          }
+        }
+      }
     }
+    
     String reptxt = (reported==0 ? "No Matching Entries Were Found!" : sb.toString());
     return new Report(reptxt,partOfTasks.size(),reported,totalSize);
   }
-
-
-
 }

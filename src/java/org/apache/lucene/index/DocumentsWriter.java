@@ -926,6 +926,8 @@ final class DocumentsWriter {
     if (!hasDeletes())
       return false;
 
+    final long t0 = System.currentTimeMillis();
+
     if (infoStream != null)
       message("apply " + deletesFlushed.numTerms + " buffered deleted terms and " +
               deletesFlushed.docIDs.size() + " deleted docIDs and " +
@@ -952,6 +954,9 @@ final class DocumentsWriter {
     }
 
     deletesFlushed.clear();
+    if (infoStream != null) {
+      message("apply deletes took " + (System.currentTimeMillis()-t0) + " msec");
+    }
 
     return any;
   }
