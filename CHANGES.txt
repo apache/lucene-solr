@@ -39,6 +39,9 @@ Changes in backwards compatibility policy
   this is a change in the default from 2.9, when these methods were
   previously deprecated.  (Mike McCandless)
 
+* LUCENE-1753: Make not yet final TokenStreams final to enforce 
+  decorator pattern. (Uwe Schindler)
+
 Changes in runtime behavior
 
 * LUCENE-1677: Remove the system property to set SegmentReader class
@@ -72,20 +75,31 @@ Changes in runtime behavior
 
 API Changes
 
-* LUCENE-1257, LUCENE-1984, LUCENE-1985, LUCENE-2057: Port to Java 1.5.
-  (Uwe Schindler, Robert Muir, Karl Wettin, Paul Elschot, Kay Kay, Shai Erera)
+* LUCENE-1257, LUCENE-1984, LUCENE-1985, LUCENE-2057, LUCENE-1833, LUCENE-2012,
+  LUCENE-1998: Port to Java 1.5:
+
+  - Add generics to public and internal APIs (see below).
+  - Replace new Integer(int), new Double(double),... by static valueOf() calls.
+  - Replace for-loops with Iterator by foreach loops.
+  - Replace StringBuffer with StringBuilder.
+  - Replace o.a.l.util.Parameter by Java 5 enums (see below).
+  - Add @Override annotations.
+  (Uwe Schindler, Robert Muir, Karl Wettin, Paul Elschot, Kay Kay, Shai Erera,
+  DM Smith)
 
 * Generify Lucene API:
 
   - TokenStream/AttributeSource: Now addAttribute()/getAttribute() return an
-    instance of the requested attribute interface and no cast needed anymore.
+    instance of the requested attribute interface and no cast needed anymore
+    (LUCENE-1855).
   - NumericRangeQuery, NumericRangeFilter, and FieldCacheRangeFilter
-    now have Integer, Long, Float, Double as type param.
-  - Document.getFields() returns List<Fieldable>
+    now have Integer, Long, Float, Double as type param (LUCENE-1857).
+  - Document.getFields() returns List<Fieldable>.
   - Query.extractTerms(Set<Term>)
   - CharArraySet and stop word sets in core/contrib
-  - PriorityQueue
+  - PriorityQueue (LUCENE-1935)
   - TopDocCollector
+  - DisjunctionMaxQuery (LUCENE-1984)
   - MultiTermQueryWrapperFilter
   - CloseableThreadLocal
   - MapOfSets
@@ -98,7 +112,7 @@ API Changes
   LUCENE-1972, LUCENE-1978, LUCENE-944, LUCENE-1979, LUCENE-1973, LUCENE-2011:
   Remove deprecated methods/constructors/classes:
 
-  - All String/File directory paths in IndexReader /
+  - Remove all String/File directory paths in IndexReader /
     IndexSearcher / IndexWriter.
   - Remove FSDirectory.getDirectory()
   - Make FSDirectory abstract.
@@ -112,13 +126,13 @@ API Changes
   - Remove SpanQuery.getTerms().
   - Remove ExtendedFieldCache, custom and auto caches, SortField.AUTO.
   - Remove old-style custom sort.
-  - Remove Legacy search setting in SortField.
+  - Remove legacy search setting in SortField.
   - Remove Hits and all references from core and contrib.
   - Remove HitCollector and its TopDocs support implementations.
   - Remove term field and accessors in MultiTermQuery
     (and fix Highlighter).
-  - Remove methods in BooleanQuery.
-  - Remove methods in Similarity.
+  - Remove deprecated methods in BooleanQuery.
+  - Remove deprecated methods in Similarity.
   - Remove BoostingTermQuery.
   - Remove MultiValueSource.
   - Remove Scorer.explain(int).
@@ -127,9 +141,6 @@ API Changes
 * LUCENE-1925: Make IndexSearcher's subReaders and docStarts members
   protected; add expert ctor to directly specify reader, subReaders
   and docStarts.  (John Wang, Tim Smith via Mike McCandless)
-
-* LUCENE-1753: Make not yet final TokenStreams final to enforce 
-  decorator pattern. (Uwe Schindler)
 
 * LUCENE-1945: All public classes that have a close() method now
   also implement java.io.Closeable (IndexReader, IndexWriter, Directory,...).
