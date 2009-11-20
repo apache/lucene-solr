@@ -23,6 +23,7 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map.Entry;
@@ -219,11 +220,11 @@ final class DocumentsWriter {
 
   // Deletes done after the last flush; these are discarded
   // on abort
-  private BufferedDeletes deletesInRAM = new BufferedDeletes();
+  private BufferedDeletes deletesInRAM = new BufferedDeletes(false);
 
   // Deletes done before the last flush; these are still
   // kept on abort
-  private BufferedDeletes deletesFlushed = new BufferedDeletes();
+  private BufferedDeletes deletesFlushed = new BufferedDeletes(true);
 
   // The max number of delete terms that can be buffered before
   // they must be flushed to disk.
@@ -828,7 +829,7 @@ final class DocumentsWriter {
   }
 
   // for testing
-  synchronized HashMap<Term,BufferedDeletes.Num> getBufferedDeleteTerms() {
+  synchronized Map<Term,BufferedDeletes.Num> getBufferedDeleteTerms() {
     return deletesInRAM.terms;
   }
 
@@ -974,7 +975,6 @@ final class DocumentsWriter {
     try {
       for (Entry<Term, BufferedDeletes.Num> entry: deletesFlushed.terms.entrySet()) {
         Term term = entry.getKey();
-
         docs.seek(term);
         int limit = entry.getValue().getNum();
         while (docs.next()) {

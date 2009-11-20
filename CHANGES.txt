@@ -17,6 +17,9 @@ New features
 
 Optimizations
 
+* LUCENE-2086: When resolving deleted terms, do so in term sort order
+  for better performance (Bogdan Ghidireac via Mike McCandless)
+
 Build
 
 ======================= Release 3.0.0 2009-11-25 =======================
