@@ -267,7 +267,7 @@ public class DocumentBuilder {
           if (isBinaryField) {
             if (destinationField.getType() instanceof BinaryField) {
               BinaryField binaryField = (BinaryField) destinationField.getType();
-              binaryField.createField(destinationField, v, boost);
+              f = binaryField.createField(destinationField, v, boost);
             }
           } else {
             f = destinationField.createField(cf.getLimitedValue(val), boost);

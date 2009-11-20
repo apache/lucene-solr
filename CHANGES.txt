@@ -59,6 +59,8 @@ Bug Fixes
 * SOLR-1572: FastLRUCache correctly implemented the LRU policy only
   for the first 2B accesses. (yonik)
 
+* SOLR-1582: Fix BinaryField copy in DocumentBuilder (gsingers)
+
 
 Other Changes
 ----------------------
