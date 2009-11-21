@@ -349,7 +349,7 @@ public class CustomScoreQuery extends Query {
     @Override
     public Explanation explain(IndexReader reader, int doc) throws IOException {
       Explanation explain = doExplain(reader, doc);
-      return explain == null ? new Explanation(0.0f, "no matching docs") : doExplain(reader, doc);
+      return explain == null ? new Explanation(0.0f, "no matching docs") : explain;
     }
     
     private Explanation doExplain(IndexReader reader, int doc) throws IOException {
