@@ -51,6 +51,8 @@ import java.util.concurrent.atomic.AtomicReference;
 public class XPathEntityProcessor extends EntityProcessorBase {
   private static final Logger LOG = LoggerFactory.getLogger(XPathEntityProcessor.class);
 
+  private static final Map<String, Object> END_MARKER = new HashMap<String, Object>();
+  
   protected List<String> placeHolderVariables;
 
   protected List<String> commonFields;
@@ -67,8 +69,17 @@ public class XPathEntityProcessor extends EntityProcessorBase {
 
   protected boolean streamRows = false;
 
-  private int batchSz = 1000;
+  // Amount of time to block reading/writing to queue when streaming
+  protected int blockingQueueTimeOut = 10;
+  
+  // Units for pumpTimeOut
+  protected TimeUnit blockingQueueTimeOutUnits = TimeUnit.SECONDS;
+  
+  // Number of rows to queue for asynchronous processing
+  protected int blockingQueueSize = 1000;
 
+  protected Thread publisherThread;
+  
   @SuppressWarnings("unchecked")
   public void init(Context context) {
     super.init(context);
@@ -85,8 +96,11 @@ public class XPathEntityProcessor extends EntityProcessorBase {
             .getEntityAttribute(USE_SOLR_ADD_SCHEMA));
     streamRows = Boolean.parseBoolean(context
             .getEntityAttribute(STREAM));
-    if (context.getEntityAttribute("batchSize") != null) {
-      batchSz = Integer.parseInt(context.getEntityAttribute("batchSize"));
+    if (context.getResolvedEntityAttribute("batchSize") != null) {
+      blockingQueueSize = Integer.parseInt(context.getEntityAttribute("batchSize"));
+    }
+    if (context.getResolvedEntityAttribute("readTimeOut") != null) {
+      blockingQueueTimeOut = Integer.parseInt(context.getEntityAttribute("readTimeOut"));
     }
     String xslt = context.getEntityAttribute(XSL);
     if (xslt != null) {
@@ -316,7 +330,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
     }
   }
 
-  private Map<String, Object> readRow(Map<String, Object> record, String xpath) {
+  protected Map<String, Object> readRow(Map<String, Object> record, String xpath) {
     if (useSolrAddXml) {
       List<String> names = (List<String>) record.get("name");
       List<String> values = (List<String>) record.get("value");
@@ -381,33 +395,58 @@ public class XPathEntityProcessor extends EntityProcessorBase {
   private Iterator<Map<String, Object>> getRowIterator(final Reader data, final String s) {
     //nothing atomic about it. I just needed a StongReference
     final AtomicReference<Exception> exp = new AtomicReference<Exception>();
-    final BlockingQueue<Map<String, Object>> blockingQueue = new ArrayBlockingQueue<Map<String, Object>>(batchSz);
+    final BlockingQueue<Map<String, Object>> blockingQueue = new ArrayBlockingQueue<Map<String, Object>>(blockingQueueSize);
     final AtomicBoolean isEnd = new AtomicBoolean(false);
-    new Thread() {
+    final AtomicBoolean throwExp = new AtomicBoolean(true);
+    publisherThread = new Thread() {
       public void run() {
         try {
           xpathReader.streamRecords(data, new XPathRecordReader.Handler() {
             @SuppressWarnings("unchecked")
             public void handle(Map<String, Object> record, String xpath) {
-              if (isEnd.get()) return;
+              if (isEnd.get()) {
+                throwExp.set(false);
+                //To end the streaming . otherwise the parsing will go on forever
+                //though consumer has gone away
+                throw new RuntimeException("BREAK");
+              }
+              Map<String, Object> row;
               try {
-                blockingQueue.offer(readRow(record, xpath), 10, TimeUnit.SECONDS);
+                row = readRow(record, xpath);
               } catch (Exception e) {
                 isEnd.set(true);
+                return;
               }
+              offer(row);
             }
           });
         } catch (Exception e) {
-          exp.set(e);
+          if(throwExp.get()) exp.set(e);
         } finally {
           closeIt(data);
-          try {
-            blockingQueue.offer(Collections.EMPTY_MAP, 10, TimeUnit.SECONDS);
-          } catch (Exception e) {
+          if (!isEnd.get()) {
+            offer(END_MARKER);
           }
         }
       }
-    }.start();
+      
+      private void offer(Map<String, Object> row) {
+        try {
+          while (!blockingQueue.offer(row, blockingQueueTimeOut, blockingQueueTimeOutUnits)) {
+            if (isEnd.get()) return;
+            LOG.debug("Timeout elapsed writing records.  Perhaps buffer size should be increased.");
+          }
+        } catch (InterruptedException e) {
+          return;
+        } finally {
+          synchronized (this) {
+            notifyAll();
+          }
+        }
+      }
+    };
+    
+    publisherThread.start();
 
     return new Iterator<Map<String, Object>>() {
       private Map<String, Object> lastRow;
@@ -418,29 +457,38 @@ public class XPathEntityProcessor extends EntityProcessorBase {
       }
 
       public Map<String, Object> next() {
-        try {
-          Map<String, Object> row = blockingQueue.poll(10, TimeUnit.SECONDS);
-          if (row == null || row == Collections.EMPTY_MAP) {
-            isEnd.set(true);
-            if (exp.get() != null) {
-              String msg = "Parsing failed for xml, url:" + s + " rows processed in this xml:" + count;
-              if (lastRow != null) msg += " last row in this xml:" + lastRow;
-              if (ABORT.equals(onError)) {
-                wrapAndThrow(SEVERE, exp.get(), msg);
-              } else if (SKIP.equals(onError)) {
-                wrapAndThrow(DataImportHandlerException.SKIP, exp.get());
-              } else {
-                LOG.warn(msg, exp.get());
-              }
+        Map<String, Object> row;
+        
+        do {
+          try {
+            row = blockingQueue.poll(blockingQueueTimeOut, blockingQueueTimeOutUnits);
+            if (row == null) {
+              LOG.debug("Timeout elapsed reading records.");
             }
+          } catch (InterruptedException e) {
+            LOG.debug("Caught InterruptedException while waiting for row.  Aborting.");
+            isEnd.set(true);
             return null;
           }
-          count++;
-          return lastRow = row;
-        } catch (InterruptedException e) {
+        } while (row == null);
+        
+        if (row == END_MARKER) {
           isEnd.set(true);
+          if (exp.get() != null) {
+            String msg = "Parsing failed for xml, url:" + s + " rows processed in this xml:" + count;
+            if (lastRow != null) msg += " last row in this xml:" + lastRow;
+            if (ABORT.equals(onError)) {
+              wrapAndThrow(SEVERE, exp.get(), msg);
+            } else if (SKIP.equals(onError)) {
+              wrapAndThrow(DataImportHandlerException.SKIP, exp.get());
+            } else {
+              LOG.warn(msg, exp.get());
+            }
+          }
           return null;
-        }
+        } 
+        count++;
+        return lastRow = row;
       }
 
       public void remove() {

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -37,6 +38,10 @@ import java.util.Properties;
  * @since solr 1.3
  */
 public class TestXPathEntityProcessor {
+  boolean simulateSlowReader;
+  boolean simulateSlowResultProcessor;
+  int rowsToRead = -1;
+  
   @Test
   public void withFieldsAndXpath() throws Exception {
     long time = System.currentTimeMillis();
@@ -110,6 +115,9 @@ public class TestXPathEntityProcessor {
 
   @Test
   public void withFieldsAndXpathStream() throws Exception {
+    final Object monitor = new Object();
+    final boolean[] done = new boolean[1];
+    
     Map entityAttrs = createMap("name", "e", "url", "cd.xml",
         XPathEntityProcessor.FOR_EACH, "/catalog/cd", "stream", "true", "batchSize","1");
     List fields = new ArrayList();
@@ -118,21 +126,88 @@ public class TestXPathEntityProcessor {
     fields.add(createMap("column", "year", "xpath", "/catalog/cd/year"));
     Context c = AbstractDataImportHandlerTest.getContext(null,
         new VariableResolverImpl(), getDataSource(cdData), Context.FULL_DUMP, fields, entityAttrs);
-    XPathEntityProcessor xPathEntityProcessor = new XPathEntityProcessor();
+    XPathEntityProcessor xPathEntityProcessor = new XPathEntityProcessor() {
+      private int count;
+      
+      @Override
+      protected Map<String, Object> readRow(Map<String, Object> record,
+          String xpath) {
+        synchronized (monitor) {
+          if (simulateSlowReader && !done[0]) {
+            try {
+              monitor.wait(100);
+            } catch (InterruptedException e) {
+              throw new RuntimeException(e);
+            }
+          }
+        }
+        
+        return super.readRow(record, xpath);
+      }
+    };
+    
+    if (simulateSlowResultProcessor) {
+      xPathEntityProcessor.blockingQueueSize = 1;
+    }
+    xPathEntityProcessor.blockingQueueTimeOut = 1;
+    xPathEntityProcessor.blockingQueueTimeOutUnits = TimeUnit.MICROSECONDS;
+    
     xPathEntityProcessor.init(c);
     List<Map<String, Object>> result = new ArrayList<Map<String, Object>>();
     while (true) {
+      if (rowsToRead >= 0 && result.size() >= rowsToRead) {
+        Thread.currentThread().interrupt();
+      }
       Map<String, Object> row = xPathEntityProcessor.nextRow();
       if (row == null)
         break;
       result.add(row);
+      if (simulateSlowResultProcessor) {
+        synchronized (xPathEntityProcessor.publisherThread) {
+          if (xPathEntityProcessor.publisherThread.isAlive()) {
+            xPathEntityProcessor.publisherThread.wait(1000);
+          }
+        }
+      }
     }
-    Assert.assertEquals(3, result.size());
-    Assert.assertEquals("Empire Burlesque", result.get(0).get("title"));
-    Assert.assertEquals("Bonnie Tyler", result.get(1).get("artist"));
-    Assert.assertEquals("1982", result.get(2).get("year"));
+    
+    synchronized (monitor) {
+      done[0] = true;
+      monitor.notify();
+    }
+    
+    // confirm that publisher thread stops.
+    xPathEntityProcessor.publisherThread.join(1000);
+    Assert.assertEquals("Expected thread to stop", false, xPathEntityProcessor.publisherThread.isAlive());
+    
+    Assert.assertEquals(rowsToRead < 0 ? 3 : rowsToRead, result.size());
+    
+    if (rowsToRead < 0) {
+      Assert.assertEquals("Empire Burlesque", result.get(0).get("title"));
+      Assert.assertEquals("Bonnie Tyler", result.get(1).get("artist"));
+      Assert.assertEquals("1982", result.get(2).get("year"));
+    }
   }
 
+  @Test
+  public void withFieldsAndXpathStreamContinuesOnTimeout() throws Exception {
+    simulateSlowReader = true;
+    withFieldsAndXpathStream();
+  }
+  
+  @Test
+  public void streamWritesMessageAfterBlockedAttempt() throws Exception {
+    simulateSlowResultProcessor = true;
+    withFieldsAndXpathStream();
+  }
+  
+  @Test
+  public void streamStopsAfterInterrupt() throws Exception {
+    simulateSlowResultProcessor = true;
+    rowsToRead = 1;
+    withFieldsAndXpathStream();
+  }
+  
   @Test
   public void withDefaultSolrAndXsl() throws Exception {
     long time = System.currentTimeMillis();
