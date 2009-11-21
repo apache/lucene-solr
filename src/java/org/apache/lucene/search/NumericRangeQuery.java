@@ -483,7 +483,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
     @Override
     protected boolean endEnum() {
       assert false; // should never be called
-      return (currentTerm != null);
+      return (currentTerm == null);
     }
 
     /**
