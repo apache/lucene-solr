@@ -89,6 +89,7 @@ public class ContextImpl extends Context {
 
   public DataSource getDataSource() {
     if (ds != null) return ds;
+    if(entity == null) return  null;
     if (entity.dataSrc == null) {
       entity.dataSrc = dataImporter.getDataSourceInstance(entity, entity.dataSource, this);
     }
