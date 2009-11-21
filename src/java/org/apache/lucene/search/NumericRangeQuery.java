@@ -389,6 +389,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
 
     private final IndexReader reader;
     private final LinkedList<String> rangeBounds = new LinkedList<String>();
+    private final Term termTemplate = new Term(field);
     private String currentUpperBound = null;
 
     NumericRangeTermEnum(final IndexReader reader) throws IOException {
@@ -482,8 +483,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
     /** this is a dummy, it is not used by this class. */
     @Override
     protected boolean endEnum() {
-      assert false; // should never be called
-      return (currentTerm == null);
+      throw new UnsupportedOperationException("not implemented");
     }
 
     /**
@@ -504,7 +504,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
       // if a current term exists, the actual enum is initialized:
       // try change to next term, if no such term exists, fall-through
       if (currentTerm != null) {
-        assert actualEnum!=null;
+        assert actualEnum != null;
         if (actualEnum.next()) {
           currentTerm = actualEnum.term();
           if (termCompare(currentTerm)) return true;
@@ -513,7 +513,10 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
       // if all above fails, we go forward to the next enum,
       // if one is available
       currentTerm = null;
-      if (rangeBounds.size() < 2) return false;
+      if (rangeBounds.size() < 2) {
+        assert rangeBounds.size() == 0;
+        return false;
+      }
       // close the current enum and read next bounds
       if (actualEnum != null) {
         actualEnum.close();
@@ -525,7 +528,7 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
       // next enum found.
       // if this behavior is changed/modified in the superclass,
       // this enum will not work anymore!
-      setEnum(reader.terms(new Term(field, lowerBound)));
+      setEnum(reader.terms(termTemplate.createTerm(lowerBound)));
       return (currentTerm != null);
     }
 
