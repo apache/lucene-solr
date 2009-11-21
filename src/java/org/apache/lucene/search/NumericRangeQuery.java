@@ -27,6 +27,7 @@ import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermEnum;
 
 /**
  * <p>A {@link Query} that matches numeric values within a
@@ -486,6 +487,12 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
       throw new UnsupportedOperationException("not implemented");
     }
 
+    /** this is a dummy, it is not used by this class. */
+    @Override
+    protected void setEnum(TermEnum tenum) {
+      throw new UnsupportedOperationException("not implemented");
+    }
+    
     /**
      * Compares if current upper bound is reached,
      * this also updates the term count for statistics.
@@ -507,29 +514,35 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
         assert actualEnum != null;
         if (actualEnum.next()) {
           currentTerm = actualEnum.term();
-          if (termCompare(currentTerm)) return true;
+          if (termCompare(currentTerm))
+            return true;
         }
       }
+      
       // if all above fails, we go forward to the next enum,
       // if one is available
       currentTerm = null;
-      if (rangeBounds.size() < 2) {
-        assert rangeBounds.size() == 0;
-        return false;
+      while (rangeBounds.size() >= 2) {
+        assert rangeBounds.size() % 2 == 0;
+        // close the current enum and read next bounds
+        if (actualEnum != null) {
+          actualEnum.close();
+          actualEnum = null;
+        }
+        final String lowerBound = rangeBounds.removeFirst();
+        this.currentUpperBound = rangeBounds.removeFirst();
+        // create a new enum
+        actualEnum = reader.terms(termTemplate.createTerm(lowerBound));
+        currentTerm = actualEnum.term();
+        if (currentTerm != null && termCompare(currentTerm))
+          return true;
+        // clear the current term for next iteration
+        currentTerm = null;
       }
-      // close the current enum and read next bounds
-      if (actualEnum != null) {
-        actualEnum.close();
-        actualEnum = null;
-      }
-      final String lowerBound = rangeBounds.removeFirst();
-      this.currentUpperBound = rangeBounds.removeFirst();
-      // this call recursively uses next(), if no valid term in
-      // next enum found.
-      // if this behavior is changed/modified in the superclass,
-      // this enum will not work anymore!
-      setEnum(reader.terms(termTemplate.createTerm(lowerBound)));
-      return (currentTerm != null);
+      
+      // no more sub-range enums available
+      assert rangeBounds.size() == 0 && currentTerm == null;
+      return false;
     }
 
     /** Closes the enumeration to further activity, freeing resources.  */

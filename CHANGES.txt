@@ -18,7 +18,10 @@ New features
 Optimizations
 
 * LUCENE-2086: When resolving deleted terms, do so in term sort order
-  for better performance (Bogdan Ghidireac via Mike McCandless)
+  for better performance. (Bogdan Ghidireac via Mike McCandless)
+
+* LUCENE-2087: Remove recursion in NumericRangeTermEnum.
+  (Uwe Schindler)
 
 Build
 
