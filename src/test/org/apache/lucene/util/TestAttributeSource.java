@@ -142,6 +142,7 @@ public class TestAttributeSource extends LuceneTestCase {
       src.addAttribute(TypeAttribute.class) instanceof TypeAttributeImpl);
   }
   
+  @SuppressWarnings("unchecked")
   public void testInvalidArguments() throws Exception {
     try {
       AttributeSource src = new AttributeSource();
@@ -152,6 +153,13 @@ public class TestAttributeSource extends LuceneTestCase {
     try {
       AttributeSource src = new AttributeSource(Token.TOKEN_ATTRIBUTE_FACTORY);
       src.addAttribute(Token.class);
+      fail("Should throw IllegalArgumentException");
+    } catch (IllegalArgumentException iae) {}
+    
+    try {
+      AttributeSource src = new AttributeSource();
+      // break this by unsafe cast
+      src.addAttribute((Class) Iterator.class);
       fail("Should throw IllegalArgumentException");
     } catch (IllegalArgumentException iae) {}
   }
