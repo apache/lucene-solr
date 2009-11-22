@@ -2,6 +2,15 @@ Lucene contrib change Log
 
 ======================= Trunk (not yet released) =======================
 
+Bug fixes
+
+ * LUCENE-2068: Fixed ReverseStringFilter which was not aware of supplementary
+   characters. During reverse the filter created unpaired surrogates, which
+   will be replaced by U+FFFD by the indexer, but not at query time. The filter
+   now reverses supplementary characters correctly if used with Version > 3.0.
+   (Simon Willnauer, Robert Muir)
+   
+
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy
