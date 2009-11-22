@@ -140,7 +140,6 @@ There are many post tokenization steps that can be done, including (but not limi
       TokenStream ts = analyzer.tokenStream("myfield",new StringReader("some text goes here"));
       while (ts.incrementToken()) {
         System.out.println("token: "+ts));
-        t = ts.next();
       }
   </PRE>
 </p>
