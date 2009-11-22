@@ -59,7 +59,7 @@ Bug Fixes
 * SOLR-1572: FastLRUCache correctly implemented the LRU policy only
   for the first 2B accesses. (yonik)
 
-* SOLR-1582: Fix BinaryField copy in DocumentBuilder (gsingers)
+* SOLR-1582: copyField was ignored for BinaryField types (gsingers)
 
 * SOLR-1563: Binary fields, including trie-based numeric fields, caused null
   pointer exceptions in the luke request handler. (yonik)
