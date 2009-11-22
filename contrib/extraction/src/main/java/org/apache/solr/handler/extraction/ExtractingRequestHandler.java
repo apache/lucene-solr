@@ -76,11 +76,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       } else {
-        try {
-          config = TikaConfig.getDefaultConfig();
-        } catch (TikaException e) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        }
+        config = TikaConfig.getDefaultConfig();
       }
       NamedList configDateFormats = (NamedList) initArgs.get(DATE_FORMATS);
       if (configDateFormats != null && configDateFormats.size() > 0) {
@@ -92,11 +88,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
         }
       }
     } else {
-      try {
-        config = TikaConfig.getDefaultConfig();
-      } catch (TikaException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      }
+      config = TikaConfig.getDefaultConfig();
     }
     factory = createFactory();
   }

@@ -17,8 +17,12 @@ You will need Solr up and running.  Then, simply add the extraction JAR file, pl
 to your Solr Home lib directory.  See http://wiki.apache.org/solr/ExtractingRequestHandler for more details on hooking it in
  and configuring.
 
-
 $Id:$
+
+================== Release 1.5-dev ==================
+
+* SOLR-1567: Upgrade to Tika 0.5, which upgrades many of the underlying libraries (PDFBox, for example) too (gsingers)
+
 ================== Release 1.4.0 ==================
 
 1. SOLR-284:  Added in support for extraction. (Eric Pugh, Chris Harris, gsingers)
