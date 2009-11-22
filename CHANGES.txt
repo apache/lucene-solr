@@ -184,6 +184,9 @@ Bug fixes
 * LUCENE-2013: SpanRegexQuery does not work with QueryScorer.
   (Benjamin Keil via Mark Miller)
 
+* LUCENE-2088: addAttribute() should only accept interfaces that
+  extend Attribute. (Shai Erera, Uwe Schindler)
+
 New features
 
 * LUCENE-1933: Provide a convenience AttributeFactory that creates a
