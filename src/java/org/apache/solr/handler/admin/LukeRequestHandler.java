@@ -53,6 +53,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Base64;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
@@ -240,12 +241,20 @@ public class LukeRequestHandler extends RequestHandlerBase
       f.add( "type", (ftype==null)?null:ftype.getTypeName() );
       f.add( "schema", getFieldFlags( sfield ) );
       f.add( "flags", getFieldFlags( fieldable ) );
-      
-      Term t = new Term( fieldable.name(), fieldable.stringValue() );
+
+      Term t = new Term(fieldable.name(), ftype!=null ? ftype.storedToIndexed(fieldable) : fieldable.stringValue());
+
       f.add( "value", (ftype==null)?null:ftype.toExternal( fieldable ) );
+
+      // TODO: this really should be "stored"
       f.add( "internal", fieldable.stringValue() );  // may be a binary number
+
+      byte[] arr = fieldable.getBinaryValue();
+      if (arr != null) {
+        f.add( "binary", Base64.byteArrayToBase64(arr, 0, arr.length));
+      }
       f.add( "boost", fieldable.getBoost() );
-      f.add( "docFreq", reader.docFreq( t ) ); // this can be 0 for non-indexed fields
+      f.add( "docFreq", t.text()==null ? 0 : reader.docFreq( t ) ); // this can be 0 for non-indexed fields
             
       // If we have a term vector, return that
       if( fieldable.isTermVectorStored() ) {
