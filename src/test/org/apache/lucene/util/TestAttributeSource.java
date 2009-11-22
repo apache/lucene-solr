@@ -141,4 +141,18 @@ public class TestAttributeSource extends LuceneTestCase {
     assertTrue("TypeAttribute is not implemented by TypeAttributeImpl",
       src.addAttribute(TypeAttribute.class) instanceof TypeAttributeImpl);
   }
+  
+  public void testInvalidArguments() throws Exception {
+    try {
+      AttributeSource src = new AttributeSource();
+      src.addAttribute(Token.class);
+      fail("Should throw IllegalArgumentException");
+    } catch (IllegalArgumentException iae) {}
+    
+    try {
+      AttributeSource src = new AttributeSource(Token.TOKEN_ATTRIBUTE_FACTORY);
+      src.addAttribute(Token.class);
+      fail("Should throw IllegalArgumentException");
+    } catch (IllegalArgumentException iae) {}
+  }
 }

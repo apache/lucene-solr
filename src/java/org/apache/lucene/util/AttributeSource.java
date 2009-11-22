@@ -224,6 +224,12 @@ public class AttributeSource {
   public <A extends Attribute> A addAttribute(Class<A> attClass) {
     AttributeImpl attImpl = attributes.get(attClass);
     if (attImpl == null) {
+      if (!(attClass.isInterface() && Attribute.class.isAssignableFrom(attClass))) {
+        throw new IllegalArgumentException(
+          "addAttribute() only accepts an interface that extends Attribute, but " +
+          attClass.getName() + " does not fulfil this contract."
+        );
+      }
       addAttributeImpl(attImpl = this.factory.createAttributeInstance(attClass));
     }
     return attClass.cast(attImpl);
