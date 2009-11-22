@@ -20,9 +20,6 @@ Optimizations
 * LUCENE-2086: When resolving deleted terms, do so in term sort order
   for better performance. (Bogdan Ghidireac via Mike McCandless)
 
-* LUCENE-2087: Remove recursion in NumericRangeTermEnum.
-  (Uwe Schindler)
-
 Build
 
 ======================= Release 3.0.0 2009-11-25 =======================
@@ -207,6 +204,9 @@ Optimizations
 
 * LUCENE-2006: Optimization of FieldDocSortedHitQueue to always
   use Comparable<?> interface.  (Uwe Schindler, Mark Miller)
+
+* LUCENE-2087: Remove recursion in NumericRangeTermEnum.
+  (Uwe Schindler)
 
 Build
 
