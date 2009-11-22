@@ -125,4 +125,18 @@ public class TestAttributeSource extends LuceneTestCase {
     assertEquals("Token should only printed once", "("+tok.toString()+")", src.toString());
   }
   
+  public void testInvalidArguments() throws Exception {
+    try {
+      AttributeSource src = new AttributeSource();
+      src.addAttribute(Token.class);
+      fail("Should throw IllegalArgumentException");
+    } catch (IllegalArgumentException iae) {}
+    
+    try {
+      AttributeSource src = new AttributeSource();
+      src.addAttribute(Iterator.class);
+      fail("Should throw IllegalArgumentException");
+    } catch (IllegalArgumentException iae) {}
+  }
+
 }

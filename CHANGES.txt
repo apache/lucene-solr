@@ -9,6 +9,9 @@ Bug fixes
    infoStream on IndexWriter and then add an empty document and commit
    (Shai Erera via Mike McCandless)
 
+ * LUCENE-2088: addAttribute() should only accept interfaces that
+   extend Attribute. (Shai Erera, Uwe Schindler)
+
 ======================= Release 2.9.1 2009-11-06 =======================
 
 Changes in backwards compatibility policy
