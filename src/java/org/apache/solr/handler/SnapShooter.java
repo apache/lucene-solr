@@ -118,12 +118,10 @@ public class SnapShooter {
     private byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
     private IndexCommit indexCommit;
     private IndexDeletionPolicyWrapper delPolicy;
-    private int reserveTime;
 
     public FileCopier(IndexDeletionPolicyWrapper delPolicy, IndexCommit commit) {
       this.delPolicy = delPolicy;
       this.indexCommit = commit;
-      this.reserveTime = reserveTime;
     }
     
     public void copyFiles(Collection<String> files, File destDir) throws IOException {
