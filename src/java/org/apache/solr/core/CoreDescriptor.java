@@ -109,6 +109,8 @@ public class CoreDescriptor {
 
   public void setDataDir(String s) {
     dataDir = s;
+    // normalize zero length to null.
+    if (dataDir != null && dataDir.length()==0) dataDir=null;
   }
 
   /**@return the core instance directory. */

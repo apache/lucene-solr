@@ -64,6 +64,12 @@ Bug Fixes
 * SOLR-1563: Binary fields, including trie-based numeric fields, caused null
   pointer exceptions in the luke request handler. (yonik)
 
+* SOLR-1577: The example solrconfig.xml defaulted to a solr data dir
+  relative to the current working directory, even if a different solr home
+  was being used.  The new behavior changes the default to a zero length
+  string, which is treated the same as if no dataDir had been specified,
+  hence the "data" directory under the solr home will be used.  (yonik)
+
 
 Other Changes
 ----------------------

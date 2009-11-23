@@ -160,6 +160,7 @@ public class SolrConfig extends Config {
     unlockOnStartup = getBool("mainIndex/unlockOnStartup", false);
     useColdSearcher = getBool("query/useColdSearcher",false);
     dataDir = get("dataDir", null);
+    if (dataDir != null && dataDir.length()==0) dataDir=null;
 
     userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache");
 
