@@ -74,6 +74,11 @@ Bug Fixes
   fl=score to the parameter list instead of appending score to the
   existing field list. (yonik)
 
+* SOLR-1593: ReverseWildcardFilter didn't work for surrogate pairs
+  (i.e. code points outside of the BMP), resulting in incorrect
+  matching.  This change requires reindexing for any content with
+  such characters.  (Robert Muir, yonik)
+
 
 Other Changes
 ----------------------

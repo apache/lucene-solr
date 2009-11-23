@@ -77,8 +77,8 @@ public class TestReversedWildcardFilterFactory extends BaseTokenTestCase {
   
   public void testIndexingAnalysis() throws Exception {
     Analyzer a = schema.getAnalyzer();
-    String text = "one two three";
-    String expected1 = "one \u0001eno two \u0001owt three \u0001eerht";
+    String text = "one two three si\uD834\uDD1Ex";
+    String expected1 = "one \u0001eno two \u0001owt three \u0001eerht si\uD834\uDD1Ex \u0001x\uD834\uDD1Eis";
     List<Token> expectedTokens1 = getTokens(
             new WhitespaceTokenizer(new StringReader(expected1)));
     // set positionIncrements and offsets in expected tokens
@@ -86,10 +86,10 @@ public class TestReversedWildcardFilterFactory extends BaseTokenTestCase {
       Token t = expectedTokens1.get(i);
       t.setPositionIncrement(0);
     }
-    String expected2 = "\u0001eno \u0001owt \u0001eerht";
+    String expected2 = "\u0001eno \u0001owt \u0001eerht \u0001x\uD834\uDD1Eis";
     List<Token> expectedTokens2 = getTokens(
             new WhitespaceTokenizer(new StringReader(expected2)));
-    String expected3 = "one two three";
+    String expected3 = "one two three si\uD834\uDD1Ex";
     List<Token> expectedTokens3 = getTokens(
             new WhitespaceTokenizer(new StringReader(expected3)));
     // field one
@@ -116,10 +116,10 @@ public class TestReversedWildcardFilterFactory extends BaseTokenTestCase {
     // XXX note: this should be false, but for now we return true for any field,
     // XXX if at least one field uses the reversing
     assertTrue(parserThree.getAllowLeadingWildcard());
-    String text = "one +two *hree f*ur fiv*";
-    String expectedOne = "one:one +one:two one:\u0001eerh* one:\u0001ru*f one:fiv*";
-    String expectedTwo = "two:one +two:two two:\u0001eerh* two:\u0001ru*f two:fiv*";
-    String expectedThree = "three:one +three:two three:*hree three:f*ur three:fiv*";
+    String text = "one +two *hree f*ur fiv* *si\uD834\uDD1Ex";
+    String expectedOne = "one:one +one:two one:\u0001eerh* one:\u0001ru*f one:fiv* one:\u0001x\uD834\uDD1Eis*";
+    String expectedTwo = "two:one +two:two two:\u0001eerh* two:\u0001ru*f two:fiv* two:\u0001x\uD834\uDD1Eis*";
+    String expectedThree = "three:one +three:two three:*hree three:f*ur three:fiv* three:*si\uD834\uDD1Ex";
     Query q = parserOne.parse(text);
     assertEquals(expectedOne, q.toString());
     q = parserTwo.parse(text);

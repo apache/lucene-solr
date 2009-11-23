@@ -27,10 +27,7 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
-import org.apache.solr.analysis.ReversedWildcardFilter;
-import org.apache.solr.analysis.ReversedWildcardFilterFactory;
-import org.apache.solr.analysis.TokenFilterFactory;
-import org.apache.solr.analysis.TokenizerChain;
+import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -193,7 +190,12 @@ public class SolrQueryParser extends QueryParser {
     String type = schema.getFieldType(field).getTypeName();
     ReversedWildcardFilterFactory factory = leadingWildcards.get(type);
     if (factory != null && factory.shouldReverse(termStr)) {
-      termStr = ReverseStringFilter.reverse(termStr + factory.getMarkerChar());
+      int len = termStr.length();
+      char[] chars = new char[len+1];
+      chars[0] = factory.getMarkerChar();      
+      termStr.getChars(0, len, chars, 1);
+      ReversedWildcardFilter.reverse(chars, 1, len);
+      termStr = new String(chars);
     }
     Query q = super.getWildcardQuery(field, termStr);
     if (q instanceof WildcardQuery) {

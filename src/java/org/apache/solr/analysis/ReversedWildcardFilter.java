@@ -20,7 +20,6 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
@@ -73,13 +72,79 @@ public class ReversedWildcardFilter extends TokenFilter {
     }
     char [] buffer = termAtt.resizeTermBuffer(oldLen + 1);
     buffer[oldLen] = markerChar;
-    //String reversed = reverseAndMark(value, markerChar);
-    ReverseStringFilter.reverse(buffer, oldLen + 1);
+    reverse(buffer, 0, oldLen + 1);
 
     posAtt.setPositionIncrement(origOffset);
     termAtt.setTermBuffer(buffer, 0, oldLen +1);
     return true;
   }
   
-   
+
+  /**
+   * Partially reverses the given input buffer in-place from the given offset
+   * up to the given length, keeping surrogate pairs in the correct (non-reversed) order.
+   * @param buffer the input char array to reverse
+   * @param start the offset from where to reverse the buffer
+   * @param len the length in the buffer up to where the
+   *        buffer should be reversed
+   */
+  public static void reverse(final char[] buffer, final int start, final int len) {
+    /* modified version of Apache Harmony AbstractStringBuilder reverse0() */
+    if (len < 2)
+      return;
+    int end = (start + len) - 1;
+    char frontHigh = buffer[start];
+    char endLow = buffer[end];
+    boolean allowFrontSur = true, allowEndSur = true;
+    final int mid = start + (len >> 1);
+    for (int i = start; i < mid; ++i, --end) {
+      final char frontLow = buffer[i + 1];
+      final char endHigh = buffer[end - 1];
+      final boolean surAtFront = allowFrontSur
+          && Character.isSurrogatePair(frontHigh, frontLow);
+      if (surAtFront && (len < 3)) {
+        // nothing to do since surAtFront is allowed and 1 char left
+        return;
+      }
+      final boolean surAtEnd = allowEndSur
+          && Character.isSurrogatePair(endHigh, endLow);
+      allowFrontSur = allowEndSur = true;
+      if (surAtFront == surAtEnd) {
+        if (surAtFront) {
+          // both surrogates
+          buffer[end] = frontLow;
+          buffer[--end] = frontHigh;
+          buffer[i] = endHigh;
+          buffer[++i] = endLow;
+          frontHigh = buffer[i + 1];
+          endLow = buffer[end - 1];
+        } else {
+          // neither surrogates
+          buffer[end] = frontHigh;
+          buffer[i] = endLow;
+          frontHigh = frontLow;
+          endLow = endHigh;
+        }
+      } else {
+        if (surAtFront) {
+          // surrogate only at the front
+          buffer[end] = frontLow;
+          buffer[i] = endLow;
+          endLow = endHigh;
+          allowFrontSur = false;
+        } else {
+          // surrogate only at the end
+          buffer[end] = frontHigh;
+          buffer[i] = endHigh;
+          frontHigh = frontLow;
+          allowEndSur = false;
+        }
+      }
+    }
+    if ((len & 0x01) == 1 && !(allowFrontSur && allowEndSur)) {
+      // only if odd length
+      buffer[end] = allowFrontSur ? endLow : frontHigh;
+    }
+  }
+
 }
