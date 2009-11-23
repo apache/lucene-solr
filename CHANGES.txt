@@ -44,13 +44,13 @@ New Features
 
 * SOLR-1574: Add many new functions from java Math (e.g. sin, cos) (yonik)
 
+* SOLR-1569: Allow functions to take in literal strings by modifying the FunctionQParser and adding LiteralValueSource (gsingers)
+
 Optimizations
 ----------------------
 
 Bug Fixes
 ----------------------
-
-* SOLR-1569: Allow functions to take in literal strings by modifying the FunctionQParser and adding LiteralValueSource (gsingers)
 
 * SOLR-1432: Make the new ValueSource.getValues(context,reader) delegate
   to the original ValueSource.getValues(reader) so custom sources
@@ -69,6 +69,10 @@ Bug Fixes
   was being used.  The new behavior changes the default to a zero length
   string, which is treated the same as if no dataDir had been specified,
   hence the "data" directory under the solr home will be used.  (yonik)
+
+* SOLR-1584: SolrJ - SolrQuery.setIncludeScore() incorrectly added
+  fl=score to the parameter list instead of appending score to the
+  existing field list. (yonik)
 
 
 Other Changes

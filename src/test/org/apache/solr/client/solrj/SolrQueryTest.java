@@ -130,6 +130,13 @@ public class SolrQueryTest extends TestCase {
       assertEquals( Boolean.TRUE, q.setMissing(Boolean.TRUE.toString()).getBool( FacetParams.FACET_MISSING ) );
       assertEquals( Boolean.FALSE, q.setFacetMissing( Boolean.FALSE ).getBool( FacetParams.FACET_MISSING ) );      
       assertEquals( "true", q.setParam( "xxx", true ).getParams( "xxx" )[0] );
+
+      assertEquals( "x,y", q.setFields("x","y").getFields() );    
+      assertEquals( "x,y,score", q.setIncludeScore(true).getFields() );
+      assertEquals( "x,y,score", q.setIncludeScore(true).getFields() ); // set twice on purpose
+      assertEquals( "x,y", q.setIncludeScore(false).getFields() );
+      assertEquals( "x,y", q.setIncludeScore(false).getFields() ); // remove twice on purpose
+
   }
   
   public void testOrder() {

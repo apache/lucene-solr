@@ -23,6 +23,8 @@ import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.StatsParams;
 
+import java.util.regex.Pattern;
+
 
 /**
  * This is an augmented SolrParams with get/set/add fields for common fields used
@@ -445,11 +447,16 @@ public class SolrQuery extends ModifiableSolrParams
     return fields;
   }
 
+  private static Pattern scorePattern = Pattern.compile("(^|[, ])score");
+
   public SolrQuery setIncludeScore(boolean includeScore) {
+    String fields = get(CommonParams.FL,"*");
     if (includeScore) {
-      this.add(CommonParams.FL, "score");
+      if (!scorePattern.matcher(fields).find()) {   
+        this.set(CommonParams.FL, fields+",score");
+      }
     } else {
-      this.remove(CommonParams.FL, "score");
+      this.set(CommonParams.FL, scorePattern.matcher(fields).replaceAll(""));
     }
     return this;
   }
