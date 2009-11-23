@@ -86,8 +86,9 @@ public class SolrIndexWriter extends IndexWriter {
 
       if (getMergePolicy() instanceof LogMergePolicy) {
         setUseCompoundFile(config.useCompoundFile);
+        if (config.mergeFactor != -1) { setMergeFactor(config.mergeFactor); }
       } else  {
-        log.warn("Use of compound file format cannot be configured if merge policy is not an instance " +
+        log.warn("Use of compound file format or mergefactor cannot be configured if merge policy is not an instance " +
                 "of LogMergePolicy. The configured policy's defaults will be used.");
       }
 

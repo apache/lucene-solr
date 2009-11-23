@@ -30,6 +30,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.*;
 import org.apache.solr.handler.*;
 import org.apache.solr.request.*;
+import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.*;
 import org.apache.solr.schema.*;
 
@@ -112,6 +113,11 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
   }
 
   public void testSomeStuff() throws Exception {
+	// test merge factor picked up
+	SolrCore core = h.getCore();
+	SolrIndexWriter writer = new SolrIndexWriter("testWriter",core.getNewIndexDir(), core.getDirectoryFactory(), false, core.getSchema(), core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy());
+	assertEquals("Mergefactor was not picked up", writer.getMergeFactor(), 8);
+	  
     lrf.args.put("version","2.0");
     assertQ("test query on empty index",
             req("qlkciyopsbgzyvkylsjhchghjrdf")
