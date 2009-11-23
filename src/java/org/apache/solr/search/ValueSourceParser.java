@@ -555,9 +555,13 @@ class DateValueSourceParser extends ValueSourceParser {
 // Private for now - we need to revisit how to handle typing in function queries
 class LongConstValueSource extends ValueSource {
   final long constant;
+  final double dv;
+  final float fv;
 
   public LongConstValueSource(long constant) {
     this.constant = constant;
+    this.dv = constant;
+    this.fv = constant;
   }
 
   public String description() {
@@ -567,7 +571,7 @@ class LongConstValueSource extends ValueSource {
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     return new DocValues() {
       public float floatVal(int doc) {
-        return constant;
+        return fv;
       }
 
       public int intVal(int doc) {
@@ -579,7 +583,7 @@ class LongConstValueSource extends ValueSource {
       }
 
       public double doubleVal(int doc) {
-        return constant;
+        return dv;
       }
 
       public String strVal(int doc) {
@@ -606,9 +610,13 @@ class LongConstValueSource extends ValueSource {
 // Private for now - we need to revisit how to handle typing in function queries
 class DoubleConstValueSource extends ValueSource {
   final double constant;
+  private final float fv;
+  private final long lv;
 
   public DoubleConstValueSource(double constant) {
     this.constant = constant;
+    this.fv = (float)constant;
+    this.lv = (long)constant;
   }
 
   public String description() {
@@ -618,15 +626,15 @@ class DoubleConstValueSource extends ValueSource {
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     return new DocValues() {
       public float floatVal(int doc) {
-        return (float)constant;
+        return fv;
       }
 
       public int intVal(int doc) {
-        return (int) constant;
+        return (int) lv;
       }
 
       public long longVal(int doc) {
-        return (long)constant;
+        return lv;
       }
 
       public double doubleVal(int doc) {

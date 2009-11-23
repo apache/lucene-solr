@@ -27,9 +27,11 @@ import java.util.Map;
  */
 public class ConstValueSource extends ValueSource {
   final float constant;
+  private final double dv;
 
   public ConstValueSource(float constant) {
     this.constant = constant;
+    this.dv = constant;
   }
 
   public String description() {
@@ -42,16 +44,16 @@ public class ConstValueSource extends ValueSource {
         return constant;
       }
       public int intVal(int doc) {
-        return (int)floatVal(doc);
+        return (int)constant;
       }
       public long longVal(int doc) {
-        return (long)floatVal(doc);
+        return (long)constant;
       }
       public double doubleVal(int doc) {
-        return (double)floatVal(doc);
+        return dv;
       }
       public String strVal(int doc) {
-        return Float.toString(floatVal(doc));
+        return Float.toString(constant);
       }
       public String toString(int doc) {
         return description();
