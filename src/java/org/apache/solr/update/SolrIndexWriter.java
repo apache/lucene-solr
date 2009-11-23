@@ -223,7 +223,7 @@ public class SolrIndexWriter extends IndexWriter {
    * }
    * ****
    */
-  private boolean isClosed = false;
+  private volatile boolean isClosed = false;
   public void close() throws IOException {
     log.debug("Closing Writer " + name);
     try {
@@ -231,6 +231,15 @@ public class SolrIndexWriter extends IndexWriter {
       if(infoStream != null) {
         infoStream.close();
       }
+    } finally {
+      isClosed = true;
+    }
+  }
+
+  @Override
+  public void rollback() throws IOException {
+    try {
+      super.rollback();
     } finally {
       isClosed = true;
     }

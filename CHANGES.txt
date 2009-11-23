@@ -82,6 +82,12 @@ Bug Fixes
   matching.  This change requires reindexing for any content with
   such characters.  (Robert Muir, yonik)
 
+* SOLR-1595: A rollback operation followed by the shutdown of Solr
+  or the close of a core resulted in a warning:
+  "SEVERE: SolrIndexWriter was not closed prior to finalize()" although
+  there were no other consequences. (yonik)
+  
+
 
 Other Changes
 ----------------------
