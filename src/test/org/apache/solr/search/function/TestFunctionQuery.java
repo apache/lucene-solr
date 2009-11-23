@@ -347,6 +347,14 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     assertQ(req("fl", "*,score", "q", "{!func}deg(y_td)", "fq", "id:3"), "//float[@name='score']='45.0'");
   }
 
+  public void testStrDistance() throws Exception {
+    assertU(adoc("id", "1", "x_s", "foil"));
+    assertU(commit());
+    assertQ(req("fl", "*,score", "q", "{!func}strdist(x_s, 'foit', edit)", "fq", "id:1"), "//float[@name='score']='0.75'");
+    assertQ(req("fl", "*,score", "q", "{!func}strdist(x_s, 'foit', jw)", "fq", "id:1"), "//float[@name='score']='0.8833333'");
+    assertQ(req("fl", "*,score", "q", "{!func}strdist(x_s, 'foit', ngram, 2)", "fq", "id:1"), "//float[@name='score']='0.875'");
+  }
+
   public void dofunc(String func, double val) throws Exception {
     // String sval = Double.toString(val);
     String sval = Float.toString((float)val);

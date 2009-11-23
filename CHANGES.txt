@@ -34,7 +34,7 @@ Detailed Change List
 New Features
 ----------------------
 
-* SOLR-1302: Added several new distance based functions, including Great Circle (haversine), Manhattan and Euclidean.
+* SOLR-1302: Added several new distance based functions, including Great Circle (haversine), Manhattan, Euclidean and String (using the StringDistance methods in the Lucene Spellchecker).
   Also added geohash(), deg() and rad() convenience functions. See http://wiki.apache.org/solr/FunctionQuery. (gsingers)
 
 * SOLR-1553: New dismax parser implementation (accessible as "edismax")

@@ -20,6 +20,10 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.spell.JaroWinklerDistance;
+import org.apache.lucene.search.spell.LevensteinDistance;
+import org.apache.lucene.search.spell.NGramDistance;
+import org.apache.lucene.search.spell.StringDistance;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.DateField;
@@ -34,6 +38,7 @@ import org.apache.solr.search.function.distance.SquaredEuclideanFunction;
 import org.apache.solr.search.function.distance.VectorDistanceFunction;
 import org.apache.solr.search.function.distance.GeohashHaversineFunction;
 import org.apache.solr.search.function.distance.GeohashFunction;
+import org.apache.solr.search.function.distance.StringDistanceFunction;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 import java.io.IOException;
@@ -253,6 +258,30 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         ValueSource lon = fp.parseValueSource();
 
         return new GeohashFunction(lat, lon);
+      }
+    });
+    addParser("strdist", new ValueSourceParser() {
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+
+        ValueSource str1 = fp.parseValueSource();
+        ValueSource str2 = fp.parseValueSource();
+        String distClass = fp.parseArg();
+
+        StringDistance dist = null;
+        if (distClass.equalsIgnoreCase("jw")) {
+          dist = new JaroWinklerDistance();
+        } else if (distClass.equalsIgnoreCase("edit")) {
+          dist = new LevensteinDistance();
+        } else if (distClass.equalsIgnoreCase("ngram")) {
+          int ngram = 2;
+          if (fp.hasMoreArguments()) {
+            ngram = fp.parseInt();
+          }
+          dist = new NGramDistance(ngram);
+        } else {
+          dist = (StringDistance) fp.req.getCore().getResourceLoader().newInstance(distClass);
+        }
+        return new StringDistanceFunction(str1, str2, dist);
       }
     });
 
