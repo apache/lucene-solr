@@ -186,6 +186,7 @@ final public class XMLWriter {
     defaultIndent = doIndent;
   }
 
+  /** Writes the XML attribute name/val. A null val means that the attribute is missing. */
   public void writeAttr(String name, String val) throws IOException {
     if (val != null) {
       writer.write(' ');
