@@ -18,6 +18,8 @@ package org.apache.lucene.index;
  */
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -33,10 +35,20 @@ import org.apache.lucene.search.Query;
  *  previously flushed segments. */
 class BufferedDeletes {
   int numTerms;
-  HashMap<Term,Num> terms = new HashMap<Term,Num>();
-  HashMap<Query,Integer> queries = new HashMap<Query,Integer>();
+  Map<Term,Num> terms;
+  Map<Query,Integer> queries = new HashMap<Query,Integer>();
   List<Integer> docIDs = new ArrayList<Integer>();
   long bytesUsed;
+  private final boolean doTermSort;
+
+  public BufferedDeletes(boolean doTermSort) {
+    this.doTermSort = doTermSort;
+    if (doTermSort) {
+      terms = new TreeMap<Term,Num>();
+    } else {
+      terms = new HashMap<Term,Num>();
+    }
+  }
 
   // Number of documents a delete term applies to.
   final static class Num {
@@ -104,11 +116,15 @@ class BufferedDeletes {
                           MergePolicy.OneMerge merge,
                           int mergeDocCount) {
 
-    final HashMap<Term,Num> newDeleteTerms;
+    final Map<Term,Num> newDeleteTerms;
 
     // Remap delete-by-term
     if (terms.size() > 0) {
-      newDeleteTerms = new HashMap<Term, Num>();
+      if (doTermSort) {
+        newDeleteTerms = new TreeMap<Term,Num>();
+      } else {
+        newDeleteTerms = new HashMap<Term,Num>();
+      }
       for(Entry<Term,Num> entry : terms.entrySet()) {
         Num num = entry.getValue();
         newDeleteTerms.put(entry.getKey(),

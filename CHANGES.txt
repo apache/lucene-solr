@@ -1,6 +1,15 @@
 Lucene Change Log
 $Id$
 
+======================= 3.0 branch (not yet released) =======================
+
+Bug fixes
+
+Optimizations
+
+ * LUCENE-2086: When resolving deleted terms, do so in term sort order
+   for better performance (Bogdan Ghidireac via Mike McCandless)
+
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy
