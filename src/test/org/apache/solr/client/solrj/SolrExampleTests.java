@@ -175,7 +175,7 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
 
     SolrInputDocument doc2 = new SolrInputDocument();
     doc2.addField( "id", "id2", 1.0f );
-    doc2.addField( "name", "doc2", 1.0f );
+    doc2.addField( "name", "h\u1234llo", 1.0f );
     doc2.addField( "price", 20 );
     
     Collection<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
@@ -191,7 +191,7 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     query.addSortField( "price", SolrQuery.ORDER.asc );
     QueryResponse rsp = server.query( query );
     
-    Assert.assertEquals( 2, rsp.getResults().getNumFound() );
+    assertEquals( 2, rsp.getResults().getNumFound() );
     System.out.println( rsp.getResults() );
     
     // Now do it again
@@ -199,9 +199,14 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     server.commit();
     
     rsp = server.query( query );
-    Assert.assertEquals( 2, rsp.getResults().getNumFound() );
-    System.out.println( rsp.getResults() );
-    
+    assertEquals( 2, rsp.getResults().getNumFound() );
+    // System.out.println( rsp.getResults() );
+
+    // query outside ascii range
+    query.setQuery("name:h\u1234llo");
+    rsp = server.query( query );
+    assertEquals( 1, rsp.getResults().getNumFound() );
+
   }
   
   /**

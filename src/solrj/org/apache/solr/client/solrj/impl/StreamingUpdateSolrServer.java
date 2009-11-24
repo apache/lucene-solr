@@ -90,7 +90,7 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
   
           public void writeRequest(OutputStream out) throws IOException {
             try {
-              OutputStreamWriter writer = new OutputStreamWriter( out );
+              OutputStreamWriter writer = new OutputStreamWriter(out, "UTF-8");
               writer.append( "<stream>" ); // can be anything...
               UpdateRequest req = queue.poll( 250, TimeUnit.MILLISECONDS );
               while( req != null ) {

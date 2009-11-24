@@ -86,7 +86,12 @@ Bug Fixes
   or the close of a core resulted in a warning:
   "SEVERE: SolrIndexWriter was not closed prior to finalize()" although
   there were no other consequences. (yonik)
-  
+
+* SOLR-1595: StreamingUpdateSolrServer used the patform default character
+  set when streaming updates, rather than using UTF-8 as the HTTP headers
+  indicated, leading to an encoding mismatch. (hossman, yonik)
+
+didn't specify the character set creating OutputStreamWriter
 
 
 Other Changes
