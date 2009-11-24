@@ -962,6 +962,18 @@ final class DocumentsWriter {
     return any;
   }
 
+  // used only by assert
+  private Term lastDeleteTerm;
+
+  // used only by assert
+  private boolean checkDeleteTerm(Term term) {
+    if (term != null) {
+      assert lastDeleteTerm == null || term.compareTo(lastDeleteTerm) > 0: "lastTerm=" + lastDeleteTerm + " vs term=" + term;
+    }
+    lastDeleteTerm = term;
+    return true;
+  }
+
   // Apply buffered delete terms, queries and docIDs to the
   // provided reader
   private final synchronized boolean applyDeletes(IndexReader reader, int docIDStart)
@@ -970,11 +982,16 @@ final class DocumentsWriter {
     final int docEnd = docIDStart + reader.maxDoc();
     boolean any = false;
 
+    assert checkDeleteTerm(null);
+
     // Delete by term
     TermDocs docs = reader.termDocs();
     try {
       for (Entry<Term, BufferedDeletes.Num> entry: deletesFlushed.terms.entrySet()) {
         Term term = entry.getKey();
+        // LUCENE-2086: we should be iterating a TreeMap,
+        // here, so terms better be in order:
+        assert checkDeleteTerm(term);
         docs.seek(term);
         int limit = entry.getValue().getNum();
         while (docs.next()) {
