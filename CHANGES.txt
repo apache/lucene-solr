@@ -13,6 +13,10 @@ API Changes
 
 Bug fixes
 
+* LUCENE-2092: BooleanQuery was ignoring disableCoord in its hashCode
+  and equals methods, cause bad things to happen when caching
+  BooleanQueries.  (Chris Hostetter, Mike McCandless)
+
 New features
 
 Optimizations
