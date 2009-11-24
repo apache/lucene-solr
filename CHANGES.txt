@@ -192,6 +192,10 @@ Bug fixes
   infoStream on IndexWriter and then add an empty document and commit
   (Shai Erera via Mike McCandless)
 
+* LUCENE-2046: IndexReader should not see the index as changed, after
+  IndexWriter.prepareCommit has been called but before
+  IndexWriter.commit is called. (Peter Keegan via Mike McCandless)
+
 New features
 
 * LUCENE-1933: Provide a convenience AttributeFactory that creates a
@@ -261,10 +265,6 @@ Bug fixes
  * LUCENE-2016: Replace illegal U+FFFF character with the replacement
    char (U+FFFD) during indexing, to prevent silent index corruption.
    (Peter Keegan, Mike McCandless)
-
- * LUCENE-2046: IndexReader should not see the index as changed, after
-   IndexWriter.prepareCommit has been called but before
-   IndexWriter.commit is called. (Peter Keegan via Mike McCandless)
 
 API Changes
 
