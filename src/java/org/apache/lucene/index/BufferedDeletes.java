@@ -18,6 +18,8 @@ package org.apache.lucene.index;
  */
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Iterator;
@@ -32,10 +34,20 @@ import java.util.Map.Entry;
  *  previously flushed segments. */
 class BufferedDeletes {
   int numTerms;
-  HashMap terms = new HashMap();
-  HashMap queries = new HashMap();
+  Map terms;
+  Map queries = new HashMap();
   List docIDs = new ArrayList();
   long bytesUsed;
+  private final boolean doTermSort;
+
+  public BufferedDeletes(boolean doTermSort) {
+    this.doTermSort = doTermSort;
+    if (doTermSort) {
+      terms = new TreeMap();
+    } else {
+      terms = new HashMap();
+    }
+  }
 
   // Number of documents a delete term applies to.
   final static class Num {
@@ -103,11 +115,15 @@ class BufferedDeletes {
                           MergePolicy.OneMerge merge,
                           int mergeDocCount) {
 
-    final HashMap newDeleteTerms;
+    final Map newDeleteTerms;
 
     // Remap delete-by-term
     if (terms.size() > 0) {
-      newDeleteTerms = new HashMap();
+      if (doTermSort) {
+        newDeleteTerms = new TreeMap();
+      } else {
+        newDeleteTerms = new HashMap();
+      }
       Iterator iter = terms.entrySet().iterator();
       while(iter.hasNext()) {
         Entry entry = (Entry) iter.next();
