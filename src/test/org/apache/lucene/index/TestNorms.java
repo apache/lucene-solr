@@ -189,7 +189,7 @@ public class TestNorms extends LuceneTestCase {
       assertEquals("number of norms mismatches",numDocNorms,b.length);
       ArrayList storedNorms = (i==1 ? modifiedNorms : norms);
       for (int j = 0; j < b.length; j++) {
-        float norm = Similarity.decodeNorm(b[j]);
+        float norm = similarityOne.decodeNormValue(b[j]);
         float norm1 = ((Float)storedNorms.get(j)).floatValue();
         assertEquals("stored norm value of "+field+" for doc "+j+" is "+norm+" - a mismatch!", norm, norm1, 0.000001);
       }
@@ -224,7 +224,7 @@ public class TestNorms extends LuceneTestCase {
   private float nextNorm() {
     float norm = lastNorm + normDelta;
     do {
-      float norm1 = Similarity.decodeNorm(Similarity.encodeNorm(norm));
+      float norm1 = similarityOne.decodeNormValue(similarityOne.encodeNormValue(norm));
       if (norm1 > lastNorm) {
         //System.out.println(norm1+" > "+lastNorm);
         norm = norm1;

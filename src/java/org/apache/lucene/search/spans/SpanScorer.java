@@ -95,7 +95,7 @@ public class SpanScorer extends Scorer {
   @Override
   public float score() throws IOException {
     float raw = getSimilarity().tf(freq) * value; // raw score
-    return norms == null? raw : raw * Similarity.decodeNorm(norms[doc]); // normalize
+    return norms == null? raw : raw * getSimilarity().decodeNormValue(norms[doc]); // normalize
   }
 
   /** This method is no longer an official member of {@link Scorer},

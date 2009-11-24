@@ -37,7 +37,7 @@ import org.apache.lucene.search.Similarity;
 
 final class NormsWriter extends InvertedDocEndConsumer {
 
-  private static final byte defaultNorm = Similarity.encodeNorm(1.0f);
+  private static final byte defaultNorm = Similarity.getDefault().encodeNormValue(1.0f);
   private FieldInfos fieldInfos;
   @Override
   public InvertedDocEndConsumerPerThread addThread(DocInverterPerThread docInverterPerThread) {

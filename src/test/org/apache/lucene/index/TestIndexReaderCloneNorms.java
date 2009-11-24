@@ -216,7 +216,8 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     }
     
     // norm values should be different 
-    assertTrue(Similarity.decodeNorm(segmentReader3C.norms("field1")[5]) != Similarity.decodeNorm(segmentReader4C.norms("field1")[5]));
+    assertTrue(Similarity.getDefault().decodeNormValue(segmentReader3C.norms("field1")[5]) 
+    		!= Similarity.getDefault().decodeNormValue(segmentReader4C.norms("field1")[5]));
     Norm reader4CCNorm = segmentReader4C.norms.get("field1");
     assertEquals(3, reader3CCNorm.bytesRef().refCount());
     assertEquals(1, reader4CCNorm.bytesRef().refCount());
@@ -283,7 +284,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
       assertEquals("number of norms mismatches", numDocNorms, b.length);
       ArrayList storedNorms = (i == 1 ? modifiedNorms : norms);
       for (int j = 0; j < b.length; j++) {
-        float norm = Similarity.decodeNorm(b[j]);
+        float norm = Similarity.getDefault().decodeNormValue(b[j]);
         float norm1 = ((Float) storedNorms.get(j)).floatValue();
         assertEquals("stored norm value of " + field + " for doc " + j + " is "
             + norm + " - a mismatch!", norm, norm1, 0.000001);
@@ -321,7 +322,8 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   private float nextNorm() {
     float norm = lastNorm + normDelta;
     do {
-      float norm1 = Similarity.decodeNorm(Similarity.encodeNorm(norm));
+      float norm1 = Similarity.getDefault().decodeNormValue(
+    		  Similarity.getDefault().encodeNormValue(norm));
       if (norm1 > lastNorm) {
         // System.out.println(norm1+" > "+lastNorm);
         norm = norm1;

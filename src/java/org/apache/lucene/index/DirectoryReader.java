@@ -31,7 +31,7 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
@@ -604,7 +604,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     ensureOpen();
     byte[] bytes = normsCache.get(field);
     if (bytes==null && !hasNorms(field)) {
-      Arrays.fill(result, offset, result.length, DefaultSimilarity.encodeNorm(1.0f));
+      Arrays.fill(result, offset, result.length, Similarity.getDefault().encodeNormValue(1.0f));
     } else if (bytes != null) {                           // cache hit
       System.arraycopy(bytes, 0, result, offset, maxDoc());
     } else {

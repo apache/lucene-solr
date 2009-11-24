@@ -17,9 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.IOException;
-
 import org.apache.lucene.index.SegmentReader.Norm;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.analysis.SimpleAnalyzer;
@@ -28,9 +25,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.AlreadyClosedException;
 
 /**
  * Tests cloning multiple types of readers, modifying the deletedDocs and norms
@@ -273,13 +268,13 @@ public class TestIndexReaderClone extends LuceneTestCase {
    * @throws Exception
    */
   private void performDefaultTests(IndexReader r1) throws Exception {
-    float norm1 = Similarity.decodeNorm(r1.norms("field1")[4]);
+    float norm1 = Similarity.getDefault().decodeNormValue(r1.norms("field1")[4]);
 
     IndexReader pr1Clone = (IndexReader) r1.clone();
     pr1Clone.deleteDocument(10);
     pr1Clone.setNorm(4, "field1", 0.5f);
-    assertTrue(Similarity.decodeNorm(r1.norms("field1")[4]) == norm1);
-    assertTrue(Similarity.decodeNorm(pr1Clone.norms("field1")[4]) != norm1);
+    assertTrue(Similarity.getDefault().decodeNormValue(r1.norms("field1")[4]) == norm1);
+    assertTrue(Similarity.getDefault().decodeNormValue(pr1Clone.norms("field1")[4]) != norm1);
 
     assertTrue(!r1.isDeleted(10));
     assertTrue(pr1Clone.isDeleted(10));
@@ -426,7 +421,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     TestIndexReaderReopen.createIndex(dir1, false);
     IndexReader orig = IndexReader.open(dir1, false);
     orig.setNorm(1, "field1", 17.0f);
-    final byte encoded = Similarity.encodeNorm(17.0f);
+    final byte encoded = Similarity.getDefault().encodeNormValue(17.0f);
     assertEquals(encoded, orig.norms("field1")[1]);
 
     // the cloned segmentreader should have 2 references, 1 to itself, and 1 to

@@ -44,9 +44,7 @@ public class TestFieldNormModifier extends TestCase {
   public TestFieldNormModifier(String name) {
     super(name);
   }
-  
-  public static byte DEFAULT_NORM = Similarity.encodeNorm(1.0f);
-  
+   
   public static int NUM_DOCS = 5;
   
   public Directory store = new RAMDirectory();

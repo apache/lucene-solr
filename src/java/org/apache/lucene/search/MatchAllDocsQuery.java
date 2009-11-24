@@ -70,7 +70,7 @@ public class MatchAllDocsQuery extends Query {
     
     @Override
     public float score() {
-      return norms == null ? score : score * Similarity.decodeNorm(norms[docID()]);
+      return norms == null ? score : score * getSimilarity().decodeNormValue(norms[docID()]);
     }
 
     @Override

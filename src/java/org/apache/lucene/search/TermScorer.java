@@ -25,8 +25,6 @@ import org.apache.lucene.index.TermDocs;
  */
 final class TermScorer extends Scorer {
   
-  private static final float[] SIM_NORM_DECODER = Similarity.getNormDecoder();
-  
   private Weight weight;
   private TermDocs termDocs;
   private byte[] norms;
@@ -56,6 +54,7 @@ final class TermScorer extends Scorer {
    */
   TermScorer(Weight weight, TermDocs td, Similarity similarity, byte[] norms) {
     super(similarity);
+    
     this.weight = weight;
     this.termDocs = td;
     this.norms = norms;
@@ -127,7 +126,7 @@ final class TermScorer extends Scorer {
       ? scoreCache[f]                             // cache hit
       : getSimilarity().tf(f)*weightValue;        // cache miss
 
-    return norms == null ? raw : raw * SIM_NORM_DECODER[norms[doc] & 0xFF]; // normalize for field
+    return norms == null ? raw : raw * getSimilarity().decodeNormValue(norms[doc]); // normalize for field
   }
 
   /**

@@ -71,7 +71,7 @@ final class NormsWriterPerField extends InvertedDocEndConsumerPerField implement
         norms = ArrayUtil.grow(norms, 1+upto);
       }
       final float norm = docState.similarity.computeNorm(fieldInfo.name, fieldState);
-      norms[upto] = Similarity.encodeNorm(norm);
+      norms[upto] = Similarity.getDefault().encodeNormValue(norm);
       docIDs[upto] = docState.docID;
       upto++;
     }

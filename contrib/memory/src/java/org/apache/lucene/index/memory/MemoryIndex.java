@@ -50,7 +50,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.RAMDirectory; // for javadocs
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -1102,7 +1102,7 @@ public class MemoryIndex implements Serializable {
         float boost = info != null ? info.getBoost() : 1.0f; 
         FieldInvertState invertState = new FieldInvertState(0, numTokens, numOverlapTokens, 0, boost);
         float n = sim.computeNorm(fieldName, invertState);
-        byte norm = Similarity.encodeNorm(n);
+        byte norm = sim.encodeNormValue(n);
         norms = new byte[] {norm};
         
         // cache it for future reuse

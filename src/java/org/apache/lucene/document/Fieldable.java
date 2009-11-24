@@ -18,8 +18,8 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInvertState; // for javadocs
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.PhraseQuery; // for javadocs
+import org.apache.lucene.search.spans.SpanQuery; // for javadocs
 
 import java.io.Reader;
 import java.io.Serializable;
@@ -48,13 +48,13 @@ public interface Fieldable extends Serializable {
    * FieldInvertState)} method, the boost value is multiplied
    * by the {@link
    * org.apache.lucene.search.Similarity#lengthNorm(String,
-   * int)} and then rounded by {@link org.apache.lucene.search.Similarity#encodeNorm(float)} before it is stored in the
+   * int)} and then rounded by {@link org.apache.lucene.search.Similarity#encodeNormValue(float)} before it is stored in the
    * index.  One should attempt to ensure that this product does not overflow
    * the range of that encoding.
    *
    * @see org.apache.lucene.document.Document#setBoost(float)
    * @see org.apache.lucene.search.Similarity#computeNorm(String, FieldInvertState)
-   * @see org.apache.lucene.search.Similarity#encodeNorm(float)
+   * @see org.apache.lucene.search.Similarity#encodeNormValue(float)
    */
   void setBoost(float boost);
 

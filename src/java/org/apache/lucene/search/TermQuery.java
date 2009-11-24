@@ -33,7 +33,7 @@ public class TermQuery extends Query {
   private Term term;
 
   private class TermWeight extends Weight {
-    private Similarity similarity;
+    private final Similarity similarity;
     private float value;
     private float idf;
     private float queryNorm;
@@ -135,7 +135,7 @@ public class TermQuery extends Query {
       Explanation fieldNormExpl = new Explanation();
       byte[] fieldNorms = reader.norms(field);
       float fieldNorm =
-        fieldNorms!=null ? Similarity.decodeNorm(fieldNorms[doc]) : 1.0f;
+        fieldNorms!=null ? similarity.decodeNormValue(fieldNorms[doc]) : 1.0f;
       fieldNormExpl.setValue(fieldNorm);
       fieldNormExpl.setDescription("fieldNorm(field="+field+", doc="+doc+")");
       fieldExpl.addDetail(fieldNormExpl);

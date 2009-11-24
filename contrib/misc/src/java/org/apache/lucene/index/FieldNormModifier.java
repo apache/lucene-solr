@@ -143,7 +143,7 @@ public class FieldNormModifier {
           if (sim == null)
             reader.setNorm(d, fieldName, Similarity.encodeNorm(1.0f));
           else
-            reader.setNorm(d, fieldName, Similarity.encodeNorm(sim.lengthNorm(fieldName, termCounts[d])));
+            reader.setNorm(d, fieldName, sim.encodeNormValue(sim.lengthNorm(fieldName, termCounts[d])));
         }
       }
       

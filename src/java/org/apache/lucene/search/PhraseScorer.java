@@ -110,7 +110,7 @@ abstract class PhraseScorer extends Scorer {
   public float score() throws IOException {
     //System.out.println("scoring " + first.doc);
     float raw = getSimilarity().tf(freq) * value; // raw score
-    return norms == null ? raw : raw * Similarity.decodeNorm(norms[first.doc]); // normalize
+    return norms == null ? raw : raw * getSimilarity().decodeNormValue(norms[first.doc]); // normalize
   }
 
   @Override

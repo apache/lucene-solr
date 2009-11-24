@@ -26,7 +26,6 @@ import org.apache.lucene.util.SmallFloat;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.IdentityHashMap;
 
 
 /** 
@@ -498,11 +497,11 @@ import java.util.IdentityHashMap;
  *        </tr>
  *      </table>
  *      <br>&nbsp;<br>
- *      However the resulted <i>norm</i> value is {@link #encodeNorm(float) encoded} as a single byte
+ *      However the resulted <i>norm</i> value is {@link #encodeNormValue(float) encoded} as a single byte
  *      before being stored.
  *      At search time, the norm byte value is read from the index
  *      {@link org.apache.lucene.store.Directory directory} and
- *      {@link #decodeNorm(byte) decoded} back to a float <i>norm</i> value.
+ *      {@link #decodeNormValue(byte) decoded} back to a float <i>norm</i> value.
  *      This encoding/decoding, while reducing index size, comes with the price of
  *      precision loss - it is not guaranteed that <i>decode(encode(x)) = x</i>.
  *      For instance, <i>decode(encode(0.89)) = 0.75</i>.
@@ -563,16 +562,30 @@ public abstract class Similarity implements Serializable {
       NORM_TABLE[i] = SmallFloat.byte315ToFloat((byte)i);
   }
 
-  /** Decodes a normalization factor stored in an index.
-   * @see #encodeNorm(float)
+  /**
+   * Decodes a normalization factor stored in an index.
+   * @see #decodeNormValue(byte)
+   * @deprecated Use {@link #decodeNormValue} instead.
    */
+  @Deprecated
   public static float decodeNorm(byte b) {
     return NORM_TABLE[b & 0xFF];  // & 0xFF maps negative bytes to positive above 127
   }
 
-  /** Returns a table for decoding normalization bytes.
-   * @see #encodeNorm(float)
+  /** Decodes a normalization factor stored in an index.
+   * @see #encodeNormValue(float)
    */
+  public float decodeNormValue(byte b) {
+    return NORM_TABLE[b & 0xFF];  // & 0xFF maps negative bytes to positive above 127
+  }
+
+  /** Returns a table for decoding normalization bytes.
+   * @see #encodeNormValue(float)
+   * @see #decodeNormValue(byte)
+   * 
+   * @deprecated Use instance methods for encoding/decoding norm values to enable customization.
+   */
+  @Deprecated
   public static float[] getNormDecoder() {
     return NORM_TABLE;
   }
@@ -612,7 +625,7 @@ public abstract class Similarity implements Serializable {
    * <p>Note that the return values are computed under 
    * {@link org.apache.lucene.index.IndexWriter#addDocument(org.apache.lucene.document.Document)} 
    * and then stored using
-   * {@link #encodeNorm(float)}.  
+   * {@link #encodeNormValue(float)}.  
    * Thus they have limited precision, and documents
    * must be re-indexed if this method is altered.
    *
@@ -654,6 +667,19 @@ public abstract class Similarity implements Serializable {
    * @see org.apache.lucene.document.Field#setBoost(float)
    * @see org.apache.lucene.util.SmallFloat
    */
+  public byte encodeNormValue(float f) {
+    return SmallFloat.floatToByte315(f);
+  }
+  
+  /**
+   * Static accessor kept for backwards compability reason, use encodeNormValue instead.
+   * @param f norm-value to encode
+   * @return byte representing the given float
+   * @deprecated Use {@link #encodeNormValue} instead.
+   * 
+   * @see #encodeNormValue(float)
+   */
+  @Deprecated
   public static byte encodeNorm(float f) {
     return SmallFloat.floatToByte315(f);
   }

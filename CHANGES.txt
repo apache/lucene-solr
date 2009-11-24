@@ -11,6 +11,12 @@ API Changes
 * LUCENE-2076: Rename FSDirectory.getFile -> getDirectory.  (George
   Aroush via Mike McCandless)
 
+* LUCENE-1260: Change norm encode (float->byte) and decode
+  (byte->float) to be instance methods not static methods.  This way a
+  custom Similarity can alter how norms are encoded, though they must
+  still be encoded as a single byte (Johan Kindgren via Mike
+  McCandless)
+
 Bug fixes
 
 * LUCENE-2092: BooleanQuery was ignoring disableCoord in its hashCode

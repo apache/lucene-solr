@@ -30,7 +30,7 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -1022,7 +1022,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     ensureOpen();
     Norm norm = norms.get(field);
     if (norm == null) {
-      Arrays.fill(bytes, offset, bytes.length, DefaultSimilarity.encodeNorm(1.0f));
+      Arrays.fill(bytes, offset, bytes.length, Similarity.getDefault().encodeNormValue(1.0f));
       return;
     }
   

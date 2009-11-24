@@ -511,7 +511,7 @@ public class TestIndexReader extends LuceneTestCase
     // is open against the index:
     public void testWritingNorms() throws IOException
     {
-        String tempDir = System.getProperty("tempDir");
+        String tempDir = "target/test";
         if (tempDir == null)
             throw new IOException("tempDir undefined, cannot run test");
 

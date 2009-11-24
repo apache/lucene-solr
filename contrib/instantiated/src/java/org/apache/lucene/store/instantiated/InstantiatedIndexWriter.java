@@ -43,7 +43,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermVectorOffsetInfo;
-import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.AttributeImpl;
@@ -202,9 +201,9 @@ public class InstantiatedIndexWriter implements Closeable {
       byte[] oldNorms = index.getNormsByFieldNameAndDocumentNumber().get(field);
       if (oldNorms != null) {
         System.arraycopy(oldNorms, 0, norms, 0, oldNorms.length);
-        Arrays.fill(norms, oldNorms.length, norms.length, DefaultSimilarity.encodeNorm(1.0f));
+        Arrays.fill(norms, oldNorms.length, norms.length, similarity.encodeNormValue(1.0f));
       } else {
-        Arrays.fill(norms, 0, norms.length, DefaultSimilarity.encodeNorm(1.0f));
+        Arrays.fill(norms, 0, norms.length, similarity.encodeNormValue(1.0f));
       }
       normsByFieldNameAndDocumentNumber.put(field, norms);
       fieldNames.remove(field);
@@ -212,7 +211,7 @@ public class InstantiatedIndexWriter implements Closeable {
     for (String field : fieldNames) {
       //System.out.println(field);
       byte[] norms = new byte[index.getDocumentsByNumber().length + termDocumentInformationFactoryByDocument.size()];
-      Arrays.fill(norms, 0, norms.length, DefaultSimilarity.encodeNorm(1.0f));
+      Arrays.fill(norms, 0, norms.length, similarity.encodeNormValue(1.0f));
       normsByFieldNameAndDocumentNumber.put(field, norms);
     }
     fieldNames.clear();
@@ -240,7 +239,7 @@ public class InstantiatedIndexWriter implements Closeable {
           float norm = eFieldTermDocInfoFactoriesByTermText.getKey().boost;
           norm *= document.getDocument().getBoost();
           norm *= similarity.lengthNorm(eFieldTermDocInfoFactoriesByTermText.getKey().fieldName, eFieldTermDocInfoFactoriesByTermText.getKey().fieldLength);
-          normsByFieldNameAndDocumentNumber.get(eFieldTermDocInfoFactoriesByTermText.getKey().fieldName)[document.getDocumentNumber()] = Similarity.encodeNorm(norm);
+          normsByFieldNameAndDocumentNumber.get(eFieldTermDocInfoFactoriesByTermText.getKey().fieldName)[document.getDocumentNumber()] = similarity.encodeNormValue(norm);
         } else {
           System.currentTimeMillis();
         }

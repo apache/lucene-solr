@@ -28,7 +28,7 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.DirectoryReader.MultiTermDocs;
 import org.apache.lucene.index.DirectoryReader.MultiTermEnum;
 import org.apache.lucene.index.DirectoryReader.MultiTermPositions;
-import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.Similarity;
 
 /** An IndexReader which reads multiple indexes, appending
  * their content. */
@@ -316,7 +316,7 @@ public class MultiReader extends IndexReader implements Cloneable {
       subReaders[i].norms(field, result, offset + starts[i]);
 
     if (bytes==null && !hasNorms(field)) {
-      Arrays.fill(result, offset, result.length, DefaultSimilarity.encodeNorm(1.0f));
+      Arrays.fill(result, offset, result.length, Similarity.getDefault().encodeNormValue(1.0f));
     } else if (bytes != null) {                         // cache hit
       System.arraycopy(bytes, 0, result, offset, maxDoc());
     } else {
