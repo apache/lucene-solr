@@ -5,6 +5,10 @@ $Id$
 
 Bug fixes
 
+ * LUCENE-2092: BooleanQuery was ignoring disableCoord in its hashCode
+   and equals methods, cause bad things to happen when caching
+   BooleanQueries.  (Chris Hostetter, Mike McCandless)
+
 Optimizations
 
  * LUCENE-2086: When resolving deleted terms, do so in term sort order
