@@ -41,9 +41,8 @@ public class JettyWebappTest extends TestCase
   @Override
   public void setUp() throws Exception 
   {
-    System.setPrope
-
-    rty("solr.solr.home", "../../../example/solr");
+    System.setProperty("solr.solr.home", "../../../example/solr");
+    System.setProperty("solr.data.dir", "./solr/data");
     String path = "../../webapp/web";
 
     server = new Server(port);
