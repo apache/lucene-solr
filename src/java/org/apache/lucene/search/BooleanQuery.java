@@ -518,13 +518,14 @@ public class BooleanQuery extends Query {
     BooleanQuery other = (BooleanQuery)o;
     return (this.getBoost() == other.getBoost())
         && this.clauses.equals(other.clauses)
-        && this.getMinimumNumberShouldMatch() == other.getMinimumNumberShouldMatch();
+        && this.getMinimumNumberShouldMatch() == other.getMinimumNumberShouldMatch()
+        && this.disableCoord == other.disableCoord;
   }
 
   /** Returns a hash code value for this object.*/
   public int hashCode() {
     return Float.floatToIntBits(getBoost()) ^ clauses.hashCode()
-           + getMinimumNumberShouldMatch();
+      + getMinimumNumberShouldMatch() + (disableCoord ? 17:0);
   }
   
 }
