@@ -2164,16 +2164,17 @@ public class IndexWriter implements Closeable {
    * default merge policy, but individual merge policies may implement
    * optimize in different ways.
    *
-   * <p>It is recommended that this method be called upon completion of indexing.  In
-   * environments with frequent updates, optimize is best done during low volume times, if at all. 
-   * 
-   * </p>
-   * <p>See http://www.gossamer-threads.com/lists/lucene/java-dev/47895 for more discussion. </p>
+   * <p> Optimize is a fairly costly operation, so you
+   * should only do it if your search performance really
+   * requires it.  Many search applications do fine never
+   * calling optimize. </p>
    *
    * <p>Note that optimize requires 2X the index size free
    * space in your Directory.  For example, if your index
    * size is 10 MB then you need 20 MB free for optimize to
-   * complete.</p>
+   * complete.  Also, it's best to call {@link #commit()}
+   * after the optimize completes to allow IndexWriter to
+   * free up disk space.</p>
    *
    * <p>If some but not all readers re-open while an
    * optimize is underway, this will cause > 2X temporary
