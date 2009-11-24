@@ -42,6 +42,7 @@ abstract public class SolrExampleTestBase extends AbstractSolrTestCase
     
     // this sets the property for jetty starting SolrDispatchFilter
     System.setProperty( "solr.solr.home", this.getSolrHome() ); 
+    System.setProperty( "solr.data.dir", "./solr/data" ); 
   }
   
   /**
