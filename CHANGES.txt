@@ -91,7 +91,9 @@ Bug Fixes
   set when streaming updates, rather than using UTF-8 as the HTTP headers
   indicated, leading to an encoding mismatch. (hossman, yonik)
 
-didn't specify the character set creating OutputStreamWriter
+* SOLR-1587: A distributed search request with fl=score, didn't match 
+  the behavior of a non-distributed request since it only returned
+  the id,score fields instead of all fields in addition to score. (yonik)
 
 
 Other Changes
