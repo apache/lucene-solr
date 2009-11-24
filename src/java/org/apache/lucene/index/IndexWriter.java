@@ -320,7 +320,10 @@ public class IndexWriter implements Closeable {
    * {#commit} and then using {@link IndexReader#open} to
    * open a new reader.  But the turarnound time of this
    * method should be faster since it avoids the potentially
-   * costly {@link #commit}.<p>
+   * costly {@link #commit}.</p>
+   *
+   * <p>You must close the {@link IndexReader} returned by
+   * this method once you are done using it.</p>
    *
    * <p>It's <i>near</i> real-time because there is no hard
    * guarantee on how quickly you can get a new reader after
