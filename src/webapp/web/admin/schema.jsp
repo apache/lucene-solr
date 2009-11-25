@@ -282,7 +282,7 @@
     //Displays information about an Analyzer in the main content area
     displayAnalyzer: function(analyzer, type, shouldCollapse) {
       var tid = type.replace(' ', '');
-      var collapse = shouldCollapse && (analyzer.tokenizer != undefined || analyzer.filters != undefined);
+      var collapse = shouldCollapse && (analyzer.charFilters != undefined || analyzer.tokenizer != undefined || analyzer.filters != undefined);
       $('#mainInfo').append(solr.createNameValueText(type, function(p) {
         p.appendChild(document.createTextNode(analyzer.className + ' '));
         if (collapse) {
@@ -297,6 +297,24 @@
       adiv.className='analyzer';
       if (collapse) {
         adiv.style.display='none';
+      }
+      if (analyzer.charFilters != undefined) {
+        adiv.appendChild(solr.createNameValueText('Char Filters', ''));
+        var f = document.createElement('ol');
+        $.each(analyzer.charFilters, function(i, item) {
+          var fil = document.createElement('li');
+          var filterText = item.className;
+          if (item.args != undefined) {
+            filterText += ' args:{'
+            $.each(item.args, function(fi, fitem) {
+              filterText += fi + ': ' + fitem + ' ';
+            });
+            filterText +='}';
+            fil.innerHTML = filterText;
+            f.appendChild(fil);
+          }
+        });
+        adiv.appendChild(f);
       }
       if (analyzer.tokenizer != undefined) {
         adiv.appendChild(solr.createNameValueText("Tokenizer Class", analyzer.tokenizer.className));

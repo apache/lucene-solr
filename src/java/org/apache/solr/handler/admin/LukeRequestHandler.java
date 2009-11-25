@@ -44,6 +44,7 @@ import org.apache.lucene.search.ConstantScoreRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.solr.analysis.CharFilterFactory;
 import org.apache.solr.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.analysis.TokenizerFactory;
@@ -391,25 +392,40 @@ public class LukeRequestHandler extends RequestHandlerBase
 	  SimpleOrderedMap<Object> aninfo = new SimpleOrderedMap<Object>();
 	  aninfo.add("className", analyzer.getClass().getName());
 	  if (analyzer instanceof TokenizerChain) {
-		   SimpleOrderedMap<Object> tokenizer = new SimpleOrderedMap<Object>();
-	       TokenizerChain tchain = (TokenizerChain)analyzer;
-	       TokenizerFactory tfac = tchain.getTokenizerFactory();
-	       tokenizer.add("className", tfac.getClass().getName());
-	       tokenizer.add("args", tfac.getArgs());
-	       aninfo.add("tokenizer", tokenizer);
-	       TokenFilterFactory[] filtfacs = tchain.getTokenFilterFactories();
-	       
-        SimpleOrderedMap<Map<String, Object>> filters = new SimpleOrderedMap<Map<String, Object>>();
-        for (TokenFilterFactory filtfac : filtfacs) {
-	    	   Map<String, Object> tok = new HashMap<String, Object>();
-           String className = filtfac.getClass().getName();
-           tok.put("className", className);
-	    	   tok.put("args", filtfac.getArgs());
-	    	   filters.add(className.substring(className.lastIndexOf('.')+1), tok);
-	       }
-	       if (filters.size() > 0) {
-	    	   aninfo.add("filters", filters);
-	       }
+
+	    TokenizerChain tchain = (TokenizerChain)analyzer;
+
+      CharFilterFactory[] cfiltfacs = tchain.getCharFilterFactories();
+      SimpleOrderedMap<Map<String, Object>> cfilters = new SimpleOrderedMap<Map<String, Object>>();
+      for (CharFilterFactory cfiltfac : cfiltfacs) {
+        Map<String, Object> tok = new HashMap<String, Object>();
+        String className = cfiltfac.getClass().getName();
+        tok.put("className", className);
+        tok.put("args", cfiltfac.getArgs());
+        cfilters.add(className.substring(className.lastIndexOf('.')+1), tok);
+      }
+      if (cfilters.size() > 0) {
+        aninfo.add("charFilters", cfilters);
+      }
+      
+      SimpleOrderedMap<Object> tokenizer = new SimpleOrderedMap<Object>();
+      TokenizerFactory tfac = tchain.getTokenizerFactory();
+      tokenizer.add("className", tfac.getClass().getName());
+      tokenizer.add("args", tfac.getArgs());
+      aninfo.add("tokenizer", tokenizer);
+
+      TokenFilterFactory[] filtfacs = tchain.getTokenFilterFactories();
+      SimpleOrderedMap<Map<String, Object>> filters = new SimpleOrderedMap<Map<String, Object>>();
+      for (TokenFilterFactory filtfac : filtfacs) {
+        Map<String, Object> tok = new HashMap<String, Object>();
+        String className = filtfac.getClass().getName();
+        tok.put("className", className);
+        tok.put("args", filtfac.getArgs());
+        filters.add(className.substring(className.lastIndexOf('.')+1), tok);
+      }
+      if (filters.size() > 0) {
+        aninfo.add("filters", filters);
+      }
 	  }
 	  return aninfo;
   }
