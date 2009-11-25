@@ -34,8 +34,11 @@ Detailed Change List
 New Features
 ----------------------
 
-* SOLR-1302: Added several new distance based functions, including Great Circle (haversine), Manhattan, Euclidean and String (using the StringDistance methods in the Lucene Spellchecker).
-  Also added geohash(), deg() and rad() convenience functions. See http://wiki.apache.org/solr/FunctionQuery. (gsingers)
+* SOLR-1302: Added several new distance based functions, including
+  Great Circle (haversine), Manhattan, Euclidean and String (using the
+  StringDistance methods in the Lucene spellchecker).
+  Also added geohash(), deg() and rad() convenience functions.
+  See http://wiki.apache.org/solr/FunctionQuery. (gsingers)
 
 * SOLR-1553: New dismax parser implementation (accessible as "edismax")
   that supports full lucene syntax, improved reserved char escaping,
@@ -44,7 +47,8 @@ New Features
 
 * SOLR-1574: Add many new functions from java Math (e.g. sin, cos) (yonik)
 
-* SOLR-1569: Allow functions to take in literal strings by modifying the FunctionQParser and adding LiteralValueSource (gsingers)
+* SOLR-1569: Allow functions to take in literal strings by modifying the
+  FunctionQParser and adding LiteralValueSource (gsingers)
 
 Optimizations
 ----------------------
@@ -87,7 +91,7 @@ Bug Fixes
   "SEVERE: SolrIndexWriter was not closed prior to finalize()" although
   there were no other consequences. (yonik)
 
-* SOLR-1595: StreamingUpdateSolrServer used the patform default character
+* SOLR-1595: StreamingUpdateSolrServer used the platform default character
   set when streaming updates, rather than using UTF-8 as the HTTP headers
   indicated, leading to an encoding mismatch. (hossman, yonik)
 
