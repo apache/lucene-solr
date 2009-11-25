@@ -50,7 +50,7 @@ import java.util.ArrayList;
  * defines how to output {@link SolrInputDocument}s or a
  * {@link SolrDocumentList}.
  * 
- * @version $Id
+ * @version $Id$
  * @since 1.5
  * 
  */
