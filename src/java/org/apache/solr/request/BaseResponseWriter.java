@@ -139,7 +139,7 @@ public abstract class BaseResponseWriter {
 
   }
 
-  /**No ops implementation so that the base classes do not have do it
+  /**No ops implementation so that the implementing classes do not have to do it
    */
   public void init(NamedList args){}
 
