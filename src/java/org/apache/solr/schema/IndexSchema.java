@@ -600,6 +600,12 @@ public final class IndexSchema {
       log.warn("no uniqueKey specified in schema.");
     } else {
       uniqueKeyField=getIndexedField(node.getNodeValue().trim());
+      if (!uniqueKeyField.stored()) {
+        log.error("uniqueKey is not stored - distributed search will not work");
+      }
+      if (uniqueKeyField.multiValued()) {
+        log.error("uniqueKey should not be multivalued");
+      }
       uniqueKeyFieldName=uniqueKeyField.getName();
       uniqueKeyFieldType=uniqueKeyField.getType();
       log.info("unique key field: "+uniqueKeyFieldName);
