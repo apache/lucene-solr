@@ -35,7 +35,7 @@ import java.util.*;
 
 public class BinaryResponseWriter implements BinaryQueryResponseWriter {
   private static final Logger LOG = LoggerFactory.getLogger(BinaryResponseWriter.class);
-  private static final Set<Class> KNOWN_TYPES = new HashSet<Class>();
+  public static final Set<Class> KNOWN_TYPES = new HashSet<Class>();
 
   public void write(OutputStream out, SolrQueryRequest req, SolrQueryResponse response) throws IOException {
     Resolver resolver = new Resolver(req, response.getReturnFields());
