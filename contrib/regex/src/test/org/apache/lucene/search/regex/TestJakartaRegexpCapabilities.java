@@ -34,4 +34,13 @@ public class TestJakartaRegexpCapabilities extends TestCase {
     assertTrue(cap.match("lucene"));
     assertEquals("lucene", cap.prefix());
   }
+  
+  public void testShakyPrefix(){
+    JakartaRegexpCapabilities cap = new JakartaRegexpCapabilities();
+    cap.compile("(ab|ac)");
+    assertTrue(cap.match("ab"));
+    assertTrue(cap.match("ac"));
+    // why is it not a???
+    assertNull(cap.prefix());
+  }
 }
