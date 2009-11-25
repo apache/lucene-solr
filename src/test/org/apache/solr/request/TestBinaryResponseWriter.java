@@ -36,7 +36,7 @@ import java.util.UUID;
 public class TestBinaryResponseWriter extends AbstractSolrTestCase {
 
   public String getSchemaFile() {
-    return "schema1_2.xml";
+    return "schema12.xml";
   }
 
   public String getSolrConfigFile() {
