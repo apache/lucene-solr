@@ -19,6 +19,7 @@ package org.apache.solr.request;
 
 import java.io.OutputStream;
 import java.io.IOException;
+import java.io.Writer;
 
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -75,4 +76,10 @@ public abstract class GenericBinaryResponseWriter extends BaseResponseWriter
    */
   public abstract SingleResponseWriter getSingleResponseWriter(
       OutputStream out, SolrQueryRequest request, SolrQueryResponse response);
+
+  /**Just to throw Exception So that the eimplementing classes do not have to do the  same
+   */
+  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
+    throw new RuntimeException("This is a binary writer , Cannot write to a characterstream");
+  }
 }
