@@ -28,7 +28,7 @@
      $Name$
   -->
 
-<schema name="test" version="1.0">
+<schema name="test" version="1.2">
   <types>
 
     <fieldType name="integer" class="solr.IntField"/>

@@ -137,4 +137,11 @@ public class IndexSchemaTest extends AbstractSolrTestCase {
     assertTrue( schema.isDynamicField( "aaa_i" ) );
     assertFalse( schema.isDynamicField( "no_such_field" ) );
   }
+
+  public void testProperties() throws Exception{
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getSchema();
+    assertFalse(schema.getField("id").multiValued());
+
+  }
 }

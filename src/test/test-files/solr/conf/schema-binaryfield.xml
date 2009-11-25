@@ -28,7 +28,7 @@
      $Name:  $
   -->
 
-<schema name="test" version="1.0">
+<schema name="test" version="1.2">
   <types>
 
     <!-- field type definitions... note that the "name" attribute is

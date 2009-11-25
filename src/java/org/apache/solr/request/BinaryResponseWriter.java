@@ -30,10 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 
 public class BinaryResponseWriter implements BinaryQueryResponseWriter {
@@ -137,7 +134,9 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
       for (Fieldable f : (List<Fieldable>) doc.getFields()) {
         String fieldName = f.name();
         if (returnFields != null && !returnFields.contains(fieldName)) continue;
-        FieldType ft = schema.getFieldTypeNoEx(fieldName);
+        SchemaField sf = schema.getFieldOrNull(fieldName);
+        FieldType ft = null;
+        if(sf != null) ft =sf.getType();
         Object val;
         if (ft == null) {  // handle fields not in the schema
           if (f.isBinary()) val = f.binaryValue();
@@ -157,7 +156,13 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
             continue;
           }
         }
-        solrDoc.addField(fieldName, val);
+        if(sf != null && sf.multiValued() && !solrDoc.containsKey(fieldName)){
+          ArrayList l = new ArrayList();
+          l.add(val);
+          solrDoc.addField(fieldName, l);
+        } else {
+          solrDoc.addField(fieldName, val);
+        }
       }
       return solrDoc;
     }
