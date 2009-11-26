@@ -88,10 +88,9 @@ public abstract class BaseResponseWriter {
         if (omitHeader == null || !omitHeader) responseWriter.writeResponseHeader((NamedList) val);
       } else if (val instanceof SolrDocumentList) {
         SolrDocumentList list = (SolrDocumentList) val;
-        DocListInfo info = new DocListInfo(list.getNumFound(), list.getStart(),
-            list.getMaxScore());
+        DocListInfo info = new DocListInfo((int)list.getNumFound(), list.size(), (int)list.getStart(), list.getMaxScore());
         if (responseWriter.isStreamingDocs()) {
-          responseWriter.startDocumentList(info);
+          responseWriter.startDocumentList(name,info);
           for (SolrDocument solrDocument : list)
             responseWriter.writeDoc(solrDocument);
           responseWriter.endDocumentList();
@@ -103,11 +102,11 @@ public abstract class BaseResponseWriter {
         int sz = docList.size();
         IdxInfo idxInfo = new IdxInfo(request.getSchema(), request
             .getSearcher(), response.getReturnFields());
-        DocListInfo info = new DocListInfo(docList.matches(), docList.offset(),
+        DocListInfo info = new DocListInfo(docList.matches(), docList.size(),docList.offset(),
             docList.maxScore());
         DocIterator iterator = docList.iterator();
         if (responseWriter.isStreamingDocs()) {
-          responseWriter.startDocumentList(info);
+          responseWriter.startDocumentList(name,info);
           for (int j = 0; j < sz; j++) {
             SolrDocument sdoc = getDoc(iterator.nextDoc(), idxInfo);
             if (idxInfo.includeScore && docList.hasScores()) {
@@ -207,12 +206,14 @@ public abstract class BaseResponseWriter {
   }
 
   public static class DocListInfo {
-    public long numFound = 0;
-    public long start = 0;
+    public final int numFound;
+    public final int start ;
     public Float maxScore = null;
+    public final int size;
 
-    public DocListInfo(long numFound, long start, Float maxScore) {
+    public DocListInfo(int numFound, int sz,int start, Float maxScore) {
       this.numFound = numFound;
+      size = sz;
       this.start = start;
       this.maxScore = maxScore;
     }
@@ -245,7 +246,7 @@ public abstract class BaseResponseWriter {
      * 
      * @param info Information about the {@link SolrDocumentList} to output.
      */
-    public void startDocumentList(DocListInfo info) throws IOException { }
+    public void startDocumentList(String name, DocListInfo info) throws IOException { }
 
     /**
      * This method writes out a {@link SolrDocument}, on a doc-by-doc basis.
