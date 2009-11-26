@@ -51,6 +51,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.Config;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SortSpec;
@@ -152,9 +153,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
 
     SchemaField sf = core.getSchema().getUniqueKeyField();
-    if( sf == null ) {
+    if( sf == null || !(sf.getType() instanceof StrField)) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
-          "QueryElevationComponent requires the schema to have a uniqueKeyField" );
+          "QueryElevationComponent requires the schema to have a uniqueKeyField implemented using StrField" );
     }
     idField = StringHelper.intern(sf.getName());
     

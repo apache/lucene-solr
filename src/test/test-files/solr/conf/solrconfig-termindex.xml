@@ -328,21 +328,6 @@
   	<bool name="httpCaching">false</bool>
   </requestHandler>
 
-  <!-- test elevation -->
-  <searchComponent name="elevate" class="org.apache.solr.handler.component.QueryElevationComponent" >
-    <str name="queryFieldType">string</str>
-    <str name="config-file">elevate.xml</str>
-  </searchComponent>
-
-  <requestHandler name="/elevate" class="org.apache.solr.handler.component.SearchHandler">
-    <lst name="defaults">
-      <str name="echoParams">explicit</str>
-    </lst>
-    <arr name="last-components">
-      <str>elevate</str>
-    </arr>
-  </requestHandler>
-
   <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
     <str name="queryAnalyzerFieldType">lowerfilt</str>
 
