@@ -59,8 +59,6 @@ public abstract class BaseResponseWriter {
   private static final Logger LOG = LoggerFactory
       .getLogger(BaseResponseWriter.class);
 
-  private static final String RESPONSE_HEADER = "responseHeader";
-
   private static final String SCORE_FIELD = "score";
 
   /**
@@ -85,7 +83,7 @@ public abstract class BaseResponseWriter {
     for (int i = 0; i < nl.size(); i++) {
       String name = nl.getName(i);
       Object val = nl.getVal(i);
-      if (RESPONSE_HEADER.equals(name)) {
+      if ("responseHeader".equals(name)) {
         Boolean omitHeader = request.getParams().getBool(CommonParams.OMIT_HEADER);
         if (omitHeader == null || !omitHeader) responseWriter.writeResponseHeader((NamedList) val);
       } else if (val instanceof SolrDocumentList) {
@@ -153,9 +151,15 @@ public abstract class BaseResponseWriter {
         Set<String> returnFields) {
       this.schema = schema;
       this.searcher = searcher;
-      this.returnFields = returnFields;
       this.includeScore = returnFields != null
-          && returnFields.contains("score");
+              && returnFields.contains(SCORE_FIELD);
+      if (returnFields != null) {
+        if (returnFields.size() == 0 || (returnFields.size() == 1 && includeScore) || returnFields.contains("*")) {
+          returnFields = null;  // null means return all stored fields
+        }
+      }
+      this.returnFields = returnFields;
+
     }
   }
 
