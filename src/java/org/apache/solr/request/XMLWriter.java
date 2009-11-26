@@ -188,14 +188,79 @@ final public class XMLWriter {
 
   /** Writes the XML attribute name/val. A null val means that the attribute is missing. */
   public void writeAttr(String name, String val) throws IOException {
+    writeAttr(name, val, true);
+  }
+
+  public void writeAttr(String name, String val, boolean escape) throws IOException{
     if (val != null) {
       writer.write(' ');
       writer.write(name);
       writer.write("=\"");
+      if(escape){
+        XML.escapeAttributeValue(val, writer);
+      } else {
+        writer.write(val);
+      }
       XML.escapeAttributeValue(val, writer);
       writer.write('"');
     }
   }
+
+  /**Writes a tag with attributes
+   *
+   * @param tag
+   * @param attributes
+   * @param closeTag
+   * @param escape
+   * @throws IOException
+   */
+  public void startTag(String tag, Map<String,String> attributes, boolean closeTag, boolean escape) throws IOException {
+    if (doIndent) indent();
+    writer.write('<');
+    writer.write(tag);
+    if(!attributes.isEmpty()) {
+      for (Map.Entry<String, String> entry : attributes.entrySet()) {
+        writeAttr(entry.getKey(), entry.getValue(), escape);
+      }
+    }
+    if (closeTag) {
+      writer.write("/>");
+    } else {
+      writer.write('>');
+    }
+  }
+
+  /**Write a complete tag w/ attributes and cdata (the cdata is not enclosed in $lt;!CDATA[]!&gt;
+   * @param tag
+   * @param attributes
+   * @param cdata
+   * @param escapeCdata
+   * @param escapeAttr
+   * @throws IOException
+   */
+  public void writeCdataTag(String tag, Map<String,String> attributes, String cdata, boolean escapeCdata, boolean escapeAttr) throws IOException {
+    if (doIndent) indent();
+    writer.write('<');
+    writer.write(tag);
+    if (!attributes.isEmpty()) {
+      for (Map.Entry<String, String> entry : attributes.entrySet()) {
+        writeAttr(entry.getKey(), entry.getValue(), escapeAttr);
+      }
+    }
+    writer.write('>');
+    if (cdata != null && cdata.length() > 0) {
+      if (escapeCdata) {
+        XML.escapeCharData(cdata, writer);
+      } else {
+        writer.write(cdata, 0, cdata.length());
+      }
+    }
+    writer.write("</");
+    writer.write(tag);
+    writer.write('>');
+  }
+
+
 
   public void startTag(String tag, String name, boolean closeTag) throws IOException {
     if (doIndent) indent();
