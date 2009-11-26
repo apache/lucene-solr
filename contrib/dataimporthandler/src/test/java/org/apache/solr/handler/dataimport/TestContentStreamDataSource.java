@@ -28,6 +28,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 import java.io.File;
+import java.util.List;
 
 /**
  * Test for ContentStreamDataSource
@@ -64,7 +65,7 @@ public class TestContentStreamDataSource extends TestCase {
     assertEquals(2, results.getNumFound());
     SolrDocument doc = results.get(0);
     assertEquals("1", doc.getFieldValue("id"));
-    assertEquals("Hello C1", doc.getFieldValue("desc"));
+    assertEquals("Hello C1", ((List)doc.getFieldValue("desc")).get(0));
   }
 
   private class SolrInstance extends AbstractSolrTestCase {
