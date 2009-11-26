@@ -201,7 +201,6 @@ final public class XMLWriter {
       } else {
         writer.write(val);
       }
-      XML.escapeAttributeValue(val, writer);
       writer.write('"');
     }
   }
