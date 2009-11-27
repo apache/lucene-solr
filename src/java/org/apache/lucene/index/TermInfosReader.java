@@ -223,7 +223,7 @@ final class TermInfosReader {
             if (tiOrd == null) {
               termsCache.put(term, new TermInfoAndOrd(ti, (int) enumerator.position));
             } else {
-              assert ti.equals(tiOrd);
+              assert sameTermInfo(ti, tiOrd, enumerator);
               assert (int) enumerator.position == tiOrd.termOrd;
             }
           }
@@ -252,13 +252,32 @@ final class TermInfosReader {
       if (tiOrd == null) {
         termsCache.put(term, new TermInfoAndOrd(ti, (int) enumerator.position));
       } else {
-        assert ti.equals(tiOrd);
+        assert sameTermInfo(ti, tiOrd, enumerator);
         assert (int) enumerator.position == tiOrd.termOrd;
       }
     } else {
       ti = null;
     }
     return ti;
+  }
+
+  // called only from asserts
+  private final boolean sameTermInfo(TermInfo ti1, TermInfo ti2, SegmentTermEnum enumerator) {
+    if (ti1.docFreq != ti2.docFreq) {
+      return false;
+    }
+    if (ti1.freqPointer != ti2.freqPointer) {
+      return false;
+    }
+    if (ti1.proxPointer != ti2.proxPointer) {
+      return false;
+    }
+    // skipOffset is only valid when docFreq >= skipInterval:
+    if (ti1.docFreq >= enumerator.skipInterval &&
+        ti1.skipOffset != ti2.skipOffset) {
+      return false;
+    }
+    return true;
   }
 
   /** Returns the nth term in the set. */
