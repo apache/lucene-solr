@@ -157,14 +157,20 @@ public abstract class Collector {
   public abstract void setNextReader(IndexReader reader, int docBase) throws IOException;
 
   /**
-   * Returns true iff this {@link Collector} can accept documents given to
-   * {@link #collect(int)} out of order.
-   * <p>
-   * NOTE: some collectors can work in either mode, with a more efficient
-   * implementation for in-order docs collection. If your collector can work in
-   * either mode, it is recommended that you create two variants of it, since
-   * some queries work much faster if out-of-order collection is supported by a
-   * {@link Collector}.
+   * Return <code>true</code> if this collector does not
+   * require the matching docIDs to be delivered in int sort
+   * order (smallest to largest) to {@link #collect}.
+   *
+   * <p> Most Lucene Query implementations will visit
+   * matching docIDs in order.  However, some queries
+   * (currently limited to certain cases of {@link
+   * BooleanQuery}) can achieve faster searching if the
+   * <code>Collector</code> allows them to deliver the
+   * docIDs out of order.</p>
+   *
+   * <p> Many collectors don't mind getting docIDs out of
+   * order, so it's important to return <code>true</code>
+   * here.
    */
   public abstract boolean acceptsDocsOutOfOrder();
   
