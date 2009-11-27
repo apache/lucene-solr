@@ -118,7 +118,7 @@ public final class RussianAnalyzer extends Analyzer
     public TokenStream tokenStream(String fieldName, Reader reader)
     {
         TokenStream result = new RussianLetterTokenizer(reader);
-        result = new LowerCaseFilter(result);
+        result = new LowerCaseFilter(matchVersion, result);
         result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
                                 result, stopSet);
         result = new RussianStemFilter(result);
@@ -146,7 +146,7 @@ public final class RussianAnalyzer extends Analyzer
     if (streams == null) {
       streams = new SavedStreams();
       streams.source = new RussianLetterTokenizer(reader);
-      streams.result = new LowerCaseFilter(streams.source);
+      streams.result = new LowerCaseFilter(matchVersion, streams.source);
       streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
                                       streams.result, stopSet);
       streams.result = new RussianStemFilter(streams.result);

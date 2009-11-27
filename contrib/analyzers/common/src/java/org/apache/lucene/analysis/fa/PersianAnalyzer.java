@@ -167,7 +167,7 @@ public final class PersianAnalyzer extends Analyzer {
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new ArabicLetterTokenizer(reader);
-    result = new LowerCaseFilter(result);
+    result = new LowerCaseFilter(matchVersion, result);
     result = new ArabicNormalizationFilter(result);
     /* additional persian-specific normalization */
     result = new PersianNormalizationFilter(result);
@@ -201,7 +201,7 @@ public final class PersianAnalyzer extends Analyzer {
     if (streams == null) {
       streams = new SavedStreams();
       streams.source = new ArabicLetterTokenizer(reader);
-      streams.result = new LowerCaseFilter(streams.source);
+      streams.result = new LowerCaseFilter(matchVersion, streams.source);
       streams.result = new ArabicNormalizationFilter(streams.result);
       /* additional persian-specific normalization */
       streams.result = new PersianNormalizationFilter(streams.result);

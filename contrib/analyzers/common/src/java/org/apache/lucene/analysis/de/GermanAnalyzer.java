@@ -200,7 +200,7 @@ public class GermanAnalyzer extends Analyzer {
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(matchVersion, reader);
     result = new StandardFilter(result);
-    result = new LowerCaseFilter(result);
+    result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
                             result, stopSet);
     result = new GermanStemFilter(result, exclusionSet);
@@ -234,7 +234,7 @@ public class GermanAnalyzer extends Analyzer {
       streams = new SavedStreams();
       streams.source = new StandardTokenizer(matchVersion, reader);
       streams.result = new StandardFilter(streams.source);
-      streams.result = new LowerCaseFilter(streams.result);
+      streams.result = new LowerCaseFilter(matchVersion, streams.result);
       streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
                                       streams.result, stopSet);
       streams.result = new GermanStemFilter(streams.result, exclusionSet);

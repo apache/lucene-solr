@@ -138,7 +138,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
       result = new TestFilter(result);
-      result = new LowerCaseFilter(result);
+      result = new LowerCaseFilter(Version.LUCENE_CURRENT, result);
       return result;
     }
   }
@@ -206,7 +206,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
       result = new TestPosIncrementFilter(result);
-      result = new LowerCaseFilter(result);
+      result = new LowerCaseFilter(Version.LUCENE_CURRENT, result);
       return result;
     }
   }

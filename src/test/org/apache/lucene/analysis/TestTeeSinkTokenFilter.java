@@ -146,7 +146,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     assertEquals("there must be 2 times 'Dog' in the stream", 2, i);
     
     source1.reset();
-    TokenStream lowerCasing = new LowerCaseFilter(source1);
+    TokenStream lowerCasing = new LowerCaseFilter(Version.LUCENE_CURRENT, source1);
     i = 0;
     termAtt = lowerCasing.getAttribute(TermAttribute.class);
     while (lowerCasing.incrementToken()) {

@@ -100,7 +100,7 @@ public class StandardAnalyzer extends Analyzer {
     StandardTokenizer tokenStream = new StandardTokenizer(matchVersion, reader);
     tokenStream.setMaxTokenLength(maxTokenLength);
     TokenStream result = new StandardFilter(tokenStream);
-    result = new LowerCaseFilter(result);
+    result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(enableStopPositionIncrements, result, stopSet);
     return result;
   }
@@ -146,7 +146,8 @@ public class StandardAnalyzer extends Analyzer {
       setPreviousTokenStream(streams);
       streams.tokenStream = new StandardTokenizer(matchVersion, reader);
       streams.filteredTokenStream = new StandardFilter(streams.tokenStream);
-      streams.filteredTokenStream = new LowerCaseFilter(streams.filteredTokenStream);
+      streams.filteredTokenStream = new LowerCaseFilter(matchVersion,
+          streams.filteredTokenStream);
       streams.filteredTokenStream = new StopFilter(enableStopPositionIncrements,
                                                    streams.filteredTokenStream, stopSet);
     } else {

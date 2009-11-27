@@ -215,7 +215,7 @@ public final class FrenchAnalyzer extends Analyzer {
                             result, stoptable);
     result = new FrenchStemFilter(result, excltable);
     // Convert to lowercase after stemming!
-    result = new LowerCaseFilter(result);
+    result = new LowerCaseFilter(matchVersion, result);
     return result;
   }
   
@@ -244,7 +244,7 @@ public final class FrenchAnalyzer extends Analyzer {
                                       streams.result, stoptable);
       streams.result = new FrenchStemFilter(streams.result, excltable);
       // Convert to lowercase after stemming!
-      streams.result = new LowerCaseFilter(streams.result);
+      streams.result = new LowerCaseFilter(matchVersion, streams.result);
       setPreviousTokenStream(streams);
     } else {
       streams.source.reset(reader);

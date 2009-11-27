@@ -139,6 +139,99 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     assertTrue(ts.incrementToken());
     assertFalse(ts.incrementToken());
   }
+  
+  private static class LowerCaseWhitespaceAnalyzer extends Analyzer {
+
+    @Override
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new LowerCaseFilter(Version.LUCENE_CURRENT,
+          new WhitespaceTokenizer(reader));
+    }
+    
+  }
+  
+  /**
+   * @deprecated remove this when lucene 3.0 "broken unicode 4" support
+   * is no longer needed.
+   */
+  private static class LowerCaseWhitespaceAnalyzerBWComp extends Analyzer {
+
+    @Override
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new LowerCaseFilter(new WhitespaceTokenizer(reader));
+    }
+    
+  }
+  
+  /**
+   * Test that LowercaseFilter handles entire unicode range correctly
+   */
+  public void testLowerCaseFilter() throws IOException {
+    Analyzer a = new LowerCaseWhitespaceAnalyzer();
+    // BMP
+    assertAnalyzesTo(a, "AbaCaDabA", new String[] { "abacadaba" });
+    // supplementary
+    assertAnalyzesTo(a, "\ud801\udc16\ud801\udc16\ud801\udc16\ud801\udc16",
+        new String[] {"\ud801\udc3e\ud801\udc3e\ud801\udc3e\ud801\udc3e"});
+    assertAnalyzesTo(a, "AbaCa\ud801\udc16DabA", 
+        new String[] { "abaca\ud801\udc3edaba" });
+    // unpaired lead surrogate
+    assertAnalyzesTo(a, "AbaC\uD801AdaBa", 
+        new String [] { "abac\uD801adaba" });
+    // unpaired trail surrogate
+    assertAnalyzesTo(a, "AbaC\uDC16AdaBa", 
+        new String [] { "abac\uDC16adaba" });
+  }
+  
+  /**
+   * Test that LowercaseFilter handles the lowercasing correctly if the term
+   * buffer has a trailing surrogate character leftover and the current term in
+   * the buffer ends with a corresponding leading surrogate.
+   */
+  public void testLowerCaseFilterLowSurrogateLeftover() throws IOException {
+    // test if the limit of the termbuffer is correctly used with supplementary
+    // chars
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(new StringReader(
+        "BogustermBogusterm\udc16"));
+    LowerCaseFilter filter = new LowerCaseFilter(Version.LUCENE_CURRENT,
+        tokenizer);
+    assertTokenStreamContents(filter, new String[] {"bogustermbogusterm\udc16"});
+    filter.reset();
+    String highSurEndingUpper = "BogustermBoguster\ud801";
+    String highSurEndingLower = "bogustermboguster\ud801";
+    tokenizer.reset(new StringReader(highSurEndingUpper));
+    assertTokenStreamContents(filter, new String[] {highSurEndingLower});
+    assertTrue(filter.hasAttribute(TermAttribute.class));
+    char[] termBuffer = filter.getAttribute(TermAttribute.class).termBuffer();
+    int length = highSurEndingLower.length();
+    assertEquals('\ud801', termBuffer[length - 1]);
+    assertEquals('\udc3e', termBuffer[length]);
+    
+  }
+  
+  /**
+   * Test that LowercaseFilter only works on BMP for back compat,
+   * depending upon version
+   * @deprecated remove this test when lucene 3.0 "broken unicode 4" support
+   * is no longer needed.
+   */
+  public void testLowerCaseFilterBWComp() throws IOException {
+    Analyzer a = new LowerCaseWhitespaceAnalyzerBWComp();
+    // BMP
+    assertAnalyzesTo(a, "AbaCaDabA", new String[] { "abacadaba" });
+    // supplementary, no-op
+    assertAnalyzesTo(a, "\ud801\udc16\ud801\udc16\ud801\udc16\ud801\udc16",
+        new String[] {"\ud801\udc16\ud801\udc16\ud801\udc16\ud801\udc16"});
+    assertAnalyzesTo(a, "AbaCa\ud801\udc16DabA",
+        new String[] { "abaca\ud801\udc16daba" });
+    // unpaired lead surrogate
+    assertAnalyzesTo(a, "AbaC\uD801AdaBa", 
+        new String [] { "abac\uD801adaba" });
+    // unpaired trail surrogate
+    assertAnalyzesTo(a, "AbaC\uDC16AdaBa", 
+        new String [] { "abac\uDC16adaba" });
+  }
+  
 }
 
 class PayloadSetter extends TokenFilter {

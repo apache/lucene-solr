@@ -199,7 +199,7 @@ public final class BrazilianAnalyzer extends Analyzer {
 	@Override
 	public final TokenStream tokenStream(String fieldName, Reader reader) {
                 TokenStream result = new StandardTokenizer( matchVersion, reader );
-		result = new LowerCaseFilter( result );
+		result = new LowerCaseFilter( matchVersion, result );
 		result = new StandardFilter( result );
 		result = new StopFilter( StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
                                          result, stoptable );
@@ -227,7 +227,7 @@ public final class BrazilianAnalyzer extends Analyzer {
       if (streams == null) {
         streams = new SavedStreams();
         streams.source = new StandardTokenizer(matchVersion, reader);
-        streams.result = new LowerCaseFilter(streams.source);
+        streams.result = new LowerCaseFilter(matchVersion, streams.source);
         streams.result = new StandardFilter(streams.result);
         streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
                                         streams.result, stoptable);

@@ -181,7 +181,7 @@ public final class CzechAnalyzer extends Analyzer {
 	public final TokenStream tokenStream( String fieldName, Reader reader ) {
                 TokenStream result = new StandardTokenizer( matchVersion, reader );
 		result = new StandardFilter( result );
-		result = new LowerCaseFilter( result );
+		result = new LowerCaseFilter( matchVersion, result );
 		result = new StopFilter( StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
                                          result, stoptable );
 		return result;
@@ -207,7 +207,7 @@ public final class CzechAnalyzer extends Analyzer {
         streams = new SavedStreams();
         streams.source = new StandardTokenizer(matchVersion, reader);
         streams.result = new StandardFilter(streams.source);
-        streams.result = new LowerCaseFilter(streams.result);
+        streams.result = new LowerCaseFilter(matchVersion, streams.result);
         streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
                                         streams.result, stoptable);
         setPreviousTokenStream(streams);
