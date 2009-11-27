@@ -17,47 +17,10 @@ package org.apache.lucene.util.cache;
 * limitations under the License.
 */
 
-import org.apache.lucene.util.LuceneTestCase;
-
-public class TestSimpleLRUCache extends LuceneTestCase {
-
+/** @deprecated */
+public class TestSimpleLRUCache extends BaseTestLRU {
   public void testLRUCache() throws Exception {
     final int n = 100;
-    Object dummy = new Object();
-    
-    Cache cache = new SimpleLRUCache(n);
-    
-    for (int i = 0; i < n; i++) {
-      cache.put(Integer.valueOf(i), dummy);
-    }
-    
-    // access every 2nd item in cache
-    for (int i = 0; i < n; i+=2) {
-      assertNotNull(cache.get(Integer.valueOf(i)));
-    }
-    
-    // add n/2 elements to cache, the ones that weren't
-    // touched in the previous loop should now be thrown away
-    for (int i = n; i < n + (n / 2); i++) {
-      cache.put(Integer.valueOf(i), dummy);
-    }
-    
-    // access every 4th item in cache
-    for (int i = 0; i < n; i+=4) {
-      assertNotNull(cache.get(Integer.valueOf(i)));
-    }
-
-    // add 3/4n elements to cache, the ones that weren't
-    // touched in the previous loops should now be thrown away
-    for (int i = n; i < n + (n * 3 / 4); i++) {
-      cache.put(Integer.valueOf(i), dummy);
-    }
-    
-    // access every 4th item in cache
-    for (int i = 0; i < n; i+=4) {
-      assertNotNull(cache.get(Integer.valueOf(i)));
-    }
-    
+    testCache(new SimpleLRUCache(n), n);
   }
-  
 }

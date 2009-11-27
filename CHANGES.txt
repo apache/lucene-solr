@@ -30,6 +30,13 @@ Optimizations
 * LUCENE-2086: When resolving deleted terms, do so in term sort order
   for better performance. (Bogdan Ghidireac via Mike McCandless)
 
+* LUCENE-2075: Terms dict cache is now shared across threads instead
+  of being stored separately in thread local storage.  Also fixed
+  terms dict so that the cache is used when seeking the thread local
+  term enum, which will be important for MultiTermQuery impls that do
+  lots of seeking (Mike McCandless, Uwe Schindler, Robert Muir, Yonik
+  Seeley)
+
 Build
 
 ======================= Release 3.0.0 2009-11-25 =======================

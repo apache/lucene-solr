@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 /** A TermInfo is the record of information stored for a term.*/
 
-final class TermInfo {
+class TermInfo {
   /** The number of documents which contain the term. */
   int docFreq = 0;
 
@@ -40,6 +40,28 @@ final class TermInfo {
     freqPointer = ti.freqPointer;
     proxPointer = ti.proxPointer;
     skipOffset = ti.skipOffset;
+  }
+
+  public boolean equals(Object obj) {
+    if (obj instanceof TermInfo) {
+      TermInfo other = (TermInfo) obj;
+      return other.docFreq == docFreq &&
+        other.freqPointer == freqPointer &&
+        other.proxPointer == proxPointer &&
+        other.skipOffset == skipOffset;
+    } else {
+      return false;
+    }
+  }
+
+  public int hashCode() {
+    final int PRIME = 17;
+    int result = 1;
+    result = PRIME * result + docFreq;
+    result = (int) (PRIME * result + freqPointer);
+    result = (int) (PRIME * result + proxPointer);
+    result = (int) (PRIME * result + skipOffset);
+    return result;
   }
 
   final void set(int docFreq,

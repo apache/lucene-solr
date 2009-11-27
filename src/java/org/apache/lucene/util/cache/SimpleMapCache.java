@@ -25,6 +25,9 @@ import java.util.Set;
  * Simple cache implementation that uses a HashMap to store (key, value) pairs.
  * This cache is not synchronized, use {@link Cache#synchronizedCache(Cache)}
  * if needed.
+ *
+ * @deprecated Lucene's internal use of this class has now
+ * switched to {@link DoubleBarrelLRUCache}.
  */
 public class SimpleMapCache<K,V> extends Cache<K,V> {
   protected Map<K,V> map;

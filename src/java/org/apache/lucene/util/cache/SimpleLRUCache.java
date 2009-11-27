@@ -24,7 +24,9 @@ import java.util.Map;
  * Simple LRU cache implementation that uses a LinkedHashMap.
  * This cache is not synchronized, use {@link Cache#synchronizedCache(Cache)}
  * if needed.
- * 
+ *
+ * @deprecated Lucene's internal use of this class has now
+ * switched to {@link DoubleBarrelLRUCache}.
  */
 public class SimpleLRUCache<K,V> extends SimpleMapCache<K,V> {
   private final static float LOADFACTOR = 0.75f;
