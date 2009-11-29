@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
 import org.apache.lucene.util.Version;
 
 import java.io.*;
@@ -36,19 +35,27 @@ import java.util.Set;
 import java.util.Collections;
 
 /**
- * {@link Analyzer} for Czech language. 
+ * {@link Analyzer} for Czech language.
  * <p>
- * Supports an external list of stopwords (words that
- * will not be indexed at all). 
- * A default set of stopwords is used unless an alternative list is specified.
+ * Supports an external list of stopwords (words that will not be indexed at
+ * all). A default set of stopwords is used unless an alternative list is
+ * specified.
  * </p>
- *
- * <p><b>NOTE</b>: This class uses the same {@link Version}
- * dependent settings as {@link StandardAnalyzer}.</p>
+ * 
+ * <a name="version"/>
+ * <p>
+ * You must specify the required {@link Version} compatibility when creating
+ * CzechAnalyzer:
+ * <ul>
+ * <li>As of 3.1, words are stemmed with {@link CzechStemFilter}
+ * <li>As of 2.9, StopFilter preserves position increments
+ * <li>As of 2.4, Tokens incorrectly identified as acronyms are corrected (see
+ * <a href="https://issues.apache.org/jira/browse/LUCENE-1068">LUCENE-1068</a>)
+ * </ul>
  */
 public final class CzechAnalyzer extends Analyzer {
 
-	/**
+  /**
 	 * List of typical stopwords.
 	 * @deprecated use {@link #getDefaultStopSet()} instead
 	 */
@@ -74,10 +81,11 @@ public final class CzechAnalyzer extends Analyzer {
         "jeho\u017e","j\u00ed\u017e","jeliko\u017e","je\u017e","jako\u017e","na\u010de\u017e",
     };
 	
-	/**
-	 * Returns a set of default Czech-stopwords 
-	 * @return a set of default Czech-stopwords 
-	 */
+  /**
+   * Returns a set of default Czech-stopwords
+   * 
+   * @return a set of default Czech-stopwords
+   */
 	public static final Set<?> getDefaultStopSet(){
 	  return DefaultSetHolder.DEFAULT_SET;
 	}
@@ -87,27 +95,29 @@ public final class CzechAnalyzer extends Analyzer {
 	      Arrays.asList(CZECH_STOP_WORDS), false));
 	}
 
-	/**
-	 * Contains the stopwords used with the {@link StopFilter}.
-	 */
+  /**
+   * Contains the stopwords used with the {@link StopFilter}.
+   */
 	// TODO make this final in 3.1
 	private Set<?> stoptable;
   private final Version matchVersion;
 
-	/**
-	 * Builds an analyzer with the default stop words ({@link #CZECH_STOP_WORDS}).
-	 */
+  /**
+   * Builds an analyzer with the default stop words ({@link #CZECH_STOP_WORDS}).
+   * 
+   * @param matchVersion Lucene version to match See
+   *          {@link <a href="#version">above</a>}
+   */
 	public CzechAnalyzer(Version matchVersion) {
     this(matchVersion, DefaultSetHolder.DEFAULT_SET);
 	}
 	
-	/**
-   * Builds an analyzer with the given stop words and stemming exclusion words
+  /**
+   * Builds an analyzer with the given stop words.
    * 
-   * @param matchVersion
-   *          lucene compatibility version
-   * @param stopwords
-   *          a stopword set
+   * @param matchVersion Lucene version to match See
+   *          {@link <a href="#version">above</a>}
+   * @param stopwords a stopword set
    */
   public CzechAnalyzer(Version matchVersion, Set<?> stopwords) {
     this.matchVersion = matchVersion;
@@ -115,10 +125,14 @@ public final class CzechAnalyzer extends Analyzer {
   }
 
 
-	/**
-	 * Builds an analyzer with the given stop words.
-	 * @deprecated use {@link #CzechAnalyzer(Version, Set)} instead
-	 */
+  /**
+   * Builds an analyzer with the given stop words.
+   * 
+   * @param matchVersion Lucene version to match See
+   *          {@link <a href="#version">above</a>}
+   * @param stopwords a stopword set
+   * @deprecated use {@link #CzechAnalyzer(Version, Set)} instead
+   */
   public CzechAnalyzer(Version matchVersion, String... stopwords) {
     this(matchVersion, StopFilter.makeStopSet( stopwords ));
 	}
@@ -126,16 +140,23 @@ public final class CzechAnalyzer extends Analyzer {
   /**
    * Builds an analyzer with the given stop words.
    * 
+   * @param matchVersion Lucene version to match See
+   *          {@link <a href="#version">above</a>}
+   * @param stopwords a stopword set
    * @deprecated use {@link #CzechAnalyzer(Version, Set)} instead
    */
   public CzechAnalyzer(Version matchVersion, HashSet<?> stopwords) {
     this(matchVersion, (Set<?>)stopwords);
 	}
 
-	/**
-	 * Builds an analyzer with the given stop words.
-	 * @deprecated use {@link #CzechAnalyzer(Version, Set)} instead
-	 */
+  /**
+   * Builds an analyzer with the given stop words.
+   * 
+   * @param matchVersion Lucene version to match See
+   *          {@link <a href="#version">above</a>}
+   * @param stopwords a file containing stopwords
+   * @deprecated use {@link #CzechAnalyzer(Version, Set)} instead
+   */
   public CzechAnalyzer(Version matchVersion, File stopwords ) throws IOException {
     this(matchVersion, (Set<?>)WordlistLoader.getWordSet( stopwords ));
 	}
@@ -171,19 +192,24 @@ public final class CzechAnalyzer extends Analyzer {
         }
     }
 
-	/**
-	 * Creates a {@link TokenStream} which tokenizes all the text in the provided {@link Reader}.
-	 *
-	 * @return  A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
-	 * 			{@link StandardFilter}, {@link LowerCaseFilter}, and {@link StopFilter}
-	 */
-	@Override
+  /**
+   * Creates a {@link TokenStream} which tokenizes all the text in the provided
+   * {@link Reader}.
+   * 
+   * @return A {@link TokenStream} built from a {@link StandardTokenizer}
+   *         filtered with {@link StandardFilter}, {@link LowerCaseFilter},
+   *         {@link StopFilter}, and {@link CzechStemFilter} (only if version is
+   *         >= LUCENE_31)
+   */
+  @Override
 	public final TokenStream tokenStream( String fieldName, Reader reader ) {
                 TokenStream result = new StandardTokenizer( matchVersion, reader );
 		result = new StandardFilter( result );
 		result = new LowerCaseFilter( matchVersion, result );
 		result = new StopFilter( StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
                                          result, stoptable );
+		if (matchVersion.onOrAfter(Version.LUCENE_31))
+		  result = new CzechStemFilter(result);
 		return result;
 	}
 	
@@ -192,13 +218,15 @@ public final class CzechAnalyzer extends Analyzer {
 	    TokenStream result;
 	};
 	
-	/**
-     * Returns a (possibly reused) {@link TokenStream} which tokenizes all the text in 
-     * the provided {@link Reader}.
-     *
-     * @return  A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
-     *          {@link StandardFilter}, {@link LowerCaseFilter}, and {@link StopFilter}
-     */
+  /**
+   * Returns a (possibly reused) {@link TokenStream} which tokenizes all the
+   * text in the provided {@link Reader}.
+   * 
+   * @return A {@link TokenStream} built from a {@link StandardTokenizer}
+   *         filtered with {@link StandardFilter}, {@link LowerCaseFilter},
+   *         {@link StopFilter}, and {@link CzechStemFilter} (only if version is
+   *         >= LUCENE_31)
+   */
 	@Override
 	public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {
@@ -210,6 +238,8 @@ public final class CzechAnalyzer extends Analyzer {
         streams.result = new LowerCaseFilter(matchVersion, streams.result);
         streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
                                         streams.result, stoptable);
+        if (matchVersion.onOrAfter(Version.LUCENE_31))
+          streams.result = new CzechStemFilter(streams.result);
         setPreviousTokenStream(streams);
       } else {
         streams.source.reset(reader);

@@ -24,31 +24,50 @@ import java.io.InputStream;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.Version;
 
 /**
  * Test the CzechAnalyzer
  * 
- * CzechAnalyzer is like a StandardAnalyzer with a custom stopword list.
+ * Before Lucene 3.1, CzechAnalyzer was a StandardAnalyzer with a custom 
+ * stopword list. As of 3.1 it also includes a stemmer.
  *
  */
 public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
   File dataDir = new File(System.getProperty("dataDir", "./bin"));
   File customStopFile = new File(dataDir, "org/apache/lucene/analysis/cz/customStopWordFile.txt");
   
-  public void testStopWord() throws Exception {
-    assertAnalyzesTo(new CzechAnalyzer(Version.LUCENE_CURRENT), "Pokud mluvime o volnem", new String[] { "mluvime", "volnem" });
+  /**
+   * @deprecated Remove this test when support for 3.0 indexes is no longer needed.
+   */
+  public void testStopWordLegacy() throws Exception {
+    assertAnalyzesTo(new CzechAnalyzer(Version.LUCENE_30), "Pokud mluvime o volnem", 
+        new String[] { "mluvime", "volnem" });
   }
-    
-  public void testReusableTokenStream() throws Exception {
-    Analyzer analyzer = new CzechAnalyzer(Version.LUCENE_CURRENT);
+  
+  public void testStopWord() throws Exception {
+    assertAnalyzesTo(new CzechAnalyzer(Version.LUCENE_CURRENT), "Pokud mluvime o volnem", 
+        new String[] { "mluvim", "voln" });
+  }
+  
+  /**
+   * @deprecated Remove this test when support for 3.0 indexes is no longer needed.
+   */
+  public void testReusableTokenStreamLegacy() throws Exception {
+    Analyzer analyzer = new CzechAnalyzer(Version.LUCENE_30);
     assertAnalyzesToReuse(analyzer, "Pokud mluvime o volnem", new String[] { "mluvime", "volnem" });
     assertAnalyzesToReuse(analyzer, "Česká Republika", new String[] { "česká", "republika" });
   }
+  
+  public void testReusableTokenStream() throws Exception {
+    Analyzer analyzer = new CzechAnalyzer(Version.LUCENE_CURRENT);
+    assertAnalyzesToReuse(analyzer, "Pokud mluvime o volnem", new String[] { "mluvim", "voln" });
+    assertAnalyzesToReuse(analyzer, "Česká Republika", new String[] { "česk", "republik" });
+  }
 
-  /*
+  /**
    * An input stream that always throws IOException for testing.
+   * @deprecated Remove this class when the loadStopWords method is removed.
    */
   private class UnreliableInputStream extends InputStream {
     @Override
@@ -57,24 +76,26 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
     }
   }
   
-  /*
+  /**
    * The loadStopWords method does not throw IOException on error,
    * instead previously it set the stoptable to null (versus empty)
    * this would cause a NPE when it is time to create the StopFilter.
+   * @deprecated Remove this test when the loadStopWords method is removed.
    */
   public void testInvalidStopWordFile() throws Exception {
-    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_CURRENT);
+    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_30);
     cz.loadStopWords(new UnreliableInputStream(), "UTF-8");
     assertAnalyzesTo(cz, "Pokud mluvime o volnem",
         new String[] { "pokud", "mluvime", "o", "volnem" });
   }
   
-  /* 
+  /** 
    * Test that changes to the stop table via loadStopWords are applied immediately
    * when using reusable token streams.
+   * @deprecated Remove this test when the loadStopWords method is removed.
    */
   public void testStopWordFileReuse() throws Exception {
-    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_CURRENT);
+    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_30);
     assertAnalyzesToReuse(cz, "Česká Republika", 
       new String[] { "česká", "republika" });
     
