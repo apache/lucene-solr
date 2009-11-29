@@ -96,7 +96,6 @@ public class PerfRunData {
       System.out.println("------------> queries:");
       System.out.println(getQueryMaker(new SearchTask(this)).printQueries());
     }
-
   }
 
   // clean old stuff, reopen 

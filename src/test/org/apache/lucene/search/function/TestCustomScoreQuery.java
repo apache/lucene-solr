@@ -206,7 +206,13 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     assertEquals("queries should have same #hits",h1.size(),h3CustomMul.size());
     assertEquals("queries should have same #hits",h1.size(),h4CustomAdd.size());
     assertEquals("queries should have same #hits",h1.size(),h5CustomMulAdd.size());
-    
+
+    QueryUtils.check(q1,s);
+    QueryUtils.check(q2,s);
+    QueryUtils.check(q3,s);
+    QueryUtils.check(q4,s);
+    QueryUtils.check(q5,s);
+
     // verify scores ratios
     for (Iterator it = h1.keySet().iterator(); it.hasNext();) {
       Integer x = (Integer) it.next();
@@ -240,7 +246,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   }
 
   private void logResult(String msg, IndexSearcher s, Query q, int doc, float score1) throws IOException {
-    QueryUtils.check(q,s);
     log(msg+" "+score1);
     log("Explain by: "+q);
     log(s.explain(q,doc));

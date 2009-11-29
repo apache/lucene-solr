@@ -271,7 +271,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   }
 
   public void testAddIndexesAndDoDeletesThreads() throws Throwable {
-    final int numIter = 5;
+    final int numIter = 2;
     int numDirs = 3;
     
     Directory mainDir = new MockRAMDirectory();
@@ -720,7 +720,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexReader r = writer.getReader();
 
     final int NUM_THREAD = 5;
-    final float SECONDS = 3;
+    final float SECONDS = 0.5f;
 
     final long endTime = (long) (System.currentTimeMillis() + 1000.*SECONDS);
     final List excs = Collections.synchronizedList(new ArrayList());
@@ -784,7 +784,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexReader r = writer.getReader();
 
     final int NUM_THREAD = 5;
-    final float SECONDS = 3;
+    final float SECONDS = 0.5f;
 
     final long endTime = (long) (System.currentTimeMillis() + 1000.*SECONDS);
     final List excs = Collections.synchronizedList(new ArrayList());

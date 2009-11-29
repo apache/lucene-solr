@@ -37,7 +37,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
-import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -50,7 +49,6 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.TermDocs;
@@ -306,34 +304,47 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
           Document doc = createDocument(text);
           if (verbose) System.out.println("\n*********** FILE=" + file);
           
+          boolean measureIndexing = false; // toggle this to measure query performance
+          MemoryIndex memind = null;
+          IndexSearcher memsearcher = null;
+          if (useMemIndex && !measureIndexing) {
+            memind = createMemoryIndex(doc);
+            memsearcher = memind.createSearcher();
+          }
+              
+          if (first) {
+            IndexSearcher s = memind.createSearcher();
+            TermDocs td = s.getIndexReader().termDocs(null);
+            assertTrue(td.next());
+            assertEquals(0, td.doc());
+            assertEquals(1, td.freq());
+            td.close();
+            s.close();
+            first = false;
+          }
+
+          RAMDirectory ramind = null;
+          IndexSearcher ramsearcher = null;
+          if (useRAMIndex && !measureIndexing) {
+            ramind = createRAMIndex(doc);
+            ramsearcher = new IndexSearcher(ramind);
+          }
+              
           for (int q=0; q < queries.length; q++) {
             try {
               Query query = parseQuery(queries[q]);
-              
-              boolean measureIndexing = false; // toggle this to measure query performance
-              MemoryIndex memind = null;
-              if (useMemIndex && !measureIndexing) memind = createMemoryIndex(doc);
-              
-              if (first) {
-                IndexSearcher s = memind.createSearcher();
-                TermDocs td = s.getIndexReader().termDocs(null);
-                assertTrue(td.next());
-                assertEquals(0, td.doc());
-                assertEquals(1, td.freq());
-                td.close();
-                s.close();
-                first = false;
-              }
-
-              RAMDirectory ramind = null;
-              if (useRAMIndex && !measureIndexing) ramind = createRAMIndex(doc);
-              
               for (int run=0; run < runs; run++) {
                 float score1 = 0.0f; float score2 = 0.0f;
-                if (useMemIndex && measureIndexing) memind = createMemoryIndex(doc);
-                if (useMemIndex) score1 = query(memind, query); 
-                if (useRAMIndex && measureIndexing) ramind = createRAMIndex(doc);
-                if (useRAMIndex) score2 = query(ramind, query);
+                if (useMemIndex && measureIndexing) {
+                  memind = createMemoryIndex(doc);
+                  memsearcher = memind.createSearcher();
+                }
+                if (useMemIndex) score1 = query(memsearcher, query); 
+                if (useRAMIndex && measureIndexing) {
+                  ramind = createRAMIndex(doc);
+                  ramsearcher = new IndexSearcher(ramind);
+                }
+                if (useRAMIndex) score2 = query(ramsearcher, query);
                 if (useMemIndex && useRAMIndex) {
                   if (verbose) System.out.println("diff="+ (score1-score2) + ", query=" + queries[q] + ", s1=" + score1 + ", s2=" + score2);
                   if (score1 != score2 || score1 < 0.0f || score2 < 0.0f || score1 > 1.0f || score2 > 1.0f) {
@@ -418,17 +429,12 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       }
     }
   }
-    
-  private float query(Object index, Query query) {
-//    System.out.println("MB=" + (getMemorySize(index) / (1024.0f * 1024.0f)));
-    Searcher searcher = null;
-    try {
-      if (index instanceof Directory)
-        searcher = new IndexSearcher((Directory)index, true);
-      else 
-        searcher = ((MemoryIndex) index).createSearcher();
 
-      final float[] scores = new float[1]; // inits to 0.0f (no match)
+  final float[] scores = new float[1]; // inits to 0.0f (no match)
+    
+  private float query(IndexSearcher searcher, Query query) {
+//    System.out.println("MB=" + (getMemorySize(index) / (1024.0f * 1024.0f)));
+    try {
       searcher.search(query, new Collector() {
         private Scorer scorer;
 
@@ -456,12 +462,6 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       return score;
     } catch (IOException e) { // should never happen (RAMDirectory)
       throw new RuntimeException(e);
-    } finally {
-      try {
-        if (searcher != null) searcher.close();
-      } catch (IOException e) { // should never happen (RAMDirectory)
-        throw new RuntimeException(e);
-      }
     }
   }
   

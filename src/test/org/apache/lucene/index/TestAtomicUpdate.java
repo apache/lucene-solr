@@ -49,7 +49,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
   private static abstract class TimedThread extends Thread {
     boolean failed;
     int count;
-    private static int RUN_TIME_SEC = 3;
+    private static float RUN_TIME_SEC = 0.5f;
     private TimedThread[] allThreads;
 
     abstract public void doWork() throws Throwable;
@@ -60,7 +60,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
 
     @Override
     public void run() {
-      final long stopTime = System.currentTimeMillis() + 1000*RUN_TIME_SEC;
+      final long stopTime = System.currentTimeMillis() + (long) (1000*RUN_TIME_SEC);
 
       count = 0;
 

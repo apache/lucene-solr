@@ -45,6 +45,11 @@ Optimizations
 
 Build
 
+Test Cases
+
+* LUCENE-1844: Speed up the unit tests (Mark Miller, Erick Erickson,
+  Mike McCandless)
+
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy

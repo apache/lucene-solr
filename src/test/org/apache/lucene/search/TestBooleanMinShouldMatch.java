@@ -316,7 +316,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
 
       // increase number of iterations for more complete testing      
-      for (int i=0; i<1000; i++) {
+      for (int i=0; i<50; i++) {
         int lev = rnd.nextInt(maxLev);
         final long seed = rnd.nextLong();
         BooleanQuery q1 = TestBoolean2.randBoolQuery(new Random(seed), true, lev, field, vals, null);
@@ -331,10 +331,10 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         // will not normalize scores.
         TopDocs top1 = s.search(q1,null,100);
         TopDocs top2 = s.search(q2,null,100);
-
-        QueryUtils.check(q1,s);
-        QueryUtils.check(q2,s);
-
+        if (i < 100) {
+          QueryUtils.check(q1,s);
+          QueryUtils.check(q2,s);
+        }
         // The constrained query
         // should be a superset to the unconstrained query.
         if (top2.totalHits > top1.totalHits) {

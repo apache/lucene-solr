@@ -58,7 +58,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     }
   }
 
-  private static final long TEST_FILE_LENGTH = 1024*1024;
+  private static final long TEST_FILE_LENGTH = 100*1024;
  
   // Call readByte() repeatedly, past the buffer boundary, and see that it
   // is working as expected.
@@ -94,15 +94,10 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     // run test with chunk size of 10 bytes
     runReadBytesAndClose(new SimpleFSIndexInput(tmpInputFile,
                                                 inputBufferSize, 10), inputBufferSize, r);
-    // run test with chunk size of 100 MB - default
-    runReadBytesAndClose(new SimpleFSIndexInput(tmpInputFile,
-                                                inputBufferSize, FSDirectory.DEFAULT_READ_CHUNK_SIZE), inputBufferSize, r);
+
     // run test with chunk size of 10 bytes
     runReadBytesAndClose(new NIOFSIndexInput(tmpInputFile,
                                              inputBufferSize, 10), inputBufferSize, r);
-    // run test with chunk size of 100 MB - default
-    runReadBytesAndClose(new NIOFSIndexInput(tmpInputFile,
-                                             inputBufferSize, FSDirectory.DEFAULT_READ_CHUNK_SIZE), inputBufferSize, r);
   }
 
   private void runReadBytesAndClose(IndexInput input, int bufferSize, Random r)
@@ -129,7 +124,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       }
     }
     // wildly fluctuating size:
-    for (long i = 0; i < 1000; i++) {
+    for (long i = 0; i < 100; i++) {
       final int size = r.nextInt(10000);
       checkReadBytes(input, 1+size, pos);
       pos += 1+size;
@@ -172,10 +167,10 @@ public class TestBufferedIndexInput extends LuceneTestCase {
     }
   }
    
-   // This tests that attempts to readBytes() past an EOF will fail, while
-   // reads up to the EOF will succeed. The EOF is determined by the
-   // BufferedIndexInput's arbitrary length() value.
-   public void testEOF() throws Exception {
+  // This tests that attempts to readBytes() past an EOF will fail, while
+  // reads up to the EOF will succeed. The EOF is determined by the
+  // BufferedIndexInput's arbitrary length() value.
+  public void testEOF() throws Exception {
      MyBufferedIndexInput input = new MyBufferedIndexInput(1024);
      // see that we can read all the bytes at one go:
      checkReadBytes(input, (int)input.length(), 0);  
@@ -223,25 +218,25 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         // an infinite file
         this(Long.MAX_VALUE);
       }
-    @Override
-    protected void readInternal(byte[] b, int offset, int length) throws IOException {
-      for(int i=offset; i<offset+length; i++)
-        b[i] = byten(pos++);
-    }
+      @Override
+      protected void readInternal(byte[] b, int offset, int length) throws IOException {
+        for(int i=offset; i<offset+length; i++)
+          b[i] = byten(pos++);
+      }
 
-    @Override
-    protected void seekInternal(long pos) throws IOException {
-      this.pos = pos;
-    }
+      @Override
+      protected void seekInternal(long pos) throws IOException {
+        this.pos = pos;
+      }
 
-    @Override
-    public void close() throws IOException {
-    }
+      @Override
+      public void close() throws IOException {
+      }
 
-    @Override
-    public long length() {
-      return len;
-    }
+      @Override
+      public long length() {
+        return len;
+      }
     }
 
     public void testSetBufferSize() throws IOException {

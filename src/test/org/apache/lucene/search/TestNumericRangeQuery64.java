@@ -244,7 +244,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     final Random rnd=newRandom();
     String field="field"+precisionStep;
     int termCountT=0,termCountC=0;
-    for (int i=0; i<50; i++) {
+    for (int i=0; i<10; i++) {
       long lower=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
       long upper=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
       if (lower>upper) {
@@ -287,8 +287,8 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       assertEquals("Total number of terms should be equal for unlimited precStep", termCountT, termCountC);
     } else {
       System.out.println("Average number of terms during random search on '" + field + "':");
-      System.out.println(" Trie query: " + (((double)termCountT)/(50*4)));
-      System.out.println(" Classical query: " + (((double)termCountC)/(50*4)));
+      System.out.println(" Trie query: " + (((double)termCountT)/(10*4)));
+      System.out.println(" Classical query: " + (((double)termCountC)/(10*4)));
     }
   }
   
@@ -315,8 +315,8 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   private void testRangeSplit(int precisionStep) throws Exception {
     final Random rnd=newRandom();
     String field="ascfield"+precisionStep;
-    // 50 random tests
-    for (int i=0; i<50; i++) {
+    // 10 random tests
+    for (int i=0; i<10; i++) {
       long lower=(long)(rnd.nextDouble()*noDocs - noDocs/2);
       long upper=(long)(rnd.nextDouble()*noDocs - noDocs/2);
       if (lower>upper) {

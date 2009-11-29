@@ -108,8 +108,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
   }
 
   private void runTest(Directory dir) throws Exception {
-    // Run for ~7 seconds
-    final long stopTime = System.currentTimeMillis() + 7000;
+    // Run for ~1 seconds
+    final long stopTime = System.currentTimeMillis() + 1000;
 
     SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     final IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), dp, IndexWriter.MaxFieldLength.UNLIMITED);

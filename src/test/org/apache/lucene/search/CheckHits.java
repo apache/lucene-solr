@@ -158,9 +158,6 @@ public class CheckHits {
         Searcher searcher,
         int[] results)
           throws IOException {
-    if (searcher instanceof IndexSearcher) {
-      QueryUtils.check(query,searcher);
-    }
 
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
 

@@ -46,7 +46,7 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
       indexThreads[x].start();
     }    
     long startTime = System.currentTimeMillis();
-    long duration = 5*1000;
+    long duration = 1000;
     while ((System.currentTimeMillis() - startTime) < duration) {
       Thread.sleep(100);
     }

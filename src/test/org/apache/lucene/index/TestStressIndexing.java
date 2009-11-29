@@ -33,7 +33,7 @@ public class TestStressIndexing extends LuceneTestCase {
   private static abstract class TimedThread extends Thread {
     boolean failed;
     int count;
-    private static int RUN_TIME_SEC = 6;
+    private static int RUN_TIME_SEC = 1;
     private TimedThread[] allThreads;
 
     abstract public void doWork() throws Throwable;

@@ -24,7 +24,6 @@ import java.util.Random;
 
 import junit.framework.TestCase;
 
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -203,6 +202,7 @@ public abstract class LuceneTestCase extends TestCase {
   
   @Override
   public void runBare() throws Throwable {
+    //long t0 = System.currentTimeMillis();
     try {
       seed = null;
       super.runBare();
@@ -212,6 +212,8 @@ public abstract class LuceneTestCase extends TestCase {
       }
       throw e;
     }
+    //long t = System.currentTimeMillis() - t0;
+    //System.out.println(t + " msec for " + getName());
   }
   
   // recorded seed

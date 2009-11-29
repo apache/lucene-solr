@@ -63,7 +63,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       final Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
       doc.add(idField);
 
-      final long stopTime = System.currentTimeMillis() + 3000;
+      final long stopTime = System.currentTimeMillis() + 500;
 
       while(System.currentTimeMillis() < stopTime) {
         doFail.set(this);

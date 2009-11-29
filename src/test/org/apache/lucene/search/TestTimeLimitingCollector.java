@@ -40,7 +40,7 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * and (3) a sanity test with multiple searching threads.
  */
 public class TestTimeLimitingCollector extends LuceneTestCase {
-  private static final int SLOW_DOWN = 47;
+  private static final int SLOW_DOWN = 3;
   private static final long TIME_ALLOWED = 17 * SLOW_DOWN; // so searches can find about 17 docs.
   
   // max time allowed is relaxed for multithreading tests. 

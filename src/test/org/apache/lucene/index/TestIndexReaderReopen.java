@@ -699,7 +699,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   
   public void testThreadSafety() throws Exception {
     final Directory dir = new MockRAMDirectory();
-    final int n = 150;
+    final int n = 30;
 
     IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < n; i++) {
@@ -741,7 +741,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     final Set readersToClose = Collections.synchronizedSet(new HashSet());
     
     for (int i = 0; i < n; i++) {
-      if (i % 10 == 0) {
+      if (i % 2 == 0) {
         IndexReader refreshed = reader.reopen();
         if (refreshed != reader) {
           readersToClose.add(reader);
@@ -754,7 +754,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       
       ReaderThreadTask task;
       
-      if (i < 20 ||( i >=50 && i < 70) || i > 90) {
+      if (i < 4 ||( i >=10 && i < 14) || i > 18) {
         task = new ReaderThreadTask() {
           
           @Override
@@ -825,7 +825,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     }
     
     synchronized(this) {
-      wait(15000);
+      wait(1000);
     }
     
     for (int i = 0; i < n; i++) {

@@ -22,7 +22,7 @@ import java.nio.CharBuffer;
 import java.nio.ByteBuffer;
 
 public class TestIndexableBinaryStringTools extends LuceneTestCase {
-  private static final int NUM_RANDOM_TESTS = 20000;
+  private static final int NUM_RANDOM_TESTS = 2000;
   private static final int MAX_RANDOM_BINARY_LENGTH = 300;
   
   public void testSingleBinaryRoundTrip() {
