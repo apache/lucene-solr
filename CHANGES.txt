@@ -114,6 +114,8 @@ Other Changes
   it would just fail in unexpected ways.  This has been changed so that it
   will fail with a clear error message on initialization. (hossman)
 
+* SOLR-1611: Added Lucene 2.9.1 collation contrib jar to lib (shalin)
+
 Build
 ----------------------
 
