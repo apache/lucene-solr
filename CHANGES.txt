@@ -50,6 +50,9 @@ New Features
 * SOLR-1569: Allow functions to take in literal strings by modifying the
   FunctionQParser and adding LiteralValueSource (gsingers)
 
+* SOLR-1571: Added unicode collation support though Lucene's CollationKeyFilter
+  (Robert Muir via shalin)
+
 Optimizations
 ----------------------
 
