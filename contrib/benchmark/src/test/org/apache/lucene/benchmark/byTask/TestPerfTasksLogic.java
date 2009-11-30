@@ -851,6 +851,7 @@ public class TestPerfTasksLogic extends LuceneTestCase {
   }
 
   private static String getReuters20LinesFile() {
-    return System.getProperty("lucene.common.dir") + "/contrib/benchmark/src/test/org/apache/lucene/benchmark/reuters.first20.lines.txt";
+    return System.getProperty("lucene.common.dir").replace('\\','/') +
+      "/contrib/benchmark/src/test/org/apache/lucene/benchmark/reuters.first20.lines.txt";
   }  
 }
