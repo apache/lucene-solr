@@ -111,7 +111,7 @@ public final class RussianAnalyzer extends Analyzer
      *
      * @return  A {@link TokenStream} built from a 
      *   {@link RussianLetterTokenizer} filtered with 
-     *   {@link RussianLowerCaseFilter}, {@link StopFilter}, 
+     *   {@link LowerCaseFilter}, {@link StopFilter}, 
      *   and {@link RussianStemFilter}
      */
     @Override
@@ -136,7 +136,7 @@ public final class RussianAnalyzer extends Analyzer
      *
      * @return  A {@link TokenStream} built from a 
      *   {@link RussianLetterTokenizer} filtered with 
-     *   {@link RussianLowerCaseFilter}, {@link StopFilter}, 
+     *   {@link LowerCaseFilter}, {@link StopFilter}, 
      *   and {@link RussianStemFilter}
      */
     @Override
