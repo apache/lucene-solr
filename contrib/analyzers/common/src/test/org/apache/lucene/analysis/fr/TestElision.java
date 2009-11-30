@@ -42,7 +42,7 @@ public class TestElision extends BaseTokenStreamTestCase {
     Set articles = new HashSet();
     articles.add("l");
     articles.add("M");
-    TokenFilter filter = new ElisionFilter(tokenizer, articles);
+    TokenFilter filter = new ElisionFilter(Version.LUCENE_CURRENT, tokenizer, articles);
     List tas = filtre(filter);
     assertEquals("embrouille", tas.get(4));
     assertEquals("O'brian", tas.get(6));

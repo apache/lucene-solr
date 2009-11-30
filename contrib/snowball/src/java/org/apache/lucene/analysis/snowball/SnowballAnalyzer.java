@@ -50,7 +50,7 @@ public class SnowballAnalyzer extends Analyzer {
   /** Builds the named analyzer with the given stop words. */
   public SnowballAnalyzer(Version matchVersion, String name, String[] stopWords) {
     this(matchVersion, name);
-    stopSet = StopFilter.makeStopSet(stopWords);
+    stopSet = StopFilter.makeStopSet(matchVersion, stopWords);
   }
 
   /** Constructs a {@link StandardTokenizer} filtered by a {@link
@@ -62,7 +62,7 @@ public class SnowballAnalyzer extends Analyzer {
     result = new StandardFilter(result);
     result = new LowerCaseFilter(matchVersion, result);
     if (stopSet != null)
-      result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+      result = new StopFilter(matchVersion,
                               result, stopSet);
     result = new SnowballFilter(result, name);
     return result;
@@ -93,7 +93,7 @@ public class SnowballAnalyzer extends Analyzer {
       streams.result = new StandardFilter(streams.source);
       streams.result = new LowerCaseFilter(matchVersion, streams.result);
       if (stopSet != null)
-        streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
+        streams.result = new StopFilter(matchVersion,
                                         streams.result, stopSet);
       streams.result = new SnowballFilter(streams.result, name);
       setPreviousTokenStream(streams);

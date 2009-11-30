@@ -92,7 +92,7 @@ public final class CzechAnalyzer extends Analyzer {
 	
 	private static class DefaultSetHolder {
 	  private static final Set<?> DEFAULT_SET = CharArraySet.unmodifiableSet(new CharArraySet(
-	      Arrays.asList(CZECH_STOP_WORDS), false));
+	      Version.LUCENE_CURRENT, Arrays.asList(CZECH_STOP_WORDS), false));
 	}
 
   /**
@@ -121,7 +121,7 @@ public final class CzechAnalyzer extends Analyzer {
    */
   public CzechAnalyzer(Version matchVersion, Set<?> stopwords) {
     this.matchVersion = matchVersion;
-    this.stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
+    this.stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
   }
 
 
@@ -134,7 +134,7 @@ public final class CzechAnalyzer extends Analyzer {
    * @deprecated use {@link #CzechAnalyzer(Version, Set)} instead
    */
   public CzechAnalyzer(Version matchVersion, String... stopwords) {
-    this(matchVersion, StopFilter.makeStopSet( stopwords ));
+    this(matchVersion, StopFilter.makeStopSet( matchVersion, stopwords ));
 	}
 
   /**
@@ -206,8 +206,7 @@ public final class CzechAnalyzer extends Analyzer {
                 TokenStream result = new StandardTokenizer( matchVersion, reader );
 		result = new StandardFilter( result );
 		result = new LowerCaseFilter( matchVersion, result );
-		result = new StopFilter( StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                                         result, stoptable );
+		result = new StopFilter( matchVersion, result, stoptable );
 		if (matchVersion.onOrAfter(Version.LUCENE_31))
 		  result = new CzechStemFilter(result);
 		return result;
@@ -236,8 +235,7 @@ public final class CzechAnalyzer extends Analyzer {
         streams.source = new StandardTokenizer(matchVersion, reader);
         streams.result = new StandardFilter(streams.source);
         streams.result = new LowerCaseFilter(matchVersion, streams.result);
-        streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                                        streams.result, stoptable);
+        streams.result = new StopFilter( matchVersion, streams.result, stoptable);
         if (matchVersion.onOrAfter(Version.LUCENE_31))
           streams.result = new CzechStemFilter(streams.result);
         setPreviousTokenStream(streams);

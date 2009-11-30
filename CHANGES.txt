@@ -25,6 +25,13 @@ Bug fixes
 
 New features
 
+* LUCENE-2069: Added Unicode 4 support to CharArraySet. Due to the switch
+  to Java 5, supplementary characters are now lowercased correctly if the
+  set is created as case insensitive.
+  CharArraySet now requires a Version argument to preserve 
+  backwards compatibility. If Version < 3.1 is passed to the constructor, 
+  CharArraySet yields the old behavior. (Simon Willnauer)
+  
 * LUCENE-2069: Added Unicode 4 support to LowerCaseFilter. Due to the switch
   to Java 5, supplementary characters are now lowercased correctly.
   LowerCaseFilter now requires a Version argument to preserve 

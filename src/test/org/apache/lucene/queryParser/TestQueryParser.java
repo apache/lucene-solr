@@ -956,7 +956,7 @@ public class TestQueryParser extends LocalizedTestCase {
   }
 
   public void testStopwords() throws Exception {
-    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "a", new StopAnalyzer(Version.LUCENE_CURRENT, StopFilter.makeStopSet("the", "foo")));
+    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "a", new StopAnalyzer(Version.LUCENE_CURRENT, StopFilter.makeStopSet(Version.LUCENE_CURRENT, "the", "foo")));
     Query result = qp.parse("a:the OR a:foo");
     assertNotNull("result is null and it shouldn't be", result);
     assertTrue("result is not a BooleanQuery", result instanceof BooleanQuery);
@@ -972,7 +972,7 @@ public class TestQueryParser extends LocalizedTestCase {
   }
 
   public void testPositionIncrement() throws Exception {
-    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "a", new StopAnalyzer(Version.LUCENE_CURRENT, StopFilter.makeStopSet("the", "in", "are", "this")));
+    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "a", new StopAnalyzer(Version.LUCENE_CURRENT, StopFilter.makeStopSet(Version.LUCENE_CURRENT, "the", "in", "are", "this")));
     qp.setEnablePositionIncrements(true);
     String qtxt = "\"the words in poisitions pos02578 are stopped in this phrasequery\"";
     //               0         2                      5           7  8

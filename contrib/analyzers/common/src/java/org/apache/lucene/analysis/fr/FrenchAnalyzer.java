@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -98,7 +99,7 @@ public final class FrenchAnalyzer extends Analyzer {
    * Contains words that should be indexed but not stemmed.
    */
   //TODO make this final in 3.0
-  private Set<?> excltable = new HashSet();
+  private Set<?> excltable = Collections.<Object>emptySet();
 
   private final Version matchVersion;
   
@@ -112,7 +113,7 @@ public final class FrenchAnalyzer extends Analyzer {
   
   private static class DefaultSetHolder {
     static final Set<?> DEFAULT_STOP_SET = CharArraySet
-        .unmodifiableSet(new CharArraySet(Arrays.asList(FRENCH_STOP_WORDS),
+        .unmodifiableSet(new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(FRENCH_STOP_WORDS),
             false));
   }
 
@@ -148,9 +149,10 @@ public final class FrenchAnalyzer extends Analyzer {
   public FrenchAnalyzer(Version matchVersion, Set<?> stopwords,
       Set<?> stemExclutionSet) {
     this.matchVersion = matchVersion;
-    this.stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
+    this.stoptable = CharArraySet.unmodifiableSet(CharArraySet
+        .copy(matchVersion, stopwords));
     this.excltable = CharArraySet.unmodifiableSet(CharArraySet
-        .copy(stemExclutionSet));
+        .copy(matchVersion, stemExclutionSet));
   }
  
 
@@ -159,7 +161,7 @@ public final class FrenchAnalyzer extends Analyzer {
    * @deprecated use {@link #FrenchAnalyzer(Version, Set)} instead
    */
   public FrenchAnalyzer(Version matchVersion, String... stopwords) {
-    this(matchVersion, StopFilter.makeStopSet(stopwords));
+    this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
   }
 
   /**
@@ -176,7 +178,7 @@ public final class FrenchAnalyzer extends Analyzer {
    * @deprecated use {@link #FrenchAnalyzer(Version, Set, Set)} instead
    */
   public void setStemExclusionTable(String... exclusionlist) {
-    excltable = StopFilter.makeStopSet(exclusionlist);
+    excltable = StopFilter.makeStopSet(matchVersion, exclusionlist);
     setPreviousTokenStream(null); // force a new stemmer to be created
   }
 
@@ -184,8 +186,8 @@ public final class FrenchAnalyzer extends Analyzer {
    * Builds an exclusionlist from a Map.
    * @deprecated use {@link #FrenchAnalyzer(Version, Set, Set)} instead
    */
-  public void setStemExclusionTable(Map exclusionlist) {
-    excltable = new HashSet(exclusionlist.keySet());
+  public void setStemExclusionTable(Map<?,?> exclusionlist) {
+    excltable = new HashSet<Object>(exclusionlist.keySet());
     setPreviousTokenStream(null); // force a new stemmer to be created
   }
 
@@ -195,7 +197,7 @@ public final class FrenchAnalyzer extends Analyzer {
    * @deprecated use {@link #FrenchAnalyzer(Version, Set, Set)} instead
    */
   public void setStemExclusionTable(File exclusionlist) throws IOException {
-    excltable = new HashSet(WordlistLoader.getWordSet(exclusionlist));
+    excltable = new HashSet<Object>(WordlistLoader.getWordSet(exclusionlist));
     setPreviousTokenStream(null); // force a new stemmer to be created
   }
 
@@ -211,8 +213,7 @@ public final class FrenchAnalyzer extends Analyzer {
   public final TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(matchVersion, reader);
     result = new StandardFilter(result);
-    result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                            result, stoptable);
+    result = new StopFilter(matchVersion, result, stoptable);
     result = new FrenchStemFilter(result, excltable);
     // Convert to lowercase after stemming!
     result = new LowerCaseFilter(matchVersion, result);
@@ -240,8 +241,7 @@ public final class FrenchAnalyzer extends Analyzer {
       streams = new SavedStreams();
       streams.source = new StandardTokenizer(matchVersion, reader);
       streams.result = new StandardFilter(streams.source);
-      streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                                      streams.result, stoptable);
+      streams.result = new StopFilter(matchVersion, streams.result, stoptable);
       streams.result = new FrenchStemFilter(streams.result, excltable);
       // Convert to lowercase after stemming!
       streams.result = new LowerCaseFilter(matchVersion, streams.result);

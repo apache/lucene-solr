@@ -29,8 +29,16 @@ import org.apache.lucene.util.Version;
 
 /**
  * Removes stop words from a token stream.
+ * 
+ * <a name="version"/>
+ * <p>You must specify the required {@link Version}
+ * compatibility when creating StopFilter:
+ * <ul>
+ *   <li> As of 3.1, StopFilter correctly handles Unicode 4.0
+ *         supplementary characters in stopwords and position
+ *         increments are preserved
+ * </ul>
  */
-
 public final class StopFilter extends TokenFilter {
 
   private final CharArraySet stopWords;
@@ -54,16 +62,46 @@ public final class StopFilter extends TokenFilter {
    * @param input Input TokenStream
    * @param stopWords A Set of Strings or char[] or any other toString()-able set representing the stopwords
    * @param ignoreCase if true, all words are lower cased first
+   * @deprecated use {@link #StopFilter(Version, TokenStream, Set, boolean)} instead
    */
   public StopFilter(boolean enablePositionIncrements, TokenStream input, Set<?> stopWords, boolean ignoreCase)
   {
+    this(Version.LUCENE_30, enablePositionIncrements, input, stopWords, ignoreCase);
+  }
+  
+  /**
+   * Construct a token stream filtering the given input. If
+   * <code>stopWords</code> is an instance of {@link CharArraySet} (true if
+   * <code>makeStopSet()</code> was used to construct the set) it will be
+   * directly used and <code>ignoreCase</code> will be ignored since
+   * <code>CharArraySet</code> directly controls case sensitivity.
+   * <p/>
+   * If <code>stopWords</code> is not an instance of {@link CharArraySet}, a new
+   * CharArraySet will be constructed and <code>ignoreCase</code> will be used
+   * to specify the case sensitivity of that set.
+   * 
+   * @param matchVersion
+   *          Lucene version to enable correct Unicode 4.0 behavior in the stop
+   *          set if Version > 3.0. See <a href="#version">above</a> for details.
+   * @param input
+   *          Input TokenStream
+   * @param stopWords
+   *          A Set of Strings or char[] or any other toString()-able set
+   *          representing the stopwords
+   * @param ignoreCase
+   *          if true, all words are lower cased first
+   */
+  public StopFilter(Version matchVersion, TokenStream input, Set<?> stopWords, boolean ignoreCase)
+  {
+   this(matchVersion, matchVersion.onOrAfter(Version.LUCENE_29), input, stopWords, ignoreCase);
+  }
+  
+  /*
+   * convenience ctor to enable deprecated ctors to set posInc explicitly
+   */
+  private StopFilter(Version matchVersion, boolean enablePositionIncrements, TokenStream input, Set<?> stopWords, boolean ignoreCase){
     super(input);
-    if (stopWords instanceof CharArraySet) {
-      this.stopWords = (CharArraySet)stopWords;
-    } else {
-      this.stopWords = new CharArraySet(stopWords.size(), ignoreCase);
-      this.stopWords.addAll(stopWords);
-    }
+    this.stopWords = CharArraySet.unmodifiableSet(new CharArraySet(matchVersion, stopWords, ignoreCase));
     this.enablePositionIncrements = enablePositionIncrements;
     termAtt = addAttribute(TermAttribute.class);
     posIncrAtt = addAttribute(PositionIncrementAttribute.class);
@@ -76,10 +114,29 @@ public final class StopFilter extends TokenFilter {
    * @param enablePositionIncrements true if token positions should record the removed stop words
    * @param in Input stream
    * @param stopWords A Set of Strings or char[] or any other toString()-able set representing the stopwords
-   * @see #makeStopSet(java.lang.String[])
+   * @see #makeStopSet(Version, java.lang.String[])
+   * @deprecated use {@link #StopFilter(Version, TokenStream, Set)} instead
    */
   public StopFilter(boolean enablePositionIncrements, TokenStream in, Set<?> stopWords) {
-    this(enablePositionIncrements, in, stopWords, false);
+    this(Version.LUCENE_CURRENT, enablePositionIncrements, in, stopWords, false);
+  }
+  
+  /**
+   * Constructs a filter which removes words from the input TokenStream that are
+   * named in the Set.
+   * 
+   * @param matchVersion
+   *          Lucene version to enable correct Unicode 4.0 behavior in the stop
+   *          set if Version > 3.0.  See <a href="#version">above</a> for details.
+   * @param in
+   *          Input stream
+   * @param stopWords
+   *          A Set of Strings or char[] or any other toString()-able set
+   *          representing the stopwords
+   * @see #makeStopSet(Version, java.lang.String[])
+   */
+  public StopFilter(Version matchVersion, TokenStream in, Set<?> stopWords) {
+    this(matchVersion, in, stopWords, false);
   }
 
   /**
@@ -88,12 +145,27 @@ public final class StopFilter extends TokenFilter {
    * This permits this stopWords construction to be cached once when
    * an Analyzer is constructed.
    * 
-   * @see #makeStopSet(java.lang.String[], boolean) passing false to ignoreCase
+   * @see #makeStopSet(Version, java.lang.String[], boolean) passing false to ignoreCase
+   * @deprecated use {@link #makeStopSet(Version, String...)} instead
    */
   public static final Set<Object> makeStopSet(String... stopWords) {
-    return makeStopSet(stopWords, false);
+    return makeStopSet(Version.LUCENE_30, stopWords, false);
   }
 
+  /**
+   * Builds a Set from an array of stop words,
+   * appropriate for passing into the StopFilter constructor.
+   * This permits this stopWords construction to be cached once when
+   * an Analyzer is constructed.
+   * 
+   * @param matchVersion Lucene version to enable correct Unicode 4.0 behavior in the returned set if Version > 3.0
+   * @param stopWords An array of stopwords
+   * @see #makeStopSet(Version, java.lang.String[], boolean) passing false to ignoreCase
+   */
+  public static final Set<Object> makeStopSet(Version matchVersion, String... stopWords) {
+    return makeStopSet(matchVersion, stopWords, false);
+  }
+  
   /**
    * Builds a Set from an array of stop words,
    * appropriate for passing into the StopFilter constructor.
@@ -101,32 +173,72 @@ public final class StopFilter extends TokenFilter {
    * an Analyzer is constructed.
    * @param stopWords A List of Strings or char[] or any other toString()-able list representing the stopwords
    * @return A Set ({@link CharArraySet}) containing the words
-   * @see #makeStopSet(java.lang.String[], boolean) passing false to ignoreCase
+   * @see #makeStopSet(Version, java.lang.String[], boolean) passing false to ignoreCase
+   * @deprecated use {@link #makeStopSet(Version, List)} instead
    */
   public static final Set<Object> makeStopSet(List<?> stopWords) {
-    return makeStopSet(stopWords, false);
+    return makeStopSet(Version.LUCENE_30, stopWords, false);
+  }
+
+  /**
+   * Builds a Set from an array of stop words,
+   * appropriate for passing into the StopFilter constructor.
+   * This permits this stopWords construction to be cached once when
+   * an Analyzer is constructed.
+   * 
+   * @param matchVersion Lucene version to enable correct Unicode 4.0 behavior in the returned set if Version > 3.0
+   * @param stopWords A List of Strings or char[] or any other toString()-able list representing the stopwords
+   * @return A Set ({@link CharArraySet}) containing the words
+   * @see #makeStopSet(Version, java.lang.String[], boolean) passing false to ignoreCase
+   */
+  public static final Set<Object> makeStopSet(Version matchVersion, List<?> stopWords) {
+    return makeStopSet(matchVersion, stopWords, false);
   }
     
   /**
+   * Creates a stopword set from the given stopword array.
+   * @param stopWords An array of stopwords
+   * @param ignoreCase If true, all words are lower cased first.  
+   * @return a Set containing the words
+   * @deprecated use {@link #makeStopSet(Version, String[], boolean)} instead;
+   */  
+  public static final Set<Object> makeStopSet(String[] stopWords, boolean ignoreCase) {
+    return makeStopSet(Version.LUCENE_30, stopWords, ignoreCase);
+  }
+  /**
+   * Creates a stopword set from the given stopword array.
    * 
+   * @param matchVersion Lucene version to enable correct Unicode 4.0 behavior in the returned set if Version > 3.0
    * @param stopWords An array of stopwords
    * @param ignoreCase If true, all words are lower cased first.  
    * @return a Set containing the words
    */    
-  public static final Set<Object> makeStopSet(String[] stopWords, boolean ignoreCase) {
-    CharArraySet stopSet = new CharArraySet(stopWords.length, ignoreCase);
+  public static final Set<Object> makeStopSet(Version matchVersion, String[] stopWords, boolean ignoreCase) {
+    CharArraySet stopSet = new CharArraySet(matchVersion, stopWords.length, ignoreCase);
     stopSet.addAll(Arrays.asList(stopWords));
     return stopSet;
   }
+  
+  /**
+   * Creates a stopword set from the given stopword list.
+   * @param stopWords A List of Strings or char[] or any other toString()-able list representing the stopwords
+   * @param ignoreCase if true, all words are lower cased first
+   * @return A Set ({@link CharArraySet}) containing the words
+   * @deprecated use {@link #makeStopSet(Version, List, boolean)} instead
+   */
+  public static final Set<Object> makeStopSet(List<?> stopWords, boolean ignoreCase){
+    return makeStopSet(Version.LUCENE_30, stopWords, ignoreCase);
+  }
 
   /**
-   *
+   * Creates a stopword set from the given stopword list.
+   * @param matchVersion Lucene version to enable correct Unicode 4.0 behavior in the returned set if Version > 3.0
    * @param stopWords A List of Strings or char[] or any other toString()-able list representing the stopwords
    * @param ignoreCase if true, all words are lower cased first
    * @return A Set ({@link CharArraySet}) containing the words
    */
-  public static final Set<Object> makeStopSet(List<?> stopWords, boolean ignoreCase){
-    CharArraySet stopSet = new CharArraySet(stopWords.size(), ignoreCase);
+  public static final Set<Object> makeStopSet(Version matchVersion, List<?> stopWords, boolean ignoreCase){
+    CharArraySet stopSet = new CharArraySet(matchVersion, stopWords.size(), ignoreCase);
     stopSet.addAll(stopWords);
     return stopSet;
   }
@@ -157,13 +269,14 @@ public final class StopFilter extends TokenFilter {
    * StopFilter use this method when creating the
    * StopFilter.  Prior to 2.9, this returns false.  On 2.9
    * or later, it returns true.
+   * @deprecated use {@link #StopFilter(Version, TokenStream, Set)} instead
    */
   public static boolean getEnablePositionIncrementsVersionDefault(Version matchVersion) {
     return matchVersion.onOrAfter(Version.LUCENE_29);
   }
 
   /**
-   * @see #setEnablePositionIncrements(boolean). 
+   * @see #setEnablePositionIncrements(boolean)
    */
   public boolean getEnablePositionIncrements() {
     return enablePositionIncrements;

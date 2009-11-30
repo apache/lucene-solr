@@ -19,6 +19,7 @@ package org.apache.lucene.analysis;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.English;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -37,7 +38,7 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
   public void testExactCase() throws IOException {
     StringReader reader = new StringReader("Now is The Time");
     Set<String> stopWords = new HashSet(Arrays.asList("is", "the", "Time"));
-    TokenStream stream = new StopFilter(false, new WhitespaceTokenizer(reader), stopWords, false);
+    TokenStream stream = new StopFilter(Version.LUCENE_CURRENT, new WhitespaceTokenizer(reader), stopWords, false);
     final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
     assertTrue(stream.incrementToken());
     assertEquals("Now", termAtt.term());
@@ -49,7 +50,7 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
   public void testIgnoreCase() throws IOException {
     StringReader reader = new StringReader("Now is The Time");
     Set<String> stopWords = new HashSet(Arrays.asList( "is", "the", "Time" ));
-    TokenStream stream = new StopFilter(false, new WhitespaceTokenizer(reader), stopWords, true);
+    TokenStream stream = new StopFilter(Version.LUCENE_CURRENT, new WhitespaceTokenizer(reader), stopWords, true);
     final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
     assertTrue(stream.incrementToken());
     assertEquals("Now", termAtt.term());
@@ -59,8 +60,8 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
   public void testStopFilt() throws IOException {
     StringReader reader = new StringReader("Now is The Time");
     String[] stopWords = new String[] { "is", "the", "Time" };
-    Set stopSet = StopFilter.makeStopSet(stopWords);
-    TokenStream stream = new StopFilter(false, new WhitespaceTokenizer(reader), stopSet);
+    Set stopSet = StopFilter.makeStopSet(Version.LUCENE_CURRENT, stopWords);
+    TokenStream stream = new StopFilter(Version.LUCENE_CURRENT, new WhitespaceTokenizer(reader), stopSet);
     final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
     assertTrue(stream.incrementToken());
     assertEquals("Now", termAtt.term());
@@ -83,14 +84,14 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     log(sb.toString());
     String stopWords[] = (String[]) a.toArray(new String[0]);
     for (int i=0; i<a.size(); i++) log("Stop: "+stopWords[i]);
-    Set stopSet = StopFilter.makeStopSet(stopWords);
+    Set stopSet = StopFilter.makeStopSet(Version.LUCENE_CURRENT, stopWords);
     // with increments
     StringReader reader = new StringReader(sb.toString());
-    StopFilter stpf = new StopFilter(false, new WhitespaceTokenizer(reader), stopSet);
+    StopFilter stpf = new StopFilter(Version.LUCENE_24, new WhitespaceTokenizer(reader), stopSet);
     doTestStopPositons(stpf,true);
     // without increments
     reader = new StringReader(sb.toString());
-    stpf = new StopFilter(false, new WhitespaceTokenizer(reader), stopSet);
+    stpf = new StopFilter(Version.LUCENE_CURRENT, new WhitespaceTokenizer(reader), stopSet);
     doTestStopPositons(stpf,false);
     // with increments, concatenating two stop filters
     ArrayList a0 = new ArrayList();
@@ -106,12 +107,12 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     for (int i=0; i<a0.size(); i++) log("Stop0: "+stopWords0[i]);
     String stopWords1[] = (String[]) a1.toArray(new String[0]);
     for (int i=0; i<a1.size(); i++) log("Stop1: "+stopWords1[i]);
-    Set stopSet0 = StopFilter.makeStopSet(stopWords0);
-    Set stopSet1 = StopFilter.makeStopSet(stopWords1);
+    Set stopSet0 = StopFilter.makeStopSet(Version.LUCENE_CURRENT, stopWords0);
+    Set stopSet1 = StopFilter.makeStopSet(Version.LUCENE_CURRENT, stopWords1);
     reader = new StringReader(sb.toString());
-    StopFilter stpf0 = new StopFilter(false, new WhitespaceTokenizer(reader), stopSet0); // first part of the set
+    StopFilter stpf0 = new StopFilter(Version.LUCENE_CURRENT, new WhitespaceTokenizer(reader), stopSet0); // first part of the set
     stpf0.setEnablePositionIncrements(true);
-    StopFilter stpf01 = new StopFilter(false, stpf0, stopSet1); // two stop filters concatenated!
+    StopFilter stpf01 = new StopFilter(Version.LUCENE_CURRENT, stpf0, stopSet1); // two stop filters concatenated!
     doTestStopPositons(stpf01,true);
   }
   

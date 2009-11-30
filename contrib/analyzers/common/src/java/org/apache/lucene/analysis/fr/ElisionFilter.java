@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.util.Version;
 
 /**
  * Removes elisions from a {@link TokenStream}. For example, "l'avion" (the plane) will be
@@ -35,44 +36,77 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * @see <a href="http://fr.wikipedia.org/wiki/%C3%89lision">Elision in Wikipedia</a>
  */
 public final class ElisionFilter extends TokenFilter {
-  private CharArraySet articles = null;
-  private TermAttribute termAtt;
+  private CharArraySet articles = CharArraySet.EMPTY_SET;
+  private final TermAttribute termAtt;
+  private static final CharArraySet DEFAULT_ARTICLES = CharArraySet.unmodifiableSet(
+      new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(
+          "l", "m", "t", "qu", "n", "s", "j"), true));
   
-  private static char[] apostrophes = {'\'', '’'};
+  private static char[] apostrophes = {'\'', '\u2019'};
+  
+  /**
+   * Set the stopword articles
+   * @param matchVersion the lucene backwards compatibility version
+   * @param articles a set of articles
+   * @deprecated use {@link #ElisionFilter(Version, TokenStream, Set)} instead
+   */
+  public void setArticles(Version matchVersion, Set<?> articles) {
+    this.articles = CharArraySet.unmodifiableSet(
+        CharArraySet.copy(matchVersion, articles));
+  }
 
+  /**
+   * Set the stopword articles
+   * @param articles a set of articles
+   * @deprecated use {@link #setArticles(Version, Set)} instead
+   */
   public void setArticles(Set<?> articles) {
-    if (articles instanceof CharArraySet)
-      this.articles = (CharArraySet) articles;
-    else
-      this.articles = new CharArraySet(articles, true);
+    setArticles(Version.LUCENE_CURRENT, articles);
+  }
+  /**
+   * Constructs an elision filter with standard stop words
+   */
+  protected ElisionFilter(Version matchVersion, TokenStream input) {
+    this(matchVersion, input, DEFAULT_ARTICLES);
   }
 
   /**
    * Constructs an elision filter with standard stop words
+   * @deprecated use {@link #ElisionFilter(Version, TokenStream)} instead
    */
   protected ElisionFilter(TokenStream input) {
-    super(input);
-    this.articles = new CharArraySet(Arrays.asList(
-        "l", "m", "t", "qu", "n", "s", "j"), true);
-    termAtt = addAttribute(TermAttribute.class);
+    this(Version.LUCENE_30, input);
   }
 
   /**
    * Constructs an elision filter with a Set of stop words
+   * @deprecated use {@link #ElisionFilter(Version, TokenStream, Set)} instead
    */
   public ElisionFilter(TokenStream input, Set<?> articles) {
+    this(Version.LUCENE_30, input, articles);
+  }
+  
+  /**
+   * Constructs an elision filter with a Set of stop words
+   * @param matchVersion the lucene backwards compatibility version
+   * @param input the source {@link TokenStream}
+   * @param articles a set of stopword articles
+   */
+  public ElisionFilter(Version matchVersion, TokenStream input, Set<?> articles) {
     super(input);
-    setArticles(articles);
+    this.articles = CharArraySet.unmodifiableSet(
+        new CharArraySet(matchVersion, articles, true));
     termAtt = addAttribute(TermAttribute.class);
   }
 
   /**
    * Constructs an elision filter with an array of stop words
+   * @deprecated use {@link #ElisionFilter(Version, TokenStream, Set)} instead
    */
   public ElisionFilter(TokenStream input, String[] articles) {
-    super(input);
-    this.articles = new CharArraySet(Arrays.asList(articles), true);
-    termAtt = addAttribute(TermAttribute.class);
+    this(Version.LUCENE_CURRENT, input,
+        new CharArraySet(Version.LUCENE_CURRENT,
+            Arrays.asList(articles), true));
   }
 
   /**

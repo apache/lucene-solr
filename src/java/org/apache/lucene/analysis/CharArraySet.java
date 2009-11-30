@@ -6,6 +6,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.apache.lucene.util.CharacterUtils;
+import org.apache.lucene.util.Version;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -32,45 +35,113 @@ import java.util.Set;
  * etc.  It is designed to be quick to test if a char[]
  * is in the set without the necessity of converting it
  * to a String first.
+ * <p>You must specify the required {@link Version}
+ * compatibility when creating {@link CharArraySet}:
+ * <ul>
+ *   <li> As of 3.1, supplementary characters are
+ *       properly lowercased.</li>
+ * </ul>
+ * Before 3.1 supplementary characters could not be
+ * lowercased correctly due to the lack of Unicode 4
+ * support in JDK 1.4. To use instances of
+ * {@link CharArraySet} with the behavior before Lucene
+ * 3.1 pass a {@link Version} < 3.1 to the constructors.
  * <P>
  * <em>Please note:</em> This class implements {@link java.util.Set Set} but
  * does not behave like it should in all cases. The generic type is
  * {@code Set<Object>}, because you can add any object to it,
  * that has a string representation. The add methods will use
  * {@link Object#toString} and store the result using a {@code char[]}
- * buffer. The same behaviour have the {@code contains()} methods.
+ * buffer. The same behavior have the {@code contains()} methods.
  * The {@link #iterator()} returns an {@code Iterator<String>}.
  * For type safety also {@link #stringIterator()} is provided.
  */
-
 public class CharArraySet extends AbstractSet<Object> {
   private final static int INIT_SIZE = 8;
   private char[][] entries;
   private int count;
   private final boolean ignoreCase;
-  public static final CharArraySet EMPTY_SET = CharArraySet.unmodifiableSet(new CharArraySet(0, false));
+  public static final CharArraySet EMPTY_SET = CharArraySet.unmodifiableSet(
+      new CharArraySet(Version.LUCENE_CURRENT, 0, false));
+  
+  private final CharacterUtils charUtils;
+  private final Version matchVersion;
 
-  /** Create set with enough capacity to hold startSize
-   *  terms */
-  public CharArraySet(int startSize, boolean ignoreCase) {
+  /**
+   * Create set with enough capacity to hold startSize terms
+   * 
+   * @param matchVersion
+   *          compatibility match version see <a href="#version">Version
+   *          note</a> above for details.
+   * @param startSize
+   *          the initial capacity
+   * @param ignoreCase
+   *          <code>false</code> if and only if the set should be case sensitive
+   *          otherwise <code>true</code>.
+   */
+  public CharArraySet(Version matchVersion, int startSize, boolean ignoreCase) {
     this.ignoreCase = ignoreCase;
     int size = INIT_SIZE;
     while(startSize + (startSize>>2) > size)
       size <<= 1;
     entries = new char[size][];
+    this.charUtils = CharacterUtils.getInstance(matchVersion);
+    this.matchVersion = matchVersion;
   }
 
-  /** Create set from a Collection of char[] or String */
+  /**
+   * Creates a set from a Collection of objects. 
+   * 
+   * @param matchVersion
+   *          compatibility match version see <a href="#version">Version
+   *          note</a> above for details.
+   * @param c
+   *          a collection whose elements to be placed into the set
+   * @param ignoreCase
+   *          <code>false</code> if and only if the set should be case sensitive
+   *          otherwise <code>true</code>.
+   */
+  public CharArraySet(Version matchVersion, Collection<? extends Object> c, boolean ignoreCase) {
+    this(matchVersion, c.size(), ignoreCase);
+    addAll(c);
+  }
+
+  /**
+   * Creates a set with enough capacity to hold startSize terms
+   * 
+   * @param startSize
+   *          the initial capacity
+   * @param ignoreCase
+   *          <code>false</code> if and only if the set should be case sensitive
+   *          otherwise <code>true</code>.
+   * @deprecated use {@link #CharArraySet(Version, int, boolean)} instead
+   */
+  public CharArraySet(int startSize, boolean ignoreCase) {
+    this(Version.LUCENE_30, startSize, ignoreCase);
+  }
+  
+  /**
+   * Creates a set from a Collection of objects. 
+   * 
+   * @param c
+   *          a collection whose elements to be placed into the set
+   * @param ignoreCase
+   *          <code>false</code> if and only if the set should be case sensitive
+   *          otherwise <code>true</code>.
+   * @deprecated use {@link #CharArraySet(Version, Collection, boolean)} instead         
+   */  
   public CharArraySet(Collection<? extends Object> c, boolean ignoreCase) {
-    this(c.size(), ignoreCase);
+    this(Version.LUCENE_30, c.size(), ignoreCase);
     addAll(c);
   }
   
   /** Create set from entries */
-  private CharArraySet(char[][] entries, boolean ignoreCase, int count){
+  private CharArraySet(Version matchVersion, char[][] entries, boolean ignoreCase, int count){
     this.entries = entries;
     this.ignoreCase = ignoreCase;
     this.count = count;
+    this.charUtils = CharacterUtils.getInstance(matchVersion);
+    this.matchVersion = matchVersion;
   }
 
   /** true if the <code>len</code> chars of <code>text</code> starting at <code>off</code>
@@ -131,8 +202,11 @@ public class CharArraySet extends AbstractSet<Object> {
    */
   public boolean add(char[] text) {
     if (ignoreCase)
-      for(int i=0;i<text.length;i++)
-        text[i] = Character.toLowerCase(text[i]);
+      for(int i=0;i<text.length;){
+        i += Character.toChars(
+              Character.toLowerCase(
+                  charUtils.codePointAt(text, i)), text, i);
+      }
     int slot = getSlot(text, 0, text.length);
     if (entries[slot] != null) return false;
     entries[slot] = text;
@@ -148,10 +222,13 @@ public class CharArraySet extends AbstractSet<Object> {
   private boolean equals(char[] text1, int off, int len, char[] text2) {
     if (len != text2.length)
       return false;
+    final int limit = off+len;
     if (ignoreCase) {
-      for(int i=0;i<len;i++) {
-        if (Character.toLowerCase(text1[off+i]) != text2[i])
+      for(int i=0;i<len;) {
+        final int codePointAt = charUtils.codePointAt(text1, off+i, limit);
+        if (Character.toLowerCase(codePointAt) != charUtils.codePointAt(text2, i))
           return false;
+        i += Character.charCount(codePointAt); 
       }
     } else {
       for(int i=0;i<len;i++) {
@@ -167,9 +244,11 @@ public class CharArraySet extends AbstractSet<Object> {
     if (len != text2.length)
       return false;
     if (ignoreCase) {
-      for(int i=0;i<len;i++) {
-        if (Character.toLowerCase(text1.charAt(i)) != text2[i])
+      for(int i=0;i<len;) {
+        final int codePointAt = charUtils.codePointAt(text1, i);
+        if (Character.toLowerCase(codePointAt) != charUtils.codePointAt(text2, i))
           return false;
+        i += Character.charCount(codePointAt);
       }
     } else {
       for(int i=0;i<len;i++) {
@@ -179,6 +258,8 @@ public class CharArraySet extends AbstractSet<Object> {
     }
     return true;
   }
+  
+
 
   private void rehash() {
     final int newSize = 2*entries.length;
@@ -198,8 +279,10 @@ public class CharArraySet extends AbstractSet<Object> {
     int code = 0;
     final int stop = offset + len;
     if (ignoreCase) {
-      for (int i=offset; i<stop; i++) {
-        code = code*31 + Character.toLowerCase(text[i]);
+      for (int i=offset; i<stop;) {
+        final int codePointAt = charUtils.codePointAt(text, i, stop);
+        code = code*31 + Character.toLowerCase(codePointAt);
+        i += Character.charCount(codePointAt);
       }
     } else {
       for (int i=offset; i<stop; i++) {
@@ -213,8 +296,10 @@ public class CharArraySet extends AbstractSet<Object> {
     int code = 0;
     int len = text.length();
     if (ignoreCase) {
-      for (int i=0; i<len; i++) {
-        code = code*31 + Character.toLowerCase(text.charAt(i));
+      for (int i=0; i<len;) {
+        int codePointAt = charUtils.codePointAt(text, i);
+        code = code*31 + Character.toLowerCase(codePointAt);
+        i += Character.charCount(codePointAt);
       }
     } else {
       for (int i=0; i<len; i++) {
@@ -274,7 +359,7 @@ public class CharArraySet extends AbstractSet<Object> {
      * Instead of delegating calls to the given set copy the low-level values to
      * the unmodifiable Subclass
      */
-    return new UnmodifiableCharArraySet(set.entries, set.ignoreCase, set.count);
+    return new UnmodifiableCharArraySet(set.matchVersion, set.entries, set.ignoreCase, set.count);
   }
 
   /**
@@ -286,15 +371,33 @@ public class CharArraySet extends AbstractSet<Object> {
    * @return a copy of the given set as a {@link CharArraySet}. If the given set
    *         is a {@link CharArraySet} the ignoreCase property will be
    *         preserved.
+   * @deprecated use {@link #copy(Version, Set)} instead
    */
   public static CharArraySet copy(Set<?> set) {
+    return copy(Version.LUCENE_30, set);
+  }
+  
+  /**
+   * Returns a copy of the given set as a {@link CharArraySet}. If the given set
+   * is a {@link CharArraySet} the ignoreCase property will be preserved.
+   * 
+   * @param matchVersion
+   *          compatibility match version see <a href="#version">Version
+   *          note</a> above for details.
+   * @param set
+   *          a set to copy
+   * @return a copy of the given set as a {@link CharArraySet}. If the given set
+   *         is a {@link CharArraySet} the ignoreCase property will be
+   *         preserved.
+   */
+  public static CharArraySet copy(Version matchVersion, Set<?> set) {
     if (set == null)
       throw new NullPointerException("Given set is null");
     if(set == EMPTY_SET)
       return EMPTY_SET;
     final boolean ignoreCase = set instanceof CharArraySet ? ((CharArraySet) set).ignoreCase
         : false;
-    return new CharArraySet(set, ignoreCase);
+    return new CharArraySet(matchVersion, set, ignoreCase);
   }
   
 
@@ -356,9 +459,9 @@ public class CharArraySet extends AbstractSet<Object> {
    */
   private static final class UnmodifiableCharArraySet extends CharArraySet {
 
-    private UnmodifiableCharArraySet(char[][] entries, boolean ignoreCase,
+    private UnmodifiableCharArraySet(Version matchVersion, char[][] entries, boolean ignoreCase,
         int count) {
-      super(entries, ignoreCase, count);
+      super(matchVersion, entries, ignoreCase, count);
     }
 
     @Override

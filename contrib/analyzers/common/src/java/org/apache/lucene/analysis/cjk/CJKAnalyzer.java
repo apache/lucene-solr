@@ -68,7 +68,7 @@ public class CJKAnalyzer extends Analyzer {
   
   private static class DefaultSetHolder {
     static final Set<?> DEFAULT_STOP_SET = CharArraySet
-        .unmodifiableSet(new CharArraySet(Arrays.asList(STOP_WORDS),
+        .unmodifiableSet(new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(STOP_WORDS),
             false));
   }
   /**
@@ -95,7 +95,7 @@ public class CJKAnalyzer extends Analyzer {
    *          a stopword set
    */
   public CJKAnalyzer(Version matchVersion, Set<?> stopwords){
-    stopTable = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
+    stopTable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
     this.matchVersion = matchVersion;
   }
 
@@ -106,7 +106,7 @@ public class CJKAnalyzer extends Analyzer {
    * @deprecated use {@link #CJKAnalyzer(Version, Set)} instead
    */
   public CJKAnalyzer(Version matchVersion, String... stopWords) {
-    stopTable = StopFilter.makeStopSet(stopWords);
+    stopTable = StopFilter.makeStopSet(matchVersion, stopWords);
     this.matchVersion = matchVersion;
   }
 
@@ -122,8 +122,7 @@ public class CJKAnalyzer extends Analyzer {
    */
   @Override
   public final TokenStream tokenStream(String fieldName, Reader reader) {
-    return new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                          new CJKTokenizer(reader), stopTable);
+    return new StopFilter(matchVersion, new CJKTokenizer(reader), stopTable);
   }
   
   private class SavedStreams {
@@ -147,8 +146,7 @@ public class CJKAnalyzer extends Analyzer {
     if (streams == null) {
       streams = new SavedStreams();
       streams.source = new CJKTokenizer(reader);
-      streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                                      streams.source, stopTable);
+      streams.result = new StopFilter(matchVersion, streams.source, stopTable);
       setPreviousTokenStream(streams);
     } else {
       streams.source.reset(reader);

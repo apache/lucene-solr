@@ -73,7 +73,8 @@ public class PatternAnalyzer extends Analyzer {
   public static final Pattern WHITESPACE_PATTERN = Pattern.compile("\\s+");
   
   private static final CharArraySet EXTENDED_ENGLISH_STOP_WORDS =
-    CharArraySet.unmodifiableSet(new CharArraySet(Arrays.asList(
+    CharArraySet.unmodifiableSet(new CharArraySet(Version.LUCENE_CURRENT, 
+        Arrays.asList(
       "a", "about", "above", "across", "adj", "after", "afterwards",
       "again", "against", "albeit", "all", "almost", "alone", "along",
       "already", "also", "although", "always", "among", "amongst", "an",
@@ -153,7 +154,7 @@ public class PatternAnalyzer extends Analyzer {
    *            if non-null, ignores all tokens that are contained in the
    *            given stop set (after previously having applied toLowerCase()
    *            if applicable). For example, created via
-   *            {@link StopFilter#makeStopSet(String[])}and/or
+   *            {@link StopFilter#makeStopSet(Version, String[])}and/or
    *            {@link org.apache.lucene.analysis.WordlistLoader}as in
    *            <code>WordlistLoader.getWordSet(new File("samples/fulltext/stopwords.txt")</code>
    *            or <a href="http://www.unine.ch/info/clef/">other stop words
@@ -199,7 +200,7 @@ public class PatternAnalyzer extends Analyzer {
     }
     else {
       stream = new PatternTokenizer(text, pattern, toLowerCase);
-      if (stopWords != null) stream = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion), stream, stopWords);
+      if (stopWords != null) stream = new StopFilter(matchVersion, stream, stopWords);
     }
     
     return stream;
@@ -387,12 +388,12 @@ public class PatternAnalyzer extends Analyzer {
     private int pos;
     private final boolean isLetter;
     private final boolean toLowerCase;
-    private final Set stopWords;
+    private final Set<?> stopWords;
     private static final Locale locale = Locale.getDefault();
     private TermAttribute termAtt = addAttribute(TermAttribute.class);
     private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
-    public FastStringTokenizer(String str, boolean isLetter, boolean toLowerCase, Set stopWords) {
+    public FastStringTokenizer(String str, boolean isLetter, boolean toLowerCase, Set<?> stopWords) {
       this.str = str;
       this.isLetter = isLetter;
       this.toLowerCase = toLowerCase;

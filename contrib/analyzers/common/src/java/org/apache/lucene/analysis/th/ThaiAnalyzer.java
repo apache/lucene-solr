@@ -48,8 +48,7 @@ public class ThaiAnalyzer extends Analyzer {
     TokenStream ts = new StandardTokenizer(matchVersion, reader);
     ts = new StandardFilter(ts);
     ts = new ThaiWordFilter(ts);
-    ts = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                        ts, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+    ts = new StopFilter(matchVersion, ts, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
     return ts;
   }
   
@@ -73,8 +72,7 @@ public class ThaiAnalyzer extends Analyzer {
       streams.source = new StandardTokenizer(matchVersion, reader);
       streams.result = new StandardFilter(streams.source);
       streams.result = new ThaiWordFilter(streams.result);
-      streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                                      streams.result, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
+      streams.result = new StopFilter(matchVersion, streams.result, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
       setPreviousTokenStream(streams);
     } else {
       streams.source.reset(reader);

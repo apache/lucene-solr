@@ -1076,7 +1076,7 @@ public class TestQPHelper extends LocalizedTestCase {
   public void testStopwords() throws Exception {
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(
-        new StopAnalyzer(Version.LUCENE_CURRENT, StopFilter.makeStopSet("the", "foo" )));
+        new StopAnalyzer(Version.LUCENE_CURRENT, StopFilter.makeStopSet(Version.LUCENE_CURRENT, "the", "foo" )));
 
     Query result = qp.parse("a:the OR a:foo", "a");
     assertNotNull("result is null and it shouldn't be", result);
@@ -1099,7 +1099,7 @@ public class TestQPHelper extends LocalizedTestCase {
   public void testPositionIncrement() throws Exception {
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(
-        new StopAnalyzer(Version.LUCENE_CURRENT, StopFilter.makeStopSet("the", "in", "are", "this" )));
+        new StopAnalyzer(Version.LUCENE_CURRENT, StopFilter.makeStopSet(Version.LUCENE_CURRENT, "the", "in", "are", "this" )));
 
     qp.setEnablePositionIncrements(true);
 

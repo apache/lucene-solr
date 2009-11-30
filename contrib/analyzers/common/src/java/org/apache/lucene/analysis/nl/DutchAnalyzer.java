@@ -80,8 +80,8 @@ public class DutchAnalyzer extends Analyzer {
   
   private static class DefaultSetHolder {
     static final Set<?> DEFAULT_STOP_SET = CharArraySet
-        .unmodifiableSet(new CharArraySet(Arrays.asList(DUTCH_STOP_WORDS),
-            false));
+        .unmodifiableSet(new CharArraySet(Version.LUCENE_CURRENT, 
+            Arrays.asList(DUTCH_STOP_WORDS), false));
   }
 
 
@@ -116,8 +116,8 @@ public class DutchAnalyzer extends Analyzer {
   }
   
   public DutchAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionTable){
-    stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
-    excltable = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionTable));
+    stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
+    excltable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionTable));
     this.matchVersion = matchVersion;
     setOverridesTokenStreamMethod(DutchAnalyzer.class);
   }
@@ -130,7 +130,7 @@ public class DutchAnalyzer extends Analyzer {
    * @deprecated use {@link #DutchAnalyzer(Version, Set)} instead
    */
   public DutchAnalyzer(Version matchVersion, String... stopwords) {
-    this(matchVersion, StopFilter.makeStopSet(stopwords));
+    this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
   }
 
   /**
@@ -168,7 +168,7 @@ public class DutchAnalyzer extends Analyzer {
    * @deprecated use {@link #DutchAnalyzer(Version, Set, Set)} instead
    */
   public void setStemExclusionTable(String... exclusionlist) {
-    excltable = StopFilter.makeStopSet(exclusionlist);
+    excltable = StopFilter.makeStopSet(matchVersion, exclusionlist);
     setPreviousTokenStream(null); // force a new stemmer to be created
   }
 
@@ -222,8 +222,7 @@ public class DutchAnalyzer extends Analyzer {
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(matchVersion, reader);
     result = new StandardFilter(result);
-    result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                            result, stoptable);
+    result = new StopFilter(matchVersion, result, stoptable);
     result = new DutchStemFilter(result, excltable, stemdict);
     return result;
   }
@@ -256,8 +255,7 @@ public class DutchAnalyzer extends Analyzer {
       streams = new SavedStreams();
       streams.source = new StandardTokenizer(matchVersion, reader);
       streams.result = new StandardFilter(streams.source);
-      streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                                      streams.result, stoptable);
+      streams.result = new StopFilter(matchVersion, streams.result, stoptable);
       streams.result = new DutchStemFilter(streams.result, excltable, stemdict);
       setPreviousTokenStream(streams);
     } else {

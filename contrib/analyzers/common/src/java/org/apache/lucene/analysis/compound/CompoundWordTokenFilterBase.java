@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.compound;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
 
@@ -34,9 +33,18 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.Version;
 
 /**
- * Base class for decomposition token filters.
+ * Base class for decomposition token filters. <a name="version"/>
+ * <p>
+ * You must specify the required {@link Version} compatibility when creating
+ * CompoundWordTokenFilterBase:
+ * <ul>
+ * <li>As of 3.1, CompoundWordTokenFilterBase correctly handles Unicode 4.0
+ * supplementary characters in strings and char arrays provided as compound word
+ * dictionaries.
+ * </ul>
  */
 public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   /**
@@ -55,7 +63,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   public static final int DEFAULT_MAX_SUBWORD_SIZE = 15;
   
   protected final CharArraySet dictionary;
-  protected final LinkedList tokens;
+  protected final LinkedList<Token> tokens;
   protected final int minWordSize;
   protected final int minSubwordSize;
   protected final int maxSubwordSize;
@@ -69,31 +77,72 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   private PayloadAttribute payloadAtt;
   
   private final Token wrapper = new Token();
-
+  /**
+   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, String[], int, int, int, boolean) instead
+   */
   protected CompoundWordTokenFilterBase(TokenStream input, String[] dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
-    this(input,makeDictionary(dictionary),minWordSize,minSubwordSize,maxSubwordSize, onlyLongestMatch);
+    this(Version.LUCENE_30, input, makeDictionary(dictionary),minWordSize,minSubwordSize,maxSubwordSize, onlyLongestMatch);
   }
   
+  /**
+   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, String[], boolean) instead
+   */
   protected CompoundWordTokenFilterBase(TokenStream input, String[] dictionary, boolean onlyLongestMatch) {
-    this(input,makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
+    this(Version.LUCENE_30, input, makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
   }
-
-  protected CompoundWordTokenFilterBase(TokenStream input, Set dictionary, boolean onlyLongestMatch) {
-    this(input,dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
+  
+  /**
+   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, Set, boolean) instead
+   */
+  protected CompoundWordTokenFilterBase(TokenStream input, Set<?> dictionary, boolean onlyLongestMatch) {
+    this(Version.LUCENE_30, input, dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
   }
-
+  
+  /**
+   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, String[]) instead
+   */
   protected CompoundWordTokenFilterBase(TokenStream input, String[] dictionary) {
-    this(input,makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
+    this(Version.LUCENE_30, input, makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
+  }
+  
+  /**
+   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, Set) instead
+   */
+  protected CompoundWordTokenFilterBase(TokenStream input, Set<?> dictionary) {
+    this(Version.LUCENE_30, input, dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
   }
 
-  protected CompoundWordTokenFilterBase(TokenStream input, Set dictionary) {
-    this(input,dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
+  /**
+   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, Set[], int, int, int, boolean) instead
+   */
+  protected CompoundWordTokenFilterBase(TokenStream input, Set<?> dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
+    this(Version.LUCENE_30, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
+  }
+  
+  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, String[] dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
+    this(matchVersion, input,makeDictionary(dictionary),minWordSize,minSubwordSize,maxSubwordSize, onlyLongestMatch);
+  }
+  
+  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, String[] dictionary, boolean onlyLongestMatch) {
+    this(matchVersion, input,makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
   }
 
-  protected CompoundWordTokenFilterBase(TokenStream input, Set dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
+  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set dictionary, boolean onlyLongestMatch) {
+    this(matchVersion, input,dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
+  }
+
+  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, String[] dictionary) {
+    this(matchVersion, input,makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
+  }
+
+  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set dictionary) {
+    this(matchVersion, input,dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
+  }
+
+  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     super(input);
     
-    this.tokens=new LinkedList();
+    this.tokens=new LinkedList<Token>();
     this.minWordSize=minWordSize;
     this.minSubwordSize=minSubwordSize;
     this.maxSubwordSize=maxSubwordSize;
@@ -102,7 +151,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     if (dictionary instanceof CharArraySet) {
       this.dictionary = (CharArraySet) dictionary;
     } else {
-      this.dictionary = new CharArraySet(dictionary.size(), false);
+      this.dictionary = new CharArraySet(matchVersion, dictionary.size(), false);
       addAllLowerCase(this.dictionary, dictionary);
     }
     
@@ -121,9 +170,13 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
    * @param dictionary 
    * @return {@link Set} of lowercased terms 
    */
-  public static final Set makeDictionary(final String[] dictionary) {
+  public static final Set<?> makeDictionary(final String[] dictionary) {
+    return makeDictionary(Version.LUCENE_30, dictionary);
+  }
+  
+  public static final Set<?> makeDictionary(final Version matchVersion, final String[] dictionary) {
     // is the below really case insensitive? 
-    CharArraySet dict = new CharArraySet(dictionary.length, false);
+    CharArraySet dict = new CharArraySet(matchVersion, dictionary.length, false);
     addAllLowerCase(dict, Arrays.asList(dictionary));
     return dict;
   }
@@ -140,11 +193,11 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   @Override
   public final boolean incrementToken() throws IOException {
     if (tokens.size() > 0) {
-      setToken((Token)tokens.removeFirst());
+      setToken(tokens.removeFirst());
       return true;
     }
 
-    if (input.incrementToken() == false)
+    if (!input.incrementToken())
       return false;
     
     wrapper.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
@@ -158,18 +211,16 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     decompose(wrapper);
 
     if (tokens.size() > 0) {
-      setToken((Token)tokens.removeFirst());
+      setToken(tokens.removeFirst());
       return true;
     } else {
       return false;
     }
   }
   
-  protected static final void addAllLowerCase(Set target, Collection col) {
-    Iterator iter=col.iterator();
-    
-    while (iter.hasNext()) {
-      target.add(((String)iter.next()).toLowerCase());
+  protected static final void addAllLowerCase(Set<Object> target, Collection<String> col) {
+    for (String string : col) {
+      target.add(string.toLowerCase());
     }
   }
   

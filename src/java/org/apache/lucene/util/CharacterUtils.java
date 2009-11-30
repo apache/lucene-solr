@@ -35,7 +35,7 @@ public abstract class CharacterUtils {
    * @return a {@link CharacterUtils} implementation according to the given
    *         {@link Version} instance.
    */
-  public static CharacterUtils getInstance(Version matchVersion) {
+  public static CharacterUtils getInstance(final Version matchVersion) {
     return matchVersion.onOrAfter(Version.LUCENE_31) ? JAVA_5 : JAVA_4;
   }
 
@@ -58,7 +58,7 @@ public abstract class CharacterUtils {
    *           - if the value offset is negative or not less than the length of
    *           the char array.
    */
-  public abstract int codePointAt(char[] chars, int offset);
+  public abstract int codePointAt(final char[] chars, final int offset);
 
   /**
    * Returns the code point at the given index of the {@link CharSequence}.
@@ -79,21 +79,52 @@ public abstract class CharacterUtils {
    *           - if the value offset is negative or not less than the length of
    *           the character sequence.
    */
-  public abstract int codePointAt(CharSequence seq, int offset);
+  public abstract int codePointAt(final CharSequence seq, final int offset);
+  
+  /**
+   * Returns the code point at the given index of the char array where only elements
+   * with index less than the limit are used.
+   * Depending on the {@link Version} passed to
+   * {@link CharacterUtils#getInstance(Version)} this method mimics the behavior
+   * of {@link Character#codePointAt(char[], int)} as it would have been
+   * available on a Java 1.4 JVM or on a later virtual machine version.
+   * 
+   * @param chars
+   *          a character array
+   * @param offset
+   *          the offset to the char values in the chars array to be converted
+   * @param limit the index afer the last element that should be used to calculate
+   *        codepoint.  
+   * 
+   * @return the Unicode code point at the given index
+   * @throws NullPointerException
+   *           - if the array is null.
+   * @throws IndexOutOfBoundsException
+   *           - if the value offset is negative or not less than the length of
+   *           the char array.
+   */
+  public abstract int codePointAt(final char[] chars, final int offset, final int limit);
 
   private static final class Java5CharacterUtils extends CharacterUtils {
     Java5CharacterUtils() {
     };
 
     @Override
-    public final int codePointAt(char[] chars, int offset) {
+    public final int codePointAt(final char[] chars, final int offset) {
       return Character.codePointAt(chars, offset);
     }
 
     @Override
-    public int codePointAt(CharSequence seq, int offset) {
+    public int codePointAt(final CharSequence seq, final int offset) {
       return Character.codePointAt(seq, offset);
     }
+
+    @Override
+    public int codePointAt(final char[] chars, final int offset, final int limit) {
+     return Character.codePointAt(chars, offset, limit);
+    }
+
+    
   }
 
   private static final class Java4CharacterUtils extends CharacterUtils {
@@ -101,14 +132,22 @@ public abstract class CharacterUtils {
     };
 
     @Override
-    public final int codePointAt(char[] chars, int offset) {
+    public final int codePointAt(final char[] chars, final int offset) {
       return chars[offset];
     }
 
     @Override
-    public int codePointAt(CharSequence seq, int offset) {
+    public int codePointAt(final CharSequence seq, final int offset) {
       return seq.charAt(offset);
     }
+
+    @Override
+    public int codePointAt(final char[] chars, final int offset, final int limit) {
+      if(offset >= limit)
+        throw new IndexOutOfBoundsException("offset must be less than limit");
+      return chars[offset];
+    }
+
   }
 
 }

@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.util.Version;
 
 /**
  * A {@link TokenFilter} with a stop word table.  
@@ -63,7 +64,7 @@ public final class ChineseFilter extends TokenFilter {
     public ChineseFilter(TokenStream in) {
         super(in);
 
-        stopTable = new CharArraySet(Arrays.asList(STOP_WORDS), false);
+        stopTable = new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(STOP_WORDS), false);
         termAtt = addAttribute(TermAttribute.class);
     }
 

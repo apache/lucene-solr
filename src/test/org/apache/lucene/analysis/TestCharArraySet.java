@@ -20,6 +20,7 @@ package org.apache.lucene.analysis;
 import java.util.Arrays;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 public class TestCharArraySet extends LuceneTestCase {
   
@@ -33,7 +34,7 @@ public class TestCharArraySet extends LuceneTestCase {
   
   
   public void testRehash() throws Exception {
-    CharArraySet cas = new CharArraySet(0, true);
+    CharArraySet cas = new CharArraySet(Version.LUCENE_CURRENT, 0, true);
     for(int i=0;i<TEST_STOP_WORDS.length;i++)
       cas.add(TEST_STOP_WORDS[i]);
     assertEquals(TEST_STOP_WORDS.length, cas.size());
@@ -44,7 +45,7 @@ public class TestCharArraySet extends LuceneTestCase {
   public void testNonZeroOffset() {
     String[] words={"Hello","World","this","is","a","test"};
     char[] findme="xthisy".toCharArray();   
-    CharArraySet set=new CharArraySet(10,true);
+    CharArraySet set=new CharArraySet(Version.LUCENE_CURRENT, 10,true);
     set.addAll(Arrays.asList(words));
     assertTrue(set.contains(findme, 1, 4));
     assertTrue(set.contains(new String(findme,1,4)));
@@ -56,7 +57,7 @@ public class TestCharArraySet extends LuceneTestCase {
   }
   
   public void testObjectContains() {
-    CharArraySet set = new CharArraySet(10, true);
+    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 10, true);
     Integer val = Integer.valueOf(1);
     set.add(val);
     assertTrue(set.contains(val));
@@ -68,7 +69,7 @@ public class TestCharArraySet extends LuceneTestCase {
   }
   
   public void testClear(){
-    CharArraySet set=new CharArraySet(10,true);
+    CharArraySet set=new CharArraySet(Version.LUCENE_CURRENT, 10,true);
     set.addAll(Arrays.asList(TEST_STOP_WORDS));
     assertEquals("Not all words added", TEST_STOP_WORDS.length, set.size());
     try{
@@ -81,7 +82,7 @@ public class TestCharArraySet extends LuceneTestCase {
   }
   
   public void testModifyOnUnmodifiable(){
-    CharArraySet set=new CharArraySet(10,true);
+    CharArraySet set=new CharArraySet(Version.LUCENE_CURRENT, 10,true);
     set.addAll(Arrays.asList(TEST_STOP_WORDS));
     final int size = set.size();
     set = CharArraySet.unmodifiableSet(set);
@@ -162,7 +163,7 @@ public class TestCharArraySet extends LuceneTestCase {
   }
   
   public void testUnmodifiableSet(){
-    CharArraySet set=new CharArraySet(10,true);
+    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 10,true);
     set.addAll(Arrays.asList(TEST_STOP_WORDS));
     final int size = set.size();
     set = CharArraySet.unmodifiableSet(set);
@@ -173,6 +174,131 @@ public class TestCharArraySet extends LuceneTestCase {
       fail("can not make null unmodifiable");
     }catch (NullPointerException e) {
       // expected
+    }
+  }
+  
+  public void testSupplementaryChars() {
+    String missing = "Term %s is missing in the set";
+    String falsePos = "Term %s is in the set but shouldn't";
+    // for reference see
+    // http://unicode.org/cldr/utility/list-unicodeset.jsp?a=[[%3ACase_Sensitive%3DTrue%3A]%26[^[\u0000-\uFFFF]]]&esc=on
+    String[] upperArr = new String[] {"Abc\ud801\udc1c",
+        "\ud801\udc1c\ud801\udc1cCDE", "A\ud801\udc1cB"};
+    String[] lowerArr = new String[] {"abc\ud801\udc44",
+        "\ud801\udc44\ud801\udc44cde", "a\ud801\udc44b"};
+    CharArraySet set = new CharArraySet(Version.LUCENE_31, Arrays.asList(TEST_STOP_WORDS), true);
+    for (String upper : upperArr) {
+      set.add(upper);
+    }
+    for (int i = 0; i < upperArr.length; i++) {
+      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
+      assertTrue(String.format(missing, lowerArr[i]), set.contains(lowerArr[i]));
+    }
+    set = new CharArraySet(Version.LUCENE_31, Arrays.asList(TEST_STOP_WORDS), false);
+    for (String upper : upperArr) {
+      set.add(upper);
+    }
+    for (int i = 0; i < upperArr.length; i++) {
+      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
+      assertFalse(String.format(falsePos, lowerArr[i]), set.contains(lowerArr[i]));
+    }
+  }
+  
+  public void testSingleHighSurrogate() {
+    String missing = "Term %s is missing in the set";
+    String falsePos = "Term %s is in the set but shouldn't";
+    String[] upperArr = new String[] { "ABC\uD800", "ABC\uD800EfG",
+        "\uD800EfG", "\uD800\ud801\udc1cB" };
+
+    String[] lowerArr = new String[] { "abc\uD800", "abc\uD800efg",
+        "\uD800efg", "\uD800\ud801\udc44b" };
+    CharArraySet set = new CharArraySet(Version.LUCENE_31, Arrays
+        .asList(TEST_STOP_WORDS), true);
+    for (String upper : upperArr) {
+      set.add(upper);
+    }
+    for (int i = 0; i < upperArr.length; i++) {
+      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
+      assertTrue(String.format(missing, lowerArr[i]), set.contains(lowerArr[i]));
+    }
+    set = new CharArraySet(Version.LUCENE_31, Arrays.asList(TEST_STOP_WORDS),
+        false);
+    for (String upper : upperArr) {
+      set.add(upper);
+    }
+    for (int i = 0; i < upperArr.length; i++) {
+      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
+      assertFalse(String.format(falsePos, upperArr[i]), set
+          .contains(lowerArr[i]));
+    }
+  }
+  
+  /**
+   * @deprecated remove this test when lucene 3.0 "broken unicode 4" support is
+   *             no longer needed.
+   */
+  public void testSupplementaryCharsBWCompat() {
+    String missing = "Term %s is missing in the set";
+    String falsePos = "Term %s is in the set but shouldn't";
+    // for reference see
+    // http://unicode.org/cldr/utility/list-unicodeset.jsp?a=[[%3ACase_Sensitive%3DTrue%3A]%26[^[\u0000-\uFFFF]]]&esc=on
+    String[] upperArr = new String[] {"Abc\ud801\udc1c",
+        "\ud801\udc1c\ud801\udc1cCDE", "A\ud801\udc1cB"};
+    String[] lowerArr = new String[] {"abc\ud801\udc44",
+        "\ud801\udc44\ud801\udc44cde", "a\ud801\udc44b"};
+    CharArraySet set = new CharArraySet(Version.LUCENE_30, Arrays.asList(TEST_STOP_WORDS), true);
+    for (String upper : upperArr) {
+      set.add(upper);
+    }
+    for (int i = 0; i < upperArr.length; i++) {
+      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
+      assertFalse(String.format(falsePos, lowerArr[i]), set.contains(lowerArr[i]));
+    }
+    set = new CharArraySet(Version.LUCENE_30, Arrays.asList(TEST_STOP_WORDS), false);
+    for (String upper : upperArr) {
+      set.add(upper);
+    }
+    for (int i = 0; i < upperArr.length; i++) {
+      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
+      assertFalse(String.format(falsePos, lowerArr[i]), set.contains(lowerArr[i]));
+    }
+  }
+
+  /**
+   * @deprecated remove this test when lucene 3.0 "broken unicode 4" support is
+   *             no longer needed.
+   */
+  public void testSingleHighSurrogateBWComapt() {
+    String missing = "Term %s is missing in the set";
+    String falsePos = "Term %s is in the set but shouldn't";
+    String[] upperArr = new String[] { "ABC\uD800", "ABC\uD800EfG",
+        "\uD800EfG", "\uD800\ud801\udc1cB" };
+
+    String[] lowerArr = new String[] { "abc\uD800", "abc\uD800efg",
+        "\uD800efg", "\uD800\ud801\udc44b" };
+    CharArraySet set = new CharArraySet(Version.LUCENE_30, Arrays
+        .asList(TEST_STOP_WORDS), true);
+    for (String upper : upperArr) {
+      set.add(upper);
+    }
+    for (int i = 0; i < upperArr.length; i++) {
+      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
+      if (i == lowerArr.length - 1)
+        assertFalse(String.format(falsePos, lowerArr[i]), set
+            .contains(lowerArr[i]));
+      else
+        assertTrue(String.format(missing, lowerArr[i]), set
+            .contains(lowerArr[i]));
+    }
+    set = new CharArraySet(Version.LUCENE_30, Arrays.asList(TEST_STOP_WORDS),
+        false);
+    for (String upper : upperArr) {
+      set.add(upper);
+    }
+    for (int i = 0; i < upperArr.length; i++) {
+      assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
+      assertFalse(String.format(falsePos, lowerArr[i]), set
+          .contains(lowerArr[i]));
     }
   }
 }

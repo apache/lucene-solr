@@ -179,8 +179,7 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
     }
     HashSet<String> stopWords = stopWordsPerField.get(fieldName);
     if (stopWords != null) {
-      result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                              result, stopWords);
+      result = new StopFilter(matchVersion, result, stopWords);
     }
     return result;
   }
@@ -223,8 +222,7 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
       /* if there are any stopwords for the field, save the stopfilter */
       HashSet<String> stopWords = stopWordsPerField.get(fieldName);
       if (stopWords != null)
-        streams.withStopFilter = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                                                streams.wrapped, stopWords);
+        streams.withStopFilter = new StopFilter(matchVersion, streams.wrapped, stopWords);
       else
         streams.withStopFilter = streams.wrapped;
 
@@ -245,8 +243,7 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
         streams.wrapped = result;
         HashSet<String> stopWords = stopWordsPerField.get(fieldName);
         if (stopWords != null)
-          streams.withStopFilter = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                                                  streams.wrapped, stopWords);
+          streams.withStopFilter = new StopFilter(matchVersion, streams.wrapped, stopWords);
         else
           streams.withStopFilter = streams.wrapped;
       }

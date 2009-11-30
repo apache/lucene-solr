@@ -87,8 +87,8 @@ public final class BrazilianAnalyzer extends Analyzer {
   
   private static class DefaultSetHolder {
     static final Set<?> DEFAULT_STOP_SET = CharArraySet
-        .unmodifiableSet(new CharArraySet(Arrays.asList(BRAZILIAN_STOP_WORDS),
-            false));
+        .unmodifiableSet(new CharArraySet(Version.LUCENE_CURRENT, 
+            Arrays.asList(BRAZILIAN_STOP_WORDS), false));
   }
 
 	/**
@@ -120,7 +120,7 @@ public final class BrazilianAnalyzer extends Analyzer {
    *          a stopword set
    */
   public BrazilianAnalyzer(Version matchVersion, Set<?> stopwords) {
-    stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
+    stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
     this.matchVersion = matchVersion;
   }
 
@@ -136,7 +136,7 @@ public final class BrazilianAnalyzer extends Analyzer {
       Set<?> stemExclusionSet) {
     this(matchVersion, stopwords);
     excltable = CharArraySet.unmodifiableSet(CharArraySet
-        .copy(stemExclusionSet));
+        .copy(matchVersion, stemExclusionSet));
   }
 
 	/**
@@ -144,7 +144,7 @@ public final class BrazilianAnalyzer extends Analyzer {
 	 * @deprecated use {@link #BrazilianAnalyzer(Version, Set)} instead
 	 */
   public BrazilianAnalyzer(Version matchVersion, String... stopwords) {
-    this(matchVersion, StopFilter.makeStopSet(stopwords));
+    this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
   }
 
   /**
@@ -169,7 +169,7 @@ public final class BrazilianAnalyzer extends Analyzer {
 	 * @deprecated use {@link #BrazilianAnalyzer(Version, Set, Set)} instead
 	 */
 	public void setStemExclusionTable( String... exclusionlist ) {
-		excltable = StopFilter.makeStopSet( exclusionlist );
+		excltable = StopFilter.makeStopSet( matchVersion, exclusionlist );
 		setPreviousTokenStream(null); // force a new stemmer to be created
 	}
 	/**
@@ -201,8 +201,7 @@ public final class BrazilianAnalyzer extends Analyzer {
                 TokenStream result = new StandardTokenizer( matchVersion, reader );
 		result = new LowerCaseFilter( matchVersion, result );
 		result = new StandardFilter( result );
-		result = new StopFilter( StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                                         result, stoptable );
+		result = new StopFilter( matchVersion, result, stoptable );
 		result = new BrazilianStemFilter( result, excltable );
 		return result;
 	}
@@ -229,8 +228,7 @@ public final class BrazilianAnalyzer extends Analyzer {
         streams.source = new StandardTokenizer(matchVersion, reader);
         streams.result = new LowerCaseFilter(matchVersion, streams.source);
         streams.result = new StandardFilter(streams.result);
-        streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                                        streams.result, stoptable);
+        streams.result = new StopFilter(matchVersion, streams.result, stoptable);
         streams.result = new BrazilianStemFilter(streams.result, excltable);
         setPreviousTokenStream(streams);
       } else {

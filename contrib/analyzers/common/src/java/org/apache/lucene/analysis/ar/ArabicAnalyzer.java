@@ -129,7 +129,7 @@ public final class ArabicAnalyzer extends Analyzer {
    *          a stopword set
    */
   public ArabicAnalyzer(Version matchVersion, Set<?> stopwords){
-    stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
+    stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
     this.matchVersion = matchVersion;
   }
 
@@ -138,7 +138,7 @@ public final class ArabicAnalyzer extends Analyzer {
    * @deprecated use {@link #ArabicAnalyzer(Version, Set)} instead
    */
   public ArabicAnalyzer( Version matchVersion, String... stopwords ) {
-    this(matchVersion, StopFilter.makeStopSet( stopwords ));
+    this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords ));
   }
 
   /**
@@ -170,8 +170,7 @@ public final class ArabicAnalyzer extends Analyzer {
     TokenStream result = new ArabicLetterTokenizer( reader );
     result = new LowerCaseFilter(matchVersion, result);
     // the order here is important: the stopword list is not normalized!
-    result = new StopFilter( StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                             result, stoptable );
+    result = new StopFilter( matchVersion, result, stoptable );
     result = new ArabicNormalizationFilter( result );
     result = new ArabicStemFilter( result );
 
@@ -200,8 +199,7 @@ public final class ArabicAnalyzer extends Analyzer {
       streams.source = new ArabicLetterTokenizer(reader);
       streams.result = new LowerCaseFilter(matchVersion, streams.source);
       // the order here is important: the stopword list is not normalized!
-      streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                                      streams.result, stoptable);
+      streams.result = new StopFilter( matchVersion, streams.result, stoptable);
       streams.result = new ArabicNormalizationFilter(streams.result);
       streams.result = new ArabicStemFilter(streams.result);
       setPreviousTokenStream(streams);

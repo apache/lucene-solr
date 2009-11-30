@@ -153,8 +153,7 @@ public class SmartChineseAnalyzer extends Analyzer {
     // The porter stemming is too strict, this is not a bug, this is a feature:)
     result = new PorterStemFilter(result);
     if (!stopWords.isEmpty()) {
-      result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                              result, stopWords, false);
+      result = new StopFilter(matchVersion, result, stopWords, false);
     }
     return result;
   }
@@ -175,8 +174,7 @@ public class SmartChineseAnalyzer extends Analyzer {
       streams.filteredTokenStream = new WordTokenFilter(streams.tokenStream);
       streams.filteredTokenStream = new PorterStemFilter(streams.filteredTokenStream);
       if (!stopWords.isEmpty()) {
-        streams.filteredTokenStream = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                                                     streams.filteredTokenStream, stopWords, false);
+        streams.filteredTokenStream = new StopFilter(matchVersion, streams.filteredTokenStream, stopWords, false);
       }
     } else {
       streams.tokenStream.reset(reader);

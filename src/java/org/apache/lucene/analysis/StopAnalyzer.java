@@ -32,13 +32,15 @@ import org.apache.lucene.util.Version;
  * <p>You must specify the required {@link Version}
  * compatibility when creating StopAnalyzer:
  * <ul>
+ *    <li> As of 3.1, StopFilter correctly handles Unicode 4.0
+ *         supplementary characters in stopwords
  *   <li> As of 2.9, position increments are preserved
  * </ul>
 */
 
 public final class StopAnalyzer extends Analyzer {
   private final Set<?> stopWords;
-  private final boolean enablePositionIncrements;
+  private final Version matchVersion;
   
   /** An unmodifiable set containing some common English words that are not usually useful
   for searching.*/
@@ -52,7 +54,8 @@ public final class StopAnalyzer extends Analyzer {
       "that", "the", "their", "then", "there", "these",
       "they", "this", "to", "was", "will", "with"
     );
-    final CharArraySet stopSet = new CharArraySet(stopWords.size(), false);
+    final CharArraySet stopSet = new CharArraySet(Version.LUCENE_CURRENT, 
+        stopWords.size(), false);
     stopSet.addAll(stopWords);  
     ENGLISH_STOP_WORDS_SET = CharArraySet.unmodifiableSet(stopSet); 
   }
@@ -63,7 +66,7 @@ public final class StopAnalyzer extends Analyzer {
    */
   public StopAnalyzer(Version matchVersion) {
     stopWords = ENGLISH_STOP_WORDS_SET;
-    enablePositionIncrements = StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion);
+    this.matchVersion = matchVersion;
   }
 
   /** Builds an analyzer with the stop words from the given set.
@@ -71,7 +74,7 @@ public final class StopAnalyzer extends Analyzer {
    * @param stopWords Set of stop words */
   public StopAnalyzer(Version matchVersion, Set<?> stopWords) {
     this.stopWords = stopWords;
-    enablePositionIncrements = StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion);
+    this.matchVersion = matchVersion;
   }
 
   /** Builds an analyzer with the stop words from the given file.
@@ -80,7 +83,7 @@ public final class StopAnalyzer extends Analyzer {
    * @param stopwordsFile File to load stop words from */
   public StopAnalyzer(Version matchVersion, File stopwordsFile) throws IOException {
     stopWords = WordlistLoader.getWordSet(stopwordsFile);
-    this.enablePositionIncrements = StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion);
+    this.matchVersion = matchVersion;
   }
 
   /** Builds an analyzer with the stop words from the given reader.
@@ -89,13 +92,14 @@ public final class StopAnalyzer extends Analyzer {
    * @param stopwords Reader to load stop words from */
   public StopAnalyzer(Version matchVersion, Reader stopwords) throws IOException {
     stopWords = WordlistLoader.getWordSet(stopwords);
-    this.enablePositionIncrements = StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion);
+    this.matchVersion = matchVersion;
   }
 
   /** Filters LowerCaseTokenizer with StopFilter. */
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    return new StopFilter(enablePositionIncrements, new LowerCaseTokenizer(reader), stopWords);
+    return new StopFilter(matchVersion,
+        new LowerCaseTokenizer(reader), stopWords);
   }
 
   /** Filters LowerCaseTokenizer with StopFilter. */
@@ -109,7 +113,8 @@ public final class StopAnalyzer extends Analyzer {
     if (streams == null) {
       streams = new SavedStreams();
       streams.source = new LowerCaseTokenizer(reader);
-      streams.result = new StopFilter(enablePositionIncrements, streams.source, stopWords);
+      streams.result = new StopFilter(matchVersion,
+          streams.source, stopWords);
       setPreviousTokenStream(streams);
     } else
       streams.source.reset(reader);

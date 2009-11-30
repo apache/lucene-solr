@@ -83,7 +83,7 @@ public class GermanAnalyzer extends Analyzer {
   
   private static class DefaultSetHolder {
     private static final Set<?> DEFAULT_SET = CharArraySet.unmodifiableSet(new CharArraySet(
-        Arrays.asList(GERMAN_STOP_WORDS), false));
+        Version.LUCENE_CURRENT, Arrays.asList(GERMAN_STOP_WORDS), false));
   }
 
   /**
@@ -131,8 +131,8 @@ public class GermanAnalyzer extends Analyzer {
    *          a stemming exclusion set
    */
   public GermanAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionSet) {
-    stopSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
-    exclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stemExclusionSet));
+    stopSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
+    exclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionSet));
     setOverridesTokenStreamMethod(GermanAnalyzer.class);
     this.matchVersion = matchVersion;
   }
@@ -142,7 +142,7 @@ public class GermanAnalyzer extends Analyzer {
    * @deprecated use {@link #GermanAnalyzer(Version, Set)}
    */
   public GermanAnalyzer(Version matchVersion, String... stopwords) {
-    this(matchVersion, StopFilter.makeStopSet(stopwords));
+    this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
   }
 
   /**
@@ -167,7 +167,7 @@ public class GermanAnalyzer extends Analyzer {
    * @deprecated use {@link #GermanAnalyzer(Version, Set, Set)} instead
    */
   public void setStemExclusionTable(String[] exclusionlist) {
-    exclusionSet = StopFilter.makeStopSet(exclusionlist);
+    exclusionSet = StopFilter.makeStopSet(matchVersion, exclusionlist);
     setPreviousTokenStream(null); // force a new stemmer to be created
   }
 
@@ -175,8 +175,8 @@ public class GermanAnalyzer extends Analyzer {
    * Builds an exclusionlist from a {@link Map}
    * @deprecated use {@link #GermanAnalyzer(Version, Set, Set)} instead
    */
-  public void setStemExclusionTable(Map exclusionlist) {
-    exclusionSet = new HashSet(exclusionlist.keySet());
+  public void setStemExclusionTable(Map<?,?> exclusionlist) {
+    exclusionSet = new HashSet<Object>(exclusionlist.keySet());
     setPreviousTokenStream(null); // force a new stemmer to be created
   }
 
@@ -201,8 +201,7 @@ public class GermanAnalyzer extends Analyzer {
     TokenStream result = new StandardTokenizer(matchVersion, reader);
     result = new StandardFilter(result);
     result = new LowerCaseFilter(matchVersion, result);
-    result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                            result, stopSet);
+    result = new StopFilter( matchVersion, result, stopSet);
     result = new GermanStemFilter(result, exclusionSet);
     return result;
   }
@@ -235,8 +234,7 @@ public class GermanAnalyzer extends Analyzer {
       streams.source = new StandardTokenizer(matchVersion, reader);
       streams.result = new StandardFilter(streams.source);
       streams.result = new LowerCaseFilter(matchVersion, streams.result);
-      streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                                      streams.result, stopSet);
+      streams.result = new StopFilter( matchVersion, streams.result, stopSet);
       streams.result = new GermanStemFilter(streams.result, exclusionSet);
       setPreviousTokenStream(streams);
     } else {

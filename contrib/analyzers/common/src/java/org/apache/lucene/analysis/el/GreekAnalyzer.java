@@ -70,7 +70,7 @@ public final class GreekAnalyzer extends Analyzer
     
     private static class DefaultSetHolder {
       private static final Set<?> DEFAULT_SET = CharArraySet.unmodifiableSet(new CharArraySet(
-          Arrays.asList(GREEK_STOP_WORDS), false));
+          Version.LUCENE_CURRENT, Arrays.asList(GREEK_STOP_WORDS), false));
     }
 
     /**
@@ -93,7 +93,7 @@ public final class GreekAnalyzer extends Analyzer
      *          a stopword set
      */
     public GreekAnalyzer(Version matchVersion, Set<?> stopwords) {
-      stopSet = CharArraySet.unmodifiableSet(CharArraySet.copy(stopwords));
+      stopSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
       this.matchVersion = matchVersion;
     }
 
@@ -104,7 +104,7 @@ public final class GreekAnalyzer extends Analyzer
      */
     public GreekAnalyzer(Version matchVersion, String... stopwords)
     {
-      this(matchVersion, StopFilter.makeStopSet(stopwords));
+      this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
     }
 
     /**
@@ -127,8 +127,7 @@ public final class GreekAnalyzer extends Analyzer
     {
         TokenStream result = new StandardTokenizer(matchVersion, reader);
         result = new GreekLowerCaseFilter(result);
-        result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                                result, stopSet);
+        result = new StopFilter(matchVersion, result, stopSet);
         return result;
     }
     
@@ -152,8 +151,7 @@ public final class GreekAnalyzer extends Analyzer
         streams = new SavedStreams();
         streams.source = new StandardTokenizer(matchVersion, reader);
         streams.result = new GreekLowerCaseFilter(streams.source);
-        streams.result = new StopFilter(StopFilter.getEnablePositionIncrementsVersionDefault(matchVersion),
-                                        streams.result, stopSet);
+        streams.result = new StopFilter(matchVersion, streams.result, stopSet);
         setPreviousTokenStream(streams);
       } else {
         streams.source.reset(reader);
