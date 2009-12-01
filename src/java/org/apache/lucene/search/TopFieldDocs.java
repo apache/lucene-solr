@@ -18,13 +18,8 @@ package org.apache.lucene.search;
  */
 
 
-/**
- * Expert: Returned by low-level sorted search implementations.
- *
- * <p>Created: Feb 12, 2004 8:58:46 AM 
- *
- * @since   lucene 1.4
- * @see Searcher#search(Query,Filter,int,Sort)
+/** Represents hits returned by {@link
+ * Searcher#search(Query,Filter,int,Sort)}.
  */
 public class TopFieldDocs
 extends TopDocs {
