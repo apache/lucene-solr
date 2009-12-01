@@ -17,37 +17,35 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-/** Expert: Returned by low-level search implementations.
- * @see Searcher#search(Query,Filter,int) */
+/** Represents hits returned by {@link
+ * Searcher#search(Query,Filter,int)} and {@link
+ * Searcher#search(Query,int)}. */
 public class TopDocs implements java.io.Serializable {
-  /** Expert: The total number of hits for the query.
-   * @see Hits#length()
-  */
+  /** The total number of hits for the query. */
   public int totalHits;
-  /** Expert: The top hits for the query. */
+  /** The top hits for the query. */
   public ScoreDoc[] scoreDocs;
-  /** Expert: Stores the maximum score value encountered, needed for normalizing. */
+  /** Stores the maximum score value encountered, needed for normalizing. */
   private float maxScore;
   
   /**
-   * Expert: Returns the maximum score value encountered. Note that in case
+   * Returns the maximum score value encountered. Note that in case
    * scores are not tracked, this returns {@link Float#NaN}.
    */
   public float getMaxScore() {
       return maxScore;
   }
   
-  /** Expert: Sets the maximum score value encountered. */
+  /** Sets the maximum score value encountered. */
   public void setMaxScore(float maxScore) {
       this.maxScore=maxScore;
   }
 
-  /** Expert: Constructs a TopDocs with a default maxScore=Float.NaN. */
+  /** Constructs a TopDocs with a default maxScore=Float.NaN. */
   TopDocs(int totalHits, ScoreDoc[] scoreDocs) {
     this(totalHits, scoreDocs, Float.NaN);
   }
 
-  /** Expert: Constructs a TopDocs.*/
   public TopDocs(int totalHits, ScoreDoc[] scoreDocs, float maxScore) {
     this.totalHits = totalHits;
     this.scoreDocs = scoreDocs;
