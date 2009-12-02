@@ -104,8 +104,9 @@ public class TestWildcard
     MultiTermQuery wq = new WildcardQuery(new Term("field", ""));
     wq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     assertMatches(searcher, wq, 0);
-    BooleanQuery expected = new BooleanQuery(true);
-    assertEquals(searcher.rewrite(expected), searcher.rewrite(wq));
+    Query q = searcher.rewrite(wq);
+    assertTrue(q instanceof BooleanQuery);
+    assertEquals(0, ((BooleanQuery) q).clauses().size());
   }
   
   /**
