@@ -97,7 +97,7 @@ public class TestRAMDirectory extends LuceneTestCase {
     searcher.close();
   }
   
-  private final int numThreads = 50;
+  private final int numThreads = 10;
   private final int docsPerThread = 40;
   
   public void testRAMDirectorySize() throws IOException, InterruptedException {
@@ -124,9 +124,6 @@ public class TestRAMDirectory extends LuceneTestCase {
               writer.addDocument(doc);
             } catch (IOException e) {
               throw new RuntimeException(e);
-            }
-            synchronized (ramDir) {
-              assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
             }
           }
         }
