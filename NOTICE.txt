@@ -20,6 +20,11 @@ stopword list that is BSD-licensed created by Jacques Savoy.  The file resides i
 contrib/analyzers/common/src/resources/org/apache/lucene/analysis/fa/stopwords.txt.
 See http://members.unine.ch/jacques.savoy/clef/index.html.
 
+The Bulgarian analyzer (contrib/analyzers) comes with a default
+stopword list that is BSD-licensed created by Jacques Savoy.  The file resides in
+contrib/analyzers/common/src/resources/org/apache/lucene/analysis/bg/stopwords.txt.
+See http://members.unine.ch/jacques.savoy/clef/index.html.
+
 Includes lib/servlet-api-2.4.jar from  Apache Tomcat
 
 The SmartChineseAnalyzer source code (under contrib/analyzers) was

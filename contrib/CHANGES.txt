@@ -15,6 +15,8 @@ New features
  * LUCENE-2067: Add a Czech light stemmer. CzechAnalyzer will now stem words
    when Version is set to 3.1 or higher.  (Robert Muir)
    
+ * LUCENE-2062: Add a Bulgarian analyzer.  (Robert Muir, Simon Willnauer)
+   
 
 ======================= Release 3.0.0 2009-11-25 =======================
 
