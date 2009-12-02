@@ -180,7 +180,7 @@ public class RAMDirectory extends Directory implements Serializable {
     synchronized (this) {
       RAMFile existing = fileMap.get(name);
       if (existing!=null) {
-        sizeInBytes.addAndGet(existing.sizeInBytes);
+        sizeInBytes.addAndGet(-existing.sizeInBytes);
         existing.directory = null;
       }
       fileMap.put(name, file);
