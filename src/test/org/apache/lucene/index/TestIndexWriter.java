@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashSet;
 import java.util.Random;
+import java.util.Collections;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
@@ -4683,5 +4684,57 @@ public class TestIndexWriter extends BaseTokenStreamTestCase {
 
     _TestUtil.checkIndex(dir);
     dir.close();
+  }
+
+  // LUCENE-2095: make sure with multiple threads commit
+  // doesn't return until all changes are in fact in the
+  // index
+  public void testCommitThreadSafety() throws Throwable {
+    final int NUM_THREADS = 5;
+    final double RUN_SEC = 0.5;
+    final Directory dir = new MockRAMDirectory();
+    final IndexWriter w = new IndexWriter(dir, new SimpleAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    w.commit();
+    final List failed = Collections.synchronizedList(new ArrayList());
+    Thread[] threads = new Thread[NUM_THREADS];
+    final long endTime = System.currentTimeMillis()+((long) (RUN_SEC*1000));
+    for(int i=0;i<NUM_THREADS;i++) {
+      final int finalI = i;
+      threads[i] = new Thread() {
+          public void run() {
+            try {
+              final Document doc = new Document();
+              IndexReader r = IndexReader.open(dir);
+              Field f = new Field("f", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+              doc.add(f);
+              int count = 0;
+              while(System.currentTimeMillis() < endTime && failed.size() == 0) {
+                for(int j=0;j<10;j++) {
+                  final String s = finalI + "_" + String.valueOf(count++);
+                  f.setValue(s);
+                  w.addDocument(doc);
+                  w.commit();
+                  IndexReader r2 = r.reopen();
+                  assertTrue(r2 != r);
+                  r.close();
+                  r = r2;
+                  assertEquals("term=f:" + s, 1, r.docFreq(new Term("f", s)));
+                }
+              }
+              r.close();
+            } catch (Throwable t) {
+              failed.add(this);
+              throw new RuntimeException(t);
+            }
+          }
+        };
+      threads[i].start();
+    }
+    for(int i=0;i<NUM_THREADS;i++) {
+      threads[i].join();
+    }
+    w.close();
+    dir.close();
+    assertEquals(0, failed.size());
   }
 }

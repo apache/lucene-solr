@@ -37,7 +37,7 @@ public class RAMDirectory extends Directory implements Serializable {
   private static final long serialVersionUID = 1l;
 
   HashMap fileMap = new HashMap();
-  long sizeInBytes = 0;
+  long sizeInBytes;
   
   // *****
   // Lock acquisition sequence:  RAMDirectory, then RAMFile
@@ -195,7 +195,7 @@ public class RAMDirectory extends Directory implements Serializable {
     if (file!=null) {
         fileMap.remove(name);
         file.directory = null;
-        sizeInBytes -= file.sizeInBytes;       // updates to RAMFile.sizeInBytes synchronized on directory
+        sizeInBytes -= file.sizeInBytes;
     } else
       throw new FileNotFoundException(name);
   }
