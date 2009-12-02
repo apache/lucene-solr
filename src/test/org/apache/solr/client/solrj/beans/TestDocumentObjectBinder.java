@@ -25,12 +25,14 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Assert;
 
 import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -100,6 +102,15 @@ public class TestDocumentObjectBinder extends TestCase
     item.inStock = false;
     item.categories =  new String[] { "aaa", "bbb", "ccc" };
     item.features = Arrays.asList( item.categories );
+    List<String> supA =  Arrays.asList(  new String[] { "supA1", "supA2", "supA3" } );
+    List<String> supB =  Arrays.asList(  new String[] { "supB1", "supB2", "supB3"});
+    item.supplier = new HashMap<String, List<String>>();
+    item.supplier.put("supplier_supA", supA);
+    item.supplier.put("supplier_supB", supB);
+    
+    item.supplier_simple = new HashMap<String, String>();
+    item.supplier_simple.put("sup_simple_supA", "supA_val");
+    item.supplier_simple.put("sup_simple_supB", "supB_val");
     
     DocumentObjectBinder binder = new DocumentObjectBinder();
     SolrInputDocument doc = binder.toSolrInputDocument( item );
@@ -113,10 +124,38 @@ public class TestDocumentObjectBinder extends TestCase
     Assert.assertEquals( item.inStock, out.inStock );
     Assert.assertEquals( item.categories.length, out.categories.length );
     Assert.assertEquals( item.features, out.features );
+    Assert.assertEquals( supA,out.supplier.get("supplier_supA"));
+    Assert.assertEquals( supB, out.supplier.get("supplier_supB"));
+    Assert.assertEquals( item.supplier_simple.get("sup_simple_supB"), out.supplier_simple.get("sup_simple_supB"));
+    
     Assert.assertEquals( item.id, singleOut.id );
     Assert.assertEquals( item.inStock, singleOut.inStock );
     Assert.assertEquals( item.categories.length, singleOut.categories.length );
     Assert.assertEquals( item.features, singleOut.features );
+    Assert.assertEquals( supA, singleOut.supplier.get("supplier_supA"));
+    Assert.assertEquals( supB, singleOut.supplier.get("supplier_supB"));
+    Assert.assertEquals( item.supplier_simple.get("sup_simple_supB"), out.supplier_simple.get("sup_simple_supB"));
+    
+//    put back "out" as Bean, to see if both ways work as you would expect
+//    but the Field that "allSuppliers" need to be cleared, as it is just for 
+//    retrieving data, not to post data
+    out.allSuppliers = null;
+    SolrInputDocument doc1 = binder.toSolrInputDocument( out );
+    
+    SolrDocumentList docs1 = new SolrDocumentList();
+    docs1.add( ClientUtils.toSolrDocument(doc1) );
+    Item out1 = binder.getBeans( Item.class, docs1 ).get( 0 );
+    
+    Assert.assertEquals( item.id, out1.id );
+    Assert.assertEquals( item.inStock, out1.inStock );
+    Assert.assertEquals( item.categories.length, out1.categories.length );
+    Assert.assertEquals( item.features, out1.features );
+
+    Assert.assertEquals( item.supplier_simple.get("sup_simple_supB"), out1.supplier_simple.get("sup_simple_supB"));
+    
+    Assert.assertEquals( supA,out1.supplier.get("supplier_supA"));
+    Assert.assertEquals( supB, out1.supplier.get("supplier_supB"));
+    
   }
 
   public static class Item {
@@ -139,6 +178,9 @@ public class TestDocumentObjectBinder extends TestCase
 
     @Field("supplier_*")
     Map<String, List<String>> supplier;
+    
+    @Field("sup_simple_*")
+    Map<String, String> supplier_simple;
 
     private String[] allSuppliers;
 

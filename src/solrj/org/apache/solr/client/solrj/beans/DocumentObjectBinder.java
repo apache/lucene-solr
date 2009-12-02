@@ -76,9 +76,19 @@ public class DocumentObjectBinder {
     }
     
     SolrInputDocument doc = new SolrInputDocument();
-    for( DocField field : fields ) {
-      doc.setField( field.name, field.get( obj ), 1.0f );
-    }
+	for (DocField field : fields) {
+		if (field.dynamicFieldNamePatternMatcher != null
+				&& field.get(obj) != null && field.isContainedInMap) {
+			Map<String, Object> mapValue = (HashMap<String, Object>) field
+					.get(obj);
+
+			for (Map.Entry<String, Object> e : mapValue.entrySet()) {
+				doc.setField( e.getKey(), e.getValue(), 1.0f);
+			}
+		} else {
+			doc.setField(field.name, field.get(obj), 1.0f);
+		}
+	}
     return doc;
   }
   
