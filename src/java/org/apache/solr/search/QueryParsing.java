@@ -625,14 +625,32 @@ public class QueryParsing {
         }
         char ch = val.charAt(pos);
         if (ch=='\\') {
-          ch = pos<end ? val.charAt(pos++) : 0;
-        } else if (ch==delim) {
           pos++;
-          return sb.toString();
+          if (pos>=end) break; 
+          ch = val.charAt(pos);
+          switch(ch) {
+            case 'n' : ch='\n'; break;
+            case 't' : ch='\t'; break;
+            case 'r' : ch='\r'; break;
+            case 'b' : ch='\b'; break;
+            case 'f' : ch='\f'; break;
+            case 'u' :
+              if (pos+4 >= end) {
+                throw new ParseException("bad unicode escape \\uxxxx at pos" + (val_start-1) + " str='"+val+"'");                
+              }
+              ch = (char)Integer.parseInt(val.substring(pos+1, pos+5), 16);
+              pos += 4;
+              break;
+          }
+        } else if (ch==delim) {
+          pos++;  // skip over the quote
+          break;
         }
         sb.append(ch);
         pos++;
       }
+
+      return sb.toString();
     }
 
     // next non-whitespace char

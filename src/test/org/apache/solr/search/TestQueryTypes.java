@@ -46,6 +46,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
     assertU(adoc("id","6", "v_f","8983"));
     assertU(adoc("id","7", "v_f","1.5"));
     assertU(adoc("id","8", "v_ti","5"));
+    assertU(adoc("id","9", "v_s","internal\"quote"));
 
     Object[] arr = new Object[] {
     "id",999.0
@@ -125,6 +126,34 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             ,"//result[@numFound='0']"
             );
 
+    //
+    // test escapes in quoted strings
+    //
+
+    // the control... unescaped queries looking for internal"quote
+    assertQ(req("q","{!raw f=v_s}internal\"quote")
+            ,"//result[@numFound='1']"
+            );
+
+    // test that single quoted string needs no escape
+    assertQ(req("q","{!raw f=v_s v='internal\"quote'}")
+            ,"//result[@numFound='1']"
+            );
+
+    // but it's OK if the escape is done
+    assertQ(req("q","{!raw f=v_s v='internal\\\"quote'}")
+            ,"//result[@numFound='1']"
+            );
+
+    // test unicode escape
+    assertQ(req("q","{!raw f=v_s v=\"internal\\u0022quote\"}")
+            ,"//result[@numFound='1']"
+            );
+
+    // inside a quoted string, internal"quote needs to be escaped
+    assertQ(req("q","{!raw f=v_s v=\"internal\\\"quote\"}")
+            ,"//result[@numFound='1']"
+            );
 
     assertQ("test custom plugin query",
             req("q","{!foo f=v_t}hello")

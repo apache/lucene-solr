@@ -104,6 +104,10 @@ Bug Fixes
 
 * SOLR-1601: Schema browser does not indicate presence of charFilter. (koji)
 
+* SOLR-1615: Backslash escaping did not work in quoted strings
+  for local param arguments. (Wojtek Piaseczny, yonik)
+
+
 Other Changes
 ----------------------
 
