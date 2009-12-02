@@ -23,6 +23,11 @@ Bug fixes
   and equals methods, cause bad things to happen when caching
   BooleanQueries.  (Chris Hostetter, Mike McCandless)
 
+* LUCENE-2095: Fixes: when two threads call IndexWriter.commit() at
+  the same time, it's possible for commit to return control back to
+  one of the threads before all changes are actually committed.
+  (Sanne Grinovero via Mike McCandless)
+
 New features
 
 * LUCENE-2069: Added Unicode 4 support to CharArraySet. Due to the switch

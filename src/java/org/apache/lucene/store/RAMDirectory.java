@@ -22,6 +22,7 @@ import java.io.FileNotFoundException;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -34,7 +35,7 @@ public class RAMDirectory extends Directory implements Serializable {
   private static final long serialVersionUID = 1l;
 
   HashMap<String,RAMFile> fileMap = new HashMap<String,RAMFile>();
-  long sizeInBytes = 0;
+  final AtomicLong sizeInBytes = new AtomicLong();
   
   // *****
   // Lock acquisition sequence:  RAMDirectory, then RAMFile
@@ -153,7 +154,7 @@ public class RAMDirectory extends Directory implements Serializable {
    * RAMOutputStream.BUFFER_SIZE. */
   public synchronized final long sizeInBytes() {
     ensureOpen();
-    return sizeInBytes;
+    return sizeInBytes.get();
   }
   
   /** Removes an existing file in the directory.
@@ -166,7 +167,7 @@ public class RAMDirectory extends Directory implements Serializable {
     if (file!=null) {
         fileMap.remove(name);
         file.directory = null;
-        sizeInBytes -= file.sizeInBytes;       // updates to RAMFile.sizeInBytes synchronized on directory
+        sizeInBytes.addAndGet(-file.sizeInBytes);
     } else
       throw new FileNotFoundException(name);
   }
@@ -179,7 +180,7 @@ public class RAMDirectory extends Directory implements Serializable {
     synchronized (this) {
       RAMFile existing = fileMap.get(name);
       if (existing!=null) {
-        sizeInBytes -= existing.sizeInBytes;
+        sizeInBytes.addAndGet(existing.sizeInBytes);
         existing.directory = null;
       }
       fileMap.put(name, file);

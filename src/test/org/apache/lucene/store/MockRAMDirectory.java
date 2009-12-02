@@ -18,7 +18,6 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Iterator;
 import java.util.Random;
@@ -213,7 +212,7 @@ public class MockRAMDirectory extends RAMDirectory {
       throw new IOException("file " + name + " already exists");
     else {
       if (existing!=null) {
-        sizeInBytes -= existing.sizeInBytes;
+        sizeInBytes.getAndAdd(-existing.sizeInBytes);
         existing.directory = null;
       }
 

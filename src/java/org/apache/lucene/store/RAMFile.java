@@ -27,7 +27,7 @@ class RAMFile implements Serializable {
   private ArrayList<byte[]> buffers = new ArrayList<byte[]>();
   long length;
   RAMDirectory directory;
-  long sizeInBytes;                  // Only maintained if in a directory; updates synchronized on directory
+  long sizeInBytes;
 
   // This is publicly modifiable via Directory.touchFile(), so direct access not supported
   private long lastModified = System.currentTimeMillis();
@@ -57,16 +57,16 @@ class RAMFile implements Serializable {
     this.lastModified = lastModified;
   }
 
-  final synchronized byte[] addBuffer(int size) {
+  final byte[] addBuffer(int size) {
     byte[] buffer = newBuffer(size);
-    if (directory!=null)
-      synchronized (directory) {             // Ensure addition of buffer and adjustment to directory size are atomic wrt directory
-        buffers.add(buffer);
-        directory.sizeInBytes += size;
-        sizeInBytes += size;
-      }
-    else
+    synchronized(this) {
       buffers.add(buffer);
+      sizeInBytes += size;
+    }
+
+    if (directory != null) {
+      directory.sizeInBytes.getAndAdd(size);
+    }
     return buffer;
   }
 
@@ -88,11 +88,8 @@ class RAMFile implements Serializable {
     return new byte[size];
   }
 
-  // Only valid if in a directory
-  long getSizeInBytes() {
-    synchronized (directory) {
-      return sizeInBytes;
-    }
+  synchronized long getSizeInBytes() {
+    return sizeInBytes;
   }
   
 }
