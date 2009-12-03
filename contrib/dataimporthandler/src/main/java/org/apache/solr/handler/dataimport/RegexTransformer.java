@@ -44,18 +44,14 @@ public class RegexTransformer extends Transformer {
 
   @SuppressWarnings("unchecked")
   public Map<String, Object> transformRow(Map<String, Object> row,
-                                          Context context) {
-    VariableResolver vr = context.getVariableResolver();
-    List<Map<String, String>> fields = context.getAllEntityFields();
+                                          Context ctx) {
+    List<Map<String, String>> fields = ctx.getAllEntityFields();
     for (Map<String, String> field : fields) {
       String col = field.get(DataImporter.COLUMN);
-      String reStr = field.get(REGEX);
-      reStr = vr.replaceTokens(reStr);
-      String splitBy = field.get(SPLIT_BY);
-      splitBy =  vr.replaceTokens(splitBy);
-      String replaceWith = field.get(REPLACE_WITH);
-      replaceWith = vr.replaceTokens(replaceWith);
-      String groupNames = vr.replaceTokens(field.get(GROUP_NAMES));
+      String reStr = ctx.replaceTokens(field.get(REGEX));
+      String splitBy = ctx.replaceTokens(field.get(SPLIT_BY));
+      String replaceWith = ctx.replaceTokens(field.get(REPLACE_WITH));
+      String groupNames = ctx.replaceTokens(field.get(GROUP_NAMES));
       if (reStr != null || splitBy != null) {
         String srcColName = field.get(SRC_COL_NAME);
         if (srcColName == null) {
