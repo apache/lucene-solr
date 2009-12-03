@@ -214,4 +214,12 @@ public class ContextImpl extends Context {
       docBuilder.writer.deleteByQuery(query);
     } 
   }
+
+  public Object resolve(String var) {
+    return resolver.resolve(var);
+  }
+
+  public String replaceTokens(String template) {
+    return resolver.replaceTokens(template);
+  }
 }

@@ -233,5 +233,13 @@ public abstract class AbstractDataImportHandlerTest extends
     public void deleteDocByQuery(String query) {
 
     }
+
+    public Object resolve(String var) {
+      return delegate.resolve(var);
+    }
+
+    public String replaceTokens(String template) {
+      return delegate.replaceTokens(template);
+    }
   }
 }

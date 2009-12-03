@@ -208,5 +208,17 @@ public abstract class Context {
    */
   public abstract void deleteDocByQuery(String query);
 
+  /**Use this directly to  resolve variable
+   * @param var the variable neme 
+   * @return the resolved value
+   */
+  public abstract Object resolve(String var);
+
+  /** Resolve variables in a template
+   * @param template
+   * @return The string w/ variables resolved
+   */
+  public abstract String replaceTokens(String template);
+
 
 }
