@@ -101,24 +101,21 @@ public class EntityProcessorWrapper extends EntityProcessor {
       }
       try {
         Class clazz = DocBuilder.loadClass(trans, context.getSolrCore());
-        if (clazz.newInstance() instanceof Transformer) {
+        if (Transformer.class.isAssignableFrom(clazz)) {
           transformers.add((Transformer) clazz.newInstance());
         } else {
-          final Method meth = clazz.getMethod(TRANSFORM_ROW, Map.class);
-          if (meth == null) {
-            String msg = "Transformer :"
-                    + trans
-                    + "does not implement Transformer interface or does not have a transformRow(Map m)method";
-            log.error(msg);
-            throw new DataImportHandlerException(
-                    SEVERE, msg);
-          }
+          Method meth = clazz.getMethod(TRANSFORM_ROW, Map.class);
           transformers.add(new ReflectionTransformer(meth, clazz, trans));
         }
+      } catch (NoSuchMethodException nsme){
+         String msg = "Transformer :"
+                    + trans
+                    + "does not implement Transformer interface or does not have a transformRow(Map<String.Object> m)method";
+            log.error(msg);
+            wrapAndThrow(SEVERE, nsme,msg);        
       } catch (Exception e) {
         log.error("Unable to load Transformer: " + aTransArr, e);
-        throw new DataImportHandlerException(SEVERE,
-                e);
+        wrapAndThrow(SEVERE, e,"Unable to load Transformer: " + trans);
       }
     }
 
