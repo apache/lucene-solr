@@ -409,4 +409,12 @@ public class SpellChecker {
       }
     }
   }
+
+  /**
+   * Close the IndexSearcher used by this SpellChecker.
+   */
+  public void close() throws IOException {
+    searcher.close();
+    searcher = null;
+  }
 }
