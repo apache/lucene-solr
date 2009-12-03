@@ -4,6 +4,10 @@ $Id$
 ======================= Trunk (not yet released) =======================
 Changes in backwards compatibility policy
 
+* LUCENE-1483: Removed utility class oal.util.SorterTemplate; this
+  class is no longer used by Lucene.  (Gunnar Wagenknecht via Mike
+  McCandless)
+
 Changes in runtime behavior
 
 API Changes
