@@ -21,7 +21,6 @@ import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.search.*;
-import org.apache.lucene.queryParser.*;
 
 import java.util.Random;
 import java.io.File;
@@ -155,7 +154,7 @@ public class TestStressIndexing extends LuceneTestCase {
     modifier.close();
 
     for(int i=0;i<numThread;i++)
-      assertTrue(!((TimedThread) threads[i]).failed);
+      assertTrue(! threads[i].failed);
 
     //System.out.println("    Writer: " + indexerThread.count + " iterations");
     //System.out.println("Searcher 1: " + searcherThread1.count + " searchers created");

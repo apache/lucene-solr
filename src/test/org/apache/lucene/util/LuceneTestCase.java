@@ -151,7 +151,7 @@ public abstract class LuceneTestCase extends TestCase {
    * @param iter Each next() is toString()ed and logged on it's own line. If iter is null this is logged differnetly then an empty iterator.
    * @param stream Stream to log messages to.
    */
-  public static void dumpIterator(String label, Iterator iter, 
+  public static <T> void dumpIterator(String label, Iterator<T> iter, 
                                   PrintStream stream) {
     stream.println("*** BEGIN "+label+" ***");
     if (null == iter) {
@@ -170,7 +170,7 @@ public abstract class LuceneTestCase extends TestCase {
    */
   public static void dumpArray(String label, Object[] objs, 
                                PrintStream stream) {
-    Iterator iter = (null == objs) ? null : Arrays.asList(objs).iterator();
+    Iterator<Object> iter = (null == objs) ? null : Arrays.asList(objs).iterator();
     dumpIterator(label, iter, stream);
   }
   

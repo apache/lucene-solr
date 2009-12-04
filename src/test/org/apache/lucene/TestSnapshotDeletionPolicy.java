@@ -19,7 +19,6 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
-import java.util.Iterator;
 import java.util.Collection;
 import java.io.File;
 import java.io.IOException;
@@ -79,7 +78,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
         writer.commit();
       }
     }
-    IndexCommit cp = (IndexCommit) dp.snapshot();
+    IndexCommit cp = dp.snapshot();
     copyFiles(dir, cp);
     writer.close();
     copyFiles(dir, cp);
@@ -181,7 +180,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
   public void backupIndex(Directory dir, SnapshotDeletionPolicy dp) throws Exception {
     // To backup an index we first take a snapshot:
     try {
-      copyFiles(dir, (IndexCommit) dp.snapshot());
+      copyFiles(dir,  dp.snapshot());
     } finally {
       // Make sure to release the snapshot, otherwise these
       // files will never be deleted during this IndexWriter
@@ -195,10 +194,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     // While we hold the snapshot, and nomatter how long
     // we take to do the backup, the IndexWriter will
     // never delete the files in the snapshot:
-    Collection files = cp.getFileNames();
-    Iterator it = files.iterator();
-    while(it.hasNext()) {
-      final String fileName = (String) it.next();
+    Collection<String> files = cp.getFileNames();
+    for (final String fileName : files) { 
       // NOTE: in a real backup you would not use
       // readFile; you would need to use something else
       // that copies the file to a backup location.  This

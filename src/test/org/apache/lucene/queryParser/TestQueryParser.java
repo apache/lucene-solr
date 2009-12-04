@@ -72,7 +72,7 @@ import org.apache.lucene.util.Version;
 public class TestQueryParser extends LocalizedTestCase {
 
   public TestQueryParser(String name) {
-    super(name, new HashSet(Arrays.asList(
+    super(name, new HashSet<String>(Arrays.asList(
       "testLegacyDateRange", "testDateRange",
       "testCJK", "testNumber", "testFarsiRangeCollating",
       "testLocalDateFormat"
@@ -798,7 +798,7 @@ public class TestQueryParser extends LocalizedTestCase {
 
   public void testBoost()
     throws Exception {
-    Set stopWords = new HashSet(1);
+    Set<Object> stopWords = new HashSet<Object>(1);
     stopWords.add("on");
     StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT, stopWords);
     QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "field", oneStopAnalyzer);

@@ -212,7 +212,7 @@ public final class FieldCacheSanityChecker {
       
       if (seen.contains(rf)) continue;
 
-      List kids = getAllDecendentReaderKeys(rf.readerKey);
+      List<Object> kids = getAllDecendentReaderKeys(rf.readerKey);
       for (Object kidKey : kids) {
         ReaderField kid = new ReaderField(kidKey, rf.fieldName);
         
@@ -270,7 +270,7 @@ public final class FieldCacheSanityChecker {
    * the hierarchy of subReaders building up a list of the objects 
    * returned by obj.getFieldCacheKey()
    */
-  private List getAllDecendentReaderKeys(Object seed) {
+  private List<Object> getAllDecendentReaderKeys(Object seed) {
     List<Object> all = new ArrayList<Object>(17); // will grow as we iter
     all.add(seed);
     for (int i = 0; i < all.size(); i++) {

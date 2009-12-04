@@ -31,13 +31,13 @@ public class TestHugeRamFile extends LuceneTestCase {
    * buffers under maxint. */
   private static class DenseRAMFile extends RAMFile {
     private long capacity = 0;
-    private HashMap singleBuffers = new HashMap();
+    private HashMap<Integer,byte[]> singleBuffers = new HashMap<Integer,byte[]>();
     @Override
     byte[] newBuffer(int size) {
       capacity += size;
       if (capacity <= MAX_VALUE) {
         // below maxint we reuse buffers
-        byte buf[] = (byte[]) singleBuffers.get(Integer.valueOf(size));
+        byte buf[] = singleBuffers.get(Integer.valueOf(size));
         if (buf==null) {
           buf = new byte[size]; 
           //System.out.println("allocate: "+size);

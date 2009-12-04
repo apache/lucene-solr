@@ -30,7 +30,7 @@ import java.util.HashSet;
 public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   
   private StopAnalyzer stop = new StopAnalyzer(Version.LUCENE_CURRENT);
-  private Set inValidTokens = new HashSet();
+  private Set<Object> inValidTokens = new HashSet<Object>();
   
   public TestStopAnalyzer(String s) {
     super(s);
@@ -40,7 +40,7 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     
-    Iterator it = StopAnalyzer.ENGLISH_STOP_WORDS_SET.iterator();
+    Iterator<?> it = StopAnalyzer.ENGLISH_STOP_WORDS_SET.iterator();
     while(it.hasNext()) {
       inValidTokens.add(it.next());
     }
@@ -59,7 +59,7 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testStopList() throws IOException {
-    Set stopWordsSet = new HashSet();
+    Set<Object> stopWordsSet = new HashSet<Object>();
     stopWordsSet.add("good");
     stopWordsSet.add("test");
     stopWordsSet.add("analyzer");
@@ -78,7 +78,7 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testStopListPositions() throws IOException {
-    Set stopWordsSet = new HashSet();
+    Set<Object> stopWordsSet = new HashSet<Object>();
     stopWordsSet.add("good");
     stopWordsSet.add("test");
     stopWordsSet.add("analyzer");

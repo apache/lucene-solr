@@ -25,9 +25,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
+import java.util.SortedSet;
 
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
@@ -72,7 +74,7 @@ public class TestIndexReader extends LuceneTestCase
     public void testCommitUserData() throws Exception {
       RAMDirectory d = new MockRAMDirectory();
 
-      Map commitUserData = new HashMap();
+      Map<String,String> commitUserData = new HashMap<String,String>();
       commitUserData.put("foo", "fighters");
       
       // set up writer
@@ -156,7 +158,7 @@ public class TestIndexReader extends LuceneTestCase
         writer.close();
         // set up reader
         IndexReader reader = IndexReader.open(d, false);
-        Collection fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
+        Collection<String> fieldNames = reader.getFieldNames(IndexReader.FieldOption.ALL);
         assertTrue(fieldNames.contains("keyword"));
         assertTrue(fieldNames.contains("text"));
         assertTrue(fieldNames.contains("unindexed"));
@@ -260,12 +262,12 @@ public class TestIndexReader extends LuceneTestCase
     IndexReader reader = IndexReader.open(d, false);
     FieldSortedTermVectorMapper mapper = new FieldSortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
     reader.getTermFreqVector(0, mapper);
-    Map map = mapper.getFieldToTerms();
+    Map<String,SortedSet<TermVectorEntry>> map = mapper.getFieldToTerms();
     assertTrue("map is null and it shouldn't be", map != null);
     assertTrue("map Size: " + map.size() + " is not: " + 4, map.size() == 4);
-    Set set = (Set) map.get("termvector");
-    for (Iterator iterator = set.iterator(); iterator.hasNext();) {
-      TermVectorEntry entry = (TermVectorEntry) iterator.next();
+    Set<TermVectorEntry> set = map.get("termvector");
+    for (Iterator<TermVectorEntry> iterator = set.iterator(); iterator.hasNext();) {
+      TermVectorEntry entry =  iterator.next();
       assertTrue("entry is null and it shouldn't be", entry != null);
       System.out.println("Entry: " + entry);
     }
@@ -380,9 +382,9 @@ public class TestIndexReader extends LuceneTestCase
         for (int i = 0; i < bin.length; i++) {
           assertEquals(bin[i], data1[i + b1.getBinaryOffset()]);
         }
-        Set lazyFields = new HashSet();
+        Set<String> lazyFields = new HashSet<String>();
         lazyFields.add("bin1");
-        FieldSelector sel = new SetBasedFieldSelector(new HashSet(), lazyFields);
+        FieldSelector sel = new SetBasedFieldSelector(new HashSet<String>(), lazyFields);
         doc = reader.document(reader.maxDoc() - 1, sel);
         Fieldable[] fieldables = doc.getFieldables("bin1");
         assertNotNull(fieldables);
@@ -1340,19 +1342,19 @@ public class TestIndexReader extends LuceneTestCase
       assertEquals("Only one index is optimized.", index1.isOptimized(), index2.isOptimized());
       
       // check field names
-      Collection fields1 = index1.getFieldNames(FieldOption.ALL);
-      Collection fields2 = index1.getFieldNames(FieldOption.ALL);
+      Collection<String> fields1 = index1.getFieldNames(FieldOption.ALL);
+      Collection<String> fields2 = index1.getFieldNames(FieldOption.ALL);
       assertEquals("IndexReaders have different numbers of fields.", fields1.size(), fields2.size());
-      Iterator it1 = fields1.iterator();
-      Iterator it2 = fields1.iterator();
+      Iterator<String> it1 = fields1.iterator();
+      Iterator<String> it2 = fields1.iterator();
       while (it1.hasNext()) {
-        assertEquals("Different field names.", (String) it1.next(), (String) it2.next());
+        assertEquals("Different field names.", it1.next(), it2.next());
       }
       
       // check norms
       it1 = fields1.iterator();
       while (it1.hasNext()) {
-        String curField = (String) it1.next();
+        String curField = it1.next();
         byte[] norms1 = index1.norms(curField);
         byte[] norms2 = index2.norms(curField);
         if (norms1 != null && norms2 != null)
@@ -1378,14 +1380,14 @@ public class TestIndexReader extends LuceneTestCase
         if (!index1.isDeleted(i)) {
           Document doc1 = index1.document(i);
           Document doc2 = index2.document(i);
-          fields1 = doc1.getFields();
-          fields2 = doc2.getFields();
-          assertEquals("Different numbers of fields for doc " + i + ".", fields1.size(), fields2.size());
-          it1 = fields1.iterator();
-          it2 = fields2.iterator();
-          while (it1.hasNext()) {
-            Field curField1 = (Field) it1.next();
-            Field curField2 = (Field) it2.next();
+          List<Fieldable> fieldable1 = doc1.getFields();
+          List<Fieldable> fieldable2 = doc2.getFields();
+          assertEquals("Different numbers of fields for doc " + i + ".", fieldable1.size(), fieldable2.size());
+          Iterator<Fieldable> itField1 = fieldable1.iterator();
+          Iterator<Fieldable> itField2 = fieldable2.iterator();
+          while (itField1.hasNext()) {
+            Field curField1 = (Field) itField1.next();
+            Field curField2 = (Field) itField2.next();
             assertEquals("Different fields names for doc " + i + ".", curField1.name(), curField2.name());
             assertEquals("Different field values for doc " + i + ".", curField1.stringValue(), curField2.stringValue());
           }          
@@ -1587,15 +1589,11 @@ public class TestIndexReader extends LuceneTestCase
     writer.addDocument(createDocument("a"));
     writer.close();
     
-    Collection commits = IndexReader.listCommits(dir);
-    Iterator it = commits.iterator();
-    while(it.hasNext()) {
-      IndexCommit commit = (IndexCommit) it.next();
-      Collection files = commit.getFileNames();
-      HashSet seen = new HashSet();
-      Iterator it2 = files.iterator();
-      while(it2.hasNext()) {
-        String fileName = (String) it2.next();
+    Collection<IndexCommit> commits = IndexReader.listCommits(dir);
+    for (final IndexCommit commit : commits) {
+      Collection<String> files = commit.getFileNames();
+      HashSet<String> seen = new HashSet<String>();
+      for (final String fileName : files) { 
         assertTrue("file " + fileName + " was duplicated", !seen.contains(fileName));
         seen.add(fileName);
       }

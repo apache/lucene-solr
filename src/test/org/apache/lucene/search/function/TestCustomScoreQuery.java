@@ -19,7 +19,6 @@ package org.apache.lucene.search.function;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.queryParser.QueryParser;
@@ -184,11 +183,11 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     TopDocs td5CustomMulAdd = s.search(q5CustomMulAdd,null,1000);
     
     // put results in map so we can verify the scores although they have changed
-    HashMap h1 = topDocsToMap(td1);
-    HashMap h2CustomNeutral = topDocsToMap(td2CustomNeutral);
-    HashMap h3CustomMul = topDocsToMap(td3CustomMul);
-    HashMap h4CustomAdd = topDocsToMap(td4CustomAdd);
-    HashMap h5CustomMulAdd = topDocsToMap(td5CustomMulAdd);
+    HashMap<Integer,Float> h1               = topDocsToMap(td1);
+    HashMap<Integer,Float> h2CustomNeutral  = topDocsToMap(td2CustomNeutral);
+    HashMap<Integer,Float> h3CustomMul      = topDocsToMap(td3CustomMul);
+    HashMap<Integer,Float> h4CustomAdd      = topDocsToMap(td4CustomAdd);
+    HashMap<Integer,Float> h5CustomMulAdd   = topDocsToMap(td5CustomMulAdd);
     
     verifyResults(boost, s, 
         h1, h2CustomNeutral, h3CustomMul, h4CustomAdd, h5CustomMulAdd,
@@ -197,7 +196,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   
   // verify results are as expected.
   private void verifyResults(float boost, IndexSearcher s, 
-      HashMap h1, HashMap h2customNeutral, HashMap h3CustomMul, HashMap h4CustomAdd, HashMap h5CustomMulAdd,
+      HashMap<Integer,Float> h1, HashMap<Integer,Float> h2customNeutral, HashMap<Integer,Float> h3CustomMul, HashMap<Integer,Float> h4CustomAdd, HashMap<Integer,Float> h5CustomMulAdd,
       Query q1, Query q2, Query q3, Query q4, Query q5) throws Exception {
     
     // verify numbers of matches
@@ -214,8 +213,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     QueryUtils.check(q5,s);
 
     // verify scores ratios
-    for (Iterator it = h1.keySet().iterator(); it.hasNext();) {
-      Integer x = (Integer) it.next();
+    for (final Integer x : h1.keySet()) {
 
       int doc =  x.intValue();
       log("doc = "+doc);
@@ -224,22 +222,22 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       log("fieldScore = "+fieldScore);
       assertTrue("fieldScore should not be 0",fieldScore>0);
 
-      float score1 = ((Float)h1.get(x)).floatValue();
+      float score1 = h1.get(x).floatValue();
       logResult("score1=", s, q1, doc, score1);
       
-      float score2 = ((Float)h2customNeutral.get(x)).floatValue();
+      float score2 = h2customNeutral.get(x).floatValue();
       logResult("score2=", s, q2, doc, score2);
       assertEquals("same score (just boosted) for neutral", boost * score1, score2, TEST_SCORE_TOLERANCE_DELTA);
 
-      float score3 = ((Float)h3CustomMul.get(x)).floatValue();
+      float score3 = h3CustomMul.get(x).floatValue();
       logResult("score3=", s, q3, doc, score3);
       assertEquals("new score for custom mul", boost * fieldScore * score1, score3, TEST_SCORE_TOLERANCE_DELTA);
       
-      float score4 = ((Float)h4CustomAdd.get(x)).floatValue();
+      float score4 = h4CustomAdd.get(x).floatValue();
       logResult("score4=", s, q4, doc, score4);
       assertEquals("new score for custom add", boost * (fieldScore + score1), score4, TEST_SCORE_TOLERANCE_DELTA);
       
-      float score5 = ((Float)h5CustomMulAdd.get(x)).floatValue();
+      float score5 = h5CustomMulAdd.get(x).floatValue();
       logResult("score5=", s, q5, doc, score5);
       assertEquals("new score for custom mul add", boost * fieldScore * (score1 + fieldScore), score5, TEST_SCORE_TOLERANCE_DELTA);
     }
@@ -253,8 +251,8 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
 
   // since custom scoring modifies the order of docs, map results 
   // by doc ids so that we can later compare/verify them 
-  private HashMap topDocsToMap(TopDocs td) {
-    HashMap h = new HashMap(); 
+  private HashMap<Integer,Float> topDocsToMap(TopDocs td) {
+    HashMap<Integer,Float> h = new HashMap<Integer,Float>(); 
     for (int i=0; i<td.totalHits; i++) {
       h.put(Integer.valueOf(td.scoreDocs[i].doc), Float.valueOf(td.scoreDocs[i].score));
     }

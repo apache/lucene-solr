@@ -46,7 +46,7 @@ public class TestLazyBug extends LuceneTestCase {
     "this string is a bigger string, mary had a little lamb, little lamb, little lamb!"
   };
 
-  private static Set dataset = new HashSet(Arrays.asList(data));
+  private static Set<String> dataset = new HashSet<String>(Arrays.asList(data));
   
   private static String MAGIC_FIELD = "f"+(NUM_FIELDS/3);
   
@@ -93,11 +93,11 @@ public class TestLazyBug extends LuceneTestCase {
       Document d = reader.document(docs[i], SELECTOR);
       d.get(MAGIC_FIELD);
       
-      List fields = d.getFields();
-      for (Iterator fi = fields.iterator(); fi.hasNext(); ) {
+      List<Fieldable> fields = d.getFields();
+      for (Iterator<Fieldable> fi = fields.iterator(); fi.hasNext(); ) {
         Fieldable f=null;
         try {
-          f = (Fieldable) fi.next();
+          f =  fi.next();
           String fname = f.name();
           String fval = f.stringValue();
           assertNotNull(docs[i]+" FIELD: "+fname, fval);

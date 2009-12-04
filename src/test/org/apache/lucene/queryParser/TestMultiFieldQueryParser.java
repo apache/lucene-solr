@@ -130,7 +130,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
   }
   
   public void testBoostsSimple() throws Exception {
-      Map boosts = new HashMap();
+      Map<String,Float> boosts = new HashMap<String,Float>();
       boosts.put("b", Float.valueOf(5));
       boosts.put("t", Float.valueOf(10));
       String[] fields = {"b", "t"};
@@ -218,7 +218,6 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
     String[] fields = {"b", "t"};
     //int[] flags = {MultiFieldQueryParser.REQUIRED_FIELD, MultiFieldQueryParser.PROHIBITED_FIELD};
       BooleanClause.Occur[] flags = {BooleanClause.Occur.MUST, BooleanClause.Occur.MUST_NOT};
-      MultiFieldQueryParser parser = new MultiFieldQueryParser(Version.LUCENE_CURRENT, fields, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
 
     Query q = MultiFieldQueryParser.parse(Version.LUCENE_CURRENT, "one", fields, flags, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));//, fields, flags, new StandardAnalyzer());
     assertEquals("+b:one -t:one", q.toString());

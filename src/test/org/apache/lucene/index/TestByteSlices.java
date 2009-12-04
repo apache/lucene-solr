@@ -21,7 +21,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestByteSlices extends LuceneTestCase {
 
   private static class ByteBlockAllocator extends ByteBlockPool.Allocator {
-    ArrayList freeByteBlocks = new ArrayList();
+    ArrayList<byte[]> freeByteBlocks = new ArrayList<byte[]>();
     
     /* Allocate another byte[] from the shared pool */
     @Override
@@ -31,7 +31,7 @@ public class TestByteSlices extends LuceneTestCase {
       if (0 == size)
         b = new byte[DocumentsWriter.BYTE_BLOCK_SIZE];
       else
-        b = (byte[]) freeByteBlocks.remove(size-1);
+        b =  freeByteBlocks.remove(size-1);
       return b;
     }
 

@@ -18,24 +18,7 @@ package org.apache.lucene.search.spans;
  */
 
 import org.apache.lucene.search.*;
-import org.apache.lucene.store.RAMDirectory;
 
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.queryParser.ParseException;
-
-import junit.framework.TestCase;
-
-import java.util.Random;
-import java.util.BitSet;
 
 /**
  * TestExplanations subclass focusing on span queries

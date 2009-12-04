@@ -85,9 +85,8 @@ public class TestThreadSafe extends LuceneTestCase {
                 }
               );
 
-      List fields = doc.getFields();
-      for (int i=0; i<fields.size(); i++) {
-        Fieldable f = (Fieldable)fields.get(i);
+      List<Fieldable> fields = doc.getFields();
+      for (final Fieldable f : fields ) {
         validateField(f);
       }
 

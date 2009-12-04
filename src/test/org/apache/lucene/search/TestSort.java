@@ -634,9 +634,9 @@ public class TestSort extends LuceneTestCase implements Serializable {
   public void testNormalizedScores() throws Exception {
 
     // capture relevancy scores
-    HashMap scoresX = getScores (full.search (queryX, null, 1000).scoreDocs, full);
-    HashMap scoresY = getScores (full.search (queryY, null, 1000).scoreDocs, full);
-    HashMap scoresA = getScores (full.search (queryA, null, 1000).scoreDocs, full);
+    HashMap<String,Float> scoresX = getScores (full.search (queryX, null, 1000).scoreDocs, full);
+    HashMap<String,Float> scoresY = getScores (full.search (queryY, null, 1000).scoreDocs, full);
+    HashMap<String,Float> scoresA = getScores (full.search (queryA, null, 1000).scoreDocs, full);
 
     // we'll test searching locally, remote and multi
     
@@ -977,9 +977,9 @@ public class TestSort extends LuceneTestCase implements Serializable {
     assertEquals (expectedResult, buff.toString());
   }
 
-  private HashMap getScores (ScoreDoc[] hits, Searcher searcher)
+  private HashMap<String,Float> getScores (ScoreDoc[] hits, Searcher searcher)
   throws IOException {
-    HashMap scoreMap = new HashMap();
+    HashMap<String,Float> scoreMap = new HashMap<String,Float>();
     int n = hits.length;
     for (int i=0; i<n; ++i) {
       Document doc = searcher.doc(hits[i].doc);
@@ -991,15 +991,15 @@ public class TestSort extends LuceneTestCase implements Serializable {
   }
 
   // make sure all the values in the maps match
-  private void assertSameValues (HashMap m1, HashMap m2) {
+  private <K, V> void assertSameValues (HashMap<K,V> m1, HashMap<K,V> m2) {
     int n = m1.size();
     int m = m2.size();
     assertEquals (n, m);
-    Iterator iter = m1.keySet().iterator();
+    Iterator<K> iter = m1.keySet().iterator();
     while (iter.hasNext()) {
-      Object key = iter.next();
-      Object o1 = m1.get(key);
-      Object o2 = m2.get(key);
+      K key = iter.next();
+      V o1 = m1.get(key);
+      V o2 = m2.get(key);
       if (o1 instanceof Float) {
         assertEquals(((Float)o1).floatValue(), ((Float)o2).floatValue(), 1e-6);
       } else {

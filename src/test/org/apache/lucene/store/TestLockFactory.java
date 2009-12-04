@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -63,8 +62,7 @@ public class TestLockFactory extends LuceneTestCase {
         assertTrue("# calls to makeLock is 0 (after instantiating IndexWriter)",
                    lf.makeLockCount >= 1);
         
-        for(Iterator e = lf.locksCreated.keySet().iterator(); e.hasNext();) {
-            String lockName = (String) e.next();
+        for(final String lockName : lf.locksCreated.keySet()) {
             MockLockFactory.MockLock lock = (MockLockFactory.MockLock) lf.locksCreated.get(lockName);
             assertTrue("# calls to Lock.obtain is 0 (after instantiating IndexWriter)",
                        lock.lockAttempts > 0);
@@ -341,7 +339,7 @@ public class TestLockFactory extends LuceneTestCase {
     public class MockLockFactory extends LockFactory {
 
         public boolean lockPrefixSet;
-        public Map locksCreated = Collections.synchronizedMap(new HashMap());
+        public Map<String,Lock> locksCreated = Collections.synchronizedMap(new HashMap<String,Lock>());
         public int makeLockCount = 0;
 
         @Override

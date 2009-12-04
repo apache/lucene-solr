@@ -306,10 +306,10 @@ public class TestIndexWriterReader extends LuceneTestCase {
     final static int NUM_THREADS = 5;
     final Thread[] threads = new Thread[NUM_THREADS];
     IndexWriter mainWriter;
-    List deletedTerms = new ArrayList();
-    LinkedList toDeleteTerms = new LinkedList();
+    List<Term> deletedTerms = new ArrayList<Term>();
+    LinkedList<Term> toDeleteTerms = new LinkedList<Term>();
     Random random;
-    final List failures = new ArrayList();
+    final List<Throwable> failures = new ArrayList<Throwable>();
     
     public DeleteThreads(IndexWriter mainWriter) throws IOException {
       this.mainWriter = mainWriter;
@@ -326,7 +326,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     
     Term getDeleteTerm() {
       synchronized (toDeleteTerms) {
-        return (Term)toDeleteTerms.removeFirst();
+        return toDeleteTerms.removeFirst();
       }
     }
     
@@ -373,7 +373,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     int numDirs;
     final Thread[] threads = new Thread[NUM_THREADS];
     IndexWriter mainWriter;
-    final List failures = new ArrayList();
+    final List<Throwable> failures = new ArrayList<Throwable>();
     IndexReader[] readers;
     boolean didClose = false;
     HeavyAtomicInt count = new HeavyAtomicInt(0);
@@ -723,7 +723,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     final float SECONDS = 0.5f;
 
     final long endTime = (long) (System.currentTimeMillis() + 1000.*SECONDS);
-    final List excs = Collections.synchronizedList(new ArrayList());
+    final List<Throwable> excs = Collections.synchronizedList(new ArrayList<Throwable>());
 
     final Thread[] threads = new Thread[NUM_THREAD];
     for(int i=0;i<NUM_THREAD;i++) {
@@ -787,7 +787,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     final float SECONDS = 0.5f;
 
     final long endTime = (long) (System.currentTimeMillis() + 1000.*SECONDS);
-    final List excs = Collections.synchronizedList(new ArrayList());
+    final List<Throwable> excs = Collections.synchronizedList(new ArrayList<Throwable>());
 
     final Thread[] threads = new Thread[NUM_THREAD];
     for(int i=0;i<NUM_THREAD;i++) {

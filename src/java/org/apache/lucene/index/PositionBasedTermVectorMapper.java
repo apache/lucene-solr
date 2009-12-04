@@ -110,7 +110,7 @@ public class PositionBasedTermVectorMapper extends TermVectorMapper{
    *
    * @return A map between field names and a Map.  The sub-Map key is the position as the integer, the value is {@link org.apache.lucene.index.PositionBasedTermVectorMapper.TVPositionInfo}.
    */
-  public Map<String, Map<Integer, TVPositionInfo>>  getFieldToTerms() {
+  public Map<String,Map<Integer,TVPositionInfo>>  getFieldToTerms() {
     return fieldToTerms;
   }
 

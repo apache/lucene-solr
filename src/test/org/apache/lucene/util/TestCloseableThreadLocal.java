@@ -29,7 +29,7 @@ public class TestCloseableThreadLocal extends LuceneTestCase {
   public void testNullValue() throws Exception {
     // Tests that null can be set as a valid value (LUCENE-1805). This
     // previously failed in get().
-    CloseableThreadLocal ctl = new CloseableThreadLocal();
+    CloseableThreadLocal<Object> ctl = new CloseableThreadLocal<Object>();
     ctl.set(null);
     assertNull(ctl.get());
   }
@@ -37,12 +37,11 @@ public class TestCloseableThreadLocal extends LuceneTestCase {
   public void testDefaultValueWithoutSetting() throws Exception {
     // LUCENE-1805: make sure default get returns null,
     // twice in a row
-    CloseableThreadLocal ctl = new CloseableThreadLocal();
-    assertNull(ctl.get());
+    CloseableThreadLocal<Object> ctl = new CloseableThreadLocal<Object>();
     assertNull(ctl.get());
   }
 
-  public class InitValueThreadLocal extends CloseableThreadLocal {
+  public class InitValueThreadLocal extends CloseableThreadLocal<Object> {
     @Override
     protected Object initialValue() {
       return TEST_VALUE;

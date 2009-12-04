@@ -286,7 +286,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     for(int i=0;i<35;i++) {
       if (!reader.isDeleted(i)) {
         Document d = reader.document(i);
-        List fields = d.getFields();
+        List<Fieldable> fields = d.getFields();
         if (!oldName.startsWith("19.") &&
             !oldName.startsWith("20.") &&
             !oldName.startsWith("21.") &&
@@ -295,19 +295,19 @@ public class TestBackwardsCompatibility extends LuceneTestCase
           if (d.getField("content3") == null) {
             final int numFields = oldName.startsWith("29.") ? 7 : 5;
             assertEquals(numFields, fields.size());
-            Field f = (Field) d.getField("id");
+            Field f =  d.getField("id");
             assertEquals(""+i, f.stringValue());
 
-            f = (Field) d.getField("utf8");
+            f = d.getField("utf8");
             assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
 
-            f = (Field) d.getField("autf8");
+            f =  d.getField("autf8");
             assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
         
-            f = (Field) d.getField("content2");
+            f = d.getField("content2");
             assertEquals("here is more content with aaa aaa aaa", f.stringValue());
 
-            f = (Field) d.getField("fie\u2C77ld");
+            f = d.getField("fie\u2C77ld");
             assertEquals("field with non-ascii name", f.stringValue());
           }
         }       

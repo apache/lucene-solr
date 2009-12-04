@@ -17,7 +17,6 @@ package org.apache.lucene.queryParser;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;

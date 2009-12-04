@@ -153,7 +153,7 @@ implements Serializable {
       // make a query without sorting first
     ScoreDoc[] hitsByRank = searcher.search(query, null, 1000).scoreDocs;
     checkHits(hitsByRank, "Sort by rank: "); // check for duplicates
-        Map resultMap = new TreeMap();
+        Map<Integer,Integer> resultMap = new TreeMap<Integer,Integer>();
         // store hits in TreeMap - TreeMap does not allow duplicates; existing entries are silently overwritten
         for(int hitid=0;hitid<hitsByRank.length; ++hitid) {
             resultMap.put(
@@ -190,7 +190,7 @@ implements Serializable {
    */
     private void checkHits(ScoreDoc[] hits, String prefix) {
         if(hits!=null) {
-            Map idMap = new TreeMap();
+            Map<Integer,Integer> idMap = new TreeMap<Integer,Integer>();
             for(int docnum=0;docnum<hits.length;++docnum) {
                 Integer luceneId = null;
 
@@ -200,7 +200,7 @@ implements Serializable {
                     message.append("Duplicate key for hit index = ");
                     message.append(docnum);
                     message.append(", previous index = ");
-                    message.append(((Integer)idMap.get(luceneId)).toString());
+                    message.append((idMap.get(luceneId)).toString());
                     message.append(", Lucene ID = ");
                     message.append(luceneId);
                     log(message.toString());

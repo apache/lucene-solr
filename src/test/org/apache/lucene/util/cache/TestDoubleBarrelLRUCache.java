@@ -21,7 +21,7 @@ public class TestDoubleBarrelLRUCache extends BaseTestLRU {
 
   public void testLRUCache() throws Exception {
     final int n = 100;
-    testCache(new DoubleBarrelLRUCache(n), n);
+    testCache(new DoubleBarrelLRUCache<Integer,Object>(n), n);
   }
 
   private class CacheThread extends Thread {

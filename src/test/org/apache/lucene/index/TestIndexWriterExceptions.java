@@ -109,7 +109,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
   }
 
-  ThreadLocal doFail = new ThreadLocal();
+  ThreadLocal<Thread> doFail = new ThreadLocal<Thread>();
 
   public class MockIndexWriter extends IndexWriter {
     Random r = new java.util.Random(17);

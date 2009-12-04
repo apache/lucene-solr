@@ -26,8 +26,7 @@ import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.List;
+
 
 /**
  * tests for the TestTeeSinkTokenFilter

@@ -352,7 +352,7 @@ public class QueryUtils {
 
         List<IndexReader> readerList = new ArrayList<IndexReader>();
         ReaderUtil.gatherSubReaders(readerList, s.getIndexReader());
-        IndexReader[] readers = (IndexReader[]) readerList.toArray(new IndexReader[0]);
+        IndexReader[] readers =  readerList.toArray(new IndexReader[0]);
         for(int i = 0; i < readers.length; i++) {
           IndexReader reader = readers[i];
           Weight w = q.weight(s);
@@ -413,7 +413,7 @@ public class QueryUtils {
     
     List<IndexReader> readerList = new ArrayList<IndexReader>();
     ReaderUtil.gatherSubReaders(readerList, s.getIndexReader());
-    IndexReader[] readers = (IndexReader[]) readerList.toArray(new IndexReader[0]);
+    IndexReader[] readers = readerList.toArray(new IndexReader[0]);
     for(int i = 0; i < readers.length; i++) {
       IndexReader reader = readers[i];
       Weight w = q.weight(s);

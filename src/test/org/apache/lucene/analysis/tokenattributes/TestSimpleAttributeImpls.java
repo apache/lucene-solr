@@ -126,7 +126,7 @@ public class TestSimpleAttributeImpls extends LuceneTestCase {
   }
 
   public static final AttributeImpl assertCopyIsEqual(AttributeImpl att) throws Exception {
-    AttributeImpl copy = (AttributeImpl) att.getClass().newInstance();
+    AttributeImpl copy = att.getClass().newInstance();
     att.copyTo(copy);
     assertEquals("Copied instance must be equal", att, copy);
     assertEquals("Copied instance's hashcode must be equal", att.hashCode(), copy.hashCode());

@@ -22,7 +22,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Iterator;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -48,7 +48,7 @@ public class TestDoc extends LuceneTestCase {
 
     private File workDir;
     private File indexDir;
-    private LinkedList files;
+    private LinkedList<File> files;
 
 
     /** Set the test case. This test case needs
@@ -66,7 +66,7 @@ public class TestDoc extends LuceneTestCase {
         Directory directory = FSDirectory.open(indexDir);
         directory.close();
 
-        files = new LinkedList();
+        files = new LinkedList<File>();
         files.add(createOutput("test.txt",
             "This is the first test file"
         ));
@@ -188,9 +188,9 @@ public class TestDoc extends LuceneTestCase {
       merger.closeReaders();
       
       if (useCompoundFile) {
-        List filesToDelete = merger.createCompoundFile(merged + ".cfs");
-        for (Iterator iter = filesToDelete.iterator(); iter.hasNext();)
-          si1.dir.deleteFile((String) iter.next());
+        List<String> filesToDelete = merger.createCompoundFile(merged + ".cfs");
+        for (final String fileToDelete : filesToDelete) 
+          si1.dir.deleteFile(fileToDelete);
       }
 
       return new SegmentInfo(merged, si1.docCount + si2.docCount, si1.dir, useCompoundFile, true);

@@ -100,10 +100,10 @@ public class TestFieldsReader extends LuceneTestCase {
     FieldsReader reader = new FieldsReader(dir, TEST_SEGMENT_NAME, fieldInfos);
     assertTrue(reader != null);
     assertTrue(reader.size() == 1);
-    Set loadFieldNames = new HashSet();
+    Set<String> loadFieldNames = new HashSet<String>();
     loadFieldNames.add(DocHelper.TEXT_FIELD_1_KEY);
     loadFieldNames.add(DocHelper.TEXT_FIELD_UTF1_KEY);
-    Set lazyFieldNames = new HashSet();
+    Set<String> lazyFieldNames = new HashSet<String>();
     //new String[]{DocHelper.LARGE_LAZY_FIELD_KEY, DocHelper.LAZY_FIELD_KEY, DocHelper.LAZY_FIELD_BINARY_KEY};
     lazyFieldNames.add(DocHelper.LARGE_LAZY_FIELD_KEY);
     lazyFieldNames.add(DocHelper.LAZY_FIELD_KEY);
@@ -150,10 +150,10 @@ public class TestFieldsReader extends LuceneTestCase {
     FieldsReader reader = new FieldsReader(dir, TEST_SEGMENT_NAME, fieldInfos);
     assertTrue(reader != null);
     assertTrue(reader.size() == 1);
-    Set loadFieldNames = new HashSet();
+    Set<String> loadFieldNames = new HashSet<String>();
     loadFieldNames.add(DocHelper.TEXT_FIELD_1_KEY);
     loadFieldNames.add(DocHelper.TEXT_FIELD_UTF1_KEY);
-    Set lazyFieldNames = new HashSet();
+    Set<String> lazyFieldNames = new HashSet<String>();
     lazyFieldNames.add(DocHelper.LARGE_LAZY_FIELD_KEY);
     lazyFieldNames.add(DocHelper.LAZY_FIELD_KEY);
     lazyFieldNames.add(DocHelper.LAZY_FIELD_BINARY_KEY);
@@ -183,9 +183,10 @@ public class TestFieldsReader extends LuceneTestCase {
     Document doc = reader.doc(0, fieldSelector);
     assertTrue("doc is null and it shouldn't be", doc != null);
     int count = 0;
-    List l = doc.getFields();
-    for (Iterator iter = l.iterator(); iter.hasNext();) {
-      Field field = (Field) iter.next();
+    List<Fieldable> l = doc.getFields();
+    for (final Fieldable fieldable : l ) {
+      Field field = (Field) fieldable;
+
       assertTrue("field is null and it shouldn't be", field != null);
       String sv = field.stringValue();
       assertTrue("sv is null and it shouldn't be", sv != null);
@@ -220,9 +221,9 @@ public class TestFieldsReader extends LuceneTestCase {
     long lazyTime = 0;
     long regularTime = 0;
     int length = 50;
-    Set lazyFieldNames = new HashSet();
+    Set<String> lazyFieldNames = new HashSet<String>();
     lazyFieldNames.add(DocHelper.LARGE_LAZY_FIELD_KEY);
-    SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(Collections.EMPTY_SET, lazyFieldNames);
+    SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(Collections. <String> emptySet(), lazyFieldNames);
 
     for (int i = 0; i < length; i++) {
       reader = new FieldsReader(tmpDir, TEST_SEGMENT_NAME, fieldInfos);

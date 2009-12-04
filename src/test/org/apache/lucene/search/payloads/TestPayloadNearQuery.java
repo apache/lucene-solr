@@ -21,7 +21,6 @@ import java.util.Collection;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseTokenizer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
@@ -91,7 +90,6 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   }
   
   private PayloadNearQuery newPhraseQuery (String fieldName, String phrase, boolean inOrder) {
-    int n;
     String[] words = phrase.split("[\\s]+");
     SpanQuery clauses[] = new SpanQuery[words.length];
     for (int i=0;i<clauses.length;i++) {
@@ -159,7 +157,6 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   public void testPayloadNear() throws IOException {
     SpanNearQuery q1, q2;
     PayloadNearQuery query;
-    TopDocs hits;
     //SpanNearQuery(clauses, 10000, false)
     q1 = spanNearQuery("field2", "twenty two");
     q2 = spanNearQuery("field2", "twenty three");

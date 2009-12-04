@@ -21,7 +21,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class BaseTestLRU extends LuceneTestCase {
 
-  protected void testCache(Cache cache, int n) throws Exception {
+  protected void testCache(Cache<Integer,Object> cache, int n) throws Exception {
     Object dummy = new Object();
     
     for (int i = 0; i < n; i++) {

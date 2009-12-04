@@ -1,13 +1,9 @@
 package org.apache.lucene.analysis;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+
 import org.apache.lucene.util.Version;
 
-import java.io.StringReader;
 
 /**
  * Copyright 2004 The Apache Software Foundation

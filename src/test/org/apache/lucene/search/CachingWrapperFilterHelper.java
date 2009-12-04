@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.BitSet;
 import java.util.WeakHashMap;
 
 import junit.framework.TestCase;
@@ -46,11 +45,11 @@ public class CachingWrapperFilterHelper extends CachingWrapperFilter {
   @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     if (cache == null) {
-      cache = new WeakHashMap();
+      cache = new WeakHashMap<IndexReader,DocIdSet>();
     }
     
     synchronized (cache) {  // check cache
-      DocIdSet cached = (DocIdSet) cache.get(reader);
+      DocIdSet cached = cache.get(reader);
       if (shouldHaveCache) {
         TestCase.assertNotNull("Cache should have data ", cached);
       } else {

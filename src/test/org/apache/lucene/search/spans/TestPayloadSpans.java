@@ -21,7 +21,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -271,13 +270,13 @@ public class TestPayloadSpans extends LuceneTestCase {
     Spans spans = snq.getSpans(is.getIndexReader());
 
     TopDocs topDocs = is.search(snq, 1);
-    Set payloadSet = new HashSet();
+    Set<String> payloadSet = new HashSet<String>();
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       while (spans.next()) {
-        Collection payloads = spans.getPayload();
+        Collection<byte[]> payloads = spans.getPayload();
 
-        for (Iterator it = payloads.iterator(); it.hasNext();) {
-          payloadSet.add(new String((byte[]) it.next()));
+        for (final byte [] payload : payloads) {
+          payloadSet.add(new String(payload));
         }
       }
     }
@@ -305,12 +304,12 @@ public class TestPayloadSpans extends LuceneTestCase {
     Spans spans = snq.getSpans(is.getIndexReader());
 
     TopDocs topDocs = is.search(snq, 1);
-    Set payloadSet = new HashSet();
+    Set<String> payloadSet = new HashSet<String>();
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       while (spans.next()) {
-        Collection payloads = spans.getPayload();
-        for (Iterator it = payloads.iterator(); it.hasNext();) {
-          payloadSet.add(new String((byte[]) it.next()));
+        Collection<byte[]> payloads = spans.getPayload();
+        for (final byte[] payload : payloads) {
+          payloadSet.add(new String(payload));
         }
       }
     }
@@ -338,22 +337,21 @@ public class TestPayloadSpans extends LuceneTestCase {
     Spans spans = snq.getSpans(is.getIndexReader());
 
     TopDocs topDocs = is.search(snq, 1);
-    Set payloadSet = new HashSet();
+    Set<String> payloadSet = new HashSet<String>();
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       while (spans.next()) {
-        Collection payloads = spans.getPayload();
+        Collection<byte[]> payloads = spans.getPayload();
 
-        for (Iterator it = payloads.iterator(); it.hasNext();) {
-          payloadSet.add(new String((byte[]) it.next()));
+        for (final byte [] payload : payloads) {
+          payloadSet.add(new String(payload));
         }
       }
     }
     assertEquals(2, payloadSet.size());
     if(DEBUG) {
-      Iterator pit = payloadSet.iterator();
-      while (pit.hasNext()) {
-        System.out.println("match:" + pit.next());
-      }
+      for (final String payload : payloadSet)
+        System.out.println("match:" +  payload);
+      
     }
     assertTrue(payloadSet.contains("a:Noise:10"));
     assertTrue(payloadSet.contains("k:Noise:11"));
@@ -375,12 +373,10 @@ public class TestPayloadSpans extends LuceneTestCase {
     IndexReader reader = searcher.getIndexReader();
     PayloadSpanUtil psu = new PayloadSpanUtil(reader);
     
-    Collection payloads = psu.getPayloadsForQuery(new TermQuery(new Term(PayloadHelper.FIELD, "rr")));
+    Collection<byte[]> payloads = psu.getPayloadsForQuery(new TermQuery(new Term(PayloadHelper.FIELD, "rr")));
     if(DEBUG)
       System.out.println("Num payloads:" + payloads.size());
-    Iterator it = payloads.iterator();
-    while(it.hasNext()) {
-      byte[] bytes = (byte[]) it.next();
+    for (final byte [] bytes : payloads) {
       if(DEBUG)
         System.out.println(new String(bytes));
     }
@@ -405,10 +401,9 @@ public class TestPayloadSpans extends LuceneTestCase {
       }
       //See payload helper, for the PayloadHelper.FIELD field, there is a single byte payload at every token
       if (spans.isPayloadAvailable()) {
-        Collection payload = spans.getPayload();
+        Collection<byte[]> payload = spans.getPayload();
         assertTrue("payload Size: " + payload.size() + " is not: " + expectedNumPayloads, payload.size() == expectedNumPayloads);
-        for (Iterator iterator = payload.iterator(); iterator.hasNext();) {
-           byte[] thePayload = (byte[]) iterator.next();
+        for (final byte [] thePayload : payload) {
           assertTrue("payload[0] Size: " + thePayload.length + " is not: " + expectedPayloadLength,
                   thePayload.length == expectedPayloadLength);
           assertTrue(thePayload[0] + " does not equal: " + expectedFirstByte, thePayload[0] == expectedFirstByte);
@@ -450,12 +445,10 @@ public class TestPayloadSpans extends LuceneTestCase {
       if(DEBUG)
         System.out.println("\nSpans Dump --");
       if (spans.isPayloadAvailable()) {
-        Collection payload = spans.getPayload();
+        Collection<byte[]> payload = spans.getPayload();
         if(DEBUG)
           System.out.println("payloads for span:" + payload.size());
-        Iterator it = payload.iterator();
-        while(it.hasNext()) {
-          byte[] bytes = (byte[]) it.next();
+        for (final byte [] bytes : payload) {
           if(DEBUG)
             System.out.println("doc:" + spans.doc() + " s:" + spans.start() + " e:" + spans.end() + " "
               + new String(bytes));
@@ -484,8 +477,8 @@ public class TestPayloadSpans extends LuceneTestCase {
   class PayloadFilter extends TokenFilter {
     String fieldName;
     int numSeen = 0;
-    Set entities = new HashSet();
-    Set nopayload = new HashSet();
+    Set<String> entities = new HashSet<String>();
+    Set<String> nopayload = new HashSet<String>();
     int pos;
     PayloadAttribute payloadAtt;
     TermAttribute termAtt;

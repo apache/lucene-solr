@@ -63,7 +63,7 @@ final class JustCompileSearchSpans {
     }
 
     @Override
-    public Collection getPayload() throws IOException {
+    public Collection<byte[]> getPayload() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
@@ -96,7 +96,7 @@ final class JustCompileSearchSpans {
   static final class JustCompilePayloadSpans extends Spans {
 
     @Override
-    public Collection getPayload() throws IOException {
+    public Collection<byte[]> getPayload() throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 

@@ -419,9 +419,9 @@ final class JustCompileSearch {
     }    
   }
 
-  static final class JustCompileTopDocsCollector extends TopDocsCollector {
+  static final class JustCompileTopDocsCollector extends TopDocsCollector<ScoreDoc> {
 
-    protected JustCompileTopDocsCollector(PriorityQueue pq) {
+    protected JustCompileTopDocsCollector(PriorityQueue<ScoreDoc> pq) {
       super(pq);
     }
 

@@ -45,7 +45,7 @@ public class MockRAMInputStream extends RAMInputStream {
     // all clones get closed:
     if (!isClone) {
       synchronized(dir) {
-        Integer v = (Integer) dir.openFiles.get(name);
+        Integer v = dir.openFiles.get(name);
         // Could be null when MockRAMDirectory.crash() was called
         if (v != null) {
           if (v.intValue() == 1) {

@@ -22,7 +22,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -287,7 +286,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
     private static class MockFSDirectory extends Directory {
 
-      List allIndexInputs = new ArrayList();
+      List<IndexInput> allIndexInputs = new ArrayList<IndexInput>();
 
       Random rand;
 
@@ -305,10 +304,9 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       }
 
       public void tweakBufferSizes() {
-        Iterator it = allIndexInputs.iterator();
         //int count = 0;
-        while(it.hasNext()) {
-          BufferedIndexInput bii = (BufferedIndexInput) it.next();
+        for (final IndexInput ip : allIndexInputs) {
+          BufferedIndexInput bii = (BufferedIndexInput) ip;
           int bufferSize = 1024+(int) Math.abs(rand.nextInt() % 32768);
           bii.setBufferSize(bufferSize);
           //count++;

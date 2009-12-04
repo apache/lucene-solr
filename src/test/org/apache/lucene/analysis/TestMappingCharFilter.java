@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis;
 
 import java.io.StringReader;
-import java.util.List;
 
 public class TestMappingCharFilter extends BaseTokenStreamTestCase {
 

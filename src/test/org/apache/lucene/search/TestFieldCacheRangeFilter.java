@@ -18,8 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.text.Collator;
-import java.util.Locale;
+
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -66,7 +65,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     Query q = new TermQuery(new Term("body","body"));
 
     // test id, bounded on both ends
-    FieldCacheRangeFilter fcrf;
+    FieldCacheRangeFilter<String> fcrf;
     result = search.search(q,fcrf = FieldCacheRangeFilter.newStringRange("id",minIP,maxIP,T,T), numDocs).scoreDocs;
     assertTrue(fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", numDocs, result.length);
@@ -213,7 +212,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     Query q = new TermQuery(new Term("body","body"));
 
     // test id, bounded on both ends
-    FieldCacheRangeFilter fcrf;
+    FieldCacheRangeFilter<Short> fcrf;
     result = search.search(q,fcrf=FieldCacheRangeFilter.newShortRange("id",minIdO,maxIdO,T,T), numDocs).scoreDocs;
     assertTrue(fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", numDocs, result.length);
@@ -305,7 +304,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     // test id, bounded on both ends
         
-    FieldCacheRangeFilter fcrf;
+    FieldCacheRangeFilter<Integer> fcrf;
     result = search.search(q,fcrf=FieldCacheRangeFilter.newIntRange("id",minIdO,maxIdO,T,T), numDocs).scoreDocs;
     assertTrue(fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", numDocs, result.length);
@@ -397,7 +396,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     // test id, bounded on both ends
         
-    FieldCacheRangeFilter fcrf;
+    FieldCacheRangeFilter<Long> fcrf;
     result = search.search(q,fcrf=FieldCacheRangeFilter.newLongRange("id",minIdO,maxIdO,T,T), numDocs).scoreDocs;
     assertTrue(fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", numDocs, result.length);
@@ -550,7 +549,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     assertTrue(reader.hasDeletions());
 
     ScoreDoc[] result;
-    FieldCacheRangeFilter fcrf;
+    FieldCacheRangeFilter<Byte> fcrf;
     Query q = new TermQuery(new Term("body","body"));
 
     result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",Byte.valueOf((byte) -20),Byte.valueOf((byte) 20),T,T), 100).scoreDocs;

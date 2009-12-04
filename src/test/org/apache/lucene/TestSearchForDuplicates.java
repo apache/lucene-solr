@@ -30,7 +30,6 @@ import org.apache.lucene.queryParser.*;
 import org.apache.lucene.util.Version;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 

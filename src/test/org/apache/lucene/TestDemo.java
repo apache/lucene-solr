@@ -33,7 +33,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util._TestUtil;
 
 /**
  * A very simple demo used in the API documentation (src/java/overview.html).

@@ -29,7 +29,7 @@ public class TestNumberTools extends LuceneTestCase {
     }
 
     public void testMax() {
-        // make sure the constants convert to their equivelents
+        // make sure the constants convert to their equivalents
         assertEquals(Long.MAX_VALUE, NumberTools
                 .stringToLong(NumberTools.MAX_STRING_VALUE));
         assertEquals(NumberTools.MAX_STRING_VALUE, NumberTools

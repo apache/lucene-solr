@@ -35,7 +35,7 @@ public class CachingWrapperFilter extends Filter {
   /**
    * A transient Filter cache (package private because of test)
    */
-  transient Map<IndexReader, DocIdSet> cache;
+  transient Map<IndexReader,DocIdSet> cache;
   
   private final ReentrantLock lock = new ReentrantLock();
 

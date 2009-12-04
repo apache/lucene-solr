@@ -16,7 +16,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
@@ -58,12 +57,11 @@ public class TestSpanQueryFilter extends LuceneTestCase {
     DocIdSet docIdSet = result.getDocIdSet();
     assertTrue("docIdSet is null and it shouldn't be", docIdSet != null);
     assertContainsDocId("docIdSet doesn't contain docId 10", docIdSet, 10);
-    List spans = result.getPositions();
+    List<SpanFilterResult.PositionInfo> spans = result.getPositions();
     assertTrue("spans is null and it shouldn't be", spans != null);
     int size = getDocIdSetSize(docIdSet);
     assertTrue("spans Size: " + spans.size() + " is not: " + size, spans.size() == size);
-    for (Iterator iterator = spans.iterator(); iterator.hasNext();) {
-       SpanFilterResult.PositionInfo info = (SpanFilterResult.PositionInfo) iterator.next();
+    for (final SpanFilterResult.PositionInfo info: spans) {
       assertTrue("info is null and it shouldn't be", info != null);
       //The doc should indicate the bit is on
       assertContainsDocId("docIdSet doesn't contain docId " + info.getDoc(), docIdSet, info.getDoc());

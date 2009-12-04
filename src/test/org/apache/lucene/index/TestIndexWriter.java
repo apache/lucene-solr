@@ -48,6 +48,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -2131,7 +2132,7 @@ public class TestIndexWriter extends LuceneTestCase {
         writer.setMergeFactor(2);
 
         final IndexWriter finalWriter = writer;
-        final ArrayList failure = new ArrayList();
+        final ArrayList<Throwable> failure = new ArrayList<Throwable>();
         Thread t1 = new Thread() {
             @Override
             public void run() {
@@ -2160,7 +2161,7 @@ public class TestIndexWriter extends LuceneTestCase {
           };
 
         if (failure.size() > 0)
-          throw (Throwable) failure.get(0);
+          throw failure.get(0);
 
         t1.start();
 
@@ -3475,14 +3476,14 @@ public class TestIndexWriter extends LuceneTestCase {
       final TermAttribute termAtt = addAttribute(TermAttribute.class);
       final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
       
-      final Iterator tokens = Arrays.asList(new String[]{"a","b","c"}).iterator();
+      final Iterator<String> tokens = Arrays.asList(new String[]{"a","b","c"}).iterator();
       boolean first = true;
       
       @Override
       public boolean incrementToken() {
         if (!tokens.hasNext()) return false;
         clearAttributes();
-        termAtt.setTermBuffer((String) tokens.next());
+        termAtt.setTermBuffer( tokens.next());
         posIncrAtt.setPositionIncrement(first ? 0 : 1);
         first = false;
         return true;
@@ -3643,7 +3644,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir, dir2;
     final static int NUM_INIT_DOCS = 17;
     IndexWriter writer2;
-    final List failures = new ArrayList();
+    final List<Throwable> failures = new ArrayList<Throwable>();
     volatile boolean didClose;
     final IndexReader[] readers;
     final int NUM_COPY;
@@ -3992,7 +3993,7 @@ public class TestIndexWriter extends LuceneTestCase {
     w.setMaxBufferedDocs(2);
     for(int j=0;j<17;j++)
       addDoc(w);
-    Map data = new HashMap();
+    Map<String,String> data = new HashMap<String,String>();
     data.put("label", "test1");
     w.commit(data);
     w.close();
@@ -4040,7 +4041,7 @@ public class TestIndexWriter extends LuceneTestCase {
   // LUCENE-1429
   public void testOutOfMemoryErrorCausesCloseToFail() throws Exception {
 
-    final List thrown = new ArrayList();
+    final List<Throwable> thrown = new ArrayList<Throwable>();
 
     final IndexWriter writer = new IndexWriter(new MockRAMDirectory(), new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED) {
         @Override
@@ -4562,7 +4563,7 @@ public class TestIndexWriter extends LuceneTestCase {
     w.addDocument(doc);
     IndexReader r = w.getReader();
     doc = r.document(0);
-    Iterator it = doc.getFields().iterator();
+    Iterator<Fieldable> it = doc.getFields().iterator();
     assertTrue(it.hasNext());
     Field f = (Field) it.next();
     assertEquals(f.name(), "zzz");

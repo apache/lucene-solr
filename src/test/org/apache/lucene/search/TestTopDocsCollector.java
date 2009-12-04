@@ -30,7 +30,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestTopDocsCollector extends LuceneTestCase {
 
-  private static final class MyTopsDocCollector extends TopDocsCollector {
+  private static final class MyTopsDocCollector extends TopDocsCollector<ScoreDoc> {
 
     private int idx = 0;
     private int base = 0;
@@ -50,7 +50,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
         maxScore = results[0].score;
       } else {
         for (int i = pq.size(); i > 1; i--) { pq.pop(); }
-        maxScore = ((ScoreDoc) pq.pop()).score;
+        maxScore = pq.pop().score;
       }
       
       return new TopDocs(totalHits, results, maxScore);
@@ -94,10 +94,10 @@ public class TestTopDocsCollector extends LuceneTestCase {
   
   private Directory dir = new RAMDirectory();
 
-  private TopDocsCollector doSearch(int numResults) throws IOException {
+  private TopDocsCollector<ScoreDoc> doSearch(int numResults) throws IOException {
     Query q = new MatchAllDocsQuery();
     IndexSearcher searcher = new IndexSearcher(dir, true);
-    TopDocsCollector tdc = new MyTopsDocCollector(numResults);
+    TopDocsCollector<ScoreDoc> tdc = new MyTopsDocCollector(numResults);
     searcher.search(q, tdc);
     searcher.close();
     return tdc;
@@ -125,7 +125,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
   
   public void testInvalidArguments() throws Exception {
     int numResults = 5;
-    TopDocsCollector tdc = doSearch(numResults);
+    TopDocsCollector<ScoreDoc> tdc = doSearch(numResults);
     
     // start < 0
     assertEquals(0, tdc.topDocs(-1).scoreDocs.length);
@@ -145,17 +145,17 @@ public class TestTopDocsCollector extends LuceneTestCase {
   }
   
   public void testZeroResults() throws Exception {
-    TopDocsCollector tdc = new MyTopsDocCollector(5);
+    TopDocsCollector<ScoreDoc> tdc = new MyTopsDocCollector(5);
     assertEquals(0, tdc.topDocs(0, 1).scoreDocs.length);
   }
   
   public void testFirstResultsPage() throws Exception {
-    TopDocsCollector tdc = doSearch(15);
+    TopDocsCollector<ScoreDoc> tdc = doSearch(15);
     assertEquals(10, tdc.topDocs(0, 10).scoreDocs.length);
   }
   
   public void testSecondResultsPages() throws Exception {
-    TopDocsCollector tdc = doSearch(15);
+    TopDocsCollector<ScoreDoc> tdc = doSearch(15);
     // ask for more results than are available
     assertEquals(5, tdc.topDocs(10, 10).scoreDocs.length);
     
@@ -169,12 +169,12 @@ public class TestTopDocsCollector extends LuceneTestCase {
   }
   
   public void testGetAllResults() throws Exception {
-    TopDocsCollector tdc = doSearch(15);
+    TopDocsCollector<ScoreDoc> tdc = doSearch(15);
     assertEquals(15, tdc.topDocs().scoreDocs.length);
   }
   
   public void testGetResultsFromStart() throws Exception {
-    TopDocsCollector tdc = doSearch(15);
+    TopDocsCollector<ScoreDoc> tdc = doSearch(15);
     // should bring all results
     assertEquals(15, tdc.topDocs(0).scoreDocs.length);
     
@@ -185,7 +185,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
   
   public void testMaxScore() throws Exception {
     // ask for all results
-    TopDocsCollector tdc = doSearch(15);
+    TopDocsCollector<ScoreDoc> tdc = doSearch(15);
     TopDocs td = tdc.topDocs();
     assertEquals(MAX_SCORE, td.getMaxScore(), 0f);
     
@@ -198,7 +198,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
   // This does not test the PQ's correctness, but whether topDocs()
   // implementations return the results in decreasing score order.
   public void testResultsOrder() throws Exception {
-    TopDocsCollector tdc = doSearch(15);
+    TopDocsCollector<ScoreDoc> tdc = doSearch(15);
     ScoreDoc[] sd = tdc.topDocs().scoreDocs;
     
     assertEquals(MAX_SCORE, sd[0].score, 0f);

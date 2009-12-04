@@ -28,7 +28,6 @@ import org.apache.lucene.util.English;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedSet;
 
@@ -167,7 +166,6 @@ public class TestTermVectors extends LuceneTestCase {
         }
         else{
           try{
-            TermPositionVector posVec = (TermPositionVector)vector[0];
             assertTrue(false);
           }
           catch(ClassCastException ignore){
@@ -208,7 +206,7 @@ public class TestTermVectors extends LuceneTestCase {
     String test2 = "computer in a computer lab"; //5 terms
     String test3 = "a chocolate lab grows old"; //5 terms
     String test4 = "eating chocolate with a chocolate lab in an old chocolate colored computer lab"; //13 terms
-    Map test4Map = new HashMap();
+    Map<String,Integer> test4Map = new HashMap<String,Integer>();
     test4Map.put("chocolate", Integer.valueOf(3));
     test4Map.put("lab", Integer.valueOf(2));
     test4Map.put("eating", Integer.valueOf(1));
@@ -246,7 +244,7 @@ public class TestTermVectors extends LuceneTestCase {
       TermDocs termDocs = knownSearcher.reader.termDocs();
       //System.out.println("Terms: " + termEnum.size() + " Orig Len: " + termArray.length);
       
-      Similarity sim = knownSearcher.getSimilarity();
+      //Similarity sim = knownSearcher.getSimilarity();
       while (termEnum.next() == true)
       {
         Term term = termEnum.term();
@@ -258,11 +256,11 @@ public class TestTermVectors extends LuceneTestCase {
           int freq = termDocs.freq();
           //System.out.println("Doc Id: " + docId + " freq " + freq);
           TermFreqVector vector = knownSearcher.reader.getTermFreqVector(docId, "field");
-          float tf = sim.tf(freq);
-          float idf = sim.idf(knownSearcher.docFreq(term), knownSearcher.maxDoc());
+          //float tf = sim.tf(freq);
+          //float idf = sim.idf(knownSearcher.docFreq(term), knownSearcher.maxDoc());
           //float qNorm = sim.queryNorm()
           //This is fine since we don't have stop words
-          float lNorm = sim.lengthNorm("field", vector.getTerms().length);
+          //float lNorm = sim.lengthNorm("field", vector.getTerms().length);
           //float coord = sim.coord()
           //System.out.println("TF: " + tf + " IDF: " + idf + " LenNorm: " + lNorm);
           assertTrue(vector != null);
@@ -283,7 +281,6 @@ public class TestTermVectors extends LuceneTestCase {
       ScoreDoc[] hits = knownSearcher.search(query, null, 1000).scoreDocs;
       //doc 3 should be the first hit b/c it is the shortest match
       assertTrue(hits.length == 3);
-      float score = hits[0].score;
       /*System.out.println("Hit 0: " + hits.id(0) + " Score: " + hits.score(0) + " String: " + hits.doc(0).toString());
       System.out.println("Explain: " + knownSearcher.explain(query, hits.id(0)));
       System.out.println("Hit 1: " + hits.id(1) + " Score: " + hits.score(1) + " String: " + hits.doc(1).toString());
@@ -304,21 +301,20 @@ public class TestTermVectors extends LuceneTestCase {
         //System.out.println("Term: " + term);
         int freq = freqs[i];
         assertTrue(test4.indexOf(term) != -1);
-        Integer freqInt = (Integer)test4Map.get(term);
+        Integer freqInt = test4Map.get(term);
         assertTrue(freqInt != null);
         assertTrue(freqInt.intValue() == freq);        
       }
       SortedTermVectorMapper mapper = new SortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
       knownSearcher.reader.getTermFreqVector(hits[1].doc, mapper);
-      SortedSet vectorEntrySet = mapper.getTermVectorEntrySet();
+      SortedSet<TermVectorEntry> vectorEntrySet = mapper.getTermVectorEntrySet();
       assertTrue("mapper.getTermVectorEntrySet() Size: " + vectorEntrySet.size() + " is not: " + 10, vectorEntrySet.size() == 10);
       TermVectorEntry last = null;
-      for (Iterator iterator = vectorEntrySet.iterator(); iterator.hasNext();) {
-         TermVectorEntry tve = (TermVectorEntry) iterator.next();
+      for (final TermVectorEntry tve : vectorEntrySet) {
         if (tve != null && last != null)
         {
           assertTrue("terms are not properly sorted", last.getFrequency() >= tve.getFrequency());
-          Integer expectedFreq = (Integer) test4Map.get(tve.getTerm());
+          Integer expectedFreq =  test4Map.get(tve.getTerm());
           //we expect double the expectedFreq, since there are two fields with the exact same text and we are collapsing all fields
           assertTrue("Frequency is not correct:", tve.getFrequency() == 2*expectedFreq.intValue());
         }
@@ -328,9 +324,9 @@ public class TestTermVectors extends LuceneTestCase {
 
       FieldSortedTermVectorMapper fieldMapper = new FieldSortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
       knownSearcher.reader.getTermFreqVector(hits[1].doc, fieldMapper);
-      Map map = fieldMapper.getFieldToTerms();
+      Map<String,SortedSet<TermVectorEntry>> map = fieldMapper.getFieldToTerms();
       assertTrue("map Size: " + map.size() + " is not: " + 2, map.size() == 2);
-      vectorEntrySet = (SortedSet) map.get("field");
+      vectorEntrySet = map.get("field");
       assertTrue("vectorEntrySet is null and it shouldn't be", vectorEntrySet != null);
       assertTrue("vectorEntrySet Size: " + vectorEntrySet.size() + " is not: " + 10, vectorEntrySet.size() == 10);
       knownSearcher.close();

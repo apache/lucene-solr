@@ -45,7 +45,7 @@ public class CheckHits {
     throws IOException {
 
     String d = q.toString(defaultFieldName);
-    Set ignore = new TreeSet();
+    Set<Integer> ignore = new TreeSet<Integer>();
     for (int i = 0; i < results.length; i++) {
       ignore.add(Integer.valueOf(results[i]));
     }
@@ -85,11 +85,11 @@ public class CheckHits {
 
     QueryUtils.check(query,searcher);
     
-    Set correct = new TreeSet();
+    Set<Integer> correct = new TreeSet<Integer>();
     for (int i = 0; i < results.length; i++) {
       correct.add(Integer.valueOf(results[i]));
     }
-    final Set actual = new TreeSet();
+    final Set<Integer> actual = new TreeSet<Integer>();
     final Collector c = new SetCollector(actual);
 
     searcher.search(query, c);
@@ -117,8 +117,8 @@ public class CheckHits {
   }
 
   public static class SetCollector extends Collector {
-    final Set bag;
-    public SetCollector(Set bag) {
+    final Set<Integer> bag;
+    public SetCollector(Set<Integer> bag) {
       this.bag = bag;
     }
     private int base = 0;
@@ -161,12 +161,12 @@ public class CheckHits {
 
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
 
-    Set correct = new TreeSet();
+    Set<Integer> correct = new TreeSet<Integer>();
     for (int i = 0; i < results.length; i++) {
       correct.add(Integer.valueOf(results[i]));
     }
 
-    Set actual = new TreeSet();
+    Set<Integer> actual = new TreeSet<Integer>();
     for (int i = 0; i < hits.length; i++) {
       actual.add(Integer.valueOf(hits[i].doc));
     }

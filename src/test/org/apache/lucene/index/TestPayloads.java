@@ -382,7 +382,7 @@ public class TestPayloads extends LuceneTestCase {
      * This Analyzer uses an WhitespaceTokenizer and PayloadFilter.
      */
     private static class PayloadAnalyzer extends Analyzer {
-        Map fieldToData = new HashMap();
+        Map<String,PayloadData> fieldToData = new HashMap<String,PayloadData>();
         
         void setPayloadData(String field, byte[] data, int offset, int length) {
             fieldToData.put(field, new PayloadData(0, data, offset, length));
@@ -394,7 +394,7 @@ public class TestPayloads extends LuceneTestCase {
         
         @Override
         public TokenStream tokenStream(String fieldName, Reader reader) {
-            PayloadData payload = (PayloadData) fieldToData.get(fieldName);
+            PayloadData payload =  fieldToData.get(fieldName);
             TokenStream ts = new WhitespaceTokenizer(reader);
             if (payload != null) {
                 if (payload.numFieldInstancesToSkip == 0) {
@@ -550,10 +550,10 @@ public class TestPayloads extends LuceneTestCase {
     }
     
     private static class ByteArrayPool {
-        private List pool;
+        private List<byte[]> pool;
         
         ByteArrayPool(int capacity, int size) {
-            pool = new ArrayList();
+            pool = new ArrayList<byte[]>();
             for (int i = 0; i < capacity; i++) {
                 pool.add(new byte[size]);
             }
@@ -572,7 +572,7 @@ public class TestPayloads extends LuceneTestCase {
         }
     
         synchronized byte[] get() {
-            return (byte[]) pool.remove(0);
+            return pool.remove(0);
         }
         
         synchronized void release(byte[] b) {

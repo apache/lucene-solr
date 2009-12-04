@@ -253,9 +253,9 @@ public class TestMultiSearcher extends LuceneTestCase
     assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 2, document.getFields().size() == 2);
     //Should be one document from each directory
     //they both have two fields, contents and other
-    Set ftl = new HashSet();
+    Set<String> ftl = new HashSet<String>();
     ftl.add("other");
-    SetBasedFieldSelector fs = new SetBasedFieldSelector(ftl, Collections.EMPTY_SET);
+    SetBasedFieldSelector fs = new SetBasedFieldSelector(ftl, Collections. <String> emptySet());
     document = searcher.doc(hits[0].doc, fs);
     assertTrue("document is null and it shouldn't be", document != null);
     assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 1, document.getFields().size() == 1);
@@ -265,7 +265,7 @@ public class TestMultiSearcher extends LuceneTestCase
     assertTrue("value is null and it shouldn't be", value != null);
     ftl.clear();
     ftl.add("contents");
-    fs = new SetBasedFieldSelector(ftl, Collections.EMPTY_SET);
+    fs = new SetBasedFieldSelector(ftl, Collections. <String> emptySet());
     document = searcher.doc(hits[1].doc, fs);
     value = document.get("contents");
     assertTrue("value is null and it shouldn't be", value != null);    

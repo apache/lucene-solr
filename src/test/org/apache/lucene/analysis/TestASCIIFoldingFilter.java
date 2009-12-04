@@ -1871,7 +1871,7 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
     };
 
     // Construct input text and expected output tokens
-    List expectedOutputTokens = new ArrayList();
+    List<String> expectedOutputTokens = new ArrayList<String>();
     StringBuilder inputText = new StringBuilder();
     for (int n = 0 ; n < foldings.length ; n += 2) {
       if (n > 0) {
@@ -1892,9 +1892,9 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
     TokenStream stream = new WhitespaceTokenizer(new StringReader(inputText.toString()));
     ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream);
     TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
-    Iterator expectedIter = expectedOutputTokens.iterator();
+    Iterator<String> expectedIter = expectedOutputTokens.iterator();
     while (expectedIter.hasNext()) {;
-      assertTermEquals((String)expectedIter.next(), filter, termAtt);
+      assertTermEquals(expectedIter.next(), filter, termAtt);
     }
     assertFalse(filter.incrementToken());
   }

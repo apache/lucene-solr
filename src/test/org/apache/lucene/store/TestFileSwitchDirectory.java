@@ -33,7 +33,7 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
    * @throws IOException
    */
   public void testBasic() throws IOException {
-    Set fileExtensions = new HashSet();
+    Set<String> fileExtensions = new HashSet<String>();
     fileExtensions.add("fdt");
     fileExtensions.add("fdx");
     

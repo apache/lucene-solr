@@ -20,9 +20,10 @@ package org.apache.lucene.index;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
+
 import java.util.List;
 import java.util.Random;
 import java.util.Map;
@@ -732,13 +733,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       }      
     };
     
-    final List readers = Collections.synchronizedList(new ArrayList());
+    final List<ReaderCouple> readers = Collections.synchronizedList(new ArrayList<ReaderCouple>());
     IndexReader firstReader = IndexReader.open(dir, false);
     IndexReader reader = firstReader;
     final Random rnd = newRandom();
     
     ReaderThread[] threads = new ReaderThread[n];
-    final Set readersToClose = Collections.synchronizedSet(new HashSet());
+    final Set<IndexReader> readersToClose = Collections.synchronizedSet(new HashSet<IndexReader>());
     
     for (int i = 0; i < n; i++) {
       if (i % 2 == 0) {
@@ -806,7 +807,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
             while (!stopped) {
               int numReaders = readers.size();
               if (numReaders > 0) {
-                ReaderCouple c = (ReaderCouple) readers.get(rnd.nextInt(numReaders));
+                ReaderCouple c =  readers.get(rnd.nextInt(numReaders));
                 TestIndexReader.assertIndexEquals(c.newReader, c.refreshedReader);
               }
               
@@ -845,17 +846,15 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       
     }
     
-    Iterator it = readersToClose.iterator();
-    while (it.hasNext()) {
-      ((IndexReader) it.next()).close();
+    for (final IndexReader readerToClose : readersToClose) {
+      readerToClose.close();
     }
     
     firstReader.close();
     reader.close();
     
-    it = readersToClose.iterator();
-    while (it.hasNext()) {
-      assertReaderClosed((IndexReader) it.next(), true, true);
+    for (final IndexReader readerToClose : readersToClose) {
+      assertReaderClosed(readerToClose, true, true);
     }
 
     assertReaderClosed(reader, true, true);
@@ -1185,9 +1184,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
 
   private static class KeepAllCommits implements IndexDeletionPolicy {
-    public void onInit(List commits) {
+    public void onInit(List<? extends IndexCommit> commits) {
     }
-    public void onCommit(List commits) {
+    public void onCommit(List<? extends IndexCommit> commits) {
     }
   }
 
@@ -1198,13 +1197,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new Field("id", ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
-      Map data = new HashMap();
+      Map<String,String> data = new HashMap<String,String>();
       data.put("index", i+"");
       writer.commit(data);
     }
     for(int i=0;i<4;i++) {
       writer.deleteDocuments(new Term("id", ""+i));
-      Map data = new HashMap();
+      Map<String,String> data = new HashMap<String,String>();
       data.put("index", (4+i)+"");
       writer.commit(data);
     }
@@ -1214,9 +1213,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     assertEquals(0, r.numDocs());
     assertEquals(4, r.maxDoc());
 
-    Iterator it = IndexReader.listCommits(dir).iterator();
-    while(it.hasNext()) {
-      IndexCommit commit = (IndexCommit) it.next();
+    Collection<IndexCommit> commits = IndexReader.listCommits(dir);
+    for (final IndexCommit commit : commits) {
       IndexReader r2 = r.reopen(commit);
       assertTrue(r2 != r);
 
@@ -1228,13 +1226,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         // expected
       }
 
-      final Map s = commit.getUserData();
+      final Map<String,String> s = commit.getUserData();
       final int v;
       if (s.size() == 0) {
         // First commit created by IW
         v = -1;
       } else {
-        v = Integer.parseInt((String) s.get("index"));
+        v = Integer.parseInt(s.get("index"));
       }
       if (v < 4) {
         assertEquals(1+v, r2.numDocs());

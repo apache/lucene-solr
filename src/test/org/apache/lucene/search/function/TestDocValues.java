@@ -18,7 +18,6 @@ package org.apache.lucene.search.function;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import junit.framework.Assert;
 
 /**
  * DocValues TestCase  

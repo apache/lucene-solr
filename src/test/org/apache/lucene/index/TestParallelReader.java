@@ -71,7 +71,7 @@ public class TestParallelReader extends LuceneTestCase {
     ParallelReader pr = new ParallelReader();
     pr.add(IndexReader.open(dir1, false));
     pr.add(IndexReader.open(dir2, false));
-    Collection fieldNames = pr.getFieldNames(IndexReader.FieldOption.ALL);
+    Collection<String> fieldNames = pr.getFieldNames(IndexReader.FieldOption.ALL);
     assertEquals(4, fieldNames.size());
     assertTrue(fieldNames.contains("f1"));
     assertTrue(fieldNames.contains("f2"));

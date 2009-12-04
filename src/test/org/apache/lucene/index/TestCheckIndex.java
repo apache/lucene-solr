@@ -58,7 +58,7 @@ public class TestCheckIndex extends LuceneTestCase {
       fail();
     }
     
-    final CheckIndex.Status.SegmentInfoStatus seg = (CheckIndex.Status.SegmentInfoStatus) indexStatus.segmentInfos.get(0);
+    final CheckIndex.Status.SegmentInfoStatus seg = indexStatus.segmentInfos.get(0);
     assertTrue(seg.openReaderPassed);
 
     assertNotNull(seg.diagnostics);
@@ -84,7 +84,7 @@ public class TestCheckIndex extends LuceneTestCase {
     assertEquals(18, seg.termVectorStatus.totVectors);
 
     assertTrue(seg.diagnostics.size() > 0);
-    final List onlySegments = new ArrayList();
+    final List<String> onlySegments = new ArrayList<String>();
     onlySegments.add("_0");
     
     assertTrue(checker.checkIndex(onlySegments).clean == true);

@@ -157,7 +157,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
   // Test that values loaded for FieldScoreQuery are cached properly and consumes the proper RAM resources.
   private void doTestCaching (String field, FieldScoreQuery.Type tp) throws CorruptIndexException, Exception {
     // prepare expected array types for comparison
-    HashMap expectedArrayTypes = new HashMap();
+    HashMap<FieldScoreQuery.Type,Object> expectedArrayTypes = new HashMap<FieldScoreQuery.Type,Object>();
     expectedArrayTypes.put(FieldScoreQuery.Type.BYTE, new byte[0]);
     expectedArrayTypes.put(FieldScoreQuery.Type.SHORT, new short[0]);
     expectedArrayTypes.put(FieldScoreQuery.Type.INT, new int[0]);

@@ -28,7 +28,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import java.io.*;
 import java.util.*;
-import java.util.zip.*;
 
 /*
   Verify we can read the pre-2.1 file format, do searches
@@ -155,33 +154,34 @@ public class TestIndexFileDeleter extends LuceneTestCase
     Arrays.sort(files);
     Arrays.sort(files2);
     
-    Set dif = difFiles(files, files2);
+    Set<String> dif = difFiles(files, files2);
     
     if (!Arrays.equals(files, files2)) {
       fail("IndexFileDeleter failed to delete unreferenced extra files: should have deleted " + (filesPre.length-files.length) + " files but only deleted " + (filesPre.length - files2.length) + "; expected files:\n    " + asString(files) + "\n  actual files:\n    " + asString(files2)+"\ndif: "+dif);
     }
   }
 
-  private static Set difFiles(String[] files1, String[] files2) {
-    Set set1 = new HashSet();
-    Set set2 = new HashSet();
-    Set extra = new HashSet();
+  private static Set<String> difFiles(String[] files1, String[] files2) {
+    Set<String> set1 = new HashSet<String>();
+    Set<String> set2 = new HashSet<String>();
+    Set<String> extra = new HashSet<String>();
+    
     for (int x=0; x < files1.length; x++) {
       set1.add(files1[x]);
     }
     for (int x=0; x < files2.length; x++) {
       set2.add(files2[x]);
     }
-    Iterator i1 = set1.iterator();
+    Iterator<String> i1 = set1.iterator();
     while (i1.hasNext()) {
-      Object o = i1.next();
+      String o = i1.next();
       if (!set2.contains(o)) {
         extra.add(o);
       }
     }
-    Iterator i2 = set2.iterator();
+    Iterator<String> i2 = set2.iterator();
     while (i2.hasNext()) {
-      Object o = i2.next();
+      String o = i2.next();
       if (!set1.contains(o)) {
         extra.add(o);
       }

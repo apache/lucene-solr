@@ -62,9 +62,8 @@ public class TestSegmentReader extends LuceneTestCase {
     //There are 2 unstored fields on the document that are not preserved across writing
     assertTrue(DocHelper.numFields(result) == DocHelper.numFields(testDoc) - DocHelper.unstored.size());
     
-    List fields = result.getFields();
-    for (Iterator iter = fields.iterator(); iter.hasNext();) {
-      Fieldable field = (Fieldable) iter.next();
+    List<Fieldable> fields = result.getFields();
+    for (final Fieldable field : fields ) { 
       assertTrue(field != null);
       assertTrue(DocHelper.nameValues.containsKey(field.name()));
     }
@@ -84,19 +83,19 @@ public class TestSegmentReader extends LuceneTestCase {
   }    
   
   public void testGetFieldNameVariations() {
-    Collection result = reader.getFieldNames(IndexReader.FieldOption.ALL);
+    Collection<String> result = reader.getFieldNames(IndexReader.FieldOption.ALL);
     assertTrue(result != null);
     assertTrue(result.size() == DocHelper.all.size());
-    for (Iterator iter = result.iterator(); iter.hasNext();) {
-      String s = (String) iter.next();
+    for (Iterator<String> iter = result.iterator(); iter.hasNext();) {
+      String s =  iter.next();
       //System.out.println("Name: " + s);
       assertTrue(DocHelper.nameValues.containsKey(s) == true || s.equals(""));
     }                                                                               
     result = reader.getFieldNames(IndexReader.FieldOption.INDEXED);
     assertTrue(result != null);
     assertTrue(result.size() == DocHelper.indexed.size());
-    for (Iterator iter = result.iterator(); iter.hasNext();) {
-      String s = (String) iter.next();
+    for (Iterator<String> iter = result.iterator(); iter.hasNext();) {
+      String s = iter.next();
       assertTrue(DocHelper.indexed.containsKey(s) == true || s.equals(""));
     }
     

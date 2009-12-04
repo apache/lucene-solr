@@ -30,7 +30,7 @@ import java.util.Map;
 
 public class TestElevationComparator extends LuceneTestCase {
 
-  private final Map/*<String, Integer>*/ priority = new HashMap/*<String, Integer>*/();
+  private final Map<String,Integer> priority = new HashMap<String,Integer>();
 
   //@Test
   public void testSorting() throws Throwable {
@@ -126,9 +126,9 @@ public class TestElevationComparator extends LuceneTestCase {
 }
 
 class ElevationComparatorSource extends FieldComparatorSource {
-  private final Map/*<String, Integer>*/ priority;
+  private final Map<String,Integer> priority;
 
-  public ElevationComparatorSource(final Map/*<String, Integer>*/ boosts) {
+  public ElevationComparatorSource(final Map<String,Integer> boosts) {
    this.priority = boosts;
   }
 
@@ -152,7 +152,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
 
      private int docVal(int doc) throws IOException {
        String id = idIndex.lookup[idIndex.order[doc]];
-       Integer prio = (Integer) priority.get(id);
+       Integer prio = priority.get(id);
        return prio == null ? 0 : prio.intValue();
      }
 

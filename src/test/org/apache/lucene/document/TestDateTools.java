@@ -9,7 +9,6 @@ import java.util.TimeZone;
 import java.util.Locale;
 
 import org.apache.lucene.util.LocalizedTestCase;
-import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

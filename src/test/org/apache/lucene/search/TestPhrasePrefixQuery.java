@@ -76,7 +76,7 @@ public class TestPhrasePrefixQuery
         query1.add(new Term("body", "blueberry"));
         query2.add(new Term("body", "strawberry"));
 
-        LinkedList termsWithPrefix = new LinkedList();
+        LinkedList<Term> termsWithPrefix = new LinkedList<Term>();
         IndexReader ir = IndexReader.open(indexStore, true);
 
         // this TermEnum gives "piccadilly", "pie" and "pizza".
@@ -89,8 +89,8 @@ public class TestPhrasePrefixQuery
             }
         } while (te.next());
 
-        query1.add((Term[])termsWithPrefix.toArray(new Term[0]));
-        query2.add((Term[])termsWithPrefix.toArray(new Term[0]));
+        query1.add(termsWithPrefix.toArray(new Term[0]));
+        query2.add(termsWithPrefix.toArray(new Term[0]));
 
         ScoreDoc[] result;
         result = searcher.search(query1, null, 1000).scoreDocs;

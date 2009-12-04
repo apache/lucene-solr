@@ -51,7 +51,7 @@ public abstract class AttributeImpl implements Cloneable, Serializable, Attribut
   @Override
   public String toString() {
     StringBuilder buffer = new StringBuilder();
-    Class clazz = this.getClass();
+    Class<?> clazz = this.getClass();
     Field[] fields = clazz.getDeclaredFields();
     try {
       for (int i = 0; i < fields.length; i++) {

@@ -56,9 +56,9 @@ public class MockRAMDirectory extends RAMDirectory {
     if (openFiles == null)
       openFiles = new HashMap<String,Integer>();
     if (createdFiles == null)
-      createdFiles = new HashSet();
+      createdFiles = new HashSet<String>();
     if (unSyncedFiles == null)
-      unSyncedFiles = new HashSet();
+      unSyncedFiles = new HashSet<String>();
   }
 
   public MockRAMDirectory() {
@@ -89,9 +89,9 @@ public class MockRAMDirectory extends RAMDirectory {
    *  unsynced files. */
   public synchronized void crash() throws IOException {
     crashed = true;
-    openFiles = new HashMap();
+    openFiles = new HashMap<String,Integer>();
     Iterator<String> it = unSyncedFiles.iterator();
-    unSyncedFiles = new HashSet();
+    unSyncedFiles = new HashSet<String>();
     int count = 0;
     while(it.hasNext()) {
       String name = it.next();
@@ -264,7 +264,7 @@ public class MockRAMDirectory extends RAMDirectory {
   @Override
   public synchronized void close() {
     if (openFiles == null) {
-      openFiles = new HashMap();
+      openFiles = new HashMap<String,Integer>();
     }
     if (noDeleteOpenFile && openFiles.size() > 0) {
       // RuntimeException instead of IOException because
@@ -311,7 +311,7 @@ public class MockRAMDirectory extends RAMDirectory {
     }
   }
 
-  ArrayList failures;
+  ArrayList<Failure> failures;
 
   /**
    * add a Failure object to the list of objects to be evaluated
@@ -319,7 +319,7 @@ public class MockRAMDirectory extends RAMDirectory {
    */
   synchronized public void failOn(Failure fail) {
     if (failures == null) {
-      failures = new ArrayList();
+      failures = new ArrayList<Failure>();
     }
     failures.add(fail);
   }

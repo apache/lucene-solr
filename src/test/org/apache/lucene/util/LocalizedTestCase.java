@@ -43,7 +43,7 @@ public abstract class LocalizedTestCase extends LuceneTestCase {
   /**
    * An optional limited set of testcases that will run under different Locales.
    */
-  private final Set testWithDifferentLocales;
+  private final Set<String> testWithDifferentLocales;
 
   public LocalizedTestCase() {
     super();
@@ -55,12 +55,12 @@ public abstract class LocalizedTestCase extends LuceneTestCase {
     testWithDifferentLocales = null;
   }
 
-  public LocalizedTestCase(Set testWithDifferentLocales) {
+  public LocalizedTestCase(Set<String> testWithDifferentLocales) {
     super();
     this.testWithDifferentLocales = testWithDifferentLocales;
   }
 
-  public LocalizedTestCase(String name, Set testWithDifferentLocales) {
+  public LocalizedTestCase(String name, Set<String> testWithDifferentLocales) {
     super(name);
     this.testWithDifferentLocales = testWithDifferentLocales;
   }

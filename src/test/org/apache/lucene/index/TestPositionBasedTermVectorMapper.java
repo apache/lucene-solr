@@ -19,7 +19,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.util.BitSet;
-import java.util.Iterator;
 import java.util.Map;
 
 public class TestPositionBasedTermVectorMapper extends LuceneTestCase {
@@ -69,19 +68,19 @@ public class TestPositionBasedTermVectorMapper extends LuceneTestCase {
       mapper.map(token, 1, null, thePositions[i]);
 
     }
-    Map map = mapper.getFieldToTerms();
+    Map<String,Map<Integer,PositionBasedTermVectorMapper.TVPositionInfo>> map = mapper.getFieldToTerms();
     assertTrue("map is null and it shouldn't be", map != null);
     assertTrue("map Size: " + map.size() + " is not: " + 1, map.size() == 1);
-    Map positions = (Map) map.get("test");
+    Map<Integer,PositionBasedTermVectorMapper.TVPositionInfo> positions = map.get("test");
     assertTrue("thePositions is null and it shouldn't be", positions != null);
     
     assertTrue("thePositions Size: " + positions.size() + " is not: " + numPositions, positions.size() == numPositions);
     BitSet bits = new BitSet(numPositions);
-    for (Iterator iterator = positions.entrySet().iterator(); iterator.hasNext();) {
-      Map.Entry entry = (Map.Entry) iterator.next();
-      PositionBasedTermVectorMapper.TVPositionInfo info = (PositionBasedTermVectorMapper.TVPositionInfo) entry.getValue();
+    for (Map.Entry<Integer,PositionBasedTermVectorMapper.TVPositionInfo> entry : positions.entrySet()) {
+    
+      PositionBasedTermVectorMapper.TVPositionInfo info = entry.getValue();
       assertTrue("info is null and it shouldn't be", info != null);
-      int pos = ((Integer) entry.getKey()).intValue();
+      int pos = entry.getKey().intValue();
       bits.set(pos);
       assertTrue(info.getPosition() + " does not equal: " + pos, info.getPosition() == pos);
       assertTrue("info.getOffsets() is null and it shouldn't be", info.getOffsets() != null);

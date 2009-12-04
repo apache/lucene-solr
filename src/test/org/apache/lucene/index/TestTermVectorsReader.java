@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.SortedSet;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -258,13 +257,13 @@ public class TestTermVectorsReader extends LuceneTestCase {
     assertTrue(reader != null);
     SortedTermVectorMapper mapper = new SortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
     reader.get(0, mapper);
-    SortedSet set = mapper.getTermVectorEntrySet();
+    SortedSet<TermVectorEntry> set = mapper.getTermVectorEntrySet();
     assertTrue("set is null and it shouldn't be", set != null);
     //three fields, 4 terms, all terms are the same
     assertTrue("set Size: " + set.size() + " is not: " + 4, set.size() == 4);
     //Check offsets and positions
-    for (Iterator iterator = set.iterator(); iterator.hasNext();) {
-      TermVectorEntry tve = (TermVectorEntry) iterator.next();
+    for (Iterator<TermVectorEntry> iterator = set.iterator(); iterator.hasNext();) {
+      TermVectorEntry tve =  iterator.next();
       assertTrue("tve is null and it shouldn't be", tve != null);
       assertTrue("tve.getOffsets() is null and it shouldn't be", tve.getOffsets() != null);
       assertTrue("tve.getPositions() is null and it shouldn't be", tve.getPositions() != null);
@@ -278,8 +277,8 @@ public class TestTermVectorsReader extends LuceneTestCase {
     //three fields, 4 terms, all terms are the same
     assertTrue("set Size: " + set.size() + " is not: " + 4, set.size() == 4);
     //Should have offsets and positions b/c we are munging all the fields together
-    for (Iterator iterator = set.iterator(); iterator.hasNext();) {
-      TermVectorEntry tve = (TermVectorEntry) iterator.next();
+    for (Iterator<TermVectorEntry> iterator = set.iterator(); iterator.hasNext();) {
+      TermVectorEntry tve = iterator.next();
       assertTrue("tve is null and it shouldn't be", tve != null);
       assertTrue("tve.getOffsets() is null and it shouldn't be", tve.getOffsets() != null);
       assertTrue("tve.getPositions() is null and it shouldn't be", tve.getPositions() != null);
@@ -289,14 +288,12 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
     FieldSortedTermVectorMapper fsMapper = new FieldSortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
     reader.get(0, fsMapper);
-    Map map = fsMapper.getFieldToTerms();
+    Map<String,SortedSet<TermVectorEntry>> map = fsMapper.getFieldToTerms();
     assertTrue("map Size: " + map.size() + " is not: " + testFields.length, map.size() == testFields.length);
-    for (Iterator iterator = map.entrySet().iterator(); iterator.hasNext();) {
-      Map.Entry entry = (Map.Entry) iterator.next();
-      SortedSet sortedSet = (SortedSet) entry.getValue();
+    for (Map.Entry<String,SortedSet<TermVectorEntry>> entry : map.entrySet()) {
+      SortedSet<TermVectorEntry> sortedSet =  entry.getValue();
       assertTrue("sortedSet Size: " + sortedSet.size() + " is not: " + 4, sortedSet.size() == 4);
-      for (Iterator inner = sortedSet.iterator(); inner.hasNext();) {
-        TermVectorEntry tve = (TermVectorEntry) inner.next();
+      for (final TermVectorEntry tve : sortedSet) {
         assertTrue("tve is null and it shouldn't be", tve != null);
         //Check offsets and positions.
         assertTrue("tve is null and it shouldn't be", tve != null);
@@ -320,12 +317,10 @@ public class TestTermVectorsReader extends LuceneTestCase {
     reader.get(0, fsMapper);
     map = fsMapper.getFieldToTerms();
     assertTrue("map Size: " + map.size() + " is not: " + testFields.length, map.size() == testFields.length);
-    for (Iterator iterator = map.entrySet().iterator(); iterator.hasNext();) {
-      Map.Entry entry = (Map.Entry) iterator.next();
-      SortedSet sortedSet = (SortedSet) entry.getValue();
+    for (final Map.Entry<String,SortedSet<TermVectorEntry>> entry : map.entrySet()) {
+      SortedSet<TermVectorEntry> sortedSet =  entry.getValue();
       assertTrue("sortedSet Size: " + sortedSet.size() + " is not: " + 4, sortedSet.size() == 4);
-      for (Iterator inner = sortedSet.iterator(); inner.hasNext();) {
-        TermVectorEntry tve = (TermVectorEntry) inner.next();
+      for (final TermVectorEntry tve : sortedSet) {
         assertTrue("tve is null and it shouldn't be", tve != null);
         //Check offsets and positions.
         assertTrue("tve is null and it shouldn't be", tve != null);

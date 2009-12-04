@@ -54,12 +54,12 @@ public class TestTransactionRollback extends LuceneTestCase {
     // System.out.println("Attempting to rollback to "+id);
     String ids="-"+id;
     IndexCommit last=null;
-    Collection commits = IndexReader.listCommits(dir);
-    for (Iterator iterator = commits.iterator(); iterator.hasNext();) {
-      IndexCommit commit = (IndexCommit) iterator.next();
-      Map ud=commit.getUserData();
+    Collection<IndexCommit> commits = IndexReader.listCommits(dir);
+    for (Iterator<IndexCommit> iterator = commits.iterator(); iterator.hasNext();) {
+      IndexCommit commit =  iterator.next();
+      Map<String,String> ud=commit.getUserData();
       if (ud.size() > 0)
-        if (((String) ud.get("index")).endsWith(ids))
+        if (ud.get("index").endsWith(ids))
           last=commit;
     }
 
@@ -68,7 +68,7 @@ public class TestTransactionRollback extends LuceneTestCase {
 		
     IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(),
                                     new RollbackDeletionPolicy(id), MaxFieldLength.UNLIMITED, last);
-    Map data = new HashMap();
+    Map<String,String> data = new HashMap<String,String>();
     data.put("index", "Rolled back to 1-"+id);
     w.commit(data);
     w.close();
@@ -135,7 +135,7 @@ public class TestTransactionRollback extends LuceneTestCase {
       w.addDocument(doc);
 			
       if (currentRecordId%10 == 0) {
-        Map data = new HashMap();
+        Map<String,String> data = new HashMap<String,String>();
         data.put("index", "records 1-"+currentRecordId);
         w.commit(data);
       }
@@ -152,18 +152,17 @@ public class TestTransactionRollback extends LuceneTestCase {
       this.rollbackPoint = rollbackPoint;
     }
 
-    public void onCommit(List commits) throws IOException {
+    public void onCommit(List<? extends IndexCommit> commits) throws IOException {
     }
 
-    public void onInit(List commits) throws IOException {
-      for (Iterator iterator = commits.iterator(); iterator.hasNext();) {
-        IndexCommit commit = (IndexCommit) iterator.next();
-        Map userData=commit.getUserData();
+    public void onInit(List<? extends IndexCommit> commits) throws IOException {
+      for (final IndexCommit commit : commits) {
+        Map<String,String> userData=commit.getUserData();
         if (userData.size() > 0) {
           // Label for a commit point is "Records 1-30"
           // This code reads the last id ("30" in this example) and deletes it
           // if it is after the desired rollback point
-          String x = (String) userData.get("index");
+          String x = userData.get("index");
           String lastVal = x.substring(x.lastIndexOf("-")+1);
           int last = Integer.parseInt(lastVal);
           if (last>rollbackPoint) {
@@ -186,10 +185,10 @@ public class TestTransactionRollback extends LuceneTestCase {
 
   class DeleteLastCommitPolicy implements IndexDeletionPolicy {
 
-    public void onCommit(List commits) throws IOException {}
+    public void onCommit(List<? extends IndexCommit> commits) throws IOException {}
 
-    public void onInit(List commits) throws IOException {
-      ((IndexCommit) commits.get(commits.size()-1)).delete();
+    public void onInit(List<? extends IndexCommit> commits) throws IOException {
+      commits.get(commits.size()-1).delete();
     }
   }
 
@@ -208,7 +207,7 @@ public class TestTransactionRollback extends LuceneTestCase {
 	
   // Keeps all commit points (used to build index)
   class KeepAllDeletionPolicy implements IndexDeletionPolicy {
-    public void onCommit(List commits) throws IOException {}
-    public void onInit(List commits) throws IOException {}
+    public void onCommit(List<? extends IndexCommit> commits) throws IOException {}
+    public void onInit(List<? extends IndexCommit> commits) throws IOException {}
   }
 }

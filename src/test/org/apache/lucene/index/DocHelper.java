@@ -109,7 +109,7 @@ class DocHelper {
   
   
   
-  public static Map nameValues = null;
+  public static Map<String,Object> nameValues = null;
 
   // ordered list of all the fields...
   // could use LinkedHashMap for this purpose if Java1.4 is OK
@@ -130,17 +130,16 @@ class DocHelper {
     largeLazyField//placeholder for large field, since this is null.  It must always be last
   };
 
-  // Map<String fieldName, Fieldable field>
-  public static Map all=new HashMap();
-  public static Map indexed=new HashMap();
-  public static Map stored=new HashMap();
-  public static Map unstored=new HashMap();
-  public static Map unindexed=new HashMap();
-  public static Map termvector=new HashMap();
-  public static Map notermvector=new HashMap();
-  public static Map lazy= new HashMap();
-  public static Map noNorms=new HashMap();
-  public static Map noTf=new HashMap();
+  public static Map<String,Fieldable> all     =new HashMap<String,Fieldable>();
+  public static Map<String,Fieldable> indexed =new HashMap<String,Fieldable>();
+  public static Map<String,Fieldable> stored  =new HashMap<String,Fieldable>();
+  public static Map<String,Fieldable> unstored=new HashMap<String,Fieldable>();
+  public static Map<String,Fieldable> unindexed=new HashMap<String,Fieldable>();
+  public static Map<String,Fieldable> termvector=new HashMap<String,Fieldable>();
+  public static Map<String,Fieldable> notermvector=new HashMap<String,Fieldable>();
+  public static Map<String,Fieldable> lazy= new HashMap<String,Fieldable>();
+  public static Map<String,Fieldable> noNorms=new HashMap<String,Fieldable>();
+  public static Map<String,Fieldable> noTf=new HashMap<String,Fieldable>();
 
   static {
     //Initialize the large Lazy Field
@@ -175,14 +174,14 @@ class DocHelper {
   }
 
 
-  private static void add(Map map, Fieldable field) {
+  private static void add(Map<String,Fieldable> map, Fieldable field) {
     map.put(field.name(), field);
   }
 
 
   static
   {
-    nameValues = new HashMap();
+    nameValues = new HashMap<String,Object>();
     nameValues.put(TEXT_FIELD_1_KEY, FIELD_1_TEXT);
     nameValues.put(TEXT_FIELD_2_KEY, FIELD_2_TEXT);
     nameValues.put(TEXT_FIELD_3_KEY, FIELD_3_TEXT);

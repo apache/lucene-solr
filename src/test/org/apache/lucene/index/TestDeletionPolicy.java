@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.Collection;
@@ -43,14 +42,14 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDeletionPolicy extends LuceneTestCase
 {
-  private void verifyCommitOrder(List commits) throws IOException {
-    final IndexCommit firstCommit = ((IndexCommit) commits.get(0));
+  private void verifyCommitOrder(List<? extends IndexCommit> commits) throws IOException {
+    final IndexCommit firstCommit =  commits.get(0);
     long last = SegmentInfos.generationFromSegmentsFileName(firstCommit.getSegmentsFileName());
     assertEquals(last, firstCommit.getGeneration());
     long lastVersion = firstCommit.getVersion();
     long lastTimestamp = firstCommit.getTimestamp();
     for(int i=1;i<commits.size();i++) {
-      final IndexCommit commit = ((IndexCommit) commits.get(i));
+      final IndexCommit commit =  commits.get(i);
       long now = SegmentInfos.generationFromSegmentsFileName(commit.getSegmentsFileName());
       long nowVersion = commit.getVersion();
       long nowTimestamp = commit.getTimestamp();
@@ -68,12 +67,12 @@ public class TestDeletionPolicy extends LuceneTestCase
     int numOnInit;
     int numOnCommit;
     Directory dir;
-    public void onInit(List commits) throws IOException {
+    public void onInit(List<? extends IndexCommit> commits) throws IOException {
       verifyCommitOrder(commits);
       numOnInit++;
     }
-    public void onCommit(List commits) throws IOException {
-      IndexCommit lastCommit = (IndexCommit) commits.get(commits.size()-1);
+    public void onCommit(List<? extends IndexCommit> commits) throws IOException {
+      IndexCommit lastCommit =  commits.get(commits.size()-1);
       IndexReader r = IndexReader.open(dir, true);
       assertEquals("lastCommit.isOptimized()=" + lastCommit.isOptimized() + " vs IndexReader.isOptimized=" + r.isOptimized(), r.isOptimized(), lastCommit.isOptimized());
       r.close();
@@ -89,18 +88,16 @@ public class TestDeletionPolicy extends LuceneTestCase
   class KeepNoneOnInitDeletionPolicy implements IndexDeletionPolicy {
     int numOnInit;
     int numOnCommit;
-    public void onInit(List commits) throws IOException {
+    public void onInit(List<? extends IndexCommit> commits) throws IOException {
       verifyCommitOrder(commits);
       numOnInit++;
       // On init, delete all commit points:
-      Iterator it = commits.iterator();
-      while(it.hasNext()) {
-        final IndexCommit commit = (IndexCommit) it.next();
+      for (final IndexCommit commit : commits) {
         commit.delete();
         assertTrue(commit.isDeleted());
       }
     }
-    public void onCommit(List commits) throws IOException {
+    public void onCommit(List<? extends IndexCommit> commits) throws IOException {
       verifyCommitOrder(commits);
       int size = commits.size();
       // Delete all but last one:
@@ -116,25 +113,25 @@ public class TestDeletionPolicy extends LuceneTestCase
     int numOnCommit;
     int numToKeep;
     int numDelete;
-    Set seen = new HashSet();
+    Set<String> seen = new HashSet<String>();
 
     public KeepLastNDeletionPolicy(int numToKeep) {
       this.numToKeep = numToKeep;
     }
 
-    public void onInit(List commits) throws IOException {
+    public void onInit(List<? extends IndexCommit> commits) throws IOException {
       verifyCommitOrder(commits);
       numOnInit++;
       // do no deletions on init
       doDeletes(commits, false);
     }
 
-    public void onCommit(List commits) throws IOException {
+    public void onCommit(List<? extends IndexCommit> commits) throws IOException {
       verifyCommitOrder(commits);
       doDeletes(commits, true);
     }
     
-    private void doDeletes(List commits, boolean isCommit) {
+    private void doDeletes(List<? extends IndexCommit> commits, boolean isCommit) {
 
       // Assert that we really are only called for each new
       // commit:
@@ -169,23 +166,21 @@ public class TestDeletionPolicy extends LuceneTestCase
       this.expirationTimeSeconds = seconds;
     }
 
-    public void onInit(List commits) throws IOException {
+    public void onInit(List<? extends IndexCommit> commits) throws IOException {
       verifyCommitOrder(commits);
       onCommit(commits);
     }
 
-    public void onCommit(List commits) throws IOException {
+    public void onCommit(List<? extends IndexCommit> commits) throws IOException {
       verifyCommitOrder(commits);
 
-      IndexCommit lastCommit = (IndexCommit) commits.get(commits.size()-1);
+      IndexCommit lastCommit = commits.get(commits.size()-1);
 
       // Any commit older than expireTime should be deleted:
       double expireTime = dir.fileModified(lastCommit.getSegmentsFileName())/1000.0 - expirationTimeSeconds;
 
-      Iterator it = commits.iterator();
 
-      while(it.hasNext()) {
-        IndexCommit commit = (IndexCommit) it.next();
+      for (final IndexCommit commit : commits) {
         double modTime = dir.fileModified(commit.getSegmentsFileName())/1000.0;
         if (commit != lastCommit && modTime < expireTime) {
           commit.delete();
@@ -297,14 +292,12 @@ public class TestDeletionPolicy extends LuceneTestCase
       assertEquals(2, policy.numOnCommit);
 
       // Test listCommits
-      Collection commits = IndexReader.listCommits(dir);
+      Collection<IndexCommit> commits = IndexReader.listCommits(dir);
       // 1 from opening writer + 2 from closing writer
       assertEquals(3, commits.size());
 
-      Iterator it = commits.iterator();
       // Make sure we can open a reader on each commit:
-      while(it.hasNext()) {
-        IndexCommit commit = (IndexCommit) it.next();
+      for (final IndexCommit commit : commits) {
         IndexReader r = IndexReader.open(commit, null, false);
         r.close();
       }
@@ -356,12 +349,10 @@ public class TestDeletionPolicy extends LuceneTestCase
     }
     writer.close();
 
-    Collection commits = IndexReader.listCommits(dir);
+    Collection<IndexCommit> commits = IndexReader.listCommits(dir);
     assertEquals(6, commits.size());
     IndexCommit lastCommit = null;
-    Iterator it = commits.iterator();
-    while(it.hasNext()) {
-      IndexCommit commit = (IndexCommit) it.next();
+    for (final IndexCommit commit : commits) {
       if (lastCommit == null || commit.getGeneration() > lastCommit.getGeneration())
         lastCommit = commit;
     }

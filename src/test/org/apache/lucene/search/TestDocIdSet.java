@@ -77,7 +77,7 @@ public class TestDocIdSet extends LuceneTestCase {
       };
 	  
     DocIdSetIterator iter = filteredSet.iterator();
-    ArrayList/*<Integer>*/ list = new ArrayList/*<Integer>*/();
+    ArrayList<Integer> list = new ArrayList<Integer>();
     int doc = iter.advance(3);
     if (doc != DocIdSetIterator.NO_MORE_DOCS) {
       list.add(Integer.valueOf(doc));
@@ -88,9 +88,9 @@ public class TestDocIdSet extends LuceneTestCase {
 	  
     int[] docs = new int[list.size()];
     int c=0;
-    Iterator/*<Integer>*/ intIter = list.iterator();
+    Iterator<Integer> intIter = list.iterator();
     while(intIter.hasNext()) {
-      docs[c++] = ((Integer) intIter.next()).intValue();
+      docs[c++] = intIter.next().intValue();
     }
     int[] answer = new int[]{4,6,8};
     boolean same = Arrays.equals(answer, docs);

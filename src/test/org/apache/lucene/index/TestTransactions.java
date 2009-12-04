@@ -217,6 +217,6 @@ public class TestTransactions extends LuceneTestCase
       threads[i].join();
 
     for(int i=0;i<numThread;i++)
-      assertTrue(!((TimedThread) threads[i]).failed);
+      assertTrue(!threads[i].failed);
   }
 }

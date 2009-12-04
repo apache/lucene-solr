@@ -17,9 +17,6 @@ package org.apache.lucene.util;
 * limitations under the License.
 */
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.OpenBitSet;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -174,7 +171,7 @@ public class TestNumericUtils extends LuceneTestCase {
   
   /** Note: The neededBounds iterator must be unsigned (easier understanding what's happening) */
   protected void assertLongRangeSplit(final long lower, final long upper, int precisionStep,
-    final boolean useBitSet, final Iterator neededBounds
+    final boolean useBitSet, final Iterator<Long> neededBounds
   ) throws Exception {
     final OpenBitSet bits=useBitSet ? new OpenBitSet(upper-lower+1) : null;
     
@@ -189,8 +186,8 @@ public class TestNumericUtils extends LuceneTestCase {
         min ^= 0x8000000000000000L;
         max ^= 0x8000000000000000L;
         //System.out.println("Long.valueOf(0x"+Long.toHexString(min>>>shift)+"L),Long.valueOf(0x"+Long.toHexString(max>>>shift)+"L),");
-        assertEquals( "inner min bound", ((Long)neededBounds.next()).longValue(), min>>>shift);
-        assertEquals( "inner max bound", ((Long)neededBounds.next()).longValue(), max>>>shift);
+        assertEquals( "inner min bound", neededBounds.next().longValue(), min>>>shift);
+        assertEquals( "inner max bound", neededBounds.next().longValue(), max>>>shift);
       }
     }, precisionStep, lower, upper);
     
@@ -246,7 +243,7 @@ public class TestNumericUtils extends LuceneTestCase {
     }).iterator());
 
     // a inverse range should produce no sub-ranges
-    assertLongRangeSplit(9500L, -5000L, 4, false, Collections.EMPTY_LIST.iterator());    
+    assertLongRangeSplit(9500L, -5000L, 4, false, Collections. <Long> emptyList().iterator());    
 
     // a 0-length range should reproduce the range itsself
     assertLongRangeSplit(9500L, 9500L, 4, false, Arrays.asList(new Long[]{
@@ -256,7 +253,7 @@ public class TestNumericUtils extends LuceneTestCase {
 
   /** Note: The neededBounds iterator must be unsigned (easier understanding what's happening) */
   protected void assertIntRangeSplit(final int lower, final int upper, int precisionStep,
-    final boolean useBitSet, final Iterator neededBounds
+    final boolean useBitSet, final Iterator<Integer> neededBounds
   ) throws Exception {
     final OpenBitSet bits=useBitSet ? new OpenBitSet(upper-lower+1) : null;
     
@@ -271,8 +268,8 @@ public class TestNumericUtils extends LuceneTestCase {
         min ^= 0x80000000;
         max ^= 0x80000000;
         //System.out.println("Integer.valueOf(0x"+Integer.toHexString(min>>>shift)+"),Integer.valueOf(0x"+Integer.toHexString(max>>>shift)+"),");
-        assertEquals( "inner min bound", ((Integer)neededBounds.next()).intValue(), min>>>shift);
-        assertEquals( "inner max bound", ((Integer)neededBounds.next()).intValue(), max>>>shift);
+        assertEquals( "inner min bound", neededBounds.next().intValue(), min>>>shift);
+        assertEquals( "inner max bound", neededBounds.next().intValue(), max>>>shift);
       }
     }, precisionStep, lower, upper);
     
@@ -328,7 +325,7 @@ public class TestNumericUtils extends LuceneTestCase {
     }).iterator());
 
     // a inverse range should produce no sub-ranges
-    assertIntRangeSplit(9500, -5000, 4, false, Collections.EMPTY_LIST.iterator());    
+    assertIntRangeSplit(9500, -5000, 4, false, Collections. <Integer> emptyList().iterator());    
 
     // a 0-length range should reproduce the range itsself
     assertIntRangeSplit(9500, 9500, 4, false, Arrays.asList(new Integer[]{

@@ -66,7 +66,7 @@ public class TestPositiveScoresOnlyCollector extends LuceneTestCase {
     }
     
     Scorer s = new SimpleScorer();
-    TopDocsCollector tdc = TopScoreDocCollector.create(scores.length, true);
+    TopDocsCollector<ScoreDoc> tdc = TopScoreDocCollector.create(scores.length, true);
     Collector c = new PositiveScoresOnlyCollector(tdc);
     c.setScorer(s);
     while (s.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {

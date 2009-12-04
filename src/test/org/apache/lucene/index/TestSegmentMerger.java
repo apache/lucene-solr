@@ -85,7 +85,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     assertTrue(termDocs != null);
     assertTrue(termDocs.next() == true);
     
-    Collection stored = mergedReader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR);
+    Collection<String> stored = mergedReader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR);
     assertTrue(stored != null);
     //System.out.println("stored size: " + stored.size());
     assertTrue("We do not have 3 fields that were indexed with term vector",stored.size() == 3);
