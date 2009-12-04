@@ -78,42 +78,42 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   
   private final Token wrapper = new Token();
   /**
-   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, String[], int, int, int, boolean) instead
+   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, String[], int, int, int, boolean)} instead
    */
   protected CompoundWordTokenFilterBase(TokenStream input, String[] dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     this(Version.LUCENE_30, input, makeDictionary(dictionary),minWordSize,minSubwordSize,maxSubwordSize, onlyLongestMatch);
   }
   
   /**
-   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, String[], boolean) instead
+   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, String[], boolean)} instead
    */
   protected CompoundWordTokenFilterBase(TokenStream input, String[] dictionary, boolean onlyLongestMatch) {
     this(Version.LUCENE_30, input, makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
   }
   
   /**
-   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, Set, boolean) instead
+   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, Set, boolean)} instead
    */
   protected CompoundWordTokenFilterBase(TokenStream input, Set<?> dictionary, boolean onlyLongestMatch) {
     this(Version.LUCENE_30, input, dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
   }
   
   /**
-   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, String[]) instead
+   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, String[])} instead
    */
   protected CompoundWordTokenFilterBase(TokenStream input, String[] dictionary) {
     this(Version.LUCENE_30, input, makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
   }
   
   /**
-   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, Set) instead
+   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, Set)} instead
    */
   protected CompoundWordTokenFilterBase(TokenStream input, Set<?> dictionary) {
     this(Version.LUCENE_30, input, dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
   }
 
   /**
-   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, Set[], int, int, int, boolean) instead
+   * @deprecated use {@link #CompoundWordTokenFilterBase(Version, TokenStream, Set, int, int, int, boolean)} instead
    */
   protected CompoundWordTokenFilterBase(TokenStream input, Set<?> dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     this(Version.LUCENE_30, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
