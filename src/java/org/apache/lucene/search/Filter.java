@@ -22,12 +22,28 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.DocIdBitSet;
 
-/** Abstract base class providing a mechanism to use a subset of an index
+/** 
+ *  Abstract base class providing a mechanism to use a subset of an index
  *  for restriction or permission of index search results.
  *  <p>
  */
 public abstract class Filter implements java.io.Serializable {
+  
   /**
+   * Creates a {@link DocIdSet} that provides the documents which should be
+   * permitted or prohibited in search results. <b>NOTE:</b> null can be
+   * returned if no documents will be accepted by this Filter.
+   * <p>
+   * Note: This method might be called more than once during a search if the
+   * index has more than one segment. In such a case the {@link DocIdSet}
+   * must be relative to the document base of the given reader. Yet, the
+   * segment readers are passed in increasing document base order.
+   * 
+   * @param reader a {@link IndexReader} instance opened on the index currently
+   *         searched on. Note, it is likely that the provided reader does not
+   *         represent the whole underlying index i.e. if the index has more than
+   *         one segment the given reader only represents a single segment.
+   *          
    * @return a DocIdSet that provides the documents which should be permitted or
    *         prohibited in search results. <b>NOTE:</b> null can be returned if
    *         no documents will be accepted by this Filter.

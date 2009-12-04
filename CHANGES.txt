@@ -69,6 +69,10 @@ Test Cases
 * LUCENE-2065: Use Java 5 generics throughout our unit tests.  (Kay
   Kay via Mike McCandless)
 
+* LUCENE-2114: Change TestFilteredSearch to test on multi-segment
+  index as well; improve javadocs of Filter to call out that the
+  provided reader is per-segment (Simon Willnauer via Mike McCandless)
+
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy
