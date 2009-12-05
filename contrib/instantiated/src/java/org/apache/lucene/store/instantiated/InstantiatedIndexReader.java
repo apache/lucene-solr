@@ -195,7 +195,7 @@ public class InstantiatedIndexReader extends IndexReader {
   }
 
   @Override
-  public Collection getFieldNames(FieldOption fieldOption) {
+  public Collection<String> getFieldNames(FieldOption fieldOption) {
     Set<String> fieldSet = new HashSet<String>();
     for (FieldSetting fi : index.getFieldSettings().values()) {
       if (fieldOption == IndexReader.FieldOption.ALL) {

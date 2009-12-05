@@ -49,7 +49,7 @@ import java.util.Collections;
 public class TestPrecedenceQueryParser extends LocalizedTestCase {
   
   public TestPrecedenceQueryParser(String name) {
-    super(name, new HashSet(Arrays.asList(new String[]{
+    super(name, new HashSet<String>(Arrays.asList(new String[]{
       "testDateRange", "testNumber"
     })));
   }

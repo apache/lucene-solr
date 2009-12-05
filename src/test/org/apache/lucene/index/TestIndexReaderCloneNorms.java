@@ -256,8 +256,8 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     // System.out.println("modifyNormsForF1 maxDoc: "+n);
     for (int i = 0; i < n; i += 3) { // modify for every third doc
       int k = (i * 3) % modifiedNorms.size();
-      float origNorm = ((Float) modifiedNorms.get(i)).floatValue();
-      float newNorm = ((Float) modifiedNorms.get(k)).floatValue();
+      float origNorm =  modifiedNorms.get(i).floatValue();
+      float newNorm =  modifiedNorms.get(k).floatValue();
       // System.out.println("Modifying: for "+i+" from "+origNorm+" to
       // "+newNorm);
       // System.out.println(" and: for "+k+" from "+newNorm+" to "+origNorm);

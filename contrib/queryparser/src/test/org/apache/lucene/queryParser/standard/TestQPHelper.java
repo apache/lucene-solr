@@ -89,7 +89,7 @@ import org.apache.lucene.util.Version;
 public class TestQPHelper extends LocalizedTestCase {
 
   public TestQPHelper(String name) {
-    super(name, new HashSet(Arrays.asList(new String[]{
+    super(name, new HashSet<String>(Arrays.asList(new String[]{
       "testLegacyDateRange", "testDateRange",
       "testCJK", "testNumber", "testFarsiRangeCollating",
       "testLocalDateFormat"

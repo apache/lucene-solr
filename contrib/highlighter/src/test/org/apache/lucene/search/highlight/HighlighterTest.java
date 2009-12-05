@@ -978,12 +978,12 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         WeightedSpanTerm[] wTerms = new WeightedSpanTerm[2];
         wTerms[0] = new WeightedSpanTerm(10f, "hello");
 
-        List positionSpans = new ArrayList();
+        List<PositionSpan> positionSpans = new ArrayList<PositionSpan>();
         positionSpans.add(new PositionSpan(0, 0));
         wTerms[0].addPositionSpans(positionSpans);
 
         wTerms[1] = new WeightedSpanTerm(1f, "kennedy");
-        positionSpans = new ArrayList();
+        positionSpans = new ArrayList<PositionSpan>();
         positionSpans.add(new PositionSpan(14, 14));
         wTerms[1].addPositionSpans(positionSpans);
 
@@ -1021,7 +1021,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       @Override
       public void run() throws Exception {
-        HashMap synonyms = new HashMap();
+        HashMap<String,String> synonyms = new HashMap<String,String>();
         synonyms.put("football", "soccer,footie");
         Analyzer analyzer = new SynonymAnalyzer(synonyms);
         String srchkey = "football";
@@ -1139,7 +1139,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       @Override
       public void run() throws Exception {
         String goodWord = "goodtoken";
-        Set stopWords = new HashSet(1);
+        Set<String> stopWords = new HashSet<String>(1);
         stopWords.add("stoppedtoken");
 
         TermQuery query = new TermQuery(new Term("data", goodWord));
@@ -1184,7 +1184,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     TestHighlightRunner helper = new TestHighlightRunner() {
       @Override
       public void run() throws Exception {
-        Set stopWords = new HashSet();
+        Set<String> stopWords = new HashSet<String>();
         stopWords.add("in");
         stopWords.add("it");
         TermQuery query = new TermQuery(new Term("text", "searchterm"));
@@ -1425,8 +1425,8 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   protected TokenStream getTS2() {
     // String s = "Hi-Speed10 foo";
     return new TokenStream() {
-      Iterator iter;
-      List lst;
+      Iterator<Token> iter;
+      List<Token> lst;
       private TermAttribute termAtt;
       private PositionIncrementAttribute posIncrAtt;
       private OffsetAttribute offsetAtt;
@@ -1434,7 +1434,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         termAtt = addAttribute(TermAttribute.class);
         posIncrAtt = addAttribute(PositionIncrementAttribute.class);
         offsetAtt = addAttribute(OffsetAttribute.class);
-        lst = new ArrayList();
+        lst = new ArrayList<Token>();
         Token t;
         t = createToken("hi", 0, 2);
         t.setPositionIncrement(1);
@@ -1457,7 +1457,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       @Override
       public boolean incrementToken() throws IOException {
         if(iter.hasNext()) {
-          Token token = (Token) iter.next();
+          Token token =  iter.next();
           termAtt.setTermBuffer(token.term());
           posIncrAtt.setPositionIncrement(token.getPositionIncrement());
           offsetAtt.setOffset(token.startOffset(), token.endOffset());
@@ -1473,8 +1473,8 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   protected TokenStream getTS2a() {
     // String s = "Hi-Speed10 foo";
     return new TokenStream() {
-      Iterator iter;
-      List lst;
+      Iterator<Token> iter;
+      List<Token> lst;
       private TermAttribute termAtt;
       private PositionIncrementAttribute posIncrAtt;
       private OffsetAttribute offsetAtt;
@@ -1482,7 +1482,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         termAtt = addAttribute(TermAttribute.class);
         posIncrAtt = addAttribute(PositionIncrementAttribute.class);
         offsetAtt = addAttribute(OffsetAttribute.class);
-        lst = new ArrayList();
+        lst = new ArrayList<Token>();
         Token t;
         t = createToken("hispeed", 0, 8);
         t.setPositionIncrement(1);
@@ -1505,7 +1505,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       @Override
       public boolean incrementToken() throws IOException {
         if(iter.hasNext()) {
-          Token token = (Token) iter.next();
+          Token token = iter.next();
           termAtt.setTermBuffer(token.term());
           posIncrAtt.setPositionIncrement(token.getPositionIncrement());
           offsetAtt.setOffset(token.startOffset(), token.endOffset());
@@ -1785,9 +1785,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 // ===================================================================
 
 class SynonymAnalyzer extends Analyzer {
-  private Map synonyms;
+  private Map<String,String> synonyms;
 
-  public SynonymAnalyzer(Map synonyms) {
+  public SynonymAnalyzer(Map<String,String> synonyms) {
     this.synonyms = synonyms;
   }
 
@@ -1815,7 +1815,7 @@ class SynonymTokenizer extends TokenStream {
   private TokenStream realStream;
   private Token currentRealToken = null;
   private org.apache.lucene.analysis.Token cRealToken = null;
-  private Map synonyms;
+  private Map<String,String> synonyms;
   StringTokenizer st = null;
   private TermAttribute realTermAtt;
   private PositionIncrementAttribute realPosIncrAtt;
@@ -1824,7 +1824,7 @@ class SynonymTokenizer extends TokenStream {
   private PositionIncrementAttribute posIncrAtt;
   private OffsetAttribute offsetAtt;
 
-  public SynonymTokenizer(TokenStream realStream, Map synonyms) {
+  public SynonymTokenizer(TokenStream realStream, Map<String,String> synonyms) {
     this.realStream = realStream;
     this.synonyms = synonyms;
     realTermAtt = realStream.addAttribute(TermAttribute.class);
@@ -1849,7 +1849,7 @@ class SynonymTokenizer extends TokenStream {
       offsetAtt.setOffset(realOffsetAtt.startOffset(), realOffsetAtt.endOffset());
       posIncrAtt.setPositionIncrement(realPosIncrAtt.getPositionIncrement());
 
-      String expansions = (String) synonyms.get(realTermAtt.term());
+      String expansions =  synonyms.get(realTermAtt.term());
       if (expansions == null) {
         return true;
       }

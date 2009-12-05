@@ -197,8 +197,8 @@ public class MemoryIndex implements Serializable {
    */
   private static final Comparator termComparator = new Comparator() {
     public int compare(Object o1, Object o2) {
-      if (o1 instanceof Map.Entry) o1 = ((Map.Entry) o1).getKey();
-      if (o2 instanceof Map.Entry) o2 = ((Map.Entry) o2).getKey();
+      if (o1 instanceof Map.Entry<?,?>) o1 = ((Map.Entry<?,?>) o1).getKey();
+      if (o2 instanceof Map.Entry<?,?>) o2 = ((Map.Entry<?,?>) o2).getKey();
       if (o1 == o2) return 0;
       return ((String) o1).compareTo((String) o2);
     }

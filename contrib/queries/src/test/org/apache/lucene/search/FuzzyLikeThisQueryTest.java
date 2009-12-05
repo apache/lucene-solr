@@ -70,7 +70,7 @@ public class FuzzyLikeThisQueryTest extends TestCase
 		FuzzyLikeThisQuery flt=new FuzzyLikeThisQuery(10,analyzer);
 		flt.addTerms("smith", "name", 0.3f, 1);
 		Query q=flt.rewrite(searcher.getIndexReader());
-		HashSet queryTerms=new HashSet();
+		HashSet<Term> queryTerms=new HashSet<Term>();
 		q.extractTerms(queryTerms);
 		assertTrue("Should have variant smythe",queryTerms.contains(new Term("name","smythe")));
 		assertTrue("Should have variant smith",queryTerms.contains(new Term("name","smith")));
@@ -87,7 +87,7 @@ public class FuzzyLikeThisQueryTest extends TestCase
 		FuzzyLikeThisQuery flt=new FuzzyLikeThisQuery(10,analyzer);
 		flt.addTerms("jonathin smoth", "name", 0.3f, 1);
 		Query q=flt.rewrite(searcher.getIndexReader());
-		HashSet queryTerms=new HashSet();
+		HashSet<Term> queryTerms=new HashSet<Term>();
 		q.extractTerms(queryTerms);
 		assertTrue("Should have variant jonathan",queryTerms.contains(new Term("name","jonathan")));
 		assertTrue("Should have variant smith",queryTerms.contains(new Term("name","smith")));
@@ -103,7 +103,7 @@ public class FuzzyLikeThisQueryTest extends TestCase
 		FuzzyLikeThisQuery flt=new FuzzyLikeThisQuery(10,analyzer);
 		flt.addTerms("fernando smith", "name", 0.3f, 1);
 		Query q=flt.rewrite(searcher.getIndexReader());
-		HashSet queryTerms=new HashSet();
+		HashSet<Term> queryTerms=new HashSet<Term>();
 		q.extractTerms(queryTerms);
 		assertTrue("Should have variant smith",queryTerms.contains(new Term("name","smith")));
 		TopDocs topDocs = searcher.search(flt, 1);

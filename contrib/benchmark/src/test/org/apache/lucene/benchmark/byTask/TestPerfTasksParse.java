@@ -49,10 +49,9 @@ public class TestPerfTasksParse extends TestCase {
     String parsedTasks = "[ "+taskStr+" ] : 1000";
     Benchmark benchmark = new Benchmark(new StringReader(propPart+parsedTasks));
     Algorithm alg = benchmark.getAlgorithm();
-    ArrayList algTasks = alg.extractTasks();
+    ArrayList<PerfTask> algTasks = alg.extractTasks();
     boolean foundAdd = false;
-    for (Iterator iter = algTasks.iterator(); iter.hasNext();) {
-       PerfTask task = (PerfTask) iter.next();
+    for (final PerfTask task : algTasks) {
        if (task.toString().indexOf(taskStr)>=0) {
           foundAdd = true;
        }
@@ -70,10 +69,9 @@ public class TestPerfTasksParse extends TestCase {
     String parsedTasks = "{ "+taskStr+" } : 1000";
     Benchmark benchmark = new Benchmark(new StringReader(propPart+parsedTasks));
     Algorithm alg = benchmark.getAlgorithm();
-    ArrayList algTasks = alg.extractTasks();
+    ArrayList<PerfTask> algTasks = alg.extractTasks();
     boolean foundAdd = false;
-    for (Iterator iter = algTasks.iterator(); iter.hasNext();) {
-       PerfTask task = (PerfTask) iter.next();
+    for (final PerfTask task : algTasks) {
        if (task.toString().indexOf(taskStr)>=0) {
           foundAdd = true;
        }

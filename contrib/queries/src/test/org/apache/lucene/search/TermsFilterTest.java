@@ -38,7 +38,7 @@ public class TermsFilterTest extends TestCase
 		TermsFilter a=new TermsFilter();
 		a.addTerm(new Term("field1","a"));
 		a.addTerm(new Term("field1","b"));
-		HashSet cachedFilters=new HashSet();
+		HashSet<Filter> cachedFilters=new HashSet<Filter>();
 		cachedFilters.add(a);
 		TermsFilter b=new TermsFilter();
 		b.addTerm(new Term("field1","a"));

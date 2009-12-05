@@ -146,7 +146,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
   }
 
   public void testBoostsSimple() throws Exception {
-    Map boosts = new HashMap();
+    Map<CharSequence,Float> boosts = new HashMap<CharSequence,Float>();
     boosts.put("b", Float.valueOf(5));
     boosts.put("t", Float.valueOf(10));
     String[] fields = { "b", "t" };

@@ -22,6 +22,11 @@ New features
    
  * LUCENE-2062: Add a Bulgarian analyzer.  (Robert Muir, Simon Willnauer)
 
+Test Cases
+
+ * LUCENE-2115: Cutover contrib tests to use Java5 generics.  (Kay Kay
+   via Mike McCandless)
+
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy

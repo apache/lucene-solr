@@ -444,12 +444,11 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     // Run algo
     Benchmark benchmark = execBenchmark(algLines1);
 
-    List stats = benchmark.getRunData().getPoints().taskStats();
+    List<TaskStats> stats = benchmark.getRunData().getPoints().taskStats();
 
     // Count how many tokens all ReadTokens saw
     int totalTokenCount1 = 0;
-    for (Iterator it = stats.iterator(); it.hasNext();) {
-      TaskStats stat = (TaskStats) it.next();
+    for (final TaskStats stat : stats) {
       if (stat.getTask().getName().equals("ReadTokens")) {
         totalTokenCount1 += stat.getCount();
       }
@@ -809,8 +808,7 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     // 3. test counters
     int n = disable ? 0 : 1;
     int nChecked = 0;
-    for (Iterator ts = benchmark.getRunData().getPoints().taskStats().iterator(); ts.hasNext();) {
-      TaskStats stats = (TaskStats) ts.next();
+    for (final TaskStats stats : benchmark.getRunData().getPoints().taskStats()) {
       String taskName = stats.getTask().getName();
       if (taskName.equals("Rounds")) {
         assertEquals("Wrong total count!",20+2*n,stats.getCount());

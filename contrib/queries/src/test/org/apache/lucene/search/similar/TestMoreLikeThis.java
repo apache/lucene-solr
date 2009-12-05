@@ -71,7 +71,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     }
 
     public void testBoostFactor() throws Throwable {
-	Map originalValues = getOriginalValues();
+	Map<String,Float> originalValues = getOriginalValues();
 
 	MoreLikeThis mlt = new MoreLikeThis(
 		reader);
@@ -88,13 +88,13 @@ public class TestMoreLikeThis extends LuceneTestCase {
 
 	BooleanQuery query = (BooleanQuery) mlt.like(new StringReader(
 		"lucene release"));
-	List clauses = query.clauses();
+	List<BooleanClause> clauses = query.clauses();
 
 	assertEquals("Expected " + originalValues.size() + " clauses.",
 		originalValues.size(), clauses.size());
 
 	for (int i = 0; i < clauses.size(); i++) {
-	    BooleanClause clause = (BooleanClause) clauses.get(i);
+	    BooleanClause clause =  clauses.get(i);
 	    TermQuery tq = (TermQuery) clause.getQuery();
 	    Float termBoost = (Float) originalValues.get(tq.getTerm().text());
 	    assertNotNull("Expected term " + tq.getTerm().text(), termBoost);
@@ -106,8 +106,8 @@ public class TestMoreLikeThis extends LuceneTestCase {
 	}
     }
 
-    private Map getOriginalValues() throws IOException {
-	Map originalValues = new HashMap();
+    private Map<String,Float> getOriginalValues() throws IOException {
+	Map<String,Float> originalValues = new HashMap<String,Float>();
 	MoreLikeThis mlt = new MoreLikeThis(reader);
 	mlt.setMinDocFreq(1);
 	mlt.setMinTermFreq(1);
@@ -116,10 +116,10 @@ public class TestMoreLikeThis extends LuceneTestCase {
 	mlt.setBoost(true);
 	BooleanQuery query = (BooleanQuery) mlt.like(new StringReader(
 		"lucene release"));
-	List clauses = query.clauses();
+	List<BooleanClause> clauses = query.clauses();
 
 	for (int i = 0; i < clauses.size(); i++) {
-	    BooleanClause clause = (BooleanClause) clauses.get(i);
+	    BooleanClause clause = clauses.get(i);
 	    TermQuery tq = (TermQuery) clause.getQuery();
 	    originalValues.put(tq.getTerm().text(), Float.valueOf(tq.getBoost()));
 	}

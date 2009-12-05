@@ -274,7 +274,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     boolean toLowerCase = true;
 //    boolean toLowerCase = false;
 //    Set stopWords = null;
-    Set stopWords = StopAnalyzer.ENGLISH_STOP_WORDS_SET;
+    Set<?> stopWords = StopAnalyzer.ENGLISH_STOP_WORDS_SET;
     
     Analyzer[] analyzers = new Analyzer[] { 
         new SimpleAnalyzer(),
@@ -380,7 +380,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   private String[] readLines(File file) throws Exception {
     BufferedReader reader = new BufferedReader(new InputStreamReader(
         new FileInputStream(file))); 
-    List lines = new ArrayList();
+    List<String> lines = new ArrayList<String>();
     String line;  
     while ((line = reader.readLine()) != null) {
       String t = line.trim(); 
@@ -493,7 +493,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   
   /** returns all files matching the given file name patterns (quick n'dirty) */
   static String[] listFiles(String[] fileNames) {
-    LinkedHashSet allFiles = new LinkedHashSet();
+    LinkedHashSet<String> allFiles = new LinkedHashSet<String>();
     for (int i=0; i < fileNames.length; i++) {
       int k;
       if ((k = fileNames[i].indexOf("*")) < 0) {

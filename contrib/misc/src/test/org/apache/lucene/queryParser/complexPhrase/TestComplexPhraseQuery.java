@@ -90,7 +90,7 @@ public class TestComplexPhraseQuery extends TestCase {
 
     Query q = qp.parse(qString);
 
-    HashSet expecteds = new HashSet();
+    HashSet<String> expecteds = new HashSet<String>();
     String[] vals = expectedVals.split(",");
     for (int i = 0; i < vals.length; i++) {
       if (vals[i].length() > 0)

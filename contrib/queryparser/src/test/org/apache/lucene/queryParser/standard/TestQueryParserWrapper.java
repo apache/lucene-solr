@@ -84,7 +84,7 @@ import org.apache.lucene.util.Version;
 public class TestQueryParserWrapper extends LocalizedTestCase {
 
   public TestQueryParserWrapper(String name) {
-    super(name, new HashSet(Arrays.asList(new String[]{
+    super(name, new HashSet<String>(Arrays.asList(new String[]{
       "testLegacyDateRange", "testDateRange",
       "testCJK", "testNumber", "testFarsiRangeCollating",
       "testLocalDateFormat"

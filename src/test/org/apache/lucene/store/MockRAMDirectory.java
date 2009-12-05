@@ -229,7 +229,7 @@ public class MockRAMDirectory extends RAMDirectory {
       throw new FileNotFoundException(name);
     else {
       if (openFiles.containsKey(name)) {
-        Integer v = (Integer) openFiles.get(name);
+        Integer v =  openFiles.get(name);
         v = Integer.valueOf(v.intValue()+1);
         openFiles.put(name, v);
       } else {
@@ -331,7 +331,7 @@ public class MockRAMDirectory extends RAMDirectory {
   synchronized void maybeThrowDeterministicException() throws IOException {
     if (failures != null) {
       for(int i = 0; i < failures.size(); i++) {
-        ((Failure)failures.get(i)).eval(this);
+        failures.get(i).eval(this);
       }
     }
   }

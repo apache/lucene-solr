@@ -81,7 +81,7 @@ public class DuplicateFilterTest extends TestCase
 	public void testDefaultFilter() throws Throwable
 	{
 		DuplicateFilter df=new DuplicateFilter(KEY_FIELD);		
-		HashSet results=new HashSet();
+		HashSet<String> results=new HashSet<String>();
 		ScoreDoc[] hits = searcher.search(tq,df, 1000).scoreDocs;
 		for(int i=0;i<hits.length;i++)
 		{
@@ -93,7 +93,7 @@ public class DuplicateFilterTest extends TestCase
 	}
 	public void testNoFilter() throws Throwable
 	{
-		HashSet results=new HashSet();
+		HashSet<String> results=new HashSet<String>();
 		ScoreDoc[] hits = searcher.search(tq, null, 1000).scoreDocs;
 		assertTrue("Default searching should have found some matches",hits.length>0);
 		boolean dupsFound=false;
@@ -112,7 +112,7 @@ public class DuplicateFilterTest extends TestCase
 	{
 		DuplicateFilter df=new DuplicateFilter(KEY_FIELD);
 		df.setProcessingMode(DuplicateFilter.PM_FAST_INVALIDATION);
-		HashSet results=new HashSet();
+		HashSet<String> results=new HashSet<String>();
 		ScoreDoc[] hits = searcher.search(tq,df, 1000).scoreDocs;
 		assertTrue("Filtered searching should have found some matches",hits.length>0);
 		for(int i=0;i<hits.length;i++)
