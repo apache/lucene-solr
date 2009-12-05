@@ -18,8 +18,13 @@ package org.apache.lucene.search.spell;
  */
 
 import java.io.IOException;
-
-import junit.framework.TestCase;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -27,9 +32,12 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
+import org.apache.lucene.util.LuceneTestCase;
 
 
 /**
@@ -37,9 +45,11 @@ import org.apache.lucene.util.English;
  *
  *
  */
-public class TestSpellChecker extends TestCase {
-  private SpellChecker spellChecker;
+public class TestSpellChecker extends LuceneTestCase {
+  private SpellCheckerMock spellChecker;
   private Directory userindex, spellindex;
+  private final Random random = newRandom();
+  private List<IndexSearcher> searchers;
 
   @Override
   protected void setUp() throws Exception {
@@ -56,10 +66,10 @@ public class TestSpellChecker extends TestCase {
       writer.addDocument(doc);
     }
     writer.close();
-
+    searchers = Collections.synchronizedList(new ArrayList<IndexSearcher>());
     // create the spellChecker
     spellindex = new RAMDirectory();
-    spellChecker = new SpellChecker(spellindex);
+    spellChecker = new SpellCheckerMock(spellindex);
   }
 
 
@@ -75,7 +85,9 @@ public class TestSpellChecker extends TestCase {
     int num_field2 = this.numdoc();
 
     assertEquals(num_field2, num_field1 + 1);
-
+    
+    assertLastSearcherOpen(4);
+    
     checkCommonSuggestions(r);
     checkLevenshteinSuggestions(r);
     
@@ -199,6 +211,188 @@ public class TestSpellChecker extends TestCase {
     //System.out.println("num docs: " + num);
     rs.close();
     return num;
+  }
+  
+  public void testClose() throws IOException {
+    IndexReader r = IndexReader.open(userindex, true);
+    spellChecker.clearIndex();
+    String field = "field1";
+    addwords(r, "field1");
+    int num_field1 = this.numdoc();
+    addwords(r, "field2");
+    int num_field2 = this.numdoc();
+    assertEquals(num_field2, num_field1 + 1);
+    checkCommonSuggestions(r);
+    assertLastSearcherOpen(4);
+    spellChecker.close();
+    assertSearchersClosed();
+    try {
+      spellChecker.close();
+      fail("spellchecker was already closed");
+    } catch (AlreadyClosedException e) {
+      // expected
+    }
+    try {
+      checkCommonSuggestions(r);
+      fail("spellchecker was already closed");
+    } catch (AlreadyClosedException e) {
+      // expected
+    }
+    
+    try {
+      spellChecker.clearIndex();
+      fail("spellchecker was already closed");
+    } catch (AlreadyClosedException e) {
+      // expected
+    }
+    
+    try {
+      spellChecker.indexDictionary(new LuceneDictionary(r, field));
+      fail("spellchecker was already closed");
+    } catch (AlreadyClosedException e) {
+      // expected
+    }
+    
+    try {
+      spellChecker.setSpellIndex(spellindex);
+      fail("spellchecker was already closed");
+    } catch (AlreadyClosedException e) {
+      // expected
+    }
+    assertEquals(4, searchers.size());
+    assertSearchersClosed();
+  }
+  
+  /*
+   * tests if the internally shared indexsearcher is correctly closed 
+   * when the spellchecker is concurrently accessed and closed.
+   */
+  public void testConcurrentAccess() throws IOException, InterruptedException {
+    assertEquals(1, searchers.size());
+    final IndexReader r = IndexReader.open(userindex, true);
+    spellChecker.clearIndex();
+    assertEquals(2, searchers.size());
+    addwords(r, "field1");
+    assertEquals(3, searchers.size());
+    int num_field1 = this.numdoc();
+    addwords(r, "field2");
+    assertEquals(4, searchers.size());
+    int num_field2 = this.numdoc();
+    assertEquals(num_field2, num_field1 + 1);
+    int numThreads = 5 + this.random.nextInt(5);
+    ExecutorService executor = Executors.newFixedThreadPool(numThreads);
+    SpellCheckWorker[] workers = new SpellCheckWorker[numThreads];
+    for (int i = 0; i < numThreads; i++) {
+      SpellCheckWorker spellCheckWorker = new SpellCheckWorker(r);
+      executor.execute(spellCheckWorker);
+      workers[i] = spellCheckWorker;
+      
+    }
+    int iterations = 5 + random.nextInt(5);
+    for (int i = 0; i < iterations; i++) {
+      Thread.sleep(100);
+      // concurrently reset the spell index
+      spellChecker.setSpellIndex(this.spellindex);
+      // for debug - prints the internal open searchers 
+      // showSearchersOpen();
+    }
+    
+    spellChecker.close();
+    executor.shutdown();
+    executor.awaitTermination(5, TimeUnit.SECONDS);
+    
+    
+    for (int i = 0; i < workers.length; i++) {
+      assertFalse(workers[i].failed);
+      assertTrue(workers[i].terminated);
+    }
+    // 4 searchers more than iterations
+    // 1. at creation
+    // 2. clearIndex()
+    // 2. and 3. during addwords
+    assertEquals(iterations + 4, searchers.size());
+    assertSearchersClosed();
+    
+  }
+  
+  private void assertLastSearcherOpen(int numSearchers) {
+    assertEquals(numSearchers, searchers.size());
+    IndexSearcher[] searcherArray = searchers.toArray(new IndexSearcher[0]);
+    for (int i = 0; i < searcherArray.length; i++) {
+      if (i == searcherArray.length - 1) {
+        assertTrue("expected last searcher open but was closed",
+            searcherArray[i].getIndexReader().getRefCount() > 0);
+      } else {
+        assertFalse("expected closed searcher but was open - Index: " + i,
+            searcherArray[i].getIndexReader().getRefCount() > 0);
+      }
+    }
+  }
+  
+  private void assertSearchersClosed() {
+    for (IndexSearcher searcher : searchers) {
+      assertEquals(0, searcher.getIndexReader().getRefCount());
+    }
+  }
+  
+  private void showSearchersOpen() {
+    int count = 0;
+    for (IndexSearcher searcher : searchers) {
+      if(searcher.getIndexReader().getRefCount() > 0)
+        ++count;
+    } 
+    System.out.println(count);
+  }
+
+  
+  private class SpellCheckWorker implements Runnable {
+    private final IndexReader reader;
+    boolean terminated = false;
+    boolean failed = false;
+    
+    SpellCheckWorker(IndexReader reader) {
+      super();
+      this.reader = reader;
+    }
+    
+    public void run() {
+      try {
+        while (true) {
+          try {
+            checkCommonSuggestions(reader);
+          } catch (AlreadyClosedException e) {
+            
+            return;
+          } catch (Throwable e) {
+            
+            e.printStackTrace();
+            failed = true;
+            return;
+          }
+        }
+      } finally {
+        terminated = true;
+      }
+    }
+    
+  }
+  
+  class SpellCheckerMock extends SpellChecker {
+    public SpellCheckerMock(Directory spellIndex) throws IOException {
+      super(spellIndex);
+    }
+
+    public SpellCheckerMock(Directory spellIndex, StringDistance sd)
+        throws IOException {
+      super(spellIndex, sd);
+    }
+
+    @Override
+    IndexSearcher createSearcher(Directory dir) throws IOException {
+      IndexSearcher searcher = super.createSearcher(dir);
+      TestSpellChecker.this.searchers.add(searcher);
+      return searcher;
+    }
   }
   
 }
