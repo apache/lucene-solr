@@ -16,6 +16,10 @@ API Changes
    reader.  (Eirik Bjørsnøs via Mike McCandless)
 
 New features
+
+ * LUCENE-2102: Add a Turkish LowerCase Filter. TurkishLowerCaseFilter handles
+   Turkish and Azeri unique casing behavior correctly.
+   (Ahmet Arslan, Robert Muir via Simon Willnauer)
  
  * LUCENE-2039: Add a extensible query parser to contrib/misc.
    ExtendableQueryParser enables arbitrary parser extensions based on a
