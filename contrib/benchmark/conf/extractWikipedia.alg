@@ -29,7 +29,7 @@
 #
 
 # Where to get documents from:
-doc.maker=org.apache.lucene.benchmark.byTask.feeds.EnwikiDocMaker
+content.source=org.apache.lucene.benchmark.byTask.feeds.EnwikiContentSource
 docs.file=temp/enwiki-20070527-pages-articles.xml
 
 # Where to write the line file output:
