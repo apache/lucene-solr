@@ -32,7 +32,7 @@
 analyzer=org.apache.lucene.analysis.SimpleAnalyzer
 
 # Feed that knows how to process the line file format:
-doc.maker=org.apache.lucene.benchmark.byTask.feeds.LineDocMaker
+content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource
 
 # File that contains one document per line:
 docs.file=work/reuters.lines.txt
