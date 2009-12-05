@@ -17,18 +17,17 @@ package org.apache.lucene.search.function;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * DocValues TestCase  
  */
-public class TestDocValues extends LuceneTestCase {
+public class TestDocValues extends LuceneTestCaseJ4 {
 
-  /* @override constructor */
-  public TestDocValues(String name) {
-    super(name);
-  }
-
+  @Test
   public void testGetMinValue() {
     float[] innerArray = new float[] { 1.0f, 2.0f, -1.0f, 100.0f };
     DocValuesTestImpl docValues = new DocValuesTestImpl(innerArray);
@@ -41,7 +40,7 @@ public class TestDocValues extends LuceneTestCase {
     assertTrue("max is NaN - no values in inner array", Float.isNaN(docValues
         .getMinValue()));
   }
-
+  @Test
   public void testGetMaxValue() {
     float[] innerArray = new float[] { 1.0f, 2.0f, -1.0f, 10.0f };
     DocValuesTestImpl docValues = new DocValuesTestImpl(innerArray);
@@ -66,6 +65,7 @@ public class TestDocValues extends LuceneTestCase {
         .getMaxValue()));
   }
 
+  @Test
   public void testGetAverageValue() {
     float[] innerArray = new float[] { 1.0f, 1.0f, 1.0f, 1.0f };
     DocValuesTestImpl docValues = new DocValuesTestImpl(innerArray);
@@ -97,7 +97,6 @@ public class TestDocValues extends LuceneTestCase {
     /**
      * @see org.apache.lucene.search.function.DocValues#floatVal(int)
      */
-    /* @Override */
     @Override
     public float floatVal(int doc) {
       return innerArray[doc];
@@ -106,7 +105,6 @@ public class TestDocValues extends LuceneTestCase {
     /**
      * @see org.apache.lucene.search.function.DocValues#toString(int)
      */
-    /* @Override */
     @Override
     public String toString(int doc) {
       return Integer.toString(doc);

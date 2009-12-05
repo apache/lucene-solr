@@ -18,14 +18,16 @@ package org.apache.lucene.search.function;
  */
 
 import java.util.HashMap;
+import java.util.Map;
 
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.junit.Test;
+import static org.junit.Assert.*;
 
 /**
  * Test FieldScoreQuery search.
@@ -38,32 +40,32 @@ import org.apache.lucene.search.TopDocs;
  * <p>
  * The exact score tests use TopDocs top to verify the exact score.  
  */
+@SuppressWarnings({"UseOfSystemOutOrSystemErr"})
 public class TestFieldScoreQuery extends FunctionTestSetup {
 
-  /* @override constructor */
-  public TestFieldScoreQuery(String name) {
-    super(name);
-  }
-
   /** Test that FieldScoreQuery of Type.BYTE returns docs in expected order. */
-  public void testRankByte () throws CorruptIndexException, Exception {
+  @Test
+  public void testRankByte () throws Exception {
     // INT field values are small enough to be parsed as byte
     doTestRank(INT_FIELD,FieldScoreQuery.Type.BYTE);
   }
 
   /** Test that FieldScoreQuery of Type.SHORT returns docs in expected order. */
-  public void testRankShort () throws CorruptIndexException, Exception {
+  @Test
+  public void testRankShort () throws Exception {
     // INT field values are small enough to be parsed as short
     doTestRank(INT_FIELD,FieldScoreQuery.Type.SHORT);
   }
 
   /** Test that FieldScoreQuery of Type.INT returns docs in expected order. */
-  public void testRankInt () throws CorruptIndexException, Exception {
+  @Test
+  public void testRankInt () throws Exception {
     doTestRank(INT_FIELD,FieldScoreQuery.Type.INT);
   }
 
   /** Test that FieldScoreQuery of Type.FLOAT returns docs in expected order. */
-  public void testRankFloat () throws CorruptIndexException, Exception {
+  @Test
+  public void testRankFloat () throws Exception {
     // INT field can be parsed as float
     doTestRank(INT_FIELD,FieldScoreQuery.Type.FLOAT);
     // same values, but in flot format
@@ -71,7 +73,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
   }
 
   // Test that FieldScoreQuery returns docs in expected order.
-  private void doTestRank (String field, FieldScoreQuery.Type tp) throws CorruptIndexException, Exception {
+  private void doTestRank (String field, FieldScoreQuery.Type tp) throws Exception {
     IndexSearcher s = new IndexSearcher(dir, true);
     Query q = new FieldScoreQuery(field,tp);
     log("test: "+q);
@@ -89,24 +91,28 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
   }
 
   /** Test that FieldScoreQuery of Type.BYTE returns the expected scores. */
-  public void testExactScoreByte () throws CorruptIndexException, Exception {
+  @Test
+  public void testExactScoreByte () throws Exception {
     // INT field values are small enough to be parsed as byte
     doTestExactScore(INT_FIELD,FieldScoreQuery.Type.BYTE);
   }
 
   /** Test that FieldScoreQuery of Type.SHORT returns the expected scores. */
-  public void testExactScoreShort () throws CorruptIndexException, Exception {
+  @Test
+  public void testExactScoreShort () throws  Exception {
     // INT field values are small enough to be parsed as short
     doTestExactScore(INT_FIELD,FieldScoreQuery.Type.SHORT);
   }
 
   /** Test that FieldScoreQuery of Type.INT returns the expected scores. */
-  public void testExactScoreInt () throws CorruptIndexException, Exception {
+  @Test
+  public void testExactScoreInt () throws  Exception {
     doTestExactScore(INT_FIELD,FieldScoreQuery.Type.INT);
   }
 
   /** Test that FieldScoreQuery of Type.FLOAT returns the expected scores. */
-  public void testExactScoreFloat () throws CorruptIndexException, Exception {
+  @Test
+  public void testExactScoreFloat () throws  Exception {
     // INT field can be parsed as float
     doTestExactScore(INT_FIELD,FieldScoreQuery.Type.FLOAT);
     // same values, but in flot format
@@ -114,40 +120,44 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
   }
 
   // Test that FieldScoreQuery returns docs with expected score.
-  private void doTestExactScore (String field, FieldScoreQuery.Type tp) throws CorruptIndexException, Exception {
+  private void doTestExactScore (String field, FieldScoreQuery.Type tp) throws Exception {
     IndexSearcher s = new IndexSearcher(dir, true);
     Query q = new FieldScoreQuery(field,tp);
     TopDocs td = s.search(q,null,1000);
     assertEquals("All docs should be matched!",N_DOCS,td.totalHits);
     ScoreDoc sd[] = td.scoreDocs;
-    for (int i=0; i<sd.length; i++) {
-      float score = sd[i].score;
-      log(s.explain(q,sd[i].doc));
-      String id = s.getIndexReader().document(sd[i].doc).get(ID_FIELD);
+    for (ScoreDoc aSd : sd) {
+      float score = aSd.score;
+      log(s.explain(q, aSd.doc));
+      String id = s.getIndexReader().document(aSd.doc).get(ID_FIELD);
       float expectedScore = expectedFieldScore(id); // "ID7" --> 7.0
-      assertEquals("score of "+id+" shuould be "+expectedScore+" != "+score, expectedScore, score, TEST_SCORE_TOLERANCE_DELTA);
+      assertEquals("score of " + id + " shuould be " + expectedScore + " != " + score, expectedScore, score, TEST_SCORE_TOLERANCE_DELTA);
     }
   }
 
   /** Test that FieldScoreQuery of Type.BYTE caches/reuses loaded values and consumes the proper RAM resources. */
-  public void testCachingByte () throws CorruptIndexException, Exception {
+  @Test
+  public void testCachingByte () throws  Exception {
     // INT field values are small enough to be parsed as byte
     doTestCaching(INT_FIELD,FieldScoreQuery.Type.BYTE);
   }
 
   /** Test that FieldScoreQuery of Type.SHORT caches/reuses loaded values and consumes the proper RAM resources. */
-  public void testCachingShort () throws CorruptIndexException, Exception {
+  @Test
+  public void testCachingShort () throws  Exception {
     // INT field values are small enough to be parsed as short
     doTestCaching(INT_FIELD,FieldScoreQuery.Type.SHORT);
   }
 
   /** Test that FieldScoreQuery of Type.INT caches/reuses loaded values and consumes the proper RAM resources. */
-  public void testCachingInt () throws CorruptIndexException, Exception {
+  @Test
+  public void testCachingInt () throws Exception {
     doTestCaching(INT_FIELD,FieldScoreQuery.Type.INT);
   }
 
   /** Test that FieldScoreQuery of Type.FLOAT caches/reuses loaded values and consumes the proper RAM resources. */
-  public void testCachingFloat () throws CorruptIndexException, Exception {
+  @Test
+  public void testCachingFloat () throws  Exception {
     // INT field values can be parsed as float
     doTestCaching(INT_FIELD,FieldScoreQuery.Type.FLOAT);
     // same values, but in flot format
@@ -155,7 +165,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
   }
 
   // Test that values loaded for FieldScoreQuery are cached properly and consumes the proper RAM resources.
-  private void doTestCaching (String field, FieldScoreQuery.Type tp) throws CorruptIndexException, Exception {
+  private void doTestCaching (String field, FieldScoreQuery.Type tp) throws Exception {
     // prepare expected array types for comparison
     HashMap<FieldScoreQuery.Type,Object> expectedArrayTypes = new HashMap<FieldScoreQuery.Type,Object>();
     expectedArrayTypes.put(FieldScoreQuery.Type.BYTE, new byte[0]);
@@ -223,7 +233,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
   }
 
   private String testName() {
-    return getClass().getName()+"."+getName();
+    return getClass().getName()+"."+ getName();
   }
 
 }

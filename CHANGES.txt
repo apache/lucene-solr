@@ -63,6 +63,9 @@ Build
 
 Test Cases
 
+* LUCENE-2037 Allow Junit4 tests in our envrionment (Erick Erickson
+  via Mike McCandless)
+
 * LUCENE-1844: Speed up the unit tests (Mark Miller, Erick Erickson,
   Mike McCandless)
 

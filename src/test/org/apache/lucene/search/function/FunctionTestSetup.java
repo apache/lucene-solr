@@ -25,20 +25,23 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
 
 /**
  * Setup for function tests
  */
-public abstract class FunctionTestSetup extends LuceneTestCase {
+@Ignore
+public class FunctionTestSetup extends LuceneTestCaseJ4 {
 
   /**
    * Actual score computation order is slightly different than assumptios
    * this allows for a small amount of variation
    */
-  public static float TEST_SCORE_TOLERANCE_DELTA = 0.001f;
-  
+  protected static float TEST_SCORE_TOLERANCE_DELTA = 0.001f;
+
   protected static final boolean DBG = false; // change to true for logging to print
 
   protected static final int N_DOCS = 17; // select a primary number > 2
@@ -47,62 +50,57 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
   protected static final String TEXT_FIELD = "text";
   protected static final String INT_FIELD = "iii";
   protected static final String FLOAT_FIELD = "fff";
-  
-  private static final String DOC_TEXT_LINES[] = {
-    "Well, this is just some plain text we use for creating the ",
-    "test documents. It used to be a text from an online collection ",
-    "devoted to first aid, but if there was there an (online) lawyers ",
-    "first aid collection with legal advices, \"it\" might have quite ",
-    "probably advised one not to include \"it\"'s text or the text of ",
-    "any other online collection in one's code, unless one has money ",
-    "that one don't need and one is happy to donate for lawyers ",
-    "charity. Anyhow at some point, rechecking the usage of this text, ",
-    "it became uncertain that this text is free to use, because ",
-    "the web site in the disclaimer of he eBook containing that text ",
-    "was not responding anymore, and at the same time, in projGut, ",
-    "searching for first aid no longer found that eBook as well. ",
-    "So here we are, with a perhaps much less interesting ",
-    "text for the test, but oh much much safer. ",
-  };
-  
-  protected Directory dir;
-  protected Analyzer anlzr;
-  
-  /* @override constructor */
-  public FunctionTestSetup(String name) {
-    super(name);
-  }
 
-  /* @override */
+  private static final String DOC_TEXT_LINES[] = {
+          "Well, this is just some plain text we use for creating the ",
+          "test documents. It used to be a text from an online collection ",
+          "devoted to first aid, but if there was there an (online) lawyers ",
+          "first aid collection with legal advices, \"it\" might have quite ",
+          "probably advised one not to include \"it\"'s text or the text of ",
+          "any other online collection in one's code, unless one has money ",
+          "that one don't need and one is happy to donate for lawyers ",
+          "charity. Anyhow at some point, rechecking the usage of this text, ",
+          "it became uncertain that this text is free to use, because ",
+          "the web site in the disclaimer of he eBook containing that text ",
+          "was not responding anymore, and at the same time, in projGut, ",
+          "searching for first aid no longer found that eBook as well. ",
+          "So here we are, with a perhaps much less interesting ",
+          "text for the test, but oh much much safer. ",
+  };
+
+  protected Directory dir = null;
+  protected Analyzer anlzr = null;
+
   @Override
-  protected void tearDown() throws Exception {
+  @After
+  public void tearDown() throws Exception {
     super.tearDown();
     dir = null;
     anlzr = null;
   }
 
-  /* @override */
   @Override
-  protected void setUp() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     super.setUp();
     // prepare a small index with just a few documents.  
     super.setUp();
     dir = new RAMDirectory();
     anlzr = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
     IndexWriter iw = new IndexWriter(dir, anlzr,
-                                     IndexWriter.MaxFieldLength.LIMITED);
+            IndexWriter.MaxFieldLength.LIMITED);
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores
     int remaining = N_DOCS;
     boolean done[] = new boolean[N_DOCS];
     int i = 0;
-    while (remaining>0) {
+    while (remaining > 0) {
       if (done[i]) {
-        throw new Exception("to set this test correctly N_DOCS="+N_DOCS+" must be primary and greater than 2!");
+        throw new Exception("to set this test correctly N_DOCS=" + N_DOCS + " must be primary and greater than 2!");
       }
-      addDoc(iw,i);
+      addDoc(iw, i);
       done[i] = true;
-      i = (i+4)%N_DOCS;
-      remaining --;
+      i = (i + 4) % N_DOCS;
+      remaining--;
     }
     iw.close();
   }
@@ -110,36 +108,36 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
   private void addDoc(IndexWriter iw, int i) throws Exception {
     Document d = new Document();
     Fieldable f;
-    int scoreAndID = i+1;
-    
-    f = new Field(ID_FIELD,id2String(scoreAndID),Field.Store.YES,Field.Index.NOT_ANALYZED); // for debug purposes
+    int scoreAndID = i + 1;
+
+    f = new Field(ID_FIELD, id2String(scoreAndID), Field.Store.YES, Field.Index.NOT_ANALYZED); // for debug purposes
     f.setOmitNorms(true);
     d.add(f);
-    
-    f = new Field(TEXT_FIELD,"text of doc"+scoreAndID+textLine(i),Field.Store.NO,Field.Index.ANALYZED); // for regular search
+
+    f = new Field(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i), Field.Store.NO, Field.Index.ANALYZED); // for regular search
     f.setOmitNorms(true);
     d.add(f);
-    
-    f = new Field(INT_FIELD,""+scoreAndID,Field.Store.NO,Field.Index.NOT_ANALYZED); // for function scoring
+
+    f = new Field(INT_FIELD, "" + scoreAndID, Field.Store.NO, Field.Index.NOT_ANALYZED); // for function scoring
     f.setOmitNorms(true);
     d.add(f);
-    
-    f = new Field(FLOAT_FIELD,scoreAndID+".000",Field.Store.NO,Field.Index.NOT_ANALYZED); // for function scoring
+
+    f = new Field(FLOAT_FIELD, scoreAndID + ".000", Field.Store.NO, Field.Index.NOT_ANALYZED); // for function scoring
     f.setOmitNorms(true);
     d.add(f);
 
     iw.addDocument(d);
-    log("added: "+d);
+    log("added: " + d);
   }
 
   // 17 --> ID00017
   protected String id2String(int scoreAndID) {
-    String s = "000000000"+scoreAndID;
-    int n = (""+N_DOCS).length() + 3;
-    int k = s.length() - n; 
-    return "ID"+s.substring(k);
+    String s = "000000000" + scoreAndID;
+    int n = ("" + N_DOCS).length() + 3;
+    int k = s.length() - n;
+    return "ID" + s.substring(k);
   }
-  
+
   // some text line for regular search
   private String textLine(int docNum) {
     return DOC_TEXT_LINES[docNum % DOC_TEXT_LINES.length];
@@ -147,11 +145,11 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
 
   // extract expected doc score from its ID Field: "ID7" --> 7.0
   protected float expectedFieldScore(String docIDFieldVal) {
-    return Float.parseFloat(docIDFieldVal.substring(2)); 
+    return Float.parseFloat(docIDFieldVal.substring(2));
   }
-  
+
   // debug messages (change DBG to true for anything to print) 
-  protected void log (Object o) {
+  protected void log(Object o) {
     if (DBG) {
       System.out.println(o.toString());
     }

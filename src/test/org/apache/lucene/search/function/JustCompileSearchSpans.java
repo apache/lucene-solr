@@ -17,10 +17,10 @@ package org.apache.lucene.search.function;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache;
+
+import java.io.IOException;
 
 /**
  * Holds all implementations of classes in the o.a.l.s.function package as a
@@ -34,7 +34,6 @@ final class JustCompileSearchFunction {
   private static final String UNSUPPORTED_MSG = "unsupported: used for back-compat testing only !";
 
   static final class JustCompileDocValues extends DocValues {
-
     @Override
     public float floatVal(int doc) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
@@ -44,7 +43,7 @@ final class JustCompileSearchFunction {
     public String toString(int doc) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
   }
 
   static final class JustCompileFieldCacheSource extends FieldCacheSource {
@@ -65,14 +64,13 @@ final class JustCompileSearchFunction {
 
     @Override
     public DocValues getCachedFieldValues(FieldCache cache, String field,
-        IndexReader reader) throws IOException {
+                                          IndexReader reader) throws IOException {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
   }
 
   static final class JustCompileValueSource extends ValueSource {
-
     @Override
     public String description() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
@@ -92,7 +90,7 @@ final class JustCompileSearchFunction {
     public int hashCode() {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
-    
+
   }
-  
+
 }
