@@ -16,6 +16,11 @@ API Changes
    reader.  (Eirik Bjørsnøs via Mike McCandless)
 
 New features
+ 
+ * LUCENE-2039: Add a extensible query parser to contrib/misc.
+   ExtendableQueryParser enables arbitrary parser extensions based on a
+   customizable field naming scheme.
+   (Simon Willnauer)
 
  * LUCENE-2108: Spellchecker now safely supports concurrent modifications to
    the spell-index. Threads can safely obtain term suggestions while the spell-
