@@ -158,11 +158,13 @@ public class IndexSearcher extends Searcher {
 
   // inherit javadoc
   @Override
-  public TopDocs search(Weight weight, Filter filter, final int nDocs) throws IOException {
+  public TopDocs search(Weight weight, Filter filter, int nDocs) throws IOException {
 
     if (nDocs <= 0) {
       throw new IllegalArgumentException("nDocs must be > 0");
     }
+
+    nDocs = Math.min(nDocs, reader.maxDoc());
 
     TopScoreDocCollector collector = TopScoreDocCollector.create(nDocs, !weight.scoresDocsOutOfOrder());
     search(weight, filter, collector);
@@ -186,9 +188,12 @@ public class IndexSearcher extends Searcher {
    * then pass that to {@link #search(Weight, Filter,
    * Collector)}.</p>
    */
-  public TopFieldDocs search(Weight weight, Filter filter, final int nDocs,
+  public TopFieldDocs search(Weight weight, Filter filter, int nDocs,
                              Sort sort, boolean fillFields)
       throws IOException {
+
+    nDocs = Math.min(nDocs, reader.maxDoc());
+
     TopFieldCollector collector = TopFieldCollector.create(sort, nDocs,
         fillFields, fieldSortDoTrackScores, fieldSortDoMaxScore, !weight.scoresDocsOutOfOrder());
     search(weight, filter, collector);

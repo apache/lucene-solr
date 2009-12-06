@@ -32,6 +32,10 @@ Bug fixes
   one of the threads before all changes are actually committed.
   (Sanne Grinovero via Mike McCandless)
 
+* LUCENE-2119: Don't throw NegativeArraySizeException if you pass
+  Integer.MAX_VALUE as nDocs to IndexSearcher search methods.  (Paul
+  Taylor via Mike McCandless)
+
 New features
 
 * LUCENE-2069: Added Unicode 4 support to CharArraySet. Due to the switch
