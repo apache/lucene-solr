@@ -7,6 +7,14 @@ API Changes
  * LUCENE-2108: Add SpellChecker.close, to close the underlying
    reader.  (Eirik Bjørsnøs via Mike McCandless)
 
+New features
+
+ * LUCENE-2108: Spellchecker now safely supports concurrent modifications to
+   the spell-index. Threads can safely obtain term suggestions while the spell-
+   index is rebuild, cleared or reset. Internal IndexSearcher instances remain
+   open until the last thread accessing them releases the reference.
+   (Simon Willnauer)
+
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy
