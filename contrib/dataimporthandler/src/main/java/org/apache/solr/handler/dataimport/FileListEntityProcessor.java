@@ -109,14 +109,14 @@ public class FileListEntityProcessor extends EntityProcessorBase {
     super.init(context);
     fileName = context.getEntityAttribute(FILE_NAME);
     if (fileName != null) {
-      fileName = resolver.replaceTokens(fileName);
+      fileName = context.replaceTokens(fileName);
       fileNamePattern = Pattern.compile(fileName);
     }
     baseDir = context.getEntityAttribute(BASE_DIR);
     if (baseDir == null)
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
               "'baseDir' is a required attribute");
-    baseDir = resolver.replaceTokens(baseDir);
+    baseDir = context.replaceTokens(baseDir);
     File dir = new File(baseDir);
     if (!dir.isDirectory())
       throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
@@ -127,7 +127,7 @@ public class FileListEntityProcessor extends EntityProcessorBase {
       recursive = Boolean.parseBoolean(r);
     excludes = context.getEntityAttribute(EXCLUDES);
     if (excludes != null) {
-      excludes = resolver.replaceTokens(excludes);
+      excludes = context.replaceTokens(excludes);
       excludesPattern = Pattern.compile(excludes);
     }
   }
@@ -144,11 +144,11 @@ public class FileListEntityProcessor extends EntityProcessorBase {
 
     Matcher m = PLACE_HOLDER_PATTERN.matcher(dateStr);
     if (m.find()) {
-      Object o = resolver.resolve(m.group(1));
+      Object o = context.resolve(m.group(1));
       if (o instanceof Date)  return (Date)o;
       dateStr = (String) o;
     } else  {
-      dateStr = resolver.replaceTokens(dateStr);
+      dateStr = context.replaceTokens(dateStr);
     }
     m = EvaluatorBag.IN_SINGLE_QUOTES.matcher(dateStr);
     if (m.find()) {
@@ -181,14 +181,14 @@ public class FileListEntityProcessor extends EntityProcessorBase {
 
     Matcher m = PLACE_HOLDER_PATTERN.matcher(sizeStr);
     if (m.find()) {
-      Object o = resolver.resolve(m.group(1));
+      Object o = context.resolve(m.group(1));
       if (o instanceof Number) {
         Number number = (Number) o;
         return number.longValue();
       }
       sizeStr = (String) o;
     } else  {
-      sizeStr = resolver.replaceTokens(sizeStr);
+      sizeStr = context.replaceTokens(sizeStr);
     }
 
     return Long.parseLong(sizeStr);

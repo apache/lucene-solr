@@ -51,14 +51,13 @@ public class NumberFormatTransformer extends Transformer {
 
   @SuppressWarnings("unchecked")
   public Object transformRow(Map<String, Object> row, Context context) {
-    VariableResolver resolver = context.getVariableResolver();
     for (Map<String, String> fld : context.getAllEntityFields()) {
-      String style = resolver.replaceTokens(fld.get(FORMAT_STYLE));
+      String style = context.replaceTokens(fld.get(FORMAT_STYLE));
       if (style != null) {
         String column = fld.get(DataImporter.COLUMN);
         String srcCol = fld.get(RegexTransformer.SRC_COL_NAME);
         Locale locale = null;
-        String localeStr = resolver.replaceTokens(fld.get(LOCALE));
+        String localeStr = context.replaceTokens(fld.get(LOCALE));
         if (srcCol == null)
           srcCol = column;
         if (localeStr != null) {

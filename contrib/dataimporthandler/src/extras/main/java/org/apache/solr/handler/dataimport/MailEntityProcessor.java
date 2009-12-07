@@ -568,7 +568,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
     try {
       String val = context.getEntityAttribute(prop);
       if (val != null) {
-        val = context.getVariableResolver().replaceTokens(val);
+        val = context.replaceTokens(val);
         v = Integer.valueOf(val);
       }
     } catch (NumberFormatException e) {
@@ -581,7 +581,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
     boolean v = ifNull;
     String val = context.getEntityAttribute(prop);
     if (val != null) {
-      val = context.getVariableResolver().replaceTokens(val);
+      val = context.replaceTokens(val);
       v = Boolean.valueOf(val);
     }
     return v;
@@ -591,7 +591,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
     String v = ifNull;
     String val = context.getEntityAttribute(prop);
     if (val != null) {
-      val = context.getVariableResolver().replaceTokens(val);
+      val = context.replaceTokens(val);
       v = val;
     }
     return v;

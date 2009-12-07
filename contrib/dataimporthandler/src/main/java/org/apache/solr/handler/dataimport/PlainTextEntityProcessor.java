@@ -47,7 +47,7 @@ public class PlainTextEntityProcessor extends EntityProcessorBase {
   public Map<String, Object> nextRow() {
     if (ended) return null;
     DataSource<Reader> ds = context.getDataSource();
-    String url = context.getVariableResolver().replaceTokens(context.getEntityAttribute(URL));
+    String url = context.replaceTokens(context.getEntityAttribute(URL));
     Reader r = null;
     try {
       r = ds.getData(url);

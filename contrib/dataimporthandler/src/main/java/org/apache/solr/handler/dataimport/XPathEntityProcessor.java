@@ -104,7 +104,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
     }
     String xslt = context.getEntityAttribute(XSL);
     if (xslt != null) {
-      xslt = resolver.replaceTokens(xslt);
+      xslt = context.replaceTokens(xslt);
       try {
         Source xsltSource = new StreamSource(xslt);
         // create an instance of TransformerFactory
@@ -141,7 +141,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
             flags = XPathRecordReader.FLATTEN;
           }
           String xpath = field.get(XPATH);
-          xpath = resolver.replaceTokens(xpath);
+          xpath = context.replaceTokens(xpath);
           xpathReader.addField(field.get(DataImporter.COLUMN),
                   xpath,
                   Boolean.parseBoolean(field.get(DataImporter.MULTI_VALUED)),
@@ -198,7 +198,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
     Map<String, Object> r = null;
     while (true) {
       if (rowIterator == null)
-        initQuery(resolver.replaceTokens(context.getEntityAttribute(URL)));
+        initQuery(context.replaceTokens(context.getEntityAttribute(URL)));
       r = getNext();
       if (r == null) {
         Object hasMore = context.getSessionAttribute(HAS_MORE, Context.SCOPE_ENTITY);
@@ -208,7 +208,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
             if (url == null)
               url = context.getEntityAttribute(URL);
             addNamespace();
-            initQuery(resolver.replaceTokens(url));
+            initQuery(context.replaceTokens(url));
             r = getNext();
             if (r == null)
               return null;
@@ -236,8 +236,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
       Object val = context.getSessionAttribute(name, Context.SCOPE_ENTITY);
       if (val != null) namespace.put(name, val);
     }
-    resolver.addNamespace(entityName, namespace);
-
+    ((VariableResolverImpl)context.getVariableResolver()).addNamespace(entityName, namespace);
   }
 
   private void addCommonFields(Map<String, Object> r) {

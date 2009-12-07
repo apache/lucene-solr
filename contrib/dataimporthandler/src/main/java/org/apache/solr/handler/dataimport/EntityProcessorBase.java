@@ -40,8 +40,6 @@ public class EntityProcessorBase extends EntityProcessor {
 
   protected Context context;
 
-  protected VariableResolverImpl resolver;
-
   protected Iterator<Map<String, Object>> rowIterator;
 
   protected List<Transformer> transformers;
@@ -54,7 +52,6 @@ public class EntityProcessorBase extends EntityProcessor {
   public void init(Context context) {
     rowIterator = null;
     this.context = context;
-    resolver = (VariableResolverImpl) context.getVariableResolver();    
     if (isFirstInit) {
       firstInit(context);
     }
@@ -180,7 +177,7 @@ public class EntityProcessorBase extends EntityProcessor {
     Map<Object, List<Map<String, Object>>> rowIdVsRows = cacheWithWhereClause
             .get(query);
     List<Map<String, Object>> rows = null;
-    Object key = resolver.resolve(cacheVariableName);
+    Object key = context.resolve(cacheVariableName);
     if (key == null) {
       throw new DataImportHandlerException(DataImportHandlerException.WARN,
               "The cache lookup value : " + cacheVariableName + " is resolved to be null in the entity :" +

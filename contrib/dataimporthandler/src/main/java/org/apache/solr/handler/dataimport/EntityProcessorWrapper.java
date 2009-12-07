@@ -166,6 +166,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
     Map<String, Object> transformedRow = row;
     List<Map<String, Object>> rows = null;
     boolean stopTransform = checkStopTransform(row);
+    VariableResolverImpl resolver = (VariableResolverImpl) context.getVariableResolver();
     for (Transformer t : transformers) {
       if (stopTransform) break;
       try {
@@ -269,7 +270,7 @@ public class EntityProcessorWrapper extends EntityProcessor {
   }
 
   public VariableResolverImpl getVariableResolver() {
-    return resolver;
+    return (VariableResolverImpl) context.getVariableResolver();
   }
 
   public Context getContext() {

@@ -35,28 +35,27 @@ import java.util.Map;
 public class LogTransformer extends Transformer {
   Logger LOG = LoggerFactory.getLogger(LogTransformer.class);
 
-  public Object transformRow(Map<String, Object> row, Context context) {
-    VariableResolver vr = context.getVariableResolver();
-    String expr = context.getEntityAttribute(LOG_TEMPLATE);
-    String level = vr.replaceTokens(context.getEntityAttribute(LOG_LEVEL));
+  public Object transformRow(Map<String, Object> row, Context ctx) {
+    String expr = ctx.getEntityAttribute(LOG_TEMPLATE);
+    String level = ctx.replaceTokens(ctx.getEntityAttribute(LOG_LEVEL));
 
     if (expr == null || level == null) return row;
 
     if ("info".equals(level)) {
       if (LOG.isInfoEnabled())
-        LOG.info(vr.replaceTokens(expr));
+        LOG.info(ctx.replaceTokens(expr));
     } else if ("trace".equals(level)) {
       if (LOG.isTraceEnabled())
-        LOG.trace(vr.replaceTokens(expr));
+        LOG.trace(ctx.replaceTokens(expr));
     } else if ("warn".equals(level)) {
       if (LOG.isWarnEnabled())
-        LOG.warn(vr.replaceTokens(expr));
+        LOG.warn(ctx.replaceTokens(expr));
     } else if ("error".equals(level)) {
       if (LOG.isErrorEnabled())
-        LOG.error(vr.replaceTokens(expr));
+        LOG.error(ctx.replaceTokens(expr));
     } else if ("debug".equals(level)) {
       if (LOG.isDebugEnabled())
-        LOG.debug(vr.replaceTokens(expr));
+        LOG.debug(ctx.replaceTokens(expr));
     }
 
     return row;

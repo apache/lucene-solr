@@ -68,7 +68,7 @@ public class SqlEntityProcessor extends EntityProcessorBase {
   public Map<String, Object> nextRow() {    
     if (rowIterator == null) {
       String q = getQuery();
-      initQuery(resolver.replaceTokens(q));
+      initQuery(context.replaceTokens(q));
     }
     return getNext();
   }
@@ -78,7 +78,7 @@ public class SqlEntityProcessor extends EntityProcessorBase {
       String deltaQuery = context.getEntityAttribute(DELTA_QUERY);
       if (deltaQuery == null)
         return null;
-      initQuery(resolver.replaceTokens(deltaQuery));
+      initQuery(context.replaceTokens(deltaQuery));
     }
     return getNext();
   }
@@ -88,7 +88,7 @@ public class SqlEntityProcessor extends EntityProcessorBase {
       String deletedPkQuery = context.getEntityAttribute(DEL_PK_QUERY);
       if (deletedPkQuery == null)
         return null;
-      initQuery(resolver.replaceTokens(deletedPkQuery));
+      initQuery(context.replaceTokens(deletedPkQuery));
     }
     return getNext();
   }
@@ -100,7 +100,7 @@ public class SqlEntityProcessor extends EntityProcessorBase {
         return null;
       LOG.info("Running parentDeltaQuery for Entity: "
               + context.getEntityAttribute("name"));
-      initQuery(resolver.replaceTokens(parentDeltaQuery));
+      initQuery(context.replaceTokens(parentDeltaQuery));
     }
     return getNext();
   }
@@ -132,11 +132,11 @@ public class SqlEntityProcessor extends EntityProcessorBase {
         sb.append(" and ");
       }
       first = false;
-      Object val = resolver.resolve("dataimporter.delta." + primaryKey);
+      Object val = context.resolve("dataimporter.delta." + primaryKey);
       if (val == null) {
         Matcher m = DOT_PATTERN.matcher(primaryKey);
         if (m.find()) {
-          val = resolver.resolve("dataimporter.delta." + m.group(1));
+          val = context.resolve("dataimporter.delta." + m.group(1));
         }
       }
       sb.append(primaryKey).append(" = ");

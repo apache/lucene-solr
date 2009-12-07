@@ -126,7 +126,7 @@ public class URLDataSource extends DataSource<Reader> {
     if (expr == null) {
       return null;
     }
-    return context.getVariableResolver().replaceTokens(expr);
+    return context.replaceTokens(expr);
   }
 
   private static final Pattern URIMETHOD = Pattern.compile("\\w{3,}:/");

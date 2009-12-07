@@ -50,7 +50,7 @@ public class CachedSqlEntityProcessor extends SqlEntityProcessor {
       return getFromRowCacheTransformed();
     if (!isFirst)
       return null;
-    String query = resolver.replaceTokens(context.getEntityAttribute("query"));
+    String query = context.replaceTokens(context.getEntityAttribute("query"));
     isFirst = false;
     if (simpleCache != null) {
       return getSimpleCacheData(query);
@@ -63,7 +63,7 @@ public class CachedSqlEntityProcessor extends SqlEntityProcessor {
   protected List<Map<String, Object>> getAllNonCachedRows() {
     List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
     String q = getQuery();
-    initQuery(resolver.replaceTokens(q));
+    initQuery(context.replaceTokens(q));
     if (rowIterator == null)
       return rows;
     while (rowIterator.hasNext()) {
