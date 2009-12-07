@@ -284,23 +284,24 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
           String[] summaries = null;
           List<TextFragment> frags = new ArrayList<TextFragment>();
-          TermOffsetsTokenStream tots = null;
-          for (int j = 0; j < docTexts.length; j++) {
-            // create TokenStream
-            try {
-              // attempt term vectors
-              if( tots == null ) {
-                TokenStream tvStream = TokenSources.getTokenStream(searcher.getReader(), docId, fieldName);
-                if (tvStream != null) {
-                  tots = new TermOffsetsTokenStream(tvStream);
-                  tstream = tots.getMultiValuedTokenStream( docTexts[j].length() );
-                } else {
-                  // fall back to analyzer
-                  tstream = createAnalyzerTStream(schema, fieldName, docTexts[j]);
-                }
+
+          TermOffsetsTokenStream tots = null; // to be non-null iff we're using TermOffsets optimization
+          try {
+              TokenStream tvStream = TokenSources.getTokenStream(searcher.getReader(), docId, fieldName);
+              if (tvStream != null) {
+                tots = new TermOffsetsTokenStream(tvStream);
               }
-            }
-            catch (IllegalArgumentException e) {
+          }
+          catch (IllegalArgumentException e) {
+            // No problem. But we can't use TermOffsets optimization.
+          }
+
+          for (int j = 0; j < docTexts.length; j++) {
+            if( tots != null ) {
+              // if we're using TermOffsets optimization, then get the next
+              // field value's TokenStream (i.e. get field j's TokenStream) from tots:
+              tstream = tots.getMultiValuedTokenStream( docTexts[j].length() );
+            } else {
               // fall back to analyzer
               tstream = createAnalyzerTStream(schema, fieldName, docTexts[j]);
             }

@@ -190,6 +190,33 @@ public class HighlighterTest extends AbstractSolrTestCase {
             );
   }
 
+  // Variant of testTermVecMultiValuedHighlight to make sure that
+  // more than just the first value of a multi-valued field is
+  // considered for highlighting.
+  public void testTermVecMultiValuedHighlight2() throws Exception {
+
+    // do summarization using term vectors on multivalued field
+    HashMap<String,String> args = new HashMap<String,String>();
+    args.put("hl", "true");
+    args.put("hl.fl", "tv_mv_text");
+    args.put("hl.snippets", "2");
+    TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
+      "standard",0,200,args);
+
+    String shortText = "short";
+    assertU(adoc("tv_mv_text", shortText,
+                 "tv_mv_text", LONG_TEXT,
+                 "id", "1"));
+    assertU(commit());
+    assertU(optimize());
+    assertQ("Basic summarization",
+            sumLRF.makeRequest("tv_mv_text:long"),
+            "//lst[@name='highlighting']/lst[@name='1']",
+            "//lst[@name='1']/arr[@name='tv_mv_text']/str[.='a <em>long</em> days night this should be a piece of text which']",
+            "//arr[@name='tv_mv_text']/str[.=' <em>long</em> fragments.']"
+            );
+  }
+
   public void testDisMaxHighlight() {
 
     // same test run through dismax handler
