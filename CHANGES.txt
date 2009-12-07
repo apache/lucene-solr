@@ -20,6 +20,10 @@ API Changes
   custom Similarity can alter how norms are encoded, though they must
   still be encoded as a single byte (Johan Kindgren via Mike
   McCandless)
+  
+* LUCENE-2103: NoLockFactory should have a private constructor;
+  until Lucene 4.0 the default one will be deprecated.
+  (Shai Erera via Uwe Schindler) 
 
 Bug fixes
 
