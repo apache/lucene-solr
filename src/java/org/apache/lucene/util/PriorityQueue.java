@@ -91,9 +91,14 @@ public abstract class PriorityQueue<T> {
         // causes a confusing NegativeArraySizeException.
         // Note that very likely this will simply then hit
         // an OOME, but at least that's more indicative to
-        // caller that this values is too big:
+        // caller that this values is too big.  We don't +1
+        // in this case, but it's very unlikely in practice
+        // one will actually insert this many objects into
+        // the PQ:
         heapSize = Integer.MAX_VALUE;
       } else {
+        // NOTE: we add +1 because all access to heap is
+        // 1-based not 0-based.  heap[0] is unused.
         heapSize = maxSize + 1;
       }
     }
