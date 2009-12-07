@@ -3,6 +3,11 @@ Lucene Benchmark Contrib Change Log
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
 $Id:$
+
+12/07/2009
+  LUCENE-2106: ReadTask does not close its Reader when 
+  OpenReader/CloseReader are not used. (Mark Miller)
+
 11/17/2009
   LUCENE-2079: Allow specifying delta thread priority after the "&";
   added log.time.step.msec to print per-time-period counts; fixed
