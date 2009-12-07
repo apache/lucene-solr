@@ -596,7 +596,9 @@ public class SimpleFacets {
       final String gap = required.getFieldParam(f,FacetParams.FACET_DATE_GAP);
       final DateMathParser dmp = new DateMathParser(ft.UTC, Locale.US);
       dmp.setNow(NOW);
-      
+
+      int minCount = params.getFieldInt(f,FacetParams.FACET_MINCOUNT, 0);
+
       try {
         
         Date low = start;
@@ -617,7 +619,10 @@ public class SimpleFacets {
               (SolrException.ErrorCode.BAD_REQUEST,
                "date facet infinite loop (is gap negative?)");
           }
-          resInner.add(label, rangeCount(sf,low,high,true,true));
+          int count = rangeCount(sf,low,high,true,true);
+          if (count >= minCount) {
+            resInner.add(label, count);
+          }
           low = high;
         }
       } catch (java.text.ParseException e) {

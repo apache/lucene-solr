@@ -110,6 +110,9 @@ Bug Fixes
 * SOLR-1628: log contains incorrect number of adds and deletes. 
   (Thijs Vonk via yonik)
 
+* SOLR-343: Date faceting now respects facet.mincount limiting
+  (Uri Boness, Raiko Eckstein via hossman)
+
 * SOLR-1624: Highlighter only highlights values from the first field  value
   in a multivalued field when term positions (term vectors) are stored.
   (Chris Harris via yonik)

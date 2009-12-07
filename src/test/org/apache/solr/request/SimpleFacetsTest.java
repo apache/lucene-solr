@@ -284,6 +284,58 @@ public class SimpleFacetsTest extends AbstractSolrTestCase {
             
             );
 
+    assertQ("check counts for month of facet by day with global mincount = 1",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start", "1976-07-01T00:00:00.000Z"
+                ,"facet.date.end",   "1976-07-01T00:00:00.000Z+1MONTH"
+                ,"facet.date.gap",   "+1DAY"
+                ,"facet.date.other", "all"
+                ,"facet.mincount", "1"
+                )
+            // 31 days + pre+post+inner = 34
+            ,"*[count("+pre+"/int)=11]"
+            ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
+            // july4th = 2 because exists doc @ 00:00:00.000 on July5
+            // (date faceting is inclusive)
+            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-13T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-15T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-21T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-30T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='before' ][.='2']"
+            ,pre+"/int[@name='after'  ][.='1']"
+            ,pre+"/int[@name='between'][.='11']"
+            );
+
+    assertQ("check counts for month of facet by day with field mincount = 1",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start", "1976-07-01T00:00:00.000Z"
+                ,"facet.date.end",   "1976-07-01T00:00:00.000Z+1MONTH"
+                ,"facet.date.gap",   "+1DAY"
+                ,"facet.date.other", "all"
+                ,"f." + f + ".facet.mincount", "2"
+                )
+            // 31 days + pre+post+inner = 34
+            ,"*[count("+pre+"/int)=7]"
+            ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
+            // july4th = 2 because exists doc @ 00:00:00.000 on July5
+            // (date faceting is inclusive)
+            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-15T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='before' ][.='2']"
+            ,pre+"/int[@name='after'  ][.='1']"
+            ,pre+"/int[@name='between'][.='11']"
+            );
+
     assertQ("check hardend=false",
             req( "q", "*:*"
                 ,"rows", "0"
