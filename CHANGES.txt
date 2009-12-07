@@ -130,6 +130,9 @@ Other Changes
 
 * SOLR-1611: Added Lucene 2.9.1 collation contrib jar to lib (shalin)
 
+* SOLR-1608: Extract base class from TestDistributedSearch to make
+  it easy to write test cases for other distributed components. (shalin)
+
 Build
 ----------------------
 
