@@ -107,6 +107,9 @@ Bug Fixes
 * SOLR-1615: Backslash escaping did not work in quoted strings
   for local param arguments. (Wojtek Piaseczny, yonik)
 
+* SOLR-1628: log contains incorrect number of adds and deletes. 
+  (Thijs Vonk via yonik)
+
 
 Other Changes
 ----------------------
