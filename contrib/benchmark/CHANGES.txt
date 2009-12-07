@@ -4,6 +4,10 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+12/07/2009
+  LUCENE-2106: ReadTask does not close its Reader when 
+  OpenReader/CloseReader are not used. (Mark Miller)
+
 11/13/2009
   LUCENE-2050: Added ability to run tasks within a serial sequence in
   the background, by appending "&".  The tasks are stopped & joined at
