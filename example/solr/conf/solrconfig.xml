@@ -987,12 +987,14 @@
   -->
 
 
-  <!-- queryResponseWriter plugins... query responses will be written using the
-    writer specified by the 'wt' request parameter matching the name of a registered
-    writer.
-    The "default" writer is the default and will be used if 'wt' is not specified 
-    in the request. XMLResponseWriter will be used if nothing is specified here.
-    The json, python, and ruby writers are also available by default.
+  <!-- queryResponseWriter plugins... query responses will be written using
+       the writer specified by the 'wt' request parameter matching the name
+       of a registered writer.
+       The "default" writer is the default and will be used if 'wt' is not
+       specified in the request.
+
+       The following response writers are implicitly configured unless
+       overridden...
 
     <queryResponseWriter name="xml" class="org.apache.solr.request.XMLResponseWriter" default="true"/>
     <queryResponseWriter name="json" class="org.apache.solr.request.JSONResponseWriter"/>
@@ -1001,6 +1003,8 @@
     <queryResponseWriter name="php" class="org.apache.solr.request.PHPResponseWriter"/>
     <queryResponseWriter name="phps" class="org.apache.solr.request.PHPSerializedResponseWriter"/>
 
+      Custom response writers can be declared as needed...
+    
     <queryResponseWriter name="custom" class="com.example.MyResponseWriter"/>
   -->
 
