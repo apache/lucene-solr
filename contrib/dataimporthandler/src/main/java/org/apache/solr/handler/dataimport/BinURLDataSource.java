@@ -36,12 +36,12 @@ import java.util.Properties;
  * @since solr 1.5
  */
 public class BinURLDataSource extends DataSource<InputStream>{
-    Logger LOG = LoggerFactory.getLogger(BinURLDataSource.class);
+  private static final Logger LOG = LoggerFactory.getLogger(BinURLDataSource.class);
 
   private String baseUrl;
-  private int connectionTimeout = URLDataSource.CONNECTION_TIMEOUT;
+  private int connectionTimeout = CONNECTION_TIMEOUT;
 
-  private int readTimeout = URLDataSource.READ_TIMEOUT;
+  private int readTimeout = READ_TIMEOUT;
 
   private Context context;
 
