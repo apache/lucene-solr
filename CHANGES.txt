@@ -117,6 +117,9 @@ Bug Fixes
   in a multivalued field when term positions (term vectors) are stored.
   (Chris Harris via yonik)
 
+* SOLR-1635: Fixed error message when numeric values can't be parsed by
+  DOMUtils - notably for plugin init params in solrconfig.xml.
+  (hossman)
 
 Other Changes
 ----------------------
