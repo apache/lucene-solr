@@ -44,7 +44,7 @@ public class ContentStreamDataSource extends DataSource<Reader> {
   }
 
   public Reader getData(String query) {
-    contentStream = context.docBuilder.requestParameters.contentStream;
+    contentStream = context.getDocBuilder().requestParameters.contentStream;
     if (contentStream == null)
       throw new DataImportHandlerException(SEVERE, "No stream available. The request has no body");
     try {
