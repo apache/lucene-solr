@@ -83,6 +83,7 @@ public class TestRegexQuery extends TestCase {
   public void testMatchAll() throws Exception {
     TermEnum terms = new RegexQuery(new Term(FN, "jum.")).getEnum(searcher.getIndexReader());
     // no term should match
+    assertNull(terms.term());
     assertFalse(terms.next());
   }
 
