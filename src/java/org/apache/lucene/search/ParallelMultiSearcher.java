@@ -18,21 +18,22 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.Callable;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.NamedThreadFactory;
-import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /** Implements parallel search over a set of <code>Searchables</code>.
@@ -175,6 +176,25 @@ public class ParallelMultiSearcher extends MultiSearcher {
    }
   }
   
+  @Override
+  HashMap<Term, Integer> createDocFrequencyMap(Set<Term> terms) throws IOException {
+    final Term[] allTermsArray = terms.toArray(new Term[terms.size()]);
+    final int[] aggregatedDocFreqs = new int[terms.size()];
+    final ArrayList<Future<int[]>> searchThreads = new ArrayList<Future<int[]>>(searchables.length);
+    for (Searchable searchable : searchables) {
+      final Future<int[]> future = executor.submit(
+          new DocumentFrequencyCallable(searchable, allTermsArray));
+      searchThreads.add(future);
+    }
+    foreach(new AggregateDocFrequency(aggregatedDocFreqs), searchThreads);
+
+    final HashMap<Term,Integer> dfMap = new HashMap<Term,Integer>();
+    for(int i=0; i<allTermsArray.length; i++) {
+      dfMap.put(allTermsArray[i], Integer.valueOf(aggregatedDocFreqs[i]));
+    }
+    return dfMap;
+  }
+  
   /*
    * apply the function to each element of the list. This method encapsulates the logic how 
    * to wait for concurrently executed searchables.  
@@ -184,9 +204,10 @@ public class ParallelMultiSearcher extends MultiSearcher {
       try{
         func.apply(future.get());
       } catch (ExecutionException e) {
-        if (e.getCause() instanceof IOException)
+        final Throwable throwable = e.getCause();
+        if (throwable instanceof IOException)
           throw (IOException) e.getCause();
-        throw new RuntimeException(e.getCause());
+        throw new RuntimeException(throwable);
       } catch (InterruptedException ie) {
         throw new ThreadInterruptedException(ie);
       }
@@ -216,6 +237,7 @@ public class ParallelMultiSearcher extends MultiSearcher {
       maxScore = Math.max(maxScore, t.getMaxScore());
     }
   }
+  
   /**
    * Accumulates the document frequency for a term.
    */
@@ -226,5 +248,38 @@ public class ParallelMultiSearcher extends MultiSearcher {
       docFreq += t.intValue();
     }
   }
-
+  
+  /**
+   * Aggregates the document frequencies from multiple searchers 
+   */
+  private static final class AggregateDocFrequency implements Function<int[]>{
+    final int[] aggregatedDocFreqs;
+    
+    public AggregateDocFrequency(int[] aggregatedDocFreqs){
+      this.aggregatedDocFreqs = aggregatedDocFreqs;
+    }
+    
+    public void apply(final int[] docFreqs) {
+      for(int i=0; i<aggregatedDocFreqs.length; i++){
+        aggregatedDocFreqs[i] += docFreqs[i];
+      }
+    }
+  }
+  
+  /**
+   * A {@link Callable} to retrieve the document frequencies for a Term array  
+   */
+  private static final class DocumentFrequencyCallable implements Callable<int[]> {
+    private final Searchable searchable;
+    private final Term[] terms;
+    
+    public DocumentFrequencyCallable(Searchable searchable, Term[] terms) {
+      this.searchable = searchable;
+      this.terms = terms;
+    }
+    
+    public int[] call() throws Exception {
+      return searchable.docFreqs(terms);
+    }
+  }
 }
