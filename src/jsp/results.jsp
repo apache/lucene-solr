@@ -18,7 +18,6 @@
 
 <%
 /*
-        Author: Andrew C. Oliver, SuperLink Software, Inc. (acoliver2@users.sourceforge.net)
 
         This jsp page is deliberatly written in the horrible java directly embedded 
         in the page style for an easy and concise demonstration of Lucene.
@@ -95,7 +94,7 @@ public String escapeHTML(String s) {
 
                 Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT);           //construct our usual analyzer
                 try {
-                        QueryParser qp = new QueryParser("contents", analyzer);
+                        QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "contents", analyzer);
                         query = qp.parse(queryString); //parse the 
                 } catch (ParseException e) {                          //query and construct the Query
                                                                       //object

@@ -40,6 +40,9 @@ Bug fixes
   Integer.MAX_VALUE as nDocs to IndexSearcher search methods.  (Paul
   Taylor via Mike McCandless)
 
+* LUCENE-2132: Fix the demo result.jsp to use QueryParser with a 
+  Version argument.  (Brian Li via Robert Muir)
+  
 New features
 
 * LUCENE-2069: Added Unicode 4 support to CharArraySet. Due to the switch

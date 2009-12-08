@@ -14,7 +14,6 @@
     See the License for the specific language governing permissions and
     limitations under the License.
  -->
-<% /* Author Andrew C. Oliver (acoliver2@users.sourceforge.net) */ %>
 <p align="center">
 	<%=appfooter%>
 </p>
