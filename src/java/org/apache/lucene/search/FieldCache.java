@@ -564,7 +564,7 @@ public interface FieldCache {
    * NOTE: These CacheEntry objects maintain a strong reference to the 
    * Cached Values.  Maintaining references to a CacheEntry the IndexReader 
    * associated with it has garbage collected will prevent the Value itself
-   * from being garbage collected when the Cache drops the WeakRefrence.
+   * from being garbage collected when the Cache drops the WeakReference.
    * </p>
    * <p>
    * <b>EXPERIMENTAL API:</b> This API is considered extremely advanced 
