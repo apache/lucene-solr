@@ -129,7 +129,7 @@ public class URLDataSource extends DataSource<Reader> {
     return context.replaceTokens(expr);
   }
 
-  private static final Pattern URIMETHOD = Pattern.compile("\\w{3,}:/");
+  static final Pattern URIMETHOD = Pattern.compile("\\w{3,}:/");
 
   private static final Pattern CHARSET_PATTERN = Pattern.compile(".*?charset=(.*)$", Pattern.CASE_INSENSITIVE);
 
