@@ -50,7 +50,7 @@
           <br clear="all" />
         <xsl:apply-templates/>
         <br /><br />
-        <a href="">Return to Admin Page</a>
+        <a href=".">Return to Admin Page</a>
       </body>
     </html>
   </xsl:template>
