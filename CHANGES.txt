@@ -70,6 +70,11 @@ Optimizations
   lots of seeking (Mike McCandless, Uwe Schindler, Robert Muir, Yonik
   Seeley)
 
+* LUCENE-2136: If the multi reader (DirectoryReader or MultiReader)
+  only has a single sub-reader, delegate all enum requests to it.
+  This avoid the overhead of using a PQ unecessarily.  (Mike
+  McCandless)
+
 Build
 
 Test Cases
