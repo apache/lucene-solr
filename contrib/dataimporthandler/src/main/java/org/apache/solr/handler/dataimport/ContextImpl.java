@@ -215,6 +215,9 @@ public class ContextImpl extends Context {
     } 
   }
 
+  DocBuilder getDocBuilder(){
+    return docBuilder;
+  }
   public Object resolve(String var) {
     return resolver.resolve(var);
   }
