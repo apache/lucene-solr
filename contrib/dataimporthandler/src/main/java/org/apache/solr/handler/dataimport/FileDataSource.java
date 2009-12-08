@@ -18,8 +18,11 @@ package org.apache.solr.handler.dataimport;
 
 import java.io.*;
 import java.util.Properties;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 
 /**
  * <p>
@@ -77,6 +80,16 @@ public class FileDataSource extends DataSource<Reader> {
    * </p>
    */
   public Reader getData(String query) {
+    File f = getFile(basePath,query);
+    try {
+      return openStream(f);
+    } catch (Exception e) {
+      wrapAndThrow(SEVERE,e,"Unable to open File : "+f.getAbsolutePath());
+      return null;
+    }
+  }
+
+  static File getFile(String basePath, String query) {
     try {
       File file0 = new File(query);
       File file = file0;
@@ -86,16 +99,14 @@ public class FileDataSource extends DataSource<Reader> {
 
       if (file.isFile() && file.canRead()) {
         LOG.debug("Accessing File: " + file.toString());
-        return openStream(file);
+        return file;
       } else if (file != file0)
         if (file0.isFile() && file0.canRead()) {
           LOG.debug("Accessing File0: " + file0.toString());
-          return openStream(file0);
+          return  file0;
         }
 
       throw new FileNotFoundException("Could not find file: " + query);
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
     } catch (FileNotFoundException e) {
       throw new RuntimeException(e);
     }
