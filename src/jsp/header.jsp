@@ -15,7 +15,6 @@
     limitations under the License.
  -->
 <%@include file="configuration.jsp"%>
-<% /* Author: Andrew C. Oliver (acoliver2@users.sourceforge.net */ %>
 <html>
 <head>
 	<title><%=appTitle%></title>

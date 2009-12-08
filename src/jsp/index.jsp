@@ -15,7 +15,6 @@
     limitations under the License.
  -->
 <%@include file="header.jsp"%>
-<% /* Author: Andrew C. Oliver (acoliver2@users.sourceforge.net) */ %>
 <center> 
 	<form name="search" action="results.jsp" method="get">
 		<p>
