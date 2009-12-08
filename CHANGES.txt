@@ -78,6 +78,9 @@ Optimizations
   This avoid the overhead of using a PQ unecessarily.  (Mike
   McCandless)
 
+* LUCENE-2137: Switch to AtomicInteger for some ref counting (Earwin
+  Burrfoot via Mike McCandless)
+
 Build
 
 Test Cases
