@@ -58,7 +58,7 @@ import org.apache.lucene.util.Version;
  * supported anymore in such a case.</font>
  * </p>
  */
-public class SmartChineseAnalyzer extends Analyzer {
+public final class SmartChineseAnalyzer extends Analyzer {
 
   private final Set<?> stopWords;
   

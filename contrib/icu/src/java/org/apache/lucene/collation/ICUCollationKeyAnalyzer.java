@@ -69,7 +69,7 @@ import java.io.IOException;
  *   java.text.Collator over several languages.
  * </p>
  */
-public class ICUCollationKeyAnalyzer extends Analyzer {
+public final class ICUCollationKeyAnalyzer extends Analyzer {
   private Collator collator;
 
   public ICUCollationKeyAnalyzer(Collator collator) {

@@ -43,7 +43,7 @@ import java.util.*;
  * stop words found in an already existing index.
  * </p>
  */
-public class QueryAutoStopWordAnalyzer extends Analyzer {
+public final class QueryAutoStopWordAnalyzer extends Analyzer {
   Analyzer delegate;
   HashMap<String,HashSet<String>> stopWordsPerField = new HashMap<String,HashSet<String>>();
   //The default maximum percentage (40%) of index documents which
@@ -58,7 +58,6 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
    */
   public QueryAutoStopWordAnalyzer(Version matchVersion, Analyzer delegate) {
     this.delegate = delegate;
-    setOverridesTokenStreamMethod(QueryAutoStopWordAnalyzer.class);
     this.matchVersion = matchVersion;
   }
 
@@ -198,13 +197,6 @@ public class QueryAutoStopWordAnalyzer extends Analyzer {
   @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {
-    if (overridesTokenStreamMethod) {
-      // LUCENE-1678: force fallback to tokenStream() if we
-      // have been subclassed and that subclass overrides
-      // tokenStream but not reusableTokenStream
-      return tokenStream(fieldName, reader);
-    }
-
     /* map of SavedStreams for each field */
     Map<String,SavedStreams> streamMap = (Map<String,SavedStreams>) getPreviousTokenStream();
     if (streamMap == null) {

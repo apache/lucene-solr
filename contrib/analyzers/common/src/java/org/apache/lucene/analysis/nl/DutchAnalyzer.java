@@ -52,7 +52,7 @@ import java.util.Map;
  * <p><b>NOTE</b>: This class uses the same {@link Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
  */
-public class DutchAnalyzer extends Analyzer {
+public final class DutchAnalyzer extends Analyzer {
   /**
    * List of typical Dutch stopwords.
    * @deprecated use {@link #getDefaultStopSet()} instead
@@ -119,7 +119,6 @@ public class DutchAnalyzer extends Analyzer {
     stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
     excltable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionTable));
     this.matchVersion = matchVersion;
-    setOverridesTokenStreamMethod(DutchAnalyzer.class);
   }
 
   /**
@@ -151,7 +150,6 @@ public class DutchAnalyzer extends Analyzer {
    */
   public DutchAnalyzer(Version matchVersion, File stopwords) {
     // this is completely broken!
-    setOverridesTokenStreamMethod(DutchAnalyzer.class);
     try {
       stoptable = org.apache.lucene.analysis.WordlistLoader.getWordSet(stopwords);
     } catch (IOException e) {
@@ -243,13 +241,6 @@ public class DutchAnalyzer extends Analyzer {
   @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {
-    if (overridesTokenStreamMethod) {
-      // LUCENE-1678: force fallback to tokenStream() if we
-      // have been subclassed and that subclass overrides
-      // tokenStream but not reusableTokenStream
-      return tokenStream(fieldName, reader);
-    }
-    
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();
     if (streams == null) {
       streams = new SavedStreams();

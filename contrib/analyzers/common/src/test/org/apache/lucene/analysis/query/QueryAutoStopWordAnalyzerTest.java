@@ -148,27 +148,6 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
 
   }
   
-  /**
-   * subclass that acts just like whitespace analyzer for testing
-   */
-  private class QueryAutoStopWordSubclassAnalyzer extends QueryAutoStopWordAnalyzer {
-    public QueryAutoStopWordSubclassAnalyzer(Version matchVersion) {
-      super(matchVersion, new WhitespaceAnalyzer());
-    }
-    
-    @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new WhitespaceTokenizer(reader);
-    }    
-  }
-  
-  public void testLUCENE1678BWComp() throws Exception {
-    QueryAutoStopWordAnalyzer a = new QueryAutoStopWordSubclassAnalyzer(Version.LUCENE_CURRENT);
-    a.addStopWords(reader, "repetitiveField", 10);
-    int numHits = search(a, "repetitiveField:boring");
-    assertFalse(numHits == 0);
-  }
-  
   /*
    * analyzer that does not support reuse
    * it is LetterTokenizer on odd invocations, WhitespaceTokenizer on even.

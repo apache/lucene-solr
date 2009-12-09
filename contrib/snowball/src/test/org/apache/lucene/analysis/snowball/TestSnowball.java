@@ -17,11 +17,8 @@ package org.apache.lucene.analysis.snowball;
  * limitations under the License.
  */
 
-import java.io.Reader;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
@@ -84,26 +81,6 @@ public class TestSnowball extends BaseTokenStreamTestCase {
         new String[]{"he", "abhor", "accent"});
     assertAnalyzesToReuse(a, "she abhorred him",
         new String[]{"she", "abhor", "him"});
-  }
-  
-  /**
-   * subclass that acts just like whitespace analyzer for testing
-   */
-  private class SnowballSubclassAnalyzer extends SnowballAnalyzer {
-    public SnowballSubclassAnalyzer(String name) {
-      super(Version.LUCENE_CURRENT, name);
-    }
-    
-    @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new WhitespaceTokenizer(reader);
-    }
-  }
-  
-  public void testLUCENE1678BWComp() throws Exception {
-    Analyzer a = new SnowballSubclassAnalyzer("English");
-    assertAnalyzesToReuse(a, "he abhorred accents",
-        new String[]{"he", "abhorred", "accents"});
   }
   
   public void testFilterTokens() throws Exception {

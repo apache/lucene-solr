@@ -21,13 +21,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.util.Version;
 
 /**
@@ -68,24 +64,6 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
     checkReuse(a, "Tischen", "tisch");
   }
   
-  /**
-   * subclass that acts just like whitespace analyzer for testing
-   */
-  private class GermanSubclassAnalyzer extends GermanAnalyzer {
-    public GermanSubclassAnalyzer(Version matchVersion) {
-      super(matchVersion);
-    }
-
-    @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new WhitespaceTokenizer(reader);
-    }
-  }
-  
-  public void testLUCENE1678BWComp() throws Exception {
-    checkReuse(new GermanSubclassAnalyzer(Version.LUCENE_CURRENT), "Tischen", "Tischen");
-  }
-
   /* 
    * Test that changes to the exclusion table are applied immediately
    * when using reusable token streams.

@@ -40,7 +40,7 @@ import java.util.Set;
  * </ul>
  * </p>
  */
-public class SnowballAnalyzer extends Analyzer {
+public final class SnowballAnalyzer extends Analyzer {
   private String name;
   private Set<?> stopSet;
   private final Version matchVersion;
@@ -48,7 +48,6 @@ public class SnowballAnalyzer extends Analyzer {
   /** Builds the named analyzer with no stop words. */
   public SnowballAnalyzer(Version matchVersion, String name) {
     this.name = name;
-    setOverridesTokenStreamMethod(SnowballAnalyzer.class);
     this.matchVersion = matchVersion;
   }
 
@@ -80,7 +79,7 @@ public class SnowballAnalyzer extends Analyzer {
   private class SavedStreams {
     Tokenizer source;
     TokenStream result;
-  };
+  }
   
   /** Returns a (possibly reused) {@link StandardTokenizer} filtered by a 
    * {@link StandardFilter}, a {@link LowerCaseFilter}, 
@@ -88,13 +87,6 @@ public class SnowballAnalyzer extends Analyzer {
   @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {
-    if (overridesTokenStreamMethod) {
-      // LUCENE-1678: force fallback to tokenStream() if we
-      // have been subclassed and that subclass overrides
-      // tokenStream but not reusableTokenStream
-      return tokenStream(fieldName, reader);
-    }
-    
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();
     if (streams == null) {
       streams = new SavedStreams();

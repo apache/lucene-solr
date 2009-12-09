@@ -35,11 +35,10 @@ import org.apache.lucene.util.Version;
  * <p><b>NOTE</b>: This class uses the same {@link Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
  */
-public class ThaiAnalyzer extends Analyzer {
+public final class ThaiAnalyzer extends Analyzer {
   private final Version matchVersion;
 
   public ThaiAnalyzer(Version matchVersion) {
-    setOverridesTokenStreamMethod(ThaiAnalyzer.class);
     this.matchVersion = matchVersion;
   }
   
@@ -59,13 +58,6 @@ public class ThaiAnalyzer extends Analyzer {
   
   @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    if (overridesTokenStreamMethod) {
-      // LUCENE-1678: force fallback to tokenStream() if we
-      // have been subclassed and that subclass overrides
-      // tokenStream but not reusableTokenStream
-      return tokenStream(fieldName, reader);
-    }
-    
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();
     if (streams == null) {
       streams = new SavedStreams();

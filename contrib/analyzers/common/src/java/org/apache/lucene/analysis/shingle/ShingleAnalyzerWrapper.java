@@ -31,7 +31,7 @@ import org.apache.lucene.util.Version;
  * A shingle is another name for a token based n-gram.
  * </p>
  */
-public class ShingleAnalyzerWrapper extends Analyzer {
+public final class ShingleAnalyzerWrapper extends Analyzer {
 
   protected Analyzer defaultAnalyzer;
   protected int maxShingleSize = 2;
@@ -40,7 +40,6 @@ public class ShingleAnalyzerWrapper extends Analyzer {
   public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer) {
     super();
     this.defaultAnalyzer = defaultAnalyzer;
-    setOverridesTokenStreamMethod(ShingleAnalyzerWrapper.class);
   }
 
   public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer, int maxShingleSize) {
@@ -54,7 +53,6 @@ public class ShingleAnalyzerWrapper extends Analyzer {
   public ShingleAnalyzerWrapper(Version matchVersion) {
     super();
     this.defaultAnalyzer = new StandardAnalyzer(matchVersion);
-    setOverridesTokenStreamMethod(ShingleAnalyzerWrapper.class);
   }
 
   /**
@@ -119,13 +117,6 @@ public class ShingleAnalyzerWrapper extends Analyzer {
   
   @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    if (overridesTokenStreamMethod) {
-      // LUCENE-1678: force fallback to tokenStream() if we
-      // have been subclassed and that subclass overrides
-      // tokenStream but not reusableTokenStream
-      return tokenStream(fieldName, reader);
-    }
-    
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();
     if (streams == null) {
       streams = new SavedStreams();

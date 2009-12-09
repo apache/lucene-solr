@@ -17,12 +17,7 @@ package org.apache.lucene.analysis.th;
  * limitations under the License.
  */
 
-import java.io.Reader;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.util.Version;
 
 /**
@@ -123,23 +118,5 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
           analyzer,
           "บริษัทชื่อ XY&Z - คุยกับ xyz@demo.com",
           new String[] { "บริษัท", "ชื่อ", "xy&z", "คุย", "กับ", "xyz@demo.com" });
-	}
-	
-	/**
-	 * subclass that acts just like whitespace analyzer for testing
-	 */
-	private class ThaiSubclassAnalyzer extends ThaiAnalyzer {
-          public ThaiSubclassAnalyzer(Version matchVersion) {
-            super(matchVersion);
-          }
-	  @Override
-	  public TokenStream tokenStream(String fieldName, Reader reader) {
-	    return new WhitespaceTokenizer(reader);
-	  }
-	}
-	
-	public void testLUCENE1678BWComp() throws Exception {
-	  ThaiSubclassAnalyzer a = new ThaiSubclassAnalyzer(Version.LUCENE_CURRENT);
-	  assertAnalyzesToReuse(a, "การที่ได้ต้องแสดงว่างานดี", new String[] { "การที่ได้ต้องแสดงว่างานดี" });
 	}
 }

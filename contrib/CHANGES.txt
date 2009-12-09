@@ -2,12 +2,19 @@ Lucene contrib change Log
 
 ======================= Trunk (not yet released) =======================
 
+Changes in backwards compatibility policy
+
+ * LUCENE-2100: All Analyzers in Lucene-contrib have been marked as final.
+   Analyzers should be only act as a composition of TokenStreams, users should
+   compose their own analyzers instead of subclassing existing ones.
+   (Simon Willnauer) 
+
 Changes in runtime behavior
 
-* LUCENE-2117: SnowballAnalyzer uses TurkishLowerCaseFilter instead of
-  LowercaseFilter to correctly handle the unique Turkish casing behavior if
-  used with Version > 3.0 and the TurkishStemmer.
-  (Robert Muir via Simon Willnauer)  
+ * LUCENE-2117: SnowballAnalyzer uses TurkishLowerCaseFilter instead of
+   LowercaseFilter to correctly handle the unique Turkish casing behavior if
+   used with Version > 3.0 and the TurkishStemmer.
+   (Robert Muir via Simon Willnauer)  
 
 Bug fixes
 

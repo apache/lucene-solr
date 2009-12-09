@@ -64,7 +64,7 @@ import org.apache.lucene.util.Version;
  * </pre>
  *
  */
-public class PatternAnalyzer extends Analyzer {
+public final class PatternAnalyzer extends Analyzer {
   
   /** <code>"\\W+"</code>; Divides text at non-letters (NOT Character.isLetter(c)) */
   public static final Pattern NON_WORD_PATTERN = Pattern.compile("\\W+");

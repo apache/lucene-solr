@@ -35,7 +35,7 @@ import java.util.Set;
  * filters with {@link StopFilter}
  *
  */
-public class CJKAnalyzer extends Analyzer {
+public final class CJKAnalyzer extends Analyzer {
   //~ Static fields/initializers ---------------------------------------------
 
   /**

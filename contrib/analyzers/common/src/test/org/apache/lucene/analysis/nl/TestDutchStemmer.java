@@ -18,12 +18,9 @@ package org.apache.lucene.analysis.nl;
  */
 
 import java.io.File;
-import java.io.Reader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.util.Version;
 
 /**
@@ -127,27 +124,6 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "lichamelijkheden", "licham");
   }
   
-  /**
-   * subclass that acts just like whitespace analyzer for testing
-   */
-  private class DutchSubclassAnalyzer extends DutchAnalyzer {
-    public DutchSubclassAnalyzer(Version matchVersion) {
-      super(matchVersion);
-    }
-    @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new WhitespaceTokenizer(reader);
-    }
-  }
-  
-  public void testLUCENE1678BWComp() throws Exception {
-    Analyzer a = new DutchSubclassAnalyzer(Version.LUCENE_CURRENT);
-    checkOneTermReuse(a, "lichaamsziek", "lichaamsziek");
-    checkOneTermReuse(a, "lichamelijk", "lichamelijk");
-    checkOneTermReuse(a, "lichamelijke", "lichamelijke");
-    checkOneTermReuse(a, "lichamelijkheden", "lichamelijkheden");
-  }
- 
   /* 
    * Test that changes to the exclusion table are applied immediately
    * when using reusable token streams.

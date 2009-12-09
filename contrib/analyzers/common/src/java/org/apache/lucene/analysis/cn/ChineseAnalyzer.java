@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.Tokenizer;
  *
  */
 
-public class ChineseAnalyzer extends Analyzer {
+public final class ChineseAnalyzer extends Analyzer {
 
     public ChineseAnalyzer() {
     }

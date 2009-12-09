@@ -213,28 +213,6 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
         new int[] { 1, 0, 1, 0, 1, 0, 1 });
   }
   
-  /**
-   * subclass that acts just like whitespace analyzer for testing
-   */
-  private class ShingleWrapperSubclassAnalyzer extends ShingleAnalyzerWrapper {
-    public ShingleWrapperSubclassAnalyzer() {
-      super(org.apache.lucene.util.Version.LUCENE_CURRENT);
-    }
-  
-    @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new WhitespaceTokenizer(reader);
-    }  
-  };
-  
-  public void testLUCENE1678BWComp() throws Exception {
-    Analyzer a = new ShingleWrapperSubclassAnalyzer();
-    assertAnalyzesToReuse(a, "this is a test",
-        new String[] { "this", "is", "a", "test" },
-        new int[] { 0, 5, 8, 10 },
-        new int[] { 4, 7, 9, 14 });
-  }
-  
   /*
    * analyzer that does not support reuse
    * it is LetterTokenizer on odd invocations, WhitespaceTokenizer on even.

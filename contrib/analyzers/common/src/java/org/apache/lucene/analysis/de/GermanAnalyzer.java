@@ -51,7 +51,7 @@ import org.apache.lucene.util.Version;
  * <p><b>NOTE</b>: This class uses the same {@link Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
  */
-public class GermanAnalyzer extends Analyzer {
+public final class GermanAnalyzer extends Analyzer {
   
   /**
    * List of typical german stopwords.
@@ -133,7 +133,6 @@ public class GermanAnalyzer extends Analyzer {
   public GermanAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionSet) {
     stopSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
     exclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionSet));
-    setOverridesTokenStreamMethod(GermanAnalyzer.class);
     this.matchVersion = matchVersion;
   }
 
@@ -221,13 +220,6 @@ public class GermanAnalyzer extends Analyzer {
    */
   @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    if (overridesTokenStreamMethod) {
-      // LUCENE-1678: force fallback to tokenStream() if we
-      // have been subclassed and that subclass overrides
-      // tokenStream but not reusableTokenStream
-      return tokenStream(fieldName, reader);
-    }
-    
     SavedStreams streams = (SavedStreams) getPreviousTokenStream();
     if (streams == null) {
       streams = new SavedStreams();
