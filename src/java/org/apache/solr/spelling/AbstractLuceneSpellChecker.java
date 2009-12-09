@@ -77,6 +77,8 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   protected float accuracy = 0.5f;
   public static final String FIELD = "field";
 
+  protected StringDistance sd;
+
   public String init(NamedList config, SolrCore core) {
     super.init(config, core);
     indexDir = (String) config.get(INDEX_DIR);
@@ -90,7 +92,6 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     sourceLocation = (String) config.get(LOCATION);
     field = (String) config.get(FIELD);
     String strDistanceName = (String)config.get(STRING_DISTANCE);
-    StringDistance sd = null;
     if (strDistanceName != null) {
       sd = (StringDistance) core.getResourceLoader().newInstance(strDistanceName);
       //TODO: Figure out how to configure options.  Where's Spring when you need it?  Or at least BeanUtils...
@@ -225,5 +226,9 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   * */
   public String getSourceLocation() {
     return sourceLocation;
+  }
+
+  public StringDistance getStringDistance() {
+    return sd;
   }
 }

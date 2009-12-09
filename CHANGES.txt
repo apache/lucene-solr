@@ -53,6 +53,9 @@ New Features
 * SOLR-1571: Added unicode collation support though Lucene's CollationKeyFilter
   (Robert Muir via shalin)
 
+* SOLR-785: Distributed Search support for SpellCheckComponent
+  (Matthew Woytowitz, shalin)
+
 Optimizations
 ----------------------
 
