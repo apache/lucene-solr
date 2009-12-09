@@ -58,9 +58,9 @@ See http://forrest.apache.org/docs/linking.html for more info
 		    <javadoc-contrib-bdb label="Bdb" href="ext:javadocs-contrib-bdb"/>
 		    <javadoc-contrib-bdb-je label="Bdb-je" href="ext:javadocs-contrib-bdb-je"/>
 		    <javadoc-contrib-benchmark label="Benchmark" href="ext:javadocs-contrib-benchmark"/>
-        <javadoc-contrib-collation label="Collation" href="ext:javadocs-contrib-collation"/>
 		    <javadoc-contrib-fast-vector-highlighter label="Fast Vector Highlighter" href="ext:javadocs-contrib-fast-vector-highlighter"/>
 		    <javadoc-contrib-highlighter label="Highlighter" href="ext:javadocs-contrib-highlighter"/>
+		    <javadoc-contrib-icu label="ICU" href="ext:javadocs-contrib-icu"/>
 		    <javadoc-contrib-instantiated label="Instantiated" href="ext:javadocs-contrib-instantiated"/>
 		    <javadoc-contrib-lucli label="Lucli" href="ext:javadocs-contrib-lucli"/>
 		    <javadoc-contrib-memory label="Memory" href="ext:javadocs-contrib-memory"/>
@@ -113,9 +113,9 @@ See http://forrest.apache.org/docs/linking.html for more info
 	<javadocs-contrib-bdb href="api/contrib-bdb/index.html"/>
 	<javadocs-contrib-bdb-je href="api/contrib-bdb-je/index.html"/>
 	<javadocs-contrib-benchmark href="api/contrib-benchmark/index.html"/>
-	<javadocs-contrib-collation href="api/contrib-collation/index.html"/>
 	<javadocs-contrib-fast-vector-highlighter href="api/contrib-fast-vector-highlighter/index.html"/>
 	<javadocs-contrib-highlighter href="api/contrib-highlighter/index.html"/>
+    <javadocs-contrib-icu href="api/contrib-icu/index.html"/>
 	<javadocs-contrib-instantiated href="api/contrib-instantiated/index.html"/>
 	<javadocs-contrib-lucli href="api/contrib-lucli/index.html"/>
 	<javadocs-contrib-memory href="api/contrib-memory/index.html"/>
