@@ -108,40 +108,60 @@ public class DOMUtil {
     return lst;
   }
 
-
+  /**
+   * Examines a Node from the DOM representation of a NamedList and adds the
+   * contents of that node to both the specified NamedList and List passed
+   * as arguments.
+   *
+   * @param nd The Node whose type will be used to determine how to parse the
+   *           text content.  If there is a 'name' attribute it will be used
+   *           when adding to the NamedList
+   * @param nlst A NamedList to add the item to with name if application.
+   *             If this param is null it will be ignored.
+   * @param arr A List to add the item to.
+   *             If this param is null it will be ignored.
+   */
   @SuppressWarnings("unchecked")
   public static void addToNamedList(Node nd, NamedList nlst, List arr) {
     // Nodes often include whitespace, etc... so just return if this
     // is not an Element.
     if (nd.getNodeType() != Node.ELEMENT_NODE) return;
 
-    String type = nd.getNodeName();
+    final String type = nd.getNodeName();
 
-    String name = null;
-    if (nd.hasAttributes()) {
-      NamedNodeMap attrs = nd.getAttributes();
-      Node nameNd = attrs.getNamedItem("name");
-      if (nameNd != null) name=nameNd.getNodeValue();
-    }
+    final String name = getAttr(nd, "name");
 
     Object val=null;
 
-    if ("str".equals(type)) {
-      val = getText(nd);
-    } else if ("int".equals(type)) {
-      val = Integer.valueOf(getText(nd));
-    } else if ("long".equals(type)) {
-      val = Long.valueOf(getText(nd));
-    } else if ("float".equals(type)) {
-      val = Float.valueOf(getText(nd));
-    } else if ("double".equals(type)) {
-      val = Double.valueOf(getText(nd));
-    } else if ("bool".equals(type)) {
-      val = StrUtils.parseBool(getText(nd));
-    } else if ("lst".equals(type)) {
+    if ("lst".equals(type)) {
       val = childNodesToNamedList(nd);
     } else if ("arr".equals(type)) {
       val = childNodesToList(nd);
+    } else {
+      final String textValue = getText(nd);
+      try {
+        if ("str".equals(type)) {
+          val = textValue;
+        } else if ("int".equals(type)) {
+          val = Integer.valueOf(textValue);
+        } else if ("long".equals(type)) {
+          val = Long.valueOf(textValue);
+        } else if ("float".equals(type)) {
+          val = Float.valueOf(textValue);
+        } else if ("double".equals(type)) {
+          val = Double.valueOf(textValue);
+        } else if ("bool".equals(type)) {
+          val = StrUtils.parseBool(textValue);
+        }
+        // :NOTE: Unexpected Node names are ignored
+        // :TODO: should we generate an error here?
+      } catch (NumberFormatException nfe) {
+        throw new SolrException
+          (SolrException.ErrorCode.SERVER_ERROR,
+           "Value " + (null != name ? ("of '" +name+ "' ") : "") +
+           "can not be parsed as '" +type+ "': \"" + textValue + "\"",
+           nfe);
+      }
     }
 
     if (nlst != null) nlst.add(name,val);
