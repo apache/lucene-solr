@@ -27,14 +27,14 @@
     <version>@version@</version>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-collation</artifactId>
+  <artifactId>lucene-icu</artifactId>
   <name>
-    Lucene CollationKeyFilter/Analyzer &amp; ICUCollationKeyFilter/Analyzer
+    Lucene ICUCollationKeyFilter/Analyzer
   </name>
   <version>@version@</version>
   <description>    
-    CollationKeyFilter, ICUCollationKeyFilter, CollationKeyAnalyzer, and
-    ICUCollationKeyAnalyzer - converts tokens into indexable collation keys
+  	Provides integration with ICU (International Components for Unicode) for
+  	stronger Unicode and internationalization support.
   </description>
   <packaging>jar</packaging>
   <dependencies>

@@ -57,11 +57,6 @@ public class TestICUCollationKeyFilter extends CollationTestBase {
     }
   }
 
-  public void testFarsiQueryParserCollating() throws Exception {
-    testFarsiQueryParserCollating(analyzer);
-  }
-  
-  
   public void testFarsiRangeFilterCollating() throws Exception {
     testFarsiRangeFilterCollating(analyzer, firstRangeBeginning, firstRangeEnd, 
                                   secondRangeBeginning, secondRangeEnd);

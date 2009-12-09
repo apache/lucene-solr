@@ -18,19 +18,16 @@ package org.apache.lucene.collation;
  */
 
 
+import com.ibm.icu.text.Collator;
 import org.apache.lucene.analysis.Analyzer;
 
-import java.text.Collator;
 import java.util.Locale;
 
 
-public class TestCollationKeyAnalyzer extends CollationTestBase {
+public class TestICUCollationKeyAnalyzer extends CollationTestBase {
 
-  // Neither Java 1.4.2 nor 1.5.0 has Farsi Locale collation available in
-  // RuleBasedCollator.  However, the Arabic Locale seems to order the Farsi
-  // characters properly.
-  private Collator collator = Collator.getInstance(new Locale("ar"));
-  private Analyzer analyzer = new CollationKeyAnalyzer(collator);
+  private Collator collator = Collator.getInstance(new Locale("fa"));
+  private Analyzer analyzer = new ICUCollationKeyAnalyzer(collator);
 
   private String firstRangeBeginning = encodeCollationKey
     (collator.getCollationKey(firstRangeBeginningOriginal).toByteArray());
@@ -41,21 +38,14 @@ public class TestCollationKeyAnalyzer extends CollationTestBase {
   private String secondRangeEnd = encodeCollationKey
     (collator.getCollationKey(secondRangeEndOriginal).toByteArray());
   
-
-  public void testFarsiQueryParserCollating() throws Exception {
-    testFarsiQueryParserCollating(analyzer);
-  }
-  
   public void testFarsiRangeFilterCollating() throws Exception {
-    testFarsiRangeFilterCollating
-      (analyzer, firstRangeBeginning, firstRangeEnd, 
-       secondRangeBeginning, secondRangeEnd);
+    testFarsiRangeFilterCollating(analyzer, firstRangeBeginning, firstRangeEnd, 
+                                  secondRangeBeginning, secondRangeEnd);
   }
  
   public void testFarsiRangeQueryCollating() throws Exception {
-    testFarsiRangeQueryCollating
-      (analyzer, firstRangeBeginning, firstRangeEnd, 
-       secondRangeBeginning, secondRangeEnd);
+    testFarsiRangeQueryCollating(analyzer, firstRangeBeginning, firstRangeEnd, 
+                                 secondRangeBeginning, secondRangeEnd);
   }
 
   public void testFarsiTermRangeQuery() throws Exception {
@@ -63,20 +53,26 @@ public class TestCollationKeyAnalyzer extends CollationTestBase {
       (analyzer, firstRangeBeginning, firstRangeEnd, 
        secondRangeBeginning, secondRangeEnd);
   }
-  
+
+  // Test using various international locales with accented characters (which
+  // sort differently depending on locale)
+  //
+  // Copied (and slightly modified) from 
+  // org.apache.lucene.search.TestSort.testInternationalSort()
+  //  
   public void testCollationKeySort() throws Exception {
-    Analyzer usAnalyzer 
-      = new CollationKeyAnalyzer(Collator.getInstance(Locale.US));
-    Analyzer franceAnalyzer 
-      = new CollationKeyAnalyzer(Collator.getInstance(Locale.FRANCE));
-    Analyzer swedenAnalyzer 
-      = new CollationKeyAnalyzer(Collator.getInstance(new Locale("sv", "se")));
-    Analyzer denmarkAnalyzer 
-      = new CollationKeyAnalyzer(Collator.getInstance(new Locale("da", "dk")));
-    
+    Analyzer usAnalyzer = new ICUCollationKeyAnalyzer
+      (Collator.getInstance(Locale.US));
+    Analyzer franceAnalyzer = new ICUCollationKeyAnalyzer
+      (Collator.getInstance(Locale.FRANCE));
+    Analyzer swedenAnalyzer = new ICUCollationKeyAnalyzer
+      (Collator.getInstance(new Locale("sv", "se")));
+    Analyzer denmarkAnalyzer = new ICUCollationKeyAnalyzer
+      (Collator.getInstance(new Locale("da", "dk")));
+
     // The ICU Collator and java.text.Collator implementations differ in their
-    // orderings - "BFJDH" is the ordering for java.text.Collator for Locale.US.
+    // orderings - "BFJHD" is the ordering for the ICU Collator for Locale.US.
     testCollationKeySort
-      (usAnalyzer, franceAnalyzer, swedenAnalyzer, denmarkAnalyzer, "BFJDH");
+      (usAnalyzer, franceAnalyzer, swedenAnalyzer, denmarkAnalyzer, "BFJHD");
   }
 }

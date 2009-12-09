@@ -21,8 +21,8 @@
 </head>
 <body>
 <p>
-  <code>CollationKeyFilter</code> and <code>ICUCollationKeyFilter</code>
-  convert each token into its binary <code>CollationKey</code> using the 
+  <code>ICUCollationKeyFilter</code>
+  converts each token into its binary <code>CollationKey</code> using the 
   provided <code>Collator</code>, and then encode the <code>CollationKey</code>
   as a String using
   {@link org.apache.lucene.util.IndexableBinaryStringTools}, to allow it to be 
@@ -60,9 +60,8 @@
 
 <h3>Farsi Range Queries</h3>
 <code><pre>
-  // "fa" Locale is not supported by Sun JDK 1.4 or 1.5
   Collator collator = Collator.getInstance(new Locale("ar"));
-  CollationKeyAnalyzer analyzer = new CollationKeyAnalyzer(collator);
+  ICUCollationKeyAnalyzer analyzer = new ICUCollationKeyAnalyzer(collator);
   RAMDirectory ramDir = new RAMDirectory();
   IndexWriter writer = new IndexWriter
     (ramDir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
@@ -92,7 +91,7 @@
 <h3>Danish Sorting</h3>
 <code><pre>
   Analyzer analyzer 
-    = new CollationKeyAnalyzer(Collator.getInstance(new Locale("da", "dk")));
+    = new ICUCollationKeyAnalyzer(Collator.getInstance(new Locale("da", "dk")));
   RAMDirectory indexStore = new RAMDirectory();
   IndexWriter writer = new IndexWriter 
     (indexStore, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
@@ -121,7 +120,7 @@
 <code><pre>
   Collator collator = Collator.getInstance(new Locale("tr", "TR"));
   collator.setStrength(Collator.PRIMARY);
-  Analyzer analyzer = new CollationKeyAnalyzer(collator);
+  Analyzer analyzer = new ICUCollationKeyAnalyzer(collator);
   RAMDirectory ramDir = new RAMDirectory();
   IndexWriter writer = new IndexWriter
     (ramDir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);

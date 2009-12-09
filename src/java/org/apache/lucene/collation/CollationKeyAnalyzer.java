@@ -59,7 +59,8 @@ import java.io.IOException;
  *   </li>
  * </ol> 
  * <p>
- *   {@link ICUCollationKeyAnalyzer} uses ICU4J's Collator, which makes 
+ *   The <code>ICUCollationKeyAnalyzer</code> in the icu package of Lucene's
+ *   contrib area uses ICU4J's Collator, which makes its
  *   its version available, thus allowing collation to be versioned
  *   independently from the JVM.  ICUCollationKeyAnalyzer is also significantly
  *   faster and generates significantly shorter keys than CollationKeyAnalyzer.

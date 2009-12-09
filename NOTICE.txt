@@ -30,6 +30,6 @@ Includes lib/servlet-api-2.4.jar from  Apache Tomcat
 The SmartChineseAnalyzer source code (under contrib/analyzers) was
 provided by Xiaoping Gao and copyright 2009 by www.imdict.net.
 
-ICU4J, (under contrib/collation) is licensed under an MIT styles license
-(contrib/collation/lib/ICU-LICENSE.txt) and Copyright (c) 1995-2008 
+ICU4J, (under contrib/icu) is licensed under an MIT styles license
+(contrib/icu/lib/ICU-LICENSE.txt) and Copyright (c) 1995-2008 
 International Business Machines Corporation and others

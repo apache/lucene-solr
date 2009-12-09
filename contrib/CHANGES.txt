@@ -37,6 +37,12 @@ New features
    
  * LUCENE-2062: Add a Bulgarian analyzer.  (Robert Muir, Simon Willnauer)
 
+Build
+
+ * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
+   into core, and moved the ICU-based collation support into contrib/icu.  
+   (Robert Muir)
+
 Test Cases
 
  * LUCENE-2115: Cutover contrib tests to use Java5 generics.  (Kay Kay

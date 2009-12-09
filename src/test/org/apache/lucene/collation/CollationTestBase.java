@@ -38,7 +38,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.util.IndexableBinaryStringTools;
-import org.apache.lucene.queryParser.analyzing.AnalyzingQueryParser;
 import org.apache.lucene.util.Version;
 
 import java.io.IOException;
@@ -71,40 +70,7 @@ public class CollationTestBase extends TestCase {
     IndexableBinaryStringTools.encode(begBuf, encodedBegBuf);
     return new String(encodedBegArray);
   }
-  
-  public void testFarsiQueryParserCollating(Analyzer analyzer) throws Exception {
-
-    RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter
-      (ramDir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
-    Document doc = new Document();
-    doc.add(new Field("content", "\u0633\u0627\u0628", 
-                      Field.Store.YES, Field.Index.ANALYZED));
-    writer.addDocument(doc);
-    writer.close();
-    IndexSearcher is = new IndexSearcher(ramDir, true);
-
-    AnalyzingQueryParser aqp = new AnalyzingQueryParser(Version.LUCENE_CURRENT, "content", analyzer);
-    aqp.setLowercaseExpandedTerms(false);
-
-    // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
-    // orders the U+0698 character before the U+0633 character, so the single
-    // index Term below should NOT be returned by a TermRangeQuery
-    // with a Farsi Collator (or an Arabic one for the case when Farsi is not
-    // supported).
-      
-    // Test TermRangeQuery
-    ScoreDoc[] result
-      = is.search(aqp.parse("[ \u062F TO \u0698 ]"), null, 1000).scoreDocs;
-    assertEquals("The index Term should not be included.", 0, result.length);
-
-    result = is.search(aqp.parse("[ \u0633 TO \u0638 ]"), null, 1000).scoreDocs;
-    assertEquals("The index Term should be included.", 1, result.length);
-
-    is.close();
-  }
-  
-  
+    
   public void testFarsiRangeFilterCollating(Analyzer analyzer, String firstBeg, 
                                             String firstEnd, String secondBeg,
                                             String secondEnd) throws Exception {

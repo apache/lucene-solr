@@ -17,17 +17,16 @@
     limitations under the License.
  -->
 
-<project name="collation" default="default">
+<project name="icu" default="default">
 
   <description>
-    CollationKeyFilter, ICUCollationKeyFilter, CollationKeyAnalyzer, and
-    ICUCollationKeyAnalyzer - converts tokens into indexable collation keys
+  	Provides integration with ICU (International Components for Unicode) for
+  	stronger Unicode and internationalization support. 
   </description>
 
 
   <path id="additional.dependencies">
     <fileset dir="lib" includes="icu4j-*.jar"/>
-    <pathelement location="../../build/contrib/misc/classes/java"/>
   </path>
 
   <pathconvert property="project.classpath"
@@ -36,17 +35,5 @@
   />
 
   <import file="../contrib-build.xml"/>
-
-  <target name="compile-misc">
-    <subant target="compile">
-       <fileset dir="${common.dir}/contrib/misc" includes="build.xml"/>
-    </subant>
-  </target>
-
-  <target name="init" depends="common.init,compile-misc"/>
-
-  <target name="compile" depends="init">
-    <antcall target="common.compile" inheritRefs="true" />
-  </target>
 
 </project>
