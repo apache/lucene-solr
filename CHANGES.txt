@@ -139,6 +139,8 @@ Other Changes
 * SOLR-1608: Extract base class from TestDistributedSearch to make
   it easy to write test cases for other distributed components. (shalin)
 
+* Upgraded to Lucene 2.9-dev r888785 (shalin)
+
 Build
 ----------------------
 
