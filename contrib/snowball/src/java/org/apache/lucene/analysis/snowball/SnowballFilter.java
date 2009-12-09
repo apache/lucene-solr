@@ -22,12 +22,20 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tr.TurkishLowerCaseFilter; // javadoc @link
+import org.apache.lucene.analysis.LowerCaseFilter; // javadoc @link
 import org.tartarus.snowball.SnowballProgram;
 
 /**
  * A filter that stems words using a Snowball-generated stemmer.
  *
  * Available stemmers are listed in {@link org.tartarus.snowball.ext}.
+ * <p><b>NOTE</b>: SnowballFilter expects lowercased text.
+ * <ul>
+ *  <li>For the Turkish language, see {@link TurkishLowerCaseFilter}.
+ *  <li>For other languages, see {@link LowerCaseFilter}.
+ * </ul>
+ * </p>
  */
 public final class SnowballFilter extends TokenFilter {
 

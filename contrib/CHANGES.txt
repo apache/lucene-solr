@@ -2,6 +2,13 @@ Lucene contrib change Log
 
 ======================= Trunk (not yet released) =======================
 
+Changes in runtime behavior
+
+* LUCENE-2117: SnowballAnalyzer uses TurkishLowerCaseFilter instead of
+  LowercaseFilter to correctly handle the unique Turkish casing behavior if
+  used with Version > 3.0 and the TurkishStemmer.
+  (Robert Muir via Simon Willnauer)  
+
 Bug fixes
 
  * LUCENE-2068: Fixed ReverseStringFilter which was not aware of supplementary
@@ -38,6 +45,10 @@ New features
  * LUCENE-2062: Add a Bulgarian analyzer.  (Robert Muir, Simon Willnauer)
 
 Build
+
+ * LUCENE-2117: SnowballAnalyzer now holds a runtime-dependency on
+   contrib-analyzers to correctly handle the unique Turkish casing behavior.
+   (Robert Muir via Simon Willnauer)  
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
    into core, and moved the ICU-based collation support into contrib/icu.  

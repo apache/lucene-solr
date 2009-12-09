@@ -30,6 +30,15 @@
   <property name="snowball.root" value="snowball/website"/>
   <property name="bin.dir" location="bin"/>
 
+  <property name="analyzers.jar" location="${common.dir}/build/contrib/analyzers/common/lucene-analyzers-${version}.jar"/>
+  <available property="analyzers.jar.present" type="file" file="${analyzers.jar}"/>
+  
+  <path id="classpath">
+	<pathelement path="${lucene.jar}"/>
+	<pathelement path="${analyzers.jar}"/>
+	<pathelement path="${project.classpath}"/>
+  </path>
+
   <target name="jar" depends="compile" description="Create JAR">
     <jarify>
       <metainf-includes>
@@ -121,5 +130,11 @@
 
   </target>
 
+  <target name="compile-core" depends="build-analyzers, common.compile-core" />
+  
+  <target name="build-analyzers" unless="analyzers.jar.present">
+    <echo>Snowball building dependency ${analyzers.jar}</echo>
+    <ant antfile="../analyzers/build.xml" target="default" inheritall="false" dir="../analyzers" />
+  </target>
 
 </project>

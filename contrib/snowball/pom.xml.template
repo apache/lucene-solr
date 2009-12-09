@@ -33,4 +33,11 @@
   <version>@version@</version>
   <description>Snowball Analyzers</description>
   <packaging>jar</packaging>
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-analyzers</artifactId>
+      <version>@version@</version>
+    </dependency>
+  </dependencies>
 </project>
