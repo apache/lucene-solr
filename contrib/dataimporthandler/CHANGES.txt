@@ -34,6 +34,7 @@ Bug Fixes
 * SOLR-1638: Fixed NullPointerException during import if uniqueKey is not specified
   in schema (Akshay Ukey via shalin)
 
+* SOLR-1639: Fixed misleading error message when dataimport.properties is not writable (shalin)
 
 Other Changes
 ----------------------

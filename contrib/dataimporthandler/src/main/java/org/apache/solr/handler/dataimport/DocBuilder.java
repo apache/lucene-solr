@@ -229,7 +229,13 @@ public class DocBuilder {
       if (requestParameters.optimize)
         addStatusMessage("Optimized");
     }
-    writer.persist(lastIndexTimeProps);
+    try {
+      writer.persist(lastIndexTimeProps);
+    } catch (Exception e) {
+      LOG.error("Could not write property file", e);
+      statusMessages.put("error", "Could not write property file. Delta imports will not work. " +
+          "Make sure your conf directory is writable");
+    }
   }
 
   void rollback() {
