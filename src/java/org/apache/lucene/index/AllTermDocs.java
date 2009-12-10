@@ -18,69 +18,19 @@
 package org.apache.lucene.index;
 
 import org.apache.lucene.util.BitVector;
-import java.io.IOException;
 
-class AllTermDocs implements TermDocs {
+class AllTermDocs extends AbstractAllTermDocs {
+
   protected BitVector deletedDocs;
-  protected int maxDoc;
-  protected int doc = -1;
 
   protected AllTermDocs(SegmentReader parent) {
+    super(parent.maxDoc());
     synchronized (parent) {
       this.deletedDocs = parent.deletedDocs;
     }
-    this.maxDoc = parent.maxDoc();
   }
 
-  public void seek(Term term) throws IOException {
-    if (term==null) {
-      doc = -1;
-    } else {
-      throw new UnsupportedOperationException();
-    }
-  }
-
-  public void seek(TermEnum termEnum) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  public int doc() {
-    return doc;
-  }
-
-  public int freq() {
-    return 1;
-  }
-
-  public boolean next() throws IOException {
-    return skipTo(doc+1);
-  }
-
-  public int read(int[] docs, int[] freqs) throws IOException {
-    final int length = docs.length;
-    int i = 0;
-    while (i < length && doc < maxDoc) {
-      if (deletedDocs == null || !deletedDocs.get(doc)) {
-        docs[i] = doc;
-        freqs[i] = 1;
-        ++i;
-      }
-      doc++;
-    }
-    return i;
-  }
-
-  public boolean skipTo(int target) throws IOException {
-    doc = target;
-    while (doc < maxDoc) {
-      if (deletedDocs == null || !deletedDocs.get(doc)) {
-        return true;
-      }
-      doc++;
-    }
-    return false;
-  }
-
-  public void close() throws IOException {
+  public boolean isDeleted(int doc) {
+    return deletedDocs != null && deletedDocs.get(doc);
   }
 }

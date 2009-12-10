@@ -23,6 +23,10 @@ Bug fixes
    will be replaced by U+FFFD by the indexer, but not at query time. The filter
    now reverses supplementary characters correctly if used with Version > 3.0.
    (Simon Willnauer, Robert Muir)
+
+ * LUCENE-2144: Fix InstantiatedIndex to handle termDocs(null)
+   correctly (enumerate all non-deleted docs).  (Karl Wettin via Mike
+   McCandless)
    
 API Changes
 

@@ -60,11 +60,14 @@ public class InstantiatedTermDocs
       currentDocumentIndex++;
       if (currentDocumentIndex < currentTerm.getAssociatedDocuments().length) {
         currentDocumentInformation = currentTerm.getAssociatedDocuments()[currentDocumentIndex];
-        if (reader.hasDeletions() && reader.isDeleted(currentDocumentInformation.getDocument().getDocumentNumber())) {
+        if (reader.isDeleted(currentDocumentInformation.getDocument().getDocumentNumber())) {
           return next();
         } else {
           return true;
         }
+      } else {
+        // mimic SegmentTermDocs
+        currentDocumentIndex = currentTerm.getAssociatedDocuments().length -1;
       }
     }
     return false;
@@ -111,6 +114,8 @@ public class InstantiatedTermDocs
     int pos = currentTerm.seekCeilingDocumentInformationIndex(target, startOffset);
 
     if (pos == -1) {
+      // mimic SegmentTermDocs that positions at the last index
+      currentDocumentIndex = currentTerm.getAssociatedDocuments().length -1;
       return false;
     }
 
