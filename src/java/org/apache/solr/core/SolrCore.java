@@ -93,6 +93,9 @@ public final class SolrCore implements SolrInfoMBean {
   private IndexDeletionPolicyWrapper solrDelPolicy;
   private DirectoryFactory directoryFactory;
   private IndexReaderFactory indexReaderFactory;
+  
+  // null if not in use
+  private ZooKeeperController zooKeeperController;
 
   public long getStartTime() { return startTime; }
 
@@ -221,6 +224,14 @@ public final class SolrCore implements SolrInfoMBean {
   
   public IndexReaderFactory getIndexReaderFactory() {
     return indexReaderFactory;
+  }
+  
+  //nocommit: consider
+  /**
+   * @return ZooKeeperController for this core or Null if none.
+   */
+  public ZooKeeperController getZooKeeperController() {
+    return zooKeeperController;
   }
   
   public String getName() {
@@ -497,13 +508,33 @@ public final class SolrCore implements SolrInfoMBean {
   /**
    * Creates a new core and register it in the list of cores.
    * If a core with the same name already exists, it will be stopped and replaced by this one.
-   *@param dataDir the index directory
-   *@param config a solr config instance
-   *@param schema a solr schema instance
-   *
-   *@since solr 1.3
+   * 
+   * @param name name of the core
+   * @param dataDir the index directory
+   * @param config a solr config instance
+   * @param schema a solr schema instance
+   * @param cd descriptor for this core
+   * 
+   * @since solr 1.3
    */
   public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd) {
+    this(name, dataDir, config, schema, cd, null);
+  }
+  
+
+  /**
+   * Creates a new core and register it in the list of cores.
+   * If a core with the same name already exists, it will be stopped and replaced by this one.
+   * 
+   * @param name name of the core
+   * @param dataDir the index directory
+   * @param config a solr config instance
+   * @param schema a solr schema instance
+   * @param cd descriptor for this core
+   * @param zooKeeperController zooKeeperController for core to use or null
+   */
+  public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd, ZooKeeperController zooKeeperController) {
+    this.zooKeeperController = zooKeeperController;
     coreDescriptor = cd;
     this.setName( name );
     resourceLoader = config.getResourceLoader();

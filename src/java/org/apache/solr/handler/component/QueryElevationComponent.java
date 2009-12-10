@@ -169,6 +169,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
               "QueryElevationComponent must specify argument: '"+CONFIG_FILE
               +"' -- path to elevate.xml" );
         }
+        //nocommit: add resourceloader.exists? needs to be handled with zookeeper
         File fC = new File( core.getResourceLoader().getConfigDir(), f );
         File fD = new File( core.getDataDir(), f );
         if( fC.exists() == fD.exists() ) {

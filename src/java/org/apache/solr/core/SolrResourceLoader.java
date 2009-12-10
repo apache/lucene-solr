@@ -65,7 +65,7 @@ public class SolrResourceLoader implements ResourceLoader
   static final String base = "org.apache" + "." + project;
   static final String[] packages = {"","analysis.","schema.","handler.","search.","update.","core.","request.","update.processor.","util.", "spelling.", "handler.component.", "handler.dataimport"};
 
-  private URLClassLoader classLoader;
+  protected URLClassLoader classLoader;
   private final String instanceDir;
   private String dataDir;
   
