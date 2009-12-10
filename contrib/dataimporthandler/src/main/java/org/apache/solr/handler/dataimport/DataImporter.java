@@ -149,8 +149,12 @@ public class DataImporter {
   }
 
   private void identifyPk(DataConfig.Entity entity) {
-    String schemaPk = schema.getUniqueKeyField().getName();
-    //if no fields are mentioned . solr uniqeKey is same as dih 'pk'
+    SchemaField uniqueKey = schema.getUniqueKeyField();
+    String schemaPk = "";
+    if (uniqueKey != null)
+      schemaPk = uniqueKey.getName();
+    else return;
+    //if no fields are mentioned . solr uniqueKey is same as dih 'pk'
     entity.pkMappingFromSchema = schemaPk;
     for (DataConfig.Field field : entity.fields) {
       if(field.getName().equals(schemaPk)) {

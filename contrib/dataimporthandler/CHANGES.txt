@@ -31,7 +31,8 @@ Optimizations
 
 Bug Fixes
 ----------------------
-
+* SOLR-1638: Fixed NullPointerException during import if uniqueKey is not specified
+  in schema (Akshay Ukey via shalin)
 
 
 Other Changes
