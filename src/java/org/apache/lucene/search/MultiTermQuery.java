@@ -31,11 +31,11 @@ import org.apache.lucene.queryParser.QueryParser; // for javadoc
 /**
  * An abstract {@link Query} that matches documents
  * containing a subset of terms provided by a {@link
- * FilteredTermsEnum} enumeration.
+ * FilteredTermEnum} enumeration.
  *
  * <p>This query cannot be used directly; you must subclass
- * it and define {@link #getTermsEnum} to provide a {@link
- * FilteredTermsEnum} that iterates through the terms to be
+ * it and define {@link #getEnum} to provide a {@link
+ * FilteredTermEnum} that iterates through the terms to be
  * matched.
  *
  * <p><b>NOTE</b>: if {@link #setRewriteMethod} is either
