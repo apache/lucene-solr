@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-
+import java.util.PriorityQueue;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -31,11 +31,11 @@ import org.apache.lucene.queryParser.QueryParser; // for javadoc
 /**
  * An abstract {@link Query} that matches documents
  * containing a subset of terms provided by a {@link
- * FilteredTermEnum} enumeration.
+ * FilteredTermsEnum} enumeration.
  *
  * <p>This query cannot be used directly; you must subclass
- * it and define {@link #getEnum} to provide a {@link
- * FilteredTermEnum} that iterates through the terms to be
+ * it and define {@link #getTermsEnum} to provide a {@link
+ * FilteredTermsEnum} that iterates through the terms to be
  * matched.
  *
  * <p><b>NOTE</b>: if {@link #setRewriteMethod} is either
@@ -51,7 +51,11 @@ import org.apache.lucene.queryParser.QueryParser; // for javadoc
  * <p>The recommended rewrite method is {@link
  * #CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}: it doesn't spend CPU
  * computing unhelpful scores, and it tries to pick the most
- * performant rewrite method given the query.
+ * performant rewrite method given the query. If you
+ * need scoring (like {@link FuzzyQuery}, use
+ * {@link #TOP_TERMS_SCORING_BOOLEAN_REWRITE} which uses
+ * a priority queue to only collect competitive terms
+ * and not hit this limitation.
  *
  * Note that {@link QueryParser} produces
  * MultiTermQueries using {@link
@@ -66,7 +70,7 @@ public abstract class MultiTermQuery extends Query {
     public abstract Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException;
   }
 
-  private static final class ConstantScoreFilterRewrite extends RewriteMethod implements Serializable {
+  private static final class ConstantScoreFilterRewrite extends RewriteMethod {
     @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) {
       Query result = new ConstantScoreQuery(new MultiTermQueryWrapperFilter<MultiTermQuery>(query));
@@ -94,27 +98,47 @@ public abstract class MultiTermQuery extends Query {
    *  @see #setRewriteMethod */
   public final static RewriteMethod CONSTANT_SCORE_FILTER_REWRITE = new ConstantScoreFilterRewrite();
 
-  private static class ScoringBooleanQueryRewrite extends RewriteMethod implements Serializable {
-    @Override
-    public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
-
-      FilteredTermEnum enumerator = query.getEnum(reader);
-      BooleanQuery result = new BooleanQuery(true);
+  private abstract static class BooleanQueryRewrite extends RewriteMethod {
+  
+    protected final int collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
+      final FilteredTermEnum enumerator = query.getEnum(reader);
       int count = 0;
       try {
         do {
           Term t = enumerator.term();
           if (t != null) {
-            TermQuery tq = new TermQuery(t); // found a match
-            tq.setBoost(query.getBoost() * enumerator.difference()); // set the boost
-            result.add(tq, BooleanClause.Occur.SHOULD); // add to query
-            count++;
+            if (collector.collect(t, enumerator.difference())) {
+              count++;
+            } else {
+              break;
+            }
           }
         } while (enumerator.next());    
       } finally {
         enumerator.close();
       }
-      query.incTotalNumberOfTerms(count);
+      return count;
+    }
+    
+    protected interface TermCollector {
+      /** return false to stop collecting */
+      boolean collect(Term t, float boost) throws IOException;
+    }
+    
+  }
+  
+  private static class ScoringBooleanQueryRewrite extends BooleanQueryRewrite {
+    @Override
+    public Query rewrite(final IndexReader reader, final MultiTermQuery query) throws IOException {
+      final BooleanQuery result = new BooleanQuery(true);
+      query.incTotalNumberOfTerms(collectTerms(reader, query, new TermCollector() {
+        public boolean collect(Term t, float boost) {
+          TermQuery tq = new TermQuery(t); // found a match
+          tq.setBoost(query.getBoost() * boost); // set the boost
+          result.add(tq, BooleanClause.Occur.SHOULD); // add to query
+          return true;
+        }
+      }));
       return result;
     }
 
@@ -139,12 +163,79 @@ public abstract class MultiTermQuery extends Query {
    *  @see #setRewriteMethod */
   public final static RewriteMethod SCORING_BOOLEAN_QUERY_REWRITE = new ScoringBooleanQueryRewrite();
 
+  private static final class TopTermsScoringBooleanQueryRewrite extends BooleanQueryRewrite {
+    @Override
+    public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
+      final int maxSize = BooleanQuery.getMaxClauseCount();
+      final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<ScoreTerm>();
+      collectTerms(reader, query, new TermCollector() {
+        public boolean collect(Term t, float boost) {
+          // ignore uncompetetive hits
+          if (stQueue.size() >= maxSize && boost <= stQueue.peek().boost)
+            return true;
+          // add new entry in PQ
+          st.term = t;
+          st.boost = boost;
+          stQueue.offer(st);
+          // possibly drop entries from queue
+          st = (stQueue.size() > maxSize) ? stQueue.poll() : new ScoreTerm();
+          return true;
+        }
+        
+        // reusable instance
+        private ScoreTerm st = new ScoreTerm();
+      });
+      
+      final BooleanQuery bq = new BooleanQuery(true);
+      for (final ScoreTerm st : stQueue) {
+        TermQuery tq = new TermQuery(st.term);    // found a match
+        tq.setBoost(query.getBoost() * st.boost); // set the boost
+        bq.add(tq, BooleanClause.Occur.SHOULD);   // add to query
+      }
+      query.incTotalNumberOfTerms(bq.clauses().size());
+      return bq;
+    }
+
+    // Make sure we are still a singleton even after deserializing
+    protected Object readResolve() {
+      return TOP_TERMS_SCORING_BOOLEAN_REWRITE;
+    }
+  
+    private static class ScoreTerm implements Comparable<ScoreTerm> {
+      public Term term;
+      public float boost;
+      
+      public int compareTo(ScoreTerm other) {
+        if (this.boost == other.boost)
+          return other.term.compareTo(this.term);
+        else
+          return Float.compare(this.boost, other.boost);
+      }
+    }
+  }
+  
+  /** A rewrite method that first translates each term into
+   *  {@link BooleanClause.Occur#SHOULD} clause in a
+   *  BooleanQuery, and keeps the scores as computed by the
+   *  query.
+   *
+   * <p>This rewrite mode only uses the top scoring terms
+   * so it will not overflow the boolean max clause count.
+   * It is the default rewrite mode for {@link FuzzyQuery}.
+   *
+   *  @see #setRewriteMethod */
+  public final static RewriteMethod TOP_TERMS_SCORING_BOOLEAN_REWRITE = new TopTermsScoringBooleanQueryRewrite();
+
   private static class ConstantScoreBooleanQueryRewrite extends ScoringBooleanQueryRewrite implements Serializable {
     @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
-      // strip the scores off
-      Query result = new ConstantScoreQuery(new QueryWrapperFilter(super.rewrite(reader, query)));
-      result.setBoost(query.getBoost());
+      Query result = super.rewrite(reader, query);
+      assert result instanceof BooleanQuery;
+      if (!((BooleanQuery) result).clauses().isEmpty()) {
+        // strip the scores off
+        result = new ConstantScoreQuery(new QueryWrapperFilter(result));
+        result.setBoost(query.getBoost());
+      }
       return result;
     }
 
@@ -176,7 +267,7 @@ public abstract class MultiTermQuery extends Query {
    *  Otherwise, {@link #CONSTANT_SCORE_FILTER_REWRITE} is
    *  used.
    */
-  public static class ConstantScoreAutoRewrite extends RewriteMethod implements Serializable {
+  public static class ConstantScoreAutoRewrite extends BooleanQueryRewrite {
 
     // Defaults derived from rough tests with a 20.0 million
     // doc Wikipedia index.  With more than 350 terms in the
@@ -217,55 +308,68 @@ public abstract class MultiTermQuery extends Query {
     }
 
     @Override
-    public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
+    public Query rewrite(final IndexReader reader, final MultiTermQuery query) throws IOException {
+
       // Get the enum and start visiting terms.  If we
       // exhaust the enum before hitting either of the
       // cutoffs, we use ConstantBooleanQueryRewrite; else,
       // ConstantFilterRewrite:
-      final Collection<Term> pendingTerms = new ArrayList<Term>();
       final int docCountCutoff = (int) ((docCountPercent / 100.) * reader.maxDoc());
       final int termCountLimit = Math.min(BooleanQuery.getMaxClauseCount(), termCountCutoff);
-      int docVisitCount = 0;
 
-      FilteredTermEnum enumerator = query.getEnum(reader);
-      try {
-        while(true) {
-          Term t = enumerator.term();
-          if (t != null) {
-            pendingTerms.add(t);
-            // Loading the TermInfo from the terms dict here
-            // should not be costly, because 1) the
-            // query/filter will load the TermInfo when it
-            // runs, and 2) the terms dict has a cache:
-            docVisitCount += reader.docFreq(t);
+      final CutOffTermCollector col = new CutOffTermCollector(reader, docCountCutoff, termCountLimit);
+      collectTerms(reader, query, col);
+      
+      if (col.hasCutOff) {
+        return CONSTANT_SCORE_FILTER_REWRITE.rewrite(reader, query);
+      } else {
+        final Query result;
+        if (col.pendingTerms.isEmpty()) {
+          result = new BooleanQuery(true);
+        } else {
+          BooleanQuery bq = new BooleanQuery(true);
+          for(Term term : col.pendingTerms) {
+            TermQuery tq = new TermQuery(term);
+            bq.add(tq, BooleanClause.Occur.SHOULD);
           }
-
-          if (pendingTerms.size() >= termCountLimit || docVisitCount >= docCountCutoff) {
-            // Too many terms -- make a filter.
-            Query result = new ConstantScoreQuery(new MultiTermQueryWrapperFilter<MultiTermQuery>(query));
-            result.setBoost(query.getBoost());
-            return result;
-          } else  if (!enumerator.next()) {
-            // Enumeration is done, and we hit a small
-            // enough number of terms & docs -- just make a
-            // BooleanQuery, now
-            BooleanQuery bq = new BooleanQuery(true);
-            for (final Term term: pendingTerms) {
-              TermQuery tq = new TermQuery(term);
-              bq.add(tq, BooleanClause.Occur.SHOULD);
-            }
-            // Strip scores
-            Query result = new ConstantScoreQuery(new QueryWrapperFilter(bq));
-            result.setBoost(query.getBoost());
-            query.incTotalNumberOfTerms(pendingTerms.size());
-            return result;
-          }
+          // Strip scores
+          result = new ConstantScoreQuery(new QueryWrapperFilter(bq));
+          result.setBoost(query.getBoost());
         }
-      } finally {
-        enumerator.close();
+        query.incTotalNumberOfTerms(col.pendingTerms.size());
+        return result;
       }
     }
     
+    private static final class CutOffTermCollector implements TermCollector {
+      CutOffTermCollector(IndexReader reader, int docCountCutoff, int termCountLimit) {
+        this.reader = reader;
+        this.docCountCutoff = docCountCutoff;
+        this.termCountLimit = termCountLimit;
+      }
+    
+      public boolean collect(Term t, float boost) throws IOException {
+        pendingTerms.add(t);
+        if (pendingTerms.size() >= termCountLimit || docVisitCount >= docCountCutoff) {
+          hasCutOff = true;
+          return false;
+        }
+        // Loading the TermInfo from the terms dict here
+        // should not be costly, because 1) the
+        // query/filter will load the TermInfo when it
+        // runs, and 2) the terms dict has a cache:
+        docVisitCount += reader.docFreq(t);
+        return true;
+      }
+      
+      int docVisitCount = 0;
+      boolean hasCutOff = false;
+      
+      final IndexReader reader;
+      final int docCountCutoff, termCountLimit;
+      final ArrayList<Term> pendingTerms = new ArrayList<Term>();
+    }
+
     @Override
     public int hashCode() {
       final int prime = 1279;

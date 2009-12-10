@@ -81,6 +81,10 @@ Optimizations
 * LUCENE-2137: Switch to AtomicInteger for some ref counting (Earwin
   Burrfoot via Mike McCandless)
 
+* LUCENE-2123: Move FuzzyQuery rewrite as separate RewriteMode into
+  MTQ. This also fixes a slowdown / memory issue added by LUCENE-504.
+  (Uwe Schindler, Robert Muir, Mike McCandless)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
