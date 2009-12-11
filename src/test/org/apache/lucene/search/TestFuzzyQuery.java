@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.util.Set;
+import java.util.List;
 import java.util.HashSet;
 import java.util.Arrays;
 import java.io.IOException;
@@ -80,6 +81,17 @@ public class TestFuzzyQuery extends LuceneTestCase {
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     
+    // test scoring
+    query = new FuzzyQuery(new Term("field", "bbbbb"), FuzzyQuery.defaultMinSimilarity, 0);   
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("3 documents should match", 3, hits.length);
+    List<String> order = Arrays.asList("bbbbb","abbbb","aabbb");
+    for (int i = 0; i < hits.length; i++) {
+      final String term = searcher.doc(hits[i].doc).get("field");
+      //System.out.println(hits[i].score);
+      assertEquals(order.get(i), term);
+    }
+
     // test BooleanQuery.maxClauseCount
     int savedClauseCount = BooleanQuery.getMaxClauseCount();
     try {

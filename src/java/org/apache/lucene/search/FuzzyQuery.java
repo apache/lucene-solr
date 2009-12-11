@@ -133,39 +133,30 @@ public class FuzzyQuery extends MultiTermQuery {
     }
 
     int maxSize = BooleanQuery.getMaxClauseCount();
-    PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<ScoreTerm>(1024);
+    PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<ScoreTerm>();
     FilteredTermEnum enumerator = getEnum(reader);
     try {
-      ScoreTerm bottomSt = null;
+      ScoreTerm st = new ScoreTerm();
       do {
         final Term t = enumerator.term();
         if (t == null) break;
-        ScoreTerm st = new ScoreTerm(t, enumerator.difference());
-        if (stQueue.size() < maxSize) {
-          // record the current bottom item
-          if (bottomSt == null || st.compareTo(bottomSt) > 0) {
-            bottomSt = st;
-          }
-          // add to PQ, as it is not yet filled up
-          stQueue.offer(st);
-        } else {
-          assert bottomSt != null;
-          // only add to PQ, if the ScoreTerm is greater than the current bottom,
-          // as all entries will be enqueued after the current bottom and will never be visible
-          if (st.compareTo(bottomSt) < 0) {
-            stQueue.offer(st);
-          }
-        }
-        //System.out.println("current: "+st.term+"("+st.score+"), bottom: "+bottomSt.term+"("+bottomSt.score+")");
+        final float score = enumerator.difference();
+        // ignore uncompetetive hits
+        if (stQueue.size() >= maxSize && score <= stQueue.peek().score)
+          continue;
+        // add new entry in PQ
+        st.term = t;
+        st.score = score;
+        stQueue.offer(st);
+        // possibly drop entries from queue
+        st = (stQueue.size() > maxSize) ? stQueue.poll() : new ScoreTerm();
       } while (enumerator.next());
     } finally {
       enumerator.close();
     }
     
     BooleanQuery query = new BooleanQuery(true);
-    int size = Math.min(stQueue.size(), maxSize);
-    for(int i = 0; i < size; i++){
-      ScoreTerm st = stQueue.poll();
+    for (final ScoreTerm st : stQueue) {
       TermQuery tq = new TermQuery(st.term);      // found a match
       tq.setBoost(getBoost() * st.score); // set the boost
       query.add(tq, BooleanClause.Occur.SHOULD);          // add to query
@@ -174,21 +165,15 @@ public class FuzzyQuery extends MultiTermQuery {
     return query;
   }
   
-  protected static class ScoreTerm implements Comparable<ScoreTerm> {
+  private static final class ScoreTerm implements Comparable<ScoreTerm> {
     public Term term;
     public float score;
     
-    public ScoreTerm(Term term, float score){
-      this.term = term;
-      this.score = score;
-    }
-    
     public int compareTo(ScoreTerm other) {
       if (this.score == other.score)
-        return this.term.compareTo(other.term);
+        return other.term.compareTo(this.term);
       else
-        // inverse ordering!!!
-        return Float.compare(other.score, this.score);
+        return Float.compare(this.score, other.score);
     }
   }
     
