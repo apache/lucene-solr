@@ -19,6 +19,7 @@ package org.apache.solr.handler.dataimport;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.XPathEntityProcessor.URL;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,6 +78,7 @@ public class PlainTextEntityProcessor extends EntityProcessorBase {
     Map<String, Object> row = new HashMap<String, Object>();
     row.put(PLAIN_TEXT, sw.toString());
     ended = true;
+    IOUtils.closeQuietly(r);
     return row;
   }
 
