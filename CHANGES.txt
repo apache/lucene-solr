@@ -911,6 +911,8 @@ Other Changes
     Also, HighlightingUtils#getQueryScorer has been removed as it was deprecated and backcompat has been 
     broken with it anyway.  (Mark Miller)
 
+50. SOLR-1357 SolrInputDocument cannot process dynamic fields (Lars Grote via noble)
+
 Build
 ----------------------
  1. SOLR-776: Added in ability to sign artifacts via Ant for releases (gsingers)
