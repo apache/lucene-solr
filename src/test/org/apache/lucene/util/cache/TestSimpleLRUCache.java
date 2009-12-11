@@ -21,6 +21,6 @@ package org.apache.lucene.util.cache;
 public class TestSimpleLRUCache extends BaseTestLRU {
   public void testLRUCache() throws Exception {
     final int n = 100;
-    testCache(new SimpleLRUCache(n), n);
+    testCache(new SimpleLRUCache<Integer,Object>(n), n);
   }
 }
