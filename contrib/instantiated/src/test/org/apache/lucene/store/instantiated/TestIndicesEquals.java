@@ -41,8 +41,6 @@ import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.AttributeImpl;
 
 /**
@@ -104,52 +102,154 @@ public class TestIndicesEquals extends TestCase {
     }
     instantiatedIndexWriter.close();
 
+
     testEqualBehaviour(dir, ii);
 
-    testTermDocs(dir, ii);
 
 
   }
 
 
-  private void testTermDocs(Directory aprioriIndex, InstantiatedIndex testIndex) throws Exception {
+  private void testTermDocsSomeMore(Directory aprioriIndex, InstantiatedIndex testIndex) throws Exception {
 
     IndexReader aprioriReader = IndexReader.open(aprioriIndex, false);
     IndexReader testReader = testIndex.indexReaderFactory();
 
-    TermEnum aprioriTermEnum = aprioriReader.terms(new Term("c", "danny"));
+    // test seek
 
-    TermDocs aprioriTermDocs = aprioriReader.termDocs(aprioriTermEnum.term());
-    TermDocs testTermDocs = testReader.termDocs(aprioriTermEnum.term());
+    Term t = new Term("c", "danny");
+    TermEnum aprioriTermEnum = aprioriReader.terms(t);
+    TermEnum testTermEnum = testReader.terms(t);
+
+    assertEquals(aprioriTermEnum.term(), testTermEnum.term());
+
+    t = aprioriTermEnum.term();
+
+    aprioriTermEnum.close();
+    testTermEnum.close();
+
+    TermDocs aprioriTermDocs = aprioriReader.termDocs(t);
+    TermDocs testTermDocs = testReader.termDocs(t);
 
     assertEquals(aprioriTermDocs.next(), testTermDocs.next());
+    assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
     assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
 
-    assertEquals(aprioriTermDocs.skipTo(100), testTermDocs.skipTo(100));
-    assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+    if (aprioriTermDocs.skipTo(4)) {
+      assertTrue(testTermDocs.skipTo(4));
+      assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
+      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+    } else {
+      assertFalse(testTermDocs.skipTo(4));
+    }
 
-    assertEquals(aprioriTermDocs.next(), testTermDocs.next());
-    assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+    if (aprioriTermDocs.next()) {
+      assertTrue(testTermDocs.next());
+      assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
+      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+    } else {
+      assertFalse(testTermDocs.next());
+    }
 
-    assertEquals(aprioriTermDocs.next(), testTermDocs.next());
-    assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
 
-    assertEquals(aprioriTermDocs.skipTo(110), testTermDocs.skipTo(110));
-    assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+    // beyond this point all next and skipto will return false
 
-    assertEquals(aprioriTermDocs.skipTo(10), testTermDocs.skipTo(10));
-    assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+    if (aprioriTermDocs.skipTo(100)) {
+      assertTrue(testTermDocs.skipTo(100));
+      assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
+      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+    } else {
+      assertFalse(testTermDocs.skipTo(100));
+    }
 
-    assertEquals(aprioriTermDocs.skipTo(210), testTermDocs.skipTo(210));
-    assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+
+    if (aprioriTermDocs.next()) {
+      assertTrue(testTermDocs.next());
+      assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
+      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+    } else {
+      assertFalse(testTermDocs.next());
+    }
+
+    if (aprioriTermDocs.skipTo(110)) {
+      assertTrue(testTermDocs.skipTo(110));
+      assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
+      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+    } else {
+      assertFalse(testTermDocs.skipTo(110));
+    }
+
+    if (aprioriTermDocs.skipTo(10)) {
+      assertTrue(testTermDocs.skipTo(10));
+      assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
+      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+    } else {
+      assertFalse(testTermDocs.skipTo(10));
+    }
+
+
+    if (aprioriTermDocs.skipTo(210)) {
+      assertTrue(testTermDocs.skipTo(210));
+      assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
+      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+    } else {
+      assertFalse(testTermDocs.skipTo(210));
+    }
 
     aprioriTermDocs.close();
-    aprioriReader.close();
-
     testTermDocs.close();
+
+
+
+    // test seek null (AllTermDocs)
+    aprioriTermDocs = aprioriReader.termDocs(null);
+    testTermDocs = testReader.termDocs(null);
+
+    while (aprioriTermDocs.next()) {
+      assertTrue(testTermDocs.next());
+      assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
+      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+    }
+    assertFalse(testTermDocs.next());
+
+
+    aprioriTermDocs.close();
+    testTermDocs.close();
+
+
+    // test seek default
+    aprioriTermDocs = aprioriReader.termDocs();
+    testTermDocs = testReader.termDocs();
+
+    // this is invalid use of the API,
+    // but if the response differs then it's an indication that something might have changed.
+    // in 2.9 and 3.0 the two TermDocs-implementations returned different values at this point.
+//    assertEquals("Descripency during invalid use of the TermDocs API, see comments in test code for details.",
+//        aprioriTermDocs.next(), testTermDocs.next());
+
+    // start using the API the way one is supposed to use it
+
+    t = new Term("", "");
+    aprioriTermDocs.seek(t);
+    testTermDocs.seek(t);
+
+    while (aprioriTermDocs.next()) {
+      assertTrue(testTermDocs.next());
+      assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
+      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+    }
+    assertFalse(testTermDocs.next());
+
+    aprioriTermDocs.close();
+    testTermDocs.close();
+
+
+    // clean up
+    aprioriReader.close();
     testReader.close();
 
   }
+
 
   private void assembleDocument(Document document, int i) {
     document.add(new Field("a", i + " Do you really want to go and live in that house all winter?", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
@@ -213,24 +313,65 @@ public class TestIndicesEquals extends TestCase {
    */
   protected void testEqualBehaviour(Directory aprioriIndex, InstantiatedIndex testIndex) throws Exception {
 
+
     testEquals(aprioriIndex,  testIndex);
 
-       // delete a few documents
-    IndexReader ir = IndexReader.open(aprioriIndex, false);
-    ir.deleteDocument(3);
-    ir.deleteDocument(8);
-    ir.close();
+    // delete a few documents
+    IndexReader air = IndexReader.open(aprioriIndex, false);
+    InstantiatedIndexReader tir = testIndex.indexReaderFactory();
 
-    ir = testIndex.indexReaderFactory();
-    ir.deleteDocument(3);
-    ir.deleteDocument(8);
-    ir.close();
+    assertEquals(air.isCurrent(), tir.isCurrent());
+    assertEquals(air.hasDeletions(), tir.hasDeletions());
+    assertEquals(air.maxDoc(), tir.maxDoc());
+    assertEquals(air.numDocs(), tir.numDocs());
+    assertEquals(air.numDeletedDocs(), tir.numDeletedDocs());
+
+    air.deleteDocument(3);
+    tir.deleteDocument(3);
+
+    assertEquals(air.isCurrent(), tir.isCurrent());
+    assertEquals(air.hasDeletions(), tir.hasDeletions());
+    assertEquals(air.maxDoc(), tir.maxDoc());
+    assertEquals(air.numDocs(), tir.numDocs());
+    assertEquals(air.numDeletedDocs(), tir.numDeletedDocs());
+
+    air.deleteDocument(8);
+    tir.deleteDocument(8);
+
+    assertEquals(air.isCurrent(), tir.isCurrent());
+    assertEquals(air.hasDeletions(), tir.hasDeletions());
+    assertEquals(air.maxDoc(), tir.maxDoc());
+    assertEquals(air.numDocs(), tir.numDocs());
+    assertEquals(air.numDeletedDocs(), tir.numDeletedDocs());    
+
+    // this (in 3.0) commits the deletions
+    air.close();
+    tir.close();
+
+    air = IndexReader.open(aprioriIndex, false);
+    tir = testIndex.indexReaderFactory();
+
+    assertEquals(air.isCurrent(), tir.isCurrent());
+    assertEquals(air.hasDeletions(), tir.hasDeletions());
+    assertEquals(air.maxDoc(), tir.maxDoc());
+    assertEquals(air.numDocs(), tir.numDocs());
+    assertEquals(air.numDeletedDocs(), tir.numDeletedDocs());
+
+    for (int d =0; d<air.maxDoc(); d++) {
+      assertEquals(air.isDeleted(d), tir.isDeleted(d));
+    }
+
+    air.close();
+    tir.close();
+
 
     // make sure they still equal
     testEquals(aprioriIndex,  testIndex);
   }
 
   protected void testEquals(Directory aprioriIndex, InstantiatedIndex testIndex) throws Exception {
+
+    testTermDocsSomeMore(aprioriIndex, testIndex);
 
     IndexReader aprioriReader = IndexReader.open(aprioriIndex, false);
     IndexReader testReader = testIndex.indexReaderFactory();

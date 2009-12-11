@@ -2,6 +2,12 @@ Lucene contrib change Log
 
 ======================= 3.0 branch (not yet released) =======================
 
+Bug fixes
+
+ * LUCENE-2144: Fix InstantiatedIndex to handle termDocs(null)
+   correctly (enumerate all non-deleted docs).  (Karl Wettin via Mike
+   McCandless)
+   
 API Changes
 
  * LUCENE-2108: Add SpellChecker.close, to close the underlying

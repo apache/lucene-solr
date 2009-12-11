@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.index;
+package org.apache.lucene.store.instantiated;
 
-import org.apache.lucene.util.BitVector;
+import org.apache.lucene.index.AbstractAllTermDocs;
 
-class AllTermDocs extends AbstractAllTermDocs {
+class InstantiatedAllTermDocs extends AbstractAllTermDocs {
 
-  protected BitVector deletedDocs;
+  private InstantiatedIndexReader reader;
 
-  protected AllTermDocs(SegmentReader parent) {
-    super(parent.maxDoc());
-    synchronized (parent) {
-      this.deletedDocs = parent.deletedDocs;
-    }
+  InstantiatedAllTermDocs(InstantiatedIndexReader reader) {
+    super(reader.maxDoc());
+    this.reader = reader;
   }
 
   public boolean isDeleted(int doc) {
-    return deletedDocs != null && deletedDocs.get(doc);
+    return reader.isDeleted(doc);
   }
 }
