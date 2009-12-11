@@ -37,17 +37,10 @@
   	<pathelement location="${solr-path}/build/solr" />
   	<pathelement location="${solr-path}/build/solrj" />
   	<fileset dir="${solr-path}/lib" includes="*.jar"/>
-  </path>
-
-  <path id="extras.classpath">
-  	<pathelement location="${solr-path}/build/solr" />
-  	<pathelement location="${solr-path}/build/solrj" />
-  	<pathelement location="target/classes" />
-  	<fileset dir="${solr-path}/lib" includes="*.jar"/>
-  	<fileset dir="lib/" includes="*.jar"/>
+    <fileset dir="lib/" includes="*.jar"/>
   	<fileset dir="${tikalibs-path}" includes="*.jar"/>
   </path>
-	
+
   <path id="test.classpath">
   	<path refid="common.classpath" />
   	<path refid="classpath.jetty" />
@@ -56,16 +49,6 @@
     <pathelement path="${java.class.path}"/>
   </path>
 
-  <path id="test.extras.classpath">
-  	<path refid="extras.classpath" />
-  	<path refid="classpath.jetty" />
-	  <pathelement path="target/classes" />
-	  <pathelement path="target/extras/classes" />
-  	<pathelement path="target/test-classes" />
-  	<pathelement path="target/extras/test-classes" />
-    <pathelement path="${java.class.path}"/>
-  </path>
-	
   <target name="clean">
   	<delete failonerror="false" dir="target"/>
     <delete failonerror="false">
@@ -94,17 +77,8 @@
     </solr-javac>
   </target>
 
-  <target name="compileExtras" depends="compile">
-    <solr-javac destdir="target/extras/classes"
-                classpathref="extras.classpath">
-      <src path="src/extras/main/java" />
-    </solr-javac>
-  </target>
-	
-  <target name="build" depends="compile,compileExtras">
+  <target name="build" depends="compile">
     <solr-jar destfile="target/${fullnamever}.jar" basedir="target/classes"
-              manifest="${common.dir}/${dest}/META-INF/MANIFEST.MF" />
-    <solr-jar destfile="target/apache-${ant.project.name}-extras-${version}.jar" basedir="target/extras/classes"
               manifest="${common.dir}/${dest}/META-INF/MANIFEST.MF" />
   </target>
 	
@@ -115,16 +89,7 @@
   	</solr-javac>
   </target>
 
-  <target name="compileExtrasTests" depends="compileExtras">
-  	<solr-javac destdir="target/extras/test-classes"
-  	                classpathref="test.classpath">
-  	  <src path="src/extras/test/java" />
-  	</solr-javac>
-  </target>
-
-  <target  name="test" depends="testCore,testExtras"/>
-	
-  <target name="testCore" depends="compileTests">
+  <target name="test" depends="compileTests">
   	<mkdir dir="${junit.output.dir}"/>
   	
   	<junit printsummary="on"
@@ -147,29 +112,6 @@
     <fail if="tests.failed">Tests failed!</fail>
   </target>
 
-  <target name="testExtras" depends="compileExtrasTests">
-  	<mkdir dir="${junit.output.dir}"/>
-
-  	<junit printsummary="on"
-           haltonfailure="no"
-           errorProperty="tests.failed"
-           failureProperty="tests.failed"
-           dir="src/extras/test/resources/"
-           >
-      <formatter type="brief" usefile="false" if="junit.details"/>
-      <classpath refid="test.extras.classpath"/>
-      <formatter type="xml"/>
-      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
-        <fileset dir="src/extras/test/java" includes="${junit.includes}"/>
-      </batchtest>
-      <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
-        <fileset dir="src/extras/test/java" includes="**/${testcase}.java"/>
-      </batchtest>
-    </junit>
-
-    <fail if="tests.failed">Tests failed!</fail>
-  </target>
-	
   <target name="dist" depends="build">
   	<copy todir="../../build/web">
   		<fileset dir="src/main/webapp" includes="**" />
@@ -177,7 +119,6 @@
   	<mkdir dir="../../build/web/WEB-INF/lib"/>
   	<copy file="target/${fullnamever}.jar" todir="${solr-path}/build/web/WEB-INF/lib"></copy>
   	<copy file="target/${fullnamever}.jar" todir="${solr-path}/dist"></copy>
-  	<copy file="target/apache-${ant.project.name}-extras-${version}.jar" todir="${solr-path}/dist"></copy>
   </target>
 	
   <target name="javadoc">
@@ -186,7 +127,6 @@
 
       <path id="javadoc.classpath">
         <path refid="common.classpath"/>
-        <path refid="extras.classpath"/>
       </path>
 
       <invoke-javadoc
@@ -194,7 +134,6 @@
       	title="${Name} ${version} contrib-${fullnamever} API">
         <sources>
           <packageset dir="src/main/java"/>
-          <packageset dir="src/extras/main/java"/>
         </sources>
       </invoke-javadoc>
     </sequential>
