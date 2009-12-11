@@ -42,6 +42,9 @@ Bug fixes
 
 * LUCENE-2132: Fix the demo result.jsp to use QueryParser with a 
   Version argument.  (Brian Li via Robert Muir)
+
+* LUCENE-2142: FieldCacheImpl.getStringIndex no longer throws an
+  exception when term count exceeds doc count.  (Mike McCandless)
   
 New features
 
