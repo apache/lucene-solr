@@ -17,8 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.Set;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Arrays;
 import java.io.IOException;
 
@@ -80,18 +79,30 @@ public class TestFuzzyQuery extends LuceneTestCase {
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     
+    // test scoring
+    query = new FuzzyQuery(new Term("field", "bbbbb"), FuzzyQuery.defaultMinSimilarity, 0);   
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("3 documents should match", 3, hits.length);
+    List<String> order = Arrays.asList("bbbbb","abbbb","aabbb");
+    for (int i = 0; i < hits.length; i++) {
+      final String term = searcher.doc(hits[i].doc).get("field");
+      //System.out.println(hits[i].score);
+      assertEquals(order.get(i), term);
+    }
+
     // test BooleanQuery.maxClauseCount
     int savedClauseCount = BooleanQuery.getMaxClauseCount();
     try {
       BooleanQuery.setMaxClauseCount(2);
-      // This query would normally return 3 documents, because 3 terms match:
-      query = new FuzzyQuery(new Term("field", "aaaab"), FuzzyQuery.defaultMinSimilarity, 3);   
+      // This query would normally return 3 documents, because 3 terms match (see above):
+      query = new FuzzyQuery(new Term("field", "bbbbb"), FuzzyQuery.defaultMinSimilarity, 0);   
       hits = searcher.search(query, null, 1000).scoreDocs;
       assertEquals("only 2 documents should match", 2, hits.length);
-      Set<String> possibleTerms = new HashSet<String>(Arrays.asList("aaaaa","aaaab"));
+      order = Arrays.asList("bbbbb","abbbb");
       for (int i = 0; i < hits.length; i++) {
         final String term = searcher.doc(hits[i].doc).get("field");
-        assertTrue("term '" + term + "' should not appear in results", possibleTerms.contains(term));
+        //System.out.println(hits[i].score);
+        assertEquals(order.get(i), term);
       }
     } finally {
       BooleanQuery.setMaxClauseCount(savedClauseCount);

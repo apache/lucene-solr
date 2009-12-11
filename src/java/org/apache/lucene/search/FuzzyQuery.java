@@ -126,29 +126,6 @@ public class FuzzyQuery extends MultiTermQuery {
   public Term getTerm() {
     return term;
   }
-  
-  /**
-   * @deprecated This class was used in previous FuzzyQuery implementations, but is now replaced by
-   * a new rewrite mode {@link MultiTermQuery#TOP_TERMS_SCORING_BOOLEAN_REWRITE}.
-   */
-  @Deprecated
-  protected static class ScoreTerm implements Comparable<ScoreTerm> {
-    public Term term;
-    public float score;
-    
-    public ScoreTerm(Term term, float score){
-      this.term = term;
-      this.score = score;
-    }
-    
-    public int compareTo(ScoreTerm other) {
-      if (this.score == other.score)
-        return this.term.compareTo(other.term);
-      else
-        // inverse ordering!!!
-        return Float.compare(other.score, this.score);
-    }
-  }
     
   @Override
   public String toString(String field) {

@@ -8,6 +8,10 @@ Changes in backwards compatibility policy
   class is no longer used by Lucene.  (Gunnar Wagenknecht via Mike
   McCandless)
 
+* LUCENE-2123: Removed the protected inner class ScoreTerm from
+  FuzzyQuery. The class was never intended to be public.
+  (Uwe Schindler, Mike McCandless)
+
 Changes in runtime behavior
 
 API Changes

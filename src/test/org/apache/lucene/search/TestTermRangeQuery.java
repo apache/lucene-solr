@@ -31,6 +31,9 @@ import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Locale;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Arrays;
 import java.text.Collator;
 
 
@@ -86,6 +89,40 @@ public class TestTermRangeQuery extends LuceneTestCase {
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("C added - A, B, C in range", 3, hits.length);
     searcher.close();
+  }
+
+  /** This test should not be here, but it tests the fuzzy query rewrite mode (TOP_TERMS_SCORING_BOOLEAN_REWRITE)
+   * with constant score and checks, that only the lower end of terms is put into the range */
+  public void testTopTermsRewrite() throws Exception {
+    initializeIndex(new String[]{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"});
+
+    IndexSearcher searcher = new IndexSearcher(dir, true);
+    TermRangeQuery query = new TermRangeQuery("content", "B", "J", true, true);
+    checkBooleanTerms(searcher, query, "B", "C", "D", "E", "F", "G", "H", "I", "J");
+    
+    final int savedClauseCount = BooleanQuery.getMaxClauseCount();
+    try {
+      BooleanQuery.setMaxClauseCount(3);
+      checkBooleanTerms(searcher, query, "B", "C", "D");
+    } finally {
+      BooleanQuery.setMaxClauseCount(savedClauseCount);
+    }
+    searcher.close();
+  }
+  
+  private void checkBooleanTerms(Searcher searcher, TermRangeQuery query, String... terms) throws IOException {
+    query.setRewriteMethod(MultiTermQuery.TOP_TERMS_SCORING_BOOLEAN_REWRITE);
+    final BooleanQuery bq = (BooleanQuery) searcher.rewrite(query);
+    final Set<String> allowedTerms = new HashSet<String>(Arrays.asList(terms));
+    assertEquals(allowedTerms.size(), bq.clauses().size());
+    for (BooleanClause c : bq.clauses()) {
+      assertTrue(c.getQuery() instanceof TermQuery);
+      final TermQuery tq = (TermQuery) c.getQuery();
+      final String term = tq.getTerm().text();
+      assertTrue("invalid term: "+ term, allowedTerms.contains(term));
+      allowedTerms.remove(term); // remove to fail on double terms
+    }
+    assertEquals(0, allowedTerms.size());
   }
 
   public void testEqualsHashcode() {

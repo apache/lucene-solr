@@ -157,7 +157,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
    * based on how similar the Term is compared to a target term.  It returns
    * exactly 0.0f when
    * <pre>
-   *    editDistance &lt; maximumEditDistance</pre>
+   *    editDistance &gt; maximumEditDistance</pre>
    * Otherwise it returns:
    * <pre>
    *    1 - (editDistance / length)</pre>
