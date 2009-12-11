@@ -20,7 +20,18 @@ package org.apache.solr.search;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.*;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -53,26 +64,28 @@ public class QueryParsing {
   public static final char LOCALPARAM_END = '}';
   public static final String DOCID = "_docid_";
 
-  /** 
-   * Helper utility for parsing a query using the Lucene QueryParser syntax. 
-   * @param qs query expression in standard Lucene syntax
+  /**
+   * Helper utility for parsing a query using the Lucene QueryParser syntax.
+   *
+   * @param qs     query expression in standard Lucene syntax
    * @param schema used for default operator (overridden by params) and passed to the query parser for field format analysis information
    */
   public static Query parseQuery(String qs, IndexSchema schema) {
     return parseQuery(qs, null, schema);
   }
 
-  /** 
-   * Helper utility for parsing a query using the Lucene QueryParser syntax. 
-   * @param qs query expression in standard Lucene syntax
+  /**
+   * Helper utility for parsing a query using the Lucene QueryParser syntax.
+   *
+   * @param qs           query expression in standard Lucene syntax
    * @param defaultField default field used for unqualified search terms in the query expression
-   * @param schema used for default operator (overridden by params) and passed to the query parser for field format analysis information
+   * @param schema       used for default operator (overridden by params) and passed to the query parser for field format analysis information
    */
   public static Query parseQuery(String qs, String defaultField, IndexSchema schema) {
     try {
       Query query = schema.getSolrQueryParser(defaultField).parse(qs);
 
-      if (SolrCore.log.isTraceEnabled() ) {
+      if (SolrCore.log.isTraceEnabled()) {
         SolrCore.log.trace("After QueryParser:" + query);
       }
 
@@ -80,16 +93,17 @@ public class QueryParsing {
 
     } catch (ParseException e) {
       SolrCore.log(e);
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Error parsing Lucene query",e);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing Lucene query", e);
     }
   }
 
   /**
-   * Helper utility for parsing a query using the Lucene QueryParser syntax. 
-   * @param qs query expression in standard Lucene syntax
+   * Helper utility for parsing a query using the Lucene QueryParser syntax.
+   *
+   * @param qs           query expression in standard Lucene syntax
    * @param defaultField default field used for unqualified search terms in the query expression
-   * @param params used to determine the default operator, overriding the schema specified operator
-   * @param schema used for default operator (overridden by params) and passed to the query parser for field format analysis information
+   * @param params       used to determine the default operator, overriding the schema specified operator
+   * @param schema       used for default operator (overridden by params) and passed to the query parser for field format analysis information
    */
   public static Query parseQuery(String qs, String defaultField, SolrParams params, IndexSchema schema) {
     try {
@@ -100,7 +114,7 @@ public class QueryParsing {
       }
       Query query = parser.parse(qs);
 
-      if (SolrCore.log.isTraceEnabled() ) {
+      if (SolrCore.log.isTraceEnabled()) {
         SolrCore.log.trace("After QueryParser:" + query);
       }
 
@@ -108,38 +122,38 @@ public class QueryParsing {
 
     } catch (ParseException e) {
       SolrCore.log(e);
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Query parsing error: " + e.getMessage(),e);
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Query parsing error: " + e.getMessage(), e);
     }
   }
 
 
   // note to self: something needs to detect infinite recursion when parsing queries
-  static int parseLocalParams(String txt, int start, Map<String,String> target, SolrParams params) throws ParseException {
-    int off=start;
-    if (!txt.startsWith(LOCALPARAM_START,off)) return start;
-    StrParser p = new StrParser(txt,start,txt.length());
-    p.pos+=2; // skip over "{!"
+  static int parseLocalParams(String txt, int start, Map<String, String> target, SolrParams params) throws ParseException {
+    int off = start;
+    if (!txt.startsWith(LOCALPARAM_START, off)) return start;
+    StrParser p = new StrParser(txt, start, txt.length());
+    p.pos += 2; // skip over "{!"
 
-    for(;;) {
+    for (; ;) {
       /*
       if (p.pos>=txt.length()) {
         throw new ParseException("Missing '}' parsing local params '" + txt + '"');
       }
       */
       char ch = p.peek();
-      if (ch==LOCALPARAM_END) {
-        return p.pos+1;
+      if (ch == LOCALPARAM_END) {
+        return p.pos + 1;
       }
 
       String id = p.getId();
-      if (id.length()==0) {
+      if (id.length() == 0) {
         throw new ParseException("Expected identifier '}' parsing local params '" + txt + '"');
 
       }
-      String val=null;
+      String val = null;
 
       ch = p.peek();
-      if (ch!='=') {
+      if (ch != '=') {
         // single word... treat {!func} as type=func for easy lookup
         val = id;
         id = TYPE;
@@ -147,25 +161,25 @@ public class QueryParsing {
         // saw equals, so read value
         p.pos++;
         ch = p.peek();
-        if (ch=='\"' || ch=='\'') {
+        if (ch == '\"' || ch == '\'') {
           val = p.getQuotedString();
-        } else if (ch=='$') {
+        } else if (ch == '$') {
           p.pos++;
           // dereference parameter
           String pname = p.getId();
-          if (params!=null) {
+          if (params != null) {
             val = params.get(pname);
           }
         } else {
           // read unquoted literal ended by whitespace or '}'
           // there is no escaping.
           int valStart = p.pos;
-          for (;;) {
+          for (; ;) {
             if (p.pos >= p.end) {
-              throw new ParseException("Missing end to unquoted value starting at " + valStart + " str='" + txt +"'");
+              throw new ParseException("Missing end to unquoted value starting at " + valStart + " str='" + txt + "'");
             }
             char c = p.val.charAt(p.pos);
-            if (c==LOCALPARAM_END || Character.isWhitespace(c)) {
+            if (c == LOCALPARAM_END || Character.isWhitespace(c)) {
               val = p.val.substring(valStart, p.pos);
               break;
             }
@@ -173,31 +187,31 @@ public class QueryParsing {
           }
         }
       }
-      if (target != null) target.put(id,val);
+      if (target != null) target.put(id, val);
     }
   }
 
   /**
-   *  "foo" returns null
-   *  "{!prefix f=myfield}yes" returns type="prefix",f="myfield",v="yes"
-   *  "{!prefix f=myfield v=$p}" returns type="prefix",f="myfield",v=params.get("p")
+   * "foo" returns null
+   * "{!prefix f=myfield}yes" returns type="prefix",f="myfield",v="yes"
+   * "{!prefix f=myfield v=$p}" returns type="prefix",f="myfield",v=params.get("p")
    */
   public static SolrParams getLocalParams(String txt, SolrParams params) throws ParseException {
-    if (txt==null || !txt.startsWith(LOCALPARAM_START)) {
-      return null;      
+    if (txt == null || !txt.startsWith(LOCALPARAM_START)) {
+      return null;
     }
-    Map<String,String> localParams = new HashMap<String,String>();
+    Map<String, String> localParams = new HashMap<String, String>();
     int start = QueryParsing.parseLocalParams(txt, 0, localParams, params);
 
     String val;
     if (start >= txt.length()) {
       // if the rest of the string is empty, check for "v" to provide the value
       val = localParams.get(V);
-      val = val==null ? "" : val;
+      val = val == null ? "" : val;
     } else {
       val = txt.substring(start);
     }
-    localParams.put(V,val);
+    localParams.put(V, val);
     return new MapSolrParams(localParams);
   }
 
@@ -206,7 +220,7 @@ public class QueryParsing {
 
   /**
    * Returns null if the sortSpec is the standard sort desc.
-   *
+   * <p/>
    * <p>
    * The form of the sort specification string currently parsed is:
    * </p>
@@ -218,69 +232,63 @@ public class QueryParsing {
    * Examples:
    * <pre>
    *   score desc               #normal sort by score (will return null)
-   *   weight bottom            #sort by weight ascending 
+   *   weight bottom            #sort by weight ascending
    *   weight desc              #sort by weight descending
    *   height desc,weight desc  #sort by height descending, and use weight descending to break any ties
    *   height desc,weight asc   #sort by height descending, using weight ascending as a tiebreaker
    * </pre>
-   *
    */
   public static Sort parseSort(String sortSpec, IndexSchema schema) {
-    if (sortSpec==null || sortSpec.length()==0) return null;
+    if (sortSpec == null || sortSpec.length() == 0) return null;
 
     String[] parts = sortSep.split(sortSpec.trim());
     if (parts.length == 0) return null;
 
     SortField[] lst = new SortField[parts.length];
-    for( int i=0; i<parts.length; i++ ) {
+    for (int i = 0; i < parts.length; i++) {
       String part = parts[i].trim();
-      boolean top=true;
-        
-      int idx = part.indexOf( ' ' );
-      if( idx > 0 ) {
-        String order = part.substring( idx+1 ).trim();
-      	if( "desc".equals( order ) || "top".equals(order) ) {
-      	  top = true;
-      	}
-      	else if ("asc".equals(order) || "bottom".equals(order)) {
-      	  top = false;
-      	}
-      	else {
-      	  throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unknown sort order: "+order);
-      	}
-      	part = part.substring( 0, idx ).trim();
+      boolean top = true;
+      //determine the ordering, ascending or descending
+      int idx = part.indexOf(' ');
+      if (idx > 0) {
+        String order = part.substring(idx + 1).trim();
+        if ("desc".equals(order) || "top".equals(order)) {
+          top = true;
+        } else if ("asc".equals(order) || "bottom".equals(order)) {
+          top = false;
+        } else {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown sort order: " + order);
+        }
+        part = part.substring(0, idx).trim();
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing sort order.");
       }
-      else {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Missing sort order." );
-      }
-    	
-      if( "score".equals(part) ) {
+      //figure out the field or score
+      if ("score".equals(part)) {
         if (top) {
           // If there is only one thing in the list, just do the regular thing...
-          if( parts.length == 1 ) {
+          if (parts.length == 1) {
             return null; // do normal scoring...
           }
           lst[i] = SortField.FIELD_SCORE;
-        }
-        else {
+        } else {
           lst[i] = new SortField(null, SortField.SCORE, true);
         }
       } else if (DOCID.equals(part)) {
         lst[i] = new SortField(null, SortField.DOC, top);
-      }
-      else {
+      } else {
         // getField could throw an exception if the name isn't found
         SchemaField f = null;
-        try{
+        try {
           f = schema.getField(part);
         }
-        catch( SolrException e ){
-          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "can not sort on undefined field: "+part, e );
+        catch (SolrException e) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "can not sort on undefined field: " + part, e);
         }
-        if (f == null || !f.indexed()){
-          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "can not sort on unindexed field: "+part );
+        if (f == null || !f.indexed()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "can not sort on unindexed field: " + part);
         }
-        lst[i] = f.getType().getSortField(f,top);
+        lst[i] = f.getType().getSortField(f, top);
       }
     }
     return new Sort(lst);
@@ -295,15 +303,15 @@ public class QueryParsing {
     FieldType ft = null;
     ft = schema.getFieldTypeNoEx(name);
     out.append(name);
-    if (ft==null) {
-      out.append("(UNKNOWN FIELD "+name+')');
+    if (ft == null) {
+      out.append("(UNKNOWN FIELD " + name + ')');
     }
     out.append(':');
     return ft;
   }
 
   static void writeFieldVal(String val, FieldType ft, Appendable out, int flags) throws IOException {
-    if (ft!=null) {
+    if (ft != null) {
       try {
         out.append(ft.indexedToReadable(val));
       } catch (Exception e) {
@@ -315,23 +323,26 @@ public class QueryParsing {
       out.append(val);
     }
   }
-  /** @see #toString(Query,IndexSchema) */
+
+  /**
+   * @see #toString(Query,IndexSchema)
+   */
   public static void toString(Query query, IndexSchema schema, Appendable out, int flags) throws IOException {
-    boolean writeBoost=true;
+    boolean writeBoost = true;
 
     if (query instanceof TermQuery) {
-      TermQuery q = (TermQuery)query;
+      TermQuery q = (TermQuery) query;
       Term t = q.getTerm();
       FieldType ft = writeFieldName(t.field(), schema, out, flags);
       writeFieldVal(t.text(), ft, out, flags);
     } else if (query instanceof TermRangeQuery) {
-      TermRangeQuery q = (TermRangeQuery)query;
+      TermRangeQuery q = (TermRangeQuery) query;
       String fname = q.getField();
       FieldType ft = writeFieldName(fname, schema, out, flags);
-      out.append( q.includesLower() ? '[' : '{' );
+      out.append(q.includesLower() ? '[' : '{');
       String lt = q.getLowerTerm();
       String ut = q.getUpperTerm();
-      if (lt==null) {
+      if (lt == null) {
         out.append('*');
       } else {
         writeFieldVal(lt, ft, out, flags);
@@ -339,21 +350,21 @@ public class QueryParsing {
 
       out.append(" TO ");
 
-      if (ut==null) {
+      if (ut == null) {
         out.append('*');
       } else {
         writeFieldVal(ut, ft, out, flags);
       }
 
-      out.append( q.includesUpper() ? ']' : '}' );
+      out.append(q.includesUpper() ? ']' : '}');
     } else if (query instanceof NumericRangeQuery) {
-      NumericRangeQuery q = (NumericRangeQuery)query;
+      NumericRangeQuery q = (NumericRangeQuery) query;
       String fname = q.getField();
       FieldType ft = writeFieldName(fname, schema, out, flags);
-      out.append( q.includesMin() ? '[' : '{' );
+      out.append(q.includesMin() ? '[' : '{');
       Number lt = q.getMin();
       Number ut = q.getMax();
-      if (lt==null) {
+      if (lt == null) {
         out.append('*');
       } else {
         out.append(lt.toString());
@@ -361,29 +372,29 @@ public class QueryParsing {
 
       out.append(" TO ");
 
-      if (ut==null) {
+      if (ut == null) {
         out.append('*');
       } else {
         out.append(ut.toString());
       }
 
-      out.append( q.includesMax() ? ']' : '}' );
+      out.append(q.includesMax() ? ']' : '}');
     } else if (query instanceof BooleanQuery) {
-      BooleanQuery q = (BooleanQuery)query;
-      boolean needParens=false;
+      BooleanQuery q = (BooleanQuery) query;
+      boolean needParens = false;
 
       if (q.getBoost() != 1.0 || q.getMinimumNumberShouldMatch() != 0) {
-        needParens=true;
+        needParens = true;
       }
       if (needParens) {
         out.append('(');
       }
-      boolean first=true;
-      for (BooleanClause c : (List<BooleanClause>)q.clauses()) {
+      boolean first = true;
+      for (BooleanClause c : (List<BooleanClause>) q.clauses()) {
         if (!first) {
           out.append(' ');
         } else {
-          first=false;
+          first = false;
         }
 
         if (c.isProhibited()) {
@@ -392,12 +403,12 @@ public class QueryParsing {
           out.append('+');
         }
         Query subQuery = c.getQuery();
-        boolean wrapQuery=false;
+        boolean wrapQuery = false;
 
         // TODO: may need to put parens around other types
         // of queries too, depending on future syntax.
         if (subQuery instanceof BooleanQuery) {
-          wrapQuery=true;
+          wrapQuery = true;
         }
 
         if (wrapQuery) {
@@ -414,36 +425,36 @@ public class QueryParsing {
       if (needParens) {
         out.append(')');
       }
-      if (q.getMinimumNumberShouldMatch()>0) {
+      if (q.getMinimumNumberShouldMatch() > 0) {
         out.append('~');
         out.append(Integer.toString(q.getMinimumNumberShouldMatch()));
       }
 
     } else if (query instanceof PrefixQuery) {
-      PrefixQuery q = (PrefixQuery)query;
+      PrefixQuery q = (PrefixQuery) query;
       Term prefix = q.getPrefix();
       FieldType ft = writeFieldName(prefix.field(), schema, out, flags);
       out.append(prefix.text());
       out.append('*');
     } else if (query instanceof ConstantScorePrefixQuery) {
-      ConstantScorePrefixQuery q = (ConstantScorePrefixQuery)query;
+      ConstantScorePrefixQuery q = (ConstantScorePrefixQuery) query;
       Term prefix = q.getPrefix();
       FieldType ft = writeFieldName(prefix.field(), schema, out, flags);
       out.append(prefix.text());
       out.append('*');
     } else if (query instanceof WildcardQuery) {
       out.append(query.toString());
-      writeBoost=false;
+      writeBoost = false;
     } else if (query instanceof FuzzyQuery) {
       out.append(query.toString());
-      writeBoost=false;      
+      writeBoost = false;
     } else if (query instanceof ConstantScoreQuery) {
       out.append(query.toString());
-      writeBoost=false;
+      writeBoost = false;
     } else {
       out.append(query.getClass().getSimpleName()
-              + '(' + query.toString() + ')' );
-      writeBoost=false;
+              + '(' + query.toString() + ')');
+      writeBoost = false;
     }
 
     if (writeBoost && query.getBoost() != 1.0f) {
@@ -452,17 +463,17 @@ public class QueryParsing {
     }
 
   }
-  
+
   /**
-   * Formats a Query for debugging, using the IndexSchema to make 
+   * Formats a Query for debugging, using the IndexSchema to make
    * complex field types readable.
-   *
+   * <p/>
    * <p>
-   * The benefit of using this method instead of calling 
+   * The benefit of using this method instead of calling
    * <code>Query.toString</code> directly is that it knows about the data
-   * types of each field, so any field which is encoded in a particularly 
-   * complex way is still readable. The downside is that it only knows 
-   * about built in Query types, and will not be able to format custom 
+   * types of each field, so any field which is encoded in a particularly
+   * complex way is still readable. The downside is that it only knows
+   * about built in Query types, and will not be able to format custom
    * Query classes.
    * </p>
    */
@@ -486,7 +497,7 @@ public class QueryParsing {
     int end;
 
     public StrParser(String val) {
-      this(val,0,val.length());
+      this(val, 0, val.length());
     }
 
     public StrParser(String val, int start, int end) {
@@ -496,18 +507,18 @@ public class QueryParsing {
     }
 
     void eatws() {
-      while (pos<end && Character.isWhitespace(val.charAt(pos))) pos++;
+      while (pos < end && Character.isWhitespace(val.charAt(pos))) pos++;
     }
 
     void skip(int nChars) {
-      pos = Math.max(pos+nChars, end);
+      pos = Math.max(pos + nChars, end);
     }
 
     boolean opt(String s) {
       eatws();
-      int slen=s.length();
+      int slen = s.length();
       if (val.regionMatches(pos, s, 0, slen)) {
-        pos+=slen;
+        pos += slen;
         return true;
       }
       return false;
@@ -525,82 +536,82 @@ public class QueryParsing {
 
     void expect(String s) throws ParseException {
       eatws();
-      int slen=s.length();
+      int slen = s.length();
       if (val.regionMatches(pos, s, 0, slen)) {
-        pos+=slen;
+        pos += slen;
       } else {
-        throw new ParseException("Expected '"+s+"' at position " + pos + " in '"+val+"'");
+        throw new ParseException("Expected '" + s + "' at position " + pos + " in '" + val + "'");
       }
     }
 
     float getFloat() throws ParseException {
       eatws();
-      char[] arr = new char[end-pos];
+      char[] arr = new char[end - pos];
       int i;
-      for (i=0; i<arr.length; i++) {
+      for (i = 0; i < arr.length; i++) {
         char ch = val.charAt(pos);
-        if ( (ch>='0' && ch<='9')
-             || ch=='+' || ch=='-'
-             || ch=='.' || ch=='e' || ch=='E'
-        ) {
+        if ((ch >= '0' && ch <= '9')
+                || ch == '+' || ch == '-'
+                || ch == '.' || ch == 'e' || ch == 'E'
+                ) {
           pos++;
-          arr[i]=ch;
+          arr[i] = ch;
         } else {
           break;
         }
       }
 
-      return Float.parseFloat(new String(arr,0,i));
+      return Float.parseFloat(new String(arr, 0, i));
     }
 
     double getDouble() throws ParseException {
       eatws();
-      char[] arr = new char[end-pos];
+      char[] arr = new char[end - pos];
       int i;
-      for (i=0; i<arr.length; i++) {
+      for (i = 0; i < arr.length; i++) {
         char ch = val.charAt(pos);
-        if ( (ch>='0' && ch<='9')
-             || ch=='+' || ch=='-'
-             || ch=='.' || ch=='e' || ch=='E'
-        ) {
+        if ((ch >= '0' && ch <= '9')
+                || ch == '+' || ch == '-'
+                || ch == '.' || ch == 'e' || ch == 'E'
+                ) {
           pos++;
-          arr[i]=ch;
+          arr[i] = ch;
         } else {
           break;
         }
       }
 
-      return Double.parseDouble(new String(arr,0,i));
+      return Double.parseDouble(new String(arr, 0, i));
     }
 
     int getInt() throws ParseException {
       eatws();
-      char[] arr = new char[end-pos];
+      char[] arr = new char[end - pos];
       int i;
-      for (i=0; i<arr.length; i++) {
+      for (i = 0; i < arr.length; i++) {
         char ch = val.charAt(pos);
-        if ( (ch>='0' && ch<='9')
-             || ch=='+' || ch=='-'
-        ) {
+        if ((ch >= '0' && ch <= '9')
+                || ch == '+' || ch == '-'
+                ) {
           pos++;
-          arr[i]=ch;
+          arr[i] = ch;
         } else {
           break;
         }
       }
 
-      return Integer.parseInt(new String(arr,0,i));
+      return Integer.parseInt(new String(arr, 0, i));
     }
 
 
     String getId() throws ParseException {
       eatws();
-      int id_start=pos;
-      if (pos<end && Character.isJavaIdentifierStart(val.charAt(pos))) {
+      int id_start = pos;
+      if (pos < end && Character.isJavaIdentifierStart(val.charAt(pos))) {
         pos++;
-        while (pos<end) {
+        while (pos < end) {
           char ch = val.charAt(pos);
-          if (!Character.isJavaIdentifierPart(ch) && ch!='.') {
+          if (!Character.isJavaIdentifierPart(ch) && ch != '.') {
             break;
           }
           pos++;
@@ -614,35 +625,45 @@ public class QueryParsing {
     String getQuotedString() throws ParseException {
       eatws();
       char delim = peekChar();
-      if (!(delim=='\"' || delim=='\'')) {
+      if (!(delim == '\"' || delim == '\'')) {
         return null;
       }
       int val_start = ++pos;
       StringBuilder sb = new StringBuilder(); // needed for escaping
-      for(;;) {
-        if (pos>=end) {
-          throw new ParseException("Missing end quote for string at pos " + (val_start-1) + " str='"+val+"'");
+      for (; ;) {
+        if (pos >= end) {
+          throw new ParseException("Missing end quote for string at pos " + (val_start - 1) + " str='" + val + "'");
         }
         char ch = val.charAt(pos);
-        if (ch=='\\') {
+        if (ch == '\\') {
           pos++;
-          if (pos>=end) break; 
+          if (pos >= end) break;
           ch = val.charAt(pos);
-          switch(ch) {
-            case 'n' : ch='\n'; break;
-            case 't' : ch='\t'; break;
-            case 'r' : ch='\r'; break;
-            case 'b' : ch='\b'; break;
-            case 'f' : ch='\f'; break;
-            case 'u' :
-              if (pos+4 >= end) {
-                throw new ParseException("bad unicode escape \\uxxxx at pos" + (val_start-1) + " str='"+val+"'");                
+          switch (ch) {
+            case 'n':
+              ch = '\n';
+              break;
+            case 't':
+              ch = '\t';
+              break;
+            case 'r':
+              ch = '\r';
+              break;
+            case 'b':
+              ch = '\b';
+              break;
+            case 'f':
+              ch = '\f';
+              break;
+            case 'u':
+              if (pos + 4 >= end) {
+                throw new ParseException("bad unicode escape \\uxxxx at pos" + (val_start - 1) + " str='" + val + "'");
               }
-              ch = (char)Integer.parseInt(val.substring(pos+1, pos+5), 16);
+              ch = (char) Integer.parseInt(val.substring(pos + 1, pos + 5), 16);
               pos += 4;
               break;
           }
-        } else if (ch==delim) {
+        } else if (ch == delim) {
           pos++;  // skip over the quote
           break;
         }
@@ -656,12 +677,12 @@ public class QueryParsing {
     // next non-whitespace char
     char peek() {
       eatws();
-      return pos<end ? val.charAt(pos) : 0;
+      return pos < end ? val.charAt(pos) : 0;
     }
 
     // next char
     char peekChar() {
-      return pos<end ? val.charAt(pos) : 0;  
+      return pos < end ? val.charAt(pos) : 0;
     }
 
     public String toString() {
@@ -681,44 +702,44 @@ public class QueryParsing {
     return out;
   }
 
-  /** 
+  /**
    * Parse a function, returning a FunctionQuery
-   *
+   * <p/>
    * <p>
    * Syntax Examples....
    * </p>
-   *
+   * <p/>
    * <pre>
    * // Numeric fields default to correct type
    * // (ie: IntFieldSource or FloatFieldSource)
    * // Others use explicit ord(...) to generate numeric field value
    * myfield
-   *
+   * <p/>
    * // OrdFieldSource
    * ord(myfield)
-   *
+   * <p/>
    * // ReverseOrdFieldSource
    * rord(myfield)
-   *
+   * <p/>
    * // LinearFloatFunction on numeric field value
    * linear(myfield,1,2)
-   *
+   * <p/>
    * // MaxFloatFunction of LinearFloatFunction on numeric field value or constant
    * max(linear(myfield,1,2),100)
-   *
+   * <p/>
    * // ReciprocalFloatFunction on numeric field value
    * recip(myfield,1,2,3)
-   *
+   * <p/>
    * // ReciprocalFloatFunction on ReverseOrdFieldSource
    * recip(rord(myfield),1,2,3)
-   *
+   * <p/>
    * // ReciprocalFloatFunction on LinearFloatFunction on ReverseOrdFieldSource
    * recip(linear(rord(myfield),1,2),3,4,5)
    * </pre>
    */
   public static FunctionQuery parseFunction(String func, IndexSchema schema) throws ParseException {
     SolrCore core = SolrCore.getSolrCore();
-    return (FunctionQuery)(QParser.getParser(func,"func",new LocalSolrQueryRequest(core,new HashMap())).parse());
+    return (FunctionQuery) (QParser.getParser(func, "func", new LocalSolrQueryRequest(core, new HashMap())).parse());
     // return new FunctionQuery(parseValSource(new StrParser(func), schema));
   }
 
