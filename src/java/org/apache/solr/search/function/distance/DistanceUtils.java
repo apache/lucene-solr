@@ -22,6 +22,9 @@ package org.apache.solr.search.function.distance;
  *
  **/
 public class DistanceUtils {
+  public static final double DEGREES_TO_RADIANS = Math.PI / 180.0;
+  public static final double RADIANS_TO_DEGREES = 180.0 / Math.PI;
+
   /**
    * @see org.apache.solr.search.function.distance.HaversineFunction
    * 
@@ -46,4 +49,6 @@ public class DistanceUtils {
     }
     return result;
   }
+
+
 }
