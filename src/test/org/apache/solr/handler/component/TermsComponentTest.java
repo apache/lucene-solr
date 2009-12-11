@@ -26,6 +26,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
 
+import java.util.regex.Pattern;
 
 /**
  *
@@ -208,6 +209,73 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertTrue("terms Size: " + terms.size() + " is not: " + 1, terms.size() == 1);
     Object value = terms.get("aaa");
     assertTrue("value is null and it shouldn't be", value != null);
+  }
+
+  public void testRegexp() throws Exception {
+    SolrCore core = h.getCore();
+    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
+    assertTrue("tc is null and it shouldn't be", tc != null);
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(TermsParams.TERMS, "true");
+    params.add(TermsParams.TERMS_FIELD, "standardfilt");
+    params.add(TermsParams.TERMS_LOWER,  "bb");
+    params.add(TermsParams.TERMS_LOWER_INCLUSIVE, "false");
+    params.add(TermsParams.TERMS_REGEXP_STR, "b.*");
+    params.add(TermsParams.TERMS_UPPER, "bbbb");
+    params.add(TermsParams.TERMS_UPPER_INCLUSIVE, "true");
+    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
+    SolrRequestHandler handler;
+    SolrQueryResponse rsp;
+    NamedList values;
+    NamedList terms;
+    handler = core.getRequestHandler("/terms");
+    assertTrue("handler is null and it shouldn't be", handler != null);
+    rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
+    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    values = rsp.getValues();
+    terms = (NamedList) ((NamedList) values.get("terms")).get("standardfilt");
+    assertEquals("terms Size: " + terms.size() + " is not: 1", 1, terms.size());
+  }
+
+  public void testRegexpFlagParsing() {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.add(TermsParams.TERMS_REGEXP_FLAG, "case_insensitive", "literal", "comments", "multiline", "unix_lines",
+              "unicode_case", "dotall", "canon_eq");
+      int flags = new TermsComponent().resolveRegexpFlags(params);
+      int expected = Pattern.CASE_INSENSITIVE | Pattern.LITERAL | Pattern.COMMENTS | Pattern.MULTILINE | Pattern.UNIX_LINES
+              | Pattern.UNICODE_CASE | Pattern.DOTALL | Pattern.CANON_EQ;
+      assertEquals(expected, flags);
+  }
+
+  public void testRegexpWithFlags() throws Exception {
+    SolrCore core = h.getCore();
+    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
+    assertTrue("tc is null and it shouldn't be", tc != null);
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(TermsParams.TERMS, "true");
+    params.add(TermsParams.TERMS_FIELD, "standardfilt");
+    params.add(TermsParams.TERMS_LOWER,  "bb");
+    params.add(TermsParams.TERMS_LOWER_INCLUSIVE, "false");
+    params.add(TermsParams.TERMS_REGEXP_STR, "B.*");
+    params.add(TermsParams.TERMS_REGEXP_FLAG, "case_insensitive");
+    params.add(TermsParams.TERMS_UPPER, "bbbb");
+    params.add(TermsParams.TERMS_UPPER_INCLUSIVE, "true");
+    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
+    SolrRequestHandler handler;
+    SolrQueryResponse rsp;
+    NamedList values;
+    NamedList terms;
+    handler = core.getRequestHandler("/terms");
+    assertTrue("handler is null and it shouldn't be", handler != null);
+    rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
+    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    values = rsp.getValues();
+    terms = (NamedList) ((NamedList) values.get("terms")).get("standardfilt");
+    assertEquals("terms Size: " + terms.size() + " is not: 1", 1, terms.size());
   }
 
   public void testSortCount() throws Exception {

@@ -53,8 +53,7 @@ New Features
 * SOLR-1571: Added unicode collation support though Lucene's CollationKeyFilter
   (Robert Muir via shalin)
 
-* SOLR-785: Distributed Search support for SpellCheckComponent
-  (Matthew Woytowitz, shalin)
+* SOLR-1625: Add regexp support for TermsComponent (Uri Boness via noble)
 
 Optimizations
 ----------------------
@@ -141,8 +140,6 @@ Other Changes
 
 * SOLR-1608: Extract base class from TestDistributedSearch to make
   it easy to write test cases for other distributed components. (shalin)
-
-* Upgraded to Lucene 2.9-dev r888785 (shalin)
 
 Build
 ----------------------

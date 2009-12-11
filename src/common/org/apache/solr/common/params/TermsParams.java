@@ -17,6 +17,7 @@
 
 package org.apache.solr.common.params;
 
+import java.util.regex.Pattern;
 
 /**
  *
@@ -68,7 +69,32 @@ public interface TermsParams {
 
   public static final String TERMS_PREFIX_STR = TERMS_PREFIX + "prefix";
 
-  /**
+  public static final String TERMS_REGEXP_STR = TERMS_PREFIX + "regex";
+
+  public static final String TERMS_REGEXP_FLAG = TERMS_REGEXP_STR + ".flag";
+
+  public static enum TermsRegexpFlag {
+      UNIX_LINES(Pattern.UNIX_LINES),
+      CASE_INSENSITIVE(Pattern.CASE_INSENSITIVE),
+      COMMENTS(Pattern.COMMENTS),
+      MULTILINE(Pattern.MULTILINE),
+      LITERAL(Pattern.LITERAL),
+      DOTALL(Pattern.DOTALL),
+      UNICODE_CASE(Pattern.UNICODE_CASE),
+      CANON_EQ(Pattern.CANON_EQ);
+
+      int value;
+
+      TermsRegexpFlag(int value) {
+          this.value = value;
+      }
+
+      public int getValue() {
+          return value;
+      }
+  }
+
+    /**
    * Optional.  The minimum value of docFreq to be returned.  1 by default
    */
   public static final String TERMS_MINCOUNT = TERMS_PREFIX + "mincount";

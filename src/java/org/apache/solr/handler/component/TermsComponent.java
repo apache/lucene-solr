@@ -20,7 +20,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.NamedList;
@@ -30,7 +29,7 @@ import org.apache.solr.request.SimpleFacets.CountPair;
 import org.apache.solr.util.BoundedTreeSet;
 
 import java.io.IOException;
-
+import java.util.regex.Pattern;
 
 /**
  * Return TermEnum information, useful for things like auto suggest.
@@ -65,6 +64,9 @@ public class TermsComponent extends SearchComponent {
           freqmax = Integer.MAX_VALUE;
         }
         String prefix = params.get(TermsParams.TERMS_PREFIX_STR);
+        String regexp = params.get(TermsParams.TERMS_REGEXP_STR);
+        Pattern pattern = regexp != null ? Pattern.compile(regexp, resolveRegexpFlags(params)) : null;
+
         boolean raw = params.getBool(TermsParams.TERMS_RAW, false);
         for (int j = 0; j < fields.length; j++) {
           String field = StringHelper.intern(fields[j]);
@@ -105,6 +107,11 @@ public class TermsComponent extends SearchComponent {
             // stop if the prefix doesn't match
             if (prefix != null && !indexedText.startsWith(prefix)) break;
 
+            if (pattern != null && !pattern.matcher(indexedText).matches()) {
+                termEnum.next();
+                continue;
+            }
+
             if (upperTerm != null) {
               int upperCmp = theTerm.compareTo(upperTerm);
               // if we are past the upper term, or equal to it (when don't include upper) then stop.
@@ -144,6 +151,22 @@ public class TermsComponent extends SearchComponent {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No terms.fl parameter specified");
       }
     }
+  }
+
+  int resolveRegexpFlags(SolrParams params) {
+      String[] flagParams = params.getParams(TermsParams.TERMS_REGEXP_FLAG);
+      if (flagParams == null) {
+          return 0;
+      }
+      int flags = 0;
+      for (String flagParam : flagParams) {
+          try {
+            flags |= TermsParams.TermsRegexpFlag.valueOf(flagParam.toUpperCase()).getValue();
+          } catch (IllegalArgumentException iae) {
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown terms regex flag '" + flagParam + "'");
+          }
+      }
+      return flags;
   }
 
   public void prepare(ResponseBuilder rb) throws IOException {
