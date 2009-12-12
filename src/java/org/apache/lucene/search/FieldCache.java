@@ -594,6 +594,15 @@ public interface FieldCache {
   public abstract void purgeAllCaches();
 
   /**
+   * Expert: drops all cache entries associated with this
+   * reader.  NOTE: this reader must precisely match the
+   * reader that the cache entry is keyed on. If you pass a
+   * top-level reader, it usually will have no effect as
+   * Lucene now caches at the segment reader level.
+   */
+  public abstract void purge(IndexReader r);
+
+  /**
    * If non-null, FieldCacheImpl will warn whenever
    * entries are created that are not sane according to
    * {@link org.apache.lucene.util.FieldCacheSanityChecker}.

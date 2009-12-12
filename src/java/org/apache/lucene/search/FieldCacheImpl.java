@@ -61,6 +61,12 @@ class FieldCacheImpl implements FieldCache {
   public void purgeAllCaches() {
     init();
   }
+
+  public void purge(IndexReader r) {
+    for(Cache c : caches.values()) {
+      c.purge(r);
+    }
+  }
   
   public CacheEntry[] getCacheEntries() {
     List<CacheEntry> result = new ArrayList<CacheEntry>(17);
@@ -143,6 +149,14 @@ class FieldCacheImpl implements FieldCache {
     
     protected abstract Object createValue(IndexReader reader, Entry key)
         throws IOException;
+
+    /** Remove this reader from the cache, if present. */
+    public void purge(IndexReader r) {
+      Object readerKey = r.getFieldCacheKey();
+      synchronized(readerCache) {
+        readerCache.remove(readerKey);
+      }
+    }
 
     public Object get(IndexReader reader, Entry key) throws IOException {
       Map<Entry,Object> innerCache;

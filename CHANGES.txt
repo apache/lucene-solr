@@ -12,6 +12,10 @@ Changes in backwards compatibility policy
   FuzzyQuery. The class was never intended to be public.
   (Uwe Schindler, Mike McCandless)
 
+* LUCENE-2135: Added FieldCache.purge(IndexReader) method to the
+  interface.  Anyone implementing FieldCache externally will need to
+  fix their code to implement this, on upgrading.  (Mike McCandless)
+
 Changes in runtime behavior
 
 API Changes
@@ -91,6 +95,10 @@ Optimizations
 * LUCENE-2123: Move FuzzyQuery rewrite as separate RewriteMode into
   MTQ. This also fixes a slowdown / memory issue added by LUCENE-504.
   (Uwe Schindler, Robert Muir, Mike McCandless)
+
+* LUCENE-2135: On IndexReader.close, forcefully evict any entries from
+  the FieldCache rather than waiting for the WeakHashMap to release
+  the reference (Mike McCandless)
 
 Build
 
