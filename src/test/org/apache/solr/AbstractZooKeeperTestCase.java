@@ -53,15 +53,18 @@ public abstract class AbstractZooKeeperTestCase extends AbstractSolrTestCase {
 
         try {
           zkServer.runFromConfig(config);
-        } catch (IOException e) {
+          log.info("ZOOKEEPER EXIT");
+        } catch (Throwable e) {          
+          e.printStackTrace();
           throw new RuntimeException(e);
         }
-
       }
     };
+    
     zooThread.setDaemon(true);
     zooThread.start();
     Thread.sleep(500); // pause for ZooKeeper to start
+
     buildZooKeeper(getSolrConfigFile(), getSchemaFile());
 
     log.info("####SETUP_START " + getName());
@@ -86,10 +89,12 @@ public abstract class AbstractZooKeeperTestCase extends AbstractSolrTestCase {
 
   public static void buildZooKeeper(String config, String schema) throws Exception {
     ZooPut zooPut = new ZooPut(ZOO_KEEPER_HOST.substring(0, ZOO_KEEPER_HOST.indexOf('/')));
+    Thread.sleep(200);  // TODO: ZooPut creation is currently async
     zooPut.makePath("/solr");
     zooPut.close();
     
     zooPut = new ZooPut(ZOO_KEEPER_HOST);
+    Thread.sleep(200);  // TODO: ZooPut creation is currently async
     
     zooPut.makePath("/collections/collection1/config=collection1");
     

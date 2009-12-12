@@ -21,6 +21,7 @@ public class ZooPut {
 
   public ZooPut(String host) throws IOException {
     keeper = new ZooKeeper(host, 10000, null);
+    // TODO: this is asynchronous - think about how to deal with connection lost, and other failures
   }
 
   public ZooPut(ZooKeeper keeper) throws IOException {

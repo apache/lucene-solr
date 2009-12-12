@@ -45,6 +45,11 @@ public class ZooKeeperController implements Watcher {
     this.collectionName = collection;
     try {
       keeper = new ZooKeeper(zookeeperHost, 10000, this);
+
+      // TODO
+      log.warn("TODO: remove sleep that waits for zookeeper client");
+      try {Thread.sleep(200);} catch (InterruptedException e) {e.printStackTrace();}
+
       loadConfigPath();
       register();
     } catch (IOException e) {
