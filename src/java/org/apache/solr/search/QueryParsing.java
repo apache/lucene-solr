@@ -41,6 +41,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.function.FunctionQuery;
+import org.apache.solr.search.function.ValueSource;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -216,7 +217,6 @@ public class QueryParsing {
   }
 
 
-  private static Pattern sortSep = Pattern.compile(",");
 
   /**
    * Returns null if the sortSpec is the standard sort desc.
@@ -240,58 +240,145 @@ public class QueryParsing {
    */
   public static Sort parseSort(String sortSpec, IndexSchema schema) {
     if (sortSpec == null || sortSpec.length() == 0) return null;
-
-    String[] parts = sortSep.split(sortSpec.trim());
-    if (parts.length == 0) return null;
-
-    SortField[] lst = new SortField[parts.length];
-    for (int i = 0; i < parts.length; i++) {
-      String part = parts[i].trim();
-      boolean top = true;
-      //determine the ordering, ascending or descending
-      int idx = part.indexOf(' ');
-      if (idx > 0) {
-        String order = part.substring(idx + 1).trim();
-        if ("desc".equals(order) || "top".equals(order)) {
-          top = true;
-        } else if ("asc".equals(order) || "bottom".equals(order)) {
-          top = false;
+    char[] chars = sortSpec.toCharArray();
+    int i = 0;
+    StringBuilder buffer = new StringBuilder(sortSpec.length());
+    String sort = null;
+    String order = null;
+    int functionDepth = 0;
+    boolean score = true;
+    List<SortField> lst = new ArrayList<SortField>(5);
+    boolean needOrder = false;
+    while (i < chars.length) {
+      if (Character.isWhitespace(chars[i]) && functionDepth == 0) {
+        if (buffer.length() == 0) {
+          //do nothing
         } else {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown sort order: " + order);
-        }
-        part = part.substring(0, idx).trim();
-      } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing sort order.");
-      }
-      //figure out the field or score
-      if ("score".equals(part)) {
-        if (top) {
-          // If there is only one thing in the list, just do the regular thing...
-          if (parts.length == 1) {
-            return null; // do normal scoring...
+          if (needOrder == false) {
+            sort = buffer.toString().trim();
+            buffer.setLength(0);
+            needOrder = true;
+          } else {
+            order = buffer.toString().trim();
+            buffer.setLength(0);
+            needOrder = false;
           }
-          lst[i] = SortField.FIELD_SCORE;
-        } else {
-          lst[i] = new SortField(null, SortField.SCORE, true);
         }
-      } else if (DOCID.equals(part)) {
-        lst[i] = new SortField(null, SortField.DOC, top);
+      } else if (chars[i] == '(' && functionDepth == 0) {
+        buffer.append(chars[i]);
+        functionDepth++;
+      } else if (chars[i] == ')' && functionDepth > 0) {
+        buffer.append(chars[i]);
+        functionDepth--;//close up one layer
+      } else if (chars[i] == ',' && functionDepth == 0) {//can either be a separator of sort declarations, or a separator in a function
+        //we have a separator between sort declarations,
+        // We may need an order still, but then evaluate it, as we should have everything we need
+        if (needOrder == true && buffer.length() > 0){
+          order = buffer.toString().trim();
+          buffer.setLength(0);
+          needOrder = false;
+        }
+        score = processSort(schema, sort, order, lst);
+        sort = null;
+        order = null;
+        buffer.setLength(0);//get ready for the next one, if there is one
+      } else if (chars[i] == ',' && functionDepth > 0) {
+        //we are in a function
+        buffer.append(chars[i]);
       } else {
+        //just a regular old char, add it to the buffer
+        buffer.append(chars[i]);
+      }
+      i++;
+    }
+    if (buffer.length() > 0 && needOrder){//see if we have anything left, at most it should be an order
+      order = buffer.toString().trim();
+      buffer.setLength(0);
+      needOrder = false;
+    }
+
+    //do some sanity checks
+    if (functionDepth != 0){
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to parse sort spec, mismatched parentheses: " + sortSpec);
+    }
+    if (buffer.length() > 0){//there's something wrong, as everything should have been parsed by now
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to parse sort spec: " + sortSpec);
+    }
+    if (needOrder == false && sort != null && sort.equals("") == false && order != null && order.equals("") == false){//handle the last declaration
+      score = processSort(schema, sort, order, lst);
+    }
+    //If the normal case (by score desc) do nothing
+    if (lst.size() == 1 && score == true && lst.get(0).getReverse() == false) {
+      return null; // do normal scoring...
+    }
+    return new Sort((SortField[]) lst.toArray(new SortField[lst.size()]));
+  }
+
+  private static boolean processSort(IndexSchema schema, String sort, String order, List<SortField> lst) {
+    boolean score = false;
+    if (sort != null && order != null) {
+      boolean top = true;
+      if ("desc".equals(order) || "top".equals(order)) {
+        top = true;
+      } else if ("asc".equals(order) || "bottom".equals(order)) {
+        top = false;
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown sort order: " + order);
+      }
+      //we got the order, now deal with the sort
+      if ("score".equals(sort)) {
+        score = true;
+        if (top) {
+          lst.add(SortField.FIELD_SCORE);
+        } else {
+          lst.add(new SortField(null, SortField.SCORE, true));
+        }
+      } else if (DOCID.equals(sort)) {
+        lst.add(new SortField(null, SortField.DOC, top));
+      } else {
+        //See if we have a Field first, then see if it is a function, then throw an exception
         // getField could throw an exception if the name isn't found
         SchemaField f = null;
         try {
-          f = schema.getField(part);
+          f = schema.getField(sort);
         }
         catch (SolrException e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "can not sort on undefined field: " + part, e);
+          //Not an error just yet
         }
-        if (f == null || !f.indexed()) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "can not sort on unindexed field: " + part);
+        if (f != null) {
+          if (f == null || !f.indexed()) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "can not sort on unindexed field: " + sort);
+          }
+          lst.add(f.getType().getSortField(f, top));
+        } else {
+          //See if we have a function:
+          FunctionQuery query = null;
+          try {
+            query = parseFunction(sort, schema);
+            if (query != null) {
+              ValueSource valueSource = query.getValueSource();
+              //We have a function query
+              try {
+                lst.add(valueSource.getSortField(top));
+              } catch (IOException e) {
+                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "error getting the sort for this function: " + sort, e);
+              }
+            } else {
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "can not sort on undefined function: " + sort);
+            }
+          } catch (ParseException e) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "can not sort on undefined field or function: " + sort, e);
+          }
+
         }
-        lst[i] = f.getType().getSortField(f, top);
       }
+    } else if (sort == null) {//no sort value
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Must declare sort field or function");
+    } else if (order == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing sort order: ");
     }
-    return new Sort(lst);
+    return score;
   }
 
 

@@ -43,8 +43,14 @@ public class QueryParsingTest extends AbstractSolrTestCase {
     IndexSchema schema = h.getCore().getSchema();
     sort = QueryParsing.parseSort("score desc", schema);
     assertNull("sort", sort);//only 1 thing in the list, no Sort specified
-    sort = QueryParsing.parseSort("weight desc", schema);
+
+    sort = QueryParsing.parseSort("score asc", schema);
     SortField[] flds = sort.getSort();
+    assertEquals(flds[0].getType(), SortField.SCORE);
+    assertTrue(flds[0].getReverse());
+
+    sort = QueryParsing.parseSort("weight desc", schema);
+    flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.FLOAT);
     assertEquals(flds[0].getField(), "weight");
     assertEquals(flds[0].getReverse(), true);
@@ -79,13 +85,71 @@ public class QueryParsingTest extends AbstractSolrTestCase {
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.FLOAT);
     assertEquals(flds[0].getField(), "weight");
-    assertEquals(flds[1].getType(), SortField.LONG);
     assertEquals(flds[1].getField(), "bday");
+    assertEquals(flds[1].getType(), SortField.LONG);
     //handles trailing commas
     sort = QueryParsing.parseSort("weight desc,", schema);
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.FLOAT);
     assertEquals(flds[0].getField(), "weight");
+
+    //test functions
+    sort = QueryParsing.parseSort("pow(weight, 2) desc", schema);
+    flds = sort.getSort();
+    assertEquals(flds[0].getType(), SortField.CUSTOM);
+    //Not thrilled about the fragility of string matching here, but...
+    //the value sources get wrapped, so the out field is different than the input
+    assertEquals(flds[0].getField(), "pow(float(weight),const(2.0))");
+
+    sort = QueryParsing.parseSort("pow(weight,                 2)         desc", schema);
+    flds = sort.getSort();
+    assertEquals(flds[0].getType(), SortField.CUSTOM);
+    //Not thrilled about the fragility of string matching here, but...
+    //the value sources get wrapped, so the out field is different than the input
+    assertEquals(flds[0].getField(), "pow(float(weight),const(2.0))");
+
+
+    sort = QueryParsing.parseSort("pow(weight, 2) desc, weight    desc,   bday    asc", schema);
+    flds = sort.getSort();
+    assertEquals(flds[0].getType(), SortField.CUSTOM);
+
+    //Not thrilled about the fragility of string matching here, but...
+    //the value sources get wrapped, so the out field is different than the input
+    assertEquals(flds[0].getField(), "pow(float(weight),const(2.0))");
+
+    assertEquals(flds[1].getType(), SortField.FLOAT);
+    assertEquals(flds[1].getField(), "weight");
+    assertEquals(flds[2].getField(), "bday");
+    assertEquals(flds[2].getType(), SortField.LONG);
+    
+    //handles trailing commas
+    sort = QueryParsing.parseSort("weight desc,", schema);
+    flds = sort.getSort();
+    assertEquals(flds[0].getType(), SortField.FLOAT);
+    assertEquals(flds[0].getField(), "weight");
+
+    try {
+      //bad number of parens, but the function parser can handle an extra close
+      sort = QueryParsing.parseSort("pow(weight,2)) desc, bday asc", schema);
+    } catch (SolrException e) {
+      assertTrue(false);
+    }
+    //Test literals in functions
+    sort = QueryParsing.parseSort("strdist(foo_s, \"junk\", jw) desc", schema);
+    flds = sort.getSort();
+    assertEquals(flds[0].getType(), SortField.CUSTOM);
+    //the value sources get wrapped, so the out field is different than the input
+    assertEquals(flds[0].getField(), "strdist(str(foo_s),literal(junk), dist=org.apache.lucene.search.spell.JaroWinklerDistance)");
+
+    sort = QueryParsing.parseSort("", schema);
+    assertNull(sort);
+
+  }
+
+  public void testBad() throws Exception {
+    Sort sort;
+
+    IndexSchema schema = h.getCore().getSchema();
     //test some bad vals
     try {
       sort = QueryParsing.parseSort("weight, desc", schema);
@@ -94,7 +158,34 @@ public class QueryParsingTest extends AbstractSolrTestCase {
       //expected
     }
     try {
+      sort = QueryParsing.parseSort("w", schema);
+      assertTrue(false);
+    } catch (SolrException e) {
+      //expected
+    }
+    try {
       sort = QueryParsing.parseSort("weight desc, bday", schema);
+      assertTrue(false);
+    } catch (SolrException e) {
+    }
+
+    try {
+      //bad number of commas
+      sort = QueryParsing.parseSort("pow(weight,,2) desc, bday asc", schema);
+      assertTrue(false);
+    } catch (SolrException e) {
+    }
+
+    try {
+      //bad function
+      sort = QueryParsing.parseSort("pow() desc, bday asc", schema);
+      assertTrue(false);
+    } catch (SolrException e) {
+    }
+
+    try {
+      //bad number of parens
+      sort = QueryParsing.parseSort("pow((weight,2) desc, bday asc", schema);
       assertTrue(false);
     } catch (SolrException e) {
     }

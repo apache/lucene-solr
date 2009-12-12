@@ -58,6 +58,8 @@ New Features
 
 * SOLR-1625: Add regexp support for TermsComponent (Uri Boness via noble)
 
+* SOLR-1297: Add sort by Function capability (gsingers)
+
 Optimizations
 ----------------------
 
