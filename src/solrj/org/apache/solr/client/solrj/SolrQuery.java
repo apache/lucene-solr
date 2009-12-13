@@ -22,6 +22,7 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.StatsParams;
+import org.apache.solr.common.params.TermsParams;
 
 import java.util.regex.Pattern;
 
@@ -54,7 +55,154 @@ public class SolrQuery extends ModifiableSolrParams
     this.set(CommonParams.Q, q);
   }
 
+  /** enable/disable terms.  
+   * 
+   * @param b flag to indicate terms should be enabled. <br /> if b==false, removes all other terms parameters
+   * @return Current reference (<i>this</i>)
+   */
+  public SolrQuery setTerms(boolean b) {
+    if (b) {
+      this.set(TermsParams.TERMS, true);
+    } else {
+      this.remove(TermsParams.TERMS);
+      this.remove(TermsParams.TERMS_FIELD);
+      this.remove(TermsParams.TERMS_LOWER);
+      this.remove(TermsParams.TERMS_UPPER);
+      this.remove(TermsParams.TERMS_UPPER_INCLUSIVE);
+      this.remove(TermsParams.TERMS_LOWER_INCLUSIVE);
+      this.remove(TermsParams.TERMS_LIMIT);
+      this.remove(TermsParams.TERMS_PREFIX_STR);
+      this.remove(TermsParams.TERMS_MINCOUNT);
+      this.remove(TermsParams.TERMS_MAXCOUNT);
+      this.remove(TermsParams.TERMS_RAW);
+      this.remove(TermsParams.TERMS_SORT);
+      this.remove(TermsParams.TERMS_REGEXP_STR);
+      this.remove(TermsParams.TERMS_REGEXP_FLAG);
+    }
+    return this;
+  }
+  
+  public boolean getTerms() {
+    return this.getBool(TermsParams.TERMS, false);
+  }
+  
+  public SolrQuery addTermsField(String field) {
+    this.add(TermsParams.TERMS_FIELD, field);
+    return this;
+  }
+  
+  public String[] getTermsFields() {
+    return this.getParams(TermsParams.TERMS_FIELD);
+  }
+  
+  public SolrQuery setTermsLower(String lower) {
+    this.set(TermsParams.TERMS_LOWER, lower);
+    return this;
+  }
+  
+  public String getTermsLower() {
+    return this.get(TermsParams.TERMS_LOWER, "");
+  }
+  
+  public SolrQuery setTermsUpper(String upper) {
+    this.set(TermsParams.TERMS_UPPER, upper);
+    return this;
+  }
+  
+  public String getTermsUpper() {
+    return this.get(TermsParams.TERMS_UPPER, "");
+  }
+  
+  public SolrQuery setTermsUpperInclusive(boolean b) {
+    this.set(TermsParams.TERMS_UPPER_INCLUSIVE, b);
+    return this;
+  }
+  
+  public boolean getTermsUpperInclusive() {
+    return this.getBool(TermsParams.TERMS_UPPER_INCLUSIVE, false);
+  }
+  
+  public SolrQuery setTermsLowerInclusive(boolean b) {
+    this.set(TermsParams.TERMS_LOWER_INCLUSIVE, b);
+    return this;
+  }
+  
+  public boolean getTermsLowerInclusive() {
+    return this.getBool(TermsParams.TERMS_LOWER_INCLUSIVE, true);
+  }
+ 
+  public SolrQuery setTermsLimit(int limit) {
+    this.set(TermsParams.TERMS_LIMIT, limit);
+    return this;
+  }
+  
+  public int getTermsLimit() {
+    return this.getInt(TermsParams.TERMS_LIMIT, 10);
+  }
+ 
+  public SolrQuery setTermsMinCount(int cnt) {
+    this.set(TermsParams.TERMS_MINCOUNT, cnt);
+    return this;
+  }
+  
+  public int getTermsMinCount() {
+    return this.getInt(TermsParams.TERMS_MINCOUNT, 1);
+  }
 
+  public SolrQuery setTermsMaxCount(int cnt) {
+    this.set(TermsParams.TERMS_MAXCOUNT, cnt);
+    return this;
+  }
+  
+  public int getTermsMaxCount() {
+    return this.getInt(TermsParams.TERMS_MAXCOUNT, -1);
+  }
+  
+  public SolrQuery setTermsPrefix(String prefix) {
+    this.set(TermsParams.TERMS_PREFIX_STR, prefix);
+    return this;
+  }
+  
+  public String getTermsPrefix() {
+    return this.get(TermsParams.TERMS_PREFIX_STR, "");
+  }
+  
+  public SolrQuery setTermsRaw(boolean b) {
+    this.set(TermsParams.TERMS_RAW, b);
+    return this;
+  }
+  
+  public boolean getTermsRaw() {
+    return this.getBool(TermsParams.TERMS_RAW, false);
+  }
+ 
+  public SolrQuery setTermsSortString(String type) {
+    this.set(TermsParams.TERMS_SORT, type);
+    return this;
+  }
+  
+  public String getTermsSortString() {
+    return this.get(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_COUNT);
+  }
+
+  public SolrQuery setTermsRegex(String regex)  {
+    this.set(TermsParams.TERMS_REGEXP_STR, regex);
+    return this;
+  }
+
+  public String getTermsRegex() {
+    return this.get(TermsParams.TERMS_REGEXP_STR);
+  }
+
+  public SolrQuery setTermsRegexFlag(String flag) {
+    this.add(TermsParams.TERMS_REGEXP_FLAG, flag);
+    return this;
+  }
+
+  public String[] getTermsRegexFlags()  {
+    return this.getParams(TermsParams.TERMS_REGEXP_FLAG);
+  }
+     
   /** Add field(s) for facet computation.
    * 
    * @param fields Array of field names from the IndexSchema

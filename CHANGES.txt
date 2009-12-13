@@ -60,6 +60,8 @@ New Features
 
 * SOLR-1297: Add sort by Function capability (gsingers)
 
+* SOLR-1139: Add TermsComponent Query and Response Support in SolrJ (Matt Weber via shalin)
+
 Optimizations
 ----------------------
 

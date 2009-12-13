@@ -143,4 +143,56 @@ public class SolrQueryTest extends TestCase {
     assertEquals( SolrQuery.ORDER.asc, SolrQuery.ORDER.desc.reverse() );
     assertEquals( SolrQuery.ORDER.desc, SolrQuery.ORDER.asc.reverse() );
   }
+  
+  public void testTerms() {
+    SolrQuery q = new SolrQuery();
+    
+    // check getters
+    assertEquals(false, q.getTerms());
+    assertEquals(null, q.getTermsFields());
+    assertEquals("", q.getTermsLower());
+    assertEquals("", q.getTermsUpper());
+    assertEquals(false, q.getTermsUpperInclusive());
+    assertEquals(true, q.getTermsLowerInclusive());
+    assertEquals(10, q.getTermsLimit());
+    assertEquals(1, q.getTermsMinCount());
+    assertEquals(-1, q.getTermsMaxCount());
+    assertEquals("", q.getTermsPrefix());
+    assertEquals(false, q.getTermsRaw());
+    assertEquals("count", q.getTermsSortString());
+    assertEquals(null, q.getTermsRegex());
+    assertEquals(null, q.getTermsRegexFlags());
+
+    // check setters
+    q.setTerms(true);
+    assertEquals(true, q.getTerms());
+    q.addTermsField("testfield");
+    assertEquals(1, q.getTermsFields().length);
+    assertEquals("testfield", q.getTermsFields()[0]);
+    q.setTermsLower("lower");
+    assertEquals("lower", q.getTermsLower());
+    q.setTermsUpper("upper");
+    assertEquals("upper", q.getTermsUpper());
+    q.setTermsUpperInclusive(true);
+    assertEquals(true, q.getTermsUpperInclusive());
+    q.setTermsLowerInclusive(false);
+    assertEquals(false, q.getTermsLowerInclusive());
+    q.setTermsLimit(5);
+    assertEquals(5, q.getTermsLimit());
+    q.setTermsMinCount(2);
+    assertEquals(2, q.getTermsMinCount());
+    q.setTermsMaxCount(5);
+    assertEquals(5, q.getTermsMaxCount());
+    q.setTermsPrefix("prefix");
+    assertEquals("prefix", q.getTermsPrefix());
+    q.setTermsRaw(true);
+    assertEquals(true, q.getTermsRaw());
+    q.setTermsSortString("index");
+    assertEquals("index", q.getTermsSortString());
+    q.setTermsRegex("a.*");
+    assertEquals("a.*", q.getTermsRegex());
+    q.setTermsRegexFlag("case_insensitive");
+    q.setTermsRegexFlag("multiline");
+    assertEquals(2, q.getTermsRegexFlags().length);
+  }
 }

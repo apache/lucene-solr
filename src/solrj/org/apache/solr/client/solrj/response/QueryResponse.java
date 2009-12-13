@@ -46,6 +46,7 @@ public class QueryResponse extends SolrResponseBase
   private NamedList<Object> _highlightingInfo = null;
   private NamedList<Object> _spellInfo = null;
   private NamedList<Object> _statsInfo = null;
+  private NamedList<Object> _termsInfo = null;
 
   // Facet stuff
   private Map<String,Integer> _facetQuery = null;
@@ -59,6 +60,9 @@ public class QueryResponse extends SolrResponseBase
   // SpellCheck Response
   private SpellCheckResponse _spellResponse = null;
 
+  // Terms Response
+  private TermsResponse _termsResponse = null;
+  
   // Field stats Response
   private Map<String,FieldStatsInfo> _fieldStatsInfo = null;
   
@@ -118,6 +122,10 @@ public class QueryResponse extends SolrResponseBase
         _statsInfo = (NamedList<Object>) res.getVal( i );
         extractStatsInfo( _statsInfo );
       }
+      else if ( "terms".equals( n ) ) {
+        _termsInfo = (NamedList<Object>) res.getVal( i );
+        extractTermsInfo( _termsInfo );
+      }
     }
   }
 
@@ -125,6 +133,10 @@ public class QueryResponse extends SolrResponseBase
     _spellResponse = new SpellCheckResponse(spellInfo);
   }
 
+  private void extractTermsInfo(NamedList<Object> termsInfo) {
+    _termsResponse = new TermsResponse(termsInfo);
+  }
+  
   private void extractStatsInfo(NamedList<Object> info) {
     if( info != null ) {
       _fieldStatsInfo = new HashMap<String, FieldStatsInfo>();
@@ -276,6 +288,10 @@ public class QueryResponse extends SolrResponseBase
     return _spellResponse;
   }
 
+  public TermsResponse getTermsResponse() {
+    return _termsResponse;
+  }
+  
   /**
    * See also: {@link #getLimitingFacets()}
    */
