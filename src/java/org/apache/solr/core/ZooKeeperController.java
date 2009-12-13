@@ -16,6 +16,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -34,6 +35,8 @@ public class ZooKeeperController implements Watcher {
   private String configName;
 
   private String collectionName;
+  
+  private boolean connected = false;
 
   /**
    * @param zookeeperHost ZooKeeper host service
@@ -46,9 +49,19 @@ public class ZooKeeperController implements Watcher {
     try {
       keeper = new ZooKeeper(zookeeperHost, 10000, this);
 
-      // TODO
-      log.warn("TODO: remove sleep that waits for zookeeper client");
-      try {Thread.sleep(200);} catch (InterruptedException e) {e.printStackTrace();}
+      // TODO: nocommit: this is asynchronous - think about how to deal with connection
+      // lost, and other failures
+      synchronized (this) {
+        while (!connected) {
+          try {
+            this.wait();
+          } catch (InterruptedException e) {
+            // nocommit
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+          }
+        }
+      }
 
       loadConfigPath();
       register();
@@ -85,6 +98,13 @@ public class ZooKeeperController implements Watcher {
   public void process(WatchedEvent event) {
     // nocommit
     System.out.println("ZooKeeper Event:" + event);
+    // nocommit: consider how we want to accomplish this
+    if (event.getState() == KeeperState.SyncConnected) {
+      synchronized (this) {
+        connected = true;
+        this.notify();
+      }
+    }
   }
 
   private void loadConfigPath() {
