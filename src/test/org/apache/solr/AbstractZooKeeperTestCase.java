@@ -1,7 +1,6 @@
 package org.apache.solr;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -18,7 +17,13 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractZooKeeperTestCase extends AbstractSolrTestCase {
   public static final String ZOO_KEEPER_HOST = "localhost:2181/solr";
   protected static Logger log = LoggerFactory.getLogger(AbstractZooKeeperTestCase.class);
-  protected ZooKeeperServerMain zkServer = new ZooKeeperServerMain();
+  
+  class ZKServerMain extends ZooKeeperServerMain {
+	  public void shutdown() {
+		  super.shutdown();
+	  }
+  }
+  protected ZKServerMain zkServer = new ZKServerMain();
 
   protected File tmpDir = new File(System.getProperty("java.io.tmpdir")
       + System.getProperty("file.separator") + getClass().getName() + "-"
@@ -89,12 +94,10 @@ public abstract class AbstractZooKeeperTestCase extends AbstractSolrTestCase {
 
   public static void buildZooKeeper(String config, String schema) throws Exception {
     ZooPut zooPut = new ZooPut(ZOO_KEEPER_HOST.substring(0, ZOO_KEEPER_HOST.indexOf('/')));
-    Thread.sleep(200);  // TODO: ZooPut creation is currently async
     zooPut.makePath("/solr");
     zooPut.close();
     
     zooPut = new ZooPut(ZOO_KEEPER_HOST);
-    Thread.sleep(200);  // TODO: ZooPut creation is currently async
     
     zooPut.makePath("/collections/collection1/config=collection1");
     
@@ -113,6 +116,7 @@ public abstract class AbstractZooKeeperTestCase extends AbstractSolrTestCase {
   }
 
   public void tearDown() throws Exception {
+	zkServer.shutdown();
     super.tearDown();
   }
 }
