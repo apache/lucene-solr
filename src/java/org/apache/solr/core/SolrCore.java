@@ -94,7 +94,7 @@ public final class SolrCore implements SolrInfoMBean {
   private DirectoryFactory directoryFactory;
   private IndexReaderFactory indexReaderFactory;
   
-  // null if not in use
+  // null if not in use - nocommit:here for convenience - consider
   private ZooKeeperController zooKeeperController;
 
   public long getStartTime() { return startTime; }
@@ -504,7 +504,7 @@ public final class SolrCore implements SolrInfoMBean {
   public SolrCore(String dataDir, IndexSchema schema) throws ParserConfigurationException, IOException, SAXException {
     this(null, dataDir, new SolrConfig(), schema, null );
   }
-  
+
   /**
    * Creates a new core and register it in the list of cores.
    * If a core with the same name already exists, it will be stopped and replaced by this one.
@@ -518,23 +518,7 @@ public final class SolrCore implements SolrInfoMBean {
    * @since solr 1.3
    */
   public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd) {
-    this(name, dataDir, config, schema, cd, null);
-  }
-  
-
-  /**
-   * Creates a new core and register it in the list of cores.
-   * If a core with the same name already exists, it will be stopped and replaced by this one.
-   * 
-   * @param name name of the core
-   * @param dataDir the index directory
-   * @param config a solr config instance
-   * @param schema a solr schema instance
-   * @param cd descriptor for this core
-   * @param zooKeeperController zooKeeperController for core to use or null
-   */
-  public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd, ZooKeeperController zooKeeperController) {
-    this.zooKeeperController = zooKeeperController;
+    this.zooKeeperController = cd.getCoreContainer().getZooKeeperController();
     coreDescriptor = cd;
     this.setName( name );
     resourceLoader = config.getResourceLoader();

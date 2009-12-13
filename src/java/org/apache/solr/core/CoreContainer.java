@@ -105,7 +105,6 @@ public class CoreContainer
     
     private ZooKeeperController zooKeeperController;
     private String zookeeperHost;
-    private String zookeeperSolrPath;
 
     public boolean isAbortOnConfigurationError() {
       return abortOnConfigurationError;
@@ -190,7 +189,7 @@ public class CoreContainer
           schema = zooKeeperController.getSchema(IndexSchema.DEFAULT_SCHEMA_FILE, cfg, resourceLoader);
         }
         
-        SolrCore singlecore = new SolrCore(null, dataDir, cfg, schema, dcore, zooKeeperController);
+        SolrCore singlecore = new SolrCore(null, dataDir, cfg, schema, dcore);
         abortOnConfigurationError = cfg.getBool(
                 "abortOnConfigurationError", abortOnConfigurationError);
         cores.register("", singlecore, false);
@@ -513,7 +512,7 @@ public class CoreContainer
         schema = new IndexSchema(config, dcore.getSchemaName(), null);
       }
     }
-    SolrCore core = new SolrCore(dcore.getName(), null, config, schema, dcore, zooKeeperController);
+    SolrCore core = new SolrCore(dcore.getName(), null, config, schema, dcore);
     return core;
   }
     
@@ -911,5 +910,10 @@ public class CoreContainer
   //nocommit: consider - used for testing now
   public boolean isZooKeeperAware() {
     return zooKeeperController != null;
+  }
+  
+  // may return null
+  public ZooKeeperController getZooKeeperController() {
+    return zooKeeperController;
   }
 }
