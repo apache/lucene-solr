@@ -62,6 +62,8 @@ New Features
 
 * SOLR-1139: Add TermsComponent Query and Response Support in SolrJ (Matt Weber via shalin)
 
+* SOLR-1177: Distributed Search support for TermsComponent (Matt Weber via shalin)
+
 Optimizations
 ----------------------
 

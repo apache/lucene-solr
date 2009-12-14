@@ -45,6 +45,7 @@ public class ResponseBuilder
   public boolean doHighlights;
   public boolean doFacets;
   public boolean doStats;
+  public boolean doTerms;
 
   private boolean needDocList = false;
   private boolean needDocSet = false;
@@ -132,6 +133,7 @@ public class ResponseBuilder
   /* private... components that don't own these shouldn't use them */
   SolrDocumentList _responseDocs;
   StatsInfo _statsInfo;
+  TermsComponent.TermsHelper _termsHelper;
 
   /**
    * Utility function to add debugging info.  This will make sure a valid
