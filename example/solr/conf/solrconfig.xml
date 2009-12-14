@@ -792,8 +792,7 @@
   </requestHandler>
 
 
-  <!-- A component to return terms and document frequency of those terms.
-       This component does not yet support distributed search. -->
+  <!-- A component to return terms and document frequency of those terms. -->
   <searchComponent name="termsComponent" class="org.apache.solr.handler.component.TermsComponent"/>
 
   <requestHandler name="/terms" class="org.apache.solr.handler.component.SearchHandler">
