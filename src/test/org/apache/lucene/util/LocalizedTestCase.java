@@ -73,6 +73,8 @@ public abstract class LocalizedTestCase extends LuceneTestCase {
 
   @Override
   protected void tearDown() throws Exception {
+    assertEquals("default locale unexpectedly changed:", locale, Locale
+        .getDefault());
     Locale.setDefault(defaultLocale);
     super.tearDown();
   }
