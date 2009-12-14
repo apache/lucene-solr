@@ -132,6 +132,9 @@ Bug Fixes
   DOMUtils - notably for plugin init params in solrconfig.xml.
   (hossman)
 
+* SOLR-1651: Fixed Incorrect dataimport handler package name in SolrResourceLoader
+  (Akshay Ukey via shalin)
+
 Other Changes
 ----------------------
 
