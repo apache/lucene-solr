@@ -650,25 +650,24 @@ public class TestQPHelper extends LocalizedTestCase {
     }
   }
 
-  private String getLocalizedDate(int year, int month, int day,
-      boolean extendLastDate) {
+  private String getLocalizedDate(int year, int month, int day) {
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
     Calendar calendar = new GregorianCalendar();
+    calendar.clear();
     calendar.set(year, month, day);
-    if (extendLastDate) {
-      calendar.set(Calendar.HOUR_OF_DAY, 23);
-      calendar.set(Calendar.MINUTE, 59);
-      calendar.set(Calendar.SECOND, 59);
-      calendar.set(Calendar.MILLISECOND, 999);
-    }
+    calendar.set(Calendar.HOUR_OF_DAY, 23);
+    calendar.set(Calendar.MINUTE, 59);
+    calendar.set(Calendar.SECOND, 59);
+    calendar.set(Calendar.MILLISECOND, 999);
     return df.format(calendar.getTime());
   }
 
   /** for testing legacy DateField support */
   public void testLegacyDateRange() throws Exception {
-    String startDate = getLocalizedDate(2002, 1, 1, false);
-    String endDate = getLocalizedDate(2002, 1, 4, false);
+    String startDate = getLocalizedDate(2002, 1, 1);
+    String endDate = getLocalizedDate(2002, 1, 4);
     Calendar endDateExpected = new GregorianCalendar();
+    endDateExpected.clear();
     endDateExpected.set(2002, 1, 4, 23, 59, 59);
     endDateExpected.set(Calendar.MILLISECOND, 999);
     assertQueryEquals("[ " + escapeDateString(startDate) + " TO " + escapeDateString(endDate) + "]", null, "["
@@ -679,9 +678,10 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   public void testDateRange() throws Exception {
-    String startDate = getLocalizedDate(2002, 1, 1, false);
-    String endDate = getLocalizedDate(2002, 1, 4, false);
+    String startDate = getLocalizedDate(2002, 1, 1);
+    String endDate = getLocalizedDate(2002, 1, 4);
     Calendar endDateExpected = new GregorianCalendar();
+    endDateExpected.clear();
     endDateExpected.set(2002, 1, 4, 23, 59, 59);
     endDateExpected.set(Calendar.MILLISECOND, 999);
     final String defaultField = "default";

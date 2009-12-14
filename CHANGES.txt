@@ -121,6 +121,9 @@ Test Cases
   index as well; improve javadocs of Filter to call out that the
   provided reader is per-segment (Simon Willnauer via Mike McCandless)
 
+* LUCENE-2155: Fix time and zone dependent localization test failures
+  in queryparser tests. (Uwe Schindler, Chris Male, Robert Muir)
+
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy

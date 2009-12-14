@@ -18,6 +18,7 @@ package org.apache.lucene.misc;
  */
 
 import java.util.Calendar;
+import java.util.GregorianCalendar;
 
 import junit.framework.TestCase;
 
@@ -60,7 +61,8 @@ public class ChainedFilterTest extends TestCase {
     IndexWriter writer =
        new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
 
-    Calendar cal = Calendar.getInstance();
+    Calendar cal = new GregorianCalendar();
+    cal.clear();
     cal.setTimeInMillis(1041397200000L); // 2003 January 01
 
     for (int i = 0; i < MAX; i++) {

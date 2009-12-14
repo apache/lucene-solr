@@ -392,7 +392,12 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   public String getLocalizedDate(int year, int month, int day) {
     DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
     Calendar calendar = new GregorianCalendar();
+    calendar.clear();
     calendar.set(year, month, day);
+    calendar.set(Calendar.HOUR_OF_DAY, 23);
+    calendar.set(Calendar.MINUTE, 59);
+    calendar.set(Calendar.SECOND, 59);
+    calendar.set(Calendar.MILLISECOND, 999);
     return df.format(calendar.getTime());
   }
 

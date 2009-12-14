@@ -134,6 +134,7 @@ public class TestSearch extends LuceneTestCase {
 
   static long Time(int year, int month, int day) {
     GregorianCalendar calendar = new GregorianCalendar();
+    calendar.clear();
     calendar.set(year, month, day);
     return calendar.getTime().getTime();
   }

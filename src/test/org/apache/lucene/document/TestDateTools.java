@@ -59,6 +59,7 @@ public class TestDateTools extends LocalizedTestCase {
   public void testStringtoTime() throws ParseException {
     long time = DateTools.stringToTime("197001010000");
     Calendar cal = new GregorianCalendar();
+    cal.clear();
     cal.set(1970, 0, 1,    // year=1970, month=january, day=1
         0, 0, 0);          // hour, minute, second
     cal.set(Calendar.MILLISECOND, 0);
@@ -73,6 +74,7 @@ public class TestDateTools extends LocalizedTestCase {
   
   public void testDateAndTimetoString() throws ParseException {
     Calendar cal = new GregorianCalendar();
+    cal.clear();
     cal.setTimeZone(TimeZone.getTimeZone("GMT"));
     cal.set(2004, 1, 3,   // year=2004, month=february(!), day=3
         22, 8, 56);       // hour, minute, second
@@ -137,6 +139,7 @@ public class TestDateTools extends LocalizedTestCase {
   
   public void testRound() {
     Calendar cal = new GregorianCalendar();
+    cal.clear();
     cal.setTimeZone(TimeZone.getTimeZone("GMT"));
     cal.set(2004, 1, 3,   // year=2004, month=february(!), day=3
         22, 8, 56);       // hour, minute, second
