@@ -6,17 +6,16 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.ZooPut;
+import org.apache.solr.util.zookeeper.CountdownWatcher;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -24,7 +23,7 @@ import org.xml.sax.SAXException;
 /**
  * Handle ZooKeeper interactions.
  */
-public class ZooKeeperController implements Watcher {
+public class ZooKeeperController {
   private static final String CONFIGS_NODE = "configs";
 
   private static Logger log = LoggerFactory
@@ -35,8 +34,6 @@ public class ZooKeeperController implements Watcher {
   private String configName;
 
   private String collectionName;
-  
-  private boolean connected = false;
 
   /**
    * @param zookeeperHost ZooKeeper host service
@@ -46,26 +43,20 @@ public class ZooKeeperController implements Watcher {
 
 
     this.collectionName = collection;
+    CountdownWatcher countdownWatcher = new CountdownWatcher("ZooKeeperController"); 
     try {
-      keeper = new ZooKeeper(zookeeperHost, 10000, this);
+      keeper = new ZooKeeper(zookeeperHost, 10000, countdownWatcher);
 
-      // TODO: nocommit: this is asynchronous - think about how to deal with connection
-      // lost, and other failures
-      synchronized (this) {
-        while (!connected) {
-          try {
-            this.wait();
-          } catch (InterruptedException e) {
-            // nocommit
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-          }
-        }
-      }
+      countdownWatcher.waitForConnected(5000);
 
       loadConfigPath();
       register();
     } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Can't create ZooKeeper instance", e);
+    } catch (InterruptedException e) {
+      // nocommit
+    } catch (TimeoutException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Can't create ZooKeeper instance", e);
     }
@@ -86,24 +77,6 @@ public class ZooKeeperController implements Watcher {
           "ZooKeeper Exception", e);
     } catch (InterruptedException e) {
       // nocommit: handle
-    }
-  }
-
-  /*
-   * (non-Javadoc)
-   * 
-   * @see
-   * org.apache.zookeeper.Watcher#process(org.apache.zookeeper.WatchedEvent)
-   */
-  public void process(WatchedEvent event) {
-    // nocommit
-    System.out.println("ZooKeeper Event:" + event);
-    // nocommit: consider how we want to accomplish this
-    if (event.getState() == KeeperState.SyncConnected) {
-      synchronized (this) {
-        connected = true;
-        this.notify();
-      }
     }
   }
 

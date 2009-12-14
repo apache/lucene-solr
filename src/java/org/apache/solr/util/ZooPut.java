@@ -3,42 +3,28 @@ package org.apache.solr.util;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
+import org.apache.solr.util.zookeeper.CountdownWatcher;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.Watcher.Event.KeeperState;
 
 /**
  * Util for uploading and updating files in ZooKeeper.
  * 
  */
-public class ZooPut implements Watcher {
+public class ZooPut {
 
   private ZooKeeper keeper;
 
   private boolean closeKeeper = true;
-  
-  private boolean connected = false;
 
-  public ZooPut(String host) throws IOException {
-    keeper = new ZooKeeper(host, 10000, this);
-    // TODO: nocommit: this is asynchronous - think about how to deal with connection
-    // lost, and other failures
-    synchronized (this) {
-      while (!connected) {
-        try {
-          this.wait();
-        } catch (InterruptedException e) {
-          // nocommit
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        }
-      }
-    }
+  public ZooPut(String host) throws IOException, InterruptedException, TimeoutException {
+    CountdownWatcher countdownWatcher = new CountdownWatcher("ZooPut:" + this); 
+    keeper = new ZooKeeper(host, 10000, countdownWatcher);
+    countdownWatcher.waitForConnected(5000);
   }
 
   public ZooPut(ZooKeeper keeper) throws IOException {
@@ -149,17 +135,6 @@ public class ZooPut implements Watcher {
     ZooPut zooPut = new ZooPut(host);
     zooPut.putFile(path, new File(file));
     zooPut.close();
-  }
-
-  public void process(WatchedEvent event) {
-    // nocommit: consider how we want to accomplish this
-    if (event.getState() == KeeperState.SyncConnected) {
-      synchronized (this) {
-        connected = true;
-        this.notify();
-      }
-    }
-
   }
 
 }
