@@ -43,7 +43,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @see org.apache.solr.search.SolrCache
  * @since solr 1.4
  */
-public class FastLRUCache implements SolrCache {
+public class FastLRUCache<K,V> implements SolrCache<K,V> {
 
   private List<ConcurrentLRUCache.Stats> cumulativeStats;
 
@@ -54,7 +54,7 @@ public class FastLRUCache implements SolrCache {
   private State state;
   private CacheRegenerator regenerator;
   private String description = "Concurrent LRU Cache";
-  private ConcurrentLRUCache cache;
+  private ConcurrentLRUCache<K,V> cache;
   private int showItems = 0;
 
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -101,7 +101,7 @@ public class FastLRUCache implements SolrCache {
     }
     description += ')';
 
-    cache = new ConcurrentLRUCache(limit, minLimit, acceptableLimit, initialSize, newThread, false, null);
+    cache = new ConcurrentLRUCache<K,V>(limit, minLimit, acceptableLimit, initialSize, newThread, false, null);
     cache.setAlive(false);
 
     if (persistence == null) {
@@ -125,11 +125,11 @@ public class FastLRUCache implements SolrCache {
 
   }
 
-  public Object put(Object key, Object value) {
+  public V put(K key, V value) {
     return cache.put(key, value);
   }
 
-  public Object get(Object key) {
+  public V get(K key) {
     return cache.get(key);
 
   }

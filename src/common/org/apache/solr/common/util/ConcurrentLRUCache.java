@@ -44,7 +44,7 @@ import java.lang.ref.WeakReference;
 public class ConcurrentLRUCache<K,V> {
   private static Logger log = LoggerFactory.getLogger(ConcurrentLRUCache.class);
 
-  private final ConcurrentHashMap<Object, CacheEntry> map;
+  private final ConcurrentHashMap<Object, CacheEntry<K,V>> map;
   private final int upperWaterMark, lowerWaterMark;
   private final ReentrantLock markAndSweepLock = new ReentrantLock(true);
   private boolean isCleaning = false;  // not volatile... piggybacked on other volatile vars
@@ -62,7 +62,7 @@ public class ConcurrentLRUCache<K,V> {
     if (upperWaterMark < 1) throw new IllegalArgumentException("upperWaterMark must be > 0");
     if (lowerWaterMark >= upperWaterMark)
       throw new IllegalArgumentException("lowerWaterMark must be  < upperWaterMark");
-    map = new ConcurrentHashMap<Object, CacheEntry>(initialSize);
+    map = new ConcurrentHashMap<Object, CacheEntry<K,V>>(initialSize);
     newThreadForCleanup = runNewThreadForCleanup;
     this.upperWaterMark = upperWaterMark;
     this.lowerWaterMark = lowerWaterMark;
@@ -102,10 +102,10 @@ public class ConcurrentLRUCache<K,V> {
     return null;
   }
 
-  public Object put(K key, V val) {
+  public V put(K key, V val) {
     if (val == null) return null;
-    CacheEntry e = new CacheEntry(key, val, stats.accessCounter.incrementAndGet());
-    CacheEntry oldCacheEntry = map.put(key, e);
+    CacheEntry<K,V> e = new CacheEntry<K,V>(key, val, stats.accessCounter.incrementAndGet());
+    CacheEntry<K,V> oldCacheEntry = map.put(key, e);
     int currentSize;
     if (oldCacheEntry == null) {
       currentSize = stats.size.incrementAndGet();
@@ -401,7 +401,7 @@ public class ConcurrentLRUCache<K,V> {
     Map<K, V> result = new LinkedHashMap<K, V>();
     TreeSet<CacheEntry> tree = new TreeSet<CacheEntry>();
     try {
-      for (Map.Entry<Object, CacheEntry> entry : map.entrySet()) {
+      for (Map.Entry<Object, CacheEntry<K,V>> entry : map.entrySet()) {
         CacheEntry ce = entry.getValue();
         ce.lastAccessedCopy = ce.lastAccessed;
         if (tree.size() < n) {
@@ -428,8 +428,8 @@ public class ConcurrentLRUCache<K,V> {
     Map<K,V> result = new LinkedHashMap<K,V>();
     TreeSet<CacheEntry> tree = new TreeSet<CacheEntry>();
     try {
-      for (Map.Entry<Object, CacheEntry> entry : map.entrySet()) {
-        CacheEntry ce = entry.getValue();
+      for (Map.Entry<Object, CacheEntry<K,V>> entry : map.entrySet()) {
+        CacheEntry<K,V> ce = entry.getValue();
         ce.lastAccessedCopy = ce.lastAccessed;
         if (tree.size() < n) {
           tree.add(ce);
@@ -457,11 +457,11 @@ public class ConcurrentLRUCache<K,V> {
     map.clear();
   }
 
-  public Map<Object, CacheEntry> getMap() {
+  public Map<Object, CacheEntry<K,V>> getMap() {
     return map;
   }
 
-  private static class CacheEntry<K,V> implements Comparable<CacheEntry> {
+  private static class CacheEntry<K,V> implements Comparable<CacheEntry<K,V>> {
     K key;
     V value;
     volatile long lastAccessed = 0;
@@ -478,7 +478,7 @@ public class ConcurrentLRUCache<K,V> {
       this.lastAccessed = lastAccessed;
     }
 
-    public int compareTo(CacheEntry that) {
+    public int compareTo(CacheEntry<K,V> that) {
       if (this.lastAccessedCopy == that.lastAccessedCopy) return 0;
       return this.lastAccessedCopy < that.lastAccessedCopy ? 1 : -1;
     }

@@ -67,10 +67,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   public final boolean enableLazyFieldLoading;
   
   private final boolean cachingEnabled;
-  private final SolrCache filterCache;
-  private final SolrCache queryResultCache;
-  private final SolrCache documentCache;
-  private final SolrCache fieldValueCache;
+  private final SolrCache<Query,DocSet> filterCache;
+  private final SolrCache<QueryResultKey,DocList> queryResultCache;
+  private final SolrCache<Integer,Document> documentCache;
+  private final SolrCache<String,Object> fieldValueCache;
 
   private final LuceneQueryOptimizer optimizer;
   

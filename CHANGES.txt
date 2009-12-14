@@ -155,6 +155,8 @@ Other Changes
 
 * Upgraded to Lucene 2.9-dev r888785 (shalin)
 
+* SOLR-1610: Generify SolrCache (Jason Rutherglen via shalin)
+
 Build
 ----------------------
 
