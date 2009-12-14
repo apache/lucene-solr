@@ -106,7 +106,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
       segment = si.name;
       this.readBufferSize = readBufferSize;
       this.dir = dir;
-      this.origInstance = origInstance;
 
       boolean success = false;
 
@@ -144,6 +143,12 @@ public class SegmentReader extends IndexReader implements Cloneable {
           decRef();
         }
       }
+
+      // Must assign this at the end -- if we hit an
+      // exception above core, we don't want to attempt to
+      // purge the FieldCache (will hit NPE because core is
+      // not assigned yet).
+      this.origInstance = origInstance;
     }
 
     synchronized TermVectorsReader getTermVectorsReaderOrig() {
