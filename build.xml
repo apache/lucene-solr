@@ -394,7 +394,6 @@
            dir="src/test/test-files/"
            >
       <jvmarg line="${args}"/>
-      <jvmarg line="-Djava.util.logging.config.file=log.properties"/>
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.run.classpath"/>
       <formatter type="${junit.formatter}"/>

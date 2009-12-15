@@ -292,6 +292,7 @@ public class CoreContainer
           }
           opt = DOMUtil.getAttr(node, CoreAdminParams.DATA_DIR, null);
           if(solrDataDirOverride != null && name.equals("")) {
+            System.out.println("set data dir override:" + solrDataDirOverride);
             p.setDataDir(solrDataDirOverride);
           }else if (opt != null) {
             p.setDataDir(opt);
@@ -468,7 +469,7 @@ public class CoreContainer
         schema = new IndexSchema(config, dcore.getSchemaName(), null);
       }
     }
-    SolrCore core = new SolrCore(dcore.getName(), null, config, schema, dcore);
+    SolrCore core = new SolrCore(dcore.getName(), dcore.getDataDir(), config, schema, dcore);
     return core;
   }
     
