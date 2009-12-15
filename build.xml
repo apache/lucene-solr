@@ -529,6 +529,8 @@
   	
     <solr-jar destfile="${dist}/apache-solr-dataimporthandler-src-${version}.jar"
               basedir="contrib/dataimporthandler/src/main/java" />
+    <solr-jar destfile="${dist}/apache-solr-dataimporthandler-extras-src-${version}.jar"
+              basedir="contrib/dataimporthandler/src/extras/main/java" />
 
     <solr-jar destfile="${dist}/apache-solr-cell-src-${version}.jar"
               basedir="contrib/extraction/src" />
@@ -731,6 +733,7 @@
     <sign-maven-dependency-artifacts artifact.id="solr-commons-csv" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-core" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-dataimporthandler" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-maven-artifacts artifact.id="solr-dataimporthandler-extras" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-clustering" gpg.passphrase="${gpg.passphrase}"/>
 
     <sign-maven-artifacts artifact.id="solr-cell" gpg.passphrase="${gpg.passphrase}"/>
@@ -790,6 +793,15 @@
                  jar.file="${dist}/apache-solr-dataimporthandler-${version}.jar">
         <artifact-attachments>
           <attach file="${dist}/apache-solr-dataimporthandler-src-${version}.jar" classifier="sources"/>
+          <attach file="${dist}/apache-solr-dataimporthandler-docs-${version}.jar" classifier="javadoc"/>
+        </artifact-attachments>
+      </m2-deploy>
+
+      <m2-deploy pom.xml="contrib/dataimporthandler/solr-dataimporthandler-extras-pom.xml.template"
+                 jar.file="${dist}/apache-solr-dataimporthandler-extras-${version}.jar">
+
+        <artifact-attachments>
+          <attach file="${dist}/apache-solr-dataimporthandler-extras-src-${version}.jar" classifier="sources"/>
           <attach file="${dist}/apache-solr-dataimporthandler-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
       </m2-deploy>

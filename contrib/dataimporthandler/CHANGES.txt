@@ -50,7 +50,7 @@ Other Changes
 
 Build
 ----------------------
-* SOLR-1643: Moved dataimporthandler extras into dataimporthandler core (shalin)
+
 
 Documentation
 ----------------------
