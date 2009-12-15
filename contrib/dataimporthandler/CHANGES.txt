@@ -31,6 +31,8 @@ New Features
 
 * SOLR-1358 : Integration of Tika and DataImportHandler ( Akshay Ukey, noble)
 
+* SOLR-1654 : TikaEntityProcessor example added DIHExample (Akshay Ukey via noble)
+
 
 Optimizations
 ----------------------
