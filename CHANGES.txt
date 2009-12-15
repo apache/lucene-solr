@@ -69,6 +69,8 @@ New Features
 
 * SOLR-1532: Allow StreamingUpdateSolrServer to use a provided HttpClient (Gabriele Renzi via shalin)
 
+* SOLR-1653: Add PatternReplaceCharFilter (koji)
+
 Optimizations
 ----------------------
 
