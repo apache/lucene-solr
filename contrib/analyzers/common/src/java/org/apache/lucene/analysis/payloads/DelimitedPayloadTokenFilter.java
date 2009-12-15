@@ -61,26 +61,19 @@ public final class DelimitedPayloadTokenFilter extends TokenFilter {
 
   @Override
   public boolean incrementToken() throws IOException {
-    boolean result = false;
     if (input.incrementToken()) {
       final char[] buffer = termAtt.termBuffer();
       final int length = termAtt.termLength();
-      //look for the delimiter
-      boolean seen = false;
       for (int i = 0; i < length; i++) {
         if (buffer[i] == delimiter) {
-          termAtt.setTermBuffer(buffer, 0, i);
           payAtt.setPayload(encoder.encode(buffer, i + 1, (length - (i + 1))));
-          seen = true;
-          break;//at this point, we know the whole piece, so we can exit.  If we don't see the delimiter, then the termAtt is the same
+          termAtt.setTermLength(i); // simply set a new length
+          return true;
         }
       }
-      if (seen == false) {
-        //no delimiter
-        payAtt.setPayload(null);
-      }
-      result = true;
-    }
-    return result;
+      // we have not seen the delimiter
+      payAtt.setPayload(null);
+      return true;
+    } else return false;
   }
 }

@@ -65,6 +65,12 @@ Build
    into core, and moved the ICU-based collation support into contrib/icu.  
    (Robert Muir)
 
+Optimizations
+
+ * LUCENE-2157: DelimitedPayloadTokenFilter no longer copies the buffer
+   over itsself. Instead it sets only the length. This patch also optimizes
+   the logic of the filter and uses NIO for IdentityEncoder. (Uwe Schindler)
+
 Test Cases
 
  * LUCENE-2115: Cutover contrib tests to use Java5 generics.  (Kay Kay
