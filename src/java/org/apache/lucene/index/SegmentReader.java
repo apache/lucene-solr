@@ -1286,6 +1286,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     throw new IllegalArgumentException(reader + " is not a SegmentReader or a single-segment DirectoryReader");
   }
 
+  @Override
   public int getTermInfosIndexDivisor() {
     return core.termsIndexDivisor;
   }
