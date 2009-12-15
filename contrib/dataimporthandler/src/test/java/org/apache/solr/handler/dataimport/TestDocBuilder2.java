@@ -298,7 +298,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
           "    </document>\n" +
           "</dataConfig>";
 
-   private final String dataConfigWithDynamicTransformer = "<dataConfig>\n" +
+   private final String dataConfigWithDynamicTransformer = "<dataConfig> <dataSource type=\"MockDataSource\"/>\n" +
           "    <document>\n" +
           "        <entity name=\"books\" query=\"select * from x\"" +
            "                transformer=\"TestDocBuilder2$AddDynamicFieldTransformer\">\n" +
@@ -308,7 +308,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
           "    </document>\n" +
           "</dataConfig>";
 
-  private final String dataConfigForSkipTransform = "<dataConfig>\n" +
+  private final String dataConfigForSkipTransform = "<dataConfig> <dataSource  type=\"MockDataSource\"/>\n" +
           "    <document>\n" +
           "        <entity name=\"books\" query=\"select * from x\"" +
            "                transformer=\"TemplateTransformer\">\n" +
@@ -319,7 +319,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
           "    </document>\n" +
           "</dataConfig>";
 
-  private final String dataConfigWithTwoEntities = "<dataConfig>\n" +
+  private final String dataConfigWithTwoEntities = "<dataConfig><dataSource type=\"MockDataSource\"/>\n" +
           "    <document>\n" +
           "        <entity name=\"books\" query=\"select * from x\">" +
           "            <field column=\"id\" />\n" +
@@ -331,7 +331,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
           "    </document>\n" +
           "</dataConfig>";
 
-  private final String dataConfigWithCaseInsensitiveFields = "<dataConfig>\n" +
+  private final String dataConfigWithCaseInsensitiveFields = "<dataConfig> <dataSource  type=\"MockDataSource\"/>\n" +
           "    <document onImportStart=\"TestDocBuilder2$StartEventListener\" onImportEnd=\"TestDocBuilder2$EndEventListener\">\n" +
           "        <entity name=\"books\" query=\"select * from x\">\n" +
           "            <field column=\"ID\" />\n" +
@@ -340,7 +340,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
           "    </document>\n" +
           "</dataConfig>";
 
-  private final String dataConfigWithTemplatizedFieldNames = "<dataConfig>\n" +
+  private final String dataConfigWithTemplatizedFieldNames = "<dataConfig><dataSource  type=\"MockDataSource\"/>\n" +
           "    <document>\n" +
           "        <entity name=\"books\" query=\"select * from x\">\n" +
           "            <field column=\"mypk\" name=\"${dih.request.mypk}\" />\n" +

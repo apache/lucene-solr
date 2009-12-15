@@ -328,11 +328,6 @@
   </requestHandler>
   
   <requestHandler name="/dataimport" class="org.apache.solr.handler.dataimport.DataImportHandler">
-    <lst name="defaults">
-      <lst name="datasource">
-         <str name="type">MockDataSource</str>
-      </lst>
-    </lst>
   </requestHandler>
     
   <!--

@@ -275,7 +275,7 @@ public class TestSqlEntityProcessorDelta2 extends AbstractDataImportHandlerTest 
     assertQ(req("desc:goodbye"), "//*[@numFound='1']");
   }
 
-  private static String dataConfig_delta2 = "<dataConfig>\n"
+  private static String dataConfig_delta2 = "<dataConfig><dataSource  type=\"MockDataSource\"/>\n"
     + "       <document>\n"
     + "               <entity name=\"x\" transformer=\"TemplateTransformer\""
     + "				query=\"" + FULLIMPORT_QUERY + "\""

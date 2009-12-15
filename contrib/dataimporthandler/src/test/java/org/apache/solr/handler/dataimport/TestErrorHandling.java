@@ -133,6 +133,7 @@ public class TestErrorHandling extends AbstractDataImportHandlerTest {
 
   private String dataConfigWithTransformer = "<dataConfig>\n" +
           "        <dataSource name=\"str\" type=\"TestErrorHandling$StringDataSource\" />" +
+          "<dataSource  type=\"MockDataSource\"/>" +
           "    <document>\n" +
           "        <entity name=\"node\" dataSource=\"str\" processor=\"XPathEntityProcessor\" url=\"test\" forEach=\"/root/node\">\n" +
           "            <field column=\"id\" xpath=\"/root/node/id\" />\n" +

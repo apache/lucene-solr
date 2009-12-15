@@ -279,6 +279,12 @@ public class DataConfig {
         dataSources.put(p.getProperty("name"), p);
       }
     }
+    if(dataSources.get(null) == null){
+      for (Properties properties : dataSources.values()) {
+        dataSources.put(null,properties);
+        break;        
+      } 
+    }
   }
 
   private static String getStringAttribute(Element e, String name, String def) {

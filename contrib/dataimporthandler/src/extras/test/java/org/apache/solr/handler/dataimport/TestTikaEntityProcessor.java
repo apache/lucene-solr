@@ -46,9 +46,9 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTest {
   public void testIndexingWithTikaEntityProcessor() throws Exception {
     String conf =
             "<dataConfig>" +
-                    "  <dataSource name=\"binary\" type=\"BinFileDataSource\"/>" +
+                    "  <dataSource type=\"BinFileDataSource\"/>" +
                     "  <document>" +
-                    "    <entity processor=\"TikaEntityProcessor\" url=\"../../../../../extraction/src/test/resources/solr-word.pdf\" dataSource=\"binary\">" +
+                    "    <entity processor=\"TikaEntityProcessor\" url=\"../../../../../extraction/src/test/resources/solr-word.pdf\" >" +
                     "      <field column=\"Author\" meta=\"true\" name=\"author\"/>" +
                     "      <field column=\"title\" meta=\"true\" name=\"docTitle\"/>" +
                     "      <field column=\"text\"/>" +
