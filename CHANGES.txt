@@ -24,6 +24,7 @@ $Id$
 ==================  1.5.0-dev ==================
 Upgrading from Solr 1.4
 ----------------------
+The experimental ALIAS command is removed in Solr 1.5 (SOLR-1637).
 
 Versions of Major Components
 ---------------------
@@ -63,6 +64,8 @@ New Features
 * SOLR-1139: Add TermsComponent Query and Response Support in SolrJ (Matt Weber via shalin)
 
 * SOLR-1177: Distributed Search support for TermsComponent (Matt Weber via shalin)
+
+* SOLR-1621: Allow current single core deployments to be specified by solr.xml (Mark Miller , noble)
 
 Optimizations
 ----------------------
@@ -156,6 +159,8 @@ Other Changes
 * Upgraded to Lucene 2.9-dev r888785 (shalin)
 
 * SOLR-1610: Generify SolrCache (Jason Rutherglen via shalin)
+
+* SOLR-1637: Remove ALIAS command
 
 Build
 ----------------------

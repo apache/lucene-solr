@@ -1,3 +1,5 @@
+<%@ page import="org.apache.solr.core.SolrCore" %>
+<%@ page import="java.util.Collection" %>
 <%--
  Licensed to the Apache Software Foundation (ASF) under one or more
  contributor license agreements.  See the NOTICE file distributed with
@@ -29,11 +31,16 @@
 
 <% 
   org.apache.solr.core.CoreContainer cores = (org.apache.solr.core.CoreContainer)request.getAttribute("org.apache.solr.CoreContainer");
+  Collection<SolrCore> solrCores = cores.getCores();
   if( cores != null
-   && cores.getCores().size() > 0 // HACK! check that we have valid names...
-   && cores.getCores().iterator().next().getName().length() != 0 ) { 
-    for( org.apache.solr.core.SolrCore core : cores.getCores() ) {%>
-<a href="<%= core.getName() %>/admin/">Admin <%= core.getName() %></a><br/>
+   && solrCores.size() > 0 // HACK! check that we have valid names...
+   && solrCores.iterator().next().getName().length() != 0 ) {
+    for( org.apache.solr.core.SolrCore core : cores.getCores() ) {
+       String coreName = core.getName();
+      if("".equals(coreName) ) coreName =".";
+%>
+<a href="<%= coreName %>/admin/">Admin <%= core.getName() %></a>
+<br/>
 <% }} else { %>
 <a href="admin/">Solr Admin</a>
 <% } %>

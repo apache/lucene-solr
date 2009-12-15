@@ -17,8 +17,6 @@
 
 package org.apache.solr.client.solrj;
 
-import java.io.File;
-
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -132,35 +130,6 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     long after = mcr.getStartTime( name ).getTime();
     assertTrue( "should have more recent time: "+after+","+before, after > before );
 
-    // test alias
-    CoreAdminRequest.aliasCore("core1","corefoo",coreadmin);
-    assertEquals( 1, getSolrCore1().query( new SolrQuery( "id:BBB" ) ).getResults().size() );
-    assertEquals( 1, getSolrCore("corefoo").query( new SolrQuery( "id:BBB" ) ).getResults().size() );
-
-    // test that reload affects aliases
-    CoreAdminRequest.reloadCore("core1", coreadmin);
-
-    // this is only an effective test for embedded, where we have
-    // direct access to the core container.
-    SolrCore c1 = cores.getCore("core1");
-    SolrCore c2 = cores.getCore("corefoo");
-    assertTrue(c1 == c2);
-    if (c1 != null) c1.close();
-    if (c2 != null) c2.close();
-
-    // retest core query
-    assertEquals( 1, getSolrCore1().query( new SolrQuery( "id:BBB" ) ).getResults().size() );
-
-    // test close
-    CoreAdminRequest.unloadCore("corefoo",coreadmin);
-    try {
-      getSolrCore("corefoo").query( new SolrQuery( "id:BBB" ) );
-      fail( "corefoo should be gone" );
-    }
-    catch( Exception ex ) {}
-    // aliased core should still work
-    assertEquals( 1, getSolrCore1().query( new SolrQuery( "id:BBB" ) ).getResults().size() );
-    
     // test move
     CoreAdminRequest.renameCore("core1","corea",coreadmin);
     CoreAdminRequest.renameCore("corea","coreb",coreadmin);

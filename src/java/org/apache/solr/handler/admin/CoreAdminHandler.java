@@ -41,7 +41,9 @@ import org.apache.lucene.store.Directory;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.Set;
 
 /**
  * @version $Id$
@@ -118,8 +120,8 @@ public class CoreAdminHandler extends RequestHandlerBase {
         }
 
         case ALIAS: {
-          doPersist = this.handleAliasAction(req, rsp);
-          break;
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'ALIAS' is not supported " +
+            req.getParams().get(CoreAdminParams.ACTION));
         }
 
         case UNLOAD: {
@@ -291,6 +293,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
    * @return true if a modification has resulted that requires persistance 
    *         of the CoreContainer configuration.
    */
+  @Deprecated
   protected boolean handleAliasAction(SolrQueryRequest req, SolrQueryResponse rsp) {
     SolrParams params = req.getParams();
 

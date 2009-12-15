@@ -17,14 +17,7 @@
 
 package org.apache.solr.core;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,7 +35,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.XML;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.FileUtils;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.schema.IndexSchema;
@@ -58,6 +50,8 @@ import org.xml.sax.SAXException;
  */
 public class CoreContainer 
 {
+  private static final String DEFAULT_CORE_NAME = "DEFAULT_CORE";
+
   protected static Logger log = LoggerFactory.getLogger(CoreContainer.class);
   
   protected final Map<String, SolrCore> cores = new LinkedHashMap<String, SolrCore>();
@@ -69,12 +63,14 @@ public class CoreContainer
   protected String libDir = null;
   protected ClassLoader libLoader = null;
   protected SolrResourceLoader loader = null;
+  @Deprecated
   protected java.lang.ref.WeakReference<SolrCore> adminCore = null;
   protected Properties containerProperties;
   protected Map<String ,IndexSchema> indexSchemaCache;
   protected String adminHandler;
   protected boolean shareSchema;
   protected String solrHome;
+  protected String solrConfigFilenameOverride;
 
   public CoreContainer() {
     solrHome = SolrResourceLoader.locateSolrHome();
@@ -100,47 +96,37 @@ public class CoreContainer
     public String getSolrConfigFilename() {
       return solrConfigFilename;
     }
-
+   @Deprecated
     public void setSolrConfigFilename(String solrConfigFilename) {
       this.solrConfigFilename = solrConfigFilename;
     }
 
     // core container instantiation
-    public CoreContainer initialize() throws IOException, ParserConfigurationException, SAXException {
+    public CoreContainer initialize() throws IOException,
+        ParserConfigurationException, SAXException {
       CoreContainer cores = null;
       String solrHome = SolrResourceLoader.locateSolrHome();
-      File fconf = new File(solrHome, solrConfigFilename == null? "solr.xml": solrConfigFilename);
+      File fconf = new File(solrHome, solrConfigFilename == null ? "solr.xml"
+          : solrConfigFilename);
       log.info("looking for solr.xml: " + fconf.getAbsolutePath());
-
-      if (fconf.exists()) {
-        cores = new CoreContainer();
+      cores = new CoreContainer();
+      cores.solrConfigFilenameOverride = solrConfigFilename;
+      if (fconf.exists())
         cores.load(solrHome, fconf);
-        abortOnConfigurationError = false;
-        // if any core aborts on startup, then abort
-        for (SolrCore c : cores.getCores()) {
-          if (c.getSolrConfig().getBool("abortOnConfigurationError", false)) {
-            abortOnConfigurationError = true;
-            break;
-          }
-        }
-        solrConfigFilename = cores.getConfigFile().getName();
-      } else {
-        // perform compatibility init
-        cores = new CoreContainer(solrHome);
-        CoreDescriptor dcore = new CoreDescriptor(cores, "", ".");
-        dcore.setCoreProperties(null);
-        SolrResourceLoader resourceLoader = new SolrResourceLoader(solrHome, null, getCoreProps(solrHome, null,dcore.getCoreProperties()));
-        cores.loader = resourceLoader;
-        SolrConfig cfg = solrConfigFilename == null ?
-                new SolrConfig(resourceLoader, SolrConfig.DEFAULT_CONF_FILE,null) :
-                new SolrConfig(resourceLoader, solrConfigFilename,null);
-        SolrCore singlecore = new SolrCore(null, null, cfg, null, dcore);
-        abortOnConfigurationError = cfg.getBool(
-                "abortOnConfigurationError", abortOnConfigurationError);
-        cores.register("", singlecore, false);
-        cores.setPersistent(false);
-        solrConfigFilename = cfg.getName();
+      else {
+        cores.load(solrHome, new ByteArrayInputStream(DEF_SOLR_XML.getBytes()));
+        cores.configFile = fconf;
       }
+      abortOnConfigurationError = false;
+      // if any core aborts on startup, then abort
+      for (SolrCore c : cores.getCores()) {
+        if (c.getSolrConfig().getBool("abortOnConfigurationError", false)) {
+          abortOnConfigurationError = true;
+          break;
+        }
+      }
+      solrConfigFilename = cores.getConfigFile().getName();
+      
       return cores;
     }
   }
@@ -176,7 +162,7 @@ public class CoreContainer
    * @throws IOException
    * @throws SAXException
    */
-  public CoreContainer(String dir, File configFile ) throws ParserConfigurationException, IOException, SAXException 
+  public CoreContainer(String dir, File configFile) throws ParserConfigurationException, IOException, SAXException 
   {
     this.load(dir, configFile);
   }
@@ -208,9 +194,23 @@ public class CoreContainer
    */
   public void load(String dir, File configFile ) throws ParserConfigurationException, IOException, SAXException {
     this.configFile = configFile;
+    this.load(dir, new FileInputStream(configFile));
+  } 
+
+  /**
+   * Load a config file listing the available solr cores.
+   * 
+   * @param dir the home directory of all resources.
+   * @param cfgis the configuration file InputStream
+   * @param configName
+   * @throws ParserConfigurationException
+   * @throws IOException
+   * @throws SAXException
+   */
+  public void load(String dir, InputStream cfgis)
+      throws ParserConfigurationException, IOException, SAXException {
     this.loader = new SolrResourceLoader(dir);
     solrHome = loader.getInstanceDir();
-    FileInputStream cfgis = new FileInputStream(configFile);
     try {
       Config cfg = new Config(loader, null, cfgis, null);
 
@@ -246,18 +246,23 @@ public class CoreContainer
       }
 
       NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core", XPathConstants.NODESET);
-
+      boolean defaultCoreFound = false;
       for (int i=0; i<nodes.getLength(); i++) {
         Node node = nodes.item(i);
         try {
-          String names = DOMUtil.getAttr(node, "name", null);
-          List<String> aliases = StrUtils.splitSmart(names,',');
-          String name = aliases.get(0);
+          String name = DOMUtil.getAttr(node, "name", null);
+          if(name.equals(DEFAULT_CORE_NAME)){
+            if(defaultCoreFound) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Only one 'DEFAULT_CORE' is allowed ");            
+            defaultCoreFound = true;
+            name="";
+          }
           CoreDescriptor p = new CoreDescriptor(this, name, DOMUtil.getAttr(node, "instanceDir", null));
 
           // deal with optional settings
           String opt = DOMUtil.getAttr(node, "config", null);
-          if (opt != null) {
+          if(solrConfigFilenameOverride != null && name.equals("")) {
+            p.setConfigName(solrConfigFilenameOverride);
+          } else if (opt != null) {
             p.setConfigName(opt);
           }
           opt = DOMUtil.getAttr(node, "schema", null);
@@ -276,12 +281,6 @@ public class CoreContainer
           p.setCoreProperties(readProperties(cfg, node));
 
           SolrCore core = create(p);
-
-          for (int a=1; a<aliases.size(); a++) {
-            core.open();
-            register(aliases.get(a), core, false);
-          }
-
           register(name, core, false);
         }
         catch (Throwable ex) {
@@ -479,6 +478,7 @@ public class CoreContainer
    */
 
   public void reload(String name) throws ParserConfigurationException, IOException, SAXException {
+    name= checkDefault(name);
     SolrCore core;
     synchronized(cores) {
       core = cores.get(name);
@@ -487,19 +487,13 @@ public class CoreContainer
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "No such core: " + name );
 
     SolrCore newCore = create(core.getCoreDescriptor());
-
-    // point all aliases to the reloaded core
-    for (String alias : getCoreNames(core)) {
-      if (!name.equals(alias)) {
-        newCore.open();
-        register(alias, newCore, false);
-      }
-    }
-
     register(name, newCore, false);
   }
-    
-  
+
+  private String checkDefault(String name) {
+    return name.length() == 0  || DEFAULT_CORE_NAME.equals(name) || name.trim().length() == 0 ? "" : name;
+  } 
+
   /**
    * Swaps two SolrCore descriptors.
    * @param n0
@@ -509,6 +503,8 @@ public class CoreContainer
     if( n0 == null || n1 == null ) {
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Can not swap unnamed cores." );
     }
+    n0 = checkDefault(n0);
+    n1 = checkDefault(n1);
     synchronized( cores ) {
       SolrCore c0 = cores.get(n0);
       SolrCore c1 = cores.get(n1);
@@ -520,7 +516,9 @@ public class CoreContainer
       cores.put(n1, c0);
 
       c0.setName(n1);
+      c0.getCoreDescriptor().name = n1;
       c1.setName(n0);
+      c1.getCoreDescriptor().name = n0;
     }
 
 
@@ -529,6 +527,7 @@ public class CoreContainer
   
   /** Removes and returns registered core w/o decrementing it's reference count */
   public SolrCore remove( String name ) {
+    name = checkDefault(name);    
     synchronized(cores) {
       return cores.remove( name );
     }
@@ -542,6 +541,7 @@ public class CoreContainer
    * @return the core if found
    */
   public SolrCore getCore(String name) {
+    name= checkDefault(name);
     synchronized(cores) {
       SolrCore core = cores.get(name);
       if (core != null)
@@ -708,24 +708,10 @@ public class CoreContainer
     if(shareSchema) writeAttribute(w, "shareSchema","true");
     w.write(">\n");
 
-    Map<SolrCore, LinkedList<String>> aliases = new HashMap<SolrCore,LinkedList<String>>();
-
     synchronized(cores) {
-      for (Map.Entry<String, SolrCore> entry : cores.entrySet()) {
-        String name = entry.getKey();
-        LinkedList<String> a = aliases.get(entry.getValue());
-        if (a==null) a = new LinkedList<String>();
-        if (name.equals(entry.getValue().getName())) {
-          a.addFirst(name);
-        } else {
-          a.addLast(name);
-        }
-        aliases.put(entry.getValue(), a);
+      for (SolrCore solrCore : cores.values()) {
+        persist(w,solrCore.getCoreDescriptor());
       }
-    }
-
-    for (Map.Entry<SolrCore, LinkedList<String>> entry : aliases.entrySet()) {
-      persist(w, entry.getValue(), entry.getKey().getCoreDescriptor());
     }
 
     w.write("</cores>\n");
@@ -742,9 +728,9 @@ public class CoreContainer
   }
   
   /** Writes the cores configuration node for a given core. */
-  void persist(Writer w, List<String> aliases, CoreDescriptor dcore) throws IOException {
+  void persist(Writer w, CoreDescriptor dcore) throws IOException {
     w.write("  <core");
-    writeAttribute(w,"name",StrUtils.join(aliases,','));
+    writeAttribute(w,"name",dcore.name);
     writeAttribute(w,"instanceDir",dcore.getInstanceDir());
     //write config (if not default)
     String opt = dcore.getConfigName();
@@ -819,4 +805,10 @@ public class CoreContainer
   public String getSolrHome() {
     return solrHome;
   }
+  private static final String DEF_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+          "<solr persistent=\"false\">\n" +
+          "  <cores adminPath=\"/admin/cores\">\n" +
+          "    <core name=\""+ DEFAULT_CORE_NAME + "\" instanceDir=\".\" />\n" +
+          "  </cores>\n" +
+          "</solr>";
 }

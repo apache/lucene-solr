@@ -66,6 +66,7 @@ public interface CoreAdminParams
     PERSIST,
     SWAP,
     RENAME,
+    @Deprecated
     ALIAS,
     MERGEINDEXES;
     
