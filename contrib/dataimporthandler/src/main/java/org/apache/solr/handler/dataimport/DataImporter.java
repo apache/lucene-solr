@@ -149,8 +149,12 @@ public class DataImporter {
   }
 
   private void identifyPk(DataConfig.Entity entity) {
-    String schemaPk = schema.getUniqueKeyField().getName();
-    //if no fields are mentioned . solr uniqeKey is same as dih 'pk'
+    SchemaField uniqueKey = schema.getUniqueKeyField();
+    String schemaPk = "";
+    if (uniqueKey != null)
+      schemaPk = uniqueKey.getName();
+    else return;
+    //if no fields are mentioned . solr uniqueKey is same as dih 'pk'
     entity.pkMappingFromSchema = schemaPk;
     for (DataConfig.Field field : entity.fields) {
       if(field.getName().equals(schemaPk)) {
@@ -267,7 +271,6 @@ public class DataImporter {
   }
 
   DataSource getDataSourceInstance(DataConfig.Entity key, String name, Context ctx) {
-    if ("null".equals(name)) return new MockDataSource();
     Properties p = dataSourceProps.get(name);
     if (p == null)
       p = config.dataSources.get(name);
@@ -279,15 +282,15 @@ public class DataImporter {
       throw new DataImportHandlerException(SEVERE,
               "No dataSource :" + name + " available for entity :"
                       + key.name);
-    String impl = p.getProperty(TYPE);
+    String type = p.getProperty(TYPE);
     DataSource dataSrc = null;
-    if (impl == null) {
+    if (type == null) {
       dataSrc = new JdbcDataSource();
     } else {
       try {
-        dataSrc = (DataSource) DocBuilder.loadClass(impl, getCore()).newInstance();
+        dataSrc = (DataSource) DocBuilder.loadClass(type, getCore()).newInstance();
       } catch (Exception e) {
-        wrapAndThrow(SEVERE, e, "Invalid type for data source: " + impl);
+        wrapAndThrow(SEVERE, e, "Invalid type for data source: " + type);
       }
     }
     try {

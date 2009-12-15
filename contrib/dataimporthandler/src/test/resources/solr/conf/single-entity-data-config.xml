@@ -1,4 +1,5 @@
 <dataConfig>
+  <dataSource type="MockDataSource"/>
 	<document>
 		<entity name="x" query="select * from x">
 			<field column="id" />

@@ -30,7 +30,7 @@ import java.io.IOException;
  * 
  * @version $Id$
  */
-public interface SolrCache extends SolrInfoMBean {
+public interface SolrCache<K,V> extends SolrInfoMBean {
   public final static Logger log = LoggerFactory.getLogger(SolrCache.class);
 
 
@@ -82,10 +82,10 @@ public interface SolrCache extends SolrInfoMBean {
   public int size();
 
   /** :TODO: copy from Map */
-  public Object put(Object key, Object value);
+  public V put(K key, V value);
 
   /** :TODO: copy from Map */
-  public Object get(Object key);
+  public V get(K key);
 
   /** :TODO: copy from Map */
   public void clear();
@@ -125,7 +125,7 @@ public interface SolrCache extends SolrInfoMBean {
    * Warm this cache associated with <code>searcher</code> using the <code>old</code>
    * cache object.  <code>this</code> and <code>old</code> will have the same concrete type.
    */
-  void warm(SolrIndexSearcher searcher, SolrCache old) throws IOException;
+  void warm(SolrIndexSearcher searcher, SolrCache<K,V> old) throws IOException;
   // Q: an alternative to passing the searcher here would be to pass it in
   // init and have the cache implementation save it.
 

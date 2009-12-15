@@ -218,14 +218,14 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTest {
     }
   }
 
-  private static String dataConfig_LastIndexTime = "<dataConfig>\n" +
+  private static String dataConfig_LastIndexTime = "<dataConfig><dataSource  type=\"MockDataSource\"/>\n" +
           "\t<function name=\"checkDateFormat\" class=\"org.apache.solr.handler.dataimport.TestSqlEntityProcessor2$DateFormatValidatingEvaluator\"/>\n" +
           "\t<document>\n" +
           "\t\t<entity name=\"x\" query=\"select * from x where last_modified > ${dih.functions.checkDateFormat(dih.last_index_time)}\" />\n" +
           "\t</document>\n" +
           "</dataConfig>";
 
-  private static String dataConfig = "<dataConfig>\n"
+  private static String dataConfig = "<dataConfig><dataSource  type=\"MockDataSource\"/>\n"
           + "       <document>\n"
           + "               <entity name=\"x\" pk=\"id\" query=\"select * from x\" deletedPkQuery=\"select id from x where last_modified > NOW AND deleted='true'\" deltaQuery=\"select id from x where last_modified > NOW\">\n"
           + "                       <field column=\"id\" />\n"
@@ -234,7 +234,7 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTest {
           + "                       </entity>\n" + "               </entity>\n"
           + "       </document>\n" + "</dataConfig>\n";
 
-  private static String dataConfig_deltaimportquery = "<dataConfig>\n"
+  private static String dataConfig_deltaimportquery = "<dataConfig><dataSource  type=\"MockDataSource\"/>\n"
           + "       <document>\n"
           + "               <entity name=\"x\" deltaImportQuery=\"select * from x where id=${dataimporter.delta.id}\" deltaQuery=\"select id from x where last_modified > NOW\">\n"
           + "                       <field column=\"id\" />\n"

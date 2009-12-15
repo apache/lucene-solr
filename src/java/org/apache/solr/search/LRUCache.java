@@ -31,7 +31,7 @@ import java.net.URL;
 /**
  * @version $Id$
  */
-public class LRUCache implements SolrCache {
+public class LRUCache<K,V> implements SolrCache<K,V> {
 
   /* An instance of this class will be shared across multiple instances
    * of an LRUCache at the same time.  Make sure everything is thread safe.
@@ -54,7 +54,7 @@ public class LRUCache implements SolrCache {
 
   private long warmupTime = 0;
 
-  private Map map;
+  private Map<K,V> map;
   private String name;
   private int autowarmCount;
   private State state;
@@ -79,7 +79,7 @@ public class LRUCache implements SolrCache {
     }
     description += ')';
 
-    map = new LinkedHashMap(initialSize, 0.75f, true) {
+    map = new LinkedHashMap<K,V>(initialSize, 0.75f, true) {
         protected boolean removeEldestEntry(Map.Entry eldest) {
           if (size() > limit) {
             // increment evictions regardless of state.
@@ -113,7 +113,7 @@ public class LRUCache implements SolrCache {
     }
   }
 
-  public Object put(Object key, Object value) {
+  public V put(K key, V value) {
     synchronized (map) {
       if (state == State.LIVE) {
         stats.inserts.incrementAndGet();
@@ -126,9 +126,9 @@ public class LRUCache implements SolrCache {
     }
   }
 
-  public Object get(Object key) {
+  public V get(K key) {
     synchronized (map) {
-      Object val = map.get(key);
+      V val = map.get(key);
       if (state == State.LIVE) {
         // only increment lookups and hits if we are live.
         lookups++;
@@ -156,10 +156,10 @@ public class LRUCache implements SolrCache {
     return state;
   }
 
-  public void warm(SolrIndexSearcher searcher, SolrCache old) throws IOException {
+  public void warm(SolrIndexSearcher searcher, SolrCache<K,V> old) throws IOException {
     if (regenerator==null) return;
     long warmingStartTime = System.currentTimeMillis();
-    LRUCache other = (LRUCache)old;
+    LRUCache<K,V> other = (LRUCache<K,V>)old;
 
     // warm entries
     if (autowarmCount != 0) {
@@ -172,7 +172,7 @@ public class LRUCache implements SolrCache {
         keys = new Object[sz];
         vals = new Object[sz];
 
-        Iterator iter = other.map.entrySet().iterator();
+        Iterator<Map.Entry<K, V>> iter = other.map.entrySet().iterator();
 
         // iteration goes from oldest (least recently used) to most recently used,
         // so we need to skip over the oldest entries.
@@ -181,7 +181,7 @@ public class LRUCache implements SolrCache {
 
 
         for (int i=0; i<sz; i++) {
-          Map.Entry entry = (Map.Entry)iter.next();
+          Map.Entry<K,V> entry = iter.next();
           keys[i]=entry.getKey();
           vals[i]=entry.getValue();
         }

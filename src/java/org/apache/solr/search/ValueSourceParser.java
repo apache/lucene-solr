@@ -32,13 +32,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.search.function.*;
 
-import org.apache.solr.search.function.distance.HaversineFunction;
-
-import org.apache.solr.search.function.distance.SquaredEuclideanFunction;
-import org.apache.solr.search.function.distance.VectorDistanceFunction;
-import org.apache.solr.search.function.distance.GeohashHaversineFunction;
-import org.apache.solr.search.function.distance.GeohashFunction;
-import org.apache.solr.search.function.distance.StringDistanceFunction;
+import org.apache.solr.search.function.distance.*;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 import java.io.IOException;
@@ -287,12 +281,12 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser(new DoubleParser("rad") {
       public double func(int doc, DocValues vals) {
-        return Math.toRadians(vals.doubleVal(doc));
+        return vals.doubleVal(doc) * DistanceUtils.DEGREES_TO_RADIANS;
       }
     });
     addParser(new DoubleParser("deg") {
       public double func(int doc, DocValues vals) {
-        return Math.toDegrees(vals.doubleVal(doc));
+        return vals.doubleVal(doc) * DistanceUtils.RADIANS_TO_DEGREES;
       }
     });
     addParser(new DoubleParser("sqrt") {

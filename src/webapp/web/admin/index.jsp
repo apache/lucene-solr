@@ -58,10 +58,11 @@
 <%-- List the cores (that arent this one) so we can switch --%>
 <% org.apache.solr.core.CoreContainer cores = (org.apache.solr.core.CoreContainer)request.getAttribute("org.apache.solr.CoreContainer");
   if (cores!=null) {
-    Collection<String> names = cores.getCoreNames();
+    Collection<SolrCore> names = cores.getCores();
     if (names.size() > 1) {%><tr><td><strong>Cores:</strong><br></td><td><%
-    for (String name : names) {
-    %>[<a href="../../<%=name%>/admin/"><%=name%></a>]<%         
+    for (SolrCore name : names) {
+      if(name.equals(core.getName())) continue;
+    %>[<a href="../../<%=name.getName()%>/admin/"><%=name%></a>]<%         
   }%></td></tr><%
 }}%>
 

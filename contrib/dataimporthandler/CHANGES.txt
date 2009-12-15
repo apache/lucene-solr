@@ -21,18 +21,30 @@ Detailed Change List
 New Features
 ----------------------
 
-* SOLR-1525 allow DIH to refer to core properties (noble)
-* SOLR-1547 TemplateTransformer copy objects more intelligently when there when the template is a single variable (noble)
-* SOLR-1627 VariableResolver should be fetched just in time (noble)
-* SOLR-1583 Create DataSources that return InputStream (noble) 
+* SOLR-1525 : allow DIH to refer to core properties (noble)
+
+* SOLR-1547 : TemplateTransformer copy objects more intelligently when there when the template is a single variable (noble)
+
+* SOLR-1627 : VariableResolver should be fetched just in time (noble)
+
+* SOLR-1583 : Create DataSources that return InputStream (noble)
+
+* SOLR-1358 : Integration of Tika and DataImportHandler ( Akshay Ukey, noble)
+
+* SOLR-1654 : TikaEntityProcessor example added DIHExample (Akshay Ukey via noble)
+
 
 Optimizations
 ----------------------
 
 Bug Fixes
 ----------------------
+* SOLR-1638: Fixed NullPointerException during import if uniqueKey is not specified
+  in schema (Akshay Ukey via shalin)
 
+* SOLR-1639: Fixed misleading error message when dataimport.properties is not writable (shalin)
 
+* SOLR-1598: Reader used in PlainTextEntityProcessor is not explicitly closed (Sascha Szott via noble)
 
 Other Changes
 ----------------------

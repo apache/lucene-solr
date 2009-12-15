@@ -19,44 +19,33 @@ package org.apache.solr.analysis;
 
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.lucene.analysis.CharStream;
 
 /**
-*
-* @version $Id$
-* @since Solr 1.4
-*
-*/
-public abstract class BaseCharFilterFactory implements CharFilterFactory {
-
-  public static final Logger log = LoggerFactory.getLogger(BaseCharFilterFactory.class);
-
-  /** The init args */
-  protected Map<String,String> args;
-
-  public Map<String, String> getArgs() {
-    return args;
-  }
+ * 
+ * @version $Id$
+ * @since Solr 1.5
+ */
+public class PatternReplaceCharFilterFactory extends BaseCharFilterFactory {
+  
+  private String pattern;
+  private String replacement;
+  private int maxBlockChars;
+  private String blockDelimiters;
 
   public void init(Map<String, String> args) {
-    this.args = args;
+    super.init( args );
+    pattern = args.get( "pattern" );
+    if( pattern == null )
+      pattern = "";
+    replacement = args.get( "replacement" );
+    if( replacement == null )
+      replacement = "";
+    maxBlockChars = getInt( "maxBlockChars", PatternReplaceCharFilter.DEFAULT_MAX_BLOCK_CHARS );
+    blockDelimiters = args.get( "blockDelimiters" );
   }
 
-  protected int getInt(String name) {
-    return getInt(name,-1,false);
-  }
-
-  protected int getInt(String name, int defaultVal) {
-    return getInt(name,defaultVal,true);
-  }
-
-  protected int getInt(String name, int defaultVal, boolean useDefault) {
-    String s = args.get(name);
-    if (s==null) {
-      if (useDefault) return defaultVal;
-      throw new RuntimeException("Configuration Error: missing parameter '" + name + "'");
-    }
-    return Integer.parseInt(s);
+  public CharStream create(CharStream input) {
+    return new PatternReplaceCharFilter( pattern, replacement, maxBlockChars, blockDelimiters, input );
   }
 }

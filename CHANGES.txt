@@ -24,6 +24,7 @@ $Id$
 ==================  1.5.0-dev ==================
 Upgrading from Solr 1.4
 ----------------------
+The experimental ALIAS command is removed in Solr 1.5 (SOLR-1637).
 
 Versions of Major Components
 ---------------------
@@ -55,6 +56,20 @@ New Features
 
 * SOLR-785: Distributed Search support for SpellCheckComponent
   (Matthew Woytowitz, shalin)
+
+* SOLR-1625: Add regexp support for TermsComponent (Uri Boness via noble)
+
+* SOLR-1297: Add sort by Function capability (gsingers)
+
+* SOLR-1139: Add TermsComponent Query and Response Support in SolrJ (Matt Weber via shalin)
+
+* SOLR-1177: Distributed Search support for TermsComponent (Matt Weber via shalin)
+
+* SOLR-1621: Allow current single core deployments to be specified by solr.xml (Mark Miller , noble)
+
+* SOLR-1532: Allow StreamingUpdateSolrServer to use a provided HttpClient (Gabriele Renzi via shalin)
+
+* SOLR-1653: Add PatternReplaceCharFilter (koji)
 
 Optimizations
 ----------------------
@@ -124,6 +139,9 @@ Bug Fixes
   DOMUtils - notably for plugin init params in solrconfig.xml.
   (hossman)
 
+* SOLR-1651: Fixed Incorrect dataimport handler package name in SolrResourceLoader
+  (Akshay Ukey via shalin)
+
 Other Changes
 ----------------------
 
@@ -143,6 +161,10 @@ Other Changes
   it easy to write test cases for other distributed components. (shalin)
 
 * Upgraded to Lucene 2.9-dev r888785 (shalin)
+
+* SOLR-1610: Generify SolrCache (Jason Rutherglen via shalin)
+
+* SOLR-1637: Remove ALIAS command
 
 Build
 ----------------------
@@ -908,6 +930,8 @@ Other Changes
     protected. If you happened to be overriding that method in custom code, overide getHighlighter instead. 
     Also, HighlightingUtils#getQueryScorer has been removed as it was deprecated and backcompat has been 
     broken with it anyway.  (Mark Miller)
+
+50. SOLR-1357 SolrInputDocument cannot process dynamic fields (Lars Grote via noble)
 
 Build
 ----------------------
