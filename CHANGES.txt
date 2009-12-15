@@ -32,6 +32,11 @@ Optimizations
  * LUCENE-2123 (partly): Fixes a slowdown / memory issue added by
    LUCENE-504.  (Uwe Schindler, Robert Muir, Mike McCandless)
 
+API Changes
+
+ * LUCENE-1609: Restore IndexReader.getTermInfosIndexDivisor (it was
+   accidentally removed in 3.0.0)  (Mike McCandless)
+
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy
