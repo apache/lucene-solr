@@ -1165,4 +1165,13 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public long getUniqueTermCount() throws IOException {
     throw new UnsupportedOperationException("this reader does not implement getUniqueTermCount()");
   }
+
+  /** For IndexReader implementations that use
+   *  TermInfosReader to read terms, this returns the
+   *  current indexDivisor as specified when the reader was
+   *  opened.
+   */
+  public int getTermInfosIndexDivisor() {
+    throw new UnsupportedOperationException("This reader does not support this method.");
+  }
 }
