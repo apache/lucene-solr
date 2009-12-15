@@ -27,6 +27,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.RequestEntity;
@@ -61,10 +62,26 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
   final Queue<Runner> runners;
   volatile CountDownLatch lock = null;  // used to block everything
   final int threadCount;
-  
-  public StreamingUpdateSolrServer(String solrServerUrl, int queueSize, int threadCount ) throws MalformedURLException  {
-    super( solrServerUrl );
-    queue = new LinkedBlockingQueue<UpdateRequest>( queueSize );
+
+  /**
+   * Uses an internal MultiThreadedHttpConnectionManager to manage http connections
+   *
+   * @param solrServerUrl The solr server url
+   * @param queueSize     The buffer size before the documents are sent o the server
+   * @param threadCount   The number of backgtound threads used to empty the queue
+   * @throws MalformedURLException
+   */
+  public StreamingUpdateSolrServer(String solrServerUrl, int queueSize, int threadCount) throws MalformedURLException {
+    this(solrServerUrl, null, queueSize, threadCount);
+  }
+
+  /**
+   * Uses the supplied HttpClient to send documents to the solr server, the HttpClient should be instantiated using a
+   * MultiThreadedHttpConnectionManager.
+   */
+  public StreamingUpdateSolrServer(String solrServerUrl, HttpClient client, int queueSize, int threadCount) throws MalformedURLException {
+    super(solrServerUrl, client);
+    queue = new LinkedBlockingQueue<UpdateRequest>(queueSize);
     this.threadCount = threadCount;
     runners = new LinkedList<Runner>();
   }

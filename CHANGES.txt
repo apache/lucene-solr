@@ -67,6 +67,8 @@ New Features
 
 * SOLR-1621: Allow current single core deployments to be specified by solr.xml (Mark Miller , noble)
 
+* SOLR-1532: Allow StreamingUpdateSolrServer to use a provided HttpClient (Gabriele Renzi via shalin)
+
 Optimizations
 ----------------------
 
