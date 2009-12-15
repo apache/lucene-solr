@@ -895,6 +895,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     return directory;
   }
 
+  @Override
   public int getTermInfosIndexDivisor() {
     return termInfosIndexDivisor;
   }
