@@ -53,6 +53,9 @@ Bug fixes
 
 * LUCENE-2142: FieldCacheImpl.getStringIndex no longer throws an
   exception when term count exceeds doc count.  (Mike McCandless)
+
+* LUCENE-2166: Don't incorrectly keep warning about the same immense
+  term, when IndexWriter.infoStream is on.  (Mike McCandless)
   
 New features
 
