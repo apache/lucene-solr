@@ -32,7 +32,6 @@ import java.util.Set;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -377,10 +376,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
       if (commit != null) {
         throw new IllegalArgumentException("a reader obtained from IndexWriter.getReader() cannot currently accept a commit");
-      }
-
-      if (!writer.isOpen(true)) {
-        throw new AlreadyClosedException("cannot reopen: the IndexWriter this reader was obtained from is now closed");
       }
 
       // TODO: right now we *always* make a new reader; in

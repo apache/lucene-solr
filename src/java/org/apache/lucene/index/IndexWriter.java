@@ -386,6 +386,9 @@ public class IndexWriter implements Closeable {
    *  loading a TermInfo.  The default value is 1.  Set this
    *  to -1 to skip loading the terms index entirely. */
   public IndexReader getReader(int termInfosIndexDivisor) throws IOException {
+
+    ensureOpen();
+
     if (infoStream != null) {
       message("flush at getReader");
     }
@@ -703,23 +706,19 @@ public class IndexWriter implements Closeable {
     notifyAll();
   }
 
-  synchronized final boolean isOpen(boolean includePendingClose) {
-    return !(closed || (includePendingClose && closing));
-  }
-
   /**
    * Used internally to throw an {@link
    * AlreadyClosedException} if this IndexWriter has been
    * closed.
    * @throws AlreadyClosedException if this IndexWriter is
    */
-  protected synchronized final void ensureOpen(boolean includePendingClose) throws AlreadyClosedException {
-    if (!isOpen(includePendingClose)) {
+  protected final void ensureOpen(boolean includePendingClose) throws AlreadyClosedException {
+    if (closed || (includePendingClose && closing)) {
       throw new AlreadyClosedException("this IndexWriter is closed");
     }
   }
 
-  protected synchronized final void ensureOpen() throws AlreadyClosedException {
+  protected final void ensureOpen() throws AlreadyClosedException {
     ensureOpen(true);
   }
 
@@ -2906,7 +2905,7 @@ public class IndexWriter implements Closeable {
     releaseWrite();
   }
 
-  private void blockAddIndexes(boolean includePendingClose) {
+  private void blockAddIndexes() {
 
     acquireRead();
 
@@ -2915,7 +2914,7 @@ public class IndexWriter implements Closeable {
 
       // Make sure we are still open since we could have
       // waited quite a while for last addIndexes to finish
-      ensureOpen(includePendingClose);
+      ensureOpen(false);
       success = true;
     } finally {
       if (!success)
@@ -4588,7 +4587,7 @@ public class IndexWriter implements Closeable {
         // Wait for any running addIndexes to complete
         // first, then block any from running until we've
         // copied the segmentInfos we intend to sync:
-        blockAddIndexes(false);
+        blockAddIndexes();
 
         // On commit the segmentInfos must never
         // reference a segment in another directory:
