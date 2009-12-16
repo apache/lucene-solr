@@ -243,8 +243,10 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
     for(int i=0;i<fieldCount;i++)
       fields[i].consumer.processFields(fields[i].fields, fields[i].fieldCount);
 
-    if (docState.maxTermPrefix != null && docState.infoStream != null)
-      docState.infoStream.println("WARNING: document contains at least one immense term (longer than the max length " + DocumentsWriter.MAX_TERM_LENGTH + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + docState.maxTermPrefix + "...'"); 
+    if (docState.maxTermPrefix != null && docState.infoStream != null) {
+      docState.infoStream.println("WARNING: document contains at least one immense term (longer than the max length " + DocumentsWriter.MAX_TERM_LENGTH + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + docState.maxTermPrefix + "...'");
+      docState.maxTermPrefix = null;
+    }
 
     final DocumentsWriter.DocWriter one = fieldsWriter.finishDocument();
     final DocumentsWriter.DocWriter two = consumer.finishDocument();
