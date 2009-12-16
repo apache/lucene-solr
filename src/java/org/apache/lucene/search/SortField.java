@@ -21,10 +21,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Locale;
 
-import org.apache.lucene.document.NumericField; // javadocs
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.util.StringHelper;
 
 /**
