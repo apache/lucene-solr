@@ -467,12 +467,13 @@ public class IndexWriter {
     // this method is called:
     poolReaders = true;
 
-    flush(true, true, true);
+    flush(true, true, false);
     
     // Prevent segmentInfos from changing while opening the
     // reader; in theory we could do similar retry logic,
     // just like we do when loading segments_N
     synchronized(this) {
+      applyDeletes();
       return new ReadOnlyDirectoryReader(this, segmentInfos, termInfosIndexDivisor);
     }
   }
@@ -4362,7 +4363,6 @@ public class IndexWriter {
       }
 
       if (flushDeletes) {
-        flushDeletesCount++;
         applyDeletes();
       }
       
@@ -5195,6 +5195,7 @@ public class IndexWriter {
   // Apply buffered deletes to all segments.
   private final synchronized boolean applyDeletes() throws CorruptIndexException, IOException {
     assert testPoint("startApplyDeletes");
+    flushDeletesCount++;
     SegmentInfos rollback = (SegmentInfos) segmentInfos.clone();
     boolean success = false;
     boolean changed;

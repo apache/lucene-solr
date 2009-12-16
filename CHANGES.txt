@@ -23,6 +23,9 @@ Bug fixes
 
  * LUCENE-2166: Don't incorrectly keep warning about the same immense
     term, when IndexWriter.infoStream is on.  (Mike McCandless)
+
+ * LUCENE-2158: At high indexing rates, NRT reader could temporarily
+   lose deletions.  (Mike McCandless)
   
 Optimizations
 
