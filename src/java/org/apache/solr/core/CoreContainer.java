@@ -58,6 +58,8 @@ public class CoreContainer
   protected boolean persistent = false;
   protected String adminPath = null;
   protected String managementPath = null;
+  protected int zkClientTimeout;
+  protected String shardAddress;
   protected CoreAdminHandler coreAdminHandler = null;
   protected File configFile = null;
   protected String libDir = null;
@@ -72,21 +74,19 @@ public class CoreContainer
   protected String solrHome;
   protected String solrConfigFilenameOverride;
   protected String solrDataDirOverride;
-  protected static final String collection = System.getProperty("collection", "collection1"); //nocommit: default;
-
+  protected String collection;
   private ZooKeeperController zooKeeperController;
 
   public CoreContainer() {
     solrHome = SolrResourceLoader.locateSolrHome();
-    initZooKeeper();
   }
   
-  private void initZooKeeper() {
+  private void initZooKeeper(int zkClientTimeout) {
     //nocommit: pull zookeeper integration into a new CoreContainer? leaning towards no.
     String zookeeperHost = System.getProperty("zkHost");
     
     if (zookeeperHost != null) {
-      zooKeeperController = new ZooKeeperController(zookeeperHost, collection);
+      zooKeeperController = new ZooKeeperController(zookeeperHost, collection, shardAddress, zkClientTimeout);
     }
   }
 
@@ -189,12 +189,10 @@ public class CoreContainer
   public CoreContainer(SolrResourceLoader loader) {
     this.loader = loader;
     this.solrHome = loader.getInstanceDir();
-    initZooKeeper();
   }
 
   public CoreContainer(String solrHome) {
     this.solrHome = solrHome;
-    initZooKeeper();
   }
 
   //-------------------------------------------------------------------
@@ -235,11 +233,16 @@ public class CoreContainer
       libDir     = cfg.get(     "solr/@sharedLib", null);
       adminPath  = cfg.get(     "solr/cores/@adminPath", null );
       shareSchema = cfg.getBool("solr/cores/@shareSchema", false );
+      zkClientTimeout = cfg.getInt("solr/cores/@zkClientTimeout", 10000);
+      shardAddress = cfg.get("solr/cores/@shardAddress", null);
+      collection = cfg.get("solr/cores/@collection", "collection1"); //nocommit: default collection
       if(shareSchema){
         indexSchemaCache = new ConcurrentHashMap<String ,IndexSchema>();
       }
       adminHandler  = cfg.get("solr/cores/@adminHandler", null );
       managementPath  = cfg.get("solr/cores/@managementPath", null );
+      
+      initZooKeeper(zkClientTimeout);
 
       if (libDir != null) {
         File f = FileUtils.resolvePath(new File(dir), libDir);

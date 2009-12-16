@@ -35,17 +35,23 @@ public class ZooKeeperController {
 
   private String collectionName;
 
+  private String shardAddress;
+
   /**
    * @param zookeeperHost ZooKeeper host service
+   * @param shardAddress
+   * @param zkClientTimeout
    * @param zkSolrPathPrefix Solr ZooKeeper node (default is /solr)
    */
-  public ZooKeeperController(String zookeeperHost, String collection) {
-
-
+  public ZooKeeperController(String zookeeperHost, String collection,
+      String shardAddress, int zkClientTimeout) {
     this.collectionName = collection;
-    CountdownWatcher countdownWatcher = new CountdownWatcher("ZooKeeperController"); 
+    this.shardAddress = shardAddress;
+    CountdownWatcher countdownWatcher = new CountdownWatcher(
+        "ZooKeeperController");
+    System.out.println("timeout:" + zkClientTimeout);
     try {
-      keeper = new ZooKeeper(zookeeperHost, 10000, countdownWatcher);
+      keeper = new ZooKeeper(zookeeperHost, zkClientTimeout, countdownWatcher);
 
       countdownWatcher.waitForConnected(5000);
 
@@ -66,9 +72,11 @@ public class ZooKeeperController {
   // nocommit: fooling around
   private void register() throws IOException {
     try {
-      String host = InetAddress.getLocalHost().getHostName();
+      if (shardAddress == null) {
+        shardAddress = InetAddress.getLocalHost().getHostName();
+      }
       ZooPut zooPut = new ZooPut(keeper);
-      zooPut.makePath("/hosts/" + host);
+      zooPut.makePath("/hosts/" + shardAddress);
     } catch (UnknownHostException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Could not determine IP of host", e);
@@ -101,7 +109,7 @@ public class ZooKeeperController {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "ZooKeeper Exception", e);
     } catch (InterruptedException e) {
-      //nocommit
+      // nocommit
     }
     if (configName == null) {
       throw new IllegalStateException("no config specified for collection:"
@@ -119,8 +127,8 @@ public class ZooKeeperController {
    */
   public IndexSchema getSchema(String schemaName, SolrConfig config,
       SolrResourceLoader resourceLoader) {
-    byte[] configBytes = getFile("/" + CONFIGS_NODE + "/"
-        + configName, schemaName);
+    byte[] configBytes = getFile("/" + CONFIGS_NODE + "/" + configName,
+        schemaName);
     InputStream is = new ByteArrayInputStream(configBytes);
     IndexSchema schema = new IndexSchema(config, schemaName, is);
     return schema;
@@ -139,8 +147,8 @@ public class ZooKeeperController {
   public SolrConfig getConfig(String solrConfigName,
       SolrResourceLoader resourceLoader) throws IOException,
       ParserConfigurationException, SAXException {
-    byte[] config = getFile("/" + CONFIGS_NODE + "/"
-        + configName, solrConfigName);
+    byte[] config = getFile("/" + CONFIGS_NODE + "/" + configName,
+        solrConfigName);
     InputStream is = new ByteArrayInputStream(config);
     SolrConfig cfg = solrConfigName == null ? new SolrConfig(resourceLoader,
         SolrConfig.DEFAULT_CONF_FILE, is) : new SolrConfig(resourceLoader,
