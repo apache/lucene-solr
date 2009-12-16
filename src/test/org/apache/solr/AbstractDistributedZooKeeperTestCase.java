@@ -55,7 +55,7 @@ public abstract class AbstractDistributedZooKeeperTestCase extends BaseDistribut
 
     CoreContainer.Initializer init = new CoreContainer.Initializer() {
       {
-        this.dataDir = super.dataDir;
+        this.dataDir = AbstractDistributedZooKeeperTestCase.this.dataDir.getAbsolutePath();
       }
     };
 
