@@ -93,9 +93,6 @@ public final class SolrCore implements SolrInfoMBean {
   private IndexDeletionPolicyWrapper solrDelPolicy;
   private DirectoryFactory directoryFactory;
   private IndexReaderFactory indexReaderFactory;
-  
-  // null if not in use - nocommit:here for convenience - consider
-  private ZooKeeperController zooKeeperController;
 
   public long getStartTime() { return startTime; }
 
@@ -224,14 +221,6 @@ public final class SolrCore implements SolrInfoMBean {
   
   public IndexReaderFactory getIndexReaderFactory() {
     return indexReaderFactory;
-  }
-  
-  //nocommit: consider
-  /**
-   * @return ZooKeeperController for this core or Null if none.
-   */
-  public ZooKeeperController getZooKeeperController() {
-    return zooKeeperController;
   }
   
   public String getName() {
@@ -504,7 +493,7 @@ public final class SolrCore implements SolrInfoMBean {
   public SolrCore(String dataDir, IndexSchema schema) throws ParserConfigurationException, IOException, SAXException {
     this(null, dataDir, new SolrConfig(), schema, null );
   }
-
+  
   /**
    * Creates a new core and register it in the list of cores.
    * If a core with the same name already exists, it will be stopped and replaced by this one.
@@ -518,7 +507,6 @@ public final class SolrCore implements SolrInfoMBean {
    * @since solr 1.3
    */
   public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd) {
-    this.zooKeeperController = cd.getCoreContainer().getZooKeeperController();
     coreDescriptor = cd;
     this.setName( name );
     resourceLoader = config.getResourceLoader();
