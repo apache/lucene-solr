@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
@@ -39,6 +40,13 @@ public class TestSnowball extends BaseTokenStreamTestCase {
     Analyzer a = new SnowballAnalyzer(Version.LUCENE_CURRENT, "English");
     assertAnalyzesTo(a, "he abhorred accents",
         new String[]{"he", "abhor", "accent"});
+  }
+  
+  public void testStopwords() throws Exception {
+    Analyzer a = new SnowballAnalyzer(Version.LUCENE_CURRENT, "English",
+        StandardAnalyzer.STOP_WORDS_SET);
+    assertAnalyzesTo(a, "the quick brown fox jumped",
+        new String[]{"quick", "brown", "fox", "jump"});
   }
 
   public void testReusableTokenStream() throws Exception {
