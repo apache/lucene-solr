@@ -198,6 +198,26 @@ public class TestLockFactory extends LuceneTestCase {
       assertFalse(l2.isLocked());
     }
 
+    public void testNativeFSLockReleaseByOtherLock() throws IOException {
+
+      NativeFSLockFactory f = new NativeFSLockFactory(System.getProperty("tempDir"));
+
+      f.setLockPrefix("test");
+      Lock l = f.makeLock("commit");
+      Lock l2 = f.makeLock("commit");
+
+      assertTrue("failed to obtain lock", l.obtain());
+      try {
+        assertTrue(l2.isLocked());
+        l2.release();
+        fail("should not have reached here. LockReleaseFailedException should have been thrown");
+      } catch (IOException e) {
+        assertTrue("Unexpected exception", e instanceof LockReleaseFailedException);
+      } finally {
+        l.release();
+      }
+    }
+
     // Verify: NativeFSLockFactory assigns null as lockPrefix if the lockDir is inside directory
     public void testNativeFSLockFactoryPrefix() throws IOException {
 
