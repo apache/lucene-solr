@@ -33,6 +33,9 @@ API Changes
  * LUCENE-2108: Add SpellChecker.close, to close the underlying
    reader.  (Eirik Bjørsnøs via Mike McCandless)
 
+ * LUCENE-2165: Add a constructor to SnowballAnalyzer that takes a Set of 
+   stopwords, and deprecate the String[] one.  (Nick Burch via Robert Muir)
+   
 New features
 
  * LUCENE-2102: Add a Turkish LowerCase Filter. TurkishLowerCaseFilter handles

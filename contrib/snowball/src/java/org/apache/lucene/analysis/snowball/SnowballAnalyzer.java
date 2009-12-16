@@ -51,10 +51,20 @@ public final class SnowballAnalyzer extends Analyzer {
     this.matchVersion = matchVersion;
   }
 
-  /** Builds the named analyzer with the given stop words. */
+  /** 
+   * Builds the named analyzer with the given stop words.
+   * @deprecated Use {@link #SnowballAnalyzer(Version, String, Set)} instead.  
+   */
   public SnowballAnalyzer(Version matchVersion, String name, String[] stopWords) {
     this(matchVersion, name);
     stopSet = StopFilter.makeStopSet(matchVersion, stopWords);
+  }
+  
+  /** Builds the named analyzer with the given stop words. */
+  public SnowballAnalyzer(Version matchVersion, String name, Set<?> stopWords) {
+    this(matchVersion, name);
+    stopSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion,
+        stopWords));
   }
 
   /** Constructs a {@link StandardTokenizer} filtered by a {@link
