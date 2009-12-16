@@ -59,6 +59,9 @@ Bug fixes
 
 * LUCENE-2104: NativeFSLock.release() would silently fail if the lock is held by 
   another thread/process.  (Shai Erera via Uwe Schindler)
+
+* LUCENE-2158: At high indexing rates, NRT reader could temporarily
+  lose deletions.  (Mike McCandless)
   
 New features
 
