@@ -24,6 +24,9 @@ Bug fixes
  * LUCENE-2132: Fix the demo result.jsp to use QueryParser with a 
    Version argument.  (Brian Li via Robert Muir)
 
+ * LUCENE-2166: Don't incorrectly keep warning about the same immense
+   term, when IndexWriter.infoStream is on.  (Mike McCandless)
+  
 Optimizations
 
  * LUCENE-2086: When resolving deleted terms, do so in term sort order
