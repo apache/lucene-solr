@@ -109,6 +109,9 @@ Optimizations
   the FieldCache rather than waiting for the WeakHashMap to release
   the reference (Mike McCandless)
 
+* LUCENE-2161: Improve concurrency of IndexReader, especially in the
+  context of near real-time readers.  (Mike McCandless)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 

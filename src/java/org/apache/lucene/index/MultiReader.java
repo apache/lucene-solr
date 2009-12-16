@@ -224,8 +224,10 @@ public class MultiReader extends IndexReader implements Cloneable {
   }
   
   @Override
-  public synchronized int numDocs() {
+  public int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)
+    // NOTE: multiple threads may wind up init'ing
+    // numDocs... but that's harmless
     if (numDocs == -1) {        // check cache
       int n = 0;                // cache miss--recompute
       for (int i = 0; i < subReaders.length; i++)

@@ -36,24 +36,28 @@ public final class BitVector implements Cloneable {
 
   private byte[] bits;
   private int size;
-  private int count = -1;
+  private int count;
 
   /** Constructs a vector capable of holding <code>n</code> bits. */
   public BitVector(int n) {
     size = n;
     bits = new byte[(size >> 3) + 1];
+    count = 0;
   }
   
   BitVector(byte[] bits, int size) {
     this.bits = bits;
     this.size = size;
+    count = -1;
   }
   
   @Override
   public Object clone() {
     byte[] copyBits = new byte[bits.length];
     System.arraycopy(bits, 0, copyBits, 0, bits.length);
-    return new BitVector(copyBits, size);
+    BitVector clone = new BitVector(copyBits, size);
+    clone.count = count;
+    return clone;
   }
   
   /** Sets the value of <code>bit</code> to one. */
@@ -119,6 +123,15 @@ public final class BitVector implements Cloneable {
       count = c;
     }
     return count;
+  }
+
+  /** For testing */
+  public final int getRecomputedCount() {
+    int c = 0;
+    int end = bits.length;
+    for (int i = 0; i < end; i++)
+      c += BYTE_COUNTS[bits[i] & 0xFF];	  // sum bits per byte
+    return c;
   }
 
   private static final byte[] BYTE_COUNTS = {	  // table of bits/byte

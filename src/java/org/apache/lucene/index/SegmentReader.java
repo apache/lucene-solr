@@ -588,20 +588,28 @@ public class SegmentReader extends IndexReader implements Cloneable {
     core.openDocStores(si);
   }
 
+  private boolean checkDeletedCounts() throws IOException {
+    final int recomputedCount = deletedDocs.getRecomputedCount();
+     
+    assert deletedDocs.count() == recomputedCount : "deleted count=" + deletedDocs.count() + " vs recomputed count=" + recomputedCount;
+
+    assert si.getDelCount() == recomputedCount : 
+    "delete count mismatch: info=" + si.getDelCount() + " vs BitVector=" + recomputedCount;
+
+    // Verify # deletes does not exceed maxDoc for this
+    // segment:
+    assert si.getDelCount() <= maxDoc() : 
+    "delete count mismatch: " + recomputedCount + ") exceeds max doc (" + maxDoc() + ") for segment " + si.name;
+
+    return true;
+  }
+
   private void loadDeletedDocs() throws IOException {
     // NOTE: the bitvector is stored using the regular directory, not cfs
     if (hasDeletions(si)) {
       deletedDocs = new BitVector(directory(), si.getDelFileName());
       deletedDocsRef = new AtomicInteger(1);
-     
-      assert si.getDelCount() == deletedDocs.count() : 
-        "delete count mismatch: info=" + si.getDelCount() + " vs BitVector=" + deletedDocs.count();
-
-      // Verify # deletes does not exceed maxDoc for this
-      // segment:
-      assert si.getDelCount() <= maxDoc() : 
-        "delete count mismatch: " + deletedDocs.count() + ") exceeds max doc (" + maxDoc() + ") for segment " + si.name;
-
+      assert checkDeletedCounts();
     } else
       assert si.getDelCount() == 0;
   }
