@@ -4,6 +4,10 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+12/17/2009
+  LUCENE-2168: Allow negative relative thread priority for BG tasks
+  (Mike McCandless)
+
 12/07/2009
   LUCENE-2106: ReadTask does not close its Reader when 
   OpenReader/CloseReader are not used. (Mark Miller)

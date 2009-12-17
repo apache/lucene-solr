@@ -51,7 +51,6 @@ public class Algorithm {
     stok.ordinaryChar('/');
     stok.ordinaryChar('(');
     stok.ordinaryChar(')');
-    stok.ordinaryChar('-');
     boolean colonOk = false; 
     boolean isDisableCountNextTask = false; // only for primitive tasks
     currSequence.setDepth(0);
