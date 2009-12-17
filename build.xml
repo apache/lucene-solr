@@ -134,7 +134,8 @@
 	  <!-- run tag tests against trunk jar -->
       <test-macro dataDir="${tags.dir}/${tag}/src/test" 
       			  tempDir="${build.dir}/${tag}"
-      			  junit.classpath="tag.junit.classpath"/>
+      			  junit.classpath="tag.junit.classpath"
+              junit.output.dir="${junit.output.dir.tag}" />
   	</sequential>
   </target>	
 

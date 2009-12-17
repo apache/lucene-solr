@@ -95,7 +95,9 @@
   <property name="jflex.home" location="${common.dir}"/>
 
   <property name="junit.output.dir" location="${build.dir}/test"/>
+  <property name="junit.output.dir.tag" location="${build.dir}/bw-test"/>
   <property name="junit.reports" location="${build.dir}/test/reports"/>
+  <property name="junit.reports.tag" location="${build.dir}/bw-test/reports"/>
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
   <property name="junit.excludes" value=""/>
 
@@ -507,16 +509,22 @@
     <fileset dir="src/test" id="clover.test.src.files">
       <include name="**/*.java" />
     </fileset>
+    <fileset dir="${build.dir}" id="clover.test.result.files">
+      <include name="**/test/TEST-*.xml" />
+      <!-- do not include BW tests -->
+    </fileset>
     <clover-report>
        <current outfile="${clover.report.dir}" title="${final.name}">
           <format type="html"/>
           <testsources refid="clover.test.src.files"/>
           <testsources refid="clover.contrib.test.src.files"/>
+          <testresults refid="clover.test.result.files"/>
        </current>
        <current outfile="${clover.report.dir}/clover.xml" title="${final.name}">
           <format type="xml"/>
           <testsources refid="clover.test.src.files"/>
           <testsources refid="clover.contrib.test.src.files"/>
+          <testresults refid="clover.test.result.files"/>
        </current>
     </clover-report>
   </target>
@@ -531,6 +539,17 @@
         <include name="**/test/TEST-*.xml"/>
       </fileset>
       <report format="frames" todir="${junit.reports}"/>
+    </junitreport>
+    
+    <mkdir dir="${junit.reports.tag}"/>
+    <junitreport todir="${junit.output.dir.tag}">
+      <!-- this fileset let's the task work for individual contribs,
+           as well as the project as a whole
+       -->
+      <fileset dir="${build.dir}">
+        <include name="**/bw-test/TEST-*.xml"/>
+      </fileset>
+      <report format="frames" todir="${junit.reports.tag}"/>
     </junitreport>
   </target>
 
