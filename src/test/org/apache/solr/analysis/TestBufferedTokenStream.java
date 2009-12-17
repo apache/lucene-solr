@@ -50,7 +50,7 @@ public class TestBufferedTokenStream extends BaseTokenTestCase {
     protected Token process(Token t) throws IOException {
       if ("A".equals(new String(t.termBuffer(), 0, t.termLength())) && 
           "B".equals(new String(peek(1).termBuffer(), 0, peek(1).termLength())))
-        write(t);
+        write((Token)t.clone());
       return t;
     }
   }

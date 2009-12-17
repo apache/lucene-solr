@@ -46,13 +46,16 @@ import java.util.LinkedList;
  *   public MyTokenStream(TokenStream input) {super(input);}
  *   protected Token process(Token t) throws IOException {
  *     if ("A".equals(t.termText()) && "B".equals(peek(1).termText()))
- *       write(t);
+ *       write((Token)t.clone());
  *     return t;
  *   }
  * }
  * </pre>
  *
- *
+ * NOTE: BufferedTokenStream does not clone() any Tokens. This is instead the 
+ * responsibility of the implementing subclass. In the "A" "B" => "A" "A" "B"
+ * example above, the subclass must clone the additional "A" it creates.
+ * 
  * @version $Id$
  */
 public abstract class BufferedTokenStream extends TokenFilter {
