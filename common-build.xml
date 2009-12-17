@@ -515,13 +515,13 @@
     </fileset>
     <clover-report>
        <current outfile="${clover.report.dir}" title="${final.name}">
-          <format type="html"/>
+          <format type="html" filter="assert"/>
           <testsources refid="clover.test.src.files"/>
           <testsources refid="clover.contrib.test.src.files"/>
           <testresults refid="clover.test.result.files"/>
        </current>
        <current outfile="${clover.report.dir}/clover.xml" title="${final.name}">
-          <format type="xml"/>
+          <format type="xml" filter="assert"/>
           <testsources refid="clover.test.src.files"/>
           <testsources refid="clover.contrib.test.src.files"/>
           <testresults refid="clover.test.result.files"/>
