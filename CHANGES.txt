@@ -142,6 +142,9 @@ Bug Fixes
 * SOLR-1651: Fixed Incorrect dataimport handler package name in SolrResourceLoader
   (Akshay Ukey via shalin)
 
+* SOLR-1660: CapitalizationFilter crashes if you use the maxWordCountOption
+  (Robert Muir via shalin)
+
 Other Changes
 ----------------------
 
