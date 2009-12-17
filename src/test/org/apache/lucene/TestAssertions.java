@@ -26,6 +26,7 @@ public class TestAssertions extends LuceneTestCase {
       assert Boolean.FALSE.booleanValue();
       fail("assertions are not enabled!");
     } catch (AssertionError e) {
+      assert Boolean.TRUE.booleanValue();
     }
   }
 
