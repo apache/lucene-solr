@@ -472,12 +472,10 @@
     <mkdir dir="${clover.db.dir}"/>
     <clover-setup initString="${clover.db.dir}/lucene_coverage.db" encoding="${build.encoding}">
       <fileset dir="src/java">
-        <include name="org/apache/**" />
-        <include name="com/example/**" />
-        <include name="lucli/**" />
+        <include name="org/apache/**/*.java" />
       </fileset>
       <testsources dir="src/test">
-        <include name="**/*.java" />
+        <include name="org/apache/**/*.java" />
       </testsources>
     </clover-setup>
   </target>
