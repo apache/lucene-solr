@@ -145,6 +145,9 @@ Bug Fixes
 * SOLR-1660: CapitalizationFilter crashes if you use the maxWordCountOption
   (Robert Muir via shalin)
 
+* SOLR-1667: PatternTokenizer does not reset attributes such as positionIncrementGap
+  (Robert Muir via shalin)
+
 Other Changes
 ----------------------
 
