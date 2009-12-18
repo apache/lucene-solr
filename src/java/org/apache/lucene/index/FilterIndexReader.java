@@ -288,4 +288,13 @@ public class FilterIndexReader extends IndexReader {
   public Object getFieldCacheKey() {
     return in.getFieldCacheKey();
   }
+
+  /** {@inheritDoc} */
+  @Override
+  public String toString() {
+    final StringBuilder buffer = new StringBuilder("FilterReader(");
+    buffer.append(in);
+    buffer.append(')');
+    return buffer.toString();
+  }
 }

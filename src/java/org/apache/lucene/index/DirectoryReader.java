@@ -299,6 +299,13 @@ class DirectoryReader extends IndexReader implements Cloneable {
     }
   }
 
+  /** {@inheritDoc} */
+  @Override
+  public String toString() {
+    final SegmentInfos infos = writer != null ? segmentInfosStart : segmentInfos;
+    return "DirectoryReader(" + infos.toString(directory) + ")";
+  }
+
   private void initialize(SegmentReader[] subReaders) {
     this.subReaders = subReaders;
     starts = new int[subReaders.length + 1];    // build starts array

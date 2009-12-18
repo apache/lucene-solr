@@ -91,11 +91,6 @@ public final class SegmentInfo {
 
   private Map<String,String> diagnostics;
 
-  @Override
-  public String toString() {
-    return "si: "+dir.toString()+" "+name+" docCount: "+docCount+" delCount: "+delCount+" delFileName: "+getDelFileName();
-  }
-  
   public SegmentInfo(String name, int docCount, Directory dir) {
     this.name = name;
     this.docCount = docCount;
@@ -683,29 +678,65 @@ public final class SegmentInfo {
     sizeInBytes = -1;
   }
 
-  /** Used for debugging */
-  public String segString(Directory dir) {
-    String cfs;
+  /** {@inheritDoc} */
+  @Override
+  public String toString() {
+    return toString(dir);
+  }
+
+  /** Used for debugging.  Format may suddenly change.
+   * 
+   *  <p>Current format looks like
+   *  <code>_a:c45/4->_1</code>, which means the segment's
+   *  name is <code>_a</code>; it's using compound file
+   *  format (would be <code>C</code> if not compound); it
+   *  has 45 documents; it has 4 deletions (this part is
+   *  left off when there are no deletions); it's using the
+   *  shared doc stores named <code>_1</code> (this part is
+   *  left off if doc stores are private).</p>
+   */
+  public String toString(Directory dir) {
+
+    StringBuilder s = new StringBuilder();
+    s.append(name).append(':');
+
+    char cfs;
     try {
-      if (getUseCompoundFile())
-        cfs = "c";
-      else
-        cfs = "C";
+      if (getUseCompoundFile()) {
+        cfs = 'c';
+      } else {
+        cfs = 'C';
+      }
     } catch (IOException ioe) {
-      cfs = "?";
+      cfs = '?';
+    }
+    s.append(cfs);
+
+    if (this.dir != dir) {
+      s.append('x');
+    }
+    s.append(docCount);
+
+    int delCount;
+    try {
+      delCount = getDelCount();
+    } catch (IOException ioe) {
+      delCount = -1;
+    }
+    if (delCount != 0) {
+      s.append('/');
+      if (delCount == -1) {
+        s.append('?');
+      } else {
+        s.append(delCount);
+      }
+    }
+    
+    if (docStoreOffset != -1) {
+      s.append("->").append(docStoreSegment);
     }
 
-    String docStore;
-
-    if (docStoreOffset != -1)
-      docStore = "->" + docStoreSegment;
-    else
-      docStore = "";
-
-    return name + ":" +
-      cfs +
-      (this.dir == dir ? "" : "x") +
-      docCount + docStore;
+    return s.toString();
   }
 
   /** We consider another SegmentInfo instance equal if it

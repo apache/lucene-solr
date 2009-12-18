@@ -1198,6 +1198,12 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return termVectorsReader.get(docNumber);
   }
   
+  /** {@inheritDoc} */
+  @Override
+  public String toString() {
+    return si.toString();
+  }
+
   /**
    * Return the name of the segment this reader is reading.
    */

@@ -145,6 +145,22 @@ public abstract class IndexReader implements Cloneable,Closeable {
     refCount.incrementAndGet();
   }
 
+  /** {@inheritDoc} */
+  @Override
+  public String toString() {
+    final StringBuilder buffer = new StringBuilder(getClass().getSimpleName());
+    buffer.append('(');
+    final IndexReader[] subReaders = getSequentialSubReaders();
+    if ((subReaders != null) && (subReaders.length > 0)) {
+      buffer.append(subReaders[0]);
+      for (int i = 1; i < subReaders.length; ++i) {
+        buffer.append(", ").append(subReaders[i]);
+      }
+    }
+    buffer.append(')');
+    return buffer.toString();
+  }
+
   /**
    * Expert: decreases the refCount of this IndexReader
    * instance.  If the refCount drops to 0, then pending

@@ -16,7 +16,14 @@ Changes in backwards compatibility policy
   interface.  Anyone implementing FieldCache externally will need to
   fix their code to implement this, on upgrading.  (Mike McCandless)
 
+* LUCENE-1923: Renamed SegmentInfo & SegmentInfos segString method to
+  toString.  These are advanced APIs and subject to change suddenly.
+  (Tim Smith via Mike McCandless)
+
 Changes in runtime behavior
+
+* LUCENE-1923: Made IndexReader.toString() produce something
+  meaningful (Tim Smith via Mike McCandless)
 
 API Changes
 

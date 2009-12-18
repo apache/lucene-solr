@@ -867,17 +867,16 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
     finishCommit(dir);
   }
 
-  public synchronized String segString(Directory directory) {
+  public synchronized String toString(Directory directory) {
     StringBuilder buffer = new StringBuilder();
+    buffer.append(getCurrentSegmentFileName()).append(": ");
     final int count = size();
     for(int i = 0; i < count; i++) {
       if (i > 0) {
         buffer.append(' ');
       }
       final SegmentInfo info = info(i);
-      buffer.append(info.segString(directory));
-      if (info.dir != directory)
-        buffer.append("**");
+      buffer.append(info.toString(directory));
     }
     return buffer.toString();
   }

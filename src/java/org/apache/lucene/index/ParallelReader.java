@@ -70,6 +70,21 @@ public class ParallelReader extends IndexReader {
     this.incRefReaders = !closeSubReaders;
   }
 
+  /** {@inheritDoc} */
+  @Override
+  public String toString() {
+    final StringBuilder buffer = new StringBuilder("ParallelReader(");
+    final Iterator<IndexReader> iter = readers.iterator();
+    if (iter.hasNext()) {
+      buffer.append(iter.next());
+    }
+    while (iter.hasNext()) {
+      buffer.append(", ").append(iter.next());
+    }
+    buffer.append(')');
+    return buffer.toString();
+  }
+
  /** Add an IndexReader.
   * @throws IOException if there is a low-level IO error
   */
