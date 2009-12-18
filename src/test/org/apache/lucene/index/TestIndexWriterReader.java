@@ -730,14 +730,14 @@ public class TestIndexWriterReader extends LuceneTestCase {
       threads[i] = new Thread() {
           @Override
           public void run() {
-            while(System.currentTimeMillis() < endTime) {
+            do {
               try {
                 writer.addIndexesNoOptimize(dirs);
               } catch (Throwable t) {
                 excs.add(t);
                 throw new RuntimeException(t);
               }
-            }
+            } while(System.currentTimeMillis() < endTime);
           }
         };
       threads[i].setDaemon(true);
@@ -760,6 +760,15 @@ public class TestIndexWriterReader extends LuceneTestCase {
     for(int i=0;i<NUM_THREAD;i++) {
       threads[i].join();
     }
+    // final check
+    IndexReader r2 = r.reopen();
+    if (r2 != r) {
+      r.close();
+      r = r2;
+    }
+    Query q = new TermQuery(new Term("indexname", "test"));
+    final int count = new IndexSearcher(r).search(q, 10).totalHits;
+    assertTrue(count >= lastCount);
 
     assertEquals(0, excs.size());
     writer.close();
@@ -796,7 +805,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
           public void run() {
             int count = 0;
             final Random r = new Random();
-            while(System.currentTimeMillis() < endTime) {
+            do {
               try {
                 for(int i=0;i<10;i++) {
                   writer.addDocument(createDocument(10*count+i, "test", 4));
@@ -811,7 +820,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
                 excs.add(t);
                 throw new RuntimeException(t);
               }
-            }
+            } while(System.currentTimeMillis() < endTime);
           }
         };
       threads[i].setDaemon(true);
@@ -832,7 +841,16 @@ public class TestIndexWriterReader extends LuceneTestCase {
     for(int i=0;i<NUM_THREAD;i++) {
       threads[i].join();
     }
-    assertTrue(sum > 0);
+    // at least search once
+    IndexReader r2 = r.reopen();
+    if (r2 != r) {
+      r.close();
+      r = r2;
+    }
+    Query q = new TermQuery(new Term("indexname", "test"));
+    sum += new IndexSearcher(r).search(q, 10).totalHits;
+
+    assertTrue("no documents found at all", sum > 0);
 
     assertEquals(0, excs.size());
     writer.close();

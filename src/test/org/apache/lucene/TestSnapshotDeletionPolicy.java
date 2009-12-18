@@ -121,7 +121,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
         public void run() {
           Document doc = new Document();
           doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-          while(System.currentTimeMillis() < stopTime) {
+          do {
             for(int i=0;i<27;i++) {
               try {
                 writer.addDocument(doc);
@@ -142,7 +142,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
             } catch (InterruptedException ie) {
               throw new ThreadInterruptedException(ie);
             }
-          }
+          } while(System.currentTimeMillis() < stopTime);
         }
       };
 
@@ -150,12 +150,10 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
 
     // While the above indexing thread is running, take many
     // backups:
-    while(System.currentTimeMillis() < stopTime) {
+    do {
       backupIndex(dir, dp);
       Thread.sleep(20);
-      if (!t.isAlive())
-        break;
-    }
+    } while(t.isAlive());
 
     t.join();
 

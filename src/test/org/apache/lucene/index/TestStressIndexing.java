@@ -30,7 +30,7 @@ public class TestStressIndexing extends LuceneTestCase {
   private Random RANDOM;
 
   private static abstract class TimedThread extends Thread {
-    boolean failed;
+    volatile boolean failed;
     int count;
     private static int RUN_TIME_SEC = 1;
     private TimedThread[] allThreads;
@@ -48,10 +48,11 @@ public class TestStressIndexing extends LuceneTestCase {
       count = 0;
 
       try {
-        while(System.currentTimeMillis() < stopTime && !anyErrors()) {
+        do {
+          if (anyErrors()) break;
           doWork();
           count++;
-        }
+        } while(System.currentTimeMillis() < stopTime);
       } catch (Throwable e) {
         System.out.println(Thread.currentThread() + ": exc");
         e.printStackTrace(System.out);

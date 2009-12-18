@@ -136,6 +136,8 @@ Test Cases
 * LUCENE-2155: Fix time and zone dependent localization test failures
   in queryparser tests. (Uwe Schindler, Chris Male, Robert Muir)
 
+* LUCENE-2170: Fix thread starvation problems.  (Uwe Schindler)
+
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy

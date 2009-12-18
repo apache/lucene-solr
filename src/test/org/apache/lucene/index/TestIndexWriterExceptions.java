@@ -65,7 +65,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
       final long stopTime = System.currentTimeMillis() + 500;
 
-      while(System.currentTimeMillis() < stopTime) {
+      do {
         doFail.set(this);
         final String id = ""+r.nextInt(50);
         idField.setValue(id);
@@ -105,7 +105,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           failure = t;
           break;
         }
-      }
+      } while(System.currentTimeMillis() < stopTime);
     }
   }
 

@@ -38,7 +38,7 @@ public class TestTransactions extends LuceneTestCase
   }
 
   private static abstract class TimedThread extends Thread {
-    boolean failed;
+    volatile boolean failed;
     private static float RUN_TIME_SEC = 0.5f;
     private TimedThread[] allThreads;
 
@@ -53,8 +53,10 @@ public class TestTransactions extends LuceneTestCase
       final long stopTime = System.currentTimeMillis() + (long) (1000*RUN_TIME_SEC);
 
       try {
-        while(System.currentTimeMillis() < stopTime && !anyErrors())
+        do {
+          if (anyErrors()) break;
           doWork();
+        } while (System.currentTimeMillis() < stopTime);
       } catch (Throwable e) {
         System.out.println(Thread.currentThread() + ": exc");
         e.printStackTrace(System.out);
