@@ -512,7 +512,7 @@
       <!-- do not include BW tests -->
     </fileset>
     <clover-report>
-       <current outfile="${clover.report.dir}" title="${final.name}">
+       <current outfile="${clover.report.dir}" title="${final.name}" numThreads="0">
           <format type="html" filter="assert"/>
           <testsources refid="clover.test.src.files"/>
           <testsources refid="clover.contrib.test.src.files"/>
