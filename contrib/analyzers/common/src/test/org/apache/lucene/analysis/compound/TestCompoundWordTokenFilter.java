@@ -17,94 +17,65 @@ package org.apache.lucene.analysis.compound;
  * limitations under the License.
  */
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
-  private static String[] locations = {
-      "http://dfn.dl.sourceforge.net/sourceforge/offo/offo-hyphenation.zip",
-      "http://surfnet.dl.sourceforge.net/sourceforge/offo/offo-hyphenation.zip",
-      "http://superb-west.dl.sourceforge.net/sourceforge/offo/offo-hyphenation.zip",
-      "http://voxel.dl.sourceforge.net/sourceforge/offo/offo-hyphenation.zip"};
-      // too slow:
-      //"http://superb-east.dl.sourceforge.net/sourceforge/offo/offo-hyphenation.zip"};
-
-  private static byte[] patternsFileContent;
+  static final File dataDir = new File(System.getProperty("dataDir", "./bin"));
+  static final File testFile = new File(dataDir, "org/apache/lucene/analysis/compound/da_UTF8.xml");
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    getHyphenationPatternFileContents();
   }
 
-  public void testHyphenationCompoundWordsDE() throws Exception {
-    String[] dict = { "Rind", "Fleisch", "Draht", "Schere", "Gesetz",
-        "Aufgabe", "Überwachung" };
+  public void testHyphenationCompoundWordsDA() throws Exception {
+    String[] dict = { "læse", "hest" };
 
-    Reader reader = getHyphenationReader("de_DR.xml");
-    if (reader == null) {
-      // we gracefully die if we have no reader
-      return;
-    }
+    Reader reader = getHyphenationReader();
 
     HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter
         .getHyphenationTree(reader);
 
     HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(
         new WhitespaceTokenizer(new StringReader(
-            "Rindfleischüberwachungsgesetz Drahtschere abba")), hyphenator,
+            "min veninde som er lidt af en læsehest")), hyphenator,
         dict, CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
-    assertTokenStreamContents(tf, new String[] { "Rindfleischüberwachungsgesetz", "Rind",
-        "fleisch", "überwachung", "gesetz", "Drahtschere", "Draht", "schere",
-        "abba" }, new int[] { 0, 0, 4, 11, 23, 30, 30, 35, 42 }, new int[] {
-        29, 4, 11, 22, 29, 41, 35, 41, 46 }, new int[] { 1, 0, 0, 0, 0, 1, 0,
-        0, 1 });
+    assertTokenStreamContents(tf, 
+        new String[] { "min", "veninde", "som", "er", "lidt", "af", "en", "læsehest", "læse", "hest" },
+        new int[] { 1, 1, 1, 1, 1, 1, 1, 1, 0, 0 }
+    );
   }
 
   public void testHyphenationCompoundWordsDELongestMatch() throws Exception {
-    String[] dict = { "Rind", "Fleisch", "Draht", "Schere", "Gesetz",
-        "Aufgabe", "Überwachung", "Rindfleisch", "Überwachungsgesetz" };
-
-    Reader reader = getHyphenationReader("de_DR.xml");
-    if (reader == null) {
-      // we gracefully die if we have no reader
-      return;
-    }
+    String[] dict = { "basketball", "basket", "ball", "kurv" };
+    Reader reader = getHyphenationReader();
 
     HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter
         .getHyphenationTree(reader);
 
+    // the word basket will not be added due to the longest match option
     HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(
         new WhitespaceTokenizer(new StringReader(
-            "Rindfleischüberwachungsgesetz")), hyphenator, dict,
+            "basketballkurv")), hyphenator, dict,
         CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE, 40, true);
-    assertTokenStreamContents(tf, new String[] { "Rindfleischüberwachungsgesetz",
-        "Rindfleisch", "fleisch", "überwachungsgesetz", "gesetz" }, new int[] {
-        0, 0, 4, 11, 23 }, new int[] { 29, 11, 11, 29, 29 }, new int[] { 1, 0,
-        0, 0, 0 });
+    assertTokenStreamContents(tf, 
+        new String[] { "basketballkurv", "basketball", "ball", "kurv" },
+        new int[] { 1, 0, 0, 0 }
+    );
+
   }
 
   public void testDumbCompoundWordsSE() throws Exception {
@@ -157,19 +128,10 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     String[] dict = { "Rind", "Fleisch", "Draht", "Schere", "Gesetz",
         "Aufgabe", "Überwachung" };
 
-    Reader reader = getHyphenationReader("de_DR.xml");
-    if (reader == null) {
-      // we gracefully die if we have no reader
-      return;
-    }
-
-    HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter
-        .getHyphenationTree(reader);
-
     Tokenizer wsTokenizer = new WhitespaceTokenizer(new StringReader(
         "Rindfleischüberwachungsgesetz"));
-    HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(
-        wsTokenizer, hyphenator, dict,
+    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(
+        wsTokenizer, dict,
         CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
@@ -185,53 +147,7 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     assertEquals("Rindfleischüberwachungsgesetz", termAtt.term());
   }
 
-  private void getHyphenationPatternFileContents() {
-    if (patternsFileContent == null) {
-      try {
-        List urls = new LinkedList(Arrays.asList(locations));
-        Collections.shuffle(urls);
-        URL url = new URL((String)urls.get(0));
-        InputStream in = url.openStream();
-        byte[] buffer = new byte[1024];
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        int count;
-
-        while ((count = in.read(buffer)) != -1) {
-          out.write(buffer, 0, count);
-        }
-        in.close();
-        out.close();
-        patternsFileContent = out.toByteArray();
-      } catch (IOException e) {
-        // we swallow all exceptions - the user might have no internet connection
-      }
-    }
-  }
-
-  private Reader getHyphenationReader(String filename) throws Exception {
-    if (patternsFileContent == null) {
-      return null;
-    }
-
-    ZipInputStream zipstream = new ZipInputStream(new ByteArrayInputStream(
-        patternsFileContent));
-
-    ZipEntry entry;
-    while ((entry = zipstream.getNextEntry()) != null) {
-      if (entry.getName().equals("offo-hyphenation/hyph/" + filename)) {
-        byte[] buffer = new byte[1024];
-        ByteArrayOutputStream outstream = new ByteArrayOutputStream();
-        int count;
-        while ((count = zipstream.read(buffer)) != -1) {
-          outstream.write(buffer, 0, count);
-        }
-        outstream.close();
-        zipstream.close();
-        return new StringReader(new String(outstream.toByteArray(),
-            "ISO-8859-1"));
-      }
-    }
-    // we never should get here
-    return null;
+  private Reader getHyphenationReader() throws Exception {
+    return new InputStreamReader(new FileInputStream(testFile), "UTF-8");
   }
 }
