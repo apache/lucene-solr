@@ -681,7 +681,7 @@ public final class SegmentInfo {
   /** {@inheritDoc} */
   @Override
   public String toString() {
-    return toString(dir);
+    return toString(dir, 0);
   }
 
   /** Used for debugging.  Format may suddenly change.
@@ -695,7 +695,7 @@ public final class SegmentInfo {
    *  shared doc stores named <code>_1</code> (this part is
    *  left off if doc stores are private).</p>
    */
-  public String toString(Directory dir) {
+  public String toString(Directory dir, int pendingDelCount) {
 
     StringBuilder s = new StringBuilder();
     s.append(name).append(':');
@@ -722,6 +722,9 @@ public final class SegmentInfo {
       delCount = getDelCount();
     } catch (IOException ioe) {
       delCount = -1;
+    }
+    if (delCount != -1) {
+      delCount += pendingDelCount;
     }
     if (delCount != 0) {
       s.append('/');

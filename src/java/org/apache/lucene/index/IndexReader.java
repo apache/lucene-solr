@@ -148,13 +148,17 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** {@inheritDoc} */
   @Override
   public String toString() {
-    final StringBuilder buffer = new StringBuilder(getClass().getSimpleName());
+    final StringBuilder buffer = new StringBuilder();
+    if (hasChanges) {
+      buffer.append('*');
+    }
+    buffer.append(getClass().getSimpleName());
     buffer.append('(');
     final IndexReader[] subReaders = getSequentialSubReaders();
     if ((subReaders != null) && (subReaders.length > 0)) {
       buffer.append(subReaders[0]);
       for (int i = 1; i < subReaders.length; ++i) {
-        buffer.append(", ").append(subReaders[i]);
+        buffer.append(" ").append(subReaders[i]);
       }
     }
     buffer.append(')');

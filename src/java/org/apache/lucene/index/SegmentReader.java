@@ -682,10 +682,10 @@ public class SegmentReader extends IndexReader implements Cloneable {
       clone.readOnly = openReadOnly;
       clone.si = si;
       clone.readBufferSize = readBufferSize;
+      clone.pendingDeleteCount = pendingDeleteCount;
 
       if (!openReadOnly && hasChanges) {
         // My pending changes transfer to the new reader
-        clone.pendingDeleteCount = pendingDeleteCount;
         clone.deletedDocsDirty = deletedDocsDirty;
         clone.normsDirty = normsDirty;
         clone.hasChanges = hasChanges;
@@ -1201,7 +1201,12 @@ public class SegmentReader extends IndexReader implements Cloneable {
   /** {@inheritDoc} */
   @Override
   public String toString() {
-    return si.toString();
+    final StringBuilder buffer = new StringBuilder();
+    if (hasChanges) {
+      buffer.append('*');
+    }
+    buffer.append(si.toString(core.dir, pendingDeleteCount));
+    return buffer.toString();
   }
 
   /**

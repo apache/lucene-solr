@@ -876,7 +876,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
         buffer.append(' ');
       }
       final SegmentInfo info = info(i);
-      buffer.append(info.toString(directory));
+      buffer.append(info.toString(directory, 0));
     }
     return buffer.toString();
   }

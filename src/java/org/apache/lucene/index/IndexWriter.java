@@ -4484,7 +4484,7 @@ public class IndexWriter implements Closeable {
         buffer.append(' ');
       }
       final SegmentInfo info = infos.info(i);
-      buffer.append(info.toString(directory));
+      buffer.append(info.toString(directory, 0));
       if (info.dir != directory)
         buffer.append("**");
     }
