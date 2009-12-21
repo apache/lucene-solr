@@ -17,14 +17,14 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.miscellaneous.SingleTokenTokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
@@ -37,7 +37,7 @@ import java.util.HashSet;
 /**
  * New WordDelimiterFilter tests... most of the tests are in ConvertedLegacyTest
  */
-public class TestWordDelimiterFilter extends AbstractSolrTestCase {
+public class TestWordDelimiterFilter extends BaseTokenTestCase {
   public String getSchemaFile() { return "solr/conf/schema.xml"; }
   public String getSolrConfigFile() { return "solr/conf/solrconfig.xml"; }
 
@@ -144,148 +144,74 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
     // test that subwords and catenated subwords have
     // the correct offsets.
     WordDelimiterFilter wdf = new WordDelimiterFilter(
-            new TokenStream() {
-              Token t;
-              public Token next() throws IOException {
-                if (t!=null) return null;
-                t = new Token("foo-bar", 5, 12);  // actual
-                return t;
-              }
-            },
+            new SingleTokenTokenStream(new Token("foo-bar", 5, 12)),
     1,1,0,0,1,1,0);
 
-    int i=0;
-    for(Token t; (t=wdf.next())!=null;) {
-      String termText = new String(t.termBuffer(), 0, t.termLength());
-      if (termText.equals("foo")) {
-        assertEquals(5, t.startOffset());
-        assertEquals(8, t.endOffset());
-        i++;
-      }
-      if (termText.equals("bar")) {
-        assertEquals(9, t.startOffset());
-        assertEquals(12, t.endOffset());
-        i++;
-      }
-      if (termText.equals("foobar")) {
-        assertEquals(5, t.startOffset());
-        assertEquals(12, t.endOffset());
-        i++;
-      }
-    }
-    assertEquals(3,i); // make sure all 3 tokens were generated
+    assertTokenStreamContents(wdf, 
+        new String[] { "foo", "bar", "foobar" },
+        new int[] { 5, 9, 5 }, 
+        new int[] { 8, 12, 12 });
 
-    // test that if splitting or catenating a synonym, that the offsets
-    // are not altered (they would be incorrect).
     wdf = new WordDelimiterFilter(
-            new TokenStream() {
-              Token t;
-              public Token next() throws IOException {
-                if (t!=null) return null;
-                t = new Token("foo-bar", 5, 6);  // a synonym
-                return t;
-              }
-            },
+            new SingleTokenTokenStream(new Token("foo-bar", 5, 6)),
     1,1,0,0,1,1,0);
-    for(Token t; (t=wdf.next())!=null;) {
-      assertEquals(5, t.startOffset());
-      assertEquals(6, t.endOffset());
-    }
+    
+    assertTokenStreamContents(wdf,
+        new String[] { "foo", "bar", "foobar" },
+        new int[] { 5, 5, 5 },
+        new int[] { 6, 6, 6 });
   }
   
   public void testOffsetChange() throws Exception
   {
     WordDelimiterFilter wdf = new WordDelimiterFilter(
-      new TokenStream() {
-        Token t;
-        public Token next() {
-         if (t != null) return null;
-         t = new Token("übelkeit)", 7, 16);
-         return t;
-        }
-      },
+      new SingleTokenTokenStream(new Token("übelkeit)", 7, 16)),
       1,1,0,0,1,1,0
     );
     
-    Token t = wdf.next();
-    
-    assertNotNull(t);
-    assertEquals("übelkeit", t.term());
-    assertEquals(7, t.startOffset());
-    assertEquals(15, t.endOffset());
+    assertTokenStreamContents(wdf,
+        new String[] { "übelkeit" },
+        new int[] { 7 },
+        new int[] { 15 });
   }
   
   public void testOffsetChange2() throws Exception
   {
     WordDelimiterFilter wdf = new WordDelimiterFilter(
-      new TokenStream() {
-        Token t;
-        public Token next() {
-         if (t != null) return null;
-         t = new Token("(übelkeit", 7, 17);
-         return t;
-        }
-      },
+      new SingleTokenTokenStream(new Token("(übelkeit", 7, 17)),
       1,1,0,0,1,1,0
     );
     
-    Token t = wdf.next();
-    
-    assertNotNull(t);
-    assertEquals("übelkeit", t.term());
-    assertEquals(8, t.startOffset());
-    assertEquals(17, t.endOffset());
+    assertTokenStreamContents(wdf,
+        new String[] { "übelkeit" },
+        new int[] { 8 },
+        new int[] { 17 });
   }
   
   public void testOffsetChange3() throws Exception
   {
     WordDelimiterFilter wdf = new WordDelimiterFilter(
-      new TokenStream() {
-        Token t;
-        public Token next() {
-         if (t != null) return null;
-         t = new Token("(übelkeit", 7, 16);
-         return t;
-        }
-      },
+      new SingleTokenTokenStream(new Token("(übelkeit", 7, 16)),
       1,1,0,0,1,1,0
     );
     
-    Token t = wdf.next();
-    
-    assertNotNull(t);
-    assertEquals("übelkeit", t.term());
-    assertEquals(8, t.startOffset());
-    assertEquals(16, t.endOffset());
+    assertTokenStreamContents(wdf,
+        new String[] { "übelkeit" },
+        new int[] { 8 },
+        new int[] { 16 });
   }
   
   public void testOffsetChange4() throws Exception
   {
     WordDelimiterFilter wdf = new WordDelimiterFilter(
-      new TokenStream() {
-        private Token t;
-        public Token next() {
-         if (t != null) return null;
-         t = new Token("(foo,bar)", 7, 16);
-         return t;
-        }
-      },
+      new SingleTokenTokenStream(new Token("(foo,bar)", 7, 16)),
       1,1,0,0,1,1,0
     );
     
-    Token t = wdf.next();
-    
-    assertNotNull(t);
-    assertEquals("foo", t.term());
-    assertEquals(8, t.startOffset());
-    assertEquals(11, t.endOffset());
-    
-    t = wdf.next();
-    
-    assertNotNull(t);
-    assertEquals("bar", t.term());
-    assertEquals(12, t.startOffset());
-    assertEquals(15, t.endOffset());
+    assertTokenStreamContents(wdf,
+        new String[] { "foo", "bar", "foobar"},
+        new int[] { 8, 12, 8 },
+        new int[] { 11, 15, 15 });
   }
 
   public void testAlphaNumericWords(){
@@ -338,24 +264,10 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
 
 
   public void doSplit(final String input, String... output) throws Exception {
-    WordDelimiterFilter wdf = new WordDelimiterFilter(new TokenStream() {
-      boolean done=false;
-      @Override
-      public Token next() throws IOException {
-        if (done) return null;
-        done = true;
-        return new Token(input,0,input.length());
-      }
-    }
-            ,1,1,0,0,0
-    );
-
-    for(String expected : output) {
-      Token t = wdf.next();
-      assertEquals(expected, t.term());
-    }
-
-    assertEquals(null, wdf.next());
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new KeywordTokenizer(
+        new StringReader(input)), 1, 1, 0, 0, 0);
+    
+    assertTokenStreamContents(wdf, output);
   }
 
   public void testSplits() throws Exception {
@@ -365,29 +277,38 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
     // non-space marking symbol shouldn't cause split
     // this is an example in Thai    
     doSplit("\u0e1a\u0e49\u0e32\u0e19","\u0e1a\u0e49\u0e32\u0e19");
+    // possessive followed by delimiter
+    doSplit("test's'", "test");
 
+    // some russian upper and lowercase
+    doSplit("Роберт", "Роберт");
+    // now cause a split (russian camelCase)
+    doSplit("РобЕрт", "Роб", "Ерт");
 
+    // a composed titlecase character, don't split
+    doSplit("aǅungla", "aǅungla");
+    
+    // a modifier letter, don't split
+    doSplit("ســـــــــــــــــلام", "ســـــــــــــــــلام");
+    
+    // enclosing mark, don't split
+    doSplit("۞test", "۞test");
+    
+    // combining spacing mark (the virama), don't split
+    doSplit("हिन्दी", "हिन्दी");
+    
+    // don't split non-ascii digits
+    doSplit("١٢٣٤", "١٢٣٤");
+    
+    // don't split supplementaries into unpaired surrogates
+    doSplit("𠀀𠀀", "𠀀𠀀");
   }
   
   public void doSplitPossessive(int stemPossessive, final String input, final String... output) throws Exception {
-    WordDelimiterFilter wdf = new WordDelimiterFilter(new TokenStream() {
-      boolean done=false;
-      @Override
-      public Token next() throws IOException {
-        if (done) return null;
-        done = true;
-        return new Token(input,0,input.length());
-      }
-    }
-            ,1,1,0,0,0,1,0,1,stemPossessive,null
-    );
+    WordDelimiterFilter wdf = new WordDelimiterFilter(new KeywordTokenizer(
+        new StringReader(input)), 1,1,0,0,0,1,0,1,stemPossessive, null);
 
-    for(String expected : output) {
-      Token t = wdf.next();
-      assertEquals(expected, t.term());
-    }
-
-    assertEquals(null, wdf.next());
+    assertTokenStreamContents(wdf, output);
   }
   
   /*
@@ -484,26 +405,5 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
         new int[] { 0, 9, 15 },
         new int[] { 6, 14, 19 },
         new int[] { 1, 11, 1 });
-  }
-
-  private void assertAnalyzesTo(Analyzer a, String input, String[] output,
-      int startOffsets[], int endOffsets[], int posIncs[]) throws Exception {
-
-    TokenStream ts = a.tokenStream("dummy", new StringReader(input));
-    TermAttribute termAtt = (TermAttribute) ts
-        .getAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) ts
-        .getAttribute(OffsetAttribute.class);
-    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) ts
-        .getAttribute(PositionIncrementAttribute.class);
-    for (int i = 0; i < output.length; i++) {
-      assertTrue(ts.incrementToken());
-      assertEquals(output[i], termAtt.term());
-      assertEquals(startOffsets[i], offsetAtt.startOffset());
-      assertEquals(endOffsets[i], offsetAtt.endOffset());
-      assertEquals(posIncs[i], posIncAtt.getPositionIncrement());
-    }
-    assertFalse(ts.incrementToken());
-    ts.close();
   }
 }

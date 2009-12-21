@@ -16,11 +16,17 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.common.util.StrUtils;
 import org.tartarus.snowball.ext.EnglishStemmer;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,11 +38,11 @@ public class EnglishPorterFilterFactoryTest extends BaseTokenTestCase {
   public void test() throws IOException {
     EnglishStemmer stemmer = new EnglishStemmer();
     String[] test = {"The", "fledgling", "banks", "were", "counting", "on", "a", "big", "boom", "in", "banking"};
-    StringBuilder gold = new StringBuilder();
+    String[] gold = new String[test.length];
     for (int i = 0; i < test.length; i++) {
       stemmer.setCurrent(test[i]);
       stemmer.stem();
-      gold.append(stemmer.getCurrent()).append(' ');
+      gold[i] = stemmer.getCurrent();
     }
 
     EnglishPorterFilterFactory factory = new EnglishPorterFilterFactory();
@@ -44,21 +50,23 @@ public class EnglishPorterFilterFactoryTest extends BaseTokenTestCase {
 
     factory.init(args);
     factory.inform(new LinesMockSolrResourceLoader(new ArrayList<String>()));
-    String out = tsToString(factory.create(new IterTokenStream(test)));
-    assertEquals(gold.toString().trim(), out);
+    Tokenizer tokenizer = new WhitespaceTokenizer(
+        new StringReader(StrUtils.join(Arrays.asList(test), ' ')));
+    TokenStream stream = factory.create(tokenizer);
+    assertTokenStreamContents(stream, gold);
   }
 
   public void testProtected() throws Exception {
     EnglishStemmer stemmer = new EnglishStemmer();
     String[] test = {"The", "fledgling", "banks", "were", "counting", "on", "a", "big", "boom", "in", "banking"};
-    StringBuilder gold = new StringBuilder();
+    String[] gold = new String[test.length];
     for (int i = 0; i < test.length; i++) {
       if (test[i].equals("fledgling") == false && test[i].equals("banks") == false) {
         stemmer.setCurrent(test[i]);
         stemmer.stem();
-        gold.append(stemmer.getCurrent()).append(' ');
+        gold[i] = stemmer.getCurrent();
       } else {
-        gold.append(test[i]).append(' ');
+        gold[i] = test[i];
       }
     }
 
@@ -69,8 +77,10 @@ public class EnglishPorterFilterFactoryTest extends BaseTokenTestCase {
     List<String> lines = new ArrayList<String>();
     Collections.addAll(lines, "banks", "fledgling");
     factory.inform(new LinesMockSolrResourceLoader(lines));
-    String out = tsToString(factory.create(new IterTokenStream(test)));
-    assertEquals(gold.toString().trim(), out);
+    Tokenizer tokenizer = new WhitespaceTokenizer(
+        new StringReader(StrUtils.join(Arrays.asList(test), ' ')));
+    TokenStream stream = factory.create(tokenizer);
+    assertTokenStreamContents(stream, gold);
   }
 
   class LinesMockSolrResourceLoader implements ResourceLoader {

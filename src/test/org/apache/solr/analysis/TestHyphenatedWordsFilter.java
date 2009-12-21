@@ -28,12 +28,24 @@ import org.apache.lucene.analysis.WhitespaceTokenizer;
 public class TestHyphenatedWordsFilter extends BaseTokenTestCase {
 	public void testHyphenatedWords() throws Exception {
 		String input = "ecologi-\r\ncal devel-\r\n\r\nop compre-\u0009hensive-hands-on and ecologi-\ncal";
-		String outputAfterHyphenatedWordsFilter = "ecological develop comprehensive-hands-on and ecological";
 		// first test
 		TokenStream ts = new WhitespaceTokenizer(new StringReader(input));
-		ts = new HyphenatedWordsFilter(ts);
-		String actual = tsToString(ts);
-		assertEquals("Testing HyphenatedWordsFilter",
-				outputAfterHyphenatedWordsFilter, actual);
+		HyphenatedWordsFilterFactory factory = new HyphenatedWordsFilterFactory();
+		ts = factory.create(ts);
+		assertTokenStreamContents(ts, 
+		    new String[] { "ecological", "develop", "comprehensive-hands-on", "and", "ecological" });
 	}
+	
+	/**
+	 * Test that HyphenatedWordsFilter behaves correctly with a final hyphen
+	 */
+	public void testHyphenAtEnd() throws Exception {
+	    String input = "ecologi-\r\ncal devel-\r\n\r\nop compre-\u0009hensive-hands-on and ecology-";
+	    // first test
+	    TokenStream ts = new WhitespaceTokenizer(new StringReader(input));
+	    HyphenatedWordsFilterFactory factory = new HyphenatedWordsFilterFactory();
+	    ts = factory.create(ts);
+	    assertTokenStreamContents(ts, 
+	        new String[] { "ecological", "develop", "comprehensive-hands-on", "and", "ecology-" });
+	  }
 }

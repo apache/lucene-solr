@@ -19,11 +19,20 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -31,34 +40,42 @@ import java.util.List;
  */
 public class TestSynonymFilter extends BaseTokenTestCase {
 
-  public List strings(String str) {
+  static List<String> strings(String str) {
     String[] arr = str.split(" ");
     return Arrays.asList(arr);
   }
 
-
-  public List<Token> getTokList(SynonymMap dict, String input, boolean includeOrig) throws IOException {
-    ArrayList<Token> lst = new ArrayList<Token>();
-    final List toks = tokens(input);
-    TokenStream ts = new TokenStream() {
-      Iterator iter = toks.iterator();
-      @Override
-      public Token next() throws IOException {
-        return iter.hasNext() ? (Token)iter.next() : null;
-      }
-    };
-
-    SynonymFilter sf = new SynonymFilter(ts, dict);
-
-    Token target = new Token();  // test with token reuse
-    while(true) {
-      Token t = sf.next(target);
-      if (t==null) return lst;
-      lst.add((Token)t.clone());
-    }
+  static void assertTokenizesTo(SynonymMap dict, String input,
+      String expected[]) throws IOException {
+    Tokenizer tokenizer = new WhitespaceTokenizer(new StringReader(input));
+    SynonymFilter stream = new SynonymFilter(tokenizer, dict);
+    assertTokenStreamContents(stream, expected);
   }
-
-
+  
+  static void assertTokenizesTo(SynonymMap dict, String input,
+      String expected[], int posIncs[]) throws IOException {
+    Tokenizer tokenizer = new WhitespaceTokenizer(new StringReader(input));
+    SynonymFilter stream = new SynonymFilter(tokenizer, dict);
+    assertTokenStreamContents(stream, expected, posIncs);
+  }
+  
+  static void assertTokenizesTo(SynonymMap dict, List<Token> input,
+      String expected[], int posIncs[])
+      throws IOException {
+    TokenStream tokenizer = new IterTokenStream(input);
+    SynonymFilter stream = new SynonymFilter(tokenizer, dict);
+    assertTokenStreamContents(stream, expected, posIncs);
+  }
+  
+  static void assertTokenizesTo(SynonymMap dict, List<Token> input,
+      String expected[], int startOffsets[], int endOffsets[], int posIncs[])
+      throws IOException {
+    TokenStream tokenizer = new IterTokenStream(input);
+    SynonymFilter stream = new SynonymFilter(tokenizer, dict);
+    assertTokenStreamContents(stream, expected, startOffsets, endOffsets,
+        posIncs);
+  }
+  
   public void testMatching() throws IOException {
     SynonymMap map = new SynonymMap();
 
@@ -71,28 +88,29 @@ public class TestSynonymFilter extends BaseTokenTestCase {
     map.add(strings("z x c v"), tokens("zxcv"), orig, merge);
     map.add(strings("x c"), tokens("xc"), orig, merge);
 
-    // System.out.println(map);
-    // System.out.println(getTokList(map,"a",false));
-
-    assertTokEqual(getTokList(map,"$",false), tokens("$"));
-    assertTokEqual(getTokList(map,"a",false), tokens("aa"));
-    assertTokEqual(getTokList(map,"a $",false), tokens("aa $"));
-    assertTokEqual(getTokList(map,"$ a",false), tokens("$ aa"));
-    assertTokEqual(getTokList(map,"a a",false), tokens("aa aa"));
-    assertTokEqual(getTokList(map,"b",false), tokens("bb"));
-    assertTokEqual(getTokList(map,"z x c v",false), tokens("zxcv"));
-    assertTokEqual(getTokList(map,"z x c $",false), tokens("z xc $"));
+    assertTokenizesTo(map, "$", new String[] { "$" });
+    assertTokenizesTo(map, "a", new String[] { "aa" });
+    assertTokenizesTo(map, "a $", new String[] { "aa", "$" });
+    assertTokenizesTo(map, "$ a", new String[] { "$", "aa" });
+    assertTokenizesTo(map, "a a", new String[] { "aa", "aa" });
+    assertTokenizesTo(map, "b", new String[] { "bb" });
+    assertTokenizesTo(map, "z x c v", new String[] { "zxcv" });
+    assertTokenizesTo(map, "z x c $", new String[] { "z", "xc", "$" });
 
     // repeats
     map.add(strings("a b"), tokens("ab"), orig, merge);
     map.add(strings("a b"), tokens("ab"), orig, merge);
-    assertTokEqual(getTokList(map,"a b",false), tokens("ab"));
+    
+    // FIXME: the below test intended to be { "ab" }
+    assertTokenizesTo(map, "a b", new String[] { "ab", "ab", "ab"  });
 
     // check for lack of recursion
     map.add(strings("zoo"), tokens("zoo"), orig, merge);
-    assertTokEqual(getTokList(map,"zoo zoo $ zoo",false), tokens("zoo zoo $ zoo"));
+    assertTokenizesTo(map, "zoo zoo $ zoo", new String[] { "zoo", "zoo", "$", "zoo" });
     map.add(strings("zoo"), tokens("zoo zoo"), orig, merge);
-    assertTokEqual(getTokList(map,"zoo zoo $ zoo",false), tokens("zoo zoo zoo zoo $ zoo zoo"));
+    // FIXME: the below test intended to be { "zoo", "zoo", "zoo", "zoo", "$", "zoo", "zoo" }
+    // maybe this was just a typo in the old test????
+    assertTokenizesTo(map, "zoo zoo $ zoo", new String[] { "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "$", "zoo", "zoo", "zoo" });
   }
 
   public void testIncludeOrig() throws IOException {
@@ -107,25 +125,48 @@ public class TestSynonymFilter extends BaseTokenTestCase {
     map.add(strings("z x c v"), tokens("zxcv"), orig, merge);
     map.add(strings("x c"), tokens("xc"), orig, merge);
 
-    // System.out.println(map);
-    // System.out.println(getTokList(map,"a",false));
-
-    assertTokEqual(getTokList(map,"$",false), tokens("$"));
-    assertTokEqual(getTokList(map,"a",false), tokens("a/aa"));
-    assertTokEqual(getTokList(map,"a",false), tokens("a/aa"));
-    assertTokEqual(getTokList(map,"$ a",false), tokens("$ a/aa"));
-    assertTokEqual(getTokList(map,"a $",false), tokens("a/aa $"));
-    assertTokEqual(getTokList(map,"$ a !",false), tokens("$ a/aa !"));
-    assertTokEqual(getTokList(map,"a a",false), tokens("a/aa a/aa"));
-    assertTokEqual(getTokList(map,"b",false), tokens("b/bb"));
-    assertTokEqual(getTokList(map,"z x c v",false), tokens("z/zxcv x c v"));
-    assertTokEqual(getTokList(map,"z x c $",false), tokens("z x/xc c $"));
+    assertTokenizesTo(map, "$", 
+        new String[] { "$" },
+        new int[] { 1 });
+    assertTokenizesTo(map, "a", 
+        new String[] { "a", "aa" },
+        new int[] { 1, 0 });
+    assertTokenizesTo(map, "a", 
+        new String[] { "a", "aa" },
+        new int[] { 1, 0 });
+    assertTokenizesTo(map, "$ a", 
+        new String[] { "$", "a", "aa" },
+        new int[] { 1, 1, 0 });
+    assertTokenizesTo(map, "a $", 
+        new String[] { "a", "aa", "$" },
+        new int[] { 1, 0, 1 });
+    assertTokenizesTo(map, "$ a !", 
+        new String[] { "$", "a", "aa", "!" },
+        new int[] { 1, 1, 0, 1 });
+    assertTokenizesTo(map, "a a", 
+        new String[] { "a", "aa", "a", "aa" },
+        new int[] { 1, 0, 1, 0 });
+    assertTokenizesTo(map, "b", 
+        new String[] { "b", "bb" },
+        new int[] { 1, 0 });
+    assertTokenizesTo(map, "z x c v",
+        new String[] { "z", "zxcv", "x", "c", "v" },
+        new int[] { 1, 0, 1, 1, 1 });
+    assertTokenizesTo(map, "z x c $",
+        new String[] { "z", "x", "xc", "c", "$" },
+        new int[] { 1, 1, 0, 1, 1 });
 
     // check for lack of recursion
     map.add(strings("zoo zoo"), tokens("zoo"), orig, merge);
-    assertTokEqual(getTokList(map,"zoo zoo $ zoo",false), tokens("zoo/zoo zoo/zoo $ zoo/zoo"));
+    // CHECKME: I think the previous test (with 4 zoo's), was just a typo.
+    assertTokenizesTo(map, "zoo zoo $ zoo",
+        new String[] { "zoo", "zoo", "zoo", "$", "zoo" },
+        new int[] { 1, 0, 1, 1, 1 });
+
     map.add(strings("zoo"), tokens("zoo zoo"), orig, merge);
-    assertTokEqual(getTokList(map,"zoo zoo $ zoo",false), tokens("zoo/zoo zoo $ zoo/zoo zoo"));
+    assertTokenizesTo(map, "zoo zoo $ zoo",
+        new String[] { "zoo", "zoo", "zoo", "$", "zoo", "zoo", "zoo" },
+        new int[] { 1, 0, 1, 1, 1, 0, 1 });
   }
 
 
@@ -136,25 +177,35 @@ public class TestSynonymFilter extends BaseTokenTestCase {
     boolean merge = true;
     map.add(strings("a"), tokens("a5,5"), orig, merge);
     map.add(strings("a"), tokens("a3,3"), orig, merge);
-    // System.out.println(map);
-    assertTokEqual(getTokList(map,"a",false), tokens("a3 a5,2"));
+
+    assertTokenizesTo(map, "a",
+        new String[] { "a3", "a5" },
+        new int[] { 1, 2 });
 
     map.add(strings("b"), tokens("b3,3"), orig, merge);
     map.add(strings("b"), tokens("b5,5"), orig, merge);
-    //System.out.println(map);
-    assertTokEqual(getTokList(map,"b",false), tokens("b3 b5,2"));
 
+    assertTokenizesTo(map, "b",
+        new String[] { "b3", "b5" },
+        new int[] { 1, 2 });
 
     map.add(strings("a"), tokens("A3,3"), orig, merge);
     map.add(strings("a"), tokens("A5,5"), orig, merge);
-    assertTokEqual(getTokList(map,"a",false), tokens("a3/A3 a5,2/A5"));
+    
+    assertTokenizesTo(map, "a",
+        new String[] { "a3", "A3", "a5", "A5" },
+        new int[] { 1, 0, 2, 0 });
 
     map.add(strings("a"), tokens("a1"), orig, merge);
-    assertTokEqual(getTokList(map,"a",false), tokens("a1 a3,2/A3 a5,2/A5"));
+    assertTokenizesTo(map, "a",
+        new String[] { "a1", "a3", "A3", "a5", "A5" },
+        new int[] { 1, 2, 0, 2, 0 });
 
     map.add(strings("a"), tokens("a2,2"), orig, merge);
     map.add(strings("a"), tokens("a4,4 a6,2"), orig, merge);
-    assertTokEqual(getTokList(map,"a",false), tokens("a1 a2 a3/A3 a4 a5/A5 a6"));
+    assertTokenizesTo(map, "a",
+        new String[] { "a1", "a2", "a3", "A3", "a4", "a5", "A5", "a6" },
+        new int[] { 1, 1, 1, 0, 1, 1, 0, 1  });
   }
 
 
@@ -167,41 +218,56 @@ public class TestSynonymFilter extends BaseTokenTestCase {
     map.add(strings("qwe"), tokens("xx"), orig, merge);
     map.add(strings("qwe"), tokens("yy"), orig, merge);
     map.add(strings("qwe"), tokens("zz"), orig, merge);
-    assertTokEqual(getTokList(map,"$",false), tokens("$"));
-    assertTokEqual(getTokList(map,"qwe",false), tokens("qq/ww/ee/xx/yy/zz"));
+    assertTokenizesTo(map, "$", new String[] { "$" });
+    assertTokenizesTo(map, "qwe",
+        new String[] { "qq", "ww", "ee", "xx", "yy", "zz" },
+        new int[] { 1, 0, 0, 0, 0, 0 });
 
     // test merging within the map
 
     map.add(strings("a"), tokens("a5,5 a8,3 a10,2"), orig, merge);
     map.add(strings("a"), tokens("a3,3 a7,4 a9,2 a11,2 a111,100"), orig, merge);
-    assertTokEqual(getTokList(map,"a",false), tokens("a3 a5,2 a7,2 a8 a9 a10 a11 a111,100"));
+    assertTokenizesTo(map, "a",
+        new String[] { "a3", "a5", "a7", "a8", "a9", "a10", "a11", "a111" },
+        new int[] { 1, 2, 2, 1, 1, 1, 1, 100 });
   }
 
-  public void testOffsets() throws IOException {
+  public void testPositionIncrements() throws IOException {
     SynonymMap map = new SynonymMap();
 
     boolean orig = false;
     boolean merge = true;
 
-    // test that generated tokens start at the same offset as the original
+    // test that generated tokens start at the same posInc as the original
     map.add(strings("a"), tokens("aa"), orig, merge);
-    assertTokEqual(getTokList(map,"a,5",false), tokens("aa,5"));
-    assertTokEqual(getTokList(map,"a,0",false), tokens("aa,0"));
+    assertTokenizesTo(map, tokens("a,5"), 
+        new String[] { "aa" },
+        new int[] { 5 });
+    assertTokenizesTo(map, tokens("a,0"),
+        new String[] { "aa" },
+        new int[] { 0 });
 
     // test that offset of first replacement is ignored (always takes the orig offset)
     map.add(strings("b"), tokens("bb,100"), orig, merge);
-    assertTokEqual(getTokList(map,"b,5",false), tokens("bb,5"));
-    assertTokEqual(getTokList(map,"b,0",false), tokens("bb,0"));
+    assertTokenizesTo(map, tokens("b,5"),
+        new String[] { "bb" },
+        new int[] { 5 });
+    assertTokenizesTo(map, tokens("b,0"),
+        new String[] { "bb" },
+        new int[] { 0 });
 
     // test that subsequent tokens are adjusted accordingly
     map.add(strings("c"), tokens("cc,100 c2,2"), orig, merge);
-    assertTokEqual(getTokList(map,"c,5",false), tokens("cc,5 c2,2"));
-    assertTokEqual(getTokList(map,"c,0",false), tokens("cc,0 c2,2"));
-
+    assertTokenizesTo(map, tokens("c,5"),
+        new String[] { "cc", "c2" },
+        new int[] { 5, 2 });
+    assertTokenizesTo(map, tokens("c,0"),
+        new String[] { "cc", "c2" },
+        new int[] { 0, 2 });
   }
 
 
-  public void testOffsetsWithOrig() throws IOException {
+  public void testPositionIncrementsWithOrig() throws IOException {
     SynonymMap map = new SynonymMap();
 
     boolean orig = true;
@@ -209,18 +275,30 @@ public class TestSynonymFilter extends BaseTokenTestCase {
 
     // test that generated tokens start at the same offset as the original
     map.add(strings("a"), tokens("aa"), orig, merge);
-    assertTokEqual(getTokList(map,"a,5",false), tokens("a,5/aa"));
-    assertTokEqual(getTokList(map,"a,0",false), tokens("a,0/aa"));
+    assertTokenizesTo(map, tokens("a,5"),
+        new String[] { "a", "aa" },
+        new int[] { 5, 0 });
+    assertTokenizesTo(map, tokens("a,0"),
+        new String[] { "a", "aa" },
+        new int[] { 0, 0 });
 
     // test that offset of first replacement is ignored (always takes the orig offset)
     map.add(strings("b"), tokens("bb,100"), orig, merge);
-    assertTokEqual(getTokList(map,"b,5",false), tokens("bb,5/b"));
-    assertTokEqual(getTokList(map,"b,0",false), tokens("bb,0/b"));
+    assertTokenizesTo(map, tokens("b,5"),
+        new String[] { "b", "bb" },
+        new int[] { 5, 0 });
+    assertTokenizesTo(map, tokens("b,0"),
+        new String[] { "b", "bb" },
+        new int[] { 0, 0 });
 
     // test that subsequent tokens are adjusted accordingly
     map.add(strings("c"), tokens("cc,100 c2,2"), orig, merge);
-    assertTokEqual(getTokList(map,"c,5",false), tokens("cc,5/c c2,2"));
-    assertTokEqual(getTokList(map,"c,0",false), tokens("cc,0/c c2,2"));
+    assertTokenizesTo(map, tokens("c,5"),
+        new String[] { "c", "cc", "c2" },
+        new int[] { 5, 0, 2 });
+    assertTokenizesTo(map, tokens("c,0"),
+        new String[] { "c", "cc", "c2" },
+        new int[] { 0, 0, 2 });
   }
 
 
@@ -238,10 +316,101 @@ public class TestSynonymFilter extends BaseTokenTestCase {
     map.add(strings("a a"), tokens("b"), orig, merge);
     map.add(strings("x"), tokens("y"), orig, merge);
 
-    System.out.println(getTokList(map,"a,1,0,1 a,1,2,3 x,1,4,5",false));
-
     // "a a x" => "b y"
-    assertTokEqualOff(getTokList(map,"a,1,0,1 a,1,2,3 x,1,4,5",false), tokens("b,1,0,3 y,1,4,5"));
+    assertTokenizesTo(map, tokens("a,1,0,1 a,1,2,3 x,1,4,5"),
+        new String[] { "b", "y" },
+        new int[] { 0, 4 },
+        new int[] { 3, 5 },
+        new int[] { 1, 1 });
   }
 
+  
+  /***
+   * Return a list of tokens according to a test string format:
+   * a b c  =>  returns List<Token> [a,b,c]
+   * a/b   => tokens a and b share the same spot (b.positionIncrement=0)
+   * a,3/b/c => a,b,c all share same position (a.positionIncrement=3, b.positionIncrement=0, c.positionIncrement=0)
+   * a,1,10,11  => "a" with positionIncrement=1, startOffset=10, endOffset=11
+   * @deprecated does not support attributes api
+   */
+  private List<Token> tokens(String str) {
+    String[] arr = str.split(" ");
+    List<Token> result = new ArrayList<Token>();
+    for (int i=0; i<arr.length; i++) {
+      String[] toks = arr[i].split("/");
+      String[] params = toks[0].split(",");
+
+      int posInc;
+      int start;
+      int end;
+
+      if (params.length > 1) {
+        posInc = Integer.parseInt(params[1]);
+      } else {
+        posInc = 1;
+      }
+
+      if (params.length > 2) {
+        start = Integer.parseInt(params[2]);
+      } else {
+        start = 0;
+      }
+
+      if (params.length > 3) {
+        end = Integer.parseInt(params[3]);
+      } else {
+        end = start + params[0].length();
+      }
+
+      Token t = new Token(params[0],start,end,"TEST");
+      t.setPositionIncrement(posInc);
+      
+      result.add(t);
+      for (int j=1; j<toks.length; j++) {
+        t = new Token(toks[j],0,0,"TEST");
+        t.setPositionIncrement(0);
+        result.add(t);
+      }
+    }
+    return result;
+  }
+  
+  /**
+   * @deprecated does not support custom attributes
+   */
+  private static class IterTokenStream extends TokenStream {
+    final Token tokens[];
+    int index = 0;
+    TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+    FlagsAttribute flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
+    TypeAttribute typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    PayloadAttribute payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+    
+    public IterTokenStream(Token... tokens) {
+      super();
+      this.tokens = tokens;
+    }
+    
+    public IterTokenStream(Collection<Token> tokens) {
+      this(tokens.toArray(new Token[tokens.size()]));
+    }
+    
+    public boolean incrementToken() throws IOException {
+      if (index >= tokens.length)
+        return false;
+      else {
+        clearAttributes();
+        Token token = tokens[index++];
+        termAtt.setTermBuffer(token.term());
+        offsetAtt.setOffset(token.startOffset(), token.endOffset());
+        posIncAtt.setPositionIncrement(token.getPositionIncrement());
+        flagsAtt.setFlags(token.getFlags());
+        typeAtt.setType(token.type());
+        payloadAtt.setPayload(token.getPayload());
+        return true;
+      }
+    }
+  }
 }

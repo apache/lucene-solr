@@ -20,6 +20,7 @@ package org.apache.solr.analysis;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.text.Collator;
 import java.text.RuleBasedCollator;
 import java.util.HashMap;
@@ -27,7 +28,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.solr.common.ResourceLoader;
 
 public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
@@ -39,18 +42,80 @@ public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
    * Then things will sort and match correctly.
    */
   public void testBasicUsage() throws IOException {
-    String[] turkishUpperCase = { "I", "WİLL", "USE", "TURKİSH", "CASING" };
-    String[] turkishLowerCase = { "ı", "will", "use", "turkish", "casıng" };
+    String turkishUpperCase = "I WİLL USE TURKİSH CASING";
+    String turkishLowerCase = "ı will use turkish casıng";
     CollationKeyFilterFactory factory = new CollationKeyFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("language", "tr");
     args.put("strength", "primary");
     factory.init(args);
     factory.inform(new StringMockSolrResourceLoader(""));
-    TokenStream tsUpper = factory.create(new IterTokenStream(turkishUpperCase));
-    TokenStream tsLower = factory.create(new IterTokenStream(turkishLowerCase));
-    assertTokEqual(BaseTokenTestCase.getTokens(tsUpper),
-        BaseTokenTestCase.getTokens(tsLower));
+    TokenStream tsUpper = factory.create(
+        new KeywordTokenizer(new StringReader(turkishUpperCase)));
+    TokenStream tsLower = factory.create(
+        new KeywordTokenizer(new StringReader(turkishLowerCase)));
+    assertCollatesToSame(tsUpper, tsLower);
+  }
+  
+  /*
+   * Test usage of the decomposition option for unicode normalization.
+   */
+  public void testNormalization() throws IOException {
+    String turkishUpperCase = "I W\u0049\u0307LL USE TURKİSH CASING";
+    String turkishLowerCase = "ı will use turkish casıng";
+    CollationKeyFilterFactory factory = new CollationKeyFilterFactory();
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("language", "tr");
+    args.put("strength", "primary");
+    args.put("decomposition", "canonical");
+    factory.init(args);
+    factory.inform(new StringMockSolrResourceLoader(""));
+    TokenStream tsUpper = factory.create(
+        new KeywordTokenizer(new StringReader(turkishUpperCase)));
+    TokenStream tsLower = factory.create(
+        new KeywordTokenizer(new StringReader(turkishLowerCase)));
+    assertCollatesToSame(tsUpper, tsLower);
+  }
+  
+  /*
+   * Test usage of the K decomposition option for unicode normalization.
+   * This works even with identical strength.
+   */
+  public void testFullDecomposition() throws IOException {
+    String fullWidth = "Ｔｅｓｔｉｎｇ";
+    String halfWidth = "Testing";
+    CollationKeyFilterFactory factory = new CollationKeyFilterFactory();
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("language", "zh");
+    args.put("strength", "identical");
+    args.put("decomposition", "full");
+    factory.init(args);
+    factory.inform(new StringMockSolrResourceLoader(""));
+    TokenStream tsFull = factory.create(
+        new KeywordTokenizer(new StringReader(fullWidth)));
+    TokenStream tsHalf = factory.create(
+        new KeywordTokenizer(new StringReader(halfWidth)));
+    assertCollatesToSame(tsFull, tsHalf);
+  }
+  
+  /*
+   * Test secondary strength, for english case is not significant.
+   */
+  public void testSecondaryStrength() throws IOException {
+    String upperCase = "TESTING";
+    String lowerCase = "testing";
+    CollationKeyFilterFactory factory = new CollationKeyFilterFactory();
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("language", "en");
+    args.put("strength", "secondary");
+    args.put("decomposition", "no");
+    factory.init(args);
+    factory.inform(new StringMockSolrResourceLoader(""));
+    TokenStream tsUpper = factory.create(
+        new KeywordTokenizer(new StringReader(upperCase)));
+    TokenStream tsLower = factory.create(
+        new KeywordTokenizer(new StringReader(lowerCase)));
+    assertCollatesToSame(tsUpper, tsLower);
   }
 
   /*
@@ -74,20 +139,22 @@ public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
     // at this point, you would save these tailoredRules to a file, 
     // and use the custom parameter.
     //
-    String[] germanUmlaut = { "Töne" };
-    String[] germanOE = { "Toene" };
+    String germanUmlaut = "Töne";
+    String germanOE = "Toene";
     CollationKeyFilterFactory factory = new CollationKeyFilterFactory();
     Map<String,String> args = new HashMap<String,String>();
     args.put("custom", "rules.txt");
     args.put("strength", "primary");
     factory.init(args);
     factory.inform(new StringMockSolrResourceLoader(tailoredRules));
-    TokenStream tsUmlaut = factory.create(new IterTokenStream(germanUmlaut));
-    TokenStream tsOE = factory.create(new IterTokenStream(germanOE));
-    assertTokEqual(BaseTokenTestCase.getTokens(tsUmlaut),
-        BaseTokenTestCase.getTokens(tsOE));
-  }
+    TokenStream tsUmlaut = factory.create(
+        new KeywordTokenizer(new StringReader(germanUmlaut)));
+    TokenStream tsOE = factory.create(
+        new KeywordTokenizer(new StringReader(germanOE)));
 
+    assertCollatesToSame(tsUmlaut, tsOE);
+  }
+  
   private class StringMockSolrResourceLoader implements ResourceLoader {
     String text;
 
@@ -106,5 +173,18 @@ public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
     public InputStream openResource(String resource) throws IOException {
       return new ByteArrayInputStream(text.getBytes("UTF-8"));
     }
+  }
+  
+  private void assertCollatesToSame(TokenStream stream1, TokenStream stream2)
+      throws IOException {
+    TermAttribute term1 = (TermAttribute) stream1
+        .addAttribute(TermAttribute.class);
+    TermAttribute term2 = (TermAttribute) stream2
+        .addAttribute(TermAttribute.class);
+    assertTrue(stream1.incrementToken());
+    assertTrue(stream2.incrementToken());
+    assertEquals(term1.term(), term2.term());
+    assertFalse(stream1.incrementToken());
+    assertFalse(stream2.incrementToken());
   }
 }

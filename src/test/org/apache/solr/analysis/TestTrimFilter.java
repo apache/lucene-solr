@@ -17,12 +17,19 @@
 
 package org.apache.solr.analysis;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-
-import java.util.List;
-
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
  * @version $Id:$
@@ -35,46 +42,75 @@ public class TestTrimFilter extends BaseTokenTestCase {
     char[] ccc = "cCc".toCharArray();
     char[] whitespace = "   ".toCharArray();
     char[] empty = "".toCharArray();
-    TokenStream ts = new TrimFilter
-            (new IterTokenStream(new Token(a, 0, a.length, 1, 5),
+    TrimFilterFactory factory = new TrimFilterFactory();
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("updateOffsets", "false");
+    factory.init(args);
+    TokenStream ts = factory.create(new IterTokenStream(new Token(a, 0, a.length, 1, 5),
                     new Token(b, 0, b.length, 6, 10),
                     new Token(ccc, 0, ccc.length, 11, 15),
                     new Token(whitespace, 0, whitespace.length, 16, 20),
-                    new Token(empty, 0, empty.length, 21, 21)), false);
+                    new Token(empty, 0, empty.length, 21, 21)));
 
-    TermAttribute token;
-    assertTrue(ts.incrementToken());
-    token = (TermAttribute) ts.getAttribute(TermAttribute.class);
-    assertEquals("a", new String(token.termBuffer(), 0, token.termLength()));
-    assertTrue(ts.incrementToken());
-    assertEquals("b", new String(token.termBuffer(), 0, token.termLength()));
-    assertTrue(ts.incrementToken());
-    assertEquals("cCc", new String(token.termBuffer(), 0, token.termLength()));
-    assertTrue(ts.incrementToken());
-    assertEquals("", new String(token.termBuffer(), 0, token.termLength()));
-    assertTrue(ts.incrementToken());
-    assertEquals("", new String(token.termBuffer(), 0, token.termLength()));
-    assertFalse(ts.incrementToken());
+    assertTokenStreamContents(ts, new String[] { "a", "b", "cCc", "", ""});
 
     a = " a".toCharArray();
     b = "b ".toCharArray();
     ccc = " c ".toCharArray();
     whitespace = "   ".toCharArray();
-    ts = new TrimFilter(new IterTokenStream(
+    factory = new TrimFilterFactory();
+    args = new HashMap<String,String>();
+    args.put("updateOffsets", "true");
+    factory.init(args);
+    ts = factory.create(new IterTokenStream(
             new Token(a, 0, a.length, 0, 2),
             new Token(b, 0, b.length, 0, 2),
             new Token(ccc, 0, ccc.length, 0, 3),
-            new Token(whitespace, 0, whitespace.length, 0, 3)), true);
+            new Token(whitespace, 0, whitespace.length, 0, 3)));
     
-    List<Token> expect = tokens("a,1,1,2 b,1,0,1 c,1,1,2 ,1,3,3");
-    List<Token> real = getTokens(ts);
-    for (Token t : expect) {
-      System.out.println("TEST:" + t);
-    }
-    for (Token t : real) {
-      System.out.println("REAL:" + t);
-    }
-    assertTokEqualOff(expect, real);
+    assertTokenStreamContents(ts, 
+        new String[] { "a", "b", "c", "" },
+        new int[] { 1, 0, 1, 3 },
+        new int[] { 2, 1, 2, 3 },
+        new int[] { 1, 1, 1, 1 });
   }
-
+  
+  /**
+   * @deprecated does not support custom attributes
+   */
+  private static class IterTokenStream extends TokenStream {
+    final Token tokens[];
+    int index = 0;
+    TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+    FlagsAttribute flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
+    TypeAttribute typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+    PayloadAttribute payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+    
+    public IterTokenStream(Token... tokens) {
+      super();
+      this.tokens = tokens;
+    }
+    
+    public IterTokenStream(Collection<Token> tokens) {
+      this(tokens.toArray(new Token[tokens.size()]));
+    }
+    
+    public boolean incrementToken() throws IOException {
+      if (index >= tokens.length)
+        return false;
+      else {
+        clearAttributes();
+        Token token = tokens[index++];
+        termAtt.setTermBuffer(token.term());
+        offsetAtt.setOffset(token.startOffset(), token.endOffset());
+        posIncAtt.setPositionIncrement(token.getPositionIncrement());
+        flagsAtt.setFlags(token.getFlags());
+        typeAtt.setType(token.type());
+        payloadAtt.setPayload(token.getPayload());
+        return true;
+      }
+    }
+  }
 }

@@ -16,36 +16,24 @@
  */
 package org.apache.solr.analysis;
 
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.TestCase;
-
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.analysis.BaseTokenTestCase.IterTokenStream;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
-public class DoubleMetaphoneFilterFactoryTest extends TestCase {
+public class DoubleMetaphoneFilterFactoryTest extends BaseTokenTestCase {
 
   public void testDefaults() throws Exception {
     DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory();
     factory.init(new HashMap<String, String>());
-    TokenStream inputStream = new IterTokenStream("international");
+    TokenStream inputStream = new WhitespaceTokenizer(new StringReader("international"));
 
     TokenStream filteredStream = factory.create(inputStream);
-
     assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
-
-    Token token = filteredStream.next(new Token());
-    assertEquals(13, token.termLength());
-    assertEquals("international", new String(token.termBuffer(), 0, token
-        .termLength()));
-
-    token = filteredStream.next(new Token());
-    assertEquals(4, token.termLength());
-    assertEquals("ANTR", new String(token.termBuffer(), 0, token.termLength()));
-
-    assertNull(filteredStream.next(new Token()));
+    assertTokenStreamContents(filteredStream, new String[] { "international", "ANTR" });
   }
 
   public void testSettingSizeAndInject() throws Exception {
@@ -55,17 +43,31 @@ public class DoubleMetaphoneFilterFactoryTest extends TestCase {
     parameters.put("maxCodeLength", "8");
     factory.init(parameters);
 
-    TokenStream inputStream = new IterTokenStream("international");
+    TokenStream inputStream = new WhitespaceTokenizer(new StringReader("international"));
 
     TokenStream filteredStream = factory.create(inputStream);
-
     assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
+    assertTokenStreamContents(filteredStream, new String[] { "ANTRNXNL" });
+  }
+  
+  /**
+   * Ensure that reset() removes any state (buffered tokens)
+   */
+  public void testReset() throws Exception {
+    DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory();
+    factory.init(new HashMap<String, String>());
+    TokenStream inputStream = new WhitespaceTokenizer(new StringReader("international"));
 
-    Token token = filteredStream.next(new Token());
-    assertEquals(8, token.termLength());
-    assertEquals("ANTRNXNL", new String(token.termBuffer(), 0, token
-        .termLength()));
-
-    assertNull(filteredStream.next(new Token()));
+    TokenStream filteredStream = factory.create(inputStream);
+    TermAttribute termAtt = (TermAttribute) filteredStream.addAttribute(TermAttribute.class);
+    assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
+    
+    assertTrue(filteredStream.incrementToken());
+    assertEquals(13, termAtt.termLength());
+    assertEquals("international", termAtt.term());
+    filteredStream.reset();
+    
+    // ensure there are no more tokens, such as ANTRNXNL
+    assertFalse(filteredStream.incrementToken());
   }
 }

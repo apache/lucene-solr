@@ -1,3 +1,5 @@
+package org.apache.solr.analysis;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,28 +17,22 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.util.TestHarness;
-import junit.framework.TestCase;
+import java.io.Reader;
+import java.io.StringReader;
+
+import org.apache.lucene.analysis.TokenStream;
 
 /**
- *
+ * Simple tests to ensure the CJK tokenizer factory is working.
  */
-abstract public class AnalysisTestCase extends AbstractSolrTestCase {
-  protected SolrConfig solrConfig;
-  /** Creates a new instance of AnalysisTestCase */
-  public AnalysisTestCase() {
-  }
-  
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
-  public String getSchemaFile() { return "schema.xml"; }
-
-  public void setUp() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.setUp();
-    solrConfig = TestHarness.createConfig(getSolrConfigFile());
+public class TestCJKTokenizerFactory extends BaseTokenTestCase {
+  /**
+   * Ensure the tokenizer actually tokenizes CJK text correctly
+   */
+  public void testTokenizer() throws Exception {
+    Reader reader = new StringReader("我是中国人");
+    CJKTokenizerFactory factory = new CJKTokenizerFactory();
+    TokenStream stream = factory.create(reader);
+    assertTokenStreamContents(stream, new String[] {"我是", "是中", "中国", "国人"});
   }
 }

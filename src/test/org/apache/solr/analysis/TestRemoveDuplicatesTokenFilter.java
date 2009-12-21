@@ -20,10 +20,14 @@ package org.apache.solr.analysis;
 import junit.framework.TestCase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+
 import java.util.Iterator;
 import java.util.Arrays;
 
-public class TestRemoveDuplicatesTokenFilter extends AnalysisTestCase {
+public class TestRemoveDuplicatesTokenFilter extends BaseTokenTestCase {
 
   public static Token tok(int pos, String t, int start, int end) {
     Token tok = new Token(t,start,end);
@@ -38,15 +42,27 @@ public class TestRemoveDuplicatesTokenFilter extends AnalysisTestCase {
     throws Exception {
 
     final Iterator<Token> toks = Arrays.asList(tokens).iterator();
-    
-    final TokenStream ts = new RemoveDuplicatesTokenFilter
+    RemoveDuplicatesTokenFilterFactory factory = new RemoveDuplicatesTokenFilterFactory();
+    final TokenStream ts = factory.create
       (new TokenStream() {
-          public Token next() { return toks.hasNext() ? toks.next() : null; }
+          TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+          OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+          PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+          public boolean incrementToken() {
+            if (toks.hasNext()) {
+              clearAttributes();
+              Token tok = toks.next();
+              termAtt.setTermBuffer(tok.term());
+              offsetAtt.setOffset(tok.startOffset(), tok.endOffset());
+              posIncAtt.setPositionIncrement(tok.getPositionIncrement());
+              return true;
+            } else {
+              return false;
+            }
+          }
         });
     
-    final String actual = TestBufferedTokenStream.tsToString(ts);
-    assertEquals(expected + " != " + actual, expected, actual);
-    
+    assertTokenStreamContents(ts, expected.split("\\s"));   
   }
   
   public void testNoDups() throws Exception {

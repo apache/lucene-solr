@@ -17,16 +17,14 @@
 
 package org.apache.solr.analysis;
 
-import java.util.ArrayList;
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.codec.Encoder;
-import org.apache.commons.codec.language.DoubleMetaphone;
 import org.apache.commons.codec.language.Metaphone;
-import org.apache.commons.codec.language.RefinedSoundex;
-import org.apache.commons.codec.language.Soundex;
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 
 
 /**
@@ -61,50 +59,38 @@ public class TestPhoneticFilter extends BaseTokenTestCase {
     assertFalse( ff.inject );
   }
   
-  public void runner( Encoder enc, boolean inject ) throws Exception
-  {
-    String[] input = new String[] {
-       "aaa", "bbb", "ccc", "easgasg"
-    };
-
-    ArrayList<Token> stream = new ArrayList<Token>();
-    ArrayList<Token> output = new ArrayList<Token>();
-    for( String s : input ) {
-      stream.add( new Token( s, 0, s.length() ) );
-
-      // phonetic token is added first in the current impl
-      output.add( new Token( enc.encode(s).toString(), 0, s.length() ) );
-
-      // add the original if applicable
-      if( inject ) {
-        output.add( new Token( s, 0, s.length() ) );
-      }
-    }
-
-    // System.out.println("###stream="+stream);
-    // System.out.println("###output="+output);
-
-    PhoneticFilter filter = new PhoneticFilter( 
-        new IterTokenStream(stream.iterator()), enc, "text", inject );
-
-    Token got = new Token();
-    for( Token t : output ) {
-      got = filter.next(got);
-      // System.out.println("##### expect=" + t + " got="+got);
-      assertEquals( t.term(), got.term());
-    }
-    assertNull( filter.next() );  // no more tokens
+  public void testAlgorithms() throws Exception {
+    assertAlgorithm("Metaphone", "true", "aaa bbb ccc easgasg",
+        new String[] { "A", "aaa", "B", "bbb", "KKK", "ccc", "ESKS", "easgasg" });
+    assertAlgorithm("Metaphone", "false", "aaa bbb ccc easgasg",
+        new String[] { "A", "B", "KKK", "ESKS" });
+    
+    assertAlgorithm("DoubleMetaphone", "true", "aaa bbb ccc easgasg",
+        new String[] { "A", "aaa", "PP", "bbb", "KK", "ccc", "ASKS", "easgasg" });
+    assertAlgorithm("DoubleMetaphone", "false", "aaa bbb ccc easgasg",
+        new String[] { "A", "PP", "KK", "ASKS" });
+    
+    assertAlgorithm("Soundex", "true", "aaa bbb ccc easgasg",
+        new String[] { "A000", "aaa", "B000", "bbb", "C000", "ccc", "E220", "easgasg" });
+    assertAlgorithm("Soundex", "false", "aaa bbb ccc easgasg",
+        new String[] { "A000", "B000", "C000", "E220" });
+    
+    assertAlgorithm("RefinedSoundex", "true", "aaa bbb ccc easgasg",
+        new String[] { "A0", "aaa", "B1", "bbb", "C3", "ccc", "E034034", "easgasg" });
+    assertAlgorithm("RefinedSoundex", "false", "aaa bbb ccc easgasg",
+        new String[] { "A0", "B1", "C3", "E034034" });
   }
   
-  public void testEncodes() throws Exception {
-    runner( new DoubleMetaphone(), true );
-    runner( new Metaphone(), true );
-    runner( new Soundex(), true );
-    runner( new RefinedSoundex(), true );
-
-    runner( new DoubleMetaphone(), false );
-    runner( new Metaphone(), false );
-    runner( new Soundex(), false );
-    runner( new RefinedSoundex(), false );
+  static void assertAlgorithm(String algName, String inject, String input,
+      String[] expected) throws Exception {
+    Tokenizer tokenizer = new WhitespaceTokenizer(
+        new StringReader(input));
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("encoder", algName);
+    args.put("inject", inject);
+    PhoneticFilterFactory factory = new PhoneticFilterFactory();
+    factory.init(args);
+    TokenStream stream = factory.create(tokenizer);
+    assertTokenStreamContents(stream, expected);
   }
 }

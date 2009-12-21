@@ -16,94 +16,52 @@
  */
 package org.apache.solr.analysis;
 
-import junit.framework.TestCase;
+import java.io.StringReader;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.analysis.BaseTokenTestCase.IterTokenStream;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 
-public class DoubleMetaphoneFilterTest extends TestCase {
+public class DoubleMetaphoneFilterTest extends BaseTokenTestCase {
 
   public void testSize4FalseInject() throws Exception {
-    TokenStream stream = new IterTokenStream("international");
+    TokenStream stream = new WhitespaceTokenizer(new StringReader("international"));
     TokenStream filter = new DoubleMetaphoneFilter(stream, 4, false);
-
-    Token token = filter.next(new Token());
-    assertEquals(4, token.termLength());
-    assertEquals("ANTR", new String(token.termBuffer(), 0, token.termLength()));
-
-    assertNull(filter.next(new Token()));
+    assertTokenStreamContents(filter, new String[] { "ANTR" });
   }
 
   public void testSize4TrueInject() throws Exception {
-    TokenStream stream = new IterTokenStream("international");
+    TokenStream stream = new WhitespaceTokenizer(new StringReader("international"));
     TokenStream filter = new DoubleMetaphoneFilter(stream, 4, true);
-
-    Token token = filter.next(new Token());
-    assertEquals(13, token.termLength());
-    assertEquals("international", new String(token.termBuffer(), 0, token
-        .termLength()));
-
-    token = filter.next(new Token());
-    assertEquals(4, token.termLength());
-    assertEquals("ANTR", new String(token.termBuffer(), 0, token.termLength()));
-
-    assertNull(filter.next(new Token()));
+    assertTokenStreamContents(filter, new String[] { "international", "ANTR" });
   }
 
   public void testAlternateInjectFalse() throws Exception {
-    TokenStream stream = new IterTokenStream("Kuczewski");
+    TokenStream stream = new WhitespaceTokenizer(new StringReader("Kuczewski"));
     TokenStream filter = new DoubleMetaphoneFilter(stream, 4, false);
-
-    Token token = filter.next(new Token());
-    assertEquals(4, token.termLength());
-    assertEquals("KSSK", new String(token.termBuffer(), 0, token.termLength()));
-
-    token = filter.next(new Token());
-    assertEquals(4, token.termLength());
-    assertEquals("KXFS", new String(token.termBuffer(), 0, token.termLength()));
-    assertNull(filter.next(new Token()));
+    assertTokenStreamContents(filter, new String[] { "KSSK", "KXFS" });
   }
 
   public void testSize8FalseInject() throws Exception {
-    TokenStream stream = new IterTokenStream("international");
+    TokenStream stream = new WhitespaceTokenizer(new StringReader("international"));
     TokenStream filter = new DoubleMetaphoneFilter(stream, 8, false);
-
-    Token token = filter.next(new Token());
-    assertEquals(8, token.termLength());
-    assertEquals("ANTRNXNL", new String(token.termBuffer(), 0, token
-        .termLength()));
-
-    assertNull(filter.next(new Token()));
+    assertTokenStreamContents(filter, new String[] { "ANTRNXNL" });
   }
 
   public void testNonConvertableStringsWithInject() throws Exception {
-    TokenStream stream = new IterTokenStream(
-        new String[] { "12345", "#$%@#^%&" });
+    TokenStream stream = new WhitespaceTokenizer(new StringReader("12345 #$%@#^%&"));
     TokenStream filter = new DoubleMetaphoneFilter(stream, 8, true);
-
-    Token token = filter.next(new Token());
-    assertEquals(5, token.termLength());
-    assertEquals("12345", new String(token.termBuffer(), 0, token.termLength()));
-
-    token = filter.next(new Token());
-    assertEquals(8, token.termLength());
-    assertEquals("#$%@#^%&", new String(token.termBuffer(), 0, token
-        .termLength()));
+    assertTokenStreamContents(filter, new String[] { "12345", "#$%@#^%&" });
   }
 
   public void testNonConvertableStringsWithoutInject() throws Exception {
-    TokenStream stream = new IterTokenStream(
-        new String[] { "12345", "#$%@#^%&" });
+    TokenStream stream = new WhitespaceTokenizer(new StringReader("12345 #$%@#^%&"));
     TokenStream filter = new DoubleMetaphoneFilter(stream, 8, false);
-
-    assertEquals("12345", filter.next(new Token()).term());
+    assertTokenStreamContents(filter, new String[] { "12345", "#$%@#^%&" });
     
     // should have something after the stream
-    stream = new IterTokenStream(
-        new String[] { "12345", "#$%@#^%&", "hello" });
+    stream = new WhitespaceTokenizer(new StringReader("12345 #$%@#^%& hello"));
     filter = new DoubleMetaphoneFilter(stream, 8, false);
-    assertNotNull(filter.next(new Token()));
+    assertTokenStreamContents(filter, new String[] { "12345", "#$%@#^%&", "HL" });
   }
 
 }

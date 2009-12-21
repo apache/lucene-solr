@@ -60,9 +60,7 @@ public class TestBufferedTokenStream extends BaseTokenTestCase {
     final String expected = "How now Q B brown A cow B like Q B thing?";
     TokenStream ts = new AB_Q_Stream
       (new WhitespaceTokenizer(new StringReader(input)));
-    final String actual = tsToString(ts);
-    //System.out.println(actual);
-    assertEquals(expected, actual);
+    assertTokenStreamContents(ts, expected.split("\\s"));
   }
   
   public void testABAAB() throws Exception {
@@ -70,9 +68,7 @@ public class TestBufferedTokenStream extends BaseTokenTestCase {
     final String expected = "How now A A B brown A cow B like A A B thing?";
     TokenStream ts = new AB_AAB_Stream
       (new WhitespaceTokenizer(new StringReader(input)));
-    final String actual = tsToString(ts);
-    //System.out.println(actual);
-    assertEquals(expected, actual);
+    assertTokenStreamContents(ts, expected.split("\\s"));
   }
   
   public void testReset() throws Exception {
