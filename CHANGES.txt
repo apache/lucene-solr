@@ -119,6 +119,14 @@ Optimizations
 * LUCENE-2161: Improve concurrency of IndexReader, especially in the
   context of near real-time readers.  (Mike McCandless)
 
+* LUCENE-2164: ConcurrentMergeScheduler has more control over merge
+  threads.  First, it gives smaller merges higher thread priority than
+  larges ones.  Second, a new set/getMaxMergeCount setting will pause
+  the larger merges to allow smaller ones to finish.  The defaults for
+  these settings are now dynamic, depending the number CPU cores as
+  reported by Runtime.getRuntime().availableProcessors() (Mike
+  McCandless)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 

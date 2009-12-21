@@ -911,4 +911,14 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
         return true;
     return false;
   }
+
+  /** Returns sum of all segment's docCounts.  Note that
+   *  this does not include deletions */
+  public int totalDocCount() {
+    int count = 0;
+    for(SegmentInfo info : this) {
+      count += info.docCount;
+    }
+    return count;
+  }
 }

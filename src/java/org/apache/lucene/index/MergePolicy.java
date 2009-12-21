@@ -85,6 +85,7 @@ public abstract class MergePolicy implements java.io.Closeable {
     final boolean useCompoundFile;
     boolean aborted;
     Throwable error;
+    boolean paused;
 
     public OneMerge(SegmentInfos segments, boolean useCompoundFile) {
       if (0 == segments.size())
@@ -110,6 +111,7 @@ public abstract class MergePolicy implements java.io.Closeable {
      *  not be committed. */
     synchronized void abort() {
       aborted = true;
+      notifyAll();
     }
 
     /** Returns true if this merge was aborted. */
@@ -118,8 +120,34 @@ public abstract class MergePolicy implements java.io.Closeable {
     }
 
     synchronized void checkAborted(Directory dir) throws MergeAbortedException {
-      if (aborted)
+      if (aborted) {
         throw new MergeAbortedException("merge is aborted: " + segString(dir));
+      }
+
+      while (paused) {
+        try {
+          // In theory we could wait() indefinitely, but we
+          // do 1000 msec, defensively
+          wait(1000);
+        } catch (InterruptedException ie) {
+          throw new RuntimeException(ie);
+        }
+        if (aborted) {
+          throw new MergeAbortedException("merge is aborted: " + segString(dir));
+        }
+      }
+    }
+
+    synchronized public void setPause(boolean paused) {
+      this.paused = paused;
+      if (!paused) {
+        // Wakeup merge thread, if it's waiting
+        notifyAll();
+      }
+    }
+
+    synchronized public boolean getPause() {
+      return paused;
     }
 
     String segString(Directory dir) {
@@ -262,5 +290,4 @@ public abstract class MergePolicy implements java.io.Closeable {
    * compound file format.
    */
   public abstract boolean useCompoundDocStore(SegmentInfos segments);
-  
 }

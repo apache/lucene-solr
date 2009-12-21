@@ -3944,7 +3944,7 @@ public class IndexWriter implements Closeable {
       handleOOM(oom, "merge");
     }
     if (infoStream != null) {
-      message("merge time " + (System.currentTimeMillis()-t0) + " msec");
+      message("merge time " + (System.currentTimeMillis()-t0) + " msec for " + merge.info.docCount + " docs");
     }
   }
 

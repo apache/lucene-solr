@@ -22,6 +22,7 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.MergePolicy;
 
 import java.io.BufferedOutputStream;
@@ -33,9 +34,15 @@ import java.io.PrintStream;
 /**
  * Create an index. <br>
  * Other side effects: index writer object in perfRunData is set. <br>
- * Relevant properties: <code>merge.factor, max.buffered,
- *  max.field.length, ram.flush.mb [default 0],
- *  [default true]</code>.
+ * Relevant properties: <code>merge.factor (default 10),
+ * max.buffered (default no flush), max.field.length (default
+ * 10,000 tokens), max.field.length, compound (default true), ram.flush.mb [default 0],
+ * merge.policy (default org.apache.lucene.index.LogByteSizeMergePolicy),
+ * merge.scheduler (default
+ * org.apache.lucene.index.ConcurrentMergeScheduler),
+ * concurrent.merge.scheduler.max.thread.count and
+ * concurrent.merge.scheduler.max.merge.count (defaults per
+ * ConcurrentMergeScheduler) </code>.
  * <p>
  * This task also supports a "writer.info.stream" property with the following
  * values:
@@ -64,6 +71,18 @@ public class CreateIndexTask extends PerfTask {
       writer.setMergeScheduler(Class.forName(mergeScheduler).asSubclass(MergeScheduler.class).newInstance());
     } catch (Exception e) {
       throw new RuntimeException("unable to instantiate class '" + mergeScheduler + "' as merge scheduler", e);
+    }
+
+    if (mergeScheduler.equals("org.apache.lucene.index.ConcurrentMergeScheduler")) {
+      ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) writer.getMergeScheduler();
+      int v = config.get("concurrent.merge.scheduler.max.thread.count", -1);
+      if (v != -1) {
+        cms.setMaxThreadCount(v);
+      }
+      v = config.get("concurrent.merge.scheduler.max.merge.count", -1);
+      if (v != -1) {
+        cms.setMaxMergeCount(v);
+      }
     }
 
     final String mergePolicy = config.get("merge.policy",
