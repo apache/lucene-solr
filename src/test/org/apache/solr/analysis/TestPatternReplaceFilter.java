@@ -17,7 +17,6 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 
@@ -27,7 +26,7 @@ import java.util.regex.Pattern;
 /**
  * @version $Id:$
  */
-public class TestPatternReplaceFilter extends AnalysisTestCase {
+public class TestPatternReplaceFilter extends BaseTokenTestCase {
 
   public void testReplaceAll() throws Exception {
     String input = "aabfooaabfooabfoob ab caaaaaaaaab";
@@ -35,14 +34,8 @@ public class TestPatternReplaceFilter extends AnalysisTestCase {
             (new WhitespaceTokenizer(new StringReader(input)),
                     Pattern.compile("a*b"),
                     "-", true);
-    Token token = ts.next();
-    assertEquals("-foo-foo-foo-", new String(token.termBuffer(), 0, token.termLength()));
-    token = ts.next();
-    assertEquals("-", new String(token.termBuffer(), 0, token.termLength()));
-    token = ts.next();
-    assertEquals("c-", new String(token.termBuffer(), 0, token.termLength()));
-    token = ts.next();
-    assertNull(token);
+    assertTokenStreamContents(ts, 
+        new String[] { "-foo-foo-foo-", "-", "c-" });
   }
 
   public void testReplaceFirst() throws Exception {
@@ -51,14 +44,8 @@ public class TestPatternReplaceFilter extends AnalysisTestCase {
             (new WhitespaceTokenizer(new StringReader(input)),
                     Pattern.compile("a*b"),
                     "-", false);
-    Token token = ts.next();
-    assertEquals("-fooaabfooabfoob", new String(token.termBuffer(), 0, token.termLength()));
-    token = ts.next();
-    assertEquals("-", new String(token.termBuffer(), 0, token.termLength()));
-    token = ts.next();
-    assertEquals("c-", new String(token.termBuffer(), 0, token.termLength()));
-    token = ts.next();
-    assertNull(token);
+    assertTokenStreamContents(ts, 
+        new String[] { "-fooaabfooabfoob", "-", "c-" });
   }
 
   public void testStripFirst() throws Exception {
@@ -67,14 +54,8 @@ public class TestPatternReplaceFilter extends AnalysisTestCase {
             (new WhitespaceTokenizer(new StringReader(input)),
                     Pattern.compile("a*b"),
                     null, false);
-    Token token = ts.next();
-    assertEquals("fooaabfooabfoob", new String(token.termBuffer(), 0, token.termLength()));
-    token = ts.next();
-    assertEquals("", new String(token.termBuffer(), 0, token.termLength()));
-    token = ts.next();
-    assertEquals("c", new String(token.termBuffer(), 0, token.termLength()));
-    token = ts.next();
-    assertNull(token);
+    assertTokenStreamContents(ts,
+        new String[] { "fooaabfooabfoob", "", "c" });
   }
 
   public void testStripAll() throws Exception {
@@ -83,14 +64,8 @@ public class TestPatternReplaceFilter extends AnalysisTestCase {
             (new WhitespaceTokenizer(new StringReader(input)),
                     Pattern.compile("a*b"),
                     null, true);
-    Token token = ts.next();
-    assertEquals("foofoofoo", new String(token.termBuffer(), 0, token.termLength()));
-    token = ts.next();
-    assertEquals("", new String(token.termBuffer(), 0, token.termLength()));
-    token = ts.next();
-    assertEquals("c", new String(token.termBuffer(), 0, token.termLength()));
-    token = ts.next();
-    assertNull(token);
+    assertTokenStreamContents(ts,
+        new String[] { "foofoofoo", "", "c" });
   }
 
   public void testReplaceAllWithBackRef() throws Exception {
@@ -99,14 +74,8 @@ public class TestPatternReplaceFilter extends AnalysisTestCase {
             (new WhitespaceTokenizer(new StringReader(input)),
                     Pattern.compile("(a*)b"),
                     "$1\\$", true);
-    Token token = ts.next();
-    assertEquals("aa$fooaa$fooa$foo$", new String(token.termBuffer(), 0, token.termLength()));
-    token = ts.next();
-    assertEquals("a$", new String(token.termBuffer(), 0, token.termLength()));
-    token = ts.next();
-    assertEquals("caaaaaaaaa$", new String(token.termBuffer(), 0, token.termLength()));
-    token = ts.next();
-    assertNull(token);
+    assertTokenStreamContents(ts,
+        new String[] { "aa$fooaa$fooa$foo$", "a$", "caaaaaaaaa$" });
   }
 
 }

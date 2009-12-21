@@ -16,9 +16,12 @@
  */
 package org.apache.solr.analysis;
 
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.solr.common.ResourceLoader;
 
+import java.io.StringReader;
 import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
@@ -28,7 +31,7 @@ import java.util.HashMap;
  * used by the StopFilterFactoryTest TODO: consider creating separate test files
  * so this won't break if stop filter test files change
  **/
-public class CommonGramsQueryFilterFactoryTest extends AbstractSolrTestCase {
+public class CommonGramsQueryFilterFactoryTest extends BaseTokenTestCase {
   public String getSchemaFile() {
     return "schema-stop-keep.xml";
   }
@@ -64,5 +67,24 @@ public class CommonGramsQueryFilterFactoryTest extends AbstractSolrTestCase {
     assertTrue(factory.isIgnoreCase() + " does not equal: " + true, factory
         .isIgnoreCase() == true);
 
+  }
+  
+  /**
+   * If no words are provided, then a set of english default stopwords is used.
+   */
+  public void testDefaults() throws Exception {
+    ResourceLoader loader = solrConfig.getResourceLoader();
+    assertTrue("loader is null and it shouldn't be", loader != null);
+    CommonGramsQueryFilterFactory factory = new CommonGramsQueryFilterFactory();
+    Map<String, String> args = new HashMap<String, String>();
+    factory.init(args);
+    factory.inform(loader);
+    Set words = factory.getCommonWords();
+    assertTrue("words is null and it shouldn't be", words != null);
+    assertTrue(words.contains("the"));
+    Tokenizer tokenizer = new WhitespaceTokenizer(new StringReader("testing the factory"));
+    TokenStream stream = factory.create(tokenizer);
+    assertTokenStreamContents(stream, 
+        new String[] { "testing_the", "the_factory" });
   }
 }

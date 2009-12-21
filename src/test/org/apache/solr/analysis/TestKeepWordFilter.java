@@ -17,13 +17,14 @@
 
 package org.apache.solr.analysis;
 
+import java.io.StringReader;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 
 
 /**
@@ -37,7 +38,7 @@ public class TestKeepWordFilter extends BaseTokenTestCase {
     words.add( "aaa" );
     words.add( "bbb" );
     
-    List<Token> input = tokens( "aaa BBB ccc ddd EEE" );
+    String input = "aaa BBB ccc ddd EEE";
     Map<String,String> args = new HashMap<String, String>();
 
     
@@ -47,18 +48,28 @@ public class TestKeepWordFilter extends BaseTokenTestCase {
     factory.init( args );
     factory.inform( solrConfig.getResourceLoader() );
     factory.setWords( words );
+    assertTrue(factory.isIgnoreCase());
+    TokenStream stream = factory.create(new WhitespaceTokenizer(new StringReader(input)));
+    assertTokenStreamContents(stream, new String[] { "aaa", "BBB" });
     
-    List<Token> expect = tokens( "aaa BBB" );
-    List<Token> real = getTokens(factory.create( new IterTokenStream(input) ));
-    assertTokEqual( expect, real );
+    // Test Stopwords (ignoreCase via the setter instead)
+    factory = new KeepWordFilterFactory();
+    args = new HashMap<String, String>();
+    factory.init( args );
+    factory.inform( solrConfig.getResourceLoader() );
+    factory.setIgnoreCase(true);
+    factory.setWords( words );
+    assertTrue(factory.isIgnoreCase());
+    stream = factory.create(new WhitespaceTokenizer(new StringReader(input)));
+    assertTokenStreamContents(stream, new String[] { "aaa", "BBB" });
     
     // Now force case
+    args = new HashMap<String, String>();
     args.put( "ignoreCase", "false" );
     factory.init( args );
     factory.inform( solrConfig.getResourceLoader() );
-    
-    expect = tokens( "aaa" );
-    real = getTokens(factory.create( new IterTokenStream(input) ));
-    assertTokEqual( expect, real );
+    assertFalse(factory.isIgnoreCase());
+    stream = factory.create(new WhitespaceTokenizer(new StringReader(input)));
+    assertTokenStreamContents(stream, new String[] { "aaa" });
   }
 }

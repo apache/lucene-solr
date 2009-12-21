@@ -17,6 +17,7 @@
 
 package org.apache.solr.analysis;
 
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,8 +28,8 @@ import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.MappingCharFilter;
 import org.apache.lucene.analysis.NormalizeCharMap;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 public class TestPatternTokenizerFactory extends BaseTokenTestCase 
 {
@@ -57,7 +58,7 @@ public class TestPatternTokenizerFactory extends BaseTokenTestCase
       tokenizer.init( args );
       
       TokenStream stream = tokenizer.create( new StringReader( test[2] ) );
-      String out = TestHyphenatedWordsFilter.tsToString( stream );
+      String out = tsToString( stream );
       System.out.println( test[2] + " ==> " + out );
       
       assertEquals("pattern: "+test[1]+" with input: "+test[2], test[3], out );
@@ -93,20 +94,45 @@ public class TestPatternTokenizerFactory extends BaseTokenTestCase
     PatternTokenizerFactory tokFactory = new PatternTokenizerFactory();
     tokFactory.init( args );
     TokenStream stream = tokFactory.create( charStream );
-
-    List<Token> result = getTokens( stream );
-    List<Token> expect = tokens( "Günther,1,0,12 Günther,1,13,25 is,1,26,28 here,1,29,33" );
-    assertTokEqualOff( expect, result );
+    assertTokenStreamContents(stream,
+        new String[] { "Günther", "Günther", "is", "here" },
+        new int[] { 0, 13, 26, 29 },
+        new int[] { 12, 25, 28, 33 },
+        new int[] { 1, 1, 1, 1 });
     
-    charStream.reset();
+    charStream = new MappingCharFilter( normMap, CharReader.get( new StringReader( INPUT ) ) );
     args.put( PatternTokenizerFactory.PATTERN, "Günther" );
     args.put( PatternTokenizerFactory.GROUP, "0" );
     tokFactory = new PatternTokenizerFactory();
     tokFactory.init( args );
     stream = tokFactory.create( charStream );
+    assertTokenStreamContents(stream,
+        new String[] { "Günther", "Günther" },
+        new int[] { 0, 13 },
+        new int[] { 12, 25 },
+        new int[] { 1, 1 });
+  }
+  
+  /** 
+   * TODO: rewrite tests not to use string comparison.
+   * @deprecated only tests TermAttribute!
+   */
+  private static String tsToString(TokenStream in) throws IOException {
+    StringBuilder out = new StringBuilder();
+    TermAttribute termAtt = (TermAttribute) in.addAttribute(TermAttribute.class);
+    // extra safety to enforce, that the state is not preserved and also
+    // assign bogus values
+    in.clearAttributes();
+    termAtt.setTermBuffer("bogusTerm");
+    while (in.incrementToken()) {
+      if (out.length() > 0)
+        out.append(' ');
+      out.append(termAtt.term());
+      in.clearAttributes();
+      termAtt.setTermBuffer("bogusTerm");
+    }
 
-    result = getTokens( stream );
-    expect = tokens( "Günther,1,0,12 Günther,1,13,25" );
-    assertTokEqualOff( expect, result );
+    in.close();
+    return out.toString();
   }
 }

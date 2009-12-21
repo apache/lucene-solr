@@ -16,29 +16,20 @@
  */
 package org.apache.solr.analysis;
 
-import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.Map.Entry;
 
-import junit.framework.TestCase;
-
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.solr.analysis.TestBufferedTokenStream.AB_AAB_Stream;
 
 /**
  * Tests CommonGramsQueryFilter
  */
-public class CommonGramsFilterTest extends TestCase {
+public class CommonGramsFilterTest extends BaseTokenTestCase {
   private static final String[] commonWords = { "s", "a", "b", "c", "d", "the",
       "of" };
   
@@ -63,18 +54,6 @@ public class CommonGramsFilterTest extends TestCase {
     assertEquals("How", term.term());
   }
   
-  public void testCommonGramsQueryFilter() throws Exception {
-    Set<Map.Entry<String, String>> input2expectedSet = initQueryMap().entrySet();
-    for (Iterator<Entry<String, String>> i = input2expectedSet.iterator(); i
-        .hasNext();) {
-      Map.Entry<String, String> me = i.next();
-      String input = me.getKey();
-      String expected = me.getValue();
-      String message = "message: input value is: " + input;
-      assertEquals(message, expected, testFilter(input, "query"));
-    }
-  }
-  
   public void testQueryReset() throws Exception {
     final String input = "How the s a brown s cow d like A B thing?";
     WhitespaceTokenizer wt = new WhitespaceTokenizer(new StringReader(input));
@@ -93,18 +72,6 @@ public class CommonGramsFilterTest extends TestCase {
     assertEquals("How_the", term.term());
   }
   
-  public void testCommonGramsFilter() throws Exception {
-    Set<Map.Entry<String, String>> input2expectedSet = initMap().entrySet();
-    for (Iterator<Entry<String, String>> i = input2expectedSet.iterator(); i
-        .hasNext();) {
-      Map.Entry<String, String> me = i.next();
-      String input = me.getKey();
-      String expected = me.getValue();
-      String message = "message: input value is: " + input;
-      assertEquals(message, expected, testFilter(input, "common"));
-    }
-  }
-  
   /**
    * This is for testing CommonGramsQueryFilter which outputs a set of tokens
    * optimized for querying with only one token at each position, either a
@@ -116,150 +83,226 @@ public class CommonGramsFilterTest extends TestCase {
    * 
    * @return Map<String,String>
    */
-  private static Map<String, String> initQueryMap() {
-    Map<String, String> input2expected = new LinkedHashMap<String, String>();
+  public void testCommonGramsQueryFilter() throws Exception {
+    Analyzer a = new Analyzer() {    
+      @Override
+      public TokenStream tokenStream(String field, Reader in) {
+        return new CommonGramsQueryFilter(new CommonGramsFilter(
+            new WhitespaceTokenizer(in), commonWords));
+      } 
+    };
 
     // Stop words used below are "of" "the" and "s"
     
     // two word queries
-    input2expected.put("brown fox", "/brown/fox");
-    input2expected.put("the fox", "/the_fox");
-    input2expected.put("fox of", "/fox_of");
-    input2expected.put("of the", "/of_the");
+    assertAnalyzesTo(a, "brown fox", 
+        new String[] { "brown", "fox" });
+    assertAnalyzesTo(a, "the fox", 
+        new String[] { "the_fox" });
+    assertAnalyzesTo(a, "fox of", 
+        new String[] { "fox_of" });
+    assertAnalyzesTo(a, "of the", 
+        new String[] { "of_the" });
     
     // one word queries
-    input2expected.put("the", "/the");
-    input2expected.put("foo", "/foo");
+    assertAnalyzesTo(a, "the", 
+        new String[] { "the" });
+    assertAnalyzesTo(a, "foo", 
+        new String[] { "foo" });
 
     // 3 word combinations s=stopword/common word n=not a stop word
-    input2expected.put("n n n", "/n/n/n");
-    input2expected.put("quick brown fox", "/quick/brown/fox");
+    assertAnalyzesTo(a, "n n n", 
+        new String[] { "n", "n", "n" });
+    assertAnalyzesTo(a, "quick brown fox", 
+        new String[] { "quick", "brown", "fox" });
 
-    input2expected.put("n n s", "/n/n_s");
-    input2expected.put("quick brown the", "/quick/brown_the");
+    assertAnalyzesTo(a, "n n s", 
+        new String[] { "n", "n_s" });
+    assertAnalyzesTo(a, "quick brown the", 
+        new String[] { "quick", "brown_the" });
 
-    input2expected.put("n s n", "/n_s/s_n");
-    input2expected.put("quick the brown", "/quick_the/the_brown");
+    assertAnalyzesTo(a, "n s n", 
+        new String[] { "n_s", "s_n" });
+    assertAnalyzesTo(a, "quick the brown", 
+        new String[] { "quick_the", "the_brown" });
 
-    input2expected.put("n s s", "/n_s/s_s");
-    input2expected.put("fox of the", "/fox_of/of_the");
+    assertAnalyzesTo(a, "n s s", 
+        new String[] { "n_s", "s_s" });
+    assertAnalyzesTo(a, "fox of the", 
+        new String[] { "fox_of", "of_the" });
 
-    input2expected.put("s n n", "/s_n/n/n");
-    input2expected.put("the quick brown", "/the_quick/quick/brown");
+    assertAnalyzesTo(a, "s n n", 
+        new String[] { "s_n", "n", "n" });
+    assertAnalyzesTo(a, "the quick brown", 
+        new String[] { "the_quick", "quick", "brown" });
 
-    input2expected.put("s n s", "/s_n/n_s");
-    input2expected.put("the fox of", "/the_fox/fox_of");
+    assertAnalyzesTo(a, "s n s", 
+        new String[] { "s_n", "n_s" });
+    assertAnalyzesTo(a, "the fox of", 
+        new String[] { "the_fox", "fox_of" });
 
-    input2expected.put("s s n", "/s_s/s_n");
-    input2expected.put("of the fox", "/of_the/the_fox");
+    assertAnalyzesTo(a, "s s n", 
+        new String[] { "s_s", "s_n" });
+    assertAnalyzesTo(a, "of the fox", 
+        new String[] { "of_the", "the_fox" });
 
-    input2expected.put("s s s", "/s_s/s_s");
-    input2expected.put("of the of", "/of_the/the_of");
-
-    return input2expected;
+    assertAnalyzesTo(a, "s s s", 
+        new String[] { "s_s", "s_s" });
+    assertAnalyzesTo(a, "of the of", 
+        new String[] { "of_the", "the_of" });
   }
   
-  private static Map<String, String> initMap() {
-    Map<String, String> input2expected = new HashMap<String, String>();
+  public void testCommonGramsFilter() throws Exception {
+    Analyzer a = new Analyzer() {    
+      @Override
+      public TokenStream tokenStream(String field, Reader in) {
+        return new CommonGramsFilter(
+            new WhitespaceTokenizer(in), commonWords);
+      } 
+    };
 
     // Stop words used below are "of" "the" and "s"
     // one word queries
-    input2expected.put("the", "/the");
-    input2expected.put("foo", "/foo");
+    assertAnalyzesTo(a, "the", new String[] { "the" });
+    assertAnalyzesTo(a, "foo", new String[] { "foo" });
 
     // two word queries
-    input2expected.put("brown fox", "/brown/fox");
-    input2expected.put("the fox", "/the,the_fox/fox");
-    input2expected.put("fox of", "/fox,fox_of/of");
-    input2expected.put("of the", "/of,of_the/the");
+    assertAnalyzesTo(a, "brown fox", 
+        new String[] { "brown", "fox" }, 
+        new int[] { 1, 1 });
+    assertAnalyzesTo(a, "the fox", 
+        new String[] { "the", "the_fox", "fox" }, 
+        new int[] { 1, 0, 1 });
+    assertAnalyzesTo(a, "fox of", 
+        new String[] { "fox", "fox_of", "of" }, 
+        new int[] { 1, 0, 1 });
+    assertAnalyzesTo(a, "of the", 
+        new String[] { "of", "of_the", "the" }, 
+        new int[] { 1, 0, 1 });
 
     // 3 word combinations s=stopword/common word n=not a stop word
-    input2expected.put("n n n", "/n/n/n");
-    input2expected.put("quick brown fox", "/quick/brown/fox");
+    assertAnalyzesTo(a, "n n n", 
+        new String[] { "n", "n", "n" }, 
+        new int[] { 1, 1, 1 });
+    assertAnalyzesTo(a, "quick brown fox", 
+        new String[] { "quick", "brown", "fox" }, 
+        new int[] { 1, 1, 1 });
 
-    input2expected.put("n n s", "/n/n,n_s/s");
-    input2expected.put("quick brown the", "/quick/brown,brown_the/the");
+    assertAnalyzesTo(a, "n n s", 
+        new String[] { "n", "n", "n_s", "s" }, 
+        new int[] { 1, 1, 0, 1 });
+    assertAnalyzesTo(a, "quick brown the", 
+        new String[] { "quick", "brown", "brown_the", "the" }, 
+        new int[] { 1, 1, 0, 1 });
 
-    input2expected.put("n s n", "/n,n_s/s,s_n/n");
-    input2expected.put("quick the fox", "/quick,quick_the/the,the_fox/fox");
+    assertAnalyzesTo(a, "n s n", 
+        new String[] { "n", "n_s", "s", "s_n", "n" }, 
+        new int[] { 1, 0, 1, 0, 1 });
+    assertAnalyzesTo(a, "quick the fox", 
+        new String[] { "quick", "quick_the", "the", "the_fox", "fox" }, 
+        new int[] { 1, 0, 1, 0, 1 });
 
-    input2expected.put("n s s", "/n,n_s/s,s_s/s");
-    input2expected.put("fox of the", "/fox,fox_of/of,of_the/the");
+    assertAnalyzesTo(a, "n s s", 
+        new String[] { "n", "n_s", "s", "s_s", "s" }, 
+        new int[] { 1, 0, 1, 0, 1 });
+    assertAnalyzesTo(a, "fox of the", 
+        new String[] { "fox", "fox_of", "of", "of_the", "the" }, 
+        new int[] { 1, 0, 1, 0, 1 });
 
-    input2expected.put("s n n", "/s,s_n/n/n");
-    input2expected.put("the quick brown", "/the,the_quick/quick/brown");
+    assertAnalyzesTo(a, "s n n", 
+        new String[] { "s", "s_n", "n", "n" }, 
+        new int[] { 1, 0, 1, 1 });
+    assertAnalyzesTo(a, "the quick brown", 
+        new String[] { "the", "the_quick", "quick", "brown" }, 
+        new int[] { 1, 0, 1, 1 });
 
-    input2expected.put("s n s", "/s,s_n/n,n_s/s");
-    input2expected.put("the fox of", "/the,the_fox/fox,fox_of/of");
+    assertAnalyzesTo(a, "s n s", 
+        new String[] { "s", "s_n", "n", "n_s", "s" }, 
+        new int[] { 1, 0, 1, 0, 1 });
+    assertAnalyzesTo(a, "the fox of", 
+        new String[] { "the", "the_fox", "fox", "fox_of", "of" }, 
+        new int[] { 1, 0, 1, 0, 1 });
 
-    input2expected.put("s s n", "/s,s_s/s,s_n/n");
-    input2expected.put("of the fox", "/of,of_the/the,the_fox/fox");
+    assertAnalyzesTo(a, "s s n", 
+        new String[] { "s", "s_s", "s", "s_n", "n" }, 
+        new int[] { 1, 0, 1, 0, 1 });
+    assertAnalyzesTo(a, "of the fox", 
+        new String[] { "of", "of_the", "the", "the_fox", "fox" }, 
+        new int[] { 1, 0, 1, 0, 1 });
 
-    input2expected.put("s s s", "/s,s_s/s,s_s/s");
-    input2expected.put("of the of", "/of,of_the/the,the_of/of");
-
-    return input2expected;
+    assertAnalyzesTo(a, "s s s", 
+        new String[] { "s", "s_s", "s", "s_s", "s" }, 
+        new int[] { 1, 0, 1, 0, 1 });
+    assertAnalyzesTo(a, "of the of", 
+        new String[] { "of", "of_the", "the", "the_of", "of" }, 
+        new int[] { 1, 0, 1, 0, 1 });
   }
   
-  /*
-   * Helper methodsCopied and from CDL XTF BigramsStopFilter.java and slightly
-   * modified to use with CommonGrams http://xtf.wiki.sourceforge.net/
-   */
   /**
-   * Very simple tokenizer that breaks up a string into a series of Lucene
-   * {@link Token Token}s.
+   * Test that CommonGramsFilter works correctly in case-insensitive mode
    */
-  static class StringTokenStream extends TokenStream {
-    private String str;
-
-    private int prevEnd = 0;
-
-    private StringTokenizer tok;
-
-    private int count = 0;
-
-    public StringTokenStream(String str, String delim) {
-      this.str = str;
-      tok = new StringTokenizer(str, delim);
-    }
-
-    public Token next() {
-      if (!tok.hasMoreTokens())
-        return null;
-      count++;
-      String term = tok.nextToken();
-      Token t = new Token(term, str.indexOf(term, prevEnd), str.indexOf(term,
-          prevEnd)
-          + term.length(), "word");
-      prevEnd = t.endOffset();
-      return t;
-    }
+  public void testCaseSensitive() throws Exception {
+    final String input = "How The s a brown s cow d like A B thing?";
+    WhitespaceTokenizer wt = new WhitespaceTokenizer(new StringReader(input));
+    Set common = CommonGramsFilter.makeCommonSet(commonWords);
+    TokenFilter cgf = new CommonGramsFilter(wt, common, false);
+    assertTokenStreamContents(cgf, new String[] {"How", "The", "The_s", "s",
+        "s_a", "a", "a_brown", "brown", "brown_s", "s", "s_cow", "cow",
+        "cow_d", "d", "d_like", "like", "A", "B", "thing?"});
   }
   
-  public static String testFilter(String in, String type) throws IOException {
-    TokenStream nsf;
-    StringTokenStream ts = new StringTokenStream(in, " .");
-    if (type.equals("query")) {
-      CommonGramsFilter cgf = new CommonGramsFilter(ts, commonWords);
-      nsf = new CommonGramsQueryFilter(cgf);
-    } else {
-      nsf = new CommonGramsFilter(ts, commonWords);
-    }
-
-    StringBuffer outBuf = new StringBuffer();
-    while (true) {
-      Token t = nsf.next();
-      if (t == null)
-        break;
-      for (int i = 0; i < t.getPositionIncrement(); i++)
-        outBuf.append('/');
-      if (t.getPositionIncrement() == 0)
-        outBuf.append(',');
-      outBuf.append(t.term());
-    }
-
-    String out = outBuf.toString();
-    out = out.replaceAll(" ", "");
-    return out;
+  /**
+   * Test CommonGramsQueryFilter in the case that the last word is a stopword
+   */
+  public void testLastWordisStopWord() throws Exception {
+    final String input = "dog the";
+    WhitespaceTokenizer wt = new WhitespaceTokenizer(new StringReader(input));
+    CommonGramsFilter cgf = new CommonGramsFilter(wt, commonWords);
+    TokenFilter nsf = new CommonGramsQueryFilter(cgf);
+    assertTokenStreamContents(nsf, new String[] { "dog_the" });
+  }
+  
+  /**
+   * Test CommonGramsQueryFilter in the case that the first word is a stopword
+   */
+  public void testFirstWordisStopWord() throws Exception {
+    final String input = "the dog";
+    WhitespaceTokenizer wt = new WhitespaceTokenizer(new StringReader(input));
+    CommonGramsFilter cgf = new CommonGramsFilter(wt, commonWords);
+    TokenFilter nsf = new CommonGramsQueryFilter(cgf);
+    assertTokenStreamContents(nsf, new String[] { "the_dog" });
+  }
+  
+  /**
+   * Test CommonGramsQueryFilter in the case of a single (stop)word query
+   */
+  public void testOneWordQueryStopWord() throws Exception {
+    final String input = "the";
+    WhitespaceTokenizer wt = new WhitespaceTokenizer(new StringReader(input));
+    CommonGramsFilter cgf = new CommonGramsFilter(wt, commonWords);
+    TokenFilter nsf = new CommonGramsQueryFilter(cgf);
+    assertTokenStreamContents(nsf, new String[] { "the" });
+  }
+  
+  /**
+   * Test CommonGramsQueryFilter in the case of a single word query
+   */
+  public void testOneWordQuery() throws Exception {
+    final String input = "monster";
+    WhitespaceTokenizer wt = new WhitespaceTokenizer(new StringReader(input));
+    CommonGramsFilter cgf = new CommonGramsFilter(wt, commonWords);
+    TokenFilter nsf = new CommonGramsQueryFilter(cgf);
+    assertTokenStreamContents(nsf, new String[] { "monster" });
+  }
+  
+  /**
+   * Test CommonGramsQueryFilter when first and last words are stopwords.
+   */
+  public void TestFirstAndLastStopWord() throws Exception {
+    final String input = "the of";
+    WhitespaceTokenizer wt = new WhitespaceTokenizer(new StringReader(input));
+    CommonGramsFilter cgf = new CommonGramsFilter(wt, commonWords);
+    TokenFilter nsf = new CommonGramsQueryFilter(cgf);
+    assertTokenStreamContents(nsf, new String[] { "the_of" });
   }
 }

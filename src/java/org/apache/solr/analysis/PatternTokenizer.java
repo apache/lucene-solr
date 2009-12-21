@@ -79,7 +79,7 @@ public final class PatternTokenizer extends Tokenizer {
   @Override
   public boolean incrementToken() throws IOException {
     if (index >= str.length()) return false;
-    
+    clearAttributes();
     if (group >= 0) {
     
       // match a specific group

@@ -206,6 +206,7 @@ class CapitalizationFilter extends TokenFilter {
     char[] backup = null;
     if (factory.maxWordCount < CapitalizationFilterFactory.DEFAULT_MAX_WORD_COUNT) {
       //make a backup in case we exceed the word count
+      backup = new char[termBufferLength];
       System.arraycopy(termBuffer, 0, backup, 0, termBufferLength);
     }
     if (termBufferLength < factory.maxTokenLength) {

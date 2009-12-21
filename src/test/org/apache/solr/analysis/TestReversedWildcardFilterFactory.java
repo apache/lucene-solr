@@ -21,11 +21,9 @@ import java.io.IOException;
 import java.io.StringReader;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.queryParser.ParseException;
@@ -53,57 +51,52 @@ public class TestReversedWildcardFilterFactory extends BaseTokenTestCase {
 
   public void testReversedTokens() throws IOException {
     String text = "simple text";
-    String expected1 = "simple \u0001elpmis text \u0001txet";
-    String expected2 = "\u0001elpmis \u0001txet";
     args.put("withOriginal", "true");
     factory.init(args);
     TokenStream input = factory.create(new WhitespaceTokenizer(new StringReader(text)));
-    List<Token> realTokens = getTokens(input);
-    List<Token> expectedTokens = tokens(expected1);
-    // set positionIncrements in expected tokens
-    for (int i = 1; i < expectedTokens.size(); i += 2) {
-      expectedTokens.get(i).setPositionIncrement(0);
-    }
-    assertTokEqual(realTokens, expectedTokens);
-    
+    assertTokenStreamContents(input, 
+        new String[] { "\u0001elpmis", "simple", "\u0001txet", "text" },
+        new int[] { 1, 0, 1, 0 });
+
     // now without original tokens
     args.put("withOriginal", "false");
     factory.init(args);
     input = factory.create(new WhitespaceTokenizer(new StringReader(text)));
-    realTokens = getTokens(input);
-    expectedTokens = tokens(expected2);
-    assertTokEqual(realTokens, expectedTokens);
+    assertTokenStreamContents(input,
+        new String[] { "\u0001elpmis", "\u0001txet" },
+        new int[] { 1, 1 });
   }
   
   public void testIndexingAnalysis() throws Exception {
     Analyzer a = schema.getAnalyzer();
     String text = "one two three si\uD834\uDD1Ex";
-    String expected1 = "one \u0001eno two \u0001owt three \u0001eerht si\uD834\uDD1Ex \u0001x\uD834\uDD1Eis";
-    List<Token> expectedTokens1 = getTokens(
-            new WhitespaceTokenizer(new StringReader(expected1)));
-    // set positionIncrements and offsets in expected tokens
-    for (int i = 1; i < expectedTokens1.size(); i += 2) {
-      Token t = expectedTokens1.get(i);
-      t.setPositionIncrement(0);
-    }
-    String expected2 = "\u0001eno \u0001owt \u0001eerht \u0001x\uD834\uDD1Eis";
-    List<Token> expectedTokens2 = getTokens(
-            new WhitespaceTokenizer(new StringReader(expected2)));
-    String expected3 = "one two three si\uD834\uDD1Ex";
-    List<Token> expectedTokens3 = getTokens(
-            new WhitespaceTokenizer(new StringReader(expected3)));
+
     // field one
     TokenStream input = a.tokenStream("one", new StringReader(text));
-    List<Token> realTokens = getTokens(input);
-    assertTokEqual(realTokens, expectedTokens1);
+    assertTokenStreamContents(input,
+        new String[] { "\u0001eno", "one", "\u0001owt", "two", 
+          "\u0001eerht", "three", "\u0001x\uD834\uDD1Eis", "si\uD834\uDD1Ex" },
+        new int[] { 0, 0, 4, 4, 8, 8, 14, 14 },
+        new int[] { 3, 3, 7, 7, 13, 13, 19, 19 },
+        new int[] { 1, 0, 1, 0, 1, 0, 1, 0 }
+    );
     // field two
     input = a.tokenStream("two", new StringReader(text));
-    realTokens = getTokens(input);
-    assertTokEqual(realTokens, expectedTokens2);
+    assertTokenStreamContents(input,
+        new String[] { "\u0001eno", "\u0001owt", 
+          "\u0001eerht", "\u0001x\uD834\uDD1Eis" },
+        new int[] { 0, 4, 8, 14 },
+        new int[] { 3, 7, 13, 19 },
+        new int[] { 1, 1, 1, 1 }
+    );
     // field three
     input = a.tokenStream("three", new StringReader(text));
-    realTokens = getTokens(input);
-    assertTokEqual(realTokens, expectedTokens3);
+    assertTokenStreamContents(input,
+        new String[] { "one", "two", "three", "si\uD834\uDD1Ex" },
+        new int[] { 0, 4, 8, 14 },
+        new int[] { 3, 7, 13, 19 },
+        new int[] { 1, 1, 1, 1 }
+    );
   }
   
   public void testQueryParsing() throws IOException, ParseException {

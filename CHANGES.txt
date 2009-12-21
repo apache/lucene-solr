@@ -142,6 +142,12 @@ Bug Fixes
 * SOLR-1651: Fixed Incorrect dataimport handler package name in SolrResourceLoader
   (Akshay Ukey via shalin)
 
+* SOLR-1660: CapitalizationFilter crashes if you use the maxWordCountOption
+  (Robert Muir via shalin)
+
+* SOLR-1667: PatternTokenizer does not reset attributes such as positionIncrementGap
+  (Robert Muir via shalin)
+
 Other Changes
 ----------------------
 
@@ -165,6 +171,12 @@ Other Changes
 * SOLR-1610: Generify SolrCache (Jason Rutherglen via shalin)
 
 * SOLR-1637: Remove ALIAS command
+
+* SOLR-1662: Added Javadocs in BufferedTokenStream and fixed incorrect cloning
+  in TestBufferedTokenStream (Robert Muir, Uwe Schindler via shalin)
+  
+* SOLR-1674: Improve analysis tests and cut over to new TokenStream API.
+  (Robert Muir via Mark Miller)
 
 Build
 ----------------------

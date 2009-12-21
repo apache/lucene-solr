@@ -18,174 +18,134 @@
 package org.apache.solr.analysis;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.io.StringReader;
 
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-
-import junit.framework.TestCase;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
  * General token testing helper functions
  */
 public abstract class BaseTokenTestCase extends AnalysisTestCase
 {
-  public static String tsToString(TokenStream in) throws IOException {
-    StringBuilder out = new StringBuilder();
-    Token t = in.next();
-    if (null != t)
-      out.append(new String(t.termBuffer(), 0, t.termLength()));
+  // some helpers to test Analyzers and TokenStreams:
+  // these are taken from Lucene's BaseTokenStreamTestCase
+   
+  public static void assertTokenStreamContents(TokenStream ts, String[] output,
+      int startOffsets[], int endOffsets[], String types[], int posIncrements[])
+      throws IOException {
+    assertNotNull(output);
+    assertTrue("has TermAttribute", ts.hasAttribute(TermAttribute.class));
+    TermAttribute termAtt = (TermAttribute) ts
+        .getAttribute(TermAttribute.class);
     
-    for (t = in.next(); null != t; t = in.next()) {
-      out.append(" ").append(new String(t.termBuffer(), 0, t.termLength()));
+    OffsetAttribute offsetAtt = null;
+    if (startOffsets != null || endOffsets != null) {
+      assertTrue("has OffsetAttribute", ts.hasAttribute(OffsetAttribute.class));
+      offsetAtt = (OffsetAttribute) ts.getAttribute(OffsetAttribute.class);
     }
-    in.close();
-    return out.toString();
-  }
-
-  public List<String> tok2str(Iterable<Token> tokLst) {
-    ArrayList<String> lst = new ArrayList<String>();
-    for ( Token t : tokLst ) {
-      lst.add( new String(t.termBuffer(), 0, t.termLength()));
+    
+    TypeAttribute typeAtt = null;
+    if (types != null) {
+      assertTrue("has TypeAttribute", ts.hasAttribute(TypeAttribute.class));
+      typeAtt = (TypeAttribute) ts.getAttribute(TypeAttribute.class);
     }
-    return lst;
-  }
-
-
-  public void assertTokEqual(List<Token> a, List<Token> b) {
-    assertTokEq(a,b,false);
-    assertTokEq(b,a,false);
-  }
-
-  public void assertTokEqualOff(List<Token> a, List<Token> b) {
-    assertTokEq(a,b,true);
-    assertTokEq(b,a,true);
-  }
-
-  private void assertTokEq(List<Token> a, List<Token> b, boolean checkOff) {
-    int pos=0;
-    for (Iterator iter = a.iterator(); iter.hasNext();) {
-      Token tok = (Token)iter.next();
-      pos += tok.getPositionIncrement();
-      if (!tokAt(b, new String(tok.termBuffer(), 0, tok.termLength()), pos
-              , checkOff ? tok.startOffset() : -1
-              , checkOff ? tok.endOffset() : -1
-              )) 
-      {
-        fail(a + "!=" + b);
-      }
+    
+    PositionIncrementAttribute posIncrAtt = null;
+    if (posIncrements != null) {
+      assertTrue("has PositionIncrementAttribute", ts
+          .hasAttribute(PositionIncrementAttribute.class));
+      posIncrAtt = (PositionIncrementAttribute) ts
+          .getAttribute(PositionIncrementAttribute.class);
     }
-  }
-
-  public boolean tokAt(List<Token> lst, String val, int tokPos, int startOff, int endOff) {
-    int pos=0;
-    for (Iterator iter = lst.iterator(); iter.hasNext();) {
-      Token tok = (Token)iter.next();
-      pos += tok.getPositionIncrement();
-      if (pos==tokPos && new String(tok.termBuffer(), 0, tok.termLength()).equals(val)
-          && (startOff==-1 || tok.startOffset()==startOff)
-          && (endOff  ==-1 || tok.endOffset()  ==endOff  )
-           )
-      {
-        return true;
-      }
-    }
-    return false;
-  }
-
-
-  /***
-   * Return a list of tokens according to a test string format:
-   * a b c  =>  returns List<Token> [a,b,c]
-   * a/b   => tokens a and b share the same spot (b.positionIncrement=0)
-   * a,3/b/c => a,b,c all share same position (a.positionIncrement=3, b.positionIncrement=0, c.positionIncrement=0)
-   * a,1,10,11  => "a" with positionIncrement=1, startOffset=10, endOffset=11
-   */
-  public List<Token> tokens(String str) {
-    String[] arr = str.split(" ");
-    List<Token> result = new ArrayList<Token>();
-    for (int i=0; i<arr.length; i++) {
-      String[] toks = arr[i].split("/");
-      String[] params = toks[0].split(",");
-
-      int posInc;
-      int start;
-      int end;
-
-      if (params.length > 1) {
-        posInc = Integer.parseInt(params[1]);
-      } else {
-        posInc = 1;
-      }
-
-      if (params.length > 2) {
-        start = Integer.parseInt(params[2]);
-      } else {
-        start = 0;
-      }
-
-      if (params.length > 3) {
-        end = Integer.parseInt(params[3]);
-      } else {
-        end = start + params[0].length();
-      }
-
-      Token t = new Token(params[0],start,end,"TEST");
-      t.setPositionIncrement(posInc);
+    
+    ts.reset();
+    for (int i = 0; i < output.length; i++) {
+      // extra safety to enforce, that the state is not preserved and also
+      // assign bogus values
+      ts.clearAttributes();
+      termAtt.setTermBuffer("bogusTerm");
+      if (offsetAtt != null) offsetAtt.setOffset(14584724, 24683243);
+      if (typeAtt != null) typeAtt.setType("bogusType");
+      if (posIncrAtt != null) posIncrAtt.setPositionIncrement(45987657);
       
-      result.add(t);
-      for (int j=1; j<toks.length; j++) {
-        t = new Token(toks[j],0,0,"TEST");
-        t.setPositionIncrement(0);
-        result.add(t);
-      }
+      assertTrue("token " + i + " exists", ts.incrementToken());
+      assertEquals("term " + i, output[i], termAtt.term());
+      if (startOffsets != null) assertEquals("startOffset " + i,
+          startOffsets[i], offsetAtt.startOffset());
+      if (endOffsets != null) assertEquals("endOffset " + i, endOffsets[i],
+          offsetAtt.endOffset());
+      if (types != null) assertEquals("type " + i, types[i], typeAtt.type());
+      if (posIncrements != null) assertEquals("posIncrement " + i,
+          posIncrements[i], posIncrAtt.getPositionIncrement());
     }
-    return result;
+    assertFalse("end of stream", ts.incrementToken());
+    ts.end();
+    ts.close();
   }
-
-  //------------------------------------------------------------------------
-  // These may be useful beyond test cases...
-  //------------------------------------------------------------------------
-
-  static List<Token> getTokens(TokenStream tstream) throws IOException {
-    List<Token> tokens = new ArrayList<Token>();
-    while (true) {
-      Token t = tstream.next();
-      if (t==null) break;
-      tokens.add(t);
-    }
-    return tokens;
+  
+  public static void assertTokenStreamContents(TokenStream ts, String[] output)
+      throws IOException {
+    assertTokenStreamContents(ts, output, null, null, null, null);
   }
-
-  public static class IterTokenStream extends TokenStream {
-    Iterator<Token> toks;
-    public IterTokenStream(Token... toks) {
-      this.toks = Arrays.asList(toks).iterator();
-    }
-    public IterTokenStream(Iterable<Token> toks) {
-      this.toks = toks.iterator();
-    }
-    public IterTokenStream(Iterator<Token> toks) {
-      this.toks = toks;
-    }
-    public IterTokenStream(String ... text) {
-      int off = 0;
-      ArrayList<Token> t = new ArrayList<Token>( text.length );
-      for( String txt : text ) {
-        t.add( new Token( txt, off, off+txt.length() ) );
-        off += txt.length() + 2;
-      }
-      this.toks = t.iterator();
-    }
-    @Override
-    public Token next() {
-      if (toks.hasNext()) {
-        return toks.next();
-      }
-      return null;
-    }
+  
+  public static void assertTokenStreamContents(TokenStream ts, String[] output,
+      String[] types) throws IOException {
+    assertTokenStreamContents(ts, output, null, null, types, null);
+  }
+  
+  public static void assertTokenStreamContents(TokenStream ts, String[] output,
+      int[] posIncrements) throws IOException {
+    assertTokenStreamContents(ts, output, null, null, null, posIncrements);
+  }
+  
+  public static void assertTokenStreamContents(TokenStream ts, String[] output,
+      int startOffsets[], int endOffsets[]) throws IOException {
+    assertTokenStreamContents(ts, output, startOffsets, endOffsets, null, null);
+  }
+  
+  public static void assertTokenStreamContents(TokenStream ts, String[] output,
+      int startOffsets[], int endOffsets[], int[] posIncrements)
+      throws IOException {
+    assertTokenStreamContents(ts, output, startOffsets, endOffsets, null,
+        posIncrements);
+  }
+  
+  public static void assertAnalyzesTo(Analyzer a, String input,
+      String[] output, int startOffsets[], int endOffsets[], String types[],
+      int posIncrements[]) throws IOException {
+    assertTokenStreamContents(a.tokenStream("dummy", new StringReader(input)),
+        output, startOffsets, endOffsets, types, posIncrements);
+  }
+  
+  public static void assertAnalyzesTo(Analyzer a, String input, String[] output)
+      throws IOException {
+    assertAnalyzesTo(a, input, output, null, null, null, null);
+  }
+  
+  public static void assertAnalyzesTo(Analyzer a, String input,
+      String[] output, String[] types) throws IOException {
+    assertAnalyzesTo(a, input, output, null, null, types, null);
+  }
+  
+  public static void assertAnalyzesTo(Analyzer a, String input,
+      String[] output, int[] posIncrements) throws IOException {
+    assertAnalyzesTo(a, input, output, null, null, null, posIncrements);
+  }
+  
+  public static void assertAnalyzesTo(Analyzer a, String input,
+      String[] output, int startOffsets[], int endOffsets[]) throws IOException {
+    assertAnalyzesTo(a, input, output, startOffsets, endOffsets, null, null);
+  }
+  
+  public static void assertAnalyzesTo(Analyzer a, String input,
+      String[] output, int startOffsets[], int endOffsets[], int[] posIncrements)
+      throws IOException {
+    assertAnalyzesTo(a, input, output, startOffsets, endOffsets, null,
+        posIncrements);
   }
 }

@@ -19,6 +19,8 @@ package org.apache.solr.analysis;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
@@ -37,20 +39,33 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
   // this is test.
   public void testNothingChange() throws IOException {
     final String BLOCK = "this is test.";
-    CharStream cs = new PatternReplaceCharFilter( "(aa)\\s+(bb)\\s+(cc)", "$1$2$3",
+    PatternReplaceCharFilterFactory factory = new PatternReplaceCharFilterFactory();
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("pattern", "(aa)\\s+(bb)\\s+(cc)");
+    args.put("replacement", "$1$2$3");
+    factory.init(args);
+    CharStream cs = factory.create(
           CharReader.get( new StringReader( BLOCK ) ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
-    assertTokEqualOff( tokens( "this,1,0,4 is,1,5,7 test.,1,8,13" ), getTokens( ts ) );
+    assertTokenStreamContents(ts,
+        new String[] { "this", "is", "test." },
+        new int[] { 0, 5, 8 },
+        new int[] { 4, 7, 13 },
+        new int[] { 1, 1, 1 });
   }
   
   // 012345678
   // aa bb cc
   public void testReplaceByEmpty() throws IOException {
     final String BLOCK = "aa bb cc";
-    CharStream cs = new PatternReplaceCharFilter( "(aa)\\s+(bb)\\s+(cc)", "",
+    PatternReplaceCharFilterFactory factory = new PatternReplaceCharFilterFactory();
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("pattern", "(aa)\\s+(bb)\\s+(cc)");
+    factory.init(args);
+    CharStream cs = factory.create(
           CharReader.get( new StringReader( BLOCK ) ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
-    assertEquals( 0, getTokens( ts ).size() );
+    assertFalse(ts.incrementToken());
   }
   
   // 012345678
@@ -58,10 +73,19 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
   // aa#bb#cc
   public void test1block1matchSameLength() throws IOException {
     final String BLOCK = "aa bb cc";
-    CharStream cs = new PatternReplaceCharFilter( "(aa)\\s+(bb)\\s+(cc)", "$1#$2#$3",
+    PatternReplaceCharFilterFactory factory = new PatternReplaceCharFilterFactory();
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("pattern", "(aa)\\s+(bb)\\s+(cc)");
+    args.put("replacement", "$1#$2#$3");
+    factory.init(args);
+    CharStream cs = factory.create(
           CharReader.get( new StringReader( BLOCK ) ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
-    assertTokEqualOff( tokens( "aa#bb#cc,1,0,8" ), getTokens( ts ) );
+    assertTokenStreamContents(ts,
+        new String[] { "aa#bb#cc" },
+        new int[] { 0 },
+        new int[] { 8 },
+        new int[] { 1 });
   }
 
   //           11111
@@ -73,7 +97,11 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
     CharStream cs = new PatternReplaceCharFilter( "(aa)\\s+(bb)\\s+(cc)", "$1##$2###$3",
           CharReader.get( new StringReader( BLOCK ) ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
-    assertTokEqualOff( tokens( "aa##bb###cc,1,0,8 dd,1,9,11" ), getTokens( ts ) );
+    assertTokenStreamContents(ts,
+        new String[] { "aa##bb###cc", "dd" },
+        new int[] { 0, 9 },
+        new int[] { 8, 11 },
+        new int[] { 1, 1 });
   }
 
   // 01234567
@@ -84,7 +112,11 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
     CharStream cs = new PatternReplaceCharFilter( "a", "aa",
           CharReader.get( new StringReader( BLOCK ) ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
-    assertTokEqualOff( tokens( "aa,1,1,2 aa,1,4,5" ), getTokens( ts ) );
+    assertTokenStreamContents(ts,
+        new String[] { "aa", "aa" },
+        new int[] { 1, 4 },
+        new int[] { 2, 5 },
+        new int[] { 1, 1 });
   }
 
   //           11111
@@ -96,7 +128,11 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
     CharStream cs = new PatternReplaceCharFilter( "(aa)\\s+(bb)\\s+(cc)", "$1#$2",
           CharReader.get( new StringReader( BLOCK ) ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
-    assertTokEqualOff( tokens( "aa#bb,1,0,11 dd,1,12,14" ), getTokens( ts ) );
+    assertTokenStreamContents(ts,
+        new String[] { "aa#bb", "dd" },
+        new int[] { 0, 12 },
+        new int[] { 11, 14 },
+        new int[] { 1, 1 });
   }
 
   //           111111111122222222223333
@@ -108,8 +144,11 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
     CharStream cs = new PatternReplaceCharFilter( "(aa)\\s+(bb)\\s+(cc)", "$1  $2  $3",
           CharReader.get( new StringReader( BLOCK ) ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
-    assertTokEqualOff( tokens( "aa,1,2,4 bb,1,6,8 cc,1,9,10 ---,1,11,14 aa,1,15,17 bb,1,18,20 aa,1,21,23 bb,1,25,27 cc,1,29,33" ),
-        getTokens( ts ) );
+    assertTokenStreamContents(ts,
+        new String[] { "aa", "bb", "cc", "---", "aa", "bb", "aa", "bb", "cc" },
+        new int[] { 2, 6, 9, 11, 15, 18, 21, 25, 29 },
+        new int[] { 4, 8, 10, 14, 17, 20, 23, 27, 33 },
+        new int[] { 1, 1, 1, 1, 1, 1, 1, 1, 1 });
   }
 
   //           11111111112222222222333333333
@@ -121,8 +160,11 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
     CharStream cs = new PatternReplaceCharFilter( "(aa)\\s+(bb)", "$1##$2", ".",
           CharReader.get( new StringReader( BLOCK ) ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
-    assertTokEqualOff( tokens( "aa##bb,1,2,7 cc,1,8,10 ---,1,11,14 aa##bb,1,15,20 aa.,1,21,24 bb,1,25,27 aa##bb,1,28,35 cc,1,36,38" ),
-        getTokens( ts ) );
+    assertTokenStreamContents(ts,
+        new String[] { "aa##bb", "cc", "---", "aa##bb", "aa.", "bb", "aa##bb", "cc" },
+        new int[] { 2, 8, 11, 15, 21, 25, 28, 36 },
+        new int[] { 7, 10, 14, 20, 24, 27, 35, 38 },
+        new int[] { 1, 1, 1, 1, 1, 1, 1, 1 });
   }
 
   //           11111111112222222222333333333
@@ -136,7 +178,10 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
     cs = new PatternReplaceCharFilter( "bb", "b", ".", cs );
     cs = new PatternReplaceCharFilter( "ccc", "c", ".", cs );
     TokenStream ts = new WhitespaceTokenizer( cs );
-    assertTokEqualOff( tokens( "aa,1,1,2 b,1,3,5 -,1,6,7 c,1,8,11 .,1,12,13 ---,1,14,17 b,1,18,20 aa,1,21,22 .,1,23,24 c,1,25,28 c,1,29,32 b,1,33,35" ),
-        getTokens( ts ) );
+    assertTokenStreamContents(ts,
+        new String[] { "aa", "b", "-", "c", ".", "---", "b", "aa", ".", "c", "c", "b" },
+        new int[] { 1, 3, 6, 8, 12, 14, 18, 21, 23, 25, 29, 33 },
+        new int[] { 2, 5, 7, 11, 13, 17, 20, 22, 24, 28, 32, 35 },
+        new int[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 });
   }
 }
