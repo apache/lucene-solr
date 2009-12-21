@@ -66,7 +66,7 @@ Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
    into core, and moved the ICU-based collation support into contrib/icu.  
-   (Robert Muir)
+   (Steven Rowe, Robert Muir)
 
 Optimizations
 
