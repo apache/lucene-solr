@@ -232,7 +232,18 @@ public class EntityProcessorWrapper extends EntityProcessor {
       return getFromRowCache();
     }
     while (true) {
-      Map<String, Object> arow = delegate.nextRow();
+      Map<String, Object> arow = null;
+      try {
+        arow = delegate.nextRow();
+      } catch (Exception e) {
+        if(ABORT.equals(onError)){
+          wrapAndThrow(SEVERE, e);
+        } else {
+          //SKIP is not really possible. If this calls the nextRow() again the Entityprocessor would be in an inconisttent state           
+          log.error("Exception in entity : "+ entityName, e);          
+          return null;
+        }
+      }
       if (arow == null) {
         return null;
       } else {

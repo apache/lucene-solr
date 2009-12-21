@@ -123,12 +123,7 @@ public class TikaEntityProcessor extends EntityProcessorBase {
     try {
       tikaParser.parse(is, contentHandler, metadata , new ParseContext());
     } catch (Exception e) {
-      if(ABORT.equals(onError)){
-        wrapAndThrow(SEVERE, e, "Unable to read content");
-      } else {
-        LOG.warn("Unable to parse document "+ context.getResolvedEntityAttribute(URL) ,e);
-        return null;
-      }
+      wrapAndThrow(SEVERE, e, "Unable to read content");
     }
     IOUtils.closeQuietly(is);
     for (Map<String, String> field : context.getAllEntityFields()) {

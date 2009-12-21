@@ -53,10 +53,7 @@ public class PlainTextEntityProcessor extends EntityProcessorBase {
     try {
       r = ds.getData(url);
     } catch (Exception e) {
-      if (ABORT.equals(onError)) {
-        wrapAndThrow(SEVERE, e, "Exception reading url : " + url);
-      }
-      return null;
+      wrapAndThrow(SEVERE, e, "Exception reading url : " + url);
     }
     StringWriter sw = new StringWriter();
     char[] buf = new char[1024];
@@ -65,12 +62,8 @@ public class PlainTextEntityProcessor extends EntityProcessorBase {
       try {
         len = r.read(buf);
       } catch (IOException e) {
-        if (ABORT.equals(onError)) {
-          wrapAndThrow(SEVERE, e, "Exception reading url : " + url);
-        } else {
-          LOG.warn("IOException while reading from data source", e);
-          return null;
-        }
+        IOUtils.closeQuietly(r);
+        wrapAndThrow(SEVERE, e, "Exception reading url : " + url);
       }
       if (len <= 0) break;
       sw.append(new String(buf, 0, len));

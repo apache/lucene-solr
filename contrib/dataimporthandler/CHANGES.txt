@@ -33,6 +33,8 @@ New Features
 
 * SOLR-1654 : TikaEntityProcessor example added DIHExample (Akshay Ukey via noble)
 
+* SOLR-1678 :  Move onError handling to DIH framework (noble)
+
 
 Optimizations
 ----------------------
