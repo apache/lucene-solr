@@ -40,6 +40,12 @@ API Changes
   until Lucene 4.0 the default one will be deprecated.
   (Shai Erera via Uwe Schindler) 
 
+* LUCENE-1609: Restore IndexReader.getTermInfosIndexDivisor (it was
+  accidentally removed in 3.0.0)  (Mike McCandless)
+
+* LUCENE-1972: Restore SortField.getComparatorSource (it was
+  accidentally removed in 3.0.0)  (Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-2092: BooleanQuery was ignoring disableCoord in its hashCode

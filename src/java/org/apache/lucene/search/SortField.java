@@ -254,6 +254,13 @@ implements Serializable {
     return reverse;
   }
 
+  /** Returns the {@link FieldComparatorSource} used for
+   * custom sorting
+   */
+  public FieldComparatorSource getComparatorSource() {
+    return comparatorSource;
+  }
+
   @Override
   public String toString() {
     StringBuilder buffer = new StringBuilder();
