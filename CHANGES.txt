@@ -46,6 +46,10 @@ API Changes
 * LUCENE-1972: Restore SortField.getComparatorSource (it was
   accidentally removed in 3.0.0)  (John Wang via Uwe Schindler)
 
+* LUCENE-2177: Deprecate the Field ctors that take byte[] and Store.
+  Since the removal of compressed fields, Store can only be YES, so
+  it's not necessary to specify.  (Erik Hatcher via Mike McCandless)
+
 Bug fixes
 
 * LUCENE-2092: BooleanQuery was ignoring disableCoord in its hashCode
