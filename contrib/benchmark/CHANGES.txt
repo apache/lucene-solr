@@ -4,6 +4,11 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+12/22/2009
+  LUCENE-2178: Allow multiple locations to add to the class path with
+  -Dbenchmark.ext.classpath=... when running "ant run-task" (Steven
+  Rowe via Mike McCandless)
+
 12/17/2009
   LUCENE-2168: Allow negative relative thread priority for BG tasks
   (Mike McCandless)

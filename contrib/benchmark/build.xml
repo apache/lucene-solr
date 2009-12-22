@@ -114,7 +114,7 @@
     <path id="run.classpath">
         <path refid="classpath"/>
         <pathelement location="${build.dir}/classes/java"/>
-        <pathelement location="${benchmark.ext.classpath}"/>
+        <pathelement path="${benchmark.ext.classpath}"/>
     </path>
 
     <property name="task.alg" location="conf/micro-standard.alg"/>
