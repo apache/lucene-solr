@@ -492,7 +492,7 @@ public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase
   }
 
   public void testDistribSearch() throws Exception {
-    for (int nServers = 1; nServers < 2; nServers++) {
+    for (int nServers = 1; nServers < 4; nServers++) {
       createServers(nServers);
       RandVal.uniqueValues = new HashSet(); //reset random values
       doTest();
