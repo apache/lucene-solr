@@ -44,7 +44,7 @@ API Changes
   accidentally removed in 3.0.0)  (Mike McCandless)
 
 * LUCENE-1972: Restore SortField.getComparatorSource (it was
-  accidentally removed in 3.0.0)  (Uwe Schindler)
+  accidentally removed in 3.0.0)  (John Wang via Uwe Schindler)
 
 Bug fixes
 
