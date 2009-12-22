@@ -43,6 +43,9 @@ API Changes
  * LUCENE-1609: Restore IndexReader.getTermInfosIndexDivisor (it was
    accidentally removed in 3.0.0)  (Mike McCandless)
 
+ * LUCENE-1972: Restore SortField.getComparatorSource (it was
+   accidentally removed in 3.0.0)  (Uwe Schindler)
+
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy
