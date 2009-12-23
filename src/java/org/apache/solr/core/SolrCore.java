@@ -670,10 +670,7 @@ public final class SolrCore implements SolrInfoMBean {
    *   <li>All MBeans will be unregistered from MBeanServer if JMX was enabled
    *       </li>
    * </ul>
-   * <p>
-   * This method should always be called when the core is obtained through
-   * {@link CoreContainer#getCore} or {@link CoreContainer#getAdminCore}.
-   * </p>
+   * <p>   
    * <p>
    * The behavior of this method is determined by the result of decrementing
    * the core's reference count (A core is created with a refrence count of 1)...

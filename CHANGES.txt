@@ -178,6 +178,8 @@ Other Changes
 * SOLR-1674: Improve analysis tests and cut over to new TokenStream API.
   (Robert Muir via Mark Miller)
 
+* SOLR-1661 : Remove adminCore from CoreContainer . removed deprecated methods setAdminCore(), getAdminCore() (noble)
+
 Build
 ----------------------
 
