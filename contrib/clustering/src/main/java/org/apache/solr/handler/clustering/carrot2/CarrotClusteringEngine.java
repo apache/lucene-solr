@@ -152,8 +152,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
 
     SolrIndexSearcher searcher = sreq.getSearcher();
     List<Document> result = new ArrayList<Document>(docList.size());
-    FieldSelector fieldSelector = new SetBasedFieldSelector(fieldsToLoad,
-            Collections.emptySet());
+
     float[] scores = {1.0f};
     int[] docsHolder = new int[1];
     Query theQuery = query;
@@ -161,7 +160,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     while (docsIter.hasNext()) {
       Integer id = docsIter.next();
       org.apache.lucene.document.Document doc = searcher.doc(id,
-              fieldSelector);
+              fieldsToLoad);
       String snippet = getValue(doc, snippetField);
       if (produceSummary == true) {
         docsHolder[0] = id.intValue();
