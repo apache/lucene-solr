@@ -25,6 +25,9 @@ Changes in runtime behavior
 * LUCENE-1923: Made IndexReader.toString() produce something
   meaningful (Tim Smith via Mike McCandless)
 
+* LUCENE-2179: CharArraySet.clear() is now functional.
+  (Robert Muir, Uwe Schindler)
+
 API Changes
 
 * LUCENE-2076: Rename FSDirectory.getFile -> getDirectory.  (George
@@ -136,6 +139,9 @@ Optimizations
   these settings are now dynamic, depending the number CPU cores as
   reported by Runtime.getRuntime().availableProcessors() (Mike
   McCandless)
+
+* LUCENE-2169: Improved CharArraySet.copy(), if source set is
+  also a CharArraySet.  (Simon Willnauer via Uwe Schindler)
 
 Build
 

@@ -17,10 +17,15 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
+
 
 public class TestCharArraySet extends LuceneTestCase {
   
@@ -61,24 +66,29 @@ public class TestCharArraySet extends LuceneTestCase {
     Integer val = Integer.valueOf(1);
     set.add(val);
     assertTrue(set.contains(val));
-    assertTrue(set.contains(Integer.valueOf(1)));
+    assertTrue(set.contains(new Integer(1))); // another integer
+    assertTrue(set.contains("1"));
+    assertTrue(set.contains(new char[]{'1'}));
     // test unmodifiable
     set = CharArraySet.unmodifiableSet(set);
     assertTrue(set.contains(val));
-    assertTrue(set.contains(Integer.valueOf(1)));
+    assertTrue(set.contains(new Integer(1))); // another integer
+    assertTrue(set.contains("1"));
+    assertTrue(set.contains(new char[]{'1'}));
   }
   
   public void testClear(){
     CharArraySet set=new CharArraySet(Version.LUCENE_CURRENT, 10,true);
     set.addAll(Arrays.asList(TEST_STOP_WORDS));
     assertEquals("Not all words added", TEST_STOP_WORDS.length, set.size());
-    try{
-      set.clear();
-      fail("remove is not supported");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertEquals("Not all words added", TEST_STOP_WORDS.length, set.size());
-    }
+    set.clear();
+    assertEquals("not empty", 0, set.size());
+    for(int i=0;i<TEST_STOP_WORDS.length;i++)
+      assertFalse(set.contains(TEST_STOP_WORDS[i]));
+    set.addAll(Arrays.asList(TEST_STOP_WORDS));
+    assertEquals("Not all words added", TEST_STOP_WORDS.length, set.size());
+    for(int i=0;i<TEST_STOP_WORDS.length;i++)
+      assertTrue(set.contains(TEST_STOP_WORDS[i]));
   }
   
   public void testModifyOnUnmodifiable(){
@@ -165,9 +175,16 @@ public class TestCharArraySet extends LuceneTestCase {
   public void testUnmodifiableSet(){
     CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 10,true);
     set.addAll(Arrays.asList(TEST_STOP_WORDS));
+    set.add(Integer.valueOf(1));
     final int size = set.size();
     set = CharArraySet.unmodifiableSet(set);
     assertEquals("Set size changed due to unmodifiableSet call" , size, set.size());
+    for (String stopword : TEST_STOP_WORDS) {
+      assertTrue(set.contains(stopword));
+    }
+    assertTrue(set.contains(Integer.valueOf(1)));
+    assertTrue(set.contains("1"));
+    assertTrue(set.contains(new char[]{'1'}));
     
     try{
       CharArraySet.unmodifiableSet(null);
@@ -299,6 +316,90 @@ public class TestCharArraySet extends LuceneTestCase {
       assertTrue(String.format(missing, upperArr[i]), set.contains(upperArr[i]));
       assertFalse(String.format(falsePos, lowerArr[i]), set
           .contains(lowerArr[i]));
+    }
+  }
+  
+  /**
+   * Test the static #copy() function with a CharArraySet as a source
+   */
+  public void testCopyCharArraySet() {
+    CharArraySet setIngoreCase = new CharArraySet(Version.LUCENE_CURRENT, 10, true);
+    CharArraySet setCaseSensitive = new CharArraySet(Version.LUCENE_CURRENT, 10, false);
+
+    List<String> stopwords = Arrays.asList(TEST_STOP_WORDS);
+    List<String> stopwordsUpper = new ArrayList<String>();
+    for (String string : stopwords) {
+      stopwordsUpper.add(string.toUpperCase());
+    }
+    setIngoreCase.addAll(Arrays.asList(TEST_STOP_WORDS));
+    setIngoreCase.add(Integer.valueOf(1));
+    setCaseSensitive.addAll(Arrays.asList(TEST_STOP_WORDS));
+    setCaseSensitive.add(Integer.valueOf(1));
+
+    CharArraySet copy = CharArraySet.copy(Version.LUCENE_CURRENT, setIngoreCase);
+    CharArraySet copyCaseSens = CharArraySet.copy(Version.LUCENE_CURRENT, setCaseSensitive);
+
+    assertEquals(setIngoreCase.size(), copy.size());
+    assertEquals(setCaseSensitive.size(), copy.size());
+
+    assertTrue(copy.containsAll(stopwords));
+    assertTrue(copy.containsAll(stopwordsUpper));
+    assertTrue(copyCaseSens.containsAll(stopwords));
+    for (String string : stopwordsUpper) {
+      assertFalse(copyCaseSens.contains(string));
+    }
+    // test adding terms to the copy
+    List<String> newWords = new ArrayList<String>();
+    for (String string : stopwords) {
+      newWords.add(string+"_1");
+    }
+    copy.addAll(newWords);
+    
+    assertTrue(copy.containsAll(stopwords));
+    assertTrue(copy.containsAll(stopwordsUpper));
+    assertTrue(copy.containsAll(newWords));
+    // new added terms are not in the source set
+    for (String string : newWords) {
+      assertFalse(setIngoreCase.contains(string));  
+      assertFalse(setCaseSensitive.contains(string));  
+
+    }
+  }
+  
+  /**
+   * Test the static #copy() function with a JDK {@link Set} as a source
+   */
+  public void testCopyJDKSet() {
+    Set<String> set = new HashSet<String>();
+
+    List<String> stopwords = Arrays.asList(TEST_STOP_WORDS);
+    List<String> stopwordsUpper = new ArrayList<String>();
+    for (String string : stopwords) {
+      stopwordsUpper.add(string.toUpperCase());
+    }
+    set.addAll(Arrays.asList(TEST_STOP_WORDS));
+
+    CharArraySet copy = CharArraySet.copy(Version.LUCENE_CURRENT, set);
+
+    assertEquals(set.size(), copy.size());
+    assertEquals(set.size(), copy.size());
+
+    assertTrue(copy.containsAll(stopwords));
+    for (String string : stopwordsUpper) {
+      assertFalse(copy.contains(string));
+    }
+    
+    List<String> newWords = new ArrayList<String>();
+    for (String string : stopwords) {
+      newWords.add(string+"_1");
+    }
+    copy.addAll(newWords);
+    
+    assertTrue(copy.containsAll(stopwords));
+    assertTrue(copy.containsAll(newWords));
+    // new added terms are not in the source set
+    for (String string : newWords) {
+      assertFalse(set.contains(string));  
     }
   }
 }

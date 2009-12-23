@@ -1,5 +1,6 @@
 package org.apache.lucene.analysis;
 
+import java.util.Arrays;
 import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Collections;
@@ -142,6 +143,13 @@ public class CharArraySet extends AbstractSet<Object> {
     this.count = count;
     this.charUtils = CharacterUtils.getInstance(matchVersion);
     this.matchVersion = matchVersion;
+  }
+  
+  /** Clears all entries in this set. This method is supported for reusing, but not {@link Set#remove}. */
+  @Override
+  public void clear() {
+    count = 0;
+    Arrays.fill(entries, null);
   }
 
   /** true if the <code>len</code> chars of <code>text</code> starting at <code>off</code>
@@ -369,35 +377,49 @@ public class CharArraySet extends AbstractSet<Object> {
    * @param set
    *          a set to copy
    * @return a copy of the given set as a {@link CharArraySet}. If the given set
-   *         is a {@link CharArraySet} the ignoreCase property will be
+   *         is a {@link CharArraySet} the ignoreCase and matchVersion property will be
    *         preserved.
-   * @deprecated use {@link #copy(Version, Set)} instead
+   * @deprecated use {@link #copy(Version, Set)} instead.
    */
-  public static CharArraySet copy(Set<?> set) {
-    return copy(Version.LUCENE_30, set);
+  public static CharArraySet copy(final Set<?> set) {
+    if(set == EMPTY_SET)
+      return EMPTY_SET;
+    return (set instanceof CharArraySet) ? copy((CharArraySet) set) : copy(Version.LUCENE_30, set);
   }
   
   /**
    * Returns a copy of the given set as a {@link CharArraySet}. If the given set
    * is a {@link CharArraySet} the ignoreCase property will be preserved.
+   * <p>
+   * <b>Note:</b> If you intend to create a copy of another {@link CharArraySet} where
+   * the {@link Version} of the source set differs from its copy
+   * {@link #CharArraySet(Version, Collection, boolean)} should be used instead.
+   * The {@link #copy(Version, Set)} will preserve the {@link Version} of the
+   * source set it is an instance of {@link CharArraySet}.
+   * </p>
    * 
    * @param matchVersion
    *          compatibility match version see <a href="#version">Version
-   *          note</a> above for details.
+   *          note</a> above for details. This argument will be ignored if the
+   *          given set is a {@link CharArraySet}.
    * @param set
    *          a set to copy
    * @return a copy of the given set as a {@link CharArraySet}. If the given set
-   *         is a {@link CharArraySet} the ignoreCase property will be
-   *         preserved.
+   *         is a {@link CharArraySet} the ignoreCase property as well as the
+   *         matchVersion will be of the given set will be preserved.
    */
-  public static CharArraySet copy(Version matchVersion, Set<?> set) {
-    if (set == null)
-      throw new NullPointerException("Given set is null");
+  public static CharArraySet copy(final Version matchVersion, final Set<?> set) {
     if(set == EMPTY_SET)
       return EMPTY_SET;
-    final boolean ignoreCase = set instanceof CharArraySet ? ((CharArraySet) set).ignoreCase
-        : false;
-    return new CharArraySet(matchVersion, set, ignoreCase);
+    if(set instanceof CharArraySet) {
+      final CharArraySet source = (CharArraySet) set;
+      // use fast path instead of iterating all values
+      // this is even on very small sets ~10 times faster than iterating
+      final char[][] entries = new char[source.entries.length][];
+      System.arraycopy(source.entries, 0, entries, 0, entries.length);
+      return new CharArraySet(source.matchVersion, entries, source.ignoreCase, source.count);
+    }
+    return new CharArraySet(matchVersion, set, false);
   }
   
 
@@ -462,6 +484,11 @@ public class CharArraySet extends AbstractSet<Object> {
     private UnmodifiableCharArraySet(Version matchVersion, char[][] entries, boolean ignoreCase,
         int count) {
       super(matchVersion, entries, ignoreCase, count);
+    }
+
+    @Override
+    public void clear() {
+      throw new UnsupportedOperationException();
     }
 
     @Override
