@@ -55,7 +55,7 @@ public abstract class CoordinateFieldType extends FieldType implements SchemaAwa
   protected FieldType subType;
   public static final String SUB_FIELD_SUFFIX = "subFieldSuffix";
   public static final String SUB_FIELD_TYPE = "subFieldType";
-  private String suffix;//need to keep this around between init and inform, since dynamic fields aren't created until before inform
+  protected String suffix;
   protected int dynFieldProps;
 
   public int getDimension() {
@@ -76,6 +76,7 @@ public abstract class CoordinateFieldType extends FieldType implements SchemaAwa
     if (subFT != null) {
       args.remove(SUB_FIELD_TYPE);
       subType = schema.getFieldTypeByName(subFT.trim());
+      suffix = POLY_FIELD_SEPARATOR + subType.typeName;      
     } else if (subSuffix != null) {
       args.remove(SUB_FIELD_SUFFIX);
       suffix = subSuffix;
@@ -90,18 +91,9 @@ public abstract class CoordinateFieldType extends FieldType implements SchemaAwa
 
   public void inform(IndexSchema schema) {
     //Can't do this until here b/c the Dynamic Fields are not initialized until here.
-    if (suffix != null){
-      SchemaField sf = schema.getField(suffix);
-      subType = sf.getType();//this means it is already registered
-      dynFieldProps = sf.getProperties(); 
-    }
-    else if (subType != null) {
+    if (subType != null) {
       SchemaField proto = registerPolyFieldDynamicPrototype(schema, subType);
       dynFieldProps = proto.getProperties();
-    } else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The field type: " + typeName
-              + " must specify the " +
-      SUB_FIELD_TYPE + " attribute or the " + SUB_FIELD_SUFFIX + " attribute.");
     }
   }
 

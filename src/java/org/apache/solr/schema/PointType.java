@@ -54,7 +54,7 @@ public class PointType extends CoordinateFieldType {
   public static final String DIMENSION = "dimension";
 
   protected IndexSchema schema;   // needed for retrieving SchemaFields
-
+  protected String[] suffixes;
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
@@ -68,6 +68,15 @@ public class PointType extends CoordinateFieldType {
     this.schema = schema;
     super.init(schema, args);
 
+    // cache suffixes
+    suffixes = new String[dimension];
+    for (int i=0; i<dimension; i++) {
+      suffixes[i] = "_" + i + suffix;
+    }
+  }
+
+  protected SchemaField subField(SchemaField base, int i) {
+    return schema.getField(base.getName() + suffixes[i]);
   }
 
 
@@ -79,7 +88,24 @@ public class PointType extends CoordinateFieldType {
   @Override
   public Fieldable[] createFields(SchemaField field, String externalVal, float boost) {
     String[] point = DistanceUtils.parsePoint(null, externalVal, dimension);
-    return createFields(field, dynFieldProps, subType, externalVal, boost, point);
+
+    // TODO: this doesn't currently support polyFields as sub-field types
+    Fieldable[] f = new Fieldable[ (field.indexed() ? dimension : 0) + (field.stored() ? 1 : 0) ];
+
+    if (field.indexed()) {
+      for (int i=0; i<dimension; i++) {
+        f[i] = subField(field, i).createField(point[i], boost);
+      }
+    }
+
+    if (field.stored()) {
+      String storedVal = externalVal;  // normalize or not?
+      f[f.length - 1] = createField(field.getName(), storedVal,
+                getFieldStore(field, storedVal), Field.Index.NO, Field.TermVector.NO,
+                false, false, boost);
+    }
+    
+    return f;
   }
 
   @Override
@@ -119,50 +145,25 @@ public class PointType extends CoordinateFieldType {
     String[] p1 = DistanceUtils.parsePoint(null, part1, dimension);
     String[] p2 = DistanceUtils.parsePoint(null, part2, dimension);
     BooleanQuery result = new BooleanQuery(true);
-    String name = field.getName() + "_";
-    String suffix = POLY_FIELD_SEPARATOR + subType.typeName;
-    int len = name.length();
-    StringBuilder bldr = new StringBuilder(len + 3 + suffix.length());//should be enough buffer to handle most values of j.
-    bldr.append(name);
     for (int i = 0; i < dimension; i++) {
-      bldr.append(i).append(suffix);
-      SchemaField subSF = schema.getField(bldr.toString());
+      SchemaField subSF = subField(field, i);
       // points must currently be ordered... should we support specifying any two opposite corner points?
-
-      /*new TermRangeQuery(
-     field.getName() + i + POLY_FIELD_SEPARATOR + subType.typeName,
-     subType.toInternal(p1[i]),
-     subType.toInternal(p2[i]),
-     minInclusive, maxInclusive);*/
-      result.add(subType.getRangeQuery(parser, subSF, p1[i], p2[i], minInclusive, maxInclusive), BooleanClause.Occur.MUST);
-      bldr.setLength(len);
+      result.add(subSF.getType().getRangeQuery(parser, subSF, p1[i], p2[i], minInclusive, maxInclusive), BooleanClause.Occur.MUST);
     }
     return result;
   }
 
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    Query result = null;
-
     String[] p1 = DistanceUtils.parsePoint(null, externalVal, dimension);
     //TODO: should we assert that p1.length == dimension?
     BooleanQuery bq = new BooleanQuery(true);
-    String name = field.getName() + "_";
-    String suffix = POLY_FIELD_SEPARATOR + subType.typeName;
-    int len = name.length();
-    StringBuilder bldr = new StringBuilder(len + 3 + suffix.length());//should be enough buffer to handle most values of j.
-    bldr.append(name);
     for (int i = 0; i < dimension; i++) {
-      bldr.append(i).append(suffix);
-      SchemaField sf1 = schema.getField(bldr.toString());
-      Query tq = subType.getFieldQuery(parser, sf1, p1[i]);
-      //new TermQuery(new Term(bldr.toString(), subType.toInternal(p1[i])));
+      SchemaField sf = subField(field, i);
+      Query tq = sf.getType().getFieldQuery(parser, sf, p1[i]);
       bq.add(tq, BooleanClause.Occur.MUST);
-      bldr.setLength(len);
     }
-    result = bq;
-
-    return result;
+    return bq;
   }
 
   class PointTypeValueSource extends MultiValueSource {
@@ -272,5 +273,3 @@ public class PointType extends CoordinateFieldType {
   }
 
 }
-
-

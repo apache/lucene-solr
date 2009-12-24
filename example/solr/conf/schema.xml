@@ -407,7 +407,7 @@
       The subFields are an implementation detail of the fieldType, and end
       users normally should not need to know about them.
      -->
-    <fieldType name="location" class="solr.PointType" dimension="2" subFieldType="double"/>
+    <fieldType name="location" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
 
  </types>
 
