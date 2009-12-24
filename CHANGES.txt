@@ -24,7 +24,10 @@ $Id$
 ==================  1.5.0-dev ==================
 Upgrading from Solr 1.4
 ----------------------
-The experimental ALIAS command is removed in Solr 1.5 (SOLR-1637).
+* The experimental ALIAS command is removed in Solr 1.5 (SOLR-1637)
+
+* Using solr.xml is recommended for single cores also (SOLR-1621)
+
 
 Versions of Major Components
 ---------------------
