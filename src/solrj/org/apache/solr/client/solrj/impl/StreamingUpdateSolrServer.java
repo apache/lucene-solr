@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * StreamingHttpSolrServer buffers all added documents and writes them
- * into open http connections. This class is thread safe.
+ * into open HTTP connections. This class is thread safe.
  * 
  * Although any SolrServer request can be made with this implementation, 
  * it is only recommended to use the {@link StreamingUpdateSolrServer} with
@@ -66,9 +66,9 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
   /**
    * Uses an internal MultiThreadedHttpConnectionManager to manage http connections
    *
-   * @param solrServerUrl The solr server url
-   * @param queueSize     The buffer size before the documents are sent o the server
-   * @param threadCount   The number of backgtound threads used to empty the queue
+   * @param solrServerUrl The Solr server URL
+   * @param queueSize     The buffer size before the documents are sent to the server
+   * @param threadCount   The number of background threads used to empty the queue
    * @throws MalformedURLException
    */
   public StreamingUpdateSolrServer(String solrServerUrl, int queueSize, int threadCount) throws MalformedURLException {
@@ -76,7 +76,7 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
   }
 
   /**
-   * Uses the supplied HttpClient to send documents to the solr server, the HttpClient should be instantiated using a
+   * Uses the supplied HttpClient to send documents to the Solr server, the HttpClient should be instantiated using a
    * MultiThreadedHttpConnectionManager.
    */
   public StreamingUpdateSolrServer(String solrServerUrl, HttpClient client, int queueSize, int threadCount) throws MalformedURLException {
@@ -224,7 +224,7 @@ public class StreamingUpdateSolrServer extends CommonsHttpSolrServer
       }
     } 
     catch (InterruptedException e) {
-      log.error( "interuped", e );
+      log.error( "interrupted", e );
       throw new IOException( e.getLocalizedMessage() );
     }
     
