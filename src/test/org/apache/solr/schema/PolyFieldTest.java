@@ -73,24 +73,10 @@ public class PolyFieldTest extends AbstractSolrTestCase {
     assertNotNull(home);
     home = schema.getField("home");
     assertNotNull(home);
-    homeFT = schema.getPolyFieldType("home");
-    assertNotNull(homeFT);
 
     home = schema.getField("homed");//sub field suffix
     assertNotNull(home);
     assertTrue(home.isPolyField());
-
-    try {
-      FieldType bad = schema.getPolyFieldType("foo");
-      assertTrue(false);
-    } catch (Exception e) {
-    }
-    try {
-      FieldType bad = schema.getPolyFieldTypeNoEx("foo");
-      assertNull(bad);
-    } catch (Exception e) {
-      assertTrue(false);
-    }
   }
 
   public void testPointFieldType() throws Exception {

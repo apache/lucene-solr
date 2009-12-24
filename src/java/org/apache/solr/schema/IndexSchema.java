@@ -180,8 +180,6 @@ public final class IndexSchema {
   @Deprecated
   public String getName() { return name; }
 
-  ;
-
   /**
    * Provides direct access to the Map containing all explicit
    * (ie: non-dynamic) fields in the index, keyed on field name.
@@ -705,12 +703,11 @@ public final class IndexSchema {
         log.debug("dynamic field creation for schema field: " + field.getName());
         addDynamicFieldNoDupCheck(dynFields, field);
       } else {
-        log.debug("dynamic field creation avoided: dynamic field: [" + field.getName() + "] " +
-                "already defined in the schema!");
+        log.debug("dynamic field already exists: dynamic field: [" + field.getName() + "]");
       }
     }
     Collections.sort(dynFields);
-    dynamicFields = (DynamicField[]) dynFields.toArray(new DynamicField[dynFields.size()]);
+    dynamicFields = dynFields.toArray(new DynamicField[dynFields.size()]);
   }
 
   private void addDynamicFieldNoDupCheck(List<DynamicField> dFields, SchemaField f) {
@@ -719,14 +716,10 @@ public final class IndexSchema {
   }
 
   private boolean isDuplicateDynField(List<DynamicField> dFields, SchemaField f) {
-    boolean dup = false;
     for( DynamicField df : dFields ) {
-      if( df.regex.equals( f.name ) ) {
-        dup = true;
-        break;
-      }
+      if( df.regex.equals( f.name ) ) return true;
     }
-    return dup;
+    return false;
   }
 
   public void registerCopyField( String source, String dest )
@@ -1107,7 +1100,7 @@ public final class IndexSchema {
    * Returns the SchemaField that should be used for the specified field name, or
    * null if none exists.
    *
-   * @param fieldName may be an explicitly defined field, a PolyField, or a name that
+   * @param fieldName may be an explicitly defined field or a name that
    * matches a dynamic field.
    * @see #getFieldType
    * @see #getField(String)
@@ -1127,7 +1120,7 @@ public final class IndexSchema {
   /**
    * Returns the SchemaField that should be used for the specified field name
    *
-   * @param fieldName may be an explicitly defined field, a PolyField type, or a name that
+   * @param fieldName may be an explicitly defined field or a name that
    * matches a dynamic field.
    * @throws SolrException if no such field exists
    * @see #getFieldType
@@ -1223,22 +1216,6 @@ public final class IndexSchema {
     return null;
   };
 
-  /**
-   *
-   * @param fieldName The name of the field
-   * @return the {@link FieldType} or a {@link org.apache.solr.common.SolrException} if the field is not a poly field.
-   */
-  public FieldType getPolyFieldType(String fieldName){
-    SchemaField f = fields.get(fieldName);
-    if (f != null && f.isPolyField()) return f.getType();
-    throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"undefined field or not a poly field "+fieldName);
-  }
-
-  public FieldType getPolyFieldTypeNoEx(String fieldName){
-    SchemaField f = fields.get(fieldName);
-    if (f != null && f.isPolyField()) return f.getType();
-    return null;
-  }
 
   /**
    * Get all copy fields, both the static and the dynamic ones.
