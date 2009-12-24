@@ -88,9 +88,8 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /**
-   * A "polyField" is a FieldType that can produce more than one Field per FieldType, via the {@link #createFields(org.apache.solr.schema.SchemaField, String, float)} method.  This is useful
-   * when hiding the implementation details of a field from the Solr end user.  For instance, a spatial point may be represented by three different field types, all of which may produce 1 or more
-   * fields.
+   * A "polyField" is a FieldType that can produce more than one Fieldable instance for a single value, via the {@link #createFields(org.apache.solr.schema.SchemaField, String, float)} method.  This is useful
+   * when hiding the implementation details of a field from the Solr end user.  For instance, a spatial point may be represented by multiple different fields.
    * @return true if the {@link #createFields(org.apache.solr.schema.SchemaField, String, float)} method may return more than one field
    */
   public boolean isPolyField(){
@@ -269,21 +268,18 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /**
-   * Given a {@link org.apache.solr.schema.SchemaField}, create one or more {@link org.apache.lucene.document.Field} instances
+   * Given a {@link org.apache.solr.schema.SchemaField}, create one or more {@link org.apache.lucene.document.Fieldable} instances
    * @param field the {@link org.apache.solr.schema.SchemaField}
    * @param externalVal The value to add to the field
    * @param boost The boost to apply
-   * @return The {@link org.apache.lucene.document.Field} instances
+   * @return An array of {@link org.apache.lucene.document.Fieldable}
    *
    * @see #createField(SchemaField, String, float)
    * @see #isPolyField()
    */
   public Fieldable[] createFields(SchemaField field, String externalVal, float boost) {
     Field f = createField( field, externalVal, boost);
-    if( f != null ) {
-      return new Field[] { f };
-    }
-    return null;
+    return f==null ? new Fieldable[]{} : new Fieldable[]{f};
   }
 
   /* Helpers for field construction */
@@ -508,7 +504,7 @@ public abstract class FieldType extends FieldProperties {
    * @param part2        the upper boundary of the range, nulls are allowed
    * @param minInclusive whether the minimum of the range is inclusive or not
    * @param maxInclusive whether the maximum of the range is inclusive or not
-*    @return a Query instance to perform range search according to given parameters
+   *  @return a Query instance to perform range search according to given parameters
    *
    * @see org.apache.solr.search.SolrQueryParser#getRangeQuery(String, String, String, boolean)
    */
@@ -532,25 +528,4 @@ public abstract class FieldType extends FieldProperties {
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     return new TermQuery(new Term(field.getName(), toInternal(externalVal)));
   }
-
-
-  /**
-   * Return a collection of all the Fields in the index where the {@link org.apache.solr.schema.SchemaField}
-   * @param polyField The instance of the {@link org.apache.solr.schema.SchemaField} to find the actual field names from
-   * @return The {@link java.util.Collection} of names of the actual fields that are a poly field.
-   *
-   *
-   */
-  /*protected Collection<String> getPolyFieldNames(SchemaField polyField){
-    if (polyField.isPolyField()) {
-      if (polyField != null) {
-        //we need the names of all the fields.  Do this lazily and then cache?
-
-
-      }
-    } //TODO: Should we throw an exception here in an else clause?
-    return Collections.emptyList();
-  }*/
-
-
 }
