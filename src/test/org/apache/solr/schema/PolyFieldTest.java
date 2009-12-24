@@ -27,6 +27,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.search.function.ValueSource;
 
 import java.util.Map;
 import java.util.Random;
@@ -118,6 +119,14 @@ public class PolyFieldTest extends AbstractSolrTestCase {
     } catch (Exception e) {
       //
     }
+
+    //
+    SchemaField s1 = schema.getField("test_p");
+    SchemaField s2 = schema.getField("test_p");
+    ValueSource v1 = s1.getType().getValueSource(s1,null);
+    ValueSource v2 = s2.getType().getValueSource(s2,null);
+    assertEquals(v1,v2);
+    assertEquals(v1.hashCode(),v2.hashCode());
   }
 
   public void testSearching() throws Exception {
@@ -125,11 +134,7 @@ public class PolyFieldTest extends AbstractSolrTestCase {
       assertU(adoc("id", "" + i, "home", i + "," + (i * 100), "homed", (i * 1000) + "," + (i * 10000)));
     }
     assertU(commit());
-    IndexReader reader = h.getCore().getSearcher().get().getReader();
-    /*for (int i = 0; i < 50; i++){
-      Document doc = reader.document(i);
-      System.out.println("Doc: " + doc.get("homed_0___double"));
-    }*/
+
     assertQ(req("fl", "*,score", "q", "*:*"), "//*[@numFound='50']");
     assertQ(req("fl", "*,score", "q", "home:1,100"),
             "//*[@numFound='1']",

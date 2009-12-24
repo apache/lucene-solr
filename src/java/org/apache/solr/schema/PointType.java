@@ -258,15 +258,12 @@ public class PointType extends CoordinateFieldType {
 
       if (dimension != that.dimension) return false;
       if (!field.equals(that.field)) return false;
-      if (!subType.equals(that.subType)) return false;
-
       return true;
     }
 
     @Override
     public int hashCode() {
       int result = field.hashCode();
-      result = 31 * result + subType.hashCode();
       result = 31 * result + dimension;
       return result;
     }

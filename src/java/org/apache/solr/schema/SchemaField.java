@@ -209,6 +209,16 @@ public final class SchemaField extends FieldProperties {
   public String getDefaultValue() {
     return defaultValue;
   }
+
+  @Override
+  public int hashCode() {
+    return name.hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    return(obj instanceof SchemaField) && name.equals(((SchemaField)obj).name);
+  }
 }
 
 

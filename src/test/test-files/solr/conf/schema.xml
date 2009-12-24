@@ -520,6 +520,8 @@
    <dynamicField name="tv_mv_*"  type="text" indexed="true"  stored="true" multiValued="true"
       termVectors="true" termPositions="true" termOffsets="true"/>
 
+   <dynamicField name="*_p"  type="xyd" indexed="true"  stored="true" multiValued="false"/> 
+
    <!-- special fields for dynamic copyField test -->
    <dynamicField name="dynamic_*" type="string" indexed="true" stored="true"/>
    <dynamicField name="*_dynamic" type="string" indexed="true" stored="true"/>
