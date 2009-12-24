@@ -59,7 +59,7 @@ public class DocumentBuilder {
     // returns null, then we don't store the field.
     if (sfield.isPolyField()) {
       Fieldable[] fields = sfield.createFields(val, boost);
-      if (fields != null && fields.length > 0) {
+      if (fields.length > 0) {
         if (!sfield.multiValued()) {
           String oldValue = map.put(sfield.getName(), val);
           if (oldValue != null) {
