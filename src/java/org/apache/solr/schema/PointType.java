@@ -32,12 +32,15 @@ import org.apache.solr.request.TextResponseWriter;
 import org.apache.solr.request.XMLWriter;
 import org.apache.solr.search.MultiValueSource;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.ToMultiValueSource;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.distance.DistanceUtils;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * A point type that indexes a point in an n-dimensional space as separate fields and uses
@@ -110,7 +113,12 @@ public class PointType extends CoordinateFieldType {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    return new PointTypeValueSource(field, dimension, subType, parser);
+    ArrayList<ValueSource> vs = new ArrayList(dimension);
+    for (int i=0; i<dimension; i++) {
+      SchemaField sub = subField(field, i);
+      vs.add(sub.getType().getValueSource(sub, parser));
+    }
+    return new PointTypeValueSource(field, vs);
   }
 
 
@@ -165,108 +173,24 @@ public class PointType extends CoordinateFieldType {
     }
     return bq;
   }
-
-  class PointTypeValueSource extends MultiValueSource {
-    protected SchemaField field;
-    protected FieldType subType;
-    protected int dimension;
-    private QParser parser;
-
-    public PointTypeValueSource(SchemaField field, int dimension, FieldType subType, QParser parser) {
-      this.field = field;
-      this.dimension = dimension;
-      this.subType = subType;
-      this.parser = parser;
-    }
-
-    @Override
-    public void createWeight(Map context, Searcher searcher) throws IOException {
-      String name = field.getName();
-      String suffix = FieldType.POLY_FIELD_SEPARATOR + subType.typeName;
-      int len = name.length();
-      StringBuilder bldr = new StringBuilder(len + 3 + suffix.length());//should be enough buffer to handle most values of j.
-      bldr.append(name);
-      for (int i = 0; i < dimension; i++) {
-        bldr.append(i).append(suffix);
-        SchemaField sf = schema.getField(bldr.toString());
-        subType.getValueSource(sf, parser).createWeight(context, searcher);
-        bldr.setLength(len);
-      }
-    }
-
-    public int dimension() {
-      return dimension;
-    }
-
-    @Override
-    public DocValues getValues(Map context, IndexReader reader) throws IOException {
-      final DocValues[] valsArr1 = new DocValues[dimension];
-      String name = field.getName();
-      String suffix = FieldType.POLY_FIELD_SEPARATOR + subType.typeName;
-      int len = name.length();
-      StringBuilder bldr = new StringBuilder(len + 3 + suffix.length());//should be enough buffer to handle most values of j.
-      bldr.append(name);
-      for (int i = 0; i < dimension; i++) {
-        bldr.append(i).append(suffix);
-        SchemaField sf = schema.getField(bldr.toString());
-        valsArr1[i] = subType.getValueSource(sf, parser).getValues(context, reader);
-        bldr.setLength(len);
-      }
-      return new DocValues() {
-        //TODO: not sure how to handle the other types at this moment
-        @Override
-        public void doubleVal(int doc, double[] vals) {
-          //TODO: check whether vals.length == dimension or assume its handled elsewhere?
-          for (int i = 0; i < dimension; i++) {
-            vals[i] = valsArr1[i].doubleVal(doc);
-          }
-        }
+}
 
 
-        @Override
-        public String toString(int doc) {
-          StringBuilder sb = new StringBuilder("point(");
-          boolean firstTime = true;
-          for (DocValues docValues : valsArr1) {
-            if (firstTime == false) {
-              sb.append(",");
-            } else {
-              firstTime = true;
-            }
-            sb.append(docValues.toString(doc));
-          }
-          sb.append(")");
-          return sb.toString();
-        }
-      };
-    }
-
-    public String description() {
-      StringBuilder sb = new StringBuilder();
-      sb.append("point(");
-      sb.append("fld=").append(field.name).append(", subType=").append(subType.typeName)
-              .append(", dimension=").append(dimension).append(')');
-      return sb.toString();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof PointTypeValueSource)) return false;
-
-      PointTypeValueSource that = (PointTypeValueSource) o;
-
-      if (dimension != that.dimension) return false;
-      if (!field.equals(that.field)) return false;
-      return true;
-    }
-
-    @Override
-    public int hashCode() {
-      int result = field.hashCode();
-      result = 31 * result + dimension;
-      return result;
-    }
+class PointTypeValueSource extends ToMultiValueSource {
+  private final SchemaField sf;
+  
+  public PointTypeValueSource(SchemaField sf, List<ValueSource> sources) {
+    super(sources);
+    this.sf = sf;
   }
 
+  @Override
+  public String name() {
+    return "point";
+  }
+
+  @Override
+  public String description() {
+    return name()+"("+sf.getName()+")";
+  }
 }

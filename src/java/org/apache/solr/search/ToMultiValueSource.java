@@ -47,13 +47,67 @@ public class ToMultiValueSource extends MultiValueSource {
     return sources.size();
   }
 
+  public String name() {
+    return "toMultiVS";
+  }
+
   @Override
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     int size = sources.size();
+
+    // special-case x,y and lat,lon since it's so common
+    if (size==2) {
+      final DocValues x = sources.get(0).getValues(context, reader);
+      final DocValues y = sources.get(1).getValues(context, reader);
+      return new DocValues() {
+        @Override
+        public void byteVal(int doc, byte[] vals) {
+          vals[0] = x.byteVal(doc);
+          vals[1] = y.byteVal(doc);
+        }
+
+        @Override
+        public void shortVal(int doc, short[] vals) {
+          vals[0] = x.shortVal(doc);
+          vals[1] = y.shortVal(doc);
+        }
+        @Override
+        public void intVal(int doc, int[] vals) {
+          vals[0] = x.intVal(doc);
+          vals[1] = y.intVal(doc);
+        }
+        @Override
+        public void longVal(int doc, long[] vals) {
+          vals[0] = x.longVal(doc);
+          vals[1] = y.longVal(doc);
+        }
+        @Override
+        public void floatVal(int doc, float[] vals) {
+          vals[0] = x.byteVal(doc);
+          vals[1] = y.byteVal(doc);
+        }
+        @Override
+        public void doubleVal(int doc, double[] vals) {
+          vals[0] = x.doubleVal(doc);
+          vals[1] = y.doubleVal(doc);
+        }
+        @Override
+        public void strVal(int doc, String[] vals) {
+          vals[0] = x.strVal(doc);
+          vals[1] = y.strVal(doc);
+        }
+        public String toString(int doc) {
+          return name() + "(" + x.toString(doc) + "," + y.toString(doc) + ")";
+        }
+      };
+    }
+
+
     final DocValues[] valsArr = new DocValues[size];
     for (int i = 0; i < size; i++) {
       valsArr[i] = sources.get(i).getValues(context, reader);
     }
+
     return new DocValues() {
       @Override
       public void byteVal(int doc, byte[] vals) {
@@ -107,7 +161,7 @@ public class ToMultiValueSource extends MultiValueSource {
       @Override
       public String toString(int doc) {
         StringBuilder sb = new StringBuilder();
-        sb.append("toMultiVS(");
+        sb.append(name()).append('(');
         boolean firstTime = true;
         for (DocValues vals : valsArr) {
           if (firstTime) {
@@ -131,7 +185,7 @@ public class ToMultiValueSource extends MultiValueSource {
 
   public String description() {
     StringBuilder sb = new StringBuilder();
-    sb.append("toMultiVS(");
+    sb.append(name()).append('(');
     boolean firstTime = true;
     for (ValueSource source : sources) {
       if (firstTime) {
