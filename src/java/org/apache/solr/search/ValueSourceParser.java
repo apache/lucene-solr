@@ -41,6 +41,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Collections;
 
 /**
  * A factory that parses user queries to generate ValueSource instances.
@@ -202,6 +203,11 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         };
       }
     });
+    addParser("toMultiVS", new ValueSourceParser(){
+      public ValueSource parse(FunctionQParser fp) throws ParseException{
+        return new ToMultiValueSource(fp.parseValueSourceList());
+      }
+    });
     addParser("query", new ValueSourceParser() {
       // boost(query($q),rating)
       public ValueSource parse(FunctionQParser fp) throws ParseException {
@@ -224,22 +230,47 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("hsin", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
 
-        ValueSource x1 = fp.parseValueSource();
-        ValueSource y1 = fp.parseValueSource();
-        ValueSource x2 = fp.parseValueSource();
-        ValueSource y2 = fp.parseValueSource();
         double radius = fp.parseDouble();
+        MultiValueSource pv1;
+        MultiValueSource pv2;
 
-        return new HaversineFunction(x1, y1, x2, y2, radius);
+        ValueSource one = fp.parseValueSource();
+        ValueSource two = fp.parseValueSource();
+        if (fp.hasMoreArguments()) {
+          List<ValueSource> s1 = new ArrayList<ValueSource>();
+          s1.add(one);
+          s1.add(two);
+          pv1 = new ToMultiValueSource(s1);
+          ValueSource x2 = fp.parseValueSource();
+          ValueSource y2 = fp.parseValueSource();
+          List<ValueSource> s2 = new ArrayList<ValueSource>();
+          s2.add(x2);
+          s2.add(y2);
+          pv2 = new ToMultiValueSource(s2);
+        } else {
+          //check to see if we have multiValue source
+          if (one instanceof MultiValueSource && two instanceof MultiValueSource){
+            pv1 = (MultiValueSource) one;
+            pv2 = (MultiValueSource) two;
+          } else {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                    "Input must either be 2 MultiValueSources, or there must be 4 ValueSources");
+          }
+        }
+        boolean convert = false;
+        if (fp.hasMoreArguments()){
+          convert = Boolean.parseBoolean(fp.parseArg());
+        }
+        return new HaversineFunction(pv1, pv2, radius, convert);
       }
     });
 
     addParser("ghhsin", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
+        double radius = fp.parseDouble();
 
         ValueSource gh1 = fp.parseValueSource();
         ValueSource gh2 = fp.parseValueSource();
-        double radius = fp.parseDouble();
 
         return new GeohashHaversineFunction(gh1, gh2, radius);
       }
@@ -393,15 +424,9 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("sqedist", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         List<ValueSource> sources = fp.parseValueSourceList();
-        if (sources.size() % 2 != 0) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Illegal number of sources.  There must be an even number of sources");
-        }
-        int dim = sources.size() / 2;
-        List<ValueSource> sources1 = new ArrayList<ValueSource>(dim);
-        List<ValueSource> sources2 = new ArrayList<ValueSource>(dim);
-        //Get dim value sources for the first vector
-        splitSources(dim, sources, sources1, sources2);
-        return new SquaredEuclideanFunction(sources1, sources2);
+        MVResult mvr = getMultiValueSources(sources);
+
+        return new SquaredEuclideanFunction(mvr.mv1, mvr.mv2);
       }
     });
 
@@ -409,14 +434,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
         float power = fp.parseFloat();
         List<ValueSource> sources = fp.parseValueSourceList();
-        if (sources.size() % 2 != 0) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Illegal number of sources.  There must be an even number of sources");
-        }
-        int dim = sources.size() / 2;
-        List<ValueSource> sources1 = new ArrayList<ValueSource>(dim);
-        List<ValueSource> sources2 = new ArrayList<ValueSource>(dim);
-        splitSources(dim, sources, sources1, sources2);
-        return new VectorDistanceFunction(power, sources1, sources2);
+        MVResult mvr = getMultiValueSources(sources);
+        return new VectorDistanceFunction(power, mvr.mv1, mvr.mv2);
       }
     });
     addParser("ms", new DateValueSourceParser());
@@ -445,6 +464,44 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     }
   }
 
+  private static MVResult getMultiValueSources(List<ValueSource> sources) {
+    MVResult mvr = new MVResult();
+    if (sources.size() % 2 != 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Illegal number of sources.  There must be an even number of sources");
+    }
+    if (sources.size() == 2) {
+
+      //check to see if these are MultiValueSource
+      boolean s1MV = sources.get(0) instanceof MultiValueSource;
+      boolean s2MV = sources.get(1) instanceof MultiValueSource;
+      if (s1MV && s2MV) {
+        mvr.mv1 = (MultiValueSource) sources.get(0);
+        mvr.mv2 = (MultiValueSource) sources.get(1);
+      } else if (s1MV ||
+              s2MV) {
+        //if one is a MultiValueSource, than the other one needs to be too.
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Illegal number of sources.  There must be an even number of sources");
+      } else {
+        mvr.mv1 = new ToMultiValueSource(Collections.singletonList(sources.get(0)));
+        mvr.mv2 = new ToMultiValueSource(Collections.singletonList(sources.get(1)));
+      }
+    } else {
+      int dim = sources.size() / 2;
+      List<ValueSource> sources1 = new ArrayList<ValueSource>(dim);
+      List<ValueSource> sources2 = new ArrayList<ValueSource>(dim);
+      //Get dim value sources for the first vector
+      splitSources(dim, sources, sources1, sources2);
+      mvr.mv1 = new ToMultiValueSource(sources1);
+      mvr.mv2 = new ToMultiValueSource(sources2);
+    }
+
+    return mvr;
+  }
+
+  private static class MVResult {
+    MultiValueSource mv1;
+    MultiValueSource mv2;
+  }
 }
 
 

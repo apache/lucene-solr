@@ -21,9 +21,9 @@ import org.apache.lucene.search.Searcher;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.ValueSource;
+import org.apache.solr.search.MultiValueSource;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 
@@ -41,18 +41,18 @@ import java.util.Map;
  * @see SquaredEuclideanFunction for the special case
  */
 public class VectorDistanceFunction extends ValueSource {
-  protected List<ValueSource> sources1, sources2;
+  protected MultiValueSource source1, source2;
   protected float power;
   protected float oneOverPower;
 
-  public VectorDistanceFunction(float power, List<ValueSource> sources1, List<ValueSource> sources2) {
-    this.power = power;
-    this.oneOverPower = 1 / power;
-    this.sources1 = sources1;
-    this.sources2 = sources2;
-    if ((sources1.size() != sources2.size())) {
+  public VectorDistanceFunction(float power, MultiValueSource source1, MultiValueSource source2) {
+    if ((source1.dimension() != source2.dimension())) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Illegal number of sources");
     }
+    this.power = power;
+    this.oneOverPower = 1 / power;
+    this.source1 = source1;
+    this.source2 = source2;
   }
 
   protected String name() {
@@ -63,37 +63,39 @@ public class VectorDistanceFunction extends ValueSource {
    * Calculate the distance
    *
    * @param doc        The current doc
-   * @param docValues1 The values from the first set of value sources
-   * @param docValues2 The values from the second set of value sources
+   * @param dv1 The values from the first MultiValueSource
+   * @param dv2 The values from the second MultiValueSource
    * @return The distance
    */
-  protected double distance(int doc, DocValues[] docValues1, DocValues[] docValues2) {
+  protected double distance(int doc, DocValues dv1, DocValues dv2) {
     double result = 0;
     //Handle some special cases:
+    double [] vals1 = new double[source1.dimension()];
+    double [] vals2 = new double[source1.dimension()];
+    dv1.doubleVal(doc, vals1);
+    dv2.doubleVal(doc, vals2);
     if (power == 0) {
-      for (int i = 0; i < docValues1.length; i++) {
-        //sparseness measure
-        result += docValues1[i].doubleVal(doc) - docValues2[i].doubleVal(doc) == 0 ? 0 : 1;
+      for (int i = 0; i < vals1.length; i++) {
+        result += vals1[i] - vals2[i] == 0 ? 0 :1;
       }
+
     } else if (power == 1.0) {
-      for (int i = 0; i < docValues1.length; i++) {
-        result += docValues1[i].doubleVal(doc) - docValues2[i].doubleVal(doc);
+      for (int i = 0; i < vals1.length; i++) {
+        result += vals1[i] - vals2[i];
       }
     } else if (power == 2.0) {
-      for (int i = 0; i < docValues1.length; i++) {
-        double v = docValues1[i].doubleVal(doc) - docValues2[i].doubleVal(doc);
+      for (int i = 0; i < vals1.length; i++) {
+        double v = vals1[i] - vals2[i];
         result += v * v;
       }
       result = Math.sqrt(result);
     } else if (power == Integer.MAX_VALUE || Double.isInfinite(power)) {//infininte norm?
-      for (int i = 0; i < docValues1.length; i++) {
-        //TODO: is this the correct infinite norm?
-        result = Math.max(docValues1[i].doubleVal(doc) - docValues2[i].doubleVal(doc), result);
+      for (int i = 0; i < vals1.length; i++) {
+        result = Math.max(vals1[i], vals2[i]);
       }
-
     } else {
-      for (int i = 0; i < docValues1.length; i++) {
-        result += Math.pow(docValues1[i].doubleVal(doc) - docValues2[i].doubleVal(doc), power);
+      for (int i = 0; i < vals1.length; i++) {
+        result += Math.pow(vals1[i] - vals2[i], power);
       }
       result = Math.pow(result, oneOverPower);
     }
@@ -103,19 +105,24 @@ public class VectorDistanceFunction extends ValueSource {
 
   @Override
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final DocValues[] valsArr1 = new DocValues[sources1.size()];
-    int i = 0;
-    for (ValueSource source : sources1) {
-      valsArr1[i++] = source.getValues(context, reader);
-    }
-    final DocValues[] valsArr2 = new DocValues[sources2.size()];
-    i = 0;
-    for (ValueSource source : sources2) {
-      valsArr2[i++] = source.getValues(context, reader);
-    }
+
+    final DocValues vals1 = source1.getValues(context, reader);
+
+    final DocValues vals2 = source2.getValues(context, reader);
+
 
 
     return new DocValues() {
+      @Override
+      public byte byteVal(int doc) {
+        return (byte) doubleVal(doc);
+      }
+
+      @Override
+      public short shortVal(int doc) {
+        return (short)doubleVal(doc);
+      }
+
       public float floatVal(int doc) {
         return (float) doubleVal(doc);
       }
@@ -129,7 +136,7 @@ public class VectorDistanceFunction extends ValueSource {
       }
 
       public double doubleVal(int doc) {
-        return distance(doc, valsArr1, valsArr2);
+        return distance(doc, vals1, vals2);
       }
 
       public String strVal(int doc) {
@@ -141,18 +148,8 @@ public class VectorDistanceFunction extends ValueSource {
         StringBuilder sb = new StringBuilder();
         sb.append(name()).append('(').append(power).append(',');
         boolean firstTime = true;
-        for (DocValues vals : valsArr1) {
-          if (firstTime) {
-            firstTime = false;
-          } else {
-            sb.append(',');
-          }
-          sb.append(vals.toString(doc));
-        }
-        for (DocValues vals : valsArr2) {
-          sb.append(',');//we will always have valsArr1, else there is an error
-          sb.append(vals.toString(doc));
-        }
+        sb.append(vals1.toString(doc)).append(',');
+        sb.append(vals2.toString(doc));
         sb.append(')');
         return sb.toString();
       }
@@ -161,12 +158,8 @@ public class VectorDistanceFunction extends ValueSource {
 
   @Override
   public void createWeight(Map context, Searcher searcher) throws IOException {
-    for (ValueSource source : sources1) {
-      source.createWeight(context, searcher);
-    }
-    for (ValueSource source : sources2) {
-      source.createWeight(context, searcher);
-    }
+    source1.createWeight(context, searcher);
+    source2.createWeight(context, searcher);
   }
 
   @Override
@@ -177,16 +170,16 @@ public class VectorDistanceFunction extends ValueSource {
     VectorDistanceFunction that = (VectorDistanceFunction) o;
 
     if (Float.compare(that.power, power) != 0) return false;
-    if (!sources1.equals(that.sources1)) return false;
-    if (!sources2.equals(that.sources2)) return false;
+    if (!source1.equals(that.source1)) return false;
+    if (!source2.equals(that.source2)) return false;
 
     return true;
   }
 
   @Override
   public int hashCode() {
-    int result = sources1.hashCode();
-    result = 31 * result + sources2.hashCode();
+    int result = source1.hashCode();
+    result = 31 * result + source2.hashCode();
     result = 31 * result + Float.floatToRawIntBits(power);
     return result;
   }
@@ -195,19 +188,8 @@ public class VectorDistanceFunction extends ValueSource {
   public String description() {
     StringBuilder sb = new StringBuilder();
     sb.append(name()).append('(').append(power).append(',');
-    boolean firstTime = true;
-    for (ValueSource source : sources1) {
-      if (firstTime) {
-        firstTime = false;
-      } else {
-        sb.append(',');
-      }
-      sb.append(source);
-    }
-    for (ValueSource source : sources2) {
-      sb.append(',');//we will always have sources1, else there is an error
-      sb.append(source);
-    }
+    sb.append(source1).append(',');
+    sb.append(source2);
     sb.append(')');
     return sb.toString();
   }

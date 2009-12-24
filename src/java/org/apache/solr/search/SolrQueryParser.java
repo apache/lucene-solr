@@ -34,6 +34,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.TextField;
 
 // TODO: implement the analysis of simple fields with
 // FieldType.toInternal() instead of going through the
@@ -144,6 +145,12 @@ public class SolrQueryParser extends QueryParser {
       } else if ("_query_".equals(field) && parser != null) {
         return parser.subQuery(queryText, null).getQuery();
       }
+    }
+    //Intercept poly fields, as they get expanded by default to an OR clause of
+    SchemaField sf = schema.getField(field);
+    //TODO: is there anyway to avoid this instance of check?
+    if (sf != null&& !(sf.getType() instanceof TextField)){//we have a poly field, deal with it specially by delegating to the FieldType
+      return sf.getType().getFieldQuery(parser, sf, queryText); 
     }
 
     // default to a normal field query

@@ -394,7 +394,12 @@
 
     <!-- since fields of this type are by default not stored or indexed,
          any data added to them will be ignored outright.  --> 
-    <fieldtype name="ignored" stored="false" indexed="false" multiValued="true" class="solr.StrField" /> 
+    <fieldtype name="ignored" stored="false" indexed="false" multiValued="true" class="solr.StrField" />
+
+    <!--
+     A PointType is a Poly Field.  It can either declare a subFieldType or a subFieldSuffix
+     -->
+    <fieldType name="location" class="solr.PointType" dimension="2" subFieldType="double"/>
 
  </types>
 
@@ -439,6 +444,8 @@
    <field name="price"  type="float" indexed="true" stored="true"/>
    <field name="popularity" type="int" indexed="true" stored="true" />
    <field name="inStock" type="boolean" indexed="true" stored="true" />
+
+   <field name="store" type="location" indexed="true" stored="true"/>
 
 
    <!-- Common metadata fields, named specifically to match up with

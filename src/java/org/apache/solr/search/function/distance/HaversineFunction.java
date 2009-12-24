@@ -18,6 +18,8 @@ package org.apache.solr.search.function.distance;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Searcher;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.search.MultiValueSource;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.ValueSource;
 
@@ -29,28 +31,31 @@ import java.util.Map;
  * Calculate the Haversine formula (distance) between any two points on a sphere
  * Takes in four value sources: (latA, lonA); (latB, lonB).
  * <p/>
- * Assumes the value sources are in radians
+ * Assumes the value sources are in radians unless
  * <p/>
  * See http://en.wikipedia.org/wiki/Great-circle_distance and
  * http://en.wikipedia.org/wiki/Haversine_formula for the actual formula and
  * also http://www.movable-type.co.uk/scripts/latlong.html
- *
- * @see org.apache.solr.search.function.RadianFunction
  */
 public class HaversineFunction extends ValueSource {
 
-  private ValueSource x1;
-  private ValueSource y1;
-  private ValueSource x2;
-  private ValueSource y2;
+  private MultiValueSource p1;
+  private MultiValueSource p2;
+  private boolean convertToRadians = false;
   private double radius;
 
-  public HaversineFunction(ValueSource x1, ValueSource y1, ValueSource x2, ValueSource y2, double radius) {
-    this.x1 = x1;
-    this.y1 = y1;
-    this.x2 = x2;
-    this.y2 = y2;
+  public HaversineFunction(MultiValueSource p1, MultiValueSource p2, double radius) {
+    this(p1, p2, radius, false);
+  }
+
+  public HaversineFunction(MultiValueSource p1, MultiValueSource p2, double radius, boolean convertToRads){
+    this.p1 = p1;
+    this.p2 = p2;
+    if (p1.dimension() != 2 || p2.dimension() != 2) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Illegal dimension for value sources");
+    }
     this.radius = radius;
+    this.convertToRadians = convertToRads;
   }
 
   protected String name() {
@@ -59,28 +64,40 @@ public class HaversineFunction extends ValueSource {
 
   /**
    * @param doc  The doc to score
-   * @param x1DV
-   * @param y1DV
-   * @param x2DV
-   * @param y2DV
+   * @param p1DV
+   * @param p2DV
    * @return The haversine distance formula
    */
-  protected double distance(int doc, DocValues x1DV, DocValues y1DV, DocValues x2DV, DocValues y2DV) {
-    double x1 = x1DV.doubleVal(doc); //in radians
-    double y1 = y1DV.doubleVal(doc);
-    double x2 = x2DV.doubleVal(doc);
-    double y2 = y2DV.doubleVal(doc);
+  protected double distance(int doc, DocValues p1DV, DocValues p2DV) {
 
+    double[] p1D = new double[2];
+    double[] p2D = new double[2];
+    p1DV.doubleVal(doc, p1D);
+    p2DV.doubleVal(doc, p2D);
+    double x1;
+    double y1;
+    double x2;
+    double y2;
+    if (convertToRadians) {
+      x1 = p1D[0] * DistanceUtils.DEGREES_TO_RADIANS;
+      y1 = p1D[1] * DistanceUtils.DEGREES_TO_RADIANS;
+      x2 = p2D[0] * DistanceUtils.DEGREES_TO_RADIANS;
+      y2 = p2D[1] * DistanceUtils.DEGREES_TO_RADIANS;
+    } else {
+      x1 = p1D[0];
+      y1 = p1D[1];
+      x2 = p2D[0];
+      y2 = p2D[1];
+    }
     return DistanceUtils.haversine(x1, y1, x2, y2, radius);
   }
 
 
   @Override
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final DocValues x1DV = x1.getValues(context, reader);
-    final DocValues y1DV = y1.getValues(context, reader);
-    final DocValues x2DV = x2.getValues(context, reader);
-    final DocValues y2DV = y2.getValues(context, reader);
+    final DocValues vals1 = p1.getValues(context, reader);
+
+    final DocValues vals2 = p2.getValues(context, reader);
     return new DocValues() {
       public float floatVal(int doc) {
         return (float) doubleVal(doc);
@@ -95,7 +112,7 @@ public class HaversineFunction extends ValueSource {
       }
 
       public double doubleVal(int doc) {
-        return (double) distance(doc, x1DV, y1DV, x2DV, y2DV);
+        return (double) distance(doc, vals1, vals2);
       }
 
       public String strVal(int doc) {
@@ -106,8 +123,7 @@ public class HaversineFunction extends ValueSource {
       public String toString(int doc) {
         StringBuilder sb = new StringBuilder();
         sb.append(name()).append('(');
-        sb.append(x1DV.toString(doc)).append(',').append(y1DV.toString(doc)).append(',')
-                .append(x2DV.toString(doc)).append(',').append(y2DV.toString(doc));
+        sb.append(vals1.toString(doc)).append(',').append(vals2.toString(doc));
         sb.append(')');
         return sb.toString();
       }
@@ -116,10 +132,9 @@ public class HaversineFunction extends ValueSource {
 
   @Override
   public void createWeight(Map context, Searcher searcher) throws IOException {
-    x1.createWeight(context, searcher);
-    x2.createWeight(context, searcher);
-    y1.createWeight(context, searcher);
-    y2.createWeight(context, searcher);
+    p1.createWeight(context, searcher);
+    p2.createWeight(context, searcher);
+
   }
 
   @Override
@@ -127,20 +142,16 @@ public class HaversineFunction extends ValueSource {
     if (this.getClass() != o.getClass()) return false;
     HaversineFunction other = (HaversineFunction) o;
     return this.name().equals(other.name())
-            && x1.equals(other.x1) &&
-            y1.equals(other.y1) &&
-            x2.equals(other.x2) &&
-            y2.equals(other.y2) && radius == other.radius;
+            && p1.equals(other.p1) &&
+            p2.equals(other.p2) && radius == other.radius;
   }
 
   @Override
   public int hashCode() {
     int result;
     long temp;
-    result = x1.hashCode();
-    result = 31 * result + y1.hashCode();
-    result = 31 * result + x2.hashCode();
-    result = 31 * result + y2.hashCode();
+    result = p1.hashCode();
+    result = 31 * result + p2.hashCode();
     result = 31 * result + name().hashCode();
     temp = Double.doubleToRawLongBits(radius);
     result = 31 * result + (int) (temp ^ (temp >>> 32));
@@ -150,7 +161,7 @@ public class HaversineFunction extends ValueSource {
   public String description() {
     StringBuilder sb = new StringBuilder();
     sb.append(name()).append('(');
-    sb.append(x1).append(',').append(y1).append(',').append(x2).append(',').append(y2);
+    sb.append(p1).append(',').append(p2);
     sb.append(')');
     return sb.toString();
   }

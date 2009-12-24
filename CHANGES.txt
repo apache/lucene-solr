@@ -74,6 +74,9 @@ New Features
 
 * SOLR-1653: Add PatternReplaceCharFilter (koji)
 
+* SOLR-1131: FieldTypes can now output multiple Fields per Type and still be searched.  This can be handy for hiding the details of a particular
+  implementation such as in the spatial case. (Chris Mattmann, shalin, noble, gsingers, yonik)
+
 Optimizations
 ----------------------
 

@@ -28,6 +28,7 @@
   <field name="popularity">6</field>
   <field name="inStock">true</field>
   <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
+  <field name="store">45.17614,-93.87341</field>
 </doc>
 
 <doc>
@@ -42,6 +43,8 @@
   <field name="price">350</field>
   <field name="popularity">6</field>
   <field name="inStock">true</field>
+  <!-- Buffalo store -->
+  <field name="store">45.17614,-93.87341</field>
   <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
 </doc>
 </add>

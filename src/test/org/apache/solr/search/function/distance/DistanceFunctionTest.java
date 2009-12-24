@@ -16,9 +16,9 @@ package org.apache.solr.search.function.distance;
  * limitations under the License.
  */
 
+import org.apache.lucene.spatial.geohash.GeoHashUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.lucene.spatial.geohash.GeoHashUtils;
 
 
 /**
@@ -44,20 +44,21 @@ public class DistanceFunctionTest extends AbstractSolrTestCase {
     assertU(adoc("id", "2", "x_td", "0", "y_td", String.valueOf(Math.PI / 2), "gh_s", GeoHashUtils.encode(32.7693246, -78.9289094)));
     assertU(adoc("id", "3", "x_td", String.valueOf(Math.PI / 2), "y_td", String.valueOf(Math.PI / 2), "gh_s", GeoHashUtils.encode(32.7693246, -80.9289094)));
     assertU(adoc("id", "4", "x_td", String.valueOf(Math.PI / 4), "y_td", String.valueOf(Math.PI / 4), "gh_s", GeoHashUtils.encode(32.7693246, -81.9289094)));
+    assertU(adoc("id", "5", "x_td", "45.0", "y_td", "45.0",
+            "gh_s", GeoHashUtils.encode(32.7693246, -81.9289094)));
     assertU(commit());
     //Get the haversine distance between the point 0,0 and the docs above assuming a radius of 1
-    assertQ(req("fl", "*,score", "q", "{!func}hsin(x_td, y_td, 0, 0, 1)", "fq", "id:1"), "//float[@name='score']='0.0'");
-    assertQ(req("fl", "*,score", "q", "{!func}hsin(x_td, y_td, 0, 0, 1)", "fq", "id:2"), "//float[@name='score']='" + (float) (Math.PI / 2) + "'");
-    assertQ(req("fl", "*,score", "q", "{!func}hsin(x_td, y_td, 0, 0, 1)", "fq", "id:3"), "//float[@name='score']='" + (float) (Math.PI / 2) + "'");
-    assertQ(req("fl", "*,score", "q", "{!func}hsin(x_td, y_td, 0, 0, 1)", "fq", "id:4"), "//float[@name='score']='1.0471976'");
+    assertQ(req("fl", "*,score", "q", "{!func}hsin(1, x_td, y_td, 0, 0)", "fq", "id:1"), "//float[@name='score']='0.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}hsin(1, x_td, y_td, 0, 0)", "fq", "id:2"), "//float[@name='score']='" + (float) (Math.PI / 2) + "'");
+    assertQ(req("fl", "*,score", "q", "{!func}hsin(1, x_td, y_td, 0, 0)", "fq", "id:3"), "//float[@name='score']='" + (float) (Math.PI / 2) + "'");
+    assertQ(req("fl", "*,score", "q", "{!func}hsin(1, x_td, y_td, 0, 0)", "fq", "id:4"), "//float[@name='score']='1.0471976'");
+    assertQ(req("fl", "*,score", "q", "{!func}hsin(1, x_td, y_td, 0, 0, true)", "fq", "id:5"), "//float[@name='score']='1.0471976'");
 
     //Geo Hash Haversine
     //Can verify here: http://www.movable-type.co.uk/scripts/latlong.html, but they use a slightly different radius for the earth, so just be close
-    assertQ(req("fl", "*,score", "q", "{!func}ghhsin(gh_s, \"" + GeoHashUtils.encode(32, -79) +
-            "\"," + Constants.EARTH_RADIUS_KM +
-            ")", "fq", "id:1"), "//float[@name='score']='122.30894'");
-    assertQ(req("fl", "*,score", "q", "{!func}ghhsin(gh_s, geohash(32, -79)," + Constants.EARTH_RADIUS_KM +
-            ")", "fq", "id:1"), "//float[@name='score']='122.30894'");
+    assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + Constants.EARTH_RADIUS_KM + ", gh_s, \"" + GeoHashUtils.encode(32, -79) +
+            "\",)", "fq", "id:1"), "//float[@name='score']='122.30894'");
+    assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + Constants.EARTH_RADIUS_KM + ", gh_s, geohash(32, -79))", "fq", "id:1"), "//float[@name='score']='122.30894'");
   }
 
   public void testVector() throws Exception {
@@ -66,6 +67,8 @@ public class DistanceFunctionTest extends AbstractSolrTestCase {
     assertU(adoc("id", "3", "x_td", "1", "y_td", "1", "z_td", "1", "w_td", "1"));
     assertU(adoc("id", "4", "x_td", "1", "y_td", "0", "z_td", "0", "w_td", "0"));
     assertU(adoc("id", "5", "x_td", "2.3", "y_td", "5.5", "z_td", "7.9", "w_td", "-2.4"));
+    assertU(adoc("id", "6", "point", "1.0,0.0"));
+    assertU(adoc("id", "7", "point", "5.5,10.9"));
     assertU(commit());
     //two dimensions, notice how we only pass in 4 value sources
     assertQ(req("fl", "*,score", "q", "{!func}sqedist(x_td, y_td, 0, 0)", "fq", "id:1"), "//float[@name='score']='0.0'");
@@ -111,6 +114,15 @@ public class DistanceFunctionTest extends AbstractSolrTestCase {
     assertQ(req("fl", "*,score", "q", "{!func}dist(1, x_td, y_td, 0, 0)", "fq", "id:3"), "//float[@name='score']='" + (float) 2.0 + "'");
     assertQ(req("fl", "*,score", "q", "{!func}dist(1, x_td, y_td, 0, 0)", "fq", "id:4"), "//float[@name='score']='1.0'");
     assertQ(req("fl", "*,score", "q", "{!func}dist(1, x_td, y_td, 0, 0)", "fq", "id:5"), "//float[@name='score']='" + (float) (2.3 + 5.5) + "'");
+
+
+    //Do point tests:
+    assertQ(req("fl", "*,score", "q", "{!func}dist(1, toMultiVS(x_td, y_td), toMultiVS(0, 0))", "fq", "id:5"),
+            "//float[@name='score']='" + (float) (2.3 + 5.5) + "'");
+
+    assertQ(req("fl", "*,score", "q", "{!func}dist(1, point, toMultiVS(0, 0))", "fq", "id:6"),
+            "//float[@name='score']='" + 0.0f + "'");
+
   }
 
 }

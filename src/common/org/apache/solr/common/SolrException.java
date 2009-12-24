@@ -38,7 +38,7 @@ public class SolrException extends RuntimeException {
     SERVER_ERROR( 500 ),
     SERVICE_UNAVAILABLE( 503 ),
     UNKNOWN(0);
-    final int code;
+    public final int code;
     
     private ErrorCode( int c )
     {

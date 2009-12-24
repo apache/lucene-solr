@@ -28,6 +28,8 @@
   <field name="price">19.95</field>
   <field name="popularity">1</field>
   <field name="inStock">false</field>
+  <!-- Buffalo store -->
+  <field name="store">45.17614,-93.87341</field>
   <field name="manufacturedate_dt">2005-08-01T16:30:25Z</field>
 </doc>
 
@@ -42,6 +44,8 @@
   <field name="price">11.50</field>
   <field name="popularity">1</field>
   <field name="inStock">false</field>
+  <!-- San Francisco store -->
+  <field name="store">37.7752,-122.4232</field>
   <field name="manufacturedate_dt">2006-02-14T23:55:59Z</field>
 </doc>
 

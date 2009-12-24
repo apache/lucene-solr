@@ -26,6 +26,8 @@
   <field name="price">185</field>
   <field name="popularity">5</field>
   <field name="inStock">true</field>
+  <!-- San Francisco store -->
+  <field name="store">37.7752,-122.4232</field>
   <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
 </doc>
 
@@ -38,6 +40,8 @@
   <field name="price">74.99</field>
   <field name="popularity">7</field>
   <field name="inStock">true</field>
+  <!-- San Francisco store -->
+  <field name="store">37.7752,-122.4232</field>
   <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
 </doc>
 
@@ -51,6 +55,8 @@
   <!-- note: price & popularity is missing on this one -->
   <field name="popularity">0</field>
   <field name="inStock">true</field>
+  <!-- Buffalo store -->
+  <field name="store">45.17614,-93.87341</field>
   <field name="manufacturedate_dt">2006-02-13T15:26:37Z</field>
 </doc>
 
