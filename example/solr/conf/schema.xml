@@ -404,6 +404,8 @@
         indexed in fields myloc_0___double,myloc_1___double.
       Example: if subFieldSuffix="_d" then the coordinates would be indexed
         in fields myloc_0_d,myloc_1_d
+      The subFields are an implementation detail of the fieldType, and end
+      users normally should not need to know about them.
      -->
     <fieldType name="location" class="solr.PointType" dimension="2" subFieldType="double"/>
 
