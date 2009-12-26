@@ -64,7 +64,7 @@ public class NIOFSDirectory extends FSDirectory {
   @Override
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
-    return new NIOFSIndexInput(new File(getFile(), name), bufferSize, getReadChunkSize());
+    return new NIOFSIndexInput(new File(getDirectory(), name), bufferSize, getReadChunkSize());
   }
 
   /** Creates an IndexOutput for the file with the given name. */

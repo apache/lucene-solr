@@ -401,7 +401,7 @@ public class MMapDirectory extends FSDirectory {
   @Override
   public IndexInput openInput(String name, int bufferSize) throws IOException {
     ensureOpen();
-    File f =  new File(getFile(), name);
+    File f =  new File(getDirectory(), name);
     RandomAccessFile raf = new RandomAccessFile(f, "r");
     try {
       return (raf.length() <= (long) maxBBuf)
