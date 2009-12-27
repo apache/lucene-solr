@@ -121,7 +121,7 @@ public class DistanceFunctionTest extends AbstractSolrTestCase {
             "//float[@name='score']='" + (float) (2.3 + 5.5) + "'");
 
     assertQ(req("fl", "*,score", "q", "{!func}dist(1, point, toMultiVS(0, 0))", "fq", "id:6"),
-            "//float[@name='score']='" + 0.0f + "'");
+            "//float[@name='score']='" + 1.0f + "'");
 
   }
 
