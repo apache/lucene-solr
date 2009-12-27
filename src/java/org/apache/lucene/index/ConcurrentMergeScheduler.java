@@ -89,7 +89,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
     maxThreadCount = count;
   }
 
-  /** @see #setMaxThreadCount. */
+  /** @see #setMaxThreadCount(int) */
   public int getMaxThreadCount() {
     return maxThreadCount;
   }
