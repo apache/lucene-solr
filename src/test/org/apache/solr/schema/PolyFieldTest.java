@@ -143,10 +143,10 @@ public class PolyFieldTest extends AbstractSolrTestCase {
             "//*[@numFound='1']",
             "//str[@name='homed'][.='1000,10000']");
     assertQ(req("fl", "*,score", "q",
-            "{!func}sqedist(home, toMultiVS(0, 0))"),
+            "{!func}sqedist(home, vector(0, 0))"),
             "\"//*[@numFound='50']\"");
     assertQ(req("fl", "*,score", "q",
-            "{!func}dist(2, home, toMultiVS(0, 0))"),
+            "{!func}dist(2, home, vector(0, 0))"),
             "\"//*[@numFound='50']\"");
 
     assertQ(req("fl", "*,score", "q",

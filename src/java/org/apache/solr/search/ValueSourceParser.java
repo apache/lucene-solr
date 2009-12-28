@@ -203,9 +203,9 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         };
       }
     });
-    addParser("toMultiVS", new ValueSourceParser(){
+    addParser("vector", new ValueSourceParser(){
       public ValueSource parse(FunctionQParser fp) throws ParseException{
-        return new ToMultiValueSource(fp.parseValueSourceList());
+        return new VectorValueSource(fp.parseValueSourceList());
       }
     });
     addParser("query", new ValueSourceParser() {
@@ -240,13 +240,13 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           List<ValueSource> s1 = new ArrayList<ValueSource>();
           s1.add(one);
           s1.add(two);
-          pv1 = new ToMultiValueSource(s1);
+          pv1 = new VectorValueSource(s1);
           ValueSource x2 = fp.parseValueSource();
           ValueSource y2 = fp.parseValueSource();
           List<ValueSource> s2 = new ArrayList<ValueSource>();
           s2.add(x2);
           s2.add(y2);
-          pv2 = new ToMultiValueSource(s2);
+          pv2 = new VectorValueSource(s2);
         } else {
           //check to see if we have multiValue source
           if (one instanceof MultiValueSource && two instanceof MultiValueSource){
@@ -482,8 +482,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         //if one is a MultiValueSource, than the other one needs to be too.
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Illegal number of sources.  There must be an even number of sources");
       } else {
-        mvr.mv1 = new ToMultiValueSource(Collections.singletonList(sources.get(0)));
-        mvr.mv2 = new ToMultiValueSource(Collections.singletonList(sources.get(1)));
+        mvr.mv1 = new VectorValueSource(Collections.singletonList(sources.get(0)));
+        mvr.mv2 = new VectorValueSource(Collections.singletonList(sources.get(1)));
       }
     } else {
       int dim = sources.size() / 2;
@@ -491,8 +491,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       List<ValueSource> sources2 = new ArrayList<ValueSource>(dim);
       //Get dim value sources for the first vector
       splitSources(dim, sources, sources1, sources2);
-      mvr.mv1 = new ToMultiValueSource(sources1);
-      mvr.mv2 = new ToMultiValueSource(sources2);
+      mvr.mv1 = new VectorValueSource(sources1);
+      mvr.mv2 = new VectorValueSource(sources2);
     }
 
     return mvr;

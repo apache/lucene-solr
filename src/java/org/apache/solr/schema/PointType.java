@@ -19,21 +19,17 @@ package org.apache.solr.schema;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.TextResponseWriter;
 import org.apache.solr.request.XMLWriter;
-import org.apache.solr.search.MultiValueSource;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.ToMultiValueSource;
-import org.apache.solr.search.function.DocValues;
+import org.apache.solr.search.VectorValueSource;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.distance.DistanceUtils;
 
@@ -176,7 +172,7 @@ public class PointType extends CoordinateFieldType {
 }
 
 
-class PointTypeValueSource extends ToMultiValueSource {
+class PointTypeValueSource extends VectorValueSource {
   private final SchemaField sf;
   
   public PointTypeValueSource(SchemaField sf, List<ValueSource> sources) {

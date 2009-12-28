@@ -117,10 +117,10 @@ public class DistanceFunctionTest extends AbstractSolrTestCase {
 
 
     //Do point tests:
-    assertQ(req("fl", "*,score", "q", "{!func}dist(1, toMultiVS(x_td, y_td), toMultiVS(0, 0))", "fq", "id:5"),
+    assertQ(req("fl", "*,score", "q", "{!func}dist(1, vector(x_td, y_td), vector(0, 0))", "fq", "id:5"),
             "//float[@name='score']='" + (float) (2.3 + 5.5) + "'");
 
-    assertQ(req("fl", "*,score", "q", "{!func}dist(1, point, toMultiVS(0, 0))", "fq", "id:6"),
+    assertQ(req("fl", "*,score", "q", "{!func}dist(1, point, vector(0, 0))", "fq", "id:6"),
             "//float[@name='score']='" + 1.0f + "'");
 
   }

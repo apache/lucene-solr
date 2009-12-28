@@ -31,11 +31,11 @@ import java.util.Map;
  * i.e. {@link org.apache.solr.search.function.DocValues#doubleVal(int, double[])}
  */
 //Not crazy about the name, but...
-public class ToMultiValueSource extends MultiValueSource {
+public class VectorValueSource extends MultiValueSource {
   protected List<ValueSource> sources;
 
 
-  public ToMultiValueSource(List<ValueSource> sources) {
+  public VectorValueSource(List<ValueSource> sources) {
     this.sources = sources;
   }
 
@@ -48,7 +48,7 @@ public class ToMultiValueSource extends MultiValueSource {
   }
 
   public String name() {
-    return "toMultiVS";
+    return "vector";
   }
 
   @Override
@@ -202,9 +202,9 @@ public class ToMultiValueSource extends MultiValueSource {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof ToMultiValueSource)) return false;
+    if (!(o instanceof VectorValueSource)) return false;
 
-    ToMultiValueSource that = (ToMultiValueSource) o;
+    VectorValueSource that = (VectorValueSource) o;
 
     if (!sources.equals(that.sources)) return false;
 
