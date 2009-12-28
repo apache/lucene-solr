@@ -17,10 +17,7 @@ package org.apache.solr.search.function.distance;
  */
 
 import org.apache.solr.search.function.DocValues;
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.MultiValueSource;
-
-import java.util.List;
+import org.apache.solr.search.function.MultiValueSource;
 
 
 /**

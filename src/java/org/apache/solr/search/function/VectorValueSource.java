@@ -1,4 +1,4 @@
-package org.apache.solr.search;
+package org.apache.solr.search.function;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Searcher;
+import org.apache.solr.search.function.MultiValueSource;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.ValueSource;
 

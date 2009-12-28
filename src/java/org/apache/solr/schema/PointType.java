@@ -29,7 +29,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.TextResponseWriter;
 import org.apache.solr.request.XMLWriter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.VectorValueSource;
+import org.apache.solr.search.function.VectorValueSource;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.distance.DistanceUtils;
 
