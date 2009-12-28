@@ -287,7 +287,7 @@ public abstract class PerfTask implements Cloneable {
 
   /**
    * Sub classes that supports parameters must override this method to return true.
-   * @return true iff this task supports command line params.
+   * @return true if this task supports command line params.
    */
   public boolean supportsParams () {
     return false;

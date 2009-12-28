@@ -80,7 +80,7 @@ public class InstantiatedTermPositions
 
   /**
    * Skips entries to the first beyond the current whose document number is
-   * greater than or equal to <currentTermPositionIndex>target</currentTermPositionIndex>. <p>Returns true iff there is such
+   * greater than or equal to <currentTermPositionIndex>target</currentTermPositionIndex>. <p>Returns true if there is such
    * an entry.  <p>Behaves as if written: <pre>
    *   boolean skipTo(int target) {
    *     do {
