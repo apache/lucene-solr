@@ -133,7 +133,7 @@ public class ExtendableQueryParser extends QueryParser {
     final ParserExtension extension = this.extensions
         .getExtension(splitExtensionField.cud);
     if (extension != null) {
-      return extension.parse(new ExtensionQuery(splitExtensionField.cur,
+      return extension.parse(new ExtensionQuery(this, splitExtensionField.cur,
           queryText));
     }
     return super.getFieldQuery(field, queryText);

@@ -1,5 +1,7 @@
 package org.apache.lucene.queryParser.ext;
 
+import org.apache.lucene.queryParser.QueryParser;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -29,6 +31,7 @@ public class ExtensionQuery {
 
   private final String field;
   private final String rawQueryString;
+  private final QueryParser topLevelParser;
 
   /**
    * Creates a new {@link ExtensionQuery}
@@ -38,9 +41,10 @@ public class ExtensionQuery {
    * @param rawQueryString
    *          the raw extension query string
    */
-  public ExtensionQuery(String field, String rawQueryString) {
+  public ExtensionQuery(QueryParser topLevelParser, String field, String rawQueryString) {
     this.field = field;
     this.rawQueryString = rawQueryString;
+    this.topLevelParser = topLevelParser;
   }
 
   /**
@@ -59,5 +63,13 @@ public class ExtensionQuery {
    */
   public String getRawQueryString() {
     return rawQueryString;
+  }
+  
+  /**
+   * Returns the top level parser which created this {@link ExtensionQuery} 
+   * @return the top level parser which created this {@link ExtensionQuery}
+   */
+  public QueryParser getTopLevelParser() {
+    return topLevelParser;
   }
 }
