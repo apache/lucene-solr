@@ -4633,6 +4633,7 @@ public class TestIndexWriter extends LuceneTestCase {
     for(int i=0;i<NUM_THREADS;i++) {
       final int finalI = i;
       threads[i] = new Thread() {
+          @Override
           public void run() {
             try {
               final Document doc = new Document();

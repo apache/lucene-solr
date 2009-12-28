@@ -28,6 +28,7 @@ class InstantiatedAllTermDocs extends AbstractAllTermDocs {
     this.reader = reader;
   }
 
+  @Override
   public boolean isDeleted(int doc) {
     return reader.isDeleted(doc);
   }

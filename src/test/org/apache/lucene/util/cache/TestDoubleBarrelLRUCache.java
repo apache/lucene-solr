@@ -37,6 +37,7 @@ public class TestDoubleBarrelLRUCache extends BaseTestLRU {
       this.endTime = endTime;
     }
 
+    @Override
     public void run() {
       try {
         long count = 0;

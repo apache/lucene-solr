@@ -156,6 +156,7 @@ public class TaskSequence extends PerfTask {
       return count;
     }
 
+    @Override
     public void run() {
       try {
         count = task.runAndMaybeStats(letChildReport);

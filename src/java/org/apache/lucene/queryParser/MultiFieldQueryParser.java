@@ -96,6 +96,7 @@ public class MultiFieldQueryParser extends QueryParser
     this.fields = fields;
   }
   
+  @Override
   protected Query getFieldQuery(String field, String queryText, int slop) throws ParseException {
     if (field == null) {
       List<BooleanClause> clauses = new ArrayList<BooleanClause>();
@@ -132,11 +133,13 @@ public class MultiFieldQueryParser extends QueryParser
   }
   
 
+  @Override
   protected Query getFieldQuery(String field, String queryText) throws ParseException {
     return getFieldQuery(field, queryText, 0);
   }
 
 
+  @Override
   protected Query getFuzzyQuery(String field, String termStr, float minSimilarity) throws ParseException
   {
     if (field == null) {
@@ -150,6 +153,7 @@ public class MultiFieldQueryParser extends QueryParser
     return super.getFuzzyQuery(field, termStr, minSimilarity);
   }
 
+  @Override
   protected Query getPrefixQuery(String field, String termStr) throws ParseException
   {
     if (field == null) {
@@ -163,6 +167,7 @@ public class MultiFieldQueryParser extends QueryParser
     return super.getPrefixQuery(field, termStr);
   }
 
+  @Override
   protected Query getWildcardQuery(String field, String termStr) throws ParseException {
     if (field == null) {
       List<BooleanClause> clauses = new ArrayList<BooleanClause>();
@@ -176,6 +181,7 @@ public class MultiFieldQueryParser extends QueryParser
   }
 
  
+  @Override
   protected Query getRangeQuery(String field, String part1, String part2, boolean inclusive) throws ParseException {
     if (field == null) {
       List<BooleanClause> clauses = new ArrayList<BooleanClause>();
