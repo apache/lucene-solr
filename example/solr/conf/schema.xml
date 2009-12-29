@@ -417,7 +417,7 @@
     <fieldtype name="geohash" class="solr.GeoHashField"/>
 
     <!--
-      A SpatialTielField is like a set of zoom levels on an interactive map (i.e. Google Maps or MapQuest).  It takes a lat/lon
+      A SpatialTileField is like a set of zoom levels on an interactive map (i.e. Google Maps or MapQuest).  It takes a lat/lon
       field and indexes it into (end - start) different fields, each representing a different zoom level.
       This can then be leveraged to quickly narrow the search space by creating a filter, at an appropriate tier level,
       that only has to enumerate a minimum number of terms.
