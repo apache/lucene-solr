@@ -54,7 +54,7 @@ public class WeightedSpanTerm extends WeightedTerm{
    *
    * @param position
    *            to check against valid term positions
-   * @return true if this term is a hit at this position
+   * @return true iff this term is a hit at this position
    */
   public boolean checkPosition(int position) {
     // There would probably be a slight speed improvement if PositionSpans
