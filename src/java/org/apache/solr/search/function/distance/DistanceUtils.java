@@ -20,7 +20,8 @@ import org.apache.solr.common.SolrException;
 
 
 /**
- * Useful distance utiltities
+ * Useful distance utiltities.
+ * solr-internal: subject to change w/o notification.
  *
  **/
 public class DistanceUtils {
