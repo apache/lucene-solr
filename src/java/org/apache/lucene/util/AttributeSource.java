@@ -64,9 +64,9 @@ public class AttributeSource {
         try {
           return getClassForInterface(attClass).newInstance();
         } catch (InstantiationException e) {
-          throw new IllegalArgumentException("Could not instantiate class " + attClass.getName());
+          throw new IllegalArgumentException("Could not instantiate implementing class for " + attClass.getName());
         } catch (IllegalAccessException e) {
-          throw new IllegalArgumentException("Could not instantiate class " + attClass.getName());
+          throw new IllegalArgumentException("Could not instantiate implementing class for " + attClass.getName());
         }
       }
       
@@ -75,7 +75,10 @@ public class AttributeSource {
           Class<? extends AttributeImpl> clazz = attClassImplMap.get(attClass);
           if (clazz == null) {
             try {
-              attClassImplMap.put(attClass, clazz = Class.forName(attClass.getName() + "Impl").asSubclass(AttributeImpl.class));
+              attClassImplMap.put(attClass,
+                clazz = Class.forName(attClass.getName() + "Impl", true, attClass.getClassLoader())
+                .asSubclass(AttributeImpl.class)
+              );
             } catch (ClassNotFoundException e) {
               throw new IllegalArgumentException("Could not find implementing class for " + attClass.getName());
             }
