@@ -83,6 +83,10 @@ Bug fixes
 * LUCENE-2158: At high indexing rates, NRT reader could temporarily
   lose deletions.  (Mike McCandless)
   
+* LUCENE-2182: DEFAULT_ATTRIBUTE_FACTORY was failing to load
+  implementation class when interface was loaded by a different
+  class loader.  (Uwe Schindler, reported on java-user by Ahmed El-dawy)
+  
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
