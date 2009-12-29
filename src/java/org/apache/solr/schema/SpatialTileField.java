@@ -37,9 +37,9 @@ import org.apache.solr.search.function.distance.DistanceUtils;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
 
 
 /**
@@ -50,7 +50,7 @@ import java.util.ArrayList;
  * <p/>
  * Querying directly against this field is probably not all that useful unless you specifically know the box id
  * <p/>
- *
+ * <p/>
  * See http://wiki.apache.org/solr/SpatialSearch
  */
 public class SpatialTileField extends AbstractSubTypeFieldType implements ResourceLoaderAware {
@@ -64,7 +64,7 @@ public class SpatialTileField extends AbstractSubTypeFieldType implements Resour
   private static final int DEFAULT_START_LEVEL = 4;
 
   private int start = DEFAULT_START_LEVEL, end = DEFAULT_END_LEVEL;
-  private int tileDiff = DEFAULT_END_LEVEL - DEFAULT_START_LEVEL;//we're going to need this over and over, so cache it.
+  private int tileDiff;//we're going to need this over and over, so cache it.
   private String projectorName;
   protected List<CartesianTierPlotter> plotters;
 
@@ -83,6 +83,7 @@ public class SpatialTileField extends AbstractSubTypeFieldType implements Resour
     args.remove(START_LEVEL);
     args.remove(END_LEVEL);
     projectorName = p.get(PROJECTOR_CLASS, SinusoidalProjector.class.getName());
+    args.remove(PROJECTOR_CLASS);
     super.init(schema, args);
     tileDiff = (end - start) + 1;//add one since we are inclusive of the upper tier
     createSuffixCache(tileDiff);
@@ -128,6 +129,7 @@ public class SpatialTileField extends AbstractSubTypeFieldType implements Resour
 
   //The externalVal here is a box id, as it doesn't make sense to pick a specific tile since that requires a distance
   //so, just OR together a search against all the tile
+
   @Override
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive,
                              boolean maxInclusive) {
@@ -180,6 +182,7 @@ public class SpatialTileField extends AbstractSubTypeFieldType implements Resour
   }
 
   //It never makes sense to create a single field, so make it impossible to happen
+
   @Override
   public Field createField(SchemaField field, String externalVal, float boost) {
     throw new UnsupportedOperationException("SpatialTileField uses multiple fields.  field=" + field.getName());
