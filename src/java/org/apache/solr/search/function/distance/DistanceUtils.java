@@ -92,4 +92,36 @@ public class DistanceUtils {
     }
     return out;
   }
+
+  /**
+   * extract (by calling {@link #parsePoint(String[], String, int)} and validate the latitude and longitude contained
+   * in the String by making sure the latitude is between 90 & -90 and longitude is between -180 and 180
+   * @param latLon A preallocated array to hold the result
+   * @param latLonStr The string to parse
+   * @return The lat long
+   */
+  public static final double[] parseLatitudeLongitude(double [] latLon, String latLonStr) {
+    if (latLon == null){
+      latLon = new double[2];
+    }
+    String[] toks = DistanceUtils.parsePoint(null, latLonStr, 2);
+    latLon[0] = Double.valueOf(toks[0]);
+
+    if (latLon[0] < -90.0 || latLon[0] > 90.0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Invalid latitude: latitudes are range -90 to 90: provided lat: ["
+                      + latLon[0] + "]");
+    }
+
+    latLon[1] = Double.valueOf(toks[1]);
+
+    if (latLon[1] < -180.0 || latLon[1] > 180.0) {
+
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Invalid longitude: longitudes are range -180 to 180: provided lon: ["
+                      + latLon[1] + "]");
+    }
+
+    return latLon;
+  }
 }

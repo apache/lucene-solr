@@ -46,14 +46,6 @@ import java.util.ArrayList;
  * NOTE: There can only be one sub type
  */
 public class PointType extends CoordinateFieldType {
-  /**
-   * 2 dimensional by default
-   */
-  public static final int DEFAULT_DIMENSION = 2;
-  public static final String DIMENSION = "dimension";
-
-  protected IndexSchema schema;   // needed for retrieving SchemaFields
-  protected String[] suffixes;
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
@@ -68,14 +60,7 @@ public class PointType extends CoordinateFieldType {
     super.init(schema, args);
 
     // cache suffixes
-    suffixes = new String[dimension];
-    for (int i=0; i<dimension; i++) {
-      suffixes[i] = "_" + i + suffix;
-    }
-  }
-
-  protected SchemaField subField(SchemaField base, int i) {
-    return schema.getField(base.getName() + suffixes[i]);
+    createSuffixCache(dimension);
   }
 
 
@@ -109,7 +94,7 @@ public class PointType extends CoordinateFieldType {
 
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
-    ArrayList<ValueSource> vs = new ArrayList(dimension);
+    ArrayList<ValueSource> vs = new ArrayList<ValueSource>(dimension);
     for (int i=0; i<dimension; i++) {
       SchemaField sub = subField(field, i);
       vs.add(sub.getType().getValueSource(sub, parser));
@@ -136,7 +121,7 @@ public class PointType extends CoordinateFieldType {
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Sorting not suported on DualPointType " + field.getName());
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Sorting not suported on PointType " + field.getName());
   }
 
   @Override

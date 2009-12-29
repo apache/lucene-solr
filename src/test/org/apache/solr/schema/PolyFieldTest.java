@@ -24,6 +24,8 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.spatial.tier.CartesianPolyFilterBuilder;
+import org.apache.lucene.spatial.tier.Shape;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.common.SolrException;
@@ -31,6 +33,7 @@ import org.apache.solr.search.function.ValueSource;
 
 import java.util.Map;
 import java.util.Random;
+import java.util.List;
 
 
 /**
@@ -123,10 +126,10 @@ public class PolyFieldTest extends AbstractSolrTestCase {
     //
     SchemaField s1 = schema.getField("test_p");
     SchemaField s2 = schema.getField("test_p");
-    ValueSource v1 = s1.getType().getValueSource(s1,null);
-    ValueSource v2 = s2.getType().getValueSource(s2,null);
-    assertEquals(v1,v2);
-    assertEquals(v1.hashCode(),v2.hashCode());
+    ValueSource v1 = s1.getType().getValueSource(s1, null);
+    ValueSource v2 = s2.getType().getValueSource(s2, null);
+    assertEquals(v1, v2);
+    assertEquals(v1.hashCode(), v2.hashCode());
   }
 
   public void testSearching() throws Exception {
@@ -156,12 +159,11 @@ public class PolyFieldTest extends AbstractSolrTestCase {
             "homed:[1,1000 TO 2000,35000]"),
             "\"//*[@numFound='2']\"");
     //bad
-    
+
     assertQEx("Query should throw an exception due to incorrect dimensions", req("fl", "*,score", "q",
             "homed:[1 TO 2000]"), SolrException.ErrorCode.BAD_REQUEST);
   }
 
-  
 
   public void testSearchDetails() throws Exception {
     SolrCore core = h.getCore();
@@ -184,4 +186,40 @@ public class PolyFieldTest extends AbstractSolrTestCase {
     assertEquals(clauses.length, 2);
 
   }
+
+
+  public void testCartesian() throws Exception {
+    for (int i = 40; i < 50; i++) {
+      for (int j = -85; j < -79; j++) {
+        assertU(adoc("id", "" + i, "home_tier",
+                i + "," + j));
+      }
+    }
+    assertU(commit());
+    CartesianPolyFilterBuilder cpfb = new CartesianPolyFilterBuilder("");
+    //Get the box based on this point and our distance
+    final Shape shape = cpfb.getBoxShape(45, -80, 10);//There's a bit of a bug in here that requires a small tier filter here.
+    final List<Double> boxIds = shape.getArea();
+    //do a box id search
+    StringBuilder qry = new StringBuilder();
+    boolean first = true;
+    for (Double boxId : boxIds) {
+      if (first == true){
+        first = false;
+      } else {
+        qry.append(" OR ");
+      }
+      qry.append("home_tier:");
+      if (boxId < 0) {
+        qry.append('\\').append(boxId);
+      } else {
+        qry.append(boxId);
+      }
+    }
+
+    assertQ(req("fl", "*,score", "q", qry.toString()),
+            "//*[@numFound='1']");
+
+  }
+
 }

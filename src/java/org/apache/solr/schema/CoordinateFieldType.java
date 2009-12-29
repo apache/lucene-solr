@@ -47,84 +47,19 @@ import java.util.HashMap;
  * NOTE: There can only be one sub Field Type.
  *
  */
-public abstract class CoordinateFieldType extends FieldType implements SchemaAware  {
+public abstract class CoordinateFieldType extends AbstractSubTypeFieldType {
   /**
    * The dimension of the coordinate system
    */
   protected int dimension;
-  protected FieldType subType;
-  public static final String SUB_FIELD_SUFFIX = "subFieldSuffix";
-  public static final String SUB_FIELD_TYPE = "subFieldType";
-  protected String suffix;
-  protected int dynFieldProps;
+  /**
+   * 2 dimensional by default
+   */
+  public static final int DEFAULT_DIMENSION = 2;
+  public static final String DIMENSION = "dimension";
+
 
   public int getDimension() {
     return dimension;
   }
-
-  public FieldType getSubType() {
-    return subType;
-  }
-
-  @Override
-  protected void init(IndexSchema schema, Map<String, String> args) {
-
-    //it's not a first class citizen for the IndexSchema
-    SolrParams p = new MapSolrParams(args);
-    String subFT = p.get(SUB_FIELD_TYPE);
-    String subSuffix = p.get(SUB_FIELD_SUFFIX);
-    if (subFT != null) {
-      args.remove(SUB_FIELD_TYPE);
-      subType = schema.getFieldTypeByName(subFT.trim());
-      suffix = POLY_FIELD_SEPARATOR + subType.typeName;      
-    } else if (subSuffix != null) {
-      args.remove(SUB_FIELD_SUFFIX);
-      suffix = subSuffix;
-    }else {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The field type: " + typeName
-              + " must specify the " +
-      SUB_FIELD_TYPE + " attribute or the " + SUB_FIELD_SUFFIX + " attribute.");
-    }
-
-    super.init(schema, args);
-  }
-
-  public void inform(IndexSchema schema) {
-    //Can't do this until here b/c the Dynamic Fields are not initialized until here.
-    if (subType != null) {
-      SchemaField proto = registerPolyFieldDynamicPrototype(schema, subType);
-      dynFieldProps = proto.getProperties();
-    }
-  }
-
-  /**
-   * Helper method for creating a dynamic field SchemaField prototype.  Returns a {@link org.apache.solr.schema.SchemaField} with
-   * the {@link org.apache.solr.schema.FieldType} given and a name of "*" + {@link org.apache.solr.schema.FieldType#POLY_FIELD_SEPARATOR} + {@link org.apache.solr.schema.FieldType#typeName}
-   * and props of indexed=true, stored=false.
-   * @param schema the IndexSchema
-   * @param type The {@link org.apache.solr.schema.FieldType} of the prototype.
-   * @return The {@link org.apache.solr.schema.SchemaField}
-   */
-
-  static SchemaField registerPolyFieldDynamicPrototype(IndexSchema schema, FieldType type){
-    String name = "*" + FieldType.POLY_FIELD_SEPARATOR + type.typeName;
-    Map<String, String> props = new HashMap<String, String>();
-    //Just set these, delegate everything else to the field type
-    props.put("indexed", "true");
-    props.put("stored", "false");
-    int p = SchemaField.calcProps(name, type, props);
-    SchemaField proto = SchemaField.create(name,
-            type, p, null);
-    schema.registerDynamicField(proto);
-    return proto;
-  }
-
-
-  /**
-   * Throws UnsupportedOperationException()
-   */
-  public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    throw new UnsupportedOperationException();
-  }
-
 }

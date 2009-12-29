@@ -255,6 +255,8 @@
     <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
     <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="*_d"/>
 
+    <fieldtype name="geohash" class="solr.GeoHashField"/>
+
  </types>
 
 
@@ -284,6 +286,8 @@
    <!-- Test a point field for distances -->
    <field name="point" type="xy" indexed="true" stored="true" multiValued="false"/>
    <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
+
+   <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
 
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.

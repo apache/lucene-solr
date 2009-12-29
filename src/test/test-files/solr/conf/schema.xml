@@ -373,7 +373,9 @@
   <fieldType name="tenD" class="solr.PointType" dimension="10" subFieldType="double"/>
     <!-- Use the sub field suffix -->
   <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="*_d"/>
-  
+
+  <fieldType name="tier" class="solr.SpatialTileField" start="4" end="15" subFieldType="double"/>
+
  </types>
 
 
@@ -404,6 +406,8 @@
    <field name="homed" type="xyd" indexed="true" stored="true" multiValued="false"/>
    <field name="home_ns" type="xy" indexed="true" stored="false" multiValued="false"/>
    <field name="work" type="xy" indexed="true" stored="true" multiValued="false"/>
+
+   <field name="home_tier" type="tier" indexed="true" stored="true" multiValued="false"/>
 
    <field name="point10" type="tenD" indexed="true" stored="true" multiValued="false"/>
 

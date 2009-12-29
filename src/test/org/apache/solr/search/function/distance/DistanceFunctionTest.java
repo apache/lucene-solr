@@ -46,6 +46,8 @@ public class DistanceFunctionTest extends AbstractSolrTestCase {
     assertU(adoc("id", "4", "x_td", String.valueOf(Math.PI / 4), "y_td", String.valueOf(Math.PI / 4), "gh_s", GeoHashUtils.encode(32.7693246, -81.9289094)));
     assertU(adoc("id", "5", "x_td", "45.0", "y_td", "45.0",
             "gh_s", GeoHashUtils.encode(32.7693246, -81.9289094)));
+    assertU(adoc("id", "6", "point_hash", "32.5, -79.0"));
+    assertU(adoc("id", "7", "point_hash", "32.6, -78.0"));
     assertU(commit());
     //Get the haversine distance between the point 0,0 and the docs above assuming a radius of 1
     assertQ(req("fl", "*,score", "q", "{!func}hsin(1, x_td, y_td, 0, 0)", "fq", "id:1"), "//float[@name='score']='0.0'");
@@ -58,6 +60,14 @@ public class DistanceFunctionTest extends AbstractSolrTestCase {
     //Can verify here: http://www.movable-type.co.uk/scripts/latlong.html, but they use a slightly different radius for the earth, so just be close
     assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + Constants.EARTH_RADIUS_KM + ", gh_s, \"" + GeoHashUtils.encode(32, -79) +
             "\",)", "fq", "id:1"), "//float[@name='score']='122.30894'");
+
+    assertQ(req("fl", "id,point_hash,score", "q", "{!func}recip(ghhsin(" + Constants.EARTH_RADIUS_KM + ", point_hash, \"" + GeoHashUtils.encode(32, -79) + "\"), 1, 1, 0)"),
+            "//*[@numFound='7']", 
+            "//result/doc[1]/float[@name='id'][.='6.0']",
+            "//result/doc[2]/float[@name='id'][.='7.0']"//all the rest don't matter
+            );
+
+
     assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + Constants.EARTH_RADIUS_KM + ", gh_s, geohash(32, -79))", "fq", "id:1"), "//float[@name='score']='122.30894'");
   }
 
