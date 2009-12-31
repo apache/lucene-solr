@@ -36,6 +36,13 @@ input.std, textarea.std {
    max-width:450px;
 }
 
+input.big, textarea.big {
+   color: black;
+   border: 2px inset #ff9933;
+   background-color: #ffffff;
+   width:100%;
+}
+
 input.stdbutton {
    font-family: ITC Officina Sans Book, Helvetica, Arial, sans-serif;
    font-style: bold;

@@ -37,21 +37,25 @@ public class ZooKeeperController {
 
   private String shardAddress;
 
+  private String zooKeeperHost;
+
   /**
-   * @param zookeeperHost ZooKeeper host service
+   * @param zooKeeperHost ZooKeeper host service
    * @param shardAddress
    * @param zkClientTimeout
    * @param zkSolrPathPrefix Solr ZooKeeper node (default is /solr)
    */
-  public ZooKeeperController(String zookeeperHost, String collection,
+  public ZooKeeperController(String zooKeeperHost, String collection,
       String shardAddress, int zkClientTimeout) {
     this.collectionName = collection;
     this.shardAddress = shardAddress;
+    this.zooKeeperHost = zooKeeperHost;
+    
     CountdownWatcher countdownWatcher = new CountdownWatcher(
         "ZooKeeperController");
     System.out.println("timeout:" + zkClientTimeout);
     try {
-      keeper = new ZooKeeper(zookeeperHost, zkClientTimeout, countdownWatcher);
+      keeper = new ZooKeeper(zooKeeperHost, zkClientTimeout, countdownWatcher);
 
       countdownWatcher.waitForConnected(5000);
 
@@ -192,5 +196,13 @@ public class ZooKeeperController {
     } catch (InterruptedException e) {
       // nocommit: handle
     }
+  }
+
+  public ZooKeeper getZooKeeper() {
+    return keeper;
+  }
+
+  public String getZooKeeperHost() {
+    return zooKeeperHost;
   }
 }
