@@ -331,7 +331,7 @@ public final class ZooKeeperController {
    */
   public void registerShard(SolrCore core) {
     String coreName = core.getCoreDescriptor().getName();
-    String shardUrl = zooKeeperHost + ":" + hostPort + "/" + hostContext + "/"
+    String shardUrl = zooKeeperHostName + ":" + hostPort + "/" + hostContext + "/"
         + coreName;
 
     // nocommit:
