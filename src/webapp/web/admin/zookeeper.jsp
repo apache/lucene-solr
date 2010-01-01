@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 --%>
-<%@ page import="javax.servlet.jsp.JspWriter,java.io.IOException,org.apache.zookeeper.*,org.apache.zookeeper.data.Stat,org.apache.solr.core.*,org.apache.solr.common.util.*
+<%@ page import="javax.servlet.jsp.JspWriter,java.io.IOException,org.apache.zookeeper.*,org.apache.zookeeper.data.Stat,org.apache.solr.core.*,org.apache.solr.cloud.*,org.apache.solr.common.util.*
                 "%>
 <%@ page import="java.io.*"%>
 <%@ page import="java.util.*"%>
