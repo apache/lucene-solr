@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 public class ZooKeeperWriter {
   private static Logger log = LoggerFactory.getLogger(ZooKeeperWriter.class);
 
-  private ZooKeeper keeper;
+  private ZooKeeperConnection keeperConnection;
 
   private boolean closeKeeper;
 
@@ -52,21 +52,17 @@ public class ZooKeeperWriter {
   ZooKeeperWriter(String zooKeeperHost, int zkClientTimeout)
       throws IOException, InterruptedException, TimeoutException {
     closeKeeper = true;
-    CountdownWatcher countdownWatcher = new CountdownWatcher("ZooKeeperWriter", new ReconnectionHandler() {
-      @Override
-      public boolean handleReconnect() throws IOException {
-        return false;
-      }
-    });
-    keeper = new ZooKeeper(zooKeeperHost, zkClientTimeout, countdownWatcher);
-    countdownWatcher.waitForConnected(5000);
+    
+    keeperConnection = new ZooKeeperConnection(zooKeeperHost, zkClientTimeout);
+    keeperConnection.connect();
   }
 
+
   /**
-   * @param keeper
+   * @param keeperConnection
    */
-  ZooKeeperWriter(ZooKeeper keeper) {
-    this.keeper = keeper;
+  ZooKeeperWriter(ZooKeeperConnection keeperConnection) {
+    this.keeperConnection = keeperConnection;
   }
 
   /**
@@ -78,7 +74,7 @@ public class ZooKeeperWriter {
    */
   public void close() throws InterruptedException {
     if (closeKeeper) {
-      keeper.close();
+      keeperConnection.close();
     }
   }
 
@@ -94,10 +90,10 @@ public class ZooKeeperWriter {
   public String makeEphemeralSeqPath(String path, byte[] data,
       Watcher watcher) throws KeeperException, InterruptedException {
 
-    String zkPath = keeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+    String zkPath = keeperConnection.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE,
         CreateMode.EPHEMERAL_SEQUENTIAL);
     
-    keeper.exists(zkPath, watcher);
+    keeperConnection.exists(zkPath, watcher);
     
     return zkPath;
   }
@@ -176,21 +172,21 @@ public class ZooKeeperWriter {
       String pathPiece = paths[i];
       sbPath.append("/" + pathPiece);
       String currentPath = sbPath.toString();
-      Object exists = keeper.exists(currentPath, watcher);
+      Object exists = keeperConnection.exists(currentPath, watcher);
       if (exists == null) {
         CreateMode mode = CreateMode.PERSISTENT;
         if (i == paths.length - 1) {
           mode = createMode;
           bytes = data;
         }
-        keeper.create(currentPath, bytes, ZooDefs.Ids.OPEN_ACL_UNSAFE, mode);
+        keeperConnection.create(currentPath, bytes, ZooDefs.Ids.OPEN_ACL_UNSAFE, mode);
         // set new watch
-        keeper.exists(currentPath, watcher);
+        keeperConnection.exists(currentPath, watcher);
       } else if (i == paths.length - 1) {
         // nocommit: version ?
-        keeper.setData(currentPath, data, -1);
+        keeperConnection.setData(currentPath, data, -1);
         // set new watch
-        keeper.exists(currentPath, watcher);
+        keeperConnection.exists(currentPath, watcher);
       }
     }
   }
@@ -220,11 +216,11 @@ public class ZooKeeperWriter {
 
     makePath(path);
 
-    Object exists = keeper.exists(path, null);
+    Object exists = keeperConnection.exists(path, null);
     if (exists != null) {
-      keeper.setData(path, data, -1);
+      keeperConnection.setData(path, data, -1);
     } else {
-      keeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+      keeperConnection.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE,
           CreateMode.PERSISTENT);
     }
   }

@@ -33,7 +33,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,39 +96,14 @@ public final class ZooKeeperController {
 
   private final static Pattern URL_PREFIX = Pattern.compile("(https?://).*");
 
-  private final ReconnectionHandler RECONNECTION_HANDLER = new ReconnectionHandler() {
-    
-    @Override
-    public boolean handleReconnect() throws IOException {
-      // nocommit : reconnection experimentation
-      log.info("Attempting to reconnect to ZooKeeper...");
-      boolean connected = true;
-      CountdownWatcher countdownWatcher = new CountdownWatcher(
-          "ZooKeeperController", RECONNECTION_HANDLER);
-      // nocommit : close old ZooKeeper client?
-      keeper = new ZooKeeper(zooKeeperHost, zkClientTimeout, countdownWatcher);
-      try {
-        countdownWatcher.waitForConnected(5000);
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-        connected = false;
-      } catch (TimeoutException e) {
-        connected = false;
-      }
-      log.info("Connected:" + connected);
-      return connected;
-    }
-  };
-
   private static Logger log = LoggerFactory
       .getLogger(ZooKeeperController.class);
 
   // nocommit : consider reconnects more closely
-  private volatile ZooKeeper keeper;
+  private volatile ZooKeeperConnection keeperConnection;
 
-  ZooKeeper getKeeper() {
-    return keeper;
+  ZooKeeperConnection getKeeper() {
+    return keeperConnection;
   }
 
   private ZooKeeperReader zkReader;
@@ -151,8 +125,6 @@ public final class ZooKeeperController {
 
   private String configName;
 
-  private int zkClientTimeout;
-
   private String zooKeeperHostName;
 
 
@@ -172,8 +144,8 @@ public final class ZooKeeperController {
     this.zooKeeperHost = zooKeeperHost;
     this.hostPort = hostPort;
     this.hostContext = hostContext;
-    this.zkClientTimeout = zkClientTimeout;
-
+    keeperConnection = new ZooKeeperConnection(zooKeeperHost, zkClientTimeout);
+ 
     shardsZkPath = COLLECTIONS_ZKNODE + collectionName + SHARDS_ZKNODE;
 
     init();
@@ -182,14 +154,11 @@ public final class ZooKeeperController {
   private void init() {
 
     try {
-
-      CountdownWatcher countdownWatcher = new CountdownWatcher(
-          "ZooKeeperController", RECONNECTION_HANDLER);
-      keeper = new ZooKeeper(zooKeeperHost, zkClientTimeout, countdownWatcher);
-      countdownWatcher.waitForConnected(5000);
-
-      zkReader = new ZooKeeperReader(keeper);
-      zkWriter = new ZooKeeperWriter(keeper);
+      keeperConnection.connect();
+      
+      // nocommit : consider losing these and having everything on ZooKeeperConnection
+      zkReader = new ZooKeeperReader(keeperConnection);
+      zkWriter = new ZooKeeperWriter(keeperConnection);
 
       configName = zkReader.readConfigName(collectionName);
 
@@ -265,7 +234,7 @@ public final class ZooKeeperController {
    */
   public void close() {
     try {
-      keeper.close();
+      keeperConnection.close();
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();

@@ -58,16 +58,16 @@ public class ZooKeeperReader {
 
   private static final String COLLECTIONS_ZKNODE = "/collections/";
 
-  private ZooKeeper keeper;
+  private ZooKeeperConnection keeperConnection;
 
   private boolean closeKeeper;
 
+ 
   /**
-   * @param zooKeeper
+   * @param keeperConnection
    */
-  ZooKeeperReader(ZooKeeper zooKeeper) {
-    this.keeper = zooKeeper;
-    // this.configName = readConfigName(collection);
+  ZooKeeperReader(ZooKeeperConnection keeperConnection) {
+    this.keeperConnection = keeperConnection;
   }
 
   /**
@@ -83,15 +83,9 @@ public class ZooKeeperReader {
   ZooKeeperReader(String zooKeeperHost, int zkClientTimeout)
       throws IOException, InterruptedException, TimeoutException {
     closeKeeper = true;
-    CountdownWatcher countdownWatcher = new CountdownWatcher(
-        "ZooKeeperController", new ReconnectionHandler() {
-          @Override
-          public boolean handleReconnect() throws IOException {
-            return false;
-          }
-        });
-    keeper = new ZooKeeper(zooKeeperHost, zkClientTimeout, countdownWatcher);
-    countdownWatcher.waitForConnected(5000);
+ 
+    keeperConnection = new ZooKeeperConnection(zooKeeperHost, zkClientTimeout);
+    keeperConnection.connect();
   }
 
   /**
@@ -103,7 +97,7 @@ public class ZooKeeperReader {
   public boolean exists(String path) {
     Object exists = null;
     try {
-      exists = keeper.exists(path, null);
+      exists = keeperConnection.exists(path, null);
     } catch (KeeperException e) {
       log.error("ZooKeeper Exception", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -116,7 +110,7 @@ public class ZooKeeperReader {
 
   public void close() throws InterruptedException {
     if (closeKeeper) {
-      keeper.close();
+      keeperConnection.close();
     }
   }
 
@@ -149,7 +143,7 @@ public class ZooKeeperReader {
   }
   
   public byte[] getConfigFileData(String zkConfigName, String fileName) throws KeeperException, InterruptedException {
-    return keeper.getData(CONFIGS_ZKNODE + zkConfigName, null, null);
+    return keeperConnection.getData(CONFIGS_ZKNODE + zkConfigName, null, null);
   }
 
   /**
@@ -169,7 +163,7 @@ public class ZooKeeperReader {
     if (log.isInfoEnabled()) {
       log.info("Reading " + fileName + " from zookeeper at " + configPath);
     }
-    bytes = keeper.getData(configPath, false, null);
+    bytes = keeperConnection.getData(configPath, null, null);
 
     return bytes;
   }
@@ -206,8 +200,8 @@ public class ZooKeeperReader {
    */
   public void printLayout(String path, int indent, StringBuilder string)
       throws KeeperException, InterruptedException {
-    byte[] data = keeper.getData(path, null, null);
-    List<String> children = keeper.getChildren(path, false);
+    byte[] data = keeperConnection.getData(path, null, null);
+    List<String> children = keeperConnection.getChildren(path, null);
     StringBuilder dent = new StringBuilder();
     for (int i = 0; i < indent; i++) {
       dent.append(" ");
@@ -258,7 +252,7 @@ public class ZooKeeperReader {
     if (log.isInfoEnabled()) {
       log.info("Load collection config from:" + path);
     }
-    List<String> children = keeper.getChildren(path, null);
+    List<String> children = keeperConnection.getChildren(path, null);
     for (String node : children) {
       // nocommit
       System.out.println("check child:" + node);
@@ -297,10 +291,10 @@ public class ZooKeeperReader {
       throw new IllegalStateException("Cannot find zk node that should exist:"
           + path);
     }
-    List<String> nodes = keeper.getChildren(path, null);
+    List<String> nodes = keeperConnection.getChildren(path, null);
 
     for (String zkNodeName : nodes) {
-      byte[] data = keeper.getData(path + "/" + zkNodeName, null, null);
+      byte[] data = keeperConnection.getData(path + "/" + zkNodeName, null, null);
 
       Properties props = new Properties();
       props.load(new ByteArrayInputStream(data));
@@ -340,11 +334,11 @@ public class ZooKeeperReader {
    * @throws InterruptedException
    */
   public Stat stat(String path) throws KeeperException, InterruptedException {
-    return keeper.exists(path, null);
+    return keeperConnection.exists(path, null);
   }
 
   public boolean configFileExists(String configName, String fileName) throws KeeperException, InterruptedException {
-    Stat stat = keeper.exists(CONFIGS_ZKNODE + configName, null);
+    Stat stat = keeperConnection.exists(CONFIGS_ZKNODE + configName, null);
     return stat != null;
   }
 
