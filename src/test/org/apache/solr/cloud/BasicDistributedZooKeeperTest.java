@@ -17,7 +17,6 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.util.HashSet;
 
 import org.apache.solr.client.solrj.SolrServerException;

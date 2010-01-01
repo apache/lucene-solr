@@ -30,13 +30,12 @@ import org.apache.solr.core.SolrResourceLoader;
 public class ZooKeeperSolrResourceLoader extends SolrResourceLoader {
 
   private String collection;
-
-  private ZooKeeperReader zkReader;
+  private ZooKeeperController zkController;
 
   public ZooKeeperSolrResourceLoader(String instanceDir, String collection,
       ZooKeeperController zooKeeperController) {
     super(instanceDir);
-    this.zkReader = zooKeeperController.getZkReader();
+    this.zkController = zooKeeperController;
     this.collection = collection;
   }
 
@@ -52,7 +51,7 @@ public class ZooKeeperSolrResourceLoader extends SolrResourceLoader {
       Properties coreProperties, ZooKeeperController zooKeeperController) {
     super(instanceDir, parent, coreProperties);
     this.collection = collection;
-    this.zkReader = zooKeeperController.getZkReader();
+    this.zkController = zooKeeperController;
   }
 
   /**
@@ -70,8 +69,8 @@ public class ZooKeeperSolrResourceLoader extends SolrResourceLoader {
     //nocommit:
     System.out.println("look for:" + file);
     try {
-      if (zkReader.exists(file)) {
-        byte[] bytes = zkReader.getFile(getConfigDir(), resource);
+      if (zkController.exists(file)) {
+        byte[] bytes = zkController.getKeeperConnection().getData(getConfigDir() + "/" + resource, null, null);
         return new ByteArrayInputStream(bytes);
       }
     } catch (Exception e) {

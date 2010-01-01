@@ -90,30 +90,37 @@ public abstract class AbstractZooKeeperTestCase extends AbstractSolrTestCase {
 
   }
 
+  final static String JUST_HOST_NAME = AbstractZooKeeperTestCase.ZOO_KEEPER_HOST.substring(0,
+      AbstractZooKeeperTestCase.ZOO_KEEPER_HOST.indexOf('/'));
+  
   // static to share with distrib test
   static void buildZooKeeper(String config, String schema)
       throws Exception {
-    ZooKeeperWriter zkWriter = new ZooKeeperWriter(ZOO_KEEPER_HOST.substring(0, ZOO_KEEPER_HOST
-        .indexOf('/')), TIMEOUT);
+    SolrZkClient zkClient = new SolrZkClient(JUST_HOST_NAME, AbstractZooKeeperTestCase.TIMEOUT);
+    zkClient.connect();
+    zkClient.makePath("/solr");
+    zkClient.close();
 
-    zkWriter.makePath("/solr");
-    zkWriter.close();
+    zkClient = new SolrZkClient(ZOO_KEEPER_HOST, AbstractZooKeeperTestCase.TIMEOUT);
+    zkClient.connect();
+    
+    zkClient.makePath("/collections/collection1/config=collection1");
 
-    zkWriter = new ZooKeeperWriter(ZOO_KEEPER_HOST, TIMEOUT);
-
-    zkWriter.makePath("/collections/collection1/config=collection1");
-
-    putConfig(zkWriter, config);
-    putConfig(zkWriter, schema);
-    putConfig(zkWriter, "stopwords.txt");
-    putConfig(zkWriter, "protwords.txt");
-    putConfig(zkWriter, "mapping-ISOLatin1Accent.txt");
-    putConfig(zkWriter, "old_synonyms.txt");
-    zkWriter.close();
+    putConfig(zkClient, config);
+    putConfig(zkClient, schema);
+    putConfig(zkClient, "stopwords.txt");
+    putConfig(zkClient, "protwords.txt");
+    putConfig(zkClient, "mapping-ISOLatin1Accent.txt");
+    putConfig(zkClient, "old_synonyms.txt");
+    
+    //nocommit
+    zkClient.printLayoutToStdOut();
+    
+    zkClient.close();
   }
 
-  private static void putConfig(ZooKeeperWriter zkWriter, String name) throws Exception {
-    zkWriter.write("/configs/collection1/" + name, new File("solr"
+  private static void putConfig(SolrZkClient zkConnection, String name) throws Exception {
+    zkConnection.write("/configs/collection1/" + name, new File("solr"
         + File.separator + "conf" + File.separator + name));
   }
 
@@ -124,10 +131,12 @@ public abstract class AbstractZooKeeperTestCase extends AbstractSolrTestCase {
   }
 
   private void printLayout() throws Exception {
-    ZooKeeperReader zkReader = new ZooKeeperReader(ZOO_KEEPER_HOST.substring(0, ZOO_KEEPER_HOST
-        .indexOf('/')), TIMEOUT);
-
-    zkReader.printLayoutToStdOut();
-    zkReader.close();
+    SolrZkClient zkClient = new SolrZkClient(
+        AbstractZooKeeperTestCase.ZOO_KEEPER_HOST.substring(0,
+            AbstractZooKeeperTestCase.ZOO_KEEPER_HOST.indexOf('/')),
+        AbstractZooKeeperTestCase.TIMEOUT);
+    zkClient.connect();
+    zkClient.printLayoutToStdOut();
+    zkClient.close();
   }
 }

@@ -94,12 +94,9 @@ public abstract class AbstractDistributedZooKeeperTestCase extends BaseDistribut
   }
   
   private void printeLayout() throws Exception {
-    ZooKeeperReader zkReader = new ZooKeeperReader(
-        AbstractZooKeeperTestCase.ZOO_KEEPER_HOST.substring(0,
-            AbstractZooKeeperTestCase.ZOO_KEEPER_HOST.indexOf('/')),
-        AbstractZooKeeperTestCase.TIMEOUT);
-
-    zkReader.printLayoutToStdOut();
-    zkReader.close();
+    SolrZkClient zkClient = new SolrZkClient(AbstractZooKeeperTestCase.JUST_HOST_NAME, AbstractZooKeeperTestCase.TIMEOUT);
+    zkClient.connect();
+    zkClient.printLayoutToStdOut();
+    zkClient.close();
   }
 }

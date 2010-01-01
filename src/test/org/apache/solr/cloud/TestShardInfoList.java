@@ -1,7 +1,5 @@
 package org.apache.solr.cloud;
 
-import junit.framework.TestCase;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements. See the NOTICE file distributed with this
@@ -18,6 +16,8 @@ import junit.framework.TestCase;
  * License for the specific language governing permissions and limitations under
  * the License.
  */
+
+import junit.framework.TestCase;
 
 public class TestShardInfoList extends TestCase {
 

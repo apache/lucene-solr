@@ -479,7 +479,7 @@ public class CoreContainer
     } else {
       solrLoader = new ZooKeeperSolrResourceLoader(instanceDir, collection, libLoader, getCoreProps(instanceDir, dcore.getPropertiesName(),dcore.getCoreProperties()), zooKeeperController);
       try {
-        config = zooKeeperController.getZkReader().getConfig(zooKeeperController.getConfigName(), dcore.getConfigName(), solrLoader);
+        config = zooKeeperController.getConfig(zooKeeperController.getConfigName(), dcore.getConfigName(), solrLoader);
       } catch (KeeperException e) {
         log.error("ZooKeeper Exception", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -522,7 +522,7 @@ public class CoreContainer
     if(schema == null){
       if(zooKeeperController != null) {
         try {
-          schema = zooKeeperController.getZkReader().getSchema(zooKeeperController.getConfigName(), dcore.getSchemaName(), config, solrLoader);
+          schema = zooKeeperController.getSchema(zooKeeperController.getConfigName(), dcore.getSchemaName(), config, solrLoader);
         } catch (KeeperException e) {
           log.error("ZooKeeper Exception", e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
