@@ -391,6 +391,11 @@
           try {
             str = new String(data, "UTF-8");
           } catch (UnsupportedEncodingException e) {
+            // nocommit : does this make sense? isn't UTF-8
+            // gauranteed to be supported? I don't think this is thrown
+            // because its not UTF-8 is it? The results are unspecified
+            // when the bytes are not properly encoded.
+            
             // not UTF8
             StringBuilder sb = new StringBuilder(data.length * 2);
             for (int i = 0; i < data.length; i++) {

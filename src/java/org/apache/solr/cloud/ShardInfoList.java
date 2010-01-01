@@ -56,14 +56,10 @@ public final class ShardInfoList {
     // nocommit
     for (ShardInfo shard : shards) {
       System.out.println("getNode:" + shard.getUrl());
-      if (shard.getRole() != Role.MASTER) {
+      if (shard.getRole() != ShardInfo.Role.MASTER) {
         return shard.getUrl();
       }
     }
     throw new IllegalStateException("No slaves for shard");
   }
-}
-
-enum Role {
-  MASTER, SLAVE
 }

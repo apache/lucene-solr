@@ -73,7 +73,7 @@ public final class ZooKeeperController {
 
       try {
         // refresh watcher
-        controller.getKeeper().exists(event.getPath(), this);
+        controller.getKeeperConnection().exists(event.getPath(), this);
 
         // TODO: need to load whole state?
         controller.loadCollectionInfo();
@@ -99,10 +99,10 @@ public final class ZooKeeperController {
   private static Logger log = LoggerFactory
       .getLogger(ZooKeeperController.class);
 
-  // nocommit : consider reconnects more closely
-  private volatile ZooKeeperConnection keeperConnection;
 
-  ZooKeeperConnection getKeeper() {
+  private ZooKeeperConnection keeperConnection;
+
+  ZooKeeperConnection getKeeperConnection() {
     return keeperConnection;
   }
 
@@ -116,7 +116,7 @@ public final class ZooKeeperController {
 
   private ZooKeeperWriter zkWriter;
 
-  private String zooKeeperHost;
+  private String zkServerAddress;
 
 
   private String hostPort;
@@ -130,21 +130,21 @@ public final class ZooKeeperController {
 
   /**
    * 
-   * @param zooKeeperHost ZooKeeper host address
+   * @param zkServerAddress ZooKeeper server host address
    * @param collection
    * @param hostUrl
    * @param hostPort
    * @param hostContext
    * @param zkClientTimeout
    */
-  public ZooKeeperController(String zooKeeperHost, String collection,
+  public ZooKeeperController(String zkServerAddress, String collection,
       String hostUrl, String hostPort, String hostContext, int zkClientTimeout) {
 
     this.collectionName = collection;
-    this.zooKeeperHost = zooKeeperHost;
+    this.zkServerAddress = zkServerAddress;
     this.hostPort = hostPort;
     this.hostContext = hostContext;
-    keeperConnection = new ZooKeeperConnection(zooKeeperHost, zkClientTimeout);
+    keeperConnection = new ZooKeeperConnection(zkServerAddress, zkClientTimeout);
  
     shardsZkPath = COLLECTIONS_ZKNODE + collectionName + SHARDS_ZKNODE;
 
@@ -267,7 +267,7 @@ public final class ZooKeeperController {
    * @return
    */
   public String getZooKeeperHost() {
-    return zooKeeperHost;
+    return zkServerAddress;
   }
 
   // load and publish a new CollectionInfo

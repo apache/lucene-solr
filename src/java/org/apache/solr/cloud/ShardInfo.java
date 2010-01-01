@@ -44,4 +44,9 @@ public final class ShardInfo {
   public String getUrl() {
     return url;
   }
+  
+
+  enum Role {
+    MASTER, SLAVE
+  }
 }
