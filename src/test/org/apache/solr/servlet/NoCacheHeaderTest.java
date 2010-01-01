@@ -30,6 +30,9 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
 
   // The tests
   public void testLastModified() throws Exception {
+    // check that the right solrconfig is being used
+    assertTrue(h.getCore().getCoreDescriptor().getConfigName().endsWith(getSolrConfigFilename()));
+    
     doLastModified("GET");
     doLastModified("HEAD");
   }

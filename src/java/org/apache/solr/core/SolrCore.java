@@ -22,6 +22,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.cloud.ZooKeeperController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
@@ -283,6 +284,8 @@ public final class SolrCore implements SolrInfoMBean {
   List<SolrEventListener> firstSearcherListeners;
   List<SolrEventListener> newSearcherListeners;
 
+  private ZooKeeperController zooKeeperComponent;
+
   /**
    * NOTE: this function is not thread safe.  However, it is safe to call within the
    * <code>inform( SolrCore core )</code> function for <code>SolrCoreAware</code> classes.
@@ -521,6 +524,11 @@ public final class SolrCore implements SolrInfoMBean {
 
     if (schema==null) {
       schema = new IndexSchema(config, IndexSchema.DEFAULT_SCHEMA_FILE, null);
+    }
+    
+    zooKeeperComponent = cd.getCoreContainer().getZooKeeperController();
+    if(zooKeeperComponent != null) {
+      zooKeeperComponent.registerShard(this);
     }
 
     //Initialize JMX

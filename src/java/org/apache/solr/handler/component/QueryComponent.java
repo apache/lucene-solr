@@ -110,6 +110,8 @@ public class QueryComponent extends SearchComponent
 
     // TODO: temporary... this should go in a different component.
     String shards = params.get(ShardParams.SHARDS);
+    // nocommit : get shards based on ZooKeeper info, using load balancing
+    // shards = req.getCore().getCoreDescriptor().getCoreContainer().getZooKeeperController().getSearchNodes();
     if (shards != null) {
       List<String> lst = StrUtils.splitSmart(shards, ",", true);
       rb.shards = lst.toArray(new String[lst.size()]);

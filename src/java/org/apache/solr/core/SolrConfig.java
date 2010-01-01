@@ -125,7 +125,7 @@ public class SolrConfig extends Config {
    *@param name the configuration name
    *@param is the configuration stream
    */
-  SolrConfig(SolrResourceLoader loader, String name, InputStream is)
+  public SolrConfig(SolrResourceLoader loader, String name, InputStream is)
   throws ParserConfigurationException, IOException, SAXException {
     super(loader, name, is, "/config/");
     initLibs();

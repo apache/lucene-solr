@@ -31,6 +31,8 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 
+import org.apache.solr.cloud.ZooKeeperSolrResourceLoader;
+import org.apache.solr.cloud.ZooKeeperController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.DOMUtil;
@@ -38,6 +40,7 @@ import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.FileUtils;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.zookeeper.KeeperException;
 import org.apache.commons.io.IOUtils;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -59,7 +62,9 @@ public class CoreContainer
   protected String adminPath = null;
   protected String managementPath = null;
   protected int zkClientTimeout;
-  protected String shardAddress;
+  protected String hostPort;
+  protected String hostContext;
+  protected String host;
   protected CoreAdminHandler coreAdminHandler = null;
   protected File configFile = null;
   protected String libDir = null;
@@ -74,19 +79,29 @@ public class CoreContainer
   protected String solrHome;
   protected String solrConfigFilenameOverride;
   protected String solrDataDirOverride;
+  protected String zkPortOverride;
   protected String collection;
+  private String testShardsListOverride;
   private ZooKeeperController zooKeeperController;
+
+  private String zkHost;
+
 
   public CoreContainer() {
     solrHome = SolrResourceLoader.locateSolrHome();
   }
   
-  private void initZooKeeper(int zkClientTimeout) {
-    //nocommit: pull zookeeper integration into a new CoreContainer? leaning towards no.
-    String zookeeperHost = System.getProperty("zkHost");
+  private void initZooKeeper(String zkHost, int zkClientTimeout) {
+    // nocommit: perhaps get from solr.xml
+    String zookeeperHost;
+    if(zkHost == null) {
+      zookeeperHost = System.getProperty("zkHost");
+    } else {
+      zookeeperHost = zkHost;
+    }
     
     if (zookeeperHost != null) {
-      zooKeeperController = new ZooKeeperController(zookeeperHost, collection, shardAddress, zkClientTimeout);
+      zooKeeperController = new ZooKeeperController(zookeeperHost, collection, host,  hostPort, hostContext, zkClientTimeout);
     }
   }
 
@@ -99,6 +114,8 @@ public class CoreContainer
     protected String solrConfigFilename = null;
     protected boolean abortOnConfigurationError = true;
     protected String dataDir = null; // override datadir for single core mode
+    private String zkPortOverride;
+    protected String testShardListOverride;
 
     public boolean isAbortOnConfigurationError() {
       return abortOnConfigurationError;
@@ -115,22 +132,34 @@ public class CoreContainer
     public void setSolrConfigFilename(String solrConfigFilename) {
       this.solrConfigFilename = solrConfigFilename;
     }
+    
+    public void setZKPortOverride(String port) {
+      this.zkPortOverride = port;
+    }
+    
+    public void setTestShardListOverride(String shardList) {
+      this.testShardListOverride = shardList;
+    }
 
     // core container instantiation
     public CoreContainer initialize() throws IOException, ParserConfigurationException, SAXException {
       CoreContainer cores = null;
       String solrHome = SolrResourceLoader.locateSolrHome();
+      // nocommit : fix broken logic confusing solr.xml with solrconfig.xml
       File fconf = new File(solrHome, solrConfigFilename == null ? "solr.xml"
           : solrConfigFilename);
       log.info("looking for solr.xml: " + fconf.getAbsolutePath());
       cores = new CoreContainer();
-      cores.solrConfigFilenameOverride = solrConfigFilename;
       cores.solrDataDirOverride = dataDir;
+      cores.zkPortOverride = zkPortOverride;
+      cores.testShardsListOverride = testShardListOverride;
       if (fconf.exists())
         cores.load(solrHome, fconf);
       else {
-        cores.load(solrHome, new ByteArrayInputStream(DEF_SOLR_XML.getBytes()));
+        log.info("no solr.xml file found - using default");
+        cores.solrConfigFilenameOverride = solrConfigFilename;
         cores.configFile = fconf;
+        cores.load(solrHome, new ByteArrayInputStream(DEF_SOLR_XML.getBytes()));
       }
       abortOnConfigurationError = false;
       // if any core aborts on startup, then abort
@@ -144,6 +173,7 @@ public class CoreContainer
       
       return cores;
     }
+
   }
 
   private static Properties getCoreProps(String instanceDir, String file, Properties defaults) {
@@ -229,20 +259,29 @@ public class CoreContainer
     try {
       Config cfg = new Config(loader, null, cfgis, null);
 
-      persistent = cfg.getBool( "solr/@persistent", false );
-      libDir     = cfg.get(     "solr/@sharedLib", null);
-      adminPath  = cfg.get(     "solr/cores/@adminPath", null );
-      shareSchema = cfg.getBool("solr/cores/@shareSchema", false );
+      persistent = cfg.getBool("solr/@persistent", false);
+      libDir = cfg.get("solr/@sharedLib", null);
+      zkHost = cfg.get("solr/@zkHost" , null);
+      adminPath = cfg.get("solr/cores/@adminPath", null);
+      shareSchema = cfg.getBool("solr/cores/@shareSchema", false);
       zkClientTimeout = cfg.getInt("solr/cores/@zkClientTimeout", 10000);
-      shardAddress = cfg.get("solr/cores/@shardAddress", null);
+      if (zkPortOverride == null) {
+        hostPort = cfg.get("solr/cores/@hostPort", "8983");
+      } else {
+        hostPort = zkPortOverride;
+      }
+      hostContext = cfg.get("solr/cores/@hostContext", "solr");
+      host = cfg.get("solr/cores/@host", null);
+
       collection = cfg.get("solr/cores/@collection", "collection1"); //nocommit: default collection
+
       if(shareSchema){
         indexSchemaCache = new ConcurrentHashMap<String ,IndexSchema>();
       }
       adminHandler  = cfg.get("solr/cores/@adminHandler", null );
       managementPath  = cfg.get("solr/cores/@managementPath", null );
       
-      initZooKeeper(zkClientTimeout);
+      initZooKeeper(zkHost, zkClientTimeout);
 
       if (libDir != null) {
         File f = FileUtils.resolvePath(new File(dir), libDir);
@@ -280,6 +319,8 @@ public class CoreContainer
 
           // deal with optional settings
           String opt = DOMUtil.getAttr(node, "config", null);
+          //nocommit
+          System.out.println("name:" + name + " c:" + solrConfigFilenameOverride);
           if(solrConfigFilenameOverride != null && name.equals("")) {
             p.setConfigName(solrConfigFilenameOverride);
           } else if (opt != null) {
@@ -288,6 +329,12 @@ public class CoreContainer
           opt = DOMUtil.getAttr(node, "schema", null);
           if (opt != null) {
             p.setSchemaName(opt);
+          }
+          opt = DOMUtil.getAttr(node, "shardList", null);
+          if(testShardsListOverride != null && name.equals("")) {
+            p.setShardList(testShardsListOverride);
+          } else if(opt != null) {
+            p.setShardList(opt);
           }
           opt = DOMUtil.getAttr(node, "properties", null);
           if (opt != null) {
@@ -425,13 +472,23 @@ public class CoreContainer
     // Initialize the solr config
     SolrResourceLoader solrLoader ;
     
-    SolrConfig config;
+    SolrConfig config = null;
     if(zooKeeperController == null) {
       solrLoader = new SolrResourceLoader(instanceDir, libLoader, getCoreProps(instanceDir, dcore.getPropertiesName(),dcore.getCoreProperties()));
       config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
     } else {
-      solrLoader = new ZKSolrResourceLoader(instanceDir, collection, libLoader, getCoreProps(instanceDir, dcore.getPropertiesName(),dcore.getCoreProperties()), zooKeeperController);
-      config = zooKeeperController.getConfig(dcore.getConfigName(), solrLoader);
+      solrLoader = new ZooKeeperSolrResourceLoader(instanceDir, collection, libLoader, getCoreProps(instanceDir, dcore.getPropertiesName(),dcore.getCoreProperties()), zooKeeperController);
+      try {
+        config = zooKeeperController.getZkReader().getConfig(zooKeeperController.getConfigName(), dcore.getConfigName(), solrLoader);
+      } catch (KeeperException e) {
+        log.error("ZooKeeper Exception", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "ZooKeeper Exception", e);
+      } catch (InterruptedException e) {
+        // Restore the interrupted status
+        Thread.currentThread().interrupt();
+        //nocommit: we may not know the config name - now what
+      }
     }
     IndexSchema schema = null;
     if (indexSchemaCache != null) {
@@ -464,7 +521,17 @@ public class CoreContainer
     }
     if(schema == null){
       if(zooKeeperController != null) {
-        schema = zooKeeperController.getSchema(dcore.getSchemaName(), config, solrLoader);
+        try {
+          schema = zooKeeperController.getZkReader().getSchema(zooKeeperController.getConfigName(), dcore.getSchemaName(), config, solrLoader);
+        } catch (KeeperException e) {
+          log.error("ZooKeeper Exception", e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "ZooKeeper Exception", e);
+        } catch (InterruptedException e) {
+          // Restore the interrupted status
+          Thread.currentThread().interrupt();
+          //nocommit: we may not know have the schema - now what
+        }
       } else {
         schema = new IndexSchema(config, dcore.getSchemaName(), null);
       }

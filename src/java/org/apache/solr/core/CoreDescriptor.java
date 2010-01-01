@@ -34,6 +34,7 @@ public class CoreDescriptor {
   protected String schemaName;
   private final CoreContainer coreContainer;
   private Properties coreProperties;
+  private String shardList;
 
   public CoreDescriptor(CoreContainer coreContainer, String name, String instanceDir) {
     this.coreContainer = coreContainer;
@@ -170,5 +171,15 @@ public class CoreDescriptor {
       if(coreProperties != null)
         this.coreProperties.putAll(coreProperties);
     }
+  }
+
+  public void setShardList(String shardList) {
+    System.out.println("set shard list:" + shardList);
+    this.shardList = shardList;
+  }
+  
+  //nocommit: may be null
+  public String getShardList() {
+    return shardList;
   }
 }

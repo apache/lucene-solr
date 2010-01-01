@@ -44,6 +44,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.StringHelper;
+import org.apache.solr.cloud.ZooKeeperController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DOMUtil;
@@ -169,20 +170,29 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
               "QueryElevationComponent must specify argument: '"+CONFIG_FILE
               +"' -- path to elevate.xml" );
         }
-        //nocommit: add resourceloader.exists? needs to be handled with zookeeper
-        File fC = new File( core.getResourceLoader().getConfigDir(), f );
-        File fD = new File( core.getDataDir(), f );
-        if( fC.exists() == fD.exists() ) {
-          throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
-              "QueryElevationComponent missing config file: '"+f + "\n"
-              +"either: "+fC.getAbsolutePath() + " or " + fD.getAbsolutePath() + " must exist, but not both." );
+        boolean exists = false;
+        //nocommit: double check this how we want to handle this
+        // check if using ZooKeeper
+        ZooKeeperController zooKeeperController = core.getCoreDescriptor().getCoreContainer().getZooKeeperController();
+        if(zooKeeperController != null) {
+          exists = zooKeeperController.configFileExists(f);
+        } else {
+          File fC = new File( core.getResourceLoader().getConfigDir(), f );
+          File fD = new File( core.getDataDir(), f );
+          if( fC.exists() == fD.exists() ) {
+            throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+                "QueryElevationComponent missing config file: '"+f + "\n"
+                +"either: "+fC.getAbsolutePath() + " or " + fD.getAbsolutePath() + " must exist, but not both." );
+          }
+          if( fC.exists() ) {
+            exists = true;
+            log.info( "Loading QueryElevation from: "+ fC.getAbsolutePath() );
+            Config cfg = new Config( core.getResourceLoader(), f );
+            elevationCache.put(null, loadElevationMap( cfg ));
+          } 
         }
-        if( fC.exists() ) {
-          log.info( "Loading QueryElevation from: "+fC.getAbsolutePath() );
-          Config cfg = new Config( core.getResourceLoader(), f );
-          elevationCache.put(null, loadElevationMap( cfg ));
-        }
-        else {
+        
+        if (!exists){
           // preload the first data
           RefCounted<SolrIndexSearcher> searchHolder = null;
           try {
@@ -193,6 +203,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
             if (searchHolder != null) searchHolder.decref();
           }
         }
+      
       }
     }
     catch( Exception ex ) {

@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util.zookeeper;
+package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 
@@ -28,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class CountdownWatcher implements Watcher {
-  protected static final Logger LOG = LoggerFactory
+  protected static final Logger log = LoggerFactory
       .getLogger(CountdownWatcher.class);
 
   private final String name;
@@ -39,8 +40,14 @@ public class CountdownWatcher implements Watcher {
 
   private boolean connected;
 
-  public CountdownWatcher(String name) {
+  private ReconnectionHandler reconnectionHandler;
+
+  //private ZooKeeper keeper;
+
+  public CountdownWatcher(String name, ReconnectionHandler handler) {
+    //this.keeper = keeper;
     this.name = name;
+    this.reconnectionHandler = handler;
     reset();
   }
 
@@ -51,12 +58,28 @@ public class CountdownWatcher implements Watcher {
   }
 
   public synchronized void process(WatchedEvent event) {
-    LOG.info("Watcher " + name + " got event " + event);
+    if(log.isInfoEnabled()) {
+      log.info("Watcher " + name + " got event " + event);
+    }
 
     state = event.getState();
     if (state == KeeperState.SyncConnected) {
       connected = true;
       clientConnected.countDown();
+    } else if(state == KeeperState.Expired) {
+      connected = false;
+      try {
+        reconnectionHandler.handleReconnect();
+      } catch (Exception e) {
+        // nocommit
+        System.out.println("connection failed:");
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
+      // nocommit: start reconnect attempts
+    } else if(state == KeeperState.Disconnected) {
+      connected = false;
+      // nocommit: start reconnect attempts
     } else {
       connected = false;
     }
@@ -81,7 +104,6 @@ public class CountdownWatcher implements Watcher {
     }
     if (!connected) {
       throw new TimeoutException("Did not connect");
-
     }
   }
 
@@ -95,7 +117,6 @@ public class CountdownWatcher implements Watcher {
     }
     if (connected) {
       throw new TimeoutException("Did not disconnect");
-
     }
   }
 }

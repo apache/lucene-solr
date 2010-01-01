@@ -110,7 +110,7 @@ public abstract class AbstractSolrTestCase extends TestCase {
     String configFile = getSolrConfigFile();
     if (configFile != null) {
 
-      solrConfig = h.createConfig(getSolrConfigFile());
+      solrConfig = h.createConfig(configFile);
       h = new TestHarness( dataDir.getAbsolutePath(),
               solrConfig,
               getSchemaFile());
