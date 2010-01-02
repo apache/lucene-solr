@@ -21,6 +21,7 @@ import java.io.*;
 import java.nio.channels.FileChannel;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 import java.text.SimpleDateFormat;
 
 import org.slf4j.Logger;
@@ -101,7 +102,19 @@ public class CoreContainer
     }
     
     if (zookeeperHost != null) {
-      zooKeeperController = new ZooKeeperController(zookeeperHost, collection, host,  hostPort, hostContext, zkClientTimeout);
+      try {
+        // nocommit : exceptions
+        zooKeeperController = new ZooKeeperController(zookeeperHost, collection, host,  hostPort, hostContext, zkClientTimeout);
+      } catch (InterruptedException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (TimeoutException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      }
     }
   }
 

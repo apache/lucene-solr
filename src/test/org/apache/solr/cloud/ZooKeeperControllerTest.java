@@ -63,7 +63,6 @@ public class ZooKeeperControllerTest extends TestCase {
     makeSolrZkNode();
     
     zkClient = new SolrZkClient(ZOO_KEEPER_ADDRESS, TIMEOUT);
-    zkClient.connect();
     String shardsPath = "/collections/collection1/shards";
     zkClient.makePath(shardsPath);
     
@@ -127,7 +126,6 @@ public class ZooKeeperControllerTest extends TestCase {
     makeSolrZkNode();
 
     SolrZkClient zkClient = new SolrZkClient(ZOO_KEEPER_ADDRESS, TIMEOUT);
-    zkClient.connect();
     String actualConfigName = "firstConfig";
       
     String shardsPath = "/collections/" + COLLECTION_NAME + "/config=" + actualConfigName;
@@ -162,7 +160,6 @@ public class ZooKeeperControllerTest extends TestCase {
 
   private void makeSolrZkNode() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(ZOO_KEEPER_HOST, TIMEOUT);
-    zkClient.connect();
     zkClient.makePath("/solr");
     zkClient.close();
   }

@@ -21,17 +21,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -39,136 +36,33 @@ import org.slf4j.LoggerFactory;
 
 public class SolrZkClient {
   static final String NEWL = System.getProperty("line.separator");
-  
+
   private static final int CONNECT_TIMEOUT = 5000;
 
   protected static final Logger log = LoggerFactory
       .getLogger(SolrZkClient.class);
 
-  private String zkHost;
-  private int zkClientTimeout;
-  
   boolean connected = false;
-  
-  private CountdownWatcher cw = new CountdownWatcher("ZooKeeperConnection Watcher");
+
+  private ConnectionManager connManager;
 
   private volatile ZooKeeper keeper;
-
-  public SolrZkClient(String zkHost, int zkClientTimeout) {
-    this.zkHost = zkHost;
-    this.zkClientTimeout = zkClientTimeout;
-  }
-
-  public void connect() throws InterruptedException, TimeoutException,
-      IOException {
-    if(connected) {
-      return;
-    }
-    // nocommit
-    log.info("Connecting to ZooKeeper...");
-    
-    keeper = new ZooKeeper(zkHost, zkClientTimeout, cw);
-    cw.waitForConnected(CONNECT_TIMEOUT);
-
-    // nocommit
-    log.info("Connected");
-  }
   
-  public boolean connected() {
-    return keeper != null && keeper.getState() == ZooKeeper.States.CONNECTED;
+  public SolrZkClient(String zkServerAddress, int zkClientTimeout) throws InterruptedException, TimeoutException, IOException {
+    this(zkServerAddress, zkClientTimeout, new DefaultConnectionStrategy());
   }
 
-  class CountdownWatcher implements Watcher {
+  public SolrZkClient(String zkServerAddress, int zkClientTimeout,
+      ZkClientConnectionStrategy strat) throws InterruptedException,
+      TimeoutException, IOException {
+    connManager = new ConnectionManager("ZooKeeperConnection Watcher",
+        zkServerAddress, zkClientTimeout, strat);
+    this.keeper = strat.connect(zkServerAddress, zkClientTimeout, connManager);
+    connManager.waitForConnected(CONNECT_TIMEOUT);
+  }
 
-    private final String name;
-    private CountDownLatch clientConnected;
-    private KeeperState state;
-    private boolean connected;
-
-    public CountdownWatcher(String name) {
-      this.name = name;
-      reset();
-    }
-
-    private synchronized void reset() {
-      clientConnected = new CountDownLatch(1);
-      state = KeeperState.Disconnected;
-      connected = false;
-    }
-
-    public synchronized void process(WatchedEvent event) {
-      if (log.isInfoEnabled()) {
-        log.info("Watcher " + name + " got event " + event);
-      }
-
-      state = event.getState();
-      if (state == KeeperState.SyncConnected) {
-        connected = true;
-        clientConnected.countDown();
-      } else if (state == KeeperState.Expired) {
-        connected = false;
-        log.info("Attempting to reconnect to ZooKeeper...");
-        boolean connected = true;
-
-        // nocommit : close old ZooKeeper client?
-
-        try {
-          connect();
-        } catch (InterruptedException e) {
-          // Restore the interrupted status
-          Thread.currentThread().interrupt();
-          connected = false;
-        } catch (TimeoutException e) {
-          connected = false;
-        } catch (IOException e) {
-          // nocommit
-          // TODO Auto-generated catch block
-          e.printStackTrace();
-        }
-        log.info("Connected:" + connected);
-        // nocommit: start reconnect attempts
-      } else if (state == KeeperState.Disconnected) {
-        connected = false;
-        // nocommit: start reconnect attempts
-      } else {
-        connected = false;
-      }
-      notifyAll();
-    }
-
-    public synchronized boolean isConnected() {
-      return connected;
-    }
-
-    public synchronized KeeperState state() {
-      return state;
-    }
-
-    public synchronized void waitForConnected(long timeout)
-        throws InterruptedException, TimeoutException {
-      long expire = System.currentTimeMillis() + timeout;
-      long left = timeout;
-      while (!connected && left > 0) {
-        wait(left);
-        left = expire - System.currentTimeMillis();
-      }
-      if (!connected) {
-        throw new TimeoutException("Did not connect");
-      }
-    }
-
-    public synchronized void waitForDisconnected(long timeout)
-        throws InterruptedException, TimeoutException {
-      long expire = System.currentTimeMillis() + timeout;
-      long left = timeout;
-      while (connected && left > 0) {
-        wait(left);
-        left = expire - System.currentTimeMillis();
-      }
-      if (connected) {
-        throw new TimeoutException("Did not disconnect");
-      }
-    }
+  public boolean isConnected() {
+    return keeper != null && keeper.getState() == ZooKeeper.States.CONNECTED;
   }
 
   public Stat exists(final String path, Watcher watcher)
@@ -195,7 +89,7 @@ public class SolrZkClient {
       throws KeeperException, InterruptedException {
     return keeper.setData(path, data, version);
   }
-  
+
   /**
    * 
    * @param path
@@ -208,10 +102,11 @@ public class SolrZkClient {
   public String create(String path, byte[] data, CreateMode createMode,
       Watcher watcher) throws KeeperException, InterruptedException {
 
-    String zkPath = keeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
+    String zkPath = keeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE,
+        createMode);
     // nocommit : race issue on keeper switch
     exists(zkPath, watcher);
-    
+
     return zkPath;
   }
 
@@ -337,8 +232,7 @@ public class SolrZkClient {
     if (exists != null) {
       setData(path, data, -1);
     } else {
-      create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-          CreateMode.PERSISTENT);
+      create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
     }
   }
 
@@ -353,14 +247,14 @@ public class SolrZkClient {
    */
   public void write(String path, File file) throws IOException,
       KeeperException, InterruptedException {
-    if(log.isInfoEnabled()) {
+    if (log.isInfoEnabled()) {
       log.info("Write to ZooKeepeer " + file.getAbsolutePath() + " to " + path);
     }
 
     String data = FileUtils.readFileToString(file);
     write(path, data.getBytes());
   }
-  
+
   /**
    * Fills string with printout of current ZooKeeper layout.
    * 

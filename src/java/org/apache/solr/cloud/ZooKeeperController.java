@@ -142,6 +142,8 @@ public final class ZooKeeperController {
 
   private String zooKeeperHostName;
 
+  private int zkClientTimeout;
+
   /**
    * 
    * @param zkServerAddress ZooKeeper server host address
@@ -150,12 +152,16 @@ public final class ZooKeeperController {
    * @param hostPort
    * @param hostContext
    * @param zkClientTimeout
+   * @throws IOException 
+   * @throws TimeoutException 
+   * @throws InterruptedException 
    */
   public ZooKeeperController(String zkServerAddress, String collection,
-      String hostUrl, String hostPort, String hostContext, int zkClientTimeout) {
+      String hostUrl, String hostPort, String hostContext, int zkClientTimeout) throws InterruptedException, TimeoutException, IOException {
 
     this.collectionName = collection;
     this.zkServerAddress = zkServerAddress;
+    this.zkClientTimeout = zkClientTimeout;
     this.hostPort = hostPort;
     this.hostContext = hostContext;
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout);
@@ -168,10 +174,6 @@ public final class ZooKeeperController {
   private void init() {
 
     try {
-      zkClient.connect();
-
-
-
       zooKeeperHostName = getHostAddress();
       Matcher m = URL_POST.matcher(zooKeeperHostName);
       if (m.matches()) {
@@ -199,10 +201,6 @@ public final class ZooKeeperController {
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
-    } catch (TimeoutException e) {
-      log.error("", e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Timeout waiting for ZooKeeper connection", e);
     } catch (KeeperException e) {
       log.error("KeeperException", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);

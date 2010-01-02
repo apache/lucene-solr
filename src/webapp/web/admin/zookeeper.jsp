@@ -44,7 +44,7 @@
 <tr>
   <td>
      <strong>   <%
-     XML.escapeCharData(printer.keeperConnection == null ? "Disconnected"
+     XML.escapeCharData(printer.zkClient == null ? "Disconnected"
          : ("Connected to zookeeper " + printer.keeperAddr), out);
    %>  </strong>
   </td>
@@ -78,7 +78,7 @@
 
     String keeperAddr; // the address we're connected to
 
-    ZooKeeperConnection keeperConnection;
+    SolrZkClient zkClient;
 
     JspWriter out;
 
@@ -100,29 +100,26 @@
         return;
       }
       
-      keeperConnection = new ZooKeeperConnection(addr, 10000);
-
       try {
-        keeperConnection.connect();
+        zkClient = new SolrZkClient(addr, 10000);
       } catch (TimeoutException e) {
-        out.println("Could not connect to zookeeper at " + addr);
-        return;
+       out.println("Could not connect to zookeeper at " + addr);
+       zkClient = null;
+       return;
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
-      }
-
-      if (!keeperConnection.connected()) {
         out.println("Could not connect to zookeeper at " + addr);
-        keeperConnection = null;
+        zkClient = null;
         return;
       }
+
 
     }
 
     // main entry point
     void print(String path) throws IOException {
-      if (keeperConnection == null)
+      if (zkClient == null)
         return;
 
       out.print("<table>");
@@ -282,7 +279,7 @@
 
       Stat stat = new Stat();
       try {
-        byte[] data = keeperConnection.getData(path, null, stat);
+        byte[] data = zkClient.getData(path, null, stat);
 
         out.print("v=" + stat.getVersion());
         if (stat.getNumChildren() != 0) {
@@ -332,7 +329,7 @@
 
       List<String> children = null;
       try {
-        children = keeperConnection.getChildren(path, null);
+        children = zkClient.getChildren(path, null);
       } catch (KeeperException e) {
         exception(e);
         return;
@@ -355,7 +352,7 @@
       try {
 
         Stat stat = new Stat();
-        byte[] data = keeperConnection.getData(path, null, stat);
+        byte[] data = zkClient.getData(path, null, stat);
 
         out.print("<h2>");
         xmlescape(path);

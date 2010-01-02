@@ -97,12 +97,10 @@ public abstract class AbstractZooKeeperTestCase extends AbstractSolrTestCase {
   static void buildZooKeeper(String config, String schema)
       throws Exception {
     SolrZkClient zkClient = new SolrZkClient(JUST_HOST_NAME, AbstractZooKeeperTestCase.TIMEOUT);
-    zkClient.connect();
     zkClient.makePath("/solr");
     zkClient.close();
 
     zkClient = new SolrZkClient(ZOO_KEEPER_HOST, AbstractZooKeeperTestCase.TIMEOUT);
-    zkClient.connect();
     
     zkClient.makePath("/collections/collection1/config=collection1");
 
@@ -135,7 +133,6 @@ public abstract class AbstractZooKeeperTestCase extends AbstractSolrTestCase {
         AbstractZooKeeperTestCase.ZOO_KEEPER_HOST.substring(0,
             AbstractZooKeeperTestCase.ZOO_KEEPER_HOST.indexOf('/')),
         AbstractZooKeeperTestCase.TIMEOUT);
-    zkClient.connect();
     zkClient.printLayoutToStdOut();
     zkClient.close();
   }

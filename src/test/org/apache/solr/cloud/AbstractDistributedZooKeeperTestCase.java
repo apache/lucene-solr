@@ -95,7 +95,6 @@ public abstract class AbstractDistributedZooKeeperTestCase extends BaseDistribut
   
   private void printeLayout() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(AbstractZooKeeperTestCase.JUST_HOST_NAME, AbstractZooKeeperTestCase.TIMEOUT);
-    zkClient.connect();
     zkClient.printLayoutToStdOut();
     zkClient.close();
   }
