@@ -22,16 +22,19 @@ import java.io.IOException;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 
+/**
+ *
+ */
 public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
 
   @Override
-  public ZooKeeper connect(String serverAddress, int timeout, Watcher watcher) throws IOException {
-    return new ZooKeeper(serverAddress, timeout, watcher);
+  public void connect(String serverAddress, int timeout, Watcher watcher, ZkUpdate updater) throws IOException {
+    updater.update(new ZooKeeper(serverAddress, timeout, watcher));
   }
 
   @Override
-  public ZooKeeper reconnect(String serverAddress, int timeout, Watcher watcher) throws IOException {
-    return new ZooKeeper(serverAddress, timeout, watcher);
+  public void reconnect(String serverAddress, int timeout, Watcher watcher, ZkUpdate updater) throws IOException {
+    updater.update(new ZooKeeper(serverAddress, timeout, watcher));
   }
 
 }

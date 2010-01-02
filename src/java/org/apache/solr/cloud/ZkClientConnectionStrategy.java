@@ -26,6 +26,11 @@ import org.apache.zookeeper.ZooKeeper;
  *
  */
 public abstract class ZkClientConnectionStrategy {
-  public abstract ZooKeeper connect(String zkServerAddress, int zkClientTimeout, Watcher watcher) throws IOException;
-  public abstract ZooKeeper reconnect(String serverAddress, int zkClientTimeout, Watcher watcher) throws IOException;
+  public abstract void connect(String zkServerAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException;
+  public abstract void reconnect(String serverAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException;
+  
+  public static abstract class ZkUpdate {
+    public abstract void update(ZooKeeper zooKeeper);
+  }
+  
 }

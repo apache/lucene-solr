@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.cloud.ZkClientConnectionStrategy.ZkUpdate;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
@@ -55,9 +56,14 @@ public class SolrZkClient {
   public SolrZkClient(String zkServerAddress, int zkClientTimeout,
       ZkClientConnectionStrategy strat) throws InterruptedException,
       TimeoutException, IOException {
-    connManager = new ConnectionManager("ZooKeeperConnection Watcher",
+    connManager = new ConnectionManager("ZooKeeperConnection Watcher", this,
         zkServerAddress, zkClientTimeout, strat);
-    this.keeper = strat.connect(zkServerAddress, zkClientTimeout, connManager);
+    strat.connect(zkServerAddress, zkClientTimeout, connManager, new ZkUpdate() {
+      @Override
+      public void update(ZooKeeper zooKeeper) {
+        keeper = zooKeeper;
+      }
+    });
     connManager.waitForConnected(CONNECT_TIMEOUT);
   }
 
@@ -313,5 +319,9 @@ public class SolrZkClient {
    */
   public void close() throws InterruptedException {
     keeper.close();
+  }
+
+  void updateKeeper(ZooKeeper keeper) {
+   this.keeper = keeper;
   }
 }
