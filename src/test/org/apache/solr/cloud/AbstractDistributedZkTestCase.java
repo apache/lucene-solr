@@ -24,8 +24,8 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.TestHarness;
 
-public abstract class AbstractDistributedZooKeeperTestCase extends BaseDistributedSearchTestCase {
-  private ZooKeeperTestServer zkServer;
+public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearchTestCase {
+  private ZkTestServer zkServer;
 
   protected File tmpDir = new File(System.getProperty("java.io.tmpdir")
       + System.getProperty("file.separator") + getClass().getName() + "-"
@@ -37,14 +37,14 @@ public abstract class AbstractDistributedZooKeeperTestCase extends BaseDistribut
     log.info("####SETUP_START " + getName());
     portSeed = 13000;
     
-    System.setProperty("zkHost", AbstractZooKeeperTestCase.ZOO_KEEPER_HOST);
+    System.setProperty("zkHost", AbstractZkTestCase.ZOO_KEEPER_HOST);
     String zkDir = tmpDir.getAbsolutePath() + File.separator
     + "zookeeper/server1/data";
-    zkServer = new ZooKeeperTestServer(zkDir);
+    zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     
     
-    AbstractZooKeeperTestCase.buildZooKeeper(getSolrConfigFile(), getSchemaFile());
+    AbstractZkTestCase.buildZooKeeper(getSolrConfigFile(), getSchemaFile());
 
     dataDir = tmpDir;
     dataDir.mkdirs();
@@ -55,8 +55,8 @@ public abstract class AbstractDistributedZooKeeperTestCase extends BaseDistribut
 
     CoreContainer.Initializer init = new CoreContainer.Initializer() {
       {
-        this.dataDir = AbstractDistributedZooKeeperTestCase.this.dataDir.getAbsolutePath();
-        this.solrConfigFilename = AbstractDistributedZooKeeperTestCase.this.getSolrConfigFilename();
+        this.dataDir = AbstractDistributedZkTestCase.this.dataDir.getAbsolutePath();
+        this.solrConfigFilename = AbstractDistributedZkTestCase.this.getSolrConfigFilename();
       }
     };
 
@@ -94,7 +94,7 @@ public abstract class AbstractDistributedZooKeeperTestCase extends BaseDistribut
   }
   
   private void printeLayout() throws Exception {
-    SolrZkClient zkClient = new SolrZkClient(AbstractZooKeeperTestCase.JUST_HOST_NAME, AbstractZooKeeperTestCase.TIMEOUT);
+    SolrZkClient zkClient = new SolrZkClient(AbstractZkTestCase.JUST_HOST_NAME, AbstractZkTestCase.TIMEOUT);
     zkClient.printLayoutToStdOut();
     zkClient.close();
   }

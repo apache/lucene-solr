@@ -25,7 +25,7 @@ import org.apache.solr.update.SolrIndexWriter;
  * TODO: assert config came from ZooKeeper
  *
  */
-public class BasicZooKeeperTest extends AbstractZooKeeperTestCase {
+public class BasicZkTest extends AbstractZkTestCase {
   public void testBasic() throws Exception {
     // test using ZooKeeper
     assertTrue("Not using ZooKeeper", h.getCoreContainer().isZooKeeperAware());

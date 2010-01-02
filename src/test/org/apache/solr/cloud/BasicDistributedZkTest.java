@@ -26,7 +26,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
  * nocommit: 
  *
  */
-public class BasicDistributedZooKeeperTest extends AbstractDistributedZooKeeperTestCase {
+public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   @Override
   public String getSchemaFile() {
     return "schema.xml";

@@ -56,7 +56,7 @@ import org.xml.sax.SAXException;
  * 
  * TODO: handle ZooKeeper goes down / failures, Solr still runs
  */
-public final class ZooKeeperController {
+public final class ZkController {
   static final String NEWL = System.getProperty("line.separator");
   
   private static final String COLLECTIONS_ZKNODE = "/collections/";
@@ -77,9 +77,9 @@ public final class ZooKeeperController {
   // watches the shards zkNode
   static class ShardsWatcher implements Watcher {
 
-    private ZooKeeperController controller;
+    private ZkController controller;
 
-    public ShardsWatcher(ZooKeeperController controller) {
+    public ShardsWatcher(ZkController controller) {
       this.controller = controller;
     }
 
@@ -118,7 +118,7 @@ public final class ZooKeeperController {
   private final static Pattern URL_PREFIX = Pattern.compile("(https?://).*");
 
   private static Logger log = LoggerFactory
-      .getLogger(ZooKeeperController.class);
+      .getLogger(ZkController.class);
 
   private SolrZkClient zkClient;
 
@@ -156,7 +156,7 @@ public final class ZooKeeperController {
    * @throws TimeoutException 
    * @throws InterruptedException 
    */
-  public ZooKeeperController(String zkServerAddress, String collection,
+  public ZkController(String zkServerAddress, String collection,
       String hostUrl, String hostPort, String hostContext, int zkClientTimeout) throws InterruptedException, TimeoutException, IOException {
 
     this.collectionName = collection;

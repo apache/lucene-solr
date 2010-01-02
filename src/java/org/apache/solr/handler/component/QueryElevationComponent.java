@@ -44,7 +44,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.StringHelper;
-import org.apache.solr.cloud.ZooKeeperController;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DOMUtil;
@@ -173,7 +173,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         boolean exists = false;
         //nocommit: double check this how we want to handle this
         // check if using ZooKeeper
-        ZooKeeperController zooKeeperController = core.getCoreDescriptor().getCoreContainer().getZooKeeperController();
+        ZkController zooKeeperController = core.getCoreDescriptor().getCoreContainer().getZooKeeperController();
         if(zooKeeperController != null) {
           exists = zooKeeperController.configFileExists(f);
         } else {

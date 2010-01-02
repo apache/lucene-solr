@@ -28,22 +28,22 @@ import org.slf4j.LoggerFactory;
 /**
  * Base test class for ZooKeeper tests.
  */
-public abstract class AbstractZooKeeperTestCase extends AbstractSolrTestCase {
+public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
 
   static final String ZOO_KEEPER_HOST = "localhost:2181/solr";
   static final int TIMEOUT = 10000;
 
   protected static Logger log = LoggerFactory
-      .getLogger(AbstractZooKeeperTestCase.class);
+      .getLogger(AbstractZkTestCase.class);
 
 
   protected File tmpDir = new File(System.getProperty("java.io.tmpdir")
       + System.getProperty("file.separator") + getClass().getName() + "-"
       + System.currentTimeMillis());
 
-  private ZooKeeperTestServer zkServer;
+  private ZkTestServer zkServer;
 
-  public AbstractZooKeeperTestCase() {
+  public AbstractZkTestCase() {
 
   }
 
@@ -60,7 +60,7 @@ public abstract class AbstractZooKeeperTestCase extends AbstractSolrTestCase {
       System.setProperty("zkHost", ZOO_KEEPER_HOST);
       String zkDir = tmpDir.getAbsolutePath() + File.separator
       + "zookeeper/server1/data";
-      zkServer = new ZooKeeperTestServer(zkDir);
+      zkServer = new ZkTestServer(zkDir);
       zkServer.run();
 
       buildZooKeeper(getSolrConfigFile(), getSchemaFile());
@@ -75,7 +75,7 @@ public abstract class AbstractZooKeeperTestCase extends AbstractSolrTestCase {
 
       CoreContainer.Initializer init = new CoreContainer.Initializer() {
         {
-          this.dataDir = AbstractZooKeeperTestCase.this.dataDir
+          this.dataDir = AbstractZkTestCase.this.dataDir
               .getAbsolutePath();
         }
       };
@@ -90,17 +90,17 @@ public abstract class AbstractZooKeeperTestCase extends AbstractSolrTestCase {
 
   }
 
-  final static String JUST_HOST_NAME = AbstractZooKeeperTestCase.ZOO_KEEPER_HOST.substring(0,
-      AbstractZooKeeperTestCase.ZOO_KEEPER_HOST.indexOf('/'));
+  final static String JUST_HOST_NAME = AbstractZkTestCase.ZOO_KEEPER_HOST.substring(0,
+      AbstractZkTestCase.ZOO_KEEPER_HOST.indexOf('/'));
   
   // static to share with distrib test
   static void buildZooKeeper(String config, String schema)
       throws Exception {
-    SolrZkClient zkClient = new SolrZkClient(JUST_HOST_NAME, AbstractZooKeeperTestCase.TIMEOUT);
+    SolrZkClient zkClient = new SolrZkClient(JUST_HOST_NAME, AbstractZkTestCase.TIMEOUT);
     zkClient.makePath("/solr");
     zkClient.close();
 
-    zkClient = new SolrZkClient(ZOO_KEEPER_HOST, AbstractZooKeeperTestCase.TIMEOUT);
+    zkClient = new SolrZkClient(ZOO_KEEPER_HOST, AbstractZkTestCase.TIMEOUT);
     
     zkClient.makePath("/collections/collection1/config=collection1");
 
@@ -130,9 +130,9 @@ public abstract class AbstractZooKeeperTestCase extends AbstractSolrTestCase {
 
   private void printLayout() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(
-        AbstractZooKeeperTestCase.ZOO_KEEPER_HOST.substring(0,
-            AbstractZooKeeperTestCase.ZOO_KEEPER_HOST.indexOf('/')),
-        AbstractZooKeeperTestCase.TIMEOUT);
+        AbstractZkTestCase.ZOO_KEEPER_HOST.substring(0,
+            AbstractZkTestCase.ZOO_KEEPER_HOST.indexOf('/')),
+        AbstractZkTestCase.TIMEOUT);
     zkClient.printLayoutToStdOut();
     zkClient.close();
   }

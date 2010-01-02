@@ -20,7 +20,7 @@ package org.apache.solr.cloud;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
 
-public class ZooKeeperTestServer {
+public class ZkTestServer {
   private static final int PORT = 2181;
 
   protected ZKServerMain zkServer = new ZKServerMain();
@@ -33,7 +33,7 @@ public class ZooKeeperTestServer {
     }
   }
 
-  public ZooKeeperTestServer(String zkDir) {
+  public ZkTestServer(String zkDir) {
     this.zkDir = zkDir;
   }
 

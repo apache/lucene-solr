@@ -27,13 +27,13 @@ import org.apache.solr.core.SolrResourceLoader;
  * ResourceLoader that works with ZooKeeper.
  *
  */
-public class ZooKeeperSolrResourceLoader extends SolrResourceLoader {
+public class ZkSolrResourceLoader extends SolrResourceLoader {
 
   private String collection;
-  private ZooKeeperController zkController;
+  private ZkController zkController;
 
-  public ZooKeeperSolrResourceLoader(String instanceDir, String collection,
-      ZooKeeperController zooKeeperController) {
+  public ZkSolrResourceLoader(String instanceDir, String collection,
+      ZkController zooKeeperController) {
     super(instanceDir);
     this.zkController = zooKeeperController;
     this.collection = collection;
@@ -47,8 +47,8 @@ public class ZooKeeperSolrResourceLoader extends SolrResourceLoader {
    * the "lib/" directory in the specified instance directory.
    * <p>
    */
-  public ZooKeeperSolrResourceLoader(String instanceDir, String collection, ClassLoader parent,
-      Properties coreProperties, ZooKeeperController zooKeeperController) {
+  public ZkSolrResourceLoader(String instanceDir, String collection, ClassLoader parent,
+      Properties coreProperties, ZkController zooKeeperController) {
     super(instanceDir, parent, coreProperties);
     this.collection = collection;
     this.zkController = zooKeeperController;

@@ -32,8 +32,8 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 
-import org.apache.solr.cloud.ZooKeeperSolrResourceLoader;
-import org.apache.solr.cloud.ZooKeeperController;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.DOMUtil;
@@ -83,7 +83,7 @@ public class CoreContainer
   protected String zkPortOverride;
   protected String collection;
   private String testShardsListOverride;
-  private ZooKeeperController zooKeeperController;
+  private ZkController zooKeeperController;
 
   private String zkHost;
 
@@ -104,7 +104,7 @@ public class CoreContainer
     if (zookeeperHost != null) {
       try {
         // nocommit : exceptions
-        zooKeeperController = new ZooKeeperController(zookeeperHost, collection, host,  hostPort, hostContext, zkClientTimeout);
+        zooKeeperController = new ZkController(zookeeperHost, collection, host,  hostPort, hostContext, zkClientTimeout);
       } catch (InterruptedException e) {
         // TODO Auto-generated catch block
         e.printStackTrace();
@@ -490,7 +490,7 @@ public class CoreContainer
       solrLoader = new SolrResourceLoader(instanceDir, libLoader, getCoreProps(instanceDir, dcore.getPropertiesName(),dcore.getCoreProperties()));
       config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
     } else {
-      solrLoader = new ZooKeeperSolrResourceLoader(instanceDir, collection, libLoader, getCoreProps(instanceDir, dcore.getPropertiesName(),dcore.getCoreProperties()), zooKeeperController);
+      solrLoader = new ZkSolrResourceLoader(instanceDir, collection, libLoader, getCoreProps(instanceDir, dcore.getPropertiesName(),dcore.getCoreProperties()), zooKeeperController);
       try {
         config = zooKeeperController.getConfig(zooKeeperController.getConfigName(), dcore.getConfigName(), solrLoader);
       } catch (KeeperException e) {
@@ -947,7 +947,7 @@ public class CoreContainer
     return zooKeeperController != null;
   }
   
-  public ZooKeeperController getZooKeeperController() {
+  public ZkController getZooKeeperController() {
     return zooKeeperController;
   }
 }

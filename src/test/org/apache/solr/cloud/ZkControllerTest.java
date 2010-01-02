@@ -30,7 +30,7 @@ import junit.framework.TestCase;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 
-public class ZooKeeperControllerTest extends TestCase {
+public class ZkControllerTest extends TestCase {
 
   private static final String COLLECTION_NAME = "collection1";
 
@@ -54,10 +54,10 @@ public class ZooKeeperControllerTest extends TestCase {
   public void testReadShards() throws Exception {
     String zkDir = tmpDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
-    ZooKeeperTestServer server = null;
+    ZkTestServer server = null;
       SolrZkClient zkClient = null;
     try {
-    server = new ZooKeeperTestServer(zkDir);
+    server = new ZkTestServer(zkDir);
     server.run();
 
     makeSolrZkNode();
@@ -77,7 +77,7 @@ public class ZooKeeperControllerTest extends TestCase {
       zkClient.printLayoutToStdOut();
     }
 
-    ZooKeeperController zkController = new ZooKeeperController(ZOO_KEEPER_ADDRESS, "collection1", "localhost", "8983", "/solr", TIMEOUT);
+    ZkController zkController = new ZkController(ZOO_KEEPER_ADDRESS, "collection1", "localhost", "8983", "/solr", TIMEOUT);
     Map<String,ShardInfoList> shardInfoMap = zkController.readShardInfo(shardsPath);
     assertTrue(shardInfoMap.size() > 0);
     
@@ -120,7 +120,7 @@ public class ZooKeeperControllerTest extends TestCase {
     String zkDir = tmpDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
 
-    ZooKeeperTestServer server = new ZooKeeperTestServer(zkDir);
+    ZkTestServer server = new ZkTestServer(zkDir);
     server.run();
 
     makeSolrZkNode();
@@ -135,7 +135,7 @@ public class ZooKeeperControllerTest extends TestCase {
       zkClient.printLayoutToStdOut();
     }
     
-    ZooKeeperController zkController = new ZooKeeperController(ZOO_KEEPER_ADDRESS, "collection1", "localhost", "8983", "/solr", TIMEOUT);
+    ZkController zkController = new ZkController(ZOO_KEEPER_ADDRESS, "collection1", "localhost", "8983", "/solr", TIMEOUT);
     String configName = zkController.readConfigName(COLLECTION_NAME);
     assertEquals(configName, actualConfigName);
     
@@ -152,10 +152,10 @@ public class ZooKeeperControllerTest extends TestCase {
     Properties props = new Properties();
     props.put(CollectionInfo.URL_PROP, url);
     props.put(CollectionInfo.SHARD_LIST_PROP, shardList);
-    props.store(baos, ZooKeeperController.PROPS_DESC);
+    props.store(baos, ZkController.PROPS_DESC);
 
     zkClient.create(shardsPath
-        + ZooKeeperController.NODE_ZKPREFIX, baos.toByteArray(), CreateMode.EPHEMERAL_SEQUENTIAL, null);
+        + ZkController.NODE_ZKPREFIX, baos.toByteArray(), CreateMode.EPHEMERAL_SEQUENTIAL, null);
   }
 
   private void makeSolrZkNode() throws Exception {
