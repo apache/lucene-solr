@@ -30,7 +30,8 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
 
-  static final String ZOO_KEEPER_HOST = "localhost:2181/solr";
+  static final String ZOO_KEEPER_ADDRESS = "localhost:2181/solr";
+  static final String ZOO_KEEPER_SERVER = "localhost:2181";
   static final int TIMEOUT = 10000;
 
   protected static Logger log = LoggerFactory
@@ -57,7 +58,7 @@ public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
 
   public void setUp() throws Exception {
     try {
-      System.setProperty("zkHost", ZOO_KEEPER_HOST);
+      System.setProperty("zkHost", ZOO_KEEPER_ADDRESS);
       String zkDir = tmpDir.getAbsolutePath() + File.separator
       + "zookeeper/server1/data";
       zkServer = new ZkTestServer(zkDir);
@@ -90,8 +91,8 @@ public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
 
   }
 
-  final static String JUST_HOST_NAME = AbstractZkTestCase.ZOO_KEEPER_HOST.substring(0,
-      AbstractZkTestCase.ZOO_KEEPER_HOST.indexOf('/'));
+  final static String JUST_HOST_NAME = AbstractZkTestCase.ZOO_KEEPER_ADDRESS.substring(0,
+      AbstractZkTestCase.ZOO_KEEPER_ADDRESS.indexOf('/'));
   
   // static to share with distrib test
   static void buildZooKeeper(String config, String schema)
@@ -100,7 +101,7 @@ public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
     zkClient.makePath("/solr");
     zkClient.close();
 
-    zkClient = new SolrZkClient(ZOO_KEEPER_HOST, AbstractZkTestCase.TIMEOUT);
+    zkClient = new SolrZkClient(ZOO_KEEPER_ADDRESS, AbstractZkTestCase.TIMEOUT);
     
     zkClient.makePath("/collections/collection1/config=collection1");
 
@@ -130,10 +131,15 @@ public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
 
   private void printLayout() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(
-        AbstractZkTestCase.ZOO_KEEPER_HOST.substring(0,
-            AbstractZkTestCase.ZOO_KEEPER_HOST.indexOf('/')),
+        AbstractZkTestCase.ZOO_KEEPER_SERVER,
         AbstractZkTestCase.TIMEOUT);
     zkClient.printLayoutToStdOut();
+    zkClient.close();
+  }
+  
+  static void makeSolrZkNode() throws Exception {
+    SolrZkClient zkClient = new SolrZkClient(ZOO_KEEPER_SERVER, TIMEOUT);
+    zkClient.makePath("/solr");
     zkClient.close();
   }
 }

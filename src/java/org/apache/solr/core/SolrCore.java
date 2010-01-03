@@ -285,6 +285,9 @@ public final class SolrCore implements SolrInfoMBean {
   List<SolrEventListener> newSearcherListeners;
 
   private ZkController zooKeeperComponent;
+  
+  // path of node that represents this core in ZooKeeper
+  private String zkNodePath;
 
   /**
    * NOTE: this function is not thread safe.  However, it is safe to call within the
@@ -528,7 +531,7 @@ public final class SolrCore implements SolrInfoMBean {
     
     zooKeeperComponent = cd.getCoreContainer().getZooKeeperController();
     if(zooKeeperComponent != null) {
-      zooKeeperComponent.registerShard(this);
+      this.zkNodePath = zooKeeperComponent.registerShard(this);
     }
 
     //Initialize JMX
@@ -701,6 +704,7 @@ public final class SolrCore implements SolrInfoMBean {
    * @see #isClosed() 
    */
   public void close() {
+    
     int count = refCount.decrementAndGet();
     if (count > 0) return; // close is called often, and only actually closes if nothing is using it.
     if (count < 0) {
@@ -708,6 +712,10 @@ public final class SolrCore implements SolrInfoMBean {
       return;
     }
     log.info(logid+" CLOSING SolrCore " + this);
+    // nocommit : if ZooKeeper, unregister core
+    if(zooKeeperComponent != null) {
+      zooKeeperComponent.unRegisterShard(this, zkNodePath);
+    }
     try {
       infoRegistry.clear();
     } catch (Exception e) {

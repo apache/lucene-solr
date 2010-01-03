@@ -39,6 +39,7 @@ public class ZkControllerTest extends TestCase {
   private static final String SHARD1 = "shard1";
 
   static final String ZOO_KEEPER_ADDRESS = "localhost:2181/solr";
+
   static final String ZOO_KEEPER_HOST = "localhost:2181";
 
   static final int TIMEOUT = 10000;
@@ -55,62 +56,65 @@ public class ZkControllerTest extends TestCase {
     String zkDir = tmpDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     ZkTestServer server = null;
-      SolrZkClient zkClient = null;
+    SolrZkClient zkClient = null;
     try {
-    server = new ZkTestServer(zkDir);
-    server.run();
+      server = new ZkTestServer(zkDir);
+      server.run();
 
-    makeSolrZkNode();
-    
-    zkClient = new SolrZkClient(ZOO_KEEPER_ADDRESS, TIMEOUT);
-    String shardsPath = "/collections/collection1/shards";
-    zkClient.makePath(shardsPath);
-    
-    zkClient.makePath("collections/collection1/config=collection1");
+      AbstractZkTestCase.makeSolrZkNode();
 
-    addShardToZk(zkClient, shardsPath, URL1, SHARD1 + "," + SHARD2);
-    addShardToZk(zkClient, shardsPath, "http://localhost:3123/solr/core1", SHARD1);
-    addShardToZk(zkClient, shardsPath, "http://localhost:3133/solr/core1", SHARD1);
+      zkClient = new SolrZkClient(ZOO_KEEPER_ADDRESS, TIMEOUT);
+      String shardsPath = "/collections/collection1/shards";
+      zkClient.makePath(shardsPath);
 
+      zkClient.makePath("collections/collection1/config=collection1");
 
-    if (DEBUG) {
-      zkClient.printLayoutToStdOut();
-    }
+      addShardToZk(zkClient, shardsPath, URL1, SHARD1 + "," + SHARD2);
+      addShardToZk(zkClient, shardsPath, "http://localhost:3123/solr/core1",
+          SHARD1);
+      addShardToZk(zkClient, shardsPath, "http://localhost:3133/solr/core1",
+          SHARD1);
 
-    ZkController zkController = new ZkController(ZOO_KEEPER_ADDRESS, "collection1", "localhost", "8983", "/solr", TIMEOUT);
-    Map<String,ShardInfoList> shardInfoMap = zkController.readShardInfo(shardsPath);
-    assertTrue(shardInfoMap.size() > 0);
-    
-    Set<Entry<String,ShardInfoList>> entries = shardInfoMap.entrySet();
-
-    if (DEBUG) {
-      for (Entry<String,ShardInfoList> entry : entries) {
-        System.out.println("shard:" + entry.getKey() + " value:"
-            + entry.getValue().toString());
+      if (DEBUG) {
+        zkClient.printLayoutToStdOut();
       }
-    }
 
-    Set<String> keys = shardInfoMap.keySet();
+      ZkController zkController = new ZkController(ZOO_KEEPER_ADDRESS,
+          "collection1", "localhost", "8983", "/solr", TIMEOUT);
+      Map<String,ShardInfoList> shardInfoMap = zkController
+          .readShardInfo(shardsPath);
+      assertTrue(shardInfoMap.size() > 0);
 
-    assertTrue(keys.size() == 2);
+      Set<Entry<String,ShardInfoList>> entries = shardInfoMap.entrySet();
 
-    assertTrue(keys.contains(SHARD1));
-    assertTrue(keys.contains(SHARD2));
+      if (DEBUG) {
+        for (Entry<String,ShardInfoList> entry : entries) {
+          System.out.println("shard:" + entry.getKey() + " value:"
+              + entry.getValue().toString());
+        }
+      }
 
-    ShardInfoList shardInfoList = shardInfoMap.get(SHARD1);
+      Set<String> keys = shardInfoMap.keySet();
 
-    assertEquals(3, shardInfoList.getShards().size());
+      assertTrue(keys.size() == 2);
 
-    shardInfoList = shardInfoMap.get(SHARD2);
+      assertTrue(keys.contains(SHARD1));
+      assertTrue(keys.contains(SHARD2));
 
-    assertEquals(1, shardInfoList.getShards().size());
+      ShardInfoList shardInfoList = shardInfoMap.get(SHARD1);
 
-    assertEquals(URL1, shardInfoList.getShards().get(0).getUrl());
+      assertEquals(3, shardInfoList.getShards().size());
+
+      shardInfoList = shardInfoMap.get(SHARD2);
+
+      assertEquals(1, shardInfoList.getShards().size());
+
+      assertEquals(URL1, shardInfoList.getShards().get(0).getUrl());
     } finally {
-      if(zkClient != null) {
+      if (zkClient != null) {
         zkClient.close();
       }
-      if(server != null) {
+      if (server != null) {
         server.shutdown();
       }
     }
@@ -123,25 +127,27 @@ public class ZkControllerTest extends TestCase {
     ZkTestServer server = new ZkTestServer(zkDir);
     server.run();
 
-    makeSolrZkNode();
+    AbstractZkTestCase.makeSolrZkNode();
 
     SolrZkClient zkClient = new SolrZkClient(ZOO_KEEPER_ADDRESS, TIMEOUT);
     String actualConfigName = "firstConfig";
-      
-    String shardsPath = "/collections/" + COLLECTION_NAME + "/config=" + actualConfigName;
+
+    String shardsPath = "/collections/" + COLLECTION_NAME + "/config="
+        + actualConfigName;
     zkClient.makePath(shardsPath);
 
     if (DEBUG) {
       zkClient.printLayoutToStdOut();
     }
-    
-    ZkController zkController = new ZkController(ZOO_KEEPER_ADDRESS, "collection1", "localhost", "8983", "/solr", TIMEOUT);
+
+    ZkController zkController = new ZkController(ZOO_KEEPER_ADDRESS,
+        "collection1", "localhost", "8983", "/solr", TIMEOUT);
     String configName = zkController.readConfigName(COLLECTION_NAME);
     assertEquals(configName, actualConfigName);
-    
+
     zkClient.close();
     server.shutdown();
-    
+
   }
 
   private void addShardToZk(SolrZkClient zkClient, String shardsPath,
@@ -154,13 +160,9 @@ public class ZkControllerTest extends TestCase {
     props.put(CollectionInfo.SHARD_LIST_PROP, shardList);
     props.store(baos, ZkController.PROPS_DESC);
 
-    zkClient.create(shardsPath
-        + ZkController.NODE_ZKPREFIX, baos.toByteArray(), CreateMode.EPHEMERAL_SEQUENTIAL, null);
+    zkClient.create(shardsPath + ZkController.NODE_ZKPREFIX,
+        baos.toByteArray(), CreateMode.EPHEMERAL_SEQUENTIAL);
   }
 
-  private void makeSolrZkNode() throws Exception {
-    SolrZkClient zkClient = new SolrZkClient(ZOO_KEEPER_HOST, TIMEOUT);
-    zkClient.makePath("/solr");
-    zkClient.close();
-  }
+
 }

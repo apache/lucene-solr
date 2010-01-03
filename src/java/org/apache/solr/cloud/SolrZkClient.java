@@ -35,6 +35,14 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 
+ * All Solr ZooKeeper interactions should go through this class rather than
+ * ZooKeeper. This class handles synchronous connects and reconnections.
+ * 
+ * nocommit: and may end up optionally queuing commands when zk is down
+ *
+ */
 public class SolrZkClient {
   static final String NEWL = System.getProperty("line.separator");
 
@@ -49,10 +57,25 @@ public class SolrZkClient {
 
   private volatile ZooKeeper keeper;
   
+  /**
+   * @param zkServerAddress
+   * @param zkClientTimeout
+   * @throws InterruptedException
+   * @throws TimeoutException
+   * @throws IOException
+   */
   public SolrZkClient(String zkServerAddress, int zkClientTimeout) throws InterruptedException, TimeoutException, IOException {
     this(zkServerAddress, zkClientTimeout, new DefaultConnectionStrategy());
   }
 
+  /**
+   * @param zkServerAddress
+   * @param zkClientTimeout
+   * @param strat
+   * @throws InterruptedException
+   * @throws TimeoutException
+   * @throws IOException
+   */
   public SolrZkClient(String zkServerAddress, int zkClientTimeout,
       ZkClientConnectionStrategy strat) throws InterruptedException,
       TimeoutException, IOException {
@@ -67,35 +90,88 @@ public class SolrZkClient {
     connManager.waitForConnected(CONNECT_TIMEOUT);
   }
 
+  /**
+   * @return true if client is connected
+   */
   public boolean isConnected() {
     return keeper != null && keeper.getState() == ZooKeeper.States.CONNECTED;
   }
+  
+  /**
+   * @param path
+   * @param version
+   * @throws InterruptedException
+   * @throws KeeperException
+   */
+  public void delete(final String path, int version)
+      throws InterruptedException, KeeperException {
+    keeper.delete(path, version);
+  }
 
+  /**
+   * @param path
+   * @param watcher
+   * @return
+   * @throws KeeperException
+   * @throws InterruptedException
+   */
   public Stat exists(final String path, Watcher watcher)
       throws KeeperException, InterruptedException {
     return keeper.exists(path, watcher);
   }
 
+  /**
+   * @param path
+   * @param data
+   * @param acl
+   * @param createMode
+   * @return
+   * @throws KeeperException
+   * @throws InterruptedException
+   */
   public String create(final String path, byte data[], List<ACL> acl,
       CreateMode createMode) throws KeeperException, InterruptedException {
     return keeper.create(path, data, acl, createMode);
   }
 
+  /**
+   * @param path
+   * @param watcher
+   * @return
+   * @throws KeeperException
+   * @throws InterruptedException
+   */
   public List<String> getChildren(final String path, Watcher watcher)
       throws KeeperException, InterruptedException {
     return keeper.getChildren(path, watcher);
   }
 
+  /**
+   * @param path
+   * @param watcher
+   * @param stat
+   * @return
+   * @throws KeeperException
+   * @throws InterruptedException
+   */
   public byte[] getData(final String path, Watcher watcher, Stat stat)
       throws KeeperException, InterruptedException {
     return keeper.getData(path, watcher, stat);
   }
 
+  /**
+   * @param path
+   * @param data
+   * @param version
+   * @return
+   * @throws KeeperException
+   * @throws InterruptedException
+   */
   public Stat setData(final String path, byte data[], int version)
       throws KeeperException, InterruptedException {
     return keeper.setData(path, data, version);
   }
-
+  
   /**
    * 
    * @param path
@@ -105,13 +181,9 @@ public class SolrZkClient {
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public String create(String path, byte[] data, CreateMode createMode,
-      Watcher watcher) throws KeeperException, InterruptedException {
+  public String create(String path, byte[] data, CreateMode createMode) throws KeeperException, InterruptedException {
 
-    String zkPath = keeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE,
-        createMode);
-    // nocommit : race issue on keeper switch
-    exists(zkPath, watcher);
+    String zkPath = keeper.create(path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE, createMode);
 
     return zkPath;
   }
@@ -321,7 +393,17 @@ public class SolrZkClient {
     keeper.close();
   }
 
+  /**
+   * Allows package private classes to update volatile ZooKeeper.
+   * 
+   * @param keeper
+   */
   void updateKeeper(ZooKeeper keeper) {
    this.keeper = keeper;
+  }
+
+  // for testing
+  void dissconect() throws InterruptedException {
+    this.keeper.close();
   }
 }

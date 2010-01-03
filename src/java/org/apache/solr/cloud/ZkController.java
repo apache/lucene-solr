@@ -142,13 +142,13 @@ public final class ZkController {
 
   private String zooKeeperHostName;
 
-  private int zkClientTimeout;
+  private String hostName;
 
   /**
    * 
    * @param zkServerAddress ZooKeeper server host address
    * @param collection
-   * @param hostUrl
+   * @param hostName
    * @param hostPort
    * @param hostContext
    * @param zkClientTimeout
@@ -157,13 +157,13 @@ public final class ZkController {
    * @throws InterruptedException 
    */
   public ZkController(String zkServerAddress, String collection,
-      String hostUrl, String hostPort, String hostContext, int zkClientTimeout) throws InterruptedException, TimeoutException, IOException {
+      String hostName, String hostPort, String hostContext, int zkClientTimeout) throws InterruptedException, TimeoutException, IOException {
 
     this.collectionName = collection;
     this.zkServerAddress = zkServerAddress;
-    this.zkClientTimeout = zkClientTimeout;
     this.hostPort = hostPort;
     this.hostContext = hostContext;
+    this.hostName = hostName;
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout);
 
     shardsZkPath = COLLECTIONS_ZKNODE + collectionName + SHARDS_ZKNODE;
@@ -178,7 +178,6 @@ public final class ZkController {
       Matcher m = URL_POST.matcher(zooKeeperHostName);
       if (m.matches()) {
         String hostName = m.group(1);
-
         // register host
         zkClient.makePath(hostName);
       } else {
@@ -307,8 +306,9 @@ public final class ZkController {
    * ZooKeeper.
    * 
    * @param core
+   * @return
    */
-  public void registerShard(SolrCore core) {
+  public String registerShard(SolrCore core) {
     String coreName = core.getCoreDescriptor().getName();
     String shardUrl = zooKeeperHostName + ":" + hostPort + "/" + hostContext
         + "/" + coreName;
@@ -319,6 +319,7 @@ public final class ZkController {
           + shardUrl);
     }
 
+    String nodePath = null;
     try {
       // create node
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -331,38 +332,67 @@ public final class ZkController {
       props.put(CollectionInfo.SHARD_LIST_PROP, shardList == null ? "" : shardList);
       props.store(baos, PROPS_DESC);
 
-      zkClient.create(shardsZkPath + NODE_ZKPREFIX, baos
-          .toByteArray(), CreateMode.EPHEMERAL_SEQUENTIAL, SHARD_WATCHER);
+      
+      nodePath = zkClient.create(shardsZkPath + NODE_ZKPREFIX, baos
+          .toByteArray(), CreateMode.EPHEMERAL_SEQUENTIAL);
+      // nocommit
+      zkClient.exists(shardsZkPath, SHARD_WATCHER);
 
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
-    } catch (Exception e) {
+    } catch (KeeperException e) {
+      log.error("ZooKeeper Exception", e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "ZooKeeper Exception", e);
+    } catch (IOException e) {
+      log.error("", e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "", e);
+    } 
+
+    return nodePath;
+  }
+  
+  /**
+   * @param core
+   * @param zkNodePath
+   */
+  public void unRegisterShard(SolrCore core, String zkNodePath) {
+    // nocommit : version?
+    try {
+      zkClient.delete(zkNodePath, -1);
+    } catch (InterruptedException e) {
+      // Restore the interrupted status
+      Thread.currentThread().interrupt();
+    } catch (KeeperException.NoNodeException e) {
+      // nocommit - this is okay - for some reason the node is already gone
+      log.warn("Unregistering core: " + core.getName()
+          + " but core's ZooKeeper node has already been removed");
+    } catch (KeeperException e) {
       log.error("ZooKeeper Exception", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "ZooKeeper Exception", e);
     }
-
   }
 
   // nocommit: fooling around
   private String getHostAddress() throws IOException {
-    String host = null;
 
-    if (host == null) {
-      host = "http://" + InetAddress.getLocalHost().getHostName();
+    if (hostName == null) {
+      hostName = "http://" + InetAddress.getLocalHost().getHostName();
     } else {
-      Matcher m = URL_PREFIX.matcher(host);
+      Matcher m = URL_PREFIX.matcher(hostName);
       if (m.matches()) {
         String prefix = m.group(1);
-        host = prefix + host;
+        hostName = prefix + hostName;
       }
     }
     if (log.isInfoEnabled()) {
-      log.info("Register host with ZooKeeper:" + host);
+      log.info("Register host with ZooKeeper:" + hostName);
     }
 
-    return host;
+    return hostName;
   }
 
   /**
@@ -413,28 +443,6 @@ public final class ZkController {
       throws KeeperException, InterruptedException {
     return zkClient.getData(CONFIGS_ZKNODE + zkConfigName, null, null);
   }
-
-  // /**
-  // * Get data at zkNode path/fileName.
-  // *
-  // * @param path to zkNode
-  // * @param fileName name of zkNode
-  // * @return data at path/file
-  // * @throws InterruptedException
-  // * @throws KeeperException
-  // */
-  // public byte[] getFile(String path, String fileName) throws KeeperException,
-  // InterruptedException {
-  // byte[] bytes = null;
-  // String configPath = path + "/" + fileName;
-  //
-  // if (log.isInfoEnabled()) {
-  // log.info("Reading " + fileName + " from zookeeper at " + configPath);
-  // }
-  // bytes = keeperConnection.getData(configPath, null, null);
-  //
-  // return bytes;
-  // }
 
   /**
    * Load IndexSchema from ZooKeeper.

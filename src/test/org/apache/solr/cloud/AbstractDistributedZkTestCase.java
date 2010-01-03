@@ -37,7 +37,7 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
     log.info("####SETUP_START " + getName());
     portSeed = 13000;
     
-    System.setProperty("zkHost", AbstractZkTestCase.ZOO_KEEPER_HOST);
+    System.setProperty("zkHost", AbstractZkTestCase.ZOO_KEEPER_ADDRESS);
     String zkDir = tmpDir.getAbsolutePath() + File.separator
     + "zookeeper/server1/data";
     zkServer = new ZkTestServer(zkDir);
