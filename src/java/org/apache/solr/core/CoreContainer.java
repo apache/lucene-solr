@@ -329,8 +329,7 @@ public class CoreContainer
 
           // deal with optional settings
           String opt = DOMUtil.getAttr(node, "config", null);
-          //nocommit
-          System.out.println("name:" + name + " c:" + solrConfigFilenameOverride);
+
           if(solrConfigFilenameOverride != null && name.equals("")) {
             p.setConfigName(solrConfigFilenameOverride);
           } else if (opt != null) {
