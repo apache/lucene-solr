@@ -64,6 +64,7 @@ import org.apache.lucene.search.Query;
  *             used along the transition from the old query parser to the new
  *             one
  */
+@Deprecated
 public class QueryParserWrapper {
 
   /**

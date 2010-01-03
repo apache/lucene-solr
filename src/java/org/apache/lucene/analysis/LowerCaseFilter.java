@@ -50,6 +50,7 @@ public final class LowerCaseFilter extends TokenFilter {
   /**
    * @deprecated Use {@link #LowerCaseFilter(Version, TokenStream)} instead.
    */
+  @Deprecated
   public LowerCaseFilter(TokenStream in) {
     this(Version.LUCENE_30, in);
   }

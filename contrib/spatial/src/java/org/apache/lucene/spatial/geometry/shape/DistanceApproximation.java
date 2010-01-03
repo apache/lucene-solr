@@ -27,6 +27,7 @@ package org.apache.lucene.spatial.geometry.shape;
  * @deprecated This has been replaced with more accurate
  * math in {@link LLRect}. This class will be removed in a future release.
  */
+@Deprecated
 public class DistanceApproximation
 {
   private double m_testLat;

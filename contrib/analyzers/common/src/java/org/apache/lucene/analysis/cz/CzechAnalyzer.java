@@ -62,6 +62,7 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
 	 * @deprecated use {@link #getDefaultStopSet()} instead
 	 */
   // TODO make this private in 3.1
+	@Deprecated
 	public final static String[] CZECH_STOP_WORDS = {
         "a","s","k","o","i","u","v","z","dnes","cz","t\u00edmto","bude\u0161","budem",
         "byli","jse\u0161","m\u016fj","sv\u00fdm","ta","tomto","tohle","tuto","tyto",
@@ -136,6 +137,7 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
    * @param stopwords a stopword set
    * @deprecated use {@link #CzechAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public CzechAnalyzer(Version matchVersion, String... stopwords) {
     this(matchVersion, StopFilter.makeStopSet( matchVersion, stopwords ));
 	}
@@ -148,6 +150,7 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
    * @param stopwords a stopword set
    * @deprecated use {@link #CzechAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public CzechAnalyzer(Version matchVersion, HashSet<?> stopwords) {
     this(matchVersion, (Set<?>)stopwords);
 	}
@@ -160,6 +163,7 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
    * @param stopwords a file containing stopwords
    * @deprecated use {@link #CzechAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public CzechAnalyzer(Version matchVersion, File stopwords ) throws IOException {
     this(matchVersion, (Set<?>)WordlistLoader.getWordSet( stopwords ));
 	}
@@ -172,6 +176,7 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
      *             and {@link #CzechAnalyzer(Version, Set)} instead
      */
     // TODO extend StopwordAnalyzerBase once this method is gone!
+    @Deprecated
     public void loadStopWords( InputStream wordfile, String encoding ) {
         setPreviousTokenStream(null); // force a new stopfilter to be created
         if ( wordfile == null ) {

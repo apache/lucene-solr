@@ -32,6 +32,7 @@ final class FieldsWriter
   static final byte FIELD_IS_BINARY = 0x2;
   
   /** @deprecated Kept for backwards-compatibility with <3.0 indexes; will be removed in 4.0 */
+  @Deprecated
   static final byte FIELD_IS_COMPRESSED = 0x4;
 
   // Original format

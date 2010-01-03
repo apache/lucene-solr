@@ -27,6 +27,7 @@ import java.util.Map;
  * A serializable Enum class.
  * @deprecated Use Java 5 enum, will be removed in a later Lucene 3.x release.
  */
+@Deprecated
 @SuppressWarnings("serial")
 public abstract class Parameter implements Serializable
 {

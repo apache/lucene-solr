@@ -44,6 +44,7 @@ import org.apache.lucene.util.NumericUtils; // for javadocs
  * This class is included for use with existing
  * indices and will be removed in a future release (possibly Lucene 4.0).
  */
+@Deprecated
 public class NumberTools {
 
     private static final int RADIX = 36;

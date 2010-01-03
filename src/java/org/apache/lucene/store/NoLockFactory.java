@@ -39,6 +39,7 @@ public class NoLockFactory extends LockFactory {
    * @see #getNoLockFactory()
    */
   // make private in 4.0!
+  @Deprecated
   public NoLockFactory() {}
 
   public static NoLockFactory getNoLockFactory() {

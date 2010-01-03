@@ -68,6 +68,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    * @deprecated use {@link #getDefaultStopSet()} instead
    */
   // TODO make this private in 3.1
+  @Deprecated
   public final static String[] FRENCH_STOP_WORDS = {
     "a", "afin", "ai", "ainsi", "après", "attendu", "au", "aujourd", "auquel", "aussi",
     "autre", "autres", "aux", "auxquelles", "auxquels", "avait", "avant", "avec", "avoir",
@@ -154,6 +155,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the given stop words.
    * @deprecated use {@link #FrenchAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public FrenchAnalyzer(Version matchVersion, String... stopwords) {
     this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
   }
@@ -163,6 +165,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    * @throws IOException
    * @deprecated use {@link #FrenchAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public FrenchAnalyzer(Version matchVersion, File stopwords) throws IOException {
     this(matchVersion, WordlistLoader.getWordSet(stopwords));
   }
@@ -171,6 +174,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    * Builds an exclusionlist from an array of Strings.
    * @deprecated use {@link #FrenchAnalyzer(Version, Set, Set)} instead
    */
+  @Deprecated
   public void setStemExclusionTable(String... exclusionlist) {
     excltable = StopFilter.makeStopSet(matchVersion, exclusionlist);
     setPreviousTokenStream(null); // force a new stemmer to be created
@@ -180,6 +184,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    * Builds an exclusionlist from a Map.
    * @deprecated use {@link #FrenchAnalyzer(Version, Set, Set)} instead
    */
+  @Deprecated
   public void setStemExclusionTable(Map<?,?> exclusionlist) {
     excltable = new HashSet<Object>(exclusionlist.keySet());
     setPreviousTokenStream(null); // force a new stemmer to be created
@@ -190,6 +195,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    * @throws IOException
    * @deprecated use {@link #FrenchAnalyzer(Version, Set, Set)} instead
    */
+  @Deprecated
   public void setStemExclusionTable(File exclusionlist) throws IOException {
     excltable = new HashSet<Object>(WordlistLoader.getWordSet(exclusionlist));
     setPreviousTokenStream(null); // force a new stemmer to be created

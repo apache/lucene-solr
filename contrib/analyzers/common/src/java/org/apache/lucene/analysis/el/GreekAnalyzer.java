@@ -95,6 +95,7 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase
      * @param stopwords Array of stopwords to use.
      * @deprecated use {@link #GreekAnalyzer(Version, Set)} instead
      */
+    @Deprecated
     public GreekAnalyzer(Version matchVersion, String... stopwords)
     {
       this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
@@ -104,6 +105,7 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase
      * Builds an analyzer with the given stop words.
      * @deprecated use {@link #GreekAnalyzer(Version, Set)} instead
      */
+    @Deprecated
     public GreekAnalyzer(Version matchVersion, Map<?,?> stopwords)
     {
       this(matchVersion, stopwords.keySet());

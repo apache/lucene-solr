@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * @deprecated Use {@link LowerCaseFilter} instead, which has the same
  *  functionality. This filter will be removed in Lucene 4.0
  */
+@Deprecated
 public final class RussianLowerCaseFilter extends TokenFilter
 {
     private TermAttribute termAtt;

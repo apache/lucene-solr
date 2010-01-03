@@ -58,6 +58,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
 	 * @deprecated use {@link #getDefaultStopSet()} instead
 	 */
   // TODO make this private in 3.1
+	@Deprecated
 	public final static String[] BRAZILIAN_STOP_WORDS = {
       "a","ainda","alem","ambas","ambos","antes",
       "ao","aonde","aos","apos","aquele","aqueles",
@@ -138,6 +139,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
 	 * Builds an analyzer with the given stop words.
 	 * @deprecated use {@link #BrazilianAnalyzer(Version, Set)} instead
 	 */
+  @Deprecated
   public BrazilianAnalyzer(Version matchVersion, String... stopwords) {
     this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
   }
@@ -146,6 +148,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the given stop words. 
    * @deprecated use {@link #BrazilianAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public BrazilianAnalyzer(Version matchVersion, Map<?,?> stopwords) {
     this(matchVersion, stopwords.keySet());
   }
@@ -154,6 +157,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the given stop words.
    * @deprecated use {@link #BrazilianAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public BrazilianAnalyzer(Version matchVersion, File stopwords)
       throws IOException {
     this(matchVersion, WordlistLoader.getWordSet(stopwords));
@@ -163,6 +167,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
 	 * Builds an exclusionlist from an array of Strings.
 	 * @deprecated use {@link #BrazilianAnalyzer(Version, Set, Set)} instead
 	 */
+	@Deprecated
 	public void setStemExclusionTable( String... exclusionlist ) {
 		excltable = StopFilter.makeStopSet( matchVersion, exclusionlist );
 		setPreviousTokenStream(null); // force a new stemmer to be created
@@ -171,6 +176,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
 	 * Builds an exclusionlist from a {@link Map}.
 	 * @deprecated use {@link #BrazilianAnalyzer(Version, Set, Set)} instead
 	 */
+	@Deprecated
 	public void setStemExclusionTable( Map<?,?> exclusionlist ) {
 		excltable = new HashSet<Object>(exclusionlist.keySet());
 		setPreviousTokenStream(null); // force a new stemmer to be created
@@ -179,6 +185,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
 	 * Builds an exclusionlist from the words contained in the given file.
 	 * @deprecated use {@link #BrazilianAnalyzer(Version, Set, Set)} instead
 	 */
+	@Deprecated
 	public void setStemExclusionTable( File exclusionlist ) throws IOException {
 		excltable = WordlistLoader.getWordSet( exclusionlist );
 		setPreviousTokenStream(null); // force a new stemmer to be created

@@ -29,6 +29,7 @@ import java.util.Set;
  * @deprecated Lucene's internal use of this class has now
  * switched to {@link DoubleBarrelLRUCache}.
  */
+@Deprecated
 public class SimpleMapCache<K,V> extends Cache<K,V> {
   protected Map<K,V> map;
   

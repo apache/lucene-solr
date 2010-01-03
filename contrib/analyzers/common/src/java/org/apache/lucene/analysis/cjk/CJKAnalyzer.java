@@ -45,6 +45,7 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
    */
   // TODO make this final in 3.1 -
   // this might be revised and merged with StopFilter stop words too
+  @Deprecated
   public final static String[] STOP_WORDS = {
     "a", "and", "are", "as", "at", "be",
     "but", "by", "for", "if", "in",
@@ -99,6 +100,7 @@ public final class CJKAnalyzer extends StopwordAnalyzerBase {
    * @param stopWords stop word array
    * @deprecated use {@link #CJKAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public CJKAnalyzer(Version matchVersion, String... stopWords) {
     super(matchVersion, StopFilter.makeStopSet(matchVersion, stopWords));
   }

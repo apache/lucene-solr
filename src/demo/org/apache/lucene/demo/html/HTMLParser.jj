@@ -70,6 +70,7 @@ public class HTMLParser {
   /**
    * @deprecated Use HTMLParser(FileInputStream) instead
    */
+  @Deprecated
   public HTMLParser(File file) throws FileNotFoundException {
     this(new FileInputStream(file));
   }

@@ -85,11 +85,13 @@ public abstract class Analyzer implements Closeable {
   }
 
   /** @deprecated */
+  @Deprecated
   protected boolean overridesTokenStreamMethod = false;
 
   /** @deprecated This is only present to preserve
    *  back-compat of classes that subclass a core analyzer
    *  and override tokenStream but not reusableTokenStream */
+  @Deprecated
   protected void setOverridesTokenStreamMethod(Class<? extends Analyzer> baseClass) {
     try {
       Method m = this.getClass().getMethod("tokenStream", String.class, Reader.class);

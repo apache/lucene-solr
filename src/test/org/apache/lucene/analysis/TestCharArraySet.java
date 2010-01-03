@@ -254,6 +254,7 @@ public class TestCharArraySet extends LuceneTestCase {
    * @deprecated remove this test when lucene 3.0 "broken unicode 4" support is
    *             no longer needed.
    */
+  @Deprecated
   public void testSupplementaryCharsBWCompat() {
     String missing = "Term %s is missing in the set";
     String falsePos = "Term %s is in the set but shouldn't";
@@ -285,6 +286,7 @@ public class TestCharArraySet extends LuceneTestCase {
    * @deprecated remove this test when lucene 3.0 "broken unicode 4" support is
    *             no longer needed.
    */
+  @Deprecated
   public void testSingleHighSurrogateBWComapt() {
     String missing = "Term %s is missing in the set";
     String falsePos = "Term %s is in the set but shouldn't";

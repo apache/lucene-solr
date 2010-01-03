@@ -50,6 +50,7 @@ public final class ElisionFilter extends TokenFilter {
    * @param articles a set of articles
    * @deprecated use {@link #ElisionFilter(Version, TokenStream, Set)} instead
    */
+  @Deprecated
   public void setArticles(Version matchVersion, Set<?> articles) {
     this.articles = CharArraySet.unmodifiableSet(
         CharArraySet.copy(matchVersion, articles));
@@ -60,6 +61,7 @@ public final class ElisionFilter extends TokenFilter {
    * @param articles a set of articles
    * @deprecated use {@link #setArticles(Version, Set)} instead
    */
+  @Deprecated
   public void setArticles(Set<?> articles) {
     setArticles(Version.LUCENE_CURRENT, articles);
   }
@@ -74,6 +76,7 @@ public final class ElisionFilter extends TokenFilter {
    * Constructs an elision filter with standard stop words
    * @deprecated use {@link #ElisionFilter(Version, TokenStream)} instead
    */
+  @Deprecated
   protected ElisionFilter(TokenStream input) {
     this(Version.LUCENE_30, input);
   }
@@ -82,6 +85,7 @@ public final class ElisionFilter extends TokenFilter {
    * Constructs an elision filter with a Set of stop words
    * @deprecated use {@link #ElisionFilter(Version, TokenStream, Set)} instead
    */
+  @Deprecated
   public ElisionFilter(TokenStream input, Set<?> articles) {
     this(Version.LUCENE_30, input, articles);
   }
@@ -103,6 +107,7 @@ public final class ElisionFilter extends TokenFilter {
    * Constructs an elision filter with an array of stop words
    * @deprecated use {@link #ElisionFilter(Version, TokenStream, Set)} instead
    */
+  @Deprecated
   public ElisionFilter(TokenStream input, String[] articles) {
     this(Version.LUCENE_CURRENT, input,
         new CharArraySet(Version.LUCENE_CURRENT,

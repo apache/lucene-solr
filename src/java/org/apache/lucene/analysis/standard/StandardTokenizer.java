@@ -71,6 +71,7 @@ public final class StandardTokenizer extends Tokenizer {
    * @deprecated this solves a bug where HOSTs that end with '.' are identified
    *             as ACRONYMs.
    */
+  @Deprecated
   public static final int ACRONYM_DEP       = 8;
 
   /** String token types that correspond to token type int constants */
@@ -227,6 +228,7 @@ public final class StandardTokenizer extends Tokenizer {
    *
    * @deprecated Remove in 3.X and make true the only valid value
    */
+  @Deprecated
   public boolean isReplaceInvalidAcronym() {
     return replaceInvalidAcronym;
   }
@@ -238,6 +240,7 @@ public final class StandardTokenizer extends Tokenizer {
    *
    * See https://issues.apache.org/jira/browse/LUCENE-1068
    */
+  @Deprecated
   public void setReplaceInvalidAcronym(boolean replaceInvalidAcronym) {
     this.replaceInvalidAcronym = replaceInvalidAcronym;
   }

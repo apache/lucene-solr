@@ -57,6 +57,7 @@ public final class DutchAnalyzer extends Analyzer {
    * List of typical Dutch stopwords.
    * @deprecated use {@link #getDefaultStopSet()} instead
    */
+  @Deprecated
   public final static String[] DUTCH_STOP_WORDS =
       {
         "de", "en", "van", "ik", "te", "dat", "die", "in", "een",
@@ -128,6 +129,7 @@ public final class DutchAnalyzer extends Analyzer {
    * @param stopwords
    * @deprecated use {@link #DutchAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public DutchAnalyzer(Version matchVersion, String... stopwords) {
     this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
   }
@@ -138,6 +140,7 @@ public final class DutchAnalyzer extends Analyzer {
    * @param stopwords
    * @deprecated use {@link #DutchAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public DutchAnalyzer(Version matchVersion, HashSet<?> stopwords) {
     this(matchVersion, (Set<?>)stopwords);
   }
@@ -148,6 +151,7 @@ public final class DutchAnalyzer extends Analyzer {
    * @param stopwords
    * @deprecated use {@link #DutchAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public DutchAnalyzer(Version matchVersion, File stopwords) {
     // this is completely broken!
     try {
@@ -165,6 +169,7 @@ public final class DutchAnalyzer extends Analyzer {
    * @param exclusionlist
    * @deprecated use {@link #DutchAnalyzer(Version, Set, Set)} instead
    */
+  @Deprecated
   public void setStemExclusionTable(String... exclusionlist) {
     excltable = StopFilter.makeStopSet(matchVersion, exclusionlist);
     setPreviousTokenStream(null); // force a new stemmer to be created
@@ -174,6 +179,7 @@ public final class DutchAnalyzer extends Analyzer {
    * Builds an exclusionlist from a Hashtable.
    * @deprecated use {@link #DutchAnalyzer(Version, Set, Set)} instead
    */
+  @Deprecated
   public void setStemExclusionTable(HashSet<?> exclusionlist) {
     excltable = exclusionlist;
     setPreviousTokenStream(null); // force a new stemmer to be created
@@ -183,6 +189,7 @@ public final class DutchAnalyzer extends Analyzer {
    * Builds an exclusionlist from the words contained in the given file.
    * @deprecated use {@link #DutchAnalyzer(Version, Set, Set)} instead
    */
+  @Deprecated
   public void setStemExclusionTable(File exclusionlist) {
     try {
       excltable = org.apache.lucene.analysis.WordlistLoader.getWordSet(exclusionlist);

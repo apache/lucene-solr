@@ -59,6 +59,7 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
    * @deprecated use {@link WordlistLoader#getWordSet(File, String)} directly
    */
   //TODO make this private
+  @Deprecated
   public static final String STOPWORDS_COMMENT = "#";
   
   /**

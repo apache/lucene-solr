@@ -146,6 +146,7 @@ public abstract class IndexInput implements Cloneable,Closeable {
    *                instead, and construct the string
    *                from those utf8 bytes
    */
+  @Deprecated
   public void readChars(char[] buffer, int start, int length)
        throws IOException {
     final int end = start + length;
@@ -174,6 +175,7 @@ public abstract class IndexInput implements Cloneable,Closeable {
    * @deprecated this method operates on old "modified utf8" encoded
    *             strings
    */
+  @Deprecated
   public void skipChars(int length) throws IOException{
     for (int i = 0; i < length; i++) {
       byte b = readByte();

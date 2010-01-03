@@ -114,6 +114,7 @@ public abstract class IndexOutput implements Closeable {
    * @deprecated -- please pre-convert to utf8 bytes
    * instead or use {@link #writeString}
    */
+  @Deprecated
   public void writeChars(String s, int start, int length)
        throws IOException {
     final int end = start + length;
@@ -139,6 +140,7 @@ public abstract class IndexOutput implements Closeable {
    * @param length the number of characters in the sequence
    * @deprecated -- please pre-convert to utf8 bytes instead or use {@link #writeString}
    */
+  @Deprecated
   public void writeChars(char[] s, int start, int length)
     throws IOException {
     final int end = start + length;

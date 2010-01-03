@@ -55,6 +55,7 @@ public final class SnowballAnalyzer extends Analyzer {
    * Builds the named analyzer with the given stop words.
    * @deprecated Use {@link #SnowballAnalyzer(Version, String, Set)} instead.  
    */
+  @Deprecated
   public SnowballAnalyzer(Version matchVersion, String name, String[] stopWords) {
     this(matchVersion, name);
     stopSet = StopFilter.makeStopSet(matchVersion, stopWords);

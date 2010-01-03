@@ -154,6 +154,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
    * @deprecated remove this when lucene 3.0 "broken unicode 4" support
    * is no longer needed.
    */
+  @Deprecated
   private static class LowerCaseWhitespaceAnalyzerBWComp extends Analyzer {
 
     @Override
@@ -215,6 +216,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
    * @deprecated remove this test when lucene 3.0 "broken unicode 4" support
    * is no longer needed.
    */
+  @Deprecated
   public void testLowerCaseFilterBWComp() throws IOException {
     Analyzer a = new LowerCaseWhitespaceAnalyzerBWComp();
     // BMP

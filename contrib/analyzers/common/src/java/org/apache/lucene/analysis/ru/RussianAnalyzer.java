@@ -72,6 +72,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
      * Builds an analyzer with the given stop words.
      * @deprecated use {@link #RussianAnalyzer(Version, Set)} instead
      */
+    @Deprecated
     public RussianAnalyzer(Version matchVersion, String... stopwords) {
       this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
     }
@@ -93,6 +94,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
      * TODO: create a Set version of this ctor
      * @deprecated use {@link #RussianAnalyzer(Version, Set)} instead
      */
+    @Deprecated
     public RussianAnalyzer(Version matchVersion, Map<?,?> stopwords)
     {
       this(matchVersion, stopwords.keySet());

@@ -84,6 +84,7 @@ public class _TestUtil {
   /** Use only for testing.
    *  @deprecated -- in 3.0 we can use Arrays.toString
    *  instead */
+  @Deprecated
   public static String arrayToString(int[] array) {
     StringBuilder buf = new StringBuilder();
     buf.append("[");
@@ -100,6 +101,7 @@ public class _TestUtil {
   /** Use only for testing.
    *  @deprecated -- in 3.0 we can use Arrays.toString
    *  instead */
+  @Deprecated
   public static String arrayToString(Object[] array) {
     StringBuilder buf = new StringBuilder();
     buf.append("[");

@@ -117,6 +117,7 @@ public class CharArraySet extends AbstractSet<Object> {
    *          otherwise <code>true</code>.
    * @deprecated use {@link #CharArraySet(Version, int, boolean)} instead
    */
+  @Deprecated
   public CharArraySet(int startSize, boolean ignoreCase) {
     this(Version.LUCENE_30, startSize, ignoreCase);
   }
@@ -131,6 +132,7 @@ public class CharArraySet extends AbstractSet<Object> {
    *          otherwise <code>true</code>.
    * @deprecated use {@link #CharArraySet(Version, Collection, boolean)} instead         
    */  
+  @Deprecated
   public CharArraySet(Collection<? extends Object> c, boolean ignoreCase) {
     this(Version.LUCENE_30, c.size(), ignoreCase);
     addAll(c);
@@ -381,6 +383,7 @@ public class CharArraySet extends AbstractSet<Object> {
    *         preserved.
    * @deprecated use {@link #copy(Version, Set)} instead.
    */
+  @Deprecated
   public static CharArraySet copy(final Set<?> set) {
     if(set == EMPTY_SET)
       return EMPTY_SET;

@@ -1276,6 +1276,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
    * We do it with R/W access for the tests (BW compatibility)
    * @deprecated Remove this when tests are fixed!
    */
+  @Deprecated
   static SegmentReader getOnlySegmentReader(Directory dir) throws IOException {
     return getOnlySegmentReader(IndexReader.open(dir,false));
   }

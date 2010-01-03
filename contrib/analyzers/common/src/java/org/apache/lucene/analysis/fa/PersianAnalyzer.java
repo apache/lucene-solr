@@ -111,6 +111,7 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the given stop words.
    * @deprecated use {@link #PersianAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public PersianAnalyzer(Version matchVersion, String... stopwords) {
     this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
   }
@@ -119,6 +120,7 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the given stop words.
    * @deprecated use {@link #PersianAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public PersianAnalyzer(Version matchVersion, Hashtable<?, ?> stopwords) {
     this(matchVersion, stopwords.keySet());
   }
@@ -128,6 +130,7 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
    * using {@link #STOPWORDS_COMMENT}
    * @deprecated use {@link #PersianAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public PersianAnalyzer(Version matchVersion, File stopwords) throws IOException {
     this(matchVersion, WordlistLoader.getWordSet(stopwords, STOPWORDS_COMMENT));
   }

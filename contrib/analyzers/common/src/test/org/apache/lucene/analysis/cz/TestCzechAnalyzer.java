@@ -40,6 +40,7 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
   /**
    * @deprecated Remove this test when support for 3.0 indexes is no longer needed.
    */
+  @Deprecated
   public void testStopWordLegacy() throws Exception {
     assertAnalyzesTo(new CzechAnalyzer(Version.LUCENE_30), "Pokud mluvime o volnem", 
         new String[] { "mluvime", "volnem" });
@@ -53,6 +54,7 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
   /**
    * @deprecated Remove this test when support for 3.0 indexes is no longer needed.
    */
+  @Deprecated
   public void testReusableTokenStreamLegacy() throws Exception {
     Analyzer analyzer = new CzechAnalyzer(Version.LUCENE_30);
     assertAnalyzesToReuse(analyzer, "Pokud mluvime o volnem", new String[] { "mluvime", "volnem" });
@@ -69,6 +71,7 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
    * An input stream that always throws IOException for testing.
    * @deprecated Remove this class when the loadStopWords method is removed.
    */
+  @Deprecated
   private class UnreliableInputStream extends InputStream {
     @Override
     public int read() throws IOException {
@@ -82,6 +85,7 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
    * this would cause a NPE when it is time to create the StopFilter.
    * @deprecated Remove this test when the loadStopWords method is removed.
    */
+  @Deprecated
   public void testInvalidStopWordFile() throws Exception {
     CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_30);
     cz.loadStopWords(new UnreliableInputStream(), "UTF-8");
@@ -94,6 +98,7 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
    * when using reusable token streams.
    * @deprecated Remove this test when the loadStopWords method is removed.
    */
+  @Deprecated
   public void testStopWordFileReuse() throws Exception {
     CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_30);
     assertAnalyzesToReuse(cz, "Česká Republika", 

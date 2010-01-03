@@ -41,6 +41,7 @@ public class TextFragment
    * @deprecated Use {@link #TextFragment(CharSequence, int, int)} instead.
    * This constructor will be removed in Lucene 4.0
    */
+	@Deprecated
 	public TextFragment(StringBuffer markedUpText,int textStartPos, int fragNum)
 	{
 		this.markedUpText=markedUpText;

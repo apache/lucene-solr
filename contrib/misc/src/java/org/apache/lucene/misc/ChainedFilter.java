@@ -156,6 +156,7 @@ public class ChainedFilter extends Filter
      *  switch to a different DocIdSet implementation yourself.
      *  This method will be removed in Lucene 4.0 
      **/
+    @Deprecated
     protected final DocIdSet finalResult(OpenBitSetDISI result, int maxDocs) {
         return result;
     }

@@ -18,6 +18,7 @@ package org.apache.lucene.util.cache;
 */
 
 /** @deprecated */
+@Deprecated
 public class TestSimpleLRUCache extends BaseTestLRU {
   public void testLRUCache() throws Exception {
     final int n = 100;

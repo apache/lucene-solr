@@ -373,6 +373,7 @@ public abstract class FSDirectory extends Directory {
   }
 
   /** @deprecated Use {@link #getDirectory} instead. */
+  @Deprecated
   public File getFile() {
     return getDirectory();
   }

@@ -167,6 +167,7 @@ public class HyphenationCompoundWordTokenFilter extends
    * @param onlyLongestMatch Add only the longest matching subword to the stream
    * @deprecated use {@link #HyphenationCompoundWordTokenFilter(Version, TokenStream, HyphenationTree, String[], int, int, int, boolean)} instead. 
    */
+  @Deprecated
   public HyphenationCompoundWordTokenFilter(TokenStream input,
       HyphenationTree hyphenator, String[] dictionary, int minWordSize,
       int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
@@ -182,6 +183,7 @@ public class HyphenationCompoundWordTokenFilter extends
    * @param dictionary the word dictionary to match against
    * @deprecated use {@link #HyphenationCompoundWordTokenFilter(Version, TokenStream, HyphenationTree, String[])} instead.
    */
+  @Deprecated
   public HyphenationCompoundWordTokenFilter(TokenStream input,
       HyphenationTree hyphenator, String[] dictionary) {
     this(Version.LUCENE_30, input, hyphenator, makeDictionary(dictionary), DEFAULT_MIN_WORD_SIZE,
@@ -197,6 +199,7 @@ public class HyphenationCompoundWordTokenFilter extends
    *        lower case strings. 
    * @deprecated use {@link #HyphenationCompoundWordTokenFilter(Version, TokenStream, HyphenationTree, Set)} instead.        
    */
+  @Deprecated
   public HyphenationCompoundWordTokenFilter(TokenStream input,
       HyphenationTree hyphenator, Set dictionary) {
     this(Version.LUCENE_30, input, hyphenator, dictionary, DEFAULT_MIN_WORD_SIZE,
@@ -218,6 +221,7 @@ public class HyphenationCompoundWordTokenFilter extends
    * @param onlyLongestMatch Add only the longest matching subword to the stream
    * @deprecated use {@link #HyphenationCompoundWordTokenFilter(Version, TokenStream, HyphenationTree, Set, int, int, int, boolean)} instead.
    */
+  @Deprecated
   public HyphenationCompoundWordTokenFilter(TokenStream input,
       HyphenationTree hyphenator, Set dictionary, int minWordSize,
       int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {

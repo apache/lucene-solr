@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * This class is included for use with existing
  * indexes and will be removed in a future release (possibly Lucene 4.0).
  */
+@Deprecated
 public final class ISOLatin1AccentFilter extends TokenFilter {
   public ISOLatin1AccentFilter(TokenStream input) {
     super(input);

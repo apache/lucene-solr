@@ -78,6 +78,7 @@ public final class ReverseStringFilter extends TokenFilter {
    * @deprecated use {@link #ReverseStringFilter(Version, TokenStream)} 
    *    instead. This constructor will be removed in Lucene 4.0
    */
+  @Deprecated
   public ReverseStringFilter(TokenStream in) {
     this(in, NOMARKER);
   }
@@ -95,6 +96,7 @@ public final class ReverseStringFilter extends TokenFilter {
    * @deprecated use {@link #ReverseStringFilter(Version, TokenStream, char)} 
    *    instead. This constructor will be removed in Lucene 4.0 
    */
+  @Deprecated
   public ReverseStringFilter(TokenStream in, char marker) {
     this(Version.LUCENE_30, in, marker);
   }
@@ -157,6 +159,7 @@ public final class ReverseStringFilter extends TokenFilter {
    * @deprecated use {@link #reverse(Version, String)} instead. This method 
    *    will be removed in Lucene 4.0
    */
+  @Deprecated
   public static String reverse( final String input ){
     return reverse(Version.LUCENE_30, input);
   }
@@ -180,6 +183,7 @@ public final class ReverseStringFilter extends TokenFilter {
    * @deprecated use {@link #reverse(Version, char[])} instead. This 
    *    method will be removed in Lucene 4.0
    */
+  @Deprecated
   public static void reverse( final char[] buffer ){
     reverse( buffer, 0, buffer.length );
   }
@@ -202,6 +206,7 @@ public final class ReverseStringFilter extends TokenFilter {
    * @deprecated use {@link #reverse(Version, char[], int)} instead. This 
    *    method will be removed in Lucene 4.0
    */
+  @Deprecated
   public static void reverse( final char[] buffer, final int len ){
     reverse( buffer, 0, len );
   }
@@ -229,6 +234,7 @@ public final class ReverseStringFilter extends TokenFilter {
    * @deprecated use {@link #reverse(Version, char[], int, int)} instead. This 
    *    method will be removed in Lucene 4.0
    */
+  @Deprecated
   public static void reverse(char[] buffer, int start, int len ) {
     reverseUnicode3(buffer, start, len);
   }
@@ -236,6 +242,7 @@ public final class ReverseStringFilter extends TokenFilter {
   /**
    * @deprecated Remove this when support for 3.0 indexes is no longer needed.
    */
+  @Deprecated
   private static void reverseUnicode3( char[] buffer, int start, int len ){
     if( len <= 1 ) return;
     int num = len>>1;

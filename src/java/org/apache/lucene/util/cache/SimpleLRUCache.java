@@ -28,6 +28,7 @@ import java.util.Map;
  * @deprecated Lucene's internal use of this class has now
  * switched to {@link DoubleBarrelLRUCache}.
  */
+@Deprecated
 public class SimpleLRUCache<K,V> extends SimpleMapCache<K,V> {
   private final static float LOADFACTOR = 0.75f;
 

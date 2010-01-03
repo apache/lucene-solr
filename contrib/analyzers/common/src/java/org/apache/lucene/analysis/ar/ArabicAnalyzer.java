@@ -65,6 +65,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    * @deprecated use {@link WordlistLoader#getWordSet(File, String)} directly  
    */
   // TODO make this private 
+  @Deprecated
   public static final String STOPWORDS_COMMENT = "#";
   
   /**
@@ -116,6 +117,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the given stop words.
    * @deprecated use {@link #ArabicAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public ArabicAnalyzer( Version matchVersion, String... stopwords ) {
     this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords ));
   }
@@ -124,6 +126,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the given stop words.
    * @deprecated use {@link #ArabicAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public ArabicAnalyzer( Version matchVersion, Hashtable<?,?> stopwords ) {
     this(matchVersion, stopwords.keySet());
   }
@@ -132,6 +135,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the given stop words.  Lines can be commented out using {@link #STOPWORDS_COMMENT}
    * @deprecated use {@link #ArabicAnalyzer(Version, Set)} instead
    */
+  @Deprecated
   public ArabicAnalyzer( Version matchVersion, File stopwords ) throws IOException {
     this(matchVersion, WordlistLoader.getWordSet( stopwords, STOPWORDS_COMMENT));
   }

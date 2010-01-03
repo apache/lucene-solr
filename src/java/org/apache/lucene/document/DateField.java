@@ -57,6 +57,7 @@ import java.util.Calendar;   // for javadoc
  * This class is included for use with existing
  * indices and will be removed in a future release (possibly Lucene 4.0).
  */
+@Deprecated
 public class DateField {
   
   private DateField() {}

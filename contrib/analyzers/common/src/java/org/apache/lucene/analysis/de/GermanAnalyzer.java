@@ -60,6 +60,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    * @deprecated use {@link #getDefaultStopSet()} instead
    */
   //TODO make this private in 3.1
+  @Deprecated
   public final static String[] GERMAN_STOP_WORDS = {
     "einer", "eine", "eines", "einem", "einen",
     "der", "die", "das", "dass", "daß",
@@ -137,6 +138,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the given stop words.
    * @deprecated use {@link #GermanAnalyzer(Version, Set)}
    */
+  @Deprecated
   public GermanAnalyzer(Version matchVersion, String... stopwords) {
     this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
   }
@@ -145,6 +147,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the given stop words.
    * @deprecated use {@link #GermanAnalyzer(Version, Set)}
    */
+  @Deprecated
   public GermanAnalyzer(Version matchVersion, Map<?,?> stopwords) {
     this(matchVersion, stopwords.keySet());
     
@@ -154,6 +157,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the given stop words.
    * @deprecated use {@link #GermanAnalyzer(Version, Set)}
    */
+  @Deprecated
   public GermanAnalyzer(Version matchVersion, File stopwords) throws IOException {
     this(matchVersion, WordlistLoader.getWordSet(stopwords));
   }
@@ -162,6 +166,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    * Builds an exclusionlist from an array of Strings.
    * @deprecated use {@link #GermanAnalyzer(Version, Set, Set)} instead
    */
+  @Deprecated
   public void setStemExclusionTable(String[] exclusionlist) {
     exclusionSet = StopFilter.makeStopSet(matchVersion, exclusionlist);
     setPreviousTokenStream(null); // force a new stemmer to be created
@@ -171,6 +176,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    * Builds an exclusionlist from a {@link Map}
    * @deprecated use {@link #GermanAnalyzer(Version, Set, Set)} instead
    */
+  @Deprecated
   public void setStemExclusionTable(Map<?,?> exclusionlist) {
     exclusionSet = new HashSet<Object>(exclusionlist.keySet());
     setPreviousTokenStream(null); // force a new stemmer to be created
@@ -180,6 +186,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    * Builds an exclusionlist from the words contained in the given file.
    * @deprecated use {@link #GermanAnalyzer(Version, Set, Set)} instead
    */
+  @Deprecated
   public void setStemExclusionTable(File exclusionlist) throws IOException {
     exclusionSet = WordlistLoader.getWordSet(exclusionlist);
     setPreviousTokenStream(null); // force a new stemmer to be created

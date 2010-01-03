@@ -64,6 +64,7 @@ public final class StopFilter extends TokenFilter {
    * @param ignoreCase if true, all words are lower cased first
    * @deprecated use {@link #StopFilter(Version, TokenStream, Set, boolean)} instead
    */
+  @Deprecated
   public StopFilter(boolean enablePositionIncrements, TokenStream input, Set<?> stopWords, boolean ignoreCase)
   {
     this(Version.LUCENE_30, enablePositionIncrements, input, stopWords, ignoreCase);
@@ -117,6 +118,7 @@ public final class StopFilter extends TokenFilter {
    * @see #makeStopSet(Version, java.lang.String[])
    * @deprecated use {@link #StopFilter(Version, TokenStream, Set)} instead
    */
+  @Deprecated
   public StopFilter(boolean enablePositionIncrements, TokenStream in, Set<?> stopWords) {
     this(Version.LUCENE_CURRENT, enablePositionIncrements, in, stopWords, false);
   }
@@ -148,6 +150,7 @@ public final class StopFilter extends TokenFilter {
    * @see #makeStopSet(Version, java.lang.String[], boolean) passing false to ignoreCase
    * @deprecated use {@link #makeStopSet(Version, String...)} instead
    */
+  @Deprecated
   public static final Set<Object> makeStopSet(String... stopWords) {
     return makeStopSet(Version.LUCENE_30, stopWords, false);
   }
@@ -176,6 +179,7 @@ public final class StopFilter extends TokenFilter {
    * @see #makeStopSet(Version, java.lang.String[], boolean) passing false to ignoreCase
    * @deprecated use {@link #makeStopSet(Version, List)} instead
    */
+  @Deprecated
   public static final Set<Object> makeStopSet(List<?> stopWords) {
     return makeStopSet(Version.LUCENE_30, stopWords, false);
   }
@@ -202,6 +206,7 @@ public final class StopFilter extends TokenFilter {
    * @return a Set containing the words
    * @deprecated use {@link #makeStopSet(Version, String[], boolean)} instead;
    */  
+  @Deprecated
   public static final Set<Object> makeStopSet(String[] stopWords, boolean ignoreCase) {
     return makeStopSet(Version.LUCENE_30, stopWords, ignoreCase);
   }
@@ -226,6 +231,7 @@ public final class StopFilter extends TokenFilter {
    * @return A Set ({@link CharArraySet}) containing the words
    * @deprecated use {@link #makeStopSet(Version, List, boolean)} instead
    */
+  @Deprecated
   public static final Set<Object> makeStopSet(List<?> stopWords, boolean ignoreCase){
     return makeStopSet(Version.LUCENE_30, stopWords, ignoreCase);
   }
@@ -271,6 +277,7 @@ public final class StopFilter extends TokenFilter {
    * or later, it returns true.
    * @deprecated use {@link #StopFilter(Version, TokenStream, Set)} instead
    */
+  @Deprecated
   public static boolean getEnablePositionIncrementsVersionDefault(Version matchVersion) {
     return matchVersion.onOrAfter(Version.LUCENE_29);
   }

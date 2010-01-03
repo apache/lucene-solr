@@ -46,6 +46,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
    * @param onlyLongestMatch Add only the longest matching subword to the stream
    * @deprecated use {@link #DictionaryCompoundWordTokenFilter(Version, TokenStream, String[], int, int, int, boolean)} instead
    */
+  @Deprecated
   public DictionaryCompoundWordTokenFilter(TokenStream input, String[] dictionary,
       int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     super(Version.LUCENE_30, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
@@ -58,6 +59,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
    * @param dictionary the word dictionary to match against
    * @deprecated use {@link #DictionaryCompoundWordTokenFilter(Version, TokenStream, String[])} instead 
    */
+  @Deprecated
   public DictionaryCompoundWordTokenFilter(TokenStream input, String[] dictionary) {
     super(Version.LUCENE_30, input, dictionary);
   }
@@ -70,6 +72,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
    *        lower case strings.
    * @deprecated use {@link #DictionaryCompoundWordTokenFilter(Version, TokenStream, Set)} instead 
    */
+  @Deprecated
   public DictionaryCompoundWordTokenFilter(TokenStream input, Set dictionary) {
     super(Version.LUCENE_30, input, dictionary);
   }
@@ -86,6 +89,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
    * @param onlyLongestMatch Add only the longest matching subword to the stream
    * @deprecated use {@link #DictionaryCompoundWordTokenFilter(Version, TokenStream, Set, int, int, int, boolean)} instead
    */
+  @Deprecated
   public DictionaryCompoundWordTokenFilter(TokenStream input, Set dictionary,
       int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     super(Version.LUCENE_30, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
