@@ -25,8 +25,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.AttributeSource.AttributeFactory;
-
 
 /**
  * CJKTokenizer is designed for Chinese, Japanese, and Korean languages.

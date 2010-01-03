@@ -19,14 +19,15 @@ package org.apache.lucene.analysis.el;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
 import org.apache.lucene.util.Version;
 
-import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
 import java.util.Map;
@@ -43,7 +44,7 @@ import java.util.Set;
  * <p><b>NOTE</b>: This class uses the same {@link Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
  */
-public final class GreekAnalyzer extends Analyzer
+public final class GreekAnalyzer extends StopwordAnalyzerBase
 {
     /**
      * List of typical Greek stopwords.
@@ -73,13 +74,6 @@ public final class GreekAnalyzer extends Analyzer
           Version.LUCENE_CURRENT, Arrays.asList(GREEK_STOP_WORDS), false));
     }
 
-    /**
-     * Contains the stopwords used with the {@link StopFilter}.
-     */
-    private final Set<?> stopSet;
-
-    private final Version matchVersion;
-
     public GreekAnalyzer(Version matchVersion) {
       this(matchVersion, DefaultSetHolder.DEFAULT_SET);
     }
@@ -93,8 +87,7 @@ public final class GreekAnalyzer extends Analyzer
      *          a stopword set
      */
     public GreekAnalyzer(Version matchVersion, Set<?> stopwords) {
-      stopSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
-      this.matchVersion = matchVersion;
+      super(matchVersion, stopwords);
     }
 
     /**
@@ -115,47 +108,20 @@ public final class GreekAnalyzer extends Analyzer
     {
       this(matchVersion, stopwords.keySet());
     }
-
-    /**
-     * Creates a {@link TokenStream} which tokenizes all the text in the provided {@link Reader}.
-     *
-     * @return  A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
-     *                  {@link GreekLowerCaseFilter} and {@link StopFilter}
-     */
+  
+   /**
+    * Creates {@link TokenStreamComponents} used to tokenize all the text in the
+    * provided {@link Reader}.
+    * 
+    * @return {@link TokenStreamComponents} built from a
+    *         {@link StandardTokenizer} filtered with
+    *         {@link GreekLowerCaseFilter} and {@link StopFilter}
+    */
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader)
-    {
-        TokenStream result = new StandardTokenizer(matchVersion, reader);
-        result = new GreekLowerCaseFilter(result);
-        result = new StopFilter(matchVersion, result, stopSet);
-        return result;
-    }
-    
-    private class SavedStreams {
-      Tokenizer source;
-      TokenStream result;
-    };
-    
-    /**
-     * Returns a (possibly reused) {@link TokenStream} which tokenizes all the text 
-     * in the provided {@link Reader}.
-     *
-     * @return  A {@link TokenStream} built from a {@link StandardTokenizer} filtered with
-     *                  {@link GreekLowerCaseFilter} and {@link StopFilter}
-     */
-    @Override
-    public TokenStream reusableTokenStream(String fieldName, Reader reader) 
-      throws IOException {
-      SavedStreams streams = (SavedStreams) getPreviousTokenStream();
-      if (streams == null) {
-        streams = new SavedStreams();
-        streams.source = new StandardTokenizer(matchVersion, reader);
-        streams.result = new GreekLowerCaseFilter(streams.source);
-        streams.result = new StopFilter(matchVersion, streams.result, stopSet);
-        setPreviousTokenStream(streams);
-      } else {
-        streams.source.reset(reader);
-      }
-      return streams.result;
+    protected TokenStreamComponents createComponents(String fieldName,
+        Reader reader) {
+      final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+      final TokenStream result = new GreekLowerCaseFilter(source);
+      return new TokenStreamComponents(source, new StopFilter(matchVersion, result, stopwords));
     }
 }

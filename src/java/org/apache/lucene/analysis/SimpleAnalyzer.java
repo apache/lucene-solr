@@ -18,25 +18,15 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.Reader;
-import java.io.IOException;
 
 /** An {@link Analyzer} that filters {@link LetterTokenizer} 
  *  with {@link LowerCaseFilter} */
 
-public final class SimpleAnalyzer extends Analyzer {
-  @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    return new LowerCaseTokenizer(reader);
-  }
+public final class SimpleAnalyzer extends ReusableAnalyzerBase {
 
   @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    Tokenizer tokenizer = (Tokenizer) getPreviousTokenStream();
-    if (tokenizer == null) {
-      tokenizer = new LowerCaseTokenizer(reader);
-      setPreviousTokenStream(tokenizer);
-    } else
-      tokenizer.reset(reader);
-    return tokenizer;
+  protected TokenStreamComponents createComponents(final String fieldName,
+      final Reader reader) {
+    return new TokenStreamComponents(new LowerCaseTokenizer(reader));
   }
 }

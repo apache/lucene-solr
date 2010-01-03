@@ -18,24 +18,14 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.Reader;
-import java.io.IOException;
 
 /** An Analyzer that uses {@link WhitespaceTokenizer}. */
 
-public final class WhitespaceAnalyzer extends Analyzer {
-  @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    return new WhitespaceTokenizer(reader);
-  }
+public final class WhitespaceAnalyzer extends ReusableAnalyzerBase {
 
   @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    Tokenizer tokenizer = (Tokenizer) getPreviousTokenStream();
-    if (tokenizer == null) {
-      tokenizer = new WhitespaceTokenizer(reader);
-      setPreviousTokenStream(tokenizer);
-    } else
-      tokenizer.reset(reader);
-    return tokenizer;
+  protected TokenStreamComponents createComponents(final String fieldName,
+      final Reader reader) {
+    return new TokenStreamComponents(new WhitespaceTokenizer(reader));
   }
 }

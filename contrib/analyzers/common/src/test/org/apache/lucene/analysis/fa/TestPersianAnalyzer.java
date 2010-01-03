@@ -17,11 +17,8 @@ package org.apache.lucene.analysis.fa;
  * limitations under the License.
  */
 
-import java.io.StringReader;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.Version;
 
 /**

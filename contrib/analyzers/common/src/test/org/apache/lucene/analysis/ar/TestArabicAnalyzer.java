@@ -17,10 +17,10 @@ package org.apache.lucene.analysis.ar;
  * limitations under the License.
  */
 
-import java.io.StringReader;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.util.Version;
 
@@ -78,7 +78,9 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
    * Test that custom stopwords work, and are not case-sensitive.
    */
   public void testCustomStopwords() throws Exception {
-    ArabicAnalyzer a = new ArabicAnalyzer(Version.LUCENE_CURRENT, new String[] { "the", "and", "a" });
+    Set<String> set = new HashSet<String>();
+    Collections.addAll(set, "the", "and", "a");
+    ArabicAnalyzer a = new ArabicAnalyzer(Version.LUCENE_CURRENT, set);
     assertAnalyzesTo(a, "The quick brown fox.", new String[] { "quick",
         "brown", "fox" });
   }

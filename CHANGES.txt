@@ -105,6 +105,12 @@ New features
   backwards compatibility. If Version < 3.1 is passed to the constructor, 
   LowerCaseFilter yields the old behavior. (Simon Willnauer, Robert Muir)  
 
+* LUCENE-2034: Added ReusableAnalyzerBase, an abstract subclass of Analyzer
+  that makes it easier to reuse TokenStreams correctly. This issue also added
+  StopwordAnalyzerBase, which improves consistency of all Analyzers that use
+  stopwords, and implement many analyzers in contrib with it.  
+  (Simon Willnauer via Robert Muir)
+  
 Optimizations
 
 * LUCENE-2086: When resolving deleted terms, do so in term sort order

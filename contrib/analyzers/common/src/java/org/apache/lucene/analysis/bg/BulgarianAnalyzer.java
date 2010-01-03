@@ -17,17 +17,16 @@ package org.apache.lucene.analysis.bg;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.Collections;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
@@ -43,7 +42,7 @@ import org.apache.lucene.util.Version;
  * http://members.unine.ch/jacques.savoy/Papers/BUIR.pdf
  * <p>
  */
-public final class BulgarianAnalyzer extends Analyzer {
+public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
   
   /**
    * File containing default Bulgarian stopwords.
@@ -55,13 +54,11 @@ public final class BulgarianAnalyzer extends Analyzer {
   public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
   
   /**
-   * Contains the stopwords used with the StopFilter.
-   */
-  private final Set<?> stoptable;
-  /**
    * The comment character in the stopwords file. All lines prefixed with this
    * will be ignored
+   * @deprecated use {@link WordlistLoader#getWordSet(File, String)} directly
    */
+  //TODO make this private
   public static final String STOPWORDS_COMMENT = "#";
   
   /**
@@ -69,7 +66,7 @@ public final class BulgarianAnalyzer extends Analyzer {
    * 
    * @return an unmodifiable instance of the default stop-words set.
    */
-  public static Set<String> getDefaultStopSet() {
+  public static Set<?> getDefaultStopSet() {
     return DefaultSetHolder.DEFAULT_STOP_SET;
   }
   
@@ -78,35 +75,19 @@ public final class BulgarianAnalyzer extends Analyzer {
    * class accesses the static final set the first time.;
    */
   private static class DefaultSetHolder {
-    static final Set<String> DEFAULT_STOP_SET;
+    static final Set<?> DEFAULT_STOP_SET;
     
     static {
       try {
-        DEFAULT_STOP_SET = loadDefaultStopWordSet();
-      } catch (Exception ex) {
+        DEFAULT_STOP_SET = loadStopwordSet(false, BulgarianAnalyzer.class, DEFAULT_STOPWORD_FILE, STOPWORDS_COMMENT);
+      } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
-        throw new RuntimeException("Unable to load default stopword set", ex);
-      }
-    }
-    
-    static Set<String> loadDefaultStopWordSet() throws IOException {
-      final InputStream stream = BulgarianAnalyzer.class
-          .getResourceAsStream(DEFAULT_STOPWORD_FILE);
-      try {
-        InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
-        // make sure it is unmodifiable as we expose it in the outer class
-        return Collections.unmodifiableSet(WordlistLoader.getWordSet(reader,
-            STOPWORDS_COMMENT));
-      } finally {
-        if(stream != null)
-          stream.close();
+        throw new RuntimeException("Unable to load default stopword set");
       }
     }
   }
-  
-  private final Version matchVersion;
-  
+   
   /**
    * Builds an analyzer with the default stop words:
    * {@link #DEFAULT_STOPWORD_FILE}.
@@ -119,58 +100,24 @@ public final class BulgarianAnalyzer extends Analyzer {
    * Builds an analyzer with the given stop words.
    */
   public BulgarianAnalyzer(Version matchVersion, Set<?> stopwords) {
-    super();
-    stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion,
-        stopwords));
-    this.matchVersion = matchVersion;
+    super(matchVersion, stopwords);
   }
   
   /**
-   * Creates a {@link TokenStream} which tokenizes all the text in the provided
+   * Creates a {@link TokenStreamComponents} which tokenizes all the text in the provided
    * {@link Reader}.
    * 
-   * @return A {@link TokenStream} built from an {@link StandardTokenizer}
+   * @return A {@link TokenStreamComponents} built from an {@link StandardTokenizer}
    *         filtered with {@link StandardFilter}, {@link LowerCaseFilter},
    *         {@link StopFilter}, and {@link BulgarianStemFilter}.
    */
   @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new StandardTokenizer(matchVersion, reader);
-    result = new StandardFilter(result);
+  public TokenStreamComponents createComponents(String fieldName, Reader reader) {
+    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+    TokenStream result = new StandardFilter(source);
     result = new LowerCaseFilter(matchVersion, result);
-    result = new StopFilter(matchVersion, result, stoptable);
+    result = new StopFilter(matchVersion, result, stopwords);
     result = new BulgarianStemFilter(result);
-    return result;
-  }
-  
-  private class SavedStreams {
-    Tokenizer source;
-    TokenStream result;
-  };
-  
-  /**
-   * Returns a (possibly reused) {@link TokenStream} which tokenizes all the
-   * text in the provided {@link Reader}.
-   * 
-   * @return A {@link TokenStream} built from an {@link StandardTokenizer}
-   *         filtered with {@link StandardFilter}, {@link LowerCaseFilter},
-   *         {@link StopFilter}, and {@link BulgarianStemFilter}.
-   */
-  @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader)
-      throws IOException {
-    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
-    if (streams == null) {
-      streams = new SavedStreams();
-      streams.source = new StandardTokenizer(matchVersion, reader);
-      streams.result = new StandardFilter(streams.source);
-      streams.result = new LowerCaseFilter(matchVersion, streams.result);
-      streams.result = new StopFilter(matchVersion, streams.result, stoptable);
-      streams.result = new BulgarianStemFilter(streams.result);
-      setPreviousTokenStream(streams);
-    } else {
-      streams.source.reset(reader);
-    }
-    return streams.result;
+    return new TokenStreamComponents(source, result);
   }
 }

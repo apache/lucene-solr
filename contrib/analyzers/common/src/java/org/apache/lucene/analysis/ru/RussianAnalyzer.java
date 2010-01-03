@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.ru;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
 import java.util.Map;
@@ -26,7 +25,9 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.Version;
@@ -39,7 +40,7 @@ import org.apache.lucene.util.Version;
  * A default set of stopwords is used unless an alternative list is specified.
  * </p>
  */
-public final class RussianAnalyzer extends Analyzer
+public final class RussianAnalyzer extends StopwordAnalyzerBase
 {
     /**
      * List of typical Russian stopwords.
@@ -63,13 +64,6 @@ public final class RussianAnalyzer extends Analyzer
               Arrays.asList(RUSSIAN_STOP_WORDS), false));
     }
 
-    /**
-     * Contains the stopwords used with the StopFilter.
-     */
-    private final Set<?> stopSet;
-
-    private final Version matchVersion;
-
     public RussianAnalyzer(Version matchVersion) {
       this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
     }
@@ -91,8 +85,7 @@ public final class RussianAnalyzer extends Analyzer
      *          a stopword set
      */
     public RussianAnalyzer(Version matchVersion, Set<?> stopwords){
-      stopSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
-      this.matchVersion = matchVersion;
+      super(matchVersion, stopwords);
     }
    
     /**
@@ -106,52 +99,21 @@ public final class RussianAnalyzer extends Analyzer
     }
 
     /**
-     * Creates a {@link TokenStream} which tokenizes all the text in the 
+     * Creates {@link TokenStreamComponents} used to tokenize all the text in the 
      * provided {@link Reader}.
      *
-     * @return  A {@link TokenStream} built from a 
+     * @return {@link TokenStreamComponents} built from a 
      *   {@link RussianLetterTokenizer} filtered with 
      *   {@link LowerCaseFilter}, {@link StopFilter}, 
      *   and {@link RussianStemFilter}
      */
     @Override
-    public TokenStream tokenStream(String fieldName, Reader reader)
-    {
-        TokenStream result = new RussianLetterTokenizer(reader);
-        result = new LowerCaseFilter(matchVersion, result);
-        result = new StopFilter(matchVersion, result, stopSet);
-        result = new RussianStemFilter(result);
-        return result;
+    protected TokenStreamComponents createComponents(String fieldName,
+        Reader reader) {
+      final Tokenizer source = new RussianLetterTokenizer(reader);
+      TokenStream result = new LowerCaseFilter(matchVersion, source);
+      result = new StopFilter(matchVersion, result, stopwords);
+      return new TokenStreamComponents(source, new RussianStemFilter(result));
+      
     }
-    
-    private class SavedStreams {
-      Tokenizer source;
-      TokenStream result;
-    };
-    
-    /**
-     * Returns a (possibly reused) {@link TokenStream} which tokenizes all the text 
-     * in the provided {@link Reader}.
-     *
-     * @return  A {@link TokenStream} built from a 
-     *   {@link RussianLetterTokenizer} filtered with 
-     *   {@link LowerCaseFilter}, {@link StopFilter}, 
-     *   and {@link RussianStemFilter}
-     */
-    @Override
-    public TokenStream reusableTokenStream(String fieldName, Reader reader) 
-      throws IOException {
-    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
-    if (streams == null) {
-      streams = new SavedStreams();
-      streams.source = new RussianLetterTokenizer(reader);
-      streams.result = new LowerCaseFilter(matchVersion, streams.source);
-      streams.result = new StopFilter(matchVersion, streams.result, stopSet);
-      streams.result = new RussianStemFilter(streams.result);
-      setPreviousTokenStream(streams);
-    } else {
-      streams.source.reset(reader);
-    }
-    return streams.result;
-  }
 }

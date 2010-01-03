@@ -20,7 +20,9 @@ package org.apache.lucene.analysis.fr;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
@@ -59,7 +61,7 @@ import java.util.Set;
  * <p><b>NOTE</b>: This class uses the same {@link Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
  */
-public final class FrenchAnalyzer extends Analyzer {
+public final class FrenchAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Extended list of typical French stopwords.
@@ -92,17 +94,11 @@ public final class FrenchAnalyzer extends Analyzer {
   };
 
   /**
-   * Contains the stopwords used with the {@link StopFilter}.
-   */
-  private final Set<?> stoptable;
-  /**
    * Contains words that should be indexed but not stemmed.
    */
   //TODO make this final in 3.0
   private Set<?> excltable = Collections.<Object>emptySet();
 
-  private final Version matchVersion;
-  
   /**
    * Returns an unmodifiable instance of the default stop-words set.
    * @return an unmodifiable instance of the default stop-words set.
@@ -148,9 +144,7 @@ public final class FrenchAnalyzer extends Analyzer {
    */
   public FrenchAnalyzer(Version matchVersion, Set<?> stopwords,
       Set<?> stemExclutionSet) {
-    this.matchVersion = matchVersion;
-    this.stoptable = CharArraySet.unmodifiableSet(CharArraySet
-        .copy(matchVersion, stopwords));
+    super(matchVersion, stopwords);
     this.excltable = CharArraySet.unmodifiableSet(CharArraySet
         .copy(matchVersion, stemExclutionSet));
   }
@@ -202,54 +196,22 @@ public final class FrenchAnalyzer extends Analyzer {
   }
 
   /**
-   * Creates a {@link TokenStream} which tokenizes all the text in the provided
+   * Creates {@link TokenStreamComponents} used to tokenize all the text in the provided
    * {@link Reader}.
    *
-   * @return A {@link TokenStream} built from a {@link StandardTokenizer} 
+   * @return {@link TokenStreamComponents} built from a {@link StandardTokenizer} 
    *         filtered with {@link StandardFilter}, {@link StopFilter}, 
    *         {@link FrenchStemFilter} and {@link LowerCaseFilter}
    */
   @Override
-  public final TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new StandardTokenizer(matchVersion, reader);
-    result = new StandardFilter(result);
-    result = new StopFilter(matchVersion, result, stoptable);
+  protected TokenStreamComponents createComponents(String fieldName,
+      Reader reader) {
+    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+    TokenStream result = new StandardFilter(source);
+    result = new StopFilter(matchVersion, result, stopwords);
     result = new FrenchStemFilter(result, excltable);
     // Convert to lowercase after stemming!
-    result = new LowerCaseFilter(matchVersion, result);
-    return result;
-  }
-  
-  private class SavedStreams {
-    Tokenizer source;
-    TokenStream result;
-  };
-  
-  /**
-   * Returns a (possibly reused) {@link TokenStream} which tokenizes all the 
-   * text in the provided {@link Reader}.
-   *
-   * @return A {@link TokenStream} built from a {@link StandardTokenizer} 
-   *         filtered with {@link StandardFilter}, {@link StopFilter}, 
-   *         {@link FrenchStemFilter} and {@link LowerCaseFilter}
-   */
-  @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader)
-      throws IOException {
-    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
-    if (streams == null) {
-      streams = new SavedStreams();
-      streams.source = new StandardTokenizer(matchVersion, reader);
-      streams.result = new StandardFilter(streams.source);
-      streams.result = new StopFilter(matchVersion, streams.result, stoptable);
-      streams.result = new FrenchStemFilter(streams.result, excltable);
-      // Convert to lowercase after stemming!
-      streams.result = new LowerCaseFilter(matchVersion, streams.result);
-      setPreviousTokenStream(streams);
-    } else {
-      streams.source.reset(reader);
-    }
-    return streams.result;
+    return new TokenStreamComponents(source, new LowerCaseFilter(matchVersion, result));
   }
 }
 

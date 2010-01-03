@@ -17,10 +17,12 @@ package org.apache.lucene.analysis.br;
  * limitations under the License.
  */
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.Version;
 
 /**

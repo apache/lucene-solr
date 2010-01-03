@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.List;
 
+import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.util.Version;
 
 /** Filters {@link LetterTokenizer} with {@link LowerCaseFilter} and {@link StopFilter}.
@@ -38,9 +39,7 @@ import org.apache.lucene.util.Version;
  * </ul>
 */
 
-public final class StopAnalyzer extends Analyzer {
-  private final Set<?> stopWords;
-  private final Version matchVersion;
+public final class StopAnalyzer extends StopwordAnalyzerBase {
   
   /** An unmodifiable set containing some common English words that are not usually useful
   for searching.*/
@@ -65,16 +64,14 @@ public final class StopAnalyzer extends Analyzer {
    * @param matchVersion See <a href="#version">above</a>
    */
   public StopAnalyzer(Version matchVersion) {
-    stopWords = ENGLISH_STOP_WORDS_SET;
-    this.matchVersion = matchVersion;
+    this(matchVersion, ENGLISH_STOP_WORDS_SET);
   }
 
   /** Builds an analyzer with the stop words from the given set.
    * @param matchVersion See <a href="#version">above</a>
    * @param stopWords Set of stop words */
   public StopAnalyzer(Version matchVersion, Set<?> stopWords) {
-    this.stopWords = stopWords;
-    this.matchVersion = matchVersion;
+    super(matchVersion, stopWords);
   }
 
   /** Builds an analyzer with the stop words from the given file.
@@ -82,8 +79,7 @@ public final class StopAnalyzer extends Analyzer {
    * @param matchVersion See <a href="#version">above</a>
    * @param stopwordsFile File to load stop words from */
   public StopAnalyzer(Version matchVersion, File stopwordsFile) throws IOException {
-    stopWords = WordlistLoader.getWordSet(stopwordsFile);
-    this.matchVersion = matchVersion;
+    this(matchVersion, WordlistLoader.getWordSet(stopwordsFile));
   }
 
   /** Builds an analyzer with the stop words from the given reader.
@@ -91,34 +87,21 @@ public final class StopAnalyzer extends Analyzer {
    * @param matchVersion See <a href="#version">above</a>
    * @param stopwords Reader to load stop words from */
   public StopAnalyzer(Version matchVersion, Reader stopwords) throws IOException {
-    stopWords = WordlistLoader.getWordSet(stopwords);
-    this.matchVersion = matchVersion;
+    this(matchVersion, WordlistLoader.getWordSet(stopwords));
   }
 
-  /** Filters LowerCaseTokenizer with StopFilter. */
+  /**
+   * Creates {@link TokenStreamComponents} used to tokenize all the text in the provided {@link Reader}.
+   *
+   * @return {@link TokenStreamComponents} built from a {@link LowerCaseTokenizer} filtered with
+   *         {@link StopFilter}
+   */
   @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    return new StopFilter(matchVersion,
-        new LowerCaseTokenizer(reader), stopWords);
-  }
-
-  /** Filters LowerCaseTokenizer with StopFilter. */
-  private class SavedStreams {
-    Tokenizer source;
-    TokenStream result;
-  };
-  @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
-    if (streams == null) {
-      streams = new SavedStreams();
-      streams.source = new LowerCaseTokenizer(reader);
-      streams.result = new StopFilter(matchVersion,
-          streams.source, stopWords);
-      setPreviousTokenStream(streams);
-    } else
-      streams.source.reset(reader);
-    return streams.result;
+  protected TokenStreamComponents createComponents(String fieldName,
+      Reader reader) {
+    final Tokenizer source = new LowerCaseTokenizer(reader);
+    return new TokenStreamComponents(source, new StopFilter(matchVersion,
+          source, stopwords));
   }
 }
 

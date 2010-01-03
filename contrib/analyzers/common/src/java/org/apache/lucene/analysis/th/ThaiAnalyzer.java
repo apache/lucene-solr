@@ -16,16 +16,18 @@ package org.apache.lucene.analysis.th;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
+
+import org.apache.lucene.analysis.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
 import org.apache.lucene.util.Version;
 
 /**
@@ -35,41 +37,28 @@ import org.apache.lucene.util.Version;
  * <p><b>NOTE</b>: This class uses the same {@link Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
  */
-public final class ThaiAnalyzer extends Analyzer {
+public final class ThaiAnalyzer extends ReusableAnalyzerBase {
   private final Version matchVersion;
 
   public ThaiAnalyzer(Version matchVersion) {
     this.matchVersion = matchVersion;
   }
-  
+
+  /**
+   * Creates {@link TokenStreamComponents} used to tokenize all the text in the
+   * provided {@link Reader}.
+   * 
+   * @return {@link TokenStreamComponents} built from a
+   *         {@link StandardTokenizer} filtered with {@link StandardFilter},
+   *         {@link ThaiWordFilter}, and {@link StopFilter}
+   */
   @Override
-  public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream ts = new StandardTokenizer(matchVersion, reader);
-    ts = new StandardFilter(ts);
-    ts = new ThaiWordFilter(ts);
-    ts = new StopFilter(matchVersion, ts, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
-    return ts;
-  }
-  
-  private class SavedStreams {
-    Tokenizer source;
-    TokenStream result;
-  };
-  
-  @Override
-  public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
-    if (streams == null) {
-      streams = new SavedStreams();
-      streams.source = new StandardTokenizer(matchVersion, reader);
-      streams.result = new StandardFilter(streams.source);
-      streams.result = new ThaiWordFilter(streams.result);
-      streams.result = new StopFilter(matchVersion, streams.result, StopAnalyzer.ENGLISH_STOP_WORDS_SET);
-      setPreviousTokenStream(streams);
-    } else {
-      streams.source.reset(reader);
-      streams.result.reset(); // reset the ThaiWordFilter's state
-    }
-    return streams.result;
+  protected TokenStreamComponents createComponents(String fieldName,
+      Reader reader) {
+    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+    TokenStream result = new StandardFilter(source);
+    result = new ThaiWordFilter(result);
+    return new TokenStreamComponents(source, new StopFilter(matchVersion,
+        result, StopAnalyzer.ENGLISH_STOP_WORDS_SET));
   }
 }

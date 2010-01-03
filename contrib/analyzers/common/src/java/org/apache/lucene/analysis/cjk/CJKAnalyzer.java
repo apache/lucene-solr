@@ -19,12 +19,12 @@ package org.apache.lucene.analysis.cjk;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.Version;
 
-import java.io.IOException;
 import java.io.Reader;
 import java.util.Arrays;
 import java.util.Set;
@@ -35,7 +35,7 @@ import java.util.Set;
  * filters with {@link StopFilter}
  *
  */
-public final class CJKAnalyzer extends Analyzer {
+public final class CJKAnalyzer extends StopwordAnalyzerBase {
   //~ Static fields/initializers ---------------------------------------------
 
   /**
@@ -71,11 +71,6 @@ public final class CJKAnalyzer extends Analyzer {
         .unmodifiableSet(new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(STOP_WORDS),
             false));
   }
-  /**
-   * stop word list
-   */
-  private final Set<?> stopTable;
-  private final Version matchVersion;
 
   //~ Constructors -----------------------------------------------------------
 
@@ -95,8 +90,7 @@ public final class CJKAnalyzer extends Analyzer {
    *          a stopword set
    */
   public CJKAnalyzer(Version matchVersion, Set<?> stopwords){
-    stopTable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
-    this.matchVersion = matchVersion;
+    super(matchVersion, stopwords);
   }
 
   /**
@@ -106,51 +100,15 @@ public final class CJKAnalyzer extends Analyzer {
    * @deprecated use {@link #CJKAnalyzer(Version, Set)} instead
    */
   public CJKAnalyzer(Version matchVersion, String... stopWords) {
-    stopTable = StopFilter.makeStopSet(matchVersion, stopWords);
-    this.matchVersion = matchVersion;
+    super(matchVersion, StopFilter.makeStopSet(matchVersion, stopWords));
   }
 
   //~ Methods ----------------------------------------------------------------
 
-  /**
-   * Creates a {@link TokenStream} which tokenizes all the text in the provided {@link Reader}.
-   *
-   * @param fieldName lucene field name
-   * @param reader    input {@link Reader}
-   * @return A {@link TokenStream} built from {@link CJKTokenizer}, filtered with
-   *    {@link StopFilter}
-   */
   @Override
-  public final TokenStream tokenStream(String fieldName, Reader reader) {
-    return new StopFilter(matchVersion, new CJKTokenizer(reader), stopTable);
-  }
-  
-  private class SavedStreams {
-    Tokenizer source;
-    TokenStream result;
-  };
-  
-  /**
-   * Returns a (possibly reused) {@link TokenStream} which tokenizes all the text 
-   * in the provided {@link Reader}.
-   *
-   * @param fieldName lucene field name
-   * @param reader    Input {@link Reader}
-   * @return A {@link TokenStream} built from {@link CJKTokenizer}, filtered with
-   *    {@link StopFilter}
-   */
-  @Override
-  public final TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    /* tokenStream() is final, no back compat issue */
-    SavedStreams streams = (SavedStreams) getPreviousTokenStream();
-    if (streams == null) {
-      streams = new SavedStreams();
-      streams.source = new CJKTokenizer(reader);
-      streams.result = new StopFilter(matchVersion, streams.source, stopTable);
-      setPreviousTokenStream(streams);
-    } else {
-      streams.source.reset(reader);
-    }
-    return streams.result;
+  protected TokenStreamComponents createComponents(String fieldName,
+      Reader reader) {
+    final Tokenizer source = new CJKTokenizer(reader);
+    return new TokenStreamComponents(source, new StopFilter(matchVersion, source, stopwords));
   }
 }
