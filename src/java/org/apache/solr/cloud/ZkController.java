@@ -407,6 +407,8 @@ public final class ZkController {
       if (m.matches()) {
         String prefix = m.group(1);
         hostName = prefix + hostName;
+      } else {
+        hostName = "http://" + hostName;
       }
     }
     if (log.isInfoEnabled()) {
