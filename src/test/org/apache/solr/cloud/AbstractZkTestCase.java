@@ -125,8 +125,8 @@ public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
 
   public void tearDown() throws Exception {
     printLayout();
-    zkServer.shutdown();
     super.tearDown();
+    zkServer.shutdown();
   }
 
   private void printLayout() throws Exception {

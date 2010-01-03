@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
@@ -26,11 +27,11 @@ import org.apache.zookeeper.ZooKeeper;
  *
  */
 public abstract class ZkClientConnectionStrategy {
-  public abstract void connect(String zkServerAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException;
-  public abstract void reconnect(String serverAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException;
+  public abstract void connect(String zkServerAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException;
+  public abstract void reconnect(String serverAddress, int zkClientTimeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException;
   
   public static abstract class ZkUpdate {
-    public abstract void update(ZooKeeper zooKeeper);
+    public abstract void update(ZooKeeper zooKeeper) throws InterruptedException, TimeoutException, IOException;
   }
   
 }

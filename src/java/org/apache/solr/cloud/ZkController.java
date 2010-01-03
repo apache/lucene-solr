@@ -89,7 +89,7 @@ public final class ZkController {
 
       try {
         // refresh watcher
-        controller.getKeeperConnection().exists(event.getPath(), this);
+        //controller.getKeeperConnection().exists(event.getPath(), this);
 
         // TODO: need to load whole state?
         controller.loadCollectionInfo();
@@ -237,6 +237,25 @@ public final class ZkController {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
     }
+    
+    // no watch the shards node
+    try {
+      zkClient.exists(shardsZkPath, new Watcher(){
+
+        public void process(WatchedEvent event) {
+          // nocommit
+          // the shards node has been updated
+          // we need to look for new nodes
+          
+        }});
+    } catch (KeeperException e) {
+      log.error("ZooKeeper Exception", e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "ZooKeeper Exception", e);
+    } catch (InterruptedException e) {
+      // Restore the interrupted status
+      Thread.currentThread().interrupt();
+    }
   }
 
   /**
@@ -371,8 +390,10 @@ public final class ZkController {
           + " but core's ZooKeeper node has already been removed");
     } catch (KeeperException e) {
       log.error("ZooKeeper Exception", e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "ZooKeeper Exception", e);
+      // we can't get through to ZooKeeper, so log error
+      // and allow close process to continue -
+      // if ZooKeeper is down, our ephemeral node
+      // should be removed anyway
     }
   }
 

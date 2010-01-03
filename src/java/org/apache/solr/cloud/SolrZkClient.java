@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 public class SolrZkClient {
   static final String NEWL = System.getProperty("line.separator");
 
-  private static final int CONNECT_TIMEOUT = 5000;
+  static final int CONNECT_TIMEOUT = 5000;
 
   protected static final Logger log = LoggerFactory
       .getLogger(SolrZkClient.class);
@@ -79,11 +79,18 @@ public class SolrZkClient {
   public SolrZkClient(String zkServerAddress, int zkClientTimeout,
       ZkClientConnectionStrategy strat) throws InterruptedException,
       TimeoutException, IOException {
-    connManager = new ConnectionManager("ZooKeeperConnection Watcher", this,
+    connManager = new ConnectionManager("ZooKeeperConnection Watcher:" + zkServerAddress, this,
         zkServerAddress, zkClientTimeout, strat);
     strat.connect(zkServerAddress, zkClientTimeout, connManager, new ZkUpdate() {
       @Override
       public void update(ZooKeeper zooKeeper) {
+        if(keeper != null) {
+          try {
+            keeper.close();
+          } catch (InterruptedException e) {
+            // nocommit
+          }
+        }
         keeper = zooKeeper;
       }
     });
@@ -109,11 +116,21 @@ public class SolrZkClient {
   }
 
   /**
-   * @param path
-   * @param watcher
-   * @return
-   * @throws KeeperException
-   * @throws InterruptedException
+   * Return the stat of the node of the given path. Return null if no such a
+   * node exists.
+   * <p>
+   * If the watch is non-null and the call is successful (no exception is thrown),
+   * a watch will be left on the node with the given path. The watch will be
+   * triggered by a successful operation that creates/delete the node or sets
+   * the data on the node.
+   *
+   * @param path the node path
+   * @param watcher explicit watcher
+   * @return the stat of the node of the given path; return null if no such a
+   *         node exists.
+   * @throws KeeperException If the server signals an error
+   * @throws InterruptedException If the server transaction is interrupted.
+   * @throws IllegalArgumentException if an invalid path is specified
    */
   public Stat exists(final String path, Watcher watcher)
       throws KeeperException, InterruptedException {
@@ -249,9 +266,9 @@ public class SolrZkClient {
   public void makePath(String path, byte[] data, CreateMode createMode,
       Watcher watcher) throws KeeperException, InterruptedException {
     if (log.isInfoEnabled()) {
-      log.info("makePath: " + path);
+      log.info("makePath: " + path + " keeper:" + keeper);
     }
-
+    
     if (path.startsWith("/")) {
       path = path.substring(1, path.length());
     }
@@ -390,6 +407,8 @@ public class SolrZkClient {
    * @throws InterruptedException
    */
   public void close() throws InterruptedException {
+    // nocommit
+    log.info("closing SolrZKClient " + this);
     keeper.close();
   }
 
@@ -399,6 +418,8 @@ public class SolrZkClient {
    * @param keeper
    */
   void updateKeeper(ZooKeeper keeper) {
+    // nocommit
+   log.info("Updating ZooKeeper instance");
    this.keeper = keeper;
   }
 
