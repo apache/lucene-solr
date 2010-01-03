@@ -24,7 +24,10 @@ $Id$
 ==================  1.5.0-dev ==================
 Upgrading from Solr 1.4
 ----------------------
-The experimental ALIAS command is removed in Solr 1.5 (SOLR-1637).
+* The experimental ALIAS command is removed in Solr 1.5 (SOLR-1637)
+
+* Using solr.xml is recommended for single cores also (SOLR-1621)
+
 
 Versions of Major Components
 ---------------------
@@ -70,6 +73,11 @@ New Features
 * SOLR-1532: Allow StreamingUpdateSolrServer to use a provided HttpClient (Gabriele Renzi via shalin)
 
 * SOLR-1653: Add PatternReplaceCharFilter (koji)
+
+* SOLR-1131: FieldTypes can now output multiple Fields per Type and still be searched.  This can be handy for hiding the details of a particular
+  implementation such as in the spatial case. (Chris Mattmann, shalin, noble, gsingers, yonik)
+
+* SOLR-1586: Add support for Geohash and Spatial Tile FieldType (Chris Mattmann, gsingers)  
 
 Optimizations
 ----------------------
@@ -177,6 +185,8 @@ Other Changes
   
 * SOLR-1674: Improve analysis tests and cut over to new TokenStream API.
   (Robert Muir via Mark Miller)
+
+* SOLR-1661 : Remove adminCore from CoreContainer . removed deprecated methods setAdminCore(), getAdminCore() (noble)
 
 Build
 ----------------------

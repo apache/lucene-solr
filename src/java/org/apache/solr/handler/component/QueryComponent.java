@@ -19,14 +19,11 @@ package org.apache.solr.handler.component;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.*;
-import org.apache.lucene.search.FieldCache.DoubleParser;
-import org.apache.lucene.search.FieldCache.LongParser;
-import org.apache.lucene.search.FieldCache.FloatParser;
-import org.apache.lucene.search.FieldCache.IntParser;
-import org.apache.lucene.search.FieldCache.Parser;
 import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -38,15 +35,14 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryResponse;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.*;
 import org.apache.solr.util.SolrPluginUtils;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
-import java.text.Collator;
 
 /**
  * TODO!
@@ -187,6 +183,14 @@ public class QueryComponent extends SearchComponent
     rsp.add("response",rb.getResults().docList);
     rsp.getToLog().add("hits", rb.getResults().docList.matches());
 
+    doFieldSortValues(rb, searcher);
+    doPrefetch(rb);
+  }
+
+  protected void doFieldSortValues(ResponseBuilder rb, SolrIndexSearcher searcher) throws IOException
+  {
+    SolrQueryRequest req = rb.req;
+    SolrQueryResponse rsp = rb.rsp;
 
     // The query cache doesn't currently store sort field values, and SolrIndexSearcher doesn't
     // currently have an option to return sort field values.  Because of this, we
@@ -264,7 +268,12 @@ public class QueryComponent extends SearchComponent
 
       rsp.add("sort_values", sortVals);
     }
+  }
 
+  protected void doPrefetch(ResponseBuilder rb) throws IOException
+  {
+    SolrQueryRequest req = rb.req;
+    SolrQueryResponse rsp = rb.rsp;
     //pre-fetch returned documents
     if (!req.getParams().getBool(ShardParams.IS_SHARD,false) && rb.getResults().docList != null && rb.getResults().docList.size()<=50) {
       // TODO: this may depend on the highlighter component (or other components?)
@@ -557,10 +566,12 @@ public class QueryComponent extends SearchComponent
       for (SolrDocument doc : docs) {
         Object id = doc.getFieldValue(keyFieldName);
         ShardDoc sdoc = rb.resultIds.get(id.toString());
-        if (returnScores && sdoc.score != null) {
-          doc.setField("score", sdoc.score);
+        if (sdoc != null) {
+          if (returnScores && sdoc.score != null) {
+              doc.setField("score", sdoc.score);
+          }
+          rb._responseDocs.set(sdoc.positionInResponse, doc);
         }
-        rb._responseDocs.set(sdoc.positionInResponse, doc);
       }      
     }
   }

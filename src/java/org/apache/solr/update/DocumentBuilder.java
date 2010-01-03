@@ -57,19 +57,35 @@ public class DocumentBuilder {
     // we don't check for a null val ourselves because a solr.FieldType
     // might actually want to map it to something.  If createField()
     // returns null, then we don't store the field.
-    Field field = sfield.createField(val, boost);
-    if (field != null) {
-      if (!sfield.multiValued()) {
-        String oldValue = map.put(sfield.getName(), val);
-        if (oldValue != null) {
-          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"ERROR: multiple values encountered for non multiValued field " + sfield.getName()
-                  + ": first='" + oldValue + "' second='" + val + "'");
+    if (sfield.isPolyField()) {
+      Fieldable[] fields = sfield.createFields(val, boost);
+      if (fields.length > 0) {
+        if (!sfield.multiValued()) {
+          String oldValue = map.put(sfield.getName(), val);
+          if (oldValue != null) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "ERROR: multiple values encountered for non multiValued field " + sfield.getName()
+                    + ": first='" + oldValue + "' second='" + val + "'");
+          }
+        }
+        // Add each field
+        for (Fieldable field : fields) {
+          doc.add(field);
         }
       }
-       
-      // field.setBoost(boost);
+    } else {
+      Field field = sfield.createField(val, boost);
+      if (field != null) {
+        if (!sfield.multiValued()) {
+          String oldValue = map.put(sfield.getName(), val);
+          if (oldValue != null) {
+            throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"ERROR: multiple values encountered for non multiValued field " + sfield.getName()
+                    + ": first='" + oldValue + "' second='" + val + "'");
+          }
+        }
+      }
       doc.add(field);
     }
+
   }
 
   /**
@@ -147,7 +163,7 @@ public class DocumentBuilder {
     for (SchemaField field : schema.getRequiredFields()) {
       if (doc.getField(field.getName() ) == null) {
         if (field.getDefaultValue() != null) {
-          doc.add( field.createField( field.getDefaultValue(), 1.0f ) );
+          addField(doc, field, field.getDefaultValue(), 1.0f);
         } else {
           if (missingFields==null) {
             missingFields = new ArrayList<String>(1);
@@ -175,6 +191,19 @@ public class DocumentBuilder {
     
     Document ret = doc; doc=null;
     return ret;
+  }
+
+
+  private static void addField(Document doc, SchemaField field, String val, float boost) {
+    if (field.isPolyField()) {
+      Fieldable[] farr = field.getType().createFields(field, val, boost);
+      for (Fieldable f : farr) {
+        if (f != null) doc.add(f); // null fields are not added
+      }
+    } else {
+      Field f = field.createField(val, boost);
+      if (f != null) doc.add(f);  // null fields are not added
+    }
   }
   
 
@@ -230,7 +259,9 @@ public class DocumentBuilder {
           isBinaryField = true;
           BinaryField binaryField = (BinaryField) sfield.getType();
           Field f = binaryField.createField(sfield,v,boost);
-          if(f != null) out.add(f);
+          if(f != null){
+            out.add(f);
+          }
           used = true;
         } else {
           // TODO!!! HACK -- date conversion
@@ -243,10 +274,7 @@ public class DocumentBuilder {
 
           if (sfield != null) {
             used = true;
-            Field f = sfield.createField(val, boost);
-            if (f != null) { // null fields are not added
-              out.add(f);
-            }
+            addField(out, sfield, val, boost);
           }
         }
 
@@ -263,17 +291,21 @@ public class DocumentBuilder {
           }
 
           used = true;
-          Field f = null;
+          //Don't worry about poly fields here
+          Fieldable [] fields = null;
           if (isBinaryField) {
             if (destinationField.getType() instanceof BinaryField) {
               BinaryField binaryField = (BinaryField) destinationField.getType();
-              f = binaryField.createField(destinationField, v, boost);
+              //TODO: safe to assume that binary fields only create one?
+              fields = new Field[]{binaryField.createField(destinationField, v, boost)};
             }
           } else {
-            f = destinationField.createField(cf.getLimitedValue(val), boost);
+            fields = destinationField.createFields(cf.getLimitedValue(val), boost);
           }
-          if (f != null) { // null fields are not added
-            out.add(f);
+          if (fields != null) { // null fields are not added
+            for (Fieldable f : fields) {
+              out.add(f);
+            }
           }
         }
         
@@ -297,7 +329,7 @@ public class DocumentBuilder {
     for (SchemaField field : schema.getRequiredFields()) {
       if (out.getField(field.getName() ) == null) {
         if (field.getDefaultValue() != null) {
-          out.add( field.createField( field.getDefaultValue(), 1.0f ) );
+          addField(out, field, field.getDefaultValue(), 1.0f);
         } 
         else {
           String id = schema.printableUniqueKey( out );

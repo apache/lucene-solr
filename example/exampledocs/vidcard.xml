@@ -30,6 +30,7 @@
   <field name="weight">16</field>
   <field name="price">479.95</field>
   <field name="popularity">7</field>
+  <field name="store">40.7143,-74.006</field>
   <field name="inStock">false</field>
   <field name="manufacturedate_dt">2006-02-13T15:26:37Z/DAY</field>
 </doc>
@@ -50,5 +51,7 @@
   <field name="popularity">7</field>
   <field name="inStock">false</field>
   <field name="manufacturedate_dt">2006-02-13T15:26:37Z/DAY</field>
+  <!-- NYC store -->
+  <field name="store">40.7143,-74.006</field>
 </doc>
 </add>

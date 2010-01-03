@@ -65,6 +65,30 @@ public final class IndexSchema {
   private float version;
   private final SolrResourceLoader loader;
 
+  private final HashMap<String, SchemaField> fields = new HashMap<String,SchemaField>();
+
+
+  private final HashMap<String, FieldType> fieldTypes = new HashMap<String,FieldType>();
+
+  private final List<SchemaField> fieldsWithDefaultValue = new ArrayList<SchemaField>();
+  private final Collection<SchemaField> requiredFields = new HashSet<SchemaField>();
+  private DynamicField[] dynamicFields;
+
+  private Analyzer analyzer;
+  private Analyzer queryAnalyzer;
+
+  private String defaultSearchFieldName=null;
+  private String queryParserDefaultOperator = "OR";
+
+
+  private final Map<String, List<CopyField>> copyFieldsMap = new HashMap<String, List<CopyField>>();
+  private DynamicCopy[] dynamicCopyFields;
+  /**
+   * keys are all fields copied to, count is num of copyField
+   * directives that target them.
+   */
+  private Map<SchemaField, Integer> copyFieldTargetCounts
+    = new HashMap<SchemaField, Integer>();
   /**
    * Constructs a schema using the specified file name using the normal
    * Config path directory searching rules.
@@ -156,11 +180,6 @@ public final class IndexSchema {
   @Deprecated
   public String getName() { return name; }
 
-  private final HashMap<String, SchemaField> fields = new HashMap<String,SchemaField>();
-  private final HashMap<String, FieldType> fieldTypes = new HashMap<String,FieldType>();
-  private final List<SchemaField> fieldsWithDefaultValue = new ArrayList<SchemaField>();
-  private final Collection<SchemaField> requiredFields = new HashSet<SchemaField>();
-
   /**
    * Provides direct access to the Map containing all explicit
    * (ie: non-dynamic) fields in the index, keyed on field name.
@@ -218,7 +237,7 @@ public final class IndexSchema {
    */
   public SimilarityFactory getSimilarityFactory() { return similarityFactory; }
 
-  private Analyzer analyzer;
+
 
   /**
    * Returns the Analyzer used when indexing documents for this index
@@ -230,7 +249,7 @@ public final class IndexSchema {
    */
   public Analyzer getAnalyzer() { return analyzer; }
 
-  private Analyzer queryAnalyzer;
+
 
   /**
    * Returns the Analyzer used when searching this index
@@ -242,8 +261,7 @@ public final class IndexSchema {
    */
   public Analyzer getQueryAnalyzer() { return queryAnalyzer; }
 
-  private String defaultSearchFieldName=null;
-  private String queryParserDefaultOperator = "OR";
+
 
   /**
    * A SolrQueryParser linked to this IndexSchema for field datatype
@@ -399,7 +417,7 @@ public final class IndexSchema {
       Config schemaConf = new Config(loader, "schema", is, "/schema/");
       Document document = schemaConf.getDocument();
       final XPath xpath = schemaConf.getXPath();
-
+      final List<SchemaAware> schemaAware = new ArrayList<SchemaAware>();
       Node nd = (Node) xpath.evaluate("/schema/@name", document, XPathConstants.NODE);
       if (nd==null) {
         log.warn("schema has no name!");
@@ -433,6 +451,9 @@ public final class IndexSchema {
           if (analyzer!=null) {
             ft.setAnalyzer(analyzer);
             ft.setQueryAnalyzer(queryAnalyzer);
+          }
+          if (ft instanceof SchemaAware){
+            schemaAware.add((SchemaAware) ft);
           }
           return ft;
         }
@@ -494,7 +515,6 @@ public final class IndexSchema {
             SolrException.logOnce(log,null,t);
             SolrConfig.severeErrors.add( t );
           }
-          
           log.debug("field defined: " + f);
           if( f.getDefaultValue() != null ) {
             log.debug(name+" contains default value: " + f.getDefaultValue());
@@ -506,23 +526,7 @@ public final class IndexSchema {
           }
         } else if (node.getNodeName().equals("dynamicField")) {
           // make sure nothing else has the same path
-          boolean dup = false;
-          for( DynamicField df : dFields ) {
-            if( df.regex.equals( f.name ) ) {
-              String msg = "[schema.xml] Duplicate DynamicField definition for '"
-                + f.getName() + "' ignoring: "+f.toString();
-              
-              Throwable t = new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
-              SolrException.logOnce(log,null,t);
-              SolrConfig.severeErrors.add( t );
-              dup = true;
-              break;
-            }
-          }
-          if( !dup ) {
-            dFields.add(new DynamicField(f));
-            log.debug("dynamic field defined: " + f);
-          }
+          addDynamicField(dFields, f);
         } else {
           // we should never get here
           throw new RuntimeException("Unknown field type");
@@ -533,6 +537,7 @@ public final class IndexSchema {
     //add them to required fields, and we only have to loop once
     // in DocumentBuilder.getDoc()
     requiredFields.addAll(getFieldsWithDefaultValue());
+
 
     // OK, now sort the dynamic fields largest to smallest size so we don't get
     // any false matches.  We want to act like a compiler tool and try and match
@@ -567,6 +572,9 @@ public final class IndexSchema {
             return (Similarity) obj;
           }
         };
+      }
+      if (similarityFactory instanceof SchemaAware){
+        schemaAware.add((SchemaAware) similarityFactory);
       }
       log.debug("using similarity factory" + similarityFactory.getClass().getName());
     }
@@ -652,7 +660,10 @@ public final class IndexSchema {
                       entry.getValue()+")");
         }
       }
-
+      //Run the callbacks on SchemaAware now that everything else is done
+      for (SchemaAware aware : schemaAware) {
+        aware.inform(this);
+      }
     } catch (SolrException e) {
       SolrConfig.severeErrors.add( e );
       throw e;
@@ -664,6 +675,51 @@ public final class IndexSchema {
 
     // create the field analyzers
     refreshAnalyzers();
+
+  }
+
+  private void addDynamicField(List<DynamicField> dFields, SchemaField f) {
+    boolean dup = isDuplicateDynField(dFields, f);
+    if( !dup ) {
+      addDynamicFieldNoDupCheck(dFields, f);
+    } else {
+      String msg = "[schema.xml] Duplicate DynamicField definition for '"
+              + f.getName() + "' ignoring: " + f.toString();
+
+      Throwable t = new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
+      SolrException.logOnce(log, null, t);
+      SolrConfig.severeErrors.add(t);
+    }
+  }
+
+  /**
+   * Register one or more new Dynamic Field with the Schema.
+   * @param f The {@link org.apache.solr.schema.SchemaField}
+   */
+  public void registerDynamicField(SchemaField ... f) {
+    List<DynamicField> dynFields = new ArrayList<DynamicField>(Arrays.asList(dynamicFields));
+    for (SchemaField field : f) {
+      if (isDuplicateDynField(dynFields, field) == false) {
+        log.debug("dynamic field creation for schema field: " + field.getName());
+        addDynamicFieldNoDupCheck(dynFields, field);
+      } else {
+        log.debug("dynamic field already exists: dynamic field: [" + field.getName() + "]");
+      }
+    }
+    Collections.sort(dynFields);
+    dynamicFields = dynFields.toArray(new DynamicField[dynFields.size()]);
+  }
+
+  private void addDynamicFieldNoDupCheck(List<DynamicField> dFields, SchemaField f) {
+    dFields.add(new DynamicField(f));
+    log.debug("dynamic field defined: " + f);
+  }
+
+  private boolean isDuplicateDynField(List<DynamicField> dFields, SchemaField f) {
+    for( DynamicField df : dFields ) {
+      if( df.regex.equals( f.name ) ) return true;
+    }
+    return false;
   }
 
   public void registerCopyField( String source, String dest )
@@ -987,7 +1043,7 @@ public final class IndexSchema {
     }
   }
 
-  private DynamicField[] dynamicFields;
+
   public SchemaField[] getDynamicFieldPrototypes() {
     SchemaField[] df = new SchemaField[dynamicFields.length];
     for (int i=0;i<dynamicFields.length;i++) {
@@ -1038,42 +1094,43 @@ public final class IndexSchema {
     }
 
     return false;
-  }
-  
+  }   
+
   /**
    * Returns the SchemaField that should be used for the specified field name, or
    * null if none exists.
    *
-   * @param fieldName may be an explicitly defined field, or a name that
+   * @param fieldName may be an explicitly defined field or a name that
    * matches a dynamic field.
    * @see #getFieldType
+   * @see #getField(String)
+   * @return The {@link org.apache.solr.schema.SchemaField}
    */
   public SchemaField getFieldOrNull(String fieldName) {
-     SchemaField f = fields.get(fieldName);
+    SchemaField f = fields.get(fieldName);
     if (f != null) return f;
 
     for (DynamicField df : dynamicFields) {
       if (df.matches(fieldName)) return df.makeSchemaField(fieldName);
     }
-    
+
     return f;
   }
 
   /**
    * Returns the SchemaField that should be used for the specified field name
    *
-   * @param fieldName may be an explicitly defined field, or a name that
+   * @param fieldName may be an explicitly defined field or a name that
    * matches a dynamic field.
    * @throws SolrException if no such field exists
    * @see #getFieldType
+   * @see #getFieldOrNull(String)
+   * @return The {@link SchemaField}
    */
   public SchemaField getField(String fieldName) {
-     SchemaField f = fields.get(fieldName);
+    SchemaField f = getFieldOrNull(fieldName);
     if (f != null) return f;
 
-    for (DynamicField df : dynamicFields) {
-      if (df.matches(fieldName)) return df.makeSchemaField(fieldName);
-    }
 
     // Hmmm, default field could also be implemented with a dynamic field of "*".
     // It would have to be special-cased and only used if nothing else matched.
@@ -1102,6 +1159,16 @@ public final class IndexSchema {
     if (f != null) return f.getType();
 
     return getDynamicFieldType(fieldName);
+  }
+
+  /**
+   * Given the name of a {@link org.apache.solr.schema.FieldType} (not to be confused with {@link #getFieldType(String)} which
+   * takes in the name of a field), return the {@link org.apache.solr.schema.FieldType}.
+   * @param fieldTypeName The name of the {@link org.apache.solr.schema.FieldType}
+   * @return The {@link org.apache.solr.schema.FieldType} or null.
+   */
+  public FieldType getFieldTypeByName(String fieldTypeName){
+    return fieldTypes.get(fieldTypeName);
   }
 
   /**
@@ -1149,15 +1216,6 @@ public final class IndexSchema {
     return null;
   };
 
-
-  private final Map<String, List<CopyField>> copyFieldsMap = new HashMap<String, List<CopyField>>();
-  private DynamicCopy[] dynamicCopyFields;
-  /**
-   * keys are all fields copied to, count is num of copyField
-   * directives that target them.
-   */
-  private Map<SchemaField, Integer> copyFieldTargetCounts
-    = new HashMap<SchemaField, Integer>();
 
   /**
    * Get all copy fields, both the static and the dynamic ones.

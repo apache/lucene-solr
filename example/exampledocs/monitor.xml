@@ -27,5 +27,7 @@
   <field name="price">2199</field>
   <field name="popularity">6</field>
   <field name="inStock">true</field>
+  <!-- Buffalo store -->
+  <field name="store">45.17614,-93.87341</field>
 </doc></add>
 

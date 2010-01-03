@@ -90,9 +90,23 @@ public final class SchemaField extends FieldProperties {
   boolean isTokenized() { return (properties & TOKENIZED)!=0; }
   boolean isBinary() { return (properties & BINARY)!=0; }
 
+
   public Field createField(String val, float boost) {
     return type.createField(this,val,boost);
   }
+  
+  public Fieldable[] createFields(String val, float boost) {
+    return type.createFields(this,val,boost);
+  }
+
+  /**
+   * If true, then use {@link #createFields(String, float)}, else use {@link #createField} to save an extra allocation
+   * @return true if this field is a poly field
+   */
+  public boolean isPolyField(){
+    return type.isPolyField();
+  }
+
 
   @Override
   public String toString() {
@@ -119,6 +133,29 @@ public final class SchemaField extends FieldProperties {
 
 
   static SchemaField create(String name, FieldType ft, Map<String,String> props) {
+
+    String defaultValue = null;
+    if( props.containsKey( "default" ) ) {
+    	defaultValue = (String)props.get( "default" );
+    }
+    return new SchemaField(name, ft, calcProps(name, ft, props), defaultValue );
+  }
+
+  /**
+   * Create a SchemaField w/ the props specified.  Does not support a default value.
+   * @param name The name of the SchemaField
+   * @param ft The {@link org.apache.solr.schema.FieldType} of the field
+   * @param props The props.  See {@link #calcProps(String, org.apache.solr.schema.FieldType, java.util.Map)}
+   * @param defValue The default Value for the field
+   * @return The SchemaField
+   *
+   * @see #create(String, FieldType, java.util.Map)
+   */
+  static SchemaField create(String name, FieldType ft, int props, String defValue){
+    return new SchemaField(name, ft, props, defValue);
+  }
+
+  static int calcProps(String name, FieldType ft, Map<String, String> props) {
     int trueProps = parseProperties(props,true);
     int falseProps = parseProperties(props,false);
 
@@ -166,16 +203,21 @@ public final class SchemaField extends FieldProperties {
 
     p &= ~falseProps;
     p |= trueProps;
-
-    String defaultValue = null;
-    if( props.containsKey( "default" ) ) {
-    	defaultValue = (String)props.get( "default" );
-    }
-    return new SchemaField(name, ft, p, defaultValue );
+    return p;
   }
 
   public String getDefaultValue() {
     return defaultValue;
+  }
+
+  @Override
+  public int hashCode() {
+    return name.hashCode();
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    return(obj instanceof SchemaField) && name.equals(((SchemaField)obj).name);
   }
 }
 

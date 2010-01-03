@@ -22,6 +22,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.schema.FieldType;
 
 /**
  * 
@@ -59,4 +60,17 @@ public class DocumentBuilderTest extends AbstractSolrTestCase {
     Document out = DocumentBuilder.toDocument( doc, core.getSchema() );
     assertNull( out.get( "name" ) );
   }
+
+  public void testMultiField() throws Exception {
+    SolrCore core = h.getCore();
+
+    // make sure a null value is not indexed
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField( "home", "2.2,3.3", 1.0f );
+    Document out = DocumentBuilder.toDocument( doc, core.getSchema() );
+    assertNotNull( out.get( "home" ) );//contains the stored value and term vector, if there is one
+    assertNotNull( out.getField( "home_0" + FieldType.POLY_FIELD_SEPARATOR + "double" ) );
+    assertNotNull( out.getField( "home_1" + FieldType.POLY_FIELD_SEPARATOR + "double" ) );
+  }
+
 }

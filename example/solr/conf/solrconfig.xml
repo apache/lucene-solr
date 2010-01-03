@@ -682,17 +682,17 @@
   the standard or dismax SearchHandler) queries such that a separate request is
   not needed to get suggestions.
 
+  See http://wiki.apache.org/solr/SpellCheckComponent for details on the request
+  parameters. 
+
   IN OTHER WORDS, THERE IS REALLY GOOD CHANCE THE SETUP BELOW IS NOT WHAT YOU
   WANT FOR YOUR PRODUCTION SYSTEM!
   #############################################################################
   -->
   <requestHandler name="/spell" class="solr.SearchHandler" lazy="true">
     <lst name="defaults">
-      <!-- omp = Only More Popular -->
       <str name="spellcheck.onlyMorePopular">false</str>
-      <!-- exr = Extended Results -->
       <str name="spellcheck.extendedResults">false</str>
-      <!--  The number of suggestions to return -->
       <str name="spellcheck.count">1</str>
     </lst>
     <arr name="last-components">

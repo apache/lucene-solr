@@ -71,8 +71,6 @@ public class CoreContainer
   protected String libDir = null;
   protected ClassLoader libLoader = null;
   protected SolrResourceLoader loader = null;
-  @Deprecated
-  protected java.lang.ref.WeakReference<SolrCore> adminCore = null;
   protected Properties containerProperties;
   protected Map<String ,IndexSchema> indexSchemaCache;
   protected String adminHandler;
@@ -260,7 +258,6 @@ public class CoreContainer
    * 
    * @param dir the home directory of all resources.
    * @param cfgis the configuration file InputStream
-   * @param configName
    * @throws ParserConfigurationException
    * @throws IOException
    * @throws SAXException
@@ -680,43 +677,7 @@ public class CoreContainer
     }
   }
 
-  /**
-   * Sets the preferred core used to handle MultiCore admin tasks.
-   */
-  @Deprecated
-  public void setAdminCore(SolrCore core) {
-    synchronized (cores) {
-      adminCore = new java.lang.ref.WeakReference<SolrCore>(core);
-    }
-  }
-
-  /**
-   * Ensures there is a valid core to handle MultiCore admin taks and
-   * increase its refcount.
-   * @see SolrCore#close() 
-   * @return the acquired admin core, null if no core is available
-   */
-  @Deprecated
-  public SolrCore getAdminCore() {
-    synchronized (cores) {
-      SolrCore core = adminCore != null ? adminCore.get() : null;
-      if (core != null && !core.isClosed()) {
-        core.open();
-      } else {
-        for (SolrCore c : cores.values()) {
-          if (c != null) {
-            core = c;
-            core.open();
-            setAdminCore(core);
-            break;
-          }
-        }
-      }
-      return core;
-    }
-  }
-
-  // ---------------- Multicore self related methods --------------- 
+  // ---------------- Multicore self related methods ---------------
   /** 
    * Creates a CoreAdminHandler for this MultiCore.
    * @return a CoreAdminHandler

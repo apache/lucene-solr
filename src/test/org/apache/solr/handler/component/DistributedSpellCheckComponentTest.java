@@ -30,6 +30,8 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     handle.put("QTime", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
     handle.put("maxScore", SKIPVAL);
+    // we care only about the spellcheck results
+    handle.put("response", SKIP);
 
     query("q", "*:*", "fl", "id,lowerfilt", "spellcheck.q","toyata", "spellcheck", "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH");
     query("q", "*:*", "fl", "id,lowerfilt", "spellcheck.q","toyata", "spellcheck", "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true");

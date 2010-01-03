@@ -251,6 +251,12 @@
     <fieldType name="tdoubles" class="solr.TrieDoubleField" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
     <fieldType name="tdates" class="solr.TrieDateField" omitNorms="true" positionIncrementGap="0" precisionStep="0" multiValued="true" />
 
+    <!-- Poly field -->
+    <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
+    <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="*_d"/>
+
+    <fieldtype name="geohash" class="solr.GeoHashField"/>
+
  </types>
 
 
@@ -275,7 +281,13 @@
 
    <!-- for testing, a type that does a transform to see if it's correctly done everywhere -->
    <field name="id" type="sfloat" indexed="true" stored="true" required="true" /> 
-   <field name="text" type="text" indexed="true" stored="false" /> 
+   <field name="text" type="text" indexed="true" stored="false" />
+
+   <!-- Test a point field for distances -->
+   <field name="point" type="xy" indexed="true" stored="true" multiValued="false"/>
+   <field name="pointD" type="xyd" indexed="true" stored="true" multiValued="false"/>
+
+   <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
 
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.

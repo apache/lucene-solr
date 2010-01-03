@@ -17,9 +17,7 @@ package org.apache.solr.search.function.distance;
  */
 
 import org.apache.solr.search.function.DocValues;
-import org.apache.solr.search.function.ValueSource;
-
-import java.util.List;
+import org.apache.solr.search.function.MultiValueSource;
 
 
 /**
@@ -30,8 +28,8 @@ import java.util.List;
 public class SquaredEuclideanFunction extends VectorDistanceFunction {
   protected String name = "sqedist";
 
-  public SquaredEuclideanFunction(List<ValueSource> sources1, List<ValueSource> sources2) {
-    super(-1, sources1, sources2);//overriding distance, so power doesn't matter here
+  public SquaredEuclideanFunction(MultiValueSource source1, MultiValueSource source2) {
+    super(-1, source1, source2);//overriding distance, so power doesn't matter here
   }
 
 
@@ -43,11 +41,16 @@ public class SquaredEuclideanFunction extends VectorDistanceFunction {
   /**
    * @param doc The doc to score
    */
-  protected double distance(int doc, DocValues[] docValues1, DocValues[] docValues2) {
+  protected double distance(int doc, DocValues dv1, DocValues dv2) {
     double result = 0;
-    for (int i = 0; i < docValues1.length; i++) {
-      result += Math.pow(docValues1[i].doubleVal(doc) - docValues2[i].doubleVal(doc), 2);
-    }
+    double [] vals1 = new double[source1.dimension()];
+    double [] vals2 = new double[source1.dimension()];
+    dv1.doubleVal(doc, vals1);
+    dv2.doubleVal(doc, vals2);
+    for (int i = 0; i < vals1.length; i++) {
+        double v = vals1[i] - vals2[i];
+        result += v * v;
+      }
     return result;
   }
 

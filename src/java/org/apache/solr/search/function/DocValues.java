@@ -48,6 +48,15 @@ public abstract class DocValues {
   public String strVal(int doc) { throw new UnsupportedOperationException(); }
   public abstract String toString(int doc);
 
+  //For Functions that can work with multiple values from the same document.  This does not apply to all functions
+  public void byteVal(int doc, byte [] vals) { throw new UnsupportedOperationException(); }
+  public void shortVal(int doc, short [] vals) { throw new UnsupportedOperationException(); }
+
+  public void floatVal(int doc, float [] vals) { throw new UnsupportedOperationException(); }
+  public void intVal(int doc, int [] vals) { throw new UnsupportedOperationException(); }
+  public void longVal(int doc, long [] vals) { throw new UnsupportedOperationException(); }
+  public void doubleVal(int doc, double [] vals) { throw new UnsupportedOperationException(); }
+  public void strVal(int doc, String [] vals) { throw new UnsupportedOperationException(); }
 
   public Explanation explain(int doc) {
     return new Explanation(floatVal(doc), toString(doc));

@@ -231,6 +231,17 @@ public abstract class AbstractSolrTestCase extends TestCase {
     }
   }
 
+  public void assertQEx(String message, SolrQueryRequest req, SolrException.ErrorCode code ) {
+    try {
+      h.query(req);
+      fail( message );
+    } catch (SolrException e) {
+      assertEquals( code.code, e.code() );
+    } catch (Exception e2) {
+      throw new RuntimeException("Exception during query", e2);
+    }
+  }
+
   
   /**
    * @see TestHarness#optimize

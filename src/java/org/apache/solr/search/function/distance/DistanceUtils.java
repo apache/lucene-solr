@@ -1,4 +1,6 @@
 package org.apache.solr.search.function.distance;
+
+import org.apache.solr.common.SolrException;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,7 +20,8 @@ package org.apache.solr.search.function.distance;
 
 
 /**
- * Useful distance utiltities
+ * Useful distance utiltities.
+ * solr-internal: subject to change w/o notification.
  *
  **/
 public class DistanceUtils {
@@ -50,5 +53,76 @@ public class DistanceUtils {
     return result;
   }
 
+  /**
+   * Given a string containing <i>dimension</i> values encoded in it, separated by commas, return a String array of length <i>dimension</i>
+   * containing the values.
+   * @param out A preallocated array.  Must be size dimension.  If it is not it will be resized.
+   * @param externalVal The value to parse
+   * @param dimension The expected number of values for the point
+   * @return An array of the values that make up the point (aka vector)
+   *
+   * @throws {@link SolrException} if the dimension specified does not match the number of values in the externalValue.
+   */
+  public static String[] parsePoint(String[] out, String externalVal, int dimension) {
+    //TODO: Should we support sparse vectors?
+    if (out==null || out.length != dimension) out=new String[dimension];
+    int idx = externalVal.indexOf(',');
+    int end = idx;
+    int start = 0;
+    int i = 0;
+    if (idx == -1 && dimension == 1 && externalVal.length() > 0){//we have a single point, dimension better be 1
+      out[0] = externalVal.trim();
+      i = 1;
+    }
+    else if (idx > 0) {//if it is zero, that is an error
+      //Parse out a comma separated list of point values, as in: 73.5,89.2,7773.4
+      for (; i < dimension; i++){
+        while (start<end && externalVal.charAt(start)==' ') start++;
+        while (end>start && externalVal.charAt(end-1)==' ') end--;
+        out[i] = externalVal.substring(start, end);
+        start = idx+1;
+        end = externalVal.indexOf(',', start);
+        if (end == -1){
+          end = externalVal.length();
+        }
+      }
+    } 
+    if (i != dimension){
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incompatible dimension (" + dimension +
+              ") and values (" + externalVal + ").  Only " + i + " values specified");
+    }
+    return out;
+  }
 
+  /**
+   * extract (by calling {@link #parsePoint(String[], String, int)} and validate the latitude and longitude contained
+   * in the String by making sure the latitude is between 90 & -90 and longitude is between -180 and 180
+   * @param latLon A preallocated array to hold the result
+   * @param latLonStr The string to parse
+   * @return The lat long
+   */
+  public static final double[] parseLatitudeLongitude(double [] latLon, String latLonStr) {
+    if (latLon == null){
+      latLon = new double[2];
+    }
+    String[] toks = DistanceUtils.parsePoint(null, latLonStr, 2);
+    latLon[0] = Double.valueOf(toks[0]);
+
+    if (latLon[0] < -90.0 || latLon[0] > 90.0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Invalid latitude: latitudes are range -90 to 90: provided lat: ["
+                      + latLon[0] + "]");
+    }
+
+    latLon[1] = Double.valueOf(toks[1]);
+
+    if (latLon[1] < -180.0 || latLon[1] > 180.0) {
+
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Invalid longitude: longitudes are range -180 to 180: provided lon: ["
+                      + latLon[1] + "]");
+    }
+
+    return latLon;
+  }
 }

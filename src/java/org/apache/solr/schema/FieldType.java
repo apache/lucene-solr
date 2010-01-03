@@ -20,14 +20,14 @@ package org.apache.solr.schema;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.index.Term;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.Sorting;
@@ -36,11 +36,17 @@ import org.apache.solr.request.XMLWriter;
 import org.apache.solr.request.TextResponseWriter;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.MapSolrParams;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.ArrayList;
 import java.io.Reader;
 import java.io.IOException;
 
@@ -52,6 +58,14 @@ import java.io.IOException;
 public abstract class FieldType extends FieldProperties {
   public static final Logger log = LoggerFactory.getLogger(FieldType.class);
 
+  /**
+   * The default poly field separator.
+   *
+   * @see #createFields(SchemaField, String, float)
+   * @see #isPolyField()
+   */
+  public static final String POLY_FIELD_SEPARATOR = "___";
+
   /** The name of the type (not the name of the field) */
   protected String typeName;
   /** additional arguments specified in the field type declaration */
@@ -59,8 +73,9 @@ public abstract class FieldType extends FieldProperties {
   /** properties explicitly set to true */
   protected int trueProperties;
   /** properties explicitly set to false */
-  protected int falseProperties;  
+  protected int falseProperties;
   int properties;
+
 
   /** Returns true if fields of this type should be tokenized */
   public boolean isTokenized() {
@@ -71,6 +86,17 @@ public abstract class FieldType extends FieldProperties {
   public boolean isMultiValued() {
     return (properties & MULTIVALUED) != 0;
   }
+
+  /**
+   * A "polyField" is a FieldType that can produce more than one Fieldable instance for a single value, via the {@link #createFields(org.apache.solr.schema.SchemaField, String, float)} method.  This is useful
+   * when hiding the implementation details of a field from the Solr end user.  For instance, a spatial point may be represented by multiple different fields.
+   * @return true if the {@link #createFields(org.apache.solr.schema.SchemaField, String, float)} method may return more than one field
+   */
+  public boolean isPolyField(){
+    return false;
+  }
+
+
 
   /** Returns true if a single field value of this type has multiple logical values
    *  for the purposes of faceting, sorting, etc.  Text fields normally return
@@ -85,7 +111,8 @@ public abstract class FieldType extends FieldProperties {
    * Common boolean properties have already been handled.
    *
    */
-  protected void init(IndexSchema schema, Map<String,String> args) {
+  protected void init(IndexSchema schema, Map<String, String> args) {
+
   }
 
   protected String getArg(String n, Map<String,String> args) {
@@ -191,8 +218,15 @@ public abstract class FieldType extends FieldProperties {
    * :TODO: clean up and clarify this explanation.
    *
    * @see #toInternal
+   *
+   *
    */
   public Field createField(SchemaField field, String externalVal, float boost) {
+    if (!field.indexed() && !field.stored()) {
+      if (log.isTraceEnabled())
+        log.trace("Ignoring unindexed/unstored field: " + field);
+      return null;
+    }
     String val;
     try {
       val = toInternal(externalVal);
@@ -200,23 +234,54 @@ public abstract class FieldType extends FieldProperties {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Error while creating field '" + field + "' from value '" + externalVal + "'", e, false);
     }
     if (val==null) return null;
-    if (!field.indexed() && !field.stored()) {
-      if (log.isTraceEnabled())
-        log.trace("Ignoring unindexed/unstored field: " + field);
-      return null;
-    }
+
+    return createField(field.getName(), val, getFieldStore(field, val),
+            getFieldIndex(field, val), getFieldTermVec(field, val), field.omitNorms(),
+            field.omitTf(), boost);
+  }
 
 
-    Field f = new Field(field.getName(),
+  /**
+   * Create the field from native Lucene parts.  Mostly intended for use by FieldTypes outputing multiple
+   * Fields per SchemaField
+   * @param name The name of the field
+   * @param val The _internal_ value to index
+   * @param storage {@link org.apache.lucene.document.Field.Store}
+   * @param index {@link org.apache.lucene.document.Field.Index}
+   * @param vec {@link org.apache.lucene.document.Field.TermVector}
+   * @param omitNorms true if norms should be omitted
+   * @param omitTFPos true if term freq and position should be omitted.
+   * @param boost The boost value
+   * @return the {@link org.apache.lucene.document.Field}.
+   */
+  protected Field createField(String name, String val, Field.Store storage, Field.Index index,
+                                    Field.TermVector vec, boolean omitNorms, boolean omitTFPos, float boost){
+    Field f = new Field(name,
                         val,
-                        getFieldStore(field, val),
-                        getFieldIndex(field, val),
-                        getFieldTermVec(field, val));
-    f.setOmitNorms(field.omitNorms());
-    f.setOmitTermFreqAndPositions(field.omitTf());
+                        storage,
+                        index,
+                        vec);
+    f.setOmitNorms(omitNorms);
+    f.setOmitTermFreqAndPositions(omitTFPos);
     f.setBoost(boost);
     return f;
   }
+
+  /**
+   * Given a {@link org.apache.solr.schema.SchemaField}, create one or more {@link org.apache.lucene.document.Fieldable} instances
+   * @param field the {@link org.apache.solr.schema.SchemaField}
+   * @param externalVal The value to add to the field
+   * @param boost The boost to apply
+   * @return An array of {@link org.apache.lucene.document.Fieldable}
+   *
+   * @see #createField(SchemaField, String, float)
+   * @see #isPolyField()
+   */
+  public Fieldable[] createFields(SchemaField field, String externalVal, float boost) {
+    Field f = createField( field, externalVal, boost);
+    return f==null ? new Fieldable[]{} : new Fieldable[]{f};
+  }
+
   /* Helpers for field construction */
   protected Field.TermVector getFieldTermVec(SchemaField field,
                                              String internalVal) {
@@ -226,7 +291,7 @@ public abstract class FieldType extends FieldProperties {
     else if (field.storeTermPositions())
       ftv = Field.TermVector.WITH_POSITIONS;
     else if (field.storeTermOffsets())
-      ftv = Field.TermVector.WITH_OFFSETS;            
+      ftv = Field.TermVector.WITH_OFFSETS;
     else if (field.storeTermVector())
       ftv = Field.TermVector.YES;
     return ftv;
@@ -237,7 +302,7 @@ public abstract class FieldType extends FieldProperties {
   }
   protected Field.Index getFieldIndex(SchemaField field,
                                       String internalVal) {
-    return field.indexed() ? (isTokenized() ? Field.Index.TOKENIZED : 
+    return field.indexed() ? (isTokenized() ? Field.Index.TOKENIZED :
                               Field.Index.UN_TOKENIZED) : Field.Index.NO;
   }
 
@@ -265,7 +330,7 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /**
-   * Convert the stored-field format to an external object.  
+   * Convert the stored-field format to an external object.
    * @see #toInternal
    * @since solr 1.3
    */
@@ -290,7 +355,7 @@ public abstract class FieldType extends FieldProperties {
     // that the indexed form is the same as the stored field form.
     return f.stringValue();
   }
-  
+
   /** Given the readable value, return the term value that will match it. */
   public String readableToIndexed(String val) {
     return toInternal(val);
@@ -321,7 +386,7 @@ public abstract class FieldType extends FieldProperties {
           termAtt.setTermBuffer(s);
           offsetAtt.setOffset(correctOffset(0),correctOffset(n));
           return true;
-        }       
+        }
       };
 
       return new TokenStreamInfo(ts, ts);
@@ -335,7 +400,7 @@ public abstract class FieldType extends FieldProperties {
    * @see #getAnalyzer
    */
   protected Analyzer analyzer=new DefaultAnalyzer(256);
-  
+
   /**
    * Analyzer set by schema for text types to use when searching fields
    * of this type, subclasses can set analyzer themselves or override
@@ -394,7 +459,7 @@ public abstract class FieldType extends FieldProperties {
    */
   public abstract void write(TextResponseWriter writer, String name, Fieldable f) throws IOException;
 
-  
+
   /**
    * Returns the SortField instance that should be used to sort fields
    * of this type.
@@ -439,7 +504,7 @@ public abstract class FieldType extends FieldProperties {
    * @param part2        the upper boundary of the range, nulls are allowed
    * @param minInclusive whether the minimum of the range is inclusive or not
    * @param maxInclusive whether the maximum of the range is inclusive or not
-*    @return a Query instance to perform range search according to given parameters
+   *  @return a Query instance to perform range search according to given parameters
    *
    * @see org.apache.solr.search.SolrQueryParser#getRangeQuery(String, String, String, boolean)
    */
@@ -452,4 +517,15 @@ public abstract class FieldType extends FieldProperties {
             minInclusive, maxInclusive);
   }
 
+  /**
+   * Returns a Query instance for doing searches against a field.
+   * @param parser The {@link org.apache.solr.search.QParser} calling the method
+   * @param field The {@link org.apache.solr.schema.SchemaField} of the field to search
+   * @param externalVal The String representation of the value to search
+   * @return The {@link org.apache.lucene.search.Query} instance.  This implementation returns a {@link org.apache.lucene.search.TermQuery} but overriding queries may not
+   * 
+   */
+  public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
+    return new TermQuery(new Term(field.getName(), toInternal(externalVal)));
+  }
 }

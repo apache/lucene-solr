@@ -35,6 +35,16 @@ import org.apache.solr.util.AbstractSolrTestCase;
 public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase {
   public static Random r = new Random(0);
 
+  protected int shardCount = 4;
+  /**
+   * Sub classes can set this flag in their constructor to true if they
+   * want to fix the number of shards to 'shardCount'
+   *
+   * The default is false which means that test will be executed with
+   * 1, 2, 3, ....shardCount number of shards repeatedly
+   */
+  protected boolean fixShardCount = false;
+
   protected JettySolrRunner controlJetty;
   protected List<SolrServer> clients = new ArrayList<SolrServer>();
   protected List<JettySolrRunner> jettys = new ArrayList<JettySolrRunner>();
@@ -522,11 +532,18 @@ public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase
   }
 
   public void testDistribSearch() throws Exception {
-    for (int nServers = 1; nServers < 2; nServers++) {
-      createServers(nServers);
+    if (fixShardCount) {
+      createServers(shardCount);
       RandVal.uniqueValues = new HashSet(); //reset random values
       doTest();
       destroyServers();
+    } else {
+      for (int nServers = 1; nServers < shardCount; nServers++) {
+        createServers(nServers);
+        RandVal.uniqueValues = new HashSet(); //reset random values
+        doTest();
+        destroyServers();
+      }
     }
   }
 

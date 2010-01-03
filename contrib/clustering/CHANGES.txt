@@ -8,6 +8,10 @@ CHANGES
 
 $Id:$
 
+================== Release 1.5-dev ==================
+
+* SOLR-1684: Switch to use the SolrIndexSearcher.doc(int, Set<String>) method b/c it can use the document cache (gsingers)
+
 ================== Release 1.4.0 ==================
 
 Solr Clustering will be released for the first time in Solr 1.4.  See http://wiki.apache.org/solr/ClusteringComponent
