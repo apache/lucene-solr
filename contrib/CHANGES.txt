@@ -73,6 +73,11 @@ Optimizations
  * LUCENE-2157: DelimitedPayloadTokenFilter no longer copies the buffer
    over itsself. Instead it sets only the length. This patch also optimizes
    the logic of the filter and uses NIO for IdentityEncoder. (Uwe Schindler)
+ 
+ * LUCENE-2084: Change IndexableBinaryStringTools to work on byte[] and char[]
+   directly, instead of Byte/CharBuffers, and modify ICUCollationKeyFilter to
+   take advantage of this for faster performance.
+   (Steven Rowe, Uwe Schindler, Robert Muir)
 
 Test Cases
 

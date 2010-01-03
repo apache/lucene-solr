@@ -153,6 +153,11 @@ Optimizations
 * LUCENE-2169: Improved CharArraySet.copy(), if source set is
   also a CharArraySet.  (Simon Willnauer via Uwe Schindler)
 
+* LUCENE-2084: Change IndexableBinaryStringTools to work on byte[] and char[]
+  directly, instead of Byte/CharBuffers, and modify CollationKeyFilter to
+  take advantage of this for faster performance.
+  (Steven Rowe, Uwe Schindler, Robert Muir)
+   
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
