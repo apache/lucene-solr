@@ -22,23 +22,21 @@ import org.apache.solr.common.SolrException;
 /**
  * Useful distance utiltities.
  * solr-internal: subject to change w/o notification.
- *
- **/
+ */
 public class DistanceUtils {
   public static final double DEGREES_TO_RADIANS = Math.PI / 180.0;
   public static final double RADIANS_TO_DEGREES = 180.0 / Math.PI;
 
   /**
-   * @see org.apache.solr.search.function.distance.HaversineFunction
-   * 
-   * @param x1 The x coordinate of the first point
-   * @param y1 The y coordinate of the first point
-   * @param x2 The x coordinate of the second point
-   * @param y2 The y coordinate of the second point
+   * @param x1     The x coordinate of the first point
+   * @param y1     The y coordinate of the first point
+   * @param x2     The x coordinate of the second point
+   * @param y2     The y coordinate of the second point
    * @param radius The radius of the sphere
    * @return The distance between the two points, as determined by the Haversine formula.
+   * @see org.apache.solr.search.function.distance.HaversineFunction
    */
-  public static double haversine(double x1, double y1, double x2, double y2, double radius){
+  public static double haversine(double x1, double y1, double x2, double y2, double radius) {
     double result = 0;
     //make sure they aren't all the same, as then we can just return 0
     if ((x1 != x2) || (y1 != y2)) {
@@ -56,38 +54,37 @@ public class DistanceUtils {
   /**
    * Given a string containing <i>dimension</i> values encoded in it, separated by commas, return a String array of length <i>dimension</i>
    * containing the values.
-   * @param out A preallocated array.  Must be size dimension.  If it is not it will be resized.
-   * @param externalVal The value to parse
-   * @param dimension The expected number of values for the point
-   * @return An array of the values that make up the point (aka vector)
    *
+   * @param out         A preallocated array.  Must be size dimension.  If it is not it will be resized.
+   * @param externalVal The value to parse
+   * @param dimension   The expected number of values for the point
+   * @return An array of the values that make up the point (aka vector)
    * @throws {@link SolrException} if the dimension specified does not match the number of values in the externalValue.
    */
   public static String[] parsePoint(String[] out, String externalVal, int dimension) {
     //TODO: Should we support sparse vectors?
-    if (out==null || out.length != dimension) out=new String[dimension];
+    if (out == null || out.length != dimension) out = new String[dimension];
     int idx = externalVal.indexOf(',');
     int end = idx;
     int start = 0;
     int i = 0;
-    if (idx == -1 && dimension == 1 && externalVal.length() > 0){//we have a single point, dimension better be 1
+    if (idx == -1 && dimension == 1 && externalVal.length() > 0) {//we have a single point, dimension better be 1
       out[0] = externalVal.trim();
       i = 1;
-    }
-    else if (idx > 0) {//if it is zero, that is an error
+    } else if (idx > 0) {//if it is zero, that is an error
       //Parse out a comma separated list of point values, as in: 73.5,89.2,7773.4
-      for (; i < dimension; i++){
-        while (start<end && externalVal.charAt(start)==' ') start++;
-        while (end>start && externalVal.charAt(end-1)==' ') end--;
+      for (; i < dimension; i++) {
+        while (start < end && externalVal.charAt(start) == ' ') start++;
+        while (end > start && externalVal.charAt(end - 1) == ' ') end--;
         out[i] = externalVal.substring(start, end);
-        start = idx+1;
+        start = idx + 1;
         end = externalVal.indexOf(',', start);
-        if (end == -1){
+        if (end == -1) {
           end = externalVal.length();
         }
       }
-    } 
-    if (i != dimension){
+    }
+    if (i != dimension) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incompatible dimension (" + dimension +
               ") and values (" + externalVal + ").  Only " + i + " values specified");
     }
@@ -96,13 +93,16 @@ public class DistanceUtils {
 
   /**
    * extract (by calling {@link #parsePoint(String[], String, int)} and validate the latitude and longitude contained
-   * in the String by making sure the latitude is between 90 & -90 and longitude is between -180 and 180
-   * @param latLon A preallocated array to hold the result
+   * in the String by making sure the latitude is between 90 & -90 and longitude is between -180 and 180.
+   * <p/>
+   * The latitude is assumed to be the first part of the string and the longitude the second part.
+   *
+   * @param latLon    A preallocated array to hold the result
    * @param latLonStr The string to parse
    * @return The lat long
    */
-  public static final double[] parseLatitudeLongitude(double [] latLon, String latLonStr) {
-    if (latLon == null){
+  public static final double[] parseLatitudeLongitude(double[] latLon, String latLonStr) {
+    if (latLon == null) {
       latLon = new double[2];
     }
     String[] toks = DistanceUtils.parsePoint(null, latLonStr, 2);
