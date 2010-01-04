@@ -28,6 +28,66 @@ public class DistanceUtils {
   public static final double RADIANS_TO_DEGREES = 180.0 / Math.PI;
 
   /**
+   * Calculate the p-norm (i.e. length) between two vectors
+   *
+   * @param vec1  The first vector
+   * @param vec2  The second vector
+   * @param power The power (2 for Euclidean distance, 1 for manhattan, etc.)
+   * @return The length.
+   *         <p/>
+   *         See http://en.wikipedia.org/wiki/Lp_space
+   * @see #vectorDistance(double[], double[], double, double)
+   */
+  public static double vectorDistance(double[] vec1, double[] vec2, double power) {
+    return vectorDistance(vec1, vec2, power, 1.0 / power);
+  }
+
+  /**
+   * Calculate the p-norm (i.e. length) between two vectors
+   *
+   * @param vec1         The first vector
+   * @param vec2         The second vector
+   * @param power        The power (2 for Euclidean distance, 1 for manhattan, etc.)
+   * @param oneOverPower If you've precalculated oneOverPower and cached it, use this method to save one division operation over {@link #vectorDistance(double[], double[], double)}.
+   * @return The length.
+   */
+  public static double vectorDistance(double[] vec1, double[] vec2, double power, double oneOverPower) {
+    double result = 0;
+
+    if (power == 0) {
+      for (int i = 0; i < vec1.length; i++) {
+        result += vec1[i] - vec2[i] == 0 ? 0 : 1;
+      }
+
+    } else if (power == 1.0) {
+      for (int i = 0; i < vec1.length; i++) {
+        result += vec1[i] - vec2[i];
+      }
+    } else if (power == 2.0) {
+      result = Math.sqrt(squaredEuclideanDistance(vec1, vec2));
+    } else if (power == Integer.MAX_VALUE || Double.isInfinite(power)) {//infininte norm?
+      for (int i = 0; i < vec1.length; i++) {
+        result = Math.max(vec1[i], vec2[i]);
+      }
+    } else {
+      for (int i = 0; i < vec1.length; i++) {
+        result += Math.pow(vec1[i] - vec2[i], power);
+      }
+      result = Math.pow(result, oneOverPower);
+    }
+    return result;
+  }
+
+  public static double squaredEuclideanDistance(double[] vec1, double[] vec2) {
+    double result = 0;
+    for (int i = 0; i < vec1.length; i++) {
+      double v = vec1[i] - vec2[i];
+      result += v * v;
+    }
+    return result;
+  }
+
+  /**
    * @param x1     The x coordinate of the first point
    * @param y1     The y coordinate of the first point
    * @param x2     The x coordinate of the second point
@@ -92,6 +152,46 @@ public class DistanceUtils {
   }
 
   /**
+   * Given a string containing <i>dimension</i> values encoded in it, separated by commas, return a double array of length <i>dimension</i>
+   * containing the values.
+   *
+   * @param out         A preallocated array.  Must be size dimension.  If it is not it will be resized.
+   * @param externalVal The value to parse
+   * @param dimension   The expected number of values for the point
+   * @return An array of the values that make up the point (aka vector)
+   * @throws {@link SolrException} if the dimension specified does not match the number of values in the externalValue.
+   */
+  public static double[] parsePointDouble(double[] out, String externalVal, int dimension) {
+    if (out == null || out.length != dimension) out = new double[dimension];
+    int idx = externalVal.indexOf(',');
+    int end = idx;
+    int start = 0;
+    int i = 0;
+    if (idx == -1 && dimension == 1 && externalVal.length() > 0) {//we have a single point, dimension better be 1
+      out[0] = Double.parseDouble(externalVal.trim());
+      i = 1;
+    } else if (idx > 0) {//if it is zero, that is an error
+      //Parse out a comma separated list of point values, as in: 73.5,89.2,7773.4
+      for (; i < dimension; i++) {
+        //TODO: abstract common code with other parsePoint
+        while (start < end && externalVal.charAt(start) == ' ') start++;
+        while (end > start && externalVal.charAt(end - 1) == ' ') end--;
+        out[i] = Double.parseDouble(externalVal.substring(start, end));
+        start = idx + 1;
+        end = externalVal.indexOf(',', start);
+        if (end == -1) {
+          end = externalVal.length();
+        }
+      }
+    }
+    if (i != dimension) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "incompatible dimension (" + dimension +
+              ") and values (" + externalVal + ").  Only " + i + " values specified");
+    }
+    return out;
+  }
+
+  /**
    * extract (by calling {@link #parsePoint(String[], String, int)} and validate the latitude and longitude contained
    * in the String by making sure the latitude is between 90 & -90 and longitude is between -180 and 180.
    * <p/>
@@ -105,7 +205,7 @@ public class DistanceUtils {
     if (latLon == null) {
       latLon = new double[2];
     }
-    String[] toks = DistanceUtils.parsePoint(null, latLonStr, 2);
+    double[] toks = DistanceUtils.parsePointDouble(null, latLonStr, 2);
     latLon[0] = Double.valueOf(toks[0]);
 
     if (latLon[0] < -90.0 || latLon[0] > 90.0) {

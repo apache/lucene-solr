@@ -20,8 +20,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Searcher;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.function.DocValues;
-import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.MultiValueSource;
+import org.apache.solr.search.function.ValueSource;
 
 import java.io.IOException;
 import java.util.Map;
@@ -62,45 +62,18 @@ public class VectorDistanceFunction extends ValueSource {
   /**
    * Calculate the distance
    *
-   * @param doc        The current doc
+   * @param doc The current doc
    * @param dv1 The values from the first MultiValueSource
    * @param dv2 The values from the second MultiValueSource
    * @return The distance
    */
   protected double distance(int doc, DocValues dv1, DocValues dv2) {
-    double result = 0;
     //Handle some special cases:
-    double [] vals1 = new double[source1.dimension()];
-    double [] vals2 = new double[source1.dimension()];
+    double[] vals1 = new double[source1.dimension()];
+    double[] vals2 = new double[source1.dimension()];
     dv1.doubleVal(doc, vals1);
     dv2.doubleVal(doc, vals2);
-    if (power == 0) {
-      for (int i = 0; i < vals1.length; i++) {
-        result += vals1[i] - vals2[i] == 0 ? 0 :1;
-      }
-
-    } else if (power == 1.0) {
-      for (int i = 0; i < vals1.length; i++) {
-        result += vals1[i] - vals2[i];
-      }
-    } else if (power == 2.0) {
-      for (int i = 0; i < vals1.length; i++) {
-        double v = vals1[i] - vals2[i];
-        result += v * v;
-      }
-      result = Math.sqrt(result);
-    } else if (power == Integer.MAX_VALUE || Double.isInfinite(power)) {//infininte norm?
-      for (int i = 0; i < vals1.length; i++) {
-        result = Math.max(vals1[i], vals2[i]);
-      }
-    } else {
-      for (int i = 0; i < vals1.length; i++) {
-        result += Math.pow(vals1[i] - vals2[i], power);
-      }
-      result = Math.pow(result, oneOverPower);
-    }
-
-    return result;
+    return DistanceUtils.vectorDistance(vals1, vals2, power, oneOverPower);
   }
 
   @Override
@@ -111,7 +84,6 @@ public class VectorDistanceFunction extends ValueSource {
     final DocValues vals2 = source2.getValues(context, reader);
 
 
-
     return new DocValues() {
       @Override
       public byte byteVal(int doc) {
@@ -120,7 +92,7 @@ public class VectorDistanceFunction extends ValueSource {
 
       @Override
       public short shortVal(int doc) {
-        return (short)doubleVal(doc);
+        return (short) doubleVal(doc);
       }
 
       public float floatVal(int doc) {

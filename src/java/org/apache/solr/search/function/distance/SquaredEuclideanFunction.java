@@ -23,8 +23,7 @@ import org.apache.solr.search.function.MultiValueSource;
 /**
  * While not strictly a distance, the Sq. Euclidean Distance is often all that is needed in many applications
  * that require a distance, thus saving a sq. rt. calculation
- *
- **/
+ */
 public class SquaredEuclideanFunction extends VectorDistanceFunction {
   protected String name = "sqedist";
 
@@ -42,16 +41,13 @@ public class SquaredEuclideanFunction extends VectorDistanceFunction {
    * @param doc The doc to score
    */
   protected double distance(int doc, DocValues dv1, DocValues dv2) {
-    double result = 0;
-    double [] vals1 = new double[source1.dimension()];
-    double [] vals2 = new double[source1.dimension()];
+
+    double[] vals1 = new double[source1.dimension()];
+    double[] vals2 = new double[source1.dimension()];
     dv1.doubleVal(doc, vals1);
     dv2.doubleVal(doc, vals2);
-    for (int i = 0; i < vals1.length; i++) {
-        double v = vals1[i] - vals2[i];
-        result += v * v;
-      }
-    return result;
+
+    return DistanceUtils.squaredEuclideanDistance(vals1, vals2);
   }
 
   @Override
