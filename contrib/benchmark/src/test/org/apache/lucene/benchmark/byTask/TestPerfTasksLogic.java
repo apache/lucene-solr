@@ -121,7 +121,7 @@ public class TestPerfTasksLogic extends LuceneTestCase {
 
   // disabled until we fix BG thread prio -- this test
   // causes build to hang
-  public void XXXtestBGSearchTaskThreads() throws Exception {
+  public void testBGSearchTaskThreads() throws Exception {
     String algLines[] = {
         "log.time.step.msec = 100",
         "log.step=100000",
