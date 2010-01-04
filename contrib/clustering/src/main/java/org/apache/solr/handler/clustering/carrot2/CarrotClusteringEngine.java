@@ -113,7 +113,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
    */
   private List<Document> getDocuments(DocList docList,
                                       Query query, final SolrQueryRequest sreq) throws IOException {
-    SolrHighlighter highligher = null;
+    SolrHighlighter highlighter = null;
     SolrParams solrParams = sreq.getParams();
     SolrCore core = sreq.getCore();
 
@@ -137,17 +137,25 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     SolrQueryRequest req = null;
     String[] snippetFieldAry = null;
     if (produceSummary == true) {
-      highligher = core.getHighlighter();
-      Map args = new HashMap();
-      snippetFieldAry = new String[]{snippetField};
-      args.put(HighlightParams.FIELDS, snippetFieldAry);
-      args.put(HighlightParams.HIGHLIGHT, "true");
-      req = new LocalSolrQueryRequest(core, query.toString(), "", 0, 1, args) {
-        @Override
-        public SolrIndexSearcher getSearcher() {
-          return sreq.getSearcher();
-        }
-      };
+      highlighter = core.getHighlighter();
+      if (highlighter != null){
+        Map args = new HashMap();
+        snippetFieldAry = new String[]{snippetField};
+        args.put(HighlightParams.FIELDS, snippetFieldAry);
+        args.put(HighlightParams.HIGHLIGHT, "true");
+        args.put(HighlightParams.SIMPLE_PRE, ""); //we don't care about actually highlighting the area
+        args.put(HighlightParams.SIMPLE_POST, "");
+        args.put(HighlightParams.FRAGSIZE, solrParams.getInt(CarrotParams.SUMMARY_FRAGSIZE, solrParams.getInt(HighlightParams.FRAGSIZE, 100)));
+        req = new LocalSolrQueryRequest(core, query.toString(), "", 0, 1, args) {
+          @Override
+          public SolrIndexSearcher getSearcher() {
+            return sreq.getSearcher();
+          }
+        };
+      } else {
+        log.warn("No highlighter configured, cannot produce summary");
+        produceSummary = false;
+      }
     }
 
     SolrIndexSearcher searcher = sreq.getSearcher();
@@ -165,11 +173,19 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
       if (produceSummary == true) {
         docsHolder[0] = id.intValue();
         DocList docAsList = new DocSlice(0, 1, docsHolder, scores, 1, 1.0f);
-        highligher.doHighlighting(docAsList, theQuery, req, snippetFieldAry);
+        NamedList highlights = highlighter.doHighlighting(docAsList, theQuery, req, snippetFieldAry);
+        if (highlights != null && highlights.size() == 1) {//should only be one value given our setup
+          //should only be one document with one field
+          NamedList tmp = (NamedList) highlights.getVal(0);
+          String [] highlt = (String[]) tmp.get(snippetField);
+          if (highlt != null && highlt.length == 1) {
+            snippet = highlt[0];
+          }
+        }
       }
       Document carrotDocument = new Document(getValue(doc, titleField),
               snippet, doc.get(urlField));
-      carrotDocument.addField("solrId", doc.get(idFieldName));
+      carrotDocument.setField("solrId", doc.get(idFieldName));
       result.add(carrotDocument);
     }
 
