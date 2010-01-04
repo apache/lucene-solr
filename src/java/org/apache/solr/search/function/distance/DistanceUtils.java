@@ -27,6 +27,9 @@ public class DistanceUtils {
   public static final double DEGREES_TO_RADIANS = Math.PI / 180.0;
   public static final double RADIANS_TO_DEGREES = 180.0 / Math.PI;
 
+  public static final double KM_TO_MILES = 0.621371192;
+  public static final double MILES_TO_KM = 1.609344;
+
   /**
    * Calculate the p-norm (i.e. length) between two vectors
    *
