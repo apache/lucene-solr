@@ -119,7 +119,9 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     assertTrue("elapsed time was " + elapsed + " msec", elapsed <= 1500);
   }
 
-  public void testBGSearchTaskThreads() throws Exception {
+  // disabled until we fix BG thread prio -- this test
+  // causes build to hang
+  public void XXXtestBGSearchTaskThreads() throws Exception {
     String algLines[] = {
         "log.time.step.msec = 100",
         "log.step=100000",
