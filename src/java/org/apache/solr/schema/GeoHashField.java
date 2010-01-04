@@ -20,7 +20,6 @@ package org.apache.solr.schema;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.request.TextResponseWriter;
 import org.apache.solr.request.XMLWriter;
 import org.apache.solr.search.QParser;
@@ -32,8 +31,9 @@ import java.io.IOException;
 /**
  * This is a class that represents a <a
  * href="http://en.wikipedia.org/wiki/Geohash">Geohash</a> field. The field is
- * provided as a lat lon pair and is internally represented as a string
+ * provided as a lat/lon pair and is internally represented as a string.
  *
+ * @see org.apache.solr.search.function.distance.DistanceUtils#parseLatitudeLongitude(double[], String)
  */
 public class GeoHashField extends FieldType {
 
@@ -77,6 +77,5 @@ public class GeoHashField extends FieldType {
     return new StrFieldSource(field.name);
   }
 
-  
 
 }
