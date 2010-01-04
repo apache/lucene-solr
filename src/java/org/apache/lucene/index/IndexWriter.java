@@ -1490,7 +1490,8 @@ public class IndexWriter implements Closeable {
             " maxBufferedDocs=" + docWriter.getMaxBufferedDocs() +
             " maxBuffereDeleteTerms=" + docWriter.getMaxBufferedDeleteTerms() +
             " maxFieldLength=" + maxFieldLength +
-            " index=" + segString());
+            " index=" + segString() +
+            " version=" + Constants.LUCENE_VERSION);
   }
 
   /**

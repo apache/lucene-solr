@@ -512,7 +512,7 @@ final class IndexFileDeleter {
         // the file for subsequent deletion.
 
         if (infoStream != null) {
-          message("IndexFileDeleter: unable to remove file \"" + fileName + "\": " + e.toString() + "; Will re-try later.");
+          message("unable to remove file \"" + fileName + "\": " + e.toString() + "; Will re-try later.");
         }
         if (deletable == null) {
           deletable = new ArrayList<String>();
