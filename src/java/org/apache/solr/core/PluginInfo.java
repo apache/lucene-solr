@@ -57,19 +57,17 @@ public class PluginInfo {
   }
 
   private List<PluginInfo> loadSubPlugins(Node node) {
-    List<PluginInfo> children = null;
-    try {
-      //if there is another sub tag with a 'class' attribute that has to be another plugin
-      NodeList nodes = (NodeList) Config.xpathFactory.newXPath().evaluate("*[@class]",node, XPathConstants.NODESET);
-      if(nodes.getLength() > 0){
-        children = new ArrayList<PluginInfo>(nodes.getLength());
-        for (int i=0; i<nodes.getLength(); i++) {
-          PluginInfo pluginInfo = new PluginInfo(nodes.item(i), null, false, false);
-          if (pluginInfo.isEnabled()) children.add(pluginInfo);
-        }
-      }
-    } catch (XPathExpressionException e) { }
-    return children == null ? Collections.<PluginInfo>emptyList(): unmodifiableList(children);
+    List<PluginInfo> children = new ArrayList<PluginInfo>();
+    //if there is another sub tag with a non namedlist tag that has to be another plugin
+    NodeList nlst = node.getChildNodes();
+    for (int i = 0; i < nlst.getLength(); i++) {
+      Node nd = nlst.item(i);
+      if (nd.getNodeType() != Node.ELEMENT_NODE) continue;
+      if (NL_TAGS.contains(nd.getNodeName())) continue;
+      PluginInfo pluginInfo = new PluginInfo(nd, null, false, false);
+      if (pluginInfo.isEnabled()) children.add(pluginInfo);
+    }
+    return children.isEmpty() ? Collections.<PluginInfo>emptyList() : unmodifiableList(children);
   }
 
   @Override
@@ -102,4 +100,5 @@ public class PluginInfo {
     for (PluginInfo child : children) if(type.equals(child.type)) result.add(child);
     return result;
   }
+  private static final HashSet<String> NL_TAGS = new HashSet<String>(Arrays.asList("lst","str","int","bool","arr","float","double"));
 }

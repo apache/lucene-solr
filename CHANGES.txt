@@ -77,7 +77,9 @@ New Features
 * SOLR-1131: FieldTypes can now output multiple Fields per Type and still be searched.  This can be handy for hiding the details of a particular
   implementation such as in the spatial case. (Chris Mattmann, shalin, noble, gsingers, yonik)
 
-* SOLR-1586: Add support for Geohash and Spatial Tile FieldType (Chris Mattmann, gsingers)  
+* SOLR-1586: Add support for Geohash and Spatial Tile FieldType (Chris Mattmann, gsingers)
+
+* SOLR-1697: PluginInfo should load plugins w/o class attribute also (noble)
 
 Optimizations
 ----------------------
