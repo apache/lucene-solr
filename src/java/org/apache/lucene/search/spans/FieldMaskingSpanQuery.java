@@ -59,7 +59,7 @@ import org.apache.lucene.util.ToStringUtils;
  * <pre>
  *    SpanQuery q1  = new SpanTermQuery(new Term("studentfirstname", "james"));
  *    SpanQuery q2  = new SpanTermQuery(new Term("studentsurname", "jones"));
- *    SpanQuery q2m new FieldMaskingSpanQuery(q2, "studentfirstname");
+ *    SpanQuery q2m = new FieldMaskingSpanQuery(q2, "studentfirstname");
  *    Query q = new SpanNearQuery(new SpanQuery[]{q1, q2m}, -1, false);
  * </pre>
  * to search for 'studentfirstname:james studentsurname:jones' and find 
