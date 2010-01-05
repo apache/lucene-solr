@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.ar.ArabicLetterTokenizer;
 
 /**
- * Test the Arabic Normalization Filter
+ * Test the Persian Normalization Filter
  * 
  */
 public class TestPersianNormalizationFilter extends BaseTokenStreamTestCase {
