@@ -21,154 +21,119 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Based on http://en.wikipedia.org/wiki/Geohash
- *
- * <p><font color="red"><b>NOTE:</b> This API is still in
- * flux and might change in incompatible ways in the next
- * release.</font>
+ * Utilities for encoding and decoding geohashes. Based on
+ * http://en.wikipedia.org/wiki/Geohash.
  */
 public class GeoHashUtils {
 
-	// geohash's char map
-	// no a's i's l's o's
-	// old MacDonal wouldn't be happy
-	private static char[] _base32 = {'0','1','2','3','4','5','6','7','8','9',
-							'b','c','d','e','f','g','h','j','k','m',
-							'n','p','q','r','s','t','u','v','w','x',
-							'y','z'} ;
-	
-	private final static Map<Character, Integer> _decodemap = new HashMap<Character, Integer>();
-	static {
-		int sz = _base32.length;
-		for (int i = 0; i < sz; i++ ){
-			_decodemap.put(_base32[i], i);
-		}
-	}
-	
-	private static int precision = 12;
-	private static int[] bits = {16, 8, 4, 2, 1};
-	
-	public static void main(String[] args) {
-		GeoHashUtils ghf = new GeoHashUtils();
-		String gc1 = ghf.encode(30, -90.0);
-		String gc2 = ghf.encode(51.4797, -0.0124);
-		
-		System.out.println(gc1);
-		System.out.println(gc2);
-		
-		double [] gd1 = ghf.decode(gc1);
-		double [] gd2 = ghf.decode(gc2);
-		System.out.println(gd1[0]+ ", "+ gd1[1]);
-		System.out.println(gd2[0]+ ", "+ gd2[1]);
-		
-	}
-	
-	public static String encode(double latitude, double longitude){
-		double[] lat_interval = {-90.0 ,  90.0};
-		double[] lon_interval = {-180.0, 180.0};
-			
-		StringBuilder geohash = new StringBuilder();
-		boolean is_even = true;
-		int bit = 0, ch = 0;
-		
-		while(geohash.length() < precision){
-			double mid = 0.0;
-			if(is_even){
-				mid = (lon_interval[0] + lon_interval[1]) / 2;
-				if (longitude > mid){
-					ch |= bits[bit];
-					lon_interval[0] = mid;
-				} else {
-					lon_interval[1] = mid;
-				}
-				
-			} else {
-				mid = (lat_interval[0] + lat_interval[1]) / 2;
-				if(latitude > mid){
-					ch |= bits[bit];
-					lat_interval[0] = mid;
-				} else {
-					lat_interval[1] = mid;
-				}
-			}
-			
-			is_even = is_even ? false : true;
-			
-			if (bit  < 4){
-				bit ++;
-			} else {
-				geohash.append(_base32[ch]);
-				bit =0;
-				ch = 0;
-			}
-		}
-		
-		return geohash.toString();
-	}
-	
-	public static double[] decode(String geohash) {
-		double[] ge = decode_exactly(geohash);
-		double lat, lon, lat_err, lon_err;
-		lat = ge[0];
-		lon = ge[1];
-		lat_err = ge[2];
-		lon_err = ge[3];
-		
-		double lat_precision = Math.max(1, Math.round(- Math.log10(lat_err))) - 1;
-		double lon_precision = Math.max(1, Math.round(- Math.log10(lon_err))) - 1;
-		
-		lat = getPrecision(lat, lat_precision);
-		lon = getPrecision(lon, lon_precision);
-		
-		return new double[] {lat, lon};
-	}
-	
-	public static double[] decode_exactly (String geohash){
-		double[] lat_interval = {-90.0 , 90.0};
-		double[] lon_interval = {-180.0, 180.0};
-		
-		double lat_err =  90.0;
-		double lon_err = 180.0;
-		boolean is_even = true;
-		int sz = geohash.length();
-		int bsz = bits.length;
-		double latitude, longitude;
-		for (int i = 0; i < sz; i++){
-			
-			int cd = _decodemap.get(geohash.charAt(i));
-			
-			for (int z = 0; z< bsz; z++){
-				int mask = bits[z];
-				if (is_even){
-					lon_err /= 2;
-					if ((cd & mask) != 0){
-						lon_interval[0] = (lon_interval[0]+lon_interval[1])/2;
-					} else {
-						lon_interval[1] = (lon_interval[0]+lon_interval[1])/2;
-					}
-					
-				} else {
-					lat_err /=2;
-				
-					if ( (cd & mask) != 0){
-						lat_interval[0] = (lat_interval[0]+lat_interval[1])/2;
-					} else {
-						lat_interval[1] = (lat_interval[0]+lat_interval[1])/2;
-					}
-				}
-				is_even = is_even ? false : true;
-			}
-		
-		}
-		latitude  = (lat_interval[0] + lat_interval[1]) / 2;
-		longitude = (lon_interval[0] + lon_interval[1]) / 2;
+  private static final char[] BASE_32 = {'0', '1', '2', '3', '4', '5', '6',
+      '7', '8', '9', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j', 'k', 'm', 'n',
+      'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
 
-		return new double []{latitude, longitude, lat_err, lon_err};
-	}
-	
-	static double getPrecision(double x, double precision) {
-		double base = Math.pow(10,- precision);
-		double diff = x % base;
-		return x - diff;
+  private final static Map<Character,Integer> DECODE_MAP = new HashMap<Character,Integer>();
+
+  private static final int PRECISION = 12;
+  private static final int[] BITS = {16, 8, 4, 2, 1};
+
+  static {
+    for (int i = 0; i < BASE_32.length; i++) {
+      DECODE_MAP.put(Character.valueOf(BASE_32[i]), Integer.valueOf(i));
+    }
+  }
+
+  private GeoHashUtils() {  
+  }
+
+  /**
+   * Encodes the given latitude and longitude into a geohash
+   *
+   * @param latitude Latitude to encode
+   * @param longitude Longitude to encode
+   * @return Geohash encoding of the longitude and latitude
+   */
+  public static String encode(double latitude, double longitude) {
+    double[] latInterval = {-90.0, 90.0};
+    double[] lngInterval = {-180.0, 180.0};
+
+    final StringBuilder geohash = new StringBuilder();
+    boolean isEven = true;
+
+    int bit = 0;
+    int ch = 0;
+
+    while (geohash.length() < PRECISION) {
+      double mid = 0.0;
+      if (isEven) {
+        mid = (lngInterval[0] + lngInterval[1]) / 2D;
+        if (longitude > mid) {
+          ch |= BITS[bit];
+          lngInterval[0] = mid;
+        } else {
+          lngInterval[1] = mid;
+        }
+      } else {
+        mid = (latInterval[0] + latInterval[1]) / 2D;
+        if (latitude > mid) {
+          ch |= BITS[bit];
+          latInterval[0] = mid;
+        } else {
+          latInterval[1] = mid;
+        }
+      }
+
+      isEven = !isEven;
+
+      if (bit < 4) {
+        bit++;
+      } else {
+        geohash.append(BASE_32[ch]);
+        bit = 0;
+        ch = 0;
+      }
+    }
+
+    return geohash.toString();
+  }
+
+  /**
+   * Decodes the given geohash into a latitude and longitude
+   *
+   * @param geohash Geohash to deocde
+   * @return Array with the latitude at index 0, and longitude at index 1
+   */
+  public static double[] decode(String geohash) {
+    final double[] latInterval = {-90.0, 90.0};
+    final double[] lngInterval = {-180.0, 180.0};
+
+    boolean isEven = true;
+
+    double latitude;
+    double longitude;
+    for (int i = 0; i < geohash.length(); i++) {
+      final int cd = DECODE_MAP.get(Character.valueOf(
+          geohash.charAt(i))).intValue();
+
+      for (int mask : BITS) {
+        if (isEven) {
+          if ((cd & mask) != 0) {
+            lngInterval[0] = (lngInterval[0] + lngInterval[1]) / 2D;
+          } else {
+            lngInterval[1] = (lngInterval[0] + lngInterval[1]) / 2D;
+          }
+        } else {
+          if ((cd & mask) != 0) {
+            latInterval[0] = (latInterval[0] + latInterval[1]) / 2D;
+          } else {
+            latInterval[1] = (latInterval[0] + latInterval[1]) / 2D;
+          }
+        }
+        isEven = !isEven;
+      }
+
+    }
+    latitude = (latInterval[0] + latInterval[1]) / 2D;
+    longitude = (lngInterval[0] + lngInterval[1]) / 2D;
+
+    return new double[] {latitude, longitude};
 	}
 }

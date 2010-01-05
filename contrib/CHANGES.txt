@@ -32,7 +32,11 @@ API Changes
 
  * LUCENE-2108: Add SpellChecker.close, to close the underlying
    reader.  (Eirik Bjørsnøs via Mike McCandless)
-
+ 
+ * LUCENE-2147: Spatial GeoHashUtils now always decode GeoHash strings
+   with full precision. GeoHash#decode_exactly(String) was merged into
+   GeoHash#decode(String). (Chris Male, Simon Willnauer)
+   
  * LUCENE-2165: Add a constructor to SnowballAnalyzer that takes a Set of 
    stopwords, and deprecate the String[] one.  (Nick Burch via Robert Muir)
    
