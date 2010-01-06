@@ -28,6 +28,9 @@ Bug fixes
    correctly (enumerate all non-deleted docs).  (Karl Wettin via Mike
    McCandless)
    
+ * LUCENE-2035: TokenSources.getTokenStream() does not assign  positionIncrement. 
+   (Christopher Morris via Mark Miller)
+   
 API Changes
 
  * LUCENE-2108: Add SpellChecker.close, to close the underlying
