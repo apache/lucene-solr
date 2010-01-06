@@ -29,7 +29,7 @@ import java.io.IOException;
   NOTE: Subclasses overriding {@link #incrementToken()} must
   call {@link AttributeSource#clearAttributes()} before
   setting attributes.
-  Subclasses overriding {@link #incrementToken()} must call
+  Subclasses overriding {@link #next(Token)} must call
   {@link Token#clear()} before setting Token attributes. 
  */
 public abstract class Tokenizer extends TokenStream {
