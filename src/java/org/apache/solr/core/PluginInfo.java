@@ -88,6 +88,11 @@ public class PluginInfo {
     return Boolean.parseBoolean(attributes.get("default"));
   }
 
+  public PluginInfo getChild(String type){
+    List<PluginInfo> l = getChildren(type);
+    return  l.isEmpty() ? null:l.get(0);
+  }
+
   /**Filter children by type
    * @param type The type name. must not be null
    * @return The mathcing children
