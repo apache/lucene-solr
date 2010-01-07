@@ -18,7 +18,6 @@ package org.apache.lucene.search.function;
  */
 
 import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -42,6 +41,11 @@ import static org.junit.Assert.*;
  */
 @SuppressWarnings({"UseOfSystemOutOrSystemErr"})
 public class TestFieldScoreQuery extends FunctionTestSetup {
+
+  /* @override constructor */
+  public TestFieldScoreQuery() {
+    super(true);
+  }
 
   /** Test that FieldScoreQuery of Type.BYTE returns docs in expected order. */
   @Test
@@ -174,7 +178,7 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
     expectedArrayTypes.put(FieldScoreQuery.Type.FLOAT, new float[0]);
     
     IndexSearcher s = new IndexSearcher(dir, true);
-    Object innerArray = null;
+    Object[] innerArray = new Object[s.getIndexReader().getSequentialSubReaders().length];
 
     boolean warned = false; // print warning once.
     for (int i=0; i<10; i++) {
@@ -186,16 +190,16 @@ public class TestFieldScoreQuery extends FunctionTestSetup {
         IndexReader reader = readers[j];
         try {
           if (i == 0) {
-            innerArray = q.valSrc.getValues(reader).getInnerArray();
-            log(i + ".  compare: " + innerArray.getClass() + " to "
+            innerArray[j] = q.valSrc.getValues(reader).getInnerArray();
+            log(i + ".  compare: " + innerArray[j].getClass() + " to "
                 + expectedArrayTypes.get(tp).getClass());
             assertEquals(
                 "field values should be cached in the correct array type!",
-                innerArray.getClass(), expectedArrayTypes.get(tp).getClass());
+                innerArray[j].getClass(), expectedArrayTypes.get(tp).getClass());
           } else {
-            log(i + ".  compare: " + innerArray + " to "
+            log(i + ".  compare: " + innerArray[j] + " to "
                 + q.valSrc.getValues(reader).getInnerArray());
-            assertSame("field values should be cached and reused!", innerArray,
+            assertSame("field values should be cached and reused!", innerArray[j],
                 q.valSrc.getValues(reader).getInnerArray());
           }
         } catch (UnsupportedOperationException e) {

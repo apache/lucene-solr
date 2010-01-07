@@ -37,6 +37,11 @@ import org.junit.Test;
 @SuppressWarnings({"UseOfSystemOutOrSystemErr"})
 public class TestOrdValues extends FunctionTestSetup {
 
+  /* @override constructor */
+  public TestOrdValues() {
+    super(false);
+  }
+
   /**
    * Test OrdFieldSource
    */

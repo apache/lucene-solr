@@ -207,6 +207,9 @@ public class CustomScoreQuery extends Query {
    * <pre>
    *     ModifiedScore = subQueryScore * valSrcScore
    * </pre>
+   *
+   * <p><b>NOTE</b>: The doc is relative to the current
+   * reader, last passed to {@link #setNextReader}.
    * 
    * @param doc id of scored doc. 
    * @param subQueryScore score of that doc by the subQuery.
@@ -215,6 +218,15 @@ public class CustomScoreQuery extends Query {
    */
   public float customScore(int doc, float subQueryScore, float valSrcScore) {
     return subQueryScore * valSrcScore;
+  }
+
+  /**
+   * Called when the scoring switches to another reader.
+   * 
+   * @param reader
+   *          next IndexReader
+   */
+  public void setNextReader(IndexReader reader) throws IOException {
   }
 
   /**
@@ -385,7 +397,6 @@ public class CustomScoreQuery extends Query {
    * A scorer that applies a (callback) function on scores of the subQuery.
    */
   private class CustomScorer extends Scorer {
-    private final CustomWeight weight;
     private final float qWeight;
     private Scorer subQueryScorer;
     private Scorer[] valSrcScorers;
@@ -396,12 +407,12 @@ public class CustomScoreQuery extends Query {
     private CustomScorer(Similarity similarity, IndexReader reader, CustomWeight w,
         Scorer subQueryScorer, Scorer[] valSrcScorers) throws IOException {
       super(similarity);
-      this.weight = w;
       this.qWeight = w.getValue();
       this.subQueryScorer = subQueryScorer;
       this.valSrcScorers = valSrcScorers;
       this.reader = reader;
       this.vScores = new float[valSrcScorers.length];
+      setNextReader(reader);
     }
 
     @Override

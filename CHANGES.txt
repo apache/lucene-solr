@@ -53,6 +53,11 @@ API Changes
   Since the removal of compressed fields, Store can only be YES, so
   it's not necessary to specify.  (Erik Hatcher via Mike McCandless)
 
+* LUCENE-2190: Added setNextReader method to CustomScoreQuery, which
+  is necessary with per-segment searching to notify the subclass
+  which reader the int doc, passed to customScore, refers to.  (Paul
+  chez Jamespot via Mike McCandless)
+
 Bug fixes
 
 * LUCENE-2092: BooleanQuery was ignoring disableCoord in its hashCode

@@ -67,9 +67,19 @@ public class FunctionTestSetup extends LuceneTestCaseJ4 {
           "So here we are, with a perhaps much less interesting ",
           "text for the test, but oh much much safer. ",
   };
+  
+  protected Directory dir;
+  protected Analyzer anlzr;
+  
+  private final boolean doMultiSegment;
 
-  protected Directory dir = null;
-  protected Analyzer anlzr = null;
+  public FunctionTestSetup(boolean doMultiSegment) {
+    this.doMultiSegment = doMultiSegment;
+  }
+
+  public FunctionTestSetup() {
+    this(false);
+  }
 
   @Override
   @After
@@ -100,7 +110,10 @@ public class FunctionTestSetup extends LuceneTestCaseJ4 {
       addDoc(iw, i);
       done[i] = true;
       i = (i + 4) % N_DOCS;
-      remaining--;
+      if (doMultiSegment && remaining % 3 == 0) {
+        iw.commit();
+      }
+      remaining --;
     }
     iw.close();
   }
