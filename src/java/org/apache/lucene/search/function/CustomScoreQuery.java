@@ -207,6 +207,9 @@ public class CustomScoreQuery extends Query {
    * <pre>
    *     ModifiedScore = subQueryScore * valSrcScore
    * </pre>
+   *
+   * <p><b>NOTE</b>: The doc is relative to the current
+   * reader, last passed to {@link #setNextReader}.
    * 
    * @param doc id of scored doc. 
    * @param subQueryScore score of that doc by the subQuery.
@@ -215,6 +218,15 @@ public class CustomScoreQuery extends Query {
    */
   public float customScore(int doc, float subQueryScore, float valSrcScore) {
     return subQueryScore * valSrcScore;
+  }
+
+  /**
+   * Called when the scoring switches to another reader.
+   * 
+   * @param reader
+   *          next IndexReader
+   */
+  public void setNextReader(IndexReader reader) throws IOException {
   }
 
   /**
@@ -399,6 +411,7 @@ public class CustomScoreQuery extends Query {
       this.valSrcScorers = valSrcScorers;
       this.reader = reader;
       this.vScores = new float[valSrcScorers.length];
+      setNextReader(reader);
     }
 
     /** @deprecated use {@link #nextDoc()} instead. */

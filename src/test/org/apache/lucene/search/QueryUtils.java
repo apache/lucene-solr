@@ -5,8 +5,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.ArrayList;
-import java.util.List;
 
 import junit.framework.Assert;
 
@@ -17,7 +15,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.ReaderUtil;
 
 /**
  * Copyright 2005 Apache Software Foundation
@@ -357,6 +354,8 @@ public class QueryUtils {
     //System.out.println("checkFirstSkipTo: "+q);
     final float maxDiff = 1e-5f;
     final int lastDoc[] = {-1};
+    final IndexReader lastReader[] = {null};
+
     s.search(q,new Collector() {
       private Scorer scorer;
       private IndexReader reader;
@@ -382,30 +381,37 @@ public class QueryUtils {
           throw new RuntimeException(e);
         }
       }
-      public void setNextReader(IndexReader reader, int docBase) {
-        this.reader = reader;
+      public void setNextReader(IndexReader reader, int docBase) throws IOException {
+        // confirm that skipping beyond the last doc, on the
+        // previous reader, hits NO_MORE_DOCS
+        if (lastReader[0] != null) {
+          final IndexReader previousReader = lastReader[0];
+          Weight w = q.weight(new IndexSearcher(previousReader));
+          Scorer scorer = w.scorer(previousReader, true, false);
+          if (scorer != null) {
+            boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
+            Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
+          }
+        }
+
+        this.reader = lastReader[0] = reader;
         lastDoc[0] = -1;
       }
       public boolean acceptsDocsOutOfOrder() {
         return false;
       }
     });
-    
-    List readerList = new ArrayList();
-    ReaderUtil.gatherSubReaders(readerList, s.getIndexReader());
-    IndexReader[] readers = (IndexReader[]) readerList.toArray(new IndexReader[0]);
-    for(int i = 0; i < readers.length; i++) {
-      IndexReader reader = readers[i];
-      Weight w = q.weight(s);
-      Scorer scorer = w.scorer(reader, true, false);
-      
+
+    if (lastReader[0] != null) {
+      // confirm that skipping beyond the last doc, on the
+      // previous reader, hits NO_MORE_DOCS
+      final IndexReader previousReader = lastReader[0];
+      Weight w = q.weight(new IndexSearcher(previousReader));
+      Scorer scorer = w.scorer(previousReader, true, false);
       if (scorer != null) {
         boolean more = scorer.advance(lastDoc[0] + 1) != DocIdSetIterator.NO_MORE_DOCS;
-  
-        if (more && lastDoc[0] != -1) 
-          Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
+        Assert.assertFalse("query's last doc was "+ lastDoc[0] +" but skipTo("+(lastDoc[0]+1)+") got to "+scorer.docID(),more);
       }
     }
-
   }
 }

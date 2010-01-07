@@ -28,6 +28,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.index.IndexReader;
 
 /**
  * Test CustomScoreQuery search.
@@ -36,7 +38,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
 
   /* @override constructor */
   public TestCustomScoreQuery(String name) {
-    super(name);
+    super(name, true);
   }
 
   /** Test that CustomScoreQuery of Type.BYTE returns the expected scores. */
@@ -64,7 +66,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     // INT field can be parsed as float
     doTestCustomScore(INT_FIELD,FieldScoreQuery.Type.FLOAT,1.0);
     doTestCustomScore(INT_FIELD,FieldScoreQuery.Type.FLOAT,5.0);
-    // same values, but in flot format
+    // same values, but in float format
     doTestCustomScore(FLOAT_FIELD,FieldScoreQuery.Type.FLOAT,1.0);
     doTestCustomScore(FLOAT_FIELD,FieldScoreQuery.Type.FLOAT,6.0);
   }
@@ -112,6 +114,8 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       }
       if (valSrcScores.length == 1) {
         return subQueryScore + valSrcScores[0];
+        // confirm that skipping beyond the last doc, on the
+        // previous reader, hits NO_MORE_DOCS
       }
       return (subQueryScore + valSrcScores[0]) * valSrcScores[1]; // we know there are two
     } 
@@ -132,6 +136,44 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       exp2.addDetail(exp);
       return exp2;      
     } 
+  }
+
+  private final class CustomExternalQuery extends CustomScoreQuery {
+    private IndexReader reader;
+    private int[] values;
+
+    public float customScore(int doc, float subScore, float valSrcScore) {
+      assertTrue(doc <= reader.maxDoc());
+      return (float) values[doc];
+    }
+
+    public void setNextReader(IndexReader r) throws IOException {
+      reader = r;
+      values = FieldCache.DEFAULT.getInts(r, INT_FIELD);
+    }
+
+    public CustomExternalQuery(Query q) {
+      super(q);
+    }
+  }
+
+  public void testCustomExternalQuery() throws Exception {
+    QueryParser qp = new QueryParser(TEXT_FIELD,anlzr); 
+    String qtxt = "first aid text"; // from the doc texts in FunctionQuerySetup.
+    Query q1 = qp.parse(qtxt); 
+    
+    final Query q = new CustomExternalQuery(q1);
+    log(q);
+
+    IndexSearcher s = new IndexSearcher(dir);
+    TopDocs hits = s.search(q, 1000);
+    assertEquals(N_DOCS, hits.totalHits);
+    for(int i=0;i<N_DOCS;i++) {
+      final int doc = hits.scoreDocs[i].doc;
+      final float score = hits.scoreDocs[i].score;
+      assertEquals("doc=" + doc, (float) 1+(4*doc) % N_DOCS, score, 0.0001);
+    }
+    s.close();
   }
   
   // Test that FieldScoreQuery returns docs with expected score.

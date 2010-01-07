@@ -70,7 +70,14 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
   
   /* @override constructor */
   public FunctionTestSetup(String name) {
+    this(name, false);
+  }
+
+  private final boolean doMultiSegment;
+
+  public FunctionTestSetup(String name, boolean doMultiSegment) {
     super(name);
+    this.doMultiSegment = doMultiSegment;
   }
 
   /* @override */
@@ -100,6 +107,9 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
       addDoc(iw,i);
       done[i] = true;
       i = (i+4)%N_DOCS;
+      if (doMultiSegment && remaining % 3 == 0) {
+        iw.commit();
+      }
       remaining --;
     }
     iw.close();
