@@ -190,6 +190,8 @@ Other Changes
 
 * SOLR-1661 : Remove adminCore from CoreContainer . removed deprecated methods setAdminCore(), getAdminCore() (noble)
 
+* SOLR-1704 : Google collections moved from clustering to core (noble)
+
 Build
 ----------------------
 
