@@ -55,7 +55,7 @@ import org.apache.lucene.store.Directory;
  *
  * @version 1.0
  */
-public class SpellChecker {
+public class SpellChecker implements java.io.Closeable {
 
   /**
    * Field name for each word in the ngram index.
