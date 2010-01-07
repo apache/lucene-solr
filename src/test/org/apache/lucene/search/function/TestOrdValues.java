@@ -40,7 +40,7 @@ public class TestOrdValues extends FunctionTestSetup {
 
   /* @override constructor */
   public TestOrdValues(String name) {
-    super(name);
+    super(name, false);
   }
 
   /** Test OrdFieldSource */
