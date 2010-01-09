@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
@@ -94,7 +95,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
   // aa##bb###cc dd
   public void test1block1matchLonger() throws IOException {
     final String BLOCK = "aa bb cc dd";
-    CharStream cs = new PatternReplaceCharFilter( "(aa)\\s+(bb)\\s+(cc)", "$1##$2###$3",
+    CharStream cs = new PatternReplaceCharFilter( pattern("(aa)\\s+(bb)\\s+(cc)"), "$1##$2###$3",
           CharReader.get( new StringReader( BLOCK ) ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
     assertTokenStreamContents(ts,
@@ -109,7 +110,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
   //  aa  aa
   public void test1block2matchLonger() throws IOException {
     final String BLOCK = " a  a";
-    CharStream cs = new PatternReplaceCharFilter( "a", "aa",
+    CharStream cs = new PatternReplaceCharFilter( pattern("a"), "aa",
           CharReader.get( new StringReader( BLOCK ) ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
     assertTokenStreamContents(ts,
@@ -125,7 +126,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
   // aa#bb dd
   public void test1block1matchShorter() throws IOException {
     final String BLOCK = "aa  bb   cc dd";
-    CharStream cs = new PatternReplaceCharFilter( "(aa)\\s+(bb)\\s+(cc)", "$1#$2",
+    CharStream cs = new PatternReplaceCharFilter( pattern("(aa)\\s+(bb)\\s+(cc)"), "$1#$2",
           CharReader.get( new StringReader( BLOCK ) ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
     assertTokenStreamContents(ts,
@@ -141,7 +142,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
   //   aa  bb  cc --- aa bb aa  bb  cc
   public void test1blockMultiMatches() throws IOException {
     final String BLOCK = "  aa bb cc --- aa bb aa   bb   cc";
-    CharStream cs = new PatternReplaceCharFilter( "(aa)\\s+(bb)\\s+(cc)", "$1  $2  $3",
+    CharStream cs = new PatternReplaceCharFilter( pattern("(aa)\\s+(bb)\\s+(cc)"), "$1  $2  $3",
           CharReader.get( new StringReader( BLOCK ) ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
     assertTokenStreamContents(ts,
@@ -157,7 +158,7 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
   //   aa##bb cc --- aa##bb aa. bb aa##bb cc
   public void test2blocksMultiMatches() throws IOException {
     final String BLOCK = "  aa bb cc --- aa bb aa. bb aa   bb cc";
-    CharStream cs = new PatternReplaceCharFilter( "(aa)\\s+(bb)", "$1##$2", ".",
+    CharStream cs = new PatternReplaceCharFilter( pattern("(aa)\\s+(bb)"), "$1##$2", ".",
           CharReader.get( new StringReader( BLOCK ) ) );
     TokenStream ts = new WhitespaceTokenizer( cs );
     assertTokenStreamContents(ts,
@@ -173,15 +174,19 @@ public class TestPatternReplaceCharFilter extends BaseTokenTestCase {
   //  aa b - c . --- b aa . c c b
   public void testChain() throws IOException {
     final String BLOCK = " a bb - ccc . --- bb a . ccc ccc bb";
-    CharStream cs = new PatternReplaceCharFilter( "a", "aa", ".",
+    CharStream cs = new PatternReplaceCharFilter( pattern("a"), "aa", ".",
         CharReader.get( new StringReader( BLOCK ) ) );
-    cs = new PatternReplaceCharFilter( "bb", "b", ".", cs );
-    cs = new PatternReplaceCharFilter( "ccc", "c", ".", cs );
+    cs = new PatternReplaceCharFilter( pattern("bb"), "b", ".", cs );
+    cs = new PatternReplaceCharFilter( pattern("ccc"), "c", ".", cs );
     TokenStream ts = new WhitespaceTokenizer( cs );
     assertTokenStreamContents(ts,
         new String[] { "aa", "b", "-", "c", ".", "---", "b", "aa", ".", "c", "c", "b" },
         new int[] { 1, 3, 6, 8, 12, 14, 18, 21, 23, 25, 29, 33 },
         new int[] { 2, 5, 7, 11, 13, 17, 20, 22, 24, 28, 32, 35 },
         new int[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 });
+  }
+  
+  private Pattern pattern( String p ){
+    return Pattern.compile( p );
   }
 }

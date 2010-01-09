@@ -18,6 +18,8 @@
 package org.apache.solr.analysis;
 
 import java.util.Map;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import org.apache.lucene.analysis.CharStream;
 
@@ -28,16 +30,20 @@ import org.apache.lucene.analysis.CharStream;
  */
 public class PatternReplaceCharFilterFactory extends BaseCharFilterFactory {
   
-  private String pattern;
+  private Pattern p;
   private String replacement;
   private int maxBlockChars;
   private String blockDelimiters;
 
   public void init(Map<String, String> args) {
     super.init( args );
-    pattern = args.get( "pattern" );
-    if( pattern == null )
-      pattern = "";
+    try {
+      p = Pattern.compile(args.get("pattern"));
+    } catch (PatternSyntaxException e) {
+      throw new RuntimeException
+        ("Configuration Error: 'pattern' can not be parsed in " +
+         this.getClass().getName(), e);
+    }
     replacement = args.get( "replacement" );
     if( replacement == null )
       replacement = "";
@@ -46,6 +52,6 @@ public class PatternReplaceCharFilterFactory extends BaseCharFilterFactory {
   }
 
   public CharStream create(CharStream input) {
-    return new PatternReplaceCharFilter( pattern, replacement, maxBlockChars, blockDelimiters, input );
+    return new PatternReplaceCharFilter( p, replacement, maxBlockChars, blockDelimiters, input );
   }
 }
