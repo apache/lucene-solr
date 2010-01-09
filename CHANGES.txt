@@ -81,6 +81,8 @@ New Features
 
 * SOLR-1697: PluginInfo should load plugins w/o class attribute also (noble)
 
+* SOLR-1268: Incorporate FastVectorHighlighter (koji)
+
 Optimizations
 ----------------------
 
@@ -188,9 +190,11 @@ Other Changes
 * SOLR-1674: Improve analysis tests and cut over to new TokenStream API.
   (Robert Muir via Mark Miller)
 
-* SOLR-1661 : Remove adminCore from CoreContainer . removed deprecated methods setAdminCore(), getAdminCore() (noble)
+* SOLR-1661: Remove adminCore from CoreContainer . removed deprecated methods setAdminCore(), getAdminCore() (noble)
 
-* SOLR-1704 : Google collections moved from clustering to core (noble)
+* SOLR-1704: Google collections moved from clustering to core (noble)
+
+* SOLR-1268: Add Lucene 2.9-dev r888785 FastVectorHighlighter contrib jar to lib. (koji)
 
 Build
 ----------------------

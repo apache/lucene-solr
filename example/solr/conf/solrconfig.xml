@@ -957,6 +957,12 @@
      <str name="hl.simple.post"><![CDATA[</em>]]></str>
     </lst>
    </formatter>
+
+   <!-- Configure the standard fragListBuilder -->
+   <fragListBuilder name="simple" class="org.apache.solr.highlight.SimpleFragListBuilder" default="true"/>
+
+   <!-- multi-colored tag FragmentsBuilder -->
+   <fragmentsBuilder name="colored" class="org.apache.solr.highlight.MultiColoredScoreOrderFragmentsBuilder" default="true"/>
   </highlighting>
 
   <!-- An example dedup update processor that creates the "id" field on the fly

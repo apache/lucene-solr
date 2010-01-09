@@ -555,7 +555,7 @@ public final class SolrCore implements SolrInfoMBean {
     reqHandlers = new RequestHandlers(this);
     reqHandlers.initHandlersFromConfig( solrConfig );
 
-    highlighter = initHighLighter();
+    highlighter = initHighlighter();
 
     // Handle things that should eventually go away
     initDeprecatedSupport();
@@ -605,7 +605,7 @@ public final class SolrCore implements SolrInfoMBean {
     resourceLoader.inform(infoRegistry);
   }
 
-  private SolrHighlighter initHighLighter() {
+  private SolrHighlighter initHighlighter() {
     SolrHighlighter highlighter = null;
     PluginInfo pluginInfo = solrConfig.getPluginInfo(SolrHighlighter.class.getName());
     if(pluginInfo != null){
