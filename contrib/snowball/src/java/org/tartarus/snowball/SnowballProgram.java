@@ -77,6 +77,26 @@ public abstract class SnowballProgram {
         current = new StringBuilder();
         return result;
     }
+    
+    /**
+     * Set the current string.
+     */
+    public void setCurrent(char text[], int offset, int length) {
+      current.setLength(0);
+      current.append(text, offset, length);
+      cursor = 0;
+      limit = current.length();
+      limit_backward = 0;
+      bra = cursor;
+      ket = limit;
+    }
+
+    /**
+     * Get the current buffer containing the stem
+     */
+    public StringBuilder getCurrentBuffer() {
+      return current;
+    }
 
     // current string
     protected StringBuilder current;

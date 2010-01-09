@@ -74,13 +74,16 @@ public final class SnowballFilter extends TokenFilter {
   @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      String originalTerm = termAtt.term();
-      stemmer.setCurrent(originalTerm);
+      char termBuffer[] = termAtt.termBuffer();
+      final int length = termAtt.termLength();
+      stemmer.setCurrent(termBuffer, 0, length);
       stemmer.stem();
-      String finalTerm = stemmer.getCurrent();
-      // Don't bother updating, if it is unchanged.
-      if (!originalTerm.equals(finalTerm))
-        termAtt.setTermBuffer(finalTerm);
+      final StringBuilder finalTerm = stemmer.getCurrentBuffer();
+      final int newLength = finalTerm.length();
+      if (newLength > termBuffer.length)
+        termBuffer = termAtt.resizeTermBuffer(newLength);
+      finalTerm.getChars(0, newLength, termBuffer, 0);
+      termAtt.setTermLength(newLength);
       return true;
     } else {
       return false;

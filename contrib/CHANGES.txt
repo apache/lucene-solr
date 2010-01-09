@@ -86,6 +86,9 @@ Optimizations
    take advantage of this for faster performance.
    (Steven Rowe, Uwe Schindler, Robert Muir)
 
+ * LUCENE-2194: Improve the efficiency of Snowball by not creating 2 new Strings
+   and 1 new StringBuilder for every word.  (Robert Muir)
+
 Test Cases
 
  * LUCENE-2115: Cutover contrib tests to use Java5 generics.  (Kay Kay
