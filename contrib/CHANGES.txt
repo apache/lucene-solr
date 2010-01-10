@@ -18,6 +18,9 @@ Changes in runtime behavior
 
 Bug fixes
 
+ * LUCENE-2199: ShingleFilter skipped over tri-gram shingles if outputUnigram
+   was set to false. (Simon Willnauer)
+
  * LUCENE-2068: Fixed ReverseStringFilter which was not aware of supplementary
    characters. During reverse the filter created unpaired surrogates, which
    will be replaced by U+FFFD by the indexer, but not at query time. The filter

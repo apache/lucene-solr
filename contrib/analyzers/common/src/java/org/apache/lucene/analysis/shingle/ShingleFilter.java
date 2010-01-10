@@ -182,7 +182,7 @@ public final class ShingleFilter extends TokenFilter {
           shingleBufferPosition++;
           return true;
         }
-      } else {
+      } else if (shingleBufferPosition % this.maxShingleSize == 0){
         shingleBufferPosition++;
       }
   
@@ -197,7 +197,7 @@ public final class ShingleFilter extends TokenFilter {
           termBuffer = termAtt.resizeTermBuffer(termLength);
         buf.getChars(0, termLength, termBuffer, 0);
         termAtt.setTermLength(termLength);
-        if ((! outputUnigrams) && shingleBufferPosition == 1) {
+        if ((! outputUnigrams) && shingleBufferPosition % this.maxShingleSize == 1) {
           posIncrAtt.setPositionIncrement(1);
         } else {
           posIncrAtt.setPositionIncrement(0);
