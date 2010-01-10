@@ -346,9 +346,14 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     return fragments;
   }
   
+  /*
+   * If fieldName is undefined, this method returns false, then
+   * doHighlightingByHighlighter() will do nothing for the field.
+   */
   private boolean useFastVectorHighlighter( SolrParams params, IndexSchema schema, String fieldName ){
-    SchemaField schemaField = schema.getField( fieldName );
-    return schemaField.storeTermPositions() &&
+    SchemaField schemaField = schema.getFieldOrNull( fieldName );
+    return schemaField != null &&
+      schemaField.storeTermPositions() &&
       schemaField.storeTermOffsets() &&
       !params.getFieldBool( fieldName, HighlightParams.USE_HIGHLIGHTER, false );
   }
@@ -357,7 +362,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       int docId, Document doc, String fieldName ) throws IOException {
     SolrParams params = req.getParams(); 
     String[] docTexts = doc.getValues(fieldName);
-    if (docTexts == null) return;
+    // according to Document javadoc, doc.getValues() never returns null. check empty instead of null
+    if (docTexts.length == 0) return;
     
     SolrIndexSearcher searcher = req.getSearcher();
     IndexSchema schema = searcher.getSchema();
