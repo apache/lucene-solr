@@ -7,6 +7,9 @@ Bug fixes
  * LUCENE-2144: Fix InstantiatedIndex to handle termDocs(null)
    correctly (enumerate all non-deleted docs).  (Karl Wettin via Mike
    McCandless)
+
+ * LUCENE-2199: ShingleFilter skipped over tri-gram shingles if outputUnigram
+   was set to false. (Simon Willnauer)
    
 API Changes
 

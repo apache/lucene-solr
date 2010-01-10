@@ -200,6 +200,93 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     "word", "shingle",
     "word"
   };
+  
+  public static final Token[] TRI_GRAM_TOKENS_WITHOUT_UNIGRAMS = new Token[] {
+    createToken("please divide", 0, 13),
+    createToken("please divide this", 0, 18),
+    createToken("divide this", 7, 18),
+    createToken("divide this sentence", 7, 27),
+    createToken("this sentence", 14, 27),
+    createToken("this sentence into", 14, 32),
+    createToken("sentence into", 19, 32),
+    createToken("sentence into shingles", 19, 39),
+    createToken("into shingles", 28, 39),
+  };
+
+  public static final int[] TRI_GRAM_POSITION_INCREMENTS_WITHOUT_UNIGRAMS = new int[] {
+    1, 0, 1, 0, 1, 0, 1, 0, 1
+  };
+  
+  public static final String[] TRI_GRAM_TYPES_WITHOUT_UNIGRAMS = new String[] {
+    "shingle", "shingle",
+    "shingle", "shingle",
+    "shingle", "shingle",
+    "shingle", "shingle",
+    "shingle",
+  };
+  
+  public static final Token[] FOUR_GRAM_TOKENS = new Token[] {
+    createToken("please", 0, 6),
+    createToken("please divide", 0, 13),
+    createToken("please divide this", 0, 18),
+    createToken("please divide this sentence", 0, 27),
+    createToken("divide", 7, 13),
+    createToken("divide this", 7, 18),
+    createToken("divide this sentence", 7, 27),
+    createToken("divide this sentence into", 7, 32),
+    createToken("this", 14, 18),
+    createToken("this sentence", 14, 27),
+    createToken("this sentence into", 14, 32),
+    createToken("this sentence into shingles", 14, 39),
+    createToken("sentence", 19, 27),
+    createToken("sentence into", 19, 32),
+    createToken("sentence into shingles", 19, 39),
+    createToken("into", 28, 32),
+    createToken("into shingles", 28, 39),
+    createToken("shingles", 33, 39)
+  };
+
+  public static final int[] FOUR_GRAM_POSITION_INCREMENTS = new int[] {
+    1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1
+  };
+
+  public static final String[] FOUR_GRAM_TYPES = new String[] {
+    "word", "shingle", "shingle", "shingle",
+    "word", "shingle", "shingle", "shingle",
+    "word", "shingle", "shingle", "shingle",
+    "word", "shingle", "shingle",
+    "word", "shingle",
+    "word"
+  };
+  
+  public static final Token[] FOUR_GRAM_TOKENS_WITHOUT_UNIGRAMS = new Token[] {
+    createToken("please divide", 0, 13),
+    createToken("please divide this", 0, 18),
+    createToken("please divide this sentence", 0, 27),
+    createToken("divide this", 7, 18),
+    createToken("divide this sentence", 7, 27),
+    createToken("divide this sentence into", 7, 32),
+    createToken("this sentence", 14, 27),
+    createToken("this sentence into", 14, 32),
+    createToken("this sentence into shingles", 14, 39),
+    createToken("sentence into", 19, 32),
+    createToken("sentence into shingles", 19, 39),
+    createToken("into shingles", 28, 39),
+  };
+
+  public static final int[] FOUR_GRAM_POSITION_INCREMENTS_WITHOUT_UNIGRAMS = new int[] {
+    1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1
+  };
+  
+  public static final String[] FOUR_GRAM_TYPES_WITHOUT_UNIGRAMS = new String[] {
+    "shingle", "shingle",
+    "shingle", "shingle",
+    "shingle", "shingle",
+    "shingle", "shingle",
+    "shingle", "shingle",
+    "shingle", "shingle",
+
+  };
 
 
   @Override
@@ -272,8 +359,25 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
                            TRI_GRAM_POSITION_INCREMENTS, TRI_GRAM_TYPES,
                            true);
   }
-
-
+  
+  public void testTriGramFilterWithoutUnigrams() throws IOException {
+    this.shingleFilterTest(3, TEST_TOKEN, TRI_GRAM_TOKENS_WITHOUT_UNIGRAMS,
+                           TRI_GRAM_POSITION_INCREMENTS_WITHOUT_UNIGRAMS, TRI_GRAM_TYPES_WITHOUT_UNIGRAMS,
+                           false);
+  }
+  
+  public void testFourGramFilter() throws IOException {
+    this.shingleFilterTest(4, TEST_TOKEN, FOUR_GRAM_TOKENS,
+        FOUR_GRAM_POSITION_INCREMENTS, FOUR_GRAM_TYPES,
+                           true);
+  }
+  
+  public void testFourGramFilterWithoutUnigrams() throws IOException {
+    this.shingleFilterTest(4, TEST_TOKEN, FOUR_GRAM_TOKENS_WITHOUT_UNIGRAMS,
+        FOUR_GRAM_POSITION_INCREMENTS_WITHOUT_UNIGRAMS,
+        FOUR_GRAM_TYPES_WITHOUT_UNIGRAMS, false);
+  }
+  
   
   public void testReset() throws Exception {
     Tokenizer wsTokenizer = new WhitespaceTokenizer(new StringReader("please divide this sentence"));
