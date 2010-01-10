@@ -38,17 +38,10 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  */
 public final class DelimitedPayloadTokenFilter extends TokenFilter {
   public static final char DEFAULT_DELIMITER = '|';
-  protected char delimiter = DEFAULT_DELIMITER;
-  protected TermAttribute termAtt;
-  protected PayloadAttribute payAtt;
-  protected PayloadEncoder encoder;
-
-  /**
-   * Construct a token stream filtering the given input.
-   */
-  protected DelimitedPayloadTokenFilter(TokenStream input) {
-    this(input, DEFAULT_DELIMITER, new IdentityEncoder());
-  }
+  private final char delimiter;
+  private final TermAttribute termAtt;
+  private final PayloadAttribute payAtt;
+  private final PayloadEncoder encoder;
 
 
   public DelimitedPayloadTokenFilter(TokenStream input, char delimiter, PayloadEncoder encoder) {

@@ -58,6 +58,10 @@ API Changes
   which reader the int doc, passed to customScore, refers to.  (Paul
   chez Jamespot via Mike McCandless)
 
+* LUCENE-2200: Several final classes had non-overriding protected
+  members. These were converted to private and unused protected
+  constructors removed.  (Steven Rowe via Robert Muir)
+
 Bug fixes
 
 * LUCENE-2092: BooleanQuery was ignoring disableCoord in its hashCode

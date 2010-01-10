@@ -164,7 +164,7 @@ final class FieldsReader implements Cloneable {
   /**
    * @throws AlreadyClosedException if this FieldsReader is closed
    */
-  protected final void ensureOpen() throws AlreadyClosedException {
+  private void ensureOpen() throws AlreadyClosedException {
     if (closed) {
       throw new AlreadyClosedException("this FieldsReader is closed");
     }

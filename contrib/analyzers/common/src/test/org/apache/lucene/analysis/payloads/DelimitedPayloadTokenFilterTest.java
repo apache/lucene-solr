@@ -34,7 +34,9 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
 
   public void testPayloads() throws Exception {
     String test = "The quick|JJ red|JJ fox|NN jumped|VB over the lazy|JJ brown|JJ dogs|NN";
-    DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter(new WhitespaceTokenizer(new StringReader(test)));
+    DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter
+      (new WhitespaceTokenizer(new StringReader(test)), 
+       DelimitedPayloadTokenFilter.DEFAULT_DELIMITER, new IdentityEncoder());
     TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
     PayloadAttribute payAtt = filter.getAttribute(PayloadAttribute.class);
     assertTermEquals("The", filter, termAtt, payAtt, null);
@@ -53,7 +55,9 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
   public void testNext() throws Exception {
 
     String test = "The quick|JJ red|JJ fox|NN jumped|VB over the lazy|JJ brown|JJ dogs|NN";
-    DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter(new WhitespaceTokenizer(new StringReader(test)));
+    DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter
+      (new WhitespaceTokenizer(new StringReader(test)), 
+       DelimitedPayloadTokenFilter.DEFAULT_DELIMITER, new IdentityEncoder());
     assertTermEquals("The", filter, null);
     assertTermEquals("quick", filter, "JJ".getBytes("UTF-8"));
     assertTermEquals("red", filter, "JJ".getBytes("UTF-8"));

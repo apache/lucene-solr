@@ -30,8 +30,8 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 public final class ArabicNormalizationFilter extends TokenFilter {
 
-  protected ArabicNormalizer normalizer = null;
-  private TermAttribute termAtt;
+  private final ArabicNormalizer normalizer;
+  private final TermAttribute termAtt;
   
   public ArabicNormalizationFilter(TokenStream input) {
     super(input);

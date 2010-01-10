@@ -33,9 +33,9 @@ import org.apache.lucene.util.Version;
  */
 public final class ShingleAnalyzerWrapper extends Analyzer {
 
-  protected Analyzer defaultAnalyzer;
-  protected int maxShingleSize = 2;
-  protected boolean outputUnigrams = true;
+  private final Analyzer defaultAnalyzer;
+  private int maxShingleSize = 2;
+  private boolean outputUnigrams = true;
 
   public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer) {
     super();

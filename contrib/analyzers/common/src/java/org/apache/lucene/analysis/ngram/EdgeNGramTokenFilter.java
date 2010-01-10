@@ -64,22 +64,15 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
     }
   }
 
-  private int minGram;
-  private int maxGram;
+  private final int minGram;
+  private final int maxGram;
   private Side side;
   private char[] curTermBuffer;
   private int curTermLength;
   private int curGramSize;
   
-  private TermAttribute termAtt;
-  private OffsetAttribute offsetAtt;
-
-
-  protected EdgeNGramTokenFilter(TokenStream input) {
-    super(input);
-    this.termAtt = addAttribute(TermAttribute.class);
-    this.offsetAtt = addAttribute(OffsetAttribute.class);
-  }
+  private final TermAttribute termAtt;
+  private final OffsetAttribute offsetAtt;
 
   /**
    * Creates EdgeNGramTokenFilter that can generate n-grams in the sizes of the given range
