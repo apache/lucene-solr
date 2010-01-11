@@ -61,7 +61,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * a dedicated hardware load balancer or using Apache httpd with mod_proxy_balancer as a load balancer. See <a
  * href="http://en.wikipedia.org/wiki/Load_balancing_(computing)">Load balancing on Wikipedia</a>
  *
- * @version $Id$
  * @since solr 1.4
  */
 public class LBHttpSolrServer extends SolrServer {
