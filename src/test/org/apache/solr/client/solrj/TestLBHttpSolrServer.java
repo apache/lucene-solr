@@ -174,6 +174,26 @@ public class TestLBHttpSolrServer extends TestCase {
     }
     assertEquals(3, names.size());
 
+
+    String noexist = "http://does_not_exist_54321.com:33331/solr";
+    LinkedList<String> serverList2 = new LinkedList<String>(serverList);
+    serverList2.addFirst(noexist);
+
+    // Make sure the non-existant server is skipped
+    names.clear();
+    for (int i=0; i<servers.length+1; i++) {
+      LBHttpSolrServer.Req req = new LBHttpSolrServer.Req(solrRequest, serverList2);
+      LBHttpSolrServer.Rsp rsp = lb2.request(req);
+      resp = new QueryResponse(rsp.getResponse(), lb);
+      assertEquals(10, resp.getResults().getNumFound());
+      names.add(resp.getResults().get(0).getFieldValue("name").toString());
+
+      // rotate the server list
+      serverList2.addLast(serverList2.removeFirst());
+    }
+    assertEquals(3, names.size());
+
+
     
     // slow LB for Simple API
     LBHttpSolrServer slowLB = new LBHttpSolrServer(servers);
@@ -235,6 +255,7 @@ public class TestLBHttpSolrServer extends TestCase {
       req.setNumDeadServersToTry(0);
       LBHttpSolrServer.Rsp rsp = slowLB2.request(req);
     }
+
 
   }
 
