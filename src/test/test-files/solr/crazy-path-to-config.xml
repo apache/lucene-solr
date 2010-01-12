@@ -65,9 +65,9 @@
   <requestHandler name="/update" class="solr.XmlUpdateRequestHandler" />
   
   
-  <queryResponseWriter name="standard" class="org.apache.solr.response.XMLResponseWriter"/>
+  <queryResponseWriter name="standard" class="solr.XMLResponseWriter"/>
   <queryResponseWriter name="useless" class="org.apache.solr.OutputWriterTest$UselessOutputWriter"/>
-  <queryResponseWriter name="xslt" class="org.apache.solr.response.XSLTResponseWriter"/>
+  <queryResponseWriter name="xslt" class="solr.XSLTResponseWriter"/>
 
 
   <admin>

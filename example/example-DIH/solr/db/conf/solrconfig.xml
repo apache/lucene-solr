@@ -674,12 +674,12 @@
     in the request. XMLResponseWriter will be used if nothing is specified here.
     The json, python, and ruby writers are also available by default.
 
-    <queryResponseWriter name="xml" class="org.apache.solr.response.XMLResponseWriter" default="true"/>
-    <queryResponseWriter name="json" class="org.apache.solr.response.JSONResponseWriter"/>
-    <queryResponseWriter name="python" class="org.apache.solr.response.PythonResponseWriter"/>
-    <queryResponseWriter name="ruby" class="org.apache.solr.response.RubyResponseWriter"/>
-    <queryResponseWriter name="php" class="org.apache.solr.response.PHPResponseWriter"/>
-    <queryResponseWriter name="phps" class="org.apache.solr.response.PHPSerializedResponseWriter"/>
+    <queryResponseWriter name="xml" class="solr.XMLResponseWriter" default="true"/>
+    <queryResponseWriter name="json" class="solr.JSONResponseWriter"/>
+    <queryResponseWriter name="python" class="solr.PythonResponseWriter"/>
+    <queryResponseWriter name="ruby" class="solr.RubyResponseWriter"/>
+    <queryResponseWriter name="php" class="solr.PHPResponseWriter"/>
+    <queryResponseWriter name="phps" class="solr.PHPSerializedResponseWriter"/>
 
     <queryResponseWriter name="custom" class="com.example.MyResponseWriter"/>
   -->
@@ -688,7 +688,7 @@
        in Solr's conf/xslt directory.  Changes to xslt files are checked for
        every xsltCacheLifetimeSeconds.  
    -->
-  <queryResponseWriter name="xslt" class="org.apache.solr.response.XSLTResponseWriter">
+  <queryResponseWriter name="xslt" class="solr.XSLTResponseWriter">
     <int name="xsltCacheLifetimeSeconds">5</int>
   </queryResponseWriter> 
     
