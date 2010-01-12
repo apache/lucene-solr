@@ -48,7 +48,7 @@ class ShardsWatcher implements Watcher {
       // controller.getKeeperConnection().exists(event.getPath(), this);
 
       // TODO: need to load whole state?
-      controller.loadCloudInfo();
+      controller.readCloudInfo();
 
     } catch (KeeperException e) {
       log.error("", e);

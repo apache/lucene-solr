@@ -403,7 +403,7 @@ public class CoreContainer
     if(zooKeeperController != null) {
       // nocommit : exceptions
       try {
-        zooKeeperController.loadCloudInfo();
+        zooKeeperController.readCloudInfo();
         
         // nocommit : set shards node watches
         zooKeeperController.watchShards();

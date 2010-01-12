@@ -76,6 +76,7 @@ class ConnectionManager implements Watcher {
       clientConnected.countDown();
     } else if (state == KeeperState.Expired) {
       // nocommit : much to do here - if expired, on reconnect we must remake ephemeral nodes (re-register cores)
+      // also may need to re-watch given nodes
       // what about on disconnect ??
       
       connected = false;
@@ -100,6 +101,7 @@ class ConnectionManager implements Watcher {
 
       log.info("Connected:" + connected);
     } else if (state == KeeperState.Disconnected) {
+      // nocommit : not sure we have to reconnect like this on disconnect
       if(connected == false) {
         // nocommit
         System.out.println("we already know we are dc'd - why are we notified twice?");

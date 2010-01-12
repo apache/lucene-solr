@@ -115,7 +115,10 @@ public final class ZkController {
 
           public void command() {
             try {
-              loadCloudInfo();
+              
+              // nocommit : re-register ephemeral nodes, wait a while
+              // for others to do the same, then load
+              readCloudInfo();
             } catch (KeeperException e) {
               log.error("ZooKeeper Exception", e);
               throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -369,7 +372,7 @@ public final class ZkController {
   }
 
   // load and publish a new CollectionInfo
-  public void loadCloudInfo() throws KeeperException, InterruptedException,
+  public void readCloudInfo() throws KeeperException, InterruptedException,
       IOException {
     // nocommit : not thread safe anymore ?
 
