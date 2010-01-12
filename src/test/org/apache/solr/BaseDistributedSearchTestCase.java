@@ -2,15 +2,7 @@ package org.apache.solr;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 import junit.framework.TestCase;
 
@@ -50,6 +42,8 @@ public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase
   protected List<JettySolrRunner> jettys = new ArrayList<JettySolrRunner>();
   protected String context = "/solr";
   protected String shards;
+  protected String[] shardsArr;
+  protected String[] deadServers = {"localhost:33331/solr","localhost:33332/solr"};
   protected File testDir;
   protected SolrServer controlClient;
   protected int portSeed;
@@ -150,16 +144,41 @@ public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase
     controlJetty = createJetty(testDir, "control");
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
 
+    shardsArr = new String[numShards];
     StringBuilder sb = new StringBuilder();
-    for (int i = 1; i <= numShards; i++) {
+    for (int i = 0; i < numShards; i++) {
       if (sb.length() > 0) sb.append(',');
       JettySolrRunner j = createJetty(testDir, "shard" + i);
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
-      sb.append("localhost:").append(j.getLocalPort()).append(context);
+      String shardStr = "localhost:" + j.getLocalPort() + context;
+      shardsArr[i] = shardStr;
+      sb.append(shardStr);
     }
 
     shards = sb.toString();
+  }
+
+  protected String getShardsString() {
+    if (deadServers == null) return shards;
+    
+    StringBuilder sb = new StringBuilder();
+    for (String shard : shardsArr) {
+      if (sb.length() > 0) sb.append(',');
+      int nDeadServers = r.nextInt(deadServers.length+1);
+      if (nDeadServers > 0) {
+        List<String> replicas = new ArrayList<String>(Arrays.asList(deadServers));
+        Collections.shuffle(replicas, r);
+        replicas.add(r.nextInt(nDeadServers+1), shard);
+        for (int i=0; i<nDeadServers+1; i++) {
+          if (i!=0) sb.append('|');
+          sb.append(replicas.get(i));
+        }
+      } else {
+        sb.append(shard);
+      }
+    }
+    return sb.toString();
   }
 
   protected void destroyServers() throws Exception {
@@ -276,7 +295,7 @@ public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase
     final QueryResponse controlRsp = controlClient.query(params);
 
     // query a random server
-    params.set("shards", shards);
+    params.set("shards", getShardsString());
     int which = r.nextInt(clients.size());
     SolrServer client = clients.get(which);
     QueryResponse rsp = client.query(params);

@@ -21,6 +21,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RTimer;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -33,6 +34,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.core.SolrCore;
 import org.apache.lucene.queryParser.ParseException;
@@ -43,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.*;
+import java.net.MalformedURLException;
 
 /**
  *
@@ -353,6 +356,8 @@ class HttpCommComponent {
 
 
   static HttpClient client;
+  static Random r = new Random();
+  static LBHttpSolrServer loadbalancer;
 
   static {
     MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
@@ -361,11 +366,22 @@ class HttpCommComponent {
     mgr.getParams().setConnectionTimeout(SearchHandler.connectionTimeout);
     mgr.getParams().setSoTimeout(SearchHandler.soTimeout);
     // mgr.getParams().setStaleCheckingEnabled(false);
-    client = new HttpClient(mgr);    
+    client = new HttpClient(mgr);
+    try {
+      loadbalancer = new LBHttpSolrServer(client);
+    } catch (MalformedURLException e) {
+      // should be impossible since we're not passing any URLs here
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
+    }
   }
 
   CompletionService<ShardResponse> completionService = new ExecutorCompletionService<ShardResponse>(commExecutor);
   Set<Future<ShardResponse>> pending = new HashSet<Future<ShardResponse>>();
+
+  // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
+  // This is primarily to keep track of what order we should use to query the replicas of a shard
+  // so that we use the same replica for all phases of a distributed request.
+  Map<String,List<String>> shardToURLs = new HashMap<String,List<String>>();
 
   HttpCommComponent() {
   }
@@ -390,7 +406,36 @@ class HttpCommComponent {
     }
   }
 
+
+  // Not thread safe... don't use in Callable.
+  // Don't modify the returned URL list.
+  private List<String> getURLs(String shard) {
+    List<String> urls = shardToURLs.get(shard);
+    if (urls==null) {
+      urls = StrUtils.splitSmart(shard,"|",true);
+
+      // convert shard to URL
+      for (int i=0; i<urls.size(); i++) {
+        urls.set(i, "http://"+urls.get(i));
+      }
+
+      //
+      // Shuffle the list instead of use round-robin by default.
+      // This prevents accidental synchronization where multiple shards could get in sync
+      // and query the same replica at the same time.
+      //
+      if (urls.size() > 1)
+        Collections.shuffle(urls, r);
+      shardToURLs.put(shard, urls);
+    }
+    return urls;
+  }
+
+
   void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
+    // do this outside of the callable for thread safety reasons
+    final List<String> urls = getURLs(shard);
+
     Callable<ShardResponse> task = new Callable<ShardResponse>() {
       public ShardResponse call() throws Exception {
 
@@ -402,13 +447,9 @@ class HttpCommComponent {
         long startTime = System.currentTimeMillis();
 
         try {
-          // String url = "http://" + shard + "/select";
-          String url = "http://" + shard;
-
           params.remove(CommonParams.WT); // use default (currently javabin)
           params.remove(CommonParams.VERSION);
 
-          SolrServer server = new CommonsHttpSolrServer(url, client);
           // SolrRequest req = new QueryRequest(SolrRequest.METHOD.POST, "/select");
           // use generic request to avoid extra processing of queries
           QueryRequest req = new QueryRequest(params);
@@ -416,10 +457,17 @@ class HttpCommComponent {
 
           // no need to set the response parser as binary is the default
           // req.setResponseParser(new BinaryResponseParser());
-          // srsp.rsp = server.request(req);
-          // srsp.rsp = server.query(sreq.params);
 
-          ssr.nl = server.request(req);
+          if (urls.size() <= 1) {
+            String url = urls.get(0);
+            srsp.setShardAddress(url);
+            SolrServer server = new CommonsHttpSolrServer(url, client);
+            ssr.nl = server.request(req);
+          } else {
+            LBHttpSolrServer.Rsp rsp = loadbalancer.request(new LBHttpSolrServer.Req(req, urls));
+            ssr.nl = rsp.getResponse();
+            srsp.setShardAddress(rsp.getServer());
+          }
         } catch (Throwable th) {
           srsp.setException(th);
           if (th instanceof SolrException) {

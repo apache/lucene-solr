@@ -36,6 +36,9 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
     // we don't call super.setUp
     log.info("####SETUP_START " + getName());
     portSeed = 13000;
+
+    // TODO: HACK: inserting dead servers doesn't currently work with these tests
+    deadServers = null;
     
     System.setProperty("zkHost", AbstractZkTestCase.ZOO_KEEPER_ADDRESS);
     String zkDir = tmpDir.getAbsolutePath() + File.separator
