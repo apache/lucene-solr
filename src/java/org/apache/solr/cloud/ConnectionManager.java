@@ -75,6 +75,9 @@ class ConnectionManager implements Watcher {
       connected = true;
       clientConnected.countDown();
     } else if (state == KeeperState.Expired) {
+      // nocommit : much to do here - if expired, on reconnect we must remake ephemeral nodes (re-register cores)
+      // what about on disconnect ??
+      
       connected = false;
       log.info("Attempting to reconnect to ZooKeeper...");
 
