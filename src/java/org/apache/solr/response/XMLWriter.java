@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.response;
 
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XML;
-import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocIterator;

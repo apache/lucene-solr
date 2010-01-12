@@ -36,7 +36,6 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.XMLWriter;
 import org.apache.solr.util.xslt.TransformerProvider;
 
 /** QueryResponseWriter which captures the output of the XMLWriter

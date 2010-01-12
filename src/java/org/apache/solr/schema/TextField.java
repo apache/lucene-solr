@@ -31,8 +31,8 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.solr.request.XMLWriter;
 import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.QParser;
 
 import java.util.Map;

@@ -22,7 +22,6 @@ import java.io.IOException;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.XMLWriter;
 
 /**
  * @version $Id$
