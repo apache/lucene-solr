@@ -71,7 +71,6 @@ public class StandardAnalyzer extends Analyzer {
    * @param stopWords stop words */
   public StandardAnalyzer(Version matchVersion, Set<?> stopWords) {
     stopSet = stopWords;
-    setOverridesTokenStreamMethod(StandardAnalyzer.class);
     replaceInvalidAcronym = matchVersion.onOrAfter(Version.LUCENE_24);
     this.matchVersion = matchVersion;
   }

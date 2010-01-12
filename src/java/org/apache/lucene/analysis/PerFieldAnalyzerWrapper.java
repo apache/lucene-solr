@@ -72,7 +72,6 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
     if (fieldAnalyzers != null) {
       analyzerMap.putAll(fieldAnalyzers);
     }
-    setOverridesTokenStreamMethod(PerFieldAnalyzerWrapper.class);
   }
   
 

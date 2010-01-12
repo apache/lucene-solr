@@ -26,7 +26,6 @@ import java.io.Reader;
  */
 public class KeywordAnalyzer extends Analyzer {
   public KeywordAnalyzer() {
-    setOverridesTokenStreamMethod(KeywordAnalyzer.class);
   }
   @Override
   public TokenStream tokenStream(String fieldName,

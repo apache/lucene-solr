@@ -20,9 +20,9 @@ package org.apache.lucene.analysis;
 import java.io.Reader;
 import java.io.IOException;
 import java.io.Closeable;
-import java.lang.reflect.Method;
 
 import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.lucene.util.VirtualMethod;
 import org.apache.lucene.store.AlreadyClosedException;
 
 import org.apache.lucene.document.Fieldable;
@@ -84,22 +84,25 @@ public abstract class Analyzer implements Closeable {
     }
   }
 
-  /** @deprecated */
-  @Deprecated
-  protected boolean overridesTokenStreamMethod = false;
+  private static final VirtualMethod<Analyzer> tokenStreamMethod =
+    new VirtualMethod<Analyzer>(Analyzer.class, "tokenStream", String.class, Reader.class);
+  private static final VirtualMethod<Analyzer> reusableTokenStreamMethod =
+    new VirtualMethod<Analyzer>(Analyzer.class, "reusableTokenStream", String.class, Reader.class);
 
-  /** @deprecated This is only present to preserve
-   *  back-compat of classes that subclass a core analyzer
-   *  and override tokenStream but not reusableTokenStream */
+  /** This field contains if the {@link #tokenStream} method was overridden in a
+   * more far away subclass of {@code Analyzer} on the current instance's inheritance path.
+   * If this field is {@code true}, {@link #reusableTokenStream} should delegate to {@link #tokenStream}
+   * instead of using the own implementation.
+   * @deprecated Please declare all implementations of {@link #reusableTokenStream} and {@link #tokenStream}
+   * as {@code final}.
+   */
+  @Deprecated
+  protected final boolean overridesTokenStreamMethod =
+    VirtualMethod.compareImplementationDistance(this.getClass(), tokenStreamMethod, reusableTokenStreamMethod) > 0;
+
+  /** @deprecated This is a no-op since Lucene 3.1. */
   @Deprecated
   protected void setOverridesTokenStreamMethod(Class<? extends Analyzer> baseClass) {
-    try {
-      Method m = this.getClass().getMethod("tokenStream", String.class, Reader.class);
-      overridesTokenStreamMethod = m.getDeclaringClass() != baseClass;
-    } catch (NoSuchMethodException nsme) {
-      // cannot happen, as baseClass is subclass of Analyzer through generics
-      overridesTokenStreamMethod = false;
-    }
   }
 
 

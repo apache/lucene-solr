@@ -58,11 +58,6 @@ public abstract class StopwordAnalyzerBase extends ReusableAnalyzerBase {
    *          the analyzer's stopword set
    */
   protected StopwordAnalyzerBase(final Version version, final Set<?> stopwords) {
-    /*
-     * no need to call
-     * setOverridesTokenStreamMethod(StopwordAnalyzerBase.class); here, both
-     * tokenStream methods are final in this class.
-     */
     matchVersion = version;
     // analyzers should use char array set for stopwords!
     this.stopwords = stopwords == null ? CharArraySet.EMPTY_SET : CharArraySet

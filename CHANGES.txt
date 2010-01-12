@@ -166,6 +166,10 @@ Optimizations
   directly, instead of Byte/CharBuffers, and modify CollationKeyFilter to
   take advantage of this for faster performance.
   (Steven Rowe, Uwe Schindler, Robert Muir)
+
+* LUCENE-2188: Add a utility class for tracking deprecated overridden
+  methods in non-final subclasses.
+  (Uwe Schindler, Robert Muir)
    
 Build
 
