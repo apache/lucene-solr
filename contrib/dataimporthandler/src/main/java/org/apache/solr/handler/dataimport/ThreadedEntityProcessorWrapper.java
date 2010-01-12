@@ -29,7 +29,7 @@ import java.util.Collections;
 
 /**
  * Each Entity may have only a single EntityProcessor .  But the same entity can be run by
- * multiple EntityProcessorWrapper (1 per thread) . thhis helps running transformations in multiple threads
+ * multiple EntityProcessorWrapper (1 per thread) . this helps running transformations in multiple threads
  * @since Solr 1.5
  */
 
@@ -86,7 +86,7 @@ public class ThreadedEntityProcessorWrapper extends EntityProcessorWrapper {
           if (ABORT.equals(onError)) {
             wrapAndThrow(SEVERE, e);
           } else {
-            //SKIP is not really possible. If this calls the nextRow() again the Entityprocessor would be in an inconisttent state
+            //SKIP is not really possible. If this calls the nextRow() again the Entityprocessor would be in an inconistent state
             LOG.error("Exception in entity : " + entityName, e);
             return null;
           }
