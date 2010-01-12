@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.io.Writer;
 
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 /** Tests the ability to configure multiple query output writers, and select those

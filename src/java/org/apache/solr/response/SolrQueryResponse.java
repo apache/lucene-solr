@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.response;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;

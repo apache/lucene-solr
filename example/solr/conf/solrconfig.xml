@@ -1001,12 +1001,12 @@
        The following response writers are implicitly configured unless
        overridden...
 
-    <queryResponseWriter name="xml" class="org.apache.solr.request.XMLResponseWriter" default="true"/>
-    <queryResponseWriter name="json" class="org.apache.solr.request.JSONResponseWriter"/>
-    <queryResponseWriter name="python" class="org.apache.solr.request.PythonResponseWriter"/>
-    <queryResponseWriter name="ruby" class="org.apache.solr.request.RubyResponseWriter"/>
-    <queryResponseWriter name="php" class="org.apache.solr.request.PHPResponseWriter"/>
-    <queryResponseWriter name="phps" class="org.apache.solr.request.PHPSerializedResponseWriter"/>
+    <queryResponseWriter name="xml" class="org.apache.solr.response.XMLResponseWriter" default="true"/>
+    <queryResponseWriter name="json" class="org.apache.solr.response.JSONResponseWriter"/>
+    <queryResponseWriter name="python" class="org.apache.solr.response.PythonResponseWriter"/>
+    <queryResponseWriter name="ruby" class="org.apache.solr.response.RubyResponseWriter"/>
+    <queryResponseWriter name="php" class="org.apache.solr.response.PHPResponseWriter"/>
+    <queryResponseWriter name="phps" class="org.apache.solr.response.PHPSerializedResponseWriter"/>
 
       Custom response writers can be declared as needed...
     
@@ -1017,7 +1017,7 @@
        in Solr's conf/xslt directory.  Changes to xslt files are checked for
        every xsltCacheLifetimeSeconds.  
    -->
-  <queryResponseWriter name="xslt" class="org.apache.solr.request.XSLTResponseWriter">
+  <queryResponseWriter name="xslt" class="org.apache.solr.response.XSLTResponseWriter">
     <int name="xsltCacheLifetimeSeconds">5</int>
   </queryResponseWriter>
 

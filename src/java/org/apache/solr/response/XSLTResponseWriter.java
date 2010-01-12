@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.response;
 
 import java.io.BufferedReader;
 import java.io.CharArrayReader;
@@ -35,6 +35,8 @@ import javax.xml.transform.stream.StreamSource;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.XMLWriter;
 import org.apache.solr.util.xslt.TransformerProvider;
 
 /** QueryResponseWriter which captures the output of the XMLWriter

@@ -15,58 +15,57 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.response;
 
-import java.io.OutputStream;
-import java.io.IOException;
 import java.io.Writer;
+import java.io.IOException;
 
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * 
  * 
  * A generic {@link QueryResponseWriter} implementation that requires a user to
  * implement the
- * {@link #getSingleResponseWriter(OutputStream, SolrQueryRequest, SolrQueryResponse)}
- * that defines a {@link SingleResponseWriter} to handle the binary output.
+ * {@link #getSingleResponseWriter(Writer, SolrQueryRequest, SolrQueryResponse)}
+ * that defines a {@link SingleResponseWriter} to handle plain ol' text output.
  * 
  * @since 1.5
  * @version $Id$
  * 
  */
-public abstract class GenericBinaryResponseWriter extends BaseResponseWriter
-    implements BinaryQueryResponseWriter {
+public abstract class GenericTextResponseWriter extends BaseResponseWriter
+    implements QueryResponseWriter {
 
   /**
    * 
-   * Writes the binary output data using the {@link SingleResponseWriter}
-   * provided by a call to
-   * {@link #getSingleResponseWriter(OutputStream, SolrQueryRequest, SolrQueryResponse)}
+   * Writes text output using the {@link SingleResponseWriter} provided by a
+   * call to
+   * {@link #getSingleResponseWriter(Writer, SolrQueryRequest, SolrQueryResponse)}
    * .
    * 
    * @param out
-   *          The {@link OutputStream} to write the binary data to.
+   *          The {@link Writer} to write the text output to.
    * @param request
    *          The provided {@link SolrQueryRequest}.
    * @param response
    *          The provided {@link SolrQueryResponse}.
    */
-  public void write(OutputStream out, SolrQueryRequest request,
+  public void write(Writer writer, SolrQueryRequest request,
       SolrQueryResponse response) throws IOException {
-    super.write(getSingleResponseWriter(out, request, response), request,
+    super.write(getSingleResponseWriter(writer, request, response), request,
         response);
   }
 
   /**
    * Users of this class should implement this method to define a
-   * {@link SingleResponseWriter} responsible for writing the binary output
-   * given a {@link SolrDocumentList} or doc-by-doc, given a
-   * {@link SolrInputDocument}.
+   * {@link SingleResponseWriter} responsible for writing text output given a
+   * {@link SolrDocumentList} or doc-by-doc, given a {@link SolrInputDocument}.
    * 
-   * @param out
-   *          The {@link OutputStream} to write the binary data response to.
+   * @param writer
+   *          The {@link Writer} to write the text data response to.
    * @param request
    *          The provided {@link SolrQueryRequest}.
    * @param response
@@ -74,12 +73,6 @@ public abstract class GenericBinaryResponseWriter extends BaseResponseWriter
    * @return A {@link SingleResponseWriter} that will be used to generate the
    *         response output from this {@link QueryResponseWriter}.
    */
-  public abstract SingleResponseWriter getSingleResponseWriter(
-      OutputStream out, SolrQueryRequest request, SolrQueryResponse response);
-
-  /**Just to throw Exception So that the eimplementing classes do not have to do the  same
-   */
-  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
-    throw new RuntimeException("This is a binary writer , Cannot write to a characterstream");
-  }
+  protected abstract SingleResponseWriter getSingleResponseWriter(
+      Writer writer, SolrQueryRequest request, SolrQueryResponse response);
 }

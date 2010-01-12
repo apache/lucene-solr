@@ -22,7 +22,7 @@ import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.IntFieldSource;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.request.XMLWriter;
-import org.apache.solr.request.TextResponseWriter;
+import org.apache.solr.response.TextResponseWriter;
 
 import java.util.Map;
 import java.io.IOException;

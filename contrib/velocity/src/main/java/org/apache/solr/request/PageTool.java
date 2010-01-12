@@ -17,6 +17,7 @@
 
 package org.apache.solr.request;
 
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.common.SolrDocumentList;
 

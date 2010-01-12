@@ -24,8 +24,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.NumericTokenStream;
 import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.request.TextResponseWriter;
 import org.apache.solr.request.XMLWriter;
+import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.*;
 

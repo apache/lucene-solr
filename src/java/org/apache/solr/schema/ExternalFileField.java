@@ -23,7 +23,7 @@ import org.apache.solr.search.function.FloatFieldSource;
 import org.apache.solr.search.function.FileFloatSource;
 import org.apache.solr.search.QParser;
 import org.apache.solr.request.XMLWriter;
-import org.apache.solr.request.TextResponseWriter;
+import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.common.SolrException;
 
 import java.util.Map;

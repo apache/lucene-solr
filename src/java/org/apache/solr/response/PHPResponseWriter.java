@@ -14,22 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.request;
+
+package org.apache.solr.response;
 
 import java.io.Writer;
 import java.io.IOException;
 
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
 
-public class RubyResponseWriter implements QueryResponseWriter {
-  static String CONTENT_TYPE_RUBY_UTF8="text/x-ruby;charset=UTF-8";
+public class PHPResponseWriter implements QueryResponseWriter {
+  static String CONTENT_TYPE_PHP_UTF8="text/x-php;charset=UTF-8";
 
   public void init(NamedList n) {
     /* NOOP */
   }
   
  public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    RubyWriter w = new RubyWriter(writer, req, rsp);
+    PHPWriter w = new PHPWriter(writer, req, rsp);
     try {
       w.writeResponse();
     } finally {
@@ -42,18 +44,39 @@ public class RubyResponseWriter implements QueryResponseWriter {
   }
 }
 
-class RubyWriter extends NaNFloatWriter {
-
-  protected String getNaN() { return "(0.0/0.0)"; }
-  protected String getInf() { return "(1.0/0.0)"; }
-
-  public RubyWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
+class PHPWriter extends JSONWriter {
+  public PHPWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
+  }
+  
+  @Override
+  public void writeNamedList(String name, NamedList val) throws IOException {
+    writeNamedListAsMapMangled(name,val);
+  }
+
+  @Override
+  public void writeMapOpener(int size) throws IOException {
+    writer.write("array(");
+  }
+
+  @Override
+  public void writeMapCloser() throws IOException {
+    writer.write(')');
+  }
+
+  @Override
+  public void writeArrayOpener(int size) throws IOException {
+    writer.write("array(");
+  }
+
+  @Override
+  public void writeArrayCloser() throws IOException {
+    writer.write(')');
   }
 
   @Override
   public void writeNull(String name) throws IOException {
-    writer.write("nil");
+    writer.write("null");
   }
 
   @Override
@@ -65,24 +88,22 @@ class RubyWriter extends NaNFloatWriter {
 
   @Override
   public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
-    // Ruby doesn't do unicode escapes... so let the servlet container write raw UTF-8
-    // bytes into the string.
-    //
-    // Use single quoted strings for safety since no evaluation is done within them.
-    // Also, there are very few escapes recognized in a single quoted string, so
-    // only escape the backslash and single quote.
-    writer.write('\'');
     if (needsEscaping) {
+      writer.write('\'');
       for (int i=0; i<val.length(); i++) {
         char ch = val.charAt(i);
-        if (ch=='\'' || ch=='\\') {
-          writer.write('\\');
+        switch (ch) {
+          case '\'':
+          case '\\': writer.write('\\'); writer.write(ch); break;
+          default:
+            writer.write(ch);
         }
-        writer.write(ch);
       }
+      writer.write('\'');
     } else {
+      writer.write('\'');
       writer.write(val);
+      writer.write('\'');
     }
-    writer.write('\'');
   }
 }

@@ -27,7 +27,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.request.XMLWriter;
-import org.apache.solr.request.TextResponseWriter;
+import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.analysis.SolrAnalyzer;
 
 import java.util.Map;

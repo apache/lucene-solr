@@ -25,7 +25,7 @@ import org.apache.solr.analysis.TrieTokenizerFactory;
 import org.apache.solr.search.function.*;
 import org.apache.solr.search.QParser;
 import org.apache.solr.request.XMLWriter;
-import org.apache.solr.request.TextResponseWriter;
+import org.apache.solr.response.TextResponseWriter;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.SortField;

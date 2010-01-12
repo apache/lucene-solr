@@ -29,8 +29,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
-import org.apache.solr.request.QueryResponseWriter;
-import org.apache.solr.request.XMLResponseWriter;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.XMLResponseWriter;
 
 /**
  * @version $Id$

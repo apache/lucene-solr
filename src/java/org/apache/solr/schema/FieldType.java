@@ -33,7 +33,7 @@ import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.Sorting;
 import org.apache.solr.search.QParser;
 import org.apache.solr.request.XMLWriter;
-import org.apache.solr.request.TextResponseWriter;
+import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;

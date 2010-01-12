@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.response;
 
 import java.io.Writer;
 import java.io.IOException;
@@ -26,6 +26,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;

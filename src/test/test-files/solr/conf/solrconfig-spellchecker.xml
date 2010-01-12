@@ -88,10 +88,10 @@
 
   
 
-  <queryResponseWriter name="standard" class="org.apache.solr.request.XMLResponseWriter"/>
+  <queryResponseWriter name="standard" class="org.apache.solr.response.XMLResponseWriter"/>
   <queryResponseWriter name="useless" class="org.apache.solr.OutputWriterTest$UselessOutputWriter"/>
-  <queryResponseWriter name="xslt" class="org.apache.solr.request.XSLTResponseWriter"/>
-  <queryResponseWriter name="json" class="org.apache.solr.request.JSONResponseWriter"/>
+  <queryResponseWriter name="xslt" class="org.apache.solr.response.XSLTResponseWriter"/>
+  <queryResponseWriter name="json" class="org.apache.solr.response.JSONResponseWriter"/>
 
     
   <!-- config for the admin interface --> 

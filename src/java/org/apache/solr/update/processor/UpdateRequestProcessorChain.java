@@ -18,7 +18,7 @@
 package org.apache.solr.update.processor;
 
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.response;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -23,6 +23,7 @@ import java.io.Writer;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * Writes a ContentStream directly to the output.

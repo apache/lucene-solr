@@ -8,8 +8,8 @@ import org.apache.solr.common.params.TermVectorParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 
 import java.util.HashMap;
 import java.util.ArrayList;
