@@ -239,6 +239,7 @@ public class TestDocBuilder {
   }
 
   public static final String dc_singleEntity = "<dataConfig>\n"
+          + "<dataSource  type=\"MockDataSource\"/>\n"
           + "    <document name=\"X\" >\n"
           + "        <entity name=\"x\" query=\"select * from x\">\n"
           + "          <field column=\"id\"/>\n"
@@ -247,6 +248,7 @@ public class TestDocBuilder {
           + "    </document>\n" + "</dataConfig>";
 
   public static final String dc_deltaConfig = "<dataConfig>\n"
+          + "<dataSource  type=\"MockDataSource\"/>\n"          
           + "    <document name=\"X\" >\n"
           + "        <entity name=\"x\" query=\"select * from x\" deltaQuery=\"select id from x\">\n"
           + "          <field column=\"id\"/>\n"

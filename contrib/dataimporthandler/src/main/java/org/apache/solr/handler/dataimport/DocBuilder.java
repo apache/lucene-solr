@@ -20,6 +20,8 @@ package org.apache.solr.handler.dataimport;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import static org.apache.solr.handler.dataimport.SolrWriter.LAST_INDEX_KEY;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.*;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import java.text.ParseException;
+import java.util.concurrent.*;
 
 /**
  * <p> DocBuilder is responsible for creating Solr documents out of the given configuration. It also maintains
@@ -61,7 +63,7 @@ public class DocBuilder {
 
   boolean verboseDebug = false;
 
-  private Map<String, Object> session = new HashMap<String, Object>();
+   Map<String, Object> session = new ConcurrentHashMap<String, Object>();
 
   static final ThreadLocal<DocBuilder> INSTANCE = new ThreadLocal<DocBuilder>();
   Map<String, Object> functionsNamespace;
@@ -81,8 +83,9 @@ public class DocBuilder {
   public VariableResolverImpl getVariableResolver() {
     try {
       VariableResolverImpl resolver = null;
-      if(dataImporter != null && dataImporter.getCore() != null) resolver =  new VariableResolverImpl(dataImporter.getCore().getResourceLoader().getCoreProperties());
-      else resolver = new VariableResolverImpl();
+      if(dataImporter != null && dataImporter.getCore() != null){
+        resolver =  new VariableResolverImpl(dataImporter.getCore().getResourceLoader().getCoreProperties());
+      } else resolver = new VariableResolverImpl();
       Map<String, Object> indexerNamespace = new HashMap<String, Object>();
       if (persistedProperties.getProperty(LAST_INDEX_TIME) != null) {
         indexerNamespace.put(LAST_INDEX_TIME, persistedProperties.getProperty(LAST_INDEX_TIME));
@@ -106,7 +109,7 @@ public class DocBuilder {
       resolver.addNamespace(DataConfig.IMPORTER_NS, indexerNamespace);
       return resolver;
     } catch (Exception e) {
-      DataImportHandlerException.wrapAndThrow(DataImportHandlerException.SEVERE, e);
+      wrapAndThrow(SEVERE, e);
       // unreachable statement
       return null;
     }
@@ -117,7 +120,7 @@ public class DocBuilder {
       EventListener listener = (EventListener) loadClass(className, dataImporter.getCore()).newInstance();
       notifyListener(listener);
     } catch (Exception e) {
-      DataImportHandlerException.wrapAndThrow(DataImportHandlerException.SEVERE, e, "Unable to load class : " + className);
+      wrapAndThrow(SEVERE, e, "Unable to load class : " + className);
     }
   }
 
@@ -247,8 +250,17 @@ public class DocBuilder {
   @SuppressWarnings("unchecked")
   private void doFullDump() {
     addStatusMessage("Full Dump Started");
-    buildDocument(getVariableResolver(), null, null, root, true,
-            null);
+    if(dataImporter.getConfig().isMultiThreaded && !verboseDebug){
+      try {
+        LOG.info("running multithreaded full-import");
+        new EntityRunner(root,null).run(null,Context.FULL_DUMP,null);
+      } catch (Exception e) {
+        LOG.error("error in import", e);
+      }
+    } else {
+      buildDocument(getVariableResolver(), null, null, root, true, null);
+    }
+
   }
 
   @SuppressWarnings("unchecked")
@@ -269,7 +281,7 @@ public class DocBuilder {
     addStatusMessage("Deltas Obtained");
     addStatusMessage("Building documents");
     if (!deletedKeys.isEmpty()) {
-      allPks.removeAll(deletedKeys);      
+      allPks.removeAll(deletedKeys);
       deleteAll(deletedKeys);
       // Make sure that documents are not re-created
     }
@@ -298,20 +310,221 @@ public class DocBuilder {
     Iterator<Map<String, Object>> iter = deletedKeys.iterator();
     while (iter.hasNext()) {
       Map<String, Object> map = iter.next();
-      Object key = map.get(root.getPk()); 
+      Object key = map.get(root.getPk());
       if(key == null) {
         LOG.warn("no key was available for deleteted pk query");
         continue;
       }
       writer.deleteDoc(key);
-      importStatistics.deletedDocCount.incrementAndGet();      
+      importStatistics.deletedDocCount.incrementAndGet();
       iter.remove();
     }
   }
+  Executor executorSvc = new ThreadPoolExecutor(
+          0,
+          Integer.MAX_VALUE,
+          5, TimeUnit.SECONDS, // terminate idle threads after 5 sec
+          new SynchronousQueue<Runnable>()  // directly hand off tasks
+  );
 
   @SuppressWarnings("unchecked")
   public void addStatusMessage(String msg) {
     statusMessages.put(msg, DataImporter.DATE_TIME_FORMAT.get().format(new Date()));
+  }
+  EntityRunner createRunner(DataConfig.Entity entity, EntityRunner parent){
+    return new EntityRunner(entity, parent);
+  }
+
+  /**This class is a just a structure to hold runtime information of one entity
+   *
+   */
+  class EntityRunner {
+    final DataConfig.Entity entity;
+    private EntityProcessor entityProcessor;
+    private final List<ThreadedEntityProcessorWrapper> entityProcessorWrapper = new ArrayList<ThreadedEntityProcessorWrapper>();
+    private DocWrapper docWrapper;
+    private volatile boolean entityInitialized ;
+    String currentProcess;
+    ThreadLocal<ThreadedEntityProcessorWrapper> currentEntityProcWrapper = new ThreadLocal<ThreadedEntityProcessorWrapper>();
+
+    private ContextImpl context;
+    EntityRunner parent;
+    AtomicBoolean entityEnded = new AtomicBoolean(false);
+    private Exception exception;
+
+    public EntityRunner(DataConfig.Entity entity, EntityRunner parent) {
+      this.parent = parent;
+      this.entity = entity;
+      if (entity.proc == null) {
+        entityProcessor = new SqlEntityProcessor();
+      } else {
+        try {
+          entityProcessor = (EntityProcessor) loadClass(entity.proc, dataImporter.getCore())
+                  .newInstance();
+        } catch (Exception e) {
+          wrapAndThrow(SEVERE, e,
+                  "Unable to load EntityProcessor implementation for entity:" + entity.name);
+        } 
+      }
+      int threads = 1;
+      if (entity.allAttributes.get("threads") != null) {
+        threads = Integer.parseInt(entity.allAttributes.get("threads"));
+      }
+      for (int i = 0; i < threads; i++) {
+        entityProcessorWrapper.add(new ThreadedEntityProcessorWrapper(entityProcessor, DocBuilder.this, this, getVariableResolver()));
+      }
+      context = new ThreadedContext(this, DocBuilder.this);
+    }
+
+
+    public void run(DocWrapper docWrapper, final String currProcess, final EntityRow rows) throws Exception {
+      entityInitialized =  false;
+      this.docWrapper = docWrapper;
+      this.currentProcess = currProcess;
+      entityEnded.set(false);
+      try {
+        if(entityProcessorWrapper.size() <= 1){
+          runAThread(entityProcessorWrapper.get(0), rows, currProcess);
+        } else {
+          final CountDownLatch latch = new CountDownLatch(entityProcessorWrapper.size());
+          for (final ThreadedEntityProcessorWrapper processorWrapper : entityProcessorWrapper) {
+            Runnable runnable = new Runnable() {
+              public void run() {
+                try {
+                  runAThread(processorWrapper, rows, currProcess);
+                }catch(Exception e) {
+                  entityEnded.set(true);
+                  exception = e;
+                } finally {
+                  latch.countDown();
+                } 
+              }
+            };
+            executorSvc.execute(runnable);
+          }          
+          try {
+            latch.await();
+          } catch (InterruptedException e) {
+            //TODO
+          }
+          Exception copy = exception;
+          if(copy != null){
+            exception = null;
+            throw copy;
+          }
+        }
+      } finally {
+        entityProcessor.destroy();
+      }
+
+
+    }
+
+    private void runAThread(ThreadedEntityProcessorWrapper epw, EntityRow rows, String currProcess) throws Exception {
+      currentEntityProcWrapper.set(epw);
+      epw.threadedInit(context);
+      initEntity();
+      try {
+        epw.init(rows);
+        DocWrapper docWrapper = this.docWrapper;
+        Context.CURRENT_CONTEXT.set(context);
+        for (; ;) {
+          try {
+            Map<String, Object> arow = epw.nextRow();
+            if (arow == null) {
+              break;
+            } else {
+              importStatistics.rowsCount.incrementAndGet();
+              if (docWrapper == null && entity.isDocRoot) {
+                docWrapper = new DocWrapper();
+                context.setDoc(docWrapper);
+                DataConfig.Entity e = entity.parentEntity;
+                for (EntityRow row = rows;  row != null&& e !=null; row = row.tail,e=e.parentEntity) {
+                    addFields(e, docWrapper, row.row, epw.resolver);
+                }
+              }
+              if (docWrapper != null) {
+                handleSpecialCommands(arow, docWrapper);
+                addFields(entity, docWrapper, arow, epw.resolver);
+              }
+              if (entity.entities != null) {
+                EntityRow nextRow = new EntityRow(arow, rows, entity.name);
+                for (DataConfig.Entity e : entity.entities) {
+                  epw.children.get(e).run(docWrapper,currProcess,nextRow);
+                }
+              }
+            }
+            if (entity.isDocRoot) {
+              LOG.info("a row on docroot" + docWrapper);
+              if (!docWrapper.isEmpty()) {
+                LOG.info("adding a doc "+docWrapper);
+                boolean result = writer.upload(docWrapper);
+                docWrapper = null;
+                if (result){
+                  importStatistics.docCount.incrementAndGet();
+                } else {
+                  importStatistics.failedDocCount.incrementAndGet();
+                }
+              }
+            }
+          } catch (DataImportHandlerException dihe) {
+            exception = dihe;
+            if(dihe.getErrCode() == SKIP_ROW || dihe.getErrCode() == SKIP) {
+              importStatistics.skipDocCount.getAndIncrement();
+              exception = null;//should not propogate up
+              continue;
+            }
+            if (entity.isDocRoot) {
+              if (dihe.getErrCode() == DataImportHandlerException.SKIP) {
+                importStatistics.skipDocCount.getAndIncrement();
+                exception = null;//should not propogate up
+              } else {
+                LOG.error("Exception while processing: "
+                        + entity.name + " document : " + docWrapper, dihe);
+              }
+              if (dihe.getErrCode() == DataImportHandlerException.SEVERE)
+                throw dihe;
+            } else {
+              //if this is not the docRoot then the execution has happened in the same thread. so propogate up,
+              // it will be handled at the docroot
+              entityEnded.set(true); 
+              throw dihe;
+            }
+            entityEnded.set(true);
+          }
+        }
+      } finally {
+        epw.destroy();
+        currentEntityProcWrapper.remove();
+        Context.CURRENT_CONTEXT.remove();
+      }
+    }
+
+    private void initEntity() {
+      if (!entityInitialized) {
+        synchronized (this) {
+          if (!entityInitialized) {
+            entityProcessor.init(context);
+            entityInitialized = true;
+          }
+        }
+      }
+    }
+  }
+
+  /**A reverse linked list .
+   *
+   */
+  static class EntityRow {
+    final Map<String, Object> row;
+    final EntityRow tail;
+    final String name;
+
+    EntityRow(Map<String, Object> row, EntityRow tail, String name) {
+      this.row = row;
+      this.tail = tail;
+      this.name = name;
+    }
   }
 
   @SuppressWarnings("unchecked")
@@ -325,7 +538,8 @@ public class DocBuilder {
             pk == null ? Context.FULL_DUMP : Context.DELTA_DUMP,
             session, parentCtx, this);
     entityProcessor.init(ctx);
-
+    Context.CURRENT_CONTEXT.set(ctx);
+    
     if (requestParameters.start > 0) {
       writer.log(SolrWriter.DISABLE_LOGGING, null, null);
     }
@@ -392,6 +606,10 @@ public class DocBuilder {
             }
             vr.removeNamespace(entity.name);
           }
+          /*The child entities would have changed the CURRENT_CONTEXT. So when they are done, set it back to the old.
+           *
+           */
+          Context.CURRENT_CONTEXT.set(ctx);
 
           if (entity.isDocRoot) {
             if (stop.get())
@@ -402,7 +620,7 @@ public class DocBuilder {
               if (result){
                 importStatistics.docCount.incrementAndGet();
               } else {
-                importStatistics.failedDocCount.incrementAndGet(); 
+                importStatistics.failedDocCount.incrementAndGet();
               }
             }
           }
@@ -435,6 +653,7 @@ public class DocBuilder {
             writer.log(SolrWriter.ROW_END, entity.name, null);
             if (entity.isDocRoot)
               writer.log(SolrWriter.END_DOC, null, null);
+            Context.CURRENT_CONTEXT.remove();
           }
         }
       }
@@ -573,7 +792,7 @@ public class DocBuilder {
   private EntityProcessorWrapper getEntityProcessor(DataConfig.Entity entity) {
     if (entity.processor != null)
       return entity.processor;
-    EntityProcessor entityProcessor;
+    EntityProcessor entityProcessor = null;
     if (entity.proc == null) {
       entityProcessor = new SqlEntityProcessor();
     } else {
@@ -581,9 +800,8 @@ public class DocBuilder {
         entityProcessor = (EntityProcessor) loadClass(entity.proc, dataImporter.getCore())
                 .newInstance();
       } catch (Exception e) {
-        throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
-                "Unable to load EntityProcessor implementation for entity:"
-                        + entity.name, e);
+        wrapAndThrow (SEVERE,e,
+                "Unable to load EntityProcessor implementation for entity:" + entity.name);
       }
     }
     return entity.processor = new EntityProcessorWrapper(entityProcessor, this);

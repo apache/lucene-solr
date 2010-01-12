@@ -20,9 +20,9 @@ package org.apache.solr.handler.dataimport;
 import org.apache.solr.core.SolrCore;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <p>
@@ -122,21 +122,30 @@ public class ContextImpl extends Context {
   }
 
   public void setSessionAttribute(String name, Object val, String scope) {
+    if(name == null) return;
     if (Context.SCOPE_ENTITY.equals(scope)) {
       if (entitySession == null)
-        entitySession = new HashMap<String, Object>();
-      entitySession.put(name, val);
+        entitySession = new ConcurrentHashMap<String, Object>();
+
+      putVal(name, val,entitySession);
     } else if (Context.SCOPE_GLOBAL.equals(scope)) {
       if (globalSession != null) {
-        globalSession.put(name, val);
+        putVal(name, val,globalSession);
       }
     } else if (Context.SCOPE_DOC.equals(scope)) {
       DocBuilder.DocWrapper doc = getDocument();
       if (doc != null)
         doc.setSessionAttribute(name, val);
     } else if (SCOPE_SOLR_CORE.equals(scope)){
-      if(dataImporter != null) dataImporter.getCoreScopeSession().put(name, val);
+      if(dataImporter != null) {
+        putVal(name, val,dataImporter.getCoreScopeSession());
+      }
     }
+  }
+
+  private void putVal(String name, Object val, Map map) {
+    if(val == null) map.remove(name);
+    else entitySession.put(name, val);
   }
 
   public Object getSessionAttribute(String name, String scope) {

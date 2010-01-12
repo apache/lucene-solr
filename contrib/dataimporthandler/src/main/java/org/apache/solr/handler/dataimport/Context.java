@@ -216,9 +216,11 @@ public abstract class Context {
 
   /** Resolve variables in a template
    * @param template
+   *
    * @return The string w/ variables resolved
    */
   public abstract String replaceTokens(String template);
 
+  static final ThreadLocal<Context> CURRENT_CONTEXT = new ThreadLocal<Context>();
 
 }
