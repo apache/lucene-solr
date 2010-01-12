@@ -44,7 +44,7 @@ import java.util.*;
  */
 public class TestLBHttpSolrServer extends TestCase {
   SolrInstance[] solr = new SolrInstance[3];
-  HttpClient httpClient = new HttpClient(new MultiThreadedHttpConnectionManager());
+  // HttpClient httpClient = new HttpClient(new MultiThreadedHttpConnectionManager());
 
   public void setUp() throws Exception {
     for (int i = 0; i < solr.length; i++) {
@@ -63,7 +63,7 @@ public class TestLBHttpSolrServer extends TestCase {
       doc.addField("name", solrInstance.name);
       docs.add(doc);
     }
-    CommonsHttpSolrServer solrServer = new CommonsHttpSolrServer(solrInstance.getUrl(), httpClient);
+    CommonsHttpSolrServer solrServer = new CommonsHttpSolrServer(solrInstance.getUrl());
     UpdateResponse resp = solrServer.add(docs);
     assertEquals(0, resp.getStatus());
     resp = solrServer.commit();
@@ -84,9 +84,9 @@ public class TestLBHttpSolrServer extends TestCase {
     }
     String[] servers = serverList.toArray(new String[serverList.size()]);
 
-    LBHttpSolrServer lb = new LBHttpSolrServer(httpClient, servers);
+    LBHttpSolrServer lb = new LBHttpSolrServer(servers);
     lb.setAliveCheckInterval(500);
-    LBHttpSolrServer lb2 = new LBHttpSolrServer(httpClient);
+    LBHttpSolrServer lb2 = new LBHttpSolrServer();
     lb2.setAliveCheckInterval(500);
 
 
@@ -176,11 +176,11 @@ public class TestLBHttpSolrServer extends TestCase {
 
     
     // slow LB for Simple API
-    LBHttpSolrServer slowLB = new LBHttpSolrServer(httpClient, servers);
+    LBHttpSolrServer slowLB = new LBHttpSolrServer(servers);
     slowLB.setAliveCheckInterval(1000000000);
 
     // slow LB for advanced API
-    LBHttpSolrServer slowLB2 = new LBHttpSolrServer(httpClient);
+    LBHttpSolrServer slowLB2 = new LBHttpSolrServer();
     slowLB2.setAliveCheckInterval(1000000000);
 
     // stop all solr servers
@@ -240,7 +240,7 @@ public class TestLBHttpSolrServer extends TestCase {
 
   // this test is a subset of testSimple and is no longer needed
   public void XtestTwoServers() throws Exception {
-    LBHttpSolrServer lbHttpSolrServer = new LBHttpSolrServer(httpClient, solr[0].getUrl(), solr[1].getUrl());
+    LBHttpSolrServer lbHttpSolrServer = new LBHttpSolrServer(solr[0].getUrl(), solr[1].getUrl());
     lbHttpSolrServer.setAliveCheckInterval(500);
     SolrQuery solrQuery = new SolrQuery("*:*");
     Set<String> names = new HashSet<String>();

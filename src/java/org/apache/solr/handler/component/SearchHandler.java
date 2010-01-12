@@ -40,6 +40,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
+import org.apache.commons.httpclient.params.HttpMethodParams;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -366,7 +368,13 @@ class HttpCommComponent {
     mgr.getParams().setConnectionTimeout(SearchHandler.connectionTimeout);
     mgr.getParams().setSoTimeout(SearchHandler.soTimeout);
     // mgr.getParams().setStaleCheckingEnabled(false);
+
     client = new HttpClient(mgr);
+
+    // prevent retries  (note: this didn't work when set on mgr.. needed to be set on client)
+    DefaultHttpMethodRetryHandler retryhandler = new DefaultHttpMethodRetryHandler(0, false);
+    client.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, retryhandler);
+
     try {
       loadbalancer = new LBHttpSolrServer(client);
     } catch (MalformedURLException e) {

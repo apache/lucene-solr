@@ -18,6 +18,9 @@ package org.apache.solr.client.solrj.impl;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
+import org.apache.commons.httpclient.DefaultMethodRetryHandler;
+import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
+import org.apache.commons.httpclient.params.HttpMethodParams;
 import org.apache.solr.client.solrj.*;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.util.NamedList;
@@ -172,6 +175,9 @@ public class LBHttpSolrServer extends SolrServer {
 
   public LBHttpSolrServer(String... solrServerUrls) throws MalformedURLException {
     this(new HttpClient(new MultiThreadedHttpConnectionManager()), solrServerUrls);
+
+    DefaultHttpMethodRetryHandler retryhandler = new DefaultHttpMethodRetryHandler(0, false);
+    httpClient.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, retryhandler);
   }
 
   /** The provided httpClient should use a multi-threaded connection manager */ 
@@ -185,7 +191,7 @@ public class LBHttpSolrServer extends SolrServer {
           throws MalformedURLException {
     this.httpClient = httpClient;
     for (String s : solrServerUrl) {
-      ServerWrapper wrapper = new ServerWrapper(new CommonsHttpSolrServer(s, httpClient, parser));
+      ServerWrapper wrapper = new ServerWrapper(makeServer(s));
       aliveServers.put(wrapper.getKey(), wrapper);
     }
     updateAliveList();
@@ -319,7 +325,7 @@ public class LBHttpSolrServer extends SolrServer {
   }
 
   public void addSolrServer(String server) throws MalformedURLException {
-    CommonsHttpSolrServer solrServer = new CommonsHttpSolrServer(server, httpClient);
+    CommonsHttpSolrServer solrServer = makeServer(server);
     addToAlive(new ServerWrapper(solrServer));
   }
 

@@ -43,7 +43,7 @@ public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase
   protected String context = "/solr";
   protected String shards;
   protected String[] shardsArr;
-  protected String[] deadServers = {"localhost:33331/solr","localhost:33332/solr"};
+  protected String[] deadServers = {"does_not_exist_54321:33331/solr","localhost:33332/solr"};
   protected File testDir;
   protected SolrServer controlClient;
   protected int portSeed;
