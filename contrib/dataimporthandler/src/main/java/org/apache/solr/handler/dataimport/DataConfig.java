@@ -102,16 +102,12 @@ public class DataConfig {
 
     public List<Entity> entities;
 
-    public String[] primaryKeys;
-
     public Entity parentEntity;
 
     public EntityProcessorWrapper processor;
 
     @SuppressWarnings("unchecked")
     public DataSource dataSrc;
-
-    public Script script;
 
     public Map<String, List<Field>> colNameVsField = new HashMap<String, List<Field>>();
 

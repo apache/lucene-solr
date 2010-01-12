@@ -60,8 +60,6 @@ public class DataImporter {
 
   private DataConfig config;
 
-  private Date lastIndexTime;
-
   private Date indexStartTime;
 
   private Properties store = new Properties();
@@ -73,8 +71,6 @@ public class DataImporter {
   public DocBuilder docBuilder;
 
   public DocBuilder.Statistics cumulativeStatistics = new DocBuilder.Statistics();
-
-  public Map<String, Evaluator> evaluators;
 
   private SolrCore core;
 
@@ -199,8 +195,6 @@ public class DataImporter {
 
   private void initEntity(DataConfig.Entity e,
                           Map<String, DataConfig.Field> fields, boolean docRootFound) {
-    if (e.pk != null)
-      e.primaryKeys = e.pk.split(",");
     e.allAttributes.put(DATA_SRC, e.dataSource);
 
     if (!docRootFound && !"false".equals(e.docRoot)) {
