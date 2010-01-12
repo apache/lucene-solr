@@ -94,7 +94,7 @@ public class LBHttpSolrServer extends SolrServer {
     long lastChecked;  // last time checked for liveness
 
     // "standard" servers are used by default.  They normally live in the alive list
-    // and move to the zombie list when unavailable.  Wne they become available again,
+    // and move to the zombie list when unavailable.  When they become available again,
     // they move back to the alive list.
     boolean standard = true;
 
@@ -143,12 +143,12 @@ public class LBHttpSolrServer extends SolrServer {
       return servers;
     }
 
-    /** @return the number of dead servers to try if there are no liver servers left */
+    /** @return the number of dead servers to try if there are no live servers left */
     public int getNumDeadServersToTry() {
       return numDeadServersToTry;
     }
 
-    /** @return The number of dead servers to try if there are no liver servers left.
+    /** @return The number of dead servers to try if there are no live servers left.
      * Defaults to the number of servers in this request. */
     public void setNumDeadServersToTry(int numDeadServersToTry) {
       this.numDeadServersToTry = numDeadServersToTry;
@@ -451,7 +451,7 @@ public class LBHttpSolrServer extends SolrServer {
       if (resp.getStatus() == 0) {
         // server has come back up.
         // make sure to remove from zombies before adding to alive to avoid a race condition
-        // where another thread could mark it down, move it back to zombie, an then we delete
+        // where another thread could mark it down, move it back to zombie, and then we delete
         // from zombie and lose it forever.
         ServerWrapper wrapper = zombieServers.remove(zombieServer.getKey());
         if (wrapper != null) {
