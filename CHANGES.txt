@@ -211,6 +211,9 @@ Build
 Documentation
 ----------------------
 
+* SOLR-1590: Javadoc for XMLWriter#startTag
+  (Chris A. Mattmann via hossman)
+
 ================== Release 1.4.0 ==================
 Release Date:  See http://lucene.apache.org/solr for the official release date.
 
