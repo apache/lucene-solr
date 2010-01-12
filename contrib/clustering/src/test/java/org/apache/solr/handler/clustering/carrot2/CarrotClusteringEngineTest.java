@@ -17,9 +17,11 @@ package org.apache.solr.handler.clustering.carrot2;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -43,6 +45,13 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTest {
     checkEngine(getClusteringEngine("default"), 10);
   }
 
+  public void testProduceSummary() throws Exception {
+    ModifiableSolrParams solrParams = new ModifiableSolrParams();
+    solrParams.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
+    solrParams.add(CarrotParams.SUMMARY_FRAGSIZE, "200");//how do we validate this?
+    checkEngine(getClusteringEngine("default"), numberOfDocs -2 /*two don't have mining in the snippet*/, 16, new TermQuery(new Term("snippet", "mine")), solrParams);
+  }
+
   public void testCarrotStc() throws Exception {
     checkEngine(getClusteringEngine("stc"), 1);
   }
@@ -55,8 +64,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTest {
   public void testWithSubclusters() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CarrotParams.OUTPUT_SUB_CLUSTERS, true);
-    checkClusters(checkEngine(getClusteringEngine("mock"), this.numberOfDocs,
-            params), 1, 1, 2);
+    checkClusters(checkEngine(getClusteringEngine("mock"), this.numberOfDocs), 1, 1, 2);
   }
 
   public void testNumDescriptions() throws Exception {
@@ -87,21 +95,27 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTest {
   }
 
   private List checkEngine(CarrotClusteringEngine engine,
-                           int expectedNumClusters) throws IOException {
-    return checkEngine(engine, expectedNumClusters, new ModifiableSolrParams());
+                            int expectedNumClusters) throws IOException {
+    return checkEngine(engine, numberOfDocs, expectedNumClusters, new MatchAllDocsQuery(), new ModifiableSolrParams());
   }
 
   private List checkEngine(CarrotClusteringEngine engine,
-                           int expectedNumClusters, SolrParams clusteringParams) throws IOException {
+                            int expectedNumClusters, SolrParams clusteringParams) throws IOException {
+    return checkEngine(engine, numberOfDocs, expectedNumClusters, new MatchAllDocsQuery(), clusteringParams);
+  }
+
+
+  private List checkEngine(CarrotClusteringEngine engine, int expectedNumDocs,
+                           int expectedNumClusters, Query query, SolrParams clusteringParams) throws IOException {
     // Get all documents to cluster
     RefCounted<SolrIndexSearcher> ref = h.getCore().getSearcher();
-    MatchAllDocsQuery query = new MatchAllDocsQuery();
+
     DocList docList;
     try {
       SolrIndexSearcher searcher = ref.get();
       docList = searcher.getDocList(query, (Query) null, new Sort(), 0,
               numberOfDocs);
-      assertEquals("docList size", this.numberOfDocs, docList.matches());
+      assertEquals("docList size", expectedNumDocs, docList.matches());
     } finally {
       ref.decref();
     }
@@ -114,7 +128,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTest {
     LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), solrParams);
     List results = (List) engine.cluster(query, docList, req);
     req.close();
-    assertEquals("number of clusters", expectedNumClusters, results.size());
+    assertEquals("number of clusters: " + results, expectedNumClusters, results.size());
     checkClusters(results, false);
     return results;
   }

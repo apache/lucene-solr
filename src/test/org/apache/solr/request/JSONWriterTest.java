@@ -22,6 +22,12 @@ import java.io.Writer;
 import java.io.StringWriter;
 
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.response.JSONResponseWriter;
+import org.apache.solr.response.PHPSerializedResponseWriter;
+import org.apache.solr.response.PythonResponseWriter;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.RubyResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 /** Test some aspects of JSON/python writer output (very incomplete)

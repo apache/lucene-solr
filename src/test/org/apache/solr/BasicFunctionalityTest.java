@@ -30,6 +30,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.*;
 import org.apache.solr.handler.*;
 import org.apache.solr.request.*;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.XMLWriter;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.util.*;
 import org.apache.solr.schema.*;

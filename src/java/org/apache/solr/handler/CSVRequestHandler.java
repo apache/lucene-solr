@@ -18,7 +18,7 @@
 package org.apache.solr.handler;
 
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryResponse;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -54,17 +54,17 @@ public class CSVRequestHandler extends ContentStreamHandlerBase {
 
   @Override
   public String getVersion() {
-    return "$Revision:$";
+    return "$Revision$";
   }
 
   @Override
   public String getSourceId() {
-    return "$Id:$";
+    return "$Id$";
   }
 
   @Override
   public String getSource() {
-    return "$URL:$";
+    return "$URL$";
   }
 }
 

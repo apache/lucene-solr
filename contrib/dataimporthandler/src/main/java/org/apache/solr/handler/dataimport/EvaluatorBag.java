@@ -212,8 +212,7 @@ public class EvaluatorBag {
         if (evaluator == null)
           return null;
         VariableResolverImpl vri = VariableResolverImpl.CURRENT_VARIABLE_RESOLVER.get();
-        Context ctx = vri == null ? null : vri.context;
-        return evaluator.evaluate(m.group(2), ctx);
+        return evaluator.evaluate(m.group(2), Context.CURRENT_CONTEXT.get());
       }
 
     };

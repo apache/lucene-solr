@@ -21,6 +21,8 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.response.BinaryQueryResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 import java.io.ByteArrayInputStream;

@@ -98,15 +98,19 @@ public class TestEvaluatorBag {
   public void testEscapeSolrQueryFunction() {
     final VariableResolverImpl resolver = new VariableResolverImpl();
     ContextImpl context = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);
-    resolver.context = context;
-    Map m= new HashMap();
-    m.put("query","c:t");
-    resolver.addNamespace("dataimporter.functions", EvaluatorBag
-            .getFunctionsNamespace(Collections.EMPTY_LIST, null));
-    resolver.addNamespace("e",m);
-    String s = resolver
-            .replaceTokens("${dataimporter.functions.escapeQueryChars(e.query)}");
-    org.junit.Assert.assertEquals("c\\:t", s);
+    Context.CURRENT_CONTEXT.set(context);
+    try {
+      Map m= new HashMap();
+      m.put("query","c:t");
+      resolver.addNamespace("dataimporter.functions", EvaluatorBag
+              .getFunctionsNamespace(Collections.EMPTY_LIST, null));
+      resolver.addNamespace("e",m);
+      String s = resolver
+              .replaceTokens("${dataimporter.functions.escapeQueryChars(e.query)}");
+      org.junit.Assert.assertEquals("c\\:t", s);
+    } finally {
+      Context.CURRENT_CONTEXT.remove();
+    }
   }
 
   /**
@@ -115,31 +119,39 @@ public class TestEvaluatorBag {
   @Test
   public void testGetDateFormatEvaluator() {
     Evaluator dateFormatEval = EvaluatorBag.getDateFormatEvaluator();
-    resolver.context = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);
+    ContextImpl context = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);
+    Context.CURRENT_CONTEXT.set(context);
+    try {
+      long time = System.currentTimeMillis();
+      assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date(time - 2*86400*1000)),
+              dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm'", Context.CURRENT_CONTEXT.get()));
 
-    long time = System.currentTimeMillis();
-    assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date(time - 2*86400*1000)),
-            dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm'", resolver.context));
+      Map<String, Object> map = new HashMap<String, Object>();
+      map.put("key", new Date(time));
+      resolver.addNamespace("A", map);
 
-    Map<String, Object> map = new HashMap<String, Object>();
-    map.put("key", new Date(time));
-    resolver.addNamespace("A", map);
-
-    assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date(time)),
-            dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm'", resolver.context));
+      assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date(time)),
+              dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm'", Context.CURRENT_CONTEXT.get()));
+    } finally {
+      Context.CURRENT_CONTEXT.remove();
+    }
   }
 
   private void runTests(Map<String, String> tests, Evaluator evaluator) {
     ContextImpl ctx = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);
-    resolver.context = ctx;
-    for (Map.Entry<String, String> entry : tests.entrySet()) {
-      Map<String, Object> values = new HashMap<String, Object>();
-      values.put("key", entry.getKey());
-      resolver.addNamespace("A", values);
+    Context.CURRENT_CONTEXT.set(ctx);
+    try {
+      for (Map.Entry<String, String> entry : tests.entrySet()) {
+        Map<String, Object> values = new HashMap<String, Object>();
+        values.put("key", entry.getKey());
+        resolver.addNamespace("A", values);
 
-      String expected = (String) entry.getValue();
-      String actual = evaluator.evaluate("A.key", ctx);
-      assertEquals(expected, actual);
+        String expected = (String) entry.getValue();
+        String actual = evaluator.evaluate("A.key", ctx);
+        assertEquals(expected, actual);
+      }
+    } finally {
+      Context.CURRENT_CONTEXT.remove();
     }
   }
 }

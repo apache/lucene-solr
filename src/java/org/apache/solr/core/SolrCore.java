@@ -34,6 +34,16 @@ import org.apache.solr.handler.component.*;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.solr.request.*;
+import org.apache.solr.response.BinaryResponseWriter;
+import org.apache.solr.response.JSONResponseWriter;
+import org.apache.solr.response.PHPResponseWriter;
+import org.apache.solr.response.PHPSerializedResponseWriter;
+import org.apache.solr.response.PythonResponseWriter;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.RawResponseWriter;
+import org.apache.solr.response.RubyResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheMBean;
@@ -584,7 +594,7 @@ public final class SolrCore implements SolrInfoMBean {
     reqHandlers = new RequestHandlers(this);
     reqHandlers.initHandlersFromConfig( solrConfig );
 
-    highlighter = initHighLighter();
+    highlighter = initHighlighter();
 
     // Handle things that should eventually go away
     initDeprecatedSupport();
@@ -634,7 +644,7 @@ public final class SolrCore implements SolrInfoMBean {
     resourceLoader.inform(infoRegistry);
   }
 
-  private SolrHighlighter initHighLighter() {
+  private SolrHighlighter initHighlighter() {
     SolrHighlighter highlighter = null;
     PluginInfo pluginInfo = solrConfig.getPluginInfo(SolrHighlighter.class.getName());
     if(pluginInfo != null){

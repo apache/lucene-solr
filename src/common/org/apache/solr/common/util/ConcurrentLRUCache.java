@@ -397,9 +397,9 @@ public class ConcurrentLRUCache<K,V> {
    * @return a LinkedHashMap containing 'n' or less than 'n' entries
    */
   public Map<K, V> getOldestAccessedItems(int n) {
-    markAndSweepLock.lock();
     Map<K, V> result = new LinkedHashMap<K, V>();
     TreeSet<CacheEntry> tree = new TreeSet<CacheEntry>();
+    markAndSweepLock.lock();
     try {
       for (Map.Entry<Object, CacheEntry<K,V>> entry : map.entrySet()) {
         CacheEntry ce = entry.getValue();
@@ -423,10 +423,10 @@ public class ConcurrentLRUCache<K,V> {
   }
 
   public Map<K,V> getLatestAccessedItems(int n) {
-    // we need to grab the lock since we are changing lastAccessedCopy
-    markAndSweepLock.lock();
     Map<K,V> result = new LinkedHashMap<K,V>();
     TreeSet<CacheEntry> tree = new TreeSet<CacheEntry>();
+    // we need to grab the lock since we are changing lastAccessedCopy
+    markAndSweepLock.lock();
     try {
       for (Map.Entry<Object, CacheEntry<K,V>> entry : map.entrySet()) {
         CacheEntry<K,V> ce = entry.getValue();

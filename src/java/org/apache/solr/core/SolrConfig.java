@@ -25,7 +25,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.request.QueryResponseWriter;
+import org.apache.solr.response.QueryResponseWriter;
 
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.FastLRUCache;

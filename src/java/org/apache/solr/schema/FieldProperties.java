@@ -99,40 +99,6 @@ abstract class FieldProperties {
     return (bitfield & props) == 0;
   }
 
-  /***
-  static int normalize(int properties) {
-    int p = properties;
-    if (on(p,TOKENIZED) && off(p,INDEXED)) {
-      throw new RuntimeException("field must be indexed to be tokenized.");
-    }
-
-    if (on(p,STORE_TERMPOSITIONS)) p|=STORE_TERMVECTORS;
-    if (on(p,STORE_TERMOFFSETS)) p|=STORE_TERMVECTORS;
-    if (on(p,STORE_TERMOFFSETS) && off(p,INDEXED)) {
-      throw new RuntimeException("field must be indexed to store term vectors.");
-    }
-
-    if (on(p,OMIT_NORMS) && off(p,INDEXED)) {
-      throw new RuntimeException("field must be indexed for norms to be omitted.");
-    }
-
-    if (on(p,SORT_MISSING_FIRST) && on(p,SORT_MISSING_LAST)) {
-      throw new RuntimeException("conflicting options sortMissingFirst,sortMissingLast.");
-    }
-
-    if ((on(p,SORT_MISSING_FIRST) || on(p,SORT_MISSING_LAST)) && off(p,INDEXED)) {
-      throw new RuntimeException("field must be indexed to be sorted.");
-    }
-
-    if ((on(p,BINARY) || on(p,COMPRESSED)) && off(p,STORED)) {
-      throw new RuntimeException("field must be stored for compressed or binary options.");
-    }
-
-    return p;
-  }
-  ***/
-
-
   static int parseProperties(Map<String,String> properties, boolean which) {
     int props = 0;
     for (Map.Entry<String, String> entry : properties.entrySet()) {

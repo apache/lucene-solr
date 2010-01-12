@@ -418,6 +418,14 @@
      <str name="hl.simple.post"><![CDATA[</em>]]></str>
     </lst>
    </formatter>
+
+   <!-- Configure the standard fragListBuilder -->
+   <fragListBuilder name="simple" class="org.apache.solr.highlight.SimpleFragListBuilder" default="true"/>
+
+   <!-- Configure the standard fragmentsBuilder -->
+   <fragmentsBuilder name="colored" class="org.apache.solr.highlight.MultiColoredScoreOrderFragmentsBuilder" default="true"/>
+
+   <fragmentsBuilder name="scoreOrder" class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder" default="true"/>
   </highlighting>
 
 

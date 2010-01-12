@@ -38,6 +38,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <p> Stores all configuration information for pulling and indexing data. </p>
@@ -59,8 +60,6 @@ public class DataImporter {
 
   private DataConfig config;
 
-  private Date lastIndexTime;
-
   private Date indexStartTime;
 
   private Properties store = new Properties();
@@ -73,8 +72,6 @@ public class DataImporter {
 
   public DocBuilder.Statistics cumulativeStatistics = new DocBuilder.Statistics();
 
-  public Map<String, Evaluator> evaluators;
-
   private SolrCore core;
 
   private ReentrantLock importLock = new ReentrantLock();
@@ -85,7 +82,7 @@ public class DataImporter {
    * Only for testing purposes
    */
   DataImporter() {
-    coreScopeSession = new HashMap<String, Object>();
+    coreScopeSession = new ConcurrentHashMap<String, Object>();
   }
 
   DataImporter(String dataConfig, SolrCore core, Map<String, Properties> ds, Map<String, Object> session) {
@@ -198,13 +195,15 @@ public class DataImporter {
 
   private void initEntity(DataConfig.Entity e,
                           Map<String, DataConfig.Field> fields, boolean docRootFound) {
-    if (e.pk != null)
-      e.primaryKeys = e.pk.split(",");
     e.allAttributes.put(DATA_SRC, e.dataSource);
 
     if (!docRootFound && !"false".equals(e.docRoot)) {
       // if in this chain no document root is found()
       e.isDocRoot = true;
+    }
+    if (e.allAttributes.get("threads") != null) {
+      if(docRootFound) throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "'threads' not allowed below rootEntity ");
+      config.isMultiThreaded = true;      
     }
 
     if (e.fields != null) {

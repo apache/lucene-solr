@@ -37,19 +37,17 @@ import java.util.Map;
 public class EntityProcessorWrapper extends EntityProcessor {
   private static final Logger log = LoggerFactory.getLogger(EntityProcessorWrapper.class);
 
-  private EntityProcessor delegate;
+  EntityProcessor delegate;
   private DocBuilder docBuilder;
 
-  private String onError;
-  private Context context;
-  private VariableResolverImpl resolver;
-  private String entityName;
+  String onError;
+  protected Context context;
+  protected VariableResolverImpl resolver;
+  String entityName;
 
   protected List<Transformer> transformers;
 
   protected List<Map<String, Object>> rowcache;
-
-  private  Context contextCopy;
 
   public EntityProcessorWrapper(EntityProcessor delegate, DocBuilder docBuilder) {
     this.delegate = delegate;
@@ -61,8 +59,6 @@ public class EntityProcessorWrapper extends EntityProcessor {
     this.context = context;
     resolver = (VariableResolverImpl) context.getVariableResolver();
     //context has to be set correctly . keep the copy of the old one so that it can be restored in destroy
-    contextCopy = resolver.context;
-    resolver.context = context;
     if (entityName == null) {
       onError = resolver.replaceTokens(context.getEntityAttribute(ON_ERROR));
       if (onError == null) onError = ABORT;
@@ -276,8 +272,6 @@ public class EntityProcessorWrapper extends EntityProcessor {
 
   public void destroy() {
     delegate.destroy();
-    resolver.context = contextCopy;
-    contextCopy = null;
   }
 
   public VariableResolverImpl getVariableResolver() {

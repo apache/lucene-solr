@@ -30,6 +30,8 @@ public interface HighlightParams {
   public static final String MAX_CHARS   = HIGHLIGHT+".maxAnalyzedChars";
   public static final String FORMATTER   = HIGHLIGHT+".formatter";
   public static final String FRAGMENTER  = HIGHLIGHT+".fragmenter";
+  public static final String FRAG_LIST_BUILDER = HIGHLIGHT+".fragListBuilder";
+  public static final String FRAGMENTS_BUILDER = HIGHLIGHT+".fragmentsBuilder";
   public static final String FIELD_MATCH = HIGHLIGHT+".requireFieldMatch";
   public static final String ALTERNATE_FIELD = HIGHLIGHT+".alternateField";
   public static final String ALTERNATE_FIELD_LENGTH = HIGHLIGHT+".maxAlternateFieldLength";
@@ -38,6 +40,9 @@ public interface HighlightParams {
   public static final String HIGHLIGHT_MULTI_TERM = HIGHLIGHT+".highlightMultiTerm";
 
   public static final String MERGE_CONTIGUOUS_FRAGMENTS = HIGHLIGHT + ".mergeContiguous";
+
+  public static final String USE_HIGHLIGHTER = HIGHLIGHT + ".useHighlighter";
+  
   // Formatter
   public static final String SIMPLE = "simple";
   public static final String SIMPLE_PRE  = HIGHLIGHT+"."+SIMPLE+".pre";

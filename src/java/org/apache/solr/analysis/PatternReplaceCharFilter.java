@@ -63,24 +63,24 @@ public class PatternReplaceCharFilter extends BaseCharFilter {
   private String replaceBlockBuffer;
   private int replaceBlockBufferOffset;
   
-  public PatternReplaceCharFilter( String pattern, String replacement, CharStream in ){
+  public PatternReplaceCharFilter( Pattern pattern, String replacement, CharStream in ){
     this( pattern, replacement, DEFAULT_MAX_BLOCK_CHARS, null, in );
   }
 
-  public PatternReplaceCharFilter( String pattern, String replacement,
+  public PatternReplaceCharFilter( Pattern pattern, String replacement,
       int maxBlockChars, CharStream in ){
     this( pattern, replacement, maxBlockChars, null, in );
   }
 
-  public PatternReplaceCharFilter( String pattern, String replacement,
+  public PatternReplaceCharFilter( Pattern pattern, String replacement,
       String blockDelimiters, CharStream in ){
     this( pattern, replacement, DEFAULT_MAX_BLOCK_CHARS, blockDelimiters, in );
   }
 
-  public PatternReplaceCharFilter( String pattern, String replacement,
+  public PatternReplaceCharFilter( Pattern pattern, String replacement,
       int maxBlockChars, String blockDelimiters, CharStream in ){
     super( in );
-    this.pattern = Pattern.compile( pattern );
+    this.pattern = pattern;
     this.replacement = replacement;
     if( maxBlockChars < 1 )
       throw new IllegalArgumentException( "maxBlockChars should be greater than 0, but it is " + maxBlockChars );

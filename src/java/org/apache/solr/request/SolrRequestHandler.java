@@ -19,6 +19,7 @@ package org.apache.solr.request;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoMBean;
+import org.apache.solr.response.SolrQueryResponse;
 
 /**
  * Implementations of <code>SolrRequestHandler</code> are called to handle query requests.

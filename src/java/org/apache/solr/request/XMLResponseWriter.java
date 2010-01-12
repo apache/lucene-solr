@@ -14,27 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.request;
 
-import java.io.Writer;
-import java.io.IOException;
-
-import org.apache.solr.common.util.NamedList;
 
 /**
- * @version $Id$
+ * @deprecated use org.apache.solr.response.XMLResponseWriter
  */
-public class XMLResponseWriter implements QueryResponseWriter {
-  public void init(NamedList n) {
-    /* NOOP */
-  }
-
-  public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
-    XMLWriter.writeResponse(writer,req,rsp);
-  }
-
-  public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return CONTENT_TYPE_XML_UTF8;
-  }
+public class XMLResponseWriter extends org.apache.solr.response.XMLResponseWriter 
+{
+	
 }

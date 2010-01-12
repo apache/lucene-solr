@@ -35,8 +35,11 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.*;
+import org.apache.lucene.search.vectorhighlight.FastVectorHighlighter;
+import org.apache.lucene.search.vectorhighlight.FieldQuery;
+import org.apache.lucene.search.vectorhighlight.FragListBuilder;
+import org.apache.lucene.search.vectorhighlight.FragmentsBuilder;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -45,12 +48,15 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -59,6 +65,8 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInfoInitialized
 {
 
+  public static Logger log = LoggerFactory.getLogger(DefaultSolrHighlighter.class);
+  
   private SolrCore solrCore;
 
   public DefaultSolrHighlighter() {
@@ -71,16 +79,35 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   public void init(PluginInfo info) {
     formatters.clear();
     fragmenters.clear();
+    fragListBuilders.clear();
+    fragmentsBuilders.clear();
 
+    // Load the fragmenters
     SolrFragmenter frag = solrCore.initPlugins(info.getChildren("fragmenter") , fragmenters,SolrFragmenter.class,null);
     if (frag == null) frag = new GapFragmenter();
     fragmenters.put("", frag);
     fragmenters.put(null, frag);
+
     // Load the formatters
     SolrFormatter fmt = solrCore.initPlugins(info.getChildren("formatter"), formatters,SolrFormatter.class,null);
     if (fmt == null) fmt = new HtmlFormatter();
     formatters.put("", fmt);
     formatters.put(null, fmt);
+
+    // Load the FragListBuilders
+    SolrFragListBuilder fragListBuilder = solrCore.initPlugins(info.getChildren("fragListBuilder"),
+        fragListBuilders, SolrFragListBuilder.class, null );
+    if( fragListBuilder == null ) fragListBuilder = new SimpleFragListBuilder();
+    fragListBuilders.put( "", fragListBuilder );
+    fragListBuilders.put( null, fragListBuilder );
+    
+    // Load the FragmentsBuilders
+    SolrFragmentsBuilder fragsBuilder = solrCore.initPlugins(info.getChildren("fragmentsBuilder"),
+        fragmentsBuilders, SolrFragmentsBuilder.class, null);
+    if( fragsBuilder == null ) fragsBuilder = new ScoreOrderFragmentsBuilder();
+    fragmentsBuilders.put( "", fragsBuilder );
+    fragmentsBuilders.put( null, fragsBuilder );
+    
     initialized = true;
 
   }
@@ -97,7 +124,13 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     formatters.put("", fmt);
     formatters.put(null, fmt);    
 
-
+    SolrFragListBuilder fragListBuilder = new SimpleFragListBuilder();
+    fragListBuilders.put( "", fragListBuilder );
+    fragListBuilders.put( null, fragListBuilder );
+    
+    SolrFragmentsBuilder fragsBuilder = new ScoreOrderFragmentsBuilder();
+    fragmentsBuilders.put( "", fragsBuilder );
+    fragmentsBuilders.put( null, fragsBuilder );
   }
 
   /**
@@ -233,6 +266,24 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     return frag.getFragmenter( fieldName, params );
   }
   
+  protected FragListBuilder getFragListBuilder( SolrParams params ){
+    String flb = params.get( HighlightParams.FRAG_LIST_BUILDER );
+    SolrFragListBuilder solrFlb = fragListBuilders.get( flb );
+    if( solrFlb == null ){
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unknown fragListBuilder: " + flb );
+    }
+    return solrFlb.getFragListBuilder( params );
+  }
+  
+  protected FragmentsBuilder getFragmentsBuilder( SolrParams params ){
+    String fb = params.get( HighlightParams.FRAGMENTS_BUILDER );
+    SolrFragmentsBuilder solrFb = fragmentsBuilders.get( fb );
+    if( solrFb == null ){
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unknown fragmentsBuilder: " + fb );
+    }
+    return solrFb.getFragmentsBuilder( params );
+  }
+  
   /**
    * Generates a list of Highlighted query fragments for each item in a list
    * of documents, or returns null if highlighting is disabled.
@@ -251,151 +302,199 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     if (!isHighlightingEnabled(params))
         return null;
      
-     SolrIndexSearcher searcher = req.getSearcher();
-     IndexSchema schema = searcher.getSchema();
-     NamedList fragments = new SimpleOrderedMap();
-     String[] fieldNames = getHighlightFields(query, req, defaultFields);
-     Set<String> fset = new HashSet<String>();
+    SolrIndexSearcher searcher = req.getSearcher();
+    IndexSchema schema = searcher.getSchema();
+    NamedList fragments = new SimpleOrderedMap();
+    String[] fieldNames = getHighlightFields(query, req, defaultFields);
+    Set<String> fset = new HashSet<String>();
      
-     {
-       // pre-fetch documents using the Searcher's doc cache
-       for(String f : fieldNames) { fset.add(f); }
-       // fetch unique key if one exists.
-       SchemaField keyField = schema.getUniqueKeyField();
-       if(null != keyField)
-         fset.add(keyField.getName());  
-     }
+    {
+      // pre-fetch documents using the Searcher's doc cache
+      for(String f : fieldNames) { fset.add(f); }
+      // fetch unique key if one exists.
+      SchemaField keyField = schema.getUniqueKeyField();
+      if(null != keyField)
+        fset.add(keyField.getName());  
+    }
 
+    // get FastVectorHighlighter instance out of the processing loop
+    FastVectorHighlighter fvh = new FastVectorHighlighter(
+        // FVH cannot process hl.usePhraseHighlighter parameter per-field basis
+        params.getBool( HighlightParams.USE_PHRASE_HIGHLIGHTER, true ),
+        // FVH cannot process hl.requireFieldMatch parameter per-field basis
+        params.getBool( HighlightParams.FIELD_MATCH, false ),
+        getFragListBuilder( params ),
+        getFragmentsBuilder( params ) );
+    FieldQuery fieldQuery = fvh.getFieldQuery( query );
 
     // Highlight each document
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docs.size(); i++) {
-       int docId = iterator.nextDoc();
-       Document doc = searcher.doc(docId, fset);
-       NamedList docSummaries = new SimpleOrderedMap();
-       for (String fieldName : fieldNames) {
-          fieldName = fieldName.trim();
-          String[] docTexts = doc.getValues(fieldName);
-          if (docTexts == null) continue;
-          
-          TokenStream tstream = null;
-          int numFragments = getMaxSnippets(fieldName, params);
-          boolean mergeContiguousFragments = isMergeContiguousFragments(fieldName, params);
+      int docId = iterator.nextDoc();
+      Document doc = searcher.doc(docId, fset);
+      NamedList docSummaries = new SimpleOrderedMap();
+      for (String fieldName : fieldNames) {
+        fieldName = fieldName.trim();
+        if( useFastVectorHighlighter( params, schema, fieldName ) )
+          doHighlightingByFastVectorHighlighter( fvh, fieldQuery, req, docSummaries, docId, doc, fieldName );
+        else
+          doHighlightingByHighlighter( query, req, docSummaries, docId, doc, fieldName );
+      }
+      String printId = schema.printableUniqueKey(doc);
+      fragments.add(printId == null ? null : printId, docSummaries);
+    }
+    return fragments;
+  }
+  
+  /*
+   * If fieldName is undefined, this method returns false, then
+   * doHighlightingByHighlighter() will do nothing for the field.
+   */
+  private boolean useFastVectorHighlighter( SolrParams params, IndexSchema schema, String fieldName ){
+    SchemaField schemaField = schema.getFieldOrNull( fieldName );
+    return schemaField != null &&
+      schemaField.storeTermPositions() &&
+      schemaField.storeTermOffsets() &&
+      !params.getFieldBool( fieldName, HighlightParams.USE_HIGHLIGHTER, false );
+  }
+  
+  private void doHighlightingByHighlighter( Query query, SolrQueryRequest req, NamedList docSummaries,
+      int docId, Document doc, String fieldName ) throws IOException {
+    SolrParams params = req.getParams(); 
+    String[] docTexts = doc.getValues(fieldName);
+    // according to Document javadoc, doc.getValues() never returns null. check empty instead of null
+    if (docTexts.length == 0) return;
+    
+    SolrIndexSearcher searcher = req.getSearcher();
+    IndexSchema schema = searcher.getSchema();
+    TokenStream tstream = null;
+    int numFragments = getMaxSnippets(fieldName, params);
+    boolean mergeContiguousFragments = isMergeContiguousFragments(fieldName, params);
 
-          String[] summaries = null;
-          List<TextFragment> frags = new ArrayList<TextFragment>();
+    String[] summaries = null;
+    List<TextFragment> frags = new ArrayList<TextFragment>();
 
-          TermOffsetsTokenStream tots = null; // to be non-null iff we're using TermOffsets optimization
-          try {
-              TokenStream tvStream = TokenSources.getTokenStream(searcher.getReader(), docId, fieldName);
-              if (tvStream != null) {
-                tots = new TermOffsetsTokenStream(tvStream);
-              }
-          }
-          catch (IllegalArgumentException e) {
-            // No problem. But we can't use TermOffsets optimization.
-          }
-
-          for (int j = 0; j < docTexts.length; j++) {
-            if( tots != null ) {
-              // if we're using TermOffsets optimization, then get the next
-              // field value's TokenStream (i.e. get field j's TokenStream) from tots:
-              tstream = tots.getMultiValuedTokenStream( docTexts[j].length() );
-            } else {
-              // fall back to analyzer
-              tstream = createAnalyzerTStream(schema, fieldName, docTexts[j]);
-            }
-                         
-            Highlighter highlighter;
-            if (Boolean.valueOf(req.getParams().get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true"))) {
-              // TODO: this is not always necessary - eventually we would like to avoid this wrap
-              //       when it is not needed.
-              tstream = new CachingTokenFilter(tstream);
-              
-              // get highlighter
-              highlighter = getPhraseHighlighter(query, fieldName, req, (CachingTokenFilter) tstream);
-               
-              // after highlighter initialization, reset tstream since construction of highlighter already used it
-              tstream.reset();
-            }
-            else {
-              // use "the old way"
-              highlighter = getHighlighter(query, fieldName, req);
-            }
-            
-            int maxCharsToAnalyze = params.getFieldInt(fieldName,
-                HighlightParams.MAX_CHARS,
-                Highlighter.DEFAULT_MAX_CHARS_TO_ANALYZE);
-            if (maxCharsToAnalyze < 0) {
-              highlighter.setMaxDocCharsToAnalyze(docTexts[j].length());
-            } else {
-              highlighter.setMaxDocCharsToAnalyze(maxCharsToAnalyze);
-            }
-
-            try {
-              TextFragment[] bestTextFragments = highlighter.getBestTextFragments(tstream, docTexts[j], mergeContiguousFragments, numFragments);
-              for (int k = 0; k < bestTextFragments.length; k++) {
-                if ((bestTextFragments[k] != null) && (bestTextFragments[k].getScore() > 0)) {
-                  frags.add(bestTextFragments[k]);
-                }
-              }
-            } catch (InvalidTokenOffsetsException e) {
-              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-            }
-          }
-          // sort such that the fragments with the highest score come first
-          Collections.sort(frags, new Comparator<TextFragment>() {
-            public int compare(TextFragment arg0, TextFragment arg1) {
-              return Math.round(arg1.getScore() - arg0.getScore());
-            }
-          });
-          
-           // convert fragments back into text
-           // TODO: we can include score and position information in output as snippet attributes
-          if (frags.size() > 0) {
-            ArrayList<String> fragTexts = new ArrayList<String>();
-            for (TextFragment fragment: frags) {
-              if ((fragment != null) && (fragment.getScore() > 0)) {
-                fragTexts.add(fragment.toString());
-              }
-              if (fragTexts.size() >= numFragments) break;
-            }
-            summaries = fragTexts.toArray(new String[0]);
-            if (summaries.length > 0) 
-            docSummaries.add(fieldName, summaries);
-          }
-           // no summeries made, copy text from alternate field
-           if (summaries == null || summaries.length == 0) {
-              String alternateField = req.getParams().getFieldParam(fieldName, HighlightParams.ALTERNATE_FIELD);
-              if (alternateField != null && alternateField.length() > 0) {
-                String[] altTexts = doc.getValues(alternateField);
-                if (altTexts != null && altTexts.length > 0){
-                  int alternateFieldLen = req.getParams().getFieldInt(fieldName, HighlightParams.ALTERNATE_FIELD_LENGTH,0);
-                  if( alternateFieldLen <= 0 ){
-                    docSummaries.add(fieldName, altTexts);
-                  }
-                  else{
-                    List<String> altList = new ArrayList<String>();
-                    int len = 0;
-                    for( String altText: altTexts ){
-                      altList.add( len + altText.length() > alternateFieldLen ?
-                                   new String(altText.substring( 0, alternateFieldLen - len )) : altText );
-                      len += altText.length();
-                      if( len >= alternateFieldLen ) break;
-                    }
-                    docSummaries.add(fieldName, altList);
-                  }
-                }
-              }
-           }
- 
+    TermOffsetsTokenStream tots = null; // to be non-null iff we're using TermOffsets optimization
+    try {
+        TokenStream tvStream = TokenSources.getTokenStream(searcher.getReader(), docId, fieldName);
+        if (tvStream != null) {
+          tots = new TermOffsetsTokenStream(tvStream);
         }
-        String printId = schema.printableUniqueKey(doc);
-        fragments.add(printId == null ? null : printId, docSummaries);
-     }
-     return fragments;
+    }
+    catch (IllegalArgumentException e) {
+      // No problem. But we can't use TermOffsets optimization.
+    }
+
+    for (int j = 0; j < docTexts.length; j++) {
+      if( tots != null ) {
+        // if we're using TermOffsets optimization, then get the next
+        // field value's TokenStream (i.e. get field j's TokenStream) from tots:
+        tstream = tots.getMultiValuedTokenStream( docTexts[j].length() );
+      } else {
+        // fall back to analyzer
+        tstream = createAnalyzerTStream(schema, fieldName, docTexts[j]);
+      }
+                   
+      Highlighter highlighter;
+      if (Boolean.valueOf(req.getParams().get(HighlightParams.USE_PHRASE_HIGHLIGHTER, "true"))) {
+        // TODO: this is not always necessary - eventually we would like to avoid this wrap
+        //       when it is not needed.
+        tstream = new CachingTokenFilter(tstream);
+        
+        // get highlighter
+        highlighter = getPhraseHighlighter(query, fieldName, req, (CachingTokenFilter) tstream);
+         
+        // after highlighter initialization, reset tstream since construction of highlighter already used it
+        tstream.reset();
+      }
+      else {
+        // use "the old way"
+        highlighter = getHighlighter(query, fieldName, req);
+      }
+      
+      int maxCharsToAnalyze = params.getFieldInt(fieldName,
+          HighlightParams.MAX_CHARS,
+          Highlighter.DEFAULT_MAX_CHARS_TO_ANALYZE);
+      if (maxCharsToAnalyze < 0) {
+        highlighter.setMaxDocCharsToAnalyze(docTexts[j].length());
+      } else {
+        highlighter.setMaxDocCharsToAnalyze(maxCharsToAnalyze);
+      }
+
+      try {
+        TextFragment[] bestTextFragments = highlighter.getBestTextFragments(tstream, docTexts[j], mergeContiguousFragments, numFragments);
+        for (int k = 0; k < bestTextFragments.length; k++) {
+          if ((bestTextFragments[k] != null) && (bestTextFragments[k].getScore() > 0)) {
+            frags.add(bestTextFragments[k]);
+          }
+        }
+      } catch (InvalidTokenOffsetsException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+    }
+    // sort such that the fragments with the highest score come first
+    Collections.sort(frags, new Comparator<TextFragment>() {
+      public int compare(TextFragment arg0, TextFragment arg1) {
+        return Math.round(arg1.getScore() - arg0.getScore());
+      }
+    });
+    
+     // convert fragments back into text
+     // TODO: we can include score and position information in output as snippet attributes
+    if (frags.size() > 0) {
+      ArrayList<String> fragTexts = new ArrayList<String>();
+      for (TextFragment fragment: frags) {
+        if ((fragment != null) && (fragment.getScore() > 0)) {
+          fragTexts.add(fragment.toString());
+        }
+        if (fragTexts.size() >= numFragments) break;
+      }
+      summaries = fragTexts.toArray(new String[0]);
+      if (summaries.length > 0) 
+      docSummaries.add(fieldName, summaries);
+    }
+    // no summeries made, copy text from alternate field
+    if (summaries == null || summaries.length == 0) {
+      alternateField( docSummaries, params, doc, fieldName );
+    }
   }
 
+  private void doHighlightingByFastVectorHighlighter( FastVectorHighlighter highlighter, FieldQuery fieldQuery,
+      SolrQueryRequest req, NamedList docSummaries, int docId, Document doc, String fieldName ) throws IOException {
+    SolrParams params = req.getParams(); 
+    String[] snippets = highlighter.getBestFragments( fieldQuery, req.getSearcher().getReader(), docId, fieldName,
+        params.getFieldInt( fieldName, HighlightParams.FRAGSIZE, 100 ),
+        params.getFieldInt( fieldName, HighlightParams.SNIPPETS, 1 ) );
+    if( snippets != null && snippets.length > 0 )
+      docSummaries.add( fieldName, snippets );
+    else
+      alternateField( docSummaries, params, doc, fieldName );
+  }
+  
+  private void alternateField( NamedList docSummaries, SolrParams params, Document doc, String fieldName ){
+    String alternateField = params.getFieldParam(fieldName, HighlightParams.ALTERNATE_FIELD);
+    if (alternateField != null && alternateField.length() > 0) {
+      String[] altTexts = doc.getValues(alternateField);
+      if (altTexts != null && altTexts.length > 0){
+        int alternateFieldLen = params.getFieldInt(fieldName, HighlightParams.ALTERNATE_FIELD_LENGTH,0);
+        if( alternateFieldLen <= 0 ){
+          docSummaries.add(fieldName, altTexts);
+        }
+        else{
+          List<String> altList = new ArrayList<String>();
+          int len = 0;
+          for( String altText: altTexts ){
+            altList.add( len + altText.length() > alternateFieldLen ?
+                new String(altText.substring( 0, alternateFieldLen - len )) : altText );
+            len += altText.length();
+            if( len >= alternateFieldLen ) break;
+          }
+          docSummaries.add(fieldName, altList);
+        }
+      }
+    }
+  }
+  
   private TokenStream createAnalyzerTStream(IndexSchema schema, String fieldName, String docText) throws IOException {
 
     TokenStream tstream;

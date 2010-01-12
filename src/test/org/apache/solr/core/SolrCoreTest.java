@@ -21,8 +21,8 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.SpellCheckComponent;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.plugin.SolrCoreAware;
 

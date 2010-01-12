@@ -25,7 +25,7 @@ import org.apache.solr.analysis.NGramFilterFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.FacetComponent;
-import org.apache.solr.request.JSONResponseWriter;
+import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.solr.util.plugin.SolrCoreAware;
 

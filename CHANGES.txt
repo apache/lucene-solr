@@ -77,7 +77,11 @@ New Features
 * SOLR-1131: FieldTypes can now output multiple Fields per Type and still be searched.  This can be handy for hiding the details of a particular
   implementation such as in the spatial case. (Chris Mattmann, shalin, noble, gsingers, yonik)
 
-* SOLR-1586: Add support for Geohash and Spatial Tile FieldType (Chris Mattmann, gsingers)  
+* SOLR-1586: Add support for Geohash and Spatial Tile FieldType (Chris Mattmann, gsingers)
+
+* SOLR-1697: PluginInfo should load plugins w/o class attribute also (noble)
+
+* SOLR-1268: Incorporate FastVectorHighlighter (koji)
 
 Optimizations
 ----------------------
@@ -186,8 +190,19 @@ Other Changes
 * SOLR-1674: Improve analysis tests and cut over to new TokenStream API.
   (Robert Muir via Mark Miller)
 
-* SOLR-1661 : Remove adminCore from CoreContainer . removed deprecated methods setAdminCore(), getAdminCore() (noble)
+* SOLR-1661: Remove adminCore from CoreContainer . removed deprecated methods setAdminCore(), getAdminCore() (noble)
 
+* SOLR-1704: Google collections moved from clustering to core (noble)
+
+* SOLR-1268: Add Lucene 2.9-dev r888785 FastVectorHighlighter contrib jar to lib. (koji)
+
+* SOLR-1538: Reordering of object allocations in ConcurrentLRUCache to eliminate
+  (an extremeely small) potential for deadlock.
+  (gabriele renzi via hossman)
+  
+* SOLR-1588: Removed some very old dead code.
+  (Chris A. Mattmann via hossman)
+  
 Build
 ----------------------
 
@@ -195,6 +210,9 @@ Build
 
 Documentation
 ----------------------
+
+* SOLR-1590: Javadoc for XMLWriter#startTag
+  (Chris A. Mattmann via hossman)
 
 ================== Release 1.4.0 ==================
 Release Date:  See http://lucene.apache.org/solr for the official release date.

@@ -25,8 +25,8 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.lucene.queryParser.ParseException;
@@ -85,8 +85,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
    *
    * @param args The {@link org.apache.solr.common.util.NamedList} to initialize from
    *
-   * @see #handleRequest(org.apache.solr.request.SolrQueryRequest, org.apache.solr.request.SolrQueryResponse)
-   * @see #handleRequestBody(org.apache.solr.request.SolrQueryRequest, org.apache.solr.request.SolrQueryResponse)
+   * @see #handleRequest(org.apache.solr.request.SolrQueryRequest, org.apache.solr.response.SolrQueryResponse)
+   * @see #handleRequestBody(org.apache.solr.request.SolrQueryRequest, org.apache.solr.response.SolrQueryResponse)
    * @see org.apache.solr.util.SolrPluginUtils#setDefaults(org.apache.solr.request.SolrQueryRequest, org.apache.solr.common.params.SolrParams, org.apache.solr.common.params.SolrParams, org.apache.solr.common.params.SolrParams)
    * @see SolrParams#toSolrParams(org.apache.solr.common.util.NamedList)
    *

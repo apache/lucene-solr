@@ -41,6 +41,9 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.*;
 import org.apache.solr.request.*;
+import org.apache.solr.response.BinaryQueryResponseWriter;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 

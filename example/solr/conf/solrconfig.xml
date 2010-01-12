@@ -957,6 +957,12 @@
      <str name="hl.simple.post"><![CDATA[</em>]]></str>
     </lst>
    </formatter>
+
+   <!-- Configure the standard fragListBuilder -->
+   <fragListBuilder name="simple" class="org.apache.solr.highlight.SimpleFragListBuilder" default="true"/>
+
+   <!-- multi-colored tag FragmentsBuilder -->
+   <fragmentsBuilder name="colored" class="org.apache.solr.highlight.MultiColoredScoreOrderFragmentsBuilder" default="true"/>
   </highlighting>
 
   <!-- An example dedup update processor that creates the "id" field on the fly
@@ -995,12 +1001,12 @@
        The following response writers are implicitly configured unless
        overridden...
 
-    <queryResponseWriter name="xml" class="org.apache.solr.request.XMLResponseWriter" default="true"/>
-    <queryResponseWriter name="json" class="org.apache.solr.request.JSONResponseWriter"/>
-    <queryResponseWriter name="python" class="org.apache.solr.request.PythonResponseWriter"/>
-    <queryResponseWriter name="ruby" class="org.apache.solr.request.RubyResponseWriter"/>
-    <queryResponseWriter name="php" class="org.apache.solr.request.PHPResponseWriter"/>
-    <queryResponseWriter name="phps" class="org.apache.solr.request.PHPSerializedResponseWriter"/>
+    <queryResponseWriter name="xml" class="solr.XMLResponseWriter" default="true"/>
+    <queryResponseWriter name="json" class="solr.JSONResponseWriter"/>
+    <queryResponseWriter name="python" class="solr.PythonResponseWriter"/>
+    <queryResponseWriter name="ruby" class="solr.RubyResponseWriter"/>
+    <queryResponseWriter name="php" class="solr.PHPResponseWriter"/>
+    <queryResponseWriter name="phps" class="solr.PHPSerializedResponseWriter"/>
 
       Custom response writers can be declared as needed...
     
@@ -1011,7 +1017,7 @@
        in Solr's conf/xslt directory.  Changes to xslt files are checked for
        every xsltCacheLifetimeSeconds.  
    -->
-  <queryResponseWriter name="xslt" class="org.apache.solr.request.XSLTResponseWriter">
+  <queryResponseWriter name="xslt" class="solr.XSLTResponseWriter">
     <int name="xsltCacheLifetimeSeconds">5</int>
   </queryResponseWriter>
 

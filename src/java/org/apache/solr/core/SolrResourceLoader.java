@@ -47,8 +47,8 @@ import org.apache.solr.common.util.FileUtils;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.request.QueryResponseWriter;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
@@ -63,7 +63,7 @@ public class SolrResourceLoader implements ResourceLoader
 
   static final String project = "solr";
   static final String base = "org.apache" + "." + project;
-  static final String[] packages = {"","analysis.","schema.","handler.","search.","update.","core.","request.","update.processor.","util.", "spelling.", "handler.component.", "handler.dataimport."};
+  static final String[] packages = {"","analysis.","schema.","handler.","search.","update.","core.","response.","request.","update.processor.","util.", "spelling.", "handler.component.", "handler.dataimport." };
 
   protected URLClassLoader classLoader;
   private final String instanceDir;

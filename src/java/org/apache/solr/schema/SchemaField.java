@@ -20,8 +20,8 @@ package org.apache.solr.schema;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.SortField;
-import org.apache.solr.request.XMLWriter;
-import org.apache.solr.request.TextResponseWriter;
+import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.response.XMLWriter;
 
 import java.util.Map;
 import java.io.IOException;

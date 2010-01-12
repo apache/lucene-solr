@@ -56,6 +56,8 @@ public class DataConfig {
 
   public Map<String, SchemaField> lowerNameVsSchemaField = new HashMap<String, SchemaField>();
 
+  boolean isMultiThreaded = false;
+
   public static class Document {
     // TODO - remove from here and add it to entity
     public String deleteQuery;
@@ -100,16 +102,12 @@ public class DataConfig {
 
     public List<Entity> entities;
 
-    public String[] primaryKeys;
-
     public Entity parentEntity;
 
     public EntityProcessorWrapper processor;
 
     @SuppressWarnings("unchecked")
     public DataSource dataSrc;
-
-    public Script script;
 
     public Map<String, List<Field>> colNameVsField = new HashMap<String, List<Field>>();
 

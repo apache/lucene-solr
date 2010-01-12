@@ -24,7 +24,7 @@ import java.util.Iterator;
 
 import org.apache.solr.common.params.SolrParams;
 
-/*
+/**
  * <p>This implementation is copied from Apache Nutch. </p>
  * <p>An implementation of a page signature. It calculates an MD5 hash
  * of a plain text "profile" of a page.</p>

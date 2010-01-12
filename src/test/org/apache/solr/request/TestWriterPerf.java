@@ -17,6 +17,9 @@
 
 package org.apache.solr.request;
 
+import org.apache.solr.response.BinaryQueryResponseWriter;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
