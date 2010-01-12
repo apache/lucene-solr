@@ -197,7 +197,7 @@ Other Changes
 * SOLR-1268: Add Lucene 2.9-dev r888785 FastVectorHighlighter contrib jar to lib. (koji)
 
 * SOLR-1538: Reordering of object allocations in ConcurrentLRUCache to eliminate
-  (an extremeely small) potential for deadlock.
+  (an extremely small) potential for deadlock.
   (gabriele renzi via hossman)
   
 * SOLR-1588: Removed some very old dead code.
