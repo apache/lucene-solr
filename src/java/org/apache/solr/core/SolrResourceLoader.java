@@ -63,7 +63,7 @@ public class SolrResourceLoader implements ResourceLoader
 
   static final String project = "solr";
   static final String base = "org.apache" + "." + project;
-  static final String[] packages = {"","analysis.","schema.","handler.","search.","update.","core.","response","request.","update.processor.","util.", "spelling.", "handler.component.", "handler.dataimport." };
+  static final String[] packages = {"","analysis.","schema.","handler.","search.","update.","core.","response.","request.","update.processor.","util.", "spelling.", "handler.component.", "handler.dataimport." };
 
   private URLClassLoader classLoader;
   private final String instanceDir;
