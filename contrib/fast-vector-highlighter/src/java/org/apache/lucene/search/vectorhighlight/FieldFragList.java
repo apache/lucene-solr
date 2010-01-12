@@ -70,6 +70,22 @@ public class FieldFragList {
       }
     }
     
+    public List<SubInfo> getSubInfos(){
+      return subInfos;
+    }
+    
+    public float getTotalBoost(){
+      return totalBoost;
+    }
+    
+    public int getStartOffset(){
+      return startOffset;
+    }
+    
+    public int getEndOffset(){
+      return endOffset;
+    }
+    
     @Override
     public String toString(){
       StringBuilder sb = new StringBuilder();
@@ -80,15 +96,24 @@ public class FieldFragList {
       return sb.toString();
     }
     
-    static class SubInfo {
+    public static class SubInfo {
       final String text;  // unnecessary member, just exists for debugging purpose
       final List<Toffs> termsOffsets;   // usually termsOffsets.size() == 1,
                               // but if position-gap > 1 and slop > 0 then size() could be greater than 1
       int seqnum;
+
       SubInfo( String text, List<Toffs> termsOffsets, int seqnum ){
         this.text = text;
         this.termsOffsets = termsOffsets;
         this.seqnum = seqnum;
+      }
+      
+      public List<Toffs> getTermsOffsets(){
+        return termsOffsets;
+      }
+      
+      public int getSeqnum(){
+        return seqnum;
       }
       
       @Override

@@ -171,8 +171,14 @@ public class FieldPhraseList {
         this.startOffset = startOffset;
         this.endOffset = endOffset;
       }
-      void setEndOffset( int endOffset ){
+      public void setEndOffset( int endOffset ){
         this.endOffset = endOffset;
+      }
+      public int getStartOffset(){
+        return startOffset;
+      }
+      public int getEndOffset(){
+        return endOffset;
       }
       @Override
       public String toString(){

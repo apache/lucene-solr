@@ -45,6 +45,9 @@ API Changes
    
  * LUCENE-2165: Add a constructor to SnowballAnalyzer that takes a Set of 
    stopwords, and deprecate the String[] one.  (Nick Burch via Robert Muir)
+
+ * LUCENE-2204: Change some package private classes/members to publicly accessible to implement
+   custom FragmentsBuilders. (Koji Sekiguchi)
    
 New features
 

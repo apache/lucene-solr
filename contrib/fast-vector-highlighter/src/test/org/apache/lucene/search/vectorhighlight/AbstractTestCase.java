@@ -268,6 +268,21 @@ public abstract class AbstractTestCase extends TestCase {
     protected boolean isDelimiter( int c ){
       return delimiters.indexOf( c ) >= 0;
     }
+    
+    public void reset( Reader input ) throws IOException {
+      super.reset( input );
+      reset();
+    }
+    
+    public void reset() throws IOException {
+      startTerm = 0;
+      nextStartOffset = 0;
+      snippet = null;
+      snippetBuffer.setLength( 0 );
+      charBufferIndex = BUFFER_SIZE;
+      charBufferLen = 0;
+      ch = 0;
+    }
   }
 
   protected void make1d1fIndex( String value ) throws Exception {
