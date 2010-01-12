@@ -24,8 +24,11 @@ package org.apache.solr.cloud;
 public final class ShardInfo {
 
   private final String url;
-  //nocommit do role based on existing ReplicationHandler role detection?
+
+  // nocommit do role based on existing ReplicationHandler role detection?
   private final Role role;
+
+  private String zkNodeName;
 
   public ShardInfo(String url) {
     this.url = url;
@@ -44,7 +47,14 @@ public final class ShardInfo {
   public String getUrl() {
     return url;
   }
-  
+
+  public String getZkNodeName() {
+    return zkNodeName;
+  }
+
+  public void setZkNodeName(String zkNodeName) {
+    this.zkNodeName = zkNodeName;
+  }
 
   enum Role {
     MASTER, SLAVE

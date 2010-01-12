@@ -54,7 +54,7 @@ import org.xml.sax.SAXException;
  */
 public class CoreContainer 
 {
-  private static final String DEFAULT_CORE_NAME = "DEFAULT_CORE";
+  static final String DEFAULT_CORE_NAME = "DEFAULT_CORE";
 
   protected static Logger log = LoggerFactory.getLogger(CoreContainer.class);
   
@@ -79,7 +79,6 @@ public class CoreContainer
   protected String solrConfigFilenameOverride;
   protected String solrDataDirOverride;
   protected String zkPortOverride;
-  protected String collection;
   private String testShardsListOverride;
   private ZkController zooKeeperController;
 
@@ -92,6 +91,8 @@ public class CoreContainer
   
   private void initZooKeeper(String zkHost, int zkClientTimeout) {
     // nocommit: perhaps get from solr.xml
+    
+    // if zkHost sys property is not set, we are not using ZooKeeper
     String zookeeperHost;
     if(zkHost == null) {
       zookeeperHost = System.getProperty("zkHost");
@@ -100,20 +101,39 @@ public class CoreContainer
     }
     
     if (zookeeperHost != null) {
+      // we are ZooKeeper enabled
       try {
-        // nocommit : exceptions
-        zooKeeperController = new ZkController(zookeeperHost, collection, host,  hostPort, hostContext, zkClientTimeout);
+        zooKeeperController = new ZkController(zookeeperHost, zkClientTimeout, host, hostPort, hostContext);
+        
+        String confDir = System.getProperty("bootstrapConfDir");
+        if(confDir != null) {
+          File dir = new File(confDir);
+          if(!dir.isDirectory()) {
+            throw new IllegalArgumentException("bootstrap conf dir must be directory");
+          }
+          String confName = System.getProperty("bootstrapConfName", "conf1");
+          zooKeeperController.uploadDirToCloud(dir, ZkController.CONFIGS_ZKNODE + confName);
+          
+        }
+        
       } catch (InterruptedException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
+        // Restore the interrupted status
+        Thread.currentThread().interrupt();
       } catch (TimeoutException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
+        log.error("Could not connect to ZooKeeper", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Could not connect to ZooKeeper", e);
       } catch (IOException e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
+        log.error("", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
+      } catch (KeeperException e) {
+        log.error("", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
       }
     }
+    
   }
 
   public Properties getContainerProperties() {
@@ -283,7 +303,8 @@ public class CoreContainer
       hostContext = cfg.get("solr/cores/@hostContext", "solr");
       host = cfg.get("solr/cores/@host", null);
 
-      collection = cfg.get("solr/cores/@collection", "collection1"); //nocommit: default collection
+      // nocommit read from core
+      //collection = cfg.get("solr/cores/@collection", "collection1"); //nocommit: default collection
 
       if(shareSchema){
         indexSchemaCache = new ConcurrentHashMap<String ,IndexSchema>();
@@ -341,9 +362,17 @@ public class CoreContainer
           }
           opt = DOMUtil.getAttr(node, "shardList", null);
           if(testShardsListOverride != null && name.equals("")) {
-            p.setShardList(testShardsListOverride);
+            p.getCloudDescriptor().setShardList(testShardsListOverride);
           } else if(opt != null) {
-            p.setShardList(opt);
+            p.getCloudDescriptor().setShardList(opt);
+          }
+          opt = DOMUtil.getAttr(node, "role", null);
+          if(opt != null) {
+            p.getCloudDescriptor().setRole(opt);
+          }
+          opt = DOMUtil.getAttr(node, "collection", null);
+          if (opt != null) {
+            p.getCloudDescriptor().setCollectionName(opt);
           }
           opt = DOMUtil.getAttr(node, "properties", null);
           if (opt != null) {
@@ -364,11 +393,31 @@ public class CoreContainer
           SolrException.logOnce(log,null,ex);
         }
       }
-    }
-
-    finally {
+    } finally {
       if (cfgis != null) {
         try { cfgis.close(); } catch (Exception xany) {}
+      }
+    }
+    
+    
+    if(zooKeeperController != null) {
+      // nocommit : exceptions
+      try {
+        zooKeeperController.loadCloudInfo();
+        
+        // nocommit : set shards node watches
+        zooKeeperController.watchShards();
+      } catch (InterruptedException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace();
+      } catch (KeeperException e) {
+        log.error("ZooKeeper Exception", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "ZooKeeper Exception", e);
+      } catch (IOException e) {
+        log.error("", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
       }
     }
   }
@@ -479,16 +528,18 @@ public class CoreContainer
     String instanceDir = idir.getPath();
     
     // Initialize the solr config
-    SolrResourceLoader solrLoader ;
+    SolrResourceLoader solrLoader = null;
     
     SolrConfig config = null;
+    String zkConfigName = null;
     if(zooKeeperController == null) {
       solrLoader = new SolrResourceLoader(instanceDir, libLoader, getCoreProps(instanceDir, dcore.getPropertiesName(),dcore.getCoreProperties()));
       config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
     } else {
-      solrLoader = new ZkSolrResourceLoader(instanceDir, collection, libLoader, getCoreProps(instanceDir, dcore.getPropertiesName(),dcore.getCoreProperties()), zooKeeperController);
       try {
-        config = zooKeeperController.getConfig(zooKeeperController.getConfigName(), dcore.getConfigName(), solrLoader);
+        zkConfigName = zooKeeperController.readConfigName(dcore.getCloudDescriptor().getCollectionName());
+        solrLoader = new ZkSolrResourceLoader(instanceDir, zkConfigName, libLoader, getCoreProps(instanceDir, dcore.getPropertiesName(),dcore.getCoreProperties()), zooKeeperController);
+        config = zooKeeperController.getConfig(zkConfigName, dcore.getConfigName(), solrLoader);
       } catch (KeeperException e) {
         log.error("ZooKeeper Exception", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -496,7 +547,7 @@ public class CoreContainer
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
-        //nocommit: we may not know the config name - now what
+        //nocommit: not good - we can't continue
       }
     }
     IndexSchema schema = null;
@@ -531,7 +582,8 @@ public class CoreContainer
     if(schema == null){
       if(zooKeeperController != null) {
         try {
-          schema = zooKeeperController.getSchema(zooKeeperController.getConfigName(), dcore.getSchemaName(), config, solrLoader);
+          System.out.println("config:" + zkConfigName);
+          schema = zooKeeperController.getSchema(zkConfigName, dcore.getSchemaName(), config, solrLoader);
         } catch (KeeperException e) {
           log.error("ZooKeeper Exception", e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

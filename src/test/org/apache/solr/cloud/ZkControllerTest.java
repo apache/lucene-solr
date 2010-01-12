@@ -57,6 +57,7 @@ public class ZkControllerTest extends TestCase {
         + "zookeeper/server1/data";
     ZkTestServer server = null;
     SolrZkClient zkClient = null;
+    ZkController zkController = null;
     try {
       server = new ZkTestServer(zkDir);
       server.run();
@@ -79,10 +80,10 @@ public class ZkControllerTest extends TestCase {
         zkClient.printLayoutToStdOut();
       }
 
-      ZkController zkController = new ZkController(ZOO_KEEPER_ADDRESS,
-          "collection1", "localhost", "8983", "/solr", TIMEOUT);
+      zkController = new ZkController(ZOO_KEEPER_ADDRESS, TIMEOUT,
+          "localhost", "8983", "/solr");
       Map<String,ShardInfoList> shardInfoMap = zkController
-          .readShardInfo(shardsPath);
+          .readShardsNode(shardsPath);
       assertTrue(shardInfoMap.size() > 0);
 
       Set<Entry<String,ShardInfoList>> entries = shardInfoMap.entrySet();
@@ -117,6 +118,9 @@ public class ZkControllerTest extends TestCase {
       if (server != null) {
         server.shutdown();
       }
+      if(zkController != null) {
+        zkController.close();
+      }
     }
   }
 
@@ -140,12 +144,40 @@ public class ZkControllerTest extends TestCase {
       zkClient.printLayoutToStdOut();
     }
 
-    ZkController zkController = new ZkController(ZOO_KEEPER_ADDRESS,
-        "collection1", "localhost", "8983", "/solr", TIMEOUT);
+    ZkController zkController = new ZkController(ZOO_KEEPER_ADDRESS, TIMEOUT,
+        "localhost", "8983", "/solr");
     String configName = zkController.readConfigName(COLLECTION_NAME);
     assertEquals(configName, actualConfigName);
 
+
+    // nocommit : close in finally
+    zkController.close();
     zkClient.close();
+    server.shutdown();
+
+  }
+  
+  public void testUploadToCloud() throws Exception {
+    String zkDir = tmpDir.getAbsolutePath() + File.separator
+        + "zookeeper/server1/data";
+
+    ZkTestServer server = new ZkTestServer(zkDir);
+    server.run();
+
+    AbstractZkTestCase.makeSolrZkNode();
+
+    ZkController zkController = new ZkController(ZOO_KEEPER_ADDRESS, TIMEOUT,
+        "localhost", "8983", "/solr");
+
+
+    zkController.uploadDirToCloud(new File("solr/conf"), ZkController.CONFIGS_ZKNODE + "/config1");
+    
+    if (DEBUG) {
+      zkController.printLayoutToStdOut();
+    }
+    
+    // nocommit close in finally
+    zkController.close();
     server.shutdown();
 
   }
@@ -160,7 +192,7 @@ public class ZkControllerTest extends TestCase {
     props.put(CollectionInfo.SHARD_LIST_PROP, shardList);
     props.store(baos, ZkController.PROPS_DESC);
 
-    zkClient.create(shardsPath + ZkController.NODE_ZKPREFIX,
+    zkClient.create(shardsPath + ZkController.CORE_ZKPREFIX,
         baos.toByteArray(), CreateMode.EPHEMERAL_SEQUENTIAL);
   }
 

@@ -40,8 +40,8 @@ public final class CollectionInfo {
       .getLogger(CollectionInfo.class);
   
   static final String SHARD_LIST_PROP = "shard_list";
-
   static final String URL_PROP = "url";
+  static final String ROLE_PROP = "role";
   
   // maps shard name to the shard addresses and roles
   private final Map<String,ShardInfoList> shardNameToShardInfoList;
@@ -77,7 +77,7 @@ public final class CollectionInfo {
     HashMap<String,ShardInfoList> shardNameToShardList = new HashMap<String,ShardInfoList>();
 
     if (zkClient.exists(path, null) == null) {
-      throw new IllegalStateException("Cannot find zk node that should exist:"
+      throw new IllegalStateException("Cannot find zk shards node that should exist:"
           + path);
     }
     List<String> nodes = zkClient.getChildren(path, null);

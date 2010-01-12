@@ -18,24 +18,49 @@ package org.apache.solr.cloud;
  */
 
 import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- *
+ * nocommit : default needs backoff retry reconnection attempts
  */
 public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
 
+  private static Logger log = LoggerFactory.getLogger(DefaultConnectionStrategy.class);
+  private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+  
   @Override
   public void connect(String serverAddress, int timeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException {
     updater.update(new ZooKeeper(serverAddress, timeout, watcher));
   }
 
   @Override
-  public void reconnect(String serverAddress, int timeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException {
-    updater.update(new ZooKeeper(serverAddress, timeout, watcher));
+  public void reconnect(final String serverAddress, final int zkClientTimeout,
+      final Watcher watcher, final ZkUpdate updater) throws IOException {
+    log.info("Starting reconnect to ZooKeeper attempts ...");
+    executor.scheduleAtFixedRate(new Runnable() {
+      public void run() {
+        log.info("Attempting the connect...");
+        try {
+          updater.update(new ZooKeeper(serverAddress, zkClientTimeout, watcher));
+          // nocommit
+          log.info("Reconnected to ZooKeeper");
+        } catch (Exception e) {
+          // nocommit
+          e.printStackTrace();
+          log.info("Reconnect to ZooKeeper failed");
+        }
+        executor.shutdownNow();
+        
+      }
+    }, 0, 1000, TimeUnit.MILLISECONDS); // nocommit : we actually want to do backoff retry
   }
 
 }

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.solr.cloud.SolrZkClient.OnReconnect;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
@@ -45,12 +46,15 @@ class ConnectionManager implements Watcher {
 
   private SolrZkClient client;
 
-  public ConnectionManager(String name, SolrZkClient client, String zkServerAddress, int zkClientTimeout, ZkClientConnectionStrategy strat) {
+  private OnReconnect onReconnect;
+
+  public ConnectionManager(String name, SolrZkClient client, String zkServerAddress, int zkClientTimeout, ZkClientConnectionStrategy strat, OnReconnect onConnect) {
     this.name = name;
     this.client = client;
     this.connectionStrategy = strat;
     this.zkServerAddress = zkServerAddress;
     this.zkClientTimeout = zkClientTimeout;
+    this.onReconnect = onConnect;
     reset();
   }
 
@@ -62,7 +66,8 @@ class ConnectionManager implements Watcher {
 
   public synchronized void process(WatchedEvent event) {
     if (log.isInfoEnabled()) {
-      log.info("Watcher " + this + " name:" + name + " got event " + event);
+      log.info("Watcher " + this + " name:" + name + " got event " + event
+          + " path:" + event.getPath() + " type:" + event.getType());
     }
 
     state = event.getState();
@@ -72,9 +77,6 @@ class ConnectionManager implements Watcher {
     } else if (state == KeeperState.Expired) {
       connected = false;
       log.info("Attempting to reconnect to ZooKeeper...");
-      boolean connected = true;
-
-      // nocommit : close old ZooKeeper client?
 
       try {
         connectionStrategy.reconnect(zkServerAddress, zkClientTimeout, this, new ZkClientConnectionStrategy.ZkUpdate() {
@@ -82,26 +84,36 @@ class ConnectionManager implements Watcher {
           public void update(ZooKeeper keeper) throws InterruptedException, TimeoutException, IOException {
            waitForConnected(SolrZkClient.CONNECT_TIMEOUT);
            client.updateKeeper(keeper);
+           if(onReconnect != null) {
+             onReconnect.command();
+           }
            ConnectionManager.this.connected = true;
           }
         });
       } catch (Exception e) {
-        // TODO Auto-generated catch block
+        // nocommit
         e.printStackTrace();
       }
 
       log.info("Connected:" + connected);
-      // nocommit: start reconnect attempts
     } else if (state == KeeperState.Disconnected) {
+      if(connected == false) {
+        // nocommit
+        System.out.println("we already know we are dc'd - why are we notified twice?");
+        return;
+      }
       connected = false;
-      // nocommit: start reconnect attempts
-      
+      // nocommit: start reconnect attempts - problem if this is shutdown related?
+
       try {
         connectionStrategy.reconnect(zkServerAddress, zkClientTimeout, this, new ZkClientConnectionStrategy.ZkUpdate() {
           @Override
           public void update(ZooKeeper keeper) throws InterruptedException, TimeoutException, IOException {
            waitForConnected(SolrZkClient.CONNECT_TIMEOUT);
            client.updateKeeper(keeper);
+           if(onReconnect != null) {
+             onReconnect.command();
+           }
            ConnectionManager.this.connected = true;
           }
         });
@@ -124,9 +136,8 @@ class ConnectionManager implements Watcher {
     return state;
   }
 
-  public synchronized ZooKeeper waitForConnected(long waitForConnection)
+  public synchronized void waitForConnected(long waitForConnection)
       throws InterruptedException, TimeoutException, IOException {
-    ZooKeeper keeper = new ZooKeeper(zkServerAddress, zkClientTimeout, this);
     long expire = System.currentTimeMillis() + waitForConnection;
     long left = waitForConnection;
     while (!connected && left > 0) {
@@ -136,7 +147,6 @@ class ConnectionManager implements Watcher {
     if (!connected) {
       throw new TimeoutException("Could not connect to ZooKeeper within " + waitForConnection + " ms");
     }
-    return keeper;
   }
 
   public synchronized void waitForDisconnected(long timeout)

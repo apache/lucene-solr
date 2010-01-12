@@ -42,7 +42,8 @@ public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
       + System.getProperty("file.separator") + getClass().getName() + "-"
       + System.currentTimeMillis());
 
-  private ZkTestServer zkServer;
+  protected ZkTestServer zkServer;
+  protected String zkDir;
 
   public AbstractZkTestCase() {
 
@@ -59,7 +60,7 @@ public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
   public void setUp() throws Exception {
     try {
       System.setProperty("zkHost", ZOO_KEEPER_ADDRESS);
-      String zkDir = tmpDir.getAbsolutePath() + File.separator
+      zkDir = tmpDir.getAbsolutePath() + File.separator
       + "zookeeper/server1/data";
       zkServer = new ZkTestServer(zkDir);
       zkServer.run();
@@ -103,7 +104,7 @@ public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
 
     zkClient = new SolrZkClient(ZOO_KEEPER_ADDRESS, AbstractZkTestCase.TIMEOUT);
     
-    zkClient.makePath("/collections/collection1/config=collection1");
+    //zkClient.makePath("/collections/collection1/config=collection1");
 
     putConfig(zkClient, config);
     putConfig(zkClient, schema);
@@ -119,7 +120,7 @@ public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
   }
 
   private static void putConfig(SolrZkClient zkConnection, String name) throws Exception {
-    zkConnection.write("/configs/collection1/" + name, new File("solr"
+    zkConnection.setData("/configs/conf1/" + name, new File("solr"
         + File.separator + "conf" + File.separator + name));
   }
 

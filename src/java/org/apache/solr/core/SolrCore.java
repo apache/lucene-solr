@@ -50,6 +50,7 @@ import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.apache.zookeeper.KeeperException;
 import org.apache.commons.io.IOUtils;
 import org.xml.sax.SAXException;
 
@@ -531,7 +532,21 @@ public final class SolrCore implements SolrInfoMBean {
     
     zooKeeperComponent = cd.getCoreContainer().getZooKeeperController();
     if(zooKeeperComponent != null) {
-      this.zkNodePath = zooKeeperComponent.registerShard(this);
+      // load ZooKeeper - nocommit: somehow fall back to local configs?
+      try {
+        this.zkNodePath = zooKeeperComponent.register(this);
+      } catch (InterruptedException e) {
+        // Restore the interrupted status
+        Thread.currentThread().interrupt();
+      } catch (KeeperException e) {
+        log.error("ZooKeeper Exception", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "ZooKeeper Exception", e);
+      } catch (IOException e) {
+        log.error("", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
+      } 
     }
 
     //Initialize JMX
@@ -711,7 +726,7 @@ public final class SolrCore implements SolrInfoMBean {
     log.info(logid+" CLOSING SolrCore " + this);
     // nocommit : if ZooKeeper, unregister core
     if(zooKeeperComponent != null) {
-      zooKeeperComponent.unRegisterShard(this, zkNodePath);
+      zooKeeperComponent.unregister(this, zkNodePath);
     }
     try {
       infoRegistry.clear();

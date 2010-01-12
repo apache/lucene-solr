@@ -22,7 +22,6 @@ import org.apache.solr.update.SolrIndexWriter;
 
 
 /**
- * TODO: assert config came from ZooKeeper
  *
  */
 public class BasicZkTest extends AbstractZkTestCase {
@@ -81,7 +80,14 @@ public class BasicZkTest extends AbstractZkTestCase {
       assertU(a, a);
     }
     assertU(commit());
-
+    
+    zkServer.shutdown();
+    Thread.sleep(300);
+    // try a reconnect
+    
+    zkServer = new ZkTestServer(zkDir);
+    zkServer.run();
+    
     // test maxint
     assertQ(req("q", "id:[100 TO 110]", "rows", "2147483647"),
         "//*[@numFound='4']");
@@ -102,6 +108,6 @@ public class BasicZkTest extends AbstractZkTestCase {
     assertQ(req("id:[100 TO 110]"), "//*[@numFound='0']");
     
     //nocommit
-    System.out.println("search nodes:" + h.getCoreContainer().getZooKeeperController().getSearchNodes());
+    System.out.println("search nodes:" + h.getCoreContainer().getZooKeeperController().getSearchNodes("DEFAULT_CORE"));
   }
 }

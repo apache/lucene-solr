@@ -85,18 +85,18 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
      
       RandVal.uniqueValues = new HashSet(); //reset random values
       doTest();
-      printeLayout();
+      printLayout();
 
       destroyServers();
     }
   }
 
   public void tearDown() throws Exception {
-    printeLayout();
+    printLayout();
     super.tearDown();
   }
   
-  private void printeLayout() throws Exception {
+  protected void printLayout() throws Exception {
     SolrZkClient zkClient = new SolrZkClient(AbstractZkTestCase.JUST_HOST_NAME, AbstractZkTestCase.TIMEOUT);
     zkClient.printLayoutToStdOut();
     zkClient.close();

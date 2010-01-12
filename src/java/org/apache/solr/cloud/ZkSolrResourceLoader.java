@@ -69,8 +69,8 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     //nocommit:
     System.out.println("look for:" + file);
     try {
-      if (zkController.exists(file)) {
-        byte[] bytes = zkController.getKeeperConnection().getData(getConfigDir() + "/" + resource, null, null);
+      if (zkController.pathExists(file)) {
+        byte[] bytes = zkController.getZkClient().getData(getConfigDir() + "/" + resource, null, null);
         return new ByteArrayInputStream(bytes);
       }
     } catch (Exception e) {

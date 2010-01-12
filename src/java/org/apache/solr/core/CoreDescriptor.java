@@ -20,6 +20,8 @@ package org.apache.solr.core;
 import java.util.Properties;
 import java.io.File;
 
+import org.apache.solr.cloud.CloudDescriptor;
+
 /**
  * A Solr core descriptor
  *
@@ -34,11 +36,16 @@ public class CoreDescriptor {
   protected String schemaName;
   private final CoreContainer coreContainer;
   private Properties coreProperties;
-  private String shardList;
+  
+  // nocommit : only filled when using ZooKeeper
+  private CloudDescriptor cloudDesc = new CloudDescriptor();
 
   public CoreDescriptor(CoreContainer coreContainer, String name, String instanceDir) {
     this.coreContainer = coreContainer;
     this.name = name;
+    
+    // cloud collection defaults to core name
+    this.cloudDesc.setCollectionName(name == "" ? CoreContainer.DEFAULT_CORE_NAME : name);
     if (name == null) {
       throw new RuntimeException("Core needs a name");
     }
@@ -173,13 +180,7 @@ public class CoreDescriptor {
     }
   }
 
-  public void setShardList(String shardList) {
-    System.out.println("set shard list:" + shardList);
-    this.shardList = shardList;
-  }
-  
-  //nocommit: may be null
-  public String getShardList() {
-    return shardList;
+  public CloudDescriptor getCloudDescriptor() {
+    return cloudDesc;
   }
 }

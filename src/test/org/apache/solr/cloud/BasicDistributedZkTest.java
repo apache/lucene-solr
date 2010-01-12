@@ -21,6 +21,7 @@ import java.util.HashSet;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.core.CoreDescriptor;
 
 /**
  * nocommit: 
@@ -73,6 +74,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
 
   public void testDistribSearch() throws Exception {
     for (int nServers = 3; nServers < 4; nServers++) {
+      printLayout();
       createServers(nServers);
       RandVal.uniqueValues = new HashSet(); //reset random values
       doTest();
@@ -127,6 +129,9 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       query("q","*:*", "sort",f+" asc");
     }
 
+    h.getCoreContainer().getCore("DEFAULT_CORE").close();
+    CoreDescriptor dcore= new CoreDescriptor( h.getCoreContainer(), "testcore", "testcore");
+    h.getCoreContainer().create(dcore);
 
     // these queries should be exactly ordered and scores should exactly match
     query("q","*:*", "sort",i1+" desc");
@@ -227,6 +232,8 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       query("q","fox duplicate horses", "hl","true", "hl.fl", t1);
       query("q","*:*", "rows",100);
     }
+    
+    super.printLayout();
 
     // Thread.sleep(10000000000L);
   }

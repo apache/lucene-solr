@@ -18,24 +18,51 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import junit.framework.TestCase;
 
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
 
 public class ZkSolrClientTest extends TestCase {
   protected File tmpDir = new File(System.getProperty("java.io.tmpdir")
       + System.getProperty("file.separator") + getClass().getName() + "-"
       + System.currentTimeMillis());
   
-  public void testBasic() throws Exception {
+  public void testConnect() throws Exception {
+    String zkDir = tmpDir.getAbsolutePath() + File.separator
+    + "zookeeper/server1/data";
+    ZkTestServer server = null;
+
+    server = new ZkTestServer(zkDir);
+    server.run();
+
+    SolrZkClient zkClient = new SolrZkClient(AbstractZkTestCase.ZOO_KEEPER_ADDRESS,
+        AbstractZkTestCase.TIMEOUT);
+    
+    zkClient.close();
+    server.shutdown();
+  }
+  
+  public void testMakeRootNode() throws Exception {
+    String zkDir = tmpDir.getAbsolutePath() + File.separator
+    + "zookeeper/server1/data";
+    ZkTestServer server = null;
+
+    server = new ZkTestServer(zkDir);
+    server.run();
+
+    AbstractZkTestCase.makeSolrZkNode();
+    
+    SolrZkClient zkClient = new SolrZkClient(AbstractZkTestCase.ZOO_KEEPER_SERVER,
+        AbstractZkTestCase.TIMEOUT);
+    
+    assertTrue(zkClient.exists("/solr"));
+    
+    zkClient.close();
+    server.shutdown();
+  }
+  
+  public void testReconnect() throws Exception {
     String zkDir = tmpDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     ZkTestServer server = null;
@@ -47,40 +74,7 @@ public class ZkSolrClientTest extends TestCase {
       AbstractZkTestCase.makeSolrZkNode();
 
       zkClient = new SolrZkClient(AbstractZkTestCase.ZOO_KEEPER_ADDRESS,
-          AbstractZkTestCase.TIMEOUT, new ZkClientConnectionStrategy() {
-            ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-            @Override
-            public void reconnect(final String serverAddress, final int zkClientTimeout,
-                final Watcher watcher, final ZkUpdate updater) throws IOException {
-              System.out.println("reconnecting");
-              executor.scheduleAtFixedRate(new Runnable() {
-                public void run() {
-                  // nocommit
-                  System.out.println("Attempting the connect...");
-                  try {
-                    updater.update(new ZooKeeper(serverAddress, zkClientTimeout, watcher));
-                    // nocommit
-                    System.out.println("Connect done");
-                  } catch (Exception e) {
-                    // nocommit
-                    e.printStackTrace();
-                    System.out.println("failed reconnect");
-                  }
-                  executor.shutdownNow();
-                  
-                }
-              }, 0, 400, TimeUnit.MILLISECONDS);
-              
-            }
-            
-            @Override
-            public void connect(String zkServerAddress, int zkClientTimeout,
-                Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException {
-              System.out.println("connecting");
-              updater.update(new ZooKeeper(zkServerAddress, zkClientTimeout, watcher));
-              
-            }
-          });
+          AbstractZkTestCase.TIMEOUT);
       String shardsPath = "/collections/collection1/shards";
       zkClient.makePath(shardsPath);
 
@@ -103,7 +97,9 @@ public class ZkSolrClientTest extends TestCase {
       server = new ZkTestServer(zkDir);
       server.run();
       
-      Thread.sleep(80);
+      // wait for reconnect
+      Thread.sleep(1000);
+      
       zkClient.makePath("collections/collection1/config=collection3");
       
       zkClient.printLayoutToStdOut();
@@ -114,6 +110,7 @@ public class ZkSolrClientTest extends TestCase {
     } catch(Exception e) {
       // nocommit
       e.printStackTrace();
+      throw e;
     } finally {
     
       if (zkClient != null) {
