@@ -4,6 +4,16 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 $Id:$
 
+1/11/2010
+  LUCENE-2181: Add a benchmark for collation. This adds NewLocaleTask,
+  which sets a Locale in the run data for collation to use, and can be
+  used in the future for benchmarking localized range queries and sorts.
+  Also add NewCollationAnalyzerTask, which works with both JDK and ICU
+  Collator implementations. Fix ReadTokensTask to not tokenize fields
+  unless they should be tokenized according to DocMaker config. The 
+  easiest way to run the benchmark is to run 'ant collation'
+  (Steven Rowe via Robert Muir)
+
 12/22/2009
   LUCENE-2178: Allow multiple locations to add to the class path with
   -Dbenchmark.ext.classpath=... when running "ant run-task" (Steven

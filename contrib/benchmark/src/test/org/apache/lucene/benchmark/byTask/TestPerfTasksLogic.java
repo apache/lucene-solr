@@ -21,15 +21,23 @@ import java.io.StringReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.BufferedReader;
+import java.text.Collator;
 import java.util.List;
 import java.util.Iterator;
+import java.util.Locale;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker;
 import org.apache.lucene.benchmark.byTask.tasks.CountingSearchTestTask;
 import org.apache.lucene.benchmark.byTask.tasks.CountingHighlighterTestTask;
 import org.apache.lucene.benchmark.byTask.stats.TaskStats;
+import org.apache.lucene.collation.CollationKeyAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.SerialMergeScheduler;
@@ -464,9 +472,13 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     TermDocs termDocs = reader.termDocs();
     int totalTokenCount2 = 0;
     while(terms.next()) {
-      termDocs.seek(terms.term());
-      while(termDocs.next())
-        totalTokenCount2 += termDocs.freq();
+      Term term = terms.term();
+      /* not-tokenized, but indexed field */
+      if (term != null && term.field() != DocMaker.ID_FIELD) { 
+        termDocs.seek(terms.term());
+        while (termDocs.next())
+          totalTokenCount2 += termDocs.freq();
+      }
     }
     reader.close();
 
@@ -850,6 +862,119 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     };
   }
 
+  /**
+   * Test that we can change the Locale in the runData,
+   * that it is parsed as we expect.
+   */
+  public void testLocale() throws Exception {
+    // empty Locale: clear it (null)
+    Benchmark benchmark = execBenchmark(getLocaleConfig(""));
+    assertNull(benchmark.getRunData().getLocale());
+
+    // ROOT locale
+    benchmark = execBenchmark(getLocaleConfig("ROOT"));
+    assertEquals(new Locale(""), benchmark.getRunData().getLocale());
+    
+    // specify just a language 
+    benchmark = execBenchmark(getLocaleConfig("de"));
+    assertEquals(new Locale("de"), benchmark.getRunData().getLocale());
+    
+    // specify language + country
+    benchmark = execBenchmark(getLocaleConfig("en,US"));
+    assertEquals(new Locale("en", "US"), benchmark.getRunData().getLocale());
+    
+    // specify language + country + variant
+    benchmark = execBenchmark(getLocaleConfig("no,NO,NY"));
+    assertEquals(new Locale("no", "NO", "NY"), benchmark.getRunData().getLocale());
+  }
+   
+  private static String[] getLocaleConfig(String localeParam) {
+    String algLines[] = {
+        "# ----- properties ",
+        "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
+        "docs.file=" + getReuters20LinesFile(),
+        "content.source.log.step=3",
+        "content.source.forever=false",
+        "directory=RAMDirectory",
+        "# ----- alg ",
+        "{ \"Rounds\"",
+        "  ResetSystemErase",
+        "  NewLocale(" + localeParam + ")",
+        "  CreateIndex",
+        "  { \"AddDocs\"  AddDoc > : * ",
+        "  NewRound",
+        "} : 1",
+    };
+    return algLines;
+  }
+  
+  /**
+   * Test that we can create CollationAnalyzers.
+   */
+  public void testCollator() throws Exception {
+    // ROOT locale
+    Benchmark benchmark = execBenchmark(getCollatorConfig("ROOT", "impl:jdk"));
+    CollationKeyAnalyzer expected = new CollationKeyAnalyzer(Collator
+        .getInstance(new Locale("")));
+    assertEqualCollation(expected, benchmark.getRunData().getAnalyzer(), "foobar");
+    
+    // specify just a language
+    benchmark = execBenchmark(getCollatorConfig("de", "impl:jdk"));
+    expected = new CollationKeyAnalyzer(Collator.getInstance(new Locale("de")));
+    assertEqualCollation(expected, benchmark.getRunData().getAnalyzer(), "foobar");
+    
+    // specify language + country
+    benchmark = execBenchmark(getCollatorConfig("en,US", "impl:jdk"));
+    expected = new CollationKeyAnalyzer(Collator.getInstance(new Locale("en",
+        "US")));
+    assertEqualCollation(expected, benchmark.getRunData().getAnalyzer(), "foobar");
+    
+    // specify language + country + variant
+    benchmark = execBenchmark(getCollatorConfig("no,NO,NY", "impl:jdk"));
+    expected = new CollationKeyAnalyzer(Collator.getInstance(new Locale("no",
+        "NO", "NY")));
+    assertEqualCollation(expected, benchmark.getRunData().getAnalyzer(), "foobar");
+  }
+  
+  private void assertEqualCollation(Analyzer a1, Analyzer a2, String text)
+      throws Exception {
+    TokenStream ts1 = a1.tokenStream("bogus", new StringReader(text));
+    TokenStream ts2 = a2.tokenStream("bogus", new StringReader(text));
+    ts1.reset();
+    ts2.reset();
+    TermAttribute termAtt1 = ts1.addAttribute(TermAttribute.class);
+    TermAttribute termAtt2 = ts2.addAttribute(TermAttribute.class);
+    assertTrue(ts1.incrementToken());
+    assertTrue(ts2.incrementToken());
+    assertEquals(termAtt1.term(), termAtt2.term());
+    assertFalse(ts1.incrementToken());
+    assertFalse(ts2.incrementToken());
+    ts1.close();
+    ts2.close();
+  }
+  
+  private static String[] getCollatorConfig(String localeParam, 
+      String collationParam) {
+    String algLines[] = {
+        "# ----- properties ",
+        "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
+        "docs.file=" + getReuters20LinesFile(),
+        "content.source.log.step=3",
+        "content.source.forever=false",
+        "directory=RAMDirectory",
+        "# ----- alg ",
+        "{ \"Rounds\"",
+        "  ResetSystemErase",
+        "  NewLocale(" + localeParam + ")",
+        "  NewCollationAnalyzer(" + collationParam + ")",
+        "  CreateIndex",
+        "  { \"AddDocs\"  AddDoc > : * ",
+        "  NewRound",
+        "} : 1",
+    };
+    return algLines;
+  }
+  
   private static String getReuters20LinesFile() {
     return System.getProperty("lucene.common.dir").replace('\\','/') +
       "/contrib/benchmark/src/test/org/apache/lucene/benchmark/reuters.first20.lines.txt";

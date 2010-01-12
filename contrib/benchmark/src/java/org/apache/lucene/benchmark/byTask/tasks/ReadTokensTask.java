@@ -67,6 +67,8 @@ public class ReadTokensTask extends PerfTask {
     Analyzer analyzer = getRunData().getAnalyzer();
     int tokenCount = 0;
     for(final Fieldable field : fields) {
+      if (!field.isTokenized()) continue;
+      
       final TokenStream stream;
       final TokenStream streamValue = field.tokenStreamValue();
 

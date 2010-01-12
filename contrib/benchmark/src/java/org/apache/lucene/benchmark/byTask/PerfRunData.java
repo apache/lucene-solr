@@ -20,6 +20,7 @@ package org.apache.lucene.benchmark.byTask;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
@@ -61,6 +62,7 @@ public class PerfRunData {
   private Directory directory;
   private Analyzer analyzer;
   private DocMaker docMaker;
+  private Locale locale;
   
   // we use separate (identical) instances for each "read" task type, so each can iterate the quries separately.
   private HashMap<Class<? extends ReadTask>,QueryMaker> readTaskQueryMaker;
@@ -242,6 +244,20 @@ public class PerfRunData {
   /** Returns the docMaker. */
   public DocMaker getDocMaker() {
     return docMaker;
+  }
+
+  /**
+   * @return the locale
+   */
+  public Locale getLocale() {
+    return locale;
+  }
+
+  /**
+   * @param locale the locale to set
+   */
+  public void setLocale(Locale locale) {
+    this.locale = locale;
   }
 
   /**
