@@ -33,8 +33,8 @@
     <pathelement location="${build.dir}/classes/java"/>
   </path>
 
-  <path id="tag.classpath">
-    <pathelement location="${build.dir}/${tag}/classes/java"/>
+  <path id="backwards.classpath">
+    <pathelement location="${build.dir}/${backwards.branch}/classes/java"/>
   </path>
 
   <path id="demo.classpath">
@@ -76,73 +76,93 @@
   <target name="test-core" depends="common.test"
           description="Runs unit tests for the core Lucene code"
   />
-  <target name="test" depends="test-core, test-contrib, test-tag"
+  <target name="test" depends="test-core, test-contrib, test-backwards"
           description="Runs all unit tests (core, contrib and back-compat)"
   />
-
-  <property name="tag" value="${compatibility.tag}"/>
 	
-  <path id="tag.test.classpath">
+  <path id="backwards.test.classpath">
     <path refid="junit-path"/>
-    <pathelement location="${build.dir}/${tag}/${tag}.jar"/>
+    <pathelement location="${build.dir}/${backwards.branch}/${backwards.branch}.jar"/>
   </path>
 	
-  <path id="tag.junit.classpath">
+  <path id="backwards.junit.classpath">
     <path refid="junit-path"/>
-    <pathelement location="${build.dir}/${tag}/classes/test"/>
+    <pathelement location="${build.dir}/${backwards.branch}/classes/test"/>
     <pathelement location="${build.dir}/${final.name}.jar"/>
     <pathelement path="${java.class.path}"/>
   </path>
 
-  <target name="download-tag"
-  	description="Downloads a previous Lucene version. Specify tag version like this: -Dtag=lucene_2_4_back_compat_tests_20090127">
-	<sequential>
-	  <mkdir dir="${tags.dir}/${tag}"/>
-      <exec dir="${tags.dir}/${tag}" executable="${svn.exe}"
-            failifexecutionfails="false">
-        <arg line="checkout http://svn.apache.org/repos/asf/lucene/java/tags/${tag}/src/"/>
+  <available property="backwards.available" file="${backwards.dir}/${backwards.branch}/src"/>
+  
+  <target name="init-backwards-checkout" unless="backwards.available" description="Creates the sparse svn checkout for backwards branch.">
+    <sequential>
+      <echo>Initial SVN checkout for '${backwards.branch}'...</echo>
+      <mkdir dir="${backwards.dir}"/>
+      <exec dir="${backwards.dir}" executable="${svn.exe}" failifexecutionfails="false" failonerror="true">
+        <arg line="checkout -r ${backwards.rev} --depth empty http://svn.apache.org/repos/asf/lucene/java/branches/${backwards.branch} ${backwards.branch}"/>
       </exec>
-	</sequential>
+      <exec dir="${backwards.dir}" executable="${svn.exe}" failifexecutionfails="false" failonerror="true">
+        <arg line="update -r ${backwards.rev} --set-depth infinity ${backwards.branch}/src"/>
+      </exec>
+    </sequential>
+  </target>
+
+  <target name="download-backwards" depends="init-backwards-checkout" description="Downloads a previous Lucene version.">
+    <sequential>
+      <echo>Update backwards branch '${backwards.branch}' to revision ${backwards.rev}...</echo>
+      <exec dir="${backwards.dir}" executable="${svn.exe}" failifexecutionfails="false" failonerror="true">
+        <arg line="update -r ${backwards.rev} ${backwards.branch}"/>
+      </exec>
+    </sequential>
   </target>
 	
-  <target name="test-tag" depends="download-tag, compile-core, jar-core"
-  	description="Runs tests of a previous Lucene version. Specify tag version like this: -Dtag=branches/lucene_2_9_back_compat_tests">
+  <!-- remove this -->
+  <target name="test-tag" depends="test-backwards" description="deprecated"/>
+
+  <target name="test-backwards" depends="download-backwards, compile-core, jar-core"
+  	description="Runs tests of a previous Lucene version.">
 	<sequential>
-      <available property="tag.available" file="${tags.dir}/${tag}/src/test" />
+    <available property="backwards.tests.available" file="${backwards.dir}/${backwards.branch}/src/test" />
 
-	  <fail unless="tag.available">
-	  	Specified tag '${tag}' could not be found in directory '${tags.dir}/${tag}'.
+	  <fail unless="backwards.tests.available">
+	  	Backwards branch '${backwards.branch}' could not be found in directory '${backwards.dir}'.
 	  </fail>
-	  <mkdir dir="${build.dir}/${tag}"/>	  
+	  <mkdir dir="${build.dir}/${backwards.branch}"/>	  
 
-	  <!-- first compile tag classes -->
+	  <!-- first compile branch classes -->
 	  <compile
-	    srcdir="${tags.dir}/${tag}/src/java"
-	    destdir="${build.dir}/${tag}/classes/java"
-      javac.source="${javac.source.tag}" javac.target="${javac.target.tag}">
-	  <classpath refid="tag.classpath"/>
+	    srcdir="${backwards.dir}/${backwards.branch}/src/java"
+	    destdir="${build.dir}/${backwards.branch}/classes/java"
+      javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}">
+	  <classpath refid="backwards.classpath"/>
 	  </compile>
 
-	  <!-- compile jar for tag -->
-      <jarify basedir="${build.dir}/${tag}/classes/java"
-			  destfile="${build.dir}/${tag}/${tag}.jar" />
+	  <!-- compile jar for branch -->
+      <jarify basedir="${build.dir}/${backwards.branch}/classes/java"
+			  destfile="${build.dir}/${backwards.branch}/${backwards.branch}.jar" />
 		  	
-	  <!-- compile tag tests against tag jar -->	
-	  <compile-test-macro srcdir="${tags.dir}/${tag}/src/test" destdir="${build.dir}/${tag}/classes/test"
-			  			  test.classpath="tag.test.classpath" javac.source="${javac.source.tag}" javac.target="${javac.target.tag}"/>
+	  <!-- compile branch tests against branch jar -->	
+	  <compile-test-macro srcdir="${backwards.dir}/${backwards.branch}/src/test" destdir="${build.dir}/${backwards.branch}/classes/test"
+			  			  test.classpath="backwards.test.classpath" javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}"/>
 		
-	  <!-- run tag tests against trunk jar -->
-      <test-macro dataDir="${tags.dir}/${tag}/src/test" 
-      			  tempDir="${build.dir}/${tag}"
-      			  junit.classpath="tag.junit.classpath"
-              junit.output.dir="${junit.output.dir.tag}" />
+	  <!-- run branch tests against trunk jar -->
+      <test-macro dataDir="${backwards.dir}/${backwards.branch}/src/test" 
+      			  tempDir="${build.dir}/${backwards.branch}"
+      			  junit.classpath="backwards.junit.classpath"
+              junit.output.dir="${junit.output.dir.backwards}" />
   	</sequential>
   </target>	
 
 	
+  <!-- remove this soon -->
   <target name="clean-tags"
-    description="Removes contents of the tags directory">
-    <delete dir="${tags.dir}"/>
+    description="deprecated: removes the old 'tag' subdir">
+    <delete dir="${common.dir}/tags"/>
+  </target>
+
+  <target name="clean-backwards"
+    description="Removes contents of the '${backwards.dir}' directory">
+    <delete dir="${backwards.dir}"/>
   </target>
 	
   <!-- ================================================================== -->
