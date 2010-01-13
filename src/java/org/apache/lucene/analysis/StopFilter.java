@@ -102,7 +102,7 @@ public final class StopFilter extends TokenFilter {
    */
   private StopFilter(Version matchVersion, boolean enablePositionIncrements, TokenStream input, Set<?> stopWords, boolean ignoreCase){
     super(input);
-    this.stopWords = CharArraySet.unmodifiableSet(new CharArraySet(matchVersion, stopWords, ignoreCase));
+    this.stopWords = stopWords instanceof CharArraySet ? (CharArraySet)stopWords : new CharArraySet(matchVersion, stopWords, ignoreCase);  
     this.enablePositionIncrements = enablePositionIncrements;
     termAtt = addAttribute(TermAttribute.class);
     posIncrAtt = addAttribute(PositionIncrementAttribute.class);
