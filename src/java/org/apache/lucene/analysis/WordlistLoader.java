@@ -196,7 +196,7 @@ public class WordlistLoader {
   /**
    * Reads a stem dictionary. Each line contains:
    * <pre>word<b>\t</b>stem</pre>
-   * (i.e. two tab seperated words)
+   * (i.e. two tab separated words)
    *
    * @return stem dictionary that overrules the stemming algorithm
    * @throws IOException 
