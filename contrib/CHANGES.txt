@@ -9,6 +9,13 @@ Changes in backwards compatibility policy
    compose their own analyzers instead of subclassing existing ones.
    (Simon Willnauer) 
 
+ * LUCENE-2194, LUCENE-2201: Snowball APIs were upgraded to snowball revision
+   502 (with some local modifications for improved performance). 
+   Index backwards compatibility and binary backwards compatibility is 
+   preserved, but some protected/public member variables changed type. This 
+   does NOT affect java code/class files produced by the snowball compiler, 
+   but technically is a backwards compatibility break.  (Robert Muir)
+    
 Changes in runtime behavior
 
  * LUCENE-2117: SnowballAnalyzer uses TurkishLowerCaseFilter instead of
@@ -91,9 +98,6 @@ Optimizations
    directly, instead of Byte/CharBuffers, and modify ICUCollationKeyFilter to
    take advantage of this for faster performance.
    (Steven Rowe, Uwe Schindler, Robert Muir)
-
- * LUCENE-2194: Improve the efficiency of Snowball by not creating 2 new Strings
-   and 1 new StringBuilder for every word.  (Robert Muir)
 
 Test Cases
 

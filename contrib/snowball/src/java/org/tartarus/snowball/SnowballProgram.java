@@ -34,16 +34,20 @@ package org.tartarus.snowball;
 
 import java.lang.reflect.InvocationTargetException;
 
+import org.apache.lucene.util.ArrayUtil;
+
 /**
- * This is the rev 500 of the Snowball SVN trunk,
+ * This is the rev 502 of the Snowball SVN trunk,
  * but modified:
  * made abstract and introduced abstract method stem to avoid expensive reflection in filter class.
  * refactored StringBuffers to StringBuilder
+ * uses char[] as buffer instead of StringBuffer/StringBuilder
+ * eq_s,eq_s_b,insert,replace_s take CharSequence like eq_v and eq_v_b
  */
 public abstract class SnowballProgram {
     protected SnowballProgram()
     {
-	current = new StringBuilder();
+	current = new char[8];
 	setCurrent("");
     }
 
@@ -54,9 +58,9 @@ public abstract class SnowballProgram {
      */
     public void setCurrent(String value)
     {
-	current.replace(0, current.length(), value);
+	current = value.toCharArray();
 	cursor = 0;
-	limit = current.length();
+	limit = value.length();
 	limit_backward = 0;
 	bra = cursor;
 	ket = limit;
@@ -67,39 +71,52 @@ public abstract class SnowballProgram {
      */
     public String getCurrent()
     {
-        String result = current.toString();
-        // Make a new StringBuffer.  If we reuse the old one, and a user of
-        // the library keeps a reference to the buffer returned (for example,
-        // by converting it to a String in a way which doesn't force a copy),
-        // the buffer size will not decrease, and we will risk wasting a large
-        // amount of memory.
-        // Thanks to Wolfram Esser for spotting this problem.
-        current = new StringBuilder();
-        return result;
+      return new String(current, 0, limit);
     }
     
     /**
      * Set the current string.
+     * @param text character array containing input
+     * @param length valid length of text.
      */
-    public void setCurrent(char text[], int offset, int length) {
-      current.setLength(0);
-      current.append(text, offset, length);
+    public void setCurrent(char text[], int length) {
+      current = text;
       cursor = 0;
-      limit = current.length();
+      limit = length;
       limit_backward = 0;
       bra = cursor;
       ket = limit;
     }
 
     /**
-     * Get the current buffer containing the stem
+     * Get the current buffer containing the stem.
+     * <p>
+     * NOTE: this may be a reference to a different character array than the
+     * one originally provided with setCurrent, in the exceptional case that 
+     * stemming produced a longer intermediate or result string. 
+     * </p>
+     * <p>
+     * It is necessary to use {@link #getCurrentBufferLength()} to determine
+     * the valid length of the returned buffer. For example, many words are
+     * stemmed simply by subtracting from the length to remove suffixes.
+     * </p>
+     * @see #getCurrentBufferLength()
      */
-    public StringBuilder getCurrentBuffer() {
+    public char[] getCurrentBuffer() {
       return current;
+    }
+    
+    /**
+     * Get the valid length of the character array in 
+     * {@link #getCurrentBuffer()}. 
+     * @return valid length of the array.
+     */
+    public int getCurrentBufferLength() {
+      return limit;
     }
 
     // current string
-    protected StringBuilder current;
+    private char current[];
 
     protected int cursor;
     protected int limit;
@@ -120,7 +137,7 @@ public abstract class SnowballProgram {
     protected boolean in_grouping(char [] s, int min, int max)
     {
 	if (cursor >= limit) return false;
-	char ch = current.charAt(cursor);
+	char ch = current[cursor];
 	if (ch > max || ch < min) return false;
 	ch -= min;
 	if ((s[ch >> 3] & (0X1 << (ch & 0X7))) == 0) return false;
@@ -131,7 +148,7 @@ public abstract class SnowballProgram {
     protected boolean in_grouping_b(char [] s, int min, int max)
     {
 	if (cursor <= limit_backward) return false;
-	char ch = current.charAt(cursor - 1);
+	char ch = current[cursor - 1];
 	if (ch > max || ch < min) return false;
 	ch -= min;
 	if ((s[ch >> 3] & (0X1 << (ch & 0X7))) == 0) return false;
@@ -142,7 +159,7 @@ public abstract class SnowballProgram {
     protected boolean out_grouping(char [] s, int min, int max)
     {
 	if (cursor >= limit) return false;
-	char ch = current.charAt(cursor);
+	char ch = current[cursor];
 	if (ch > max || ch < min) {
 	    cursor++;
 	    return true;
@@ -158,7 +175,7 @@ public abstract class SnowballProgram {
     protected boolean out_grouping_b(char [] s, int min, int max)
     {
 	if (cursor <= limit_backward) return false;
-	char ch = current.charAt(cursor - 1);
+	char ch = current[cursor - 1];
 	if (ch > max || ch < min) {
 	    cursor--;
 	    return true;
@@ -174,7 +191,7 @@ public abstract class SnowballProgram {
     protected boolean in_range(int min, int max)
     {
 	if (cursor >= limit) return false;
-	char ch = current.charAt(cursor);
+	char ch = current[cursor];
 	if (ch > max || ch < min) return false;
 	cursor++;
 	return true;
@@ -183,7 +200,7 @@ public abstract class SnowballProgram {
     protected boolean in_range_b(int min, int max)
     {
 	if (cursor <= limit_backward) return false;
-	char ch = current.charAt(cursor - 1);
+	char ch = current[cursor - 1];
 	if (ch > max || ch < min) return false;
 	cursor--;
 	return true;
@@ -192,7 +209,7 @@ public abstract class SnowballProgram {
     protected boolean out_range(int min, int max)
     {
 	if (cursor >= limit) return false;
-	char ch = current.charAt(cursor);
+	char ch = current[cursor];
 	if (!(ch > max || ch < min)) return false;
 	cursor++;
 	return true;
@@ -201,41 +218,68 @@ public abstract class SnowballProgram {
     protected boolean out_range_b(int min, int max)
     {
 	if (cursor <= limit_backward) return false;
-	char ch = current.charAt(cursor - 1);
+	char ch = current[cursor - 1];
 	if(!(ch > max || ch < min)) return false;
 	cursor--;
 	return true;
     }
 
-    protected boolean eq_s(int s_size, String s)
+    protected boolean eq_s(int s_size, CharSequence s)
     {
 	if (limit - cursor < s_size) return false;
 	int i;
 	for (i = 0; i != s_size; i++) {
-	    if (current.charAt(cursor + i) != s.charAt(i)) return false;
+	    if (current[cursor + i] != s.charAt(i)) return false;
 	}
 	cursor += s_size;
 	return true;
     }
 
-    protected boolean eq_s_b(int s_size, String s)
+    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
+    @Deprecated
+    protected boolean eq_s(int s_size, String s)
+    {
+	return eq_s(s_size, (CharSequence)s);
+    }
+
+    protected boolean eq_s_b(int s_size, CharSequence s)
     {
 	if (cursor - limit_backward < s_size) return false;
 	int i;
 	for (i = 0; i != s_size; i++) {
-	    if (current.charAt(cursor - s_size + i) != s.charAt(i)) return false;
+	    if (current[cursor - s_size + i] != s.charAt(i)) return false;
 	}
 	cursor -= s_size;
 	return true;
     }
 
-    protected boolean eq_v(StringBuilder s)
+    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
+    @Deprecated
+    protected boolean eq_s_b(int s_size, String s)
     {
-	return eq_s(s.length(), s.toString());
+	return eq_s_b(s_size, (CharSequence)s);
     }
 
+    protected boolean eq_v(CharSequence s)
+    {
+	return eq_s(s.length(), s);
+    }
+
+    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
+    @Deprecated
+    protected boolean eq_v(StringBuilder s)
+    {
+	return eq_s(s.length(), (CharSequence)s);
+    }
+
+    protected boolean eq_v_b(CharSequence s)
+    {   return eq_s_b(s.length(), s);
+    }
+
+    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
+    @Deprecated
     protected boolean eq_v_b(StringBuilder s)
-    {   return eq_s_b(s.length(), s.toString());
+    {   return eq_s_b(s.length(), (CharSequence)s);
     }
 
     protected int find_among(Among v[], int v_size)
@@ -262,7 +306,7 @@ public abstract class SnowballProgram {
 		    diff = -1;
 		    break;
 		}
-		diff = current.charAt(c + common) - w.s.charAt(i2);
+		diff = current[c + common] - w.s[i2];
 		if (diff != 0) break;
 		common++;
 	    }
@@ -335,7 +379,7 @@ public abstract class SnowballProgram {
 		    diff = -1;
 		    break;
 		}
-		diff = current.charAt(c - 1 - common) - w.s.charAt(i2);
+		diff = current[c - 1 - common] - w.s[i2];
 		if (diff != 0) break;
 		common++;
 	    }
@@ -382,22 +426,45 @@ public abstract class SnowballProgram {
     /* to replace chars between c_bra and c_ket in current by the
      * chars in s.
      */
-    protected int replace_s(int c_bra, int c_ket, String s)
+    protected int replace_s(int c_bra, int c_ket, CharSequence s)
     {
-	int adjustment = s.length() - (c_ket - c_bra);
-	current.replace(c_bra, c_ket, s);
+	final int adjustment = s.length() - (c_ket - c_bra);
+	final int newLength = limit + adjustment;
+	//resize if necessary
+	if (newLength > current.length) {
+	  char newBuffer[] = new char[ArrayUtil.getNextSize(newLength)];
+	  System.arraycopy(current, 0, newBuffer, 0, limit);
+	  current = newBuffer;
+	}
+	// if the substring being replaced is longer or shorter than the
+	// replacement, need to shift things around
+	if (adjustment != 0 && c_ket < limit) {
+	  System.arraycopy(current, c_ket, current, c_bra + s.length(), 
+	      limit - c_ket);
+	}
+	// insert the replacement text
+	// Note, faster is s.getChars(0, s.length(), current, c_bra);
+	// but would have to duplicate this method for both String and StringBuilder
+	for (int i = 0; i < s.length(); i++)
+	  current[c_bra + i] = s.charAt(i);
+	
 	limit += adjustment;
 	if (cursor >= c_ket) cursor += adjustment;
 	else if (cursor > c_bra) cursor = c_bra;
 	return adjustment;
     }
 
+    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
+    @Deprecated
+    protected int replace_s(int c_bra, int c_ket, String s) {
+	return replace_s(c_bra, c_ket, (CharSequence)s);
+    }
+
     protected void slice_check()
     {
 	if (bra < 0 ||
 	    bra > ket ||
-	    ket > limit ||
-	    limit > current.length())   // this line could be removed
+	    ket > limit)
 	{
 	    System.err.println("faulty slice operation");
 	// FIXME: report error somehow.
@@ -409,32 +476,50 @@ public abstract class SnowballProgram {
 	}
     }
 
-    protected void slice_from(String s)
+    protected void slice_from(CharSequence s)
     {
 	slice_check();
 	replace_s(bra, ket, s);
     }
+ 
+    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
+    @Deprecated
+    protected void slice_from(String s)
+    {
+	slice_from((CharSequence)s);
+    }
 
+    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
+    @Deprecated
     protected void slice_from(StringBuilder s)
     {
-        slice_from(s.toString());
+	slice_from((CharSequence)s);
     }
 
     protected void slice_del()
     {
-	slice_from("");
+	slice_from((CharSequence)"");
     }
 
-    protected void insert(int c_bra, int c_ket, String s)
+    protected void insert(int c_bra, int c_ket, CharSequence s)
     {
 	int adjustment = replace_s(c_bra, c_ket, s);
 	if (c_bra <= bra) bra += adjustment;
 	if (c_bra <= ket) ket += adjustment;
     }
 
+    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
+    @Deprecated
+    protected void insert(int c_bra, int c_ket, String s)
+    {
+	insert(c_bra, c_ket, (CharSequence)s);
+    }
+
+    /** @deprecated for binary back compat. Will be removed in Lucene 4.0 */
+    @Deprecated
     protected void insert(int c_bra, int c_ket, StringBuilder s)
     {
-	insert(c_bra, c_ket, s.toString());
+	insert(c_bra, c_ket, (CharSequence)s);
     }
 
     /* Copy the slice into the supplied StringBuffer */
@@ -442,13 +527,15 @@ public abstract class SnowballProgram {
     {
 	slice_check();
 	int len = ket - bra;
-	s.replace(0, s.length(), current.substring(bra, ket));
+	s.setLength(0);
+	s.append(current, bra, len);
 	return s;
     }
 
     protected StringBuilder assign_to(StringBuilder s)
     {
-	s.replace(0, s.length(), current.substring(0, limit));
+	s.setLength(0);
+	s.append(current, 0, limit);
 	return s;
     }
 
