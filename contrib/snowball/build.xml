@@ -131,10 +131,26 @@
   </target>
 
   <target name="compile-core" depends="build-analyzers, common.compile-core" />
+  <target name="compile-test" depends="download-vocab-tests, common.compile-test" />
   
   <target name="build-analyzers" unless="analyzers.jar.present">
     <echo>Snowball building dependency ${analyzers.jar}</echo>
     <ant antfile="../analyzers/build.xml" target="default" inheritall="false" dir="../analyzers" />
   </target>
 
+  <property name="snowball.vocab.rev" value="500"/>
+  <property name="snowball.vocab.url" 
+  	value="svn://svn.tartarus.org/snowball/trunk/data"/>
+  <property name="vocab.dir" value="src/test/org/apache/lucene/analysis/snowball"/>
+	
+  <target name="download-vocab-tests" depends="compile-core"
+    description="Downloads Snowball vocabulary tests">
+    <sequential>
+      <mkdir dir="${vocab.dir}"/>
+      <exec dir="${vocab.dir}" executable="${svn.exe}"
+	            failifexecutionfails="false">
+        <arg line="checkout -r ${snowball.vocab.rev} ${snowball.vocab.url}"/>
+	  </exec>
+	</sequential>
+  </target>
 </project>
