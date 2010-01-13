@@ -42,10 +42,15 @@ class ShardsWatcher implements Watcher {
   public void process(WatchedEvent event) {
     // nocommit : this will be called too often as shards register themselves?
     System.out.println("shard node changed");
+   
 
     try {
+      // nocommit:
+      controller.printLayoutToStdOut();
       // nocommit : refresh watcher
-      // controller.getKeeperConnection().exists(event.getPath(), this);
+      
+      // nocommit : rewatch
+      controller.getZkClient().exists(event.getPath(), this);
 
       // TODO: need to load whole state?
       controller.readCloudInfo();

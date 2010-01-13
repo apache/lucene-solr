@@ -44,22 +44,27 @@ public final class CollectionInfo {
   static final String ROLE_PROP = "role";
   
   // maps shard name to the shard addresses and roles
-  private final Map<String,ShardInfoList> shardNameToShardInfoList;
+  private final Map<String,Properties> shards;
   private final long updateTime;
 
-  public CollectionInfo(Map<String,ShardInfoList> shardNameToShardInfoList) {
+  private final List<String> nodes;
+
+
+
+  public CollectionInfo(Map<String,Properties> shards, List<String> nodes) {
     //nocommit: defensive copy?
-    this.shardNameToShardInfoList = shardNameToShardInfoList;
+    this.shards = shards;
     this.updateTime = System.currentTimeMillis();
+    this.nodes = nodes;
   }
   
-  public CollectionInfo(SolrZkClient client, String path) throws KeeperException, InterruptedException, IOException {
-    //nocommit: 
-    // build immutable CollectionInfo
-    shardNameToShardInfoList = readShardInfo(client, path);
-    
-    this.updateTime = System.currentTimeMillis();
-  }
+//  public CollectionInfo(SolrZkClient client, String path) throws KeeperException, InterruptedException, IOException {
+//    //nocommit: 
+//    // build immutable CollectionInfo
+//    shardNameToShardInfoList = readShardInfo(client, path);
+//    nodes = client.getChildren(path, null);
+//    this.updateTime = System.currentTimeMillis();
+//  }
   
   /**
    * Read info on the available Shards and Nodes.
@@ -80,7 +85,7 @@ public final class CollectionInfo {
       throw new IllegalStateException("Cannot find zk shards node that should exist:"
           + path);
     }
-    List<String> nodes = zkClient.getChildren(path, null);
+
 
     for (String zkNodeName : nodes) {
       byte[] data = zkClient.getData(path + "/" + zkNodeName, null,
@@ -120,18 +125,17 @@ public final class CollectionInfo {
    * 
    * @return
    */
-  public List<String> getSearchShards() {
-    List<String> nodeList = new ArrayList<String>();
-    for (ShardInfoList nodes : shardNameToShardInfoList.values()) {
-      nodeList.add(nodes.getShardUrl());
-    }
-    return nodeList;
-  }
-
-  public ShardInfoList getShardInfoList(String shardName) {
-    return shardNameToShardInfoList.get(shardName);
-  }
+//  public List<String> getSearchShards() {
+//    List<String> nodeList = new ArrayList<String>();
+//    for (ShardInfoList nodes : shardNameToShardInfoList.values()) {
+//      nodeList.add(nodes.getShardUrl());
+//    }
+//    return nodeList;
+//  }
   
+  public List<String> getNodes() {
+    return Collections.unmodifiableList(nodes);
+  }
 
   /**
    * @return last time info was updated.

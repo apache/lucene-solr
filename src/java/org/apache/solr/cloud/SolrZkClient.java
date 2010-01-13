@@ -240,6 +240,11 @@ public class SolrZkClient {
       InterruptedException {
     makePath(path, null, CreateMode.PERSISTENT);
   }
+  
+  public void makePath(String path, CreateMode createMode) throws KeeperException,
+      InterruptedException {
+    makePath(path, null, createMode);
+  }
 
   /**
    * Creates the path in ZooKeeper, creating each node as necessary.

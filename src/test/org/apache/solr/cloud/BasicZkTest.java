@@ -106,8 +106,6 @@ public class BasicZkTest extends AbstractZkTestCase {
     assertU(delQ("id:[100 TO 110]"));
     assertU(commit());
     assertQ(req("id:[100 TO 110]"), "//*[@numFound='0']");
-    
-    //nocommit
-    System.out.println("search nodes:" + h.getCoreContainer().getZooKeeperController().getSearchNodes("DEFAULT_CORE"));
+
   }
 }

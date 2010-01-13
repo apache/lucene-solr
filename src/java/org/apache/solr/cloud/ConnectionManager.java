@@ -101,32 +101,10 @@ class ConnectionManager implements Watcher {
 
       log.info("Connected:" + connected);
     } else if (state == KeeperState.Disconnected) {
-      // nocommit : not sure we have to reconnect like this on disconnect
-      if(connected == false) {
-        // nocommit
-        System.out.println("we already know we are dc'd - why are we notified twice?");
-        return;
-      }
+      // nocommit : not sure we have to reconnect on disconnect
+      // ZooKeeper will recover when it can
       connected = false;
-      // nocommit: start reconnect attempts - problem if this is shutdown related?
 
-      try {
-        connectionStrategy.reconnect(zkServerAddress, zkClientTimeout, this, new ZkClientConnectionStrategy.ZkUpdate() {
-          @Override
-          public void update(ZooKeeper keeper) throws InterruptedException, TimeoutException, IOException {
-           waitForConnected(SolrZkClient.CONNECT_TIMEOUT);
-           client.updateKeeper(keeper);
-           if(onReconnect != null) {
-             onReconnect.command();
-           }
-           ConnectionManager.this.connected = true;
-          }
-        });
-      } catch (Exception e) {
-        // TODO Auto-generated catch block
-        e.printStackTrace();
-      }
-      
     } else {
       connected = false;
     }

@@ -26,9 +26,11 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -89,6 +91,8 @@ public final class ZkController {
   private String localHostName;
   private String localHost;
 
+  private String hostName;
+
   /**
    * 
    * @param zkServerAddress ZooKeeper server host address
@@ -142,7 +146,7 @@ public final class ZkController {
    * nocommit: adds nodes if they don't exist, eg /shards/ node. consider race
    * conditions
    */
-  private void addZkShardsNode(String collection) throws IOException {
+  private void addZkCoresNode(String collection) throws IOException {
 
     String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE;
     try {
@@ -309,24 +313,24 @@ public final class ZkController {
   }
 
   // nocommit - testing
-  public String getSearchNodes(String collection) {
-    StringBuilder nodeString = new StringBuilder();
-    boolean first = true;
-    List<String> nodes;
-
-    nodes = cloudInfo.getCollectionInfo(collection).getSearchShards();
-    // nocommit
-    System.out.println("there are " + nodes.size() + " node(s)");
-    for (String node : nodes) {
-      nodeString.append(node);
-      if (first) {
-        first = false;
-      } else {
-        nodeString.append(',');
-      }
-    }
-    return nodeString.toString();
-  }
+//  public String getSearchNodes(String collection) {
+//    StringBuilder nodeString = new StringBuilder();
+//    boolean first = true;
+//    List<String> nodes;
+//
+//    nodes = cloudInfo.getCollectionInfo(collection).getSearchShards();
+//    // nocommit
+//    System.out.println("there are " + nodes.size() + " node(s)");
+//    for (String node : nodes) {
+//      nodeString.append(node);
+//      if (first) {
+//        first = false;
+//      } else {
+//        nodeString.append(',');
+//      }
+//    }
+//    return nodeString.toString();
+//  }
 
   SolrZkClient getZkClient() {
     return zkClient;
@@ -344,8 +348,9 @@ public final class ZkController {
     try {
       localHostName = getHostAddress();
       Matcher m = URL_POST.matcher(localHostName);
+
       if (m.matches()) {
-        String hostName = m.group(1);
+        hostName = m.group(1);
         // register host
         zkClient.makePath(hostName);
       } else {
@@ -354,8 +359,24 @@ public final class ZkController {
             + localHostName);
       }
       
+      // makes nodes node
+      try {
+        zkClient.makePath("/nodes");
+      } catch (KeeperException e) {
+        // its okay if another beats us creating the node
+        if (e.code() != KeeperException.Code.NODEEXISTS) {
+          log.error("ZooKeeper Exception", e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+              "ZooKeeper Exception", e);
+        }
+      }
+      String nodeName = hostName + ":" + localHostPort + "_"+ localHostContext;
+      zkClient.makePath("/nodes/" + nodeName, CreateMode.EPHEMERAL);
+      
       // nocommit
       setUpCollectionsNode();
+      
+      
 
     } catch (IOException e) {
       log.error("", e);
@@ -385,7 +406,11 @@ public final class ZkController {
     for (String collection : collections) {
       String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection
           + SHARDS_ZKNODE;
-      CollectionInfo collectionInfo = new CollectionInfo(zkClient, shardsZkPath);
+      
+      List<String> nodes = zkClient.getChildren(shardsZkPath, null);
+      Map<String,Properties> shards = readShardsInfo(collection, shardsZkPath, nodes);
+ 
+      CollectionInfo collectionInfo = new CollectionInfo(shards, nodes);
       cloudInfo.addCollectionInfo(collection, collectionInfo);
     }
 
@@ -470,21 +495,22 @@ public final class ZkController {
    * Read info on the available Shards and Nodes.
    * 
    * @param path to the shards zkNode
+   * @param shardsZkPath 
+   * @param nodeList 
    * @return Map from shard name to a {@link ShardInfoList}
    * @throws InterruptedException
    * @throws KeeperException
    * @throws IOException
    */
-  public Map<String,ShardInfoList> readShardsNode(String path)
+  public Map<String,Properties> readShardsInfo(String collection, String path, List<String> nodes)
       throws KeeperException, InterruptedException, IOException {
-
-    HashMap<String,ShardInfoList> shardNameToShardList = new HashMap<String,ShardInfoList>();
-
-    if (!zkClient.exists(path)) {
-      throw new IllegalStateException("Cannot find zk node that should exist:"
-          + path);
+    Set<String> nodesSet = new HashSet<String>(nodes.size());
+    nodesSet.addAll(nodes);
+    if(cloudInfo != null) {
+      List<String> oldNodes = cloudInfo.getCollectionInfo(collection).getNodes();
     }
-    List<String> nodes = zkClient.getChildren(path, null);
+    
+    Map<String,Properties> cores = new HashMap<String,Properties>();
 
     for (String zkNodeName : nodes) {
       byte[] data = zkClient.getData(path + "/" + zkNodeName, null, null);
@@ -492,30 +518,11 @@ public final class ZkController {
       Properties props = new Properties();
       props.load(new ByteArrayInputStream(data));
 
-      String url = (String) props.get(CollectionInfo.URL_PROP);
-      String shardNameList = (String) props.get(CollectionInfo.SHARD_LIST_PROP);
-      String[] shardsNames = shardNameList.split(",");
-      for (String shardName : shardsNames) {
-        ShardInfoList sList = shardNameToShardList.get(shardName);
-        List<ShardInfo> shardList;
-        if (sList == null) {
-          shardList = new ArrayList<ShardInfo>(1);
-        } else {
-          List<ShardInfo> oldShards = sList.getShards();
-          shardList = new ArrayList<ShardInfo>(oldShards.size() + 1);
-          shardList.addAll(oldShards);
-        }
-
-        ShardInfo shard = new ShardInfo(url);
-        shardList.add(shard);
-        ShardInfoList list = new ShardInfoList(shardList);
-
-        shardNameToShardList.put(shardName, list);
-      }
+      cores.put(zkNodeName, props);
 
     }
 
-    return Collections.unmodifiableMap(shardNameToShardList);
+    return Collections.unmodifiableMap(cores);
   }
 
   /**
@@ -548,7 +555,7 @@ public final class ZkController {
 
     // build layout if not exists
     // nocommit : consider how we watch shards on all collections
-    addZkShardsNode(collection);
+    addZkCoresNode(collection);
 
     // create node
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -565,8 +572,19 @@ public final class ZkController {
 
     props.store(baos, PROPS_DESC);
 
-    nodePath = zkClient.create(shardsZkPath + CORE_ZKPREFIX,
-        baos.toByteArray(), CreateMode.EPHEMERAL_SEQUENTIAL);
+    String nodeName = hostName + ":" + localHostPort + "_"+ localHostContext + (coreName.length() == 0 ? "" : "_" + coreName);
+    try {
+      nodePath = zkClient.create(shardsZkPath + "/" + nodeName,
+        baos.toByteArray(), CreateMode.PERSISTENT);
+    } catch (KeeperException e) {
+      // its okay if the node already exists
+      if (e.code() != KeeperException.Code.NODEEXISTS) {
+        throw e;
+      }
+    }
+    
+    // signal that the shards node has changed
+    zkClient.setData(shardsZkPath, (byte[])null);
 
     return nodePath;
   }
@@ -627,8 +645,14 @@ public final class ZkController {
 
       public void process(WatchedEvent event) {
         System.out.println("Collections node event:" + event);
+        // nocommit : if collections node was signaled, look for new collections
         
       }});
+    
+    collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null);
+    for(String collection : collections) {
+      zkClient.exists(COLLECTIONS_ZKNODE + "/" + collection + "/shards", shardWatcher);
+    }
   }
 
   private void setUpCollectionsNode() throws KeeperException, InterruptedException {

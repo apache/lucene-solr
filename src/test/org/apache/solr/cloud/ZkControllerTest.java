@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -82,35 +83,20 @@ public class ZkControllerTest extends TestCase {
 
       zkController = new ZkController(ZOO_KEEPER_ADDRESS, TIMEOUT,
           "localhost", "8983", "/solr");
-      Map<String,ShardInfoList> shardInfoMap = zkController
-          .readShardsNode(shardsPath);
-      assertTrue(shardInfoMap.size() > 0);
+      zkController.readCloudInfo();
+      CloudInfo cloudInfo = zkController.getCloudInfo();
+      CollectionInfo collectionInfo = cloudInfo.getCollectionInfo("collection1");
+      assertNotNull(collectionInfo);
 
-      Set<Entry<String,ShardInfoList>> entries = shardInfoMap.entrySet();
 
       if (DEBUG) {
-        for (Entry<String,ShardInfoList> entry : entries) {
-          System.out.println("shard:" + entry.getKey() + " value:"
-              + entry.getValue().toString());
+        for (String node : collectionInfo.getNodes()) {
+          System.out.println("shard:" + node);
         }
       }
 
-      Set<String> keys = shardInfoMap.keySet();
-
-      assertTrue(keys.size() == 2);
-
-      assertTrue(keys.contains(SHARD1));
-      assertTrue(keys.contains(SHARD2));
-
-      ShardInfoList shardInfoList = shardInfoMap.get(SHARD1);
-
-      assertEquals(3, shardInfoList.getShards().size());
-
-      shardInfoList = shardInfoMap.get(SHARD2);
-
-      assertEquals(1, shardInfoList.getShards().size());
-
-      assertEquals(URL1, shardInfoList.getShards().get(0).getUrl());
+      // nocommit : check properties 
+      
     } finally {
       if (zkClient != null) {
         zkClient.close();

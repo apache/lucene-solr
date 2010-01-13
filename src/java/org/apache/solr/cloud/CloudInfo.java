@@ -24,11 +24,11 @@ public class CloudInfo {
   private Map<String,CollectionInfo> collectionInfos = new HashMap<String,CollectionInfo>();
   
   //nocommit
-  public synchronized void addCollectionInfo(String collection, CollectionInfo collectionInfo) {
+  public void addCollectionInfo(String collection, CollectionInfo collectionInfo) {
     collectionInfos.put(collection, collectionInfo);
   }
   
-  public synchronized CollectionInfo getCollectionInfo(String collection) {
+  public CollectionInfo getCollectionInfo(String collection) {
     return collectionInfos.get(collection);
   }
 }
