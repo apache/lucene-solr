@@ -25,20 +25,20 @@ public class TestRamUsageEstimator extends TestCase {
     String string = new String("test str");
     RamUsageEstimator rue = new RamUsageEstimator();
     long size = rue.estimateRamUsage(string);
-    System.out.println("size:" + size);
+    //System.out.println("size:" + size);
     
     string = new String("test strin");
     size = rue.estimateRamUsage(string);
-    System.out.println("size:" + size);
+    //System.out.println("size:" + size);
     
     Holder holder = new Holder();
     holder.holder = new Holder("string2", 5000L);
     size = rue.estimateRamUsage(holder);
-    System.out.println("size:" + size);
+    //System.out.println("size:" + size);
     
     String[] strings = new String[]{new String("test strin"), new String("hollow"), new String("catchmaster")};
     size = rue.estimateRamUsage(strings);
-    System.out.println("size:" + size);
+    //System.out.println("size:" + size);
   }
   
   private static final class Holder {
