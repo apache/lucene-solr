@@ -55,6 +55,17 @@ API Changes
    which reader the int doc, passed to customScore, refers to.  (Paul
    chez Jamespot via Mike McCandless)
 
+Test Cases
+
+ * LUCENE-2114: Change TestFilteredSearch to test on multi-segment
+   index as well. (Simon Willnauer via Mike McCandless)
+
+Documentation
+
+ * LUCENE-2114: Improve javadocs of Filter to call out that the
+   provided reader is per-segment (Simon Willnauer via Mike
+   McCandless)
+
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy

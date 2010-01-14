@@ -24,9 +24,12 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.OpenBitSet;
 
@@ -42,19 +45,32 @@ public class TestFilteredSearch extends LuceneTestCase {
 
   private static final String FIELD = "category";
   
-  public void testFilteredSearch() {
+  public void testFilteredSearch() throws CorruptIndexException, LockObtainFailedException, IOException {
+    boolean enforceSingleSegment = true;
     RAMDirectory directory = new RAMDirectory();
     int[] filterBits = {1, 36};
-    Filter filter = new SimpleDocIdSetFilter(filterBits);
-    
+    SimpleDocIdSetFilter filter = new SimpleDocIdSetFilter(filterBits);
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    searchFiltered(writer, directory, filter, enforceSingleSegment);
+    // run the test on more than one segment
+    enforceSingleSegment = false;
+    // reset - it is stateful
+    filter.reset();
+    writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    // we index 60 docs - this will create 6 segments
+    writer.setMaxBufferedDocs(10);
+    searchFiltered(writer, directory, filter, enforceSingleSegment);
+  }
 
+  public void searchFiltered(IndexWriter writer, Directory directory, Filter filter, boolean optimize) {
     try {
-      IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
       for (int i = 0; i < 60; i++) {//Simple docs
         Document doc = new Document();
         doc.add(new Field(FIELD, Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
         writer.addDocument(doc);
       }
+      if(optimize)
+        writer.optimize();
       writer.close();
 
       BooleanQuery booleanQuery = new BooleanQuery();
@@ -69,24 +85,33 @@ public class TestFilteredSearch extends LuceneTestCase {
     catch (IOException e) {
       fail(e.getMessage());
     }
-
+    
   }
-  
-
+ 
   public static final class SimpleDocIdSetFilter extends Filter {
-    private OpenBitSet bits;
-
+    private int docBase;
+    private final int[] docs;
+    private int index;
     public SimpleDocIdSetFilter(int[] docs) {
-      bits = new OpenBitSet();
-      for(int i = 0; i < docs.length; i++){
-    	  bits.set(docs[i]);
-      }
-      
+      this.docs = docs;
     }
-
     @Override
     public DocIdSet getDocIdSet(IndexReader reader) {
-      return bits;
+      final OpenBitSet set = new OpenBitSet();
+      final int limit = docBase+reader.maxDoc();
+      for (;index < docs.length; index++) {
+        final int docId = docs[index];
+        if(docId > limit)
+          break;
+        set.set(docId-docBase);
+      }
+      docBase = limit;
+      return set.isEmpty()?null:set;
+    }
+    
+    public void reset(){
+      index = 0;
+      docBase = 0;
     }
   }
 
