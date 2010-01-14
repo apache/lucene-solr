@@ -43,6 +43,18 @@ Optimizations
  * LUCENE-2086: When resolving deleted terms, do so in term sort order
    for better performance (Bogdan Ghidireac via Mike McCandless)
 
+Test Cases
+
+ * LUCENE-2114: Change TestFilteredSearch to test on multi-segment
+   index as well. (Simon Willnauer via Mike McCandless)
+
+Documentation
+
+ * LUCENE-2114: Improve javadocs of Filter to call out that the
+   provided reader is per-segment (Simon Willnauer via Mike
+   McCandless)
+
+
 ======================= Release 2.9.1 2009-11-06 =======================
 
 Changes in backwards compatibility policy
