@@ -149,6 +149,49 @@ public class TestQualityRun extends TestCase {
 
     
   }
+  
+  public void testTrecTopicsReader() throws Exception {
+    File workDir = new File(System.getProperty("benchmark.work.dir","work"));
+    assertTrue("Bad workDir: " + workDir, 
+        workDir.exists() && workDir.isDirectory());
+    
+    // <tests src dir> for topics/qrels files:
+    //  src/test/org/apache/lucene/benchmark/quality
+    File srcTestDir = new File(new File(new File(new File(new File(
+      new File(new File(workDir.getAbsoluteFile().getParentFile(),
+        "src"),"test"),"org"),"apache"),"lucene"),"benchmark"),"quality");
+    
+    // prepare topics
+    File topicsFile = new File(srcTestDir, "trecTopics.txt");
+    assertTrue("Bad topicsFile: " + topicsFile, 
+        topicsFile.exists() && topicsFile.isFile());
+    TrecTopicsReader qReader = new TrecTopicsReader();
+    QualityQuery qqs[] = qReader.readQueries(
+        new BufferedReader(new FileReader(topicsFile)));
+    
+    assertEquals(20, qqs.length);
+    
+    QualityQuery qq = qqs[0];
+    assertEquals("statement months  total 1987", qq.getValue("title"));
+    assertEquals("Topic 0 Description Line 1 Topic 0 Description Line 2", 
+        qq.getValue("description"));
+    assertEquals("Topic 0 Narrative Line 1 Topic 0 Narrative Line 2", 
+        qq.getValue("narrative"));
+    
+    qq = qqs[1];
+    assertEquals("agreed 15  against five", qq.getValue("title"));
+    assertEquals("Topic 1 Description Line 1 Topic 1 Description Line 2", 
+        qq.getValue("description"));
+    assertEquals("Topic 1 Narrative Line 1 Topic 1 Narrative Line 2", 
+        qq.getValue("narrative"));
+    
+    qq = qqs[19];
+    assertEquals("20 while  common week", qq.getValue("title"));
+    assertEquals("Topic 19 Description Line 1 Topic 19 Description Line 2", 
+        qq.getValue("description"));
+    assertEquals("Topic 19 Narrative Line 1 Topic 19 Narrative Line 2", 
+        qq.getValue("narrative"));
+  }
 
   // use benchmark logic to create the full Reuters index
   private void createReutersIndex() throws Exception {

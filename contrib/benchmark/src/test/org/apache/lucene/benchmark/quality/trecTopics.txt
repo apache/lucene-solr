@@ -26,10 +26,12 @@
 <title> statement months  total 1987
 
 <desc> Description:
-
+Topic 0 Description Line 1
+Topic 0 Description Line 2
 
 <narr> Narrative:
-
+Topic 0 Narrative Line 1
+Topic 0 Narrative Line 2
 
 </top>
 
@@ -39,10 +41,12 @@
 <title> agreed 15  against five
 
 <desc> Description:
-
+Topic 1 Description Line 1
+Topic 1 Description Line 2
 
 <narr> Narrative:
-
+Topic 1 Narrative Line 1
+Topic 1 Narrative Line 2
 
 </top>
 
@@ -273,9 +277,11 @@
 <title> 20 while  common week
 
 <desc> Description:
-
+Topic 19 Description Line 1
+Topic 19 Description Line 2
 
 <narr> Narrative:
-
+Topic 19 Narrative Line 1
+Topic 19 Narrative Line 2
 
 </top>

@@ -76,16 +76,31 @@ public class TrecTopicsReader {
         k = sb.indexOf(">");
         String title = sb.substring(k+1).trim();
         // description
-        sb = read(reader,"<desc>",null,false,false);
-        sb = read(reader,"<narr>",null,false,true);
-        String descripion = sb.toString().trim();
+        read(reader,"<desc>",null,false,false);
+        sb.setLength(0);
+        String line = null;
+        while ((line = reader.readLine()) != null) {
+          if (line.startsWith("<narr>"))
+            break;
+          if (sb.length() > 0) sb.append(' ');
+          sb.append(line);
+        }
+        String description = sb.toString().trim();
+        // narrative
+        sb.setLength(0);
+        while ((line = reader.readLine()) != null) {
+          if (line.startsWith("</top>"))
+            break;
+          if (sb.length() > 0) sb.append(' ');
+          sb.append(line);
+        }
+        String narrative = sb.toString().trim();
         // we got a topic!
         fields.put("title",title);
-        fields.put("description",descripion);
+        fields.put("description",description);
+        fields.put("narrative", narrative);
         QualityQuery topic = new QualityQuery(id,fields);
         res.add(topic);
-        // skip narrative, get to end of doc
-        read(reader,"</top>",null,false,false);
       }
     } finally {
       reader.close();
