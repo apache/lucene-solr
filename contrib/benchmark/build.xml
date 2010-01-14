@@ -128,7 +128,6 @@
     <path id="classpath">
         <pathelement path="${common.dir}/build/classes/java"/>
         <pathelement path="${common.dir}/build/classes/demo"/>
-      <pathelement path="${common.dir}/build/classes/test"/>
         <pathelement path="${common.dir}/build/contrib/highlighter/classes/java"/>
         <pathelement path="${common.dir}/build/contrib/memory/classes/java"/>
         <pathelement path="${common.dir}/build/contrib/fast-vector-highlighter/classes/java"/>
@@ -145,7 +144,7 @@
     <property name="task.alg" location="conf/micro-standard.alg"/>
     <property name="task.mem" value="140M"/>
 
-    <target name="run-task" depends="compile-test,check-files,get-files" 
+    <target name="run-task" depends="compile,check-files,get-files" 
      description="Run compound penalty perf test (optional: -Dtask.alg=your-algorithm-file -Dtask.mem=java-max-mem)">
         <echo>Working Directory: ${working.dir}</echo>
         <java classname="org.apache.lucene.benchmark.byTask.Benchmark" maxmemory="${task.mem}" fork="true">
