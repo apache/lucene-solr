@@ -23,21 +23,20 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.DocIdBitSet;
 
 /** 
- *  Abstract base class providing a mechanism to use a subset of an index
- *  for restriction or permission of index search results.
- *  <p>
+ *  Abstract base class for restricting which documents may
+ *  be returned during searching.
  */
 public abstract class Filter implements java.io.Serializable {
   
   /**
-   * Creates a {@link DocIdSet} that provides the documents which should be
-   * permitted or prohibited in search results. <b>NOTE:</b> null can be
-   * returned if no documents will be accepted by this Filter.
+   * Creates a {@link DocIdSet} enumerating the documents that should be
+   * permitted in search results. <b>NOTE:</b> null can be
+   * returned if no documents are accepted by this Filter.
    * <p>
-   * Note: This method might be called more than once during a search if the
-   * index has more than one segment. In such a case the {@link DocIdSet}
-   * must be relative to the document base of the given reader. Yet, the
-   * segment readers are passed in increasing document base order.
+   * Note: This method will be called once per segment in
+   * the index during searching.  The returned {@link DocIdSet}
+   * must refer to document IDs for that segment, not for
+   * the top-level reader.
    * 
    * @param reader a {@link IndexReader} instance opened on the index currently
    *         searched on. Note, it is likely that the provided reader does not
