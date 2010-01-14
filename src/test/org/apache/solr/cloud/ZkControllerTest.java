@@ -84,8 +84,8 @@ public class ZkControllerTest extends TestCase {
       zkController = new ZkController(ZOO_KEEPER_ADDRESS, TIMEOUT,
           "localhost", "8983", "/solr");
       zkController.readCloudInfo();
-      CloudInfo cloudInfo = zkController.getCloudInfo();
-      CollectionInfo collectionInfo = cloudInfo.getCollectionInfo("collection1");
+      CloudState cloudInfo = zkController.getCloudInfo();
+      CollectionState collectionInfo = cloudInfo.getCollectionInfo("collection1");
       assertNotNull(collectionInfo);
 
 
@@ -174,8 +174,8 @@ public class ZkControllerTest extends TestCase {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     // nocommit: could do xml
     Properties props = new Properties();
-    props.put(CollectionInfo.URL_PROP, url);
-    props.put(CollectionInfo.SHARD_LIST_PROP, shardList);
+    props.put(CollectionState.URL_PROP, url);
+    props.put(CollectionState.SHARD_LIST_PROP, shardList);
     props.store(baos, ZkController.PROPS_DESC);
 
     zkClient.create(shardsPath + ZkController.CORE_ZKPREFIX,

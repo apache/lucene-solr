@@ -52,7 +52,7 @@ class ShardsWatcher implements Watcher {
       // nocommit : rewatch
       controller.getZkClient().exists(event.getPath(), this);
 
-      // TODO: need to load whole state?
+      // nocommit : just see what has changed
       controller.readCloudInfo();
 
     } catch (KeeperException e) {

@@ -20,15 +20,15 @@ package org.apache.solr.cloud;
 import java.util.HashMap;
 import java.util.Map;
 
-public class CloudInfo {
-  private Map<String,CollectionInfo> collectionInfos = new HashMap<String,CollectionInfo>();
+public class CloudState {
+  private Map<String,CollectionState> collectionStates = new HashMap<String,CollectionState>();
   
   //nocommit
-  public void addCollectionInfo(String collection, CollectionInfo collectionInfo) {
-    collectionInfos.put(collection, collectionInfo);
+  public void addCollectionInfo(String collection, CollectionState collectionInfo) {
+    collectionStates.put(collection, collectionInfo);
   }
   
-  public CollectionInfo getCollectionInfo(String collection) {
-    return collectionInfos.get(collection);
+  public CollectionState getCollectionInfo(String collection) {
+    return collectionStates.get(collection);
   }
 }

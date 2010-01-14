@@ -34,10 +34,10 @@ import org.slf4j.LoggerFactory;
  * Information about the Collection.
  * 
  */
-public final class CollectionInfo {
+public final class CollectionState {
 
   protected static final Logger log = LoggerFactory
-      .getLogger(CollectionInfo.class);
+      .getLogger(CollectionState.class);
   
   static final String SHARD_LIST_PROP = "shard_list";
   static final String URL_PROP = "url";
@@ -51,7 +51,7 @@ public final class CollectionInfo {
 
 
 
-  public CollectionInfo(Map<String,Properties> shards, List<String> nodes) {
+  public CollectionState(Map<String,Properties> shards, List<String> nodes) {
     //nocommit: defensive copy?
     this.shards = shards;
     this.updateTime = System.currentTimeMillis();

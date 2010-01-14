@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -82,7 +81,7 @@ public final class ZkController {
 
   private SolrZkClient zkClient;
 
-  private volatile CloudInfo cloudInfo;
+  private volatile CloudState cloudInfo;
 
   private String zkServerAddress;
 
@@ -175,7 +174,7 @@ public final class ZkController {
 
     // now watch the shards node
     try {
-      zkClient.exists(shardsZkPath, shardWatcher);
+      zkClient.getChildren(shardsZkPath, shardWatcher);
     } catch (KeeperException e) {
       log.error("ZooKeeper Exception", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -214,7 +213,7 @@ public final class ZkController {
   /**
    * @return information about the cluster from ZooKeeper
    */
-  public CloudInfo getCloudInfo() {
+  public CloudState getCloudInfo() {
     return cloudInfo;
   }
 
@@ -400,7 +399,7 @@ public final class ZkController {
     log.info("Updating cloud state from ZooKeeper... :" + zkClient.keeper);
     
     // build immutable CloudInfo
-    CloudInfo cloudInfo = new CloudInfo();
+    CloudState cloudInfo = new CloudState();
     List<String> collections = getCollectionNames();
     // nocommit : load all collection info
     for (String collection : collections) {
@@ -410,7 +409,7 @@ public final class ZkController {
       List<String> nodes = zkClient.getChildren(shardsZkPath, null);
       Map<String,Properties> shards = readShardsInfo(collection, shardsZkPath, nodes);
  
-      CollectionInfo collectionInfo = new CollectionInfo(shards, nodes);
+      CollectionState collectionInfo = new CollectionState(shards, nodes);
       cloudInfo.addCollectionInfo(collection, collectionInfo);
     }
 
@@ -561,14 +560,14 @@ public final class ZkController {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     // nocommit: could do xml
     Properties props = new Properties();
-    props.put(CollectionInfo.URL_PROP, shardUrl);
+    props.put(CollectionState.URL_PROP, shardUrl);
 
     String shardList = cloudDesc.getShardList();
 
-    props.put(CollectionInfo.SHARD_LIST_PROP, shardList == null ? ""
+    props.put(CollectionState.SHARD_LIST_PROP, shardList == null ? ""
         : shardList);
 
-    props.put(CollectionInfo.ROLE_PROP, cloudDesc.getRole());
+    props.put(CollectionState.ROLE_PROP, cloudDesc.getRole());
 
     props.store(baos, PROPS_DESC);
 
