@@ -96,11 +96,6 @@ Bug fixes
   implementation class when interface was loaded by a different
   class loader.  (Uwe Schindler, reported on java-user by Ahmed El-dawy)
   
-* LUCENE-2211: Fix missing clearAttributes() calls in contrib:
-  ShingleMatrix, PrefixAware, compounds, NGramTokenFilter,
-  EdgeNGramTokenFilter, Highlighter, and MemoryIndex.
-  (Uwe Schindler, Robert Muir)
-  
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight

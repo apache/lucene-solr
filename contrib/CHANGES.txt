@@ -40,6 +40,11 @@ Bug fixes
    
  * LUCENE-2035: TokenSources.getTokenStream() does not assign  positionIncrement. 
    (Christopher Morris via Mark Miller)
+  
+ * LUCENE-2211: Fix missing clearAttributes() calls in contrib:
+   ShingleMatrix, PrefixAware, compounds, NGramTokenFilter,
+   EdgeNGramTokenFilter, Highlighter, and MemoryIndex.
+   (Uwe Schindler, Robert Muir)
    
 API Changes
 
