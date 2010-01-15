@@ -10,6 +10,11 @@ Bug fixes
 
  * LUCENE-2199: ShingleFilter skipped over tri-gram shingles if outputUnigram
    was set to false. (Simon Willnauer)
+  
+ * LUCENE-2211: Fix missing clearAttributes() calls:
+   ShingleMatrix, PrefixAware, compounds, NGramTokenFilter,
+   EdgeNGramTokenFilter, Highlighter, and MemoryIndex.
+   (Uwe Schindler, Robert Muir)
    
 API Changes
 
