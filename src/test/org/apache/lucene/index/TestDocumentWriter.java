@@ -221,6 +221,7 @@ public class TestDocumentWriter extends LuceneTestCase {
         if (index == tokens.length) {
           return false;
         } else {
+          clearAttributes();
           termAtt.setTermBuffer(tokens[index++]);
           return true;
         }        

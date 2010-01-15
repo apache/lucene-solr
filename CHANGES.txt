@@ -96,6 +96,11 @@ Bug fixes
   implementation class when interface was loaded by a different
   class loader.  (Uwe Schindler, reported on java-user by Ahmed El-dawy)
   
+* LUCENE-2211: Fix missing clearAttributes() calls in contrib:
+  ShingleMatrix, PrefixAware, compounds, NGramTokenFilter,
+  EdgeNGramTokenFilter, Highlighter, and MemoryIndex.
+  (Uwe Schindler, Robert Muir)
+  
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
@@ -197,6 +202,10 @@ Test Cases
 
 * LUCENE-2170: Fix thread starvation problems.  (Uwe Schindler)
 
+* LUCENE-2211: Improves BaseTokenStreamTestCase to use a fake attribute
+  that checks if clearAttributes() was called correctly.
+  (Uwe Schindler, Robert Muir)
+  
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy

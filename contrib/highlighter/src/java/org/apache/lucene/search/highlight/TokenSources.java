@@ -169,6 +169,7 @@ public class TokenSources {
           return false;
         }
         Token token = tokens[currentToken++];
+        clearAttributes();
         termAtt.setTermBuffer(token.term());
         offsetAtt.setOffset(token.startOffset(), token.endOffset());
         return true;

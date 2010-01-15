@@ -79,29 +79,14 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     final TeeSinkTokenFilter source = new TeeSinkTokenFilter(new WhitespaceTokenizer(new StringReader(buffer1.toString())));
     final TokenStream sink1 = source.newSinkTokenStream();
     final TokenStream sink2 = source.newSinkTokenStream(theFilter);
-    int i = 0;
-    TermAttribute termAtt = source.getAttribute(TermAttribute.class);
-    while (source.incrementToken()) {
-      assertEquals(tokens1[i], termAtt.term());
-      i++;
-    }
-    assertEquals(tokens1.length, i);
     
-    i = 0;
-    termAtt = sink1.getAttribute(TermAttribute.class);
-    while (sink1.incrementToken()) {
-      assertEquals(tokens1[i], termAtt.term());
-      i++;
-    }
-    assertEquals(tokens1.length, i);
+    source.addAttribute(CheckClearAttributesAttribute.class);
+    sink1.addAttribute(CheckClearAttributesAttribute.class);
+    sink2.addAttribute(CheckClearAttributesAttribute.class);
     
-    i = 0;
-    termAtt = sink2.getAttribute(TermAttribute.class);
-    while (sink2.incrementToken()) {
-      assertTrue(termAtt.term().equalsIgnoreCase("The"));
-      i++;
-    }
-    assertEquals("there should be two times 'the' in the stream", 2, i);
+    assertTokenStreamContents(source, tokens1);
+    assertTokenStreamContents(sink1, tokens1);
+    assertTokenStreamContents(sink2, new String[]{"The", "the"});
   }
 
   public void testMultipleSources() throws Exception {
@@ -109,50 +94,28 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     final TeeSinkTokenFilter.SinkTokenStream dogDetector = tee1.newSinkTokenStream(dogFilter);
     final TeeSinkTokenFilter.SinkTokenStream theDetector = tee1.newSinkTokenStream(theFilter);
     final TokenStream source1 = new CachingTokenFilter(tee1);
+    
+    tee1.addAttribute(CheckClearAttributesAttribute.class);
+    dogDetector.addAttribute(CheckClearAttributesAttribute.class);
+    theDetector.addAttribute(CheckClearAttributesAttribute.class);
 
     final TeeSinkTokenFilter tee2 = new TeeSinkTokenFilter(new WhitespaceTokenizer(new StringReader(buffer2.toString())));
     tee2.addSinkTokenStream(dogDetector);
     tee2.addSinkTokenStream(theDetector);
     final TokenStream source2 = tee2;
 
-    int i = 0;
-    TermAttribute termAtt = source1.getAttribute(TermAttribute.class);
-    while (source1.incrementToken()) {
-      assertEquals(tokens1[i], termAtt.term());
-      i++;
-    }
-    assertEquals(tokens1.length, i);
-    i = 0;
-    termAtt = source2.getAttribute(TermAttribute.class);
-    while (source2.incrementToken()) {
-      assertEquals(tokens2[i], termAtt.term());
-      i++;
-    }
-    assertEquals(tokens2.length, i);
-    i = 0;
-    termAtt = theDetector.getAttribute(TermAttribute.class);
-    while (theDetector.incrementToken()) {
-      assertTrue("'" + termAtt.term() + "' is not equal to 'The'", termAtt.term().equalsIgnoreCase("The"));
-      i++;
-    }
-    assertEquals("there must be 4 times 'The' in the stream", 4, i);
-    i = 0;
-    termAtt = dogDetector.getAttribute(TermAttribute.class);
-    while (dogDetector.incrementToken()) {
-      assertTrue("'" + termAtt.term() + "' is not equal to 'Dogs'", termAtt.term().equalsIgnoreCase("Dogs"));
-      i++;
-    }
-    assertEquals("there must be 2 times 'Dog' in the stream", 2, i);
+    assertTokenStreamContents(source1, tokens1);
+    assertTokenStreamContents(source2, tokens2);
+
+    assertTokenStreamContents(theDetector, new String[]{"The", "the", "The", "the"});
+    assertTokenStreamContents(dogDetector, new String[]{"Dogs", "Dogs"});
     
     source1.reset();
     TokenStream lowerCasing = new LowerCaseFilter(Version.LUCENE_CURRENT, source1);
-    i = 0;
-    termAtt = lowerCasing.getAttribute(TermAttribute.class);
-    while (lowerCasing.incrementToken()) {
-      assertEquals(tokens1[i].toLowerCase(), termAtt.term());
-      i++;
-    }
-    assertEquals(i, tokens1.length);
+    String[] lowerCaseTokens = new String[tokens1.length];
+    for (int i = 0; i < tokens1.length; i++)
+      lowerCaseTokens[i] = tokens1[i].toLowerCase();
+    assertTokenStreamContents(lowerCasing, lowerCaseTokens);
   }
 
   /**

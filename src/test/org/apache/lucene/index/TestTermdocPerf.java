@@ -48,6 +48,7 @@ class RepeatingTokenStream extends TokenStream {
    public boolean incrementToken() throws IOException {
      num--;
      if (num >= 0) {
+       clearAttributes();
        termAtt.setTermBuffer(value);
        return true;
      }

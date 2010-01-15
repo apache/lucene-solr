@@ -114,6 +114,7 @@ public class PrefixAwareTokenFilter extends TokenStream {
   
   private void setCurrentToken(Token token) {
     if (token == null) return;
+    clearAttributes();
     termAtt.setTermBuffer(token.termBuffer(), 0, token.termLength());
     posIncrAtt.setPositionIncrement(token.getPositionIncrement());
     flagsAtt.setFlags(token.getFlags());

@@ -311,6 +311,7 @@ public class HighlighterPhraseTest extends TestCase {
       if (this.i >= this.tokens.length) {
         return false;
       }
+      clearAttributes();
       termAttribute.setTermBuffer(this.tokens[i].term(), 0, this.tokens[i]
           .term().length());
       offsetAttribute.setOffset(this.tokens[i].startOffset(), this.tokens[i]
@@ -355,6 +356,7 @@ public class HighlighterPhraseTest extends TestCase {
       if (this.i >= this.tokens.length) {
         return false;
       }
+      clearAttributes();
       termAttribute.setTermBuffer(this.tokens[i].term(), 0, this.tokens[i]
           .term().length());
       offsetAttribute.setOffset(this.tokens[i].startOffset(), this.tokens[i]

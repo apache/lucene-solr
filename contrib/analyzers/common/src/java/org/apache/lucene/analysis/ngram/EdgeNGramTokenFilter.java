@@ -134,6 +134,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           // grab gramSize chars from front or back
           int start = side == Side.FRONT ? 0 : curTermLength - curGramSize;
           int end = start + curGramSize;
+          clearAttributes();
           offsetAtt.setOffset(start, end);
           termAtt.setTermBuffer(curTermBuffer, start, curGramSize);
           curGramSize++;

@@ -21,6 +21,8 @@ import java.io.StringReader;
 import java.io.IOException;
  
 import org.apache.lucene.analysis.tokenattributes.*;
+import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** 
@@ -38,26 +40,67 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   
   // some helpers to test Analyzers and TokenStreams:
   
+  public static interface CheckClearAttributesAttribute extends Attribute {
+    boolean getAndResetClearCalled();
+  }
+
+  public static final class CheckClearAttributesAttributeImpl extends AttributeImpl implements CheckClearAttributesAttribute {
+    private boolean clearCalled = false;
+    
+    public boolean getAndResetClearCalled() {
+      try {
+        return clearCalled;
+      } finally {
+        clearCalled = false;
+      }
+    }
+
+    @Override
+    public void clear() {
+      clearCalled = true;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return (
+        other instanceof CheckClearAttributesAttributeImpl &&
+        ((CheckClearAttributesAttributeImpl) other).clearCalled == this.clearCalled
+      );
+    }
+
+    @Override
+    public int hashCode() {
+      return 76137213 ^ Boolean.valueOf(clearCalled).hashCode();
+    }
+    
+    @Override
+    public void copyTo(AttributeImpl target) {
+      ((CheckClearAttributesAttributeImpl) target).clear();
+    }
+  }
+
   public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
     assertNotNull(output);
-    assertTrue("has TermAttribute", ts.hasAttribute(TermAttribute.class));
+    CheckClearAttributesAttribute checkClearAtt = ts.addAttribute(CheckClearAttributesAttribute.class);
+    
+    assertTrue("has no TermAttribute", ts.hasAttribute(TermAttribute.class));
     TermAttribute termAtt = ts.getAttribute(TermAttribute.class);
     
     OffsetAttribute offsetAtt = null;
     if (startOffsets != null || endOffsets != null) {
-      assertTrue("has OffsetAttribute", ts.hasAttribute(OffsetAttribute.class));
+      assertTrue("has no OffsetAttribute", ts.hasAttribute(OffsetAttribute.class));
       offsetAtt = ts.getAttribute(OffsetAttribute.class);
     }
     
     TypeAttribute typeAtt = null;
     if (types != null) {
-      assertTrue("has TypeAttribute", ts.hasAttribute(TypeAttribute.class));
+      assertTrue("has no TypeAttribute", ts.hasAttribute(TypeAttribute.class));
       typeAtt = ts.getAttribute(TypeAttribute.class);
     }
     
     PositionIncrementAttribute posIncrAtt = null;
     if (posIncrements != null) {
-      assertTrue("has PositionIncrementAttribute", ts.hasAttribute(PositionIncrementAttribute.class));
+      assertTrue("has no PositionIncrementAttribute", ts.hasAttribute(PositionIncrementAttribute.class));
       posIncrAtt = ts.getAttribute(PositionIncrementAttribute.class);
     }
     
@@ -70,7 +113,10 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       if (typeAtt != null) typeAtt.setType("bogusType");
       if (posIncrAtt != null) posIncrAtt.setPositionIncrement(45987657);
       
-      assertTrue("token "+i+" exists", ts.incrementToken());
+      checkClearAtt.getAndResetClearCalled(); // reset it, because we called clearAttribute() before
+      assertTrue("token "+i+" does not exist", ts.incrementToken());
+      assertTrue("clearAttributes() was not called correctly in TokenStream chain", checkClearAtt.getAndResetClearCalled());
+      
       assertEquals("term "+i, output[i], termAtt.term());
       if (startOffsets != null)
         assertEquals("startOffset "+i, startOffsets[i], offsetAtt.startOffset());

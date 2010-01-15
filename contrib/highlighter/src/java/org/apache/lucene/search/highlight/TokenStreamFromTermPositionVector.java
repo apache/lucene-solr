@@ -102,6 +102,7 @@ public class TokenStreamFromTermPositionVector extends TokenStream {
   public boolean incrementToken() throws IOException {
     if (this.tokensAtCurrentPosition.hasNext()) {
       final Token next = this.tokensAtCurrentPosition.next();
+      clearAttributes();
       termAttribute.setTermBuffer(next.term());
       positionIncrementAttribute.setPositionIncrement(next
           .getPositionIncrement());

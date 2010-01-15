@@ -119,6 +119,7 @@ public class TestQPHelper extends LocalizedTestCase {
     public boolean incrementToken() throws IOException {
       if (inPhrase) {
         inPhrase = false;
+        clearAttributes();
         termAtt.setTermBuffer("phrase2");
         offsetAtt.setOffset(savedStart, savedEnd);
         return true;
@@ -1163,6 +1164,7 @@ public class TestQPHelper extends LocalizedTestCase {
     final TermAttribute term = addAttribute(TermAttribute.class);
     @Override
     public boolean incrementToken() {
+      clearAttributes();
       if (upto == 4) {
         return false;
       }

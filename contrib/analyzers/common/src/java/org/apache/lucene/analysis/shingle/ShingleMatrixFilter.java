@@ -377,6 +377,7 @@ public final class ShingleMatrixFilter extends TokenStream {
     } while (token == request_next_token);
     if (token == null) return false;
 
+    clearAttributes();
     termAtt.setTermBuffer(token.termBuffer(), 0, token.termLength());
     posIncrAtt.setPositionIncrement(token.getPositionIncrement());
     flagsAtt.setFlags(token.getFlags());
