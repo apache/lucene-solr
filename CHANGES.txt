@@ -33,6 +33,13 @@ Bug fixes
  * LUCENE-2182: DEFAULT_ATTRIBUTE_FACTORY was failing to load
    implementation class when interface was loaded by a different
    class loader.  (Uwe Schindler, reported on java-user by Ahmed El-dawy)
+  
+ * LUCENE-2211: Fix missing clearAttributes() calls in contrib:
+   ShingleMatrix, PrefixAware, compounds, NGramTokenFilter,
+   EdgeNGramTokenFilter, Highlighter, and MemoryIndex.
+   (Uwe Schindler, Robert Muir)
+
+New features
 
 Optimizations
 
@@ -65,6 +72,10 @@ Documentation
  * LUCENE-2114: Improve javadocs of Filter to call out that the
    provided reader is per-segment (Simon Willnauer via Mike
    McCandless)
+
+ * LUCENE-2211: Improves BaseTokenStreamTestCase to use a fake attribute
+   that checks if clearAttributes() was called correctly.
+   (Uwe Schindler, Robert Muir)
 
 ======================= Release 3.0.0 2009-11-25 =======================
 

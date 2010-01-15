@@ -156,6 +156,7 @@ public class TokenSources
             if (currentToken >= tokens.length) {
               return false;
             }
+            clearAttributes();
             Token token = tokens[currentToken++];
             termAtt.setTermBuffer(token.term());
             offsetAtt.setOffset(token.startOffset(), token.endOffset());

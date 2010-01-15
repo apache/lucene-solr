@@ -73,6 +73,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     
     @Override
     public boolean incrementToken() throws IOException {
+      clearAttributes();
       if (inPhrase) {
         inPhrase = false;
         termAtt.setTermBuffer("phrase2");

@@ -117,6 +117,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
     
     @Override
     public boolean incrementToken() {
+      clearAttributes();
       termAtt.setTermBuffer("accents");
       offsetAtt.setOffset(2, 7);
       typeAtt.setType("wrd");

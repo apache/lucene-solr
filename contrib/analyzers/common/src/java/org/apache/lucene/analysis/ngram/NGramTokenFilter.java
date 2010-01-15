@@ -87,6 +87,7 @@ public final class NGramTokenFilter extends TokenFilter {
       }
       while (curGramSize <= maxGram) {
         while (curPos+curGramSize <= curTermLength) {     // while there is input
+          clearAttributes();
           termAtt.setTermBuffer(curTermBuffer, curPos, curGramSize);
           offsetAtt.setOffset(curPos, curPos+curGramSize);
           curPos++;

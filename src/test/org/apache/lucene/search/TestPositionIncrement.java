@@ -78,6 +78,7 @@ public class TestPositionIncrement extends LuceneTestCase {
           public boolean incrementToken() {
             if (i == TOKENS.length)
               return false;
+            clearAttributes();
             termAtt.setTermBuffer(TOKENS[i]);
             offsetAtt.setOffset(i,i);
             posIncrAtt.setPositionIncrement(INCREMENTS[i]);

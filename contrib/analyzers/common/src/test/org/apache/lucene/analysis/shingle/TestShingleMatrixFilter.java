@@ -85,22 +85,12 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
     ts = new ShingleMatrixFilter(tls, 1, 2, new Character(' '), false, new ShingleMatrixFilter.OneDimensionalNonWeightedTokenSettingsCodec());
 
-
-    assertNext(ts, "please", 0, 6);
-    assertNext(ts, "please divide", 0, 13);
-    assertNext(ts, "divide", 7, 13);
-    assertNext(ts, "divide this", 7, 18);
-    assertNext(ts, "this", 14, 18);
-    assertNext(ts, "this sentence", 14, 27);
-    assertNext(ts, "sentence", 19, 27);
-    assertNext(ts, "sentence into", 19, 32);
-    assertNext(ts, "into", 28, 32);
-    assertNext(ts, "into shingles", 28, 39);
-    assertNext(ts, "shingles", 33, 39);
-
-
-    assertFalse(ts.incrementToken());
-
+    assertTokenStreamContents(ts,
+      new String[] { "please", "please divide", "divide", "divide this",
+        "this", "this sentence", "sentence", "sentence into", "into",
+        "into shingles", "shingles" },
+      new int[] { 0, 0, 7, 7, 14, 14, 19, 19, 28, 28, 33 },
+      new int[] { 6, 13, 13, 18, 18, 27, 27, 32, 32, 39, 39 });
   }
 
   /**
@@ -546,6 +536,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
         return false;
       }
       Token prototype = (Token) iterator.next();
+      clearAttributes();
       termAtt.setTermBuffer(prototype.termBuffer(), 0, prototype.termLength());
       posIncrAtt.setPositionIncrement(prototype.getPositionIncrement());
       flagsAtt.setFlags(prototype.getFlags());

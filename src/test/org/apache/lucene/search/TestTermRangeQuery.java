@@ -237,6 +237,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
         if (done)
           return false;
         else {
+          clearAttributes();
           done = true;
           if (count == 1) {
             termAtt.termBuffer()[0] = buffer[0];
