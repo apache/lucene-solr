@@ -200,7 +200,7 @@ public abstract class AbstractTestCase extends TestCase {
     public boolean incrementToken() throws IOException {
       if( !getNextPartialSnippet() )
         return false;
-      
+      clearAttributes();
       termAtt.setTermBuffer(snippet, startTerm, lenTerm);
       offsetAtt.setOffset(correctOffset(startOffset), correctOffset(startOffset + lenTerm));
       return true;

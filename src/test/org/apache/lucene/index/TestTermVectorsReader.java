@@ -136,6 +136,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
         return false;
       else {
         final TestToken testToken = tokens[tokenUpto++];
+        clearAttributes();
         termAtt.setTermBuffer(testToken.text);
         offsetAtt.setOffset(testToken.startOffset, testToken.endOffset);
         if (tokenUpto > 1) {

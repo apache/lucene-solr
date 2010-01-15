@@ -54,6 +54,11 @@ Documentation
    provided reader is per-segment (Simon Willnauer via Mike
    McCandless)
 
+Test Cases
+
+ * LUCENE-2211: Improves BaseTokenStreamTestCase to use a fake attribute
+   that checks if clearAttributes() was called correctly.
+   (Uwe Schindler, Robert Muir)
 
 ======================= Release 2.9.1 2009-11-06 =======================
 

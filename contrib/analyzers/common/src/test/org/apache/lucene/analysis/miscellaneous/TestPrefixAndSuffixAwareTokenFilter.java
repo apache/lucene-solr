@@ -19,10 +19,7 @@ package org.apache.lucene.analysis.miscellaneous;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -36,22 +33,10 @@ public class TestPrefixAndSuffixAwareTokenFilter extends BaseTokenStreamTestCase
         new WhitespaceTokenizer(new StringReader("hello world")),
         new SingleTokenTokenStream(createToken("$", 0, 0)));
 
-    assertNext(ts, "^", 0, 0);
-    assertNext(ts, "hello", 0, 5);
-    assertNext(ts, "world", 6, 11);
-    assertNext(ts, "$", 11, 11);
-    assertFalse(ts.incrementToken());
-  }
-
-
-  private void assertNext(TokenStream ts, String text, int startOffset, int endOffset) throws IOException {
-    TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) ts.addAttribute(OffsetAttribute.class);
-
-    assertTrue(ts.incrementToken());
-    assertEquals(text, termAtt.term());
-    assertEquals(startOffset, offsetAtt.startOffset());
-    assertEquals(endOffset, offsetAtt.endOffset());
+    assertTokenStreamContents(ts,
+        new String[] { "^", "hello", "world", "$" },
+        new int[] { 0, 0, 6, 11 },
+        new int[] { 0, 5, 11, 11 });
   }
 
   private static Token createToken(String term, int start, int offset)

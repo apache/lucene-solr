@@ -138,6 +138,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     public boolean incrementToken() throws IOException {
       if (inPhrase) {
         inPhrase = false;
+        clearAttributes();
         termAtt.setTermBuffer("phrase2");
         offsetAtt.setOffset(savedStart, savedEnd);
         return true;

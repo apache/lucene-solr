@@ -288,6 +288,7 @@ public class MemoryIndex implements Serializable {
           throw new IllegalArgumentException("keyword must not be null");
         
         String term = obj.toString();
+        clearAttributes();
         termAtt.setTermBuffer(term);
         offsetAtt.setOffset(start, start+termAtt.termLength());
         start += term.length() + 1; // separate words by 1 (blank) character

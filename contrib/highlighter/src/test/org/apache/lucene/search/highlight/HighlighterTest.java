@@ -1433,6 +1433,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public boolean incrementToken() throws IOException {
         if(iter.hasNext()) {
           Token token = (Token) iter.next();
+          clearAttributes();
           termAtt.setTermBuffer(token.term());
           posIncrAtt.setPositionIncrement(token.getPositionIncrement());
           offsetAtt.setOffset(token.startOffset(), token.endOffset());
@@ -1480,6 +1481,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public boolean incrementToken() throws IOException {
         if(iter.hasNext()) {
           Token token = (Token) iter.next();
+          clearAttributes();
           termAtt.setTermBuffer(token.term());
           posIncrAtt.setPositionIncrement(token.getPositionIncrement());
           offsetAtt.setOffset(token.startOffset(), token.endOffset());
@@ -1813,6 +1815,7 @@ class SynonymTokenizer extends TokenStream {
         return false;
       }
       //Token nextRealToken = new Token(, offsetAtt.startOffset(), offsetAtt.endOffset());
+      clearAttributes();
       termAtt.setTermBuffer(realTermAtt.term());
       offsetAtt.setOffset(realOffsetAtt.startOffset(), realOffsetAtt.endOffset());
       posIncrAtt.setPositionIncrement(realPosIncrAtt.getPositionIncrement());
@@ -1830,6 +1833,7 @@ class SynonymTokenizer extends TokenStream {
       return true;
     } else {
       String tok = st.nextToken();
+      clearAttributes();
       termAtt.setTermBuffer(tok);
       offsetAtt.setOffset(currentRealToken.startOffset(), currentRealToken.endOffset());
       posIncrAtt.setPositionIncrement(0);

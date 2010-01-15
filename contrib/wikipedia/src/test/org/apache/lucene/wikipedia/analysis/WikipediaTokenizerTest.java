@@ -18,8 +18,6 @@
 
 package org.apache.lucene.wikipedia.analysis;
 
-import junit.framework.TestCase;
-
 import java.io.StringReader;
 import java.io.IOException;
 import java.util.HashMap;
@@ -46,6 +44,12 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
     super(s);
   }
 
+  public void testSimple() throws Exception {
+    WikipediaTokenizer tf = new WikipediaTokenizer(new StringReader("This is a [[Category:foo]]"));
+    assertTokenStreamContents(tf,
+        new String[] { "This", "is", "a", "foo" });
+  }
+  
   public void testHandwritten() throws Exception {
     //make sure all tokens are in only one type
     String test = "[[link]] This is a [[Category:foo]] Category  This is a linked [[:Category:bar none withstanding]] " +

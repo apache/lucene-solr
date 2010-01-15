@@ -143,6 +143,7 @@ public class TestQPHelper extends LocalizedTestCase {
     public boolean incrementToken() throws IOException {
       if (inPhrase) {
         inPhrase = false;
+        clearAttributes();
         termAtt.setTermBuffer("phrase2");
         offsetAtt.setOffset(savedStart, savedEnd);
         return true;
@@ -1186,6 +1187,7 @@ public class TestQPHelper extends LocalizedTestCase {
   private class CannedTokenStream extends TokenStream {
     private int upto = 0;
     public boolean incrementToken() {
+      clearAttributes();
       if (upto == 4) {
         return false;
       }

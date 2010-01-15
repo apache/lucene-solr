@@ -20,6 +20,15 @@ Bug Fixes
  * LUCENE-2199: ShingleFilter skipped over tri-gram shingles if outputUnigram
    was set to false. (Simon Willnauer)
 
+ * LUCENE-1939: IndexOutOfBoundsException at ShingleMatrixFilter's
+   Iterator#hasNext method on exhausted streams.
+   (Patrick Jungermann via Karl Wettin)
+  
+ * LUCENE-2211: Fix missing clearAttributes() calls:
+   ShingleMatrix, PrefixAware, compounds, NGramTokenFilter,
+   EdgeNGramTokenFilter, Highlighter, and MemoryIndex.
+   (Uwe Schindler, Robert Muir)
+
 ======================= Release 2.9.1 2009-11-06 =======================
 
 Changes in backwards compatibility policy

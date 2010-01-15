@@ -373,6 +373,7 @@ public class ShingleMatrixFilter extends TokenStream {
     } while (token == request_next_token);
     if (token == null) return false;
     
+    clearAttributes();
     termAtt.setTermBuffer(token.termBuffer(), 0, token.termLength());
     posIncrAtt.setPositionIncrement(token.getPositionIncrement());
     flagsAtt.setFlags(token.getFlags());
@@ -429,7 +430,7 @@ public class ShingleMatrixFilter extends TokenStream {
         if (ignoringSinglePrefixOrSuffixShingle
             && currentShingleLength == 1
             && (((Matrix.Column.Row) currentPermutationRows.get(currentPermutationTokensStartOffset)).getColumn().isFirst() || ((Matrix.Column.Row) currentPermutationRows.get(currentPermutationTokensStartOffset)).getColumn().isLast())) {
-          return next(reusableToken);
+          return next();
         }
 
         int termLength = 0;
@@ -838,7 +839,8 @@ public class ShingleMatrixFilter extends TokenStream {
 
         public boolean hasNext() {
           int s = columnRowCounters.length;
-          return s != 0 && columnRowCounters[s - 1] < ((Column) columns.get(s - 1)).getRows().size();
+          int n = columns.size();
+          return s != 0 && n >= s && columnRowCounters[s - 1] < ((Column) columns.get(s - 1)).getRows().size();
         }
 
         public Object next() {
