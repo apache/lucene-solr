@@ -37,6 +37,7 @@ New Features
 
 * SOLR-1352 : Multi-threaded implementation of DIH (noble)
 
+* SOLR-1721 : Add explicit option to run DataImportHandler in synchronous mode (Alexey Serba via noble)
 
 Optimizations
 ----------------------
