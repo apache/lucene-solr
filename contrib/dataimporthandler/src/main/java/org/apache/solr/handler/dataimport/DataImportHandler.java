@@ -211,7 +211,7 @@ public class DataImportHandler extends RequestHandlerBase implements
           }
         } else {
           // Asynchronous request for normal mode
-          if(requestParams.contentStream == null){
+          if(requestParams.contentStream == null && !requestParams.syncMode){
             importer.runAsync(requestParams, sw);
           } else {
               importer.runCmd(requestParams, sw);
