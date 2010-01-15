@@ -353,7 +353,7 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
-
+  <searchComponent class="solr.HighlightComponent" name="highlight">
   <highlighting>
    <!-- Configure the standard fragmenter -->
    <fragmenter name="gap" class="org.apache.solr.highlight.GapFragmenter" default="true">
@@ -376,6 +376,7 @@
     </lst>
    </formatter>
   </highlighting>
+  </searchComponent>
 
 
   <!-- enable streaming for testing... -->

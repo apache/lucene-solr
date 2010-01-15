@@ -28,6 +28,8 @@ Upgrading from Solr 1.4
 
 * Using solr.xml is recommended for single cores also (SOLR-1621)
 
+* Old syntax of <highlighting> is deprecated (SOLR-1696)
+
 
 Versions of Major Components
 ---------------------
@@ -202,6 +204,8 @@ Other Changes
   
 * SOLR-1588: Removed some very old dead code.
   (Chris A. Mattmann via hossman)
+  
+* SOLR-1696 : Deprecate old <highlighting> syntax and move configuration to HighlightComponent (noble)
   
 Build
 ----------------------

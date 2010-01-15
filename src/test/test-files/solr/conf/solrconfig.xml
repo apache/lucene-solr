@@ -396,7 +396,7 @@
       <str>tvComponent</str>
     </arr>
   </requestHandler>
-
+  <searchComponent class="solr.HighlightComponent" name="highlight">
   <highlighting>
    <!-- Configure the standard fragmenter -->
    <fragmenter name="gap" class="org.apache.solr.highlight.GapFragmenter" default="true">
@@ -427,6 +427,7 @@
 
    <fragmentsBuilder name="scoreOrder" class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder" default="true"/>
   </highlighting>
+  </searchComponent>
 
 
   <!-- enable streaming for testing... -->
