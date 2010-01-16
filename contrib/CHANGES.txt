@@ -83,6 +83,11 @@ New features
    
  * LUCENE-2062: Add a Bulgarian analyzer.  (Robert Muir, Simon Willnauer)
 
+ * LUCENE-2206: Add Snowball's stopword lists for Danish, Dutch, English,
+   Finnish, French, German, Hungarian, Italian, Norwegian, Russian, Spanish, 
+   and Swedish. These can be loaded with WordListLoader.getSnowballWordSet.
+   (Robert Muir, Simon Willnauer)
+
 Build
 
  * LUCENE-2117: SnowballAnalyzer now holds a runtime-dependency on

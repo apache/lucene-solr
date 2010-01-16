@@ -191,6 +191,66 @@ public class WordlistLoader {
     return result;
   }
 
+  /**
+   * Loads a text file in Snowball format associated with a given class (See
+   * {@link Class#getResourceAsStream(String)}) and adds all words as entries to
+   * a {@link Set}. The words need to be in lower-case if you make use of an
+   * Analyzer which uses LowerCaseFilter (like StandardAnalyzer).
+   * 
+   * @param aClass a class that is associated with the given stopwordResource
+   * @param stopwordResource name of the resource file associated with the given
+   *          class
+   * @return a {@link Set} with the file's words
+   * @see #getSnowballWordSet(Reader)
+   */
+  public static Set<String> getSnowballWordSet(Class<?> aClass,
+      String stopwordResource) throws IOException {
+    final Reader reader = new BufferedReader(new InputStreamReader(aClass
+        .getResourceAsStream(stopwordResource), "UTF-8"));
+    try {
+      return getSnowballWordSet(reader);
+    } finally {
+      reader.close();
+    }
+  }
+  
+  /**
+   * Reads stopwords from a stopword list in Snowball format.
+   * <p>
+   * The snowball format is the following:
+   * <ul>
+   * <li>Lines may contain multiple words separated by whitespace.
+   * <li>The comment character is the vertical line (&#124;).
+   * <li>Lines may contain trailing comments.
+   * </ul>
+   * </p>
+   * 
+   * @param reader Reader containing a Snowball stopword list
+   * @return A Set with the reader's words
+   */
+  public static Set<String> getSnowballWordSet(Reader reader)
+      throws IOException {
+    final Set<String> result = new HashSet<String>();
+    BufferedReader br = null;
+    try {
+      if (reader instanceof BufferedReader) {
+        br = (BufferedReader) reader;
+      } else {
+        br = new BufferedReader(reader);
+      }
+      String line = null;
+      while ((line = br.readLine()) != null) {
+        int comment = line.indexOf('|');
+        if (comment >= 0) line = line.substring(0, comment);
+        String words[] = line.split("\\s+");
+        for (int i = 0; i < words.length; i++)
+          if (words[i].length() > 0) result.add(words[i]);
+      }
+    } finally {
+      if (br != null) br.close();
+    }
+    return result;
+  }
 
 
   /**

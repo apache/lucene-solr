@@ -7,6 +7,9 @@ The Apache Software Foundation (http://www.apache.org/).
 The snowball stemmers in
   contrib/snowball/src/java/net/sf/snowball
 were developed by Martin Porter and Richard Boulton.
+The snowball stopword lists in
+  contrib/snowball/src/resources/org/apache/lucene/analysis/snowball
+were developed by Martin Porter and Richard Boulton.
 The full snowball package is available from
   http://snowball.tartarus.org/
 
