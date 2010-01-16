@@ -2,8 +2,6 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
-$Id:$
-
 1/14/2010
   LUCENE-2210: TrecTopicsReader now properly reads descriptions and
   narratives from trec topics files.  (Robert Muir)
