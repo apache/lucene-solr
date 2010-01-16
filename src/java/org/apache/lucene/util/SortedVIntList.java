@@ -128,10 +128,8 @@ public class SortedVIntList extends DocIdSet {
       }
   
       if ((lastBytePos + MAX_BYTES_PER_INT) > bytes.length) {
-        // Biggest possible int does not fit.
-        // Requires initial size of at least 9,
-        // see SortedVIntList.initBytes() and ArrayUtil.getNextSize()
-        ArrayUtil.getNextSize(bytes.length);
+        // biggest possible int does not fit
+        resizeBytes((bytes.length * 2) + MAX_BYTES_PER_INT);
       }
   
       // See org.apache.lucene.store.IndexOutput.writeVInt()
