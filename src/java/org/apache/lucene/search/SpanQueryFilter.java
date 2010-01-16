@@ -34,9 +34,6 @@ import java.util.List;
  * <p/>
  * This filter does not cache.  See the {@link org.apache.lucene.search.CachingSpanFilter} for a wrapper that
  * caches.
- *
- *
- * @version $Id:$
  */
 public class SpanQueryFilter extends SpanFilter {
   protected SpanQuery query;

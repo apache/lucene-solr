@@ -37,8 +37,6 @@ import org.apache.lucene.store.RAMDirectory;
 
 /**
  * Tests changing of field norms with a custom similarity and with fake norms.
- *
- * @version $Id$
  */
 public class TestFieldNormModifier extends TestCase {
   public TestFieldNormModifier(String name) {

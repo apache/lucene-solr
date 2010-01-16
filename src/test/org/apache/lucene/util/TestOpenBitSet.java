@@ -22,9 +22,6 @@ import java.util.BitSet;
 
 import org.apache.lucene.search.DocIdSetIterator;
 
-/**
- * @version $Id$
- */
 public class TestOpenBitSet extends LuceneTestCase {
   Random rand;
 

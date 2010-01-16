@@ -1,7 +1,5 @@
 Lucene Build Instructions
 
-$Id$
-
 Basic steps:
   0) Install JDK 1.5 (or greater), Ant 1.7.0 (or greater)
   1) Download Lucene from Apache and unpack it

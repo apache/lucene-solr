@@ -40,8 +40,6 @@ import org.apache.lucene.store.RAMDirectory;
 
 /**
  * Tests changing the norms after changing the simularity
- *
- * @version $Id:$
  */
 public class TestLengthNormModifier extends TestCase {
     public TestLengthNormModifier(String name) {

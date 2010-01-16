@@ -1,7 +1,5 @@
 Lucene README file
 
-$Id$
-
 INTRODUCTION
 
 Lucene is a Java full-text search engine.  Lucene is not a complete

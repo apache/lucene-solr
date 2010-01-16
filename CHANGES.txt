@@ -1,5 +1,4 @@
 Lucene Change Log
-$Id$
 
 ======================= Trunk (not yet released) =======================
 Changes in backwards compatibility policy

@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-/* $Id: PatternParser.java 426576 2006-07-28 15:44:37Z jeremias $ */
-
 package org.apache.lucene.analysis.compound.hyphenation;
 
 // SAX

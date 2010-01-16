@@ -22,8 +22,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 /** An iterator to iterate over set bits in an OpenBitSet.
  * This is faster than nextSetBit() for iterating over the complete set of bits,
  * especially when the density of the bits set is high.
- *
- * @version $Id$
  */
 public class OpenBitSetIterator extends DocIdSetIterator {
 

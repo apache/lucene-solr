@@ -31,8 +31,6 @@ import org.apache.lucene.index.IndexReader;
  * QueryFilter that matches, e.g., only documents modified within the last
  * week.  The QueryFilter and TermRangeQuery would only need to be reconstructed
  * once per day.
- *
- * @version $Id:$
  */
 public class QueryWrapperFilter extends Filter {
   private Query query;

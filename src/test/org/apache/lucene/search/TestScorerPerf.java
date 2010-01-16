@@ -33,10 +33,6 @@ import org.apache.lucene.document.Field;
  * limitations under the License.
  */
 
-/**
- *
- * @version $Id$
- */
 public class TestScorerPerf extends LuceneTestCase {
   Random r;
   boolean validate = true;  // set to false when doing performance testing

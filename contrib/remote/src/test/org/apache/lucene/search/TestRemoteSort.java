@@ -44,8 +44,6 @@ import org.apache.lucene.util._TestUtil;
  * Unit tests for remote sorting code.
  * Note: This is a modified copy of {@link TestSort} without duplicated test
  * methods and therefore unused members and methodes. 
- *
- * @version $Id:$
  */
 
 public class TestRemoteSort extends LuceneTestCase implements Serializable {

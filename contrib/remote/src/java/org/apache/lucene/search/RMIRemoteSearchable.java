@@ -38,8 +38,6 @@ import java.rmi.Remote;
  * 
  * </p>
  * </p>
- * 
- *  @version $Id:$
  */
 public interface RMIRemoteSearchable extends Searchable, Remote {
 

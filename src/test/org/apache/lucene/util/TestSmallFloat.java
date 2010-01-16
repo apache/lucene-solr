@@ -18,9 +18,6 @@ package org.apache.lucene.util;
 
 import java.util.Random;
 
-/**
- * @version $Id$
- */
 public class TestSmallFloat extends LuceneTestCase {
 
   // original lucene byteToFloat

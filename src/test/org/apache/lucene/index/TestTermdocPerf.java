@@ -30,10 +30,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * @version $Id$
- */
-
 class RepeatingTokenStream extends TokenStream {
   public int num;
   TermAttribute termAtt;

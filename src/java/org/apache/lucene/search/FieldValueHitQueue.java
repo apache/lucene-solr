@@ -30,7 +30,6 @@ import org.apache.lucene.util.PriorityQueue;
  * incompatible ways in the next release.
  *
  * @since 2.9
- * @version $Id:
  * @see Searcher#search(Query,Filter,int,Sort)
  * @see FieldCache
  */

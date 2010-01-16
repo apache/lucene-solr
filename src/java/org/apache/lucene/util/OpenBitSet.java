@@ -73,8 +73,6 @@ Test system: AMD Opteron, 64 bit linux, Sun Java 1.5_06 -server -Xbatch -Xmx64M
    <th>1% full</th> <td>2.51</td> <td>3.49</td> <td>&nbsp;</td> <td>1.00</td> <td>&nbsp;</td> <td>1.02</td>
  </tr>
 </table>
-
- * @version $Id$
  */
 
 public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {

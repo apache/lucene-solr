@@ -40,7 +40,6 @@ import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 
-/** @version $Id */
 /**
  * <p><b>NOTE:</b> This API is new and still experimental
  * (subject to change suddenly in the next release)</p>

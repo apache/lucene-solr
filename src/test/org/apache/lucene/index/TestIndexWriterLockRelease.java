@@ -28,8 +28,6 @@ import org.apache.lucene.store.FSDirectory;
  * This tests the patch for issue #LUCENE-715 (IndexWriter does not
  * release its write lock when trying to open an index which does not yet
  * exist).
- *
- * @version $Id$
  */
 
 public class TestIndexWriterLockRelease extends LuceneTestCase {
