@@ -802,12 +802,16 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
 
   @Override
   public int hashCode() {
-      long h = 0x98761234;  // something non-zero for length==0
-      for (int i = bits.length; --i>=0;) {
+    // Start with a zero hash and use a mix that results in zero if the input is zero.
+    // This effectively truncates trailing zeros without an explicit check.
+    long h = 0;
+    for (int i = bits.length; --i>=0;) {
       h ^= bits[i];
       h = (h << 1) | (h >>> 63); // rotate left
     }
-    return (int)((h>>32) ^ h);  // fold leftmost bits into right
+    // fold leftmost bits into right and add a constant to prevent
+    // empty sets from returning 0, which is too common.
+    return (int)((h>>32) ^ h) + 0x98761234;
   }
 
 }

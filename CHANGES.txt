@@ -94,6 +94,9 @@ Bug fixes
 * LUCENE-2182: DEFAULT_ATTRIBUTE_FACTORY was failing to load
   implementation class when interface was loaded by a different
   class loader.  (Uwe Schindler, reported on java-user by Ahmed El-dawy)
+
+* LUCENE-2216: OpenBitSet.hashCode returned different hash codes for
+  sets that only differed by trailing zeros. (Dawid Weiss, yonik)
   
 New features
 
