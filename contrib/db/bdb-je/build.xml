@@ -21,10 +21,10 @@
     Lucene Berkeley DB Java Edition integration
   </description>
 
-  <property name="je.version" value="3.3.69" />
+  <property name="je.version" value="3.3.93" />
 
   <path id="je.jar">
-    <pathelement location="lib/je-${je.version}/lib/je-${je.version}.jar" />
+    <pathelement location="lib/je-${je.version}.jar" />
   </path>
 
   <available classname="com.sleepycat.je.Database" property="je.jar.exists">
@@ -48,13 +48,8 @@
 
   <target name="get-je-jar" unless="je.jar.exists">
     <mkdir dir="lib" />
-    <get src="http://download.oracle.com/berkeley-db/je-${je.version}.zip"
-         dest="lib/je-${je.version}.zip" />
-    <unzip src="lib/je-${je.version}.zip" dest="lib">
-      <patternset>
-        <include name="je-${je.version}/lib/je-${je.version}.jar" />
-      </patternset>
-    </unzip>
+    <get src="http://download.oracle.com/maven/com/sleepycat/je/${je.version}/je-${je.version}.jar"
+         dest="lib/je-${je.version}.jar" />
   </target>
 
   <target name="check-and-get-je-jar" depends="get-je-jar" />
