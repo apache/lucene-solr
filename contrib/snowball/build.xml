@@ -147,10 +147,9 @@
     description="Downloads Snowball vocabulary tests">
     <sequential>
       <mkdir dir="${vocab.dir}"/>
-      <exec dir="${vocab.dir}" executable="${svn.exe}"
-	            failifexecutionfails="false">
+      <exec dir="${vocab.dir}" executable="${svn.exe}" failifexecutionfails="false" failonerror="true">
         <arg line="checkout -r ${snowball.vocab.rev} ${snowball.vocab.url}"/>
-	  </exec>
-	</sequential>
+      </exec>
+    </sequential>
   </target>
 </project>

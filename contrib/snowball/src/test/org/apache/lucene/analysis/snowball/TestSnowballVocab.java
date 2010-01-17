@@ -43,6 +43,10 @@ public class TestSnowballVocab extends BaseTokenStreamTestCase {
    * Run all languages against their snowball vocabulary tests.
    */
   public void testStemmers() throws IOException {
+    if (!dataRoot.exists()) {
+      System.err.println("WARN: This test was disabled, as the svn checkout of snowball test files is not supported on your system!");
+      return;
+    }
     assertCorrectOutput("Danish", "danish");
     assertCorrectOutput("Dutch", "dutch");
     assertCorrectOutput("English", "english");
