@@ -66,33 +66,33 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
 
   public void testFrontUnigram() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.FRONT, 1, 1);
-    assertTokenStreamContents(tokenizer, new String[]{"a"}, new int[]{0}, new int[]{1});
+    assertTokenStreamContents(tokenizer, new String[]{"a"}, new int[]{0}, new int[]{1}, 5 /* abcde */);
   }
 
   public void testBackUnigram() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.BACK, 1, 1);
-    assertTokenStreamContents(tokenizer, new String[]{"e"}, new int[]{4}, new int[]{5});
+    assertTokenStreamContents(tokenizer, new String[]{"e"}, new int[]{4}, new int[]{5}, 5 /* abcde */);
   }
 
   public void testOversizedNgrams() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.FRONT, 6, 6);
-    assertTokenStreamContents(tokenizer, new String[0], new int[0], new int[0]);
+    assertTokenStreamContents(tokenizer, new String[0], new int[0], new int[0], 5 /* abcde */);
   }
 
   public void testFrontRangeOfNgrams() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.FRONT, 1, 3);
-    assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3});
+    assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3}, 5 /* abcde */);
   }
 
   public void testBackRangeOfNgrams() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.BACK, 1, 3);
-    assertTokenStreamContents(tokenizer, new String[]{"e","de","cde"}, new int[]{4,3,2}, new int[]{5,5,5});
+    assertTokenStreamContents(tokenizer, new String[]{"e","de","cde"}, new int[]{4,3,2}, new int[]{5,5,5}, 5 /* abcde */);
   }
   
   public void testReset() throws Exception {
     EdgeNGramTokenizer tokenizer = new EdgeNGramTokenizer(input, EdgeNGramTokenizer.Side.FRONT, 1, 3);
-    assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3});
+    assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3}, 5 /* abcde */);
     tokenizer.reset(new StringReader("abcde"));
-    assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3});
+    assertTokenStreamContents(tokenizer, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3}, 5 /* abcde */);
   }
 }
