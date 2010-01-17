@@ -57,12 +57,12 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
 
     public void testUnigrams() throws Exception {
         NGramTokenizer tokenizer = new NGramTokenizer(input, 1, 1);
-        assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5});
+        assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, new Integer(5) /* abcde */);
     }
 
     public void testBigrams() throws Exception {
         NGramTokenizer tokenizer = new NGramTokenizer(input, 2, 2);
-        assertTokenStreamContents(tokenizer, new String[]{"ab","bc","cd","de"}, new int[]{0,1,2,3}, new int[]{2,3,4,5});
+        assertTokenStreamContents(tokenizer, new String[]{"ab","bc","cd","de"}, new int[]{0,1,2,3}, new int[]{2,3,4,5}, new Integer(5) /* abcde */);
     }
 
     public void testNgrams() throws Exception {
@@ -70,19 +70,20 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
         assertTokenStreamContents(tokenizer,
           new String[]{"a","b","c","d","e", "ab","bc","cd","de", "abc","bcd","cde"}, 
           new int[]{0,1,2,3,4, 0,1,2,3, 0,1,2},
-          new int[]{1,2,3,4,5, 2,3,4,5, 3,4,5}
+          new int[]{1,2,3,4,5, 2,3,4,5, 3,4,5},
+          new Integer(5) /* abcde */
         );
     }
 
     public void testOversizedNgrams() throws Exception {
         NGramTokenizer tokenizer = new NGramTokenizer(input, 6, 7);
-        assertTokenStreamContents(tokenizer, new String[0], new int[0], new int[0]);
+        assertTokenStreamContents(tokenizer, new String[0], new int[0], new int[0], new Integer(5) /* abcde */);
     }
     
     public void testReset() throws Exception {
       NGramTokenizer tokenizer = new NGramTokenizer(input, 1, 1);
-      assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5});
+      assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, new Integer(5) /* abcde */);
       tokenizer.reset(new StringReader("abcde"));
-      assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5});
+      assertTokenStreamContents(tokenizer, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5}, new Integer(5) /* abcde */);
     }
 }

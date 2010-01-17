@@ -176,9 +176,13 @@ public final class CJKTokenizer extends Tokenizer {
                         length = 0;
                         preIsTokened = false;
                     }
+                    else{
+                      offset--;
+                    }
 
                     break;
                 } else {
+                    offset--;
                     return false;
                 }
             } else {
@@ -289,6 +293,7 @@ public final class CJKTokenizer extends Tokenizer {
           typeAtt.setType(TOKEN_TYPE_NAMES[tokenType]);
           return true;
         } else if (dataLen == -1) {
+          offset--;
           return false;
         }
 
@@ -299,7 +304,7 @@ public final class CJKTokenizer extends Tokenizer {
     
     public final void end() {
       // set final offset
-      final int finalOffset = offset;
+      final int finalOffset = correctOffset(offset);
       this.offsetAtt.setOffset(finalOffset, finalOffset);
     }
     

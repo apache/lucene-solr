@@ -43,11 +43,6 @@ Optimizations
  * LUCENE-2086: When resolving deleted terms, do so in term sort order
    for better performance (Bogdan Ghidireac via Mike McCandless)
 
-Test Cases
-
- * LUCENE-2114: Change TestFilteredSearch to test on multi-segment
-   index as well. (Simon Willnauer via Mike McCandless)
-
 Documentation
 
  * LUCENE-2114: Improve javadocs of Filter to call out that the
@@ -56,9 +51,15 @@ Documentation
 
 Test Cases
 
+ * LUCENE-2114: Change TestFilteredSearch to test on multi-segment
+   index as well. (Simon Willnauer via Mike McCandless)
+
  * LUCENE-2211: Improves BaseTokenStreamTestCase to use a fake attribute
    that checks if clearAttributes() was called correctly.
    (Uwe Schindler, Robert Muir)
+
+ * LUCENE-2207, LUCENE-2219: Improve BaseTokenStreamTestCase to check if
+   end() is implemented correctly.  (Koji Sekiguchi, Robert Muir)
 
 ======================= Release 2.9.1 2009-11-06 =======================
 

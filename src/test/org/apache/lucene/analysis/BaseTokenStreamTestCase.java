@@ -127,7 +127,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     }
   }
 
-  public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
+  public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], Integer finalOffset) throws IOException {
     assertNotNull(output);
     CheckClearAttributesAttribute checkClearAtt = (CheckClearAttributesAttribute) ts.addAttribute(CheckClearAttributesAttribute.class);
     
@@ -135,7 +135,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
     
     OffsetAttribute offsetAtt = null;
-    if (startOffsets != null || endOffsets != null) {
+    if (startOffsets != null || endOffsets != null || finalOffset != null) {
       assertTrue("has no OffsetAttribute", ts.hasAttribute(OffsetAttribute.class));
       offsetAtt = (OffsetAttribute) ts.getAttribute(OffsetAttribute.class);
     }
@@ -177,32 +177,45 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     }
     assertFalse("end of stream", ts.incrementToken());
     ts.end();
+    if (finalOffset != null)
+      assertEquals("finalOffset ", finalOffset.intValue(), offsetAtt.endOffset());
     ts.close();
   }
   
+  public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
+    assertTokenStreamContents(ts, output, startOffsets, endOffsets, types, posIncrements, null);
+  }
+
   public static void assertTokenStreamContents(TokenStream ts, String[] output) throws IOException {
-    assertTokenStreamContents(ts, output, null, null, null, null);
+    assertTokenStreamContents(ts, output, null, null, null, null, null);
   }
   
   public static void assertTokenStreamContents(TokenStream ts, String[] output, String[] types) throws IOException {
-    assertTokenStreamContents(ts, output, null, null, types, null);
+    assertTokenStreamContents(ts, output, null, null, types, null, null);
   }
   
   public static void assertTokenStreamContents(TokenStream ts, String[] output, int[] posIncrements) throws IOException {
-    assertTokenStreamContents(ts, output, null, null, null, posIncrements);
+    assertTokenStreamContents(ts, output, null, null, null, posIncrements, null);
   }
   
   public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[]) throws IOException {
-    assertTokenStreamContents(ts, output, startOffsets, endOffsets, null, null);
+    assertTokenStreamContents(ts, output, startOffsets, endOffsets, null, null, null);
+  }
+  
+  public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], Integer finalOffset) throws IOException {
+    assertTokenStreamContents(ts, output, startOffsets, endOffsets, null, null, finalOffset);
   }
   
   public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], int[] posIncrements) throws IOException {
-    assertTokenStreamContents(ts, output, startOffsets, endOffsets, null, posIncrements);
+    assertTokenStreamContents(ts, output, startOffsets, endOffsets, null, posIncrements, null);
   }
 
+  public static void assertTokenStreamContents(TokenStream ts, String[] output, int startOffsets[], int endOffsets[], int[] posIncrements, Integer finalOffset) throws IOException {
+    assertTokenStreamContents(ts, output, startOffsets, endOffsets, null, posIncrements, finalOffset);
+  }
   
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
-    assertTokenStreamContents(a.tokenStream("dummy", new StringReader(input)), output, startOffsets, endOffsets, types, posIncrements);
+    assertTokenStreamContents(a.tokenStream("dummy", new StringReader(input)), output, startOffsets, endOffsets, types, posIncrements, new Integer(input.length()));
   }
   
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output) throws IOException {
@@ -227,7 +240,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   
 
   public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
-    assertTokenStreamContents(a.reusableTokenStream("dummy", new StringReader(input)), output, startOffsets, endOffsets, types, posIncrements);
+    assertTokenStreamContents(a.reusableTokenStream("dummy", new StringReader(input)), output, startOffsets, endOffsets, types, posIncrements, new Integer(input.length()));
   }
   
   public static void assertAnalyzesToReuse(Analyzer a, String input, String[] output) throws IOException {

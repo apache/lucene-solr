@@ -18,14 +18,10 @@ package org.apache.lucene.analysis.cjk;
  */
 
 import java.io.IOException;
-import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.Version;
 
 
 public class TestCJKTokenizer extends BaseTokenStreamTestCase {
@@ -47,33 +43,33 @@ public class TestCJKTokenizer extends BaseTokenStreamTestCase {
   }
 
   public void checkCJKToken(final String str, final TestToken[] out_tokens) throws IOException {
-    CJKTokenizer tokenizer = new CJKTokenizer(new StringReader(str));
-    TermAttribute termAtt = (TermAttribute) tokenizer.getAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) tokenizer.getAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) tokenizer.getAttribute(TypeAttribute.class);
+    Analyzer analyzer = new CJKAnalyzer(Version.LUCENE_CURRENT);
+    String terms[] = new String[out_tokens.length];
+    int startOffsets[] = new int[out_tokens.length];
+    int endOffsets[] = new int[out_tokens.length];
+    String types[] = new String[out_tokens.length];
     for (int i = 0; i < out_tokens.length; i++) {
-      assertTrue(tokenizer.incrementToken());
-      assertEquals(termAtt.term(), out_tokens[i].termText);
-      assertEquals(offsetAtt.startOffset(), out_tokens[i].start);
-      assertEquals(offsetAtt.endOffset(), out_tokens[i].end);
-      assertEquals(typeAtt.type(), out_tokens[i].type);
+      terms[i] = out_tokens[i].termText;
+      startOffsets[i] = out_tokens[i].start;
+      endOffsets[i] = out_tokens[i].end;
+      types[i] = out_tokens[i].type;
     }
-    assertFalse(tokenizer.incrementToken());
+    assertAnalyzesTo(analyzer, str, terms, startOffsets, endOffsets, types, null);
   }
   
   public void checkCJKTokenReusable(final Analyzer a, final String str, final TestToken[] out_tokens) throws IOException {
-    TokenStream ts = a.reusableTokenStream("dummy", new StringReader(str));
-    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) ts.getAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) ts.getAttribute(TypeAttribute.class);
+    Analyzer analyzer = new CJKAnalyzer(Version.LUCENE_CURRENT);
+    String terms[] = new String[out_tokens.length];
+    int startOffsets[] = new int[out_tokens.length];
+    int endOffsets[] = new int[out_tokens.length];
+    String types[] = new String[out_tokens.length];
     for (int i = 0; i < out_tokens.length; i++) {
-      assertTrue(ts.incrementToken());
-      assertEquals(termAtt.term(), out_tokens[i].termText);
-      assertEquals(offsetAtt.startOffset(), out_tokens[i].start);
-      assertEquals(offsetAtt.endOffset(), out_tokens[i].end);
-      assertEquals(typeAtt.type(), out_tokens[i].type);
+      terms[i] = out_tokens[i].termText;
+      startOffsets[i] = out_tokens[i].start;
+      endOffsets[i] = out_tokens[i].end;
+      types[i] = out_tokens[i].type;
     }
-    assertFalse(ts.incrementToken());
+    assertAnalyzesToReuse(analyzer, str, terms, startOffsets, endOffsets, types, null);
   }
   
   public void testJa1() throws IOException {
@@ -219,13 +215,8 @@ public class TestCJKTokenizer extends BaseTokenStreamTestCase {
   
   public void testTokenStream() throws Exception {
     Analyzer analyzer = new CJKAnalyzer();
-    TokenStream ts = analyzer.tokenStream("dummy", new StringReader("\u4e00\u4e01\u4e02"));
-    TermAttribute termAtt = (TermAttribute) ts.getAttribute(TermAttribute.class);
-    assertTrue(ts.incrementToken());
-    assertEquals("\u4e00\u4e01", termAtt.term());
-    assertTrue(ts.incrementToken());
-    assertEquals("\u4e01\u4e02", termAtt.term());
-    assertFalse(ts.incrementToken());
+    assertAnalyzesTo(analyzer, "\u4e00\u4e01\u4e02", 
+        new String[] { "\u4e00\u4e01", "\u4e01\u4e02"});
   }
   
   public void testReusableTokenStream() throws Exception {
@@ -260,5 +251,25 @@ public class TestCJKTokenizer extends BaseTokenStreamTestCase {
       newToken("\u3053", 14,15, CJKTokenizer.DOUBLE_TOKEN_TYPE)
     };
     checkCJKTokenReusable(analyzer, str, out_tokens2);
+  }
+  
+  /**
+   * LUCENE-2207: wrong offset calculated by end() 
+   */
+  public void testFinalOffset() throws IOException {
+    checkCJKToken("あい", new TestToken[] { 
+        newToken("あい", 0, 2, CJKTokenizer.DOUBLE_TOKEN_TYPE) });
+    checkCJKToken("あい   ", new TestToken[] { 
+        newToken("あい", 0, 2, CJKTokenizer.DOUBLE_TOKEN_TYPE) });
+    checkCJKToken("test", new TestToken[] { 
+        newToken("test", 0, 4, CJKTokenizer.SINGLE_TOKEN_TYPE) });
+    checkCJKToken("test   ", new TestToken[] { 
+        newToken("test", 0, 4, CJKTokenizer.SINGLE_TOKEN_TYPE) });
+    checkCJKToken("あいtest", new TestToken[] {
+        newToken("あい", 0, 2, CJKTokenizer.DOUBLE_TOKEN_TYPE),
+        newToken("test", 2, 6, CJKTokenizer.SINGLE_TOKEN_TYPE) });
+    checkCJKToken("testあい    ", new TestToken[] { 
+        newToken("test", 0, 4, CJKTokenizer.SINGLE_TOKEN_TYPE),
+        newToken("あい", 4, 6, CJKTokenizer.DOUBLE_TOKEN_TYPE) });
   }
 }

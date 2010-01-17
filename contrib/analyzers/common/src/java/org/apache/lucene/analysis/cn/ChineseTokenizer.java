@@ -128,8 +128,10 @@ public final class ChineseTokenizer extends Tokenizer {
                 bufferIndex = 0;
             }
 
-            if (dataLen == -1) return flush();
-            else
+            if (dataLen == -1) {
+              offset--;
+              return flush();
+            } else
                 c = ioBuffer[bufferIndex++];
 
 
@@ -160,7 +162,7 @@ public final class ChineseTokenizer extends Tokenizer {
     
     public final void end() {
       // set final offset
-      final int finalOffset = offset;
+      final int finalOffset = correctOffset(offset);
       this.offsetAtt.setOffset(finalOffset, finalOffset);
     }
 
