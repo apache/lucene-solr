@@ -114,6 +114,11 @@ Test Cases
  * LUCENE-2115: Cutover contrib tests to use Java5 generics.  (Kay Kay
    via Mike McCandless)
 
+Other
+
+ * LUCENE-1845: Updated bdb-je jar from version 3.3.69 to 3.3.93.
+   (Simon Willnauer via Mike McCandless)
+
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy
