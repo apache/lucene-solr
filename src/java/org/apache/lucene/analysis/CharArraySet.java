@@ -387,7 +387,7 @@ public class CharArraySet extends AbstractSet<Object> {
   public static CharArraySet copy(final Set<?> set) {
     if(set == EMPTY_SET)
       return EMPTY_SET;
-    return (set instanceof CharArraySet) ? copy((CharArraySet) set) : copy(Version.LUCENE_30, set);
+    return copy(Version.LUCENE_30, set);
   }
   
   /**

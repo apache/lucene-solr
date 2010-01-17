@@ -321,6 +321,50 @@ public class TestCharArraySet extends LuceneTestCase {
     }
   }
   
+  public void testCopyCharArraySetBWCompat() {
+    CharArraySet setIngoreCase = new CharArraySet(Version.LUCENE_CURRENT, 10, true);
+    CharArraySet setCaseSensitive = new CharArraySet(Version.LUCENE_CURRENT, 10, false);
+
+    List<String> stopwords = Arrays.asList(TEST_STOP_WORDS);
+    List<String> stopwordsUpper = new ArrayList<String>();
+    for (String string : stopwords) {
+      stopwordsUpper.add(string.toUpperCase());
+    }
+    setIngoreCase.addAll(Arrays.asList(TEST_STOP_WORDS));
+    setIngoreCase.add(Integer.valueOf(1));
+    setCaseSensitive.addAll(Arrays.asList(TEST_STOP_WORDS));
+    setCaseSensitive.add(Integer.valueOf(1));
+
+    CharArraySet copy = CharArraySet.copy(setIngoreCase);
+    CharArraySet copyCaseSens = CharArraySet.copy(setCaseSensitive);
+
+    assertEquals(setIngoreCase.size(), copy.size());
+    assertEquals(setCaseSensitive.size(), copy.size());
+
+    assertTrue(copy.containsAll(stopwords));
+    assertTrue(copy.containsAll(stopwordsUpper));
+    assertTrue(copyCaseSens.containsAll(stopwords));
+    for (String string : stopwordsUpper) {
+      assertFalse(copyCaseSens.contains(string));
+    }
+    // test adding terms to the copy
+    List<String> newWords = new ArrayList<String>();
+    for (String string : stopwords) {
+      newWords.add(string+"_1");
+    }
+    copy.addAll(newWords);
+    
+    assertTrue(copy.containsAll(stopwords));
+    assertTrue(copy.containsAll(stopwordsUpper));
+    assertTrue(copy.containsAll(newWords));
+    // new added terms are not in the source set
+    for (String string : newWords) {
+      assertFalse(setIngoreCase.contains(string));  
+      assertFalse(setCaseSensitive.contains(string));  
+
+    }
+  }
+  
   /**
    * Test the static #copy() function with a CharArraySet as a source
    */
