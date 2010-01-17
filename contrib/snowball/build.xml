@@ -148,7 +148,7 @@
     <sequential>
       <mkdir dir="${vocab.dir}"/>
       <exec dir="${vocab.dir}" executable="${svn.exe}" failifexecutionfails="false" failonerror="true">
-        <arg line="checkout -r ${snowball.vocab.rev} ${snowball.vocab.url}"/>
+        <arg line="checkout --trust-server-cert --non-interactive -r ${snowball.vocab.rev} ${snowball.vocab.url}"/>
       </exec>
     </sequential>
   </target>
