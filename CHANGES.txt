@@ -203,6 +203,9 @@ Test Cases
   that checks if clearAttributes() was called correctly.
   (Uwe Schindler, Robert Muir)
   
+* LUCENE-2207, LUCENE-2219: Improve BaseTokenStreamTestCase to check if 
+  end() is implemented correctly.  (Koji Sekiguchi, Robert Muir)
+  
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy

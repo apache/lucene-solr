@@ -45,9 +45,15 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
   }
 
   public void testSimple() throws Exception {
-    WikipediaTokenizer tf = new WikipediaTokenizer(new StringReader("This is a [[Category:foo]]"));
+    String text = "This is a [[Category:foo]]";
+    WikipediaTokenizer tf = new WikipediaTokenizer(new StringReader(text));
     assertTokenStreamContents(tf,
-        new String[] { "This", "is", "a", "foo" });
+        new String[] { "This", "is", "a", "foo" },
+        new int[] { 0, 5, 8, 21 },
+        new int[] { 4, 7, 9, 24 },
+        new String[] { "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", WikipediaTokenizer.CATEGORY },
+        new int[] { 1, 1, 1, 1, },
+        text.length());
   }
   
   public void testHandwritten() throws Exception {

@@ -45,6 +45,10 @@ Bug fixes
    ShingleMatrix, PrefixAware, compounds, NGramTokenFilter,
    EdgeNGramTokenFilter, Highlighter, and MemoryIndex.
    (Uwe Schindler, Robert Muir)
+
+ * LUCENE-2207, LUCENE-2219: Fix incorrect offset calculations in end() for 
+   CJKTokenizer, ChineseTokenizer, SmartChinese SentenceTokenizer, 
+   and WikipediaTokenizer.  (Koji Sekiguchi, Robert Muir)
    
 API Changes
 
