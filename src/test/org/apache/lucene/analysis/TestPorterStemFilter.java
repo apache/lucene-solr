@@ -33,11 +33,11 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
    * Run the stemmer against all strings in voc.txt
    * The output should be the same as the string in output.txt
    */
-  public void testPorterStemFilter() throws IOException {
+  public void testPorterStemFilter() throws Exception {
     Tokenizer tokenizer = new KeywordTokenizer(new StringReader(""));
     TokenStream filter = new PorterStemFilter(tokenizer);   
     ZipFile zipFile = new ZipFile(
-        new File(getClass().getResource("porterTestData.zip").getFile()));
+        new File(getClass().getResource("porterTestData.zip").toURI()));
     InputStream voc = zipFile.getInputStream(zipFile.getEntry("voc.txt"));
     InputStream out = zipFile.getInputStream(zipFile.getEntry("output.txt"));
     BufferedReader vocReader = new BufferedReader(new InputStreamReader(
