@@ -230,6 +230,8 @@ public class TaskSequence extends PerfTask {
       getRunData().getPoints().getCurrentStats().setCountsByTime(countsByTime, logByTimeMsec);
     }
 
+    stopNow = false;
+
     return count;
   }
 
@@ -276,6 +278,7 @@ public class TaskSequence extends PerfTask {
         }
       }
     }
+    stopNow = false;
     return count;
   }
 

@@ -92,6 +92,7 @@ public class NearRealtimeReaderTask extends PerfTask {
         r = newReader;
       }
     }
+    stopNow = false;
 
     return reopenCount;
   }

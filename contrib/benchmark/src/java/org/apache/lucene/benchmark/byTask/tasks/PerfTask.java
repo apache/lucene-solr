@@ -134,7 +134,6 @@ public abstract class PerfTask implements Cloneable {
    * @return number of work items done by this task.
    */
   public final int runAndMaybeStats(boolean reportStats) throws Exception {
-    stopNow = false;
     if (!reportStats || shouldNotRecordStats()) {
       setup();
       int count = doLogic();
