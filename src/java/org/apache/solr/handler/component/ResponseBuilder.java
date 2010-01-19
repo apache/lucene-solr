@@ -94,7 +94,9 @@ public class ResponseBuilder
   public int stage;  // What stage is this current request at?
 
   //The address of the Shard
+  boolean isDistrib; // is this a distributed search?
   public String[] shards;
+  public String[] slices; // the optional logical ids of the shards
   public int shards_rows = -1;
   public int shards_start = -1;
   public List<ShardRequest> outgoing;  // requests to be sent

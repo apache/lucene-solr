@@ -39,6 +39,10 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.*;
 import org.apache.solr.util.SolrPluginUtils;
+import org.apache.solr.cloud.CloudState;
+import org.apache.solr.cloud.Slice;
+import org.apache.solr.cloud.ZkNodeProps;
+
 
 import java.io.IOException;
 import java.net.URL;
@@ -104,14 +108,78 @@ public class QueryComponent extends SearchComponent
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
-    // TODO: temporary... this should go in a different component.
+    // TODO: temporary... this should go in a different component, or in SearchHandler
+    rb.isDistrib = params.getBool("distrib",false);
     String shards = params.get(ShardParams.SHARDS);
-    // nocommit : get shards based on ZooKeeper info, using load balancing
-    // shards = req.getCore().getCoreDescriptor().getCoreContainer().getZooKeeperController().getSearchNodes();
-    if (shards != null) {
-      List<String> lst = StrUtils.splitSmart(shards, ",", true);
-      rb.shards = lst.toArray(new String[lst.size()]);
+
+    // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
+    // search is distributed.
+    boolean hasShardURL = shards != null && shards.charAt('/') > 0;
+    rb.isDistrib = hasShardURL | rb.isDistrib;  
+
+    if (rb.isDistrib) {
+      CloudState cloudState = null;
+
+      if (shards != null) {
+        List<String> lst = StrUtils.splitSmart(shards, ",", true);
+        rb.shards = lst.toArray(new String[lst.size()]);
+        rb.slices = new String[rb.shards.length];
+        for (int i=0; i<rb.shards.length; i++) {
+          if (rb.shards[i].indexOf('/') < 0) {
+            // this is a logical shard
+            rb.slices[i] = rb.shards[i];
+            rb.shards[i] = null;
+          }
+        }
+      } else {
+        // we weren't provided with a list of slices to query, so find the list that will cover the complete index
+
+        cloudState =  req.getCore().getCoreDescriptor().getCoreContainer().getZooKeeperController().getCloudInfo();
+
+        // TODO: EXAMPLE
+        rb.slices = new String[]{"shard1","shard2"};
+        rb.shards = new String[rb.shards.length];
+      }
+
+      //
+      // Map slices to shards
+      //
+      for (int i=0; i<rb.shards.length; i++) {
+        if (rb.shards[i] == null) {
+          if (cloudState == null) {
+              cloudState =  req.getCore().getCoreDescriptor().getCoreContainer().getZooKeeperController().getCloudInfo();
+          }
+          String sliceStr = rb.slices[i];
+          Slice slice = cloudState.getSlice(sliceStr);
+
+          if (slice==null) {
+            // TODO: we could treat this as "all servers down" for a slice if partial results are enabled.
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such slice: " + sliceStr);
+          }
+
+          Map<String, ZkNodeProps> sliceShards = slice.getShards();
+
+          // For now, recreate the | delimited list of equivalent servers
+          StringBuilder sliceShardsStr = new StringBuilder();
+          boolean first = true;
+          for (ZkNodeProps nodeProps : sliceShards.values()) {
+            if (first) {
+              first = false;
+            } else {
+              sliceShardsStr.append('|');  
+            }
+            String url = nodeProps.get("url");
+            if (url.startsWith("http://"))
+              url = url.substring(7);
+            sliceShardsStr.append(url);
+          }
+
+          rb.shards[i] = sliceShardsStr.toString();
+        }
+      }
     }
+    
+    
     String shards_rows = params.get(ShardParams.SHARDS_ROWS);
     if(shards_rows != null) {
       rb.shards_rows = Integer.parseInt(shards_rows);

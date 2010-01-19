@@ -189,7 +189,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
       subt.stop();
     }
 
-    if (rb.shards == null) {
+    if (!rb.isDistrib) {
       // a normal non-distributed request
 
       // The semantics of debugging vs not debugging are different enough that
@@ -465,6 +465,13 @@ class HttpCommComponent {
 
           // no need to set the response parser as binary is the default
           // req.setResponseParser(new BinaryResponseParser());
+
+          // if there are no shards available for a slice, urls.size()==0
+          if (urls.size()==0) {
+            // TODO: what's the right error code here? We should use the same thing when
+            // all of the servers for a shard are down.
+            throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard");
+          }
 
           if (urls.size() <= 1) {
             String url = urls.get(0);
