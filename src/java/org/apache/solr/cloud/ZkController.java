@@ -403,7 +403,7 @@ public final class ZkController {
       List<Slice> slices = new ArrayList<Slice>();
       for(String shardIdZkPath : shardIdNames) {
         Map<String,ZkNodeProps> shardsMap = readShards(shardIdPaths + "/" + shardIdZkPath);
-        Slice slice = new Slice(shardsMap);
+        Slice slice = new Slice(shardIdZkPath, shardsMap);
         slices.add(slice);
       }
       cloudInfo.addSlices(collection, slices);

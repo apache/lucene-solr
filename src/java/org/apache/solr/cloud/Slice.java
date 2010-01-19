@@ -23,12 +23,18 @@ import java.util.Map;
 // effectively immutable
 public class Slice {
   private final Map<String,ZkNodeProps> shards;
+  private final String name;
 
-  public Slice(Map<String,ZkNodeProps> shards) {
+  public Slice(String name, Map<String,ZkNodeProps> shards) {
     this.shards = shards;
+    this.name = name;
   }
   
   public Map<String,ZkNodeProps> getShards() {
     return Collections.unmodifiableMap(shards);
+  }
+  
+  public String getName() {
+    return name;
   }
 }

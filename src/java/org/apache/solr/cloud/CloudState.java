@@ -32,7 +32,7 @@ public class CloudState {
   }
   
   // nocommit : only call before publishing
-  public void addSlices(String collection, List<Slice> slices) {
+  void addSlices(String collection, List<Slice> slices) {
     collectionStates.put(collection, slices);
   }
   
@@ -41,7 +41,7 @@ public class CloudState {
     return Collections.unmodifiableList(collectionStates.get(collection));
   }
   
-  public List<String> getNodes() {
+  public List<String> getLiveNodes() {
     return Collections.unmodifiableList(liveNodes);
   }
 
