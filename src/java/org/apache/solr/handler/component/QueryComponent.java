@@ -41,7 +41,6 @@ import org.apache.solr.search.*;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.cloud.CloudState;
 import org.apache.solr.cloud.Slice;
-import org.apache.solr.cloud.Slices;
 import org.apache.solr.cloud.ZkNodeProps;
 
 
@@ -151,7 +150,7 @@ public class QueryComponent extends SearchComponent
               cloudState =  req.getCore().getCoreDescriptor().getCoreContainer().getZooKeeperController().getCloudState();
           }
           String sliceStr = rb.slices[i];
-          Slices slices = cloudState.getSlices(sliceStr);
+          List<Slice> slices = cloudState.getSlices(sliceStr);
 
           if (slices==null || slices.size() == 0) {
             // TODO: we could treat this as "all servers down" for a slice if partial results are enabled.

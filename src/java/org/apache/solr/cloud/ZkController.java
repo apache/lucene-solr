@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -392,15 +393,14 @@ public final class ZkController {
     log.info("Updating cloud state from ZooKeeper... :" + zkClient.keeper);
     
     // build immutable CloudInfo
-    CloudState cloudInfo = new CloudState();
-    List<String> liveNodes = getLiveNodes();
-    cloudInfo.setNodes(liveNodes);
+    CloudState cloudInfo = new CloudState(getLiveNodes());
+
     List<String> collections = getCollectionNames();
     // nocommit : load all collection info
     for (String collection : collections) {
       String shardIdPaths = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE;
       List<String> shardIdNames = zkClient.getChildren(shardIdPaths, null);
-      Slices slices = new Slices();
+      List<Slice> slices = new ArrayList<Slice>();
       for(String shardIdZkPath : shardIdNames) {
         Map<String,ZkNodeProps> shardsMap = readShards(shardIdPaths + "/" + shardIdZkPath);
         Slice slice = new Slice(shardsMap);

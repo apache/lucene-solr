@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import junit.framework.TestCase;
 
@@ -76,7 +77,7 @@ public class ZkControllerTest extends TestCase {
           "localhost", "8983", "/solr");
       zkController.updateCloudState();
       CloudState cloudInfo = zkController.getCloudState();
-      Slices slices = cloudInfo.getSlices("collection1");
+      List<Slice> slices = cloudInfo.getSlices("collection1");
       assertNotNull(slices);
 
 

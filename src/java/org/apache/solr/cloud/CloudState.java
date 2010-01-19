@@ -24,25 +24,25 @@ import java.util.Map;
 
 // effectively immutable
 public class CloudState {
-  private Map<String,Slices> collectionStates = new HashMap<String,Slices>();
-  private List<String> nodes = null;
+  private Map<String,List<Slice>> collectionStates = new HashMap<String,List<Slice>>();
+  private List<String> liveNodes = null;
   
-  // nocommit
-  public void addSlices(String collection, Slices slices) {
+  public CloudState(List<String> liveNodes) {
+    this.liveNodes = liveNodes;
+  }
+  
+  // nocommit : only call before publishing
+  public void addSlices(String collection, List<Slice> slices) {
     collectionStates.put(collection, slices);
   }
   
   // nocommit
-  public Slices getSlices(String collection) {
-    return collectionStates.get(collection);
+  public List<Slice> getSlices(String collection) {
+    return Collections.unmodifiableList(collectionStates.get(collection));
   }
   
   public List<String> getNodes() {
-    return Collections.unmodifiableList(nodes);
+    return Collections.unmodifiableList(liveNodes);
   }
-  
-  // nocommit
-  public void setNodes(List<String> nodes) {
-    this.nodes = nodes;
-  }
+
 }
