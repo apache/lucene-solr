@@ -21,13 +21,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 // effectively immutable
 public class CloudState {
   private Map<String,List<Slice>> collectionStates = new HashMap<String,List<Slice>>();
-  private List<String> liveNodes = null;
+  private Set<String> liveNodes = null;
   
-  public CloudState(List<String> liveNodes) {
+  public CloudState(Set<String> liveNodes) {
     this.liveNodes = liveNodes;
   }
   
@@ -41,8 +42,12 @@ public class CloudState {
     return Collections.unmodifiableList(collectionStates.get(collection));
   }
   
-  public List<String> getLiveNodes() {
-    return Collections.unmodifiableList(liveNodes);
+  public Set<String> getLiveNodes() {
+    return Collections.unmodifiableSet(liveNodes);
+  }
+  
+  public boolean liveNodesContain(String name) {
+    return liveNodes.contains(name);
   }
 
 }

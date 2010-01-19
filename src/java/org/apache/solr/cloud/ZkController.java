@@ -28,8 +28,10 @@ import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -77,6 +79,7 @@ public final class ZkController {
 
   static final String URL_PROP = "url";
   static final String ROLE_PROP = "role";
+  static final String NODE_NAME = "node_name";
 
   final ShardsWatcher shardWatcher = new ShardsWatcher(this);
 
@@ -380,8 +383,12 @@ public final class ZkController {
 
   private void createEphemeralNode() throws KeeperException,
       InterruptedException {
-    String nodeName = hostName + ":" + localHostPort + "_"+ localHostContext;
+    String nodeName = getNodeUrl();
     zkClient.makePath(NODES_ZKNODE + "/" + nodeName, CreateMode.EPHEMERAL);
+  }
+  
+  private String getNodeUrl() {
+    return hostName + ":" + localHostPort + "_"+ localHostContext;
   }
 
   // load and publish a new CollectionInfo
@@ -414,10 +421,13 @@ public final class ZkController {
     this.cloudState = cloudInfo;
   }
 
-  private List<String> getLiveNodes() throws KeeperException, InterruptedException {
+  private Set<String> getLiveNodes() throws KeeperException, InterruptedException {
     // nocomit : incremental update
     List<String> liveNodes = zkClient.getChildren(NODES_ZKNODE, null);
-    return liveNodes;
+    Set<String> liveNodesSet = new HashSet<String>(liveNodes.size());
+    liveNodesSet.addAll(liveNodes);
+
+    return liveNodesSet;
   }
 
   /**
@@ -564,6 +574,8 @@ public final class ZkController {
     props.put(URL_PROP, shardUrl);
 
     props.put(ROLE_PROP, cloudDesc.getRole());
+    
+    props.put(NODE_NAME, getNodeUrl());
 
     props.store(new DataOutputStream(baos));
 
