@@ -217,7 +217,7 @@ public final class ZkController {
     return cloudState;
   }
 
-  public List<String> getCollectionNames() throws KeeperException,
+  private List<String> getCollectionNames() throws KeeperException,
       InterruptedException {
     // nocommit : watch for new collections?
     List<String> collectionNodes = zkClient.getChildren(COLLECTIONS_ZKNODE,
@@ -393,6 +393,8 @@ public final class ZkController {
     
     // build immutable CloudInfo
     CloudState cloudInfo = new CloudState();
+    List<String> liveNodes = getLiveNodes();
+    cloudInfo.setNodes(liveNodes);
     List<String> collections = getCollectionNames();
     // nocommit : load all collection info
     for (String collection : collections) {
@@ -408,6 +410,12 @@ public final class ZkController {
 
     // update volatile
     this.cloudState = cloudInfo;
+  }
+
+  private List<String> getLiveNodes() throws KeeperException, InterruptedException {
+    // nocomit : incremental update
+    List<String> liveNodes = zkClient.getChildren(NODES_ZKNODE, null);
+    return liveNodes;
   }
 
   /**

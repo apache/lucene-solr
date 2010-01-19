@@ -25,7 +25,7 @@ import java.util.Map;
 // effectively immutable
 public class CloudState {
   private Map<String,Slice> collectionStates = new HashMap<String,Slice>();
-  private final List<String> nodes = null;
+  private List<String> nodes = null;
   
   // nocommit
   public void addSlice(String collection, Slice slice) {
@@ -39,5 +39,10 @@ public class CloudState {
   
   public List<String> getNodes() {
     return Collections.unmodifiableList(nodes);
+  }
+  
+  // nocommit
+  public void setNodes(List<String> nodes) {
+    this.nodes = nodes;
   }
 }
