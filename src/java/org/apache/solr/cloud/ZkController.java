@@ -81,7 +81,7 @@ public final class ZkController {
 
   private SolrZkClient zkClient;
 
-  private volatile CloudState cloudInfo;
+  private volatile CloudState cloudState;
 
   private String zkServerAddress;
 
@@ -213,8 +213,8 @@ public final class ZkController {
   /**
    * @return information about the cluster from ZooKeeper
    */
-  public CloudState getCloudInfo() {
-    return cloudInfo;
+  public CloudState getCloudState() {
+    return cloudState;
   }
 
   public List<String> getCollectionNames() throws KeeperException,
@@ -407,7 +407,7 @@ public final class ZkController {
     }
 
     // update volatile
-    this.cloudInfo = cloudInfo;
+    this.cloudState = cloudInfo;
   }
 
   /**

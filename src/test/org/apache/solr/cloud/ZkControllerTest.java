@@ -75,7 +75,7 @@ public class ZkControllerTest extends TestCase {
       zkController = new ZkController(ZOO_KEEPER_ADDRESS, TIMEOUT,
           "localhost", "8983", "/solr");
       zkController.updateCloudState();
-      CloudState cloudInfo = zkController.getCloudInfo();
+      CloudState cloudInfo = zkController.getCloudState();
       Slice slice = cloudInfo.getSlice("collection1");
       assertNotNull(slice);
 

@@ -134,7 +134,7 @@ public class QueryComponent extends SearchComponent
       } else {
         // we weren't provided with a list of slices to query, so find the list that will cover the complete index
 
-        cloudState =  req.getCore().getCoreDescriptor().getCoreContainer().getZooKeeperController().getCloudInfo();
+        cloudState =  req.getCore().getCoreDescriptor().getCoreContainer().getZooKeeperController().getCloudState();
 
         // TODO: EXAMPLE
         rb.slices = new String[]{"shard1","shard2"};
@@ -147,7 +147,7 @@ public class QueryComponent extends SearchComponent
       for (int i=0; i<rb.shards.length; i++) {
         if (rb.shards[i] == null) {
           if (cloudState == null) {
-              cloudState =  req.getCore().getCoreDescriptor().getCoreContainer().getZooKeeperController().getCloudInfo();
+              cloudState =  req.getCore().getCoreDescriptor().getCoreContainer().getZooKeeperController().getCloudState();
           }
           String sliceStr = rb.slices[i];
           Slice slice = cloudState.getSlice(sliceStr);
