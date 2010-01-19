@@ -206,6 +206,8 @@ Other Changes
   (Chris A. Mattmann via hossman)
   
 * SOLR-1696 : Deprecate old <highlighting> syntax and move configuration to HighlightComponent (noble)
+
+* Upgraded to Lucene 2.9-dev r900226 (koji)
   
 Build
 ----------------------
