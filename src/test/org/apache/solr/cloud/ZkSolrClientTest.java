@@ -80,6 +80,7 @@ public class ZkSolrClientTest extends TestCase {
 
       zkClient.makePath("collections/collection1/config=collection1");
       
+      // this tests disconnect state
       server.shutdown();
       
       Thread.sleep(80);
@@ -106,6 +107,8 @@ public class ZkSolrClientTest extends TestCase {
       
       assertNotNull(zkClient.exists("/collections/collection1/config=collection3", null));
       assertNotNull(zkClient.exists("/collections/collection1/config=collection1", null));
+      
+      //this tests expired state
       
       // cause expiration
       for(int i = 0; i < 1000; i++) {
