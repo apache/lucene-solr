@@ -62,6 +62,7 @@ public class ZkSolrClientTest extends TestCase {
     server.shutdown();
   }
   
+  // nocommit : must be a clear way to do this
   public void testReconnect() throws Exception {
     String zkDir = tmpDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
@@ -73,8 +74,7 @@ public class ZkSolrClientTest extends TestCase {
 
       AbstractZkTestCase.makeSolrZkNode();
 
-      zkClient = new SolrZkClient(AbstractZkTestCase.ZOO_KEEPER_ADDRESS,
-          AbstractZkTestCase.TIMEOUT);
+      zkClient = new SolrZkClient(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, 5);
       String shardsPath = "/collections/collection1/shards";
       zkClient.makePath(shardsPath);
 
@@ -106,6 +106,19 @@ public class ZkSolrClientTest extends TestCase {
       
       assertNotNull(zkClient.exists("/collections/collection1/config=collection3", null));
       assertNotNull(zkClient.exists("/collections/collection1/config=collection1", null));
+      
+      // cause expiration
+      for(int i = 0; i < 1000; i++) {
+        System.gc();
+      }
+      
+      Thread.sleep(3000); // pause for reconnect
+      
+      zkClient.makePath("collections/collection1/config=collection4");
+      
+      zkClient.printLayoutToStdOut();
+      
+      assertNotNull(zkClient.exists("/collections/collection1/config=collection4", null));
 
     } catch(Exception e) {
       // nocommit

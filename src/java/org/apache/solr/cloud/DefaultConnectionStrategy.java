@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
 
   private static Logger log = LoggerFactory.getLogger(DefaultConnectionStrategy.class);
-  private ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+  private ScheduledExecutorService executor;
   
   @Override
   public void connect(String serverAddress, int timeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException {
@@ -45,6 +45,7 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
   public void reconnect(final String serverAddress, final int zkClientTimeout,
       final Watcher watcher, final ZkUpdate updater) throws IOException {
     log.info("Starting reconnect to ZooKeeper attempts ...");
+    executor = Executors.newScheduledThreadPool(1);
     executor.schedule(new Runnable() {
       private int delay = 1000;
       public void run() {
