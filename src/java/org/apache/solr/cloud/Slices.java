@@ -17,33 +17,9 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-public class CloudDescriptor {
+import java.util.ArrayList;
 
-  private String shardId;
-  private String collectionName;
-  private String role = "none";
-  
-  public String getRole() {
-    return role;
-  }
 
-  public void setRole(String role) {
-    this.role = role;
-  }
+public class Slices extends ArrayList<Slice> {
 
-  public void setShardId(String shardId) {
-    this.shardId = shardId;
-  }
-  
-  public String getShardId() {
-    return shardId;
-  }
-  
-  public String getCollectionName() {
-    return collectionName;
-  }
-
-  public void setCollectionName(String collectionName) {
-    this.collectionName = collectionName;
-  }
 }

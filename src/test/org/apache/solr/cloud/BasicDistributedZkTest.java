@@ -57,13 +57,13 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   String invalidField="invalid_field_not_in_schema";
   
   protected void createServers(int numShards) throws Exception {
-    controlJetty = createJetty(testDir, "control", "control_slice");
+    controlJetty = createJetty(testDir, "control", "control_shardId");
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
 
     StringBuilder sb = new StringBuilder();
     for (int i = 1; i <= numShards; i++) {
       if (sb.length() > 0) sb.append(',');
-      JettySolrRunner j = createJetty(testDir, "jetty" + i, "slice" + (i + 2));
+      JettySolrRunner j = createJetty(testDir, "jetty" + i, "shardId" + (i + 2));
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
       sb.append("localhost:").append(j.getLocalPort()).append(context);

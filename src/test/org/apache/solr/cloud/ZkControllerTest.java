@@ -57,7 +57,7 @@ public class ZkControllerTest extends TestCase {
       AbstractZkTestCase.makeSolrZkNode();
 
       zkClient = new SolrZkClient(ZOO_KEEPER_ADDRESS, TIMEOUT);
-      String shardsPath = "/collections/collection1/slices/slice1";
+      String shardsPath = "/collections/collection1/shards/shardid1";
       zkClient.makePath(shardsPath);
 
       zkClient.makePath("collections/collection1/config=collection1");
@@ -76,13 +76,15 @@ public class ZkControllerTest extends TestCase {
           "localhost", "8983", "/solr");
       zkController.updateCloudState();
       CloudState cloudInfo = zkController.getCloudState();
-      Slice slice = cloudInfo.getSlice("collection1");
-      assertNotNull(slice);
+      Slices slices = cloudInfo.getSlices("collection1");
+      assertNotNull(slices);
 
 
       if (DEBUG) {
-        for (String shard : slice.getShards().keySet()) {
-          System.out.println("shard:" + shard);
+        for(Slice slice : slices) {
+          for (String shard : slice.getShards().keySet()) {
+            System.out.println("shard:" + shard);
+          }
         }
       }
 

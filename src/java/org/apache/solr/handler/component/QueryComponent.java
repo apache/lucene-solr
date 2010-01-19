@@ -41,6 +41,7 @@ import org.apache.solr.search.*;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.cloud.CloudState;
 import org.apache.solr.cloud.Slice;
+import org.apache.solr.cloud.Slices;
 import org.apache.solr.cloud.ZkNodeProps;
 
 
@@ -150,14 +151,16 @@ public class QueryComponent extends SearchComponent
               cloudState =  req.getCore().getCoreDescriptor().getCoreContainer().getZooKeeperController().getCloudState();
           }
           String sliceStr = rb.slices[i];
-          Slice slice = cloudState.getSlice(sliceStr);
+          Slices slices = cloudState.getSlices(sliceStr);
 
-          if (slice==null) {
+          if (slices==null || slices.size() == 0) {
             // TODO: we could treat this as "all servers down" for a slice if partial results are enabled.
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such slice: " + sliceStr);
           }
 
-          Map<String, ZkNodeProps> sliceShards = slice.getShards();
+          
+          // nocommit : just using the first slice
+          Map<String, ZkNodeProps> sliceShards = slices.get(0).getShards();
 
           // For now, recreate the | delimited list of equivalent servers
           StringBuilder sliceShardsStr = new StringBuilder();

@@ -80,7 +80,7 @@ public class CoreContainer
   protected String solrConfigFilenameOverride;
   protected String solrDataDirOverride;
   protected String zkPortOverride;
-  private String testSliceOverride;
+  private String testShardIdOverride;
   private ZkController zooKeeperController;
 
   private String zkHost;
@@ -185,7 +185,7 @@ public class CoreContainer
       cores = new CoreContainer();
       cores.solrDataDirOverride = dataDir;
       cores.zkPortOverride = zkPortOverride;
-      cores.testSliceOverride = testShardListOverride;
+      cores.testShardIdOverride = testShardListOverride;
       if (fconf.exists())
         cores.load(solrHome, fconf);
       else {
@@ -363,14 +363,14 @@ public class CoreContainer
             p.setSchemaName(opt);
           }
           // nocommit : default shard list to SHARD: + host:port + context + core
-          opt = DOMUtil.getAttr(node, "slice", null);
-          if(testSliceOverride != null && name.equals("")) {
-            p.getCloudDescriptor().setSlice(testSliceOverride);
+          opt = DOMUtil.getAttr(node, "shardId", null);
+          if(testShardIdOverride != null && name.equals("")) {
+            p.getCloudDescriptor().setShardId(testShardIdOverride);
           } else if(zooKeeperController != null) {
             if(opt == null) {
-              opt = "SLICE:" + zooKeeperController.getHostName() + ":" + hostPort + "_" + hostContext + "_" + (name.length() == 0 ? "" : "_" + name);
+              opt = "SHARDID:" + zooKeeperController.getHostName() + ":" + hostPort + "_" + hostContext + "_" + (name.length() == 0 ? "" : "_" + name);
             }
-            p.getCloudDescriptor().setSlice(opt);
+            p.getCloudDescriptor().setShardId(opt);
           }
           opt = DOMUtil.getAttr(node, "role", null);
           if(opt != null) {

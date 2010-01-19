@@ -24,16 +24,16 @@ import java.util.Map;
 
 // effectively immutable
 public class CloudState {
-  private Map<String,Slice> collectionStates = new HashMap<String,Slice>();
+  private Map<String,Slices> collectionStates = new HashMap<String,Slices>();
   private List<String> nodes = null;
   
   // nocommit
-  public void addSlice(String collection, Slice slice) {
-    collectionStates.put(collection, slice);
+  public void addSlices(String collection, Slices slices) {
+    collectionStates.put(collection, slices);
   }
   
   // nocommit
-  public Slice getSlice(String collection) {
+  public Slices getSlices(String collection) {
     return collectionStates.get(collection);
   }
   

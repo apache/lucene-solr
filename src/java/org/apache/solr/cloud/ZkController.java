@@ -68,7 +68,7 @@ public final class ZkController {
   private final static Pattern URL_PREFIX = Pattern.compile("(https?://).*");
 
   // package private for tests
-  static final String SLICES_ZKNODE = "/slices";
+  static final String SHARDS_ZKNODE = "/shards";
   // nocommit : ok to be public? for corecontainer access
   public static final String CONFIGS_ZKNODE = "/configs";
   static final String COLLECTIONS_ZKNODE = "/collections";
@@ -150,9 +150,9 @@ public final class ZkController {
    * conditions
    * @param collection2 
    */
-  private void addZkShardsNode(String slice, String collection) throws IOException {
+  private void addZkShardsNode(String shardId, String collection) throws IOException {
 
-    String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SLICES_ZKNODE + "/" + slice;
+    String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE + "/" + shardId;
     
     try {
       // shards node
@@ -163,7 +163,7 @@ public final class ZkController {
         // makes shards zkNode if it doesn't exist
         zkClient.makePath(shardsZkPath, CreateMode.PERSISTENT, null);
         
-        // ping that there is a new collection (nocommit : or now possibly a new slice)
+        // ping that there is a new collection (nocommit : or now possibly a new shardId?)
         zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
       }
     } catch (KeeperException e) {
@@ -398,13 +398,15 @@ public final class ZkController {
     List<String> collections = getCollectionNames();
     // nocommit : load all collection info
     for (String collection : collections) {
-      String slicePaths = COLLECTIONS_ZKNODE + "/" + collection + SLICES_ZKNODE;
-      List<String> sliceNames = zkClient.getChildren(slicePaths, null);
-      for(String sliceZkPath : sliceNames) {
-        Map<String,ZkNodeProps> shards = readShards(slicePaths + "/" + sliceZkPath);
-        Slice slice = new Slice(shards);
-        cloudInfo.addSlice(collection, slice);
+      String shardIdPaths = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE;
+      List<String> shardIdNames = zkClient.getChildren(shardIdPaths, null);
+      Slices slices = new Slices();
+      for(String shardIdZkPath : shardIdNames) {
+        Map<String,ZkNodeProps> shardsMap = readShards(shardIdPaths + "/" + shardIdZkPath);
+        Slice slice = new Slice(shardsMap);
+        slices.add(slice);
       }
+      cloudInfo.addSlices(collection, slices);
       
     }
 
@@ -549,11 +551,11 @@ public final class ZkController {
 
     String collection = cloudDesc.getCollectionName();
     String nodePath = null;
-    String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SLICES_ZKNODE + "/" + cloudDesc.getSlice();
+    String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE + "/" + cloudDesc.getShardId();
 
     // build layout if not exists
     // nocommit : consider how we watch shards on all collections
-    addZkShardsNode(cloudDesc.getSlice(), collection);
+    addZkShardsNode(cloudDesc.getShardId(), collection);
 
     // create node
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -629,8 +631,8 @@ public final class ZkController {
     
     collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null);
     for(String collection : collections) {
-      for(String slice : zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection + SLICES_ZKNODE, null)) {
-        zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection + SLICES_ZKNODE + "/" + slice, shardWatcher);
+      for(String shardId : zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE, null)) {
+        zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE + "/" + shardId, shardWatcher);
       }
     }
   }
