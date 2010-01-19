@@ -383,11 +383,11 @@ public final class ZkController {
 
   private void createEphemeralNode() throws KeeperException,
       InterruptedException {
-    String nodeName = getNodeUrl();
+    String nodeName = getNodeName();
     zkClient.makePath(NODES_ZKNODE + "/" + nodeName, CreateMode.EPHEMERAL);
   }
   
-  private String getNodeUrl() {
+  private String getNodeName() {
     return hostName + ":" + localHostPort + "_"+ localHostContext;
   }
 
@@ -407,11 +407,11 @@ public final class ZkController {
     for (String collection : collections) {
       String shardIdPaths = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE;
       List<String> shardIdNames = zkClient.getChildren(shardIdPaths, null);
-      List<Slice> slices = new ArrayList<Slice>();
+      Map<String,Slice> slices = new HashMap<String,Slice>();
       for(String shardIdZkPath : shardIdNames) {
         Map<String,ZkNodeProps> shardsMap = readShards(shardIdPaths + "/" + shardIdZkPath);
         Slice slice = new Slice(shardIdZkPath, shardsMap);
-        slices.add(slice);
+        slices.put(shardIdZkPath, slice);
       }
       cloudInfo.addSlices(collection, slices);
       
@@ -575,7 +575,7 @@ public final class ZkController {
 
     props.put(ROLE_PROP, cloudDesc.getRole());
     
-    props.put(NODE_NAME, getNodeUrl());
+    props.put(NODE_NAME, getNodeName());
 
     props.store(new DataOutputStream(baos));
 

@@ -150,7 +150,7 @@ public class QueryComponent extends SearchComponent
               cloudState =  req.getCore().getCoreDescriptor().getCoreContainer().getZooKeeperController().getCloudState();
           }
           String sliceStr = rb.slices[i];
-          List<Slice> slices = cloudState.getSlices(sliceStr);
+          Map<String,Slice> slices = cloudState.getSlices(sliceStr);
 
           if (slices==null || slices.size() == 0) {
             // TODO: we could treat this as "all servers down" for a slice if partial results are enabled.

@@ -22,6 +22,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import junit.framework.TestCase;
 
@@ -77,12 +78,12 @@ public class ZkControllerTest extends TestCase {
           "localhost", "8983", "/solr");
       zkController.updateCloudState();
       CloudState cloudInfo = zkController.getCloudState();
-      List<Slice> slices = cloudInfo.getSlices("collection1");
+      Map<String,Slice> slices = cloudInfo.getSlices("collection1");
       assertNotNull(slices);
 
 
       if (DEBUG) {
-        for(Slice slice : slices) {
+        for(Slice slice : slices.values()) {
           for (String shard : slice.getShards().keySet()) {
             System.out.println("shard:" + shard);
           }

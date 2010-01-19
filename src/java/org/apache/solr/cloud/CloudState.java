@@ -19,13 +19,12 @@ package org.apache.solr.cloud;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 // effectively immutable
 public class CloudState {
-  private Map<String,List<Slice>> collectionStates = new HashMap<String,List<Slice>>();
+  private Map<String,Map<String,Slice>> collectionStates = new HashMap<String,Map<String,Slice>>();
   private Set<String> liveNodes = null;
   
   public CloudState(Set<String> liveNodes) {
@@ -33,13 +32,13 @@ public class CloudState {
   }
   
   // nocommit : only call before publishing
-  void addSlices(String collection, List<Slice> slices) {
+  void addSlices(String collection, Map<String,Slice> slices) {
     collectionStates.put(collection, slices);
   }
   
   // nocommit
-  public List<Slice> getSlices(String collection) {
-    return Collections.unmodifiableList(collectionStates.get(collection));
+  public Map<String,Slice> getSlices(String collection) {
+    return Collections.unmodifiableMap(collectionStates.get(collection));
   }
   
   public Set<String> getLiveNodes() {
