@@ -57,13 +57,13 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   String invalidField="invalid_field_not_in_schema";
   
   protected void createServers(int numShards) throws Exception {
-    controlJetty = createJetty(testDir, "control", "shard2");
+    controlJetty = createJetty(testDir, "control", "control_slice");
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
 
     StringBuilder sb = new StringBuilder();
     for (int i = 1; i <= numShards; i++) {
       if (sb.length() > 0) sb.append(',');
-      JettySolrRunner j = createJetty(testDir, "shard" + i, "shard" + (i + 2));
+      JettySolrRunner j = createJetty(testDir, "jetty" + i, "slice" + (i + 2));
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
       sb.append("localhost:").append(j.getLocalPort()).append(context);
@@ -129,7 +129,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       query("q","*:*", "sort",f+" asc");
     }
 
-    h.getCoreContainer().getCore("DEFAULT_CORE").close();
+    h.getCoreContainer().getCore(h.getCoreContainer().getDefaultCoreName()).close();
     CoreDescriptor dcore= new CoreDescriptor( h.getCoreContainer(), "testcore", "testcore");
     h.getCoreContainer().create(dcore);
 

@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,30 +43,31 @@ class ShardsWatcher implements Watcher {
   public void process(WatchedEvent event) {
     // nocommit : this will be called too often as shards register themselves?
     System.out.println("shard node changed");
-   
+    if (event.getType() == EventType.NodeChildrenChanged) {
 
-    try {
-      // nocommit:
-      controller.printLayoutToStdOut();
-      // nocommit : refresh watcher
-      
-      // nocommit : rewatch
-      controller.getZkClient().exists(event.getPath(), this);
+      try {
 
-      // nocommit : just see what has changed
-      controller.readCloudInfo();
+        // nocommit : rewatch
+        controller.getZkClient().exists(event.getPath(), this);
 
-    } catch (KeeperException e) {
-      log.error("", e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "ZooKeeper Exception", e);
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-    } catch (IOException e) {
-      log.error("", e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "IOException", e);
+        // nocommit : just see what has changed
+        controller.updateCloudState();
+
+      } catch (KeeperException e) {
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
+      } catch (InterruptedException e) {
+        // Restore the interrupted status
+        Thread.currentThread().interrupt();
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
+      } catch (IOException e) {
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
+      }
     }
 
   }

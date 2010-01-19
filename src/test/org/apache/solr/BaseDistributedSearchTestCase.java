@@ -192,8 +192,8 @@ public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase
     return createJetty(baseDir, dataDirName, null, null);
   }
 
-  public JettySolrRunner createJetty(File baseDir, String dataDirName, String shardList) throws Exception {
-    return createJetty(baseDir, dataDirName, shardList, null);
+  public JettySolrRunner createJetty(File baseDir, String dataDirName, String slice) throws Exception {
+    return createJetty(baseDir, dataDirName, slice, null);
   }
   
   public JettySolrRunner createJetty(File baseDir, String dataDirName, String shardList, String solrConfigOverride) throws Exception {

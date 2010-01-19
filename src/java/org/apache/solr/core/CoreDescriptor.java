@@ -45,7 +45,7 @@ public class CoreDescriptor {
     this.name = name;
     
     // cloud collection defaults to core name
-    this.cloudDesc.setCollectionName(name == "" ? CoreContainer.DEFAULT_CORE_NAME : name);
+    this.cloudDesc.setCollectionName(name == "" ? coreContainer.getDefaultCoreName() : name);
     if (name == null) {
       throw new RuntimeException("Core needs a name");
     }

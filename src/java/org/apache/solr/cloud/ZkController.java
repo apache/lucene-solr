@@ -19,17 +19,16 @@ package org.apache.solr.cloud;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -69,13 +68,14 @@ public final class ZkController {
   private final static Pattern URL_PREFIX = Pattern.compile("(https?://).*");
 
   // package private for tests
-  static final String CORE_ZKPREFIX = "/core";
-  static final String SHARDS_ZKNODE = "/shards";
+  static final String SLICES_ZKNODE = "/slices";
   // nocommit : ok to be public? for corecontainer access
   public static final String CONFIGS_ZKNODE = "/configs";
   static final String COLLECTIONS_ZKNODE = "/collections";
+  static final String NODES_ZKNODE = "/nodes";
 
-  static final String PROPS_DESC = "CoreDesc";
+  static final String URL_PROP = "url";
+  static final String ROLE_PROP = "role";
 
   final ShardsWatcher shardWatcher = new ShardsWatcher(this);
 
@@ -91,6 +91,7 @@ public final class ZkController {
   private String localHost;
 
   private String hostName;
+
 
   /**
    * 
@@ -118,21 +119,24 @@ public final class ZkController {
 
           public void command() {
             try {
-              
-              // nocommit : re-register ephemeral nodes, wait a while
+              // nocommit : re-register ephemeral nodes, (possibly) wait a while
               // for others to do the same, then load
-              readCloudInfo();
+              createEphemeralNode();
+              updateCloudState();
             } catch (KeeperException e) {
-              log.error("ZooKeeper Exception", e);
-              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                  "ZooKeeper Exception", e);
+              log.error("", e);
+              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                  "", e);
             } catch (InterruptedException e) {
               // Restore the interrupted status
               Thread.currentThread().interrupt();
+              log.error("", e);
+              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                  "", e);
             } catch (IOException e) {
               log.error("", e);
-              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "",
-                  e);
+              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                  "", e);
             }
 
           }
@@ -144,10 +148,12 @@ public final class ZkController {
   /**
    * nocommit: adds nodes if they don't exist, eg /shards/ node. consider race
    * conditions
+   * @param collection2 
    */
-  private void addZkCoresNode(String collection) throws IOException {
+  private void addZkShardsNode(String slice, String collection) throws IOException {
 
-    String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE;
+    String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SLICES_ZKNODE + "/" + slice;
+    
     try {
       // shards node
       if (!zkClient.exists(shardsZkPath)) {
@@ -157,31 +163,22 @@ public final class ZkController {
         // makes shards zkNode if it doesn't exist
         zkClient.makePath(shardsZkPath, CreateMode.PERSISTENT, null);
         
-        // ping that there is a new collection
+        // ping that there is a new collection (nocommit : or now possibly a new slice)
         zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
       }
     } catch (KeeperException e) {
       // its okay if another beats us creating the node
       if (e.code() != KeeperException.Code.NODEEXISTS) {
-        log.error("ZooKeeper Exception", e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "ZooKeeper Exception", e);
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
       }
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
-    }
-
-    // now watch the shards node
-    try {
-      zkClient.getChildren(shardsZkPath, shardWatcher);
-    } catch (KeeperException e) {
-      log.error("ZooKeeper Exception", e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "ZooKeeper Exception", e);
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
+      log.error("", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+          "", e);
     }
   }
 
@@ -194,6 +191,9 @@ public final class ZkController {
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
+      log.error("", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+          "", e);
     }
   }
 
@@ -287,6 +287,10 @@ public final class ZkController {
 
     return localHost;
   }
+  
+  public String getHostName() {
+    return hostName;
+  }
 
   /**
    * Load IndexSchema from ZooKeeper.
@@ -310,26 +314,6 @@ public final class ZkController {
     IndexSchema schema = new IndexSchema(config, schemaName, is);
     return schema;
   }
-
-  // nocommit - testing
-//  public String getSearchNodes(String collection) {
-//    StringBuilder nodeString = new StringBuilder();
-//    boolean first = true;
-//    List<String> nodes;
-//
-//    nodes = cloudInfo.getCollectionInfo(collection).getSearchShards();
-//    // nocommit
-//    System.out.println("there are " + nodes.size() + " node(s)");
-//    for (String node : nodes) {
-//      nodeString.append(node);
-//      if (first) {
-//        first = false;
-//      } else {
-//        nodeString.append(',');
-//      }
-//    }
-//    return nodeString.toString();
-//  }
 
   SolrZkClient getZkClient() {
     return zkClient;
@@ -360,21 +344,19 @@ public final class ZkController {
       
       // makes nodes node
       try {
-        zkClient.makePath("/nodes");
+        zkClient.makePath(NODES_ZKNODE);
       } catch (KeeperException e) {
         // its okay if another beats us creating the node
         if (e.code() != KeeperException.Code.NODEEXISTS) {
-          log.error("ZooKeeper Exception", e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "ZooKeeper Exception", e);
+          log.error("", e);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "", e);
         }
       }
-      String nodeName = hostName + ":" + localHostPort + "_"+ localHostContext;
-      zkClient.makePath("/nodes/" + nodeName, CreateMode.EPHEMERAL);
+      createEphemeralNode();
       
       // nocommit
       setUpCollectionsNode();
-      
       
 
     } catch (IOException e) {
@@ -384,18 +366,29 @@ public final class ZkController {
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
+      log.error("", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+          "", e);
     } catch (KeeperException e) {
-      log.error("KeeperException", e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+      log.error("", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+          "", e);
     }
 
   }
 
-  // load and publish a new CollectionInfo
-  public void readCloudInfo() throws KeeperException, InterruptedException,
-      IOException {
-    // nocommit : not thread safe anymore ?
+  private void createEphemeralNode() throws KeeperException,
+      InterruptedException {
+    String nodeName = hostName + ":" + localHostPort + "_"+ localHostContext;
+    zkClient.makePath(NODES_ZKNODE + "/" + nodeName, CreateMode.EPHEMERAL);
+  }
 
+  // load and publish a new CollectionInfo
+  public synchronized void updateCloudState() throws KeeperException, InterruptedException,
+      IOException {
+
+    // nocommit - incremental update rather than reread everything
+    
     log.info("Updating cloud state from ZooKeeper... :" + zkClient.keeper);
     
     // build immutable CloudInfo
@@ -403,14 +396,14 @@ public final class ZkController {
     List<String> collections = getCollectionNames();
     // nocommit : load all collection info
     for (String collection : collections) {
-      String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection
-          + SHARDS_ZKNODE;
+      String slicePaths = COLLECTIONS_ZKNODE + "/" + collection + SLICES_ZKNODE;
+      List<String> sliceNames = zkClient.getChildren(slicePaths, null);
+      for(String sliceZkPath : sliceNames) {
+        Map<String,ZkNodeProps> shards = readShards(slicePaths + "/" + sliceZkPath);
+        Slice slice = new Slice(shards);
+        cloudInfo.addSlice(collection, slice);
+      }
       
-      List<String> nodes = zkClient.getChildren(shardsZkPath, null);
-      Map<String,Properties> shards = readShardsInfo(collection, shardsZkPath, nodes);
- 
-      CollectionState collectionInfo = new CollectionState(shards, nodes);
-      cloudInfo.addCollectionInfo(collection, collectionInfo);
     }
 
     // update volatile
@@ -491,37 +484,35 @@ public final class ZkController {
   }
 
   /**
-   * Read info on the available Shards and Nodes.
-   * 
-   * @param path to the shards zkNode
-   * @param shardsZkPath 
-   * @param nodeList 
-   * @return Map from shard name to a {@link ShardInfoList}
-   * @throws InterruptedException
+   * @param zkClient
+   * @param shardsZkPath
+   * @return
    * @throws KeeperException
+   * @throws InterruptedException
    * @throws IOException
    */
-  public Map<String,Properties> readShardsInfo(String collection, String path, List<String> nodes)
+  private Map<String,ZkNodeProps> readShards(String shardsZkPath)
       throws KeeperException, InterruptedException, IOException {
-    Set<String> nodesSet = new HashSet<String>(nodes.size());
-    nodesSet.addAll(nodes);
-    if(cloudInfo != null) {
-      List<String> oldNodes = cloudInfo.getCollectionInfo(collection).getNodes();
+
+    Map<String,ZkNodeProps> shardNameToProps = new HashMap<String,ZkNodeProps>();
+
+    if (zkClient.exists(shardsZkPath, null) == null) {
+      throw new IllegalStateException("Cannot find zk shards node that should exist:"
+          + shardsZkPath);
     }
+
+    List<String> shardZkPaths = zkClient.getChildren(shardsZkPath, null);
     
-    Map<String,Properties> cores = new HashMap<String,Properties>();
-
-    for (String zkNodeName : nodes) {
-      byte[] data = zkClient.getData(path + "/" + zkNodeName, null, null);
-
-      Properties props = new Properties();
-      props.load(new ByteArrayInputStream(data));
-
-      cores.put(zkNodeName, props);
-
+    for(String shardPath : shardZkPaths) {
+      byte[] data = zkClient.getData(shardsZkPath + "/" + shardPath, null,
+          null);
+      
+      ZkNodeProps props = new ZkNodeProps();
+      props.load(new DataInputStream(new ByteArrayInputStream(data)));
+      shardNameToProps.put(shardPath, props);
     }
 
-    return Collections.unmodifiableMap(cores);
+    return Collections.unmodifiableMap(shardNameToProps);
   }
 
   /**
@@ -550,30 +541,25 @@ public final class ZkController {
 
     String collection = cloudDesc.getCollectionName();
     String nodePath = null;
-    String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE;
+    String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SLICES_ZKNODE + "/" + cloudDesc.getSlice();
 
     // build layout if not exists
     // nocommit : consider how we watch shards on all collections
-    addZkCoresNode(collection);
+    addZkShardsNode(cloudDesc.getSlice(), collection);
 
     // create node
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     // nocommit: could do xml
-    Properties props = new Properties();
-    props.put(CollectionState.URL_PROP, shardUrl);
+    ZkNodeProps props = new ZkNodeProps();
+    props.put(URL_PROP, shardUrl);
 
-    String shardList = cloudDesc.getShardList();
+    props.put(ROLE_PROP, cloudDesc.getRole());
 
-    props.put(CollectionState.SHARD_LIST_PROP, shardList == null ? ""
-        : shardList);
+    props.store(new DataOutputStream(baos));
 
-    props.put(CollectionState.ROLE_PROP, cloudDesc.getRole());
-
-    props.store(baos, PROPS_DESC);
-
-    String nodeName = hostName + ":" + localHostPort + "_"+ localHostContext + (coreName.length() == 0 ? "" : "_" + coreName);
+    String shardZkNodeName = hostName + ":" + localHostPort + "_"+ localHostContext + (coreName.length() == 0 ? "" : "_" + coreName);
     try {
-      nodePath = zkClient.create(shardsZkPath + "/" + nodeName,
+      nodePath = zkClient.create(shardsZkPath + "/" + shardZkNodeName,
         baos.toByteArray(), CreateMode.PERSISTENT);
     } catch (KeeperException e) {
       // its okay if the node already exists
@@ -583,6 +569,7 @@ public final class ZkController {
     }
     
     // signal that the shards node has changed
+    // nocommit
     zkClient.setData(shardsZkPath, (byte[])null);
 
     return nodePath;
@@ -593,23 +580,7 @@ public final class ZkController {
    * @param zkNodePath
    */
   public void unregister(SolrCore core, String zkNodePath) {
-    // nocommit : version?
-    try {
-      zkClient.delete(zkNodePath, -1);
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-    } catch (KeeperException.NoNodeException e) {
-      // nocommit - this is okay - for some reason the node is already gone
-      log.warn("Unregistering core: " + core.getName()
-          + " but core's ZooKeeper node has already been removed");
-    } catch (KeeperException e) {
-      log.error("ZooKeeper Exception", e);
-      // we can't get through to ZooKeeper, so log error
-      // and allow close process to continue -
-      // if ZooKeeper is down, our ephemeral node
-      // should be removed anyway
-    }
+    // nocommit : perhaps mark the core down in zk?
   }
 
   /**
@@ -650,7 +621,9 @@ public final class ZkController {
     
     collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null);
     for(String collection : collections) {
-      zkClient.exists(COLLECTIONS_ZKNODE + "/" + collection + "/shards", shardWatcher);
+      for(String slice : zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection + SLICES_ZKNODE, null)) {
+        zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection + SLICES_ZKNODE + "/" + slice, shardWatcher);
+      }
     }
   }
 
@@ -666,13 +639,16 @@ public final class ZkController {
     } catch (KeeperException e) {
       // its okay if another beats us creating the node
       if (e.code() != KeeperException.Code.NODEEXISTS) {
-        log.error("ZooKeeper Exception", e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "ZooKeeper Exception", e);
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
       }
     } catch (InterruptedException e) {
       // Restore the interrupted status
       Thread.currentThread().interrupt();
+      log.error("", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+          "", e);
     }
     
     log.info("Start watching collections node for changes");
@@ -686,14 +662,17 @@ public final class ZkController {
           
           // re-watch
           try {
-            zkClient.exists(COLLECTIONS_ZKNODE, this);
+            zkClient.exists(event.getPath(), this);
           } catch (KeeperException e) {
-            log.error("ZooKeeper Exception", e);
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "ZooKeeper Exception", e);
+            log.error("", e);
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                "", e);
           } catch (InterruptedException e) {
             // Restore the interrupted status
             Thread.currentThread().interrupt();
+            log.error("", e);
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                "", e);
           }
         }
 

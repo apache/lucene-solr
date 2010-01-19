@@ -28,7 +28,7 @@
   adminPath: RequestHandler path to manage cores.  
     If 'null' (or absent), cores will not be manageable via request handler
   -->
-  <cores adminPath="/admin/cores" hostPort="8983" hostContext="solr" zkClientTimeout="8000">
-    <core name="DEFAULT_CORE" instanceDir="." shardList="shard1"/>
+  <cores adminPath="/admin/cores" defaultCoreName="collection1" hostPort="8983" hostContext="solr" zkClientTimeout="8000">
+    <core name="collection1" instanceDir="."/>
   </cores>
 </solr>

@@ -45,22 +45,30 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
   public void reconnect(final String serverAddress, final int zkClientTimeout,
       final Watcher watcher, final ZkUpdate updater) throws IOException {
     log.info("Starting reconnect to ZooKeeper attempts ...");
-    executor.scheduleAtFixedRate(new Runnable() {
+    executor.schedule(new Runnable() {
+      private int delay = 1000;
       public void run() {
         log.info("Attempting the connect...");
+        boolean connected = false;
         try {
           updater.update(new ZooKeeper(serverAddress, zkClientTimeout, watcher));
           // nocommit
           log.info("Reconnected to ZooKeeper");
+          connected = true;
         } catch (Exception e) {
           // nocommit
           e.printStackTrace();
           log.info("Reconnect to ZooKeeper failed");
         }
-        executor.shutdownNow();
+        if(connected) {
+          executor.shutdownNow();
+        } else {
+          delay = delay * 2; // nocommit : back off retry that levels off
+          executor.schedule(this, delay, TimeUnit.MILLISECONDS);
+        }
         
       }
-    }, 0, 1000, TimeUnit.MILLISECONDS); // nocommit : we actually want to do backoff retry
+    }, 1000, TimeUnit.MILLISECONDS);
   }
 
 }

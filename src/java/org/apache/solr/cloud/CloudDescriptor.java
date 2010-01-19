@@ -18,8 +18,8 @@ package org.apache.solr.cloud;
  */
 
 public class CloudDescriptor {
-  // nocommit : zk
-  private String shardList;
+
+  private String slice;
   private String collectionName;
   private String role = "none";
   
@@ -31,13 +31,12 @@ public class CloudDescriptor {
     this.role = role;
   }
 
-  public void setShardList(String shardList) {
-    this.shardList = shardList;
+  public void setSlice(String slice) {
+    this.slice = slice;
   }
   
-  //nocommit: may be null
-  public String getShardList() {
-    return shardList;
+  public String getSlice() {
+    return slice;
   }
   
   public String getCollectionName() {

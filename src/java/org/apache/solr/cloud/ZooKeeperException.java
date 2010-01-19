@@ -17,27 +17,14 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-// effectively immutable
-public class CloudState {
-  private Map<String,Slice> collectionStates = new HashMap<String,Slice>();
-  private final List<String> nodes = null;
-  
-  // nocommit
-  public void addSlice(String collection, Slice slice) {
-    collectionStates.put(collection, slice);
+import org.apache.solr.common.SolrException;
+
+public class ZooKeeperException extends SolrException {
+
+  public ZooKeeperException(ErrorCode code, String msg, Throwable th) {
+    super(code, msg, th);
+
   }
-  
-  // nocommit
-  public Slice getSlice(String collection) {
-    return collectionStates.get(collection);
-  }
-  
-  public List<String> getNodes() {
-    return Collections.unmodifiableList(nodes);
-  }
+
 }

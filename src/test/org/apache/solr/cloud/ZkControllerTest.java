@@ -18,26 +18,17 @@ package org.apache.solr.cloud;
  */
 
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.Map.Entry;
 
 import junit.framework.TestCase;
 
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 
 public class ZkControllerTest extends TestCase {
 
   private static final String COLLECTION_NAME = "collection1";
-
-  private static final String SHARD2 = "shard2";
-
-  private static final String SHARD1 = "shard1";
 
   static final String ZOO_KEEPER_ADDRESS = "localhost:2181/solr";
 
@@ -66,16 +57,16 @@ public class ZkControllerTest extends TestCase {
       AbstractZkTestCase.makeSolrZkNode();
 
       zkClient = new SolrZkClient(ZOO_KEEPER_ADDRESS, TIMEOUT);
-      String shardsPath = "/collections/collection1/shards";
+      String shardsPath = "/collections/collection1/slices/slice1";
       zkClient.makePath(shardsPath);
 
       zkClient.makePath("collections/collection1/config=collection1");
 
-      addShardToZk(zkClient, shardsPath, URL1, SHARD1 + "," + SHARD2);
+      addShardToZk(zkClient, shardsPath, URL1, "slave");
       addShardToZk(zkClient, shardsPath, "http://localhost:3123/solr/core1",
-          SHARD1);
+          "master");
       addShardToZk(zkClient, shardsPath, "http://localhost:3133/solr/core1",
-          SHARD1);
+          "slave");
 
       if (DEBUG) {
         zkClient.printLayoutToStdOut();
@@ -83,15 +74,15 @@ public class ZkControllerTest extends TestCase {
 
       zkController = new ZkController(ZOO_KEEPER_ADDRESS, TIMEOUT,
           "localhost", "8983", "/solr");
-      zkController.readCloudInfo();
+      zkController.updateCloudState();
       CloudState cloudInfo = zkController.getCloudInfo();
-      CollectionState collectionInfo = cloudInfo.getCollectionInfo("collection1");
-      assertNotNull(collectionInfo);
+      Slice slice = cloudInfo.getSlice("collection1");
+      assertNotNull(slice);
 
 
       if (DEBUG) {
-        for (String node : collectionInfo.getNodes()) {
-          System.out.println("shard:" + node);
+        for (String shard : slice.getShards().keySet()) {
+          System.out.println("shard:" + shard);
         }
       }
 
@@ -169,17 +160,18 @@ public class ZkControllerTest extends TestCase {
   }
 
   private void addShardToZk(SolrZkClient zkClient, String shardsPath,
-      String url, String shardList) throws IOException, KeeperException,
+      String url, String role) throws IOException, KeeperException,
       InterruptedException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    // nocommit: could do xml
-    Properties props = new Properties();
-    props.put(CollectionState.URL_PROP, url);
-    props.put(CollectionState.SHARD_LIST_PROP, shardList);
-    props.store(baos, ZkController.PROPS_DESC);
 
-    zkClient.create(shardsPath + ZkController.CORE_ZKPREFIX,
-        baos.toByteArray(), CreateMode.EPHEMERAL_SEQUENTIAL);
+    ZkNodeProps props = new ZkNodeProps();
+    props.put(ZkController.URL_PROP, url);
+    props.put(ZkController.ROLE_PROP, role);
+    props.store(new DataOutputStream(baos));
+
+    //nocommit : fix
+//    zkClient.create(shardsPath + ZkController.CORE_ZKPREFIX,
+//        baos.toByteArray(), CreateMode.EPHEMERAL_SEQUENTIAL);
   }
 
 

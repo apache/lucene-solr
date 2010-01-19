@@ -18,26 +18,17 @@ package org.apache.solr.cloud;
  */
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 // effectively immutable
-public class CloudState {
-  private Map<String,Slice> collectionStates = new HashMap<String,Slice>();
-  private final List<String> nodes = null;
-  
-  // nocommit
-  public void addSlice(String collection, Slice slice) {
-    collectionStates.put(collection, slice);
+public class Slice {
+  private final Map<String,ZkNodeProps> shards;
+
+  public Slice(Map<String,ZkNodeProps> shards) {
+    this.shards = shards;
   }
   
-  // nocommit
-  public Slice getSlice(String collection) {
-    return collectionStates.get(collection);
-  }
-  
-  public List<String> getNodes() {
-    return Collections.unmodifiableList(nodes);
+  public Map<String,ZkNodeProps> getShards() {
+    return Collections.unmodifiableMap(shards);
   }
 }

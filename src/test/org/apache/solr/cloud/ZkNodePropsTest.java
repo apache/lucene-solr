@@ -17,46 +17,30 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-/**
- * Information about a Shard.
- * 
- */
-public final class ShardInfo {
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 
-  private final String url;
+import junit.framework.TestCase;
 
-  // nocommit do role based on existing ReplicationHandler role detection?
-  private final Role role;
 
-  private String zkNodeName;
+public class ZkNodePropsTest extends TestCase {
 
-  public ShardInfo(String url) {
-    this.url = url;
-    role = Role.SLAVE;
-  }
+  public void testBasic() throws IOException {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-  public ShardInfo(String url, Role role) {
-    this.url = url;
-    this.role = role;
-  }
-
-  public Role getRole() {
-    return role;
-  }
-
-  public String getUrl() {
-    return url;
-  }
-
-  public String getZkNodeName() {
-    return zkNodeName;
-  }
-
-  public void setZkNodeName(String zkNodeName) {
-    this.zkNodeName = zkNodeName;
-  }
-
-  enum Role {
-    MASTER, SLAVE
+    ZkNodeProps props = new ZkNodeProps();
+    props.put("prop1", "value1");
+    props.put("prop2", "value2");
+    props.put("prop3", "value3");
+    props.store(new DataOutputStream(baos));
+    
+    ZkNodeProps props2 = new ZkNodeProps();
+    props2.load(new DataInputStream(new ByteArrayInputStream(baos.toByteArray())));
+    assertEquals("value1", props2.get("prop1"));
+    assertEquals("value2", props2.get("prop2"));
+    assertEquals("value3", props2.get("prop3"));
   }
 }

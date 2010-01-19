@@ -102,7 +102,7 @@ class ConnectionManager implements Watcher {
       log.info("Connected:" + connected);
     } else if (state == KeeperState.Disconnected) {
       // nocommit : not sure we have to reconnect on disconnect
-      // ZooKeeper will recover when it can
+      // ZooKeeper will recover when it can it seems ??
       connected = false;
 
     } else {
