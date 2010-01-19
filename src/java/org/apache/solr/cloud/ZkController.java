@@ -77,9 +77,9 @@ public final class ZkController {
   static final String COLLECTIONS_ZKNODE = "/collections";
   static final String NODES_ZKNODE = "/nodes";
 
-  static final String URL_PROP = "url";
-  static final String ROLE_PROP = "role";
-  static final String NODE_NAME = "node_name";
+  public static final String URL_PROP = "url";
+  public static final String ROLE_PROP = "role";
+  public static final String NODE_NAME = "node_name";
 
   final ShardsWatcher shardWatcher = new ShardsWatcher(this);
 

@@ -42,6 +42,7 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.cloud.CloudState;
 import org.apache.solr.cloud.Slice;
 import org.apache.solr.cloud.ZkNodeProps;
+import org.apache.solr.cloud.ZkController;
 
 
 import java.io.IOException;
@@ -118,7 +119,10 @@ public class QueryComponent extends SearchComponent
     rb.isDistrib = hasShardURL | rb.isDistrib;  
 
     if (rb.isDistrib) {
+      // since the cost of grabbing cloud state is still up in the air, we grab it only
+      // if we need it.
       CloudState cloudState = null;
+      Map<String,Slice> slices = null;
 
       if (shards != null) {
         List<String> lst = StrUtils.splitSmart(shards, ",", true);
@@ -136,9 +140,17 @@ public class QueryComponent extends SearchComponent
 
         cloudState =  req.getCore().getCoreDescriptor().getCoreContainer().getZooKeeperController().getCloudState();
 
-        // TODO: EXAMPLE
-        rb.slices = new String[]{"shard1","shard2"};
-        rb.shards = new String[rb.shards.length];
+        // TODO: check "collection" for which collection(s) to search.. but for now, just default to the URL.
+        // This can be more efficient... we only record the name, even though we have the
+        // shard info we need in the next step of mapping slice->shards
+        slices = cloudState.getSlices(req.getCore().getCoreDescriptor().getName());
+        rb.slices = slices.keySet().toArray(new String[slices.size()]);
+        /***
+        rb.slices = new String[slices.size()];
+        for (int i=0; i<rb.slices.length; i++) {
+          rb.slices[i] = slices.get(i).getName();
+        }
+        ***/
       }
 
       //
@@ -148,23 +160,29 @@ public class QueryComponent extends SearchComponent
         if (rb.shards[i] == null) {
           if (cloudState == null) {
               cloudState =  req.getCore().getCoreDescriptor().getCoreContainer().getZooKeeperController().getCloudState();
+              slices = cloudState.getSlices(req.getCore().getCoreDescriptor().getName());
           }
-          String sliceStr = rb.slices[i];
-          Map<String,Slice> slices = cloudState.getSlices(sliceStr);
+          String sliceName = rb.slices[i];
 
-          if (slices==null || slices.size() == 0) {
-            // TODO: we could treat this as "all servers down" for a slice if partial results are enabled.
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such slice: " + sliceStr);
+          Slice slice = slices.get(sliceName);
+
+          if (slice==null) {
+            // Treat this the same as "all servers down" for a slice, and let things continue
+            // if partial results are acceptable
+            rb.shards[i] = "";
+            continue;
+            // throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no such shard: " + sliceName);
           }
-
           
-          // nocommit : just using the first slice
-          Map<String, ZkNodeProps> sliceShards = slices.get(0).getShards();
+          Map<String, ZkNodeProps> sliceShards = slice.getShards();
 
           // For now, recreate the | delimited list of equivalent servers
+          Set<String> liveNodes = cloudState.getLiveNodes();
           StringBuilder sliceShardsStr = new StringBuilder();
           boolean first = true;
           for (ZkNodeProps nodeProps : sliceShards.values()) {
+            if (!liveNodes.contains(nodeProps.get(ZkController.NODE_NAME)))
+              continue;
             if (first) {
               first = false;
             } else {
