@@ -29,6 +29,6 @@
     If 'null' (or absent), cores will not be manageable via request handler
   -->
   <cores adminPath="/admin/cores" defaultCoreName="collection1" hostContext="solr" zkClientTimeout="30">
-    <core name="collection1" instanceDir="." slice="slice1"/>
+    <core name="collection1" instanceDir="." shardId="shard1"/>
   </cores>
 </solr>
