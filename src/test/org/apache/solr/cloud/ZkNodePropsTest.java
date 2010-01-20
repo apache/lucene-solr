@@ -17,8 +17,6 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import junit.framework.TestCase;
