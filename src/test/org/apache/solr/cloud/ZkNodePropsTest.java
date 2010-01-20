@@ -19,8 +19,6 @@ package org.apache.solr.cloud;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 
 import junit.framework.TestCase;
@@ -35,12 +33,18 @@ public class ZkNodePropsTest extends TestCase {
     props.put("prop1", "value1");
     props.put("prop2", "value2");
     props.put("prop3", "value3");
-    props.store(new DataOutputStream(baos));
+    props.put("prop4", "value4");
+    props.put("prop5", "value5");
+    props.put("prop6", "value6");
+    props.store(baos);
     
     ZkNodeProps props2 = new ZkNodeProps();
-    props2.load(new DataInputStream(new ByteArrayInputStream(baos.toByteArray())));
+    props2.load(new ByteArrayInputStream(baos.toByteArray()));
     assertEquals("value1", props2.get("prop1"));
     assertEquals("value2", props2.get("prop2"));
     assertEquals("value3", props2.get("prop3"));
+    assertEquals("value4", props2.get("prop4"));
+    assertEquals("value5", props2.get("prop5"));
+    assertEquals("value6", props2.get("prop6"));
   }
 }

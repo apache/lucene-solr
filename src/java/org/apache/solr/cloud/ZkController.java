@@ -577,7 +577,7 @@ public final class ZkController {
     
     props.put(NODE_NAME, getNodeName());
 
-    props.store(new DataOutputStream(baos));
+    props.store(baos);
 
     String shardZkNodeName = hostName + ":" + localHostPort + "_"+ localHostContext + (coreName.length() == 0 ? "" : "_" + coreName);
     try {
