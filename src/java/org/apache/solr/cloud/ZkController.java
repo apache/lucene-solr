@@ -384,10 +384,20 @@ public final class ZkController {
   private void createEphemeralNode() throws KeeperException,
       InterruptedException {
     String nodeName = getNodeName();
-    zkClient.makePath(NODES_ZKNODE + "/" + nodeName, CreateMode.EPHEMERAL);
+    String nodePath = NODES_ZKNODE + "/" + nodeName;
+    log.info("Register node as live in ZooKeeper:" + nodePath);
+    try {
+      zkClient.makePath(nodePath, CreateMode.EPHEMERAL);
+    } catch (KeeperException e) {
+      // its okay if the node already exists
+      if (e.code() != KeeperException.Code.NODEEXISTS) {
+        throw e;
+      }
+    }
   }
   
-  private String getNodeName() {
+  // package private for tests
+  String getNodeName() {
     return hostName + ":" + localHostPort + "_"+ localHostContext;
   }
 

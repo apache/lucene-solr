@@ -101,15 +101,20 @@ public class DistributedZkFailuresTest extends AbstractDistributedZkTestCase {
 
   @Override
   public void doTest() throws Exception {
+    ZkController zkController = h.getCoreContainer().getZooKeeperController();
     del("*:*");
     
     // nocommit : test too long
     System.out.println("gc block");
-    for(int i = 0; i < 400; i++) {
+    for(int i = 0; i < 100; i++) {
       // try and timeout
       System.gc();
     }
     System.out.println("done gc block");
+    
+    // ensure zk still thinks node is up
+    assertTrue(zkController.getCloudState().liveNodesContain(zkController.getNodeName()));
+    
     // index the same document to two servers and make sure things
     // don't blow up.
     if (clients.size()>=2) {
@@ -123,6 +128,5 @@ public class DistributedZkFailuresTest extends AbstractDistributedZkTestCase {
       query("q","*:*", "rows",100);
     }
 
-    //Thread.sleep(10000000000L);
   }
 }

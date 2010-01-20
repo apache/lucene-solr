@@ -29,6 +29,8 @@ public class BasicZkTest extends AbstractZkTestCase {
     // test using ZooKeeper
     assertTrue("Not using ZooKeeper", h.getCoreContainer().isZooKeeperAware());
     
+    ZkController zkController = h.getCoreContainer().getZooKeeperController();
+    
     // test merge factor picked up
     SolrCore core = h.getCore();
     SolrIndexWriter writer = new SolrIndexWriter("testWriter", core
@@ -83,10 +85,14 @@ public class BasicZkTest extends AbstractZkTestCase {
     
     zkServer.shutdown();
     Thread.sleep(300);
-    // try a reconnect
+    
+    // try a reconnect from disconnect
     
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
+    
+    // ensure zk still thinks node is up
+    assertTrue(zkController.getCloudState().liveNodesContain(zkController.getNodeName()));
     
     // test maxint
     assertQ(req("q", "id:[100 TO 110]", "rows", "2147483647"),
