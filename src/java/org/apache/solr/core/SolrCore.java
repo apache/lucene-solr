@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZooKeeperException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
@@ -539,24 +540,27 @@ public final class SolrCore implements SolrInfoMBean {
     if (schema==null) {
       schema = new IndexSchema(config, IndexSchema.DEFAULT_SCHEMA_FILE, null);
     }
-    
-    zooKeeperComponent = cd.getCoreContainer().getZooKeeperController();
-    if(zooKeeperComponent != null) {
-      // load ZooKeeper - nocommit: somehow fall back to local configs?
-      try {
-        this.zkNodePath = zooKeeperComponent.register(this);
-      } catch (InterruptedException e) {
-        // Restore the interrupted status
-        Thread.currentThread().interrupt();
-      } catch (KeeperException e) {
-        log.error("ZooKeeper Exception", e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "ZooKeeper Exception", e);
-      } catch (IOException e) {
-        log.error("", e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "", e);
-      } 
+    if (cd != null) {
+      zooKeeperComponent = cd.getCoreContainer().getZooKeeperController();
+      if (zooKeeperComponent != null) {
+        // load ZooKeeper - nocommit: somehow fall back to local configs?
+        try {
+          this.zkNodePath = zooKeeperComponent.register(this);
+        } catch (InterruptedException e) {
+          // Restore the interrupted status
+          Thread.currentThread().interrupt();
+          log.error("", e);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "", e);
+        } catch (KeeperException e) {
+          log.error("", e);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "", e);
+        } catch (IOException e) {
+          log.error("", e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+        }
+      }
     }
 
     //Initialize JMX
