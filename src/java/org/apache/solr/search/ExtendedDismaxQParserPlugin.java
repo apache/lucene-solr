@@ -104,8 +104,15 @@ class ExtendedDismaxQParser extends QParser {
     SolrParams solrParams = localParams == null ? params : new DefaultSolrParams(localParams, params);
 
     queryFields = U.parseFieldBoosts(solrParams.getParams(DMP.QF));
-    Map<String,Float> phraseFields = U.parseFieldBoosts(solrParams.getParams(DMP.PF));
-    Map<String,Float> phraseFields3 = U.parseFieldBoosts(solrParams.getParams("pf3"));
+    // Boosted phrase of the full query string
+    Map<String,Float> phraseFields = 
+      U.parseFieldBoosts(solrParams.getParams(DMP.PF));
+    // Boosted Bi-Term Shingles from the query string
+    Map<String,Float> phraseFields2 = 
+      U.parseFieldBoosts(solrParams.getParams("pf2"));
+    // Boosted Tri-Term Shingles from the query string
+    Map<String,Float> phraseFields3 = 
+      U.parseFieldBoosts(solrParams.getParams("pf3"));
 
     float tiebreaker = solrParams.getFloat(DMP.TIE, 0.0f);
 
@@ -284,7 +291,10 @@ class ExtendedDismaxQParser extends QParser {
       query.add(parsedUserQuery, BooleanClause.Occur.MUST);
 
       // sloppy phrase queries for proximity
-      if (phraseFields.size() > 0 || phraseFields3.size() > 0) {
+      if (phraseFields.size() > 0 || 
+          phraseFields2.size() > 0 ||
+          phraseFields3.size() > 0) {
+        
         // find non-field clauses
         List<Clause> normalClauses = new ArrayList<Clause>(clauses.size());
         for (Clause clause : clauses) {
@@ -298,70 +308,15 @@ class ExtendedDismaxQParser extends QParser {
           normalClauses.add(clause);
         }
 
-        Map<String,Float> pf = phraseFields;
-        if (normalClauses.size() >= 2 && pf.size() > 0) {
-          StringBuilder sb = new StringBuilder();
-          for (int i=0; i<normalClauses.size()-1; i++) {
-            sb.append('"');
-            sb.append(normalClauses.get(i).val);
-            sb.append(' ');
-            sb.append(normalClauses.get(i+1).val);
-            sb.append('"');
-            sb.append(' ');
-          }
-
-          String userPhraseQuery = sb.toString();
-
-          /* for parsing sloppy phrases using DisjunctionMaxQueries */
-          ExtendedSolrQueryParser pp =
-                  new ExtendedSolrQueryParser(this, IMPOSSIBLE_FIELD_NAME);
-          pp.addAlias(IMPOSSIBLE_FIELD_NAME,
-                  tiebreaker, pf);
-          pp.setPhraseSlop(pslop);
-          pp.makeDismax = false;  // make boolean queries instead
-          pp.setRemoveStopFilter(true);  // remove stop filter and keep stopwords
-          pp.minClauseSize = 2;  // if a stopword is removed, don't add the phrase
-
-          // TODO: perhaps we shouldn't use synonyms either...
-
-          Query phrase = pp.parse(userPhraseQuery);
-          if (phrase != null) {
-            query.add(phrase, BooleanClause.Occur.SHOULD);
-          }
-        }
-
-        pf = phraseFields3;
-        if (normalClauses.size() >= 3 && pf.size() > 0) {
-          StringBuilder sb = new StringBuilder();
-          for (int i=0; i<normalClauses.size()-2; i++) {
-            sb.append('"');
-            sb.append(normalClauses.get(i).val);
-            sb.append(' ');
-            sb.append(normalClauses.get(i+1).val);
-            sb.append(' ');
-            sb.append(normalClauses.get(i+2).val);
-            sb.append('"');
-            sb.append(' ');
-          }
-
-          String userPhraseQuery = sb.toString();
-
-          /* for parsing sloppy phrases using DisjunctionMaxQueries */
-          ExtendedSolrQueryParser pp =
-                  new ExtendedSolrQueryParser(this, IMPOSSIBLE_FIELD_NAME);
-          pp.addAlias(IMPOSSIBLE_FIELD_NAME,
-                  tiebreaker, pf);
-          pp.setPhraseSlop(pslop);
-          pp.makeDismax = false;  // make boolean queries instead
-          pp.setRemoveStopFilter(true);  // remove stop filter and keep stopwords
-          pp.minClauseSize = 2;  // keep min phrase size at 2 since stopword could have been removed in middle
-
-          Query phrase = pp.parse(userPhraseQuery);
-          if (phrase != null) {
-            query.add(phrase, BooleanClause.Occur.SHOULD);
-          }
-        }
-
+        // full phrase...
+        addShingledPhraseQueries(query, normalClauses, phraseFields, 0, 
+                                 tiebreaker, pslop);
+        // shingles...
+        addShingledPhraseQueries(query, normalClauses, phraseFields2, 2,  
+                                 tiebreaker, pslop);
+        addShingledPhraseQueries(query, normalClauses, phraseFields3, 3,
+                                 tiebreaker, pslop);
+        
       }
     }
 
@@ -380,23 +335,8 @@ class ExtendedDismaxQParser extends QParser {
       }
     }
     if (null != boostQueries) {
-      if(1 == boostQueries.size() && 1 == boostParams.length) {
-        /* legacy logic */
-        Query f = boostQueries.get(0);
-        if (1.0f == f.getBoost() && f instanceof BooleanQuery) {
-          /* if the default boost was used, and we've got a BooleanQuery
-           * extract the subqueries out and use them directly
-           */
-          for (Object c : ((BooleanQuery)f).clauses()) {
-            query.add((BooleanClause)c);
-          }
-        } else {
-          query.add(f, BooleanClause.Occur.SHOULD);
-        }
-      } else {
-        for(Query f : boostQueries) {
-          query.add(f, BooleanClause.Occur.SHOULD);
-        }
+      for(Query f : boostQueries) {
+        query.add(f, BooleanClause.Occur.SHOULD);
       }
     }
 
@@ -449,6 +389,85 @@ class ExtendedDismaxQParser extends QParser {
 
     return topQuery;
   }
+
+  /**
+   * Modifies the main query by adding a new optional Query consisting
+   * of shingled phrase queries across the specified clauses using the 
+   * specified field =&gt; boost mappings.
+   *
+   * @param mainQuery Where the phrase boosting queries will be added
+   * @param clauses Clauses that will be used to construct the phrases
+   * @param fields Field =&gt; boost mappings for the phrase queries
+   * @param shingleSize how big the phrases should be, 0 means a single phrase
+   * @param tiebreaker tie breker value for the DisjunctionMaxQueries
+   * @param slop slop value for the constructed phrases
+   */
+  private void addShingledPhraseQueries(final BooleanQuery mainQuery, 
+                                        final List<Clause> clauses,
+                                        final Map<String,Float> fields,
+                                        int shingleSize,
+                                        final float tiebreaker,
+                                        final int slop) 
+    throws ParseException {
+    
+    if (null == fields || fields.isEmpty() || 
+        null == clauses || clauses.size() <= shingleSize ) 
+      return;
+    
+    if (0 == shingleSize) shingleSize = clauses.size();
+
+    final int goat = shingleSize-1; // :TODO: better name for var?
+
+    StringBuilder userPhraseQuery = new StringBuilder();
+      for (int i=0; i < clauses.size() - goat; i++) {
+        userPhraseQuery.append('"');
+        for (int j=0; j <= goat; j++) {
+          userPhraseQuery.append(clauses.get(i + j).val);
+          userPhraseQuery.append(' ');
+        }
+        userPhraseQuery.append('"');
+        userPhraseQuery.append(' ');
+      }
+
+      /* for parsing sloppy phrases using DisjunctionMaxQueries */
+      ExtendedSolrQueryParser pp =
+        new ExtendedSolrQueryParser(this, IMPOSSIBLE_FIELD_NAME);
+
+      pp.addAlias(IMPOSSIBLE_FIELD_NAME, tiebreaker, fields);
+      pp.setPhraseSlop(slop);
+      pp.setRemoveStopFilter(true);  // remove stop filter and keep stopwords
+
+      /* :TODO: reevaluate using makeDismax=true vs false...
+       * 
+       * The DismaxQueryParser always used DisjunctionMaxQueries for the 
+       * pf boost, for the same reasons it used them for the qf fields.
+       * When Yonik first wrote the ExtendedDismaxQParserPlugin, he added
+       * the "makeDismax=false" property to use BooleanQueries instead, but 
+       * when asked why his response was "I honestly don't recall" ...
+       *
+       * https://issues.apache.org/jira/browse/SOLR-1553?focusedCommentId=12793813#action_12793813
+       *
+       * so for now, we continue to use dismax style queries becuse it 
+       * seems the most logical and is back compatible, but we should 
+       * try to figure out what Yonik was thinking at the time (because he 
+       * rarely does things for no reason)
+       */
+      pp.makeDismax = true; 
+
+
+      // minClauseSize is independent of the shingleSize because of stop words
+      // (if they are removed from the middle, so be it, but we need at least 
+      // two or there shouldn't be a boost)
+      pp.minClauseSize = 2;  
+      
+      // TODO: perhaps we shouldn't use synonyms either...
+
+      Query phrase = pp.parse(userPhraseQuery.toString());
+      if (phrase != null) {
+        mainQuery.add(phrase, BooleanClause.Occur.SHOULD);
+      }
+  }
+
 
   @Override
   public String[] getDefaultHighlightFields() {
