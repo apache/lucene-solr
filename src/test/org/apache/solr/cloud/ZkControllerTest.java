@@ -197,16 +197,15 @@ public class ZkControllerTest extends TestCase {
   private void addShardToZk(SolrZkClient zkClient, String shardsPath,
       String zkNodeName, String url, String role) throws IOException,
       KeeperException, InterruptedException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
     ZkNodeProps props = new ZkNodeProps();
     props.put(ZkController.URL_PROP, url);
     props.put(ZkController.ROLE_PROP, role);
     props.put(ZkController.NODE_NAME, TEST_NODE_NAME);
-    props.store(baos);
+    byte[] bytes = props.store();
 
     System.out.println("shards path:" + shardsPath);
-    zkClient.create(shardsPath + "/" + zkNodeName, baos.toByteArray(),
+    zkClient.create(shardsPath + "/" + zkNodeName, bytes,
         CreateMode.PERSISTENT);
   }
 

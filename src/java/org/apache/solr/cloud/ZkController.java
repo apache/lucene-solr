@@ -528,7 +528,7 @@ public final class ZkController {
           null);
       
       ZkNodeProps props = new ZkNodeProps();
-      props.load(new DataInputStream(new ByteArrayInputStream(data)));
+      props.load(data);
       shardNameToProps.put(shardPath, props);
     }
 
@@ -568,8 +568,7 @@ public final class ZkController {
     addZkShardsNode(cloudDesc.getShardId(), collection);
 
     // create node
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    // nocommit: could do xml
+
     ZkNodeProps props = new ZkNodeProps();
     props.put(URL_PROP, shardUrl);
 
@@ -577,12 +576,12 @@ public final class ZkController {
     
     props.put(NODE_NAME, getNodeName());
 
-    props.store(baos);
+    byte[] bytes = props.store();
 
     String shardZkNodeName = hostName + ":" + localHostPort + "_"+ localHostContext + (coreName.length() == 0 ? "" : "_" + coreName);
     try {
       nodePath = zkClient.create(shardsZkPath + "/" + shardZkNodeName,
-        baos.toByteArray(), CreateMode.PERSISTENT);
+        bytes, CreateMode.PERSISTENT);
     } catch (KeeperException e) {
       // its okay if the node already exists
       if (e.code() != KeeperException.Code.NODEEXISTS) {

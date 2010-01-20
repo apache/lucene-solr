@@ -27,7 +27,6 @@ import junit.framework.TestCase;
 public class ZkNodePropsTest extends TestCase {
 
   public void testBasic() throws IOException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
     ZkNodeProps props = new ZkNodeProps();
     props.put("prop1", "value1");
@@ -36,10 +35,10 @@ public class ZkNodePropsTest extends TestCase {
     props.put("prop4", "value4");
     props.put("prop5", "value5");
     props.put("prop6", "value6");
-    props.store(baos);
+    byte[] bytes = props.store();
     
     ZkNodeProps props2 = new ZkNodeProps();
-    props2.load(new ByteArrayInputStream(baos.toByteArray()));
+    props2.load(bytes);
     assertEquals("value1", props2.get("prop1"));
     assertEquals("value2", props2.get("prop2"));
     assertEquals("value3", props2.get("prop3"));

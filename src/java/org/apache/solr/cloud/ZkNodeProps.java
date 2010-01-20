@@ -1,10 +1,6 @@
 package org.apache.solr.cloud;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -13,14 +9,8 @@ public class ZkNodeProps extends HashMap<String,String> {
 
   private static final long serialVersionUID = 1L;
 
-  public void load(InputStream in) throws IOException {
-    DataInputStream dis = new DataInputStream(in);
-    String stringRep = null;
-    try {
-      stringRep = dis.readUTF();
-    } finally {
-      dis.close();
-    }
+  public void load(byte[] bytes) throws IOException {
+    String stringRep = new String(bytes, "UTF-8");
     String[] lines = stringRep.split("\n");
     for (String line : lines) {
       int sepIndex = line.indexOf('=');
@@ -30,18 +20,13 @@ public class ZkNodeProps extends HashMap<String,String> {
     }
   }
 
-  public void store(OutputStream out) throws IOException {
+  public byte[] store() throws IOException {
     StringBuilder sb = new StringBuilder();
     Set<Entry<String,String>> entries = entrySet();
     for(Entry<String,String> entry : entries) {
       sb.append(entry.getKey() + "=" + entry.getValue() + "\n");
     }
-    DataOutputStream dos = new DataOutputStream(out);
-    try {
-      dos.writeUTF(sb.toString());
-    } finally {
-      dos.close();
-    }
+    return sb.toString().getBytes("UTF-8");
   }
   
   public String toString() {
