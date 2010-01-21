@@ -30,7 +30,7 @@ import java.util.*;
  * Internally uses a Map to temporally hold a reference to every
  * object seen. 
  * 
- * If checkIntered, all Strings checked will be interned, but those
+ * If checkInterned, all Strings checked will be interned, but those
  * that were not already interned will be released for GC when the
  * estimate is complete.
  */
