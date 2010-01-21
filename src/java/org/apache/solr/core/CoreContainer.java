@@ -115,13 +115,15 @@ public class CoreContainer
             throw new IllegalArgumentException("bootstrap_confdir must be a directory of configuration files");
           }
           String confName = System.getProperty("bootstrap_confname", "configuration1");
-          zooKeeperController.uploadDirToCloud(dir, ZkController.CONFIGS_ZKNODE + confName);
+          zooKeeperController.uploadDirToCloud(dir, ZkController.CONFIGS_ZKNODE + "/" + confName);
         }
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "", e);
       } catch (TimeoutException e) {
-        log.error("Could not connect to ZooKeeper", e);
         log.error("Could not connect to ZooKeeper", e);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
             "", e);
