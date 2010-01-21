@@ -42,10 +42,6 @@ public class ZkControllerTest extends TestCase {
 
   private static final String COLLECTION_NAME = "collection1";
 
-  static final String ZOO_KEEPER_ADDRESS = "localhost:2181/solr";
-
-  static final String ZOO_KEEPER_HOST = "localhost:2181";
-
   static final int TIMEOUT = 10000;
 
   private static final String URL1 = "http://localhost:3133/solr/core0";
@@ -68,7 +64,7 @@ public class ZkControllerTest extends TestCase {
 
       AbstractZkTestCase.makeSolrZkNode();
 
-      zkClient = new SolrZkClient(ZOO_KEEPER_ADDRESS, TIMEOUT);
+      zkClient = new SolrZkClient(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, TIMEOUT);
       String shardsPath = "/collections/collection1/shards/shardid1";
       zkClient.makePath(shardsPath);
 
@@ -82,7 +78,7 @@ public class ZkControllerTest extends TestCase {
         zkClient.printLayoutToStdOut();
       }
 
-      zkController = new ZkController(ZOO_KEEPER_ADDRESS, TIMEOUT, "localhost",
+      zkController = new ZkController(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, TIMEOUT, "localhost",
           "8983", "/solr");
       zkController.updateCloudState();
       CloudState cloudInfo = zkController.getCloudState();
@@ -144,7 +140,7 @@ public class ZkControllerTest extends TestCase {
 
       AbstractZkTestCase.makeSolrZkNode();
 
-      SolrZkClient zkClient = new SolrZkClient(ZOO_KEEPER_ADDRESS, TIMEOUT);
+      SolrZkClient zkClient = new SolrZkClient(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, TIMEOUT);
       String actualConfigName = "firstConfig";
 
       String shardsPath = "/collections/" + COLLECTION_NAME + "/config="
@@ -155,7 +151,7 @@ public class ZkControllerTest extends TestCase {
         zkClient.printLayoutToStdOut();
       }
       zkClient.close();
-      ZkController zkController = new ZkController(ZOO_KEEPER_ADDRESS, TIMEOUT,
+      ZkController zkController = new ZkController(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, TIMEOUT,
           "localhost", "8983", "/solr");
       try {
         String configName = zkController.readConfigName(COLLECTION_NAME);
@@ -181,7 +177,7 @@ public class ZkControllerTest extends TestCase {
 
       AbstractZkTestCase.makeSolrZkNode();
 
-      zkController = new ZkController(ZOO_KEEPER_ADDRESS, TIMEOUT, "localhost",
+      zkController = new ZkController(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, TIMEOUT, "localhost",
           "8983", "/solr");
 
       zkController.uploadDirToCloud(new File("solr/conf"),

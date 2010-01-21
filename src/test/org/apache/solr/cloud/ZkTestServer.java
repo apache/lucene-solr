@@ -21,7 +21,7 @@ import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
 
 public class ZkTestServer {
-  private static final int PORT = 2181;
+  private static final int PORT = 2323;
 
   protected ZKServerMain zkServer = new ZKServerMain();
 

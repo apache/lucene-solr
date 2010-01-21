@@ -30,8 +30,8 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
 
-  static final String ZOO_KEEPER_ADDRESS = "localhost:2181/solr";
-  static final String ZOO_KEEPER_SERVER = "localhost:2181";
+  static final String ZOO_KEEPER_ADDRESS = "localhost:2323/solr";
+  static final String ZOO_KEEPER_SERVER = "localhost:2323";
   static final int TIMEOUT = 10000;
 
   protected static Logger log = LoggerFactory
