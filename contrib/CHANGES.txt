@@ -15,6 +15,10 @@ Changes in backwards compatibility policy
    preserved, but some protected/public member variables changed type. This 
    does NOT affect java code/class files produced by the snowball compiler, 
    but technically is a backwards compatibility break.  (Robert Muir)
+   
+ * LUCENE-2226: Moved contrib/snowball functionality into contrib/analyzers.
+   Be sure to remove any old obselete lucene-snowball jar files from your
+   classpath!  (Robert Muir)
     
 Changes in runtime behavior
 
@@ -94,14 +98,10 @@ New features
 
 Build
 
- * LUCENE-2117: SnowballAnalyzer now holds a runtime-dependency on
-   contrib-analyzers to correctly handle the unique Turkish casing behavior.
-   (Robert Muir via Simon Willnauer)  
-
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
    into core, and moved the ICU-based collation support into contrib/icu.  
    (Steven Rowe, Robert Muir)
-
+   
 Optimizations
 
  * LUCENE-2157: DelimitedPayloadTokenFilter no longer copies the buffer

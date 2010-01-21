@@ -1,4 +1,4 @@
-Lucene Snowball README file
+Lucene Contrib Analyzers README file
 
 This project provides pre-compiled version of the Snowball stemmers
 based on revision 500 of the Tartarus Snowball repository,

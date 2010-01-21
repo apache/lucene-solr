@@ -120,12 +120,7 @@
             <section id="remote"><title>remote</title>
                 <p>Classes to help use Lucene with RMI.</p>
                 <p>See <a href="../api/contrib-remote/index.html">remote javadoc</a></p>
-            </section>    
-            
-            <section id="snowball"><title>snowball</title>
-                <p>Pre-compiled versions of the Snowball stemmers for Lucene.</p>
-                <p>See <a href="../api/contrib-snowball/index.html">snowball javadoc</a></p>
-            </section>               
+            </section>                 
                         
             <section id="spatial"><title>spatial</title>
                 <p>Classes to help with efficient distance based sorting.</p>
