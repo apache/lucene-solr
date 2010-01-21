@@ -43,6 +43,14 @@ public final class RamUsageEstimator {
   private int arraySize;
   private int classSize;
 
+  public final static int NUM_BYTES_OBJECT_REF = Constants.JRE_IS_64BIT ? 8 : 4;
+  public final static int NUM_BYTES_CHAR = 2;
+  public final static int NUM_BYTES_SHORT = 2;
+  public final static int NUM_BYTES_INT = 4;
+  public final static int NUM_BYTES_LONG = 8;
+  public final static int NUM_BYTES_FLOAT = 4;
+  public final static int NUM_BYTES_DOUBLE = 8;
+
   private boolean checkInterned;
 
   /**

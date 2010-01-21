@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /** This is a DocFieldConsumer that writes stored fields. */
 final class StoredFieldsWriter {
@@ -108,7 +109,7 @@ final class StoredFieldsWriter {
         // enough space to recycle all outstanding PerDoc
         // instances
         assert allocCount == 1+docFreeList.length;
-        docFreeList = new PerDoc[ArrayUtil.getNextSize(allocCount)];
+        docFreeList = new PerDoc[ArrayUtil.oversize(allocCount, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       }
       return new PerDoc();
     } else

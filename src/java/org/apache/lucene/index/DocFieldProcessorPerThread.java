@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Gathers all Fieldables for a document under the same
@@ -340,7 +341,7 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
         // enough space to recycle all outstanding PerDoc
         // instances
         assert allocCount == 1+docFreeList.length;
-        docFreeList = new PerDoc[ArrayUtil.getNextSize(allocCount)];
+        docFreeList = new PerDoc[ArrayUtil.oversize(allocCount, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       }
       return new PerDoc();
     } else

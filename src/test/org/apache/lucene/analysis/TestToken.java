@@ -85,7 +85,6 @@ public class TestToken extends LuceneTestCase {
       buf.append(buf.toString());
     }
     assertEquals(1048576, t.termLength());
-    assertEquals(1179654, t.termBuffer().length);
 
     // now as a string, first variant
     t = new Token();
@@ -99,7 +98,6 @@ public class TestToken extends LuceneTestCase {
       buf.append(content);
     }
     assertEquals(1048576, t.termLength());
-    assertEquals(1179654, t.termBuffer().length);
 
     // now as a string, second variant
     t = new Token();
@@ -113,7 +111,6 @@ public class TestToken extends LuceneTestCase {
       buf.append(content);
     }
     assertEquals(1048576, t.termLength());
-    assertEquals(1179654, t.termBuffer().length);
 
     // Test for slow growth to a long term
     t = new Token();
@@ -127,7 +124,6 @@ public class TestToken extends LuceneTestCase {
       buf.append("a");
     }
     assertEquals(20000, t.termLength());
-    assertEquals(20167, t.termBuffer().length);
 
     // Test for slow growth to a long term
     t = new Token();
@@ -141,7 +137,6 @@ public class TestToken extends LuceneTestCase {
       buf.append("a");
     }
     assertEquals(20000, t.termLength());
-    assertEquals(20167, t.termBuffer().length);
   }
 
   public void testToString() throws Exception {

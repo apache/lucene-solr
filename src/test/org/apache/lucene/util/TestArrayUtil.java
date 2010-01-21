@@ -1,0 +1,59 @@
+package org.apache.lucene.util;
+
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.util.Random;
+
+public class TestArrayUtil extends LuceneTestCase {
+
+  // Ensure ArrayUtil.getNextSize gives linear amortized cost of realloc/copy
+  public void testGrowth() {
+    int currentSize = 0;
+    long copyCost = 0;
+
+    // Make sure ArrayUtil hits Integer.MAX_VALUE, if we insist:
+    while(currentSize != Integer.MAX_VALUE) {
+      int nextSize = ArrayUtil.oversize(1+currentSize, RamUsageEstimator.NUM_BYTES_OBJECT_REF);
+      assertTrue(nextSize > currentSize);
+      if (currentSize > 0) {
+        copyCost += currentSize;
+        double copyCostPerElement = ((double) copyCost)/currentSize;
+        assertTrue("cost " + copyCostPerElement, copyCostPerElement < 10.0);
+      }
+      currentSize = nextSize;
+    }
+  }
+
+  public void testMaxSize() {
+    // intentionally pass invalid elemSizes:
+    for(int elemSize=0;elemSize<10;elemSize++) {
+      assertEquals(Integer.MAX_VALUE, ArrayUtil.oversize(Integer.MAX_VALUE, elemSize));
+      assertEquals(Integer.MAX_VALUE, ArrayUtil.oversize(Integer.MAX_VALUE-1, elemSize));
+    }
+  }
+
+  public void testInvalidElementSizes() {
+    final Random r = newRandom();
+    for(int iter=0;iter<10000;iter++) {
+      final int minTargetSize = r.nextInt(Integer.MAX_VALUE);
+      final int elemSize = r.nextInt(11);
+      final int v = ArrayUtil.oversize(minTargetSize, elemSize);
+      assertTrue(v >= minTargetSize);
+    }
+  }
+}

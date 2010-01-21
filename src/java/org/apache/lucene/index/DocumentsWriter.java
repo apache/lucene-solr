@@ -40,6 +40,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * This class accepts multiple added documents and directly
@@ -1503,7 +1504,7 @@ final class DocumentsWriter {
         int gap = doc.docID - nextWriteDocID;
         if (gap >= waiting.length) {
           // Grow queue
-          DocWriter[] newArray = new DocWriter[ArrayUtil.getNextSize(gap)];
+          DocWriter[] newArray = new DocWriter[ArrayUtil.oversize(gap, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
           assert nextWriteLoc >= 0;
           System.arraycopy(waiting, nextWriteLoc, newArray, 0, waiting.length-nextWriteLoc);
           System.arraycopy(waiting, 0, newArray, waiting.length-nextWriteLoc, nextWriteLoc);

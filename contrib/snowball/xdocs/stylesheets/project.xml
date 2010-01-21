@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project name="Snowball Stemers for Lucene"
+         href="http://jakarta.apache.org/lucene-sandbox/snowball/">
+
+    <title>Snowball Stemmers for Lucene</title>
+
+    <body>
+    <menu name="Documentation">
+        <item name="Javadoc"           href="/api/index.html"/>
+    </menu>
+
+    <menu name="Download">
+        <item name="Releases"
+              href="http://jakarta.apache.org/builds/jakarta-lucene-sandbox/snowball/"/>
+        <item name="CVS Repository"   href="/site/cvsindex.html"/>
+    </menu>
+
+    <menu name="Links">
+        <item name="Snowball Home" href="http://snowball.tartarus.org/"/>
+        <item name="Lucene Home" href="http://jakarta.apache.org/lucene/"/>
+        <item name="Lucene Sandbox"
+              href="http://jakarta.apache.org/lucene/docs/lucene-sandbox/"/>
+    </menu>
+
+    <menu name="Jakarta">
+        <item name="Get Involved"          href="/site/getinvolved.html"/>
+        <item name="Acknowledgements"      href="/site/acknowledgements.html"/>
+        <item name="Contact"               href="/site/contact.html"/>
+        <item name="Legal"                 href="/site/legal.html"/>
+    </menu>
+    </body>
+</project>

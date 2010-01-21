@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -117,7 +118,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
         // enough space to recycle all outstanding PerDoc
         // instances
         assert allocCount == 1+docFreeList.length;
-        docFreeList = new PerDoc[ArrayUtil.getNextSize(allocCount)];
+        docFreeList = new PerDoc[ArrayUtil.oversize(allocCount, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       }
       return new PerDoc();
     } else
@@ -266,6 +267,8 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     void addField(final int fieldNumber) {
       if (numVectorFields == fieldNumbers.length) {
         fieldNumbers = ArrayUtil.grow(fieldNumbers);
+      }
+      if (numVectorFields == fieldPointers.length) {
         fieldPointers = ArrayUtil.grow(fieldPointers);
       }
       fieldNumbers[numVectorFields] = fieldNumber;

@@ -1,10 +1,5 @@
 package org.apache.lucene.analysis;
 
-import java.io.IOException;
-
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.util.ArrayUtil;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,6 +16,12 @@ import org.apache.lucene.util.ArrayUtil;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.IOException;
+
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * This class converts alphabetic, numeric, and symbolic Unicode characters
@@ -101,7 +102,7 @@ public final class ASCIIFoldingFilter extends TokenFilter {
     // Worst-case length required:
     final int maxSizeNeeded = 4 * length;
     if (output.length < maxSizeNeeded) {
-      output = new char[ArrayUtil.getNextSize(maxSizeNeeded)];
+      output = new char[ArrayUtil.oversize(maxSizeNeeded, RamUsageEstimator.NUM_BYTES_CHAR)];
     }
 
     outputPos = 0;

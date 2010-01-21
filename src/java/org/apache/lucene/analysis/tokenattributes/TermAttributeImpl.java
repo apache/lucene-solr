@@ -21,6 +21,7 @@ import java.io.Serializable;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * The term text of a Token.
@@ -106,12 +107,12 @@ public class TermAttributeImpl extends AttributeImpl implements TermAttribute, C
   public char[] resizeTermBuffer(int newSize) {
     if (termBuffer == null) {
       // The buffer is always at least MIN_BUFFER_SIZE
-      termBuffer = new char[ArrayUtil.getNextSize(newSize < MIN_BUFFER_SIZE ? MIN_BUFFER_SIZE : newSize)]; 
+      termBuffer = new char[ArrayUtil.oversize(newSize < MIN_BUFFER_SIZE ? MIN_BUFFER_SIZE : newSize, RamUsageEstimator.NUM_BYTES_CHAR)]; 
     } else {
       if(termBuffer.length < newSize){
         // Not big enough; create a new array with slight
         // over allocation and preserve content
-        final char[] newCharBuffer = new char[ArrayUtil.getNextSize(newSize)];
+        final char[] newCharBuffer = new char[ArrayUtil.oversize(newSize, RamUsageEstimator.NUM_BYTES_CHAR)];
         System.arraycopy(termBuffer, 0, newCharBuffer, 0, termBuffer.length);
         termBuffer = newCharBuffer;
       }
@@ -127,19 +128,19 @@ public class TermAttributeImpl extends AttributeImpl implements TermAttribute, C
   private void growTermBuffer(int newSize) {
     if (termBuffer == null) {
       // The buffer is always at least MIN_BUFFER_SIZE
-      termBuffer = new char[ArrayUtil.getNextSize(newSize < MIN_BUFFER_SIZE ? MIN_BUFFER_SIZE : newSize)];   
+      termBuffer = new char[ArrayUtil.oversize(newSize < MIN_BUFFER_SIZE ? MIN_BUFFER_SIZE : newSize, RamUsageEstimator.NUM_BYTES_CHAR)];   
     } else {
       if(termBuffer.length < newSize){
         // Not big enough; create a new array with slight
         // over allocation:
-        termBuffer = new char[ArrayUtil.getNextSize(newSize)];
+        termBuffer = new char[ArrayUtil.oversize(newSize, RamUsageEstimator.NUM_BYTES_CHAR)];
       }
     } 
   }
   
   private void initTermBuffer() {
     if (termBuffer == null) {
-      termBuffer = new char[ArrayUtil.getNextSize(MIN_BUFFER_SIZE)];
+      termBuffer = new char[ArrayUtil.oversize(MIN_BUFFER_SIZE, RamUsageEstimator.NUM_BYTES_CHAR)];
       termLength = 0;
     }
   }

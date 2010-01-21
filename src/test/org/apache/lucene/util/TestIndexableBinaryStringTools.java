@@ -164,14 +164,14 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
       int encodedLen1 = IndexableBinaryStringTools.getEncodedLength(
           originalArray1, 0, numBytes1);
       if (encodedLen1 > encoded1.length)
-        encoded1 = new char[ArrayUtil.getNextSize(encodedLen1)];
+        encoded1 = new char[ArrayUtil.oversize(encodedLen1, RamUsageEstimator.NUM_BYTES_CHAR)];
       IndexableBinaryStringTools.encode(originalArray1, 0, numBytes1, encoded1,
           0, encodedLen1);
 
       int encodedLen2 = IndexableBinaryStringTools.getEncodedLength(original2,
           0, numBytes2);
       if (encodedLen2 > encoded2.length)
-        encoded2 = new char[ArrayUtil.getNextSize(encodedLen2)];
+        encoded2 = new char[ArrayUtil.oversize(encodedLen2, RamUsageEstimator.NUM_BYTES_CHAR)];
       IndexableBinaryStringTools.encode(original2, 0, numBytes2, encoded2, 0,
           encodedLen2);
 
@@ -308,7 +308,7 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
       int encodedLen = IndexableBinaryStringTools.getEncodedLength(binary, 0,
           numBytes);
       if (encoded.length < encodedLen)
-        encoded = new char[ArrayUtil.getNextSize(encodedLen)];
+        encoded = new char[ArrayUtil.oversize(encodedLen, RamUsageEstimator.NUM_BYTES_CHAR)];
       IndexableBinaryStringTools.encode(binary, 0, numBytes, encoded, 0,
           encodedLen);
 
