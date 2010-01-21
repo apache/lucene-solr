@@ -61,15 +61,20 @@
 
 
 <%
-  printer.print(path);
+  try {
+    printer.print(path);
+  } finally {
+    printer.close();
+  }
 %>
 
 </body>
 </html>
 
 <%!static class ZKPrinter {
-    static boolean FULLPATH_DEFAULT = true;
+    static boolean FULLPATH_DEFAULT = false;
 
+    boolean indent = true;
     boolean fullpath = FULLPATH_DEFAULT;
 
     boolean detail = false;
@@ -79,6 +84,7 @@
     String keeperAddr; // the address we're connected to
 
     SolrZkClient zkClient;
+    boolean doClose;  // close the client after done if we opened it
 
     JspWriter out;
 
@@ -102,6 +108,7 @@
       
       try {
         zkClient = new SolrZkClient(addr, 10000);
+        doClose = true;
       } catch (TimeoutException e) {
        out.println("Could not connect to zookeeper at " + addr);
        zkClient = null;
@@ -117,6 +124,14 @@
 
     }
 
+    public void close() {
+        try {
+          if (doClose) zkClient.close();
+        } catch (InterruptedException e) {
+            // ignore exception on close
+        }
+    }
+    
     // main entry point
     void print(String path) throws IOException {
       if (zkClient == null)
@@ -181,23 +196,23 @@
 
     void up() throws IOException {
       level++;
-      if (!fullpath)
-        out.println("<BLOCKQUOTE>");
       levelchange = true;
     }
 
     void down() throws IOException {
       level--;
-      if (!fullpath)
-        out.println("</BLOCKQUOTE>");
       levelchange = true;
     }
 
     void indent() throws IOException {
       // if we are using blockquote and just changed indent levels, don't output a break
-      if (fullpath || !levelchange)
-        out.println("<br>");
+      // if (fullpath || !levelchange)
+      out.println("<br>");
       levelchange = false;
+
+      for (int i=0; i<level; i++)
+        out.println("&nbsp;&nbsp;&nbsp;&nbsp;");
+
       // if fullpath, no indent is needed
       // if not, we are currently using blockquote which the browser
       // will take care of indenting.
