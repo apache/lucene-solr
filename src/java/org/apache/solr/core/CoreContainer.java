@@ -35,6 +35,7 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZooKeeperException;
+import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.DOMUtil;
@@ -82,6 +83,7 @@ public class CoreContainer
   protected String zkPortOverride;
   private String testShardIdOverride;
   private ZkController zooKeeperController;
+  private SolrZkServer zkServer;
 
   private String zkHost;
   
@@ -94,13 +96,22 @@ public class CoreContainer
   
   private void initZooKeeper(String zkHost, int zkClientTimeout) {
     // nocommit: perhaps get from solr.xml
-    
+
     // if zkHost sys property is not set, we are not using ZooKeeper
     String zookeeperHost;
     if(zkHost == null) {
       zookeeperHost = System.getProperty("zkHost");
     } else {
       zookeeperHost = zkHost;
+    }
+
+    zkServer = new SolrZkServer(System.getProperty("runZk"), zookeeperHost, solrHome, hostPort);
+    zkServer.parseConfig();
+    zkServer.start();
+
+    // set client from server config if not already set
+    if (zookeeperHost == null) {
+      // TODO
     }
     
     if (zookeeperHost != null) {
@@ -980,4 +991,9 @@ public class CoreContainer
   public ZkController getZooKeeperController() {
     return zooKeeperController;
   }
+
+
+
+
+
 }
