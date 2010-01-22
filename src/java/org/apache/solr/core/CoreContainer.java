@@ -106,7 +106,7 @@ public class CoreContainer
     if (zookeeperHost != null) {
       // we are ZooKeeper enabled
       try {
-        zooKeeperController = new ZkController(zookeeperHost, zkClientTimeout, host, hostPort, hostContext);
+        zooKeeperController = new ZkController(zookeeperHost, zkClientTimeout, host, hostPort, hostContext, this);
         
         String confDir = System.getProperty("bootstrap_confdir");
         if(confDir != null) {

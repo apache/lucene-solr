@@ -18,14 +18,11 @@ package org.apache.solr.cloud;
  */
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,6 +37,7 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.solr.cloud.SolrZkClient.OnReconnect;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -96,23 +94,24 @@ public final class ZkController {
 
   private String hostName;
 
+  private CoreContainer coreContainer;
+
 
   /**
-   * 
    * @param zkServerAddress ZooKeeper server host address
    * @param zkClientTimeout
-   * @param collection
    * @param localHost
    * @param locaHostPort
    * @param localHostContext
-   * @throws IOException
-   * @throws TimeoutException
+   * @param coreConatiner
    * @throws InterruptedException
+   * @throws TimeoutException
+   * @throws IOException
    */
   public ZkController(String zkServerAddress, int zkClientTimeout, String localHost, String locaHostPort,
-      String localHostContext) throws InterruptedException,
+      String localHostContext, final CoreContainer coreConatiner) throws InterruptedException,
       TimeoutException, IOException {
-
+    this.coreContainer = coreConatiner;
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
     this.localHostContext = localHostContext;
@@ -126,6 +125,11 @@ public final class ZkController {
               // nocommit : re-register ephemeral nodes, (possibly) wait a while
               // for others to do the same, then load
               createEphemeralNode();
+              // register cores in case any new cores came online will zk was down
+              Collection<SolrCore> cores = coreConatiner.getCores();
+              for(SolrCore core : cores) {
+                register(core, false);
+              }
               updateCloudState();
             } catch (KeeperException e) {
               log.error("", e);
@@ -545,39 +549,39 @@ public final class ZkController {
     return Collections.unmodifiableMap(shardNameToProps);
   }
 
+
   /**
    * Register shard. A SolrCore calls this on startup to register with
    * ZooKeeper.
    * 
-   * @param core
-   * @return
+   * @param core SolrCore to register as a shard
+   * @param forcePropsUpdate update solr.xml core props even if the shard is already registered
+   * 
    * @throws IOException
-   * @throws InterruptedException
    * @throws KeeperException
+   * @throws InterruptedException
    */
-  public String register(SolrCore core) throws IOException,
+  public void register(SolrCore core, boolean forcePropsUpdate) throws IOException,
       KeeperException, InterruptedException {
     String coreName = core.getCoreDescriptor().getName();
     String shardUrl = localHostName + ":" + localHostPort + "/" + localHostContext
         + "/" + coreName;
+    
+    CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
+    String collection = cloudDesc.getCollectionName();
+    
+    String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE + "/" + cloudDesc.getShardId();
 
-    // nocommit:
+    boolean shardZkNodeAlreadyExists = zkClient.exists(shardsZkPath);
+    
+    if(shardZkNodeAlreadyExists && !forcePropsUpdate) {
+      return;
+    }
+    
     if (log.isInfoEnabled()) {
       log.info("Register shard - core:" + core.getName() + " address:"
           + shardUrl);
     }
-
-    CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
-
-    String collection = cloudDesc.getCollectionName();
-    String nodePath = null;
-    String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE + "/" + cloudDesc.getShardId();
-
-    // build layout if not exists
-    // nocommit : consider how we watch shards on all collections
-    addZkShardsNode(cloudDesc.getShardId(), collection);
-
-    // create node
 
     ZkNodeProps props = new ZkNodeProps();
     props.put(URL_PROP, shardUrl);
@@ -587,30 +591,40 @@ public final class ZkController {
     props.put(NODE_NAME, getNodeName());
 
     byte[] bytes = props.store();
-
+    
     String shardZkNodeName = hostName + ":" + localHostPort + "_"+ localHostContext + (coreName.length() == 0 ? "" : "_" + coreName);
-    try {
-      nodePath = zkClient.create(shardsZkPath + "/" + shardZkNodeName,
-        bytes, CreateMode.PERSISTENT);
-    } catch (KeeperException e) {
-      // its okay if the node already exists
-      if (e.code() != KeeperException.Code.NODEEXISTS) {
-        throw e;
+
+    
+    if(shardZkNodeAlreadyExists && forcePropsUpdate) {
+      // nocommit : consider how we watch shards on all collections
+      zkClient.setData(shardsZkPath + "/" + shardZkNodeName, bytes);
+    } else {
+      addZkShardsNode(cloudDesc.getShardId(), collection);
+      try {
+        zkClient.create(shardsZkPath + "/" + shardZkNodeName, bytes,
+            CreateMode.PERSISTENT);
+      } catch (KeeperException e) {
+        // its okay if the node already exists
+        if (e.code() != KeeperException.Code.NODEEXISTS) {
+          throw e;
+        }
+        // for some reason the shard already exists, though it didn't when we
+        // started registration - just return
+        return;
       }
     }
-    
+
     // signal that the shards node has changed
     // nocommit
     zkClient.setData(shardsZkPath, (byte[])null);
 
-    return nodePath;
+
   }
 
   /**
    * @param core
-   * @param zkNodePath
    */
-  public void unregister(SolrCore core, String zkNodePath) {
+  public void unregister(SolrCore core) {
     // nocommit : perhaps mark the core down in zk?
   }
 
