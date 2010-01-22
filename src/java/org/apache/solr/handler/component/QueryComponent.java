@@ -115,7 +115,7 @@ public class QueryComponent extends SearchComponent
 
     // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
     // search is distributed.
-    boolean hasShardURL = shards != null && shards.charAt('/') > 0;
+    boolean hasShardURL = shards != null && shards.indexOf('/') > 0;
     rb.isDistrib = hasShardURL | rb.isDistrib;  
 
     if (rb.isDistrib) {
