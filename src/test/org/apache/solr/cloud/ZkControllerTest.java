@@ -79,7 +79,7 @@ public class ZkControllerTest extends TestCase {
       }
 
       zkController = new ZkController(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, TIMEOUT, "localhost",
-          "8983", "/solr");
+          "8983", "/solr", null);
       zkController.updateCloudState();
       CloudState cloudInfo = zkController.getCloudState();
       Map<String,Slice> slices = cloudInfo.getSlices("collection1");
@@ -152,7 +152,7 @@ public class ZkControllerTest extends TestCase {
       }
       zkClient.close();
       ZkController zkController = new ZkController(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, TIMEOUT,
-          "localhost", "8983", "/solr");
+          "localhost", "8983", "/solr", null);
       try {
         String configName = zkController.readConfigName(COLLECTION_NAME);
         assertEquals(configName, actualConfigName);
@@ -178,7 +178,7 @@ public class ZkControllerTest extends TestCase {
       AbstractZkTestCase.makeSolrZkNode();
 
       zkController = new ZkController(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, TIMEOUT, "localhost",
-          "8983", "/solr");
+          "8983", "/solr", null);
 
       zkController.uploadDirToCloud(new File("solr/conf"),
           ZkController.CONFIGS_ZKNODE + "/config1");

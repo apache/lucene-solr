@@ -103,15 +103,15 @@ public final class ZkController {
    * @param localHost
    * @param locaHostPort
    * @param localHostContext
-   * @param coreConatiner
+   * @param coreContainer
    * @throws InterruptedException
    * @throws TimeoutException
    * @throws IOException
    */
   public ZkController(String zkServerAddress, int zkClientTimeout, String localHost, String locaHostPort,
-      String localHostContext, final CoreContainer coreConatiner) throws InterruptedException,
+      String localHostContext, final CoreContainer coreContainer) throws InterruptedException,
       TimeoutException, IOException {
-    this.coreContainer = coreConatiner;
+    this.coreContainer = coreContainer;
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
     this.localHostContext = localHostContext;
@@ -126,9 +126,13 @@ public final class ZkController {
               // for others to do the same, then load
               createEphemeralNode();
               // register cores in case any new cores came online will zk was down
-              Collection<SolrCore> cores = coreConatiner.getCores();
-              for(SolrCore core : cores) {
-                register(core, false);
+              
+              // coreContainer may currently be null in tests, so don't reregister
+              if(coreContainer != null) {
+                Collection<SolrCore> cores = coreContainer.getCores();
+                for(SolrCore core : cores) {
+                  register(core, false);
+                }
               }
               updateCloudState();
             } catch (KeeperException e) {
