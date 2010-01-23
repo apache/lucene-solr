@@ -7,7 +7,6 @@ import org.apache.zookeeper.server.quorum.flexible.QuorumHierarchical;
 import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
 import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.apache.zookeeper.server.ServerConfig;
-import org.apache.log4j.Logger;
 import org.apache.solr.common.SolrException;
 import org.slf4j.LoggerFactory;
 
@@ -16,23 +15,22 @@ import java.util.Map;
 import java.io.*;
 import java.util.Map.Entry;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 
 
 public class SolrZkServer {
   static org.slf4j.Logger log = LoggerFactory.getLogger(SolrZkServer.class);
   
-  String runZk;
+  String zkRun;
   String zkHost;
   String solrHome;
   String solrPort;
   Properties props;
   SolrZkServerProps zkProps;
 
-  private Thread zkThread;  // the thread running a zookeeper server, only if runZk is set
+  private Thread zkThread;  // the thread running a zookeeper server, only if zkRun is set
 
   public SolrZkServer(String runZk, String zkHost, String solrHome, String solrPort) {
-    this.runZk = runZk;
+    this.zkRun = runZk;
     this.zkHost = zkHost;
     this.solrHome = solrHome;
     this.solrPort = solrPort;
@@ -62,7 +60,7 @@ public class SolrZkServer {
       zkProps = new SolrZkServerProps();
       // set default data dir
       zkProps.setDataDir(solrHome + '/' + "zoo_data");
-      zkProps.runZk = runZk;
+      zkProps.runZk = zkRun;
       zkProps.solrPort = solrPort;
     }
     
@@ -71,16 +69,16 @@ public class SolrZkServer {
       SolrZkServerProps.injectServers(props, zkHost);
       zkProps.parseProperties(props);
     } catch (QuorumPeerConfig.ConfigException e) {
-      if (runZk != null)
+      if (zkRun != null)
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } catch (IOException e) {
-      if (runZk != null)
+      if (zkRun != null)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
 
   public void start() {
-    if (runZk == null) return;
+    if (zkRun == null) return;
 
     zkThread = new Thread() {
       @Override
@@ -119,7 +117,7 @@ public class SolrZkServer {
   }
 
   public void stop() {
-    if (runZk == null) return;
+    if (zkRun == null) return;
     // TODO: how to do an orderly shutdown?
     zkThread.interrupt();
   }
@@ -134,7 +132,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
   protected static org.slf4j.Logger LOG = LoggerFactory.getLogger(QuorumPeerConfig.class);
 
   String solrPort; // port that Solr is listening on
-  String runZk;    // the runZk param
+  String runZk;    // the zkRun param
   Properties sourceProps;
 
   /**

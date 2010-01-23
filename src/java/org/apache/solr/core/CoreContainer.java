@@ -105,7 +105,7 @@ public class CoreContainer
       zookeeperHost = zkHost;
     }
 
-    zkServer = new SolrZkServer(System.getProperty("runZk"), zookeeperHost, solrHome, hostPort);
+    zkServer = new SolrZkServer(System.getProperty("zkRun"), zookeeperHost, solrHome, hostPort);
     zkServer.parseConfig();
     zkServer.start();
 
