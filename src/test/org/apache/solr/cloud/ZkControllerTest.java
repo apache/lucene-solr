@@ -180,7 +180,7 @@ public class ZkControllerTest extends TestCase {
       zkController = new ZkController(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, TIMEOUT, "localhost",
           "8983", "/solr", null);
 
-      zkController.uploadDirToCloud(new File("solr/conf"),
+      zkController.uploadToZK(new File("solr/conf"),
           ZkController.CONFIGS_ZKNODE + "/config1");
 
       if (DEBUG) {

@@ -639,14 +639,14 @@ public final class ZkController {
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public void uploadDirToCloud(File dir, String zkPath) throws IOException, KeeperException, InterruptedException {
+  public void uploadToZK(File dir, String zkPath) throws IOException, KeeperException, InterruptedException {
     File[] files = dir.listFiles();
     for(File file : files) {
       if (!file.getName().startsWith(".")) {
         if (!file.isDirectory()) {
           zkClient.setData(zkPath + "/" + file.getName(), file);
         } else {
-          uploadDirToCloud(file, zkPath + "/" + file.getName());
+          uploadToZK(file, zkPath + "/" + file.getName());
         }
       }
     }
