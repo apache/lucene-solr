@@ -20,12 +20,13 @@ import java.net.SocketAddress;
 
 
 public class SolrZkServer {
-  protected static org.slf4j.Logger log = LoggerFactory.getLogger(SolrZkServer.class);
+  static org.slf4j.Logger log = LoggerFactory.getLogger(SolrZkServer.class);
   
   String runZk;
   String zkHost;
   String solrHome;
   String solrPort;
+  Properties props;
   SolrZkServerProps zkProps;
 
   private Thread zkThread;  // the thread running a zookeeper server, only if runZk is set
@@ -37,9 +38,26 @@ public class SolrZkServer {
     this.solrPort = solrPort;
   }
 
-  public void parseConfig() {
-    if (runZk == null) return;
+  public String getClientString() {
+    if (props==null) return null;
 
+    StringBuilder result = new StringBuilder();
+    for (Entry<Object, Object> entry : props.entrySet()) {
+      String key = entry.getKey().toString().trim();
+      String value = entry.getValue().toString().trim();
+      if (key.startsWith("server.")) {
+        int first = value.indexOf(':');
+        int second = value.indexOf(':', first+1);
+        String host = value.substring(0, second>0 ? second : first);
+        if (result.length() > 0)
+          result.append(',');
+        result.append(host);
+      }
+    }
+    return result.toString();
+  }
+
+  public void parseConfig() {
     if (zkProps == null) {
       zkProps = new SolrZkServerProps();
       // set default data dir
@@ -49,12 +67,14 @@ public class SolrZkServer {
     }
     
     try {
-      Properties props = SolrZkServerProps.getProperties(solrHome + '/' + "zoo.cfg");
+      props = SolrZkServerProps.getProperties(solrHome + '/' + "zoo.cfg");
       SolrZkServerProps.injectServers(props, zkHost);
       zkProps.parseProperties(props);
     } catch (QuorumPeerConfig.ConfigException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      if (runZk != null)
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } catch (IOException e) {
+      if (runZk != null)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
@@ -83,7 +103,12 @@ public class SolrZkServer {
       }
     };
 
-    log.info("STARTING ZOOKEEPER SERVER");
+    if (zkProps.getServers().size() > 1) {
+      log.info("STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER");      
+    } else {
+      log.info("STARTING EMBEDDED STANDALONE ZOOKEEPER SERVER");
+    }
+
     zkThread.setDaemon(true);
     zkThread.start();
     try {
@@ -101,6 +126,8 @@ public class SolrZkServer {
 }
 
 
+
+
 // Allows us to set a default for the data dir before parsing
 // zoo.cfg (which validates that there is a dataDir)
 class SolrZkServerProps extends QuorumPeerConfig {
@@ -108,6 +135,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
 
   String solrPort; // port that Solr is listening on
   String runZk;    // the runZk param
+  Properties sourceProps;
 
   /**
    * Parse a ZooKeeper configuration file
@@ -178,7 +206,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
 
     InetSocketAddress thisAddr = null;
 
-    if (runZk != null) {
+    if (runZk != null && runZk.length()>0) {
       String parts[] = runZk.split(":");
       thisAddr = new InetSocketAddress(parts[0], Integer.parseInt(parts[1]));
     } else {
@@ -190,12 +218,14 @@ class SolrZkServerProps extends QuorumPeerConfig {
 
     for (QuorumPeer.QuorumServer server : slist.values()) {
       if (server.addr.equals(thisAddr)) {
+        LOG.info("I AM SERVER #" + server.id + " Addr=" + server.addr);
         return server.id;
       }
     }
 
     return null;
   }
+
 
 
   public void setDataDir(String dataDir) {
@@ -342,7 +372,9 @@ class SolrZkServerProps extends QuorumPeerConfig {
         Long myid = getMySeverId();
         if (myid != null) {
           serverId = myid;
+          return;
         }
+        if (runZk == null) return;
         //////////////// END ADDED FOR SOLR //////
         throw new IllegalArgumentException(myIdFile.toString()
             + " file is missing");

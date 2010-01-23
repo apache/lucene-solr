@@ -111,12 +111,13 @@ public class CoreContainer
 
     // set client from server config if not already set
     if (zookeeperHost == null) {
-      // TODO
+      zookeeperHost = zkServer.getClientString();
     }
     
     if (zookeeperHost != null) {
       // we are ZooKeeper enabled
       try {
+        log.info("Zookeeper client=" + zookeeperHost);
         zooKeeperController = new ZkController(zookeeperHost, zkClientTimeout, host, hostPort, hostContext, this);
         
         String confDir = System.getProperty("bootstrap_confdir");
