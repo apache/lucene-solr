@@ -96,11 +96,6 @@ public class CoreContainer
   
   private void initZooKeeper(String zkHost, int zkClientTimeout) {
     // nocommit: perhaps get from solr.xml
-
-    String zkRun = System.getProperty("zkRun");
-    if (zkRun == null && zkHost == null)
-        return;  // not in zk mode
-
     // if zkHost sys property is not set, we are not using ZooKeeper
     String zookeeperHost;
     if(zkHost == null) {
@@ -108,6 +103,11 @@ public class CoreContainer
     } else {
       zookeeperHost = zkHost;
     }
+
+    String zkRun = System.getProperty("zkRun");
+
+    if (zkRun == null && zookeeperHost == null)
+        return;  // not in zk mode
 
     zkServer = new SolrZkServer(zkRun, zookeeperHost, solrHome, hostPort);
     zkServer.parseConfig();
