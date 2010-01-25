@@ -20,7 +20,7 @@ package org.apache.solr.cloud;
 import java.util.Collections;
 import java.util.Map;
 
-// effectively immutable
+// immutable
 public class Slice {
   private final Map<String,ZkNodeProps> shards;
   private final String name;

@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 
 public class ZooKeeperException extends SolrException {
 

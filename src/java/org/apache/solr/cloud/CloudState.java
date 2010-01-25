@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
  */
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -26,23 +25,18 @@ import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// effectively immutable
+// immutable
 public class CloudState {
   protected static Logger log = LoggerFactory.getLogger(CloudState.class);
   
-  private Map<String,Map<String,Slice>> collectionStates = new HashMap<String,Map<String,Slice>>();
-  private Set<String> liveNodes = null;
+  private final Map<String,Map<String,Slice>> collectionStates;
+  private final Set<String> liveNodes;
   
-  public CloudState(Set<String> liveNodes) {
+  public CloudState(Set<String> liveNodes, Map<String,Map<String,Slice>> collectionStates) {
     this.liveNodes = liveNodes;
+    this.collectionStates = collectionStates;
   }
   
-  // nocommit : only call before publishing
-  void addSlices(String collection, Map<String,Slice> slices) {
-    collectionStates.put(collection, slices);
-  }
-  
-  // nocommit
   public Map<String,Slice> getSlices(String collection) {
     Map<String,Slice> collectionState = collectionStates.get(collection);
     if(collectionState == null) {

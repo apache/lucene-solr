@@ -17,8 +17,6 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import java.io.IOException;
-
 import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;

@@ -94,8 +94,6 @@ public final class ZkController {
 
   private String hostName;
 
-  private CoreContainer coreContainer;
-
 
   /**
    * @param zkServerAddress ZooKeeper server host address
@@ -111,7 +109,6 @@ public final class ZkController {
   public ZkController(String zkServerAddress, int zkClientTimeout, String localHost, String locaHostPort,
       String localHostContext, final CoreContainer coreContainer) throws InterruptedException,
       TimeoutException, IOException {
-    this.coreContainer = coreContainer;
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
     this.localHostContext = localHostContext;
@@ -418,10 +415,11 @@ public final class ZkController {
     log.info("Updating cloud state from ZooKeeper... :" + zkClient.keeper);
     
     // build immutable CloudInfo
-    CloudState cloudInfo = new CloudState(getLiveNodes());
+
 
     List<String> collections = getCollectionNames();
     // nocommit : load all collection info
+    Map<String,Map<String,Slice>> collectionStates = new HashMap<String,Map<String,Slice>>();
     for (String collection : collections) {
       String shardIdPaths = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE;
       List<String> shardIdNames = zkClient.getChildren(shardIdPaths, null);
@@ -431,10 +429,12 @@ public final class ZkController {
         Slice slice = new Slice(shardIdZkPath, shardsMap);
         slices.put(shardIdZkPath, slice);
       }
-      cloudInfo.addSlices(collection, slices);
+      collectionStates.put(collection, slices);
       
     }
-
+    
+    CloudState cloudInfo = new CloudState(getLiveNodes(), collectionStates);
+    
     // update volatile
     this.cloudState = cloudInfo;
   }
