@@ -42,7 +42,7 @@ class ShardsWatcher implements Watcher {
 
   public void process(WatchedEvent event) {
     // nocommit : this will be called too often as shards register themselves?
-    System.out.println("shard node changed");
+
     if (event.getType() == EventType.NodeChildrenChanged) {
 
       try {

@@ -46,7 +46,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +77,8 @@ public final class ZkController {
   public static final String ROLE_PROP = "role";
   public static final String NODE_NAME = "node_name";
 
-  final ShardsWatcher shardWatcher = new ShardsWatcher(this);
+  // for when we do incremental cloud state updates
+  //final ShardsWatcher shardWatcher = new ShardsWatcher(this);
 
   private SolrZkClient zkClient;
 
@@ -154,9 +154,9 @@ public final class ZkController {
   }
 
   /**
-   * nocommit: adds nodes if they don't exist, eg /shards/ node. consider race
-   * conditions
-   * @param collection2 
+   * @param shardId
+   * @param collection
+   * @throws IOException
    */
   private void addZkShardsNode(String shardId, String collection) throws IOException {
 
@@ -227,7 +227,7 @@ public final class ZkController {
 
   private List<String> getCollectionNames() throws KeeperException,
       InterruptedException {
-    // nocommit : watch for new collections?
+
     List<String> collectionNodes = zkClient.getChildren(COLLECTIONS_ZKNODE,
         null);
 
@@ -275,7 +275,7 @@ public final class ZkController {
     return zkClient.getData(CONFIGS_ZKNODE + "/" + zkConfigName, null, null);
   }
 
-  // nocommit: fooling around
+  // TODO: consider how this is done
   private String getHostAddress() throws IOException {
 
     if (localHost == null) {
@@ -345,9 +345,9 @@ public final class ZkController {
         // register host
         zkClient.makePath(hostName);
       } else {
-        // nocommit
-        throw new IllegalStateException("Unrecognized host:"
-            + localHostName);
+        log.error("Unrecognized host:" + localHostName);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+            "Unrecognized host:" + localHostName);
       }
       
       // makes nodes node
@@ -363,10 +363,8 @@ public final class ZkController {
       }
       createEphemeralNode();
       
-      // nocommit
       setUpCollectionsNode();
       
-
     } catch (IOException e) {
       log.error("", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -409,15 +407,14 @@ public final class ZkController {
   public synchronized void updateCloudState() throws KeeperException, InterruptedException,
       IOException {
 
-    // nocommit - incremental update rather than reread everything
+    // TODO: - incremental update rather than reread everything
     
     log.info("Updating cloud state from ZooKeeper... :" + zkClient.keeper);
     
     // build immutable CloudInfo
 
-
     List<String> collections = getCollectionNames();
-    // nocommit : load all collection info
+    
     Map<String,Map<String,Slice>> collectionStates = new HashMap<String,Map<String,Slice>>();
     for (String collection : collections) {
       String shardIdPaths = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE;
@@ -439,7 +436,6 @@ public final class ZkController {
   }
 
   private Set<String> getLiveNodes() throws KeeperException, InterruptedException {
-    // nocomit : incremental update
     List<String> liveNodes = zkClient.getChildren(NODES_ZKNODE, null);
     Set<String> liveNodesSet = new HashSet<String>(liveNodes.size());
     liveNodesSet.addAll(liveNodes);
@@ -494,8 +490,6 @@ public final class ZkController {
               + collection + " could not be located", e);
     }
     for (String node : children) {
-      // nocommit
-      System.out.println("check child:" + node);
       // nocommit: do we actually want to handle settings in the node name?
       if (node.startsWith("config=")) {
         configName = node.substring(node.indexOf("=") + 1);
@@ -597,9 +591,7 @@ public final class ZkController {
     
     String shardZkNodeName = hostName + ":" + localHostPort + "_"+ localHostContext + (coreName.length() == 0 ? "" : "_" + coreName);
 
-    
     if(shardZkNodeAlreadyExists && forcePropsUpdate) {
-      // nocommit : consider how we watch shards on all collections
       zkClient.setData(shardsZkPath + "/" + shardZkNodeName, bytes);
     } else {
       addZkShardsNode(cloudDesc.getShardId(), collection);
@@ -617,18 +609,13 @@ public final class ZkController {
       }
     }
 
-    // signal that the shards node has changed
-    // nocommit
-    zkClient.setData(shardsZkPath, (byte[])null);
-
-
   }
 
   /**
    * @param core
    */
   public void unregister(SolrCore core) {
-    // nocommit : perhaps mark the core down in zk?
+    // TODO : perhaps mark the core down in zk?
   }
 
   /**
@@ -667,22 +654,20 @@ public final class ZkController {
     zkClient.printLayoutToStdOut();
   }
 
-  // nocommit
   public void watchShards() throws KeeperException, InterruptedException {
-    List<String> collections = zkClient.getChildren(COLLECTIONS_ZKNODE, new Watcher() {
-
-      public void process(WatchedEvent event) {
-        System.out.println("Collections node event:" + event);
-        // nocommit : if collections node was signaled, look for new collections
-        
-      }});
     
-    collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null);
-    for(String collection : collections) {
-      for(String shardId : zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE, null)) {
-        zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE + "/" + shardId, shardWatcher);
-      }
-    }
+    // TODO: don't reload whole state when anything changes - just reload what's
+    // changed
+    // List<String> collections = zkClient.getChildren(COLLECTIONS_ZKNODE,
+    // null);
+    // collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null);
+    // for(String collection : collections) {
+    // for(String shardId : zkClient.getChildren(COLLECTIONS_ZKNODE + "/" +
+    // collection + SHARDS_ZKNODE, null)) {
+    // zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection +
+    // SHARDS_ZKNODE + "/" + shardId, shardWatcher);
+    // }
+    // }
   }
 
   private void setUpCollectionsNode() throws KeeperException, InterruptedException {
@@ -713,13 +698,12 @@ public final class ZkController {
     zkClient.exists(COLLECTIONS_ZKNODE, new Watcher(){
 
       public void process(WatchedEvent event) {
-        // nocommit
-        System.out.println("collections node changed: "+ event);
-        if(event.getType() == EventType.NodeDataChanged) {
-          // no commit - we may have a new collection, watch the shards node for them
-          
-          // re-watch
           try {
+            // TODO: fine grained - just reload what's changed
+            
+            // something changed, reload cloud state
+            updateCloudState();
+            // re-watch
             zkClient.exists(event.getPath(), this);
           } catch (KeeperException e) {
             log.error("", e);
@@ -731,8 +715,11 @@ public final class ZkController {
             log.error("", e);
             throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
                 "", e);
+          } catch (IOException e) {
+            log.error("", e);
+            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                "", e);
           }
-        }
 
       }});
   }
