@@ -131,7 +131,7 @@ public class CoreContainer
             throw new IllegalArgumentException("bootstrap_confdir must be a directory of configuration files");
           }
           String confName = System.getProperty("bootstrap_confname", "configuration1");
-          zooKeeperController.uploadToZK(dir, ZkController.CONFIGS_ZKNODE + "/" + confName);
+          zooKeeperController.uploadConfigDir(dir, confName);
         }
       } catch (InterruptedException e) {
         // Restore the interrupted status

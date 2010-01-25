@@ -70,8 +70,7 @@ public final class ZkController {
 
   // package private for tests
   static final String SHARDS_ZKNODE = "/shards";
-  // nocommit : ok to be public? for corecontainer access
-  public static final String CONFIGS_ZKNODE = "/configs";
+  static final String CONFIGS_ZKNODE = "/configs";
   static final String COLLECTIONS_ZKNODE = "/collections";
   static final String NODES_ZKNODE = "/nodes";
 
@@ -650,7 +649,17 @@ public final class ZkController {
         }
       }
     }
-    
+  }
+  
+  /**
+   * @param dir
+   * @param configName
+   * @throws IOException
+   * @throws KeeperException
+   * @throws InterruptedException
+   */
+  public void uploadConfigDir(File dir, String configName) throws IOException, KeeperException, InterruptedException {
+    uploadToZK(dir, ZkController.CONFIGS_ZKNODE + "/" + configName);
   }
 
   // convenience for testing
