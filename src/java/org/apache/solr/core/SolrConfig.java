@@ -193,7 +193,12 @@ public class SolrConfig extends Config {
      loadPluginInfo(IndexDeletionPolicy.class,"mainIndex/deletionPolicy",false, true);
      loadPluginInfo(IndexReaderFactory.class,"indexReaderFactory",false, true);
      loadPluginInfo(UpdateRequestProcessorChain.class,"updateRequestProcessorChain",false, false);
+
+     //TODO deprecated remove it later
      loadPluginInfo(SolrHighlighter.class,"highlighting",false, false);
+     if( pluginStore.containsKey( SolrHighlighter.class.getName() ) )
+       log.warn( "Deprecated syntax found. <highlighting/> should move to <searchComponent/>" );
+
      updateHandlerInfo = loadUpdatehandlerInfo();
 
     Config.log.info("Loaded SolrConfig: " + name);

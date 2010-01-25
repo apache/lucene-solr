@@ -763,6 +763,7 @@
     </lst>
   </requestHandler>
 
+  <searchComponent class="solr.HighlightComponent" name="highlight">
   <highlighting>
    <!-- Configure the standard fragmenter -->
    <!-- This could most likely be commented out in the "default" case -->
@@ -792,7 +793,7 @@
     </lst>
    </formatter>
   </highlighting>
-
+  </searchComponent>
   <!-- An example dedup update processor that creates the "id" field on the fly
        based on the hash code of some other fields.  This example has overwriteDupes
        set to false since we are using the id field as the signatureField and Solr

@@ -25,12 +25,18 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.highlight.SolrHighlighter;
+import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.plugin.PluginInfoInitialized;
+import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.Arrays;
 import java.util.Map;
+import java.util.List;
+import java.util.Collections;
 
 /**
  * TODO!
@@ -38,22 +44,44 @@ import java.util.Map;
  * @version $Id$
  * @since solr 1.3
  */
-public class HighlightComponent extends SearchComponent 
+public class HighlightComponent extends SearchComponent implements PluginInfoInitialized, SolrCoreAware
 {
   public static final String COMPONENT_NAME = "highlight";
-  
+  private PluginInfo info = PluginInfo.EMPTY_INFO;
+  private SolrHighlighter highlighter;
+
+
+  public void init(PluginInfo info) {
+    this.info = info;
+  }
+
   @Override
-  public void prepare(ResponseBuilder rb) throws IOException
-  {
-    SolrHighlighter highlighter = rb.req.getCore().getHighlighter();
+  public void prepare(ResponseBuilder rb) throws IOException {
     rb.doHighlights = highlighter.isHighlightingEnabled(rb.req.getParams());
   }
-  
+
+  public void inform(SolrCore core) {
+    List<PluginInfo> children = info.getChildren("highlighting");
+    if(children.isEmpty()) {
+      PluginInfo pluginInfo = core.getSolrConfig().getPluginInfo(SolrHighlighter.class.getName()); //TODO deprecated configuration remove later
+      if (pluginInfo != null) {
+        highlighter = core.createInitInstance(pluginInfo, SolrHighlighter.class, null, DefaultSolrHighlighter.class.getName());
+        highlighter.initalize(core.getSolrConfig());
+      } else {
+        DefaultSolrHighlighter defHighlighter = new DefaultSolrHighlighter(core);
+        defHighlighter.init(PluginInfo.EMPTY_INFO);
+        highlighter = defHighlighter;
+      }
+    } else {
+      highlighter = core.createInitInstance(children.get(0),SolrHighlighter.class,null, DefaultSolrHighlighter.class.getName());
+    }
+
+  }
+
   @Override
   public void process(ResponseBuilder rb) throws IOException {
     SolrQueryRequest req = rb.req;
     if (rb.doHighlights) {
-      SolrHighlighter highlighter = req.getCore().getHighlighter();
       SolrParams params = req.getParams();
 
       String[] defaultHighlightFields;  //TODO: get from builder by default?
@@ -158,6 +186,9 @@ public class HighlightComponent extends SearchComponent
     return nl;
   }
 
+  public SolrHighlighter getHighlighter() {
+    return highlighter;
+  }
   ////////////////////////////////////////////
   ///  SolrInfoMBean
   ////////////////////////////////////////////

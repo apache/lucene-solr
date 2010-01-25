@@ -103,5 +103,6 @@ public class PluginInfo {
     for (PluginInfo child : children) if(type.equals(child.type)) result.add(child);
     return result;
   }
+  public static final PluginInfo EMPTY_INFO = new PluginInfo("",Collections.<String,String>emptyMap(), new NamedList(),Collections.<PluginInfo>emptyList());
   private static final HashSet<String> NL_TAGS = new HashSet<String>(Arrays.asList("lst","str","int","bool","arr","float","double"));
 }

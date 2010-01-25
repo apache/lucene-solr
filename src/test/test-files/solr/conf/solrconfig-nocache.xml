@@ -266,6 +266,7 @@
   <requestHandler name="/update"     class="solr.XmlUpdateRequestHandler"          />
   <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy" />
 
+  <searchComponent class="solr.HighlightComponent" name="highlight">
   <highlighting>
    <!-- Configure the standard fragmenter -->
    <fragmenter name="gap" class="org.apache.solr.highlight.GapFragmenter" default="true">
@@ -288,7 +289,7 @@
     </lst>
    </formatter>
   </highlighting>
-
+  </searchComponent>
 
   <!-- enable streaming for testing... -->
   <requestDispatcher handleSelect="true" >

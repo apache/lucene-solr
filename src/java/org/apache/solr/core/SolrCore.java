@@ -99,7 +99,6 @@ public final class SolrCore implements SolrInfoMBean {
   private final UpdateHandler updateHandler;
   private final long startTime;
   private final RequestHandlers reqHandlers;
-  private final SolrHighlighter highlighter;
   private final Map<String,SearchComponent> searchComponents;
   private final Map<String,UpdateRequestProcessorChain> updateProcessorChains;
   private final Map<String, SolrInfoMBean> infoRegistry;
@@ -469,10 +468,7 @@ public final class SolrCore implements SolrInfoMBean {
     return createInstance(className, UpdateHandler.class, "Update Handler");
   }
   
-  private SolrHighlighter createHighlighter(String className) {
-	return createInstance(className, SolrHighlighter.class, "Highlighter");
-  }
-  
+
   /** 
    * @return the last core initialized.  If you are using multiple cores, 
    * this is not a function to use.
@@ -596,7 +592,6 @@ public final class SolrCore implements SolrInfoMBean {
     reqHandlers = new RequestHandlers(this);
     reqHandlers.initHandlersFromConfig( solrConfig );
 
-    highlighter = initHighlighter();
 
     // Handle things that should eventually go away
     initDeprecatedSupport();
@@ -644,19 +639,6 @@ public final class SolrCore implements SolrInfoMBean {
     // and a SolrCoreAware MBean may have properties that depend on getting a Searcher
     // from the core.
     resourceLoader.inform(infoRegistry);
-  }
-
-  private SolrHighlighter initHighlighter() {
-    SolrHighlighter highlighter = null;
-    PluginInfo pluginInfo = solrConfig.getPluginInfo(SolrHighlighter.class.getName());
-    if(pluginInfo != null){
-      highlighter = createInitInstance(pluginInfo,SolrHighlighter.class,null, DefaultSolrHighlighter.class.getName());
-      highlighter.initalize(solrConfig);
-    } else{
-      highlighter = new DefaultSolrHighlighter();
-      highlighter.initalize(solrConfig);
-    }
-    return highlighter;
   }
 
 
@@ -841,8 +823,10 @@ public final class SolrCore implements SolrInfoMBean {
   /**
    * Get the SolrHighlighter
    */
+  @Deprecated
   public SolrHighlighter getHighlighter() {
-    return highlighter;
+    HighlightComponent hl = (HighlightComponent) searchComponents.get(HighlightComponent.COMPONENT_NAME);
+    return hl==null? null: hl.getHighlighter();
   }
 
   /**
@@ -874,10 +858,20 @@ public final class SolrCore implements SolrInfoMBean {
   {
     Map<String, SearchComponent> components = new HashMap<String, SearchComponent>();
     initPlugins(components,SearchComponent.class);
+    for (Map.Entry<String, SearchComponent> e : components.entrySet()) {
+      SearchComponent c = e.getValue();
+      if (c instanceof HighlightComponent) {
+        HighlightComponent hl = (HighlightComponent) c;
+        if(!HighlightComponent.COMPONENT_NAME.equals(e.getKey())){
+          components.put(HighlightComponent.COMPONENT_NAME,hl);
+        }
+        break;
+      }
+    }
+    addIfNotPresent(components,HighlightComponent.COMPONENT_NAME,HighlightComponent.class);
     addIfNotPresent(components,QueryComponent.COMPONENT_NAME,QueryComponent.class);
     addIfNotPresent(components,FacetComponent.COMPONENT_NAME,FacetComponent.class);
     addIfNotPresent(components,MoreLikeThisComponent.COMPONENT_NAME,MoreLikeThisComponent.class);
-    addIfNotPresent(components,HighlightComponent.COMPONENT_NAME,HighlightComponent.class);
     addIfNotPresent(components,StatsComponent.COMPONENT_NAME,StatsComponent.class);
     addIfNotPresent(components,DebugComponent.COMPONENT_NAME,DebugComponent.class);
     return components;

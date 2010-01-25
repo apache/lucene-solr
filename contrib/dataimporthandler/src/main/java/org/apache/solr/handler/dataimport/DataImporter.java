@@ -470,6 +470,8 @@ public class DataImporter {
 
     public boolean verbose = false;
 
+    public boolean syncMode = false;
+
     public boolean commit = true;
 
     public boolean optimize = true;
@@ -504,6 +506,7 @@ public class DataImporter {
         verbose = "true".equals(requestParams.get("verbose"))
                 || "on".equals(requestParams.get("verbose"));
       }
+      syncMode = "true".equals(requestParams.get("synchronous"));
       if (DELTA_IMPORT_CMD.equals(command) || IMPORT_CMD.equals(command)) {
         clean = false;
       }

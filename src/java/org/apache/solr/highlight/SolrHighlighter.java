@@ -41,19 +41,19 @@ public abstract class SolrHighlighter
 
   // Thread safe registry
   protected final Map<String,SolrFormatter> formatters =
-    Collections.synchronizedMap( new HashMap<String, SolrFormatter>() );
+    new HashMap<String, SolrFormatter>();
 
   // Thread safe registry
   protected final Map<String,SolrFragmenter> fragmenters =
-    Collections.synchronizedMap( new HashMap<String, SolrFragmenter>() );
+    new HashMap<String, SolrFragmenter>() ;
 
   // Thread safe registry
   protected final Map<String, SolrFragListBuilder> fragListBuilders =
-    Collections.synchronizedMap( new HashMap<String, SolrFragListBuilder>() );
+    new HashMap<String, SolrFragListBuilder>() ;
 
   // Thread safe registry
   protected final Map<String, SolrFragmentsBuilder> fragmentsBuilders =
-    Collections.synchronizedMap( new HashMap<String, SolrFragmentsBuilder>() );
+    new HashMap<String, SolrFragmentsBuilder>() ;
 
   @Deprecated
   public abstract void initalize( SolrConfig config );

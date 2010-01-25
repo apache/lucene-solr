@@ -130,7 +130,8 @@
       single = SingleInstanceLockFactory - suggested for a read-only index
                or when there is no possibility of another process trying
                to modify the index.
-      native = NativeFSLockFactory  - uses OS native file locking
+      native = NativeFSLockFactory  - uses OS native file locking.
+               Do not use with multiple solr webapps in the same JVM.
       simple = SimpleFSLockFactory  - uses a plain file for locking
 
       (For backwards compatibility with Solr 1.2, 'simple' is the default
@@ -928,7 +929,7 @@
      <str name="echoHandler">true</str>
     </lst>
   </requestHandler>
-
+  <searchComponent class="solr.HighlightComponent" name="highlight">
   <highlighting>
    <!-- Configure the standard fragmenter -->
    <!-- This could most likely be commented out in the "default" case -->
@@ -964,6 +965,7 @@
    <!-- multi-colored tag FragmentsBuilder -->
    <fragmentsBuilder name="colored" class="org.apache.solr.highlight.MultiColoredScoreOrderFragmentsBuilder" default="true"/>
   </highlighting>
+  </searchComponent>
 
   <!-- An example dedup update processor that creates the "id" field on the fly
        based on the hash code of some other fields.  This example has overwriteDupes
