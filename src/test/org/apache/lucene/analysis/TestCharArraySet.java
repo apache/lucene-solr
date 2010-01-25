@@ -448,4 +448,47 @@ public class TestCharArraySet extends LuceneTestCase {
       assertFalse(set.contains(string));  
     }
   }
+  
+  /**
+   * Tests a special case of {@link CharArraySet#copy(Version, Set)} where the
+   * set to copy is the {@link CharArraySet#EMPTY_SET}
+   */
+  public void testCopyEmptySet() {
+    assertSame(CharArraySet.EMPTY_SET, 
+        CharArraySet.copy(Version.LUCENE_CURRENT, CharArraySet.EMPTY_SET));
+  }
+
+  /**
+   * Smoketests the static empty set
+   */
+  public void testEmptySet() {
+    assertEquals(0, CharArraySet.EMPTY_SET.size());
+    
+    assertTrue(CharArraySet.EMPTY_SET.isEmpty());
+    for (String stopword : TEST_STOP_WORDS) {
+      assertFalse(CharArraySet.EMPTY_SET.contains(stopword));
+    }
+    assertFalse(CharArraySet.EMPTY_SET.contains((Object) "foo"));
+    assertFalse(CharArraySet.EMPTY_SET.contains((Object) "foo".toCharArray()));
+    assertFalse(CharArraySet.EMPTY_SET.contains("foo".toCharArray(),0,3));
+  }
+  
+  /**
+   * Test for NPE
+   */
+  public void testContainsWithNull() {
+    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    try {
+      set.contains((char[]) null, 0, 10);
+      fail("null value must raise NPE");
+    } catch (NullPointerException e) {}
+    try {
+      set.contains((CharSequence) null);
+      fail("null value must raise NPE");
+    } catch (NullPointerException e) {}
+    try {
+      set.contains((Object) null);
+      fail("null value must raise NPE");
+    } catch (NullPointerException e) {}
+  }
 }

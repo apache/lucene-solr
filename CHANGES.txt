@@ -172,6 +172,9 @@ Optimizations
 * LUCENE-2188: Add a utility class for tracking deprecated overridden
   methods in non-final subclasses.
   (Uwe Schindler, Robert Muir)
+
+* LUCENE-2195: Speedup CharArraySet if set is empty.
+  (Simon Willnauer via Robert Muir)
    
 Build
 

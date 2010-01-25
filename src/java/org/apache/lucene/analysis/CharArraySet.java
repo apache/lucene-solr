@@ -62,8 +62,7 @@ public class CharArraySet extends AbstractSet<Object> {
   private char[][] entries;
   private int count;
   private final boolean ignoreCase;
-  public static final CharArraySet EMPTY_SET = CharArraySet.unmodifiableSet(
-      new CharArraySet(Version.LUCENE_CURRENT, 0, false));
+  public static final CharArraySet EMPTY_SET = new EmptyCharArraySet();
   
   private final CharacterUtils charUtils;
   private final Version matchVersion;
@@ -482,7 +481,7 @@ public class CharArraySet extends AbstractSet<Object> {
    * the internal representation of a {@link CharArraySet} to a super
    * constructor and overrides all mutators. 
    */
-  private static final class UnmodifiableCharArraySet extends CharArraySet {
+  private static class UnmodifiableCharArraySet extends CharArraySet {
 
     private UnmodifiableCharArraySet(Version matchVersion, char[][] entries, boolean ignoreCase,
         int count) {
@@ -519,5 +518,37 @@ public class CharArraySet extends AbstractSet<Object> {
       throw new UnsupportedOperationException();
     }
   }
+  
+  /**
+   * Empty {@link UnmodifiableCharArraySet} optimized for speed.
+   * Contains checks will always return <code>false</code> or throw
+   * NPE if necessary.
+   */
+  private static final class EmptyCharArraySet extends UnmodifiableCharArraySet {
 
+    private EmptyCharArraySet() {
+      super(Version.LUCENE_CURRENT, new char[0][], false, 0);
+    }
+    
+    @Override
+    public boolean contains(char[] text, int off, int len) {
+      if(text == null)
+        throw new NullPointerException();
+      return false;
+    }
+
+    @Override
+    public boolean contains(CharSequence cs) {
+      if(cs == null)
+        throw new NullPointerException();
+      return false;
+    }
+
+    @Override
+    public boolean contains(Object o) {
+      if(o == null)
+        throw new NullPointerException();
+      return false;
+    }
+  }
 }
