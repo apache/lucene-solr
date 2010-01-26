@@ -425,8 +425,10 @@ public class CoreContainer
     
     if(zooKeeperController != null) {
       try {
-        zooKeeperController.addShardZkNodeWatches();
-        zooKeeperController.updateCloudState(true);
+        synchronized (zooKeeperController) {
+          zooKeeperController.addShardZkNodeWatches();
+          zooKeeperController.updateCloudState(true);
+        }
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
