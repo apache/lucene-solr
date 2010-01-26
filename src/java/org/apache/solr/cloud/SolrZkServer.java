@@ -43,48 +43,44 @@ public class SolrZkServer {
   String solrPort;
   Properties props;
   SolrZkServerProps zkProps;
+  String zkClientString;
 
   private Thread zkThread;  // the thread running a zookeeper server, only if zkRun is set
 
-  public SolrZkServer(String runZk, String zkHost, String solrHome, String solrPort) {
-    this.zkRun = runZk;
-    this.zkHost = zkHost;
+  public SolrZkServer(String zkRun, String zkHost, String solrHome, String solrPort) {
+    this.zkRun = zkRun;
+    this.zkClientString = this.zkHost = zkHost;
     this.solrHome = solrHome;
     this.solrPort = solrPort;
+
+    this.zkClientString = this.zkHost != null ? this.zkHost : this.zkRun;
   }
 
   public String getClientString() {
-    if (props==null) return null;
+    if (props == null) return null;
 
-    StringBuilder result = new StringBuilder();
-    for (Entry<Object, Object> entry : props.entrySet()) {
-      String key = entry.getKey().toString().trim();
-      String value = entry.getValue().toString().trim();
-      if (key.startsWith("server.")) {
-        int first = value.indexOf(':');
-        int second = value.indexOf(':', first+1);
-        String host = value.substring(0, second>0 ? second : first);
-        if (result.length() > 0)
-          result.append(',');
-        result.append(host);
-      }
-    }
-    return result.toString();
+    // if the string wasn't passed as zkHost, then use the standalone server we started
+    if (zkRun == null) return null;
+    return "localhost:" + zkProps.getClientPort();
   }
 
   public void parseConfig() {
     if (zkProps == null) {
       zkProps = new SolrZkServerProps();
       // set default data dir
+      // TODO: use something based on IP+port???  support ensemble all from same solr home?
       zkProps.setDataDir(solrHome + '/' + "zoo_data");
-      zkProps.runZk = zkRun;
+      zkProps.zkRun = zkRun;
       zkProps.solrPort = solrPort;
     }
     
     try {
       props = SolrZkServerProps.getProperties(solrHome + '/' + "zoo.cfg");
-      SolrZkServerProps.injectServers(props, zkHost);
+      SolrZkServerProps.injectServers(props, zkRun, zkHost);
       zkProps.parseProperties(props);
+      if (zkProps.getClientPort() <= 0) {
+        zkProps.setClientPort(Integer.parseInt(solrPort)+1000);
+      }
     } catch (QuorumPeerConfig.ConfigException e) {
       if (zkRun != null)
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -135,7 +131,6 @@ public class SolrZkServer {
 
   public void stop() {
     if (zkRun == null) return;
-    // TODO: how to do an orderly shutdown?
     zkThread.interrupt();
   }
 }
@@ -149,8 +144,13 @@ class SolrZkServerProps extends QuorumPeerConfig {
   protected static org.slf4j.Logger LOG = LoggerFactory.getLogger(QuorumPeerConfig.class);
 
   String solrPort; // port that Solr is listening on
-  String runZk;    // the zkRun param
-  Properties sourceProps;
+  String zkRun;
+  String zkHosts;
+
+  {
+    // prevent exception from being thrown if clientPort is missing
+    clientPort = -1;
+  }
 
   /**
    * Parse a ZooKeeper configuration file
@@ -186,22 +186,41 @@ class SolrZkServerProps extends QuorumPeerConfig {
   }
 
 
-  // adds server.x if they don't exist, based on zkHost if it does exist
-  public static void injectServers(Properties props, String zkHost) {
+  // Adds server.x if they don't exist, based on zkHost if it does exist.
+  // Given zkHost=localhost:1111,localhost:2222 this will inject
+  // server.0=localhost:1112:1113
+  // server.1=localhost:2223:2224
+  public static void injectServers(Properties props, String zkRun, String zkHost) {
+
+    // if clientPort not already set, use zkRun
+    if (zkRun != null && props.getProperty("clientPort")==null) {
+      int portIdx = zkRun.lastIndexOf(':');
+      if (portIdx > 0) {
+        String portStr = zkRun.substring(portIdx+1);
+        props.setProperty("clientPort", portStr);
+      }
+    }
+
     boolean hasServers = hasServers(props);
 
     if (!hasServers && zkHost != null) {
       int alg = Integer.parseInt(props.getProperty("electionAlg","3").trim());
       String[] hosts = zkHost.split(",");
       int serverNum = 0;
-      for (String host : hosts) {
-        host = host.trim();
+      for (String hostAndPort : hosts) {
+        hostAndPort = hostAndPort.trim();
+        int portIdx = hostAndPort.lastIndexOf(':');
+        String clientPortStr = hostAndPort.substring(portIdx+1);
+        int clientPort = Integer.parseInt(clientPortStr);
+        String host = hostAndPort.substring(0,portIdx);
+
+        String serverStr = host + ':' + (clientPort+1);
         // algorithms other than 0 need an extra port for leader election.
         if (alg != 0) {
-          int port = Integer.parseInt(host.substring(host.indexOf(':')+1));
-          host = host + ":" + (port+1);
+          serverStr = serverStr + ':' + (clientPort+2);
         }
-        props.setProperty("server."+serverNum, host);
+
+        props.setProperty("server."+serverNum, serverStr);
         serverNum++;
       }
     }
@@ -217,23 +236,52 @@ class SolrZkServerProps extends QuorumPeerConfig {
   // called by the modified version of parseProperties
   // when the myid file is missing.
   public Long getMySeverId() {
-    if (runZk == null && solrPort == null) return null;
-
-    InetSocketAddress thisAddr = null;
-
-    if (runZk != null && runZk.length()>0) {
-      String parts[] = runZk.split(":");
-      thisAddr = new InetSocketAddress(parts[0], Integer.parseInt(parts[1]));
-    } else {
-     // default to localhost:<solrPort+1000>
-     thisAddr = new InetSocketAddress("localhost", Integer.parseInt(solrPort)+1000);
-    }
+    if (zkRun == null && solrPort == null) return null;
 
     Map<Long, QuorumPeer.QuorumServer> slist = getServers();
 
+    String myHost = "localhost";
+    InetSocketAddress thisAddr = null;
+
+    if (zkRun != null && zkRun.length()>0) {
+      String parts[] = zkRun.split(":");
+      myHost = parts[0];
+      thisAddr = new InetSocketAddress(myHost, Integer.parseInt(parts[1]) + 1);
+    } else {
+      // default to localhost:<solrPort+1000>
+      thisAddr = new InetSocketAddress(myHost, Integer.parseInt(solrPort)+1001);
+    }
+
+
+    // first try a straight match by host
+    Long me = null;
+    boolean multiple = false;
+    int port = 0;
+    for (QuorumPeer.QuorumServer server : slist.values()) {
+      if (server.addr.getHostName().equals(myHost)) {
+        multiple = me!=null;
+        me = server.id;
+        port = server.addr.getPort();
+      }
+    }
+
+    if (!multiple) {
+      // only one host matched... assume it's me.
+      clientPort = port - 1;
+      return me;
+    }
+
+    if (me == null) {
+      // no hosts matched.
+      return null;
+    }
+
+
+    // multiple matches... try to figure out by port.
     for (QuorumPeer.QuorumServer server : slist.values()) {
       if (server.addr.equals(thisAddr)) {
-        LOG.info("I AM SERVER #" + server.id + " Addr=" + server.addr);
+        if (clientPort <= 0)
+          clientPort = server.addr.getPort() - 1;
         return server.id;
       }
     }
@@ -245,6 +293,10 @@ class SolrZkServerProps extends QuorumPeerConfig {
 
   public void setDataDir(String dataDir) {
     this.dataDir = dataDir;
+  }
+
+  public void setClientPort(int clientPort) {
+    this.clientPort = clientPort;
   }
 
 
@@ -389,7 +441,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
           serverId = myid;
           return;
         }
-        if (runZk == null) return;
+        if (zkRun == null) return;
         //////////////// END ADDED FOR SOLR //////
         throw new IllegalArgumentException(myIdFile.toString()
             + " file is missing");
