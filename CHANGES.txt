@@ -97,6 +97,9 @@ Bug fixes
 
 * LUCENE-2216: OpenBitSet.hashCode returned different hash codes for
   sets that only differed by trailing zeros. (Dawid Weiss, yonik)
+
+* LUCENE-2235: Implement missing PerFieldAnalyzerWrapper.getOffsetGap().
+  (Javier Godoy via Uwe Schindler)
   
 New features
 
